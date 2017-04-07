@@ -1,0 +1,121 @@
+Machines
+  bluewaters : ORNL XE6, os is CNL, 32 pes/node, batch system is PBS 
+      os              CNL
+      compilers       pgi,cray,gnu
+      pes/node        16
+      max_tasks/node  32
+  brutus : Brutus Linux Cluster ETH (pgi(9.0-1)/intel(10.1.018) with openi(1.4.1)/mvapich2(1.4rc2), 16 pes/node, batch system LSF, added by UB 
+      os              LINUX
+      compilers       pgi,intel
+      pes/node        16
+      max_tasks/node  16
+  cheyenne : NCAR SGI platform, os is Linux, 36 pes/node, batch system is PBS 
+      os              LINUX
+      compilers       intel,gnu
+      pes/node        36
+      max_tasks/node  36
+  constance : PNL Haswell cluster, OS is Linux, batch system is SLURM 
+      os              LINUX
+      compilers       intel,pgi
+      pes/node        24
+      max_tasks/node  24
+  cori-haswell : NERSC XC40 Haswell, os is CNL, 32 pes/node, batch system is Slurm 
+      os              CNL
+      compilers       intel,gnu,cray
+      pes/node        32
+      max_tasks/node  64
+  cori-knl : NERSC XC* KNL, os is CNL, 68 pes/node, batch system is Slurm 
+      os              CNL
+      compilers       intel,gnu,cray
+      pes/node        64
+      max_tasks/node  256
+  theta : ALCF Cray XC* KNL, os is CNL, 64 pes/node, batch system is cobalt 
+      os              CNL
+      compilers       intel,gnu,cray
+      pes/node        64
+      max_tasks/node  64
+  eastwind : PNL IBM Xeon cluster, os is Linux (pgi), batch system is SLURM 
+      os              LINUX
+      compilers       pgi,intel
+      pes/node        12
+      max_tasks/node  12
+  edison : NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM 
+      os              CNL
+      compilers       intel,gnu,cray
+      pes/node        24
+      max_tasks/node  48
+  hobart : "NCAR CGD Linux Cluster 48 pes/node, batch system is PBS" 
+      os              LINUX
+      compilers       intel,pgi,nag,gnu
+      pes/node        24
+      max_tasks/node  48
+  gaea : NOAA XE6, os is CNL, 24 pes/node, batch system is PBS 
+      os              CNL
+      compilers       pgi
+      pes/node        24
+      max_tasks/node  24
+  laramie : NCAR SGI test platform, os is Linux, 36 pes/node, batch system is PBS 
+      os              LINUX
+      compilers       intel,gnu
+      pes/node        36
+      max_tasks/node  36
+  melvin : Linux workstation for Jenkins testing 
+      os              LINUX
+      compilers       gnu
+      pes/node        64
+      max_tasks/node  64
+  sandia-srn-sems : Linux workstation at Sandia on SRN with SEMS TPL modules 
+      os              LINUX
+      compilers       gnu
+      pes/node        64
+      max_tasks/node  64
+  mira : ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt 
+      os              BGQ
+      compilers       ibm
+      pes/node        8
+      max_tasks/node  64
+  olympus : PNL cluster, os is Linux (pgi), batch system is SLURM 
+      os              LINUX
+      compilers       pgi
+      pes/node        32
+      max_tasks/node  32
+  pleiades-has : NASA/AMES Linux Cluster, Linux (ia64), 2.5 GHz Haswell Intel Xeon E5-2680v3 processors, 24 pes/node (two 12-core processors) and 128 GB of memory/node, batch system is PBS 
+      os              LINUX
+      compilers       intel
+      pes/node        24
+      max_tasks/node  24
+  pleiades-wes : NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.93 GHz Westmere processors, 12 pes/node and 24 GB of memory, batch system is PBS 
+      os              LINUX
+      compilers       intel
+      pes/node        12
+      max_tasks/node  12
+  pleiades-san : NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.6 GHz Sandy Bridge processors, 16 cores/node and 32 GB of memory, batch system is PBS 
+      os              LINUX
+      compilers       intel
+      pes/node        16
+      max_tasks/node  16
+  pleiades-ivy : NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.8 GHz Ivy Bridge processors, 20 cores/node and 3.2 GB of memory per core, batch system is PBS 
+      os              LINUX
+      compilers       intel
+      pes/node        20
+      max_tasks/node  20
+  rosa : CSCS Cray XE6, os is CNL, 32 pes/node, batch system is SLURM 
+      os              CNL
+      compilers       pgi,cray,gnu
+      pes/node        32
+      max_tasks/node  32
+  skybridge : SNL clust 
+      os              LINUX
+      compilers       intel
+      pes/node        16
+      max_tasks/node  16
+  stampede : TACC DELL, os is Linux, 16 pes/node, batch system is SLURM 
+      os              LINUX
+      compilers       intel
+      pes/node        16
+      max_tasks/node  16
+  yellowstone : NCAR IBM, os is Linux, 16 pes/node, batch system is LSF 
+      os              LINUX
+      compilers       intel,pgi,gnu,intel15
+      pes/node        15
+      max_tasks/node  30

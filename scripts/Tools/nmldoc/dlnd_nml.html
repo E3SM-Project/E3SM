@@ -1,0 +1,1159 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+
+    <style type="text/css">
+      body {
+         font-family:'Open Sans', Arial, sans-serif;
+         font-size:14px;
+         font-weight:300;
+         line-height:1.6em;
+         color:#656565;
+         width: 90%;
+         align: center;
+      }
+
+      .container {
+         padding: 0 30px 0 30px;
+         padding-top: 0px;
+         padding-right: 30px;
+         padding-bottom: 30px;
+         padding-left: 30px;
+         position: relative;
+      }
+      
+      dt { color:#656565; font-weight: bold }
+
+      .accordionItem h2 { margin: 0; font-size: 1.1em; padding: 0.4em; color: #000; background-color: #E3E4E6; border-bottom: 1px solid #66d; width: 90%}
+      .accordionItem h2:hover { cursor: pointer; }
+      .accordionItem div { margin: 0; padding: 1em 0.4em; background-color: #eef; border-bottom: 1px solid #66d; width: 90%}
+      .accordionItem.hide h2 { color: #000; background-color: #E3E4E6; width: 90%}
+      
+      .detailsBtn { background-color: #E3E4E6; }
+
+      #variable { color:#66d; font-size: 1.2em; font-weight: bold; display: inline-block; margin-right: 30px; width: 350px; }
+      #emphasis { color:#656565; font-weight: bold; display: inline-block; }
+      #small { color:#9f9f9f; display: inline-block; }
+
+    </style>
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script type="text/javascript">
+    //<![CDATA[
+
+    var accordionItems = new Array();
+
+    function init() {
+
+      // Grab the accordion items from the page
+      var divs = document.getElementsByTagName( 'div' );
+      for ( var i = 0; i < divs.length; i++ ) {
+        if ( divs[i].className == 'accordionItem' ) accordionItems.push( divs[i] );
+      }
+
+      // Assign onclick events to the accordion item headings
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        var h2 = getFirstChildWithTagName( accordionItems[i], 'H2' );
+        h2.onclick = toggleItem;
+      }
+
+      // Hide all accordion item bodies 
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+    }
+
+    function toggleItem() {
+      var itemClass = this.parentNode.className;
+
+      // Hide all items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+
+      // Show this item if it was previously hidden
+      if ( itemClass == 'accordionItem hide' ) {
+        this.parentNode.className = 'accordionItem';
+        $(this).parent().find('div').slideDown();
+      }
+    }
+
+    function getFirstChildWithTagName( element, tagName ) {
+      for ( var i = 0; i < element.childNodes.length; i++ ) {
+        if ( element.childNodes[i].nodeName == tagName ) return element.childNodes[i];
+      }
+    }
+
+    function hideAll() {
+      // Hide all accordian items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+    }
+
+    function showAll() {
+      // show all accordian items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideDown();
+      }
+    }
+
+     //]]>
+    </script>
+
+  </head>
+  <body onload="init()">
+    <div class="container">
+        <h1>Component Model Namelist Definitions for <b>DLND</b></h1>
+	<p style="font-size: 0.9em;">
+	  CESM Version: CESM2.0<br>
+	  HTML created on: 2017-03-30
+	</p>
+  	<p>
+	This page contains the complete list of <b>DLND</b> namelist variables available.<br/>
+	They are grouped by categories designed to aid browsing.  <br/>
+	Clicking on the name of a variable will display additional descriptive information.<br/>  
+	Click on the "Show Details" button and then cntl+F key to search for specific strings in this file.
+	</p>
+
+	<button class="detailsBtn" onclick="showAll();">Show Details</button>
+	<button class="detailsBtn" onclick="hideAll();">Hide Details</button>
+
+	
+	<h2>Category: dlnd</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">decomp</span> <span id="emphasis">DLND Decomposition strategy 1d = Vector decomposition root = run only on th...</span>
+	      
+	      <br/><span id="small">Group: dlnd_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>DLND Decomposition strategy 1d = Vector decomposition root = run only on the master task</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;1d&#39;, &#39;root&#34;&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1d <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>dlnd_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">force_prognostic_true</span> <span id="emphasis">If TRUE, prognostic is forced to true.</span>
+	      
+	      <br/><span id="small">Group: dlnd_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>If TRUE, prognostic is forced to true.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>logical</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;.true.&#39;, &#39;.false&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: .false. <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>dlnd_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">restfilm</span> <span id="emphasis">Master restart file name for dlnd model</span>
+	      
+	      <br/><span id="small">Group: dlnd_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Master restart file name for dlnd model</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: undefined <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>dlnd_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">restfils</span> <span id="emphasis">Stream restart file name for dlnd model, needed for branch simulations</span>
+	      
+	      <br/><span id="small">Group: dlnd_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Stream restart file name for dlnd model, needed for branch simulations</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: undefined <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>dlnd_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+	<h2>Category: streams</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">datamode</span> <span id="emphasis">datamode = &#34;NULL&#34; NULL is always a valid option and means no data will be g...</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>datamode = "NULL" NULL is always a valid option and means no data will be generated. Turns off the data model as a provider of data to the coupler. The ice_present flag will be set to false and the coupler will assume no exchange of data to or from the data model. dataMode = "COPYALL" Copies all fields directly from the input data streams Any required fields not found on an input stream will be set to zero. Set by the following xml variables in env_run.xml DLND_MODE default value: NULL</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;NULL&#39;, &#39;COPYALL&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is NULL for: {'dlnd_mode': 'NULL'} <br/>value is COPYALL for: {'dlnd_mode': 'GLC_CPLHIST'} <br/>value is COPYALL for: {'dlnd_mode': 'CPLHIST'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">domainfile</span> <span id="emphasis">spatial gridfile associated with the strdata. grid information will be read...</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>spatial gridfile associated with the strdata. grid information will be read from this file and that grid will serve as the target grid for all input data for this strdata input.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: null <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">dtlimit</span> <span id="emphasis">array (up to 30 elements) of delta time ratio limits placed on the time int...</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>array (up to 30 elements) of delta time ratio limits placed on the time interpolation associated with the array of streams. this real value causes the model to stop if the ratio of the running maximum delta time divided by the minimum delta time is greater than the dtlimit for that stream. for instance, with daily data, the delta time should be exactly one day throughout the dataset and the computed maximum divided by minimum delta time should always be 1.0. for monthly data, the delta time should be between 28 and 31 days and the maximum ratio should be about 1.1. the running value of the delta time is computed as data is read and any wraparound or cycling is also included. this input helps trap missing data or errors in cycling. to turn off trapping, set the value to 1.0e30 or something similar.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real(30)</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1.5e0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">fillalgo</span> <span id="emphasis">array (up to 30 elements) of fill algorithms associated with the array of s...</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>array (up to 30 elements) of fill algorithms associated with the array of streams. valid options are just copy (ie. no fill), special value, nearest neighbor, nearest neighbor in "i" direction, or nearest neighbor in "j" direction. valid values: 'copy','spval','nn','nnoni','nnonj'</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char(30)</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;copy&#39;, &#39;bilinear&#39;, &#39;nn&#39;, &#39;nnoni&#39;, &#39;nnonj&#39;, &#39;spval&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: nn <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">fillmask</span> <span id="emphasis">plays no role is fill algorithm at the present time.</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>plays no role is fill algorithm at the present time.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char(30)</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;nomask&#39;, &#39;srcmask&#39;, &#39;dstmask&#39;, &#39;bothmask&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: nomask <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">fillread</span> <span id="emphasis">array (up to 30 elements) of filenames associated with the array of streams...</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>array (up to 30 elements) of filenames associated with the array of streams. specifies the weights file to read in instead of computing the weights on the fly for the fill operation. if this is set, fillalgo and fillmask are ignored.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char(30)</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: NOT_SET <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">fillwrite</span> <span id="emphasis">array (up to 30 elements) of filenames associated with the array of streams...</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>array (up to 30 elements) of filenames associated with the array of streams. specifies the weights file to generate after weights are computed on the fly for the fill operation. this allows a user to save and reuse a set of weights later.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char(30)</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: NOT_SET <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">mapalgo</span> <span id="emphasis">array (up to 30 elements) of fill algorithms associated with the array of s...</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>array (up to 30 elements) of fill algorithms associated with the array of streams. valid options are copy by index, set to special value, nearest neighbor, nearest neighbor in "i" direction, nearest neighbor in "j" direction, or bilinear. valid values: copy,spval,nn,nnoni,nnonj,bilinear</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char(30)</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;copy&#39;, &#39;bilinear&#39;, &#39;nn&#39;, &#39;nnoni&#39;, &#39;nnonj&#39;, &#39;spval&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: bilinear <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">mapmask</span> <span id="emphasis">array (up to 30 elements) of masking algorithms for mapping input data asso...</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>array (up to 30 elements) of masking algorithms for mapping input data associated with the array of streams. valid options are map only from valid src points, map only to valid destination points, ignore all masks, map only from valid src points to valid destination points.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char(30)</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;nomask&#39;, &#39;srcmask&#39;, &#39;dstmask&#39;, &#39;bothmask&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: dstmask <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">mapread</span> <span id="emphasis">array (up to 30 elements) of filenames associated with the array of streams...</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>array (up to 30 elements) of filenames associated with the array of streams. specifies the weights file to read instead of computing weights on the fly for the mapping (interpolation) operation. if this is set, mapalgo and mapmask are ignored.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char(30)</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: NOT_SET <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">mapwrite</span> <span id="emphasis">array (up to 30 elements) of filenames associated with the array of streams...</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>array (up to 30 elements) of filenames associated with the array of streams. specifies the weights file to generate after weights are computed on the fly for the mapping (interpolation) operation. this allows a user to save and reuse a set of weights later.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char(30)</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: NOT_SET <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">streams</span> <span id="emphasis">character array (up to 30 elements) of stream input files. this string is a...</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>character array (up to 30 elements) of stream input files. this string is actually parsed by a stream method and so the format is specified by the stream module. this string consists of a "stream_input_filename year_align year_first year_last". the stream_input_filename is a stream text input file and the format and options are described elsewhere. year_align, year_first, and year_last provide information about the time axis of the file and how to relate the input time axis to the model time axis.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char(30)</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: undefined <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">streamslist</span> <span id="emphasis">List of streams used for the given datm_mode.</span>
+	      
+	      <br/><span id="small">Group: streams_file
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>List of streams used for the given datm_mode.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char(100)</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is NULL for: {'dlnd_mode': 'NULL'} <br/>value is lnd.cplhist for: {'dlnd_mode': '^CPLHIST$'} <br/>value is sno.cplhist for: {'dlnd_mode': 'GLC_CPLHIST'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>streams_file</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">strm_datdir</span> <span id="emphasis">Stream data file directory.</span>
+	      
+	      <br/><span id="small">Group: streams_file
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Stream data file directory.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is $DLND_CPLHIST_DIR for: {'stream': 'sno.cplhist'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>streams_file</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">strm_datfil</span> <span id="emphasis">Stream data file path(s).</span>
+	      
+	      <br/><span id="small">Group: streams_file
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Stream data file path(s).</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is $DLND_CPLHIST_CASE.cpl.hs2x.%y-01-01.nc for: {'stream': 'sno.cplhist'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>streams_file</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">strm_datvar</span> <span id="emphasis">Stream data variable name(s).</span>
+	      
+	      <br/><span id="small">Group: streams_file
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Stream data variable name(s).</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is s2x_Ss_tsrf%glc     tsrf%glc
+        s2x_Ss_topo%glc     topo%glc
+        s2x_Fgss_qice%glc   qice%glc for: {'stream': 'sno.cplhist'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>streams_file</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">strm_domdir</span> <span id="emphasis">Stream domain file directory.</span>
+	      
+	      <br/><span id="small">Group: streams_file
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Stream domain file directory.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is $DIN_LOC_ROOT/lnd/dlnd7 for: {'stream': 'sno.cplhist'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>streams_file</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">strm_domfil</span> <span id="emphasis">Stream domain file path(s).</span>
+	      
+	      <br/><span id="small">Group: streams_file
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Stream domain file path(s).</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is domain.lnd.fv0.9x1.25_gx1v6.090309.nc for: {'stream': 'sno.cplhist'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>streams_file</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">strm_domvar</span> <span id="emphasis">Stream domain variable name(s).</span>
+	      
+	      <br/><span id="small">Group: streams_file
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Stream domain variable name(s).</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: time    time
+        xc      lon
+        yc      lat
+        area    area
+        mask    mask <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>streams_file</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">strm_offset</span> <span id="emphasis">Stream offset.</span>
+	      
+	      <br/><span id="small">Group: streams_file
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Stream offset.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>streams_file</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">strm_year_align</span> <span id="emphasis">Simulation year to align stream to.</span>
+	      
+	      <br/><span id="small">Group: streams_file
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Simulation year to align stream to.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is $DLND_CPLHIST_YR_ALIGN for: {'stream': 'sno.cplhist'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>streams_file</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">strm_year_end</span> <span id="emphasis">Last year of stream.</span>
+	      
+	      <br/><span id="small">Group: streams_file
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Last year of stream.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is $DLND_CPLHIST_YR_END for: {'stream': 'sno.cplhist'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>streams_file</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">strm_year_start</span> <span id="emphasis">First year of stream.</span>
+	      
+	      <br/><span id="small">Group: streams_file
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>First year of stream.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is $DLND_CPLHIST_YR_START for: {'stream': 'sno.cplhist'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>streams_file</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">taxmode</span> <span id="emphasis">array of time axis modes associated with the array of streams for handling ...</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>array of time axis modes associated with the array of streams for handling data outside the specified stream time axis. valid options are to cycle the data based on the first, last, and align settings associated with the stream dataset, to extend the first and last valid value indefinitely, or to limit the interpolated data to fall only between the least and greatest valid value of the time array. valid values: cycle,extend,limit extend = extrapolate before and after the period by using the first or last value. cycle = cycle between the range of data limit = restrict to the period for which the data is valid</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char(30)</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;extend&#39;, &#39;cycle&#39;, &#39;limit&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: cycle <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">tintalgo</span> <span id="emphasis">array (up to 30 elements) of time interpolation options associated with the...</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>array (up to 30 elements) of time interpolation options associated with the array of streams. valid values: lower,upper,nearest,linear,coszen lower = Use lower time-value upper = Use upper time-value nearest = Use the nearest time-value linear = Linearly interpolate between the two time-values coszen = Scale according to the cosine of the solar zenith angle (for solar)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char(30)</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;coszen&#39;, &#39;nearest&#39;, &#39;linear&#39;, &#39;lower&#39;, &#39;upper&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: linear <br/>value is lower for: {'stream': 'sno.cplhist'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">vectors</span> <span id="emphasis">list of paired colon delimited field names that should be treated as vector...</span>
+	      
+	      <br/><span id="small">Group: shr_strdata_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>list of paired colon delimited field names that should be treated as vectors when carrying out spatial interpolation. unlike other character arrays in this namelist, this array is completely decoupled from the list of streams. this is a list of vector pairs that span all input streams where different fields of the vector pair could appear in different streams. for example, vectors = 'u:v','taux:tauy'.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: null <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>shr_strdata_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+    </div>
+  </body>
+</html>

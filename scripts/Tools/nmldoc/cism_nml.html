@@ -1,0 +1,3703 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+
+    <style type="text/css">
+      body {
+         font-family:'Open Sans', Arial, sans-serif;
+         font-size:14px;
+         font-weight:300;
+         line-height:1.6em;
+         color:#656565;
+         width: 90%;
+         align: center;
+      }
+
+      .container {
+         padding: 0 30px 0 30px;
+         padding-top: 0px;
+         padding-right: 30px;
+         padding-bottom: 30px;
+         padding-left: 30px;
+         position: relative;
+      }
+      
+      dt { color:#656565; font-weight: bold }
+
+      .accordionItem h2 { margin: 0; font-size: 1.1em; padding: 0.4em; color: #000; background-color: #E3E4E6; border-bottom: 1px solid #66d; width: 90%}
+      .accordionItem h2:hover { cursor: pointer; }
+      .accordionItem div { margin: 0; padding: 1em 0.4em; background-color: #eef; border-bottom: 1px solid #66d; width: 90%}
+      .accordionItem.hide h2 { color: #000; background-color: #E3E4E6; width: 90%}
+      
+      .detailsBtn { background-color: #E3E4E6; }
+
+      #variable { color:#66d; font-size: 1.2em; font-weight: bold; display: inline-block; margin-right: 30px; width: 350px; }
+      #emphasis { color:#656565; font-weight: bold; display: inline-block; }
+      #small { color:#9f9f9f; display: inline-block; }
+
+    </style>
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script type="text/javascript">
+    //<![CDATA[
+
+    var accordionItems = new Array();
+
+    function init() {
+
+      // Grab the accordion items from the page
+      var divs = document.getElementsByTagName( 'div' );
+      for ( var i = 0; i < divs.length; i++ ) {
+        if ( divs[i].className == 'accordionItem' ) accordionItems.push( divs[i] );
+      }
+
+      // Assign onclick events to the accordion item headings
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        var h2 = getFirstChildWithTagName( accordionItems[i], 'H2' );
+        h2.onclick = toggleItem;
+      }
+
+      // Hide all accordion item bodies 
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+    }
+
+    function toggleItem() {
+      var itemClass = this.parentNode.className;
+
+      // Hide all items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+
+      // Show this item if it was previously hidden
+      if ( itemClass == 'accordionItem hide' ) {
+        this.parentNode.className = 'accordionItem';
+        $(this).parent().find('div').slideDown();
+      }
+    }
+
+    function getFirstChildWithTagName( element, tagName ) {
+      for ( var i = 0; i < element.childNodes.length; i++ ) {
+        if ( element.childNodes[i].nodeName == tagName ) return element.childNodes[i];
+      }
+    }
+
+    function hideAll() {
+      // Hide all accordian items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+    }
+
+    function showAll() {
+      // show all accordian items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideDown();
+      }
+    }
+
+     //]]>
+    </script>
+
+  </head>
+  <body onload="init()">
+    <div class="container">
+        <h1>Component Model Namelist Definitions for <b>CISM</b></h1>
+	<p style="font-size: 0.9em;">
+	  CESM Version: CESM2.0<br>
+	  HTML created on: 2017-03-30
+	</p>
+  	<p>
+	This page contains the complete list of <b>CISM</b> namelist variables available.<br/>
+	They are grouped by categories designed to aid browsing.  <br/>
+	Clicking on the name of a variable will display additional descriptive information.<br/>  
+	Click on the "Show Details" button and then cntl+F key to search for specific strings in this file.
+	</p>
+
+	<button class="detailsBtn" onclick="showAll();">Show Details</button>
+	<button class="detailsBtn" onclick="hideAll();">Hide Details</button>
+
+	
+	<h2>Category: cism</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">cism_debug</span> <span id="emphasis">Determines whether extra diagnostics are printed in the cism log file Defau...</span>
+	      
+	      <br/><span id="small">Group: cism_params
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Determines whether extra diagnostics are printed in the cism log file Default: false</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>logical</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;.true.&#39;, &#39;.false&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: .false. <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_params</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">cisminputfile</span> <span id="emphasis">Input file Default: For startup runs or hybrid runs with CISM_OBSERVED_IC=T...</span>
+	      
+	      <br/><span id="small">Group: derived
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Input file Default: For startup runs or hybrid runs with CISM_OBSERVED_IC=TRUE, a resolution-dependent initial conditions file (e.g., gland10.input.nc). For branch/hybrid runs with CISM_OBSERVED_IC=FALSE, a restart file name built based on RUN_REFCASE and RUN_REFDATE.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*256</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is glc/cism/gland20.input_c150415.nc for: {'cism_phys': 'cism1', 'glc_grid': 'gland20'} <br/>value is glc/cism/gland10.input_c150415.nc for: {'cism_phys': 'cism1', 'glc_grid': 'gland10'} <br/>value is glc/cism/gland5.input_c150415.nc for: {'cism_phys': 'cism1', 'glc_grid': 'gland5'} <br/>value is glc/cism/IceSheetData_UMontana/PresentDayGreenland/Greenland_5km_v1.1_SacksRev_c150415.nc for: {'cism_phys': 'cism1', 'glc_grid': 'gland5UM'} <br/>value is glc/cism/gland20.input_c150415.nc for: {'cism_phys': 'cism2', 'glc_grid': 'gland20'} <br/>value is glc/cism/Greenland/glissade/init/greenland_4km_epsg3413_bheatflxPos_c161227.nc for: {'cism_phys': 'cism2', 'glc_grid': 'gland4'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>derived</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">ice_flux_routing</span> <span id="emphasis">Code describing how the solid ice runoff flux (i.e., calving) should be rou...</span>
+	      
+	      <br/><span id="small">Group: cism_params
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Code describing how the solid ice runoff flux (i.e., calving) should be routed. ocn: all solid ice goes to the ocean component ice: all solid ice goes to the sea ice component Default: ocn</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*64</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;ocn&#39;, &#39;ice&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: ocn <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_params</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">paramfile</span> <span id="emphasis">Name of top-level configuration file for Glimmer Glacier model (Determined ...</span>
+	      
+	      <br/><span id="small">Group: cism_params
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Name of top-level configuration file for Glimmer Glacier model (Determined by scripts -- cannot be set by user)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*100</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_params</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">zero_gcm_fluxes</span> <span id="emphasis">If true, zero out all fluxes sent to the GCM Default: Depends on GLC_TWO_WA...</span>
+	      
+	      <br/><span id="small">Group: cism_params
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>If true, zero out all fluxes sent to the GCM Default: Depends on GLC_TWO_WAY_COUPLING xml variable</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>logical</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;.true.&#39;, &#39;.false&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is .false. for: {'glc_two_way_coupling': 'TRUE', 'cism_evolve': 'TRUE'} <br/>value is .true. for: {'glc_two_way_coupling': 'FALSE', 'cism_evolve': 'TRUE'} <br/>value is .true. for: {'glc_two_way_coupling': 'TRUE', 'cism_evolve': 'FALSE'} <br/>value is .true. for: {'glc_two_way_coupling': 'FALSE', 'cism_evolve': 'FALSE'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_params</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+	<h2>Category: cism_config_climate</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">evolve_ice</span> <span id="emphasis">0: Do not let the ice sheet evolve (hold ice state fixed at initial conditi...</span>
+	      
+	      <br/><span id="small">Group: cism_config_climate
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>0: Do not let the ice sheet evolve (hold ice state fixed at initial condition) 1: Let the ice sheet evolve Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 1 for: {'cism_evolve': 'TRUE'} <br/>value is 0 for: {'cism_evolve': 'FALSE'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_climate</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">ice_tstep_multiply</span> <span id="emphasis">Ice time-step multiplier: allows asynchronous climate-ice coupling Default:...</span>
+	      
+	      <br/><span id="small">Group: cism_config_climate
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Ice time-step multiplier: allows asynchronous climate-ice coupling Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_climate</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">test_coupling</span> <span id="emphasis">If this is set to true, it sets the mass balance timestep to 1 day. This me...</span>
+	      
+	      <br/><span id="small">Group: cism_config_climate
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>If this is set to true, it sets the mass balance timestep to 1 day. This means the ice dynamics is called after one day of climate simulation. THIS IS ONLY FOR TESTING OF COUPLING PROCEDURES, NOT TO BE USED FOR SCIENCE.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>logical</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;.true.&#39;, &#39;.false&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: .false. <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_climate</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+	<h2>Category: cism_config_grid</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">dew</span> <span id="emphasis">Node spacing in x-direction (m) Default: resolution-dependent</span>
+	      
+	      <br/><span id="small">Group: cism_config_grid
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Node spacing in x-direction (m) Default: resolution-dependent</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 10000. for: {'glc_grid': 'gland10'} <br/>value is 20000. for: {'glc_grid': 'gland20'} <br/>value is 5000. for: {'glc_grid': 'gland5'} <br/>value is 5000. for: {'glc_grid': 'gland5UM'} <br/>value is 4000. for: {'glc_grid': 'gland4'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_grid</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">dns</span> <span id="emphasis">Node spacing in y-direction (m) Default: resolution-dependent</span>
+	      
+	      <br/><span id="small">Group: cism_config_grid
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Node spacing in y-direction (m) Default: resolution-dependent</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 10000. for: {'glc_grid': 'gland10'} <br/>value is 20000. for: {'glc_grid': 'gland20'} <br/>value is 5000. for: {'glc_grid': 'gland5'} <br/>value is 5000. for: {'glc_grid': 'gland5UM'} <br/>value is 4000. for: {'glc_grid': 'gland4'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_grid</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">ewn</span> <span id="emphasis">Number of nodes in x-direction Default: resolution-dependent</span>
+	      
+	      <br/><span id="small">Group: cism_config_grid
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Number of nodes in x-direction Default: resolution-dependent</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 151 for: {'glc_grid': 'gland10'} <br/>value is 76 for: {'glc_grid': 'gland20'} <br/>value is 301 for: {'glc_grid': 'gland5'} <br/>value is 301 for: {'glc_grid': 'gland5UM'} <br/>value is 393 for: {'glc_grid': 'gland4'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_grid</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">nsn</span> <span id="emphasis">Number of nodes in y-direction Default: resolution-dependent</span>
+	      
+	      <br/><span id="small">Group: cism_config_grid
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Number of nodes in y-direction Default: resolution-dependent</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 281 for: {'glc_grid': 'gland10'} <br/>value is 141 for: {'glc_grid': 'gland20'} <br/>value is 561 for: {'glc_grid': 'gland5'} <br/>value is 561 for: {'glc_grid': 'gland5UM'} <br/>value is 695 for: {'glc_grid': 'gland4'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_grid</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">upn</span> <span id="emphasis">Number of nodes in z-direction Default: 11</span>
+	      
+	      <br/><span id="small">Group: cism_config_grid
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Number of nodes in z-direction Default: 11</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 11 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_grid</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+	<h2>Category: cism_config_gthf</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">con</span> <span id="emphasis">thermal conductivity of lithosphere (W m-1 K-1) Only relevant if gthf = 2 D...</span>
+	      
+	      <br/><span id="small">Group: cism_config_gthf
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>thermal conductivity of lithosphere (W m-1 K-1) Only relevant if gthf = 2 Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_gthf</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">nlayer</span> <span id="emphasis">Number of vertical layers Only relevant if gthf = 2 Default: 20</span>
+	      
+	      <br/><span id="small">Group: cism_config_gthf
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Number of vertical layers Only relevant if gthf = 2 Default: 20</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_gthf</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">num_dim</span> <span id="emphasis">1: 1D calculations 3: 3D calculations Only relevant if gthf = 2 Default: 1</span>
+	      
+	      <br/><span id="small">Group: cism_config_gthf
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>1: 1D calculations 3: 3D calculations Only relevant if gthf = 2 Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;1&#39;, &#39;3&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_gthf</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">numt</span> <span id="emphasis">Number of time steps for spinning up GTHF calculations Only relevant if gth...</span>
+	      
+	      <br/><span id="small">Group: cism_config_gthf
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Number of time steps for spinning up GTHF calculations Only relevant if gthf = 2 Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_gthf</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">rho</span> <span id="emphasis">Density of lithosphere (kg m-3) Only relevant if gthf = 2 Default: (use har...</span>
+	      
+	      <br/><span id="small">Group: cism_config_gthf
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Density of lithosphere (kg m-3) Only relevant if gthf = 2 Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_gthf</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">rock_base</span> <span id="emphasis">Depth below sea-level at which geothermal heat gradient is applied (m) Only...</span>
+	      
+	      <br/><span id="small">Group: cism_config_gthf
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Depth below sea-level at which geothermal heat gradient is applied (m) Only relevant if gthf = 2 Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_gthf</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">shc</span> <span id="emphasis">Specific heat capacity of lithosphere (J kg-1 K-1) Only relevant if gthf = ...</span>
+	      
+	      <br/><span id="small">Group: cism_config_gthf
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Specific heat capacity of lithosphere (J kg-1 K-1) Only relevant if gthf = 2 Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_gthf</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">surft</span> <span id="emphasis">Initial surface temperature (degrees C) Only relevant if gthf = 2 Default: ...</span>
+	      
+	      <br/><span id="small">Group: cism_config_gthf
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Initial surface temperature (degrees C) Only relevant if gthf = 2 Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_gthf</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+	<h2>Category: cism_config_ho_options</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">glissade_maxiter</span> <span id="emphasis">Maximum number of nonlinear iterations to be used by the Glissade velocity ...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Maximum number of nonlinear iterations to be used by the Glissade velocity solver Default: 50</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 50 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_approx</span> <span id="emphasis">Flag that indicates which Stokes approximation to use with the glissade dyc...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Flag that indicates which Stokes approximation to use with the glissade dycore. Not valid for other dycores. -1: Shallow-ice approximation, Glide-type calculation (uses glissade_velo_sia) 0: Shallow-ice approximation, vertical-shear stresses only (uses glissade_velo_higher) 1: Shallow-shelf approximation, horizontal-plane stresses only (uses glissade_velo_higher) 2: Blatter-Pattyn approximation with both vertical-shear and horizontal-plane stresses (uses glissade_velo_higher) 3: Vertically integrated 'L1L2' approximation with vertical-shear and horizontal-plane stresses (uses glissade_velo_higher) 4: Depth-integrated viscosity approximation based on Goldberg (2011) (uses glissade_velo_higher) Default: 4</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;-1&#39;, &#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 4 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_assemble_beta</span> <span id="emphasis">Flag that describes how beta terms are assembled in the glissade finite-ele...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Flag that describes how beta terms are assembled in the glissade finite-element calculation 0: Standard finite-element calculation (which effectively smooths beta) 1: Apply local value of beta at each vertex Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_assemble_bfric</span> <span id="emphasis">Flag that describes how the basal friction heat flux is computed in the gli...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Flag that describes how the basal friction heat flux is computed in the glissade finite-element calculation Not valid for other dycores 0: Standard finite-element calculation summing over quadrature points 1: Apply local value of beta*(u^2 + v^2) at each vertex Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_assemble_taud</span> <span id="emphasis">Flag that describes how driving-stress terms are assembled in the glissade ...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Flag that describes how driving-stress terms are assembled in the glissade finite-element calculation Not valid for other dycores 0: Standard finite-element calculation (which effectively smooths the driving stress) 1: Apply local value of driving stress at each vertex Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_babc</span> <span id="emphasis">Basal boundary condition for Payne/Price dynamical core 0: constant value o...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Basal boundary condition for Payne/Price dynamical core 0: constant value of 10 Pa/yr (useful for debugging) 1: simple hard-coded pattern (useful for debugging) 2: treat betasquared value as a till yield stress (in Pa) using Picard iteration 3: linear (inverse) function of bwat 4: very large value for betasquared to enforce no slip everywhere 5: betasquared field passed in from .nc input file as part of standard i/o 6: no slip everywhere (using Dirichlet BC rather than large betasquared) 7: treat betasquared value as till yield stress (in Pa) using Newton-type iteration (in devel.) Default: 5</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;, &#39;5&#39;, &#39;6&#39;, &#39;7&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 5 <br/>value is 4 for: {'glc_grid': 'gland20'} <br/>value is 4 for: {'glc_grid': 'gland10'} <br/>value is 4 for: {'glc_grid': 'gland5'} <br/>value is 4 for: {'glc_grid': 'gland5UM'} <br/>value is 4 for: {'glc_grid': 'gland4'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_disp</span> <span id="emphasis">Method for computing the dissipation during the temperature calculation -1:...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Method for computing the dissipation during the temperature calculation -1: no dissipation 0: 0-order SIA approx. 1: 1st order solution (e.g., Blatter-Pattyn) Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;-1&#39;, &#39;0&#39;, &#39;1&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_efvs</span> <span id="emphasis">How effective viscosity is computed for higher-order dynamical core 0: cons...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>How effective viscosity is computed for higher-order dynamical core 0: constant value 1: multiple of flow factor 2: compute from effective strain rate Default: 2</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 2 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_flotation_function</span> <span id="emphasis">Flag that indicates how to compute the flotation function at and near verti...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Flag that indicates how to compute the flotation function at and near vertices in the glissade dycore Not valid for other dycores 0: f_flotation = (-rhow*b/rhoi*H) = f_pattyn; less than or equal to 1 for grounded, greater than 1 for floating 1: f_flotation = (rhoi*H)/(-rhow*b) = 1/f_pattyn; greater than or equal to 1 for grounded, less than 1 for floating 2: f_flotation = -rhow*b - rhoi*H = ocean cavity thickness; less than or equal to 0 for grounded, greater than 0 for floating Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_gradient</span> <span id="emphasis">Which gradient operator to use in the glissade dycore. Not valid in other d...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Which gradient operator to use in the glissade dycore. Not valid in other dycores. 0: Centered gradient. 1: Upstream gradient (may be better for ice evolution because it damps checkerboard noise). Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_gradient_margin</span> <span id="emphasis">How to compute the gradient at the ice margin in the glissade dycore. Not v...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>How to compute the gradient at the ice margin in the glissade dycore. Not valid for other dycores. 0: Use info from all neighbor cells, ice-covered or ice-free 1: Use info from ice-covered and/or land cells, not ice-free ocean 2: Use info from ice-covered cells only Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_ground</span> <span id="emphasis">Flag that indicates how the grounded ice fraction is computed in the glissa...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Flag that indicates how the grounded ice fraction is computed in the glissade dycore Not valid for other dycores 0: fground = 0 in floating cells (based on flotation condition), else fground = 1 1: fground between 0 and 1 (inclusive), based on a grounding line parameterization 2: fground = 1 in all cells Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_nonlinear</span> <span id="emphasis">Method for solving the nonlinear iteration when solving the first-order mom...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Method for solving the nonlinear iteration when solving the first-order momentum balance 0: use the standard Picard iteration 1: use Jacobian Free Newton Krylov (JFNK) method Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 1 for: {'dycore': '1'} <br/>value is 0 for: {'dycore': '2'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_precond</span> <span id="emphasis">Flag that indicates which Stokes preconditioner to use in the glissade dyco...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Flag that indicates which Stokes preconditioner to use in the glissade dycore. Not valid for other dycores. 0: No preconditioner 1: Diagonal preconditioner 2: Physics-based shallow-ice preconditioner Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_resid</span> <span id="emphasis">Method for computing residual in Payne/Price dynamical core 0: maxval 1: ma...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Method for computing residual in Payne/Price dynamical core 0: maxval 1: maxval ignoring basal velocity 2: mean value 3: L2 norm of system residual, Ax-b=resid Default: 3</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 3 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">which_ho_sparse</span> <span id="emphasis">Method for solving the sparse linear system that arises from the higher-ord...</span>
+	      
+	      <br/><span id="small">Group: cism_config_ho_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Method for solving the sparse linear system that arises from the higher-order solver 0: Biconjugate gradient, incomplete LU preconditioner 1: GMRES, incomplete LU preconditioner 2: Conjugate gradient, incomplete LU preconditioner 3: Conjugate gradient, structured grid, parallel-enabled 4: standalone interface to Trilinos Default: 3</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 3 for: {'dycore': '2'} <br/>value is 1 for: {'cism_use_trilinos': 'FALSE', 'dycore': '1'} <br/>value is 4 for: {'cism_use_trilinos': 'TRUE', 'dycore': '1'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_ho_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+	<h2>Category: cism_config_isostasy</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">asthenosphere</span> <span id="emphasis">0: fluid mantle, isostatic adjustment happens instantaneously 1: relaxing m...</span>
+	      
+	      <br/><span id="small">Group: cism_config_isostasy
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>0: fluid mantle, isostatic adjustment happens instantaneously 1: relaxing mantle, mantle is approximated by a half-space Only relevant if isostasy = 1 Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_isostasy</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">flexural_rigidity</span> <span id="emphasis">Flexural rigidity of the lithosphere Only relevant if &#39;lithosphere&#39; is set ...</span>
+	      
+	      <br/><span id="small">Group: cism_config_isostasy
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Flexural rigidity of the lithosphere Only relevant if 'lithosphere' is set to 1 Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_isostasy</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">lithosphere</span> <span id="emphasis">0: local lithosphere, equilibrium bedrock depression is found using Archime...</span>
+	      
+	      <br/><span id="small">Group: cism_config_isostasy
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>0: local lithosphere, equilibrium bedrock depression is found using Archimedes' principle 1: elastic lithosphere, flexural rigidity is taken into account Only relevant if isostasy = 1 Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_isostasy</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">relaxed_tau</span> <span id="emphasis">Characteristic time constant of relaxing mantle (years) Only relevant if is...</span>
+	      
+	      <br/><span id="small">Group: cism_config_isostasy
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Characteristic time constant of relaxing mantle (years) Only relevant if isostasy = 1 Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_isostasy</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">update</span> <span id="emphasis">Lithosphere update period (years) Only relevant if isostasy = 1 Default: (u...</span>
+	      
+	      <br/><span id="small">Group: cism_config_isostasy
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Lithosphere update period (years) Only relevant if isostasy = 1 Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_isostasy</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+	<h2>Category: cism_config_options</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">basal_mass_balance</span> <span id="emphasis">0: not in continuity equation 1: in continuity equation Default: 1</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>0: not in continuity equation 1: in continuity equation Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">basal_water</span> <span id="emphasis">Determines the treatment of basal water 0: Set to zero everywhere 1: Calcul...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Determines the treatment of basal water 0: Set to zero everywhere 1: Calculated from local water balance 2: Compute the basal water flux, then find depth via calculation 3: Set to constant everywhere (10m) 4: Calculated from till water content, in the basal processes module Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">calving_domain</span> <span id="emphasis">0: Calve only at ocean edge 1: Calve wherever the calving criterion is met ...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>0: Calve only at ocean edge 1: Calve wherever the calving criterion is met 2: Calve where the calving criterion is met, and there is a connected path to the ocean through other cells where the criterion is met Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">calving_init</span> <span id="emphasis">0: Do not calve at initialization 1: Calve at initialization Default: (use ...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>0: Do not calve at initialization 1: Calve at initialization Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">dycore</span> <span id="emphasis">Which dycore to use 0: glide dycore (SIA, serial only) 1: NOT SUPPORTED: gl...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Which dycore to use 0: glide dycore (SIA, serial only) 1: NOT SUPPORTED: glam dycore (HO, FDM, serial or parallel) Note that this option is not allowed within CESM, because it is buggy 2: glissade dycore (HO, FEM, serial or parallel) Default: 0 for cism1, 2 for cism2</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;2&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 0 for: {'cism_phys': 'cism1'} <br/>value is 2 for: {'cism_phys': 'cism2'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">evolution</span> <span id="emphasis">0: pseudo-diffusion 1: ADI scheme [CANNOT BE USED: RESTARTS ARE NOT EXACT] ...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>0: pseudo-diffusion 1: ADI scheme [CANNOT BE USED: RESTARTS ARE NOT EXACT] 2: diffusion 3: remap thickness 4: 1st order upwind 5: no thickness evolution Default: 0 for cism1, 3 for cism2</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;, &#39;5&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 0 for: {'cism_phys': 'cism1'} <br/>value is 3 for: {'cism_phys': 'cism2'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">flow_law</span> <span id="emphasis">0: constant value, taken from default_flwa 1: uniform value equal to the Pa...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>0: constant value, taken from default_flwa 1: uniform value equal to the Paterson-Budd value at -10 deg C 2: Paterson-Budd temperature-dependent relationship Default: 2</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 2 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">gthf</span> <span id="emphasis">0: prescribed uniform geothermal heat flux 1: read 2D geothermal flux field...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>0: prescribed uniform geothermal heat flux 1: read 2D geothermal flux field from input file (if present) 2: calculate geothermal flux using 3d diffusion Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">hotstart</span> <span id="emphasis">Hotstart (restart) the model if set to 1. This allows for exact restarts fr...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Hotstart (restart) the model if set to 1. This allows for exact restarts from previous initial conditions Default: 0 for startup or hybrid with CISM_OBSERVED_IC=TRUE, 1 for hybrid/branch with CISM_OBSERVED_IC=FALSE</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">isostasy</span> <span id="emphasis">0: no isostasy 1: compute isostasy Default: 0</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>0: no isostasy 1: compute isostasy Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">marine_margin</span> <span id="emphasis">0: ignore marine margin 1: set thickness to zero if floating 2: lose a spec...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>0: ignore marine margin 1: set thickness to zero if floating 2: lose a specified fraction of floating ice 3: set thickness to zero if relaxed bedrock is below a given depth (marine_limit) 4: set thickness to zero if current bedrock is below a given depth (marine_limit) 5: Huybrechts grounding line scheme for Greenland initialization Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;, &#39;5&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">periodic_ew</span> <span id="emphasis">0: no periodic EW boundary conditions 1: periodic EW boundary conditions (T...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>0: no periodic EW boundary conditions 1: periodic EW boundary conditions (This is a Glimmer serial option. The parallel code enforces periodic EW and NS boundary conditions by default.) Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">sigma</span> <span id="emphasis">How to determine sigma values 0: compute standard Glimmer sigma coordinates...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>How to determine sigma values 0: compute standard Glimmer sigma coordinates 1: sigma coordinates are given in external file [NOT ALLOWED WHEN RUNNING CISM IN CESM] 2: read sigma coordinates from config file (from sigma_levels) 3: evenly spaced levels, as required for glam dycore 4: compute Pattyn sigma coordinates Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">slip_coeff</span> <span id="emphasis">Basal traction parameter 0: no basal sliding 1: constant basal traction coe...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Basal traction parameter 0: no basal sliding 1: constant basal traction coefficient 2: constant coefficient where basal water is present, else no sliding 3: constant coefficient where the basal temperature is at the pressure melting point, else no sliding 4: coefficient is proportional to basal melt rate 5: coefficient is a linear function of basal water depth Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;, &#39;5&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">temp_init</span> <span id="emphasis">Temperature initialization method 0: Initialize temperature to 0 C 1: Initi...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Temperature initialization method 0: Initialize temperature to 0 C 1: Initialize temperature to surface air temperature 2: Initialize temperature with a linear profile in each column Default: 2</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 2 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">temperature</span> <span id="emphasis">Determines the temperature solution method 0: isothermal: set column to sur...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Determines the temperature solution method 0: isothermal: set column to surface air temperature 1: prognostic temperature solution 2: do NOTHING: hold temperatures steady at initial value 3: prognostic enthalpy solution Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">topo_is_relaxed</span> <span id="emphasis">0: relaxed topography is read from a separate variable 1: first time slice ...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>0: relaxed topography is read from a separate variable 1: first time slice of input topography is assumed to be relaxed 2: first time slice of input topography is assumed to be in isostatic equilibrium with ice thickness Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">vertical_integration</span> <span id="emphasis">Method of integration used to obtain vertical velocity 0: standard vertical...</span>
+	      
+	      <br/><span id="small">Group: cism_config_options
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Method of integration used to obtain vertical velocity 0: standard vertical integration 1: vertical integration constrained to obey an upper kinematic boundary condition Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_options</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+	<h2>Category: cism_config_parameters</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">basal_tract_const</span> <span id="emphasis">(m yr-1 Pa-1) Default: 1.e-4</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>(m yr-1 Pa-1) Default: 1.e-4</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1.e-4 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">basal_tract_max</span> <span id="emphasis">(m yr-1 Pa-1) (Only used for slip_coeff = BTRC_LINEAR_BMLT) Default: (use h...</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>(m yr-1 Pa-1) (Only used for slip_coeff = BTRC_LINEAR_BMLT) Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">basal_tract_slope</span> <span id="emphasis">(Pa-1) (Only used for slip_coeff = BTRC_LINEAR_BMLT) Default: (use hard-cod...</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>(Pa-1) (Only used for slip_coeff = BTRC_LINEAR_BMLT) Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">basal_tract_tanh</span> <span id="emphasis">5-element list of values (Only used for slip_coeff = BTRC_TANH_BWAT) Defaul...</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>5-element list of values (Only used for slip_coeff = BTRC_TANH_BWAT) Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real(5)</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">calving_fraction</span> <span id="emphasis">Fraction of ice lost to calving Default: (use hard-coded default)</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Fraction of ice lost to calving Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">default_flwa</span> <span id="emphasis">Glen&#39;s A to use in isothermal case Default: (use hard-coded default)</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Glen's A to use in isothermal case Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">flow_factor</span> <span id="emphasis">The flow law is enhanced with this factor. The greater the value, the lower...</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>The flow law is enhanced with this factor. The greater the value, the lower the viscosity and the faster the ice will flow. Default: 3.0 for cism1, 1.0 for cism2</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 3. for: {'cism_phys': 'cism1'} <br/>value is 1. for: {'cism_phys': 'cism2'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">geothermal</span> <span id="emphasis">Constant geothermal heat flux (W m-2; sign convention is positive down) (Ma...</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Constant geothermal heat flux (W m-2; sign convention is positive down) (May be overwritten by a spatially-varying field in input file [bheatflx]) Default: -0.05</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: -5.e-2 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">ho_beta_const</span> <span id="emphasis">Spatially uniform beta for higher-order dycores (Pa yr m-1) Default: (use h...</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Spatially uniform beta for higher-order dycores (Pa yr m-1) Default: (use hard-coded default)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">hydro_time</span> <span id="emphasis">Time scale for basal water to drain (yr-1) (Not relevant for basal_water=2)...</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Time scale for basal water to drain (yr-1) (Not relevant for basal_water=2) Default: 1000.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1000. <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">ice_limit</span> <span id="emphasis">Thickness below which ice dynamics is ignored (m) Below this limit, ice is ...</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Thickness below which ice dynamics is ignored (m) Below this limit, ice is only accumulated Default: 100 for cism1, 1 for cism2</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 100. for: {'cism_phys': 'cism1'} <br/>value is 1. for: {'cism_phys': 'cism2'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">log_level</span> <span id="emphasis">Set to a value between 0 (no messages) and 6 (all messages) Default: 6</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Set to a value between 0 (no messages) and 6 (all messages) Default: 6</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;, &#39;5&#39;, &#39;6&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 6 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">marine_limit</span> <span id="emphasis">All ice is assumed lost once water depths reach this value (for marine_marg...</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>All ice is assumed lost once water depths reach this value (for marine_margin=2 or 4) (m) Note that water depth is negative Default: -200.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: -200. <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">max_slope</span> <span id="emphasis">Maximum surface slope used in the glissade driving-stress calculation (unit...</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Maximum surface slope used in the glissade driving-stress calculation (unitless) Not valid for other dycores Default: 0.1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0.1 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">periodic_offset_ew</span> <span id="emphasis">Optional periodic offset for ismip-hom and similar tests May be needed to e...</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Optional periodic offset for ismip-hom and similar tests May be needed to ensure continuous ice geometry at the edges of the global domain Default: 0.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">periodic_offset_ns</span> <span id="emphasis">Optional periodic offset for ismip-hom and similar tests May be needed to e...</span>
+	      
+	      <br/><span id="small">Group: cism_config_parameters
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Optional periodic offset for ismip-hom and similar tests May be needed to ensure continuous ice geometry at the edges of the global domain Default: 0.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_parameters</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+	<h2>Category: cism_config_sigma</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">sigma_levels</span> <span id="emphasis">List of sigma levels, in ascending order, separated by spaces These run bet...</span>
+	      
+	      <br/><span id="small">Group: cism_config_sigma
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>List of sigma levels, in ascending order, separated by spaces These run between 0.0 (at top surface) and 1.0 (at lower surface) Only relevant if sigma = 2 Default: 0.00 0.15 0.30 0.45 0.60 0.75 0.83 0.90 0.95 0.98 1.00</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real(20)</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0.00 0.15 0.30 0.45 0.60 0.75 0.83 0.90 0.95 0.98 1.00 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_sigma</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+	<h2>Category: cism_config_time</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">dt</span> <span id="emphasis">Ice sheet timestep (years) Must translate into an integer number of hours D...</span>
+	      
+	      <br/><span id="small">Group: cism_config_time
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Ice sheet timestep (years) Must translate into an integer number of hours Default: Depends on resolution and physics option</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 0.1 for: {'cism_phys': 'cism1', 'glc_grid': 'gland10'} <br/>value is 0.1 for: {'cism_phys': 'cism1', 'glc_grid': 'gland20'} <br/>value is 0.05 for: {'cism_phys': 'cism1', 'glc_grid': 'gland5'} <br/>value is 0.05 for: {'cism_phys': 'cism1', 'glc_grid': 'gland5UM'} <br/>value is 0.5 for: {'cism_phys': 'cism2', 'glc_grid': 'gland20'} <br/>value is 0.05 for: {'cism_phys': 'cism2', 'glc_grid': 'gland4'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_time</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">dt_diag</span> <span id="emphasis">Diagnostic frequency (years) Set to 0 for no diagnostic output; set to dt f...</span>
+	      
+	      <br/><span id="small">Group: cism_config_time
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Diagnostic frequency (years) Set to 0 for no diagnostic output; set to dt for diagnostic output every time step Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1. <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_time</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">idiag</span> <span id="emphasis">x coordinate of point for diagnostic output Default: resolution-dependent</span>
+	      
+	      <br/><span id="small">Group: cism_config_time
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>x coordinate of point for diagnostic output Default: resolution-dependent</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 38 for: {'glc_grid': 'gland10'} <br/>value is 19 for: {'glc_grid': 'gland20'} <br/>value is 76 for: {'glc_grid': 'gland5'} <br/>value is 76 for: {'glc_grid': 'gland5UM'} <br/>value is 95 for: {'glc_grid': 'gland4'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_time</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">jdiag</span> <span id="emphasis">y coordinate of point for diagnostic output Default: resolution-dependent</span>
+	      
+	      <br/><span id="small">Group: cism_config_time
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>y coordinate of point for diagnostic output Default: resolution-dependent</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 114 for: {'glc_grid': 'gland10'} <br/>value is 57 for: {'glc_grid': 'gland20'} <br/>value is 228 for: {'glc_grid': 'gland5'} <br/>value is 228 for: {'glc_grid': 'gland5UM'} <br/>value is 285 for: {'glc_grid': 'gland4'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_time</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">ntem</span> <span id="emphasis">Multiplier of ice sheet timestep, dt (in theory, can be real-valued, but va...</span>
+	      
+	      <br/><span id="small">Group: cism_config_time
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Multiplier of ice sheet timestep, dt (in theory, can be real-valued, but values less than 1 are not handled properly, so restricted to being an integer) Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_time</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">profile</span> <span id="emphasis">Profile period (number of time steps between profiles) Default: 100</span>
+	      
+	      <br/><span id="small">Group: cism_config_time
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Profile period (number of time steps between profiles) Default: 100</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_time</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">subcyc</span> <span id="emphasis">Subcycling for glissade Default: 1</span>
+	      
+	      <br/><span id="small">Group: cism_config_time
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Subcycling for glissade Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_config_time</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+	<h2>Category: history</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">cesm_history_vars</span> <span id="emphasis">Space-delimited list of variables output to history file Default: &#39;acab art...</span>
+	      
+	      <br/><span id="small">Group: cism_history
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Space-delimited list of variables output to history file Default: 'acab artm thk usurf topg uvel vvel uflx vflx temp bmlt bwat'</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*1024</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is 'acab artm thk usurf topg uvel vvel uflx vflx temp bmlt bwat' for: {'cism_phys': 'cism1', 'cism_evolve': 'TRUE'} <br/>value is 'acab artm thk usurf topg uvel vvel temp bmlt bwat' for: {'cism_phys': 'cism1', 'cism_evolve': 'FALSE'} <br/>value is 'acab artm thk usurf topg uvel vvel temp bmlt bwat beta_internal' for: {'cism_phys': 'cism2', 'cism_evolve': 'TRUE'} <br/>value is 'acab artm thk usurf topg uvel vvel temp bmlt bwat' for: {'cism_phys': 'cism2', 'cism_evolve': 'FALSE'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_history</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">history_frequency</span> <span id="emphasis">History frequency e.g., if history_option=nyears, then 1 = annual, 2 = ever...</span>
+	      
+	      <br/><span id="small">Group: cism_history
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>History frequency e.g., if history_option=nyears, then 1 = annual, 2 = every two years, etc. Ignored for history_option = 'coupler' Default: 1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 1 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_history</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">history_option</span> <span id="emphasis">How history frequency is specified nyears: Write history every N years coup...</span>
+	      
+	      <br/><span id="small">Group: cism_history
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>How history frequency is specified nyears: Write history every N years coupler: Get history frequency from coupler (HIST_OPTION/HIST_N xml variables) WARNING: SHOULD NOT BE USED IN PRODUCTION RUNS - frequency metadata not set properly Default: nyears</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*64</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;nyears&#39;, &#39;coupler&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: nyears <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>cism_history</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+	<h2>Category: overrides</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">decrease_frac</span> <span id="emphasis">Fractional decrease in glacier area, per day (should be positive). (days_el...</span>
+	      
+	      <br/><span id="small">Group: glc_override_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Fractional decrease in glacier area, per day (should be positive). (days_elapsed * decrease_frac) determines the elevation threshold below which ice_covered is set to 0. When this factor reaches 1, all elevations below 3500 m are set to non-ice-covered. Default: 0 (no decrease)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0.0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>glc_override_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">decrease_override_delay</span> <span id="emphasis">Time delay before beginning decrease_frac overrides (days). Default: 0 (sta...</span>
+	      
+	      <br/><span id="small">Group: glc_override_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Time delay before beginning decrease_frac overrides (days). Default: 0 (start overrides at beginning of run)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>glc_override_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">enable_frac_overrides</span> <span id="emphasis">Whether to enable overrides of the glc fraction sent to the coupler. If thi...</span>
+	      
+	      <br/><span id="small">Group: glc_override_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Whether to enable overrides of the glc fraction sent to the coupler. If this is false, the other settings in this namelist group are ignored. ONLY MEANT FOR TESTING - SHOULD NOT BE USED FOR SCIENCE RUNS. Default: .false.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>logical</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;.true.&#39;, &#39;.false&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: .false. <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>glc_override_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">increase_frac</span> <span id="emphasis">Fractional increase in glacier area, per day. (days_elapsed * increase_frac...</span>
+	      
+	      <br/><span id="small">Group: glc_override_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Fractional increase in glacier area, per day. (days_elapsed * increase_frac) determines the elevation threshold above which ice_covered is set to 1. When this factor reaches 1, all elevations >= 0 m are set to ice-covered. Default: 0 (no increase)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0.0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>glc_override_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">increase_override_delay</span> <span id="emphasis">Time delay before beginning increase_frac overrides (days). Default: 0 (sta...</span>
+	      
+	      <br/><span id="small">Group: glc_override_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Time delay before beginning increase_frac overrides (days). Default: 0 (start overrides at beginning of run)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>glc_override_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">rearrange_freq</span> <span id="emphasis">Frequency (days) at which we rearrange elevation classes. Default: 0 (no fl...</span>
+	      
+	      <br/><span id="small">Group: glc_override_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Frequency (days) at which we rearrange elevation classes. Default: 0 (no flips ever)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>glc_override_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">rearrange_override_delay</span> <span id="emphasis">Time delay before beginning rearrange_freq overrides (days). Default: 0 (st...</span>
+	      
+	      <br/><span id="small">Group: glc_override_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Time delay before beginning rearrange_freq overrides (days). Default: 0 (start overrides at beginning of run)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>glc_override_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+	<h2>Category: time</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">allow_leapyear</span> <span id="emphasis">Whether leap years are enabled in the GLC time manager. CAUTION: Leap years...</span>
+	      
+	      <br/><span id="small">Group: time_manager_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Whether leap years are enabled in the GLC time manager. CAUTION: Leap years don't work correctly with GLC time steps longer than a few months. Default: .false. for NO_LEAP calendar, .true. otherwise</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>logical</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;.true.&#39;, &#39;.false&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: .true. <br/>value is .false. for: {'calendar': 'NO_LEAP'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>time_manager_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">date_separator</span> <span id="emphasis">Character to separate date values Default: &#39;-&#39;</span>
+	      
+	      <br/><span id="small">Group: time_manager_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Character to separate date values Default: '-'</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*1</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: - <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>time_manager_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">dt_count</span> <span id="emphasis">Time step, in units given by dt_option This generally should not be changed...</span>
+	      
+	      <br/><span id="small">Group: time_manager_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Time step, in units given by dt_option This generally should not be changed Default: set based on NCPL_BASE_PERIOD and GLC_NCPL in env_run.xml, so that there is one GLC time step per coupling period</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>real</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>time_manager_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">dt_option</span> <span id="emphasis">GLC time-step units This generally should not be changed Valid values: step...</span>
+	      
+	      <br/><span id="small">Group: time_manager_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>GLC time-step units This generally should not be changed Valid values: steps_per_year, steps_per_day, seconds, hours Default: set based on NCPL_BASE_PERIOD and GLC_NCPL in env_run.xml, so that there is one GLC time step per coupling period</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*80</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;steps_per_year&#39;, &#39;steps_per_day&#39;, &#39;seconds&#39;, &#39;hours&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>time_manager_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">iday0</span> <span id="emphasis">Starting day number in month Default: comes from RUN_STARTDATE or RUN_REFDA...</span>
+	      
+	      <br/><span id="small">Group: time_manager_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Starting day number in month Default: comes from RUN_STARTDATE or RUN_REFDATE</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;, &#39;5&#39;, &#39;6&#39;, &#39;7&#39;, &#39;8&#39;, &#39;9&#39;, &#39;10&#39;, &#39;11&#39;, &#39;12&#39;, &#39;13&#39;, &#39;14&#39;, &#39;15&#39;, &#39;16&#39;, &#39;17&#39;, &#39;18&#39;, &#39;19&#39;, &#39;20&#39;, &#39;21&#39;, &#39;22&#39;, &#39;23&#39;, &#39;24&#39;, &#39;25&#39;, &#39;26&#39;, &#39;27&#39;, &#39;28&#39;, &#39;29&#39;, &#39;30&#39;, &#39;31&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>time_manager_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">ihour0</span> <span id="emphasis">Starting hour of the day Default: 0</span>
+	      
+	      <br/><span id="small">Group: time_manager_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Starting hour of the day Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;, &#39;5&#39;, &#39;6&#39;, &#39;7&#39;, &#39;8&#39;, &#39;9&#39;, &#39;10&#39;, &#39;11&#39;, &#39;12&#39;, &#39;13&#39;, &#39;14&#39;, &#39;15&#39;, &#39;16&#39;, &#39;17&#39;, &#39;18&#39;, &#39;19&#39;, &#39;20&#39;, &#39;21&#39;, &#39;22&#39;, &#39;23&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>time_manager_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">iminute0</span> <span id="emphasis">Starting minute of the day Default: 0</span>
+	      
+	      <br/><span id="small">Group: time_manager_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Starting minute of the day Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;, &#39;5&#39;, &#39;6&#39;, &#39;7&#39;, &#39;8&#39;, &#39;9&#39;, &#39;10&#39;, &#39;11&#39;, &#39;12&#39;, &#39;13&#39;, &#39;14&#39;, &#39;15&#39;, &#39;16&#39;, &#39;17&#39;, &#39;18&#39;, &#39;19&#39;, &#39;20&#39;, &#39;21&#39;, &#39;22&#39;, &#39;23&#39;, &#39;24&#39;, &#39;25&#39;, &#39;26&#39;, &#39;27&#39;, &#39;28&#39;, &#39;29&#39;, &#39;30&#39;, &#39;31&#39;, &#39;32&#39;, &#39;33&#39;, &#39;34&#39;, &#39;35&#39;, &#39;36&#39;, &#39;37&#39;, &#39;38&#39;, &#39;39&#39;, &#39;40&#39;, &#39;41&#39;, &#39;42&#39;, &#39;43&#39;, &#39;44&#39;, &#39;45&#39;, &#39;46&#39;, &#39;47&#39;, &#39;48&#39;, &#39;49&#39;, &#39;50&#39;, &#39;51&#39;, &#39;52&#39;, &#39;53&#39;, &#39;54&#39;, &#39;55&#39;, &#39;56&#39;, &#39;57&#39;, &#39;58&#39;, &#39;59&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>time_manager_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">imonth0</span> <span id="emphasis">Starting month number Default: comes from RUN_STARTDATE or RUN_REFDATE</span>
+	      
+	      <br/><span id="small">Group: time_manager_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Starting month number Default: comes from RUN_STARTDATE or RUN_REFDATE</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;, &#39;5&#39;, &#39;6&#39;, &#39;7&#39;, &#39;8&#39;, &#39;9&#39;, &#39;10&#39;, &#39;11&#39;, &#39;12&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>time_manager_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">isecond0</span> <span id="emphasis">Starting second of the minute Default: 0</span>
+	      
+	      <br/><span id="small">Group: time_manager_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Starting second of the minute Default: 0</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;, &#39;5&#39;, &#39;6&#39;, &#39;7&#39;, &#39;8&#39;, &#39;9&#39;, &#39;10&#39;, &#39;11&#39;, &#39;12&#39;, &#39;13&#39;, &#39;14&#39;, &#39;15&#39;, &#39;16&#39;, &#39;17&#39;, &#39;18&#39;, &#39;19&#39;, &#39;20&#39;, &#39;21&#39;, &#39;22&#39;, &#39;23&#39;, &#39;24&#39;, &#39;25&#39;, &#39;26&#39;, &#39;27&#39;, &#39;28&#39;, &#39;29&#39;, &#39;30&#39;, &#39;31&#39;, &#39;32&#39;, &#39;33&#39;, &#39;34&#39;, &#39;35&#39;, &#39;36&#39;, &#39;37&#39;, &#39;38&#39;, &#39;39&#39;, &#39;40&#39;, &#39;41&#39;, &#39;42&#39;, &#39;43&#39;, &#39;44&#39;, &#39;45&#39;, &#39;46&#39;, &#39;47&#39;, &#39;48&#39;, &#39;49&#39;, &#39;50&#39;, &#39;51&#39;, &#39;52&#39;, &#39;53&#39;, &#39;54&#39;, &#39;55&#39;, &#39;56&#39;, &#39;57&#39;, &#39;58&#39;, &#39;59&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>time_manager_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">iyear0</span> <span id="emphasis">Starting year number Default: comes from RUN_STARTDATE or RUN_REFDATE</span>
+	      
+	      <br/><span id="small">Group: time_manager_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Starting year number Default: comes from RUN_STARTDATE or RUN_REFDATE</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>time_manager_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">runid</span> <span id="emphasis">Simulation identifier (ie case name) Default: case name set by create_newca...</span>
+	      
+	      <br/><span id="small">Group: time_manager_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Simulation identifier (ie case name) Default: case name set by create_newcase</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*128</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>time_manager_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">stop_option</span> <span id="emphasis">Stop option -- always let the coupler stop the model so use &#39;never&#39;. Defaul...</span>
+	      
+	      <br/><span id="small">Group: time_manager_nml
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Stop option -- always let the coupler stop the model so use 'never'. Default: 'never'</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*80</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: never <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>time_manager_nml</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+    </div>
+  </body>
+</html>

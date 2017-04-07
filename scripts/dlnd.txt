@@ -1,0 +1,8 @@
+ 
+    =========================================
+    DLND naming conventions
+    =========================================
+  
+             _DLND%SCPL : dlnd modes are DLND_MODE=GLC_CPLHIST:
+             _DLND%LCPL : dlnd modes are DLND_MODE=CPLHIST:
+             _DLND%NULL : dlnd modes are DLND_MODE=NULL:

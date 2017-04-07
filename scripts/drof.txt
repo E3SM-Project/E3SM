@@ -1,0 +1,9 @@
+ 
+    =========================================
+    DROF naming conventions
+    =========================================
+  
+             _DROF%NULL : NULL drof mode:
+              _DROF%NYF : COREv2 drof normal year forcing:
+              _DROF%IAF : COREv2 drof interannual year forcing:
+          _DROF%CPLHIST : CPLHIST mode:

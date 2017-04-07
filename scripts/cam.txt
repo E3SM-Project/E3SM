@@ -1,0 +1,31 @@
+ 
+    =========================================
+    CAM naming conventions
+    =========================================
+  
+               SDYN_CAM : CAM winds and temperature nudged towards prescribed meteorology:
+                  %HS94 : CAM Held-Suarez forcing:
+                  CAM40 : CAM cam4 physics:
+              %WCCM[%_] : CAM WACCM with middle atmosphere chemistry:
+                 %DCTBM : CAM dynamical core test with baroclinic wave IC and terminator chemistry:
+              %SVBS[%_] : CAM troposphere / stratosphere chemistry with simplified volatility basis set SOA scheme and modal aersols :
+      AR95_CAM[45]%SCAM : CAM stand-alone single column CAM ARM95 IOP test case:
+              %WCMX[%_] : CAM WACCM-X:
+                %PM[%_] : CAM prescribed modal aerosols:
+               %CLB[%_] : CAM CLUBB:
+              %WCTS[%_] : CAM WACCM with tropospheric, stratospheric, mesospheric, and lower thermospheric chemistry:
+              _CAM.%L60 : CAM 60 layers and full gravity wave spectrum:
+                  CAM60 : CAM cam6.0 physics:
+                %SPCAMS : CAM super-parameterized CAM one moment SAM microphysics 
+                %SPCAMM : CAM super-parameterized CAM double moment m2005 SAM microphysics 
+                 %AQUAP : CAM atmosphere in aquaplanet mode: 
+              %WCSC[%_] : CAM WACCM specified chemistry:
+      AR97_CAM[45]%SCAM : CAM stand-alone single column CAM ARM97 IOP test case:
+                 %ADIAB : CAM adiabatic physics:
+               %KESSLER : CAM dynamical core test with baroclinic wave IC and Kessler physics:
+              %TMOZ[%_] : CAM tropospheric chemistry with bulk aerosols:
+              %WCXI[%_] : CAM WACCM-X enhanced ionosphere:
+                  %PORT : CAM Parallel Offline Radiation Tool:
+               %DABIP04 : CAM dry adiabatic baroclinic instability (Polvani 2004):
+                  CAM50 : CAM cam5 physics:
+              %RCO2[%_] : CAM CO2 ramp: 

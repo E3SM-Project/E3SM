@@ -1,0 +1,8 @@
+ 
+    =========================================
+    POP naming conventions
+    =========================================
+  
+              _POP2%ECO : POP2/Ecosystem:
+               _POP2%1D : Single column POP2:
+                  _POP2 : POP2 default:

@@ -1,0 +1,823 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+
+    <style type="text/css">
+      body {
+         font-family:'Open Sans', Arial, sans-serif;
+         font-size:14px;
+         font-weight:300;
+         line-height:1.6em;
+         color:#656565;
+         width: 90%;
+         align: center;
+      }
+
+      .container {
+         padding: 0 30px 0 30px;
+         padding-top: 0px;
+         padding-right: 30px;
+         padding-bottom: 30px;
+         padding-left: 30px;
+         position: relative;
+      }
+      
+      dt { color:#656565; font-weight: bold }
+
+      .accordionItem h2 { margin: 0; font-size: 1.1em; padding: 0.4em; color: #000; background-color: #E3E4E6; border-bottom: 1px solid #66d; width: 90%}
+      .accordionItem h2:hover { cursor: pointer; }
+      .accordionItem div { margin: 0; padding: 1em 0.4em; background-color: #eef; border-bottom: 1px solid #66d; width: 90%}
+      .accordionItem.hide h2 { color: #000; background-color: #E3E4E6; width: 90%}
+      
+      .detailsBtn { background-color: #E3E4E6; }
+
+      #variable { color:#66d; font-size: 1.2em; font-weight: bold; display: inline-block; margin-right: 30px; width: 350px; }
+      #emphasis { color:#656565; font-weight: bold; display: inline-block; }
+      #small { color:#9f9f9f; display: inline-block; }
+
+    </style>
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script type="text/javascript">
+    //<![CDATA[
+
+    var accordionItems = new Array();
+
+    function init() {
+
+      // Grab the accordion items from the page
+      var divs = document.getElementsByTagName( 'div' );
+      for ( var i = 0; i < divs.length; i++ ) {
+        if ( divs[i].className == 'accordionItem' ) accordionItems.push( divs[i] );
+      }
+
+      // Assign onclick events to the accordion item headings
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        var h2 = getFirstChildWithTagName( accordionItems[i], 'H2' );
+        h2.onclick = toggleItem;
+      }
+
+      // Hide all accordion item bodies 
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+    }
+
+    function toggleItem() {
+      var itemClass = this.parentNode.className;
+
+      // Hide all items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+
+      // Show this item if it was previously hidden
+      if ( itemClass == 'accordionItem hide' ) {
+        this.parentNode.className = 'accordionItem';
+        $(this).parent().find('div').slideDown();
+      }
+    }
+
+    function getFirstChildWithTagName( element, tagName ) {
+      for ( var i = 0; i < element.childNodes.length; i++ ) {
+        if ( element.childNodes[i].nodeName == tagName ) return element.childNodes[i];
+      }
+    }
+
+    function hideAll() {
+      // Hide all accordian items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+    }
+
+    function showAll() {
+      // show all accordian items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideDown();
+      }
+    }
+
+     //]]>
+    </script>
+
+  </head>
+  <body onload="init()">
+    <div class="container">
+        <h1>Component Model Namelist Definitions for <b>MOSART</b></h1>
+	<p style="font-size: 0.9em;">
+	  CESM Version: CESM2.0<br>
+	  HTML created on: 2017-03-30
+	</p>
+  	<p>
+	This page contains the complete list of <b>MOSART</b> namelist variables available.<br/>
+	They are grouped by categories designed to aid browsing.  <br/>
+	Clicking on the name of a variable will display additional descriptive information.<br/>  
+	Click on the "Show Details" button and then cntl+F key to search for specific strings in this file.
+	</p>
+
+	<button class="detailsBtn" onclick="showAll();">Show Details</button>
+	<button class="detailsBtn" onclick="hideAll();">Hide Details</button>
+
+	
+	<h2>Category: history</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">rtmhist_fexcl1</span> <span id="emphasis">Fields to exclude from history tape series 1. Default: &#39; &#39;</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Fields to exclude from history tape series 1. Default: ' '</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*34(1000)</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">rtmhist_fexcl2</span> <span id="emphasis">Fields to exclude from history tape series 2. Default: &#39; &#39;</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Fields to exclude from history tape series 2. Default: ' '</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*34(1000)</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">rtmhist_fexcl3</span> <span id="emphasis">Fields to exclude from history tape series 3. Default: &#39; &#39;</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Fields to exclude from history tape series 3. Default: ' '</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*34(1000)</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">rtmhist_fincl1</span> <span id="emphasis">Fields to add to history tape series 1. Default: &#39; &#39;</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Fields to add to history tape series 1. Default: ' '</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*34(1000)</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">rtmhist_fincl2</span> <span id="emphasis">Fields to add to history tape series 2. Default: &#39; &#39;</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Fields to add to history tape series 2. Default: ' '</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*34(1000)</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">rtmhist_fincl3</span> <span id="emphasis">Fields to add to history tape series 3. Default: &#39; &#39;</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Fields to add to history tape series 3. Default: ' '</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*34(1000)</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">rtmhist_mfilt</span> <span id="emphasis">Per tape series maximum number of time samples. Default: 1,30,30</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Per tape series maximum number of time samples. Default: 1,30,30</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer(6)</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 30 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">rtmhist_ndens</span> <span id="emphasis">Per tape series history file density (i.e. output precision) 1=double preci...</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Per tape series history file density (i.e. output precision) 1=double precision 2=single precision</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer(6)</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;1&#39;, &#39;2&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 2 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">rtmhist_nhtfrq</span> <span id="emphasis">Per tape series history write frequency. positive means in time steps 0=mon...</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Per tape series history write frequency. positive means in time steps 0=monthly negative means hours (i.e. 24 means every 24 time-steps and -24 means every day</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer(6)</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 0 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+	<h2>Category: mosart</h2>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">bypass_routing_option</span> <span id="emphasis">Method for bypassing routing model. Default: direct_in_place</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Method for bypassing routing model. Default: direct_in_place</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*32</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;direct_in_place&#39;, &#39;direct_to_outlet&#39;, &#39;none&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 'direct_in_place' <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">coupling_period</span> <span id="emphasis">MOSART coupling period to driver (sec). Default: 10800 Can ONLY be set by m...</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>MOSART coupling period to driver (sec). Default: 10800 Can ONLY be set by modifying the value of the xml variable ROF_NCPL in env_run.xml.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">decomp_option</span> <span id="emphasis">Decomposition Option for mosart Default: &#39;roundrobin&#39;</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Decomposition Option for mosart Default: 'roundrobin'</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*32</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;basin&#39;, &#39;1d&#39;, &#39;roundrobin&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 'roundrobin' <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">delt_mosart</span> <span id="emphasis">MOSART time step (sec). Default: 3600 Internal mosart timestep, will be adj...</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>MOSART time step (sec). Default: 3600 Internal mosart timestep, will be adjusted down to be integer multiple of coupling_period if necessary</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>integer</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 3600 <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">do_rtm</span> <span id="emphasis">If .true., turn on mosart river routing Default: .true. If the value of the...</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>If .true., turn on mosart river routing Default: .true. If the value of the xml variable ROF GRID in env_build.xml is set to 'null', then the MOSART build-namelist will set do_mosart to .false. If do_mosart is set to .false., then MOSART will send a flag of rof_prognostic = .false. back to the coupler on initialization.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>logical</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;.true.&#39;, &#39;.false&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is .true. for: {'CLM_ACCELERATED_SPINUP': 'off', 'MOSART_MODE': 'ACTIVE'} <br/>value is .false. for: {'CLM_ACCELERATED_SPINUP': 'on'} <br/>value is .false. for: {'MOSART_MODE': 'NULL'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">do_rtmflood</span> <span id="emphasis">If .true., turn on mosart flooding back to clm Default: .false. Note that m...</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>If .true., turn on mosart flooding back to clm Default: .false. Note that mosart flood is not supported in CESM1.1</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>logical</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;.true.&#39;, &#39;.false&#39;]</dd>
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">finidat_rtm</span> <span id="emphasis">Full pathname of initial mosart file Default: &#39; &#39;</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Full pathname of initial mosart file Default: ' '</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*256</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">frivinp_rtm</span> <span id="emphasis">Full pathname of input datafile for MOSART.</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Full pathname of input datafile for MOSART.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*256</dd>
+	      
+	    
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value is rof/mosart/MOSART_Global_half_20151205a.nc for: {'rof_grid': 'r05'} <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">ice_runoff</span> <span id="emphasis">Default: .true. If .true., river runoff will be split up into liquid and ic...</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Default: .true. If .true., river runoff will be split up into liquid and ice streams, otherwise ice runoff will be zero and all runoff directed to liquid stream.</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>logical</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;.true.&#39;, &#39;.false&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: .true. <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">nrevsn_rtm</span> <span id="emphasis">Full pathname of master restart file for a branch run. (only used if RUN_TY...</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Full pathname of master restart file for a branch run. (only used if RUN_TYPE=branch) (Set with xml variables RUN_REFCASE and RUN_REFDATE in env_run.xml)</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*256</dd>
+	      
+	    
+	      
+	    
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">qgwl_runoff_option</span> <span id="emphasis">Method for handling of qgwl runoff inputs. Default: threshold</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>Method for handling of qgwl runoff inputs. Default: threshold</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*32</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;all&#39;, &#39;negative&#39;, &#39;threshold&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 'threshold' <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2><span id="variable">smat_option</span> <span id="emphasis">sparse matrix mct setting. Default: Xonly Xonly is bfb on different pe coun...</span>
+	      
+	      <br/><span id="small">Group: mosart_inparm
+              </span></h2>
+	  <div>
+	    <dl>
+	      
+	      <dt>Description</dt>
+	      <dd>sparse matrix mct setting. Default: Xonly Xonly is bfb on different pe counts, opt and Yonly might involve partial sums</dd>
+	      
+
+	      	    
+	      <dt>Type</dt>
+	      <dd>char*32</dd>
+	      
+	    
+	      	    
+	      <dt>Valid Values</dt>
+	      <dd>[&#39;opt&#39;, &#39;Xonly&#39;, &#39;Yonly&#39;]</dd>
+	      
+	    
+	      	    
+	      <dt>Default Value</dt>
+	      <dd>value: 'Xonly' <br/></dd>
+	      
+
+	      	    
+	      <dt>XML Group Name</dt>
+	      <dd>mosart_inparm</dd>
+	      
+
+	    </dl>
+	  </div>
+	</div>
+	
+	
+    </div>
+  </body>
+</html>

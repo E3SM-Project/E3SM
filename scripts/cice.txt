@@ -1,0 +1,7 @@
+ 
+    =========================================
+    CICE naming conventions
+    =========================================
+  
+          _CICE4?%PRES_ : prescribed cice:
+               _CICE4?_ : prognostic cice:

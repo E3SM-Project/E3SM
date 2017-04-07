@@ -1,0 +1,33 @@
+#!/bin/sh
+
+./manage_case --query-component-name cam > cam.txt
+./manage_case --query-component-name datm > datm.txt
+./manage_case --query-component-name satm > satm.txt
+./manage_case --query-component-name xatm > xatm.txt
+./manage_case --query-component-name clm > clm.txt
+./manage_case --query-component-name dlnd > dlnd.txt
+./manage_case --query-component-name slnd > slnd.txt
+./manage_case --query-component-name xlnd > xlnd.txt
+./manage_case --query-component-name cice > cice.txt
+./manage_case --query-component-name dice > dice.txt
+./manage_case --query-component-name sice > sice.txt
+./manage_case --query-component-name xice > xice.txt
+./manage_case --query-component-name pop > pop.txt
+./manage_case --query-component-name aquap > aquap.txt
+./manage_case --query-component-name docn > docn.txt
+./manage_case --query-component-name socn > socn.txt
+./manage_case --query-component-name xocn > xocn.txt
+./manage_case --query-component-name rtm > rtm.txt
+./manage_case --query-component-name mosart > mosart.txt
+./manage_case --query-component-name drof > drof.txt
+./manage_case --query-component-name srof > srof.txt
+./manage_case --query-component-name xrof > xrof.txt
+./manage_case --query-component-name cism > cism.txt
+./manage_case --query-component-name  sglc >  sglc.txt
+./manage_case --query-component-name xglc > xglc.txt
+./manage_case --query-component-name ww3 > ww3.txt
+./manage_case --query-component-name dwav > dwav.txt
+./manage_case --query-component-name swav > swav.txt
+./manage_case --query-component-name xwav > xwav.txt
+./manage_case --query-component-name desp > desp.txt
+./manage_case --query-component-name sesp > sesp.txt
