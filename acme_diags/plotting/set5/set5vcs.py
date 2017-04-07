@@ -7,6 +7,9 @@ import cdms2
 import genutil.statistics
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
+# Expensive to init inside plot()
+vcs_canvas = vcs.init(bg=True)
+
 
 def plot_min_max_mean(canvas, metrics_dict, ref_test_or_diff):
     """ canvas is a vcs.Canvas, metrics_dict is a dict and 
@@ -98,7 +101,9 @@ def plot(reference, test, diff, metrics_dict, parameter):
         os.makedirs(case_id)
 
     # Plotting
-    vcs_canvas = vcs.init(bg=True, geometry=(parameter.canvas_size_w, parameter.canvas_size_h))
+    vcs_canvas.bgX = parameter.canvas_size_w
+    vcs_canvas.bgY = parameter.canvas_size_h
+
     if not parameter.logo:
         vcs_canvas.drawlogooff()
 
@@ -173,3 +178,4 @@ def plot(reference, test, diff, metrics_dict, parameter):
             vcs_canvas.svg(case_id + '/' + parameter.output_file)
 
         print('Plot saved in: ' + case_id + '/' + parameter.output_file + '.' + f)
+    vcs_canvas.clear()
