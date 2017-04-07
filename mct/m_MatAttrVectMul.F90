@@ -108,7 +108,6 @@
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_zero => zero
-      use m_AttrVect, only : AttrVect_nRAttr => nRAttr
       use m_AttrVect, only : AttrVect_indexRA => indexRA
       use m_AttrVect, only : SharedAttrIndexList
 
@@ -238,11 +237,11 @@
             call SparseMatrix_vecinit(sMat)
        endif
 
-!DIR$ CONCURRENT
+!DIR$ IVDEP
        do m=1,num_indices
           do l=1,sMat%tbl_end
 !CDIR NOLOOPCHG
-!DIR$ CONCURRENT
+!DIR$ IVDEP
              do i=sMat%row_s(l),sMat%row_e(l)
                col = sMat%tcol(i,l)
                wgt = sMat%twgt(i,l)
@@ -262,7 +261,7 @@
 
          ! loop over attributes being regridded.
 
-!DIR$ CONCURRENT
+!DIR$ IVDEP
 	  do m=1,num_indices
 
 	     yAV%rAttr(m,row) = yAV%rAttr(m,row) + wgt * xAV%rAttr(m,col)
@@ -319,13 +318,17 @@
    contiguous=.true.
    ycontiguous=.true.
    do i=2,num_indices
-      if(xaVindices(i) /= xAVindices(i-1)+1) contiguous = .false.
+      if(xaVindices(i) /= xAVindices(i-1)+1) then
+         contiguous = .false.
+         exit
+      endif
    enddo
    if(contiguous) then
       do i=2,num_indices
           if(yAVindices(i) /= yAVindices(i-1)+1) then
 	    contiguous=.false.
             ycontiguous=.false.
+            exit
           endif
       enddo
    endif
@@ -336,6 +339,7 @@
 
    if(ycontiguous) then
      outxmin=yaVindices(1)-1
+!dir$ collapse
      do j=1,ysize
        do i=1,numav
          yAV%rAttr(outxmin+i,j)=0._FP
@@ -361,7 +365,7 @@
 	wgt = sMat%data%rAttr(iwgt,n)
 
        ! loop over attributes being regridded.
-!DIR$ CONCURRENT
+!DIR$ IVDEP
   	do m=1,num_indices
 	    yAV%rAttr(outxmin+m,row) = &
 	       yAV%rAttr(outxmin+m,row) + &
@@ -376,7 +380,7 @@
 	wgt = sMat%data%rAttr(iwgt,n)
 
        ! loop over attributes being regridded.
-!DIR$ CONCURRENT
+!DIR$ IVDEP
   	do m=1,num_indices
 	    yAV%rAttr(yAVindices(m),row) = &
 	       yAV%rAttr(yAVindices(m),row) + &
