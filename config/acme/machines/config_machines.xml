@@ -2562,7 +2562,7 @@
 	 <NODENAME_REGEX>summitdev-*</NODENAME_REGEX>
 	 <TESTS>acme_developer</TESTS>
 	 <COMPILERS>ibm</COMPILERS>
-	 <MPILIBS>spectrum_mpi,mpi_serial</MPILIBS>
+	 <MPILIBS>openmpi,mpi_serial</MPILIBS>
 	 <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/$PROJECT</CIME_OUTPUT_ROOT>
 	 <RUNDIR>/lustre/atlas/scratch/$ENV{USER}/$PROJECT/$CASE/run</RUNDIR>
 	 <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -2572,7 +2572,7 @@
 	 <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
 	 <BASELINE_ROOT>/lustre/atlas1/cli900/world-shared/cesm/baselines</BASELINE_ROOT>
 	 <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.summitdev</CCSM_CPRNC>
-	 <SAVE_TIMING_DIR>$ENV{PROJWORK}/$PROJECT</SAVE_TIMING_DIR>
+	 <SAVE_TIMING_DIR>/lustre/atlas/proj-shared/$PROJECT</SAVE_TIMING_DIR>
 	 <OS>LINUX</OS>
 	 <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
 	 <SUPPORTED_BY>acme</SUPPORTED_BY>
@@ -2580,10 +2580,11 @@
 	 <PES_PER_NODE>20</PES_PER_NODE>
 	 <MAX_TASKS_PER_NODE>160</MAX_TASKS_PER_NODE>
 	 <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-	 <PROJECT>csc190acme</PROJECT>
+	 <PROJECT>csc190</PROJECT>
 	 <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
+	 <PERL5LIB>/lustre/atlas/proj-shared/cli115/summitdev/soft/perlmods/lib</PERL5LIB>
 
-	 <mpirun mpilib="spectrum_mpi">
+	 <mpirun mpilib="openmpi">
 	 <executable args="default">mpirun</executable>
 	 <arguments>
 		 <arg name="num_tasks" > -np $TOTALPES</arg>
@@ -2598,6 +2599,13 @@
       <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
       <init_path lang="sh">/sw/summitdev/init/profile</init_path>
       <init_path lang="csh">/sw/summitdev/init/cshrc</init_path>
+      <init_path lang="python">/sw/summitdev/lmod/6.5.3/rhel7.2_gnu4.8.5/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="perl">/sw/summitdev/lmod/6.5.3/rhel7.2_gnu4.8.5/lmod/lmod/init/perl</init_path>
+      <!-- list of cmd_path elements, one for every supported language, e.g. sh, perl, python -->
+      <!-- <cmd_path lang="perl">/sw/summitdev/lmod/6.5.3/rhel7.2_gnu4.8.5/lmod/lmod/libexec/lmod perl</cmd_path> -->
+      <cmd_path lang="perl">/sw/summitdev/lmod/6.5.3/rhel7.2_gnu4.8.5/lmod/lmod/libexec/lmod /lustre/atlas/proj-shared/cli115/summitdev/soft/perl/default/bin/perl</cmd_path>
+      <cmd_path lang="python">/sw/summitdev/lmod/6.5.3/rhel7.2_gnu4.8.5/lmod/lmod/libexec/lmod python</cmd_path>
+ 
       <!-- list of cmd_path elements, one for every supported language, e.g. sh, perl, python -->
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
@@ -2605,10 +2613,13 @@
                          if compiler and mpilib condition applies -->
       <!-- Always execute -->
       <modules>
+        <command name="rm">python</command>
+        <command name="rm">hdf5</command>
+        <command name="rm">parallel-netcdf</command>
         <command name="load">python/2.7.12</command>
-        <!-- <command name="unload">subversion</command> -->
+        <!-- <command name="rm">subversion</command> -->
         <!-- <command name="load">subversion/1.8.3</command> -->
-        <command name="unload">cmake</command>
+        <command name="rm">cmake</command>
         <command name="load">cmake/3.6.1</command>
       </modules>
 
@@ -2625,7 +2636,6 @@
       <!-- mpi lib settings -->
       <modules mpilib="mpi-serial">
         <command name="load">netcdf/4.4.1</command>
-        <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
       <modules mpilib="!mpi-serial">
         <command name="load">parallel-netcdf/1.7.0</command>
