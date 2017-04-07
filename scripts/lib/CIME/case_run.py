@@ -102,6 +102,7 @@ def _run_model_impl(case, lid):
     while loop:
         loop = False
         stat = run_cmd(cmd, from_dir=rundir)[0]
+        model_logfile = os.path.join(rundir, model + ".log." + lid)
         # Determine if failure was due to a failed node, if so, try to restart
         if stat != 0:
             node_fail_re = case.get_value("NODE_FAIL_REGEX")
@@ -130,7 +131,7 @@ def _run_model_impl(case, lid):
 
             if not loop:
                 # We failed and we're not restarting
-                expect(False, "Command '%s' failed" % cmd)
+                expect(False, "RUN FAIL: Command '%s' failed\nSee log file for details: %s" % (cmd, model_logfile))
 
     logger.info("%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 

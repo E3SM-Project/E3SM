@@ -146,7 +146,13 @@ class SystemTestsCommon(object):
 
         except:
             success = False
-            excmsg = "Exception during run:\n%s\n%s" % (sys.exc_info()[1], traceback.format_exc())
+            msg = sys.exc_info()[1].message
+            if "RUN FAIL" in msg:
+                # Don't want to print stacktrace for a model failure since that
+                # is not a CIME/infrastructure problem.
+                excmsg = msg
+            else:
+                excmsg = "Exception during run:\n%s\n%s" % (sys.exc_info()[1], traceback.format_exc())
             logger.warning(excmsg)
             append_testlog(excmsg)
 

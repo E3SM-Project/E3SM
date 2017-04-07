@@ -325,14 +325,14 @@ class TestScheduler(object):
     def _shell_cmd_for_phase(self, test, cmd, phase, from_dir=None):
     ###########################################################################
         while True:
-            rc, output, errput = run_cmd(cmd, from_dir=from_dir)
+            rc, output, _ = run_cmd(cmd + " 2>&1", from_dir=from_dir)
             if rc != 0:
                 self._log_output(test,
-                                 "%s FAILED for test '%s'.\nCommand: %s\nOutput: %s\n\nErrput: %s" %
-                                 (phase, test, cmd, output, errput))
+                                 "%s FAILED for test '%s'.\nCommand: %s\nOutput: %s\n" %
+                                 (phase, test, cmd, output))
                 # Temporary hack to get around odd file descriptor use by
                 # buildnml scripts.
-                if "bad interpreter" in errput:
+                if "bad interpreter" in output:
                     time.sleep(1)
                     continue
                 else:
@@ -340,10 +340,10 @@ class TestScheduler(object):
             else:
                 # We don't want "RUN PASSED" in the TestStatus.log if the only thing that
                 # succeeded was the submission.
-                if phase != RUN_PHASE or self._no_batch:
-                    self._log_output(test,
-                                     "%s PASSED for test '%s'.\nCommand: %s\nOutput: %s" %
-                                     (phase, test, cmd, output))
+                phase = "SUBMIT" if phase == RUN_PHASE else phase
+                self._log_output(test,
+                                 "%s PASSED for test '%s'.\nCommand: %s\nOutput: %s\n" %
+                                 (phase, test, cmd, output))
                 break
 
         return rc == 0
@@ -545,8 +545,8 @@ class TestScheduler(object):
         rv = self._shell_cmd_for_phase(test, "./case.setup", SETUP_PHASE, from_dir=test_dir)
 
         # It's OK for this command to fail with baseline diffs but not catastrophically
-        cmdstat, output, errput = run_cmd("./case.cmpgen_namelists", from_dir=test_dir)
-        expect(cmdstat in [0, TESTS_FAILED_ERR_CODE], "Fatal error in case.cmpgen_namelists: %s" % (output + "\n" + errput))
+        cmdstat, output, _ = run_cmd("./case.cmpgen_namelists 2>&1", from_dir=test_dir)
+        expect(cmdstat in [0, TESTS_FAILED_ERR_CODE], "Fatal error in case.cmpgen_namelists: %s" % output)
 
         return rv
 
