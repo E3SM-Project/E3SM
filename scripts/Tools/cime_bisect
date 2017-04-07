@@ -88,7 +88,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def cime_bisect(testargs, good, bad, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory, all_commits):
 ###############################################################################
-    create_test = os.path.join(CIME.utils.get_scripts_location_within_cime(), "create_test")
+    create_test = os.path.join(CIME.utils.get_scripts_root(), "create_test")
     expect(os.path.exists(create_test), "Please run the root of a CIME repo")
     wait_for_tests = os.path.join(CIME.utils.get_scripts_location_within_cime(), "Tools", "wait_for_tests")
 
