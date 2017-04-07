@@ -105,7 +105,7 @@ for mct, etc.
   <CFLAGS> -g -qfullpath -qmaxmem=-1 -qphsinfo </CFLAGS>
   <FIXEDFLAGS>  -qsuffix=f=f -qfixed=132 </FIXEDFLAGS>
   <FREEFLAGS> -qsuffix=f=f90:cpp=F90  </FREEFLAGS>
-  <FFLAGS> -g -qfullpath -qmaxmem=-1 -qphsinfo </FFLAGS>
+  <FFLAGS> -g -qzerosize -qfree=f90 -qfullpath -qmaxmem=-1 -qphsinfo </FFLAGS>
   <FC_AUTO_R8> -qrealsize=8 </FC_AUTO_R8>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -qstrict -Q </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O3  </ADD_CFLAGS>
@@ -1034,12 +1034,15 @@ for mct, etc.
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <NETCDF_PATH>${OLCF_NETCDF_ROOT}</NETCDF_PATH>
-  <PNETCDF_PATH>$(OLCF_PARALLEL_NETCDF_ROOT}</PNETCDF_PATH>
+  <PNETCDF_PATH>${OLCF_PARALLEL_NETCDF_ROOT}</PNETCDF_PATH>
   <HDF5_PATH>${OLCF_HDF5_ROOT}</HDF5_PATH>
+  <NETCDF_FORTRAN_PATH>/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4</NETCDF_FORTRAN_PATH>
+  <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 </ADD_SLIBS>
   <!-- 
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
   <ADD_SLIBS> -L${OLCF_NETCDF_ROOT}/lib -lnetcdf  </ADD_SLIBS> 
+  <ADD_SLIBS compile_threaded="true"> </ADD_SLIBS>
   -->
 </compiler>
 
