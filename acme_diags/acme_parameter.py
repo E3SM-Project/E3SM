@@ -6,15 +6,15 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.case_id = ''
         self.reference_data_path = ''
         self.test_data_path = ''
-        self.reference_data_set = ''
-        self.test_data_set = ''
+        self.reference_name = ''  # TODO: keep either this or ref_name
+        self.test_name = ''
 
-        self.variables = ''
+        self.variables = ''  # TODO: make this a list
         self.season = []
         self.region = ''
         self.regrid_tool = 'esmf'
         self.regrid_method = 'linear'
-
+        self.levels = []  # TODO: change to plev
 
         # Plotting related
         self.main_title = 'Main Title'
@@ -42,7 +42,6 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.diff_colormap = ''
         self.diff_levels = []
         self.diff_units = ''
-        
 
 
     def check_values(self):
