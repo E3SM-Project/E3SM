@@ -25,7 +25,7 @@ The package enables the AMWG Set 5 diagnostics and features built-in user diagno
 ## Documentation <a name="doc"></a>
 
 * [Quickstart guide for AIMS4](docs/quick-guide-aims4.ipynb)
-* [Installation, Basic Configuration, and Running](docs/docs/install-config-run.ipynb)
+* [Installation, Basic Configuration, and Running](docs/install-config-run.ipynb)
 * More Configuration
   * [List of parameters for config file](docs/available-parameters.ipynb)
   * [Adding user diagnostics](docs/add-new-diagnostics.ipynb)
