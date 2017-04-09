@@ -31,7 +31,7 @@ set old_executable = false
 
 ### AUTOMATIC DELETION OPTIONS
 set seconds_before_delete_source_dir = -1
-set seconds_before_delete_case_dir   = 1
+set seconds_before_delete_case_dir   = 10
 set seconds_before_delete_bld_dir    = -1
 set seconds_before_delete_run_dir    = -1
 
@@ -206,13 +206,18 @@ set cpl_hist_num   = 1
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #===========================================
+# DOCUMENT WHICH VERSION OF THIS SCRIPT IS BEING USED:
+#===========================================
+set script_ver = 3.0.5
+
+#===========================================
 # DEFINE THINGS NEEDED LATER:
 #===========================================
 
 alias lowercase "echo \!:1 | tr '[A-Z]' '[a-z]'"  #make function which lowercases any strings passed to it.
 alias uppercase "echo \!:1 | tr '[a-z]' '[A-Z]'"  #make function which uppercases any strings passed to it.
 
-alias acme_print 'eval "echo run_acme: \!*"'
+alias acme_print 'echo run_acme: !*'
 alias acme_newline "echo ''"
 
 #===========================================
@@ -227,11 +232,6 @@ if ( $first_argument != '' ) then
  echo '** This script accepts no arguments. Please edit the script as needed and resubmit without arguments. **'
  exit 5
 endif
-
-#===========================================
-# DOCUMENT WHICH VERSION OF THIS SCRIPT IS BEING USED:
-#===========================================
-set script_ver = 3.0.5
 
 acme_newline
 acme_print '++++++++ run_acme starting ('`date`'), version '$script_ver' ++++++++'
@@ -545,8 +545,6 @@ cd ${case_name}
 acme_newline
 acme_print '-------- Finished create_newcase --------'
 acme_newline
-
-pwd
 
 #================================================
 # UPDATE VARIABLES WHICH REQUIRE A CASE TO BE SET
@@ -1107,6 +1105,9 @@ if ( `lowercase $short_term_archive_root_dir` != default ) then
 endif
 
 $xmlchange_exe --id DOUT_L_MS --val `uppercase $do_long_term_archiving`
+
+# DOUT_L_MSROOT is the directory in your account on the local mass storage system (typically an HPSS tape system)
+-$xmlchange_exe --id DOUT_L_MSROOT --val "ACME_simulation_output/${case_name}"
 
 #============================================
 # COUPLER HISTORY OUTPUT
