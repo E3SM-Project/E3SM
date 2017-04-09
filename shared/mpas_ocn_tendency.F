@@ -583,11 +583,9 @@ contains
                call mpas_pool_get_array(tracersSurfaceFluxPool, 'nonLocalSurfaceTracerFlux', nonLocalSurfaceTracerFlux)
 
                ! Get surface flux due to river runoff array
-!maltrud only active tracers have runoff flux for now
-               if (trim(groupItr % memberName) == 'activeTracers') then
+!maltrud only active tracers have runoff flux for now, but we still need to associate for ALL tracers
                modifiedGroupName = trim(groupItr % memberName) // "SurfaceFluxRunoff"
                call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), tracerGroupSurfaceFluxRunoff)
-               endif
 
                ! Get surface flux removed array to keep track of how much flux is ignored
                modifiedGroupName = trim(groupItr % memberName) // "SurfaceFluxRemoved"
@@ -603,14 +601,12 @@ contains
                end do
                !$omp end do
 
-               if (trim(groupItr % memberName) == 'activeTracers') then
-                  !$omp do schedule(runtime)
-                  do iCell = 1, nCells
-                    tracerGroupSurfaceFluxRunoff(:, iCell) = 0.0_RKIND
-                    tracerGroupSurfaceFluxRemoved(:, iCell) = 0.0_RKIND
-                  end do
-                  !$omp end do
-               endif
+               !$omp do schedule(runtime)
+               do iCell = 1, nCells
+                 tracerGroupSurfaceFluxRunoff(:, iCell) = 0.0_RKIND
+                 tracerGroupSurfaceFluxRemoved(:, iCell) = 0.0_RKIND
+               end do
+               !$omp end do
 
                !
                ! fill components of surface tracer flux

@@ -162,11 +162,28 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), pointer :: ecosysAuxiliary  ! additional forcing fields
-      type (mpas_pool_type), pointer :: ecosysDiagsLevel1  ! diagnostics
+      type (mpas_pool_type), pointer :: ecosysDiagFieldsLevel1,  &  ! diagnostics
+                                        ecosysDiagFieldsLevel2,  &
+                                        ecosysDiagFieldsLevel3,  &
+                                        ecosysDiagFieldsLevel4,  &
+                                        ecosysDiagFieldsLevel5
+
+      logical, pointer ::  &
+         config_ecosysTracers_diagnostic_fields_level1,  &
+         config_ecosysTracers_diagnostic_fields_level2,  &
+         config_ecosysTracers_diagnostic_fields_level3,  &
+         config_ecosysTracers_diagnostic_fields_level4,  &
+         config_ecosysTracers_diagnostic_fields_level5
+
+      !
+      ! level 1 diagnostics
+      !
 
       real (kind=RKIND), dimension(:), pointer :: &
-         ecosys_diag_tot_CaCO3_form_zint, &
          ecosys_diag_photoC_TOT_zint,  &
+         ecosys_diag_photoC_NO3_TOT_zint,  &
+         ecosys_diag_O2_ZMIN,  &
+         ecosys_diag_O2_ZMIN_DEPTH,  &
          ecosys_diag_Jint_Ctot,  &
          ecosys_diag_Jint_100m_Ctot,  &
          ecosys_diag_Jint_Ntot,  &
@@ -174,21 +191,82 @@ contains
          ecosys_diag_Jint_Ptot,  &
          ecosys_diag_Jint_100m_Ptot,  &
          ecosys_diag_Jint_Sitot,  &
-         ecosys_diag_Jint_100m_Sitot,  &
-         ecosys_diag_O2_ZMIN,  &
-         ecosys_diag_O2_ZMIN_DEPTH
+         ecosys_diag_Jint_100m_Sitot
 
-      ! two dimensional arrays
+      ! one dimensional arrays for each autotroph (nx,autotroph_cnt)
       real (kind=RKIND), dimension(:,:), pointer :: &
-         ecosys_diag_tot_Nfix,  &
+         ecosys_diag_photoC_zint,    &
+         ecosys_diag_photoC_NO3_zint
+
+      ! two dimensional arrays (nx,nz)
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         ecosys_diag_PAR_avg,  &
+         ecosys_diag_POC_FLUX_IN,  &
+         ecosys_diag_CaCO3_FLUX_IN,  &
+         ecosys_diag_auto_graze_TOT,  &
+         ecosys_diag_zoo_loss,  &
+         ecosys_diag_photoC_TOT,  &
+         ecosys_diag_photoC_NO3_TOT,  &
          ecosys_diag_NITRIF,  &
          ecosys_diag_DENITRIF,  &
+         ecosys_diag_calcToSed,      &
+         ecosys_diag_pocToSed,       &
+         ecosys_diag_pfeToSed,       &
+         ecosys_diag_SedDenitrif,    &
+         ecosys_diag_tot_Nfix
+
+      !
+      ! level 2 diagnostics
+      !
+
+      ! two dimensional arrays (nx,nz)
+      real (kind=RKIND), dimension(:,:), pointer :: &
          ecosys_diag_O2_PRODUCTION,  &
          ecosys_diag_O2_CONSUMPTION,  &
-         ecosys_diag_PAR_avg,  &
-         ecosys_diag_zoo_loss,  &
-         ecosys_diag_auto_graze_TOT,  &
-         ecosys_diag_photoC_TOT,  &
+         ecosys_diag_AOU,          &
+         ecosys_diag_pH_3D,     &
+         ecosys_diag_POC_PROD,  &
+         ecosys_diag_POC_REMIN,  &
+!maltrud NOT SAVED IN BGC_mod YET
+         ecosys_diag_POC_ACCUM
+
+      ! two dimensional arrays for each autotroph (nx,nz,autotroph_cnt)
+      real (BGC_r8), dimension(:,:,:), pointer :: &
+         ecosys_diag_N_lim,          &
+         ecosys_diag_P_lim,          &
+         ecosys_diag_Fe_lim,         &
+         ecosys_diag_SiO3_lim,       &
+         ecosys_diag_light_lim,      &
+         ecosys_diag_photoC,         &
+         ecosys_diag_photoC_NO3,     &
+         ecosys_diag_photoFe,        &
+         ecosys_diag_photoNO3,       &
+         ecosys_diag_photoNH4,       &
+         ecosys_diag_DOP_uptake,     &
+         ecosys_diag_PO4_uptake,     &
+         ecosys_diag_auto_graze,     &
+         ecosys_diag_auto_loss,      &
+         ecosys_diag_auto_agg,       &
+         ecosys_diag_Nfix
+
+      !
+      ! level 3 diagnostics
+      !
+
+      ! one dimensional arrays (nx)
+      real (kind=RKIND), dimension(:), pointer :: &
+         ecosys_diag_tot_bSi_form
+
+      ! two dimensional arrays (nx,nz)
+      real (BGC_r8), dimension(:,:), pointer :: &
+         ecosys_diag_SiO2_FLUX_IN,  &
+         ecosys_diag_SiO2_PROD,  &
+         ecosys_diag_SiO2_REMIN,  &
+         ecosys_diag_dust_FLUX_IN,  &
+         ecosys_diag_dust_REMIN,  &
+         ecosys_diag_P_iron_FLUX_IN,  &
+         ecosys_diag_P_iron_PROD,  &
+         ecosys_diag_P_iron_REMIN,  &
          ecosys_diag_DOC_prod,  &
          ecosys_diag_DOC_remin,  &
          ecosys_diag_DON_prod,  &
@@ -199,25 +277,67 @@ contains
          ecosys_diag_DOFe_remin,  &
          ecosys_diag_Fe_scavenge,  &
          ecosys_diag_Fe_scavenge_rate,  &
-         ecosys_diag_POC_FLUX_IN,  &
-         ecosys_diag_POC_PROD,  &
-         ecosys_diag_POC_REMIN,  &
-         ecosys_diag_CaCO3_FLUX_IN,  &
-         ecosys_diag_CaCO3_PROD,  &
-         ecosys_diag_CaCO3_REMIN,  &
-         ecosys_diag_SiO2_FLUX_IN,  &
-         ecosys_diag_SiO2_PROD,  &
-         ecosys_diag_SiO2_REMIN,  &
-         ecosys_diag_dust_FLUX_IN,  &
-         ecosys_diag_dust_REMIN,  &
-         ecosys_diag_P_iron_FLUX_IN,  &
-         ecosys_diag_P_iron_PROD,  &
-         ecosys_diag_P_iron_REMIN
+!maltrud NOT SAVED IN BGC_mod YET
+         ecosys_diag_DONr_remin,     &
+         ecosys_diag_DOPr_remin,     &
+         ecosys_diag_ponToSed,       &
+         ecosys_diag_popToSed,       &
+         ecosys_diag_bsiToSed,       &
+         ecosys_diag_dustToSed,      &
+         ecosys_diag_OtherRemin
+
+      ! two dimensional arrays for each autotroph (nx,nz,autotroph_cnt)
+      real (BGC_r8), dimension(:,:,:), pointer :: &
+         ecosys_diag_bSi_form
+
+      !
+      ! level 4 diagnostics
+      !
+
+      ! one dimensional arrays (nx)
+      real (BGC_r8), dimension(:), pointer :: &
+         ecosys_diag_tot_CaCO3_form_zint, &
+         ecosys_diag_zsatcalc,            &
+         ecosys_diag_zsatarag
+
+      ! one dimensional arrays for each autotroph (nx,autotroph_cnt)
+      real (BGC_r8), dimension(:,:), pointer :: &
+         ecosys_diag_CaCO3_form_zint  ! diag array for CaCO3 formation vertical integral
+
+      ! two dimensional arrays (nx,nz)
+      real (BGC_r8), dimension(:,:), pointer :: &
+         ecosys_diag_CaCO3_PROD,     &
+         ecosys_diag_CaCO3_REMIN,    &
+         ecosys_diag_tot_CaCO3_form, &
+         ecosys_diag_CO3,            &
+         ecosys_diag_HCO3,           &
+         ecosys_diag_H2CO3,          &
+         ecosys_diag_CO3_ALT_CO2,    &
+         ecosys_diag_HCO3_ALT_CO2,   &
+         ecosys_diag_H2CO3_ALT_CO2,  &
+         ecosys_diag_pH_3D_ALT_CO2,  &
+         ecosys_diag_co3_sat_calc,   &
+         ecosys_diag_co3_sat_arag
+
+      ! two dimensional arrays for each autotroph (nx,nz,autotroph_cnt)
+      real (BGC_r8), dimension(:,:,:), pointer :: &
+         ecosys_diag_CaCO3_form
+
+      !
+      !
+      ! level 5 diagnostics
+      !
+
+      ! two dimensional arrays (nx,nz)
+      real (BGC_r8), dimension(:,:), pointer :: &
+         ecosys_diag_PO4_RESTORE,  &
+         ecosys_diag_NO3_RESTORE,  &
+         ecosys_diag_SiO3_RESTORE
 
       ! source/sink wants cm instead of m
       real (kind=RKIND) :: zTop, zBot, convertLengthScale = 100.0_RKIND
 
-      integer :: iCell, iLevel, iTracer, numColumns, column
+      integer :: iCell, iLevel, iTracer, numColumns, column, autotroph
 
       err = 0
 
@@ -234,54 +354,141 @@ contains
       call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
 
 !maltrud change to diagnostics pool at some point (needs to be passed in)
-      call mpas_pool_get_subpool(forcingPool, 'ecosysDiagsLevel1', ecosysDiagsLevel1)
 
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_tot_CaCO3_form_zint', ecosys_diag_tot_CaCO3_form_zint)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_photoC_TOT_zint', ecosys_diag_photoC_TOT_zint)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_Ctot', ecosys_diag_Jint_Ctot)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_100m_Ctot', ecosys_diag_Jint_100m_Ctot)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_Ntot', ecosys_diag_Jint_Ntot)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_100m_Ntot', ecosys_diag_Jint_100m_Ntot)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_Ptot', ecosys_diag_Jint_Ptot)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_100m_Ptot', ecosys_diag_Jint_100m_Ptot)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_Sitot', ecosys_diag_Jint_Sitot)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_100m_Sitot', ecosys_diag_Jint_100m_Sitot)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_O2_ZMIN', ecosys_diag_O2_ZMIN)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_O2_ZMIN_DEPTH', ecosys_diag_O2_ZMIN_DEPTH)
+      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level1',config_ecosysTracers_diagnostic_fields_level1)
+      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level2',config_ecosysTracers_diagnostic_fields_level2)
+      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level3',config_ecosysTracers_diagnostic_fields_level3)
+      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level4',config_ecosysTracers_diagnostic_fields_level4)
+      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level5',config_ecosysTracers_diagnostic_fields_level5)
 
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_tot_Nfix', ecosys_diag_tot_Nfix)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_NITRIF', ecosys_diag_NITRIF)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DENITRIF', ecosys_diag_DENITRIF)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_O2_PRODUCTION', ecosys_diag_O2_PRODUCTION)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_O2_CONSUMPTION', ecosys_diag_O2_CONSUMPTION)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_PAR_avg', ecosys_diag_PAR_avg)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_zoo_loss', ecosys_diag_zoo_loss)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_auto_graze_TOT', ecosys_diag_auto_graze_TOT)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_photoC_TOT', ecosys_diag_photoC_TOT)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DOC_prod', ecosys_diag_DOC_prod)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DOC_remin', ecosys_diag_DOC_remin)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DON_prod', ecosys_diag_DON_prod)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DON_remin', ecosys_diag_DON_remin)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DOP_prod', ecosys_diag_DOP_prod)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DOP_remin', ecosys_diag_DOP_remin)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DOFe_prod', ecosys_diag_DOFe_prod)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DOFe_remin', ecosys_diag_DOFe_remin)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Fe_scavenge', ecosys_diag_Fe_scavenge)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Fe_scavenge_rate', ecosys_diag_Fe_scavenge_rate)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_POC_FLUX_IN', ecosys_diag_POC_FLUX_IN)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_POC_PROD', ecosys_diag_POC_PROD)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_POC_REMIN', ecosys_diag_POC_REMIN)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_CaCO3_FLUX_IN', ecosys_diag_CaCO3_FLUX_IN)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_CaCO3_PROD', ecosys_diag_CaCO3_PROD)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_CaCO3_REMIN', ecosys_diag_CaCO3_REMIN)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_SiO2_FLUX_IN', ecosys_diag_SiO2_FLUX_IN)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_SiO2_PROD', ecosys_diag_SiO2_PROD)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_SiO2_REMIN', ecosys_diag_SiO2_REMIN)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_dust_FLUX_IN', ecosys_diag_dust_FLUX_IN)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_dust_REMIN', ecosys_diag_dust_REMIN)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_P_iron_FLUX_IN', ecosys_diag_P_iron_FLUX_IN)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_P_iron_PROD', ecosys_diag_P_iron_PROD)
-      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_P_iron_REMIN', ecosys_diag_P_iron_REMIN)
+      if (config_ecosysTracers_diagnostic_fields_level1) then
+         call mpas_pool_get_subpool(forcingPool, 'ecosysDiagFieldsLevel1', ecosysDiagFieldsLevel1)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_photoC_TOT_zint', ecosys_diag_photoC_TOT_zint)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_photoC_NO3_TOT_zint', ecosys_diag_photoC_NO3_TOT_zint)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_O2_ZMIN', ecosys_diag_O2_ZMIN)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_O2_ZMIN_DEPTH', ecosys_diag_O2_ZMIN_DEPTH)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_Ctot', ecosys_diag_Jint_Ctot)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_100m_Ctot', ecosys_diag_Jint_100m_Ctot)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_Ntot', ecosys_diag_Jint_Ntot)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_100m_Ntot', ecosys_diag_Jint_100m_Ntot)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_Ptot', ecosys_diag_Jint_Ptot)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_100m_Ptot', ecosys_diag_Jint_100m_Ptot)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_Sitot', ecosys_diag_Jint_Sitot)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_100m_Sitot', ecosys_diag_Jint_100m_Sitot)
+
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_photoC_zint', ecosys_diag_photoC_zint)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_photoC_NO3_zint', ecosys_diag_photoC_NO3_zint)
+
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_PAR_avg', ecosys_diag_PAR_avg)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_POC_FLUX_IN', ecosys_diag_POC_FLUX_IN)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_CaCO3_FLUX_IN', ecosys_diag_CaCO3_FLUX_IN)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_auto_graze_TOT', ecosys_diag_auto_graze_TOT)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_zoo_loss', ecosys_diag_zoo_loss)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_photoC_TOT', ecosys_diag_photoC_TOT)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_photoC_NO3_TOT', ecosys_diag_photoC_NO3_TOT)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_NITRIF', ecosys_diag_NITRIF)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_DENITRIF', ecosys_diag_DENITRIF)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_calcToSed', ecosys_diag_calcToSed)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_pocToSed', ecosys_diag_pocToSed)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_pfeToSed', ecosys_diag_pfeToSed)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_SedDenitrif', ecosys_diag_SedDenitrif)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_tot_Nfix', ecosys_diag_tot_Nfix)
+
+      endif
+
+      if (config_ecosysTracers_diagnostic_fields_level2) then
+         call mpas_pool_get_subpool(forcingPool, 'ecosysDiagFieldsLevel2', ecosysDiagFieldsLevel2)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_O2_PRODUCTION', ecosys_diag_O2_PRODUCTION)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_O2_CONSUMPTION', ecosys_diag_O2_CONSUMPTION)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_AOU', ecosys_diag_AOU)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_pH_3D', ecosys_diag_pH_3D)
+
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_POC_PROD', ecosys_diag_POC_PROD)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_POC_REMIN', ecosys_diag_POC_REMIN)
+!maltrud NOT SAVED IN BGC_mod YET
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_POC_ACCUM', ecosys_diag_POC_ACCUM)
+
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_N_lim', ecosys_diag_N_lim)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_P_lim', ecosys_diag_P_lim)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_Fe_lim', ecosys_diag_Fe_lim)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_SiO3_lim', ecosys_diag_SiO3_lim)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_light_lim', ecosys_diag_light_lim)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_photoC', ecosys_diag_photoC)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_photoC_NO3', ecosys_diag_photoC_NO3)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_photoFe', ecosys_diag_photoFe)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_photoNO3', ecosys_diag_photoNO3)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_photoNH4', ecosys_diag_photoNH4)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_DOP_uptake', ecosys_diag_DOP_uptake)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_PO4_uptake', ecosys_diag_PO4_uptake)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_auto_graze', ecosys_diag_auto_graze)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_auto_loss', ecosys_diag_auto_loss)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_auto_agg', ecosys_diag_auto_agg)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_Nfix', ecosys_diag_Nfix)
+      endif
+
+      if (config_ecosysTracers_diagnostic_fields_level3) then
+         call mpas_pool_get_subpool(forcingPool, 'ecosysDiagFieldsLevel3', ecosysDiagFieldsLevel3)
+
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_tot_bSi_form', ecosys_diag_tot_bSi_form)
+
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_SiO2_FLUX_IN', ecosys_diag_SiO2_FLUX_IN)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_SiO2_PROD', ecosys_diag_SiO2_PROD)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_SiO2_REMIN', ecosys_diag_SiO2_REMIN)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_dust_FLUX_IN', ecosys_diag_dust_FLUX_IN)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_dust_REMIN', ecosys_diag_dust_REMIN)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_P_iron_FLUX_IN', ecosys_diag_P_iron_FLUX_IN)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_P_iron_PROD', ecosys_diag_P_iron_PROD)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_P_iron_REMIN', ecosys_diag_P_iron_REMIN)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_DOC_prod', ecosys_diag_DOC_prod)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_DOC_remin', ecosys_diag_DOC_remin)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_DON_prod', ecosys_diag_DON_prod)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_DON_remin', ecosys_diag_DON_remin)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_DOP_prod', ecosys_diag_DOP_prod)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_DOP_remin', ecosys_diag_DOP_remin)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_DOFe_prod', ecosys_diag_DOFe_prod)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_DOFe_remin', ecosys_diag_DOFe_remin)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_Fe_scavenge', ecosys_diag_Fe_scavenge)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_Fe_scavenge_rate', ecosys_diag_Fe_scavenge_rate)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_DONr_remin', ecosys_diag_DONr_remin)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_DOPr_remin', ecosys_diag_DOPr_remin)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_ponToSed', ecosys_diag_ponToSed)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_popToSed', ecosys_diag_popToSed)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_bsiToSed', ecosys_diag_bsiToSed)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_dustToSed', ecosys_diag_dustToSed)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_OtherRemin', ecosys_diag_OtherRemin)
+
+         call mpas_pool_get_array(ecosysDiagFieldsLevel3, 'ecosys_diag_bSi_form', ecosys_diag_bSi_form)
+      endif
+
+      if (config_ecosysTracers_diagnostic_fields_level4) then
+         call mpas_pool_get_subpool(forcingPool, 'ecosysDiagFieldsLevel4', ecosysDiagFieldsLevel4)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_tot_CaCO3_form_zint', ecosys_diag_tot_CaCO3_form_zint)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_zsatcalc', ecosys_diag_zsatcalc)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_zsatarag', ecosys_diag_zsatarag)
+
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_CaCO3_form_zint', ecosys_diag_CaCO3_form_zint)
+
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_CaCO3_PROD', ecosys_diag_CaCO3_PROD)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_CaCO3_REMIN', ecosys_diag_CaCO3_REMIN)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_tot_CaCO3_form', ecosys_diag_tot_CaCO3_form)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_CaCO3_form', ecosys_diag_CaCO3_form)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_CO3', ecosys_diag_CO3)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_HCO3', ecosys_diag_HCO3)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_H2CO3', ecosys_diag_H2CO3)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_CO3_ALT_CO2', ecosys_diag_CO3_ALT_CO2)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_HCO3_ALT_CO2', ecosys_diag_HCO3_ALT_CO2)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_H2CO3_ALT_CO2', ecosys_diag_H2CO3_ALT_CO2)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_pH_3D_ALT_CO2', ecosys_diag_pH_3D_ALT_CO2)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_co3_sat_calc', ecosys_diag_co3_sat_calc)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel4, 'ecosys_diag_co3_sat_arag', ecosys_diag_co3_sat_arag)
+      endif
+
+      if (config_ecosysTracers_diagnostic_fields_level5) then
+         call mpas_pool_get_subpool(forcingPool, 'ecosysDiagFieldsLevel5', ecosysDiagFieldsLevel5)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel5, 'ecosys_diag_PO4_RESTORE', ecosys_diag_PO4_RESTORE)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel5, 'ecosys_diag_NO3_RESTORE', ecosys_diag_NO3_RESTORE)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel5, 'ecosys_diag_SiO3_RESTORE', ecosys_diag_SiO3_RESTORE)
+      endif
 
       numColumns = 1
       column = 1
@@ -472,99 +679,274 @@ contains
             PH_PREV_3D(iLevel,iCell)         = BGC_output%PH_PREV_3D(iLevel,column)
             PH_PREV_ALT_CO2_3D(iLevel,iCell) = BGC_output%PH_PREV_ALT_CO2_3D(iLevel,column)
 
+            !
+            ! level 1 diagnostics
+            !
+
+            if (config_ecosysTracers_diagnostic_fields_level1) then
+               ecosys_diag_PAR_avg(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_PAR_avg(iLevel,column)
+               ecosys_diag_POC_FLUX_IN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_POC_FLUX_IN(iLevel,column)
+               ecosys_diag_CaCO3_FLUX_IN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_CaCO3_FLUX_IN(iLevel,column)
+               ecosys_diag_auto_graze_TOT(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_auto_graze_TOT(iLevel,column)
+               ecosys_diag_zoo_loss(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_zoo_loss(iLevel,column)
+               ecosys_diag_photoC_TOT(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_photoC_TOT(iLevel,column)
+               ecosys_diag_photoC_NO3_TOT(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_photoC_NO3_TOT(iLevel,column)
+               ecosys_diag_NITRIF(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_NITRIF(iLevel,column)
+               ecosys_diag_DENITRIF(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DENITRIF(iLevel,column)
+               ecosys_diag_calcToSed(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_calcToSed(iLevel,column)
+               ecosys_diag_pocToSed(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_pocToSed(iLevel,column)
+               ecosys_diag_pfeToSed(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_pfeToSed(iLevel,column)
+               ecosys_diag_SedDenitrif(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_SedDenitrif(iLevel,column)
+               ecosys_diag_tot_Nfix(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_tot_Nfix(iLevel,column)
+            endif  !  config_ecosysTracers_diagnostic_fields_level1
+
+            !
+            ! level 2 diagnostics
+            !
+            if (config_ecosysTracers_diagnostic_fields_level2) then
+               ecosys_diag_O2_PRODUCTION(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_O2_PRODUCTION(iLevel,column)
+               ecosys_diag_O2_CONSUMPTION(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_O2_CONSUMPTION(iLevel,column)
+               ecosys_diag_AOU(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_AOU(iLevel,column)
+               ecosys_diag_pH_3D(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_pH_3D(iLevel,column)
+               ecosys_diag_POC_PROD(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_POC_PROD(iLevel,column)
+               ecosys_diag_POC_REMIN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_POC_REMIN(iLevel,column)
+!maltrud NOT SAVED IN BGC_mod YET
+!              ecosys_diag_POC_ACCUM(iLevel,iCell) =  &
+!                          BGC_diagnostic_fields%diag_POC_ACCUM(iLevel,column)
+               ecosys_diag_POC_ACCUM(iLevel,iCell) = 0.0_RKIND
+
+               do autotroph = 1, autotroph_cnt
+                  ecosys_diag_N_lim(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_N_lim(iLevel,column,autotroph)
+                  ecosys_diag_P_lim(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_P_lim(iLevel,column,autotroph)
+                  ecosys_diag_Fe_lim(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_Fe_lim(iLevel,column,autotroph)
+                  ecosys_diag_SiO3_lim(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_SiO3_lim(iLevel,column,autotroph)
+                  ecosys_diag_light_lim(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_light_lim(iLevel,column,autotroph)
+                  ecosys_diag_photoC(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_photoC(iLevel,column,autotroph)
+                  ecosys_diag_photoC_NO3(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_photoC_NO3(iLevel,column,autotroph)
+                  ecosys_diag_photoFe(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_photoFe(iLevel,column,autotroph)
+                  ecosys_diag_photoNO3(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_photoNO3(iLevel,column,autotroph)
+                  ecosys_diag_photoNH4(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_photoNH4(iLevel,column,autotroph)
+                  ecosys_diag_DOP_uptake(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DOP_uptake(iLevel,column,autotroph)
+                  ecosys_diag_PO4_uptake(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_PO4_uptake(iLevel,column,autotroph)
+                  ecosys_diag_auto_graze(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_auto_graze(iLevel,column,autotroph)
+                  ecosys_diag_auto_loss(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_auto_loss(iLevel,column,autotroph)
+                  ecosys_diag_auto_agg(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_auto_agg(iLevel,column,autotroph)
+                  ecosys_diag_Nfix(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_Nfix(iLevel,column,autotroph)
+               enddo  !  autotroph loop
+
+            endif  !  config_ecosysTracers_diagnostic_fields_level2
+
+            !
+            ! level 3 diagnostics
+            !
+            if (config_ecosysTracers_diagnostic_fields_level3) then
+               ecosys_diag_SiO2_FLUX_IN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_SiO2_FLUX_IN(iLevel,column)
+               ecosys_diag_SiO2_PROD(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_SiO2_PROD(iLevel,column)
+               ecosys_diag_SiO2_REMIN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_SiO2_REMIN(iLevel,column)
+               ecosys_diag_dust_FLUX_IN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_dust_FLUX_IN(iLevel,column)
+               ecosys_diag_dust_REMIN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_dust_REMIN(iLevel,column)
+               ecosys_diag_P_iron_FLUX_IN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_P_iron_FLUX_IN(iLevel,column)
+               ecosys_diag_P_iron_PROD(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_P_iron_PROD(iLevel,column)
+               ecosys_diag_P_iron_REMIN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_P_iron_REMIN(iLevel,column)
+               ecosys_diag_DOC_prod(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DOC_prod(iLevel,column)
+               ecosys_diag_DOC_remin(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DOC_remin(iLevel,column)
+               ecosys_diag_DON_prod(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DON_prod(iLevel,column)
+               ecosys_diag_DON_remin(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DON_remin(iLevel,column)
+               ecosys_diag_DOP_prod(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DOP_prod(iLevel,column)
+               ecosys_diag_DOP_remin(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DOP_remin(iLevel,column)
+               ecosys_diag_DOFe_prod(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DOFe_prod(iLevel,column)
+               ecosys_diag_DOFe_remin(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DOFe_remin(iLevel,column)
+               ecosys_diag_Fe_scavenge(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_Fe_scavenge(iLevel,column)
+               ecosys_diag_Fe_scavenge_rate(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_Fe_scavenge_rate(iLevel,column)
+               ecosys_diag_DONr_remin(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DONr_remin(iLevel,column)
+               ecosys_diag_DOPr_remin(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DOPr_remin(iLevel,column)
+               ecosys_diag_ponToSed(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_ponToSed(iLevel,column)
+               ecosys_diag_popToSed(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_popToSed(iLevel,column)
+               ecosys_diag_bsiToSed(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_bsiToSed(iLevel,column)
+               ecosys_diag_dustToSed(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_dustToSed(iLevel,column)
+               ecosys_diag_OtherRemin(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_OtherRemin(iLevel,column)
+
+               do autotroph = 1, autotroph_cnt
+                  ecosys_diag_bSi_form(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_bSi_form(iLevel,column,autotroph)
+               enddo  !  autotroph loop
+
+            endif  !  config_ecosysTracers_diagnostic_fields_level3
+
+            !
+            ! level 4 diagnostics
+            !
+            if (config_ecosysTracers_diagnostic_fields_level4) then
+               ecosys_diag_CaCO3_PROD(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_CaCO3_PROD(iLevel,column)
+               ecosys_diag_CaCO3_REMIN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_CaCO3_REMIN(iLevel,column)
+               ecosys_diag_tot_CaCO3_form(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_tot_CaCO3_form(iLevel,column)
+               ecosys_diag_CO3(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_CO3(iLevel,column)
+               ecosys_diag_HCO3(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_HCO3(iLevel,column)
+               ecosys_diag_H2CO3(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_H2CO3(iLevel,column)
+               ecosys_diag_CO3_ALT_CO2(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_CO3_ALT_CO2(iLevel,column)
+               ecosys_diag_HCO3_ALT_CO2(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_HCO3_ALT_CO2(iLevel,column)
+               ecosys_diag_H2CO3_ALT_CO2(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_H2CO3_ALT_CO2(iLevel,column)
+               ecosys_diag_pH_3D_ALT_CO2(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_pH_3D_ALT_CO2(iLevel,column)
+               ecosys_diag_co3_sat_calc(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_co3_sat_calc(iLevel,column)
+               ecosys_diag_co3_sat_arag(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_co3_sat_arag(iLevel,column)
+
+               do autotroph = 1, autotroph_cnt
+                  ecosys_diag_CaCO3_form(autotroph,iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_CaCO3_form(iLevel,column,autotroph)
+               enddo
+            endif  !  config_ecosysTracers_diagnostic_fields_level4
+
+            !
+            ! level 5 diagnostics
+            !
+
+            if (config_ecosysTracers_diagnostic_fields_level5) then
+                  ecosys_diag_PO4_RESTORE(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_PO4_RESTORE(iLevel,column)
+                     ecosys_diag_NO3_RESTORE(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_NO3_RESTORE(iLevel,column)
+                     ecosys_diag_SiO3_RESTORE(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_SiO3_RESTORE(iLevel,column)
+            endif  !  config_ecosysTracers_diagnostic_fields_level5
+
+         enddo  !  iLevel
+
+         !
+         ! level 1 diagnostics with no depth dependence
+         !
+         if (config_ecosysTracers_diagnostic_fields_level1) then
+            ecosys_diag_photoC_TOT_zint(iCell) =  &
+                        BGC_diagnostic_fields%diag_photoC_TOT_zint(column)
+            ecosys_diag_photoC_NO3_TOT_zint(iCell) =  &
+                        BGC_diagnostic_fields%diag_photoC_NO3_TOT_zint(column)
+            ecosys_diag_O2_ZMIN(iCell) =  &
+                        BGC_diagnostic_fields%diag_O2_ZMIN(column)
+            ecosys_diag_O2_ZMIN_DEPTH(iCell) =  &
+                        BGC_diagnostic_fields%diag_O2_ZMIN_DEPTH(column)
+            ecosys_diag_Jint_Ctot(iCell) =  &
+                        BGC_diagnostic_fields%diag_Jint_Ctot(column)
+            ecosys_diag_Jint_100m_Ctot(iCell) =  &
+                        BGC_diagnostic_fields%diag_Jint_100m_Ctot(column)
+            ecosys_diag_Jint_Ntot(iCell) =  &
+                        BGC_diagnostic_fields%diag_Jint_Ntot(column)
+            ecosys_diag_Jint_100m_Ntot(iCell) =  &
+                        BGC_diagnostic_fields%diag_Jint_100m_Ntot(column)
+            ecosys_diag_Jint_Ptot(iCell) =  &
+                        BGC_diagnostic_fields%diag_Jint_Ptot(column)
+            ecosys_diag_Jint_100m_Ptot(iCell) =  &
+                        BGC_diagnostic_fields%diag_Jint_100m_Ptot(column)
+            ecosys_diag_Jint_Sitot(iCell) =  &
+                        BGC_diagnostic_fields%diag_Jint_Sitot(column)
+            ecosys_diag_Jint_100m_Sitot(iCell) =  &
+                        BGC_diagnostic_fields%diag_Jint_100m_Sitot(column)
+
+            do autotroph = 1, autotroph_cnt
+               ecosys_diag_photoC_zint(autotroph,iCell) =  &
+                        BGC_diagnostic_fields%diag_photoC_zint(column,autotroph)
+               ecosys_diag_photoC_NO3_zint(autotroph,iCell) =  &
+                        BGC_diagnostic_fields%diag_photoC_NO3_zint(column,autotroph)
+            enddo
+
+         endif  !  config_ecosysTracers_diagnostic_fields_level1
+
+         !
+         ! level 3 diagnostics with no depth dependence
+         !
+         if (config_ecosysTracers_diagnostic_fields_level3) then
+            ecosys_diag_tot_bSi_form(iCell) =  &
+                           BGC_diagnostic_fields%diag_tot_bSi_form(column)
+         endif  !  config_ecosysTracers_diagnostic_fields_level3
+
+         !
+         ! level 4 diagnostics with no depth dependence
+         !
+         if (config_ecosysTracers_diagnostic_fields_level4) then
             ecosys_diag_tot_CaCO3_form_zint(iCell) =  &
                            BGC_diagnostic_fields%diag_tot_CaCO3_form_zint(column)
-            ecosys_diag_photoC_TOT_zint(iCell) =  &
-                           BGC_diagnostic_fields%diag_photoC_TOT_zint(column)
-            ecosys_diag_Jint_Ctot(iCell) =  &
-                           BGC_diagnostic_fields%diag_Jint_Ctot(column)
-            ecosys_diag_Jint_100m_Ctot(iCell) =  &
-                           BGC_diagnostic_fields%diag_Jint_100m_Ctot(column)
-            ecosys_diag_Jint_Ntot(iCell) =  &
-                           BGC_diagnostic_fields%diag_Jint_Ntot(column)
-            ecosys_diag_Jint_100m_Ntot(iCell) =  &
-                           BGC_diagnostic_fields%diag_Jint_100m_Ntot(column)
-            ecosys_diag_Jint_Ptot(iCell) =  &
-                           BGC_diagnostic_fields%diag_Jint_Ptot(column)
-            ecosys_diag_Jint_100m_Ptot(iCell) =  &
-                           BGC_diagnostic_fields%diag_Jint_100m_Ptot(column)
-            ecosys_diag_Jint_Sitot(iCell) =  &
-                           BGC_diagnostic_fields%diag_Jint_Sitot(column)
-            ecosys_diag_Jint_100m_Sitot(iCell) =  &
-                           BGC_diagnostic_fields%diag_Jint_100m_Sitot(column)
-            ecosys_diag_O2_ZMIN(iCell) =  &
-                           BGC_diagnostic_fields%diag_O2_ZMIN(column)
-            ecosys_diag_O2_ZMIN_DEPTH(iCell) =  &
-                           BGC_diagnostic_fields%diag_O2_ZMIN_DEPTH(column)
+            ecosys_diag_zsatcalc(iCell) =  &
+                           BGC_diagnostic_fields%diag_zsatcalc(column)
+            ecosys_diag_zsatarag(iCell) =  &
+                           BGC_diagnostic_fields%diag_zsatarag(column)
 
-            ecosys_diag_tot_Nfix(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_tot_Nfix(iLevel,column)
-            ecosys_diag_NITRIF(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_NITRIF(iLevel,column)
-            ecosys_diag_DENITRIF(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_DENITRIF(iLevel,column)
-            ecosys_diag_O2_PRODUCTION(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_O2_PRODUCTION(iLevel,column)
-            ecosys_diag_O2_CONSUMPTION(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_O2_CONSUMPTION(iLevel,column)
-            ecosys_diag_PAR_avg(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_PAR_avg(iLevel,column)
-            ecosys_diag_zoo_loss(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_zoo_loss(iLevel,column)
-            ecosys_diag_auto_graze_TOT(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_auto_graze_TOT(iLevel,column)
-            ecosys_diag_photoC_TOT(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_photoC_TOT(iLevel,column)
-            ecosys_diag_DOC_prod(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_DOC_prod(iLevel,column)
-            ecosys_diag_DOC_remin(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_DOC_remin(iLevel,column)
-            ecosys_diag_DON_prod(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_DON_prod(iLevel,column)
-            ecosys_diag_DON_remin(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_DON_remin(iLevel,column)
-            ecosys_diag_DOP_prod(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_DOP_prod(iLevel,column)
-            ecosys_diag_DOP_remin(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_DOP_remin(iLevel,column)
-            ecosys_diag_DOFe_prod(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_DOFe_prod(iLevel,column)
-            ecosys_diag_DOFe_remin(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_DOFe_remin(iLevel,column)
-            ecosys_diag_Fe_scavenge(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_Fe_scavenge(iLevel,column)
-            ecosys_diag_Fe_scavenge_rate(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_Fe_scavenge_rate(iLevel,column)
-            ecosys_diag_POC_FLUX_IN(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_POC_FLUX_IN(iLevel,column)
-            ecosys_diag_POC_PROD(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_POC_PROD(iLevel,column)
-            ecosys_diag_POC_REMIN(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_POC_REMIN(iLevel,column)
-            ecosys_diag_CaCO3_FLUX_IN(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_CaCO3_FLUX_IN(iLevel,column)
-            ecosys_diag_CaCO3_PROD(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_CaCO3_PROD(iLevel,column)
-            ecosys_diag_CaCO3_REMIN(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_CaCO3_REMIN(iLevel,column)
-            ecosys_diag_SiO2_FLUX_IN(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_SiO2_FLUX_IN(iLevel,column)
-            ecosys_diag_SiO2_PROD(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_SiO2_PROD(iLevel,column)
-            ecosys_diag_SiO2_REMIN(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_SiO2_REMIN(iLevel,column)
-            ecosys_diag_dust_FLUX_IN(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_dust_FLUX_IN(iLevel,column)
-            ecosys_diag_dust_REMIN(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_dust_REMIN(iLevel,column)
-            ecosys_diag_P_iron_FLUX_IN(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_P_iron_FLUX_IN(iLevel,column)
-            ecosys_diag_P_iron_PROD(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_P_iron_PROD(iLevel,column)
-            ecosys_diag_P_iron_REMIN(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_P_iron_REMIN(iLevel,column)
+            do autotroph = 1, autotroph_cnt
+               ecosys_diag_CaCO3_form_zint(autotroph,iCell) =  &
+                           BGC_diagnostic_fields%diag_CaCO3_form_zint(column,autotroph)
+            enddo
 
-         enddo
+         endif  !  config_ecosysTracers_diagnostic_fields_level4
 
       enddo  !  iCell
 
@@ -639,7 +1021,7 @@ contains
 
 ! input flux components in forcing pool
       real (kind=RKIND), dimension(:), pointer :: &
-         atmosphericPressure,   &
+         seaSurfacePressure,   &
          iceFraction,          &
          landIceFraction
 
@@ -699,7 +1081,7 @@ contains
       call mpas_timer_start("ecosys surface flux")
       err = 0
 
-      call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
+      call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
       call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
 
@@ -755,7 +1137,7 @@ contains
       do iCell=1,nCellsSolve
 
 !maltrud we really want sea level pressure for this, but it isnt available so just use 1 atm
-!        BGC_forcing%surfacePressure(column) = atmosphericPressure(iCell)*PascalsToAtmospheres
+!        BGC_forcing%surfacePressure(column) = seaSurfacePressure(iCell)*PascalsToAtmospheres
          BGC_forcing%surfacePressure(column) = 1.0_RKIND
          BGC_forcing%iceFraction(column) = iceFraction(iCell)
 !maltrud assume for now that if there is any land ice, it is all land ice
@@ -1291,7 +1673,7 @@ contains
 ! initialize monthly forcing to be read from file
 
       forcingIntervalMonthly = "0000-01-00_00:00:00"
-      forcingReferenceTimeMonthly = "0000-01-01_00:00:00"
+      forcingReferenceTimeMonthly = "0000-01-15_00:00:00"
 
       call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
       call MPAS_pool_get_config(domain % configs, 'config_forcing_restart_file', config_forcing_restart_file)
