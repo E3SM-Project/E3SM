@@ -35,6 +35,9 @@
 		<dim name="R3" definition="3" units="unitless"
 			 description="The number three as a dimension."
 		/>
+		<dim name="FOUR" definition="4" units="unitless"
+			 description="The number four as a dimension."
+		/>
 		<dim name="SIX" definition="6" units="unitless"
 			 description="The number six as a dimension."
 		/>

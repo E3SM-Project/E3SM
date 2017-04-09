@@ -79,11 +79,29 @@
 		<var_struct name="tracersSurfaceFlux" time_levs="1">
 			<var_array name="DMSTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="DMSTracersPKG">
 				<!-- Add constituents of tracer group -->
-				<var name="DMSSurfaceFlux" array_group="DMSGRP" units="mmol m^{-3} m s^{-1}"
+				<var name="DMSSurfaceFlux" array_group="DMSSurfaceFluxGRP" units="mmol m^{-3} m s^{-1}"
 			description="Dimethyl Sulfide Surface Flux"
 				/>
-				<var name="DMSPSurfaceFlux" array_group="DMSGRP" units="mmol m^{-3} m s^{-1}"
+				<var name="DMSPSurfaceFlux" array_group="DMSSurfaceFluxGRP" units="mmol m^{-3} m s^{-1}"
 			description="Dimethyl Sulfoniopropionate Surface Flux"
+				/>
+			</var_array>
+			<var_array name="DMSTracersSurfaceFluxRunoff" type="real" dimensions="nCells Time" packages="DMSTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="DMSSurfaceFluxRunoff" array_group="DMSSurfaceFluxRunoffGRP" units="mmol m^{-3} m s^{-1}"
+					description="Dimethyl Sulfide Surface Flux Due to Runoff"
+				/>
+				<var name="DMSPSurfaceFluxRunoff" array_group="DMSSurfaceFluxRunoffGRP" units="mmol m^{-3} m s^{-1}"
+					description="Dimethyl Sulfoniopropionate Surface Flux Due to Runoff"
+				/>
+			</var_array>
+			<var_array name="DMSTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="DMSTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="DMSSurfaceFluxRemoved" array_group="DMSSurfaceFluxRemovedGRP" units="mmol m^{-3} m s^{-1}"
+					description="Dimethyl Sulfide Surface Flux that is ignored"
+				/>
+				<var name="DMSPSurfaceFluxRemoved" array_group="DMSSurfaceFluxRemovedGRP" units="mmol m^{-3} m s^{-1}"
+					description="Dimethyl Sulfoniopropionate Surface Flux that is ignored"
 				/>
 			</var_array>
 		</var_struct>
