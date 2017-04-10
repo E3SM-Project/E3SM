@@ -1160,6 +1160,7 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="grizzly" COMPILER="gnu">
+	<PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
         <MPICC>mpicc</MPICC>
         <MPIFC>mpif90</MPIFC>
         <MPICXX>mpic++</MPICXX>
@@ -1171,6 +1172,7 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="grizzly" COMPILER="intel">
+	<PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
         <MPICC>mpicc</MPICC>
         <MPIFC>mpif90</MPIFC>
         <MPICXX>mpic++</MPICXX>
