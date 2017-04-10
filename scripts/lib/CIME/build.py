@@ -254,10 +254,9 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             my_file = "PYTHONPATH=%s:%s:$PYTHONPATH %s"%(os.path.join(cimeroot,"scripts","Tools"),
                                                           os.path.join(cimeroot,"scripts","lib"), my_file)
         logger.info("Building %s with output to file %s"%(lib,file_build))
-        with open(file_build, "w") as fd:
-            stat = run_cmd("%s %s %s %s 2>&1" %
-                           (my_file, full_lib_path, os.path.join(exeroot,sharedpath), caseroot),
-                           from_dir=exeroot,arg_stdout=fd)[0]
+        stat = run_cmd("%s %s %s %s" %
+                       (my_file, full_lib_path, os.path.join(exeroot,sharedpath), caseroot),
+                       from_dir=exeroot, combine_output=True, arg_stdout=file_build)[0]
 
         analyze_build_log(lib, file_build, compiler)
         expect(stat == 0, "ERROR: buildlib.%s failed, cat %s" % (lib, file_build))
