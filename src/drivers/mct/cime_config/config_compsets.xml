@@ -43,6 +43,16 @@
   </compset>
 
   <compset>
+    <alias>ADLND</alias>
+    <lname>2000_SATM_DLND%SCPL_SICE_SOCN_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>ADWAV</alias>
+    <lname>2000_SATM_SLND_SICE_SOCN_SROF_SGLC_DWAV%CLIMO</lname>
+  </compset>
+
+  <compset>
     <alias>ADESP</alias>
     <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_DESP</lname>
   </compset>

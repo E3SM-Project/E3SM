@@ -25,9 +25,9 @@
       'streamN.txt year_align year_first year_last '
 
       Currently the following datamode values are supported
-      SSMI_IAF
-      SSMI
       NULL
+      COPYALL
+      SSTDATA
 
       **********IMPORTANT NOTE: *************
       In the value matches below, regular expressions are used **** 
