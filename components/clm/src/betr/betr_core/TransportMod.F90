@@ -231,15 +231,15 @@ contains
 
     SHR_ASSERT_ALL((ubound(trcin_mobile , 1)  == (/bounds%endc/))  , errMsg(__FILE__,__LINE__))
     SHR_ASSERT_ALL((ubound(trcin_mobile , 2)  == (/ubj/))          , errMsg(__FILE__,__LINE__))
-    SHR_ASSERT_ALL((size(trcin_mobile   , 3)  == (/3/))            , errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((size(trcin_mobile , 3)  == (/ntrcs/))            , errMsg(__FILE__,__LINE__))
 
     SHR_ASSERT_ALL((ubound(bot_concflx,1) == (/bounds%endc/))  , errMsg(__FILE__,__LINE__))
     SHR_ASSERT_ALL((ubound(bot_concflx,2) == (/2/))            , errMsg(__FILE__,__LINE__))
-    SHR_ASSERT_ALL((size(bot_concflx,  3) == (/ntrcs/))        , errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((size(bot_concflx,3) == (/ntrcs/))        , errMsg(__FILE__,__LINE__))
 
     SHR_ASSERT_ALL((ubound(trc_concflx_air, 1) == (/bounds%endc/)) , errMsg(__FILE__,__LINE__))
     SHR_ASSERT_ALL((ubound(trc_concflx_air, 2) == (/2/))           , errMsg(__FILE__,__LINE__))
-    SHR_ASSERT_ALL((size(trc_concflx_air,   3) == (/3/))           , errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((size(trc_concflx_air, 3) == (/ntrcs/))           , errMsg(__FILE__,__LINE__))
 
 
     if(.not. source_only) then
@@ -676,6 +676,8 @@ contains
      SHR_ASSERT_ALL((ubound(leaching_mass)  == (/bounds%endc,ntrcs/)), errMsg(__FILE__,__LINE__))
      SHR_ASSERT_ALL((ubound(trcou)      == (/bounds%endc, ubj,ntrcs/)),    errMsg(__FILE__,__LINE__))
      SHR_ASSERT_ALL(((/ubound(trcin,1),ubound(trcin,2),size(trcin,3)/)      == (/bounds%endc, ubj,ntrcs/)),    errMsg(__FILE__,__LINE__))
+
+
 
      call Extra_inst%InitAllocate(1,ubj-lbj+6)
      halfdt_col(:) = .false.
