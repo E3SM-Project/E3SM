@@ -27,6 +27,10 @@ parser.add_option("--ens_file", dest="ens_file", default="", \
                   help="Name of samples file")
 parser.add_option("--parm_list", dest="parm_list", default='parm_list', \
                   help = 'File containing list of parameters to vary')
+parser.add_option("--cnp", dest="cnp", default = False, action="store_true", \
+                  help = 'CNP mode - initialize P pools')
+parser.add_option("--site", dest="site", default='parm_list', \
+                  help = 'Site name')
 (options, args) = parser.parse_args()
 
 
@@ -98,22 +102,16 @@ for f in os.listdir(ens_dir):
                 os.system('mv '+ens_dir+'/'+paramfile_new+'_tmp '+ens_dir+'/'+paramfile_new)
                 myoutput.write(" paramfile = '"+paramfile_new+"'\n")
                 pftfile = ens_dir+'/clm_params_'+est[1:]+'.nc'
-                pnum = 0
-                for p in parm_names:
-                   if ('INI' not in p):
-                      param = nffun.getvar(pftfile, p)
-                      if (parm_indices[pnum] > 0):
-                         param[parm_indices[pnum]-1] = parm_values[pnum]
-                      elif (parm_indices[pnum] == 0):
-                         param = parm_values[pnum]
-                      else:
-                         param[:] = parm_values[pnum]
-                      ierr = nffun.putvar(pftfile, p, param)
-                      if ('fr_flig' in p):
-                        param=nffun.getvar(pftfile, 'fr_fcel')
-                        param[:]=1.0-parm_values[pnum]-parm_values[pnum-1]
-		        ierr = nffun.putvar(pftfile, 'fr_fcel', param)
-                      pnum = pnum+1
+            elif ('fsoilordercon' in s):
+                CNPfile_orig = ((s.split()[2]).strip("'"))
+                if (CNPfile_orig[0:2] == './'):
+                   CNPfile_orig  = orig_dir+'/'+CNPfile_orig[2:]
+                CNPfile_new  = './CNP_parameters_'+est[1:]+'.nc'
+                os.system('cp '+CNPfile_orig+' '+ens_dir+'/'+CNPfile_new)
+                os.system('nccopy -3 '+ens_dir+'/'+CNPfile_new+' '+ens_dir+'/'+CNPfile_new+'_tmp')
+                os.system('mv '+ens_dir+'/'+CNPfile_new+'_tmp '+ens_dir+'/'+CNPfile_new)
+                myoutput.write(" fsoilordercon = '"+CNPfile_new+"'\n")
+                CNPfile = ens_dir+'/CNP_parameters_'+est[1:]+'.nc'
             elif ('finidat = ' in s):
                 finidat_file_orig = ((s.split()[2]).strip("'"))
                 if (finidat_file_orig.strip() != ''):
@@ -127,6 +125,10 @@ for f in os.listdir(ens_dir):
 	                  finidat_file_orig = finidat_file_path+'/*.clm2.r.*.nc'
                           os.system('python adjust_restart.py --rundir '+ os.path.abspath(options.runroot)+ \
                                        '/UQ/'+casename+'_ad_spinup/g'+gst[1:]+' --casename '+casename+'_ad_spinup')
+                          if (options.cnp):
+                             os.system('python IniPPools.py --diricase '+ os.path.abspath(options.runroot)+ \
+                                       '/UQ/'+casename+'_ad_spinup/g'+gst[1:]+' --casename '+casename+'_ad_spinup' + \
+                                       ' --sitephos Site_PPools.txt --casesite '+options.site+'\n')
                    if ('20TR' in casename):
                       finidat_file_path = os.path.abspath(options.runroot)+'/UQ/'+casename.replace('20TR','1850')+ \
                                        '/g'+gst[1:]
@@ -134,24 +136,6 @@ for f in os.listdir(ens_dir):
                           finidat_file_orig = finidat_file_path+'/*.clm2.r.*.nc'
                           os.system('rm '+finidat_file_path+'/*ad_spinup*.clm2.r.*.nc')
                    os.system('cp '+finidat_file_orig+' '+finidat_file_new)
-                   pnum = 0
-                   #Apply scaling factor for soil organic carbon (slowest  pool only)
-                   if ('BGC' in casename):
-                      scalevars = ['soil3c_vr','soil3n_vr','soil3p_vr']
-                   else:
-                      scalevars = ['soil4c_vr','soil4n_vr','soil4p_vr']
-                   sumvars = ['totsomc','totsomp','totcolc','totcoln','totcolp']
-                   for p in parm_names:
-                      if ('.nc' in finidat_file_new and 'INI_somfac' in p):
-                         for v in scalevars:
-                            myvar = nffun.getvar(finidat_file_new, v)
-                            myvar = parm_values[pnum] * myvar
-                            ierr = nffun.putvar(finidat_file_new, v, myvar)
-                        #TEMPORARY - add 3 gN to npool
-                      #myvar = nffun.getvar(finidat_file_new,'npool')
-                      #myvar = myvar+3.
-                      #ierr = nffun.putvar(finidat_file_new,'npool',myvar)
-                      pnum=pnum+1
                    myoutput.write(" finidat = '"+finidat_file_new+"'\n")
                 else:
                    myoutput.write(s)
@@ -168,3 +152,37 @@ for f in os.listdir(ens_dir):
         myoutput.close()
         myinput.close()
         os.system(' mv '+ens_dir+'/'+f+'.tmp '+ens_dir+'/'+f)
+
+pnum = 0
+CNP_parms = ['ks_sorption', 'r_desorp', 'r_weather', 'r_adsorp', 'k_s1_biochem', 'smax', 'k_s3_biochem', \
+             'r_occlude', 'k_s4_biochem', 'k_s2_biochem']
+
+for p in parm_names:
+   if ('INI' in p):
+      if ('BGC' in casename):
+         scalevars = ['soil3c_vr','soil3n_vr','soil3p_vr']
+      else:
+         scalevars = ['soil4c_vr','soil4n_vr','soil4p_vr']
+      sumvars = ['totsomc','totsomp','totcolc','totcoln','totcolp']
+      for v in scalevars:
+         myvar = nffun.getvar(finidat_file_new, v)
+         myvar = parm_values[pnum] * myvar
+         ierr = nffun.putvar(finidat_file_new, v, myvar)
+   else:
+      if (p in CNP_parms):
+         myfile= CNPfile
+      else:
+         myfile = pftfile
+      param = nffun.getvar(myfile, p)
+      if (parm_indices[pnum] > 0):
+         param[parm_indices[pnum]-1] = parm_values[pnum]
+      elif (parm_indices[pnum] == 0):
+         param = parm_values[pnum]
+      else:
+         param[:] = parm_values[pnum]
+      ierr = nffun.putvar(myfile, p, param)
+      if ('fr_flig' in p):
+         param=nffun.getvar(myfile, 'fr_fcel')
+         param[:]=1.0-parm_values[pnum]-parm_values[pnum-1]
+         ierr = nffun.putvar(myfile, 'fr_fcel', param)
+   pnum = pnum+1

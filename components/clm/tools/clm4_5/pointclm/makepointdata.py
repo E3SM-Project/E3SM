@@ -422,7 +422,7 @@ if ('20TR' in options.compset and options.nopftdyn == False):
             #    pct_glacier[j][j] = pct_glacier_1850[0][0]
             #    pct_urban[j][i] = pct_urban_1850[0][0]
             thisrow = 0
-            for t in range(0,161):     
+            for t in range(0,251):     
                 if (options.surfdata_grid == False):
                     if (dynexist):
                         for p in range(0,npft):

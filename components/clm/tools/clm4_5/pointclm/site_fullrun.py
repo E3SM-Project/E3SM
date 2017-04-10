@@ -512,6 +512,11 @@ for row in AFdatareader:
                 output.write("python adjust_restart.py --rundir "+os.path.abspath(runroot)+ \
                              '/'+ad_case+'/run/ --casename '+ad_case+' --restart_year '+ \
                              str(int(ny_ad)+1)+'\n')
+            if (not options.cn_only):
+                output.write("python IniPPools.py --diricase "+os.path.abspath(runroot)+ \
+                             '/'+ad_case+'/run/ --casename '+ad_case+' --restart_year '+ \
+                             str(int(ny_ad)+1)+ ' --sitephos Site_PPools.txt' + \
+                             ' --casesite '+site+'\n')
         output.write("cd "+caseroot+'/'+basecase+"_I1850"+modelst+"\n")
         output.write('./case.submit --no-batch\n')	
         if (options.notrans == False):

@@ -934,7 +934,7 @@ else:
 
 #Datm mods/ transient CO2 patch for transient run (datm buildnml mods)
 if (not cpl_bypass):
-    myinput  = open('./Buildconf/datmconf/datm_atm_in')
+    myinput  = open('./Buildconf/datmconf/datm_in')
     myoutput = open('user_nl_datm','w')
     for s in myinput:
         if ('streams =' in s):
@@ -953,17 +953,19 @@ if (not cpl_bypass):
                                    '"datm.streams.txt.CLMCRUNCEP.Precip '+str(myalign_year)+ \
                                    ' '+str(startyear)+' '+str(endyear)+'  ", '+ \
                                    '"datm.streams.txt.CLMCRUNCEP.TPQW '+str(myalign_year)+ \
-                                   ' '+str(startyear)+' '+str(endyear)+'  ", '+mypresaero+myco2+'\n')
+                                   ' '+str(startyear)+' '+str(endyear)+'  ", '+mypresaero+myco2+ \
+                                   ', "datm.streams.txt.topo.observed 1 1 1"\n')
             else:
                 myoutput.write(' streams = "datm.streams.txt.CLM1PT.CLM_USRDAT '+str(myalign_year)+ \
-                                   ' '+str(startyear)+' '+str(endyear)+'  ", '+mypresaero+myco2+'\n')
+                                   ' '+str(startyear)+' '+str(endyear)+'  ", '+mypresaero+myco2+ \
+                                   ', "datm.streams.txt.topo.observed 1 1 1"\n')
         elif ('streams' in s):
             continue  #do nothing
         elif ('taxmode' in s):
             if (use_cruncep):
-                taxst = "taxmode = 'cycle', 'cycle', 'cycle', 'extend'"
+                taxst = "taxmode = 'cycle', 'cycle', 'cycle', 'extend', 'extend'"
             else:
-                taxst = "taxmode = 'cycle', 'extend'"
+                taxst = "taxmode = 'cycle', 'extend', 'extend'"
             if ('20TR' in compset):
                 taxst = taxst+", 'extend'"
             myoutput.write(taxst+'\n')
@@ -1137,17 +1139,22 @@ if (options.ensemble_file != '' or int(options.mc_ensemble) != -1):
             output_run.write('module load python_scipy/0.15.1\n')
             output_run.write('module load python_mpi4py/2.0.0\n')
         output_run.write('cd '+csmdir+'/components/clm/tools/clm4_5/pointclm/\n')
+        cnp = 'True'
+        if (options.cn_only or options.c_only):
+            cnp= 'False'
         if ('oic' in options.machine or 'cades' in options.machine):
             mpicmd = 'mpirun'
             if ('cades' in options.machine):
                 mpicmd = '/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/openmpi/1.10.3/centos7.2_gnu5.3.0/bin/mpirun'
             cmd = mpicmd+' -np '+str(np_total)+' --hostfile $PBS_NODEFILE python manage_ensemble.py ' \
                +'--case '+casename+' --runroot '+runroot+' --n_ensemble '+str(nsamples)+' --ens_file '+ \
-               options.ensemble_file+' --exeroot '+exeroot+' --parm_list '+options.parm_list
+               options.ensemble_file+' --exeroot '+exeroot+' --parm_list '+options.parm_list+' --cnp '+cnp + \
+               ' --site '+options.site
         elif (('titan' in options.machine or 'eos' in options.machine) and int(options.ninst) == 1):
             cmd = 'aprun -n '+str(np_total)+' python manage_ensemble.py ' \
                +'--case '+casename+' --runroot '+runroot+' --n_ensemble '+str(nsamples)+' --ens_file '+ \
-               options.ensemble_file+' --exeroot '+exeroot+' --parm_list '+options.parm_list
+               options.ensemble_file+' --exeroot '+exeroot+' --parm_list '+options.parm_list+' --cnp '+cnp + \
+               ' --site '+options.site
         if (options.postproc_file != ''): 
             cmd = cmd + ' --postproc_file '+options.postproc_file
         output_run.write(cmd+'\n')
