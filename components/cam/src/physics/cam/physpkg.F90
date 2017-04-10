@@ -909,6 +909,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #if ( defined OFFLINE_DYN )
      use metdata,       only: get_met_srf1
 #endif
+
     !
     ! Input arguments
     !
@@ -1115,6 +1116,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     ! Purpose: 
     ! Second part of atmospheric physics package after updating of surface models
     ! 
+    ! Modified by Kai Zhang 2017-03: add IEFLX fixer treatment 
     !-----------------------------------------------------------------------
     use physics_buffer,         only: physics_buffer_desc, pbuf_get_chunk, pbuf_deallocate, pbuf_update_tim_idx
     use mo_lightning,   only: lightning_no_prod
@@ -1127,6 +1129,10 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
 #endif
+    use time_manager,   only: get_nstep
+    use check_energy,   only: ieflx_gmean 
+    use check_energy,   only: check_ieflx_fix 
+    use phys_control,   only: ieflx_opt !!l_ieflx_fix
     !
     ! Input arguments
     !
@@ -1146,6 +1152,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     !
     integer :: c                                 ! chunk index
     integer :: ncol                              ! number of columns
+    integer :: nstep                             ! current timestep number
 #if (! defined SPMD)
     integer  :: mpicom = 0
 #endif
@@ -1177,11 +1184,29 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     call t_startf ('ac_physics')
     !call t_adj_detailf(+1)
 
+    nstep = get_nstep()
+
+
+    !! calculate the global mean ieflx 
+
+    if(ieflx_opt>0) then
+       call ieflx_gmean(phys_state, phys_tend, pbuf2d, cam_in, cam_out, nstep)
+    end if
+
 !$OMP PARALLEL DO PRIVATE (C, NCOL, phys_buffer_chunk)
 
     do c=begchunk,endchunk
        ncol = get_ncols_p(c)
        phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
+
+       !! 
+       !! add the implied internal energy flux to sensible heat flux
+       !! 
+
+       if(ieflx_opt>0) then
+          call check_ieflx_fix(c, ncol, nstep, cam_in(c)%shf)
+       end if
+
        !
        ! surface diagnostics for history files
        !

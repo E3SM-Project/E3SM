@@ -1116,6 +1116,18 @@ Whether or not to printout fixer diagnostic message.
 Default: set by build-namelist.
 </entry>
 
+<entry id="ieflx_opt" type="integer"  category="fixers"
+       group="phys_ctl_nl" valid_values="">
+IEFLX fixer options
+Default: 0
+</entry>
+
+<entry id="l_ieflx_fix" type="logical" category="fixers"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to fix ieflx
+Default: .false.
+</entry>
+
 <!-- Gravity Wave Drag -->
 
 <entry id="use_gw_oro" type="logical" category="gw_drag"
