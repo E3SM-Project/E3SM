@@ -263,10 +263,14 @@ def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False, outfil
     if mstr1 != mstr2:
         mstr = mstr1+mstr2
 
-    output_filename = "%s%s.cprnc.out"%(basename, mstr)
+    output_filename = os.path.join(rundir, "%s%s.cprnc.out" % (basename, mstr))
     if outfile_suffix:
-        output_filename += ".%s"%(outfile_suffix)
-    cpr_stat, out, _ = run_cmd("%s -m %s %s 2>&1 | tee %s/%s" % (cprnc_exe, file1, file2, rundir, output_filename))
+        output_filename += ".%s" % outfile_suffix
+
+    cpr_stat = run_cmd("%s -m %s %s" % (cprnc_exe, file1, file2), combine_output=True, arg_stdout=output_filename)[0]
+    with open(output_filename, "r") as fd:
+        out = fd.read()
+
     if multiinst_cpl_compare:
         #  In a multiinstance test the cpl hist file will have a different number of
         # dimensions and so cprnc will indicate that the files seem to be DIFFERENT

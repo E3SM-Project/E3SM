@@ -143,9 +143,15 @@ def get_model():
                       and model != "xml_schemas"])
     expect(False, msg)
 
+def _convert_to_fd(filearg, from_dir):
+    if not filearg.startswith("/") and from_dir is not None:
+        filearg = os.path.join(from_dir, filearg)
+
+    return open(filearg, "a")
+
 _hack=object()
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
-            arg_stdout=_hack, arg_stderr=_hack, env=None):
+            arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
     """
     Wrapper around subprocess to make it much more convenient to run shell commands
 
@@ -155,10 +161,15 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     import subprocess # Not safe to do globally, module not available in older pythons
 
     # Real defaults for these value should be subprocess.PIPE
-    if (arg_stdout is _hack):
+    if arg_stdout is _hack:
         arg_stdout = subprocess.PIPE
-    if (arg_stderr is _hack):
-        arg_stderr = subprocess.PIPE
+    elif isinstance(arg_stdout, str):
+        arg_stdout = _convert_to_fd(arg_stdout, from_dir)
+
+    if arg_stderr is _hack:
+        arg_stderr = subprocess.STDOUT if combine_output else subprocess.PIPE
+    elif isinstance(arg_stderr, str):
+        arg_stderr = _convert_to_fd(arg_stdout, from_dir)
 
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
         logger.info("RUN: %s" % cmd)
@@ -181,6 +192,12 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     errput = errput.strip() if errput is not None else errput
     stat = proc.wait()
 
+    if isinstance(arg_stdout, file):
+        arg_stdout.close() # pylint: disable=no-member
+
+    if isinstance(arg_stderr, file) and arg_stderr is not arg_stdout:
+        arg_stderr.close() # pylint: disable=no-member
+
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
         if stat != 0:
             logger.info("  stat: %d\n" % stat)
@@ -192,7 +209,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     return stat, output, errput
 
 def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
-                    arg_stdout=_hack, arg_stderr=_hack):
+                    arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
     """
     Wrapper around subprocess to make it much more convenient to run shell commands.
     Expects command to work. Just returns output string.
@@ -207,14 +224,18 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
 
     >>> run_cmd_no_fail('grep foo', input_str='foo')
     'foo'
+
+    >>> run_cmd_no_fail('echo THE ERROR >&2', combine_output=True)
+    'THE ERROR'
     """
-    stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout, arg_stderr)
+    stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout, arg_stderr, env, combine_output)
     if stat != 0:
         # If command produced no errput, put output in the exception since we
         # have nothing else to go on.
         errput = output if errput == "" else errput
         expect(False, "Command: '%s' failed with error '%s'%s" %
                (cmd, errput, "" if from_dir is None else " from dir '%s'" % from_dir))
+
     return output
 
 def check_minimum_python_version(major, minor):
