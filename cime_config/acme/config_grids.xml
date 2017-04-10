@@ -490,6 +490,12 @@
       <alias>ne30_oECv3_ICG</alias>
     </grid>
 
+    <grid compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+      <sname>ne120np4_oRRS18to6v3_ICG</sname>
+      <lname>a%ne120np4_l%ne120np4_oi%oRRS18to6v3_ICG_r%r0125_m%oRRS18to6v3_g%null_w%null</lname>
+      <alias>ne120_oRRS18v3_ICG</alias>
+    </grid>
+
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne60np4_ne60np4</sname>
       <alias>ne60_ne60</alias>
