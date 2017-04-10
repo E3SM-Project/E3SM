@@ -217,7 +217,7 @@ set script_ver = 3.0.5
 alias lowercase "echo \!:1 | tr '[A-Z]' '[a-z]'"  #make function which lowercases any strings passed to it.
 alias uppercase "echo \!:1 | tr '[a-z]' '[A-Z]'"  #make function which uppercases any strings passed to it.
 
-alias acme_print 'echo run_acme: !*'
+alias acme_print 'echo run_acme: \!*'
 alias acme_newline "echo ''"
 
 #===========================================
@@ -844,11 +844,8 @@ set input_data_dir = `$xmlquery_exe DIN_LOC_ROOT --value`
 #$xmlchange_exe --id CAM_CONFIG_OPTS --val "-phys cam5 -chem linoz_mam3"
 
 ## Chris Golaz: build with COSP
+#NOTE: xmlchange has a bug which requires append to be specified with quotes and a leading space
 $xmlchange_exe --id CAM_CONFIG_OPTS --append -val " -cosp"
-
-# Chris Golaz: Set BFBFLAG to true by default 
-#PMC: this is the default on master as of March 2017, so this can be deleted soon
-$xmlchange_exe --id BFBFLAG --val TRUE
 
 #===========================
 # SET THE PARTITION OF NODES
@@ -887,13 +884,6 @@ acme_newline
 #stuff in $run_root_dir readable by everyone in acme group.
 
 set run_root_dir = `cd $case_run_dir/..; pwd -P`
-
-if ( `lowercase $machine` == anvil ) then
-  set run_root_dir = `$xmlquery_exe --value RUNDIR`
-  chgrp climate $run_root_dir
-  chmod g+s     $run_root_dir
-  chgrp climate $case_scripts_dir
-endif
 
 #both run_root_dir and case_scripts_dir are created by create_newcase,
 #so run_root_dir group isn't inherited for case_scripts_dir
