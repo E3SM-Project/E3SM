@@ -84,6 +84,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Number of tasks create_test should perform simultaneously. Default "
                         "will be min(num_cores, num_tests).")
 
+    parser.add_argument("--walltime",
+                        help="Force a specific walltime for all tests.")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
@@ -95,7 +98,8 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     expect(not (args.cdash_project is not CIME.wait_for_tests.ACME_MAIN_CDASH and not args.submit_to_cdash),
            "Does not make sense to use --cdash-project without --submit-to-cdash")
 
-    return args.generate_baselines, args.submit_to_cdash, args.no_batch, args.baseline_name, args.cdash_build_name, args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare, args.scratch_root, args.parallel_jobs
+    return args.generate_baselines, args.submit_to_cdash, args.no_batch, args.baseline_name, args.cdash_build_name, \
+        args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare, args.scratch_root, args.parallel_jobs, args.walltime
 
 ###############################################################################
 def _main_func(description):
@@ -104,10 +108,10 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, scratch_root, parallel_jobs = \
+    generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, scratch_root, parallel_jobs, walltime = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, scratch_root, parallel_jobs)
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, scratch_root, parallel_jobs, walltime)
              else CIME.utils.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################
