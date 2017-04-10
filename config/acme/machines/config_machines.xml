@@ -2588,10 +2588,13 @@
 	 <executable args="default">mpirun</executable>
 	 <arguments>
 		 <arg name="num_tasks" > -np $TOTALPES</arg>
-		 <arg name="tasks_per_node"> --map-by ppr:$PES_PER_NODE:node</arg>
-		 <arg name="thread_count"> --envs OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
+		 <arg name="binding_core"> --map-by core:PE=$ENV{OMP_NUM_THREADS} --bind-to core </arg>
+		 <arg name="thread_count"> -x OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
 		 <arg name="show-binding"> --report-bindings </arg>
 		 <arg name="show-processmap"> --display-map </arg>
+		 <!--
+		 <arg name="tasks_per_node"> map-by ppr:$PES_PER_NODE:node</arg>
+		 -->
 	 </arguments>  
 	 </mpirun>
 
@@ -2629,9 +2632,9 @@
         <command name="rm">clang</command>
         <command name="rm">xlflang</command>
         <command name="load">xl/20161123</command>
-        <!-- <command name="load">spectrum_mpi</command> -->
         <command name="load">spectrum_mpi/10.1.0.2-20161221</command>
         <command name="load">essl/5.5.0-20161110</command>
+        <command name="load">netlib-lapack/3.6.1</command>
       </modules>
       <!-- mpi lib settings -->
       <modules mpilib="mpi-serial">
@@ -2647,12 +2650,13 @@
         <env name="COMPILER">$COMPILER</env>
         <env name="MPILIB">$MPILIB</env>
         <env name="OMP_STACKSIZE">128M</env>
-		<!--
-        <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
+		<env name="NETCDF_C_PATH">`which nc-config | xargs dirname | xargs dirname`</env>
         <env name="NETCDF_FORTRAN_PATH">/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4</env>
-        <env name="PNETCDF_PATH" mpilib="!mpi-serial">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
-        <env name="HDF5_PATH" mpilib="!mpi-serial">$ENV{OLCF_HDF5_ROOT}</env>
-		-->
+		<env name="PNETCDF_PATH" mpilib="!mpi-serial">`which pnetcdf_version | xargs dirname | xargs dirname`</env>
+        <env name="HDF5_PATH" mpilib="!mpi-serial">`which h5dump | xargs dirname | xargs dirname`</env>
+        <env name="ESSL_PATH">/sw/summitdev/essl/5.5.0-20161110</env>
+        <env name="NETLIB_LAPACK_PATH">/autofs/nccs-svm1_sw/summitdev/.spack/opt/spack/20170224/linux-rhel7-ppc64le/xl-20161123/netlib-lapack-3.6.1-7y4cztmzhlmtfu2pl5cwz2bk4hhpeixh</env>
+        <!-- <env name="NETLIB_LAPACK_PATH">`echo '#include <lapacke.h>' | cpp -H -o /dev/null 2>&amp;1 | head -n1 | cut -f2 -d' ' | xargs dirname | xargs dirname`</env> -->
       </environment_variables>
     </module_system>
 </machine>
