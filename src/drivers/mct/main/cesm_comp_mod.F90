@@ -2146,6 +2146,16 @@ end subroutine cesm_init
       barrier_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_barrier)
       pause_alarm   = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_pause)
 
+      ! Check alarm consistency
+      if (glcrun_avg_alarm .and. .not. glcrun_alarm) then
+         write(logunit,*) 'ERROR: glcrun_avg_alarm is true, but glcrun_alarm is false'
+         write(logunit,*) 'Make sure that NCPL_BASE_PERIOD, GLC_NCPL and GLC_AVG_PERIOD'
+         write(logunit,*) 'are set so that glc averaging only happens at glc coupling times.'
+         write(logunit,*) '(It is allowable for glc coupling to be more frequent than glc averaging,'
+         write(logunit,*) 'but not for glc averaging to be more frequent than glc coupling.)'
+         call shr_sys_abort(subname//' glcrun_avg_alarm is true, but glcrun_alarm is false')
+      end if
+
       ! Determine wich components need to write pause (restart) files
       if (pause_alarm) then
         if (trim(pause_component_list) == 'all') then
@@ -2925,50 +2935,45 @@ end subroutine cesm_init
       !| GLC SETUP-SEND
       !----------------------------------------------------------
 
-      ! NOTE - only create appropriate input to glc if the avg_alarm is on
-      if (glc_present) then
-         if (glcrun_avg_alarm) then
+      if (glc_present .and. glcrun_alarm) then
 
-            if (.not. glcrun_alarm) then
-               write(logunit,*) 'ERROR: glcrun_avg_alarm is true, but glcrun_alarm is false'
-               write(logunit,*) 'Make sure that NCPL_BASE_PERIOD, GLC_NCPL and GLC_AVG_PERIOD'
-               write(logunit,*) 'are set so that glc averaging only happens at glc coupling times.'
-               write(logunit,*) '(It is allowable for glc coupling to be more frequent than glc averaging,'
-               write(logunit,*) 'but not for glc averaging to be more frequent than glc coupling.)'
-               call shr_sys_abort(subname//' glcrun_avg_alarm is true, but glcrun_alarm is false')
-            end if
+         !----------------------------------------------------
+         !| glc prep-merge
+         !----------------------------------------------------
 
-            !----------------------------------------------------
-            !| glc prep-merge
-            !----------------------------------------------------
+         if (iamin_CPLID .and. glc_prognostic) then
+            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPREP_BARRIER')
+            call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
+            if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-            if (glc_prognostic) then
-               if (iamin_CPLID) then
-                  call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPREP_BARRIER')
-                  call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
-                  if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+            if (lnd_c2_glc) then
+               ! NOTE - only create appropriate input to glc if the avg_alarm is on
+               if (glcrun_avg_alarm) then
+                  call prep_glc_accum_avg(timer='CPL:glcprep_avg')
 
-                  if (lnd_c2_glc) then
-                     call prep_glc_accum_avg(timer='CPL:glcprep_avg')
+                  ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
+                  call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
 
-                     ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
-                     call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
+                  call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
 
-                     call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
+                  call component_diag(infodata, glc, flow='x2c', comment='send glc', &
+                       info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
 
-                     call component_diag(infodata, glc, flow='x2c', comment='send glc', &
-                          info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
-                  endif
+               else
+                  call prep_glc_zero_fields()
+               end if  ! glcrun_avg_alarm
+            end if  ! lnd_c2_glc
 
-                  if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-                  call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)
+            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+            call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)
 
-               end if  ! iamin_CPLID
+         end if  ! iamin_CPLID .and. glc_prognostic
 
+         ! Set the infodata field on all tasks (not just those with iamin_CPLID).
+         if (glc_prognostic) then
+            if (glcrun_avg_alarm) then
                call seq_infodata_PutData(infodata, glc_valid_input=.true.)
-            end if  ! glc_prognostic
-         else  ! .not. glcrun_avg_alarm
-            if (glc_prognostic) then
+            else
                call seq_infodata_PutData(infodata, glc_valid_input=.false.)
             end if
          end if
