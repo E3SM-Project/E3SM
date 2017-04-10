@@ -29,5 +29,5 @@ The package enables the AMWG Set 5 diagnostics and features built-in user diagno
 * More Configuration
   * [Defining Parameters and All Available Parameters](docs/available-parameters.ipynb)
   * [Adding User Diagnostics](docs/add-new-diagnostics.ipynb)
-  * [List of Built-in Derived Variables](acme_diags/derivations/acme.py)
+  * [List of Built-in Derived Variables](acme_diags/derivations/acme.py) - look for `derived_variables` around line 190
 * [CDP Viewer documentation](https://github.com/UV-CDAT/cdp/blob/master/jupyter/using-the-cdp-viewer.ipynb)
