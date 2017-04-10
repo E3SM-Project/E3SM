@@ -1016,7 +1016,7 @@ CAM[45]%L60  => CAM with 60 layers and full gravity wave spectrum:
 <!-- CLM_BLDNML_OPTS is not additive, we must list all possible combinations -->
 <CLM_BLDNML_OPTS compset="%CNCR"                 >-ignore_ic_year</CLM_BLDNML_OPTS>  <!-- ERROR: Never matched, see bug 2025 -->
 <CLM_BLDNML_OPTS compset="_CLM45%[^_]*SP"        >-bgc sp</CLM_BLDNML_OPTS>
-<CLM_BLDNML_OPTS compset="_CLM45%[^_]*SPBC"      >-bgc sp -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</CLM_BLDNML_OPTS>
+<CLM_BLDNML_OPTS compset="_CLM45%[^_]*SPBC"      >-bgc sp -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</CLM_BLDNML_OPTS>
 <CLM_BLDNML_OPTS compset="_CLM45%[^_]*CN"        >-bgc cn</CLM_BLDNML_OPTS>
 <CLM_BLDNML_OPTS compset="_CLM45%[^_]*BGC"       >-bgc bgc</CLM_BLDNML_OPTS>
 <CLM_BLDNML_OPTS compset="_CLM45%[^_]*CN-CROP"   >-bgc cn -crop</CLM_BLDNML_OPTS>
@@ -1027,11 +1027,11 @@ CAM[45]%L60  => CAM with 60 layers and full gravity wave spectrum:
 <CLM_BLDNML_OPTS compset="_CLM45%[^_]*BGCDV-CROP">-bgc bgc -dynamic_vegetation -crop</CLM_BLDNML_OPTS>
 <CLM_BLDNML_OPTS compset="_CLM45%[^_]*CN-ED"     >-bgc cn -ed_mode</CLM_BLDNML_OPTS>
 <CLM_BLDNML_OPTS compset="_CLM45%[^_]*BGC-ED"    >-bgc bgc -ed_mode</CLM_BLDNML_OPTS>
-<CLM_BLDNML_OPTS compset="_CLM45%[^_]*CRDCTCBC"   >-bgc cn -nutrient c   -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</CLM_BLDNML_OPTS>
-<CLM_BLDNML_OPTS compset="_CLM45%[^_]*CNRDCTCBC"  >-bgc cn -nutrient cn  -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</CLM_BLDNML_OPTS>
-<CLM_BLDNML_OPTS compset="_CLM45%[^_]*CNPRDCTCBC" >-bgc cn -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</CLM_BLDNML_OPTS>
-<CLM_BLDNML_OPTS compset="_CLM45%[^_]*CNECACTCBC" >-bgc cn -nutrient cn  -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</CLM_BLDNML_OPTS>
-<CLM_BLDNML_OPTS compset="_CLM45%[^_]*CNPECACTCBC">-bgc cn -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</CLM_BLDNML_OPTS>
+<CLM_BLDNML_OPTS compset="_CLM45%[^_]*CRDCTCBC"   >-bgc cn -nutrient c   -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</CLM_BLDNML_OPTS>
+<CLM_BLDNML_OPTS compset="_CLM45%[^_]*CNRDCTCBC"  >-bgc cn -nutrient cn  -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</CLM_BLDNML_OPTS>
+<CLM_BLDNML_OPTS compset="_CLM45%[^_]*CNPRDCTCBC" >-bgc cn -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</CLM_BLDNML_OPTS>
+<CLM_BLDNML_OPTS compset="_CLM45%[^_]*CNECACTCBC" >-bgc cn -nutrient cn  -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</CLM_BLDNML_OPTS>
+<CLM_BLDNML_OPTS compset="_CLM45%[^_]*CNPECACTCBC">-bgc cn -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</CLM_BLDNML_OPTS>
 
 <CLM_BLDNML_OPTS compset="_CLM50%[^_]*SP"        >-bgc sp</CLM_BLDNML_OPTS>
 <CLM_BLDNML_OPTS compset="_CLM50%[^_]*BGC"       >-bgc bgc</CLM_BLDNML_OPTS>

@@ -383,6 +383,15 @@ incremental remapping transport scheme
 Default: 'remap'
 </entry>
 
+<entry
+id="fsnowoptics"
+type="char*256"
+category="parameterizations"
+group="ice_nml"
+input_pathname="abs" >
+input file for snowoptics
+</entry>
+
 <!---Ice albedos    ---->
 
 <entry 

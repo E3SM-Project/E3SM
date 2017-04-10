@@ -137,9 +137,9 @@
       integer (kind=int_kind) :: & 
            varid,           & ! netcdf id for field
            status             ! status output from netcdf routines
-      character (len=256) :: filename_optics 
       !mgf--
 #endif
+      character (len=256) :: fsnowoptics = 'unknown_fsnowoptics_file'
 
       !-----------------------------------------------------------------
       ! Namelist variables.
@@ -177,7 +177,7 @@
         precip_units,   Tfrzpt,          update_ocn_f,                  &
         oceanmixed_ice, ocn_data_format, sss_data_type, sst_data_type,  &
         ocn_data_dir,   oceanmixed_file, restore_sst,   trestore,       &
-        restore_ice    
+        restore_ice,    fsnowoptics    
 
       namelist /tracer_nml/    &
         tr_iage, restart_age,  &
@@ -808,26 +808,34 @@
       call broadcast_scalar(nt_vlvl,  master_task)
       call broadcast_scalar(nt_volpn, master_task)
       call broadcast_scalar(nt_aero,  master_task)
-
+      call broadcast_scalar(fsnowoptics, master_task)
 #ifdef MODAL_AER
       !mgf++
       if (my_task == master_task) then
-!         filename_optics = '/nobackup/flanner/optprops/snicar_optics_5bnd_mam_c140303.nc'
-         filename_optics = '/pic/projects/climate/csmdata/lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc'
-         
-         status = nf90_open(filename_optics, NF90_NOWRITE, fid)
+
+         status = nf90_open(fsnowoptics, NF90_NOWRITE, fid)
+         if (status .ne. NF90_NOERR) call abort_ice( 'ice: Error opening file: '//fsnowoptics)            
 
          status = nf90_inq_varid(fid, 'ext_cff_mss_bc_mam_cice', varid)
+         if (status .ne. NF90_NOERR) call abort_ice( 'ice: Error inquiring ext_cff_mss_bc_mam_cice variable in file: '//fsnowoptics)            
+
          status = nf90_get_var(fid, varid, kaer_bc_tab)
-         
+         if (status .ne. NF90_NOERR) call abort_ice( 'ice: Error reading ext_cff_mss_bc_mam_cice variable in file: '//fsnowoptics)            
+
          status = nf90_inq_varid(fid, 'ss_alb_bc_mam_cice', varid)
+         if (status .ne. NF90_NOERR) call abort_ice( 'ice: Error inquiring ss_alb_bc_mam_cice  variable in file: '//fsnowoptics)
          status = nf90_get_var(fid, varid, waer_bc_tab)
+         if (status .ne. NF90_NOERR) call abort_ice( 'ice: Error reading ss_alb_bc_mam_cice variable in file: '//fsnowoptics)
          
          status = nf90_inq_varid(fid, 'asm_prm_bc_mam_cice', varid)
+         if (status .ne. NF90_NOERR) call abort_ice( 'ice: Error inquiring asm_prm_bc_mam_cice variable in file: '//fsnowoptics)
          status = nf90_get_var(fid, varid, gaer_bc_tab)
+         if (status .ne. NF90_NOERR) call abort_ice( 'ice: Error reading  asm_prm_bc_mam_cice variable in file: '//fsnowoptics)
          
          status = nf90_inq_varid(fid, 'bcint_enh_mam_cice', varid)
+         if (status .ne. NF90_NOERR) call abort_ice( 'ice: Error inquiring bcint_enh_mam_cice variable in file: '//fsnowoptics)
          status = nf90_get_var(fid, varid, bcenh)
+         if (status .ne. NF90_NOERR) call abort_ice( 'ice: Error reading  bcint_enh_mam_cice variable in file: '//fsnowoptics)
          
          status = nf90_close(fid)
 
