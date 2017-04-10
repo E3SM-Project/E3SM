@@ -20,8 +20,9 @@ program cesm_driver
    !----------------------------------------------------------------------------
    ! share code & libs
    !----------------------------------------------------------------------------
-   use perf_mod
-   use ESMF
+   use perf_mod,      only : t_startf, t_adj_detailf, t_stopf
+   use ESMF,          only : ESMF_Initialize, ESMF_Finalize
+   use seq_comm_mct,  only : esmf_logfile_kind
    use cesm_comp_mod, only : cesm_pre_init1
    use cesm_comp_mod, only : cesm_pre_init2
    use cesm_comp_mod, only : cesm_init
@@ -40,7 +41,7 @@ program cesm_driver
    ! because it is needed for the time manager, even if the ESMF_INTERFACE
    ! is not used.
    !--------------------------------------------------------------------------
-   call ESMF_Initialize()
+   call ESMF_Initialize(logkindflag=esmf_logfile_kind)
 
    !--------------------------------------------------------------------------
    ! Read in the configuration information and initialize the time manager.

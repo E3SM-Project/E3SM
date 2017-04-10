@@ -37,7 +37,7 @@ def configure(machobj, output_dir, macros_format, compiler, mpilib, debug, sysos
     """
     # Macros generation.
     suffixes = {'Makefile': 'make', 'CMake': 'cmake'}
-    macro_maker = Compilers(machobj)
+    macro_maker = Compilers(machobj, compiler=compiler, mpilib=mpilib)
     for form in macros_format:
         out_file_name = os.path.join(output_dir,"Macros."+suffixes[form])
         macro_maker.write_macros_file(macros_file=out_file_name, output_format=suffixes[form])

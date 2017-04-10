@@ -198,10 +198,9 @@ def get_histfiles_for_restarts(case, archive, archive_entry, restfile):
                     histfile = matchobj.group(1).strip()
                     histfile = os.path.basename(histfile)
                     # append histfile to the list ONLY if it exists in rundir before the archiving
-                    if os.path.isfile(os.path.join(rundir,histfile)): 
+                    if os.path.isfile(os.path.join(rundir,histfile)):
                         histfiles.append(histfile)
     return histfiles
-
 
 ###############################################################################
 def _archive_restarts(case, archive, archive_entry,
@@ -353,9 +352,26 @@ def _archive_process(case, archive):
                 _archive_history_files(case, archive, archive_entry,
                                        compclass, compname, histfiles_savein_rundir)
 
+###############################################################################
+def restore_from_archive(case):
+###############################################################################
+    """
+    Take most recent archived restart files and load them into current case.
+    """
+    dout_sr = case.get_value("DOUT_S_ROOT")
+    rundir = case.get_value("RUNDIR")
+    most_recent_rest = run_cmd_no_fail("ls -1dt %s/rest/* | head -1" % dout_sr)
+
+    for item in glob.glob("%s/*" % most_recent_rest):
+        base = os.path.basename(item)
+        dst = os.path.join(rundir, base)
+        if os.path.exists(dst):
+            os.remove(dst)
+
+        shutil.copy(item, rundir)
 
 ###############################################################################
-def case_st_archive(case):
+def case_st_archive(case, no_resubmit=False):
 ###############################################################################
     """
     Create archive object and perform short term archiving
@@ -387,7 +403,7 @@ def case_st_archive(case):
 
     # resubmit case if appropriate
     resubmit = case.get_value("RESUBMIT")
-    if resubmit > 0:
+    if resubmit > 0 and not no_resubmit:
         logger.info("resubmitting from st_archive, resubmit=%d"%resubmit)
         if case.get_value("MACH") == "mira":
             expect(os.path.isfile(".original_host"), "ERROR alcf host file not found")

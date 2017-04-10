@@ -42,7 +42,7 @@
   <entry id="BFBFLAG">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
+    <default_value>TRUE</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>turns on coupler bit-for-bit reproducibility with varying pe counts</desc>
@@ -156,6 +156,7 @@
       <value compset="_DATM.*_DOCN%SOM"          >CESM1_MOD</value>
       <value compset="_POP2"                     >CESM1_MOD</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN">CESM1_MOD</value>
+      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN">CESM1_MOD</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">CESM1_MOD</value>
       <value compset="_SOCN"                     >CESM1_MOD</value>
       <value compset="_MPASO"                    >CESM1_MOD</value>
@@ -286,6 +287,7 @@
       <value compset="_SLND.*SOCN.*_MPASLI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
       <value compset="_CAM.*_CLM.*MPASO">48</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
     </values>
@@ -305,6 +307,7 @@
       <value compset="_SLND.*SOCN.*_MPASLI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
       <value compset="_CAM.*_CLM.*MPASO">48</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
     </values>
@@ -324,6 +327,7 @@
       <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_SWAV">1</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
+      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">1</value>
       <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
       <value compset="_SATM.*_SLND.*_SICE.*_SOCN">1</value>
@@ -332,6 +336,7 @@
       <value compset="_SLND.*SOCN.*_MPASLI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
       <value compset="_CAM.*_CLM.*MPASO">48</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="oi%oRRS18to6">48</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="oi%oRRS15to5">96</value>
@@ -370,12 +375,14 @@
       <value compset="_DATM.*_MPASO"           >$ATM_NCPL</value>
       <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN">$ATM_NCPL</value>
+      <value compset="_DATM.*_SLND.*_DICE.*_DOCN">$ATM_NCPL</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</value>
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MPASLI">1</value>
       <value compset="_SLND.*SOCN.*_MPASLI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
       <value compset="_CAM.*_CLM.*MPASO">8</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">6</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">4</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">8</value>
     </values>
@@ -404,9 +411,9 @@
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <values>
-      <value compset="DATM.+POP\d">true</value>
-      <value compset="DATM.*_MPASO">true</value>
-      <value compset="DATM.+DOCN%IAF">true</value>
+      <value compset="DATM.+POP\d">TRUE</value>
+      <value compset="DATM.*_MPASO">TRUE</value>
+      <value compset="DATM.+DOCN%IAF">TRUE</value>
     </values>
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
@@ -536,6 +543,8 @@
       <value compset="^2000.+AV1C-04P"				>368.865</value>
       <value compset="^2000.+AV1C-04P2"				>368.865</value>
       <value compset="^2000.+AV1C-L"				>368.865</value>
+      <value compset="^2000.+AV1C-H01A"				>368.865</value>
+      <value compset="^2000.+AV1C-H01B"				>368.865</value>
       <!-- Override values based on CAM (WACCM) chemistry -->
       <value compset="CAM[45]%W"				>0.000001</value>
       <value compset="CAM[45]%SSOA"				>0.000001</value>

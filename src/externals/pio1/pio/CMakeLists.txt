@@ -30,6 +30,8 @@ endif()
 
 # Netcdf is required
 
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../pio2/cmake" ${CMAKE_MODULE_PATH})
+
 #SET (NETCDF_FIND_COMPONENTS F90)
 FIND_PACKAGE(NetCDF "4.3.3" COMPONENTS C Fortran)
 IF (${NetCDF_Fortran_FOUND})

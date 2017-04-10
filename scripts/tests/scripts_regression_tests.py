@@ -349,8 +349,10 @@ class J_TestCreateNewcase(unittest.TestCase):
                 output = run_cmd_no_fail(cmd, from_dir=casedir)
                 self.assertTrue(output == JOB_QUEUE, msg="%s != %s"%(output, JOB_QUEUE))
 
-        cls._do_teardown.append(cls._testroot)
+            cmd = xmlquery + " --listall"
+            run_cmd_no_fail(cmd, from_dir=casedir)
 
+        cls._do_teardown.append(cls._testroot)
 
     @classmethod
     def tearDownClass(cls):
@@ -909,6 +911,46 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
         self.assertFalse(run_thread.isAlive(), msg="jenkins_generic_job should have finished")
         self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
         assert_dashboard_has_build(self, build_name)
+
+###############################################################################
+class T_TestRunRestart(TestCreateTestCommon):
+###############################################################################
+
+    ###########################################################################
+    def test_run_restart(self):
+    ###########################################################################
+        run_cmd_assert_result(self, "%s/create_test --test-root %s --output-root %s -t %s NODEFAIL_P1.f45_g37.X"
+                              % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name))
+        if self._hasbatch:
+            run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
+                                  from_dir=self._testroot)
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name("NODEFAIL_P1.f45_g37.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
+
+        fail_sentinel = os.path.join(casedir, "run", "FAIL_SENTINEL")
+        self.assertTrue(os.path.exists(fail_sentinel), msg="Missing %s" % fail_sentinel)
+
+        self.assertEqual(open(fail_sentinel, "r").read().count("FAIL"), 3)
+
+    ###########################################################################
+    def test_run_restart_too_many_fails(self):
+    ###########################################################################
+        os.environ["NODEFAIL_NUM_FAILS"] = "5"
+        run_cmd_assert_result(self, "%s/create_test --test-root %s --output-root %s -t %s NODEFAIL_P1.f45_g37.X"
+                              % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name),
+                              expected_stat=(0 if self._hasbatch else CIME.utils.TESTS_FAILED_ERR_CODE))
+        if self._hasbatch:
+            run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
+                                  from_dir=self._testroot, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name("NODEFAIL_P1.f45_g37.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
+
+        fail_sentinel = os.path.join(casedir, "run", "FAIL_SENTINEL")
+        self.assertTrue(os.path.exists(fail_sentinel), msg="Missing %s" % fail_sentinel)
+
+        self.assertEqual(open(fail_sentinel, "r").read().count("FAIL"), 4)
 
 ###############################################################################
 class Q_TestBlessTestResults(TestCreateTestCommon):
@@ -2105,7 +2147,17 @@ def _main_func():
             expect(not hasattr(B_CheckCode, testname), "Repeat %s" % testname)
             setattr(B_CheckCode, testname, pylint_test)
 
-    unittest.main(verbosity=2, catchbreak=True)
+    try:
+        unittest.main(verbosity=2, catchbreak=True)
+    except SystemExit:
+        had_fails = sys.exc_info()[1].message
+        if had_fails:
+            print "Detected failures, leaving directory:", TEST_ROOT
+        else:
+            print "All pass, removing directory:", TEST_ROOT
+            if os.path.exists(TEST_ROOT):
+                shutil.rmtree(TEST_ROOT)
+            raise
 
 if (__name__ == "__main__"):
     _main_func()

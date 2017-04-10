@@ -361,6 +361,21 @@ LII    CLM initial condition interpolation test
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
+  <test NAME="NODEFAIL">
+    <DESC>For testing infra only. Tests restart upon detected node failure</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <REST_N>$STOP_N / 2 + 1</REST_N>
+    <REST_OPTION>$STOP_OPTION</REST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <NODE_FAIL_REGEX>JGF FAKE NODE FAIL</NODE_FAIL_REGEX>
+    <PCT_SPARE_NODES>300</PCT_SPARE_NODES>
+  </test>
+
   <test NAME="ICP">
     <DESC>cice performance test</DESC>
     <INFO_DBUG>1</INFO_DBUG>

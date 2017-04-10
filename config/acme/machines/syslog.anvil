@@ -1,0 +1,54 @@
+#!/bin/csh -f
+# anvil syslog script: 
+#  mach_syslog <sampling interval (in seconds)> <job identifier> <timestamp> <run directory> <timing directory> <output directory> 
+
+set sample_interval = $1
+set jid = $2
+set lid = $3
+set run = $4
+set timing = $5
+set dir = $6
+set ncores = 0
+
+# wait until job mapping information is output before saving output file
+# (note that calling script 'touch'es the acme log file before spawning this script, so that 'wc' does not fail)
+set nnodes = `qstat -f $jid | grep -F Resource_List.nodes | sed 's/ *Resource_List.nodes = *\([0-9]*\):ppn=*\([0-9]*\) */\1/' `
+set ppn = `qstat -f $jid | grep -F Resource_List.nodes | sed 's/ *Resource_List.nodes = *\([0-9]*\):ppn=*\([0-9]*\) */\2/' `
+@ ncores = $nnodes * $ppn
+set outlth = 0
+while ($outlth < $ncores)
+  sleep 10
+  set outlth = `wc \-l $run/acme.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
+end
+set remaining = `qstat -f $jid | grep -F Walltime.Remaining | sed 's/ *Walltime.Remaining = *\([0-9]*\) */\1/' `
+cat > $run/Walltime.Remaining <<EOF1
+$remaining $sample_interval
+EOF1
+/bin/cp --preserve=timestamps $run/acme.log.$lid $dir/acme.log.$lid.$remaining
+
+while ($remaining > 0)
+  echo "Wallclock time remaining: $remaining" >> $dir/atm.log.$lid.step
+  grep -Fa -e "nstep" -e "model date" $run/*atm.log.$lid | tail -n 4 >> $dir/atm.log.$lid.step
+  echo "Wallclock time remaining: $remaining" >> $dir/lnd.log.$lid.step
+  grep -Fa -e "timestep" -e "model date" $run/*lnd.log.$lid | tail -n 4 >> $dir/lnd.log.$lid.step
+  echo "Wallclock time remaining: $remaining" >> $dir/ocn.log.$lid.step
+  grep -Fa -e "timestep" -e "Step number" -e "model date" $run/*ocn.log.$lid | tail -n 4 >> $dir/ocn.log.$lid.step
+  echo "Wallclock time remaining: $remaining" >> $dir/ice.log.$lid.step
+  grep -Fa -e "timestep" -e "istep" -e "model date" $run/*ice.log.$lid | tail -n 4 >> $dir/ice.log.$lid.step
+  echo "Wallclock time remaining: $remaining" >> $dir/rof.log.$lid.step
+  grep -Fa "model date" $run/*rof.log.$lid | tail -n 4 >> $dir/rof.log.$lid.step
+  grep -Fa "model date" $run/*cpl.log.$lid  > $dir/cpl.log.$lid.step-all
+  echo "Wallclock time remaining: $remaining" >> $dir/cpl.log.$lid.step
+  tail -n 4 $dir/cpl.log.$lid.step-all >> $dir/cpl.log.$lid.step
+  /bin/cp --preserve=timestamps -u $timing/* $dir
+  qstat -f acme > $dir/qstatf.$lid.$remaining
+  chmod a+r $dir/*
+  sleep $sample_interval
+  set remaining = `qstat -f $jid | grep -F Walltime.Remaining | sed 's/ *Walltime.Remaining = *\([0-9]*\) */\1/' `
+  if ("X$remaining" == "X") set remaining = 0
+  cat > $run/Walltime.Remaining << EOF2
+$remaining $sample_interval
+EOF2
+
+end
+
