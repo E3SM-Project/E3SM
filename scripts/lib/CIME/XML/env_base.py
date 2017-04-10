@@ -114,10 +114,10 @@ class EnvBase(EntryID):
 
         if iscompvar:
             attribute = {"component":component}
-            type_str = self._get_type_info(node)
-            val = self.set_element_text("value", convert_to_string(value, type_str, vid), attribute, root=node)
-            return val
-        val = EntryID._set_value(self, node, value, vid, subgroup, ignore_type)
+            str_value = self.get_valid_value_string(node, value, vid, ignore_type)
+            val = self.set_element_text("value", str_value, attribute, root=node)
+        else:
+            val = EntryID._set_value(self, node, value, vid, subgroup, ignore_type)
         return val
 
     def get_nodes_by_id(self, varid):
