@@ -27,7 +27,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                         arg_cdash_build_name, cdash_project,
                         arg_test_suite,
                         cdash_build_group, baseline_compare,
-                        scratch_root, parallel_jobs):
+                        scratch_root, parallel_jobs, walltime):
 ###############################################################################
     """
     Return True if all tests passed
@@ -106,10 +106,11 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
 
     batch_args = "--no-batch" if no_batch else ""
     pjob_arg = "" if parallel_jobs is None else "-j %d" % parallel_jobs
+    walltime_arg = "" if walltime is None else " --walltime %s" % walltime
 
     test_id = "%s_%s" % (test_id_root, CIME.utils.get_timestamp())
-    create_test_cmd = "./create_test %s --test-root %s -t %s %s %s %s" % \
-                      (test_suite, test_root, test_id, baseline_args, batch_args, pjob_arg)
+    create_test_cmd = "./create_test %s --test-root %s -t %s %s %s %s %s" % \
+                      (test_suite, test_root, test_id, baseline_args, batch_args, pjob_arg, walltime_arg)
 
     if (not CIME.wait_for_tests.SIGNAL_RECEIVED):
         create_test_stat = CIME.utils.run_cmd(create_test_cmd, from_dir=CIME.utils.get_scripts_root(),
