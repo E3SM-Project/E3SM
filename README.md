@@ -27,7 +27,7 @@ The package enables the AMWG Set 5 diagnostics and features built-in user diagno
 * [Quickstart guide for AIMS4](docs/quick-guide-aims4.ipynb)
 * [Installation, Basic Configuration, and Running](docs/install-config-run.ipynb)
 * More Configuration
-  * [List of parameters for config file](docs/available-parameters.ipynb)
-  * [Adding user diagnostics](docs/add-new-diagnostics.ipynb)
-  * [List of built-in derived variables](jill-add-this)
+  * [Defining Parameters and All Available Parameters](docs/available-parameters.ipynb)
+  * [Adding User Diagnostics](docs/add-new-diagnostics.ipynb)
+  * [List of Built-in Derived Variables](acme_diags/derivations/acme.py)
 * [CDP Viewer documentation](https://github.com/UV-CDAT/cdp/blob/master/jupyter/using-the-cdp-viewer.ipynb)
