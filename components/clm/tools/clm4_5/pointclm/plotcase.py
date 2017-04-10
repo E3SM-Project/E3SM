@@ -4,6 +4,7 @@ import os, sys, csv, glob
 import numpy, scipy
 from scipy.io import netcdf
 from optparse import OptionParser
+import matplotlib.pyplot as plt
 
 def getvar(fname, varname, npf, index, scale_factor):
     usescipy = False
@@ -37,11 +38,11 @@ parser.add_option("--titles", dest="titles", default='', \
                   help = "titles of case to plot (for legend)")
 parser.add_option("--obs", action="store_true", default=False, \
                   help = "plot observations", dest="myobs")
-parser.add_option("--site", dest="site", default="none", \
+parser.add_option("--sites", dest="site", default="none", \
                   help = 'site (to plot observations)')
 parser.add_option("--varfile", dest="myvarfile", default='varfile', \
                   help = 'file containing list of variables to plot')
-parser.add_option("--var", dest="myvar", default='', \
+parser.add_option("--vars", dest="myvar", default='', \
                   help="variable to plot (overrides varfile, " \
                   +"sends plot to screen")
 parser.add_option("--avpd", dest="myavpd", default=1, \
@@ -81,13 +82,39 @@ cesmdir=os.path.abspath(options.mycsmdir)
 #    sys.exit()
 
 mycases = options.mycase.split(',')
-ncases = len(mycases)
-if (mycases == ''):
-  ncases=1
- 
-if (options.titles == ''):
+mysites = options.site.split(',')
+mycompsets = options.compset.split(',')
+
+ncases = 1
+if (len(mycases) > 1):
+  ncases = len(mycases)
+  mysites=[]
+  mycompsets=[]
+  for c in range(0,ncases):
+    mysites.append(options.site)
+    mycompsets.append(options.compset)
   mytitles = mycases
+elif (len(mysites) > 1):
+  ncases = len(mysites)
+  mycases=[]
+  mycompsets=[]
+  for c in range(0,ncases):
+    mycases.append(options.mycase)
+    mycompsets.append(options.compset)
+  mytitles = mysites
+elif (len(mycompsets) > 1):
+  ncases = len(mycompsets)
+  mycases=[]
+  mysites=[]
+  for c in range(0,ncases):
+    mycases.append(options.mycase)
+    mysites.append(options.site)  
+  mytitles = mycompsets
 else:
+  mytitles=[]
+  mytitles.append(mycases[0]+'_'+mysites[0]+'_'+mycompsets[0])
+
+if (options.titles != ''):
   mytitles = options.titles.split(',')
 
 obs     = options.myobs
@@ -106,7 +133,7 @@ if (options.myvar == ''):
     terminal = 'postscript'
 else:
     terminal=''
-    myvars.append(options.myvar)
+    myvars = options.myvar.split(',')
     
 
 avpd      = int(options.myavpd)        # desired averaging period in output timestep
@@ -125,19 +152,23 @@ if (options.myseasonal):
 if (obs):
     ncases=ncases+1
 
-site = options.site
-compset = options.compset
+#site = options.site
+#compset = options.compset
 
 dirs=[]
+nvar = len(myvars)    
+x_toplot    = numpy.zeros([ncases, 2000000], numpy.float)
+data_toplot = numpy.zeros([ncases, nvar, 2000000], numpy.float)
+
 for c in range(0,ncases):
     if (obs and c == ncases-1):   #observations
         diro='/home/zdr/models/LoTEC/assim/observations'
         os.chdir(diro)
     else:
         if (mycases[c].strip() != ''):
-            dirs.append(cesmdir+'/run/'+mycases[c]+'_'+site+'_'+compset+'/run/')
+            dirs.append(cesmdir+'/'+mycases[c]+'_'+mysites[c]+'_'+mycompsets[c]+'/run/')
         else:
-            dirs.append(cesmdir+'/run/'+site+'_'+compset+'/run/')
+            dirs.append(cesmdir+'/'+mysites[c]+'_'+mycompsets[c]+'/run/')
         os.chdir(dirs[c])
  
     #query lnd_in file for output file information
@@ -145,71 +176,26 @@ for c in range(0,ncases):
     if ((options.myhist_mfilt == -999 or options.myhist_nhtfrq == -999) or (obs and  c  < ncases-1)):
         print('Obtaining output resolution information from lnd_in')
         input = open("lnd_in")
-        hash1 = False
-        hash2 = False
-        for s in input:
-            s2=s.strip()
-            if (s2.startswith('hist_fincl2')):
-                hash1 = True
-            if (s2.startswith('hist_fincl3')):
-                hash2 = True
-        input.close()
         npf=-999
         tstep=-999
         input = open("lnd_in")
-        print(hash1, hash2)
         for s in input:
-            if (s[0:11].strip() == 'hist_mfilt'):
-                if (hash2):
-                    s1,s2,val,val1,val2=s.split()
-                elif (hash1):
-                    s1,s2,val,val1 = s.split()
-                else:
-                    s1,s2,val=s.split() 
-                
+	    if ('hist_mfilt' in s):
+	        mfiltinfo = s.split()[2]
+                npf = int(mfiltinfo.split(',')[0])
+                if (options.h1): 
+                    npf = int(mfiltinfo.split(',')[1])
                 if (options.h2):
-                    if (hash2):
-                        npf = int(val2)
-                    else:
-                        print('h2 files requested but do not exist')
-                elif (options.h1):
-                    if (hash1 and hash2):
-                        npf = int(val1[:-1])
-                    elif (hash1):
-                        npf = int(val1)
-                    else:
-                        print('h1 files requested but do not exist')
-                else:
-                    if (hash1 or hash2):
-                        npf = int(val[:-1])
-                    else:
-                        npf = int(val)
-                print(npf)
-                
-            if (s[0:12].strip() == 'hist_nhtfrq'):
-                if (hash2):
-                    s1,s2,val,val1,val2=s.split()
-                    print(val, val1, val2)
-                elif (hash1):
-                    s1,s2,val,val1 = s.split()
-                else:
-                    s1,s2,val=s.split() 
-                
+                    npf = int(mfiltinfo.split(',')[2])
+            if ('hist_nhtfrq' in s):
+                nhtfrqinfo = s.split()[2]
+                tstep = int(nhtfrqinfo.split(',')[0])
+                if (options.h1):
+                    tstep = int(nhtfrqinfo.split(',')[1])
                 if (options.h2):
-                    if (hash2):
-                        tstep= int(val2)
-                elif (options.h1):
-                    if (hash1 and hash2):
-                        tstep = int(val1[:-1])
-                    elif (hash1):
-                        tstep = int(val1)
-                else:
-                    if (hash1 or hash2):
-                        tstep = int(val[:-1])
-                    else:
-                        tstep = int(val)
-                print(tstep)
+                    tstep = int(nhtfrqinfo.split(',')[2])
         input.close()
+        print npf, tstep
     elif (c == ncases-1 and obs):
         npf   = 8760
         tstep = -1
@@ -233,9 +219,9 @@ for c in range(0,ncases):
         else:
             hst = 'h0'
         if (mycases[c] == ''):
-          testfile = site+'_'+compset+'.clm2.'+hst+'.'+yststr[2:6]+'-01.nc'
+          testfile = mysites[c]+'_'+mycompsets[c]+'.clm2.'+hst+'.'+yststr[2:6]+'-01.nc'
         else:
-          testfile = mycases[c]+'_'+site+'_'+compset+'.clm2.'+hst+'.'+yststr[2:6]+'-01.nc'
+          testfile = mycases[c]+'_'+mysites[c]+'_'+mycompsets[c]+'.clm2.'+hst+'.'+yststr[2:6]+'-01.nc'
     else:
         ftype = 'custom'
         nhtot=-1*tstep*npf
@@ -249,9 +235,9 @@ for c in range(0,ncases):
         else:
             hst='h0'
         if (mycases[c] == ''):
-          testfile = site+'_'+compset+'.clm2.'+hst+'.'+yststr[2:6]+'-01-01-00000.nc'
+          testfile = mysites[c]+'_'+mycompsets[c]+'.clm2.'+hst+'.'+yststr[2:6]+'-01-01-00000.nc'
         else:
-          testfile = mycases[c]+'_'+site+'_'+compset+'.clm2.'+hst+'.'+yststr[2:6]+'-01-01-00000.nc'
+          testfile = mycases[c]+'_'+mysites[c]+'_'+mycompsets[c]+'.clm2.'+hst+'.'+yststr[2:6]+'-01-01-00000.nc'
         
     if (obs and c == ncases-1):
         ftype='obs'
@@ -264,7 +250,7 @@ for c in range(0,ncases):
     os.system('pwd')
     if (os.path.isfile(testfile) == False):
         print('Output not in run directory.  Switching to archive directory')
-        archdir=cesmdir+'/run/archive/'+mycases[c]+'_'+site+'_'+compset+'/lnd/hist'
+        archdir=cesmdir+'/archive/'+mycases[c]+'_'+mysites[c]+'_'+mycompsets[c]+'/lnd/hist'
         print(archdir)
         if (os.path.exists(archdir) == False):
             print('Archive directory does not exist.  Exiting')
@@ -278,9 +264,8 @@ for c in range(0,ncases):
                 
 
     #initialize data arrays
-    nvar=len(myvars)
-    mydata=numpy.zeros([nvar,2000000], numpy.float)
-    x=numpy.zeros([2000000], numpy.float)
+    mydata      = numpy.zeros([nvar,2000000], numpy.float)
+    x           = numpy.zeros([2000000], numpy.float)
     nsteps=0
  
     if (c == 0):   
@@ -290,13 +275,13 @@ for c in range(0,ncases):
     #read monthly .nc files (default output)
     if (ftype == 'default'):
         jobs=[]
-        for y in range(ystart,yend+1):
-            yst=str(10000+y)[1:5]
-            for m in range(0,12):
-                mst=str(101+m)[1:3]
-                myfile = os.path.abspath('./'+mycases[c]+'_'+site+'_'+compset+".clm2."+hst+"."+yst+"-"+mst+".nc")
-                nstepslast=nsteps
-                for v in range(0,nvar):
+        for v in range(0,nvar):
+            nsteps = 0
+            for y in range(ystart,yend+1):
+                yst=str(10000+y)[1:5]
+                for m in range(0,12):
+                    mst=str(101+m)[1:3]
+                    myfile = os.path.abspath('./'+mycases[c]+'_'+mysites[c]+'_'+mycompsets[c]+".clm2."+hst+"."+yst+"-"+mst+".nc")
                     #get units/long names from first file
                     if (y == ystart and m == 0 and c == 0):
                         nffile = netcdf.netcdf_file(myfile,"r")
@@ -304,19 +289,10 @@ for c in range(0,ncases):
                         var_long_names.append(varout.long_name)
                         var_units.append(varout.units)
                         nffile.close()
-                    nsteps=nstepslast
                     x[nsteps] = y+m/12.0
-                    nsteps=nsteps+1
-                    jobs.append(job_server.submit(getvar,(myfile,myvars[v],npf, int(options.index), \
-                                   float(options.scale_factor)), (), ("Scientific.IO.NetCDF",)))
-                    nsteps = 0
-                    for job in jobs:
-                        mydata[v,nsteps] = job()
-            #print(v, nsteps, mydata[v,nsteps])
-#                    if (myvars[v] == 'NEE' or myvars[v] == 'GPP'):
-#                        mydata[v,nsteps]=mydata[v,nsteps]*1e6/12.0
-                        nsteps = nsteps + 1
-
+                    myvar_temp = getvar(myfile, myvars[v],npf,int(options.index), float(options.scale_factor))
+                    mydata[v,nsteps] = myvar_temp
+                    nsteps = nsteps + 1
 
     #read annual .nc files
     if (ftype == 'custom'):
@@ -326,10 +302,10 @@ for c in range(0,ncases):
             for y in range(ystart,yend+1):
                 yst=str(10000+y)[1:5]
                 if (mycases[c].strip() == ''):
-                    myfile = os.path.abspath('./'+site+'_'+compset+".clm2."+hst+"."+yst+\
+                    myfile = os.path.abspath('./'+mysites[c]+'_'+mycompsets[c]+".clm2."+hst+"."+yst+\
                                              "-01-01-00000.nc")
                 else:
-                    myfile = os.path.abspath('./'+mycases[c]+"_"+site+'_'+compset+".clm2."+hst+"."+yst+\
+                    myfile = os.path.abspath('./'+mycases[c]+"_"+mysites[c]+'_'+mycompsets[c]+".clm2."+hst+"."+yst+\
                                              "-01-01-00000.nc")
                 if (y == ystart and c == 0):
                     nffile = netcdf.netcdf_file(myfile,"r")
@@ -340,9 +316,11 @@ for c in range(0,ncases):
                 myvar_temp = getvar(myfile,myvars[v],npf,int(options.index), \
                                                float(options.scale_factor))
                 for i in range(0,npf):
-                  x[(y-ystart)*npf+i] = (y*1.0)/npf - 0.5/npf
+                  x[(y-ystart)*npf+i] = (y*1.0) + (i*1.0-0.5)/npf 
+                  #print (y-ystart)*npf+i,  x[(y-ystart)*npf+i]
                   mydata[v,(y-ystart)*npf+i] = myvar_temp[i]
                   nsteps=nsteps+1
+
     #read obervation file, assumes it is in case directory (years must match!)
     #will work for NEE only!
     if (ftype == 'obs'):
@@ -374,109 +352,60 @@ for c in range(0,ncases):
     if (avtype == 'default'):
         print(nsteps, avpd)
         for v in range(0,nvar):
-            os.system('pwd')
-            print(myvars[v]+'_'+str(c)+".txt")
-            output=open(myvars[v]+'_'+str(c)+".txt","w")
-            for s in range(0,int(nsteps/avpd)):        
-                output.write(str(sum(x[s*avpd:(s+1)*avpd])/avpd)+ " " + \
-                             str(sum(mydata[v,s*avpd:(s+1)*avpd])/avpd)+"\n")
-            output.close()
+            snum = 0
+            for s in range(0,int(nsteps/avpd)): 
+                x_toplot[c, snum]       = sum(x[s*avpd:(s+1)*avpd])/avpd
+                data_toplot[c, v, snum] = sum(mydata[v,s*avpd:(s+1)*avpd])/avpd      
+                snum = snum+1
 
     #diurnal average (must have hourly output)
     if (avtype == 'diurnal'):
+        snum=36
         for v in range(0,nvar):
-            output=open(myvars[v]+'_'+str(c)+".txt","w")
-            mysum = numpy.zeros(36, numpy.float)
-            myct = numpy.zeros(36,numpy.float)
+            mysum = numpy.zeros(snum, numpy.float)
+            myct = numpy.zeros(snum,numpy.float)
             for y in range(0,(yend-ystart+1)):
                 for d in range (int(options.dstart),int(options.dend)):
-                    for s in range(0,36):        
+                    for s in range(0,snum):        
                         h=s
                         if (h >= 24):
                             h=h-24
                         mysum[s] = mysum[s]+mydata[v,y*8760+(d-1)*24+h]/((yend-ystart+1)* \
                                                  (int(options.dend)-int(options.dstart)+1))
-            for s in range(0,36):
-                output.write(str(s+0.5)+ " " + \
-                                 str(mysum[s])+"\n")
-            output.close()
-        
+                        myct[s] = myct[s]+1
+            for s in range(0,snum):
+                x_toplot[c,s] = s+0.5
+                data_toplot[c, v, s] = mysum[s]/myct[s]
+      
     #seasonal average (assumes default monthly output)
     if (avtype == 'seasonal'):
         for v in range(0,nvar):
-            output=open(myvars[v]+'_'+str(c)+".txt","w")
-            np = 12
-            mysum=numpy.zeros(np, numpy.float)
-            
+            snum = 12
+            mysum=numpy.zeros(snum, numpy.float)
             for y in range(0,(yend-ystart+1)):
-                for s in range(0,np):
-                    print(y, s, v, mydata[v,y*12+s])
+                for s in range(0,snum):
                     mysum[s]=mysum[s]+mydata[v,(y*12+s)]/(yend-ystart+1)
         
-            for s in range(0,np):
-                output.write(str(s+0.5)+" "+str(mysum[s])+"\n")
-            output.close()
-                
-                
-#create gnuplot script
-output=open('plotmyvar.p','w')
-#output.write('set terminal '+terminal+' enhanced color\n')
-
-
-if terminal != '':
-    output.write('set terminal '+terminal+'\n') #+' enhanced color\n')
-    plotfile = mycases[0]+'_'+site+'_'+compset+'_plots.ps'
+            for s in range(0,snum):
+                x_toplot[c,s] = s+0.5
+                data_toplot[c,v,s] = mysum[s]
+        
+#matplotlib plot
+for v in range(0,len(myvars)):
+    fig = plt.figure()
+    ax = plt.subplot(111)
+    for c in range(0,ncases):                
+        ax.plot(x_toplot[c, 1:snum], data_toplot[c,v,1:snum], label=mytitles[c])
     if (avtype == 'seasonal'):
-        plotfile = mycases[0]+'_'+site+'_'+compset+'_seasonal_plots.ps'
+        plt.xlabel('Model Month')
     elif (avtype == 'diurnal'):
-        plotfile = mycases[0]+'_'+site+'_'+compset+'_diurnal_plots.ps'
-    output.write('set output "'+plotfile+'"\n')
-output.write('set style line 1 lt 1 lw 3 lc rgb "red"\n')
-output.write('set style line 2 lt 1 lw 3 lc rgb "blue"\n')
-output.write('set style line 3 lt 1 lw 3 lc rgb "black"\n')
-output.write('set style line 4 lt 1 lw 3 lc rgb "cyan"\n')
-output.write('set style line 5 lt 1 lw 3 lc rgb "green"\n')
-output.write('set style line 6 lt 2 lw 3 lc rgb "red"\n')
-output.write('set style line 7 lt 2 lw 3 lc rgb "blue"\n')
-output.write('set style line 8 lt 2 lw 3 lc rgb "black"\n')
-output.write('set style line 9 lt 2 lw 3 lc rgb "cyan"\n')
-output.write('set style line 10 lt 2 lw 3 lc rgb "green"\n')
-
-for v in range(0,nvar):
-    cmd  = 'plot "'+dirs[0]+'/'+myvars[v]+'_0.txt" with lines linestyle 1 title "' \
-           +mytitles[0]+'" ' 
-    if (avtype == 'seasonal'):
-        cmd_xlab = 'set xlabel "model month" '
-    elif (avtype == 'diurnal'):
-        cmd_xlab = 'set xlabel "model hour (UTC)" '
+        plt.xlabel('Model Hour (UTC)')
     else:
-        cmd_xlab = 'set xlabel "model year" '
-    cmd_ylab = 'set ylabel "'+myvars[v]+' ('+var_units[v]+')" '
-    cmd_titl = 'set title  "'+var_long_names[v]+' at '+site+'" '
-    if (ncases >= 2 and obs == False) or (ncases >= 3 and obs == True):
-      for n in range(1,ncases):
-        cmd = cmd+', "'+dirs[n]+'/'+myvars[v]+'_'+str(n)+'.txt" with lines linestyle '+str(n+1)+' title "' \
-            +mytitles[n]+'"'
-    if (obs and (myvars[v] == 'NEE' or myvars[v] == 'GPP')):
-        cmd = cmd+', "'+diro+'/'+myvars[v]+'_'+str(ncases-1)+'.txt" with lines linestyle '+str(ncases)+ \
-            ' title "observed"'
-    output.write(cmd_xlab+'\n')
-    output.write(cmd_ylab+'\n')
-    output.write(cmd_titl+'\n')
-    output.write('set key below\n')
-    #output.write('set xrange [1997:2002]\n')
-    output.write(cmd+'\n')
-    #output.write('set xrange [1997:2002]\n')
-    output.write('replot\n')
-output.close()
+        plt.xlabel('Model Year')
 
-#execute gnuplot script
-os.system('gnuplot -persist plotmyvar.p')
-os.system('mkdir -p '+cesmdir+'/components/clm/tools/clm4_5/pointclm/plots/'+site+'_'+compset)
-if (terminal == 'postscript'):
-    os.system('ps2pdf '+plotfile+' '+plotfile[:-4]+'.pdf')
-    os.system('mv '+plotfile[:-4]+'.pdf '+cesmdir+'/components/clm/tools/clm4_5/pointclm/plots/'+ \
-                  site+'_'+compset+'/')
-    os.system('mv '+plotfile+' '+cesmdir+'/components/clm/tools/clm4_5/pointclm/plots/'+ \
-                  site+'_'+compset+'/') 
-#os.system('ps2pdf '+cesmdir+'/scripts/plots/'+mycase1+'/'+mycase1+'_plots.ps')
+    plt.ylabel(myvars[v]+' ('+var_units[v]+')')
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.title(var_long_names[v])
+plt.show()
