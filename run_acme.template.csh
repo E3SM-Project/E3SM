@@ -37,7 +37,7 @@ set seconds_before_delete_run_dir    = -1
 
 ### SUBMIT OPTIONS
 set submit_run       = true
-set debug_queue      = false
+set debug_queue      = true
 
 ### PROCESSOR CONFIGURATION
 set processor_config = S
@@ -683,107 +683,6 @@ else if ( `lowercase $processor_config` == 'customknl' ) then
   ./xmlchange NTHRDS_ROF="1"
   ./xmlchange NTHRDS_WAV="1"
 
-else if ( `lowercase $processor_config` == 'custom173' ) then
-
-  acme_print 'Setting custom processor configuration, because $processor_config = '$processor_config
-###   This space is to allow a custom processor configuration to be defined.
-###   If your layout will be useful to other people, then please get it added to the standard
-###   configurations in the ACME repository.
-
-###   NOTE: It is shorter and more robust to implement the PE configuration changes using xmlchange
-###         rather than embedding the whole env_mach_pes.xml file
-
-# These were chosen based on the smallest pe layouts of provided input files
-  $xmlchange_exe --id NTASKS_ATM --val 2700
-  $xmlchange_exe --id NTHRDS_ATM --val 1
-  $xmlchange_exe --id ROOTPE_ATM --val 0
-
-  $xmlchange_exe --id NTASKS_LND --val 312
-  $xmlchange_exe --id NTHRDS_LND --val 1
-  $xmlchange_exe --id ROOTPE_LND --val 2400
-
-  $xmlchange_exe --id NTASKS_ICE --val 2400
-  $xmlchange_exe --id NTHRDS_ICE --val 1
-  $xmlchange_exe --id ROOTPE_ICE --val 0
-
-  $xmlchange_exe --id NTASKS_OCN --val 1440
-  $xmlchange_exe --id NTHRDS_OCN --val 1
-  $xmlchange_exe --id ROOTPE_OCN --val 2712
-
-  $xmlchange_exe --id NTASKS_CPL --val 2400
-  $xmlchange_exe --id NTHRDS_CPL --val 1
-  $xmlchange_exe --id ROOTPE_CPL --val 0
-
-  $xmlchange_exe --id NTASKS_GLC --val 312
-  $xmlchange_exe --id NTHRDS_GLC --val 1
-  $xmlchange_exe --id ROOTPE_GLC --val 2400
-
-  $xmlchange_exe --id NTASKS_ROF --val 312
-  $xmlchange_exe --id NTHRDS_ROF --val 1
-  $xmlchange_exe --id ROOTPE_ROF --val 2400
-
-  $xmlchange_exe --id NTASKS_WAV --val 2400
-  $xmlchange_exe --id NTHRDS_WAV --val 1
-  $xmlchange_exe --id ROOTPE_WAV --val 0
-
-  set sequential_or_concurrent = 'concurrent'
-  foreach layout_name ( NINST_ATM_LAYOUT NINST_LND_LAYOUT NINST_ICE_LAYOUT NINST_OCN_LAYOUT NINST_GLC_LAYOUT NINST_ROF_LAYOUT NINST_WAV_LAYOUT )
-    $xmlchange_exe --id $layout_name --val $sequential_or_concurrent
-  end
-
-else if ( `lowercase $processor_config` == 'custom375' ) then
-
-  acme_print 'Setting custom processor configuration, because $processor_config = '$processor_config
-###   This space is to allow a custom processor configuration to be defined.
-###   If your layout will be useful to other people, then please get it added to the standard
-###   configurations in the ACME repository.
-
-###   NOTE: It is shorter and more robust to implement the PE configuration changes using xmlchange
-###         rather than embedding the whole env_mach_pes.xml file
-
-# These were chosen based on the smallest pe layouts of provided input files
-  $xmlchange_exe --id NTASKS_ATM --val 5400
-  $xmlchange_exe --id NTHRDS_ATM --val 1
-  $xmlchange_exe --id ROOTPE_ATM --val 0
-
-  $xmlchange_exe --id NTASKS_LND --val 600
-  $xmlchange_exe --id NTHRDS_LND --val 1
-  $xmlchange_exe --id ROOTPE_LND --val 4800
-
-  $xmlchange_exe --id NTASKS_ICE --val 4800
-  $xmlchange_exe --id NTHRDS_ICE --val 1
-  $xmlchange_exe --id ROOTPE_ICE --val 0
-
-  $xmlchange_exe --id NTASKS_OCN --val 3600
-  $xmlchange_exe --id NTHRDS_OCN --val 1
-  $xmlchange_exe --id ROOTPE_OCN --val 5400
-
-  $xmlchange_exe --id NTASKS_CPL --val 4800
-  $xmlchange_exe --id NTHRDS_CPL --val 1
-  $xmlchange_exe --id ROOTPE_CPL --val 0
-
-  $xmlchange_exe --id NTASKS_GLC --val 600
-  $xmlchange_exe --id NTHRDS_GLC --val 1
-  $xmlchange_exe --id ROOTPE_GLC --val 4800
-
-  $xmlchange_exe --id NTASKS_ROF --val 600
-  $xmlchange_exe --id NTHRDS_ROF --val 1
-  $xmlchange_exe --id ROOTPE_ROF --val 4800
-
-  $xmlchange_exe --id NTASKS_WAV --val 4800
-  $xmlchange_exe --id NTHRDS_WAV --val 1
-  $xmlchange_exe --id ROOTPE_WAV --val 0
-
-  set sequential_or_concurrent = 'concurrent'
-  foreach layout_name ( NINST_ATM_LAYOUT NINST_LND_LAYOUT NINST_ICE_LAYOUT NINST_OCN_LAYOUT NINST_GLC_LAYOUT NINST_ROF_LAYOUT NINST_WAV_LAYOUT )
-    $xmlchange_exe --id $layout_name --val $sequential_or_concurrent
-  end
-
-
-### The following couple of lines are for when no custom configuration is set (eg, in the archived version)
-#    acme_print 'Custom processor configuration not defined.  Please edit this script.'
-#    exit 150
-
 endif
 
 #============================================
@@ -854,7 +753,7 @@ $xmlchange_exe --id CAM_CONFIG_OPTS --append -val " -cosp"
 if ( `lowercase $debug_queue` == true ) then
   if ( $machine == cab || $machine == sierra ) then
     $xmlchange_exe --id JOB_QUEUE --val 'pdebug'
-  else
+  else if ($machine != skybridge ) then
     $xmlchange_exe --id JOB_QUEUE --val 'debug'
   endif
 endif
@@ -1097,7 +996,7 @@ endif
 $xmlchange_exe --id DOUT_L_MS --val `uppercase $do_long_term_archiving`
 
 # DOUT_L_MSROOT is the directory in your account on the local mass storage system (typically an HPSS tape system)
--$xmlchange_exe --id DOUT_L_MSROOT --val "ACME_simulation_output/${case_name}"
+$xmlchange_exe --id DOUT_L_MSROOT --val "ACME_simulation_output/${case_name}"
 
 #============================================
 # COUPLER HISTORY OUTPUT
