@@ -302,6 +302,8 @@ subroutine dropmixnuc( &
    ! assume cloud presence controlled by cloud fraction
    ! doesn't distinguish between warm, cold clouds
 
+   use output_aerocom_aie , only: do_aerocom_ind3
+
    ! arguments
    type(physics_state), target, intent(in)    :: state
    type(physics_ptend),         intent(out)   :: ptend
@@ -421,6 +423,16 @@ subroutine dropmixnuc( &
    real(r8), allocatable :: coltend(:,:)       ! column tendency for diagnostic output
    real(r8), allocatable :: coltend_cw(:,:)    ! column tendency
    real(r8) :: ccn(pcols,pver,psat)    ! number conc of aerosols activated at supersat
+   integer :: ccn3d_idx  
+   real(r8), pointer :: ccn3d(:, :) 
+
+!+++ AeroCOM IND3 output
+   real(r8) :: ccn3col(pcols), ccn4col(pcols)
+   real(r8) :: ccn3bl(pcols), ccn4bl(pcols)
+   real(r8) :: zi2(pver+1), zm2(pver)
+   integer  :: idx1000
+   logical  :: zmflag
+
 
    !-------------------------------------------------------------------------------
 
@@ -440,6 +452,10 @@ subroutine dropmixnuc( &
 
    call pbuf_get_field(pbuf, kvh_idx, kvh)
 
+   if(do_aerocom_ind3) then 
+       ccn3d_idx = pbuf_get_index('ccn3d')
+       call pbuf_get_field(pbuf, ccn3d_idx, ccn3d)
+   end if
 
 
    arg = 1.0_r8
@@ -1076,6 +1092,40 @@ subroutine dropmixnuc( &
    do l = 1, psat
       call outfld(ccn_name(l), ccn(1,1,l), pcols, lchnk)
    enddo
+
+   if(do_aerocom_ind3) then 
+      ccn3d(:ncol, :) = ccn(:ncol, :, 4)
+      ccn3col = 0.0_r8; ccn4col = 0.0_r8
+      do i=1, ncol
+        do k=1, pver
+          ccn3col(i) = ccn3col(i) + ccn(i,k,3) * 1.0e6*   &
+             pdel(i,k)/gravit/(pmid(i,k)/(temp(i,k)*rair))  !#/cm3 --> #/m2
+          ccn4col(i) = ccn4col(i) + ccn(i,k,4) * 1.0e6*   &
+             pdel(i,k)/gravit/(pmid(i,k)/(temp(i,k)*rair))  !#/cm3 --> #/m2
+        enddo
+
+! calculate CCN at 1km 
+        zi2 = 0.0
+        zm2 = 0.0
+        zmflag = .true.
+        do k=pver, 1, -1
+          zi2(k) = zi2(k+1) + pdel(i,k)/gravit/(pmid(i,k)/(temp(i,k)*rair)) !
+          zm2(k) = (zi2(k+1)+zi2(k))/2._r8
+          if(zm2(k).gt.1000. .and. zmflag) then
+            idx1000 = min(k, pver-1) 
+            zmflag = .false.
+          end if
+        end do
+        ccn3bl(i) = (ccn(i,idx1000,3)*(1000.-zm2(idx1000+1))+ccn(i,idx1000+1,3) * (zm2(idx1000)-1000.)) &                               
+                     /(zm2(idx1000)-zm2(idx1000+1)) * 1.0e6  ! #/cm3 -->#/m3
+        ccn4bl(i) = (ccn(i,idx1000,4)*(1000.-zm2(idx1000+1))+ccn(i,idx1000+1,4) * (zm2(idx1000)-1000.)) &                            
+                     /(zm2(idx1000)-zm2(idx1000+1)) *1.0e6   ! #/cm3 -->#/m3
+      enddo
+      call outfld('colccn.1', ccn3col, pcols, lchnk)
+      call outfld('colccn.3', ccn4col, pcols, lchnk)
+      call outfld('ccn.1bl', ccn3bl, pcols, lchnk)
+      call outfld('ccn.3bl', ccn4bl, pcols, lchnk)
+   end if
 
    ! do column tendencies
    if (prog_modal_aero) then

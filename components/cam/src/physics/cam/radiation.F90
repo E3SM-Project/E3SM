@@ -563,6 +563,7 @@ end function radiation_nextsw_cday
     use orbit,            only: zenith
 
 
+
     ! Arguments
     real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
     real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
@@ -705,7 +706,8 @@ end function radiation_nextsw_cday
 
     call pbuf_get_field(pbuf, rel_idx, rel    )
     call pbuf_get_field(pbuf, rei_idx, rei    )
-   
+
+
     !  For CRM, make cloud equal to input observations:
     if (single_column.and.scm_crm_mode.and.have_cld) then
        do k = 1,pver
@@ -851,7 +853,6 @@ end function radiation_nextsw_cday
           call outfld('FSN200  ',fsn200,pcols,lchnk)
           call outfld('FSN200C ',fsn200c,pcols,lchnk)
           call outfld('SWCF    ',swcf  ,pcols,lchnk)
-
 
 	  !! initialize tau_cld_vistau and tau_icld_vistau as fillvalue, they will stay fillvalue for night columns
           tot_icld_vistau(1:pcols,1:pver)=fillvalue

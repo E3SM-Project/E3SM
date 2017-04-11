@@ -146,6 +146,7 @@ subroutine phys_register
     use rad_constituents,   only: rad_cnst_get_info ! Added to query if it is a modal aero sim or not
     use subcol,             only: subcol_register
     use subcol_utils,       only: is_subcol_on
+    use output_aerocom_aie, only: output_aerocom_aie_register, do_aerocom_ind3
 
     !---------------------------Local variables-----------------------------
     !
@@ -296,6 +297,9 @@ subroutine phys_register
 
        ! vertical diffusion
        if (.not. do_clubb_sgs) call vd_register()
+
+       if (do_aerocom_ind3) call output_aerocom_aie_register()
+    
     end if
 
     ! Register diagnostics PBUF
@@ -703,6 +707,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use solar_data,         only: solar_data_init
     use rad_solar_var,      only: rad_solar_var_init
     use nudging,            only: Nudge_Model,nudging_init
+    use output_aerocom_aie, only: output_aerocom_aie_init, do_aerocom_ind3
+
 
     ! Input/output arguments
     type(physics_state), pointer       :: phys_state(:)
@@ -853,6 +859,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 #endif
     call sslt_rebin_init()
     call tropopause_init()
+
+    if(do_aerocom_ind3) call output_aerocom_aie_init()
 
     prec_dp_idx  = pbuf_get_index('PREC_DP')
     snow_dp_idx  = pbuf_get_index('SNOW_DP')
@@ -1775,6 +1783,7 @@ subroutine tphysbc (ztodt,               &
     use clubb_intr,      only: clubb_tend_cam
     use sslt_rebin,      only: sslt_rebin_adv
     use tropopause,      only: tropopause_output
+    use output_aerocom_aie, only: do_aerocom_ind3, cloud_top_aerocom
     use cam_abortutils,      only: endrun
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
@@ -2588,6 +2597,10 @@ if (l_rad) then
     call t_stopf('radiation')
 
 end if ! l_rad
+
+    if(do_aerocom_ind3) then
+       call cloud_top_aerocom(state, pbuf) 
+    end if
 
     ! Diagnose the location of the tropopause and its location to the history file(s).
     call t_startf('tropopause')
