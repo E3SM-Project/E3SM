@@ -26,6 +26,7 @@
       <value compset="_DOCN%COPY">copyall</value>
       <value compset="_DOCN%DAQUAP">pres_aquap</value>
       <value compset="_DOCN%SAQUAP">som_aquap</value>
+      <value compset="_DOCN%WW3">ww3</value>
     </values>
     <group>run_component_docn</group>
     <file>env_run.xml</file>
@@ -219,9 +220,8 @@
     <desc compset="_DOCN%NULL">docn null mode:</desc>
     <desc compset="_DOCN%SOM" >docn slab ocean mode:</desc>
     <desc compset="_DOCN%DOM" >docn data mode:</desc>
-    <desc compset="_DOCN%US20">docn us20 mode:</desc>
-    <desc compset="_DOCN%COPY">docn copy mode:</desc>
     <desc compset="_DOCN%IAF" >docn interannual mode:</desc>
+    <desc compset="_DOCN%WW3">docn ww3 mode:</desc>
   </description>
 
   <help>
@@ -231,4 +231,3 @@
   </help>
 
 </entry_id>
-
