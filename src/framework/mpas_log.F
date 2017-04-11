@@ -848,7 +848,7 @@ module mpas_log
    !>   The variables to be expanded are represented with a '$' symbol followed
    !>   by one of these indicators:
    !>   $i -> integer, formatted to be length of integer
-   !>   $l -> logical, fomatted as 'TRUE' or 'FALSE'
+   !>   $l -> logical, fomatted as 'T' or 'F'
    !>   $f -> float, formatted as 9 digits of precision for SP mode, 17 for DP mode
    !>                Floats are formatted using 'G' format which is smart about using
    !>                displaying as a decimal or scientific notation based on the value.
@@ -954,9 +954,9 @@ module mpas_log
                    case ('l')
                       if (iLogical <= nLogicals) then
                          if (logicArgs(iLogical)) then
-                            write(varPart ,'(a)') "TRUE"
+                            write(varPart ,'(a)') 'T'
                          else
-                            write(varPart ,'(a)') "FALSE"
+                            write(varPart ,'(a)') 'F'
                          endif
                          iLogical = iLogical + 1
                       else
