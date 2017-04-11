@@ -1333,6 +1333,14 @@
       <file ocn_mask="oRRS18to6v3">domain.ocn.oRRS18to6v3.170111.nc</file>
     </domain>
 
+    <domain name="oRRS18to6v3_ICG">
+      <nx>3693225</nx>
+      <ny>1</ny>
+      <desc>oRRS18to6v3_ICG is an MPAS ocean grid with a mesh density function that is roughly proportional to the Rossby radius of deformation, with 18 km gridcells at low and 6 km gridcells at high latitudes.  This version of initial conditions is spun-up from a G compset run:</desc>
+      <file ice_mask="oRRS18to6v3">domain.ocn.oRRS18to6v3.170111.nc</file>
+      <file ocn_mask="oRRS18to6v3">domain.ocn.oRRS18to6v3.170111.nc</file>
+    </domain>
+
 
     <!-- ROF (river) grids-->
 
