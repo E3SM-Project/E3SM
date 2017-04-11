@@ -29,7 +29,7 @@ module output_aerocom_aie
    public :: cloud_top_aerocom
    public ::  output_aerocom
 
-   logical, public :: do_aerocom_ind3 = .true.
+   logical, public :: do_aerocom_ind3 
 
    real(r8) :: p0 = 1.0e5    
 
