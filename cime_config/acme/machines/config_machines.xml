@@ -1840,7 +1840,7 @@
 		</modules>
 	</module_system>
 	<environment_variables>
-		<env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable</env>
+		<env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
 	</environment_variables>
 
 	<BATCH_SYSTEM>moab</BATCH_SYSTEM>
