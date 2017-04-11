@@ -39,7 +39,7 @@
     CLM1PT		= Run with supplied single point data (force CLM)
     CORE2_NYF		= CORE2 normal year forcing (for forcing POP and CICE)
     CORE2_IAF		= CORE2 intra-annual year forcing (for forcing POP and CICE)
-    CPLHISTForcing	= Streams for ocn/ice forcing used for spinup (for forcing POP and CICE)
+    CPLHISTForcing	= Streams for lnd or ocn/ice forcing used for spinup 
     presaero		= Prescribed aerosol forcing
     topo		= Surface topography
     co2tseries		= Time series of prescribed CO2 forcing
@@ -175,7 +175,6 @@
       <value datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</value>
       <value datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SHUM.SOFS.6HOUR,CORE2_IAF.TBOT.SOFS.6HOUR,CORE2_IAF.U.SOFS.6HOUR,CORE2_IAF.V.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</value>
       <value datm_mode="WW3">WW3</value>
-      <value datm_mode="NLDAS">NLDAS</value>
       <value datm_mode="CPLHISTForcing">CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr</value>
     </values>
   </entry>
@@ -217,7 +216,6 @@
       <value stream="CORE2_IAF.NCEP.U_10">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CORE2_IAF.NCEP.V_10">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="WW3">$DIN_LOC_ROOT/wav/ww3</value>
-      <value stream="NLDAS">$DIN_LOC_ROOT/share/domains/domain.clm </value>
       <value stream="co2tseries">$DIN_LOC_ROOT/atm/datm7/CO2 </value>
       <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</value>
@@ -274,7 +272,6 @@
       <value stream="CORE2_IAF.NCEP.V_10">domain.T62.050609.nc</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
       <value stream="WW3">core2_G4_wns_30min_20000601_to_05.nc</value>
-      <value stream="NLDAS">domain.lnd.nldas2_0224x0464_c110415.nc</value>
       <value stream="co2tseries.20tr">fco2_datm_1765-2007_c100614.nc</value>
       <value stream="co2tseries.rcp2.6">fco2_datm_rcp2.6_1765-2500_c130312.nc</value>
       <value stream="co2tseries.rcp4.5">fco2_datm_rcp4.5_1765-2500_c130312.nc</value>
@@ -395,7 +392,6 @@
       <value stream="CORE2_IAF.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
       <value stream="CORE2_IAF">$DIN_LOC_ROOT/ocn/iaf</value>
       <value stream="WW3">$DIN_LOC_ROOT/wav/ww3</value>
-      <value stream="NLDAS">$DIN_LOC_ROOT/atm/datm7/NLDAS</value>
       <value stream="co2tseries">$DIN_LOC_ROOT/atm/datm7/CO2</value>
       <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</value>
@@ -1110,20 +1106,6 @@
       </value>
       <value  stream="CORE2_IAF.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
       <value  stream="WW3">core2_G4_wns_30min_20000601_to_05.nc</value>
-      <value  stream="NLDAS">
-        clmforc.nldas.1980-01.nc
-        clmforc.nldas.1980-02.nc
-        clmforc.nldas.1980-03.nc
-        clmforc.nldas.1980-04.nc
-        clmforc.nldas.1980-05.nc
-        clmforc.nldas.1980-06.nc
-        clmforc.nldas.1980-07.nc
-        clmforc.nldas.1980-08.nc
-        clmforc.nldas.1980-09.nc
-        clmforc.nldas.1980-10.nc
-        clmforc.nldas.1980-11.nc
-        clmforc.nldas.1980-12.nc
-      </value>
       <value stream="co2tseries.20tr">fco2_datm_1765-2007_c100614.nc</value>
       <value stream="co2tseries.rcp2.6">fco2_datm_rcp2.6_1765-2500_c130312.nc</value>
       <value stream="co2tseries.rcp4.5">fco2_datm_rcp4.5_1765-2500_c130312.nc</value>
@@ -1386,15 +1368,6 @@
         vWind    v
         airSeaTempDiff tbot
       </value>
-      <value  stream="NLDAS">
-        TBOT     tbot
-        WIND     wind
-        QBOT     shum
-        PSRF     pbot
-        FLDS     lwdn
-        PRECTmms precn
-        FSDS     swdn
-      </value>
       <value  stream="co2tseries.20tr">
         CO2        co2diag
       </value>
@@ -1497,7 +1470,6 @@
       <value stream="CORE2_IAF.CORE2.ArcFactor">1</value>
       <value stream="CORE2_IAF">1</value>
       <value stream="WW3">2000</value>
-      <value stream="NLDAS">1980</value>
       <value stream="co2tseries.20tr">1850</value>
       <value stream="co2tseries.rcp">2005</value>
       <value stream="BC.QIAN.Precip">1979</value>
@@ -1551,7 +1523,6 @@
       <value stream="CORE2_IAF.NCEP.V_10">1948</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">1948</value>
       <value stream="WW3">2000</value>
-      <value stream="NLDAS">1980</value>
       <value stream="co2tseries.20tr">1850</value>
       <value stream="co2tseries.rcp">2005</value>
       <value stream="BC.QIAN">1979</value>
@@ -1604,7 +1575,6 @@
       <value stream="CORE2_IAF.NCEP.V_10">2009</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">2009</value>
       <value stream="WW3">2000</value>
-      <value stream="NLDAS">1980</value>
       <value stream="co2tseries.20tr">2007</value>
       <value stream="co2tseries.rcp">2500</value>
       <value stream="BC.QIAN.Precip">2004</value>
@@ -1698,7 +1668,6 @@
       <value datm_mode="CORE2_NYF">CORE2_NYF</value>
       <value datm_mode="CORE2_IAF">CORE2_IAF</value>
       <value datm_mode="WW3">COPYALL</value>
-      <value datm_mode="NLDAS">CLMNCEP</value>
       <value datm_mode="CPLHISTForcing">CPLHIST</value>
     </values>
   </entry>
@@ -1968,11 +1937,9 @@
     </desc>
     <values>
       <value>null</value>
-      <value datm_mode="CLM">null</value>
       <value datm_mode="CORE2_NYF">u:v</value>
       <value datm_mode="CORE2_IAF">u:v</value>
       <value datm_mode="WW3">u:v</value>
-      <value datm_mode="NLDAS">null</value>
     </values>
   </entry>
 
