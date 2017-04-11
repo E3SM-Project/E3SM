@@ -20,7 +20,7 @@ setenv project       fy150001
 ### SOURCE CODE OPTIONS
 set fetch_code     = false
 set acme_tag       = master
-set tag_name       = ACME
+set tag_name       = default             
 
 ### CUSTOM CASE_NAME
 set case_name = ${tag_name}.${job_name}.${resolution}
@@ -206,12 +206,12 @@ set cpl_hist_num   = 1
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #===========================================
-# DOCUMENT WHICH VERSION OF THIS SCRIPT IS BEING USED:
+# VERSION OF THIS SCRIPT
 #===========================================
 set script_ver = 3.0.5
 
 #===========================================
-# DEFINE THINGS NEEDED LATER:
+# DEFINE ALIASES
 #===========================================
 
 alias lowercase "echo \!:1 | tr '[A-Z]' '[a-z]'"  #make function which lowercases any strings passed to it.
@@ -221,7 +221,7 @@ alias acme_print 'echo run_acme: \!*'
 alias acme_newline "echo ''"
 
 #===========================================
-# ALERT THE USER IF THEY TRY TO PASS ARGUMENTS:
+# ALERT THE USER IF THEY TRY TO PASS ARGUMENTS
 #===========================================
 set first_argument = $1
 if ( $first_argument != '' ) then
@@ -238,7 +238,7 @@ acme_print '++++++++ run_acme starting ('`date`'), version '$script_ver' +++++++
 acme_newline
 
 #===========================================
-# DETERMINE THE LOCATION AND NAME OF THE SCRIPT:
+# DETERMINE THE LOCATION AND NAME OF THE SCRIPT
 #===========================================
 
 # NOTE: CIME 5 and git commands are not cwd agnostic, so compute the absolute paths, then cd to the directories as needed
@@ -248,10 +248,17 @@ set this_script_dir = `cd $relative_dir ; pwd -P`
 set this_script_path = $this_script_dir/$this_script_name
 
 #===========================================
-# SET CODE_ROOT_DIR IF DEFAULT:
+# SETUP DEFAULTS
 #===========================================
+
 if ( `lowercase $code_root_dir` == default ) then
   set code_root_dir = `cd $this_script_dir/..; pwd -P`
+endif
+
+if ( `lowercase $tag_name` == default ) then
+  set pwd_temp       = `pwd`            
+  set tag_name       = ${pwd_temp:t} 
+  acme_print '$tag_name = '$tag_name
 endif
 
 #===========================================
@@ -316,7 +323,7 @@ if ( `lowercase $debug_queue` == true && ( $num_submits >1 || `lowercase $do_sho
 endif
 
 if ( `lowercase $debug_queue` == true && walltime =~ 30:00 ) then
-  acme_print '       You are running in the debug queue and asked for walltime = $walltime.'
+  acme_print '       You are running in the debug queue and asked for walltime = '$walltime
   acme_print '       Generally, only walltime of 30 min or less is allowed in debug queue.'
   acme_print '       If you intentionally asked for walltime different than 30 min, disable'
   acme_print '       this error message. Quitting.'
@@ -1097,7 +1104,7 @@ endif
 $xmlchange_exe --id DOUT_L_MS --val `uppercase $do_long_term_archiving`
 
 # DOUT_L_MSROOT is the directory in your account on the local mass storage system (typically an HPSS tape system)
--$xmlchange_exe --id DOUT_L_MSROOT --val "ACME_simulation_output/${case_name}"
+$xmlchange_exe --id DOUT_L_MSROOT --val "ACME_simulation_output/${case_name}"
 
 #============================================
 # COUPLER HISTORY OUTPUT
