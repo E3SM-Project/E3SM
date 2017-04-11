@@ -26,10 +26,21 @@ SUBROUTINE smooth_init(ofilename, restrict_smooth_src_to_nn_dest,  map_in, map_o
    implicit none
 
    !--- arguments ---
-   character(*), intent(in)    :: ofilename                       ! name of ocn scrip grid file
-   type(sMatrix),intent(in)    :: map_in                          ! original unsmoothed, matrix
-   logical,      intent(in)    :: restrict_smooth_src_to_nn_dest  ! map_out%mask_a = pts mapped to map_in
-   type(sMatrix),intent(inout) :: map_out                         ! smoothing matrix
+   ! name of ocn scrip grid file
+   character(*), intent(in)    :: ofilename
+
+   ! original unsmoothed, matrix
+   type(sMatrix),intent(in)    :: map_in
+
+   ! map_out%mask_a = pts mapped to map_in?
+   ! This should be set to .true. if you are making a single map, but it may be
+   ! useful to set it to .false. if you plan on mapping several runoff grids to
+   ! the same ocean grid. The nearest-neighbor / smooth map generated in step 3
+   ! will be the same regardless of the value of this variable.
+   logical,      intent(in)    :: restrict_smooth_src_to_nn_dest
+
+   ! smoothing matrix
+   type(sMatrix),intent(inout) :: map_out
 
    !--- local ---
    integer :: i,j,n ! indicies: row, col, sparse matrix
