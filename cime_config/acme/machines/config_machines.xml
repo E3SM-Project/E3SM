@@ -1805,7 +1805,7 @@
 	<CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CIME_OUTPUT_ROOT>
 	<SAVE_TIMING_DIR>$CASEROOT/timings</SAVE_TIMING_DIR>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
-	<module_system type="module">
+	<module_pichsystem type="module">
 		<init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
 		<init_path lang="python">/usr/share/Modules/init/python.py</init_path>
 		<init_path lang="csh">/etc/profile.d/z00_lmod.csh</init_path>
@@ -1817,7 +1817,6 @@
 		<modules>
 			<command name="purge"/>
 			<command name="use">/usr/projects/climate/SHARED_CLIMATE/modulefiles/all</command>
-			<command name="load">friendly-testing</command>
 			<command name="load">python/anaconda-2.7-climate</command>
 		</modules>
 
