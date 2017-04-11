@@ -341,7 +341,7 @@ contains
           write(iulog,*)'WARNING:  water balance error ',&
                ' nstep= ',nstep, &
                ' local indexc= ',indexc,&
-               ' global indexc= ',GetGlobalIndex(decomp_index=indexc, clmlevel=namec), &
+               !' global indexc= ',GetGlobalIndex(decomp_index=indexc, clmlevel=namec), &
                ' errh2o= ',errh2o(indexc)
 
           if ((col%itype(indexc) == icol_roof .or. &
@@ -472,7 +472,7 @@ contains
           write(iulog,*)'WARNING:  snow balance error '
           write(iulog,*)'nstep= ',nstep, &
                ' local indexc= ',indexc, &
-               ' global indexc= ',GetGlobalIndex(decomp_index=indexc, clmlevel=namec), &
+               !' global indexc= ',GetGlobalIndex(decomp_index=indexc, clmlevel=namec), &
                ' col%itype= ',col%itype(indexc), &
                ' lun%itype= ',lun%itype(col%landunit(indexc)), &
                ' errh2osno= ',errh2osno(indexc)
