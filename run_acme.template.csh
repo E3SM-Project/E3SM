@@ -20,7 +20,7 @@ setenv project       fy150001
 ### SOURCE CODE OPTIONS
 set fetch_code     = false
 set acme_tag       = master
-set tag_name       = ACME
+set tag_name       = default
 
 ### CUSTOM CASE_NAME
 set case_name = ${tag_name}.${job_name}.${resolution}
@@ -206,12 +206,12 @@ set cpl_hist_num   = 1
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #===========================================
-# DOCUMENT WHICH VERSION OF THIS SCRIPT IS BEING USED:
+# VERSION OF THIS SCRIPT
 #===========================================
 set script_ver = 3.0.5
 
 #===========================================
-# DEFINE THINGS NEEDED LATER:
+# DEFINE ALIASES
 #===========================================
 
 alias lowercase "echo \!:1 | tr '[A-Z]' '[a-z]'"  #make function which lowercases any strings passed to it.
@@ -221,7 +221,7 @@ alias acme_print 'echo run_acme: \!*'
 alias acme_newline "echo ''"
 
 #===========================================
-# ALERT THE USER IF THEY TRY TO PASS ARGUMENTS:
+# ALERT THE USER IF THEY TRY TO PASS ARGUMENTS
 #===========================================
 set first_argument = $1
 if ( $first_argument != '' ) then
@@ -238,7 +238,7 @@ acme_print '++++++++ run_acme starting ('`date`'), version '$script_ver' +++++++
 acme_newline
 
 #===========================================
-# DETERMINE THE LOCATION AND NAME OF THE SCRIPT:
+# DETERMINE THE LOCATION AND NAME OF THE SCRIPT
 #===========================================
 
 # NOTE: CIME 5 and git commands are not cwd agnostic, so compute the absolute paths, then cd to the directories as needed
@@ -248,10 +248,17 @@ set this_script_dir = `cd $relative_dir ; pwd -P`
 set this_script_path = $this_script_dir/$this_script_name
 
 #===========================================
-# SET CODE_ROOT_DIR IF DEFAULT:
+# SETUP DEFAULTS
 #===========================================
+
 if ( `lowercase $code_root_dir` == default ) then
   set code_root_dir = `cd $this_script_dir/..; pwd -P`
+endif
+
+if ( `lowercase $tag_name` == default ) then
+  set pwd_temp       = `pwd`
+  set tag_name       = ${pwd_temp:t}
+  acme_print '$tag_name = '$tag_name
 endif
 
 #===========================================
@@ -316,11 +323,11 @@ if ( `lowercase $debug_queue` == true && ( $num_submits >1 || `lowercase $do_sho
 endif
 
 if ( `lowercase $debug_queue` == true && walltime =~ 30:00 ) then
-  acme_print '       You are running in the debug queue and asked for walltime = $walltime.'
+  acme_print '       You are running in the debug queue and asked for walltime = '$walltime
   acme_print '       Generally, only walltime of 30 min or less is allowed in debug queue.'
   acme_print '       If you intentionally asked for walltime different than 30 min, disable'
   acme_print '       this error message. Quitting.'
-  exit 18  
+  exit 18
 endif
 
 #===========================================
@@ -502,7 +509,7 @@ endsw
 # Note:  we also want to change the group id for the files.
 #        But this can only be done once the run_root_dir has been created,
 #        so it is done later.
-# TODO:  CIME does this to some extent; determine how much and 
+# TODO:  CIME does this to some extent; determine how much and
 umask 022
 
 set cime_dir = ${code_root_dir}/${tag_name}/cime
@@ -645,7 +652,7 @@ if ( `lowercase $processor_config` == '1' ) then
 
 else if ( `lowercase $processor_config` == 'customknl' ) then
 
-  acme_print 'using custom layout for cori-knl because $processor_config = '$processor_config 
+  acme_print 'using custom layout for cori-knl because $processor_config = '$processor_config
 
   ./xmlchange MAX_TASKS_PER_NODE="64"
   ./xmlchange PES_PER_NODE="256"
@@ -1264,9 +1271,9 @@ acme_newline
 # 3.0.0    2016-12-15    Initial update for CIME5. Change script names, don't move the case directory
 #                        as it's broken by the update, use xmlchange to set up the custom PE Layout.
 #                        Remove support for CIME2 and pre-cime versions.  (MD)
-# 3.0.1    2017-01-26    Setup to run A_WCYCL1850S simulation at ne30 resolution.  (CG) 
+# 3.0.1    2017-01-26    Setup to run A_WCYCL1850S simulation at ne30 resolution.  (CG)
 # 3.0.2    2017-02-13    Activated logical links by default, and tweaked the default settings. (PJC)
-# 3.0.3    2017-03-24    Added cori-knl support, made walltime an input variable, changed umask to 022, and 
+# 3.0.3    2017-03-24    Added cori-knl support, made walltime an input variable, changed umask to 022, and
 #                        deleted run_name since it wasn't being used any more.
 # 3.0.4    2017-03-31    Added version to ACME repository. Working on using more defaults from CIME.
 #                        Use 'print' and 'newline' for standardized output (MD)
@@ -1300,4 +1307,3 @@ acme_newline
 
 ### To add a new line:
 # sed -i /"PBS -j oe"/a"#PBS -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}" ${case_run_exe}
-
