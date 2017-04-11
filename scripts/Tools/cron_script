@@ -1,0 +1,14 @@
+#!/bin/bash
+
+#
+# Wrapper around jenkins_generic_job that will allow output
+# from that script to always be printed to the screen and
+# recoverable if cron is forced to kill the job. This is the
+# script that should be used from cron.
+#
+
+SCRIPT_DIR=$( cd "$( dirname "$0" )" && pwd )
+DATE_STAMP=$(date "+%Y-%m-%d_%H%M%S")
+export JENKINS_START_TIME=$(date "+%s")
+
+$SCRIPT_DIR/jenkins_generic_job --submit-to-cdash "$@" >& JENKINS_$DATE_STAMP

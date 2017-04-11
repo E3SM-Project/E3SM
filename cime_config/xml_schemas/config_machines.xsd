@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <!-- attributes -->
+  <xs:attribute name="version" type="xs:string"/>
+  <xs:attribute name="MACH" type="xs:NCName"/>
+  <xs:attribute name="compiler" type="xs:string"/>
+  <xs:attribute name="mpilib" type="xs:string"/>
+  <xs:attribute name="debug" type="xs:boolean"/>
+  <xs:attribute name="threaded" type="xs:boolean"/>
+  <xs:attribute name="type" type="xs:NCName"/>
+  <xs:attribute name="lang" type="xs:NCName"/>
+  <xs:attribute name="name" type="xs:NCName"/>
+
+  <!-- simple elements -->
+  <xs:element name="NODENAME_REGEX" type="xs:string"/>
+  <xs:element name="DESC" type="xs:string"/>
+  <xs:element name="OS" type="xs:NCName"/>
+  <xs:element name="PROXY" type="xs:string"/>
+  <xs:element name="SAVE_TIMING_DIR" type="xs:string" />
+  <xs:element name="PROJECT" type="xs:NCName" />
+  <xs:element name="COMPILERS" type="xs:string"/>
+  <xs:element name="MPILIBS" type="xs:string"/>
+  <xs:element name="CIME_OUTPUT_ROOT" type="xs:string"/>
+  <xs:element name="DIN_LOC_ROOT" type="xs:string"/>
+  <xs:element name="DIN_LOC_ROOT_CLMFORC" type="xs:string"/>
+  <xs:element name="DOUT_S_ROOT" type="xs:string"/>
+  <xs:element name="DOUT_L_MSROOT" type="xs:string"/>
+  <xs:element name="BASELINE_ROOT" type="xs:string"/>
+  <xs:element name="CCSM_CPRNC" type="xs:string"/>
+  <xs:element name="PERL5LIB" type="xs:string"/>
+  <xs:element name="BATCH_SYSTEM" type="xs:NCName"/>
+  <xs:element name="SUPPORTED_BY" type="xs:string"/>
+  <xs:element name="GMAKE_J" type="xs:integer"/>
+  <xs:element name="MAX_TASKS_PER_NODE" type="xs:integer"/>
+  <xs:element name="PES_PER_NODE" type="xs:integer"/>
+  <xs:element name="PROJECT_REQUIRED" type="xs:NCName"/>
+  <xs:element name="GMAKE" type="xs:string"/>
+  <xs:element name="TESTS" type="xs:string"/>
+  <xs:element name="executable" type="xs:string"/>
+  <xs:element name="default_run_exe" type="xs:string"/>
+  <xs:element name="default_run_misc_suffix" type="xs:string"/>
+
+  <!-- complex elements -->
+
+  <xs:element name="config_machines">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="machine" minOccurs="1" maxOccurs="unbounded" />
+        <xs:element ref="default_run_suffix" minOccurs="0" maxOccurs="1"/>
+      </xs:sequence>
+      <xs:attribute ref="version"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="machine">
+    <xs:complexType>
+      <xs:sequence>
+	<!-- DESC: a text description of the machine, this field is current not used-->
+        <xs:element ref="DESC" minOccurs="1" maxOccurs="1"/>
+	<!-- NODENAME_REGEX: a regular expression used to identify this machine
+	  it must work on compute nodes as well as login nodes, use machine option
+	  to create_test or create_newcase if this flag is not available -->
+        <xs:element ref="NODENAME_REGEX" minOccurs="0" maxOccurs="1"/>
+	<!-- OS: the operating system of this machine. -->
+        <xs:element ref="OS" minOccurs="1" maxOccurs="1"/>
+	<!-- PROXY: optional http proxy for access to the internet-->
+        <xs:element ref="PROXY" minOccurs="0" maxOccurs="1"/>
+	<!-- COMPILERS: compilers supported on this machine, comma seperated list, first is default -->
+        <xs:element ref="COMPILERS" minOccurs="1" maxOccurs="1"/>
+	<!-- MPILIBS: mpilibs supported on this machine, comma seperated list, first is default -->
+        <xs:element ref="MPILIBS" minOccurs="1" maxOccurs="1"/>
+	<!-- PROJECT: A project or account number used for batch jobs
+	  can be overridden in environment or $HOME/.cime/config -->
+	<xs:element ref="PROJECT" minOccurs="0" maxOccurs="1"/>
+	<!-- SAVE_TIMING_DIR: (Acme only) directory to write timing output to -->
+	<xs:element ref="SAVE_TIMING_DIR" minOccurs="0" maxOccurs="1"/>
+	<!-- CIME_OUTPUT_ROOT: Base directory for case output,
+	     the bld and run directories are written below here -->
+        <xs:element ref="CIME_OUTPUT_ROOT" minOccurs="1" maxOccurs="1"/>
+	<!-- DIN_LOC_ROOT: location of the inputdata directory -->
+        <xs:element ref="DIN_LOC_ROOT" minOccurs="1" maxOccurs="1"/>
+	<!-- DIN_LOC_ROOT_CLMFORC: optional input location for clm forcing data  -->
+        <xs:element ref="DIN_LOC_ROOT_CLMFORC" minOccurs="0" maxOccurs="1"/>
+	<!-- DOUT_S_ROOT: root directory of short term archive files -->
+        <xs:element ref="DOUT_S_ROOT" minOccurs="1" maxOccurs="1"/>
+	<!-- DOUT_L_MSROOT: root directory on mass store system of
+	     long term archive files-->
+        <xs:element ref="DOUT_L_MSROOT" minOccurs="0" maxOccurs="1"/>
+	<!-- BASELINE_ROOT:  Root directory for system test baseline files -->
+        <xs:element ref="BASELINE_ROOT" minOccurs="0" maxOccurs="1"/>
+	<!-- CCSM_CPRNC: location of the cprnc tool, compares model output in testing-->
+        <xs:element ref="CCSM_CPRNC" minOccurs="0" maxOccurs="1"/>
+	<!-- PERL5LIB: location of external PERL modules (this variable is deprecated) -->
+        <xs:element ref="PERL5LIB" minOccurs="0" maxOccurs="1"/>
+	<!-- GMAKE: gnu compatible make tool, default is 'gmake' -->
+        <xs:element ref="GMAKE" minOccurs="0" maxOccurs="1"/>
+	<!-- GMAKE_J: optional number of threads to pass to the gmake flag -->
+        <xs:element ref="GMAKE_J" minOccurs="0" maxOccurs="1"/>
+	<!-- TESTS: (acme only) list of tests to run on this machine -->
+        <xs:element ref="TESTS" minOccurs="0" maxOccurs="1"/>
+	<!-- BATCH_SYSTEM: batch system used on this machine (none is okay) -->
+        <xs:element ref="BATCH_SYSTEM" minOccurs="1" maxOccurs="1"/>
+	<!-- SUPPORTED_BY: contact information for support for this system -->
+        <xs:element ref="SUPPORTED_BY" minOccurs="1" maxOccurs="1"/>
+	<!-- MAX_TASKS_PER_NODE: maximum number of threads*tasks per
+	     shared memory node on this machine-->
+        <xs:element ref="MAX_TASKS_PER_NODE" minOccurs="1" maxOccurs="1"/>
+	<!-- PES_PER_NODE: number of physical PES per shared node on
+	     this machine, in practice the MPI tasks per node will not exceed this value -->
+        <xs:element ref="PES_PER_NODE" minOccurs="1" maxOccurs="1"/>
+	<!-- PROJECT_REQUIRED: Does this machine require a project to be specified to
+	     the batch system?  See PROJECT above -->
+        <xs:element ref="PROJECT_REQUIRED" minOccurs="0" maxOccurs="1"/>
+	<!-- mpirun: The mpi exec to start a job on this machine
+	     see detail below-->
+	<xs:element minOccurs="0" maxOccurs="unbounded" ref="mpirun"/>
+	<!-- module_system: how and what modules to load on this system ,
+	     see detail below -->
+        <xs:element ref="module_system" minOccurs="0" maxOccurs="1"/>
+	<!-- environment_variables: environment_variables to set on this system,
+	  see detail below-->
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="environment_variables"/>
+      </xs:sequence>
+      <xs:attribute ref="MACH" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="mpirun">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="executable"/>
+	<xs:element ref="arguments" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute ref="compiler"/>
+      <xs:attribute ref="mpilib"/>
+      <xs:attribute ref="threaded"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="arguments">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element name="arg" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="module_system">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="init_path"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="cmd_path"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="modules"/>
+      </xs:sequence>
+      <xs:attribute ref="type" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="init_path">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="cmd_path">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="modules">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="command"/>
+      </xs:sequence>
+      <xs:attribute ref="compiler" />
+      <xs:attribute ref="debug" />
+      <xs:attribute ref="mpilib"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="command">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="environment_variables">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="env"/>
+      </xs:sequence>
+      <xs:attribute ref="debug"/>
+      <xs:attribute ref="mpilib"/>
+      <xs:attribute ref="compiler"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="env">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="default_run_suffix">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="default_run_exe"/>
+        <xs:element ref="default_run_misc_suffix"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+
+"""
+Check (and optionally download) input data files.
+
+Should be run from case.
+"""
+from standard_script_setup import *
+
+from CIME.utils import get_model
+from CIME.XML.machines import Machines
+from CIME.check_input_data import check_input_data, SVN_LOCS
+from CIME.case import Case
+
+import argparse, doctest
+
+MACHINE = Machines()
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [--download] [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Download input data \033[0m
+    > %s --download
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("--svn-loc", default=SVN_LOCS[get_model()],
+                        help="The input data repository from which to download data.")
+
+    parser.add_argument("-i", "--input-data-root", default=MACHINE.get_value("DIN_LOC_ROOT"),
+                        help="The root directory where input data goes")
+
+    parser.add_argument("--data-list-dir", default="Buildconf",
+                        help="Where to find list of input files")
+
+    parser.add_argument("--download", action="store_true",
+                        help="Attempt to download missing input files")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.svn_loc, args.input_data_root, args.data_list_dir, args.download
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    svn_loc, input_data_root, data_list_dir, download = parse_command_line(sys.argv, description)
+
+    with Case() as case:
+        sys.exit(0 if check_input_data(case,
+                                       svn_loc=svn_loc,
+                                       input_data_root=input_data_root,
+                                       data_list_dir=data_list_dir,
+                                       download=download) else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
+

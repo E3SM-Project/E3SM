@@ -1,0 +1,327 @@
+-*- mode:org -*-
+#+startup: showall
+
+Quick guide to the CESM unit testing framework
+
+* Requirements
+
+  - Machines :: Basic compiler information is retrieved from
+                config_compilers.xml in Machines. Even if running on an
+                unsupported machine, it is necessary to have this file to
+                get some basic information about the compiler.
+
+                As of this writing, it is possible to run with Machines,
+                this directory, the CMake module directory, and the
+                directory that specifies tests. A full CESM checkout is
+                more convenient but not needed.
+
+  - Python 2.6 or later :: Required for scripts. Python 3.2 is also known
+       to work.
+
+  - CMake 2.8 :: Required for build tools. CMake 2.6 may work for some
+                 compilers, but not the NAG Fortran compiler.
+
+  - Compilers :: The following compilers should be compatible with this
+                 framework.
+
+    + GNU :: gfortran 4.8.1 or later for pFUnit, 4.7.2 or later for other
+             tests
+
+    + IBM :: xlf 14.1 or later.
+
+    + Intel :: ifort 13 or later.
+
+    + NAG :: nagfor 5.3.1 or later (tested with gcc 4.4).
+
+    + PGI :: None supported for pFUnit, 12.5 otherwise.
+
+* Invocation of run_tests.py
+
+** Quick start
+
+  In the simplest case, you may want to run tests from a single directory.
+  In that case, there are just three pieces of information that you usually
+  need to specify:
+
+  1. The location of the directory where you want to build and run the
+     tests ("BUILD_DIR").
+
+  2. The location of the directory specifying the test via a
+     CMakeLists.txt file ("TEST_SPEC_DIR").
+
+  3. The compiler vendor ("COMPILER").
+
+  The following command can run the tests:
+
+    run_tests.py --build-dir=BUILD_DIR --test-spec-dir=TEST_SPEC_DIR \
+        --compiler=COMPILER
+
+  The current compiler options are:
+
+  - GNU
+  - IBM
+  - Intel
+  - NAG
+  - PGI
+
+  COMPILER defaults to GNU.
+
+  If you change a source file, you can run the same command again, and
+  run_tests.py will do the bare minimum of work necessary to re-run the
+  tests (i.e. it will not recompile files that are not affected by your
+  change).
+
+** Further options
+
+   For a full options listing, use:
+
+     run_tests.py -h
+
+   Some particularly useful options are as follows:
+
+   + --build-type :: Setting this option to "CESM" will build the tests
+                     with CESM compiler options (or the most similar
+                     pFUnit-compatible flags). Setting this option to
+                     "CESM_DEBUG" will build with CESM's DEBUG mode
+                     options.
+
+   + --clean :: Cleans the directory and re-runs both CMake and make when
+                  running the tests.
+
+   + -R :: This option allows you to specify a regular expression; only
+             tests with names matching that expression will run.
+
+   + -v :: Verbose output, including the commands used to compile, any
+           compiler warnings, and CTest output from tests that pass. To get
+           CTest output from tests that fail, set the environment variable
+           CTEST_OUTPUT_ON_FAILURE.
+
+   + --xml-test-list :: This is an alternative to --test-spec-dir. If you
+        provide an XML test list, run_tests.py will run tests from all
+        directories specified in that list. An example is present in
+        Examples.
+
+* Defining new tests using CMake
+
+  This README focuses on integration between the python scripts here, the
+  CMake modules, and CESM Machines. Further information, such as detailed
+  APIs, can be found in the documentation for pFUnit and the CMake modules
+  themselves.
+
+  If you are new to this system, it is *highly* recommended that you look
+  through the examples first.
+
+** CIME_utils - run_tests.py interface
+
+   The following CMake snippet will include the CESM utilities module. The
+   variable ${CIME_CMAKE_MODULE_DIRECTORY} is defined by run_tests.py, or
+   by hand if you choose not to use run_tests.py and instead invoke cmake
+   directly.
+
+     list(APPEND CMAKE_MODULE_PATH ${CIME_CMAKE_MODULE_DIRECTORY})
+     include(CIME_utils)
+
+   CIME_utils processes a few options set by run_tests.py (e.g.
+   "USE_COLOR"), and includes all of the following modules as well.
+   Projects that do development without run_tests.py may choose to include
+   only the modules below that they need.
+
+** Compilers - CESM compiler options
+
+   This module is also part of the run_tests.py interface; the primary
+   purpose is to read in flags generated from CESM's config_compilers.xml
+   file. However, it's also a catch-all for compiler-specific information.
+
+   The details of this module shouldn't be important to most users, most of
+   the time, but it does provide one utility function that you may want to
+   use.
+
+    - define_Fortran_stop_failure(test_name)
+
+      This is used to notify CTest that the test will signal failure by
+      stopping with a non-zero code (e.g. "stop 1").
+
+** genf90_utils - genf90 source code generation
+
+   This provides functions for working with genf90 templates.
+
+   If using run_tests.py, the "--enable-genf90" option will turn on genf90
+   functionality by setting GENF90 and ENABLE_GENF90.
+
+    - process_genf90_source_list(genf90_file_list output_directory
+      fortran_list_name)
+
+      Preprocesses genf90 files and puts them in the output directory. The
+      named list will have generated sources appended to it.
+
+** FindpFUnit - Find module for the pFUnit library
+
+   This is a typical CMake Find module; it defines the following variables
+   with their conventional CMake meanings:
+
+    - PFUNIT_FOUND
+    - PFUNIT_LIBRARY
+    - PFUNIT_LIBRARIES
+    - PFUNIT_INCLUDE_DIR
+    - PFUNIT_INCLUDE_DIRS
+
+   Three additional, pFUnit-specific variables are defined:
+
+    - PFUNIT_MODULE_DIR :: Directory with *.mod files. This is already
+         included in PFUNIT_INCLUDE_DIRS, so you usually shouldn't need
+         this.
+    - PFUNIT_DRIVER :: Path to the pFUnit driver source.
+    - PFUNIT_PARSER :: Path to pFUnitParser.py (the pFUnit preprocessor).
+
+   If run_tests.py can find the pFUnit directory in config_compilers.xml,
+   the variable $PFUNIT will be set to assist the FindpFUnit module.
+   Otherwise, you must do one of the following:
+
+    - Define the environment variable $PFUNIT with the location of the
+      installation.
+    - Put the pFUnit "bin" directory in your $PATH.
+
+** pFUnit_utils - pFUnit preprocessing and driver tools
+
+   This module aims to greatly simplify use of the pFUnit parser and
+   driver. (Currently, it assumes that both are being used.)
+
+   This module requires the variables defined by the FindpFUnit module.
+
+    - add_pFUnit_executable(name pf_file_list output_directory
+      fortran_source_list).
+
+      This function automatically processes the .pf files to create tests,
+      then links them with the Fortran files, pFUnit's library, and the
+      pFUnit driver to create a test executable with the given name.
+
+      The output_directory is a location where generated sources should be
+      placed; ${CMAKE_CURRENT_BUILD_DIR} is usually a safe place.
+
+    - define_pFUnit_failure(test_name)
+
+      This tells CTest to detect test success or failure using regular
+      expressions appropriate for pFUnit.
+
+** Sourcelist_utils - Utilities for VPATH emulation
+
+   This module provides functions for working with lists of source code
+   files, allowing VPATH-like behavior where you can select a source file
+   from multiple versions in different directories, based on the order in
+   which they were found.
+
+    - sourcelist_to_parent(var_name)
+
+      Expands all relative paths in the source list relative to the current
+      source directory, then exports to parent scope.
+
+    - extract_sources(sources_needed all_sources source_list_name)
+
+      Allows you to search for the sources you need using their base names.
+      If a base name matches multiple files in all_sources, the very *last*
+      match is the one returned. The output is appended to the list named
+      by source_list_name.
+
+    - declare_generated_dependencies(target generated_list)
+
+      Declares that a target depends on generated files in a different
+      directory. This is done to address limitations in CMake that prevent
+      information about file generation from propagating outside of the
+      current directory, and is designed specifically to work with genf90
+      files.
+
+   The intended use of the Sourcelist_utils is as follows.
+
+   Each sub-directory's CMakeLists.txt adds source files to a list, and
+   uses sourcelist_to_parent to make that name visible in other
+   directories. Generated sources should be attached to both the master
+   list and their own dedicated list.
+
+   When one of the CMakeLists.txt needs to create a library or executable
+   from the source list, it creates a "sources_needed" list containing all
+   of the sources it expects to find. This should be a short list for unit
+   tests. Then it uses extract_sources to find the absolute paths for these
+   sources. Finally, it can then use this source list as the input to
+   add_executable or add_pFUnit_executable.
+
+   Once the target is added, use declare_generated_dependencies to make
+   sure that source generation is triggered.
+
+* Writing the tests themselves
+
+  The following gives only the briefest overview; developers are encouraged
+  to look at the underlying tool documentation (for CTest and pFUnit) and
+  at the Examples in this directory.
+
+  The code below is from the circle_area example.
+
+** CTest tests
+
+   CTest tests can be written as very short test programs. Here is an
+   example of a test for a "circle_area" function that implements A=pi*r^2.
+
+
+program test_driver
+
+use circle, only: circle_area, pi, r8
+
+implicit none
+
+! Roundoff level tolerance.
+real(r8), parameter :: tol = 1.e-15_r8
+
+call assert(abs(pi - circle_area(1.0_r8)) <= tol, "Circle has wrong area.")
+
+contains
+
+  subroutine assert(val, msg)
+    logical, intent(in) :: val
+    character(len=*), intent(in) :: msg
+
+    if (.not. val) then
+       print *, msg
+       stop 1
+    end if
+
+  end subroutine assert
+
+end program test_driver
+
+
+   In practice, of course, the routine being tested is likely to be more
+   complex, but the same basic principle applies; you determine whether or
+   not the test should pass, and call "stop 1" for failure.
+
+   This assumes that you use "define_Fortran_stop_failure" in the
+   CMakeLists.txt for this file (see above). Otherwise, this behavior is
+   not portable.
+
+** pFUnit tests
+
+   Defining pFUnit tests is easiest with the aid of pFUnit's preprocessor,
+   which can generate a test driver using annotations containing the "@"
+   symbol. Here is a short test of the same circle_area function as above,
+   using pFUnit:
+
+
+module test_circle
+
+use pfunit_mod
+
+use circle, only: circle_area, pi, r8
+
+implicit none
+
+! Roundoff level tolerance.
+real(r8), parameter :: tol = 1.e-15_r8
+
+contains
+
+@Test
+subroutine test_circle_area()
+
+  @assertEqual(pi, circle_area(1.0_r8), tolerance=tol)
+
+end subroutine test_circle_area
+
+end module test_circle

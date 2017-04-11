@@ -1,0 +1,86 @@
+===============
+ABOUT THIS TOOL
+===============
+
+The src/ directory here contains F90 files and a Makefile to produce the
+runoff_map executable, which reads in a runoff file and an ocean grid file
+and outputs a map from the former to the latter:
+
+1) Computes an initial nearest neighbor mapping from the rof grid cells to
+   active ocean grid cells.
+2) Computes a smoothing matrix on the ocean grid.
+3) The two matrices are multipled together to generate the final mapping file.
+
+====================
+HOW TO USE THIS TOOL
+====================
+
+1) Build (in the src/ directory)
+2) Setup a namelist file (runoff_map.nml)
+3) Run ./runoff_map
+
+============
+HOW TO BUILD
+============
+
+See INSTALL file in this directory
+
+====================
+NAMELIST FILE FORMAT
+====================
+
+The namelist file must be called "runoff_map.nml".  That name is hardwired
+into the executable.
+
+The namelist looks like this
+
+  &input_nml
+   gridtype     = 'scrip'
+   file_roff    = '/glade/p/cesm/cseg/mapping/grids/wr50a_090614.nc'
+   file_ocn     = '/glade/p/cesm/cseg/mapping/grids/ar9v4_100920.nc'
+   file_nn      = 'map_wr50a_ar9v4_nn.nc '
+   file_smooth  = 'map_ar9v4_ar9v4_smoother.nc '
+   file_new     = 'map_wr50a_to_ar9v4_e1000r300_130507.nc'
+   title        = 'runoff map: wr50a -> ar9v4, smoothed '
+   eFold        = 1000000.0
+   rMax         =  300000.0
+   step1 = .true.
+   step2 = .false.
+   step3 = .false.
+  /
+
+where
+
+Input grid files:
+  file_roff =   an ascii rdirc file OR an obs rtm file OR a scrip grid file
+  gridtype  =  type of file_roff file, "rtm" or "obs" or "scrip"
+     rtm is a 720 x 360 grid ascii file
+     obs is a netcdf file with xc, yc, xv, yv, mask and area variable names
+     scrip is a scrip type grid file (must contain grid_area along with typical
+       scrip grid variables)
+  file_ocn  =  a scrip ocean grid file (must contain grid_area along with
+    typical scrip grid variables)
+
+Input parameters:
+  eFold  = smoothing eFold distance in meters
+  rMax   = maximum radius of effect in meters
+
+Settings:
+  title = ascii string to add to mapping files
+  step1 = computes nearest neighbor map
+  step2 = computes smooth map
+  step3 = multiple two maps together
+
+Output fields:
+  file_nn     = nearest neighbor mapping file
+  file_smooth = smoother mapping file
+  file_new    = combined file
+
+
+==========
+HOW TO RUN
+==========
+
+Execute the binary ./runoff_map (again, this will read the runoff_map.nml
+namelist file - see above section for tips on creating the file)
+

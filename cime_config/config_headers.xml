@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="config_definition.xsl" ?>
+
+<files>
+  <file name="env_batch.xml">
+    <header>
+      These variables may be changed anytime during a run, they
+      control arguments to the batch submit command.
+    </header>
+  </file>
+
+  <file name="env_case.xml">
+    <header>
+    These variables CANNOT BE CHANGED once a case has been created.
+    Invoke create_newcase again if a different grid or component
+    combination is required.
+    </header>
+  </file>
+
+  <file name ="env_run.xml">
+    <header>
+    These variables MAY BE CHANGED ANYTIME during a run.
+    Additional machine speific variables that can be changed
+    during a run are contained in the env_mach_specific file
+    Note1: users SHOULD NOT modify BUILD_COMPETE in env_build.xml
+    this is done automatically by the scripts.
+    </header>
+  </file>
+
+  <file name ="env_mach_specific.xml">
+    <header>
+    These variables control the machine dependent environment including
+    the paths to compilers and libraries external to cime such as netcdf, 
+    environment variables for use in the running job should also be set	here.
+    </header>
+  </file>
+
+  <file name="env_build.xml">
+    <header>
+    These variables SHOULD NOT be changed once the model has been built.
+    urrently, these variables are not cached.
+    Note1: users SHOULD NOT modify BUILD_COMPETE below
+    this is done automatically by the scripts.
+    </header>
+  </file>
+
+  <file name="env_mach_pes.xml">
+    <header>
+    These variables CANNOT be modified once case_setup has been
+    invoked without first invoking case_setup -reset
+
+    NTASKS: the total number of MPI tasks, a negative value indicates nodes rather than tasks.
+    NTHRDS: the number of OpenMP threads per MPI task.
+    ROOTPE: the global mpi task of the component root task, if negative, indicates nodes rather than tasks.
+    PSTRID: the stride of MPI tasks across the global set of pes (for now set to 1)
+    NINST : the number of component instances (will be spread evenly across NTASKS)
+
+    for example, for NTASKS = 8, NTHRDS = 2, ROOTPE = 32, NINST  = 2
+    the MPI tasks would be placed starting on global pe 32 and each pe would be threaded 2-ways
+    These tasks will be divided amongst both instances (4 tasks each).
+
+    Note: PEs that support threading never have an MPI task associated
+    with them for performance reasons.  As a result, NTASKS and ROOTPE
+    are relatively independent of NTHRDS and they determine
+    the layout of mpi processors between components.  NTHRDS is used
+    to determine how those mpi tasks should be placed across the machine.
+
+    The following values should not be set by the user since they'll be
+    overwritten by scripts: TOTALPES, MAX_TASKS_PER_NODE, PES_PER_NODE
+    </header>
+  </file>
+
+  <file name="env_archive.xml">
+    <header>
+    These are the variables specific to the short term archiver. 
+    For a detailed listing of the env_archive.xml file, run
+    ./st_archive -help
+    To validate the env_archive.xml file using xmllint, run
+    xmllint -schema Tools/archive.xsd env_archive.xml
+    from the case root.
+    </header>
+  </file>
+
+  <file name="env_test.xml">
+    <header>These are the variables specific to a test case.</header>
+  </file>
+
+</files>

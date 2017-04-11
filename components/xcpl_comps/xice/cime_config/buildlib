@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+"""
+build data model library
+"""
+
+import sys, os
+
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
+
+from standard_script_setup import *
+from CIME.buildlib import build_xcpl_lib
+
+build_xcpl_lib(sys.argv, 'ice')
