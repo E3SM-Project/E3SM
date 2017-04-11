@@ -1,0 +1,52 @@
+module test_macro
+
+! Test that if NDEBUG is not defined, shr_assert macros run assertions.
+
+use pfunit_mod
+
+#undef NDEBUG
+#include "shr_assert.h"
+
+contains
+
+@Test
+subroutine macro_assert_can_pass()
+  SHR_ASSERT(.true., "Assert macro unexpectedly aborted!")
+end subroutine macro_assert_can_pass
+
+@Test
+subroutine macro_assert_can_fail()
+  SHR_ASSERT(.false., "Expected failure.")
+  ! When this was written, the preprocessor did not recognize this assert,
+  ! so call it directly instead of using an "@".
+  call assertExceptionRaised("ABORTED: Expected failure.")
+end subroutine macro_assert_can_fail
+
+@Test
+subroutine macro_assert_all_can_pass()
+  SHR_ASSERT_ALL(([.true., .true.]), "Assert macro unexpectedly aborted!")
+end subroutine macro_assert_all_can_pass
+
+@Test
+subroutine macro_assert_all_can_fail()
+  SHR_ASSERT_ALL(([.true., .false.]), "Expected failure.")
+  ! When this was written, the preprocessor did not recognize this assert,
+  ! so call it directly instead of using an "@".
+  call assertExceptionRaised("ABORTED: Expected failure.")
+end subroutine macro_assert_all_can_fail
+
+@Test
+subroutine macro_assert_any_can_pass()
+  SHR_ASSERT_ANY(([.true., .false.]), "Assert macro unexpectedly aborted!")
+end subroutine macro_assert_any_can_pass
+
+@Test
+subroutine macro_assert_any_can_fail()
+  SHR_ASSERT_ANY(([.false., .false.]), "Expected failure.")
+  ! When this was written, the preprocessor did not recognize this assert,
+  ! so call it directly instead of using an "@".
+  call assertExceptionRaised("ABORTED: Expected failure.")
+end subroutine macro_assert_any_can_fail
+
+
+end module test_macro
