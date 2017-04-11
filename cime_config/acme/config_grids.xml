@@ -490,6 +490,12 @@
       <alias>ne30_oECv3_ICG</alias>
     </grid>
 
+    <grid compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+      <sname>ne120np4_oRRS18to6v3_ICG</sname>
+      <lname>a%ne120np4_l%ne120np4_oi%oRRS18to6v3_ICG_r%r0125_m%oRRS18to6v3_g%null_w%null</lname>
+      <alias>ne120_oRRS18v3_ICG</alias>
+    </grid>
+
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne60np4_ne60np4</sname>
       <alias>ne60_ne60</alias>
@@ -1323,6 +1329,14 @@
       <nx>3693225</nx>
       <ny>1</ny>
       <desc>oRRS18to6v3 is an MPAS ocean grid with a mesh density function that is roughly proportional to the Rossby radius of deformation, with 18 km gridcells at low and 6 km gridcells at high latitudes:</desc>
+      <file ice_mask="oRRS18to6v3">domain.ocn.oRRS18to6v3.170111.nc</file>
+      <file ocn_mask="oRRS18to6v3">domain.ocn.oRRS18to6v3.170111.nc</file>
+    </domain>
+
+    <domain name="oRRS18to6v3_ICG">
+      <nx>3693225</nx>
+      <ny>1</ny>
+      <desc>oRRS18to6v3_ICG is an MPAS ocean grid with a mesh density function that is roughly proportional to the Rossby radius of deformation, with 18 km gridcells at low and 6 km gridcells at high latitudes.  This version of initial conditions is spun-up from a G compset run:</desc>
       <file ice_mask="oRRS18to6v3">domain.ocn.oRRS18to6v3.170111.nc</file>
       <file ocn_mask="oRRS18to6v3">domain.ocn.oRRS18to6v3.170111.nc</file>
     </domain>
