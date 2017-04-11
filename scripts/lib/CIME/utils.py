@@ -973,17 +973,6 @@ def wait_for_unlocked(filepath):
             if file_object:
                 file_object.close()
 
-def get_build_threaded(case):
-    """Returns True if current settings require a threaded build/run."""
-    force_threaded = case.get_value("BUILD_THREADED")
-    if force_threaded:
-        return True
-    comp_classes = case.get_values("COMP_CLASSES")
-    for comp_class in comp_classes:
-        if case.get_value("NTHRDS_%s"%comp_class) > 1:
-            return True
-    return False
-
 def gunzip_existing_file(filepath):
     with gzip.open(filepath, "rb") as fd:
         return fd.read()

@@ -1246,7 +1246,7 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case(self):
     ###########################################################################
-        run_cmd_assert_result(self, "%s/create_test cime_test_only -t %s --no-build --test-root %s --output-root %s"
+        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_P1.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s"
                               % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT))
 
         casedir = os.path.join(self._testroot,
@@ -1281,6 +1281,45 @@ class K_TestCimeCase(TestCreateTestCommon):
 
             # Test some test properties
             self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
+
+    ###########################################################################
+    def test_cime_case_build_threaded_1(self):
+    ###########################################################################
+        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_P1x1.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s"
+                              % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT))
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1x1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        with Case(casedir, read_only=False) as case:
+            build_threaded = case.get_value("BUILD_THREADED")
+            self.assertFalse(build_threaded)
+
+            build_threaded = case.get_build_threaded()
+            self.assertFalse(build_threaded)
+
+            case.set_value("BUILD_THREADED", True)
+
+            build_threaded = case.get_build_threaded()
+            self.assertTrue(build_threaded)
+
+    ###########################################################################
+    def test_cime_case_build_threaded_2(self):
+    ###########################################################################
+        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_P1x2.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s"
+                              % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT))
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1x2.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        with Case(casedir, read_only=False) as case:
+            build_threaded = case.get_value("BUILD_THREADED")
+            self.assertFalse(build_threaded)
+
+            build_threaded = case.get_build_threaded()
+            self.assertTrue(build_threaded)
 
     ###########################################################################
     def test_cime_case_mpi_serial(self):

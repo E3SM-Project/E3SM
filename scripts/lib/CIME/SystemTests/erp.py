@@ -67,7 +67,6 @@ class ERP(SystemTestsCommon):
                     nthreads  = self._case.get_value("NTHRDS_%s"%comp)
                     rootpe    = self._case.get_value("ROOTPE_%s"%comp)
                     if ( nthreads > 1 ):
-                        self._case.set_value("BUILD_THREADED", True)
                         self._case.set_value("NTHRDS_%s"%comp, nthreads/2)
                     if ( ntasks > 1 ):
                         self._case.set_value("NTASKS_%s"%comp, ntasks/2)
