@@ -4,6 +4,9 @@ from Tools.standard_script_setup import *
 from CIME.utils         import expect, get_model
 from CIME.case          import Case
 from CIME.check_lockedfiles import lock_file
+import re
+
+invalid_case_name_re = re.compile(r"[\.<>/{}[\]~`@]");
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +149,10 @@ OR
     run_unsupported = False
     if model == "cesm":
         run_unsupported = args.run_unsupported
+
+    m = invalid_case_name_re.search(args.case)
+    if m is not None:
+        expect(False, "Invalid character in case name %s"%m.group(0))
 
 
     return args.case, args.compset, args.res, args.machine, args.compiler,\
