@@ -469,13 +469,6 @@ contains
     call waterstate_vars%restart (bounds, ncid,  flag='read', &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:) )
 
-    ! The following write statement is needed for some tests to pass with pgi 13.9 on
-    ! yellowstone, presumably due to a compiler bug. Without this, the following two
-    ! tests were failing:
-    ! ERS_D_Mmpi-serial.1x1_brazil.ICLM45CNED.yellowstone_pgi.clm-edTest
-    ! ERS_Lm3.1x1_smallvilleIA.ICLM45BGCCROP.yellowstone_pgi
-    write(iulog,*) 'about to call aerosol_vars%restart: ', ubound(waterstate_vars%h2osoi_ice_col)
-
     call aerosol_vars%restart (bounds, ncid, flag='read', &
          h2osoi_ice_col=waterstate_vars%h2osoi_ice_col(bounds%begc:bounds%endc,:), &
          h2osoi_liq_col=waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc,:) ) 
