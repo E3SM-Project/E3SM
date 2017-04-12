@@ -26,10 +26,41 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        raise exc_type("%s %s" % (error_prefix,error_msg))
+        logger.error("%s %s" % (error_prefix,error_msg))
+        raise exc_type()
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
+
+def check_name(fullname, additional_chars=None, fullpath=False):
+    """
+    check for unallowed characters in name
+
+    >>> check_name("test.id", additional_chars=".")
+    Traceback (most recent call last):
+        ...
+    SystemExit: ERROR: illegal character . found in name test.id
+    >>> check_name("case.name", fullpath=False)
+
+    >>> check_name("/some/file/path/case.name", fullpath=True)
+    Traceback (most recent call last):
+        ...
+    SystemExit: ERROR: Path /some/file/path does not exist or is not writable
+    """
+    chars = "<>/{}[\]~`@"
+    if additional_chars is not None:
+        chars += additional_chars
+    if fullpath:
+        path, name = os.path.split(fullname)
+        if path is not None and not (os.path.exists(path) and os.access(path, os.W_OK)): 
+            expect(False, "Path %s does not exist or is not writable"%path)
+    else:
+        name = fullname
+
+    match = re.search(r"["+re.escape(chars)+"]", name)
+    if match is not None:
+        expect(False, "Illegal character %s found in name %s"%(match.group(0), name))
+
 
 # Should only be called from get_cime_config()
 def _read_cime_config_file():
