@@ -34,7 +34,9 @@ def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
 
 def check_name(fullname, additional_chars=None, fullpath=False):
     """
-    check for unallowed characters in name
+    check for unallowed characters in name, this routine only
+    checks the final name and does not check if path exists or is
+    writable
 
     >>> check_name("test.id", additional_chars=".")
     Traceback (most recent call last):
@@ -43,18 +45,14 @@ def check_name(fullname, additional_chars=None, fullpath=False):
     >>> check_name("case.name", fullpath=False)
 
     >>> check_name("/some/file/path/case.name", fullpath=True)
-    Traceback (most recent call last):
-        ...
-    SystemExit: ERROR: Path /some/file/path does not exist or is not writable
+
     """
 
     chars = '<>/{}[\]~`@' # pylint: disable=anomalous-backslash-in-string
     if additional_chars is not None:
         chars += additional_chars
     if fullpath:
-        path, name = os.path.split(fullname)
-        if path is not None and not (os.path.exists(path) and os.access(path, os.W_OK)):
-            expect(False, "Path %s does not exist or is not writable"%path)
+        _, name = os.path.split(fullname)
     else:
         name = fullname
 
