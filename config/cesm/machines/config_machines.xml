@@ -251,13 +251,8 @@
       <modules mpilib="mpi-serial">
 	<command name="load">netcdf/4.4.1.1</command>
       </modules>
-      <modules mpilib="mpt" compiler="intel">
+      <modules mpilib="mpt">
 	<command name="load">netcdf-mpi/4.4.1.1</command>
-      </modules>
-      <modules mpilib="mpt" compiler="gnu">
-	<command name="load">netcdf/4.4.1.1</command>
-      </modules>
-      <modules mpilib="mpt" >
 	<command name="load">pnetcdf/1.8.0</command>
       </modules>
     </module_system>
