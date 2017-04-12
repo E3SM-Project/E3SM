@@ -32,7 +32,7 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
-def check_name(fullname, additional_chars=None):
+def check_name(fullname, additional_chars=None, fullpath=False):
     """
     check for unallowed characters in name, this routine only
     checks the final name and does not check if path exists or is
