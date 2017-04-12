@@ -147,7 +147,7 @@ OR
     if model == "cesm":
         run_unsupported = args.run_unsupported
     try:
-        CIME.utils.check_name(args.case, fullpath=args.case.startswith('/'))
+        CIME.utils.check_name(args.case, fullpath=True)
     except:
         expect(False, "Illegal case name argument provided")
 
