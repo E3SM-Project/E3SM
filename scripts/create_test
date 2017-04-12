@@ -280,10 +280,8 @@ OR
     if args.test_id is None:
         args.test_id = "%s_%s"%(CIME.utils.get_timestamp(), CIME.utils.id_generator())
     else:
-        try:
-            CIME.utils.check_name(args.test_id, additional_chars=".")
-        except:
-            expect(False, "invalid test-id argument provided")
+        expect(CIME.utils.check_name(args.test_id, additional_chars="."),
+               "invalid test-id argument provided")
 
     if args.testfile is not None:
         with open(args.testfile, "r") as fd:

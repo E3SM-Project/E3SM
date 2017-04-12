@@ -39,13 +39,11 @@ def check_name(fullname, additional_chars=None, fullpath=False):
     writable
 
     >>> check_name("test.id", additional_chars=".")
-    Traceback (most recent call last):
-        ...
-    SystemExit: ERROR: Illegal character . found in name test.id
+    False
     >>> check_name("case.name", fullpath=False)
-
+    True
     >>> check_name("/some/file/path/case.name", fullpath=True)
-
+    True
     """
 
     chars = '<>/{}[\]~`@' # pylint: disable=anomalous-backslash-in-string
@@ -57,8 +55,9 @@ def check_name(fullname, additional_chars=None, fullpath=False):
         name = fullname
     match = re.search(r"["+re.escape(chars)+"]", name)
     if match is not None:
-        expect(False, "Illegal character %s found in name %s"%(match.group(0), name))
-
+        logger.warn("Illegal character %s found in name %s"%(match.group(0), name))
+        return False
+    return True
 
 # Should only be called from get_cime_config()
 def _read_cime_config_file():
