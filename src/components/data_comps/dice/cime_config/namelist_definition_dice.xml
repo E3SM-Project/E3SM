@@ -59,7 +59,6 @@
       <value dice_mode="ssmi$">SSMI</value>
       <value dice_mode="ssmi_iaf">SSMI_IAF</value>
       <value dice_mode="prescribed">prescribed</value>
-      <value dice_mode="ww3">ww3</value>
     </values>
   </entry>
 
@@ -69,7 +68,6 @@
     <group>derived</group>
     <desc>does not appear in namelist - only used to set domain and data information</desc>
     <values>
-      <value stream="ww3">$SSTICE_GRID_FILENAME</value>
       <value stream="prescribed">$SSTICE_GRID_FILENAME</value>
     </values>
   </entry>
@@ -80,7 +78,6 @@
     <group>derived</group>
     <desc>does not appear in namelist - only used to set domain and data information</desc>
     <values>
-      <value stream="ww3">$SSTICE_GRID_FILENAME</value>
       <value stream="prescribed">$SSTICE_GRID_FILENAME</value>
     </values>
   </entry>
@@ -122,7 +119,6 @@
         area    area
         mask    mask
       </value>
-      <value stream="ww3" sstice_stream="WW3">
         time    time
         gridLon lon
         gridLat lat
@@ -226,9 +222,6 @@
       <value>
         ifrac  ifrac
       </value>
-      <value stream="ww3" sstice_stream="WW3">
-        iceCon  ifrac
-      </value>
     </values>
   </entry>
 
@@ -252,7 +245,6 @@
     <value stream="SSMI$">1 </value>
     <value stream="SSMI_IAF">1</value>
     <value stream="prescribed">$SSTICE_YEAR_ALIGN</value>
-    <value stream="ww3">$SSTICE_YEAR_ALIGN</value>
   </values>
   </entry>
 
@@ -266,7 +258,6 @@
       <value stream="SSMI$">1 </value>
       <value stream="SSMI_IAF">1948</value>
       <value stream="prescribed">$SSTICE_YEAR_START</value>
-      <value stream="ww3">$SSTICE_YEAR_START</value>
     </values>
   </entry>
 
@@ -280,7 +271,6 @@
       <value stream="SSMI$">1 </value>
       <value stream="SSMI_IAF">2009</value>
       <value stream="prescribed">$SSTICE_YEAR_END</value>
-      <value stream="ww3">$SSTICE_YEAR_END</value>
     </values>
   </entry>
 
@@ -330,7 +320,6 @@
       <value dice_mode="ssmi_iaf">SSTDATA</value>
       <value dice_mode="ssmi">SSTDATA</value>
       <value dice_mode="prescribed">SSTDATA</value>
-      <value dice_mode="ww3">COPYALL</value>
     </values>
   </entry>
 

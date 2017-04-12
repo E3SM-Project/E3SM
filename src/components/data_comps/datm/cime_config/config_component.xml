@@ -15,7 +15,7 @@
 
   <entry id="DATM_MODE">
     <type>char</type>
-    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CLMGSWP3,WW3,CPLHISTForcing</valid_values>
+    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CLMGSWP3,CPLHISTForcing</valid_values>
     <default_value>CORE2_NYF</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -25,7 +25,6 @@
     <values>
       <value compset="%NYF">CORE2_NYF</value>
       <value compset="%IAF">CORE2_IAF</value>
-      <value compset="%WW3">WW3</value>
       <value compset="%WISOQIA">CLM_QIAN_WISO</value>
       <value compset="%QIA">CLM_QIAN</value>
       <value compset="%CRU">CLMCRUNCEP</value>
@@ -275,7 +274,6 @@
     <desc compset="^2000_DATM%1PT"	>single point tower site atm input data:</desc>
     <desc compset="_DATM%NYF"		>COREv2 datm normal year forcing: (requires additional user-supplied data)</desc>
     <desc compset="_DATM%IAF"		>COREv2 datm interannual year forcing: (requires additional user-supplied data)</desc>
-    <desc compset="_DATM%WW3"		>WW3 wave watch data from a short period of hi temporal frequency COREv2 data</desc>
   </description>
 
   <help>
