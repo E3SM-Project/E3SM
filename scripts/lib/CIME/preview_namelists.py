@@ -75,12 +75,14 @@ def create_namelists(case):
 
         cmd = os.path.join(config_dir, "buildnml")
         do_run_cmd = False
+        # This code will try to import and run each buildnml as a subroutine
+        # if that fails it will run it as a program in a seperate shell
         try:
             with open(cmd, 'r') as f:
                 first_line = f.readline()
             if "python" in first_line:
-                logger.info("   Calling %s buildnml"%compname)
                 mod = imp.load_source("buildnml", cmd)
+                logger.info("   Calling %s buildnml"%compname)
                 mod.buildnml(case, caseroot, compname)
             else:
                 raise SyntaxError
