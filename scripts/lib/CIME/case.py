@@ -403,7 +403,7 @@ class Case(object):
         either a longname or an alias.  This will also set the
         compsets and pes specfication files.
         """
-        science_support = {}
+        science_support = []
         compset_alias = None
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are %s" % components)
