@@ -31,7 +31,9 @@ except:
 # global variables
 _now = datetime.datetime.now().strftime('%Y-%m-%d')
 logger = logging.getLogger(__name__)
-
+_xml_files =  ['env_archive.xml','env_batch.xml','env_build.xml',
+               'env_case.xml','env_mach_pes.xml','env_mach_specific.xml',
+               'env_run.xml']
 
 ###############################################################################
 def commandline_options():
@@ -44,7 +46,7 @@ def commandline_options():
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument('--xmlfile', nargs=1, required=True,
+    parser.add_argument('--xmlfile', nargs=1, required=True, choices=_xml_files,
                         help='Fully quailfied path to input caseroot XML file.')
 
     parser.add_argument('--htmlfile', nargs=1, required=True,
@@ -69,24 +71,15 @@ def _main_func(options, work_dir):
         definition = GenericXML(infile=filename)
     except:
         sys.exit("Error: unable to parse file %s" %filename)
-        
-    # Determine if have new or old schema
-    basepath = os.path.dirname(filename)
-    default_files = glob.glob(os.path.join(basepath,"namelist_defaults*.xml"))
-    defaults = []
-    if len(default_files) > 0:
-        schema = "old"
-        for default_file in default_files:
-            defaults.append(GenericXML(infile=default_file))
-    else:
-        schema = "new"
 
     # Initialize a variables for the html template
     html_dict = dict()
     cesm_version = 'CESM2.0'
-    comp = ''
-    if options.comp:
-        comp = options.comp[0]
+
+    # load up the html_dict based on the file specified
+#START HERE
+
+
 
     # Create a dictionary with a category key and a list of all entry nodes for each key
     category_dict = dict()
