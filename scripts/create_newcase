@@ -147,6 +147,8 @@ OR
     if model == "cesm":
         run_unsupported = args.run_unsupported
 
+    expect(CIME.utils.check_name(args.case, fullpath=True),
+           "Illegal case name argument provided")
 
     return args.case, args.compset, args.res, args.machine, args.compiler,\
         args.mpilib, args.project, args.pecount, \

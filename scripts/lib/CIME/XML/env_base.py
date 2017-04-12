@@ -5,7 +5,7 @@ import string
 from CIME.XML.standard_module_setup import *
 from CIME.XML.entry_id import EntryID
 from CIME.XML.headers import Headers
-from CIME.utils import convert_to_type, convert_to_string
+from CIME.utils import convert_to_type
 logger = logging.getLogger(__name__)
 
 class EnvBase(EntryID):

@@ -26,10 +26,38 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        raise exc_type("%s %s" % (error_prefix,error_msg))
+        logger.error("%s %s", error_prefix,error_msg, exc_info=True)
+        raise exc_type("%s %s"%(error_prefix,error_msg))
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
+
+def check_name(fullname, additional_chars=None, fullpath=False):
+    """
+    check for unallowed characters in name, this routine only
+    checks the final name and does not check if path exists or is
+    writable
+
+    >>> check_name("test.id", additional_chars=".")
+    False
+    >>> check_name("case.name", fullpath=False)
+    True
+    >>> check_name("/some/file/path/case.name", fullpath=True)
+    True
+    """
+
+    chars = '<>/{}[\]~`@' # pylint: disable=anomalous-backslash-in-string
+    if additional_chars is not None:
+        chars += additional_chars
+    if fullpath:
+        _, name = os.path.split(fullname)
+    else:
+        name = fullname
+    match = re.search(r"["+re.escape(chars)+"]", name)
+    if match is not None:
+        logger.warn("Illegal character %s found in name %s"%(match.group(0), name))
+        return False
+    return True
 
 # Should only be called from get_cime_config()
 def _read_cime_config_file():
