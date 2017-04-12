@@ -212,7 +212,7 @@ class N_TestUnitTest(unittest.TestCase):
         unit_test_tool = os.path.abspath(os.path.join(test_spec_dir,"tools","unit_testing","run_tests.py"))
 
         run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s"\
-                            %(unit_test_tool,test_dir,test_spec_dir, compiler))
+                            %(unit_test_tool,test_dir,test_spec_dir))
         cls._do_teardown.append(test_dir)
 
     @classmethod
