@@ -88,6 +88,26 @@
   <lname>2000_CAM5%AV1C-H01A_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<compset>
+  <alias>A_WCYCL1850_H01A</alias >
+  <lname>1850_CAM5%AV1C-H01A_CLM45%SPBC_MPASCICE_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL1850_H01AS</alias >
+  <lname>1850_CAM5%AV1C-H01A_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
+
+<compset>
+  <alias>A_WCYCL20TR_H01A</alias >
+  <lname>20TR_CAM5%AV1C-H01A_CLM45%SPBC_MPASCICE_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL20TR_H01AS</alias >
+  <lname>20TR_CAM5%AV1C-H01A_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
 
 <!-- ACME backup compsets -->
 <compset>
