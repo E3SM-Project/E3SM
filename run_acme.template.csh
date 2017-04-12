@@ -322,14 +322,6 @@ if ( `lowercase $debug_queue` == true && ( $num_submits >1 || `lowercase $do_sho
   exit 17
 endif
 
-if ( `lowercase $debug_queue` == true && walltime =~ 30:00 ) then
-  acme_print '       You are running in the debug queue and asked for walltime = '$walltime
-  acme_print '       Generally, only walltime of 30 min or less is allowed in debug queue.'
-  acme_print '       If you intentionally asked for walltime different than 30 min, disable'
-  acme_print '       this error message. Quitting.'
-  exit 18
-endif
-
 #===========================================
 # DOWNLOAD SOURCE CODE IF NEEDED:
 #===========================================
