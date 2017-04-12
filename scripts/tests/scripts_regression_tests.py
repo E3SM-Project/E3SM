@@ -248,8 +248,11 @@ class J_TestCreateNewcase(unittest.TestCase):
             shutil.rmtree(testdir)
 
         cls._testdirs.append(testdir)
-
-        run_cmd_assert_result(self, "%s/create_newcase --case %s --compset X --res f19_g16 --output-root %s" % (SCRIPT_DIR, testdir, cls._testroot), from_dir=SCRIPT_DIR)
+        if CIME.utils.get_model() == "cesm":
+            pesfile = os.path.join("..","src","drivers","mct","cime_config","config_pes.xml")
+            run_cmd_assert_result(self, "%s/create_newcase --case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --user-compset --run-unsupported --pesfile %s --res f19_g16 --output-root %s" % (SCRIPT_DIR, testdir, pesfile, cls._testroot), from_dir=SCRIPT_DIR)
+        else:
+            run_cmd_assert_result(self, "%s/create_newcase --case %s --compset X --res f19_g16 --output-root %s" % (SCRIPT_DIR, testdir, cls._testroot), from_dir=SCRIPT_DIR)
         run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
         run_cmd_assert_result(self, "./case.build", from_dir=testdir)
 
