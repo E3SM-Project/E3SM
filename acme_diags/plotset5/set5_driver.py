@@ -299,8 +299,8 @@ for parameter in parameters:
                     parameter.plot(mv2_domain, mv1_domain, diff,
                                    metrics_dict, parameter)
                 else:
-                    plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 
+		    plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                 if season is seasons[0]:
                     viewer.add_row('%s %s' % (var, region))
                     if hasattr(mv1,"long_name"):
@@ -315,8 +315,6 @@ for parameter in parameters:
                                '.png', is_file=True, title=season, other_files=formatted_files)
 
                 save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
-                f_mod.close()
-                f_obs.close()
 
         elif mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
             plev = parameter.levels
@@ -450,10 +448,12 @@ for parameter in parameters:
                                    '.png', is_file=True, title=season, other_files=formatted_files)
 
                     save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
-            f_mod.close()
             f_in.close()
+        
         else:
             raise RuntimeError(
                 "Dimensions of two variables are difference. Abort")
+        f_obs.close()
+        f_mod.close()
 
 viewer.generate_viewer()
