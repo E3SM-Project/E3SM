@@ -133,6 +133,9 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
                 else:
                     expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst, comp, ntasks))
 
+        # Set TOTAL_CORES
+        case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
+
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
         else:
@@ -147,10 +150,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
             logger.debug("at update TOTALPES = %s"%pestot)
             case.set_value("TOTALPES", pestot)
             thread_count = env_mach_pes.get_max_thread_count(models)
-            if thread_count > 1:
-                case.set_value("BUILD_THREADED", True)
-
-            expect(not (case.get_value("BUILD_THREADED")  and compiler == "nag"),
+            build_threaded = case.get_build_threaded()
+            expect(not (build_threaded and compiler == "nag"),
                    "it is not possible to run with OpenMP if using the NAG Fortran compiler")
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
@@ -186,6 +187,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
         # Create user_nl files for the required number of instances
         if not os.path.exists("user_nl_cpl"):
             logger.info("Creating user_nl_xxx files for components and cpl")
+
         # loop over models
         for model in models:
             comp = case.get_value("COMP_%s" % model)
@@ -219,7 +221,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
         env_module.make_env_mach_specific_file(compiler, debug, mpilib, "sh")
         env_module.make_env_mach_specific_file(compiler, debug, mpilib, "csh")
         env_module.save_all_env_info("software_environment.txt")
-
 
 def adjust_pio_layout(case, new_pio_stride):
 

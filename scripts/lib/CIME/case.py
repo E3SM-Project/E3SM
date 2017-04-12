@@ -10,7 +10,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
-from CIME.utils                     import get_build_threaded, get_current_commit
+from CIME.utils                     import get_current_commit
 from CIME.check_lockedfiles         import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -142,7 +142,7 @@ class Case(object):
         mpi_attribs = {
             "compiler" : self.get_value("COMPILER"),
             "mpilib"   : self.get_value("MPILIB"),
-            "threaded" : get_build_threaded(self)
+            "threaded" : self.get_build_threaded()
             }
 
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
@@ -1007,6 +1007,10 @@ class Case(object):
             orig_exeroot = self.get_value("EXEROOT")
             newcase.set_value("EXEROOT", orig_exeroot)
             newcase.set_value("BUILD_COMPLETE","TRUE")
+            orig_bld_complete = self.get_value("BUILD_COMPLETE")
+            if not orig_bld_complete:
+                logger.warn("\nWARNING: Creating a clone with --keepexe before building the original case may cause PIO_TYPENAME to be invalid in the clone")
+                logger.warn("Avoid this message by building case one before you clone.\n")
         else:
             newcase.set_value("BUILD_COMPLETE","FALSE")
 
@@ -1072,7 +1076,7 @@ class Case(object):
         mpi_attribs = {
             "compiler" : self.get_value("COMPILER"),
             "mpilib"   : self.get_value("MPILIB"),
-            "threaded" : get_build_threaded(self)
+            "threaded" : self.get_build_threaded()
             }
 
         executable, args = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
@@ -1118,6 +1122,13 @@ class Case(object):
             env_module = self.get_env("mach_specific")
             env_module.load_env(compiler=compiler,debug=debug, mpilib=mpilib)
             self._is_env_loaded = True
+
+    def get_build_threaded(self):
+        """
+        Returns True if current settings require a threaded build/run.
+        """
+        force_threaded = self.get_value("BUILD_THREADED")
+        return bool(force_threaded) or self.thread_count > 1
 
     def _check_testlists(self, compset_alias, grid_name, files):
         """

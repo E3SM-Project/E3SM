@@ -108,7 +108,7 @@ class EnvMachSpecific(EnvBase):
             source_cmd = ""
 
         if (module_system == "module"):
-            return run_cmd_no_fail("%smodule list 2>&1" % source_cmd)
+            return run_cmd_no_fail("%smodule list" % source_cmd, combine_output=True)
         elif (module_system == "soft"):
             # Does soft really not provide this capability?
             return ""
@@ -126,7 +126,7 @@ class EnvMachSpecific(EnvBase):
         """
         with open(filename, "w") as f:
             f.write(self.list_modules())
-        run_cmd_no_fail("echo -e '\n' >> %s && env >> %s" % (filename, filename))
+        run_cmd_no_fail("echo -e '\n' && env", arg_stdout=filename)
 
     def make_env_mach_specific_file(self, compiler, debug, mpilib, shell):
         modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)

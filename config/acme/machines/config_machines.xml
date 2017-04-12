@@ -900,8 +900,8 @@
       <env name="NETCDFROOT">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1</env>
       <env name="NETCDF_INCLUDES">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/include</env>
       <env name="NETCDF_LIBS">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/lib</env>
-      <env name="PATH">$ENV{NETCDFROOT}/bin:$ENV{PATH}</env>
-      <env name="LD_LIBRARY_PATH">$ENV{NETCDFROOT}/lib:/soft/intel/15.0.1/mkl/lib/intel64:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="PATH">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/lib:/soft/intel/15.0.1/mkl/lib/intel64:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="mvapich">
       <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0</env>

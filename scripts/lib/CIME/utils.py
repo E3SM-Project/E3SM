@@ -26,10 +26,38 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        raise exc_type("%s %s" % (error_prefix,error_msg))
+        logger.error("%s %s", error_prefix,error_msg, exc_info=True)
+        raise exc_type("%s %s"%(error_prefix,error_msg))
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
+
+def check_name(fullname, additional_chars=None, fullpath=False):
+    """
+    check for unallowed characters in name, this routine only
+    checks the final name and does not check if path exists or is
+    writable
+
+    >>> check_name("test.id", additional_chars=".")
+    False
+    >>> check_name("case.name", fullpath=False)
+    True
+    >>> check_name("/some/file/path/case.name", fullpath=True)
+    True
+    """
+
+    chars = '<>/{}[\]~`@' # pylint: disable=anomalous-backslash-in-string
+    if additional_chars is not None:
+        chars += additional_chars
+    if fullpath:
+        _, name = os.path.split(fullname)
+    else:
+        name = fullname
+    match = re.search(r"["+re.escape(chars)+"]", name)
+    if match is not None:
+        logger.warn("Illegal character %s found in name %s"%(match.group(0), name))
+        return False
+    return True
 
 # Should only be called from get_cime_config()
 def _read_cime_config_file():
@@ -143,9 +171,15 @@ def get_model():
                       and model != "xml_schemas"])
     expect(False, msg)
 
+def _convert_to_fd(filearg, from_dir):
+    if not filearg.startswith("/") and from_dir is not None:
+        filearg = os.path.join(from_dir, filearg)
+
+    return open(filearg, "a")
+
 _hack=object()
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
-            arg_stdout=_hack, arg_stderr=_hack, env=None):
+            arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
     """
     Wrapper around subprocess to make it much more convenient to run shell commands
 
@@ -155,10 +189,15 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     import subprocess # Not safe to do globally, module not available in older pythons
 
     # Real defaults for these value should be subprocess.PIPE
-    if (arg_stdout is _hack):
+    if arg_stdout is _hack:
         arg_stdout = subprocess.PIPE
-    if (arg_stderr is _hack):
-        arg_stderr = subprocess.PIPE
+    elif isinstance(arg_stdout, str):
+        arg_stdout = _convert_to_fd(arg_stdout, from_dir)
+
+    if arg_stderr is _hack:
+        arg_stderr = subprocess.STDOUT if combine_output else subprocess.PIPE
+    elif isinstance(arg_stderr, str):
+        arg_stderr = _convert_to_fd(arg_stdout, from_dir)
 
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
         logger.info("RUN: %s" % cmd)
@@ -181,6 +220,12 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     errput = errput.strip() if errput is not None else errput
     stat = proc.wait()
 
+    if isinstance(arg_stdout, file):
+        arg_stdout.close() # pylint: disable=no-member
+
+    if isinstance(arg_stderr, file) and arg_stderr is not arg_stdout:
+        arg_stderr.close() # pylint: disable=no-member
+
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
         if stat != 0:
             logger.info("  stat: %d\n" % stat)
@@ -192,7 +237,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     return stat, output, errput
 
 def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
-                    arg_stdout=_hack, arg_stderr=_hack):
+                    arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
     """
     Wrapper around subprocess to make it much more convenient to run shell commands.
     Expects command to work. Just returns output string.
@@ -207,14 +252,18 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
 
     >>> run_cmd_no_fail('grep foo', input_str='foo')
     'foo'
+
+    >>> run_cmd_no_fail('echo THE ERROR >&2', combine_output=True)
+    'THE ERROR'
     """
-    stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout, arg_stderr)
+    stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout, arg_stderr, env, combine_output)
     if stat != 0:
         # If command produced no errput, put output in the exception since we
         # have nothing else to go on.
         errput = output if errput == "" else errput
         expect(False, "Command: '%s' failed with error '%s'%s" %
                (cmd, errput, "" if from_dir is None else " from dir '%s'" % from_dir))
+
     return output
 
 def check_minimum_python_version(major, minor):
@@ -951,17 +1000,6 @@ def wait_for_unlocked(filepath):
         finally:
             if file_object:
                 file_object.close()
-
-def get_build_threaded(case):
-    """Returns True if current settings require a threaded build/run."""
-    force_threaded = case.get_value("BUILD_THREADED")
-    if force_threaded:
-        return True
-    comp_classes = case.get_values("COMP_CLASSES")
-    for comp_class in comp_classes:
-        if case.get_value("NTHRDS_%s"%comp_class) > 1:
-            return True
-    return False
 
 def gunzip_existing_file(filepath):
     with gzip.open(filepath, "rb") as fd:

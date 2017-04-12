@@ -254,10 +254,9 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             my_file = "PYTHONPATH=%s:%s:$PYTHONPATH %s"%(os.path.join(cimeroot,"scripts","Tools"),
                                                           os.path.join(cimeroot,"scripts","lib"), my_file)
         logger.info("Building %s with output to file %s"%(lib,file_build))
-        with open(file_build, "w") as fd:
-            stat = run_cmd("%s %s %s %s 2>&1" %
-                           (my_file, full_lib_path, os.path.join(exeroot,sharedpath), caseroot),
-                           from_dir=exeroot,arg_stdout=fd)[0]
+        stat = run_cmd("%s %s %s %s" %
+                       (my_file, full_lib_path, os.path.join(exeroot,sharedpath), caseroot),
+                       from_dir=exeroot, combine_output=True, arg_stdout=file_build)[0]
 
         analyze_build_log(lib, file_build, compiler)
         expect(stat == 0, "ERROR: buildlib.%s failed, cat %s" % (lib, file_build))
@@ -336,7 +335,7 @@ def _clean_impl(case, cleanlist, clean_all):
         expect(cleanlist is not None and len(cleanlist) > 0,"Empty cleanlist not expected")
         debug           = case.get_value("DEBUG")
         use_esmf_lib    = case.get_value("USE_ESMF_LIB")
-        build_threaded  = case.get_value("BUILD_THREADED")
+        build_threaded  = case.get_build_threaded()
         gmake           = case.get_value("GMAKE")
         caseroot        = case.get_value("CASEROOT")
         casetools       = case.get_value("CASETOOLS")
@@ -395,7 +394,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only):
     # needs to be unset before building again.
     if "MODEL" in os.environ.keys():
         del os.environ["MODEL"]
-    build_threaded      = case.get_value("BUILD_THREADED")
+    build_threaded      = case.get_build_threaded()
     casetools           = case.get_value("CASETOOLS")
     exeroot             = case.get_value("EXEROOT")
     incroot             = case.get_value("INCROOT")
