@@ -21,6 +21,8 @@ module PhosphorusStateType
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
   use clm_varctl             , only : nu_com
+ 
+  use soilorder_varcon , only : smax,ks_sorption
               
   ! 
   ! !PUBLIC TYPES:
@@ -869,11 +871,17 @@ contains
     integer            :: restart_file_spinup_state 
     ! flags for comparing the model and restart decomposition cascades
     integer            :: decomp_cascade_state, restart_file_decomp_cascade_state 
+    real(r8)           :: smax_c, ks_sorption_c
+
     !------------------------------------------------------------------------
 
     !--------------------------------
     ! patch phosphorus state variables
     !--------------------------------
+    associate(&
+         isoilorder     => cnstate_vars%isoilorder &
+         )
+
 
     call restartvar(ncid=ncid, flag=flag, varname='leafp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
@@ -1008,6 +1016,20 @@ contains
             dim1name='column', dim2name='levgrnd', switchdim=.true., &
             long_name='',  units='', fill_value=spval, &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
+       
+       if(flag == 'read')then
+
+        do c = bounds%begc, bounds%endc
+         smax_c = smax(isoilorder(c))
+         ks_sorption_c = ks_sorption(isoilorder(c))
+
+         this%solutionp_vr_col(c,:) = (this%labilep_vr_col(c,:)*ks_sorption_c)/&
+                                (smax_c-this%labilep_vr_col(c,:))
+        enddo
+       endif
+
+
     else
 
        ptr1d => this%solutionp_vr_col(:,1)
@@ -1237,6 +1259,7 @@ contains
        end do
 
     end if
+    end associate
 
   end subroutine Restart
 

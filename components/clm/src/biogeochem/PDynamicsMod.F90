@@ -559,9 +559,11 @@ contains
 
                  biochem_pmin_ppools_vr_col(c,j,l) = decomp_ppools_vr_col(c,j,l)* &
                                      k_s1_biochem_c * fpi_vr_col(c,j)*&
-                                     (1._r8-exp(r_bc*(1-fpi_p_vr_col(c,j)) ) )/dt
+                                     (1._r8-exp(r_bc*(1._r8-fpi_p_vr_col(c,j)) ))/dt
+
 
                endif 
+              
 
             end do
          end do
@@ -683,6 +685,8 @@ contains
             enddo
         enddo
     end do
+
+    
     
     end associate
 

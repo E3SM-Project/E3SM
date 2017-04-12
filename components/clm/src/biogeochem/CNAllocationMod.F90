@@ -1759,6 +1759,7 @@ contains
                c = filter_soilc(fc)
                sminn_to_plant(c) = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
                sminp_to_plant(c) = sminp_to_plant(c) + sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
+
             end do
          end do
 
@@ -2502,35 +2503,33 @@ contains
                do j = 1, nlevdecomp
                   do fc=1,num_soilc
                      c = filter_soilc(fc)
-
-                     if (nlimit(c,j) == 1.and.plimit(c,j) == 0) then
-
-                        actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) * fpi_vr(c,j)
-
-                     elseif (nlimit(c,j) == 0.and.plimit(c,j) == 1) then
-
-                        actual_immob_nh4_vr(c,j)   = potential_immob_vr(c,j) * fpi_nh4_vr(c,j) * ( fpi_p_vr(c,j)/fpi_vr(c,j))
-                        actual_immob_no3_vr(c,j)   = potential_immob_vr(c,j) * fpi_no3_vr(c,j) * ( fpi_p_vr(c,j)/fpi_vr(c,j))
-
-                     elseif (nlimit(c,j) == 1.and.plimit(c,j) == 1)then
-
-                        if( fpi_vr(c,j) <=fpi_p_vr(c,j) )then
-
-                           actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) *fpi_vr(c,j)
-
+                     if( fpi_vr(c,j) <=fpi_p_vr(c,j) )then ! more N limited
+                        do k = 1, ndecomp_cascade_transitions
+                           if (pmnf_decomp_cascade(c,j,k) > 0.0_r8 .and. pmpf_decomp_cascade(c,j,k) > 0.0_r8) then
+                              actual_immob_p_vr(c,j) = actual_immob_p_vr(c,j) - pmpf_decomp_cascade(c,j,k) *(fpi_p_vr(c,j)-fpi_vr(c,j))
+                           end if
+                         end do
+                     else
+                        if (fpi_nh4_vr(c,j) > fpi_p_vr(c,j)) then ! more P limited
+                           do k = 1, ndecomp_cascade_transitions
+                              if (pmnf_decomp_cascade(c,j,k) > 0.0_r8 .and. pmpf_decomp_cascade(c,j,k) > 0.0_r8) then
+                                 actual_immob_nh4_vr(c,j) = actual_immob_nh4_vr(c,j) - pmnf_decomp_cascade(c,j,k) * (fpi_nh4_vr(c,j) - fpi_p_vr(c,j))
+                                 actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) - pmnf_decomp_cascade(c,j,k) * fpi_no3_vr(c,j)
+                              end if
+                           end do
                         else
-
-                           actual_immob_nh4_vr(c,j)   = potential_immob_vr(c,j) * fpi_nh4_vr(c,j) * ( fpi_p_vr(c,j)/fpi_vr(c,j))
-                           actual_immob_no3_vr(c,j)   = potential_immob_vr(c,j) * fpi_no3_vr(c,j) * ( fpi_p_vr(c,j)/fpi_vr(c,j))
-
-                        endif
-
+                           do k = 1, ndecomp_cascade_transitions
+                              if (pmnf_decomp_cascade(c,j,k) > 0.0_r8 .and. pmpf_decomp_cascade(c,j,k) > 0.0_r8) then
+                                 actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) - pmnf_decomp_cascade(c,j,k) * (fpi_nh4_vr(c,j) + fpi_no3_vr(c,j) - fpi_p_vr(c,j) )
+                              end if
+                           end do
+                        end if
                      endif
                      ! sum up no3 and nh4 fluxes
                      actual_immob_vr(c,j) = actual_immob_no3_vr(c,j) + actual_immob_nh4_vr(c,j)
+                  end do
+               end do
 
-                  enddo
-               enddo
             else ! ECA mode or MIC outcompete plant mode, be consistent with the idea in (.not. NITRIF_DENITRIF)
                     ! apply generic flux limiter based on Tang 2016 doi:10.5194/bg-13-723-2016
                do j = 1, nlevdecomp
@@ -3859,98 +3858,70 @@ contains
 
       end do ! end pft loop
 
-      if (nu_com .eq. 'RD') then
-          ! now use the p2c routine to update column level soil mineral N and P uptake
-          ! based on competition between N and P limitation       - XYANG
-
-          if( .not. use_nitrif_denitrif) then
-
-              call p2c(bounds,num_soilc,filter_soilc, &
-                  sminp_to_ppool(bounds%begp:bounds%endp), &
-                  sminp_to_plant(bounds%begc:bounds%endc))
-
-              call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
-
-              do j = 1, nlevdecomp
-                  do fc=1,num_soilc
-                      c = filter_soilc(fc)
-                      sminp_to_plant_vr(c,j) = sminp_to_plant(c) *  puptake_prof(c,j)
-                  end do
-              end do
-      
-          else     ! use_nitrif_denitrif
-
-              temp_sminn_to_plant(bounds%begc:bounds%endc) = sminn_to_plant(bounds%begc:bounds%endc)
-              temp_sminp_to_plant(bounds%begc:bounds%endc) = sminp_to_plant(bounds%begc:bounds%endc)
-
-              call p2c(bounds,num_soilc,filter_soilc, &
-                  sminn_to_npool(bounds%begp:bounds%endp), &
-                  sminn_to_plant(bounds%begc:bounds%endc))
-
-              call p2c(bounds,num_soilc,filter_soilc, &
-                  sminp_to_ppool(bounds%begp:bounds%endp), &
-                  sminp_to_plant(bounds%begc:bounds%endc))
-
-        
-              do j = 1, nlevdecomp
-                  do fc=1,num_soilc
-                      c = filter_soilc(fc)
-                      if ( temp_sminn_to_plant(c) > 0._r8) then 
-                          sminn_to_plant_vr(c,j)    = sminn_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) )
-                          smin_nh4_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
-                          smin_no3_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
-                      else
-                          sminn_to_plant_vr(c,j)    = 0._r8
-                          smin_nh4_to_plant_vr(c,j) = 0._r8
-                          smin_no3_to_plant_vr(c,j) = 0._r8
-                      endif
-                 
-                      if ( temp_sminp_to_plant(c) > 0._r8) then 
-                          sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
-                      else
-                          sminp_to_plant_vr(c,j) = 0._r8
-                      endif 
-                  end do
-              end do             
-         
-          end if 
-      end if
-
       !----------------------------------------------------------------
       ! now use the p2c routine to update column level soil mineral N and P uptake
       ! based on competition between N and P limitation       - XYANG
       !! Nitrogen
       if (nu_com .eq. 'RD') then
 
-        if(suplphos == suplpNon) then !!! No supplemental Phosphorus
-          call p2c(bounds,num_soilc,filter_soilc,         &
-               sminn_to_npool(bounds%begp:bounds%endp), &
-               sminn_to_plant(bounds%begc:bounds%endc))
-
-          call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
-          do j = 1, nlevdecomp
-            do fc=1,num_soilc
-                c = filter_soilc(fc)
-                sminn_to_plant_vr(c,j) = sminn_to_plant(c) *  nuptake_prof(c,j)
-            end do
-          end do
-        end if
 
         !! Phosphorus
 
         if( .not. use_nitrif_denitrif) then
 
+        if( .not.cnallocate_carbonphosphorus_only().and. .not.cnallocate_carbonnitrogen_only().and. .not.cnallocate_carbon_only() )then
+
+          temp_sminn_to_plant = sminn_to_plant
+          temp_sminp_to_plant = sminp_to_plant
+
+          call p2c(bounds,num_soilc,filter_soilc, &
+                sminn_to_npool(bounds%begp:bounds%endp), &
+                sminn_to_plant(bounds%begc:bounds%endc))
           call p2c(bounds,num_soilc,filter_soilc,       &
               sminp_to_ppool(bounds%begp:bounds%endp), &
               sminp_to_plant(bounds%begc:bounds%endc))
 
-          call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
           do j = 1, nlevdecomp
-              do fc=1,num_soilc
-                c = filter_soilc(fc)
-                sminp_to_plant_vr(c,j) = sminp_to_plant(c) *  puptake_prof(c,j)
-              end do
-          end do
+               do fc=1,num_soilc
+                  c = filter_soilc(fc)
+                  if ( temp_sminn_to_plant(c) > 0._r8) then 
+                     sminn_to_plant_vr(c,j)    = sminn_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) )
+                  else
+                     sminn_to_plant_vr(c,j)    = 0._r8
+                  endif
+                   
+                  if ( temp_sminp_to_plant(c) > 0._r8) then 
+                     sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
+                  else
+                     sminp_to_plant_vr(c,j) = 0._r8
+                  endif 
+               end do
+          end do             
+
+        end if   ! carbonnitrogenphosphorus
+
+        if( cnallocate_carbonnitrogen_only() )then
+
+          temp_sminp_to_plant = sminp_to_plant
+
+          call p2c(bounds,num_soilc,filter_soilc, &
+                sminp_to_ppool(bounds%begp:bounds%endp), &
+                sminp_to_plant(bounds%begc:bounds%endc))
+
+          
+          do j = 1, nlevdecomp
+               do fc=1,num_soilc
+                  c = filter_soilc(fc)
+
+                  if ( temp_sminp_to_plant(c) > 0._r8) then 
+                     sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
+                  else
+                     sminp_to_plant_vr(c,j) = 0._r8
+                  endif 
+               end do
+          end do             
+        end if  ! carbonnitrogen 
+
 
         else     ! use_nitrif_denitrif
   
