@@ -963,6 +963,12 @@ using a fortran linker.
   <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
 </compiler>
 
+<compiler MACH="cheyenne" COMPILER="gnu">
+  <CPPDEFS>
+    <append MODEL="pio1"> -DNO_MPIMOD </append>
+  </CPPDEFS>
+</compiler>
+
 <compiler MACH="cheyenne">
   <CPPDEFS>
     <!-- these flags enable nano timers -->
@@ -982,6 +988,8 @@ using a fortran linker.
   <CMAKE_OPTS>
     <append DEBUG="TRUE"> -DPIO_ENABLE_LOGGING=ON </append>
   </CMAKE_OPTS>
+  <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
 <compiler MACH="laramie">
