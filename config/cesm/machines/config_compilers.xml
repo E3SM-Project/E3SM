@@ -109,7 +109,7 @@ using a fortran linker.
   <CFLAGS>
     <base> -mcmodel=medium -std=gnu99 </base>
     <append compile_threaded="true"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall </append>
+    <append DEBUG="TRUE"> -g -Wall -ffpe-trap=invalid,zero,overflow -fcheck=bounds </append>
     <append DEBUG="FALSE"> -O </append>
   </CFLAGS>
   <CMAKE_OPTS>
