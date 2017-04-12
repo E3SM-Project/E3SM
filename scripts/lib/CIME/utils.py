@@ -26,8 +26,8 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        logger.error("%s %s" % (error_prefix,error_msg))
-        raise exc_type()
+        logger.error("%s %s", error_prefix,error_msg, exc_info=True)
+        raise exc_type("%s %s"%(error_prefix,error_msg))
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -39,7 +39,7 @@ def check_name(fullname, additional_chars=None, fullpath=False):
     >>> check_name("test.id", additional_chars=".")
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: illegal character . found in name test.id
+    SystemExit: ERROR: Illegal character . found in name test.id
     >>> check_name("case.name", fullpath=False)
 
     >>> check_name("/some/file/path/case.name", fullpath=True)
@@ -47,12 +47,13 @@ def check_name(fullname, additional_chars=None, fullpath=False):
         ...
     SystemExit: ERROR: Path /some/file/path does not exist or is not writable
     """
-    chars = "<>/{}[\]~`@"
+
+    chars = '<>/{}[\]~`@' # pylint: disable=anomalous-backslash-in-string
     if additional_chars is not None:
         chars += additional_chars
     if fullpath:
         path, name = os.path.split(fullname)
-        if path is not None and not (os.path.exists(path) and os.access(path, os.W_OK)): 
+        if path is not None and not (os.path.exists(path) and os.access(path, os.W_OK)):
             expect(False, "Path %s does not exist or is not writable"%path)
     else:
         name = fullname
