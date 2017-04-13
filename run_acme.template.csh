@@ -422,7 +422,7 @@ if ( `lowercase $case_build_dir` != default && -d $case_build_dir ) then
   if ( ${seconds_before_delete_bld_dir} >= 0 ) then
     set num_seconds_until_delete = $seconds_before_delete_bld_dir
     acme_newline
-    acme_print 'Removing old $case_build_dir directory '${case_name}' in '${num_seconds_until_delete}' seconds.'
+    acme_print 'Removing old $case_build_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
     acme_print 'To abort, press ctrl-C'
     while ( ${num_seconds_until_delete} > 0 )
       acme_print ' '${num_seconds_until_delete}'  seconds until deletion.'
