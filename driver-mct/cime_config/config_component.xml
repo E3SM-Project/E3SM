@@ -935,6 +935,23 @@
     this to work.</desc>
   </entry>
 
+  <entry id="ESMF_LOGFILE_KIND">
+    <type>char</type>
+    <valid_values>ESMF_LOGKIND_SINGLE,ESMF_LOGKIND_MULTI,ESMF_LOGKIND_NONE</valid_values>
+    <default_value>ESMF_LOGKIND_NONE</default_value>
+    <group>run_cesm</group>
+    <file>env_run.xml</file>
+    <desc>
+      Determines what ESMF log files (if any) are generated when
+          USE_ESMF_LIB is TRUE.
+      ESMF_LOGKIND_SINGLE: Use a single log file, combining messages from
+          all of the PETs. Not supported on some platforms.
+      ESMF_LOGKIND_MULTI: Use multiple log files -- one per PET.
+      ESMF_LOGKIND_NONE: Do not issue messages to a log file.
+      By default, no ESMF log files are generated.
+    </desc>
+  </entry>
+
   <entry id="COMP_RUN_BARRIERS">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -1804,6 +1821,16 @@
     </desc>
   </entry>
 
+  <entry id="NODE_FAIL_REGEX">
+    <type>char</type>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      A regular expression to search for an indication that a run failure was caused by a node failure
+      and should therefore be re-attempted.
+    </desc>
+  </entry>
+
   <entry id="PROXY">
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -1878,6 +1905,14 @@
   <!-- ===================================================================== -->
   <!-- definitions pelayout -->
   <!-- ===================================================================== -->
+
+  <entry id="PCT_SPARE_NODES">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>mach_pes</group>
+    <file>env_mach_pes.xml</file>
+    <desc>Percent of extra spare nodes to allocate</desc>
+  </entry>
 
   <entry id="NTASKS">
     <type>integer</type>
@@ -2475,6 +2510,50 @@
       when building the ACME executable. This occurs if this variable
       is set to TRUE. Note that is only available on a limited set of
       machines/compilers.</desc>
+  </entry>
+
+  <entry id="MPASLI_CONFIG_OPTS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>build_component_mpasli</group>
+    <file>env_build.xml</file>
+    <desc>MPASLI configure options. Currently not used</desc>
+  </entry>
+
+  <entry id="MPASLI_USE_ALBANY">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_component_mpasli</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies MPASLI is built with support for the Albany
+      library The first-order velocity solver in MPASLI uses the
+      Albany library.  In order to use that velocity solver, MPASLI
+      must be built with Albany support and linking to Albany must
+      occur when building the ACME executable.  This occurs if this
+      variable is set to TRUE.  Note that is only available on a
+      limited set of machines/compilers.  This must remain FALSE to
+      run MPASLI on a machine that does not have Albany, or for which
+      the CIME scripts are not aware of the existence of
+      Albany.</desc>
+  </entry>
+
+  <!-- Prerun/postrun custom script options -->
+
+  <entry id="PRERUN_SCRIPT">
+    <type>char</type>
+    <default_value></default_value>
+    <group>external_tools</group>
+    <file>env_run.xml</file>
+    <desc>External script to be run before model completion</desc>
+  </entry>
+  <entry id="POSTRUN_SCRIPT">
+    <type>char</type>
+    <default_value></default_value>
+    <group>external_tools</group>
+    <file>env_run.xml</file>
+    <desc>External script to be run after model completion</desc>
   </entry>
 
   <!-- Data Assimilation type stuff -->

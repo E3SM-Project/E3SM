@@ -258,8 +258,8 @@ contains
     character(len=*), parameter :: volr_field = 'volr'
     !---------------------------------------------------------------
 
-    SHR_ASSERT(associated(volr_r), errMsg(sourcefile, __LINE__))
-    SHR_ASSERT(associated(volr_l), errMsg(sourcefile, __LINE__))
+    SHR_ASSERT_FL(associated(volr_r), sourcefile, __LINE__)
+    SHR_ASSERT_FL(associated(volr_l), sourcefile, __LINE__)
 
     lsize_r = size(volr_r)
     lsize_l = size(volr_l)
