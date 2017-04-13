@@ -355,7 +355,7 @@
 
 <!-- AM_regionalStatistics -->
 <config_AM_regionalStatistics_enable>true</config_AM_regionalStatistics_enable>
-<config_AM_regionalStatistics_compute_interval>'0000-00-00_01:00:00'</config_AM_regionalStatistics_compute_interval>
+<config_AM_regionalStatistics_compute_interval>'0000-00-01_00:00:00'</config_AM_regionalStatistics_compute_interval>
 <config_AM_regionalStatistics_output_stream>'regionalStatisticsOutput'</config_AM_regionalStatistics_output_stream>
 <config_AM_regionalStatistics_compute_on_startup>true</config_AM_regionalStatistics_compute_on_startup>
 <config_AM_regionalStatistics_write_on_startup>true</config_AM_regionalStatistics_write_on_startup>

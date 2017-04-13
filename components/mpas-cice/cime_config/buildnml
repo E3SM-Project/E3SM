@@ -348,9 +348,9 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="regionalStatisticsOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
-	print $stream_file '        filename_template="mpascice.hist.am.regionalStatistics.$Y.nc"' . "\n";
-	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
-	print $stream_file '        output_interval="00-00-00_01:00:00"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.regionalStatistics.$Y.$M.nc"' . "\n";
+	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
+	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="regionalStatisticsAMPKG">' . "\n";
 	print $stream_file '' . "\n";
