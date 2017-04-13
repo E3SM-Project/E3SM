@@ -7,11 +7,10 @@ jobs.
 """
 import socket
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import expect, append_status
+from CIME.utils                     import expect, run_and_log_case_status
 from CIME.preview_namelists         import create_namelists
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.check_input_data          import check_all_input_data
-from CIME.case_cmpgen_namelists     import case_cmpgen_namelists
 from CIME.test_status               import *
 
 logger = logging.getLogger(__name__)
@@ -64,22 +63,31 @@ def _submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
 
     logger.warn("submit_jobs %s" % job)
     job_ids = case.submit_jobs(no_batch=no_batch, job=job, batch_args=batch_args)
-    msg = "Submitted jobs %s" % job_ids
-    append_status(msg, caseroot=caseroot, sfile="CaseStatus")
+    logger.info("Submitted job ids %s" % job_ids)
 
 def submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
+    if case.get_value("TEST"):
+        caseroot = case.get_value("CASEROOT")
+        casebaseid = case.get_value("CASEBASEID")
+        # This should take care of the race condition where the submitted job
+        # begins immediately and tries to set RUN phase. We proactively assume
+        # a passed SUBMIT phase. If this state is already PASS, don't set it again
+        # because then we'll lose RUN phase info if it's there. This info is important
+        # for system_tests_common to know if it needs to reinitialize the test or not.
+        with TestStatus(test_dir=caseroot, test_name=casebaseid) as ts:
+            phase_status = ts.get_status(SUBMIT_PHASE)
+            if phase_status != TEST_PASS_STATUS:
+                ts.set_status(SUBMIT_PHASE, TEST_PASS_STATUS)
+
     try:
-        _submit(case, job=job, resubmit=resubmit, no_batch=no_batch, batch_args=batch_args)
+        functor = lambda: _submit(case, job, resubmit, no_batch, batch_args)
+        run_and_log_case_status(functor, "case.submit", caseroot=case.get_value("CASEROOT"))
     except:
         # If something failed in the batch system, make sure to mark
         # the test as failed if we are running a test.
         if case.get_value("TEST"):
-            caseroot = case.get_value("CASEROOT")
-            casebaseid = case.get_value("CASEBASEID")
-            with TestStatus(test_dir=caseroot, test_name=casebaseid, lock=True) as ts:
-                ts.set_status(RUN_PHASE, TEST_FAIL_STATUS, comments="batch system failure")
-
-            append_status("Batch submission failed, TestStatus file changed to read-only", caseroot=caseroot, sfile="TestStatus.log")
+            with TestStatus(test_dir=caseroot, test_name=casebaseid) as ts:
+                ts.set_status(SUBMIT_PHASE, TEST_FAIL_STATUS)
 
         raise
 
@@ -88,9 +96,6 @@ def check_case(case, caseroot):
     create_namelists(case) # Must be called before check_all_input_data
     logger.info("Checking that inputdata is available as part of case submission")
     check_all_input_data(case)
-    # Now that we have baselines, do baseline operations
-    if case.get_value("TEST"):
-        case_cmpgen_namelists(case)
 
     expect(case.get_value("BUILD_COMPLETE"), "Build complete is "
            "not True please rebuild the model by calling case.build")

@@ -12,7 +12,7 @@
 
 from standard_script_setup import *
 
-from CIME.utils import expect, convert_to_type, append_status
+from CIME.utils import expect, convert_to_type, append_case_status
 from CIME.case import Case
 
 import re
@@ -135,7 +135,7 @@ def xmlchange(caseroot, listofsettings=None, xmlid=None, xmlval=None, subgroup=N
         for arg in sys.argv:
             argstr += "%s "%arg
         msg = "<command> %s </command>" % (argstr)
-        append_status(msg, caseroot=caseroot, sfile="CaseStatus")
+        append_case_status("xmlchange", "success", msg=msg, caseroot=caseroot)
 
 def _main_func(description):
     if ("--test" in sys.argv):

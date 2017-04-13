@@ -23,7 +23,7 @@ module pio
 #ifndef NO_MPIMOD
    use mpi, only : MPI_OFFSET_KIND ! _EXTERNAL
 #endif
-
+   use iso_c_binding
   implicit none
   private
 
@@ -43,7 +43,17 @@ module pio
   type, public :: var_desc_t
   end type var_desc_t
 
+   type, bind(c), public :: PIO_rearr_comm_fc_opt_t
+      logical(c_bool) :: enable_hs            ! Enable handshake?
+      logical(c_bool) :: enable_isend         ! Enable isends?
+      integer(c_int) :: max_pend_req         ! Maximum pending requests
+    end type PIO_rearr_comm_fc_opt_t
+
   type, public :: PIO_rearr_opt_t
+      integer(c_int)                         :: comm_type
+      integer(c_int)                         :: fcd       ! Flow control direction
+      type(PIO_rearr_comm_fc_opt_t)   :: comm_fc_opts_comp2io
+      type(PIO_rearr_comm_fc_opt_t)   :: comm_fc_opts_io2comp
   end type PIO_rearr_opt_t
 
   integer, parameter, private ::          &
@@ -69,6 +79,15 @@ module pio
   integer, parameter, public :: pio_rearr_subset = 0
   integer, parameter, public :: pio_rearr_box = 1
   integer, parameter, public :: PIO_WRITE = 0
+
+  integer, parameter, public :: pio_rearr_comm_p2p = 0
+  integer, parameter, public :: pio_rearr_comm_coll = 1
+  integer,parameter,public :: PIO_rearr_comm_fc_2d_enable = 0
+  integer,parameter,public :: PIO_rearr_comm_fc_1d_comp2io = 1
+  integer,parameter,public :: PIO_rearr_comm_fc_1d_io2comp = 2
+  integer,parameter,public :: PIO_rearr_comm_fc_2d_disable = 3
+  integer, public, parameter :: PIO_REARR_COMM_UNLIMITED_PEND_REQ = -1
+
 
   public :: PIO_def_dim
   public :: PIO_enddef
@@ -344,16 +363,18 @@ contains
     ierr = 0
   end function get_var_vdesc_{DIMS}d_{TYPE}
 
-  subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
+  subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base, rearr_opts)
+
     integer(i4), intent(in) :: comp_rank
     integer(i4), intent(in) :: comp_comm
     integer(i4), intent(in) :: num_iotasks
     integer(i4), intent(in) :: num_aggregator
     integer(i4), intent(in) :: stride
     integer(i4), intent(in) :: rearr
-    type (iosystem_desc_t), intent(inout)  :: iosystem  ! io descriptor to initalize
-
+    type (iosystem_desc_t), intent(out)  :: iosystem  ! io descriptor to initalize
     integer(i4), intent(in),optional :: base
+    type (pio_rearr_opt_t), intent(in), optional :: rearr_opts
+
   end subroutine init_intracom
 
   subroutine init_intercom(component_count, peer_comm, comp_comms, io_comm, iosystem)
@@ -362,7 +383,7 @@ contains
     integer, intent(in) :: comp_comms(component_count)   !  The compute communicator
     integer, intent(in) :: io_comm     !  The io communicator
 
-    type (iosystem_desc_t), intent(inout)  :: iosystem(component_count)  ! io descriptor to initalize
+    type (iosystem_desc_t), intent(out)  :: iosystem(component_count)  ! io descriptor to initalize
   end subroutine init_intercom
 
   subroutine PIO_initdecomp_bc(iosystem,basepiotype,dims,compstart,compcount,iodesc,iostart,iocount)

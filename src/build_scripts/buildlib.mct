@@ -14,7 +14,7 @@ set MACH	= `./xmlquery  MACH	 -value `
 set MPILIB	= `./xmlquery  MPILIB	 -value `
 set OS		= `./xmlquery  OS	 -value `
 
-setenv MCT_DIR    $CIMEROOT/externals/mct   # mct directory
+setenv MCT_DIR    $CIMEROOT/src/externals/mct   # mct directory
 setenv MCT_LIBDIR $1
 setenv LIBDIR $2
 echo "MCT_LIBDIR   $MCT_LIBDIR"

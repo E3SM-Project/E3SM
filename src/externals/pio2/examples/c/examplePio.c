@@ -163,18 +163,15 @@ typedef struct examplePioClass
  */
 struct examplePioClass* epc_init( struct examplePioClass* this )
 {
-    int ierr;
-    int argc;
-    char *argv;
     int i, localVal;
 
     /*
     ** initialize MPI
     */
     
-    ierr = MPI_Init(NULL, NULL);
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &this->myRank);
-    ierr = MPI_Comm_size(MPI_COMM_WORLD, &this->ntasks);
+    MPI_Init(NULL, NULL);
+    MPI_Comm_rank(MPI_COMM_WORLD, &this->myRank);
+    MPI_Comm_size(MPI_COMM_WORLD, &this->ntasks);
 
     /* Check that a valid number of processors was specified. */
     if (!(this->ntasks == 1 || this->ntasks == 2 || this->ntasks == 4 ||
@@ -235,10 +232,11 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
         localVal++;
     }
 
-    if (this->verbose) {
-	printf("rank: %d length: %d [", this->myRank, this->arrIdxPerPe);
+    if (this->verbose)
+    {
+	printf("rank: %d length: %lld [", this->myRank, this->arrIdxPerPe);
 	for (i = 0; i < this->arrIdxPerPe; i++ ) {
-	    printf("%d", this->compdof[i]);
+	    printf("%lld", this->compdof[i]);
 	    if (i < this->arrIdxPerPe - 1)
 		printf(", ");
 	}
@@ -451,17 +449,15 @@ struct examplePioClass* epc_closeFile( struct examplePioClass* this )
  */
 struct examplePioClass* epc_cleanUp( struct examplePioClass* this )
 {
-    int ierr;
-    
     if (this->verbose)
 	printf("rank: %d Freeing local and library resources...\n", this->myRank);
     free(this->dataBuffer);
     free(this->readBuffer);
     free(this->compdof);
     
-    ierr = PIOc_freedecomp(this->pioIoSystem, this->iodescNCells);
-    ierr = PIOc_finalize(this->pioIoSystem);
-    ierr = MPI_Finalize();
+    PIOc_freedecomp(this->pioIoSystem, this->iodescNCells);
+    PIOc_finalize(this->pioIoSystem);
+    MPI_Finalize();
     
     return this;
 }

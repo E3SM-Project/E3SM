@@ -195,8 +195,8 @@ static int update_ll_hash (Timer *, const int, const unsigned int);
 static inline int update_ptr (Timer *, const int);
 static int construct_tree (Timer *, Method);
 
-static int cmp (const char **, const char **);
-static int ncmp (const char **, const char **);
+static int cmp (const void *, const void *);
+static int ncmp (const void *, const void *);
 static int get_index ( const char *, const char *);
 
 typedef struct {
@@ -2933,9 +2933,9 @@ int get_index( const char * list,
 ** cmp: returns value from strcmp. for use with qsort
 */
 
-static int cmp(const char **x, const char **y)
+static int cmp(const void *x, const void *y)
 {
-  return strcmp(*x, *y);
+  return strcmp(*(char**)x, *(char**)y);
 }
 
 
@@ -2943,15 +2943,17 @@ static int cmp(const char **x, const char **y)
 ** ncmp: compares values of memory adresses pointed to by a pointer. for use with qsort
 */
 
-static int ncmp( const char **x, const char **y )
+static int ncmp( const void *x, const void *y )
 {
   static const char *thisfunc = "GPTLsetoption";
+  const char **ix = (const char **)x;
+  const char **iy = (const char **)y;
 
-  if( *x > *y )
+  if( *ix > *iy )
     return 1;
-  if( *x < *y )
+  if( *ix < *iy )
     return -1;
-  if( *x == *y )
+  if( *ix == *iy )
     GPTLerror("%s: shared memory address between timers\n", thisfunc);
 }
 

@@ -1,12 +1,13 @@
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
-from CIME.utils                     import append_status, gzip_existing_file, new_lid
+from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
 from CIME.preview_namelists         import create_namelists
+from CIME.case_st_archive           import case_st_archive, restore_from_archive
 
-import shutil, time, sys, os, glob, resource
+import shutil, time, sys, os, glob
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,6 @@ def pre_run_check(case, lid):
     if case.get_value("TESTCASE") == "PFS":
         env_mach_pes = os.path.join(caseroot,"env_mach_pes.xml")
         shutil.copy(env_mach_pes,"%s.%s"%(env_mach_pes,lid))
-
 
     # check for locked files.
     check_lockedfiles(case.get_value("CASEROOT"))
@@ -69,10 +69,6 @@ def pre_run_check(case, lid):
     # variable while the job is in the queue
     create_namelists(case)
 
-    # document process
-    append_status("Run started ", caseroot=caseroot,
-                  sfile="CaseStatus")
-
     logger.info("-------------------------------------------------------------------------")
     logger.info(" - Prestage required restarts into %s" %(rundir))
     logger.info(" - Case input data directory (DIN_LOC_ROOT) is %s " %(din_loc_root))
@@ -80,8 +76,18 @@ def pre_run_check(case, lid):
     logger.info("-------------------------------------------------------------------------")
 
 ###############################################################################
-def run_model(case):
+def _run_model_impl(case, lid):
 ###############################################################################
+
+    pre_run_check(case, lid)
+
+    model = case.get_value("MODEL")
+
+    # Set OMP_NUM_THREADS
+    env_mach_pes = case.get_env("mach_pes")
+    comp_classes = case.get_values("COMP_CLASSES")
+    thread_count = env_mach_pes.get_max_thread_count(comp_classes)
+    os.environ["OMP_NUM_THREADS"] = str(thread_count)
 
     # Run the model
     logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:%M:%S")))
@@ -91,14 +97,58 @@ def run_model(case):
     logger.info("run command is %s " %cmd)
 
     rundir = case.get_value("RUNDIR")
-    run_cmd_no_fail(cmd, from_dir=rundir)
+    loop = True
+
+    while loop:
+        loop = False
+        stat = run_cmd(cmd, from_dir=rundir)[0]
+        model_logfile = os.path.join(rundir, model + ".log." + lid)
+        # Determine if failure was due to a failed node, if so, try to restart
+        if stat != 0:
+            node_fail_re = case.get_value("NODE_FAIL_REGEX")
+            if node_fail_re:
+                node_fail_regex = re.compile(node_fail_re)
+                model_logfile = os.path.join(rundir, model + ".log." + lid)
+                if os.path.exists(model_logfile):
+                    num_fails = len(node_fail_regex.findall(open(model_logfile, 'r').read()))
+                    if num_fails > 0 and case.spare_nodes >= num_fails:
+                        # We failed due to node failure!
+                        logger.warning("Detected model run failed due to node failure, restarting")
+
+                        # Archive the last consistent set of restart files and restore them
+                        case_st_archive(case, no_resubmit=True)
+                        restore_from_archive(case)
+
+                        orig_cont = case.get_value("CONTINUE_RUN")
+                        if not orig_cont:
+                            case.set_value("CONTINUE_RUN", True)
+                            create_namelists(case)
+
+                        lid = new_lid()
+                        loop = True
+
+                        case.spare_nodes -= num_fails
+
+            if not loop:
+                # We failed and we're not restarting
+                expect(False, "RUN FAIL: Command '%s' failed\nSee log file for details: %s" % (cmd, model_logfile))
+
     logger.info("%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:%M:%S")))
+
+    post_run_check(case, lid)
+
+    return lid
+
+###############################################################################
+def run_model(case, lid):
+###############################################################################
+    functor = lambda: _run_model_impl(case, lid)
+    return run_and_log_case_status(functor, "case.run", caseroot=case.get_value("CASEROOT"))
 
 ###############################################################################
 def post_run_check(case, lid):
 ###############################################################################
 
-    caseroot = case.get_value("CASEROOT")
     rundir = case.get_value("RUNDIR")
     model = case.get_value("MODEL")
 
@@ -107,26 +157,15 @@ def post_run_check(case, lid):
     cpl_logfile = os.path.join(rundir, "cpl" + ".log." + lid)
 
     if not os.path.isfile(model_logfile):
-        msg = "Model did not complete, no %s log file "%model_logfile
-        append_status(msg, caseroot=caseroot, sfile="CaseStatus")
-        expect(False, msg)
+        expect(False, "Model did not complete, no %s log file " % model_logfile)
     elif not os.path.isfile(cpl_logfile):
-        msg = "Model did not complete, no cpl log file"
-        append_status(msg, caseroot=caseroot, sfile="CaseStatus")
-        expect(False, msg)
+        expect(False, "Model did not complete, no cpl log file '%s'" % cpl_logfile)
     elif os.stat(model_logfile).st_size == 0:
-        msg = " Run FAILED "
-        append_status(msg, caseroot=caseroot, sfile="CaseStatus")
-        expect(False, msg)
+        expect(False, "Run FAILED")
     else:
         with open(cpl_logfile, 'r') as fd:
-            if 'SUCCESSFUL TERMINATION' in fd.read():
-                msg = "Run SUCCESSFUL"
-                append_status(msg, caseroot=caseroot, sfile="CaseStatus")
-            else:
-                msg = "Model did not complete - see %s \n " %(cpl_logfile)
-                append_status(msg, caseroot=caseroot, sfile="CaseStatus")
-                expect(False, msg)
+            if 'SUCCESSFUL TERMINATION' not in fd.read():
+                expect(False, "Model did not complete - see %s \n "  % cpl_logfile)
 
 ###############################################################################
 def save_logs(case, lid):
@@ -178,12 +217,22 @@ def resubmit_check(case):
         submit(case, job=job, resubmit=True)
 
 ###############################################################################
-def do_data_assimilation(da_script, caseroot, cycle, lid):
+def do_external(script_name, caseroot, rundir, lid, prefix):
 ###############################################################################
-    cmd = da_script + " 1> da.log.%s %s %d 2>&1" %(lid, caseroot, cycle)
-    logger.debug("running %s" %da_script)
+    filename = "%s.external.log.%s" %(prefix, lid)
+    outfile = os.path.join(rundir, filename)
+    cmd = script_name + " 1> %s %s 2>&1" %(outfile, caseroot)
+    logger.info("running %s" %script_name)
     run_cmd_no_fail(cmd)
-    # disposeLog(case, 'da', lid)  THIS IS UNDEFINED!
+
+###############################################################################
+def do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
+###############################################################################
+    filename = "da.log.%s" %(lid)
+    outfile = os.path.join(rundir, filename)
+    cmd = da_script + " 1> %s %s %d 2>&1" %(outfile, caseroot, cycle)
+    logger.info("running %s" %da_script)
+    run_cmd_no_fail(cmd)
 
 ###############################################################################
 def case_run(case):
@@ -196,12 +245,8 @@ def case_run(case):
            "Please submit your run using the submit script like so:"
            " ./case.submit")
 
-    # If we need to produce core files, we need to try to ensure that the
-    # system will support them
-    try:
-        resource.setrlimit(resource.RLIMIT_CORE, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
-    except:
-        pass
+    prerun_script = case.get_value("PRERUN_SCRIPT")
+    postrun_script = case.get_value("POSTRUN_SCRIPT")
 
     data_assimilation = case.get_value("DATA_ASSIMILATION")
     data_assimilation_cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
@@ -209,11 +254,6 @@ def case_run(case):
 
     # set up the LID
     lid = new_lid()
-
-    # Set OMP_NUM_THREADS. Want this to happen before prerun provenance
-    # so it gets properly logged in the environment provenance files.
-    env_mach_pes = case.get_env("mach_pes")
-    os.environ["OMP_NUM_THREADS"] = str(env_mach_pes.get_max_thread_count(case.get_values("COMP_CLASSES")))
 
     save_prerun_provenance(case)
 
@@ -223,15 +263,22 @@ def case_run(case):
             case.set_value("CONTINUE_RUN", "TRUE")
             lid = new_lid()
 
-        pre_run_check(case, lid)
-        run_model(case)
-        post_run_check(case, lid)
+        if prerun_script:
+            do_external(prerun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
+                        lid, prefix="prerun")
+
+        lid = run_model(case, lid)
         save_logs(case, lid)       # Copy log files back to caseroot
         if case.get_value("CHECK_TIMING") or case.get_value("SAVE_TIMING"):
             get_timing(case, lid)     # Run the getTiming script
 
         if data_assimilation:
-            do_data_assimilation(data_assimilation_script, case.get_value("CASEROOT"), cycle, lid)
+            do_data_assimilation(data_assimilation_script, case.get_value("CASEROOT"), cycle, lid,
+                                 case.get_value("RUNDIR"))
+
+        if postrun_script:
+            do_external(postrun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
+                        lid, prefix="postrun")
 
         save_postrun_provenance(case)
 

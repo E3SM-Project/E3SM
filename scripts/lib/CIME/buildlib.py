@@ -50,7 +50,7 @@ def build_data_lib(argv, compclass):
         compname = "d" + compclass
         with open('Filepath', 'w') as out:
             out.write(os.path.join(caseroot, "SourceMods", "src.%s" %compname) + "\n")
-            out.write(os.path.join(cimeroot, "components", "data_comps", compname) + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname) + "\n")
 
         # Build the component
         run_gmake(case, compclass, libroot)
@@ -69,8 +69,8 @@ def build_xcpl_lib(argv, compclass):
         compname = "x" + compclass
         with open('Filepath', 'w') as out:
             out.write(os.path.join(caseroot, "SourceMods", "src.%s", compname) + "\n")
-            out.write(os.path.join(cimeroot, "components", "xcpl_comps", "xshare") + "\n")
-            out.write(os.path.join(cimeroot, "components", "xcpl_comps",compname, "cpl") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", "xshare") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps",compname, "cpl") + "\n")
 
         # Build the component
         run_gmake(case, compclass, libroot)
@@ -89,8 +89,8 @@ def build_stub_lib(argv, compclass):
         compname = "s" + compclass
         with open('Filepath', 'w') as out:
             out.write(os.path.join(caseroot, "SourceMods", "src.%s", compname) + "\n")
-            out.write(os.path.join(cimeroot, "components", "stub_comps", "xshare") + "\n")
-            out.write(os.path.join(cimeroot, "components", "stub_comps",compname, "cpl") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "stub_comps", "xshare") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "stub_comps",compname, "cpl") + "\n")
 
         # Build the component
         run_gmake(case, compclass, libroot)

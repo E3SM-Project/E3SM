@@ -24,7 +24,7 @@ def _run_pylint(on_file, interactive):
 
     # add init-hook option
     cmd_options += " --init-hook='sys.path.extend((\"%s\",\"%s\",\"%s\"))'"%\
-        (os.path.join(cimeroot,"utils","python"),
+        (os.path.join(cimeroot,"scripts","lib"),
          os.path.join(cimeroot,"scripts","Tools"),
          os.path.join(cimeroot,"tools","unit_testing","python"))
 
@@ -65,7 +65,8 @@ def _should_pylint_skip(filepath):
 def get_all_checkable_files():
 ###############################################################################
     cimeroot = get_cime_root()
-    all_git_files = run_cmd_no_fail("git ls-files --full-name %s" % cimeroot, verbose=False).splitlines()
+    all_git_files = run_cmd_no_fail("git ls-files", from_dir=cimeroot, verbose=False).splitlines()
+
     files_to_test = [item for item in all_git_files
                      if ((item.endswith(".py") or is_python_executable(os.path.join(cimeroot, item))) and not _should_pylint_skip(item))]
     return files_to_test
