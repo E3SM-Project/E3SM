@@ -77,7 +77,7 @@ NOTES:
 
 3. Settings
   title                 = ascii string to add to mapping files (default: 'unset')
-  restrict_smooth_src_to_nn_dest = option to limit the srouce points for step2 to
+  restrict_smooth_src_to_nn_dest = option to limit the source points for step2 to
                                    just the points that get mapped to in step1; if
                                    false, use all ocean points in
                                    file_ocn_coastal_mask instead (default: .true.)
@@ -97,14 +97,11 @@ WHAT THESE TOOLS PROVIDE
 The runoff_map executable generates three maps:
 
 1) A nearest neighbor mapping from the rof grid to the ocean grid.
-   * For river runoff, it may be desireable to limit the destination grid
-     so that runoff only enters at coastal points. The optional file_ocn_coast_mask
+   * For river runoff, it may be desireble to limit the destination grid so that
+     runoff only enters at coastal points. The optional file_ocn_coast_mask
      variable in the namelist allows you to specify two ocean grid files; one for
-     the full ocean and one for just the coast
-     variable can be used to point to an ocean grid 
-   * The optional file_ocn_coast_mask file allows mapping to a subset of ocean
-     cells, presumably the coastal cells); typically this should not be
-     specified for ice runoff
+     the full ocean and one for just the coast. Typically this should not be
+     specified for ice runoff.
 2) A smoothing map from the ocean grid to the ocean grid.
    * If file_ocn_coast_mask was specified, this maps from the coastal ocean to
      the open ocean; otherwise it maps from the ocean grid onto itself.
