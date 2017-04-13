@@ -31,6 +31,10 @@ def _get_time_in_seconds(time, unit):
         dmult = 30 * 24 * 3600
     elif 'nday' in unit:
         dmult = 24 * 3600
+    elif 'nhour' in unit:
+        dmult = 3600
+    elif 'nminute' in unit:
+        dmult = 60
     else:
         dmult = 1
 
