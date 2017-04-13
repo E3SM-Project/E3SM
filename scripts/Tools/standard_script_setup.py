@@ -7,7 +7,7 @@ that every script should do.
 import sys, os
 import __main__ as main
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..")
-_LIB_DIR = os.path.join(_CIMEROOT, "utils", "python")
+_LIB_DIR = os.path.join(_CIMEROOT, "scripts", "lib")
 sys.path.append(_LIB_DIR)
 
 # Important: Allows external tools to link up with CIME

@@ -12,12 +12,11 @@ def create_dirs(case):
     Make necessary directories for case
     """
     # Get data from XML
-    exeroot = case.get_value("EXEROOT")
-    libroot = case.get_value("LIBROOT")
-    incroot = case.get_value("INCROOT")
-    rundir = case.get_value("RUNDIR")
+    exeroot  = case.get_value("EXEROOT")
+    libroot  = case.get_value("LIBROOT")
+    incroot  = case.get_value("INCROOT")
+    rundir   = case.get_value("RUNDIR")
     caseroot = case.get_value("CASEROOT")
-
 
     docdir = os.path.join(caseroot, "CaseDocs")
     dirs_to_make = []
@@ -47,6 +46,8 @@ def create_namelists(case):
     """
     case.flush()
 
+    create_dirs(case)
+
     casebuild = case.get_value("CASEBUILD")
     caseroot = case.get_value("CASEROOT")
     rundir = case.get_value("RUNDIR")
@@ -74,12 +75,14 @@ def create_namelists(case):
 
         cmd = os.path.join(config_dir, "buildnml")
         do_run_cmd = False
+        # This code will try to import and run each buildnml as a subroutine
+        # if that fails it will run it as a program in a seperate shell
         try:
             with open(cmd, 'r') as f:
                 first_line = f.readline()
             if "python" in first_line:
-                logger.info("   Calling %s buildnml"%compname)
                 mod = imp.load_source("buildnml", cmd)
+                logger.info("   Calling %s buildnml"%compname)
                 mod.buildnml(case, caseroot, compname)
             else:
                 raise SyntaxError
@@ -100,8 +103,8 @@ def create_namelists(case):
             logger.info(output)
             # refresh case xml object from file
             case.read_xml()
-    logger.info("Finished creating component namelists")
 
+    logger.info("Finished creating component namelists")
 
     # Save namelists to docdir
     if (not os.path.isdir(docdir)):
@@ -111,7 +114,6 @@ def create_namelists(case):
                 fd.write(" CESM Resolved Namelist Files\n   For documentation only DO NOT MODIFY\n")
         except (OSError, IOError) as e:
             expect(False, "Failed to write %s/README: %s" % (docdir, e))
-
 
     for cpglob in ["*_in_[0-9]*", "*modelio*", "*_in",
                    "*streams*txt*", "*stxt", "*maps.rc", "*cism.config*"]:

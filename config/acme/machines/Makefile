@@ -427,8 +427,8 @@ ifndef CISM_LIBDIR
   CISM_LIBDIR=$(GLC_DIR)/lib
 endif
 
-INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
-		-I$(CIMEROOT)/share/csm_share/include -I$(CIMEROOT)/share/shr_RandNum/include
+INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include -I$(CIMEROOT)/src/share/util \
+		-I$(CIMEROOT)/src/share/include -I$(CIMEROOT)/src/share/RandNum/include
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
@@ -472,15 +472,15 @@ rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
 	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
 
 
-ifdef COSP_LIBDIR
-INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../
-$(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
-	$(MAKE) -C $(COSP_LIBDIR) F90='$(FC)' F90FLAGS='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FC_AUTO_R8)' \
-	F90FLAGS_noauto='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS)' \
-	F90FLAGS_fixed='$(INCLDIR) $(INCS) $(FIXEDFLAGS) $(FFLAGS) $(FC_AUTO_R8)'
+  ifdef COSP_LIBDIR
+    INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../
+    $(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
+    $(MAKE) -C $(COSP_LIBDIR) F90='$(FC)' F90FLAGS='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FC_AUTO_R8)' \
+    F90FLAGS_noauto='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS)' \
+    F90FLAGS_fixed='$(INCLDIR) $(INCS) $(FIXEDFLAGS) $(FFLAGS) $(FC_AUTO_R8)'
 
-cospsimulator_intr.o: $(COSP_LIBDIR)/libcosp.a
-endif
+    cospsimulator_intr.o: $(COSP_LIBDIR)/libcosp.a
+  endif
 
 endif
 
@@ -569,25 +569,25 @@ endif
 
 $(SHAREDLIBROOT)/$(SHAREDPATH)/mct/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
-	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct
+	$(CONFIG_SHELL) $(CIMEROOT)/src/externals/mct/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/src/externals/mct
 
 $(SHAREDLIBROOT)/$(SHAREDPATH)/mct/mpi-serial/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
-	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/mpi-serial/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct/mpi-serial
+	$(CONFIG_SHELL) $(CIMEROOT)/src/externals/mct/mpi-serial/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/src/externals/mct/mpi-serial
 
 ifeq ($(PIO_VERSION),2)
 # This is a pio2 library
   PIOLIB = $(PIO_LIBDIR)/libpiof.a $(PIO_LIBDIR)/libpioc.a
   PIOLIBNAME = -lpiof -lpioc
-  PIO_SRC_DIR = $(CIMEROOT)/externals/pio2
+  PIO_SRC_DIR = $(CIMEROOT)/src/externals/pio2
 else
 # This is a pio1 library
   PIOLIB = $(PIO_LIBDIR)/libpio.a
   PIOLIBNAME = -lpio
-  ifneq ("$(wildcard $(CIMEROOT)/externals/pio1/pio)", "")
-    PIO_SRC_DIR = $(CIMEROOT)/externals/pio1
+  ifneq ("$(wildcard $(CIMEROOT)/src/externals/pio1/pio)", "")
+    PIO_SRC_DIR = $(CIMEROOT)/src/externals/pio1
   else
-    PIO_SRC_DIR = $(CIMEROOT)/externals/pio1/pio
+    PIO_SRC_DIR = $(CIMEROOT)/src/externals/pio1/pio
   endif
 endif
 #endif
@@ -615,7 +615,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
               -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
               -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
               -D PIO_ENABLE_TESTS:BOOL=OFF \
-              -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
+	      -D USER_CMAKE_MODULE_PATH:LIST="$(CIMEROOT)/src/externals/CMake;$(CIMEROOT)/src/externals/pio2/cmake" \
 
 # Allow for separate installations of the NetCDF C and Fortran libraries
 ifeq ($(NETCDF_SEPARATE), false)
@@ -832,7 +832,7 @@ $(COMPLIB): $(OBJS)
 	$(CXX) -c $(INCLDIR) $(INCS) $(CXXFLAGS)  $<
 
 %.F90: %.F90.in
-	$(CIMEROOT)/externals/genf90/genf90.pl $< > $@
+	$(CIMEROOT)/src/externals/genf90/genf90.pl $< > $@
 
 cleanatm:
 	$(RM) -f $(LIBROOT)/libatm.a

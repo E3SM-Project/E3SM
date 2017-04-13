@@ -43,6 +43,8 @@
 
    the 'executable' tag must have arguments required for the chosen mpirun, as well as the executable name.
 
+ unit_testing: can be 'true' or 'false'.
+   This allows using a different mpirun command to launch unit tests
 
 -->
 
@@ -1636,6 +1638,11 @@
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
+    </mpirun>
+    <mpirun mpilib="default" unit_testing="true">
+      <!-- For unit testing, avoid all of the extra stuff that we use before and
+           after the mpirun command when launching cesm on yellowstone -->
+      <executable>mpirun.lsf </executable>
     </mpirun>
     <mpirun mpilib="default" threaded="false">
       <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT mpirun.lsf $ENV{CESMDATAROOT}/tools/bin/launch </executable>

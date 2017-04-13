@@ -244,7 +244,7 @@
        <directive>--mail-user=email@pnnl.gov</directive>
        <directive>--output=slurm.out</directive>
        <directive>--error=slurm.err</directive>
-     </directives>
+    </directives>
     <queues>
       <queue walltimemax="00:59:00" jobmin="1" jobmax="9999" default="true">slurm</queue>
     </queues>

@@ -1,32 +1,56 @@
-SYNOPSIS
-     configure [options]
-OPTIONS
-     User supplied values are denoted in angle brackets (<>).  Any value that contains
-     white-space must be quoted.  Long option names may be supplied with either single
-     or double leading dashes.  A consequence of this is that single letter options may
-     NOT be bundled.
+usage: configure [-h] [-d] [-v] [-s] [--machine MACHINE]
+                 [--machines-dir MACHINES_DIR]
+                 [--macros-format {Makefile,CMake}] [--output-dir OUTPUT_DIR]
+                 [--compiler COMPILER] [--mpilib MPILIB]
 
-     -cimeroot            Specify the toplevel cime directory.
-                          default: use CIMEROOT environment variable
-     -mach <name>         Specify a machine (required).
-     -compiler <name>     Specify a compiler for the target machine (optional)
-                          default: default compiler for the target machine
-     -mpilib <name>       Specify an mpi library for the target machine (optional)
-                          default: mpi-serial  (most of the tools are serial apps)
-     -mach_dir <path>     Specify the locations of the Machines directory (optional).
+This script writes CIME build information to a directory. The pieces of
+information that will be written include: 1. Machine-specific build settings
+(i.e. the "Macros" file). 2. File-specific build settings (i.e. "Depends"
+files). 3. Environment variable loads (i.e. the env_mach_specific files). The
+.env_mach_specific.sh and .env_mach_specific.csh files are specific to a given
+compiler, MPI library, and DEBUG setting. By default, these will be the
+machine's default compiler, the machine's default MPI library, and FALSE,
+respectively. These can be changed by setting the environment variables
+COMPILER, MPILIB, and DEBUG, respectively.
 
-     -output_dir <path>   default: current working directory
-     -output_format <value> Output format can be make or cmake.
-                          default: make
-     -help [or -h]        Print usage to STDOUT (optional).
-     -loglevel
+optional arguments:
+  -h, --help            show this help message and exit
+  -d, --debug           Print debug information (very verbose) to file /home/j
+                        edwards/cesm2_0_alpha/cime/tools/mapping/map_field/src
+                        /configure.log
+  -v, --verbose         Add additional context (time and file) to log messages
+  -s, --silent          Print only warnings and error messages
+  --machine MACHINE     The machine to create build information for.
+  --machines-dir MACHINES_DIR
+                        The machines directory to take build information from.
+                        Overrides the CIME_MODEL environment variable, and
+                        must be specified if that variable is not set.
+  --macros-format {Makefile,CMake}
+                        The format of Macros file to generate. If 'Makefile'
+                        is passed in, a file called 'Macros.make' is
+                        generated. If 'CMake' is passed in, a file called
+                        'Macros.cmake' is generated. This option can be
+                        specified multiple times to generate multiple files.
+                        If not used at all, Macros generation is skipped. Note
+                        that Depends files are currently always in Makefile
+                        format, regardless of this option.
+  --output-dir OUTPUT_DIR
+                        The directory to write files to. If not specified,
+                        defaults to the current working directory.
+  --compiler COMPILER, -compiler COMPILER
+                        Specify a compiler. To see list of supported compilers
+                        for each machine, use the utility manage_case in this
+                        directory
+  --mpilib MPILIB, -mpilib MPILIB
+                        Specify the mpilib. To see list of supported mpilibs
+                        for each machine, use the utility manage_case in this
+                        directory. The default is the first listing in MPILIBS
+                        in config_machines.xml
+  --clean               Remove old Macros and env files before attempting to
+                        create new ones
 
-EXAMPLES
-
-  ./configure -mach bluefire -compiler ibm -cimeroot /path/to/cime
 
 
-This tool is used to create Macros files to build CESM tools on supported machines.
 It will create a Macros file in make or cmake format along with the module support
 for the specified or default compiler.   It will also create two files
 .env_mach_specific.csh

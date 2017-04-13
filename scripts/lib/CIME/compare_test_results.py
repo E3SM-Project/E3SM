@@ -1,5 +1,5 @@
 import CIME.compare_namelists, CIME.simple_compare
-from CIME.utils import expect, get_model
+from CIME.utils import expect, get_model, append_status
 from CIME.test_status import *
 from CIME.hist_utils import compare_baseline
 from CIME.case_cmpgen_namelists import case_cmpgen_namelists
@@ -67,12 +67,12 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
         ts = TestStatus(test_dir=test_dir)
         test_name = ts.get_name()
         if (compare_tests in [[], None] or CIME.utils.match_any(test_name, compare_tests)):
-            CIME.utils.append_status(
-                msg = ("Comparing against baseline with compare_test_results:\n" +
-                       "Baseline: %s\n"%(baseline_name) +
-                       "In baseline_root: %s"%(baseline_root)),
-                caseroot = test_dir,
-                sfile = logfile_name)
+            append_status(
+                "Comparing against baseline with compare_test_results:\n" +
+                "Baseline: %s\n"%(baseline_name) +
+                "In baseline_root: %s"%(baseline_root),
+                logfile_name,
+                caseroot=test_dir)
 
             if (not hist_only):
                 nl_compare_result = None
@@ -143,15 +143,9 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
 
             print brief_result,
 
-            CIME.utils.append_status(
-                msg = brief_result,
-                caseroot = test_dir,
-                sfile = logfile_name)
+            append_status(brief_result, logfile_name, caseroot=test_dir)
 
             if detailed_comments:
-                CIME.utils.append_status(
-                    msg = "Detailed comments:\n" + detailed_comments,
-                    caseroot = test_dir,
-                    sfile = logfile_name)
+                append_status("Detailed comments:\n" + detailed_comments, logfile_name, caseroot=test_dir)
 
     return all_pass_or_skip

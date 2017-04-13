@@ -16,11 +16,11 @@ class Files(EntryID):
 
         >>> files = Files()
         >>> files.get_value('CASEFILE_HEADERS',resolved=False)
-        '$CIMEROOT/cime_config/config_headers.xml'
+        '$CIMEROOT/config/config_headers.xml'
         """
         cimeroot = get_cime_root()
-        infile = os.path.join(cimeroot, "cime_config", get_model(), "config_files.xml")
-        schema = os.path.join(cimeroot, "cime_config", "xml_schemas", "entry_id.xsd")
+        infile = os.path.join(cimeroot, "config", get_model(), "config_files.xml")
+        schema = os.path.join(cimeroot, "config", "xml_schemas", "entry_id.xsd")
         EntryID.__init__(self, infile, schema=schema)
 
     def get_schema(self, nodename):

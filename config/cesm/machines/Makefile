@@ -361,8 +361,36 @@ ifndef CISM_LIBDIR
   CISM_LIBDIR=$(GLC_DIR)/lib
 endif
 
-INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
-		-I$(CIMEROOT)/share/csm_share/include -I$(CIMEROOT)/share/shr_RandNum/include
+INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include -I$(CIMEROOT)/src/share/util \
+		-I$(CIMEROOT)/src/share/include -I$(CIMEROOT)/src/share/RandNum/include
+
+ifeq ($(MODEL),driver)
+  INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj -I$(EXEROOT)/esp/obj
+# nagfor and gcc have incompatible LDFLAGS.
+# nagfor requires the weird "-Wl,-Wl,," syntax.
+# If done in config_compilers.xml, we break MCT.
+  ifeq ($(strip $(COMPILER)),nag)
+    ifeq ($(NETCDF_SEPARATE), false)
+      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_PATH)/lib
+    else ifeq ($(NETCDF_SEPARATE), true)
+      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_C_PATH)/lib
+      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_FORTRAN_PATH)/lib
+    endif
+  endif
+else
+  ifeq ($(strip $(COMPILER)),nag)
+    ifeq ($(DEBUG), TRUE)
+      ifeq ($(strip $(MACH)),hobart)
+       # GCC needs to be able to link to
+       # nagfor runtime to get autoconf
+       # tests to work.
+	 CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
+	 SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
+       endif
+    endif
+  endif
+endif
+
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
@@ -389,8 +417,8 @@ FFLAGS_NOOPT += $(FPPDEFS)
 
 
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
-# The following is for the COSP simulator code:
-COSP_LIBDIR:=$(EXEROOT)/atm/obj/cosp
+  # The following is for the COSP simulator code:
+  COSP_LIBDIR:=$(EXEROOT)/atm/obj/cosp
 endif
 
 ifeq ($(MODEL),cam)
@@ -431,34 +459,6 @@ ifeq ($(NETCDF_SEPARATE), false)
   SLIBS += -L$(LIB_NETCDF) -lnetcdff -lnetcdf
 else ifeq ($(NETCDF_SEPARATE), true)
   SLIBS += -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
-endif
-
-
-ifeq ($(MODEL),driver)
-  INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj -I$(EXEROOT)/esp/obj
-# nagfor and gcc have incompatible LDFLAGS.
-# nagfor requires the weird "-Wl,-Wl,," syntax.
-# If done in config_compilers.xml, we break MCT.
-  ifeq ($(strip $(COMPILER)),nag)
-    ifeq ($(NETCDF_SEPARATE), false)
-      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_PATH)/lib
-    else ifeq ($(NETCDF_SEPARATE), true)
-      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_C_PATH)/lib
-      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_FORTRAN_PATH)/lib
-    endif
-  endif
-else
-  ifeq ($(strip $(COMPILER)),nag)
-    ifeq ($(DEBUG), TRUE)
-      ifeq ($(strip $(MACH)),hobart)
-       # GCC needs to be able to link to
-       # nagfor runtime to get autoconf
-       # tests to work.
-	 CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-	 SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
-       endif
-    endif
-  endif
 endif
 
 ifdef LIB_PNETCDF
@@ -517,25 +517,25 @@ endif
 
 $(SHAREDLIBROOT)/$(SHAREDPATH)/mct/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
-	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct
+	$(CONFIG_SHELL) $(CIMEROOT)/src/externals/mct/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/src/externals/mct
 
 $(SHAREDLIBROOT)/$(SHAREDPATH)/mct/mpi-serial/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
-	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/mpi-serial/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct/mpi-serial
+	$(CONFIG_SHELL) $(CIMEROOT)/src/externals/mct/mpi-serial/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/src/externals/mct/mpi-serial
 
 ifeq ($(PIO_VERSION),2)
 # This is a pio2 library
   PIOLIB = $(PIO_LIBDIR)/libpiof.a $(PIO_LIBDIR)/libpioc.a
   PIOLIBNAME = -lpiof -lpioc
-  PIO_SRC_DIR = $(CIMEROOT)/externals/pio2
+  PIO_SRC_DIR = $(CIMEROOT)/src/externals/pio2
 else
 # This is a pio1 library
   PIOLIB = $(PIO_LIBDIR)/libpio.a
   PIOLIBNAME = -lpio
-  ifneq ("$(wildcard $(CIMEROOT)/externals/pio1/pio)", "")
-    PIO_SRC_DIR = $(CIMEROOT)/externals/pio1
+  ifneq ("$(wildcard $(CIMEROOT)/src/externals/pio1/pio)", "")
+    PIO_SRC_DIR = $(CIMEROOT)/src/externals/pio1
   else
-    PIO_SRC_DIR = $(CIMEROOT)/externals/pio1/pio
+    PIO_SRC_DIR = $(CIMEROOT)/src/externals/pio1/pio
   endif
 endif
 
@@ -562,7 +562,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
 	      -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 	      -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
 	      -D PIO_ENABLE_TESTS:BOOL=OFF \
-	      -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
+	      -D USER_CMAKE_MODULE_PATH:LIST="$(CIMEROOT)/src/externals/CMake;$(CIMEROOT)/src/externals/pio2/cmake" \
 
 # Allow for separate installations of the NetCDF C and Fortran libraries
 ifeq ($(NETCDF_SEPARATE), false)
@@ -796,7 +796,7 @@ endif
 	$(CXX) -c $(INCLDIR) $(INCS) $(CXXFLAGS)  $<
 
 %.F90: %.F90.in
-	$(CIMEROOT)/externals/genf90/genf90.pl $< > $@
+	$(CIMEROOT)/src/externals/genf90/genf90.pl $< > $@
 
 cleanatm:
 	$(RM) -f $(LIBROOT)/libatm.a

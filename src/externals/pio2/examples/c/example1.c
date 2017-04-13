@@ -195,21 +195,8 @@ int check_file(int ntasks, char *filename) {
 	 * classic format file (but with different libraries). The
 	 * last two produce netCDF4/HDF5 format files, written with
 	 * and without using netCDF-4 parallel I/O. */
-	int format[NUM_NETCDF_FLAVORS] = {PIO_IOTYPE_PNETCDF, 
-					  PIO_IOTYPE_NETCDF,
-					  PIO_IOTYPE_NETCDF4C,
-					  PIO_IOTYPE_NETCDF4P};
+	int format[NUM_NETCDF_FLAVORS];
 
-	/** Names for the output files. Two of them (pnetcdf and
-	 * classic) will be in classic netCDF format, the others
-	 * (serial4 and parallel4) will be in netCDF-4/HDF5
-	 * format. All four can be read by the netCDF library, and all
-	 * will contain the same contents. */
-	char filename[NUM_NETCDF_FLAVORS][NC_MAX_NAME] = {"example1_pnetcdf.nc",
-							  "example1_classic.nc",
-							  "example1_serial4.nc",
-							  "example1_parallel4.nc"};
-	
 	/** Number of processors that will do IO. In this example we
 	 * will do IO from all processors. */
 	int niotasks;
@@ -218,14 +205,8 @@ int check_file(int ntasks, char *filename) {
 	 * example. */
 	int ioproc_stride = 1;
 
-	/** Number of the aggregator? Always 0 in this example. */
-	int numAggregator = 0;
-
 	/** Zero based rank of first processor to be used for I/O. */
 	int ioproc_start = 0;
-
-	/** Specifies the flavor of netCDF output format. */
-	int iotype;
 
 	/** The dimension ID. */
 	int dimid;
@@ -265,12 +246,6 @@ int check_file(int ntasks, char *filename) {
 	 * as elements_per_pe.*/
 	int *buffer;
 
-	/** A buffer for reading data back from the file. The size of
-	 * this array will vary depending on how many processors are
-	 * involved in the execution of the example code. It's length
-	 * will be the same as elements_per_pe.*/
-	int *read_buffer;
-
 	/** A 1-D array which holds the decomposition mapping for this
 	 * example. The size of this array will vary depending on how
 	 * many processors are involved in the execution of the
@@ -278,6 +253,12 @@ int check_file(int ntasks, char *filename) {
 	 * elements_per_pe. */
 	PIO_Offset *compdof;
 
+        /** Test filename. */
+        char filename[NC_MAX_NAME + 1];
+
+        /** The number of netCDF flavors available in this build. */
+        int num_flavors = 0;
+            
 	/** Used for command line processing. */
 	int c;
 
@@ -344,16 +325,29 @@ int check_file(int ntasks, char *filename) {
 				   compdof, &ioid, NULL, NULL, NULL)))
 	    ERR(ret);
 	free(compdof);
+
+        /* The number of favors may change with the build parameters. */
+#ifdef _PNETCDF
+        format[num_flavors++] = PIO_IOTYPE_PNETCDF;
+#endif
+        format[num_flavors++] = PIO_IOTYPE_NETCDF;
+#ifdef _NETCDF4
+        format[num_flavors++] = PIO_IOTYPE_NETCDF4C;
+        format[num_flavors++] = PIO_IOTYPE_NETCDF4P;
+#endif
 	
 	/* Use PIO to create the example file in each of the four
 	 * available ways. */
-	for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) 
+	for (int fmt = 0; fmt < num_flavors; fmt++) 
 	{
+            /* Create a filename. */
+            sprintf(filename, "example1_%d.nc", fmt);
+            
 	    /* Create the netCDF output file. */
 	    if (verbose)
 		printf("rank: %d Creating sample file %s with format %d...\n",
-		       my_rank, filename[fmt], format[fmt]);
-	    if ((ret = PIOc_createfile(iosysid, &ncid, &(format[fmt]), filename[fmt],
+		       my_rank, filename, format[fmt]);
+	    if ((ret = PIOc_createfile(iosysid, &ncid, &(format[fmt]), filename,
 				       PIO_CLOBBER)))
 		ERR(ret);
 	
@@ -406,9 +400,12 @@ int check_file(int ntasks, char *filename) {
 
 	/* Check the output file. */
 	if (!my_rank)
-	    for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) 
-		if ((ret = check_file(ntasks, filename[fmt])))
+	    for (int fmt = 0; fmt < num_flavors; fmt++)
+            {
+                sprintf(filename, "example1_%d.nc", fmt);
+		if ((ret = check_file(ntasks, filename)))
 		    ERR(ret);
+            }
 
 	/* Finalize the MPI library. */
 	MPI_Finalize();

@@ -11,6 +11,15 @@
     </rpointer>
   </comp_archive_spec>
 
+  <comp_archive_spec compname="datm" compclass="atm">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer$NINST_STRING.atm</rpointer_file>
+      <rpointer_content >$CASE.datm$NINST_STRING.r.$DATENAME.nc,$CASE.datm$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
+    </rpointer>
+  </comp_archive_spec>
+
   <comp_archive_spec compname="clm" compclass="lnd">
     <rest_file_extension>\.[ri]\..*</rest_file_extension>
     <rest_file_extension>\.rh.*</rest_file_extension>
@@ -19,6 +28,15 @@
     <rpointer>
       <rpointer_file>rpointer$NINST_STRING.lnd</rpointer_file>
       <rpointer_content>./$CASE.clm2$NINST_STRING.r.$DATENAME.nc</rpointer_content>
+    </rpointer>
+  </comp_archive_spec>
+
+  <comp_archive_spec compname="dlnd" compclass="lnd">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer$NINST_STRING.lnd</rpointer_file>
+      <rpointer_content >$CASE.dlnd$NINST_STRING.r.$DATENAME.nc,$CASE.dlnd$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 
@@ -42,6 +60,15 @@
     </rpointer>
   </comp_archive_spec>
 
+  <comp_archive_spec compname="drof" compclass="rof">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer$NINST_STRING.rof</rpointer_file>
+      <rpointer_content>$CASE.drof$NINST_STRING.r.$DATENAME.nc,$CASE.drof$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
+    </rpointer>
+  </comp_archive_spec>
+
   <comp_archive_spec compname="cice" compclass="ice">
     <rest_file_extension>\.[ri].*</rest_file_extension>
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
@@ -58,6 +85,15 @@
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ice</rpointer_file>
+    </rpointer>
+  </comp_archive_spec>
+
+  <comp_archive_spec compname="dice" compclass="ice">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer$NINST_STRING.ice</rpointer_file>
+      <rpointer_content>$CASE.dice$NINST_STRING.r.$DATENAME.nc,$CASE.dice$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 
@@ -81,6 +117,15 @@
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ocn</rpointer_file>
+    </rpointer>
+  </comp_archive_spec>
+
+  <comp_archive_spec compname="docn" compclass="ocn">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer$NINST_STRING.ocn</rpointer_file>
+      <rpointer_content>$CASE.docn$NINST_STRING.r.$DATENAME.nc,$CASE.docn$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 
@@ -111,6 +156,25 @@
     <rpointer>
       <rpointer_file>rpointer$NINST_STRING.wav</rpointer_file>
       <rpointer_content>unset</rpointer_content>
+    </rpointer>
+  </comp_archive_spec>
+
+  <comp_archive_spec compname="dwav" compclass="wav">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer$NINST_STRING.wav</rpointer_file>
+      <rpointer_content >$CASE.dwav$NINST_STRING.r.$DATENAME.nc,$CASE.dwav$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
+    </rpointer>
+  </comp_archive_spec>
+
+  <comp_archive_spec compname="cpl" compclass="cpl">
+    <rest_file_extension>\.r\..*</rest_file_extension>
+    <hist_file_extension>\.h.*.nc$</hist_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer.cpl</rpointer_file>
+      <rpointer_content >$CASE.cpl.r.$DATENAME.nc</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 

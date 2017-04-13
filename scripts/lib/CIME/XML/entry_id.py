@@ -130,7 +130,6 @@ class EntryID(GenericXML):
         # handled in classes
         return vid, None, False
 
-
     def _get_default(self, node):
         return self._get_node_element_info(node, "default_value")
 
@@ -151,7 +150,6 @@ class EntryID(GenericXML):
                 result.append(group.get("id"))
 
         return result
-
 
     def get_valid_values(self, vid):
         node = self.get_optional_node("entry", {"id":vid})
@@ -174,7 +172,6 @@ class EntryID(GenericXML):
 
     def get_nodes_by_id(self, vid):
         return self.get_nodes("entry", {"id":vid})
-
 
     def _set_valid_values(self, node, new_valid_values):
         old_vv = self._get_valid_values(node)
@@ -201,18 +198,22 @@ class EntryID(GenericXML):
         subgroup is ignored in the general routine and applied in specific methods
         """
         expect(subgroup is None, "Subgroup not supported")
+        str_value = self.get_valid_value_string(node, value, vid, ignore_type)
+        node.set("value", str_value)
+        return value
+
+    def get_valid_value_string(self, node, value,vid=None,  ignore_type=False):
         valid_values = self._get_valid_values(node)
         if ignore_type:
             expect(type(value) is str, "Value must be type string if ignore_type is true")
             str_value = value
-        else:
-            type_str = self._get_type_info(node)
-            str_value = convert_to_string(value, type_str, vid)
+            return str_value
+        type_str = self._get_type_info(node)
+        str_value = convert_to_string(value, type_str, vid)
+
         if valid_values is not None and not str_value.startswith('$'):
             expect(str_value in valid_values, "Did not find %s in valid values for %s: %s" % (value, vid, valid_values))
-        node.set("value", str_value)
-
-        return value
+        return str_value
 
     def set_value(self, vid, value, subgroup=None, ignore_type=False):
         """
@@ -221,7 +222,8 @@ class EntryID(GenericXML):
         subgroup is ignored in the general routine and applied in specific methods
         """
         val = None
-        node = self.get_optional_node("entry", {"id":vid})
+        root = self.root if subgroup is None else self.get_optional_node("group", {"id":subgroup})
+        node = self.get_optional_node("entry", {"id":vid}, root=root)
         if node is not None:
             val = self._set_value(node, value, vid, subgroup, ignore_type)
         return val
@@ -254,7 +256,8 @@ class EntryID(GenericXML):
         or from the values field if the attribute argument is provided
         and matches
         """
-        node = self.get_optional_node("entry", {"id":vid})
+        root = self.root if subgroup is None else self.get_optional_node("group", {"id":subgroup})
+        node = self.get_optional_node("entry", {"id":vid}, root=root)
         if node is None:
             return
         val = self._get_value(node, attribute=attribute, resolved=resolved, subgroup=subgroup)
@@ -367,11 +370,22 @@ class EntryID(GenericXML):
         f1nodes = self.get_nodes("entry")
         for node in f1nodes:
             vid = node.get("id")
-            f2val = other.get_value(vid, resolved=False)
-            if f2val is not None:
+            f2match = other.get_optional_node("entry", attributes={"id":vid})
+            if f2match is not None:
                 f1val = self.get_value(vid, resolved=False)
-                if f2val != f1val:
-                    xmldiffs[vid] = [f1val, f2val]
+                if f1val is not None:
+                    f2val = other.get_value(vid, resolved=False)
+                    if f1val != f2val:
+                        xmldiffs[vid] = [f1val, f2val]
+                else:
+                    f1val = ET.tostring(node, method="text")
+                    f2val = ET.tostring(f2match, method="text")
+                    if f2val != f1val:
+                        f1value_nodes = self.get_nodes("value", root=node)
+                        for valnode in f1value_nodes:
+                            f2valnode = other.get_node("value", root=f2match, attributes=valnode.attrib)
+                            if f2valnode.text != valnode.text:
+                                xmldiffs["%s:%s"%(vid,valnode.attrib)] = [valnode.text, f2valnode.text]
 
         return xmldiffs
 

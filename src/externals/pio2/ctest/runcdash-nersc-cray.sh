@@ -6,18 +6,50 @@ if [ $# -eq 0 ]; then
 else
 	model=$1
 fi
+
 module rm PrgEnv-intel
-module load craype-network-aries
+module rm PrgEnv-cray
+module rm PrgEnv-gnu
+module rm intel
+module rm cce
+module rm cray-parallel-netcdf
+module rm cray-parallel-hdf5
+module rm pmi
+module rm cray-libsci
+module rm cray-mpich2
+module rm cray-mpich
+module rm cray-netcdf
+module rm cray-hdf5
+module rm cray-netcdf-hdf5parallel
+module rm craype-sandybridge
+module rm craype-ivybridge
+module rm craype-haswell
+module rm craype
 module load PrgEnv-cray
-module load craype-haswell
-module load cray-shmem
-module load cray-mpich
-module swap cce cce/8.4.2
-module load git/2.6.3
-module load cmake/3.3.2
-module load cray-hdf5-parallel/1.8.14
-module load cray-netcdf-hdf5parallel/4.3.3.1
-module load cray-parallel-netcdf/1.6.1
+
+case "$NERSC_HOST" in
+    edison)
+	cd $CSCRATCH/dashboard
+	module switch cce cce/8.5.1
+	module load craype-ivybridge
+	module load git/2.4.6
+	module load cmake/3.3.2
+	module load cray-hdf5-parallel/1.8.16
+	module load cray-netcdf-hdf5parallel/4.3.3.1
+	module load cray-parallel-netcdf/1.7.0
+	;;
+    cori)
+        cd $SCRATCH/dashboard
+	module switch cce cce/8.5.4
+	module load craype-mic-knl
+	module load git/2.9.1
+	module load cmake/3.3.2
+	module load cray-hdf5-parallel/1.8.16
+	module load cray-netcdf-hdf5parallel/4.3.3.1
+	module load cray-parallel-netcdf/1.7.0
+	;;
+
+esac
 
 export CC=cc
 export FC=ftn
@@ -31,8 +63,12 @@ fi
 cd "$PIO_DASHBOARD_ROOT"
 
 if [ ! -d src ]; then
-  git clone https://github.com/PARALLELIO/ParallelIO src
+  git clone --branch develop https://github.com/PARALLELIO/ParallelIO src
 fi
 cd src
+git checkout develop
+git pull origin develop
+
+export HDF5_DISABLE_VERSION_CHECK=2
 
 ctest -S CTestScript.cmake,${model} -VV

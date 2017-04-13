@@ -71,6 +71,11 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                              DEFINITIONS -I${NetCDF_C_INCLUDE_DIR}
                              COMMENT "whether NetCDF has parallel support")
 
+                 # Check if logging enabled
+		 set(CMAKE_REQUIRED_INCLUDES ${NetCDF_C_INCLUDE_DIR})
+		 set(CMAKE_REQUIRED_LIBRARIES ${NetCDF_C_LIBRARIES})
+		 CHECK_FUNCTION_EXISTS(nc_set_log_level NetCDF_C_LOGGING_ENABLED)
+
             endif ()
 
             # Dependencies
