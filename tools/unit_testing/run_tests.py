@@ -246,14 +246,6 @@ def _main():
             )
 
 
-
-
-# Search for the CESM root directory.
-# First check the option. If not specified, look to see if there's a tools
-# directory two levels up (just as a sanity check).
-    if machine is None:
-        machine="yellowstone"
-
     if machines_dir is not None:
         machines_file = os.path.join(machines_dir, "config_machines.xml")
         machobj = Machines(infile=machines_file, machine=machine)
