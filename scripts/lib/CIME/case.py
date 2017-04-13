@@ -142,7 +142,8 @@ class Case(object):
         mpi_attribs = {
             "compiler" : self.get_value("COMPILER"),
             "mpilib"   : self.get_value("MPILIB"),
-            "threaded" : self.get_build_threaded()
+            "threaded" : self.get_build_threaded(),
+            "unit_testing" : False
             }
 
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
@@ -1076,7 +1077,8 @@ class Case(object):
         mpi_attribs = {
             "compiler" : self.get_value("COMPILER"),
             "mpilib"   : self.get_value("MPILIB"),
-            "threaded" : self.get_build_threaded()
+            "threaded" : self.get_build_threaded(),
+            "unit_testing" : False
             }
 
         executable, args = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)

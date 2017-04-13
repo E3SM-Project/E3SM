@@ -51,6 +51,8 @@
 
    the 'executable' tag must have arguments required for the chosen mpirun, as well as the executable name.
 
+ unit_testing: can be 'true' or 'false'.
+   This allows using a different mpirun command to launch unit tests
 
 -->
 
