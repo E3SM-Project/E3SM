@@ -208,6 +208,7 @@ if (step3) then
    !--- create new map datatype to hold result of matrix-matrix multiply ---
    call map_dup(map_orig,map_new)
    map_new%title  = trim(title)
+   map_new%domain_b = trim(map_smooth%domain_b)
    call map_matMatMult(map_orig,map_new,map_smooth) ! mult(A,B,S): B=S*A
    call mapsort_sort(map_new)
    call map_check(map_new)
