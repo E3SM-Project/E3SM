@@ -36,8 +36,10 @@ class Compsets(GenericXML):
                 for node in science_support_nodes:
                     science_support.append(node.get("grid"))
 
+                user_mods = self.get_optional_node("user_mods", root=node)
+
                 logger.debug("Found node match with alias: %s and lname: %s" % (alias, lname))
-                return (lname, alias, science_support)
+                return (lname, alias, science_support, user_mods)
         return (None, None, [False])
 
     def get_compset_var_settings(self, compset, grid):

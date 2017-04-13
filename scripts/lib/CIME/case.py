@@ -95,7 +95,9 @@ class Case(object):
         self._components = []
         self._component_classes = []
         self._is_env_loaded = False
-
+        # these are user_mods as defined in the compset
+        # Command Line user_mods are handeled seperately
+        self._user_mods = None
         self.thread_count = None
         self.total_tasks = None
         self.tasks_per_node = None
@@ -419,7 +421,7 @@ class Case(object):
             # If the file exists, read it and see if there is a match for the compset alias or longname
             if (os.path.isfile(compsets_filename)):
                 compsets = Compsets(compsets_filename)
-                match, compset_alias, science_support = compsets.get_compset_match(name=compset_name)
+                match, compset_alias, science_support, self._user_mods = compsets.get_compset_match(name=compset_name)
                 pesfile = files.get_value("PES_SPEC_FILE"     , {"component":component})
                 if match is not None:
                     self._pesfile = pesfile
@@ -952,14 +954,22 @@ class Case(object):
         self._create_caseroot_tools()
 
     def apply_user_mods(self, user_mods_dir=None):
-        if user_mods_dir is not None:
-            if os.path.isabs(user_mods_dir):
-                user_mods_path = user_mods_dir
-            else:
-                user_mods_path = self.get_value('USER_MODS_DIR')
-                user_mods_path = os.path.join(user_mods_path, user_mods_dir)
-            self.set_value("USER_MODS_FULLPATH",user_mods_path)
-            apply_user_mods(self._caseroot, user_mods_path)
+        """
+        User mods can be specified on the create_newcase command line (usually when called from create test)
+        or they can be in the compset definition, or both.
+        """
+        
+        for user_mods in (user_mods_dir, self._user_mods):
+            if user_mods is not None:
+                if os.path.isabs(user_mods):
+                    user_mods_path = user_mods
+                else:
+                    user_mods_path = self.get_value('USER_MODS_DIR')
+                    user_mods_path = os.path.join(user_mods_path, user_mods)
+                CIME.user_mod_support.apply_user_mods(self._caseroot, user_mods_path)
+
+
+
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None):
         if cime_output_root is None:
