@@ -102,7 +102,7 @@ class PRE(SystemTestsCompareTwo):
             expect((len(restart_files_2) == 1),
                    "Missing case2 restart file, %s", glob_str)
             rfile2 = restart_files_2[0]
-            ok, out = cprnc(comp, rfile1, rfile2, self._case, rundir2)
+            ok, out = cprnc(comp, rfile1, rfile2, self._case, rundir2) # pylint: disable=unused-variable
             logger.warning("CPRNC result for %s: %s"%(os.path.basename(rfile1), "PASS" if (ok == should_match) else "FAIL"))
             compare_ok = compare_ok and (should_match == ok)
 
