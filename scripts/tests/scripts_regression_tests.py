@@ -248,8 +248,27 @@ class J_TestCreateNewcase(unittest.TestCase):
             shutil.rmtree(testdir)
 
         cls._testdirs.append(testdir)
-
         run_cmd_assert_result(self, "%s/create_newcase --case %s --compset X --res f19_g16 --output-root %s" % (SCRIPT_DIR, testdir, cls._testroot), from_dir=SCRIPT_DIR)
+        run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
+        run_cmd_assert_result(self, "./case.build", from_dir=testdir)
+
+        cls._do_teardown.append(testdir)
+
+    def test_f_createnewcase_with_user_compset(self):
+        cls = self.__class__
+
+        testdir = os.path.join(cls._testroot, 'testcreatenewcase_with_user_compset')
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+
+        cls._testdirs.append(testdir)
+
+        pesfile = os.path.join("..","src","drivers","mct","cime_config","config_pes.xml")
+        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --user-compset --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
+        if CIME.utils.get_model() == "cesm":
+            args += " --run-unsupported"
+
+        run_cmd_assert_result(self, "%s/create_newcase %s"%(SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
         run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
         run_cmd_assert_result(self, "./case.build", from_dir=testdir)
 

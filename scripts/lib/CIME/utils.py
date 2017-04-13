@@ -26,7 +26,6 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        logger.error("%s %s", error_prefix,error_msg, exc_info=True)
         raise exc_type("%s %s"%(error_prefix,error_msg))
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
