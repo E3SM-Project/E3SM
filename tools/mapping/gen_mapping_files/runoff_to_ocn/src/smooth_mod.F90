@@ -1,8 +1,3 @@
-!===============================================================================
-! SVN $Id: smooth_mod.F90 56089 2013-12-18 00:50:07Z mlevy@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/gen_mapping_files/runoff_to_ocn/src/smooth_mod.F90 $
-!===============================================================================
-
 MODULE smooth_mod
 
 #define _NEW 1
@@ -26,13 +21,26 @@ MODULE smooth_mod
 CONTAINS
 !===============================================================================
 
-SUBROUTINE smooth_init(map_in, map_out)
+SUBROUTINE smooth_init(ofilename, restrict_smooth_src_to_nn_dest,  map_in, map_out)
 
    implicit none
 
    !--- arguments ---
-   type(sMatrix),intent( in)   :: map_in   ! original unsmoothed, matrix
-   type(sMatrix),intent(inout) :: map_out  ! smoothing matrix
+   ! name of ocn scrip grid file
+   character(*), intent(in)    :: ofilename
+
+   ! original unsmoothed, matrix
+   type(sMatrix),intent(in)    :: map_in
+
+   ! map_out%mask_a = pts mapped to map_in?
+   ! This should be set to .true. if you are making a single map, but it may be
+   ! useful to set it to .false. if you plan on mapping several runoff grids to
+   ! the same ocean grid. The nearest-neighbor / smooth map generated in step 3
+   ! will be the same regardless of the value of this variable.
+   logical,      intent(in)    :: restrict_smooth_src_to_nn_dest
+
+   ! smoothing matrix
+   type(sMatrix),intent(inout) :: map_out
 
    !--- local ---
    integer :: i,j,n ! indicies: row, col, sparse matrix
@@ -123,26 +131,19 @@ SUBROUTINE smooth_init(map_in, map_out)
    allocate(map_out%  yv_a(map_in%nv_b,map_in%n_b) )
    allocate(map_out%mask_a(            map_in%n_b) )
    allocate(map_out%area_a(            map_in%n_b) )
-
-   allocate(map_out%  xc_b(            map_in%n_b) )
-   allocate(map_out%  yc_b(            map_in%n_b) )
-   allocate(map_out%  xv_b(map_in%nv_b,map_in%n_b) )
-   allocate(map_out%  yv_b(map_in%nv_b,map_in%n_b) )
-   allocate(map_out%mask_b(            map_in%n_b) )
-   allocate(map_out%area_b(            map_in%n_b) )
-
    allocate(map_out%frac_a(map_in%n_b) )
-   allocate(map_out%frac_b(map_in%n_b) )
 
    allocate(map_out%s  (ns))
    allocate(map_out%row(ns))
    allocate(map_out%col(ns))
-   allocate(map_out%sn1(map_in%n_b) )
-   allocate(map_out%sn2(map_in%n_b) )
 
    !------------------------------------------------
    ! set values
    !------------------------------------------------
+
+   ! map_in maps from runoff -> coastal ocean
+   ! map_out maps from coastal ocean -> global ocean
+   ! So source of map_out = dest of map_in
    map_out%   n_a = map_in%   n_b
    map_out%dims_a = map_in%dims_b
    map_out%  ni_a = map_in%  ni_b
@@ -152,36 +153,30 @@ SUBROUTINE smooth_init(map_in, map_out)
    map_out%  yc_a = map_in%  yc_b
    map_out%  xv_a = map_in%  xv_b
    map_out%  yv_a = map_in%  yv_b
-!  map_out%mask_a = map_in%mask_b ! all active ocn cells
    map_out%area_a = map_in%area_b
+   map_out%domain_a   = map_in%domain_b
 
-   !--- compute minimal src domain mask for smoothing matrix ---
-   jmd_count = 0
-   map_out%mask_a = 0
-   do n=1,map_in%n_s
-      i = map_in%row(n)     ! this ocn cell could get runoff
-      map_out%mask_a(i) = 1 ! this ocn cell's runoff get's smoothed
-      if(map_in%s(n) > 0.0) then
-        jmd_count = jmd_count+1
-      endif
-   end do
-   write(*,*) subName,'number of source points is =  ',jmd_count
-   write(*,*) subName,'map_in%ns                  =  ',map_in%n_s
+   if (restrict_smooth_src_to_nn_dest) then
+      !--- compute minimal src domain mask for smoothing matrix ---
+      jmd_count = 0
+      map_out%mask_a = 0
+      do n=1,map_in%n_s
+         i = map_in%row(n)     ! this ocn cell could get runoff
+         map_out%mask_a(i) = 1 ! this ocn cell's runoff get's smoothed
+         if(map_in%s(n) > 0.0) then
+            jmd_count = jmd_count+1
+         endif
+      end do
+      write(*,*) subName,'number of source points is =  ',jmd_count
+      write(*,*) subName,'map_in%ns                  =  ',map_in%n_s
+   else
+      map_out%mask_a = map_in%mask_b ! all active ocn cells
+   end if
 
-   map_out%   n_b = map_in%   n_b
-   map_out%dims_b = map_in%dims_b
-   map_out%  ni_b = map_in%  ni_b
-   map_out%  nj_b = map_in%  nj_b
-   map_out%  nv_b = map_in%  nv_b
-   map_out%  xc_b = map_in%  xc_b
-   map_out%  yc_b = map_in%  yc_b
-   map_out%  xv_b = map_in%  xv_b
-   map_out%  yv_b = map_in%  yv_b
-   map_out%mask_b = map_in%mask_b
-   map_out%area_b = map_in%area_b
+   ! destination of map_out must be read in from file
+   call map_DestGridRead(map_out, ofilename)
 
-!  map_out%frac_a = map_in%frac_b
-!  map_out%frac_b = map_in%frac_b
+   ! Overwrite frac_a and frac_b to be 1 globally
    map_out%frac_a = 1.0
    map_out%frac_b = 1.0
 
@@ -189,16 +184,11 @@ SUBROUTINE smooth_init(map_in, map_out)
    map_out%s      = 1.0
    map_out%row    = 1
    map_out%col    = 1
-   map_out%sn1    = map_in%sn1
-   map_out%sn2    = map_in%sn2
 
    map_out%title      = "CCSM conservative smoothing map"
    map_out%normal     = map_in%normal
-   map_out%method     = "created using SVN $Id: smooth_mod.F90 56089 2013-12-18 00:50:07Z mlevy@ucar.edu $"
    map_out%history    = map_in%history
    map_out%convention = map_in%convention
-   map_out%domain_a   = map_in%domain_b
-   map_out%domain_b   = map_in%domain_b
 
 END SUBROUTINE smooth_init
 
@@ -394,9 +384,9 @@ SUBROUTINE smooth(map,efold,rmax)
         wgtsum = 0.0
         nbox = 0
         gdcnt = 0
+        kStart = 1
 
 #ifdef _BREADTH
-        kStart = 2
         i2ind(1) = ic
         j2ind(1) = jc
         imask_JMD = -1000
@@ -408,7 +398,6 @@ SUBROUTINE smooth(map,efold,rmax)
                 rdist,rmax,i2ind,j2ind, strPtr, length)
 
 #else
-        kStart = 1
         !--- recursive function to find dest cells ---
 
         call depth_setDist(ic,jc,ni,nj,map%xc_a,map%yc_a,0.0,imask,rdist,rmax,i2ind,j2ind,length)
