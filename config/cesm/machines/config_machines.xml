@@ -432,7 +432,7 @@
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.5.4</command>
+	<command name="switch">cce cce/8.5.7</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -535,7 +535,7 @@
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.5.4</command>
+	<command name="switch">cce cce/8.5.7</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -544,7 +544,7 @@
       <modules>
 	<command name="load">cray-memkind</command>
 	<command name="load">craype-mic-knl</command>
-	<command name="load">papi/5.4.3.2</command>
+<!--	<command name="load">papi/5.4.3.2</command> -->
 	<command name="swap">craype craype/2.5.7</command>
       </modules>
       <modules compiler="!intel">
