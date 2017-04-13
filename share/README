@@ -5,10 +5,10 @@
 
                   A description of csm_share
 
-This module exists to collect code shared between various CCSM components.
-Excluding this "shared code" module, CCSM components are built using disjoint
+This module exists to collect code shared between various CIME components.
+Excluding this "shared code" module, CIME components are built using disjoint
 sets of source code.  The use of this shared code is similar to the use of
-object code libraries where each subdirectory of csm_share is equivalant to
+object code libraries where each subdirectory of share is equivalant to
 one library.  While object library routines are accessed by linking to libraries
 during the load phase, these shared code routines are accessed by including the
 appropriate source code directory path during the compile phase.
@@ -25,7 +25,7 @@ Motivation for this code sharing includes:
 
 Current subsets ("libraries") of shared code only include:
 
-shr - very generic, general-purpose code that is likely to be useful to all
-      CCSM components.  CCSM components may be explicitly required to use some
+util - very generic, general-purpose code that is likely to be useful to all
+      CIME components.  CIME components may be explicitly required to use some
       parts of this code, for example the physical constants module.
 
