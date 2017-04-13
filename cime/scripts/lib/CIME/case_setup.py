@@ -9,7 +9,7 @@ from CIME.preview_namelists import create_dirs, create_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.machines      import Machines
 from CIME.BuildTools.configure import configure
-from CIME.utils             import append_status, get_cime_root, get_model
+from CIME.utils             import get_cime_root, run_and_log_case_status, get_model
 from CIME.test_status       import *
 
 import shutil
@@ -59,11 +59,9 @@ def _build_usernl_files(case, model, comp):
                     shutil.copy(model_nl, nlfile)
 
 ###############################################################################
-def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
+def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, adjust_pio=True):
 ###############################################################################
     os.chdir(caseroot)
-    msg = "case.setup starting"
-    append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
     cimeroot = get_cime_root(case)
 
@@ -71,7 +69,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
     din_loc_root = case.get_value("DIN_LOC_ROOT")
     testcase     = case.get_value("TESTCASE")
     expect(not (not os.path.isdir(din_loc_root) and testcase != "SBN"),
-           "inputdata root is not a directory: \"$din_loc_root\" ")
+           "inputdata root is not a directory: %s" % din_loc_root)
 
     # Check that userdefine settings are specified before expanding variable
     for vid, value in case:
@@ -99,9 +97,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 logger.info("Successfully cleaned test script case.testdriver")
 
         logger.info("Successfully cleaned batch script case.run")
-
-        msg = "case.setup clean complete"
-        append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
     if not clean:
         case.load_env()
@@ -138,6 +133,9 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 else:
                     expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst, comp, ntasks))
 
+        # Set TOTAL_CORES
+        case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
+
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
         else:
@@ -152,10 +150,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             logger.debug("at update TOTALPES = %s"%pestot)
             case.set_value("TOTALPES", pestot)
             thread_count = env_mach_pes.get_max_thread_count(models)
-            if thread_count > 1:
-                case.set_value("BUILD_THREADED", True)
-
-            expect(not (case.get_value("BUILD_THREADED")  and compiler == "nag"),
+            build_threaded = case.get_build_threaded()
+            expect(not (build_threaded and compiler == "nag"),
                    "it is not possible to run with OpenMP if using the NAG Fortran compiler")
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
@@ -178,16 +174,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
 
             # Make sure pio settings are consistant
-            for comp in models:
-                pio_stride = case.get_value("PIO_STRIDE_%s"%comp)
-                pio_numtasks = case.get_value("PIO_NUMTASKS_%s"%comp)
-                ntasks = case.get_value("NTASKS_%s"%comp)
-                if pio_stride < 0 or pio_stride > ntasks:
-                    pio_stride = min(ntasks, tasks_per_node)
-                    case.set_value("PIO_STRIDE_%s"%comp, pio_stride)
-                if pio_numtasks < 0 or pio_numtasks > ntasks:
-                    pio_numtasks = max(1, ntasks//pio_stride)
-                    case.set_value("PIO_NUMTASKS_%s"%comp, pio_numtasks)
+            if adjust_pio:
+                adjust_pio_layout(case, tasks_per_node)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
@@ -199,6 +187,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # Create user_nl files for the required number of instances
         if not os.path.exists("user_nl_cpl"):
             logger.info("Creating user_nl_xxx files for components and cpl")
+
         # loop over models
         for model in models:
             comp = case.get_value("COMP_%s" % model)
@@ -214,21 +203,10 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
         logger.info("If an old case build already exists, might want to run \'case.build --clean\' before building")
 
-        # Create test script if appropriate
-        # Short term fix to be removed when csh tests are removed
-        if os.path.exists("env_test.xml"):
-            if not os.path.exists("case.test"):
-                logger.info("Starting testcase.setup")
-                run_cmd_no_fail("./testcase.setup -caseroot %s" % caseroot)
-                logger.info("Finished testcase.setup")
-
         # Some tests need namelists created here (ERP) - so do this if are in test mode
         if test_mode or get_model() == "acme":
             logger.info("Generating component namelists as part of setup")
             create_namelists(case)
-
-        msg = "case.setup complete"
-        append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
         # Record env information
         env_module = case.get_env("mach_specific")
@@ -236,19 +214,42 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         env_module.make_env_mach_specific_file(compiler, debug, mpilib, "csh")
         env_module.save_all_env_info("software_environment.txt")
 
+def adjust_pio_layout(case, new_pio_stride):
+
+    models = case.get_values("COMP_CLASSES")
+    for comp in models:
+        pio_stride = case.get_value("PIO_STRIDE_%s"%comp)
+        pio_numtasks = case.get_value("PIO_NUMTASKS_%s"%comp)
+        ntasks = case.get_value("NTASKS_%s"%comp)
+        new_stride = min(ntasks, new_pio_stride)
+        new_numtasks = max(1, ntasks//new_stride)
+        if pio_stride != new_stride:
+            logger.info("Resetting  PIO_STRIDE_%s to %s"%(comp, new_stride))
+            case.set_value("PIO_STRIDE_%s"%comp, new_stride)
+            if pio_numtasks != new_numtasks:
+                logger.info("Resetting  PIO_NUMTASKS_%s to %s"%(comp, new_numtasks))
+                case.set_value("PIO_NUMTASKS_%s"%comp, new_numtasks)
+
+
 ###############################################################################
-def case_setup(case, clean=False, test_mode=False, reset=False, no_status=False):
+def case_setup(case, clean=False, test_mode=False, reset=False, adjust_pio=True):
 ###############################################################################
     caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
-    if case.get_value("TEST") and not no_status:
+    phase = "setup.clean" if clean else "case.setup"
+    functor = lambda: _case_setup_impl(case, caseroot, clean, test_mode, reset, adjust_pio)
+
+    if case.get_value("TEST") and not test_mode:
         test_name = casebaseid if casebaseid is not None else case.get_value("CASE")
         with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
             try:
-                _case_setup_impl(case, caseroot, clean=clean, test_mode=test_mode, reset=reset)
+                run_and_log_case_status(functor, phase, caseroot=caseroot)
             except:
                 ts.set_status(SETUP_PHASE, TEST_FAIL_STATUS)
                 raise
             else:
-                ts.set_status(SETUP_PHASE, TEST_PASS_STATUS)
+                if clean:
+                    ts.set_status(SETUP_PHASE, TEST_PEND_STATUS)
+                else:
+                    ts.set_status(SETUP_PHASE, TEST_PASS_STATUS)
     else:
-        _case_setup_impl(case, caseroot, clean=clean, test_mode=test_mode, reset=reset)
+        run_and_log_case_status(functor, phase, caseroot=caseroot)

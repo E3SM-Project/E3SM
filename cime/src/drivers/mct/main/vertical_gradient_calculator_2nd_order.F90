@@ -100,8 +100,8 @@ contains
 
     this%num_points = size(field, 1)
     this%nelev = size(field, 2)
-    SHR_ASSERT_ALL((ubound(topo) == (/this%num_points, this%nelev/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(elevclass_bounds) == (/this%nelev/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL_FL((ubound(topo) == (/this%num_points, this%nelev/)), __FILE__, __LINE__)
+    SHR_ASSERT_ALL_FL((ubound(elevclass_bounds) == (/this%nelev/)), __FILE__, __LINE__)
 
     allocate(this%elevclass_bounds(0:this%nelev))
     this%elevclass_bounds(:) = elevclass_bounds(:)
@@ -231,8 +231,8 @@ contains
 
     ! Assert pre-conditions
 
-    SHR_ASSERT(this%calculated, errMsg(__FILE__, __LINE__))
-    SHR_ASSERT((size(gradients) == this%num_points), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_FL(this%calculated, __FILE__, __LINE__)
+    SHR_ASSERT_FL((size(gradients) == this%num_points), __FILE__, __LINE__)
 
     if (elevation_class < 1 .or. elevation_class > this%nelev) then
        write(logunit,*) subname, ': ERROR: elevation class out of bounds: ', &
@@ -266,9 +266,9 @@ contains
     character(len=*), parameter :: subname = 'get_gradients_one_point'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT(this%calculated, errMsg(__FILE__, __LINE__))
-    SHR_ASSERT(point <= this%num_points, errMsg(__FILE__, __LINE__))
-    SHR_ASSERT((size(gradients) == this%nelev), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_FL(this%calculated, __FILE__, __LINE__)
+    SHR_ASSERT_FL(point <= this%num_points, __FILE__, __LINE__)
+    SHR_ASSERT_FL((size(gradients) == this%nelev), __FILE__, __LINE__)
 
     gradients(:) = this%vertical_gradient(point, :)
 

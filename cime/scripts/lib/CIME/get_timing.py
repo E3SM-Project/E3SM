@@ -122,9 +122,9 @@ class _TimingParser:
         ncpl_base_period = self.case.get_value("NCPL_BASE_PERIOD")
         atm_ncpl = self.case.get_value("ATM_NCPL")
         ocn_ncpl = self.case.get_value("OCN_NCPL")
-        ccsm_compset = self.case.get_value("COMPSET")
-        if ccsm_compset is None:
-            ccsm_compset = ""
+        compset = self.case.get_value("COMPSET")
+        if compset is None:
+            compset = ""
         grid = self.case.get_value("GRID")
         run_type = self.case.get_value("RUN_TYPE")
         stop_option = self.case.get_value("STOP_OPTION")
@@ -232,7 +232,7 @@ class _TimingParser:
         self.write("  Curr Date   : %s\n" % now)
 
         self.write("  grid        : %s\n" % grid)
-        self.write("  compset     : %s\n" % ccsm_compset)
+        self.write("  compset     : %s\n" % compset)
         self.write("  run_type    : %s, continue_run = %s "
                    "(inittype = %s)\n" %
                    (run_type, str(continue_run).upper(), inittype))
@@ -247,7 +247,7 @@ class _TimingParser:
         self.write("  ---------        ------     -------   ------   "
                    "------  ---------  ------  \n")
         maxthrds = 0
-        for k in ['CPL', 'GLC', 'WAV', 'LND', 'ROF', 'ICE', 'ATM', 'OCN']:
+        for k in self.case.get_values("COMP_CLASSES"):
             m = self.models[k]
             self.write("  %s = %-8s   %-6u      %-6u   %-6u x %-6u  "
                        "%-6u (%-6u) \n"
@@ -335,7 +335,7 @@ class _TimingParser:
 
         self.write("    TOT Run Time:  %10.3f seconds   %10.3f seconds/mday   "
                    "%10.2f myears/wday \n" % (tmax, tmax/adays, tmaxr))
-        for k in ['LND', 'ROF', 'ICE', 'ATM', 'OCN', 'GLC', 'WAV', 'CPL']:
+        for k in self.case.get_values("COMP_CLASSES"):
             m = self.models[k]
             self.write("    %s Run Time:  %10.3f seconds   "
                        "%10.3f seconds/mday   %10.2f myears/wday \n"

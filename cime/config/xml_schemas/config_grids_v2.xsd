@@ -63,10 +63,8 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element ref="grid" maxOccurs="unbounded"/>
-        <xs:choice minOccurs="0">
-          <xs:element ref="support"/>
-          <xs:element ref="mask"/>
-        </xs:choice>
+        <xs:element ref="support" minOccurs="0"/>
+        <xs:element ref="mask" minOccurs="0"/>
       </xs:sequence>
       <xs:attribute ref="alias" use="required"/>
       <xs:attribute ref="compset"/>

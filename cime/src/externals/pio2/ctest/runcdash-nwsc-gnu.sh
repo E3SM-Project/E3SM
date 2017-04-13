@@ -9,11 +9,11 @@ fi
 
 module reset
 module unload netcdf
-module swap intel gnu/5.3.0
+module swap intel gnu/6.1.0
 module load git/2.3.0
 module load cmake/3.0.2
-module load netcdf-mpi/4.3.3.1
-module load pnetcdf/1.6.1
+module load netcdf-mpi/4.4.1
+module load pnetcdf/1.7.0
 
 export CC=mpicc
 export FC=mpif90
@@ -27,8 +27,10 @@ fi
 cd "$PIO_DASHBOARD_ROOT"
 
 if [ ! -d src ]; then
-  git clone https://github.com/PARALLELIO/ParallelIO src
+  git clone --branch develop https://github.com/PARALLELIO/ParallelIO src
 fi
 cd src
+git checkout develop
+git pull origin develop
 
 ctest -S CTestScript.cmake,${model} -VV

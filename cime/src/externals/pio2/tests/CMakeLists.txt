@@ -5,21 +5,24 @@ project (PIOTests C Fortran)
 #  TESTING TARGET
 #==============================================================================
 
-# Custom "piotests" target (builds the test executables)
-add_custom_target (tests)
+# # Custom "piotests" target (builds the test executables)
+# add_custom_target (tests)
 
-# Custom "check" target that depends upon "tests"
-add_custom_target (check COMMAND ${CMAKE_CTEST_COMMAND})
-add_dependencies (check tests)
+# # Custom "check" target that depends upon "tests"
+# add_custom_target (check COMMAND ${CMAKE_CTEST_COMMAND})
+# add_dependencies (check tests)
 
 #==============================================================================
 #  INCLUDE SOURCE DIRECTORIES
 #==============================================================================
+add_subdirectory (cunit)
 
-add_subdirectory (unit)
-add_subdirectory (general)
-if (PIO_ENABLE_TIMING)
+if (PIO_ENABLE_FORTRAN)
+  add_subdirectory (unit)
+  add_subdirectory (general)
+  if (PIO_ENABLE_TIMING)
     add_subdirectory (performance)
-else ()
+  else ()
     message (STATUS "Cannot build performance test without gptl timing library")
-endif ()
+  endif ()
+endif()

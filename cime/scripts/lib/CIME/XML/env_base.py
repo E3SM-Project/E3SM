@@ -1,16 +1,16 @@
 """
-Base class for env files .  This class inherits from EntryID.py
+Base class for env files.  This class inherits from EntryID.py
 """
 import string
 from CIME.XML.standard_module_setup import *
 from CIME.XML.entry_id import EntryID
 from CIME.XML.headers import Headers
-from CIME.utils import convert_to_type, convert_to_string
+from CIME.utils import convert_to_type
 logger = logging.getLogger(__name__)
 
 class EnvBase(EntryID):
 
-    def __init__(self, case_root, infile):
+    def __init__(self, case_root, infile, schema=None):
         if case_root is None:
             case_root = os.getcwd()
 
@@ -19,7 +19,7 @@ class EnvBase(EntryID):
         else:
             fullpath = os.path.join(case_root, infile)
 
-        EntryID.__init__(self, fullpath)
+        EntryID.__init__(self, fullpath, schema=schema)
         if not os.path.isfile(fullpath):
             headerobj = Headers()
             headernode = headerobj.get_header_node(os.path.basename(fullpath))
@@ -95,7 +95,8 @@ class EnvBase(EntryID):
         """
         vid, comp, iscompvar = self.check_if_comp_var(vid, None)
         val = None
-        node = self.get_optional_node("entry", {"id":vid})
+        root = self.root if subgroup is None else self.get_optional_node("group", {"id":subgroup})
+        node = self.get_optional_node("entry", {"id":vid}, root=root)
         if node is not None:
             if iscompvar and comp is None:
                 # pylint: disable=no-member
@@ -104,6 +105,7 @@ class EnvBase(EntryID):
             else:
                 val = self._set_value(node, value, vid, subgroup, ignore_type, component=comp)
         return val
+
     # pylint: disable=arguments-differ
     def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False, component=None):
         if vid is None:
@@ -112,10 +114,10 @@ class EnvBase(EntryID):
 
         if iscompvar:
             attribute = {"component":component}
-            type_str = self._get_type_info(node)
-            val = self.set_element_text("value", convert_to_string(value, type_str, vid), attribute, root=node)
-            return val
-        val = EntryID._set_value(self, node, value, vid, subgroup, ignore_type)
+            str_value = self.get_valid_value_string(node, value, vid, ignore_type)
+            val = self.set_element_text("value", str_value, attribute, root=node)
+        else:
+            val = EntryID._set_value(self, node, value, vid, subgroup, ignore_type)
         return val
 
     def get_nodes_by_id(self, varid):

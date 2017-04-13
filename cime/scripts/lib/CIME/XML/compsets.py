@@ -38,7 +38,7 @@ class Compsets(GenericXML):
 
                 logger.debug("Found node match with alias: %s and lname: %s" % (alias, lname))
                 return (lname, alias, science_support)
-        return (None, None, False)
+        return (None, None, [False])
 
     def get_compset_var_settings(self, compset, grid):
         '''
@@ -85,4 +85,3 @@ class Compsets(GenericXML):
         for v in compsets_text.iteritems():
             label, definition = v
             logger.info("   %20s : %s" %(label, definition))
-

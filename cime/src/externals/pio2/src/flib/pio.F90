@@ -1,7 +1,7 @@
 !>
-!! @file
+!! @file 
 !! @brief User interface Module for PIO, this is the only file a user program should 'use'
-!!
+!! 
 !<
 
 module pio
@@ -16,9 +16,14 @@ module pio
        pio_seterrorhandling, pio_setframe, pio_init, pio_get_local_array_size, &
        pio_freedecomp, pio_syncfile, &
        pio_finalize, pio_set_hint, pio_getnumiotasks, pio_file_is_open, &
-       PIO_deletefile, PIO_get_numiotasks, PIO_iotype_available
+       PIO_deletefile, PIO_get_numiotasks, PIO_iotype_available, &
+       pio_set_rearr_opts
 
   use pio_types, only : io_desc_t, file_desc_t, var_desc_t, iosystem_desc_t, &
+       pio_rearr_opt_t, pio_rearr_comm_fc_opt_t, pio_rearr_comm_fc_2d_enable,&
+       pio_rearr_comm_fc_1d_comp2io, pio_rearr_comm_fc_1d_io2comp,&
+       pio_rearr_comm_fc_2d_disable, pio_rearr_comm_unlimited_pend_req,&
+       pio_rearr_comm_p2p, pio_rearr_comm_coll,&
        pio_int, pio_real, pio_double, pio_noerr, iotype_netcdf, &
        iotype_pnetcdf,  pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
        pio_iotype_pnetcdf,pio_iotype_netcdf, &
@@ -28,9 +33,9 @@ module pio
        pio_nofill, pio_unlimited, pio_fill_int, pio_fill_double, pio_fill_float, &
 #endif
        pio_64bit_offset, pio_64bit_data, &
-       pio_internal_error, pio_bcast_error, pio_return_error, pio_rearr_opt_t
+       pio_internal_error, pio_bcast_error, pio_return_error, pio_default
 
-  use piodarray, only : pio_read_darray, pio_write_darray, pio_set_buffer_size_limit
+  use piodarray, only : pio_read_darray, pio_write_darray, pio_set_buffer_size_limit  
 
   use pio_nf, only:        &
        PIO_enddef,            &
@@ -53,12 +58,14 @@ module pio
        PIO_def_var   ,        &
        PIO_def_var_deflate   ,        &
        PIO_redef     ,          &
+       PIO_set_log_level,          &
        PIO_inquire_variable , &
        PIO_inquire_dimension, &
        PIO_set_chunk_cache, &
        PIO_get_chunk_cache, &
        PIO_set_var_chunk_cache, &
-       PIO_get_var_chunk_cache
+       PIO_get_var_chunk_cache, &
+       PIO_strerror
 
   use pionfatt_mod, only : PIO_put_att   => put_att,        &
        PIO_get_att   => get_att
@@ -111,11 +118,11 @@ contains
          logical(C_BOOL), intent(out) :: iotask
        end function PIOc_iam_iotask
     end interface
-
+    
     ierr = PIOc_iam_iotask(iosystem%iosysid, ctask)
     task = ctask
   end function pio_iam_iotask
-
+  
 !>
 !! @public
 !! @brief Integer function returns rank of IO task.
@@ -131,7 +138,7 @@ contains
          integer(C_INT), intent(out) :: rank
        end function PIOc_iotask_rank
     end interface
-
+    
     ierr = PIOc_iotask_rank(iosystem%iosysid, rank)
   end function pio_iotask_rank
 

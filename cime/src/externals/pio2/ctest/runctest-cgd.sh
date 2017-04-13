@@ -1,8 +1,8 @@
 #!/bin/sh
 #==============================================================================
 #
-#  This script defines how to run CTest on the Argonne Leadership Computing
-#  Facility systems (mira/cetus/vesta/cooley).
+#  This script defines how to run CTest on the NCAR CGD local cluster
+#  Hobart.
 #
 #  This assumes the CTest model name (e.g., "Nightly") is passed to it when
 #  run.
@@ -29,7 +29,7 @@ echo "\$CTESTCMD -S ${scrdir}/CTestScript-Test.cmake,${model} -V" >> runctest.sh
 chmod +x runctest.sh
 
 # Submit the job to the queue
-jobid=`/usr/local/bin/qsub -l nodes=1:ppn=4 runctest.sh`
+jobid=`/usr/local/bin/qsub -l nodes=1:ppn=4 runctest.sh -q short`
 
 # Wait for the job to complete before exiting
 while true; do
