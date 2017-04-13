@@ -3398,7 +3398,7 @@ contains
              end if
              
              ! take mr from xsmrpool pool first
-             if (xsmrpool(p) > 0) then
+             if (xsmrpool(p) > 0._r8) then
                 if (mr > 0._r8 .and. (xsmrpool(p)/dt + gpp(p)) <= mr) then
                    curmr = gpp(p)
                    curmr_ratio = curmr / mr
@@ -3473,7 +3473,7 @@ contains
                 cpool_to_xsmrpool(p) = 0.0_r8
                 
                 ! storage pool turnover
-                xsmrpool_turnover(p) = max(xsmrpool(p) - mr*xsmr_ratio*dt , 0.0_r8) / (10.0*365.0*secspday)
+                xsmrpool_turnover(p) = max(xsmrpool(p) - mr*xsmr_ratio*dt , 0.0_r8) / (10.0_r8*365.0_r8*secspday)
              end if
              
              plant_calloc(p) = availc(p)

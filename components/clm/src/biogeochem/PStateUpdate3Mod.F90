@@ -167,8 +167,14 @@ contains
                             pf%sminp_to_plant_vr_col(c,j)*dt - pf%labilep_to_secondp_vr_col(c,j)*dt - &
                             pf%sminp_leached_vr_col(c,j)*dt ))
                 if (temp_solutionp(c,j) < 0.0_r8) then
-                  pf%labilep_to_secondp_vr_col(c,j) = pf%labilep_to_secondp_vr_col(c,j)/(pf%labilep_to_secondp_vr_col(c,j)+pf%sminp_leached_vr_col(c,j))*(temp_solutionp(c,j) + pf%labilep_to_secondp_vr_col(c,j)*dt + pf%sminp_leached_vr_col(c,j)*dt) /dt
-                  pf%sminp_leached_vr_col(c,j) = pf%sminp_leached_vr_col(c,j)/(pf%labilep_to_secondp_vr_col(c,j)+pf%sminp_leached_vr_col(c,j))*(temp_solutionp(c,j) + pf%labilep_to_secondp_vr_col(c,j)*dt + pf%sminp_leached_vr_col(c,j)*dt) /dt
+                  pf%labilep_to_secondp_vr_col(c,j) = pf%labilep_to_secondp_vr_col(c,j)/ & 
+                            (pf%labilep_to_secondp_vr_col(c,j)+pf%sminp_leached_vr_col(c,j))* &
+                            (temp_solutionp(c,j) + pf%labilep_to_secondp_vr_col(c,j)*dt + &
+                            pf%sminp_leached_vr_col(c,j)*dt) /dt
+                  pf%sminp_leached_vr_col(c,j) = pf%sminp_leached_vr_col(c,j)/ &
+                            (pf%labilep_to_secondp_vr_col(c,j)+pf%sminp_leached_vr_col(c,j))* &
+                            (temp_solutionp(c,j) + pf%labilep_to_secondp_vr_col(c,j)*dt + &
+                            pf%sminp_leached_vr_col(c,j)*dt) /dt
                   temp_solutionp(c,j) = 0.0_r8
                   ps%solutionp_vr_col(c,j) = 0.0_r8
                   ps%labilep_vr_col(c,j) = 0.0_r8
@@ -178,8 +184,8 @@ contains
                   ! solve quadratic function to get equilibrium solutionp and adsorbp pools
                   aa = 1;
                   bb = smax_c + ks_sorption_c - temp_solutionp(c,j)
-                  cc = -1.0 * ks_sorption_c *  temp_solutionp(c,j)
-                  ps%solutionp_vr_col(c,j)  = (-bb+(bb*bb-4.0*aa*cc)**0.5)/(2.0*aa)
+                  cc = -1.0_r8 * ks_sorption_c *  temp_solutionp(c,j)
+                  ps%solutionp_vr_col(c,j)  = (-bb+(bb*bb-4.0_r8*aa*cc)**0.5_r8)/(2.0_r8*aa)
                   ps%labilep_vr_col(c,j) = temp_solutionp(c,j) - ps%solutionp_vr_col(c,j)
                end if
             enddo
