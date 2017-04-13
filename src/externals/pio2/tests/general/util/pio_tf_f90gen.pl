@@ -69,7 +69,7 @@ sub generate_gen_templates
   my ($gen_templ_func_bodies) = "";
 
   # Find typenames for the template and corresponding concrete types
-  my (@typenames); 
+  my (@typenames);
   my ($ntypenames);
   my (@typename_counter, @typename_counter_max);
   my ($typename);
@@ -148,7 +148,7 @@ sub generate_gen_templates
 }
 
 # FIXME - Not used, kept around so that the logic is not lost
-# Could be used to generate templates with all permutations of the typenames 
+# Could be used to generate templates with all permutations of the typenames
 sub generate_gen_templates_all_permutes
 {
   my ($gen_templ_func_name, $ref_modif_gen_templ_func_names,
@@ -156,7 +156,7 @@ sub generate_gen_templates_all_permutes
   my ($gen_templ_func_bodies) = "";
 
   # Find typenames for the template and corresponding concrete types
-  my (@typenames); 
+  my (@typenames);
   my ($ntypenames);
   my (@typename_counter, @typename_counter_max);
   my ($typename);
@@ -298,11 +298,11 @@ sub transform_src
       $out_line = $out_line . $1 . "  END IF\n";
       $out_line = $out_line . $1 . "  IF (pio_tf_world_rank_ == 0) THEN\n";
       $out_line = $out_line . $1 . "    IF (pio_tf_retval_utest_ == 0) THEN\n";
-      $out_line = $out_line . $1 . "      WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n"; 
+      $out_line = $out_line . $1 . "      WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n";
       $out_line = $out_line . $1 . "        \"$_\",&\n";
       $out_line = $out_line . $1 . "        \"---------\",\"PASSED\"\n";
       $out_line = $out_line . $1 . "    ELSE\n";
-      $out_line = $out_line . $1 . "      WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n"; 
+      $out_line = $out_line . $1 . "      WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n";
       $out_line = $out_line . $1 . "        \"$_\",&\n";
       $out_line = $out_line . $1 . "        \"---------\",\"FAILED\"\n";
       $out_line = $out_line . $1 . "    END IF\n";
@@ -330,11 +330,11 @@ sub transform_src
       $out_line = $out_line . $1 . "  END IF\n";
       $out_line = $out_line . $1 . "  IF (pio_tf_world_rank_ == 0) THEN\n";
       $out_line = $out_line . $1 . "    IF (pio_tf_retval_utest_ == 0) THEN\n";
-      $out_line = $out_line . $1 . "      WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n"; 
+      $out_line = $out_line . $1 . "      WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n";
       $out_line = $out_line . $1 . "        pio_tf_tmp_log_str_,&\n";
       $out_line = $out_line . $1 . "        \"---------\",\"PASSED\"\n";
       $out_line = $out_line . $1 . "    ELSE\n";
-      $out_line = $out_line . $1 . "      WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n"; 
+      $out_line = $out_line . $1 . "      WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n";
       $out_line = $out_line . $1 . "        pio_tf_tmp_log_str_,&\n";
       $out_line = $out_line . $1 . "        \"---------\",\"FAILED\"\n";
       $out_line = $out_line . $1 . "    END IF\n";
@@ -361,20 +361,34 @@ sub transform_src
     $out_line = $out_line . $1 . "END IF\n";
     $out_line = $out_line . $1 . "IF (pio_tf_world_rank_ == 0) THEN\n";
     $out_line = $out_line . $1 . "  IF (pio_tf_retval_utest_ == 0) THEN\n";
-    $out_line = $out_line . $1 . "    WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n"; 
+    $out_line = $out_line . $1 . "    WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n";
     $out_line = $out_line . $1 . "      pio_tf_tmp_log_str_,&\n";
     $out_line = $out_line . $1 . "      \"--------\", \"PASSED\"\n";
     $out_line = $out_line . $1 . "  ELSE\n";
-    $out_line = $out_line . $1 . "    WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n"; 
+    $out_line = $out_line . $1 . "    WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n";
     $out_line = $out_line . $1 . "      pio_tf_tmp_log_str_,&\n";
     $out_line = $out_line . $1 . "      \"--------\", \"FAILED\"\n";
     $out_line = $out_line . $1 . "  END IF\n";
     $out_line = $out_line . $1 . "END IF";
     $cur_test_case_num += 1;
 }
+  elsif(/^(\s*)PIO_TF_PASSERT\((.+),([^,]+),([^)]+)\)(.*)$/s){
+    $out_line = $1 . $5 . "\n";
+    $out_line = $out_line . $1 . "IF (.NOT. (PIO_TF_Passert_($2, $3))) THEN\n";
+    $out_line = $out_line . $1 . "  call MPI_COMM_RANK($3, pio_tf_tmp_comm_rank_, pio_tf_retval_utest_)\n";
+    $out_line = $out_line . $1 . "  pio_tf_retval_utest_ = -1\n";
+    $out_line = $out_line . $1 . "  IF (pio_tf_tmp_comm_rank_ == 0) THEN\n";
+    $out_line = $out_line . $1 . "    PRINT *, \"PIO_TF: Assertion failed :\",&\n";
+    $out_line = $out_line . $1 . "      " . $4 . ",&\n";
+    $out_line = $out_line . $1 . "       \":\", __FILE__, \":\", __LINE__,&\n";
+    $out_line = $out_line . $1 . "      " . "\"($template_fname:$template_line_no)\"\n";
+    $out_line = $out_line . $1 . "  END IF\n";
+    $out_line = $out_line . $1 . "  RETURN\n";
+    $out_line = $out_line . $1 . "END IF";
+  }
   elsif(/^(\s*)PIO_TF_PASSERT\((.+),([^)]+)\)(.*)$/s){
     $out_line = $1 . $4 . "\n";
-    $out_line = $out_line . $1 . "IF (.NOT. (PIO_TF_Passert_($2))) THEN\n";
+    $out_line = $out_line . $1 . "IF (.NOT. (PIO_TF_Passert_($2, pio_tf_comm_))) THEN\n";
     $out_line = $out_line . $1 . "  pio_tf_retval_utest_ = -1\n";
     $out_line = $out_line . $1 . "  IF (pio_tf_world_rank_ == 0) THEN\n";
     $out_line = $out_line . $1 . "    PRINT *, \"PIO_TF: Assertion failed :\",&\n";
@@ -396,9 +410,23 @@ sub transform_src
     $out_line = $out_line . $1 . "  RETURN\n";
     $out_line = $out_line . $1 . "END IF";
   }
+  elsif(/^(\s*)PIO_TF_CHECK_ERR\(([^,]+),([^,]+),(.+)\)(\s*)$/s){
+    $out_line = $1 . $5 . "\n";
+    $out_line = $out_line . $1 . "IF (.NOT. (PIO_TF_Passert_(($2) == PIO_NOERR, $3))) THEN\n";
+    $out_line = $out_line . $1 . "  call MPI_COMM_RANK($3, pio_tf_tmp_comm_rank_, pio_tf_retval_utest_)\n";
+    $out_line = $out_line . $1 . "  pio_tf_retval_utest_ = -1\n";
+    $out_line = $out_line . $1 . "  IF (pio_tf_tmp_comm_rank_ == 0) THEN\n";
+    $out_line = $out_line . $1 . "    PRINT *, \"PIO_TF: PIO Function failed:\",&\n";
+    $out_line = $out_line . $1 . "      " . $4 . ",&\n";
+    $out_line = $out_line . $1 . "      \":\", __FILE__, \":\", __LINE__,&\n";
+    $out_line = $out_line . $1 . "      " . "\"($template_fname:$template_line_no)\"\n";
+    $out_line = $out_line . $1 . "  END IF\n";
+    $out_line = $out_line . $1 . "  RETURN\n";
+    $out_line = $out_line . $1 . "END IF";
+  }
   elsif(/^(\s*)PIO_TF_CHECK_ERR\(([^,]+),(.+)\)(\s*)$/s){
     $out_line = $1 . $4 . "\n";
-    $out_line = $out_line . $1 . "IF (.NOT. (PIO_TF_Passert_(($2) == PIO_NOERR))) THEN\n";
+    $out_line = $out_line . $1 . "IF (.NOT. (PIO_TF_Passert_(($2) == PIO_NOERR, pio_tf_comm_))) THEN\n";
     $out_line = $out_line . $1 . "  pio_tf_retval_utest_ = -1\n";
     $out_line = $out_line . $1 . "  IF (pio_tf_world_rank_ == 0) THEN\n";
     $out_line = $out_line . $1 . "    PRINT *, \"PIO_TF: PIO Function failed:\",&\n";
@@ -455,8 +483,8 @@ sub transform_src
 # Returns 1 => if a generic template func is found, 0 otherwise
 sub find_gen_templ_funcs
 {
-  my($_, $ref_templ_typenames) = @_;
-  if(/^\s*PIO_TF_TEMPLATE\s*<(.*)>.*$/s){
+  my($str, $ref_templ_typenames) = @_;
+  if($str =~ /^\s*PIO_TF_TEMPLATE\s*<(.*)>.*$/s){
     if($1 eq ''){
       print "Error parsing template code, Check syntax of PIO_TF_TEMPLATE...\n";
       return 0;
@@ -555,7 +583,7 @@ sub update_auto_func_list_with_gen_templ
   my ($gen_templ_func_name);
   my (@modif_gen_templ_func_names);
   foreach $gen_templ_func_name (@{$ref_gen_templ_funcs_list}){
-    # Get the general template function names 
+    # Get the general template function names
     &generate_gen_templates($gen_templ_func_name, \@modif_gen_templ_func_names,
         $base_file_name, $ifline_num);
     my ($func_name);
@@ -573,20 +601,29 @@ sub get_default_test_main
   $out_line = $out_line . "  PROGRAM PIO_TF_Test_main_\n";
   $out_line = $out_line . "    USE pio_tutil\n";
   $out_line = $out_line . "    IMPLICIT NONE\n";
-  $out_line = $out_line . "    INTEGER ierr\n";
+  $out_line = $out_line . "    INTEGER, PARAMETER :: NREARRS = 2\n";
+  $out_line = $out_line . "    INTEGER :: rearrs(NREARRS) = (/pio_rearr_subset,pio_rearr_box/)\n";
+  $out_line = $out_line . "    CHARACTER(LEN=PIO_TF_MAX_STR_LEN) :: rearrs_info(NREARRS) = (/\"PIO_REARR_SUBSET\",\"PIO_REARR_BOX   \"/)\n";
+  $out_line = $out_line . "    INTEGER i, ierr\n";
   $out_line = $out_line . "\n";
   $out_line = $out_line . "    pio_tf_nerrs_total_=0\n";
   $out_line = $out_line . "    pio_tf_retval_utest_=0\n";
   $out_line = $out_line . "    CALL MPI_Init(ierr)\n";
-  $out_line = $out_line . "    CALL PIO_TF_Init_()\n";
-  $out_line = $out_line . "    CALL PIO_TF_Test_driver_()\n";
-  $out_line = $out_line . "    CALL PIO_TF_Finalize_()\n";
+  $out_line = $out_line . "    DO i=1,SIZE(rearrs)\n";
+  $out_line = $out_line . "      CALL PIO_TF_Init_(rearrs(i))\n";
+  $out_line = $out_line . "      IF (pio_tf_world_rank_ == 0) THEN\n";
+  $out_line = $out_line . "        WRITE(*,*) \"PIO_TF: Testing : \", trim(rearrs_info(i))\n";
+  $out_line = $out_line . "      END IF\n";
+  $out_line = $out_line . "      CALL PIO_TF_Test_driver_()\n";
+  $out_line = $out_line . "      CALL PIO_TF_Finalize_()\n";
+  $out_line = $out_line . "    END DO\n";
   $out_line = $out_line . "    IF (pio_tf_world_rank_ == 0) THEN\n";
   $out_line = $out_line . "      IF (pio_tf_nerrs_total_ == 0) THEN\n";
   $out_line = $out_line . "        IF (pio_tf_retval_utest_ == 0) THEN\n";
   $out_line = $out_line . "          WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF: \",&\n";
   $out_line = $out_line . "           \"All tests\", \"---------\", \"PASSED\"\n";
   $out_line = $out_line . "        ELSE\n";
+  $out_line = $out_line . "          pio_tf_nerrs_total_ = pio_tf_nerrs_total_ + 1\n";
   $out_line = $out_line . "          WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF: \",&\n";
   $out_line = $out_line . "           \"Test driver\", \"---------\", \"FAILED\"\n";
   $out_line = $out_line . "        END IF\n";
@@ -630,10 +667,10 @@ sub get_default_test_driver
     $out_line = $out_line . "    END IF\n";
     $out_line = $out_line . "    IF (pio_tf_world_rank_ == 0) THEN\n";
     $out_line = $out_line . "      IF (pio_tf_retval_utest_ == 0) THEN\n";
-    $out_line = $out_line . "        WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n"; 
+    $out_line = $out_line . "        WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n";
     $out_line = $out_line . "          \"$_\",\"-----------\", \"PASSED\"\n";
     $out_line = $out_line . "      ELSE\n";
-    $out_line = $out_line . "        WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n"; 
+    $out_line = $out_line . "        WRITE(*,PIO_TF_TEST_RES_FMT) \"PIO_TF:Test $cur_test_case_num:\",&\n";
     $out_line = $out_line . "          \"$_\",\"-----------\", \"FAILED\"\n";
     $out_line = $out_line . "      END IF\n";
     $out_line = $out_line . "    END IF\n";
@@ -756,7 +793,7 @@ sub process_template_file
   $orig_line = "";
   while(<TEMPLATE_FILE>){
     my ($out_line);
-  
+
     $orig_line = $orig_line . $_;
     chomp;
     $_ = $in_line . $_;
@@ -769,7 +806,7 @@ sub process_template_file
       # Strip off comments at the end of the line
       if(/^([^!]*)!(.*)$/s){
         if($verbose){ print "Stripping comment: $2\n"; }
-        $_ = $1; 
+        $_ = $1;
       }
       if(/^\s*PROGRAM.*/si){
         # Report error and exit if the template has a PROGRAM keyword
@@ -829,8 +866,8 @@ sub print_usage_and_exit()
 # Read input args
 GetOptions(
   # Annotate generated source with template line numbers etc
-  "annotate-source"		=>	\$annotate_source,
-  "out=s"				      =>	\$output_fname,
+  "annotate-source"             =>      \$annotate_source,
+  "out=s"                                     =>        \$output_fname,
   "verbose"           =>  \$verbose
 );
 
@@ -853,4 +890,3 @@ if(!stat($template_fname)){
 
 if($verbose){ print "Reading input args complete\n" }
 &process_template_file($template_fname, $output_fname);
-

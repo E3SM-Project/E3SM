@@ -20,7 +20,7 @@ class DAE(SystemTestsCompareTwo):
     Implementation of the CIME data assimilation test: Tests simple DA script
     which does not change the CAM input. Compares answers to non-DA run.
     Refers to a faux data assimilation script in the
-    cime/utils/data_assimilation directory
+    cime/scripts/data_assimilation directory
     """
 
     ###########################################################################
@@ -41,7 +41,7 @@ class DAE(SystemTestsCompareTwo):
     def _case_two_setup(self):
     ###########################################################################
         # Set up data assimilation in config_tests.xml once that's ready
-        # We need to find the utils/data_assimilation directory
+        # We need to find the scripts/data_assimilation directory
         # LIB_DIR should be our parent dir
         da_dir = os.path.join(os.path.dirname(sms.LIB_DIR), "data_assimilation")
         expect(os.path.isdir(da_dir), "ERROR: da_dir, '%s', does not exist"%da_dir)
@@ -65,18 +65,21 @@ class DAE(SystemTestsCompareTwo):
         # Clean up any da.log files in case this is a re-run.
         self._activate_case2()
         case_root = self._get_caseroot2()
-        da_files = glob.glob(os.path.join(case_root, 'da.log.*'))
+        rundir2 = self._case.get_value("RUNDIR")
+        da_files = glob.glob(os.path.join(rundir2, 'da.log.*'))
         for file_ in da_files:
             os.remove(file_)
         # End for
+
         # CONTINUE_RUN ends up TRUE, set it back in case this is a re-run.
         self._case.set_value("CONTINUE_RUN", False)
         # Start normal run here
         self._activate_case1()
         SystemTestsCompareTwo.run_phase(self)
+
         # Do some checks on the data assimilation 'output' from case2
         self._activate_case2()
-        da_files = glob.glob(os.path.join(case_root, 'da.log.*'))
+        da_files = glob.glob(os.path.join(rundir2, 'da.log.*'))
         if da_files is None:
             logger = logging.getLogger(__name__)
             logger.warning("No DA files in %s", os.path.join(case_root, 'da.log.*'))

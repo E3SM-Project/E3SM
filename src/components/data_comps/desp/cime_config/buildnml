@@ -11,7 +11,7 @@
 
 import os, shutil, sys, glob
 
-_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
 from standard_script_setup import *
@@ -65,7 +65,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     config['desp_mode'] = desp_mode
 
     #----------------------------------------------------
-    # Initialize namelist defaults 
+    # Initialize namelist defaults
     #----------------------------------------------------
     nmlgen.init_defaults(infile, config)
 
@@ -99,7 +99,7 @@ def buildnml(case, caseroot, compname):
         os.makedirs(confdir)
 
     #----------------------------------------------------
-    # Construct the namelist generator 
+    # Construct the namelist generator
     #----------------------------------------------------
     # Determine directory for user modified namelist_definitions.xml and namelist_defaults.xml
     user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)
@@ -107,7 +107,7 @@ def buildnml(case, caseroot, compname):
             "user_xml_dir %s does not exist " %user_xml_dir)
 
     # NOTE: User definition *replaces* existing definition.
-    namelist_xml_dir = os.path.join(cimeroot, "components", "data_comps", compname, "cime_config")
+    namelist_xml_dir = os.path.join(cimeroot, "src", "components", "data_comps", compname, "cime_config")
     definition_file = [os.path.join(namelist_xml_dir, "namelist_definition_desp.xml")]
     user_definition = os.path.join(user_xml_dir, "namelist_definition_desp.xml")
     if os.path.isfile(user_definition):
@@ -117,12 +117,11 @@ def buildnml(case, caseroot, compname):
 
     # Create the namelist generator object - independent of instance
     nmlgen = NamelistGenerator(case, definition_file)
-    
+
     #----------------------------------------------------
     # Loop over instances
     #----------------------------------------------------
     for inst_counter in range(1, ninst+1):
-
         # determine instance string
         inst_string = ""
         if ninst > 1:

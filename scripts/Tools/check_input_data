@@ -41,8 +41,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--svn-loc", default=SVN_LOCS[get_model()],
                         help="The input data repository from which to download data.")
 
-    parser.add_argument("-i", "--input-data-root", default=MACHINE.get_value("DIN_LOC_ROOT"),
-                        help="The root directory where input data goes")
+    parser.add_argument("-i", "--input-data-root", default=None,
+                        help="The root directory where input data goes. "
+                        "Default value will come from DIN_LOC_ROOT from case which itself "
+                        "defaults to '%s'" % MACHINE.get_value("DIN_LOC_ROOT"))
 
     parser.add_argument("--data-list-dir", default="Buildconf",
                         help="Where to find list of input files")

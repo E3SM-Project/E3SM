@@ -3,7 +3,7 @@ Base class for CIME system tests
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
-from CIME.utils import append_status
+from CIME.utils import append_testlog
 from CIME.case_setup import case_setup
 from CIME.case_run import case_run
 from CIME.case_st_archive import case_st_archive
@@ -65,7 +65,7 @@ class SystemTestsCommon(object):
             logging.warning("Resetting case due to detected re-run of phase %s" % phase)
             self._case.set_initial_test_values()
 
-            case_setup(self._case, reset=True, test_mode=True, no_status=True)
+            case_setup(self._case, reset=True, test_mode=True)
 
     def build(self, sharedlib_only=False, model_only=False):
         """
@@ -89,7 +89,7 @@ class SystemTestsCommon(object):
                     success = False
                     excmsg = "Exception during build:\n%s\n%s" % (sys.exc_info()[1], traceback.format_exc())
                     logger.warning(excmsg)
-                    append_status(excmsg, sfile="TestStatus.log")
+                    append_testlog(excmsg)
 
                 time_taken = time.time() - start_time
                 with self._test_status:
@@ -130,8 +130,6 @@ class SystemTestsCommon(object):
         success = True
         start_time = time.time()
         try:
-            expect(self._test_status.get_status(MODEL_BUILD_PHASE) == TEST_PASS_STATUS,
-                   "Model was not built!")
             self._resetup_case(RUN_PHASE)
             with self._test_status:
                 self._test_status.set_status(RUN_PHASE, TEST_PEND_STATUS)
@@ -148,9 +146,15 @@ class SystemTestsCommon(object):
 
         except:
             success = False
-            excmsg = "Exception during run:\n%s\n%s" % (sys.exc_info()[1], traceback.format_exc())
+            msg = sys.exc_info()[1].message
+            if "RUN FAIL" in msg:
+                # Don't want to print stacktrace for a model failure since that
+                # is not a CIME/infrastructure problem.
+                excmsg = msg
+            else:
+                excmsg = "Exception during run:\n%s\n%s" % (sys.exc_info()[1], traceback.format_exc())
             logger.warning(excmsg)
-            append_status(excmsg, sfile="TestStatus.log")
+            append_testlog(excmsg)
 
         # Writing the run status should be the very last thing due to wait_for_tests
         time_taken = time.time() - start_time
@@ -225,7 +229,7 @@ class SystemTestsCommon(object):
 
     def _component_compare_copy(self, suffix):
         comments = copy(self._case, suffix)
-        append_status(comments, sfile="TestStatus.log")
+        append_testlog(comments)
 
     def _component_compare_test(self, suffix1, suffix2):
         """
@@ -233,7 +237,7 @@ class SystemTestsCommon(object):
         run case needs indirection based on success.
         """
         success, comments = compare_test(self._case, suffix1, suffix2)
-        append_status(comments, sfile="TestStatus.log")
+        append_testlog(comments)
         status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
         with self._test_status:
             self._test_status.set_status("%s_%s_%s" % (COMPARE_PHASE, suffix1, suffix2), status)
@@ -300,7 +304,7 @@ class SystemTestsCommon(object):
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS)
                 else:
                     comment = "memleak detected, memory went from %f to %f in %d days" % (originalmem, finalmem, finaldate-originaldate)
-                    append_status(comment, sfile="TestStatus.log")
+                    append_testlog(comment)
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_FAIL_STATUS, comments=comment)
 
     def compare_env_run(self, expected=None):
@@ -313,10 +317,8 @@ class SystemTestsCommon(object):
                 logging.warn("  Resetting %s for test" % key)
                 f1obj.set_value(key, f2obj.get_value(key, resolved=False))
             else:
-                print "Found difference in %s: case: %s original value %s" %\
+                print "WARNING: Found difference in test %s: case: %s original value %s" %\
                     (key, diffs[key][0], diffs[key][1])
-                print " Use option --force to run the test with this"\
-                    " value or --reset to reset to original"
                 return False
         return True
 
@@ -339,7 +341,7 @@ class SystemTestsCommon(object):
         with self._test_status:
             # compare baseline
             success, comments = compare_baseline(self._case)
-            append_status(comments, sfile="TestStatus.log")
+            append_testlog(comments)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             ts_comments = comments if "\n" not in comments else None
             self._test_status.set_status(BASELINE_PHASE, status, comments=ts_comments)
@@ -367,7 +369,7 @@ class SystemTestsCommon(object):
                 else:
                     comment = "Error: Could not determine baseline memory usage"
                     self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
-                    append_status(comment, sfile="TestStatus.log")
+                    append_testlog(comment)
 
             # compare throughput to baseline
             current = self._get_throughput(newestcpllogfile)
@@ -380,7 +382,7 @@ class SystemTestsCommon(object):
                 else:
                     comment = "Error: Computation time increase > 25% from baseline"
                     self._test_status.set_status(THROUGHPUT_PHASE, TEST_FAIL_STATUS, comments=comment)
-                    append_status(comment, sfile="TestStatus.log")
+                    append_testlog(comment)
 
     def _generate_baseline(self):
         """
@@ -389,7 +391,7 @@ class SystemTestsCommon(object):
         with self._test_status:
             # generate baseline
             success, comments = generate_baseline(self._case)
-            append_status(comments, sfile="TestStatus.log")
+            append_testlog(comments)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             self._test_status.set_status("%s" % GENERATE_PHASE, status)
             basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
@@ -432,9 +434,6 @@ class FakeTest(SystemTestsCommon):
             os.environ["MPI_SHEPHERD"] = "true"
         super(FakeTest, self).run_indv(suffix, st_archive)
 
-
-
-
 class TESTRUNPASS(FakeTest):
 
     def build_phase(self, sharedlib_only=False, model_only=False):
@@ -445,7 +444,7 @@ class TESTRUNPASS(FakeTest):
 """
 echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
-cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
+cp %s/scripts/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
 """ % (rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
@@ -468,9 +467,9 @@ class TESTRUNDIFF(FakeTest):
 echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 if [ -z "$TESTRUNDIFF_ALTERNATE" ]; then
-  cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
+  cp %s/scripts/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
 else
-  cp %s/utils/python/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc
+  cp %s/scripts/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc
 fi
 """ % (rundir, cimeroot, rundir, case, cimeroot, rundir, case)
         self._set_script(script)
@@ -487,8 +486,8 @@ class TESTTESTDIFF(FakeTest):
 """
 echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
-cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
-cp %s/utils/python/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc.rest
+cp %s/scripts/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
+cp %s/scripts/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc.rest
 """ % (rundir, cimeroot, rundir, case, cimeroot, rundir, case)
         self._set_script(script)
         super(TESTTESTDIFF, self).build_phase(sharedlib_only=sharedlib_only,
@@ -546,7 +545,7 @@ class TESTRUNSLOWPASS(FakeTest):
 sleep 300
 echo Slow pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
-cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
+cp %s/scripts/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
 """ % (rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
@@ -557,12 +556,12 @@ class TESTMEMLEAKFAIL(FakeTest):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
         case = self._case.get_value("CASE")
-        testfile = os.path.join(cimeroot,"utils","python","tests","cpl.log.failmemleak.gz")
+        testfile = os.path.join(cimeroot,"scripts","tests","cpl.log.failmemleak.gz")
         script = \
 """
 echo Insta pass
 gunzip -c %s > %s/cpl.log.$LID
-cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
+cp %s/scripts/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
 """ % (testfile, rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
@@ -573,12 +572,12 @@ class TESTMEMLEAKPASS(FakeTest):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
         case = self._case.get_value("CASE")
-        testfile = os.path.join(cimeroot,"utils","python","tests","cpl.log.passmemleak.gz")
+        testfile = os.path.join(cimeroot,"scripts","tests","cpl.log.passmemleak.gz")
         script = \
 """
 echo Insta pass
 gunzip -c %s > %s/cpl.log.$LID
-cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
+cp %s/scripts/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
 """ % (testfile, rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,

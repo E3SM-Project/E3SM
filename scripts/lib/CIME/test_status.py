@@ -28,7 +28,6 @@ from CIME.XML.standard_module_setup import *
 from collections import OrderedDict
 
 import os
-from stat import S_IREAD, S_IRGRP, S_IROTH
 
 TEST_STATUS_FILENAME = "TestStatus"
 
@@ -53,6 +52,7 @@ SETUP_PHASE           = "SETUP"
 NAMELIST_PHASE        = "NLCOMP"
 SHAREDLIB_BUILD_PHASE = "SHAREDLIB_BUILD"
 MODEL_BUILD_PHASE     = "MODEL_BUILD"
+SUBMIT_PHASE          = "SUBMIT"
 RUN_PHASE             = "RUN"
 THROUGHPUT_PHASE      = "TPUTCOMP"
 MEMCOMP_PHASE         = "MEMCOMP"
@@ -67,6 +67,7 @@ ALL_PHASES = [CREATE_NEWCASE_PHASE,
               NAMELIST_PHASE,
               SHAREDLIB_BUILD_PHASE,
               MODEL_BUILD_PHASE,
+              SUBMIT_PHASE,
               RUN_PHASE,
               COMPARE_PHASE,
               BASELINE_PHASE,
@@ -81,6 +82,7 @@ CORE_PHASES = [CREATE_NEWCASE_PHASE,
                SETUP_PHASE,
                SHAREDLIB_BUILD_PHASE,
                MODEL_BUILD_PHASE,
+               SUBMIT_PHASE,
                RUN_PHASE]
 
 def _test_helper1(file_contents):
@@ -98,7 +100,7 @@ def _test_helper2(file_contents, wait_for_run=False, check_throughput=False, che
 
 class TestStatus(object):
 
-    def __init__(self, test_dir=None, test_name=None, no_io=False, lock=False):
+    def __init__(self, test_dir=None, test_name=None, no_io=False):
         """
         Create a TestStatus object
 
@@ -113,7 +115,6 @@ class TestStatus(object):
         self._test_name = test_name
         self._ok_to_modify = False
         self._no_io = no_io
-        self._lock = lock
 
         if os.path.exists(self._filename):
             self._parse_test_status_file()
@@ -174,7 +175,7 @@ class TestStatus(object):
 
         if phase in CORE_PHASES and phase != CORE_PHASES[0]:
             previous_core_phase = CORE_PHASES[CORE_PHASES.index(phase)-1]
-            #TODO: enamble check below
+            #TODO: enable check below
             #expect(previous_core_phase in self._phase_statuses, "Core phase '%s' was skipped" % previous_core_phase)
 
             if previous_core_phase in self._phase_statuses:
@@ -224,9 +225,6 @@ class TestStatus(object):
         if self._phase_statuses and not self._no_io:
             with open(self._filename, "w") as fd:
                 self.phase_statuses_dump(fd)
-
-            if self._lock:
-                os.chmod(self._filename, S_IREAD | S_IRGRP | S_IROTH)
 
     def _parse_test_status(self, file_contents):
         """

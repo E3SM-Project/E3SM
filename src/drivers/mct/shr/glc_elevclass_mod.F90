@@ -126,7 +126,7 @@ contains
     character(len=*), parameter :: subname = 'glc_elevclass_init_override'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(my_topomax) == (/my_glc_nec/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL_FL((ubound(my_topomax) == (/my_glc_nec/)), __FILE__, __LINE__)
 
     glc_nec = my_glc_nec
     allocate(topomax(0:glc_nec))

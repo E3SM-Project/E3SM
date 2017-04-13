@@ -15,7 +15,7 @@ class Headers(EntryID):
 
         >>> files = Files()
         >>> files.get_value('CASEFILE_HEADERS',resolved=False)
-        '$CIMEROOT/cime_config/config_headers.xml'
+        '$CIMEROOT/config/config_headers.xml'
         """
         if infile is None:
             files = Files()

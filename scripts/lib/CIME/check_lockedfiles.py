@@ -9,6 +9,8 @@ from CIME.XML.env_mach_pes import EnvMachPes
 from CIME.XML.env_batch import EnvBatch
 from CIME.utils import run_cmd_no_fail
 
+logger = logging.getLogger(__name__)
+
 import glob, shutil
 
 LOCKED_DIR = "LockedFiles"
@@ -82,13 +84,15 @@ def check_lockedfiles(caseroot=None):
     If caseroot is not specified, it is set to the current working directory
     """
     caseroot = os.getcwd() if caseroot is None else caseroot
-    lockedfiles = glob.glob(os.path.join(caseroot, "LockedFiles", "[^.]*.xml"))
+    lockedfiles = glob.glob(os.path.join(caseroot, "LockedFiles", "*.xml"))
     for lfile in lockedfiles:
         fpart = os.path.basename(lfile)
+        # ignore files used for tests such as env_mach_pes.ERP1.xml by looking for extra dots in the name
+        if lfile.count('.') > 1:
+            continue
         cfile = os.path.join(caseroot, fpart)
         if os.path.isfile(cfile):
             objname = fpart.split('.')[0]
-            logging.info("Checking file %s"%objname)
             if objname == "env_build":
                 f1obj = EnvBuild(caseroot, cfile)
                 f2obj = EnvBuild(caseroot, lfile)
@@ -104,7 +108,6 @@ def check_lockedfiles(caseroot=None):
             else:
                 logging.warn("Locked XML file '%s' is not current being handled" % fpart)
                 continue
-
             diffs = f1obj.compare_xml(f2obj)
             if diffs:
                 logging.warn("File %s has been modified"%lfile)

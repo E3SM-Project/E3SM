@@ -1,5 +1,16 @@
 include (CMakeParseArguments)
 
+# Find Valgrind to perform memory leak check
+if (PIO_VALGRIND_CHECK)
+    find_program (VALGRIND_COMMAND NAMES valgrind)
+    if (VALGRIND_COMMAND)
+        set (VALGRIND_COMMAND_OPTIONS --leak-check=full --show-reachable=yes)
+    else ()
+        message (WARNING "Valgrind not found: memory leak check could not be performed")
+        set (VALGRIND_COMMAND "")
+    endif ()
+endif ()
+
 #
 # - Functions for parallel testing with CTest
 #
@@ -20,6 +31,11 @@ function (platform_name RETURN_VARIABLE)
         SITENAME MATCHES "^caldera")
         
         set (${RETURN_VARIABLE} "nwsc" PARENT_SCOPE)
+
+    # New NWSC SGI machine
+    elseif (SITENAME MATCHES "^laramie")
+        
+	set (${RETURN_VARIABLE} "nwscla" PARENT_SCOPE)
         
     # ALCF/Argonne Machines
     elseif (SITENAME MATCHES "^mira" OR
@@ -29,7 +45,7 @@ function (platform_name RETURN_VARIABLE)
         
         set (${RETURN_VARIABLE} "alcf" PARENT_SCOPE)
         
-    # ALCF/Argonne Machines
+    # NERSC Machines
     elseif (SITENAME MATCHES "^edison" OR
         SITENAME MATCHES "^cori")
         
@@ -39,6 +55,12 @@ function (platform_name RETURN_VARIABLE)
     elseif (SITENAME MATCHES "^h2ologin")
 
         set (${RETURN_VARIABLE} "ncsa" PARENT_SCOPE)
+
+    # OLCF/Oak Ridge Machines
+    elseif (SITENAME MATCHES "^eos" OR
+            SITENAME MATCHES "^titan")
+
+        set (${RETURN_VARIABLE} "olcf" PARENT_SCOPE)
         
     else ()
 
@@ -78,14 +100,14 @@ function (add_mpi_test TESTNAME)
 
         # Run tests directly from the command line
         set(EXE_CMD ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${num_procs} 
-                    ${MPIEXEC_PREFLAGS} ${exec_file} 
+                    ${MPIEXEC_PREFLAGS} ${VALGRIND_COMMAND} ${VALGRIND_COMMAND_OPTIONS} ${exec_file} 
                     ${MPIEXEC_POSTFLAGS} ${exec_args})
 
     else ()
                         
         # Run tests from the platform-specific executable
         set (EXE_CMD ${CMAKE_SOURCE_DIR}/cmake/mpiexec.${PLATFORM} 
-                     ${num_procs} ${exec_file} ${exec_args})
+                     ${num_procs} ${VALGRIND_COMMAND} ${VALGRIND_COMMAND_OPTIONS} ${exec_file} ${exec_args})
                      
     endif ()
     
