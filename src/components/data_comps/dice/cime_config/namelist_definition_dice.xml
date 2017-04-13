@@ -119,10 +119,6 @@
         area    area
         mask    mask
       </value>
-        time    time
-        gridLon lon
-        gridLat lat
-      </value>
     </values>
   </entry>
 
