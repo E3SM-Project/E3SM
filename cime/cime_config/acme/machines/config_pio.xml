@@ -46,6 +46,7 @@
     <values>
       <value>pnetcdf</value>
       <value mach="userdefined">netcdf</value>
+      <value mach="melvin">netcdf</value>
       <value mach="eastwind">netcdf</value>
       <value mach="constance">netcdf</value>
       <value mach="sooty">netcdf</value>

@@ -1,5 +1,1 @@
-if [ `./xmlquery MACH -value` = "melvin" ]; then
-    ./xmlchange PIO_TYPENAME=netcdf
-fi
-
 ./xmlchange --append CAM_CONFIG_OPTS='-cosp'
