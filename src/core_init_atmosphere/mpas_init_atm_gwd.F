@@ -46,6 +46,8 @@ module mpas_init_atm_gwd
    !     See the read_global_30s_landuse function 
    integer (kind=I1KIND), parameter :: WATER = 16
 
+   integer (kind=I1KIND), dimension(:), pointer :: hlanduse ! Dominant land mask (0 or 1)
+   real (kind=RKIND) :: hc   ! critical height
 
    contains
 
@@ -95,6 +97,11 @@ module mpas_init_atm_gwd
       character(len=StrKIND), pointer :: config_topo_data
       character(len=StrKIND) :: geog_sub_path
 
+      ! Variables for smoothing variance
+      integer, dimension(:,:), pointer:: cellsOnCell
+      integer (kind=I1KIND) :: sum_landuse
+      real (kind=RKIND) :: sum_var
+
 
       allocate(topo(topo_x,topo_y))
       allocate(landuse(topo_x,topo_y))
@@ -142,6 +149,7 @@ module mpas_init_atm_gwd
       call mpas_pool_get_array(mesh, 'lonCell', lonCell)
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
       call mpas_pool_get_array(mesh, 'var2d', var2d)
       call mpas_pool_get_array(mesh, 'con', con)
@@ -157,6 +165,8 @@ module mpas_init_atm_gwd
 !      call mpas_pool_get_array(mesh, 'theta', htheta)
 !      call mpas_pool_get_array(mesh, 'gamma', hgamma)
 !      call mpas_pool_get_array(mesh, 'sigma', hsigma)
+
+      allocate(hlanduse(nCells))
 
       iErr = read_global_30s_topo(config_geog_data_path, geog_sub_path)
       if (iErr /= 0) then
@@ -231,18 +241,48 @@ module mpas_init_atm_gwd
          oa2(iCell) = get_oa2()
          oa3(iCell) = get_oa3()
          oa4(iCell) = get_oa4()
+
+         ! Critical height, to be used in OL computation
+         ! See Appendix of Kim, Y-J, 1996: Representation of Sub-Grid Scale Orographic Effects
+         ! in a General Circulation Model. J. Climate, 9, 2698-2717.
+         hc = 1116.2_RKIND - 0.878_RKIND * var2d(iCell)
+
          ol1(iCell) = get_ol1()
          ol2(iCell) = get_ol2()
          ol3(iCell) = get_ol3()
          ol4(iCell) = get_ol4()
+
+         hlanduse(iCell) = get_dom_landmask()  ! get dominant land mask in cell
+
 !         elvmax(iCell) = get_elvmax()
 !         htheta(iCell) = get_htheta()
 !         hgamma(iCell) = get_hgamma()
 !         hsigma(iCell) = get_hsigma()
       end do
 
+
+      ! Smooth variance at isolated points
+      do iCell = 1,nCells
+         sum_landuse = 0_I1KIND
+         sum_var     = 0.0_RKIND
+         do i=1,nEdgesOnCell(iCell)
+             sum_landuse = sum_landuse + hlanduse(cellsOnCell(i,iCell)) 
+             sum_var     = sum_var     + var2d(cellsOnCell(i,iCell))
+         end do
+
+         if (sum_landuse == int(nEdgesOnCell(iCell),kind=I1KIND) .and. hlanduse(iCell) == 0_I1KIND) then
+             call mpas_log_write('smoothing out a water point, iCell = $i', intArgs=(/iCell/))
+             var2d(iCell) = sum_var / real(nEdgesOnCell(iCell),kind=RKIND)
+         else if (sum_landuse == 0_I1KIND .and. hlanduse(iCell) == 1_I1KIND) then
+             call mpas_log_write('smoothing out a land point, iCell = $i', intArgs=(/iCell/))
+             var2d(iCell) = sum_var / real(nEdgesOnCell(iCell),kind=RKIND)
+         end if
+      end do
+
+
       deallocate(topo)
       deallocate(landuse)
+      deallocate(hlanduse)
 
       iErr = 0
 
@@ -392,6 +432,43 @@ module mpas_init_atm_gwd
 
    !***********************************************************************
    !
+   !  function get_dom_landmask
+   !
+   !> \brief   Returns the dominant land mask in a cell
+   !> \author  May Wong
+   !> \date    
+   !> \details 1 = land, 0 = water
+   !
+   !-----------------------------------------------------------------------
+   integer (kind=I1KIND) function get_dom_landmask( )
+
+      implicit none
+
+      integer :: i, j      
+      real (kind=RKIND) :: xland
+      xland = 0.0_RKIND
+
+      ! Get dominant land/water mask in the box
+      do j=1,ny
+      do i=1,nx
+         if (box_landuse(i,j) /= WATER) then
+            xland = xland + 1.0_RKIND
+         end if
+      end do
+      end do
+      xland = xland / real(nx*ny,kind=RKIND)
+
+      if (xland >= 0.5_RKIND) then
+         get_dom_landmask = 1_I1KIND
+      else
+         get_dom_landmask = 0_I1KIND
+      end if 
+
+   end function get_dom_landmask 
+
+
+   !***********************************************************************
+   !
    !  subroutine get_box
    !
    !> \brief   Cuts out a rectangular box of data centered at a given (lat,lon)
@@ -418,6 +495,7 @@ module mpas_init_atm_gwd
 
       integer :: i, j, ii, jj, ic, jc
       real (kind=RKIND) :: sg_lat
+
 
       !
       ! Get number of points to extract in the zonal direction
@@ -487,6 +565,7 @@ module mpas_init_atm_gwd
       end do
       end do
 
+
       !
       ! Compute mean topography in the extracted box
       !
@@ -529,7 +608,7 @@ module mpas_init_atm_gwd
    !
    !  function get_con
    !
-   !> \brief   Computes orographic convexityof sub-grid-scale terrain
+   !> \brief   Computes orographic convexity of sub-grid-scale terrain
    !> \author  Michael Duda
    !> \date    29 May 2015
    !> \details 
@@ -540,24 +619,61 @@ module mpas_init_atm_gwd
       implicit none
 
       integer :: i, j
-      real (kind=RKIND) :: s2, s4, var
+      real (kind=RKIND) :: s2, s4, var, xland, mean_land, mean_water, oro
 
       s2 = 0.0
       s4 = 0.0
+      mean_land = 0.0
+      mean_water = 0.0
+      xland = 0.0
+
+      !
+      ! Compute grid-box mean
+      !
+      do j=1,ny
+         do i=1,nx
+            if (box_landuse(i,j) /= WATER) then
+               xland = xland + 1.0
+               mean_land = mean_land + box(i,j)
+            else
+               mean_water = mean_water + box(i,j)
+            end if
+         end do
+      end do
+      if (xland > 0.0) then
+         mean_land = mean_land / xland
+      end if
+      if (xland < real(nx*ny,kind=RKIND)) then
+         mean_water = mean_water / (real(nx*ny,kind=RKIND) - xland)
+      end if
+      xland = xland / real(nx*ny,kind=RKIND)
+ 
+      if (xland >= 0.5_RKIND) then
+         oro = mean_land
+      else
+         oro = mean_water
+      end if
 
       do j=1,ny
          do i=1,nx
             s2 = s2 + (box(i,j) - box_mean)**2
-            s4 = s4 + (box(i,j) - box_mean)**4
+            s4 = s4 + (box(i,j) - oro)**4
          end do
       end do
 
       var = s2 / real(nx*ny,RKIND)
- 
-      if (abs(var) < 1.0e-5) then
+
+      if (sqrt(var) < 1.0) then
          get_con = 0.0
       else
          get_con = s4 / (var**2 * real(nx*ny,RKIND))
+      end if
+
+      !
+      ! Zero-ing all convexity statistics over dominantly water points.
+      !
+      if (xland < 0.5_RKIND) then
+         get_con = 0.0
       end if
 
    end function get_con
@@ -750,7 +866,7 @@ module mpas_init_atm_gwd
 
       do j=ny/4,3*ny/4
          do i=1,nx
-            if (box(i,j) > box_mean) nw = nw + 1
+            if (box(i,j) > hc) nw = nw + 1
             nt = nt + 1
          end do
       end do
@@ -783,7 +899,7 @@ module mpas_init_atm_gwd
 
       do j=1,ny
          do i=nx/4,3*nx/4
-            if (box(i,j) > box_mean) nw = nw + 1
+            if (box(i,j) > hc) nw = nw + 1
             nt = nt + 1
          end do
       end do
@@ -816,13 +932,13 @@ module mpas_init_atm_gwd
 
       do j=1,ny/2
          do i=1,nx/2
-            if (box(i,j) > box_mean) nw = nw + 1
+            if (box(i,j) > hc) nw = nw + 1
             nt = nt + 1
          end do
       end do
       do j=ny/2+1,ny
          do i=nx/2+1,nx
-            if (box(i,j) > box_mean) nw = nw + 1
+            if (box(i,j) > hc) nw = nw + 1
             nt = nt + 1
          end do
       end do
@@ -855,13 +971,13 @@ module mpas_init_atm_gwd
 
       do j=ny/2+1,ny
          do i=1,nx/2
-            if (box(i,j) > box_mean) nw = nw + 1
+            if (box(i,j) > hc) nw = nw + 1
             nt = nt + 1
          end do
       end do
       do j=1,ny/2
          do i=nx/2+1,nx
-            if (box(i,j) > box_mean) nw = nw + 1
+            if (box(i,j) > hc) nw = nw + 1
             nt = nt + 1
          end do
       end do
