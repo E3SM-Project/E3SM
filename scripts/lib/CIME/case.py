@@ -966,7 +966,7 @@ class Case(object):
                 else:
                     user_mods_path = self.get_value('USER_MODS_DIR')
                     user_mods_path = os.path.join(user_mods_path, user_mods)
-                CIME.user_mod_support.apply_user_mods(self._caseroot, user_mods_path)
+                apply_user_mods(self._caseroot, user_mods_path)
 
 
 
