@@ -290,7 +290,7 @@ def _main():
             "unit_testing" : True
         }
 
-        # We can get away with specifying case=None for exe_only=True
+        # We can get away with specifying case=None since we're using exe_only=True
         mpirun_command, _ = machspecific.get_mpirun(case=None, attribs=mpi_attribs, exe_only=True)
         logger.warn("mpirun command is '%s'"%mpirun_command)
 
