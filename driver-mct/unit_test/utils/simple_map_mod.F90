@@ -66,8 +66,8 @@ contains
     !-----------------------------------------------------------------------
 
     n_overlaps = size(overlap_weights)
-    call shr_assert(size(source_indices) == n_overlaps, errMsg(__FILE__, __LINE__))
-    call shr_assert(size(dest_indices) == n_overlaps, errMsg(__FILE__, __LINE__))
+    call shr_assert(size(source_indices) == n_overlaps, file=__FILE__, line=__LINE__)
+    call shr_assert(size(dest_indices) == n_overlaps, file=__FILE__, line=__LINE__)
 
     this%n_overlaps = n_overlaps
     this%source_indices = source_indices

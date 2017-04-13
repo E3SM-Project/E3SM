@@ -248,7 +248,7 @@ contains
     !-----------------------------------------------------------------------
 
     npts = size(glc_elevclass)
-    SHR_ASSERT((size(glc_topo) == npts), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_FL((size(glc_topo) == npts), __FILE__, __LINE__)
 
     do glc_pt = 1, npts
        call glc_get_elevation_class(glc_topo(glc_pt), glc_elevclass(glc_pt), err_code)
@@ -291,8 +291,8 @@ contains
     !-----------------------------------------------------------------------
 
     npts = size(glc_frac_this_ec)
-    SHR_ASSERT((size(glc_frac) == npts), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT((size(glc_elevclass) == npts), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_FL((size(glc_frac) == npts), __FILE__, __LINE__)
+    SHR_ASSERT_FL((size(glc_elevclass) == npts), __FILE__, __LINE__)
 
     if (this_elevclass == 0) then
        glc_frac_this_ec(:) = 1._r8 - glc_frac(:)
@@ -340,7 +340,7 @@ contains
 
     ! Extract fields from attribute vectors
     lsize = mct_aVect_lsize(glc_frac_this_ec_l)
-    SHR_ASSERT(mct_aVect_lsize(glc_topo_this_ec_l) == lsize, errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_FL(mct_aVect_lsize(glc_topo_this_ec_l) == lsize, __FILE__, __LINE__)
     allocate(frac_l(lsize))
     allocate(topo_l(lsize))
     call mct_aVect_exportRattr(glc_frac_this_ec_l, frac_field, frac_l)
@@ -388,7 +388,7 @@ contains
     !-----------------------------------------------------------------------
 
     lsize = mct_aVect_lsize(frac_av)
-    SHR_ASSERT(mct_aVect_lsize(mask_av) == lsize, errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_FL(mct_aVect_lsize(mask_av) == lsize, __FILE__, __LINE__)
 
     call mct_aVect_init(frac_times_icemask_av, rList = frac_times_icemask_field, lsize = lsize)
     call mct_aVect_copy(aVin = frac_av, aVout = frac_times_icemask_av, &
