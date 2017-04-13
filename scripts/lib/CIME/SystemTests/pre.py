@@ -50,6 +50,7 @@ class PRE(SystemTestsCompareTwo):
         # Set up a pause/resume run
         self._case.set_value("STOP_OPTION", self._stopopt)
         self._case.set_value("STOP_N", self._stopn)
+        self._case.set_value("ESP_RUN_ON_PAUSE", "TRUE")
         if self._stopn > 3:
             pausen = 2
         else:
