@@ -862,6 +862,7 @@ class Case(object):
                      os.path.join(toolsdir, "lt_archive.sh"),
                      os.path.join(toolsdir, "getTiming"),
                      os.path.join(toolsdir, "save_provenance"),
+                     os.path.join(toolsdir, "get_key_commands"),
                      os.path.join(machines_dir,"Makefile"),
                      os.path.join(machines_dir,"mkSrcfiles"),
                      os.path.join(machines_dir,"mkDepends")]
@@ -1062,9 +1063,9 @@ class Case(object):
 
         return newcase
 
-    def submit_jobs(self, no_batch=False, job=None, batch_args=None):
+    def submit_jobs(self, no_batch=False, job=None, batch_args=None, dry_run=False):
         env_batch = self.get_env('batch')
-        return env_batch.submit_jobs(self, no_batch=no_batch, job=job, batch_args=batch_args)
+        return env_batch.submit_jobs(self, no_batch=no_batch, job=job, batch_args=batch_args, dry_run=dry_run)
 
     def get_mpirun_cmd(self, job="case.run"):
         env_mach_specific = self.get_env('mach_specific')
