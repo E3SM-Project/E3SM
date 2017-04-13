@@ -2485,18 +2485,18 @@ EOF
 	    }
 	}
 
-	system("cp $cam_root/cime/externals/mct/Makefile $mct_libdir/.") == 0
+	system("cp $cam_root/cime/src/externals/mct/Makefile $mct_libdir/.") == 0
 	    or die "Unable to copy mct top level Makefile\n";
-	system("cp $cam_root/cime/externals/mct/mct/Makefile $mct_libdir/mct/.") == 0
+	system("cp $cam_root/cime/src/externals/mct/mct/Makefile $mct_libdir/mct/.") == 0
 	    or die "Unable to copy mct Makefile\n";
-	system("cp $cam_root/cime/externals/mct/mpeu/Makefile $mct_libdir/mpeu/.") == 0
+	system("cp $cam_root/cime/src/externals/mct/mpeu/Makefile $mct_libdir/mpeu/.") == 0
 	    or die "Unable to copy mpeu Makefile\n";
 	if ($spmd eq 'OFF') {
-	    system("cp $cam_root/cime/externals/mct/mpi-serial/Makefile $mct_libdir/mpi-serial/.") == 0
+	    system("cp $cam_root/cime/src/externals/mct/mpi-serial/Makefile $mct_libdir/mpi-serial/.") == 0
 		or die "Unable to copy mpi-serial Makefile\n";
-	    system("cp $cam_root/cime/externals/mct/mpi-serial/mpif.h $mct_libdir/mpi-serial/.") == 0
+	    system("cp $cam_root/cime/src/externals/mct/mpi-serial/mpif.h $mct_libdir/mpi-serial/.") == 0
 		or die "Unable to copy mpi-serial/mpif.h \n";
-	    system("cp $cam_root/cime/externals/mct/mpi-serial/mpi.h $mct_libdir/mpi-serial/.") == 0
+	    system("cp $cam_root/cime/src/externals/mct/mpi-serial/mpi.h $mct_libdir/mpi-serial/.") == 0
 		or die "Unable to copy mpi-serial/mpi.h\n";
 	}
 
@@ -2549,8 +2549,8 @@ EOF
 
 	$mct_ldflags = "LDFLAGS=\'$mct_ldflags\' ";
 
-	my $cfg_cmnd = "$cam_root/cime/externals/mct/configure FC=$fc CC=$cc ".
-	    "$mct_flags_str --srcdir=$cam_root/cime/externals/mct $mpi_hdr ".
+	my $cfg_cmnd = "$cam_root/cime/src/externals/mct/configure FC=$fc CC=$cc ".
+	    "$mct_flags_str --srcdir=$cam_root/cime/src/externals/mct $mpi_hdr ".
 	    "$mpi_serial $mct_debug $mct_quiet $mct_ldflags ";
 
 	chdir $mct_libdir      or die "FAILURE: cd to $mct_libdir\n";
@@ -2806,17 +2806,17 @@ sub write_filepath
 
 	# These paths are only needed for CAM standalone builds
 
-	print $fh "$cam_root/cime/externals/pio/pio\n";
+	print $fh "$cam_root/cime/src/externals/pio/pio\n";
 
 	unless ($esmf_libdir) { 
-	    print $fh "$cam_root/cime/share/esmf_wrf_timemgr\n";
+	    print $fh "$cam_root/cime/src/share/esmf_wrf_timemgr\n";
 	}
 
 	# Sequential Driver
-	print $fh "$cam_root/cime/driver_cpl/driver\n";
-	print $fh "$cam_root/cime/driver_cpl/shr\n";
+	print $fh "$cam_root/cime/src/drivers/mct/main\n";
+	print $fh "$cam_root/cime/src/drivers/mct/shr\n";
 	if ($comp_intf eq 'esmf') {
-	    print $fh "$cam_root/cime/driver_cpl/shr_esmf\n";
+	    print $fh "$cam_root/cime/src/drivers/mct/shr_esmf\n";
 	}
 
 	# Ocean package.
@@ -2824,14 +2824,14 @@ sub write_filepath
 	    print $fh "$camsrcdir/cam/src/utils/cam_dom\n";
 	}
 	elsif ($ocn eq 'docn') {
-	    print $fh "$cam_root/cime/components/data_comps/docn\n";
+	    print $fh "$cam_root/cime/src/components/data_comps/docn\n";
 	}
 	elsif ($ocn eq 'aquaplanet') {
 	    print $fh "$camsrcdir/cam/src/utils/cam_aqua\n";
 	    print $fh "$camsrcdir/cam/src/utils/cam_aqua/cpl\n";
 	}
 	elsif ($ocn eq 'socn') {
-	    print $fh "$cam_root/cime/components/stub_comps/socn/cpl\n";
+	    print $fh "$cam_root/cime/src/components/stub_comps/socn/cpl\n";
 	}
 
 	# Land package
@@ -2842,12 +2842,12 @@ sub write_filepath
 	    print $fh "$camsrcdir/clm/src_clm40/biogeophys\n";
 	}
 	elsif ($lnd eq 'slnd') {
-	    print $fh "$cam_root/cime/components/stub_comps/slnd/cpl\n";
+	    print $fh "$cam_root/cime/src/components/stub_comps/slnd/cpl\n";
 	}
 
 	# Sea ice package
 	if ($ice eq 'sice') {
-	    print $fh "$cam_root/cime/components/stub_comps/sice/cpl\n";
+	    print $fh "$cam_root/cime/src/components/stub_comps/sice/cpl\n";
 	}
 	elsif ($ice eq 'cice') {
 	    print $fh "$camsrcdir/cice/src/drivers/cesm\n";
@@ -2857,7 +2857,7 @@ sub write_filepath
 	}
 
 	# Land ice package
-	print $fh "$cam_root/cime/components/stub_comps/sglc/cpl\n";
+	print $fh "$cam_root/cime/src/components/stub_comps/sglc/cpl\n";
 
         # Runoff package
         if ($rof eq 'rtm') {
@@ -2865,15 +2865,15 @@ sub write_filepath
             print $fh "$camsrcdir/rtm/src/riverroute\n";
         }
         elsif ($rof eq 'srof') {
-            print $fh "$cam_root/cime/components/stub_comps/srof/cpl\n";
+            print $fh "$cam_root/cime/src/components/stub_comps/srof/cpl\n";
         }
 
 	# Wave package
-	print $fh "$cam_root/cime/components/stub_comps/swav/cpl\n";
+	print $fh "$cam_root/cime/src/components/stub_comps/swav/cpl\n";
 
         # Share utilities
-	print $fh "$cam_root/cime/share/csm_share/shr\n";
-	print $fh "$cam_root/cime/share/csm_share/include\n";
+	print $fh "$cam_root/cime/src/share/util\n";
+	print $fh "$cam_root/cime/src/share/include\n";
     }
 
     $fh->close;
@@ -2979,8 +2979,8 @@ F_OPTIMIZATION_OVERRIDE := $fopt
 USER_LDFLAGS := $ldflags
 COSP_LIBDIR  := $cosp_libdir
 MCT_LIBDIR   := $mct_libdir
-GPTL_SRCDIR  := $cam_root/cime/externals/gptl
-TIMING_SRCDIR := $cam_root/cime/share/timing
+GPTL_SRCDIR  := $cam_root/cime/src/externals/gptl
+TIMING_SRCDIR := $cam_root/cime/src/share/timing
 
 EOF
 
