@@ -27,7 +27,9 @@ class Compsets(GenericXML):
         nodes = self.get_nodes("compset")
         alias = None
         lname = None
+
         science_support = []
+
         for node in nodes:
             alias = self.get_element_text("alias",root=node)
             lname = self.get_element_text("lname",root=node)
@@ -40,7 +42,7 @@ class Compsets(GenericXML):
 
                 logger.debug("Found node match with alias: %s and lname: %s" % (alias, lname))
                 return (lname, alias, science_support, user_mods)
-        return (None, None, [False])
+        return (None, None, [False], None)
 
     def get_compset_var_settings(self, compset, grid):
         '''
