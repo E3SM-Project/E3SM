@@ -18,7 +18,6 @@ def create_dirs(case):
     rundir = case.get_value("RUNDIR")
     caseroot = case.get_value("CASEROOT")
 
-
     docdir = os.path.join(caseroot, "CaseDocs")
     dirs_to_make = []
     models = case.get_values("COMP_CLASSES")
@@ -46,6 +45,11 @@ def create_namelists(case):
     Create component namelists
     """
     case.flush()
+
+    # Needed in case user did case.build --clean-all
+    exeroot = case.get_value("EXEROOT")
+    if not os.path.exists(exeroot):
+        create_dirs(case)
 
     casebuild = case.get_value("CASEBUILD")
     caseroot = case.get_value("CASEROOT")
@@ -100,8 +104,8 @@ def create_namelists(case):
             logger.info(output)
             # refresh case xml object from file
             case.read_xml()
-    logger.info("Finished creating component namelists")
 
+    logger.info("Finished creating component namelists")
 
     # Save namelists to docdir
     if (not os.path.isdir(docdir)):
@@ -111,7 +115,6 @@ def create_namelists(case):
                 fd.write(" CESM Resolved Namelist Files\n   For documentation only DO NOT MODIFY\n")
         except (OSError, IOError) as e:
             expect(False, "Failed to write %s/README: %s" % (docdir, e))
-
 
     for cpglob in ["*_in_[0-9]*", "*modelio*", "*_in",
                    "*streams*txt*", "*stxt", "*maps.rc", "*cism.config*"]:
