@@ -67,7 +67,7 @@ class HOMME(SystemTestsCommon):
             stat = run_cmd("%s -j 4 check" % gmake, arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
 
         else:
-            stat = run_cmd("%s -j 4 baseline" % gmake, arg_stdout=log, combine_output=True, from_dir=exeroot)
+            stat = run_cmd("%s -j 4 baseline" % gmake, arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
 
         # Add homme.log output to TestStatus.log so that it can
         # appear on the dashboard. Otherwise, the TestStatus.log
