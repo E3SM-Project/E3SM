@@ -15,7 +15,7 @@
 
   <entry id="DOCN_MODE">
     <type>char</type>
-    <valid_values>prescribed,som,copyall,interannual,null</valid_values>
+    <valid_values>prescribed,pres_aquap,som,som_aquap,copyall,interannual,null</valid_values>
     <default_value>prescribed</default_value>
     <values>
       <value compset="_DOCN%NULL">null</value>
@@ -24,6 +24,8 @@
       <value compset="_DOCN%US20">us20</value>
       <value compset="_DOCN%IAF">interannual</value>
       <value compset="_DOCN%COPY">copyall</value>
+      <value compset="_DOCN%DAQUAP">pres_aquap</value>
+      <value compset="_DOCN%SAQUAP">som_aquap</value>
     </values>
     <group>run_component_docn</group>
     <file>env_run.xml</file>
@@ -69,7 +71,8 @@
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
     <values>
-      <value compset="_DOCN%SOM.*_TEST" >pop_frc.1x1d.090130.nc</value>
+      <value compset="_DOCN%SOM.*_TEST">pop_frc.1x1d.090130.nc</value>
+      <value compset="_DOCN%SAQUAP">/glade/u/home/benedict/ys/datain/cesm2_0_beta03.som.forcing/cam4.som.forcing.aquaplanet.QzaFix_h30Fix_TspunFix.fv19_CTL.nc</value>
     </values>
     <group>run_component_docn</group>
     <file>env_run.xml</file>
