@@ -49,11 +49,11 @@ module CanopyStateType
      real(r8) , pointer :: altmax_lastyear_col      (:)   ! col prior year maximum annual depth of thaw 
      integer  , pointer :: altmax_indx_col          (:)   ! col maximum annual depth of thaw 
      integer  , pointer :: altmax_lastyear_indx_col (:)   ! col prior year maximum annual depth of thaw 
-
+     
      real(r8) , pointer :: dewmx_patch              (:)   ! patch maximum allowed dew [mm] 
 
-     real(r8) , pointer :: rscanopy_patch           (:)   ! patch canopy stomatal resistance (s/m) (ED specific)
-
+     real(r8) , pointer :: dleaf_patch              (:)   ! patch characteristic leaf width (diameter) [m]
+                                                          ! for non-ED/FATES this is the same as pftcon%dleaf()
      real(r8),  pointer :: lbl_rsc_h2o_patch        (:)   ! laminar boundary layer resistance for water over dry leaf (s/m)
    contains
 
@@ -133,8 +133,7 @@ contains
     allocate(this%altmax_lastyear_indx_col (begc:endc))           ; this%altmax_lastyear_indx_col (:)   = huge(1)
 
     allocate(this%dewmx_patch              (begp:endp))           ; this%dewmx_patch              (:)   = nan
-
-    allocate(this%rscanopy_patch           (begp:endp))           ; this%rscanopy_patch           (:)   = nan
+    allocate(this%dleaf_patch              (begp:endp))           ; this%dleaf_patch              (:)   = nan
     allocate(this%lbl_rsc_h2o_patch        (begp:endp))           ; this%lbl_rsc_h2o_patch        (:)   = nan
 
   end subroutine InitAllocate
@@ -273,11 +272,6 @@ contains
          avgflag='A', long_name='fraction sunlit (last 240hrs)', &
          ptr_patch=this%fsun240_patch, default='inactive')
 
-    ! Ed specific field
-    this%rscanopy_patch(begp:endp) = spval
-    call hist_addfld1d (fname='RSCANOPY', units=' s m-1',  &
-         avgflag='A', long_name='canopy resistance', &
-         ptr_patch=this%rscanopy_patch, set_lake=0._r8, set_urb=0._r8)
 
   end subroutine InitHistory
 
