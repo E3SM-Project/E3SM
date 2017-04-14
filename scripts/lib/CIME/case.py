@@ -862,7 +862,7 @@ class Case(object):
                      os.path.join(toolsdir, "lt_archive.sh"),
                      os.path.join(toolsdir, "getTiming"),
                      os.path.join(toolsdir, "save_provenance"),
-                     os.path.join(toolsdir, "get_key_commands"),
+                     os.path.join(toolsdir, "preview_run"),
                      os.path.join(machines_dir,"Makefile"),
                      os.path.join(machines_dir,"mkSrcfiles"),
                      os.path.join(machines_dir,"mkDepends")]
