@@ -549,6 +549,8 @@ using a fortran linker.
   <LDFLAGS>
     <append>-mkl </append>
   </LDFLAGS>
+  <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
 
@@ -571,6 +573,8 @@ using a fortran linker.
   <LDFLAGS>
     <append>-mkl -lmemkind -zmuldefs</append>
   </LDFLAGS>
+  <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
 
