@@ -130,6 +130,7 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 	$ic_date .= '170111';
 	$ic_prefix .= 'oRRS18to6v3';
 	$decomp_prefix .= 'mpas-o.graph.info.';
+	$restoring_file .= 'sss.monthlyClimatology.PHC2_salx.2004_08_03.nc';
 } elsif ( $OCN_GRID eq 'oRRS15to5' ) {
 	$grid_date .= '151209';
 	$grid_prefix .= 'ocean.RRS.15-5km';
@@ -141,13 +142,25 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 chdir "$CASEBUILD/mpas-oconf";
 
 #--------------------------------------------------------------------
+# Set OCN_FORCING = core_forced_restoring if restoring file is available
+#--------------------------------------------------------------------
+if ($OCN_FORCING eq 'core_forced') {
+	if ($restoring_file ne '') {
+		$OCN_FORCING = 'core_forced_restoring';
+	} else {
+		print "WARNING: Should be running with salinity restoring on!\n";
+		print "         But no file available for this grid.\n";
+	}
+}
+
+#--------------------------------------------------------------------
 # Generate input data file
 #--------------------------------------------------------------------
 
 open(my $input_list, "+>", "$CASEBUILD/mpas-o.input_data_list");
 print $input_list "mesh = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$grid_prefix.$grid_date.nc\n";
 print $input_list "ic = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$ic_prefix.$ic_date.nc\n";
-if ( $OCN_FORCING eq 'core_forced' ) {
+if ( $OCN_FORCING eq 'core_forced_restoring' ) {
 	print $input_list "sss = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$restoring_file\n";
 }
 #print $input_list "full_graph = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$decomp_prefix$grid_date\n";
