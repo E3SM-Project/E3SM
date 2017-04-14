@@ -7,7 +7,6 @@ module bndry_mod
   use bndry_mod_base, only: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation, bndry_exchangeS, bndry_exchangeS_start, bndry_exchangeS_finish, sort_neighbor_buffer_mapping
   use parallel_mod, only : syncmp,parallel_t,abortmp,iam
   use edgetype_mod, only : Ghostbuffer3D_t,Edgebuffer_t,LongEdgebuffer_t
-  use thread_mod, only : omp_in_parallel, omp_get_thread_num, omp_get_num_threads
   use kinds, only: real_kind
   implicit none
   private
