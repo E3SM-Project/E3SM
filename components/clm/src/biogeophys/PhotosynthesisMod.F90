@@ -70,6 +70,7 @@ contains
     use clm_varcon     , only : rgas, tfrz
     use clm_varctl     , only : cnallocate_carbon_only 
     use pftvarcon      , only : nbrdlf_dcd_tmp_shrub, nsoybean, nsoybeanirrig, npcropmin
+    use pftvarcon      , only : vcmax_np1, vcmax_np2, vcmax_np3, vcmax_np4, jmax_np1, jmax_np2, jmax_np3
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds                         
@@ -462,12 +463,12 @@ contains
                   ! from m2 ground to m2 leaf; dividing by sum_nscaler to
                   ! convert total leaf N to leaf N at canopy top
                   lnc(p) = leafn(p) / (total_lai * sum_nscaler)
-                  lnc(p) = min(max(lnc(p),0.0_r8),3.0_r8) ! based on TRY database, doi: 10.1002/ece3.1173
+                  lnc(p) = min(max(lnc(p),0.25_r8),3.0_r8) ! based on doi: 10.1002/ece3.1173
                else                                                                    
                   lnc(p) = 0.0_r8                                                      
                end if
 
-               vcmax25top = (i_vcmax(pft%itype(p)) + s_vcmax(pft%itype(p)) * lnc(p)) * dayl_factor(p) 
+               vcmax25top = (i_vcmax(pft%itype(p)) + s_vcmax(pft%itype(p)) * lnc(p)) * dayl_factor(p)
                jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
 
             else
@@ -504,24 +505,18 @@ contains
                      ! convert total leaf N to leaf N at canopy top
                      lnc(p) = leafn(p) / (total_lai * sum_nscaler)
                      lpc(p) = leafp(p) / (total_lai * sum_nscaler)
-                     lnc(p) = min(max(lnc(p),0.0_r8),3.0_r8) ! based on TRY database, doi: 10.1002/ece3.1173
-                     lpc(p) = min(max(lpc(p),0.0_r8),0.5_r8) ! based on TRY database, doi: 10.1002/ece3.1173
+                     lnc(p) = min(max(lnc(p),0.25_r8),3.0_r8) ! based on doi: 10.1002/ece3.1173
+                     lpc(p) = min(max(lpc(p),0.014_r8),0.85_r8) ! based on doi: 10.1002/ece3.1173
+                     vcmax25top = exp(vcmax_np1 + vcmax_np2*log(lnc(p)) + vcmax_np3*log(lpc(p)) + vcmax_np4*log(lnc(p))*log(lpc(p))) * dayl_factor(p)
+                     jmax25top = exp(jmax_np1 + jmax_np2*log(vcmax25top) + jmax_np3*log(lpc(p))) * dayl_factor(p)
+                     vcmax25top = min(max(vcmax25top, 10.0_r8), 150.0_r8)
+                     jmax25top = min(max(jmax25top, 10.0_r8), 250.0_r8)
                   else
                      lnc(p) = 0.0_r8
                      lpc(p) = 0.0_r8
+                     vcmax25top = 0.0_r8
+                     jmax25top = 0.0_r8
                   end if
-
-                  if (lnc(p) >= 0.1_r8 .and. lnc(p) <=3.0_r8 .and. lpc(p) >= 0.05_r8 .and. lpc(p) <= 0.5_r8) then
-                     vcmax25top = exp(3.946_r8 + 0.921_r8*log(lnc(p)) + 0.121_r8*log(lpc(p)) + 0.282_r8*log(lnc(p))*log(lpc(p))) * dayl_factor(p)
-                     jmax25top = exp(1.246_r8 + 0.886_r8*log(vcmax25top) + 0.089_r8*log(lpc(p))) * dayl_factor(p)
-                  else if (lnc(p) < 0.1_r8 .or. lpc(p) < 0.05_r8) then
-                     vcmax25top = 10.0_r8
-                     jmax25top  = 10.0_r8
-                  else
-                     vcmax25top = 150.0_r8
-                     jmax25top  = 250.0_r8
-                  end if
-
                else
                   lnc(p)     = 0.0_r8
                   vcmax25top = 0.0_r8

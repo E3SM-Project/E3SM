@@ -18,6 +18,7 @@ module CNCStateUpdate1Mod
   use CNDecompCascadeConType , only : decomp_cascade_con
   use EcophysConType         , only : ecophyscon
   use PatchType              , only : pft
+  use clm_varctl             , only : nu_com
   ! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
   !
@@ -256,6 +257,9 @@ contains
          cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) + cf%cpool_to_xsmrpool_patch(p)*dt
          cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%leaf_xsmr_patch(p)*dt
          cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%froot_xsmr_patch(p)*dt
+         if (nu_com .ne. 'RD') then
+            cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%xsmrpool_turnover_patch(p)*dt
+         end if
          if (woody(ivt(p)) == 1._r8) then
             cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%livestem_xsmr_patch(p)*dt
             cs%xsmrpool_patch(p) = cs%xsmrpool_patch(p) - cf%livecroot_xsmr_patch(p)*dt

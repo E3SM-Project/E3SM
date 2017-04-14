@@ -250,6 +250,7 @@ module CNCarbonFluxType
      real(r8), pointer :: availc_patch                              (:)     ! C flux available for allocation (gC/m2/s)
      real(r8), pointer :: xsmrpool_recover_patch                    (:)     ! C flux assigned to recovery of negative cpool (gC/m2/s)
      real(r8), pointer :: xsmrpool_c13ratio_patch                   (:)     ! C13/C(12+13) ratio for xsmrpool (proportion)
+     real(r8), pointer :: xsmrpool_turnover_patch                   (:)     ! xsmrpool flux to atmosphere due to turnover
 
      ! CN: CLAMP summary (diagnostic) variables, not involved in mass balance
      real(r8), pointer :: frootc_alloc_patch                        (:)     ! (gC/m2/s) patch-level fine root C alloc
@@ -628,6 +629,7 @@ contains
      allocate(this%availc_patch                              (begp:endp)) ; this%availc_patch                              (:) = nan
      allocate(this%xsmrpool_recover_patch                    (begp:endp)) ; this%xsmrpool_recover_patch                    (:) = nan
      allocate(this%xsmrpool_c13ratio_patch                   (begp:endp)) ; this%xsmrpool_c13ratio_patch                   (:) = nan
+     allocate(this%xsmrpool_turnover_patch                   (begp:endp)) ; this%xsmrpool_turnover_patch                   (:) = nan
 
      allocate(this%fire_closs_patch                          (begp:endp)) ; this%fire_closs_patch                          (:) = nan
      allocate(this%cpool_to_grainc_patch                     (begp:endp)) ; this%cpool_to_grainc_patch                     (:) = nan
@@ -4092,6 +4094,7 @@ contains
        this%leafc_loss_patch(i)                          = value_patch
        this%woodc_alloc_patch(i)                         = value_patch
        this%woodc_loss_patch(i)                          = value_patch
+       this%xsmrpool_turnover_patch(i)                   = value_patch
     end do
 
     if ( crop_prog )then
@@ -4415,10 +4418,18 @@ contains
                this%mr_patch(p) + &
                this%gr_patch(p) + &
                this%xsmrpool_to_atm_patch(p) ! xsmr... is -ve (slevis)
+         if (nu_com .ne. 'RD' ) then
+             this%ar_patch(p) = this%ar_patch(p) + &
+                this%xsmrpool_turnover_patch(p)
+          end if
        else
           this%ar_patch(p) = &
                this%mr_patch(p) + &
                this%gr_patch(p)
+          if (nu_com .ne. 'RD' ) then
+             this%ar_patch(p) = this%ar_patch(p) + &
+                this%xsmrpool_turnover_patch(p)
+          end if
        end if
 
 
