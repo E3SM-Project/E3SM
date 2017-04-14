@@ -4,13 +4,17 @@ Originator: Chris Fischer
 Date: 4-14-2017 
 Tag: cime5.3.0-alpha.07
 Answer Changes: None
-Tests on various PRs: by-hand, code_checker, pylint, scripts_regression_tests, cime_developer with gnu compiler on cheyenne,
-       All gnu debug tests in CESM test suites, create B compset with ww3 at T31 resolution, J_TestCreateNewcase,
+Tests on various PRs: by-hand, code_checker, pylint, scripts_regression_tests, 
+       cime_developer with gnu compiler on cheyenne, All gnu debug tests in CESM 
+       test suites, create B compset with ww3 at T31 resolution, 
+       J_TestCreateNewcase, some cesm tests on cori-knl
 Dependencies:
 
 Brief Summary:
+	-Updates to get going on cori-knl
 	-Update domain_b in nnsm map
-	-Fix bug where create_test was not handling user-selected projects correctly in the case where the test_root depended on PROJECT.
+	-Fix bug where create_test was not handling user-selected projects correctly 
+	 in the case where the test_root depended on PROJECT.
 	-HOMME Improvement
 	-Unit testing: Determine machine-specific settings automatically
 	-Mapping/update runoff to ocn
@@ -40,13 +44,13 @@ User interface changes:
 	-Formatting changes to CaseStatus
 
 PR summary: git log --oneline --first-parent [previous_tag]..master 
+30243ac Merge pull request #1351 from jedwards4b/cori_update
 1f4c4e9 Merge pull request #1349 from mnlevy1981/mapping/runoff_metadata_bugfix
 7664249 Merge pull request #1348 from ESMCI/jgfouca/fix_custom_proj_test_root
 6156e0a Merge pull request #1346 from ESMCI/jgfouca/homme_improvement
 3779ec1 Merge pull request #1343 from billsacks/run_tests_defaults
 5074c4a Merge pull request #1280 from mnlevy1981/mapping/update_runoff_to_ocn
 60bfc01 Merge pull request #1341 from jedwards4b/user-compset 
-a0d0f0e Update license of GPTL
 5e79b04 Merge pull request #1340 from jedwards4b/cheyenne_fixes
 37aac0f Merge pull request #1337 from jedwards4b/validate_case_and_test_id_args
 5edf3fa Merge pull request #1339 from billsacks/gnu_debug_checks
@@ -67,10 +71,10 @@ a4c7ab7 Merge pull request #1307 from ESMCI/jgfouca/remove_useless_newlines_from
 
 
 Modified files: git diff --name-status [previous_tag]
-
 M	README.unit_testing
 M	config/acme/machines/config_machines.xml
 M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_batch.xml
 M	config/cesm/machines/config_compilers.xml
 M	config/cesm/machines/config_machines.xml
 M	config/cesm/machines/config_pio.xml
