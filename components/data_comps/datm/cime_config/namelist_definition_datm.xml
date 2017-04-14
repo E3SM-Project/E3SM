@@ -1944,6 +1944,7 @@
            steps, which is undesirable unless we truly want linear interpolation
            between multiple input values -->
       <value stream="topo.observed">lower</value>
+      <value stream="CORE2_IAF.GISS.SWDN">coszen</value>
     </values>
   </entry>
 
