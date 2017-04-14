@@ -1074,28 +1074,33 @@ class Case(object):
         run_misc_suffix = "" if run_misc_suffix is None else run_misc_suffix
         run_suffix = run_exe + run_misc_suffix
 
-        # Things that will have to be matched against mpirun element attributes
-        mpi_attribs = {
-            "compiler" : self.get_value("COMPILER"),
-            "mpilib"   : self.get_value("MPILIB"),
-            "threaded" : self.get_build_threaded(),
-            "unit_testing" : False
-            }
+        mpirun_cmd_override = self.get_value("MPI_RUN_COMMAND")
 
-        executable, args = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
-
-        # special case for aprun
-        if executable == "aprun":
-            aprun_cmd, num_nodes = get_aprun_cmd_for_case(self, run_exe)
-            expect(num_nodes == self.num_nodes, "Not using optimized num nodes")
-            return aprun_cmd + " " + run_misc_suffix
+        if mpirun_cmd_override not in ["", None, "UNSET"]:
+            return mpirun_cmd_override + " " + run_exe + " " + run_misc_suffix
         else:
-            mpi_arg_string = " ".join(args.values())
+            # Things that will have to be matched against mpirun element attributes
+            mpi_attribs = {
+                "compiler" : self.get_value("COMPILER"),
+                "mpilib"   : self.get_value("MPILIB"),
+                "threaded" : self.get_build_threaded(),
+                "unit_testing" : False
+                }
 
-            if self.get_value("BATCH_SYSTEM") == "cobalt":
-                mpi_arg_string += " : "
+            executable, args = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
 
-            return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
+            # special case for aprun
+            if executable == "aprun":
+                aprun_cmd, num_nodes = get_aprun_cmd_for_case(self, run_exe)
+                expect(num_nodes == self.num_nodes, "Not using optimized num nodes")
+                return aprun_cmd + " " + run_misc_suffix
+            else:
+                mpi_arg_string = " ".join(args.values())
+
+                if self.get_value("BATCH_SYSTEM") == "cobalt":
+                    mpi_arg_string += " : "
+
+                return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
 
     def set_model_version(self, model):
         version = "unknown"

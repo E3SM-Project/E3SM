@@ -363,7 +363,6 @@ class EnvBatch(EnvBase):
 
             logger.info("Starting job script %s" % job)
 
-            # This is what we want longterm
             function_name = job.replace(".", "_")
             if not dry_run:
                 function_name = job.replace(".", "_")
@@ -372,6 +371,9 @@ class EnvBatch(EnvBase):
             return
 
         submitargs = self.get_submit_args(case, job)
+        args_override = self.get_value("BATCH_COMMAND", subgroup=job)
+        if args_override:
+            submitargs = args_override
 
         if depid is not None:
             dep_string = self.get_value("depend_string", subgroup=None)
@@ -455,7 +457,7 @@ class EnvBatch(EnvBase):
 
     def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
         if nodename in ("JOB_WALLCLOCK_TIME", "PROJECT", "PROJECT_REQUIRED",
-                        "JOB_QUEUE"):
+                        "JOB_QUEUE", "BATCH_COMMAND"):
             nodes = EnvBase.get_nodes(self, "entry", attributes={"id":nodename},
                                         root=root, xpath=xpath)
         else:
