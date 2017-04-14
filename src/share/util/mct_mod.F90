@@ -98,6 +98,7 @@ module mct_mod
    use m_GlobalSegMap       ,only: mct_gsMap_gstorage     => GlobalStorage
    use m_GlobalSegMap       ,only: mct_gsMap_ngseg        => ngseg
    use m_GlobalSegMap       ,only: mct_gsMap_nlseg        => nlseg
+   use m_GlobalSegMap       ,only: mct_gsMap_OP           => OrderedPoints
    use m_GlobalSegMap       ,only: mct_gsMap_maxnlseg     => max_nlseg
    use m_GlobalSegMap       ,only: mct_gsMap_activepes    => active_pes
    use m_GlobalSegMap       ,only: mct_gsMap_copy         => copy

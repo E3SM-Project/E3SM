@@ -1215,7 +1215,7 @@
     <entry id="CLM_CO2_TYPE" value="diagnostic">
       <type>char</type>
       <valid_values>constant,diagnostic,prognostic</valid_values>
-      <list>1</list>
+      <!--list>1</list-->
       <desc>Determines how CLM will determine where CO2 is set.
       If value is constant, it will be set to CCSM_CO2_PPMV,
       if value is either diagnostic or prognostic, the atmosphere model
