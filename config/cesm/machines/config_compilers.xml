@@ -549,6 +549,8 @@ using a fortran linker.
   <LDFLAGS>
     <append>-mkl </append>
   </LDFLAGS>
+  <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
 
@@ -566,11 +568,13 @@ using a fortran linker.
     <append> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </append>
   </SLIBS>
     <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_PAPI -DHAVE_SLASHPROC</append>
+    <append MODEL="gptl"> -DHAVE_SLASHPROC</append>
   </CPPDEFS>
   <LDFLAGS>
     <append>-mkl -lmemkind -zmuldefs</append>
   </LDFLAGS>
+  <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
 
