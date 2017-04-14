@@ -33,9 +33,8 @@ class PRE(SystemTestsCompareTwo):
                                        run_two_suffix='pr',
                                        run_one_description='no pause/resume',
                                        run_two_description='pause/resume')
-        self._stopopt  = 'ndays'
-        self._stopn    = 5
-        self._pausediv = 5 # Number of pause cycles per run
+        self._stopopt  = ''
+        self._stopn    = 0
 
     ###########################################################################
     def _case_one_setup(self):

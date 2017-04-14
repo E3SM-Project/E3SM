@@ -158,6 +158,8 @@ LAR    long term archive test
 
 DAE    data assimilation test: non answer changing
 
+PRE    pause-resume test: by default a BFB test of pause-resume cycling
+
 ======================================================================
     Other component-specific tests
 ======================================================================

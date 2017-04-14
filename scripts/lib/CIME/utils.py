@@ -573,6 +573,25 @@ def get_timestamp(timestamp_format="%Y%m%d_%H%M%S", utc_time=False):
         time_tuple = time.localtime()
     return time.strftime(timestamp_format, time_tuple)
 
+def get_time_in_seconds(time, unit):
+    """
+    Convert a time from 'unit' to seconds
+    """
+    if 'nyear' in unit:
+        dmult = 365 * 24 * 3600
+    elif 'nmonth' in unit:
+        dmult = 30 * 24 * 3600
+    elif 'nday' in unit:
+        dmult = 24 * 3600
+    elif 'nhour' in unit:
+        dmult = 3600
+    elif 'nminute' in unit:
+        dmult = 60
+    else:
+        dmult = 1
+
+    return dmult * time
+
 def get_project(machobj=None):
     """
     Hierarchy for choosing PROJECT:

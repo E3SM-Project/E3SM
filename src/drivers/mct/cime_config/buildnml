@@ -16,29 +16,11 @@ from standard_script_setup import *
 from CIME.case import Case
 from CIME.nmlgen import NamelistGenerator
 from CIME.utils import expect
-from CIME.utils import run_cmd_no_fail, get_model
+from CIME.utils import run_cmd_no_fail, get_model, get_time_in_seconds
 from CIME.buildnml import create_namelist_infile, parse_input
 from CIME.XML.files import Files
 
 logger = logging.getLogger(__name__)
-
-###############################################################################
-def _get_time_in_seconds(time, unit):
-###############################################################################
-    if 'nyear' in unit:
-        dmult = 365 * 24 * 3600
-    elif 'nmonth' in unit:
-        dmult = 30 * 24 * 3600
-    elif 'nday' in unit:
-        dmult = 24 * 3600
-    elif 'nhour' in unit:
-        dmult = 3600
-    elif 'nminute' in unit:
-        dmult = 60
-    else:
-        dmult = 1
-
-    return dmult * time
 
 ###############################################################################
 def _create_drv_namelists(case, infile, confdir, nmlgen, files):
@@ -179,7 +161,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
         if 'nstep' in pauseo:
             esp_time = mindt
         else:
-            esp_time = _get_time_in_seconds(pausen, pauseo)
+            esp_time = get_time_in_seconds(pausen, pauseo)
 
         nmlgen.set_value('esp_cpl_dt', value=esp_time)
     # End if pause is active
