@@ -259,7 +259,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
     if stat != 0:
         # If command produced no errput, put output in the exception since we
         # have nothing else to go on.
-        errput = output if errput == "" else errput
+        errput = output if not errput else errput
         expect(False, "Command: '%s' failed with error '%s'%s" %
                (cmd, errput, "" if from_dir is None else " from dir '%s'" % from_dir))
 
@@ -1172,7 +1172,7 @@ def run_and_log_case_status(func, phase, caseroot='.'):
     try:
         rv = func()
     except:
-        e = sys.exc_info()[0]
+        e = sys.exc_info()[1]
         append_case_status(phase, "error", msg=("\n%s" % e), caseroot=caseroot)
         raise
     else:
