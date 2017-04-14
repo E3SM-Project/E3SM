@@ -256,7 +256,7 @@ contains
     use clm_varctl,  only : use_crop, use_dynroot
     use clm_varcon,  only : tfrz
     use spmdMod   ,  only : masterproc
-    use EDPftvarcon, only : EDpftconrd
+
     !
     ! !ARGUMENTS:
     implicit none
@@ -460,6 +460,9 @@ contains
     allocate( bbbopt             (0:mxpft) )
     allocate( mbbopt             (0:mxpft) )
     allocate( nstor              (0:mxpft) )
+
+    ! (FATES-INTERF) check .not.use_ed logic after converting to new fates parameter system
+    ! these logic checks should probably be removed
   
     ! Set specific vegetation type values
 
@@ -804,13 +807,6 @@ contains
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
     call ncd_io('tc_stress', tc_stress, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
-    !
-    ! ED variables
-    !
-    if ( use_ed ) then
-       ! The following sets the module variable EDpftcon_inst in EDPftcon
-       call EDpftconrd ( ncid )
-    endif
        
     call ncd_pio_closefile(ncid)
 

@@ -17,6 +17,7 @@ module clm_initializeMod
   !use readParamsMod    , only : readParameters
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
+  use FatesInterfaceMod, only : set_fates_global_elements
   ! 
   !-----------------------------------------
   ! Definition of component types
@@ -26,8 +27,6 @@ module clm_initializeMod
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
   use PatchType              , only : pft                
-  use EDVecPatchType         , only : EDpft                   
-  use EDVecCohortType        , only : coh                ! unique to ED, used for domain decomp
   use clm_instMod
   !
   implicit none
@@ -187,6 +186,22 @@ contains
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
 
     ! ------------------------------------------------------------------------
+    ! Ask Fates to evaluate its own dimensioning needs.
+    ! This determines the total amount of space it requires in its largest
+    ! dimension.  We are currently calling that the "cohort" dimension, but
+    ! it is really a utility dimension that captures the models largest
+    ! size need.
+    ! Sets:
+    ! fates_maxElementsPerPatch
+    ! fates_maxElementsPerSite (where a site is roughly equivalent to a column)
+    ! 
+    ! (Note: fates_maxELementsPerSite is the critical variable used by CLM
+    ! to allocate space)
+    ! ------------------------------------------------------------------------
+    call set_fates_global_elements(use_ed)
+    
+
+    ! ------------------------------------------------------------------------
     ! Determine decomposition of subgrid scale landunits, columns, patches
     ! ------------------------------------------------------------------------
 
@@ -215,10 +230,6 @@ contains
     call lun%Init (bounds_proc%begl, bounds_proc%endl)
     call col%Init (bounds_proc%begc, bounds_proc%endc)
     call pft%Init (bounds_proc%begp, bounds_proc%endp)
-    if ( use_ed ) then
-       call EDpft%Init(bounds_proc)
-       call coh%Init(bounds_proc)
-    end if
 
     ! Build hierarchy and topological info for derived types
     ! This is needed here for the following call to decompInit_glcp
@@ -316,11 +327,8 @@ contains
     use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
     use CNDecompCascadeCNMod  , only : init_decompcascade_cn
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
-    use EDInitMod             , only : ed_init  
     use EcophysConType        , only : ecophysconInit 
     use SoilorderConType      , only : soilorderconInit 
-    use EDEcophysConType      , only : EDecophysconInit 
-    use EDPftVarcon           , only : EDpftvarcon_inst
     use LakeCon               , only : LakeConInit 
     use SatellitePhenologyMod , only : SatellitePhenologyInit, readAnnualVegetation, interpMonthlyVeg
     use SnowSnicarMod         , only : SnowAge_init, SnowOptics_init
@@ -592,7 +600,7 @@ contains
                ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-               waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+               waterflux_vars, waterstate_vars,                                               &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
                betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars )
        end if
@@ -607,7 +615,7 @@ contains
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+            waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
@@ -652,7 +660,7 @@ contains
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+            waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
@@ -667,7 +675,7 @@ contains
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+            waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
@@ -792,19 +800,6 @@ contains
     ! initialize2 for some consistency checking; now it can be deallocated
 
     deallocate(wt_nat_patch)
-
-    ! --------------------------------------------------------------
-    ! Initialise the ED model state structure
-    ! --------------------------------------------------------------
-   
-    if ( use_ed ) then
-       !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
-       do nc = 1, nclumps
-          call get_clump_bounds(nc, bounds_clump)
-          call ed_init( bounds_clump, waterstate_vars, canopystate_vars, EDbio_vars, &
-               carbonstate_vars, nitrogenstate_vars, carbonflux_vars) 
-       end do
-    endif ! use_ed
 
     ! topo_glc_mec was allocated in initialize1, but needed to be kept around through
     ! initialize2 because it is used to initialize other variables; now it can be

@@ -17,7 +17,7 @@ module decompInitMod
   use LandunitType    , only : lun                
   use ColumnType      , only : col                
   use PatchType       , only : pft                
-  use EDVecCohortType , only : coh
+  use FatesInterfaceMod, only : fates_maxElementsPerSite
   use decompMod
   use mct_mod
   !
@@ -851,8 +851,10 @@ contains
        ! ED cohort gsMap
        allocate(gindex(begCohort:endCohort))
        ioff(:) = 0
+       ci = begc
        do coi = begCohort,endCohort
-          gi = coh%gridcell(coi) !function call to get gcell for this cohort idx
+          if ( mod(coi, fates_maxElementsPerSite ) == 0 ) ci = ci + 1
+          gi = coh%gridcell(ci) !function call to get gcell for this cohort idx
           gindex(coi) = coStart(gi) + ioff(gi)
           ioff(gi) = ioff(gi) + 1
        enddo

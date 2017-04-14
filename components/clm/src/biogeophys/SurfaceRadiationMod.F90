@@ -8,6 +8,7 @@ module SurfaceRadiationMod
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use clm_varctl        , only : use_snicar_frc, use_ed
+  use abortutils        , only : endrun
   use decompMod         , only : bounds_type
   use clm_varcon        , only : namec
   use atm2lndType       , only : atm2lnd_type
@@ -18,9 +19,7 @@ module SurfaceRadiationMod
   use GridcellType      , only : grc                
   use LandunitType      , only : lun                
   use ColumnType        , only : col                
-  use PatchType         , only : pft                
-  use EDVecPatchtype    , only : EDpft
-  use EDtypesMod
+  use PatchType         , only : pft
 
   !
   ! !PRIVATE TYPES:
@@ -518,18 +517,8 @@ contains
 
           if( use_ed )then
 
-             if ( EDpft%ED_patch(p) == 1 )then !#1
-                currentSite => gridCellEdState(g)%spnt      
-                currentPatch => gridCellEdState(g)%spnt%oldest_patch    
-                do while(p /= currentPatch%clm_pno)
-                   currentPatch => currentPatch%younger
-                enddo
-                currentPatch%ed_parsun_z(:,:,:) = 0._r8
-                currentPatch%ed_parsha_z(:,:,:) = 0._r8
-                currentPatch%ed_laisun_z(:,:,:) = 0._r8     
-                currentPatch%ed_laisha_z(:,:,:) = 0._r8
-                fsun(p) = 0._r8
-             endif
+             ! (FATES-INTERF) put error call, flag for development
+             call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
 
           else ! not use_ed
 
@@ -555,44 +544,8 @@ contains
 
           if( use_ed )then
 
-             ! currentPatch%f_sun is calculated in the surface_albedo routine...
-             if(EDpft%ED_patch(p).eq.1)then
-                fsun(p) = 0._r8
-                sunlai = 0._r8
-                shalai = 0._r8
-                currentSite => gridCellEdState(g)%spnt      
-                currentPatch => gridCellEdState(g)%spnt%oldest_patch    
-                do while(p /= currentPatch%clm_pno)
-                   currentPatch => currentPatch%younger
-                enddo
-                do CL = 1, currentPatch%NCL_p
-                   do FT = 1,numpft_ed
-                      do iv = 1, currentPatch%nrad(CL,ft) !NORMAL CASE. 
-                         ! FIX(SPM,040114) ** Should this be elai or tlai? Surely we only do radiation for elai? 
-                         currentPatch%ed_laisun_z(CL,ft,iv) = currentPatch%elai_profile(CL,ft,iv) * &
-                              currentPatch%f_sun(CL,ft,iv)
-                         currentPatch%ed_laisha_z(CL,ft,iv) = currentPatch%elai_profile(CL,ft,iv) * &
-                              (1._r8 - currentPatch%f_sun(CL,ft,iv))
-                      end do
-                      sunlai = sunlai + sum(currentPatch%ed_laisun_z(CL,ft,1: currentPatch%nrad(CL,ft)))
-                      shalai = shalai + sum(currentPatch%ed_laisha_z(CL,ft,1: currentPatch%nrad(CL,ft)))
-                      !needed for the VOC emissions, etc. 
-                   end do
-                end do
-                if(sunlai+shalai > 0._r8)then
-                   fsun(p) = sunlai / (sunlai+shalai) 
-                else
-                   fsun(p) = 0._r8
-                endif
-                if(fsun(p) > 1._r8)then
-                   write(iulog,*) 'too much leaf area in profile', fsun(p),currentPatch%lai,sunlai,shalai
-                endif
-
-             else ! not ed patch
-
-               fsun(p) = 0.0_r8
-
-             end if !ED_patch   
+             ! (FATES-INTERF) error call, flag development
+             call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
 
           else ! use_ed false.  revert to normal multi-layer canopy.
 
@@ -651,24 +604,9 @@ contains
              if (ib == 1) then
 
                 if ( use_ed ) then   
-                   if (EDpft%ED_patch(p).eq.1 )then
-
-                      currentSite => gridCellEdState(g)%spnt      
-                      currentPatch => gridCellEdState(g)%spnt%oldest_patch    
-                      do while(p /= currentPatch%clm_pno)
-                         currentPatch => currentPatch%younger
-                      enddo
-                      do CL = 1, currentPatch%NCL_p
-                         do FT = 1,numpft_ed
-                            do iv = 1, currentPatch%nrad(CL,ft)
-                               currentPatch%ed_parsun_z(CL,ft,iv) = forc_solad(g,ib)*currentPatch%fabd_sun_z(CL,ft,iv) + &
-                                    forc_solai(g,ib)*currentPatch%fabi_sun_z(CL,ft,iv) 
-                               currentPatch%ed_parsha_z(CL,ft,iv) = forc_solad(g,ib)*currentPatch%fabd_sha_z(CL,ft,iv) + &
-                                    forc_solai(g,ib)*currentPatch%fabi_sha_z(CL,ft,iv)          
-                            end do !iv
-                         end do !FT
-                      end do !CL
-                   end if ! ED_patch check
+                   
+                   ! (FATES-INTERF)
+                   call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
 
                 else ! not use_ed
 
@@ -990,11 +928,8 @@ contains
           p = filter_nourbanp(fp)
           g = pft%gridcell(p)
           if (use_ed) then
-             errsol(p) = (fsa(p) + fsr(p)  - (forc_solad(g,1) + forc_solad(g,2) + forc_solai(g,1) + forc_solai(g,2)))
-             if(abs(errsol(p)) > 0.1_r8)then
-                g = pft%gridcell(p)
-                write(iulog,*) 'sol error in surf rad',p,g, errsol(p),EDpft%ed_patch(p)
-             endif
+             ! (FATES-INTERF) put error call, flag for development
+             call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
           end if
        end do
 

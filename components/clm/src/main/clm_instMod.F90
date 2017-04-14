@@ -54,13 +54,13 @@ module clm_instMod
   use LandunitType               , only : lun
   use ColumnType                 , only : col
   use PatchType                  , only : pft
-  use EDEcophysConType           , only : EDecophyscon       ! ED Constants
 
-  use EDBioType                  , only : EDbio_type         ! ED type used to interact with CLM variables
-  use EDVecPatchType             , only : EDpft
-  use EDVecCohortType            , only : coh                ! unique to ED, used for domain decomp
   use clm_bgc_interface_data     , only : clm_bgc_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
+
+!!  use CLMFatesInterfaceMod       , only : hlm_fates_interface_type (FATES-INTERF)
+
+
   !
   implicit none
   save
@@ -112,6 +112,7 @@ module clm_instMod
   type(phosphorusflux_type)                           :: phosphorusflux_vars
   type(clm_bgc_interface_data_type)                   :: clm_bgc_data
   type(chemstate_type)                                :: chemstate_vars
+!!  type(hlm_fates_interface_type)                      :: clm_fates (FATES-INTERF)
 
   public :: clm_inst_biogeochem
   public :: clm_inst_biogeophys
@@ -202,9 +203,7 @@ contains
 
     end if
 
-    if ( use_ed ) then
-       call EDbio_vars%Init(bounds_proc)
-    end if
+!!    call clm_fates%Init(bounds_proc)  (FATES-INTERF)
 
     call hist_printflds()
 
@@ -222,14 +221,12 @@ contains
     use landunit_varcon                   , only : istice, istice_mec, istsoil
     use clm_varcon                        , only : h2osno_max, bdsno
     use domainMod                         , only : ldomain
-    use EDPftVarcon                       , only : EDpftvarcon_inst
     use clm_varpar                        , only : nlevsno, numpft
     use clm_varctl                        , only : single_column, fsurdat, scmlat, scmlon
     use controlMod                        , only : nlfilename
     use SoilWaterRetentionCurveFactoryMod , only : create_soil_water_retention_curve
     use fileutils                         , only : getfil
     use EcophysConType                    , only : ecophysconInit
-    use EDEcophysConType                  , only : EDecophysconInit
     use SoilorderConType                  , only : soilorderconInit
     use LakeCon                           , only : LakeConInit
     use initVerticalMod                   , only : initVertical
@@ -287,9 +284,6 @@ contains
     ! Initialize ecophys constants
 
     call ecophysconInit()
-    if (use_ed) then
-       call EDecophysconInit( EDpftvarcon_Inst, numpft)
-    end if
 
     ! Initialize soil order related constants
 

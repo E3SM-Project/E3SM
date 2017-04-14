@@ -56,6 +56,17 @@ module PatchType
      integer , pointer :: mxy      (:) ! m index for laixy(i,j,m),etc. (undefined for special landunits)
      logical , pointer :: active   (:) ! true=>do computations on this patch
 
+     ! Fates relevant types
+     logical , pointer :: is_veg         (:) ! This is an ACTIVE fates patch
+     logical , pointer :: is_bareground  (:)
+     real(r8), pointer :: wt_ed          (:) !TODO mv ? can this be removed
+     logical, pointer  :: is_fates (:) ! true for patch vector space reserved
+                                       ! for FATES.
+                                       ! this is static and is true for all 
+                                       ! patches within fates jurisdiction
+                                       ! including patches which are not currently
+                                       ! associated with a FATES linked-list patch
+
    contains
 
      procedure, public :: Init
@@ -88,6 +99,14 @@ contains
     allocate(this%mxy      (begp:endp)); this%mxy      (:) = ispval
     allocate(this%active   (begp:endp)); this%active   (:) = .false.
 
+    allocate(this%is_fates   (begp:endp)); this%is_fates   (:) = .false.
+    if (use_ed) then
+       allocate(this%is_veg  (begp:endp)); this%is_veg  (:) = .false.
+       allocate(this%is_bareground (begp:endp)); this%is_bareground (:) = .false.
+       allocate(this%wt_ed      (begp:endp)); this%wt_ed      (:) = nan 
+    end if
+
+
   end subroutine Init
 
   !------------------------------------------------------------------------
@@ -106,6 +125,13 @@ contains
     deallocate(this%itype   )
     deallocate(this%mxy     )
     deallocate(this%active  )
+
+    deallocate(this%is_fates)
+    if (use_ed) then
+       deallocate(this%is_veg)
+       deallocate(this%is_bareground)
+       deallocate(this%wt_ed)
+    end if
 
   end subroutine Clean
 

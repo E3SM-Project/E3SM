@@ -43,7 +43,8 @@ contains
     use clm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
-    use EDtypesMod  , only : cohorts_per_gcell
+    use FatesInterfaceMod, only : fates_maxElementsPerSite
+
     !
     ! !ARGUMENTS
     implicit none
@@ -99,10 +100,14 @@ contains
 
     ipfts = ipfts + npfts_per_lunit
 
-    !
-    ! number of cohorts per gridcell set here.
-    !
-    icohorts = icohorts + cohorts_per_gcell
+    ! -------------------------------------------------------------------------
+    ! Number of cohorts is set here
+    ! ED cohorts (via FATES) populate all natural vegetation columns.
+    ! Current implementations mostly assume that only one column contains
+    ! natural vegetation, which is synonomous with the soil column. 
+    ! -------------------------------------------------------------------------
+
+    icohorts = icols * fates_maxElementsPerSite
 
     if (present(nveg )) nveg  = npfts_per_lunit
 
