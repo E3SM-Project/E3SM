@@ -105,9 +105,10 @@ contains
     integer              , intent(in)            :: nete
     logical,               intent(in)            :: compute_diagnostics
 
-    real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
+    real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w,dampfac
     real (kind=real_kind) ::  itertol,itererrmax,maximumval(nets:nete,6)
     real (kind=real_kind) ::  maxvalue,maximumvalvec(6),statesave(nets:nete,np,np,nlev,6)
+    real (kind=real_kind) ::  statesave2(nets:nete,np,np,nlev,6)
 
     integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage,k, qn0
     integer :: n,i,j,lx,lenx,maxiter,itercount
@@ -283,7 +284,7 @@ contains
       call t_startf('implicit Euler')
       itercount=1 
       maxiter=10000
-      itertol=1e-3
+      itertol=1e-1
       itererrmax=2.0*itertol
       do ie=nets,nete
         elem(ie)%state%v(:,:,1,:,np1)   = elem(ie)%state%v(:,:,1,:,n0)
@@ -329,38 +330,57 @@ contains
        ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
        call compute_and_apply_rhs_imex(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,3*eta_ave_w/4,.false.)
+
       itercount=1 
-      maxiter=10000
-      itertol=1e-6
+      maxiter=1000
+      itertol=1e-8
+      dampfac=1.0
       itererrmax=2.0*itertol
       do ie=nets,nete
-        statesave(ie,:,:,:,1) = elem(ie)%state%v(:,:,1,:,n0)
-        statesave(ie,:,:,:,2) = elem(ie)%state%v(:,:,2,:,n0)
-        statesave(ie,:,:,:,3) = elem(ie)%state%w(:,:,:,n0)
-        statesave(ie,:,:,:,4) = elem(ie)%state%phi(:,:,:,n0)
-        statesave(ie,:,:,:,5) = elem(ie)%state%theta_dp_cp(:,:,:,n0)
-        statesave(ie,:,:,:,6) = elem(ie)%state%dp3d(:,:,:,n0)
-
-        elem(ie)%state%v(:,:,:,:,n0)         = elem(ie)%state%v(:,:,:,:,np1)
-        elem(ie)%state%w(:,:,:,n0)           = elem(ie)%state%w(:,:,:,np1)
-        elem(ie)%state%theta_dp_cp(:,:,:,n0) = elem(ie)%state%theta_dp_cp(:,:,:,np1)
-        elem(ie)%state%phi(:,:,:,n0)         = elem(ie)%state%phi(:,:,:,np1)
-        elem(ie)%state%dp3d(:,:,:,n0)        = elem(ie)%state%dp3d(:,:,:,np1)
+        statesave(ie,:,:,:,1) = elem(ie)%state%v(:,:,1,:,np1)
+        statesave(ie,:,:,:,2) = elem(ie)%state%v(:,:,2,:,np1)
+        statesave(ie,:,:,:,3) = elem(ie)%state%w(:,:,:,np1)
+        statesave(ie,:,:,:,4) = elem(ie)%state%phi(:,:,:,np1)
+        statesave(ie,:,:,:,5) = elem(ie)%state%theta_dp_cp(:,:,:,np1)
+        statesave(ie,:,:,:,6) = elem(ie)%state%dp3d(:,:,:,np1)
       end do      
-      call fp_iteration_impeuler(elem,np1,n0,nm1,qn0,hvcoord,dt,hybrid,&
-            deriv,nets,nete,eta_ave_w,itertol,maxiter,itererrmax,itercount,.true.)
+
+ !     call fp_iteration_impeuler(elem,np1,n0,nm1,qn0,hvcoord,dt,hybrid,&
+ !           deriv,nets,nete,eta_ave_w,itertol,maxiter,itererrmax,itercount,.false.)
+       
+      call compute_and_apply_rhs_imex_stiff(np1,n0,nm1,qn0,dt2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol,dampfac,statesave)
+ 
       do ie=nets,nete
-        elem(ie)%state%v(:,:,1,:,n0) = statesave(ie,:,:,:,1) 
-        elem(ie)%state%v(:,:,2,:,n0) = statesave(ie,:,:,:,2)
-        elem(ie)%state%w(:,:,:,n0)   = statesave(ie,:,:,:,3)
-        elem(ie)%state%phi(:,:,:,n0) =  statesave(ie,:,:,:,4)
-        elem(ie)%state%theta_dp_cp(:,:,:,n0) = statesave(ie,:,:,:,5)
-        elem(ie)%state%dp3d(:,:,:,n0) =  statesave(ie,:,:,:,6)
+    !    print *, maxval( elem(ie)%state%phi(:,:,:,n0) - elem(ie)%state%phi(:,:,:,np1) )
       end do
-      print*, itercount, itererrmax   
+      do ie=nets,nete
+        statesave(ie,:,:,:,1) = elem(ie)%state%v(:,:,1,:,np1)
+        statesave(ie,:,:,:,2) = elem(ie)%state%v(:,:,2,:,np1)
+        statesave(ie,:,:,:,3) = elem(ie)%state%w(:,:,:,np1)
+        statesave(ie,:,:,:,4) = elem(ie)%state%phi(:,:,:,np1)
+        statesave(ie,:,:,:,5) = elem(ie)%state%theta_dp_cp(:,:,:,np1)
+        statesave(ie,:,:,:,6) = elem(ie)%state%dp3d(:,:,:,np1)
+      end do
+
+      print *, 'maxiter  ', 'itertol  ', 'rel'
+      print*, maxiter,itertol, itertol/norm2(statesave)
 !==========================================================================================
-    else if (method==8) ! implicit euler after each stage of the explicit method
-    
+    else if (method==8) then ! Jacobian free Newton-Krylov
+      itercount=1 
+      maxiter=10000
+      itertol=1e-3
+      itererrmax=2.0*itertol
+      do ie=nets,nete
+        elem(ie)%state%v(:,:,1,:,np1)   = elem(ie)%state%v(:,:,1,:,n0)
+        elem(ie)%state%v(:,:,2,:,np1)   = elem(ie)%state%v(:,:,2,:,n0)
+        elem(ie)%state%w(:,:,:,np1)     = elem(ie)%state%w(:,:,:,n0)
+        elem(ie)%state%phi(:,:,:,np1)   = elem(ie)%state%phi(:,:,:,n0)
+        elem(ie)%state%theta_dp_cp(:,:,:,np1) = elem(ie)%state%theta_dp_cp(:,:,:,n0)
+        elem(ie)%state%dp3d(:,:,:,np1)  = elem(ie)%state%dp3d(:,:,:,n0)
+      end do
+      
+        print*, itercount, itererrmax 
     else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
@@ -1396,25 +1416,6 @@ contains
         ! d(p-nh) / d(p-hyrdostatic)
         dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
      endif
- !    print *, 'maxvalue exner', maxval(exner(:,:,:))
-
-     do i=1,np
-       do j=1,np
-         do k=1,nlev
-           if (isnan(exner(i,j,k))) then
-             print *, 'exner pressure is NaN'
-             if (k > 1) then
-  !             print *, 'k  ' , 'phik - phik-1 < 0'
-   !            print *, k, maxval(phi(:,:,k)-phi(:,:,k-1))
-             end if 
-             stop
-           end if
-         end do
-       end do
-     end do
-
-
-
 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
@@ -1789,7 +1790,197 @@ contains
   call t_stopf('compute_and_apply_rhs_imex')
 
   end subroutine compute_and_apply_rhs_imex
+ 
 
+!================================================================================================================
+!================================================================================================================
+!================================================================================================================
+!================================================================================================================
+!================================================================================================================
+!================================================================================================================
+!================================================================================================================
+!================================================================================================================
+!================================================================================================================
+
+
+  subroutine compute_and_apply_rhs_imex_stiff(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
+       deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol,dampfac,statesave)
+  ! ===================================
+  ! compute the RHS, accumulate into u(np1) and apply DSS
+  !
+  !           u(np1) = u(nm1) + dt2*DSS[ RHS(u(n0)) ]
+  !
+  ! This subroutine was orgininally called to compute a leapfrog timestep
+  ! but by adjusting np1,nm1,n0 and dt2, many other timesteps can be
+  ! accomodated.  For example, setting nm1=np1=n0 this routine will
+  ! take a forward euler step, overwriting the input with the output.
+  !
+  !    qn0 = timelevel used to access Qdp() in order to compute virtual Temperature
+  !
+  ! ===================================
+  use kinds, only : real_kind
+  use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
+  use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
+  use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
+  use edgetype_mod, only : edgedescriptor_t
+  use bndry_mod, only : bndry_exchangev
+  use control_mod, only : moisture, qsplit, use_cpstar, rsplit, swest
+  use hybvcoord_mod, only : hvcoord_t
+
+  use physical_constants, only : cp, cpwater_vapor, Rgas, kappa, Rwater_vapor,p0, g
+  use physics_mod, only : virtual_specific_heat, virtual_temperature
+  use prim_si_mod, only : preq_vertadv_v, preq_vertadv_upwind, preq_omega_ps, preq_hydrostatic_v2
+
+  use time_mod, only : tevolve
+
+  implicit none
+  integer, intent(in) :: np1,nm1,n0,qn0,nets,nete
+  real*8, intent(in) :: dt2
+  logical, intent(in)  :: compute_diagnostics
+  integer :: maxiter
+  real*8 :: itertol
+
+  type (hvcoord_t)     , intent(in) :: hvcoord
+  type (hybrid_t)      , intent(in) :: hybrid
+  type (element_t)     , intent(inout), target :: elem(:)
+  type (derivative_t)  , intent(in) :: deriv
+  real (kind=real_kind) :: dampfac,eta_ave_w  ! weighting for eta_dot_dpdn mean flux
+  real (kind=real_kind) :: statesave(nets:nete,np,np,nlev,6)
+
+  ! local
+  logical :: stiff
+
+  real (kind=real_kind), pointer, dimension(:,:,:)   :: phi
+  real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
+  real (kind=real_kind), pointer, dimension(:,:,:)   :: theta_dp_cp
+   
+  real (kind=real_kind) :: kappa_star(np,np,nlev)
+  real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
+  real (kind=real_kind) :: dpnh(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
+  real (kind=real_kind) :: dpnh_dp(np,np,nlev),dpnh_dp2(np,np,nlev)    !    ! dpnh / dp3d  
+  real (kind=real_kind) :: temp(np,np,nlev)
+  real (kind=real_kind) :: Jac(np,np,2*nlev,2*nlev), Q(np,np,2*nlev,2*nlev)
+  real (kind=real_kind) :: R(np,np,2*nlev,2*nlev), Qt(2*nlev,2*nlev)
+  real (kind=real_kind) :: e(np,np,2*nlev)
+  real (kind=real_kind) :: Fn(np,np,2*nlev,1),x(np,np,2*nlev,1),epsie
+  real (kind=real_kind) :: dFn(np,np,2*nlev,1)
+  real (kind=real_kind) :: QtFn(np,np,2*nlev,1), Fntemp(2*nlev,1)
+  real (kind=real_kind) :: res(np,np,2*nlev),resnorm,resnormmax
+  real (kind=real_kind) :: statesavetemp(np,np,nlev,6),linsolveerror
+
+  real (kind=real_kind) ::  itererr, itererrmax
+  integer :: i,j,k,l,kptr,ie,itercount,itercountmax
+
+  stiff = .false.
+ ! stiff = .true.
+  itercountmax=1
+  itererrmax=0.d0
+  resnormmax=0.d0
+
+  epsie=1e-6
+  call t_startf('compute_and_apply_rhs_imex_stiff')
+  do ie=nets,nete 
+    itercount=1
+    itererr = 2.0*itertol       
+    do while ((itercount < maxiter).and.((itererr > itertol).or.(resnorm > itertol)) )
+      
+      dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
+      theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,np1)
+      phi => elem(ie)%state%phi(:,:,:,np1)
+      call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+
+      call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
+      kappa_star,pnh,dpnh,exner) ! ,exner_i)
+      dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
+      
+      Fn(:,:,1:nlev,1) = elem(ie)%state%w(:,:,:,np1)-statesave(ie,:,:,:,3) &
+        +dt2*g*(1.0-dpnh_dp(:,:,:))
+     
+      Fn(:,:,nlev+1:2*nlev,1) = elem(ie)%state%phi(:,:,:,np1)-statesave(ie,:,:,:,4) &
+        -dt2*g*elem(ie)%state%w(:,:,:,np1)      
+
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+      do k=1,2*nlev
+        
+        e(:,:,:)=0.0   
+        e(:,:,k)=1.0  
+
+        phi(:,:,:)=phi(:,:,:)+epsie*e(:,:,nlev+1:2*nlev)
+        
+        call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+         
+        call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&     
+          kappa_star,pnh,dpnh,exner) ! ,exner_i)
+        dpnh_dp2(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
+         phi(:,:,:)=phi(:,:,:)-epsie*e(:,:,nlev+1:2*nlev)
+
+       ! compute the new dpnh_dp at the perturbed values
+       ! use the pointers only  
+
+        dFn(:,:,1:nlev,1) = elem(ie)%state%w(:,:,1:nlev,np1)+epsie*e(:,:,1:nlev)- &
+          statesave(ie,:,:,1:nlev,3)+dt2*g*(1.0-dpnh_dp2(:,:,1:nlev))
+
+        dFn(:,:,nlev+1:2*nlev,1) = elem(ie)%state%phi(:,:,1:nlev,np1)            &
+          + epsie*e(:,:,nlev+1:2*nlev) - statesave(ie,:,:,1:nlev,4)              &
+          - dt2*g*(elem(ie)%state%w(:,:,1:nlev,np1)+e(:,:,1:nlev)*epsie)
+      
+    !    Jac(:,:,:,k)=(dFn(:,:,:,1)-Fn(:,:,:,1))/epsie 
+         Jac(:,:,1:nlev,k)=e(:,:,1:nlev)+g*dt2*(dpnh_dp(:,:,:)-dpnh_dp2(:,:,:))/epsie 
+         Jac(:,:,nlev+1:2*nlev,k)=e(:,:,nlev+1:2*nlev)-g*dt2*e(:,:,1:nlev)
+      end do
+ 
+      call mgs(Jac,Q,R)
+    
+      do i=1,np
+        do j=1,np
+          Qt(:,:)=Q(i,j,:,:)
+          Fntemp(:,1)=Fn(i,j,:,1)
+          Qt=transpose(Qt)
+          Fntemp=matmul(Qt,Fntemp)
+          QtFn(i,j,:,1) = Fntemp(:,1)
+        end do
+      end do               
+                        
+      call backsubstitution(R,-dampfac*QtFn,x,linsolveerror)
+                                  
+      elem(ie)%state%w(:,:,1:nlev,np1) = elem(ie)%state%w(:,:,1:nlev,np1)     &
+        + x(:,:,1:nlev,1)
+      elem(ie)%state%phi(:,:,1:nlev,np1) = elem(ie)%state%phi(:,:,1:nlev,np1) &
+        + x(:,:,nlev+1:2*nlev,1)
+      itererr=norm2(x)
+      resnorm=norm2(Fn)
+      itercount=itercount+1
+     end do                   
+
+      if (itercount > itercountmax) then
+        itercountmax=itercount
+      endif
+      if (itererr > itererrmax) then 
+        itererrmax=itererr
+      end if 
+      if (resnorm > resnormmax) then 
+        resnormmax = resnorm
+      end if 
+      maxiter=itercountmax
+      if (itererrmax > resnormmax) then 
+        itertol=itererrmax
+      else
+        itertol= resnormmax
+      end if 
+  end do
+  call t_stopf('compute_and_apply_rhs_imex_stiff')
+
+  end subroutine compute_and_apply_rhs_imex_stiff
+
+
+
+ 
+!==================================================================================
+!==================================================================================
+!==================================================================================
 
  subroutine fp_iteration_impeuler(elem,np1,n0,nm1,qn0,hvcoord,dt,hybrid,&
             deriv,nets,nete,eta_ave_w,itertol,maxiter,itererr,itercount,imex)
@@ -1832,8 +2023,10 @@ contains
          delta(ie,:,:,:,6) = elem(ie)%state%dp3d(:,:,:,np1)
        end do
       if (imex) then 
-        call compute_and_apply_rhs_imex(np1,n0,np1,qn0,dampfac*dt,elem,hvcoord,hybrid,&
-          deriv,nets,nete,.false.,eta_ave_w,imex)
+!        call compute_and_apply_rhs_imex_stiff(np1,n0,np1,qn0,dampfac*dt,elem,hvcoord,hybrid,&
+!          deriv,nets,nete,.false.,eta_ave_w,maxiter,itertol,1d0)
+     call compute_and_apply_rhs_imex(np1,n0,np1,qn0,dampfac*dt,elem,hvcoord,hybrid,&
+          deriv,nets,nete,.false.,eta_ave_w,.true.)
       else
        call compute_and_apply_rhs(np1,n0,np1,qn0,dampfac*dt,elem,hvcoord,hybrid,&
           deriv,nets,nete,.false.,eta_ave_w)        
@@ -1894,6 +2087,74 @@ contains
     
   end subroutine
 
+
+  subroutine mgs(A,Q,R)
+    
+    real (kind=real_kind), intent(inout) :: A(np,np,2*nlev,2*nlev)
+    real (kind=real_kind), intent(inout) :: Q(np,np,2*nlev,2*nlev)
+    real (kind=real_kind), intent(inout) :: R(np,np,2*nlev,2*nlev)
+
+    ! local variables
+    integer :: i,j,k,l
+    real (kind=real_kind) :: Atemp(2*nlev,2*nlev)
+    real (kind=real_kind) :: Qtemp(2*nlev,2*nlev)
+    real (kind=real_kind) :: Rtemp(2*nlev,2*nlev)
+
+    R=0.0
+    do i=1,np
+      do j=1,np
+        Atemp(:,:)=A(i,j,:,:)
+        Rtemp=0.0
+        do k=1,2*nlev
+          Rtemp(k,k)=norm2(Atemp(:,k))
+          Qtemp(1:2*nlev,k)=Atemp(1:2*nlev,k)/Rtemp(k,k)
+          do l=k+1,2*nlev
+            Rtemp(k,l)=dot_product(Qtemp(:,k),Atemp(:,l))
+            Atemp(:,l)=Atemp(:,l)-Rtemp(k,l)*Qtemp(:,k)
+          end do
+        end do
+        A(i,j,:,:)=Atemp(:,:)
+        Q(i,j,:,:)=Qtemp(:,:)
+        R(i,j,:,:)=Rtemp(:,:)
+      end do
+    end do
+  end subroutine
+
+  subroutine backsubstitution(R,b,x,err)
+    
+    real (kind=real_kind), intent(in) :: R(np,np,2*nlev,2*nlev)
+    real (kind=real_kind), intent(in) :: b(np,np,2*nlev)
+    real (kind=real_kind), intent(inout) :: x(np,np,2*nlev)
+    real (kind=real_kind), intent(inout) :: err
+
+    integer :: i,j
+    real (kind=real_kind) :: sum(np,np),error,errortemp
+    real (kind=real_kind) :: Rtemp(2*nlev,2*nlev)
+    real (kind=real_kind) :: btemp(2*nlev,1)
+    real (kind=real_kind) :: xtemp(2*nlev,1)
+
+
+    do i=2*nlev,1,-1
+      sum(:,:) = b(:,:,i)
+      do j=i+1,2*nlev
+        sum(:,:)=sum(:,:)-R(:,:,i,j)*x(:,:,j)
+      end do
+      x(:,:,i)=sum(:,:)/R(:,:,i,i)
+    end do
+    err=0.0
+    do i=1,np
+      do j=1,np
+        Rtemp(:,:)=R(i,j,:,:)
+        xtemp(:,1)=x(i,j,:)
+        btemp(:,1)=b(i,j,:)
+        errortemp = norm2(matmul(Rtemp(:,:),xtemp(:,1))-btemp(:,1))
+        if (errortemp > err) then
+          err=errortemp
+        end if
+      end do
+   end do
+  
+  end subroutine
 
 end module prim_advance_mod
 
