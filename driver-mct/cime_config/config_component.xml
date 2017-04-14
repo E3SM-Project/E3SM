@@ -303,7 +303,7 @@
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      Sets the run length along with STOP_N and STOP_DATE (must be nyear(s) for _GLC compsets for restarts to work properly).
+      Sets the run length along with STOP_N and STOP_DATE
     </desc>
   </entry>
 
@@ -335,8 +335,7 @@
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      sets frequency of model restart writes (same options as STOP_OPTION) (must be nyear(s) for _GLC compsets)
-      (must be nyear(s) for _GLC compsets)
+      sets frequency of model restart writes (same options as STOP_OPTION)
     </desc>
   </entry>
 
@@ -368,7 +367,7 @@
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      Sets the pause frequency along with PAUSE_N (must be nyear(s) for _GLC compsets for restarts to resume properly).
+      Sets the pause frequency along with PAUSE_N
     </desc>
   </entry>
 
