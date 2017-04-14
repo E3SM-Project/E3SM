@@ -100,6 +100,9 @@ CONTAINS
   ! Change by Santos, 10 Aug 2011:
   ! Integrated into gravity_waves_sources module, several arguments made global
   !  to prevent repeated allocation/initialization
+  ! Change by Aaron Donahue, April 2017:
+  !   Fixed bug where boundary information was called for processors not associated
+  !   with dynamics when dyn_npes<npes
   ! 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     use physical_constants, only : kappa
@@ -107,6 +110,8 @@ CONTAINS
     use edge_mod, only : edgevpack, edgevunpack
     use bndry_mod, only : bndry_exchangev
     use dyn_comp, only : hvcoord
+    use spmd_utils,      only : iam 
+    use parallel_mod,    only : par 
     implicit none
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
@@ -150,7 +155,9 @@ CONTAINS
        call edgeVpack(edge3, frontgf(:,:,:,ie),nlev,0,ie)
        call edgeVpack(edge3, gradth(:,:,:,:,ie),2*nlev,nlev,ie)
     enddo
-    call bndry_exchangeV(hybrid,edge3)
+    if (iam<par%nprocs) then
+       call bndry_exchangeV(hybrid,edge3)
+    end if
     do ie=nets,nete
        call edgeVunpack(edge3, frontgf(:,:,:,ie),nlev,0,ie)
        call edgeVunpack(edge3, gradth(:,:,:,:,ie),2*nlev,nlev,ie)
