@@ -4,10 +4,10 @@
 Script to query key CIME shell commands (mpirun and batch submission).
 
 To force a certain mpirun command, use:
-./xmlchange MPIRUN_OVERRIDE $your_cmd
+./xmlchange MPI_RUN_COMMAND $your_cmd
 
 To force a certain qsub command, use:
-./xmlchange SUBMIT_OVERRIDE $your_cmd
+./xmlchange --subgroup=case.run BATCH_COMMAND $your_cmd
 """
 
 from standard_script_setup import *
