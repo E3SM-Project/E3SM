@@ -958,8 +958,10 @@ class Case(object):
         User mods can be specified on the create_newcase command line (usually when called from create test)
         or they can be in the compset definition, or both.
         """
-        
-        for user_mods in (user_mods_dir, self._user_mods):
+
+        # This looping order will lead to the specified user_mods_dir taking
+        # precedence over self._user_mods, if there are any conflicts.
+        for user_mods in (self._user_mods, user_mods_dir):
             if user_mods is not None:
                 if os.path.isabs(user_mods):
                     user_mods_path = user_mods
