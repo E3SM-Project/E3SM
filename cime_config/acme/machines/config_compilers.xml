@@ -1101,19 +1101,14 @@ for mct, etc.
 
 
 <compiler COMPILER="intel" MACH="cascade">
-  <NETCDF_PATH> $(NETCDF_LIB)/..</NETCDF_PATH>
+  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <CONFIG_ARGS> --host=Linux --enable-filesystem-hints=lustre</CONFIG_ARGS>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt </SLIBS>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH)/lib/intel64 -lmkl_rt </SLIBS>
   <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
