@@ -2280,11 +2280,26 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    mgflxprc(:ncol,top_lev:pverp) = rflx(:ncol,top_lev:pverp) + sflx(:ncol,top_lev:pverp)
    mgflxsnw(:ncol,top_lev:pverp) = sflx(:ncol,top_lev:pverp)
 
+! mgflxprc and mgflxsnw are used in COSP to compulate precipitation fractional
+! area and derive precipitation (rain and snow) mixing ratios. Including iflx and cflx
+! in precipitation fluxes would result in additional effects of cloud liquid and ice 
+! on cosp's smiluated lidar and radar reflectivity signal through the rain/snow
+! portion of calculations that are handled separately from that of cloud liquid and ice. 
+! If included, it would not exactly amount to double counting the effect of cloud liquid and ice
+! because the mixing ratio derived from iflx and cflx epected to be much smaller than
+! the actual grid-mean cldliq and cldice, and rain or snow size distribution
+! would be used to compute the lidar/radar signal strength.
+! 
+! Note that it would need to include iflx and cflx to make the values at surface interface 
+! consistent with large scale precipitation rates.
+
+! rain and snow species.
+!
 !ADD CONDENSATE FLUXES FOR MG2 (ice and snow already added for MG1)
-   if (micro_mg_version .ge. 2) then
-      mgflxprc(:ncol,top_lev:pverp) = mgflxprc(:ncol,top_lev:pverp) + iflx(:ncol,top_lev:pverp) + cflx(:ncol,top_lev:pverp)
-      mgflxsnw(:ncol,top_lev:pverp) = mgflxsnw(:ncol,top_lev:pverp) + iflx(:ncol,top_lev:pverp)
-   end if
+!  if (micro_mg_version .ge. 2) then
+!     mgflxprc(:ncol,top_lev:pverp) = mgflxprc(:ncol,top_lev:pverp) + iflx(:ncol,top_lev:pverp) + cflx(:ncol,top_lev:pverp)
+!     mgflxsnw(:ncol,top_lev:pverp) = mgflxsnw(:ncol,top_lev:pverp) + iflx(:ncol,top_lev:pverp)
+!  end if
 
    mgmrprc(:ncol,top_lev:pver) = qrout(:ncol,top_lev:pver) + qsout(:ncol,top_lev:pver)
    mgmrsnw(:ncol,top_lev:pver) = qsout(:ncol,top_lev:pver)
