@@ -224,6 +224,16 @@
         <queue walltimemax="01:00:00" jobmin="1" jobmax="65536" default="true">default</queue>
       </queues>
     </batch_system>
+    
+    <batch_system MACH="cascade" type="slurm">
+      <directives>
+	<directive>--mail-type=END</directive>
+	<directive>--mail-user=email@pnnl.gov</directive>
+      </directives>
+      <queues>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="9999" default="true">small</queue>
+      </queues>
+    </batch_system>
 
    <batch_system MACH="constance" type="slurm">
     <directives>
