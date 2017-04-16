@@ -1268,6 +1268,9 @@ class K_TestCimeCase(TestCreateTestCommon):
         run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_P1.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s"
                               % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT))
 
+        self.assertEqual(type(MACHINE.get_value("MAX_TASKS_PER_NODE")), int)
+        self.assertTrue(type(MACHINE.get_value("PROJECT_REQUIRED")) in [type(None) , bool])
+
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
