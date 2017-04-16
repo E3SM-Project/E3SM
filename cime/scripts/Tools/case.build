@@ -7,8 +7,8 @@ Script to build a case.
 from standard_script_setup import *
 
 import CIME.build as build
-from CIME.case           import Case
-from CIME.utils           import  append_status, find_system_test
+from CIME.case            import Case
+from CIME.utils           import find_system_test
 from CIME.XML.files       import Files
 from CIME.XML.component   import Component
 from CIME.test_status     import *
@@ -94,20 +94,10 @@ def _main_func(description):
                     ts.set_status(phase_to_fail, TEST_FAIL_STATUS, comments="failed to initialize")
                 raise
 
-            append_status("case.testbuild starting ",
-                          caseroot=caseroot,sfile="CaseStatus")
             success = test.build(sharedlib_only=sharedlib_only, model_only=model_only)
-            if success:
-                append_status("case.testbuild complete",
-                              caseroot=caseroot,sfile="CaseStatus")
         else:
-            append_status("case.build starting",
-                          caseroot=caseroot,sfile="CaseStatus")
             success = build.case_build(caseroot, case=case, sharedlib_only=sharedlib_only,
-                             model_only=model_only)
-            if success:
-                append_status("case.build complete",
-                              caseroot=caseroot,sfile="CaseStatus")
+                                       model_only=model_only)
 
     sys.exit(0 if success else 1)
 

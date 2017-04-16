@@ -25,7 +25,7 @@ def parse_command_line(args):
                         "is assumed to be under then current working directory ")
 
     parser.add_argument("--keepexe", "-keepexe", action="store_true",
-                        help="Sets EXEROOT to point to original build")
+                        help="Sets EXEROOT to point to original build, it is highly recommended that the original case be built before cloning if using the --keepexe flag")
 
     parser.add_argument("--mach-dir", "-mach_dir",
                         help="Specify the locations of the Machines directory, other than the default"

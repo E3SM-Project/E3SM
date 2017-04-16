@@ -3,14 +3,14 @@
 grid_xml_converter.py -- convert (or verify) grid xml from CIME2 format to CIME5
 The location of these files are needed by the script:
     CIME2: cime/scripts/Tools/config_grid.xml
-    CIME5: cime_config/acme/config_grids.xml
+    CIME5: config/acme/config_grids.xml
 """
 
 # make sure cime2, cime roots are defined
 # use categories
 #  GRID CONFIGURATIONS   grid list   domain    grid maps
 #    CIME2: cime/scripts/Tools/config_grid.xml
-#    CIME5: cime_config/acme/config_grids.xml
+#    CIME5: config/acme/config_grids.xml
 #
 
 from standard_script_setup import *
@@ -293,7 +293,7 @@ class DataTree(object):
             self.writexml(fixlist,badxmlfile)
             if len(fixlist) > 0:
                 logger.info("Some nodes should be removed from")
-                logger.info("cime_config/acme/config_grids.xml. These nodes")
+                logger.info("config/acme/config_grids.xml. These nodes")
                 logger.info("have been written to %s" % badxmlfile)
 
 class GridTree(DataTree):
