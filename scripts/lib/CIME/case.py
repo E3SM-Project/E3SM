@@ -585,8 +585,14 @@ class Case(object):
         #--------------------------------------------
         # set machine values in env_xxx files
         machobj = Machines(machine=machine_name)
+        probed_machine = machobj.probe_machine_name()
         machine_name = machobj.get_machine_name()
-        self.set_value("MACH",machine_name)
+        self.set_value("MACH", machine_name)
+        if probed_machine != machine_name and probed_machine is not None:
+            logger.warning("WARNING: User-selected machine '%s' does not match probed machine '%s'" % (machine_name, probed_machine))
+        else:
+            logger.info("Machine is %s" % machine_name)
+
         nodenames = machobj.get_node_names()
         nodenames =  [x for x in nodenames if
                       '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
