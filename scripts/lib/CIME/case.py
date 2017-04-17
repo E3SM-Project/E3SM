@@ -96,7 +96,7 @@ class Case(object):
         self._component_classes = []
         self._is_env_loaded = False
         # these are user_mods as defined in the compset
-        # Command Line user_mods are handeled seperately
+        # Command Line user_mods are handled seperately
         self._user_mods = None
         self.thread_count = None
         self.total_tasks = None
