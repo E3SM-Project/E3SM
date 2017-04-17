@@ -355,11 +355,16 @@ contains
 
 !maltrud change to diagnostics pool at some point (needs to be passed in)
 
-      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level1',config_ecosysTracers_diagnostic_fields_level1)
-      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level2',config_ecosysTracers_diagnostic_fields_level2)
-      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level3',config_ecosysTracers_diagnostic_fields_level3)
-      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level4',config_ecosysTracers_diagnostic_fields_level4)
-      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level5',config_ecosysTracers_diagnostic_fields_level5)
+      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level1', &
+              config_ecosysTracers_diagnostic_fields_level1)
+      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level2', &
+              config_ecosysTracers_diagnostic_fields_level2)
+      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level3', &
+              config_ecosysTracers_diagnostic_fields_level3)
+      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level4', &
+              config_ecosysTracers_diagnostic_fields_level4)
+      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level5', &
+              config_ecosysTracers_diagnostic_fields_level5)
 
       if (config_ecosysTracers_diagnostic_fields_level1) then
          call mpas_pool_get_subpool(forcingPool, 'ecosysDiagFieldsLevel1', ecosysDiagFieldsLevel1)
@@ -1021,7 +1026,7 @@ contains
 
 ! input flux components in forcing pool
       real (kind=RKIND), dimension(:), pointer :: &
-         seaSurfacePressure,   &
+         atmosphericPressure,   &
          iceFraction,          &
          landIceFraction
 
@@ -1081,7 +1086,7 @@ contains
       call mpas_timer_start("ecosys surface flux")
       err = 0
 
-      call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
       call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
 
@@ -1137,7 +1142,7 @@ contains
       do iCell=1,nCellsSolve
 
 !maltrud we really want sea level pressure for this, but it isnt available so just use 1 atm
-!        BGC_forcing%surfacePressure(column) = seaSurfacePressure(iCell)*PascalsToAtmospheres
+!        BGC_forcing%surfacePressure(column) = atmosphericPressure(iCell)*PascalsToAtmospheres
          BGC_forcing%surfacePressure(column) = 1.0_RKIND
          BGC_forcing%iceFraction(column) = iceFraction(iCell)
 !maltrud assume for now that if there is any land ice, it is all land ice
