@@ -365,7 +365,7 @@ class SystemTestsCommon(object):
                     else:
                         comment = "Error: Memory usage increase > 10% from baseline"
                         self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
-                        append_status(comment, sfile="TestStatus.log")
+                        append_testlog(comment)
                 else:
                     comment = "Error: Could not determine baseline memory usage"
                     self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
