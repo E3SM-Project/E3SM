@@ -953,19 +953,20 @@ class Case(object):
             self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
 
-        # Apply user_mods if part of compset
-        if self._user_mods is not None:
-            self._user_mods = self.get_resolved_value(self._user_mods)
-            self.apply_user_mods()
-
     def apply_user_mods(self, user_mods_dir=None):
         """
         User mods can be specified on the create_newcase command line (usually when called from create test)
         or they can be in the compset definition, or both.
         """
+
+        if self._user_mods is None:
+            compset_user_mods_resolved = None
+        else:
+            compset_user_mods_resolved = self.get_resolved_value(self._user_mods)
+
         # This looping order will lead to the specified user_mods_dir taking
         # precedence over self._user_mods, if there are any conflicts.
-        for user_mods in (self._user_mods, user_mods_dir):
+        for user_mods in (compset_user_mods_resolved, user_mods_dir):
             if user_mods is not None:
                 if os.path.isabs(user_mods):
                     user_mods_path = user_mods

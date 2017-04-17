@@ -195,7 +195,7 @@ def _main_func(description):
         if user_mods_dir is not None:
             if os.path.isdir(user_mods_dir):
                 user_mods_dir = os.path.abspath(user_mods_dir)
-            case.apply_user_mods(user_mods_dir)
+        case.apply_user_mods(user_mods_dir)
 
     # Lock env_case.xml
     lock_file("env_case.xml", caseroot)
