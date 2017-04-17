@@ -1238,7 +1238,7 @@ if (options.ensemble_file != '' or int(options.mc_ensemble) != -1):
                +'--case '+casename+' --runroot '+runroot+' --n_ensemble '+str(nsamples)+' --ens_file '+ \
                options.ensemble_file+' --exeroot '+exeroot+' --parm_list '+options.parm_list+' --cnp '+cnp + \
                ' --site '+options.site
-        elif (('titan' in options.machine or 'eos' in options.machine) and int(options.ninst) == 1):
+        elif (('titan' in options.machine or 'eos' in options.machine or 'edison' in options.machine) and int(options.ninst) == 1):
             cmd = 'aprun -n '+str(np_total)+' python manage_ensemble.py ' \
                +'--case '+casename+' --runroot '+runroot+' --n_ensemble '+str(nsamples)+' --ens_file '+ \
                options.ensemble_file+' --exeroot '+exeroot+' --parm_list '+options.parm_list+' --cnp '+cnp + \
