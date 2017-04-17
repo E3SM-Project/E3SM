@@ -601,17 +601,17 @@ contains
                end do
                !$omp end do
 
-               !$omp do schedule(runtime)
-               do iCell = 1, nCells
-                 tracerGroupSurfaceFluxRunoff(:, iCell) = 0.0_RKIND
-                 tracerGroupSurfaceFluxRemoved(:, iCell) = 0.0_RKIND
-               end do
-               !$omp end do
-
                !
                ! fill components of surface tracer flux
                !
                if (config_use_tracerGroup_surface_bulk_forcing) then
+                  !$omp do schedule(runtime)
+                  do iCell = 1, nCells
+                    tracerGroupSurfaceFluxRunoff(:, iCell) = 0.0_RKIND
+                    tracerGroupSurfaceFluxRemoved(:, iCell) = 0.0_RKIND
+                  end do
+                  !$omp end do
+
                   call ocn_surface_bulk_forcing_tracers(meshPool, groupItr % memberName, forcingPool, tracerGroup, &
                                                         tracerGroupSurfaceFlux, tracerGroupSurfaceFluxRunoff, &
                                                         tracerGroupSurfaceFluxRemoved, dt, layerThickness, err)
