@@ -11,7 +11,6 @@ import os
 import glob
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-import HTMLParser 
 import urllib
 import argparse
 
@@ -55,8 +54,8 @@ for child in root.iter('group'):
     for entry in child.iter('entry'):
         test_id = entry.get('id')
         value = entry.get('value')
-     if test_id == "MACH":
-        machine=value
+        if test_id == "MACH":
+            machine=value
 
 xml_file=glob.glob("*"+args.testid+"/env_test.xml")
 root = ET.parse(xml_file[0]).getroot()
@@ -64,8 +63,8 @@ for child in root.iter('group'):
     for entry in child.iter('entry'):
         test_id = entry.get('id')
         value = entry.get('value')
-     if test_id == "BASELINE_NAME_CMP":
-        baseline=value
+        if test_id == "BASELINE_NAME_CMP":
+            baseline=value
 
 
 #

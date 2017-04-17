@@ -8,7 +8,7 @@ phases. All other phases need to handle their own status because
 they can be run outside the context of TestScheduler.
 """
 
-import shutil, traceback, stat, threading, time, glob
+import traceback, stat, threading, time, glob
 from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
