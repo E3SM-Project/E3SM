@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<?xml-stylesheet type="text/xsl" href="http://www.cgd.ucar.edu/~cam/namelist/namelist_definition.xsl"?>
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
 
 <entry_id version="2.0">
 
@@ -352,7 +352,7 @@
     </values>
   </entry>
 
-  <entry id="brnch_retain_casename" modify_via_xml="REFCASE">
+  <entry id="brnch_retain_casename" modify_via_xml="RUN_REFCASE">
     <type>logical</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
@@ -1497,6 +1497,23 @@
     </values>
   </entry>
 
+  <entry id="esp_cpl_dt" skip_default_entry="true">
+    <type>integer</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      esp run interval in seconds
+      esp_cpl_dt is the number of times the esp is run per NCPL_BASE_PERIOD
+      NCPL_BASE_PERIOD is set in env_run.xml and is the base period
+      associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
+      default value set by buildnml to be the pause interval if pause is active
+      otherwise, it is set to the shortest component coupling time
+    </desc>
+    <values>
+      <value>-999</value>
+    </values>
+  </entry>
+
   <entry id="atm_cpl_offset">
     <type>integer</type>
     <category>time</category>
@@ -1566,6 +1583,36 @@
     </desc>
     <values>
       <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="esp_cpl_offset">
+    <type>integer</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      esp coupling interval offset in seconds default: 0
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="esp_run_on_pause" modify_via_xml="ESP_RUN_ON_PAUSE">
+    <type>logical</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      true => ESP component runs after driver 'pause cycle'
+      If any component 'pauses' (see PAUSE_OPTION, PAUSE_N and
+      PAUSE_COMPONENT_LIST XML variables), the ESP component (if
+      present) will be run to process the component 'pause' (restart)
+      files and set any required 'resume' signals.
+      If true, esp_cpl_dt and esp_cpl_offset settings are ignored.
+      default: true
+    </desc>
+    <values>
+      <value>.true.</value>
     </values>
   </entry>
 

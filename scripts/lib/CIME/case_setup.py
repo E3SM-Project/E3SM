@@ -127,6 +127,9 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
                 continue
             ninst  = case.get_value("NINST_%s" % comp)
             ntasks = case.get_value("NTASKS_%s" % comp)
+            # ESP models are currently limited to 1 instance
+            expect((comp != "ESP") or (ninst == 1),
+                   "ESP components may only have one instance")
             if ninst > ntasks:
                 if ntasks == 1:
                     case.set_value("NTASKS_%s" % comp, ninst)

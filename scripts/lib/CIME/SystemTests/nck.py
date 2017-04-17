@@ -46,7 +46,11 @@ class NCK(SystemTestsCompareTwo):
 
     def _case_two_setup(self):
         for comp in self._comp_classes:
-            self._case.set_value("NINST_%s"%comp, 2)
+            if (comp == "ESP"):
+                self._case.set_value("NINST_%s"%comp, 1)
+            else:
+                self._case.set_value("NINST_%s"%comp, 2)
+
             ntasks = self._case.get_value("NTASKS_%s"%comp)
             self._case.set_value("NTASKS_%s"%comp, ntasks*2)
 

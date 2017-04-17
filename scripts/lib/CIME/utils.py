@@ -787,6 +787,25 @@ def convert_to_babylonian_time(seconds):
 
     return "%02d:%02d:%02d" % (hours, minutes, seconds)
 
+def get_time_in_seconds(timeval, unit):
+    """
+    Convert a time from 'unit' to seconds
+    """
+    if 'nyear' in unit:
+        dmult = 365 * 24 * 3600
+    elif 'nmonth' in unit:
+        dmult = 30 * 24 * 3600
+    elif 'nday' in unit:
+        dmult = 24 * 3600
+    elif 'nhour' in unit:
+        dmult = 3600
+    elif 'nminute' in unit:
+        dmult = 60
+    else:
+        dmult = 1
+
+    return dmult * timeval
+
 def compute_total_time(job_cost_map, proc_pool):
     """
     Given a map: jobname -> (procs, est-time), return a total time
