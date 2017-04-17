@@ -23,13 +23,14 @@ parser.add_option("--ens_file", dest="ens_file", default="", \
                   help="Name of samples file")
 parser.add_option("--postproc_file", dest="postproc_file", default="", \
                   help="Location of post_processing info")
+parser.add_option("--postproc_only", dest="postproc_only", default=False, \
+                  action="store_true", help='Only do post-processing')
 parser.add_option("--parm_list", dest="parm_list", default='parm_list', \
                   help = 'File containing list of parameters to vary')
 parser.add_option("--cnp", dest="cnp", default = False, action="store_true", \
                   help = 'CNP mode - initialize P pools')
 parser.add_option("--site", dest="site", default='parm_list', \
                   help = 'Site name')
-
 #parser.add_option("--calc_costfuction")
 (options, args) = parser.parse_args()
 
@@ -123,8 +124,6 @@ if (rank == 0):
             ierr = postproc(myvars, myyear_start, myyear_end, myday_start, \
                      myday_end, myfactor, myoffset, thisjob, \
                      options.runroot, options.casename, data)
-            #Update post-processed output file 
-            np.savetxt(options.casename+'_postprocessed.txt', data.transpose())
         comm.send(n_job, dest=process, tag=1)
         comm.send(0,     dest=process, tag=2)
     #receive remaining messages and finalize
@@ -137,9 +136,12 @@ if (rank == 0):
                             myday_end, myfactor, myoffset, thisjob, \
                             options.runroot, options.casename, data)
             #Update post-processed output file
-            np.savetxt(options.casename+'_postprocessed.txt', data.transpose())
         comm.send(-1, dest=process, tag=1)
         comm.send(-1, dest=process, tag=2)
+    if (do_postproc):
+        np.savetxt(options.casename+'_postprocessed.txt', data.transpose())
+    MPI.Finalize()
+
 #Slave
 else:
     status=0
@@ -148,21 +150,21 @@ else:
         status = comm.recv(source=0, tag=2) 
 
         if (status == 0):
-            os.chdir(workdir)
-            cnp = 'False'
-            if (options.cnp):
-                cnp='True'
-            #Python script to set up the ensemble run directory and manipulate parameters
-            os.system('python ensemble_copy.py --case '+options.casename+' --runroot '+ \
+            if (options.postproc_only == False):
+                os.chdir(workdir)
+                cnp = 'False'
+                if (options.cnp):
+                    cnp='True'
+                #Python script to set up the ensemble run directory and manipulate parameters
+                os.system('python ensemble_copy.py --case '+options.casename+' --runroot '+ \
                       options.runroot +' --ens_num '+str(myjob)+' --ens_file '+options.ens_file+ \
                       ' --parm_list '+options.parm_list+' --cnp '+cnp+' --site '+options.site)
-            jobst = str(100000+int(myjob))
-            rundir = options.runroot+'/UQ/'+options.casename+'/g'+jobst[1:]+'/'
-            os.chdir(rundir)
-            #Run the executable
-            os.system(options.exeroot+'/acme.exe > ccsm_log.txt')
+                jobst = str(100000+int(myjob))
+                rundir = options.runroot+'/UQ/'+options.casename+'/g'+jobst[1:]+'/'
+                os.chdir(rundir)
+                #Run the executable
+                os.system(options.exeroot+'/acme.exe > ccsm_log.txt')
             comm.send(rank,  dest=0, tag=3)
             comm.send(myjob, dest=0, tag=4)
     print rank, ' complete'
-
-   
+    MPI.Finalize()

@@ -225,9 +225,7 @@ for c in range(0,ncases):
     else:
         ftype = 'custom'
         nhtot=-1*tstep*npf
-        if (nhtot != 8760):
-            print('Only annual or default (monthly) files are supported')
-            sys.exit()
+        nypf = max(1, nhtot/8760)
         if (options.h2):
             hst='h2'
         elif (options.h1):
@@ -299,15 +297,16 @@ for c in range(0,ncases):
         for v in range(0,nvar):
             jobs = []
             nsteps=0
-            for y in range(ystart,yend+1):
-                yst=str(10000+y)[1:5]
+            nfiles = (yend-ystart)/nypf
+            for y in range(0,nfiles+1):
+                yst=str(10000+ystart+y*nypf)[1:5]
                 if (mycases[c].strip() == ''):
                     myfile = os.path.abspath('./'+mysites[c]+'_'+mycompsets[c]+".clm2."+hst+"."+yst+\
                                              "-01-01-00000.nc")
                 else:
                     myfile = os.path.abspath('./'+mycases[c]+"_"+mysites[c]+'_'+mycompsets[c]+".clm2."+hst+"."+yst+\
                                              "-01-01-00000.nc")
-                if (y == ystart and c == 0):
+                if (y == 0 and c == 0):
                     nffile = netcdf.netcdf_file(myfile,"r")
                     varout=nffile.variables[myvars[v]]
                     var_long_names.append(varout.long_name)
@@ -316,9 +315,8 @@ for c in range(0,ncases):
                 myvar_temp = getvar(myfile,myvars[v],npf,int(options.index), \
                                                float(options.scale_factor))
                 for i in range(0,npf):
-                  x[(y-ystart)*npf+i] = (y*1.0) + (i*1.0-0.5)/npf 
-                  #print (y-ystart)*npf+i,  x[(y-ystart)*npf+i]
-                  mydata[v,(y-ystart)*npf+i] = myvar_temp[i]
+                  x[y*npf+i] = ystart+(y*nypf) + nypf*(i*1.0-0.5)/npf 
+                  mydata[v,y*npf+i] = myvar_temp[i]
                   nsteps=nsteps+1
 
     #read obervation file, assumes it is in case directory (years must match!)

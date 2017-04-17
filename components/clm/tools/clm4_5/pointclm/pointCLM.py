@@ -33,6 +33,8 @@ parser.add_option("--caseidprefix", dest="mycaseid", default="", \
                   help="Unique identifier to include as a prefix to the case name")
 parser.add_option("--caseroot", dest="caseroot", default='', \
                   help = "case root directory (default = ./, i.e., under scripts/)")
+parser.add_option("--diags", dest="diags", default=False, \
+                 action="store_true", help="Write special outputs for diagnostics")
 parser.add_option("--runroot", dest="runroot", default="", \
                   help="Directory where the run would be created")
 parser.add_option("--exeroot", dest="exeroot", default="", \
@@ -88,6 +90,8 @@ parser.add_option("--srcmods_loc", dest="srcmods_loc", default='', \
                   help = 'Copy sourcemods from this location')
 parser.add_option("--parm_file", dest="parm_file", default='',
                   help = 'file for parameter modifications')
+parser.add_option("--parm_vals", dest="parm_vals", default="", \
+                  help = 'User specified parameter values')
 parser.add_option("--parm_file_P", dest="parm_file_P", default='',
                   help = 'file for P parameter modifications')
 parser.add_option("--hist_mfilt", dest="hist_mfilt", default=-1, \
@@ -171,6 +175,7 @@ parser.add_option("--trans2", dest="trans2", default=False, action="store_true",
                   help = 'Tranisnent phase 2 (1901-2010) - CRUNCEP only')
 parser.add_option("--spinup_vars", dest="spinup_vars", default=False, \
                   help = 'Limit output vars in spinup runs', action="store_true")
+parser.add_option("--trans_varlist", dest = "trans_varlist", default='', help = "Transient outputs")
 parser.add_option("--c_only", dest="c_only", default=False, \
                  help="Carbon only (supplemental P and N)", action="store_true")
 parser.add_option("--cn_only", dest="cn_only", default=False, \
@@ -486,7 +491,19 @@ if (options.parm_file != ''):
             thisvar[int(values[1])] = float(values[2])
             ierr = nffun.putvar(pftfile, values[0], thisvar)
     input.close()
-
+if (options.parm_vals != ''):
+    pftfile = tmpdir+'/clm_params_'+pftphys_stamp+'.'+casename+'.nc'
+    parms = options.parm_vals.split()
+    nparms = len(parms)
+    for n in range(0,nparms):
+	parm_data=parms[n].split(',')
+        thisvar = nffun.getvar(pftfile, parm_data[0])
+        if (len(parm_data) == 2):
+	   thisvar[:] = float(parm_data[1])
+        elif (len(parm_data) == 3): 
+           thisvar[int(parm_data[1])] = float(parm_data[2])
+        ierr =  nffun.putvar(pftfile, parm_data[0], thisvar)
+           
 #parameter (soil order dependent) modifications if desired    ::X.YANG 
 os.system('cp '+options.ccsm_input+'/lnd/clm2/paramdata/CNP_parameters_'+CNPstamp+'.nc ' \
               +tmpdir+'/CNP_parameters_'+CNPstamp+casename+'.nc')
@@ -688,17 +705,54 @@ for i in range(1,int(options.ninst)+1):
     output.write('&clm_inparm\n')
 
     #history file options
+    #outputs for SPRUCE MiP and Jiafu's diagnostics code:
+    var_list_hourly = ['GPP', 'NEE', 'NEP', 'NPP', 'LEAFC_ALLOC', 'AGNPP', 'MR', \
+            'CPOOL_TO_DEADSTEMC', 'LIVECROOTC_XFER_TO_LIVECROOTC', 'DEADCROOTC_XFER_TO_DEADCROOTC', \
+            'CPOOL_TO_LIVECROOTC', 'CPOOL_TO_DEADCROOTC', 'FROOTC_ALLOC', 'AR', 'LEAF_MR', 'CPOOL_LEAF_GR',
+            'TRANSFER_LEAF_GR', 'CPOOL_LEAF_STORAGE_GR', 'LIVESTEM_MR', 'CPOOL_LIVESTEM_GR', \
+            'TRANSFER_LIVESTEM_GR', 'CPOOL_LIVESTEM_STORAGE_GR', 'CPOOL_DEADSTEM_GR', 'TRANSFER_DEADSTEM_GR', \
+            'CPOOL_DEADSTEM_STORAGE_GR', 'LIVECROOT_MR', 'CPOOL_LIVECROOT_GR', 'TRANSFER_LIVECROOT_GR', \
+            'CPOOL_LIVECROOT_STORAGE_GR', 'CPOOL_DEADCROOT_GR', 'TRANSFER_DEADCROOT_GR', 'CPOOL_DEADCROOT_STORAGE_GR', \
+            'FROOT_MR', 'CPOOL_FROOT_GR', 'TRANSFER_FROOT_GR', 'CPOOL_FROOT_STORAGE_GR', 'FSH', 'EFLX_LH_TOT', \
+            'Rnet', 'FCTR', 'FGEV', 'FCEV', 'SOILLIQ', 'QOVER', 'QDRAI', 'TOTVEGC', 'LEAFC', 'LIVESTEMC', 'DEADSTEMC', \
+            'FROOTC', 'LIVECROOTC', 'DEADCROOTC', 'TG', 'TV', 'TSA', 'TSOI', 'DEADSTEMC_STORAGE', \
+            'LIVESTEMC_STORAGE', 'DEADCROOTC_STORAGE', 'LIVECROOTC_STORAGE', 'CPOOL_TO_DEADSTEMC_STORAGE', \
+            'CPOOL_TO_LIVESTEMC_STORAGE', 'CPOOL_TO_DEADCROOTC_STORAGE', 'CPOOL_TO_LIVECROOTC_STORAGE', \
+            'ER', 'HR', 'FROOTC_STORAGE', 'LEAFC_STORAGE', 'LEAFC_XFER', 'FROOTC_XFER', 'LIVESTEMC_XFER', \
+            'DEADSTEMC_XFER', 'LIVECROOTC_XFER', 'DEADCROOTC_XFER', 'SR', 'HR_vr', 'FIRA', 
+            'FSA', 'FSDS', 'FLDS', 'TBOT', 'RAIN', 'SNOW', 'WIND', 'PBOT', 'QBOT', 'QVEGT', 'QVEGE', 'QSOIL', \
+            'QFLX_SUB_SNOW', 'QFLX_DEW_GRND', 'QH2OSFC', 'H2OSOI', 'CPOOL_TO_LIVESTEMC', 'TOTLITC', \
+            'TOTSOMC', 'ZWT', 'SNOWDP', 'TLAI']
+    var_list_daily = ['TOTLITC', 'TOTSOMC', 'CWDC', 'LITR1C_vr', 'LITR2C_vr', 'LITR3C_vr', 'SOIL1C_vr', 'SOIL2C_vr', \
+                      'SOIL3C_vr', 'SOIL4C_vr', 'H2OSFC', 'ZWT', 'SNOWDP', 'TLAI']
+    var_list_pft = ['GPP', 'NPP', 'LEAFC_ALLOC', 'AGNPP', 'CPOOL_TO_DEADSTEMC', 'LIVECROOTC_XFER_TO_LIVECROOTC', \
+            'DEADCROOTC_XFER_TO_DEADCROOTC', 'CPOOL_TO_LIVECROOTC', 'CPOOL_TO_DEADCROOTC', 'FROOTC_ALLOC', \
+            'AR', 'MR', 'LEAF_MR', 'CPOOL_LEAF_GR', 'TRANSFER_LEAF_GR', 'CPOOL_LEAF_STORAGE_GR', 'LIVESTEM_MR', \
+            'CPOOL_LIVESTEM_GR', 'TRANSFER_LIVESTEM_GR', 'CPOOL_LIVESTEM_STORAGE_GR', 'CPOOL_DEADSTEM_GR', \
+            'TRANSFER_DEADSTEM_GR', 'CPOOL_DEADSTEM_STORAGE_GR', 'LIVECROOT_MR', 'CPOOL_LIVECROOT_GR', 'TRANSFER_LIVECROOT_GR', \
+            'CPOOL_LIVECROOT_STORAGE_GR', 'CPOOL_DEADCROOT_GR', 'TRANSFER_DEADCROOT_GR', 'CPOOL_DEADCROOT_STORAGE_GR', \
+            'FROOT_MR', 'CPOOL_FROOT_GR', 'TRANSFER_FROOT_GR', 'CPOOL_FROOT_STORAGE_GR', 'FCTR', 'FCEV', 'TOTVEGC', 'LEAFC', \
+            'LIVESTEMC', 'DEADSTEMC', 'FROOTC', 'LIVECROOTC', 'DEADCROOTC', 'DEADSTEMC_STORAGE', \
+            'LIVESTEMC_STORAGE', 'DEADCROOTC_STORAGE', 'LIVECROOTC_STORAGE', 'CPOOL_TO_DEADSTEMC_STORAGE', \
+            'CPOOL_TO_LIVESTEMC_STORAGE', 'CPOOL_TO_DEADCROOTC_STORAGE', 'CPOOL_TO_LIVECROOTC_STORAGE', \
+            'FROOTC_STORAGE', 'LEAFC_STORAGE', 'LEAFC_XFER', 'FROOTC_XFER', 'LIVESTEMC_XFER', \
+            'DEADSTEMC_XFER', 'LIVECROOTC_XFER', 'DEADCROOTC_XFER', 'TLAI', 'CPOOL_TO_LIVESTEMC']
+    var_list_spinup = ['NPOOL', 'EFLX_LH_TOT', 'RETRANSN', 'PCO2', 'PBOT', 'NDEP_TO_SMINN', 'OCDEP', 'BCDEP', 'COL_FIRE_CLOSS', 'HDM', \
+             'LNFM', 'NEE', 'GPP', 'FPSN', 'AR', 'HR', 'MR', 'GR', 'ER', 'NPP', 'TLAI', 'SOIL3C', 'SOIL4C', 'TOTSOMC', 'LEAFC', \
+             'DEADSTEMC', 'DEADCROOTC', 'FROOTC', 'LIVESTEMC', 'LIVECROOTC', 'TOTVEGC', 'TOTCOLC', 'TOTLITC', 'BTRAN', 'CWDC', \
+             'QVEGE', 'QVEGT', 'QSOIL', 'QDRAI', 'QRUNOFF', 'FPI', 'FPG']
+
     if ('20TR' not in compset and int(options.hist_mfilt) == -1):
 	#default to annual for spinup runs if not specified
 	options.hist_mfilt = 1
 	options.hist_nhtfrq = -8760
 
-    if (options.hist_mfilt != -1):
+    if (options.hist_mfilt != -1 and not options.diags):
         if (options.ad_spinup):
             output.write(" hist_mfilt = "+str(options.hist_mfilt)+", "+str(options.hist_mfilt)+"\n")
         else:
             output.write(" hist_mfilt = "+ str(options.hist_mfilt)+"\n")
-    if (options.hist_nhtfrq != -999):
+    if (options.hist_nhtfrq != -999 and not options.diags):
         if (options.ad_spinup):
             output.write(" hist_nhtfrq = "+ str(options.hist_nhtfrq)+", "+str(options.hist_nhtfrq)+"\n")
         else:
@@ -719,14 +773,47 @@ for i in range(1,int(options.ninst)+1):
         print myline
         output.write(myline+"\n")
         hvars_file.close()
+   
     if (options.spinup_vars and (not '20TR' in compset)):
         output.write(" hist_empty_htapes = .true.\n")
-        output.write(" hist_fincl1 = 'NPOOL', 'EFLX_LH_TOT', 'RETRANSN', 'PCO2', 'PBOT', 'NDEP_TO_SMINN', 'OCDEP', 'BCDEP', 'COL_FIRE_CLOSS', 'HDM', 'LNFM', 'NEE', 'GPP', 'FPSN', 'AR', 'HR', 'MR', 'GR', 'ER', 'NPP', 'TLAI', 'SOIL3C', 'SOIL4C', 'TOTSOMC', 'LEAFC', 'DEADSTEMC', 'DEADCROOTC', 'FROOTC', 'LIVESTEMC', 'LIVECROOTC', 'TOTVEGC', 'TOTCOLC', 'TOTLITC', 'BTRAN', 'CWDC', 'QVEGE', 'QVEGT', 'QSOIL', 'QDRAI', 'QRUNOFF', 'FPI', 'FPG'\n")
+        h0varst = " hist_fincl1 = "
+        for v in var_list_spinup:
+	    h0varst = h0varst+"'"+v+"',"
+        h0varst = h0varst[:-1]+"\n"
+        output.write(h0varst)
+
+    if ('20TR' in compset and options.diags):
+        output.write(" hist_dov2xy = .true., .true., .true., .false.\n")
+        output.write(" hist_mfilt = 1, 8760, 365, 365\n")
+        output.write(" hist_nhtfrq = 0, -1, -24, -24\n")
+        h1varst = " hist_fincl2 = "
+        h2varst = " hist_fincl3 = "
+        h3varst = " hist_fincl4 = "
+        for v in var_list_hourly:
+            h1varst = h1varst+"'"+v+"',"
+            h2varst = h2varst+"'"+v+"',"
+        for v in var_list_daily:
+            h2varst = h2varst+"'"+v+"',"
+        for v in var_list_pft:
+            h3varst = h3varst+"'"+v+"',"
+        h1varst = h1varst[:-1]+"\n"
+        h2varst = h2varst[:-1]+"\n"
+        h3varst = h3varst[:-1]+"\n"
+        output.write(h1varst)
+        output.write(h2varst)
+        output.write(h3varst)
+    elif ('20TR' in compset and options.trans_varlist != ''):
+	trans_varlist = options.trans_varlist.split(',')
+	output.write(" hist_empty_htapes = .true.\n")
+        h0varst = " hist_fincl1 = "
+	for v in trans_varlist:
+	    h0varst = h0varst+"'"+v+"',"
+	h0varst = h0varst[:-1]+"\n"
+        output.write(h0varst)
 
     if (options.ad_spinup):
         output.write(" hist_dov2xy = .true., .false.\n")
         if ('BGC' in compset or options.centbgc):
-
             output.write(" hist_fincl2 = 'CWDC_vr', 'CWDN_vr', 'CWDP_vr', 'SOIL3C_vr', 'SOIL3N_vr', 'SOIL3P_vr', 'SOIL2C_vr', " + \
                              "'SOIL2N_vr', 'SOIL2P_vr', 'DEADSTEMC', 'DEADSTEMN', 'DEADSTEMP', 'DEADCROOTC', 'DEADCROOTN', "+ \
                              "'DEADCROOTP', 'LITR3C_vr', 'LITR3N_vr', 'LITR3P_vr'\n")
@@ -1122,6 +1209,7 @@ if (options.ensemble_file != '' or int(options.mc_ensemble) != -1):
         if (options.machine == 'eos'):
             output_run.write('source $MODULESHOME/init/csh\n')
             output_run.write('module load nco\n')
+            output_run.write('module load cray-netcdf\n')
 	    output_run.write('module unload python\n')
             output_run.write('module load python/2.7.5\n')
             output_run.write('module unload PrgEnv-intel\n')

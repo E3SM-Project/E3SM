@@ -301,7 +301,8 @@ class Frame(wx.Frame):
 
     def OnEnsembleFileOpen(self, event):
         file_opened = 0
-        dialog = wx.FileDialog(None, wildcard="*.dat", defaultDir="./", style = wx.OPEN)
+        dialog = wx.FileDialog(None, wildcard="*.dat;*.txt", defaultDir="./", style = wx.OPEN)
+        #dialog = wx.FileDialog(None, defaultDir="./", style = wx.OPEN)
         result = dialog.ShowModal()
         if result == wx.ID_OK:
             ensemble_file = dialog.GetPath()

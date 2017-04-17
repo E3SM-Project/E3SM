@@ -11,50 +11,54 @@ parser.add_option("--caseidprefix", dest="mycaseid", default="", \
                   help="Unique identifier to include as a prefix to the case name")
 parser.add_option("--caseroot", dest="caseroot", default='', \
                   help = "case root directory (default = ./, i.e., under scripts/)")
+parser.add_option("--ccsm_input", dest="ccsm_input", \
+                  default='', \
+                  help = "input data directory for CESM (required)")
+parser.add_option("--clean_build", action="store_true", default=False, \
+                  help="Perform a clean build")
+parser.add_option("--csmdir", dest="csmdir", default='../../../../..', \
+                  help = "base CESM directory (default = ../../..)")
+parser.add_option("--compiler", dest="compiler", default = 'gnu', \
+                  help = "compiler to use (pgi*, gnu)")
+parser.add_option("--diags", dest="diags", default=False, \
+                 action="store_true", help="Write special outputs for diagnostics")
+parser.add_option("--hist_mfilt_trans", dest="hist_mfilt", default="365", \
+                  help = 'number of output timesteps per file (transient only)')
+parser.add_option("--hist_mfilt_spinup", dest="hist_mfilt_spinup", default="-999", \
+                  help = 'number of output timesteps per file (transient only)')
+parser.add_option("--hist_nhtfrq_spinup", dest="hist_nhtfrq_spinup", default="-999", \
+                  help = 'output file timestep (transient only)')
+parser.add_option("--hist_nhtfrq_trans", dest="hist_nhtfrq", default="-24", \
+                  help = 'output file timestep (transient only)')
+parser.add_option("--machine", dest="machine", default = 'oic2', \
+                  help = "machine to use (default = oic2)")
+parser.add_option("--mpilib", dest="mpilib", default="mpi-serial", \
+                      help = "mpi library (openmpi*, mpich, ibm, mpi-serial)")
+parser.add_option("--noad", action="store_true", dest="noad", default=False, \
+                  help='Do not perform ad spinup simulation')
+parser.add_option("--nofire", dest="nofire", default=False, \
+                  action="store_true", help='Turn off fire algorithms')
+parser.add_option("--nopointdata", action="store_true", \
+                  dest="nopointdata", help="Do NOT make point data (use data already created)", \
+                  default=False)
+parser.add_option("--notrans", action="store_true", dest="notrans", default=False, \
+                  help='Do not perform transient simulation (spinup only)')
+parser.add_option("--nyears_final_spinup", dest="nyears_final_spinup", default='200', \
+                  help="base no. of years for final spinup")
 parser.add_option("--runroot", dest="runroot", default="", \
                   help="Directory where the run would be created")
 parser.add_option("--site", dest="site", default='', \
                   help = '6-character FLUXNET code to run (required)')
 parser.add_option("--sitegroup", dest="sitegroup",default="AmeriFlux", \
                   help = "site group to use (default AmeriFlux)")
-parser.add_option("--machine", dest="machine", default = 'oic2', \
-                  help = "machine to use (default = oic2)")
-parser.add_option("--compiler", dest="compiler", default = 'gnu', \
-                  help = "compiler to use (pgi*, gnu)")
-parser.add_option("--mpilib", dest="mpilib", default="mpi-serial", \
-                      help = "mpi library (openmpi*, mpich, ibm, mpi-serial)")
-parser.add_option("--csmdir", dest="csmdir", default='../../../../..', \
-                  help = "base CESM directory (default = ../../..)")
-parser.add_option("--ccsm_input", dest="ccsm_input", \
-                  default='', \
-                  help = "input data directory for CESM (required)")
-parser.add_option("--nopointdata", action="store_true", \
-                  dest="nopointdata", help="Do NOT make point data (use data already created)", \
-                  default=False)
-parser.add_option("--noad", action="store_true", dest="noad", default=False, \
-                  help='Do not perform ad spinup simulation')
-parser.add_option("--notrans", action="store_true", dest="notrans", default=False, \
-	          help='Do not perform transient simulation (spinup only)')
 parser.add_option("--srcmods_loc", dest="srcmods_loc", default='', \
                   help = 'Copy sourcemods from this location')
-parser.add_option("--nyears_final_spinup", dest="nyears_final_spinup", default='200', \
-                  help="base no. of years for final spinup")
-parser.add_option("--clean_build", action="store_true", default=False, \
-                  help="Perform a clean build")
-parser.add_option("--hist_mfilt_trans", dest="hist_mfilt", default="365", \
-                  help = 'number of output timesteps per file (transient only)')
-parser.add_option("--hist_nhtfrq_trans", dest="hist_nhtfrq", default="-24", \
-                  help = 'output file timestep (transient only)')
-parser.add_option("--hist_mfilt_spinup", dest="hist_mfilt_spinup", default="-999", \
-                  help = 'number of output timesteps per file (transient only)')
-parser.add_option("--hist_nhtfrq_spinup", dest="hist_nhtfrq_spinup", default="-999", \
-                  help = 'output file timestep (transient only)')
 parser.add_option("--parm_file", dest="parm_file", default="", \
                   help = 'parameter file to use')
+parser.add_option("--parm_vals", dest="parm_vals", default="", \
+                  help = 'User specified parameter values')
 parser.add_option("--nopftdyn", action="store_true", dest="nopftdyn", \
                       default=False, help='Do not use dynamic PFT file')
-parser.add_option("--nofire", dest="nofire", default=False, \
-                  action="store_true", help='Turn off fire algorithms')
 parser.add_option("--regional", action="store_true", \
                    dest="regional", default=False, \
                    help="Flag for regional run (2x2 or greater)")
@@ -104,8 +108,11 @@ parser.add_option("--siteparms",dest = "siteparms", default=False, \
                   action="store_true", help = 'Use default PFT parameters')
 parser.add_option("--cpl_bypass", dest = "cpl_bypass", default=False, \
                   help = "Bypass coupler", action="store_true")
-parser.add_option("--spinup_vars", dest = "spinup_vars", default=False, help = "limit output variables for spinup", action="store_true")
-parser.add_option("--cn_only", dest="cn_only", default=False, help='Carbon/Nitrogen only (saturated P)', action ="store_true")
+parser.add_option("--spinup_vars", dest = "spinup_vars", default=False, \
+                  help = "limit output variables for spinup", action="store_true")
+parser.add_option("--trans_varlist", dest = "trans_varlist", default='', help = "Transient outputs")
+parser.add_option("--cn_only", dest="cn_only", default=False, \
+                  help='Carbon/Nitrogen only (saturated P)', action ="store_true")
 parser.add_option("--ensemble_file", dest="ensemble_file", default='', \
                   help = 'Parameter sample file to generate ensemble')
 parser.add_option("--parm_list", dest="parm_list", default='parm_list', \
@@ -226,8 +233,9 @@ if (int(options.mc_ensemble) != -1):
                   numpy.transpose(samples))
     options.ensemble_file = 'mcsamples_'+options.mycaseid+'_'+str(options.mc_ensemble)+'.txt'
 
+mysites = options.site.split(',')
 for row in AFdatareader:
-    if row[0] == options.site or (options.site == 'all' and row[0] !='site_code' \
+    if (row[0] in mysites) or ('all' in mysites and row[0] !='site_code' \
                                       and row[0] != ''):
         site      = row[0]
         if (options.cruncep):
@@ -277,6 +285,8 @@ for row in AFdatareader:
             basecmd = basecmd+' --caseidprefix '+mycaseid
         if (options.parm_file != ''):
             basecmd = basecmd+' --parm_file '+options.parm_file
+        if (options.parm_vals != ''):
+            basecmd = basecmd+' --parm_vals '+options.parm_vals
         if (options.clean_build):
             basecmd = basecmd+' --clean_build '
         if (options.regional):
@@ -410,8 +420,12 @@ for row in AFdatareader:
             cmd_trns = cmd_trns+' --compset I20TRCLM45'+mybgc
         if (options.spinup_vars):
             cmd_trns = cmd_trns + ' --spinup_vars'
+        if (options.trans_varlist != ''):
+            cmd_trns = cmd_trns + ' --trans_varlist '+options.trans_varlist
         if (options.ensemble_file != ''):  #Transient post-processing
             cmd_trns = cmd_trns + ' --postproc_file postproc_vars'
+        if (options.diags):
+            cmd_trns = cmd_trns + ' --diags'
         #transient phase 2 (CRU-NCEP only, without coupler bypass)
         if (options.cruncep and not options.cpl_bypass):
             basecase=basecase.replace('1850','20TR')+'_phase1'
