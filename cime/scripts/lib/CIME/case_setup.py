@@ -226,9 +226,9 @@ def adjust_pio_layout(case, new_pio_stride):
         if pio_stride != new_stride:
             logger.info("Resetting  PIO_STRIDE_%s to %s"%(comp, new_stride))
             case.set_value("PIO_STRIDE_%s"%comp, new_stride)
-            if pio_numtasks != new_numtasks:
-                logger.info("Resetting  PIO_NUMTASKS_%s to %s"%(comp, new_numtasks))
-                case.set_value("PIO_NUMTASKS_%s"%comp, new_numtasks)
+        if pio_numtasks != new_numtasks:
+            logger.info("Resetting  PIO_NUMTASKS_%s to %s"%(comp, new_numtasks))
+            case.set_value("PIO_NUMTASKS_%s"%comp, new_numtasks)
 
 
 ###############################################################################
