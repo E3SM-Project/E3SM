@@ -383,8 +383,7 @@ contains
      integer                :: CL                              ! Canopy Layer index
      integer                :: FT                              ! clm patch index
      real                   :: gaib, rib                       ! for debugging
-     type (site) ,  pointer :: currentSite 
-     type (patch),  pointer :: currentPatch                    ! Import fapar matrix for each patch from ED data structure.
+
      !------------------------------------------------------------------------------
 
      associate(                                                     & 

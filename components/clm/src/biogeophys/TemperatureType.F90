@@ -1059,17 +1059,15 @@ contains
   end subroutine InitAccVars
 
   !-----------------------------------------------------------------------
-  subroutine UpdateAccVars (this, EDbio_vars, bounds)
+  subroutine UpdateAccVars (this, bounds)
     !
     ! USES
     use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
     use clm_time_manager , only : get_step_size, get_nstep, is_end_curr_day, get_curr_date
     use accumulMod       , only : update_accum_field, extract_accum_field, accumResetVal
-    use EDBioType        , only : EDbio_type
     !
     ! !ARGUMENTS:
     class(temperature_type)                :: this
-    type(EDbio_type)       , intent(inout) :: EDbio_vars
     type(bounds_type)      , intent(in)    :: bounds
     !
     ! !LOCAL VARIABLES:

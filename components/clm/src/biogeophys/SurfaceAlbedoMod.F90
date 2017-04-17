@@ -203,7 +203,6 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds    ! bounds
-    type (patch) , pointer :: currentPatch
     integer , intent(in) :: num_nourbanc       ! number of columns in non-urban filter
     integer , intent(in) :: filter_nourbanc(:) ! column filter for non-urban points
      integer                , intent(in)    :: num_nourbanp       ! number of patches in non-urban filter

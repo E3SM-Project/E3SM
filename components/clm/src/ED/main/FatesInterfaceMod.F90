@@ -49,4 +49,6 @@ module FatesInterfaceMod
          
 
       end if
-  end module FatesInterfaceMod
+   end subroutine set_fates_global_elements
+
+end module FatesInterfaceMod

@@ -32,7 +32,6 @@ module initGridCellsMod
   public initGridcells ! initialize sub-grid gridcell mapping 
   !
   ! !PRIVATE MEMBER FUNCTIONS:
-  private set_cohort_decomp
   private set_landunit_veg_compete
   private set_landunit_wet_ice_lake
   private set_landunit_crop_noncompete
@@ -54,7 +53,7 @@ contains
     use subgridWeightsMod , only : compute_higher_order_weights
     use landunit_varcon   , only : istsoil, istice, istwet, istdlak, istice_mec
     use landunit_varcon   , only : isturb_tbd, isturb_hd, isturb_md, istcrop
-    use clm_varctl        , only : create_glacier_mec_landunit, use_ed
+    use clm_varctl        , only : create_glacier_mec_landunit
     use shr_const_mod     , only : SHR_CONST_PI
     !
     ! !LOCAL VARIABLES:
@@ -185,11 +184,6 @@ contains
           end do
        endif
 
-       if ( use_ed ) then
-          ! cohort decomp
-          call set_cohort_decomp( bounds_clump=bounds_clump )
-       end if
-
        ! Ensure that we have set the expected number of pfts, cols and landunits for this clump
        SHR_ASSERT(li == bounds_clump%endl, errMsg(__FILE__, __LINE__))
        SHR_ASSERT(ci == bounds_clump%endc, errMsg(__FILE__, __LINE__))
@@ -223,32 +217,6 @@ contains
 
   end subroutine initGridcells
 
-  !------------------------------------------------------------------------
-  subroutine set_cohort_decomp ( bounds_clump )
-    !
-    ! !DESCRIPTION: 
-    ! Set gridcell decomposition for cohorts
-    !
-    use EDtypesMod      , only : cohorts_per_gcell
-    use EDVecCohortType , only : coh
-    !
-    ! !ARGUMENTS:
-    type(bounds_type), intent(in)    :: bounds_clump  
-    !
-    ! !LOCAL VARIABLES:
-    integer cohi, gi
-    !------------------------------------------------------------------------
-
-    gi = bounds_clump%begg
-
-    do cohi = bounds_clump%begCohort, bounds_clump%endCohort
-
-       coh%gridcell(cohi) = gi
-       if ( mod(cohi,cohorts_per_gcell ) == 0 ) gi = gi + 1
-
-     end do
-
-  end subroutine set_cohort_decomp
 
   !------------------------------------------------------------------------
   subroutine set_landunit_veg_compete (ltype, gi, li, ci, pi, setdata)

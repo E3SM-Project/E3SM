@@ -67,9 +67,6 @@ module clm_driver
   use VOCEmissionMod         , only : VOCEmission
   !
   use filterMod              , only : setFilters
-  use EDmainMod              , only : edmodel
-  use EDCLMLinkMod           , only : clm_ed_link
-  use EDtypesMod             , only : gridCellEdState
   !
   use atm2lndMod             , only : downscale_forcings
   use lnd2atmMod             , only : lnd2atm
@@ -114,7 +111,6 @@ module clm_driver
   use clm_instMod            , only : lnd2atm_vars
   use clm_instMod            , only : glc2lnd_vars
   use clm_instMod            , only : lnd2glc_vars
-  use clm_instMod            , only : EDbio_vars
   use clm_instMod            , only : soil_water_retention_curve
   use clm_instMod            , only : chemstate_vars
   use betr_initializeMod     , only : betrtracer_vars
@@ -135,6 +131,7 @@ module clm_driver
   use ColumnType             , only : col                
   use PatchType              , only : pft
   use shr_sys_mod            , only : shr_sys_flush
+  use shr_log_mod            , only : errMsg => shr_log_errMsg
 
   !!----------------------------------------------------------------------------
   !! bgc interface & pflotran:
@@ -525,7 +522,7 @@ contains
             atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars,               &
             frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars,               &
             temperature_vars, waterflux_vars, waterstate_vars, ch4_vars, photosyns_vars, &
-            EDbio_vars, soil_water_retention_curve, nitrogenstate_vars,phosphorusstate_vars) 
+            soil_water_retention_curve, nitrogenstate_vars,phosphorusstate_vars) 
        call t_stopf('canflux')
 
        ! Fluxes for all urban landunits
@@ -772,7 +769,7 @@ contains
                   canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
                   dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
                   plantsoilnutrientflux_vars, phosphorusstate_vars)  
-       else       
+      else       
        
          ! FIX(SPM,032414)  push these checks into the routines below and/or make this consistent.
          if (.not. use_ed) then 
@@ -923,7 +920,8 @@ contains
            call nitrogenflux_vars%SetValues(&
                   filter(nc)%num_soilp, filter(nc)%soilp, 0._r8, filter(nc)%num_soilc, filter(nc)%soilc, 0._r8)
 
-           call EDbio_vars%SetValues( 0._r8 )
+           ! (FATES-INTERF) put error call, flag for development
+           call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
           
          end if  ! end of if-use_ed
 
@@ -1185,29 +1183,25 @@ contains
     ! FIX(SPM,032414) double check why this isn't called for ED
 
     if (nstep > 0) then
-       !
-       ! FIX(SPM, 082814) - in the ED branch RF and I comment out the if(.not.
-       ! use_ed) then statement ... double check if this is required and why
-       !
-       !if (.not. use_ed) then
-          call t_startf('accum')
+       
+       call t_startf('accum')
+       
+       call atm2lnd_vars%UpdateAccVars(bounds_proc)
+       
+       call temperature_vars%UpdateAccVars(bounds_proc)
+       
+       call canopystate_vars%UpdateAccVars(bounds_proc)
+       
+       if (use_cndv) then
+          call dgvs_vars%UpdateCNDVAccVars(bounds_proc, temperature_vars)
+       end if
+       
+       if (crop_prog) then
+          call crop_vars%UpdateAccVars(bounds_proc, temperature_vars, cnstate_vars)
+       end if
+       
+       call t_stopf('accum')
 
-          call atm2lnd_vars%UpdateAccVars(bounds_proc)
-
-          call temperature_vars%UpdateAccVars(EDBio_vars, bounds_proc)
-
-          call canopystate_vars%UpdateAccVars(bounds_proc)
-
-          if (use_cndv) then
-             call dgvs_vars%UpdateCNDVAccVars(bounds_proc, temperature_vars)
-          end if
-
-          if (crop_prog) then
-             call crop_vars%UpdateAccVars(bounds_proc, temperature_vars, cnstate_vars)
-          end if
-
-          call t_stopf('accum')
-       !end if
     end if
 
     ! ============================================================================
@@ -1259,38 +1253,13 @@ contains
     
     if ( use_ed ) then
        if ( is_beg_curr_day() ) then ! run ED at the start of each day
-
           if ( masterproc ) write(iulog,*)  'edtime ed call edmodel ',get_nstep()
           nclumps = get_proc_clumps()
-
           !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
           do nc = 1,nclumps
 
-             call get_clump_bounds(nc, bounds_clump)
-
-             call edmodel( bounds_clump, & 
-                  atm2lnd_vars, soilstate_vars, temperature_vars, waterstate_vars )
-
-             ! link to CLM structures
-             call clm_ed_link( bounds_clump, gridCellEdState, &
-                  waterstate_vars, canopystate_vars, EDbio_vars, &
-                  carbonstate_vars, nitrogenstate_vars, carbonflux_vars) 
-
-             call setFilters( bounds_clump, glc2lnd_vars%icemask_grc )
-
-             !reset surface albedo fluxes in case there is a mismatch between elai and canopy absorbtion. 
-             call SurfaceAlbedo(bounds_clump,                      &
-                filter_inactive_and_active(nc)%num_nourbanc,       &
-                filter_inactive_and_active(nc)%nourbanc,           &
-                filter_inactive_and_active(nc)%num_nourbanp,       &
-                filter_inactive_and_active(nc)%nourbanp,           &
-                filter_inactive_and_active(nc)%num_urbanc,         &
-                filter_inactive_and_active(nc)%urbanc,             &
-                filter_inactive_and_active(nc)%num_urbanp,         & 
-                filter_inactive_and_active(nc)%urbanp,             &
-                nextsw_cday, declinp1,                             &
-                aerosol_vars, canopystate_vars, waterstate_vars,   &
-                lakestate_vars, temperature_vars, surfalb_vars)
+             ! CALL FATES DYNAMICS (FATES-INTERF)
+             call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
 
           end do
           !$OMP END PARALLEL DO
@@ -1344,7 +1313,7 @@ contains
                ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-               waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+               waterflux_vars, waterstate_vars,                                               &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
                betrtracer_vars, tracerstate_vars, tracerflux_vars,                            &
                tracercoeff_vars, rdate=rdate )

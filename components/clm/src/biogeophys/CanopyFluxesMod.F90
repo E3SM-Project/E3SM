@@ -19,10 +19,6 @@ module CanopyFluxesMod
   use pftvarcon             , only : nbrdlf_dcd_tmp_shrub, nsoybean , nsoybeanirrig
   use decompMod             , only : bounds_type
   use PhotosynthesisMod     , only : Photosynthesis, PhotosynthesisTotal, Fractionation
-  use EDPhotosynthesisMod   , only : Photosynthesis_ED
-  use EDAccumulateFluxesMod , only : AccumulateFluxes_ED
-  use EDBtranMod            , only : BTRAN_ED
-  use EDBioType             , only : EDbio_type
   use SoilMoistStressMod    , only : calc_effective_soilporosity, calc_volumetric_h2oliq
   use SoilMoistStressMod    , only : calc_root_moist_stress, set_perchroot_opt
   use SimpleMathMod         , only : array_div_vector
@@ -44,7 +40,6 @@ module CanopyFluxesMod
   use GridcellType          , only : grc                
   use ColumnType            , only : col                
   use PatchType             , only : pft                
-  use EDtypesMod            , only : site, numpft_ed
   use PhosphorusStateType   , only : phosphorusstate_type
   use CNNitrogenStateType   , only : nitrogenstate_type
   !
@@ -71,7 +66,7 @@ contains
        atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars, &
        frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars, &
        temperature_vars, waterflux_vars, waterstate_vars, ch4_vars, photosyns_vars, &
-       EDbio_vars, soil_water_retention_curve, nitrogenstate_vars, phosphorusstate_vars) 
+       soil_water_retention_curve, nitrogenstate_vars, phosphorusstate_vars) 
     !
     ! !DESCRIPTION:
     ! 1. Calculates the leaf temperature:
@@ -131,7 +126,6 @@ contains
     type(waterflux_type)      , intent(inout) :: waterflux_vars
     type(ch4_type)            , intent(inout) :: ch4_vars
     type(photosyns_type)      , intent(inout) :: photosyns_vars
-    type(EDbio_type)          , intent(inout) :: EDbio_vars
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
     type(nitrogenstate_type)  , intent(inout) :: nitrogenstate_vars
     type(phosphorusstate_type), intent(inout) :: phosphorusstate_vars
@@ -314,9 +308,7 @@ contains
     real(r8) :: dt_veg(bounds%begp:bounds%endp)          ! change in t_veg, last iteration (Kelvin)                              
     integer  :: jtop(bounds%begc:bounds%endc)            ! lbning
     integer  :: filterc_tmp(bounds%endp-bounds%begp+1)   ! temporary variable
-    real(r8) :: rresis_ft(numpft_ed,nlevgrnd)            ! resistance to water uptake per pft and soil layer.
     integer  :: ft                                       ! plant functional type index
-    real(r8) :: pftgs(numpft_ed)                         ! patch weighted stomatal conductance s/m
     real(r8) :: temprootr                 
     real(r8) :: dt_veg_temp(bounds%begp:bounds%endp)
     integer  :: iv
@@ -439,10 +431,7 @@ contains
          eflx_sh_h2osfc       => energyflux_vars%eflx_sh_h2osfc_patch      , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]                      
          eflx_sh_soil         => energyflux_vars%eflx_sh_soil_patch        , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]                      
          eflx_sh_veg          => energyflux_vars%eflx_sh_veg_patch         , & ! Output: [real(r8) (:)   ]  sensible heat flux from leaves (W/m**2) [+ to atm]                    
-         eflx_sh_grnd         => energyflux_vars%eflx_sh_grnd_patch        , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]                    
-
-         rscanopy             => canopystate_vars%rscanopy_patch           ,  & ! Output: [real(r8) (:,:)]   canopy resistance s/m (ED)
-
+         eflx_sh_grnd         => energyflux_vars%eflx_sh_grnd_patch        , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
          begp                 => bounds%begp                               , &
          endp                 => bounds%endp                                 &
          )
@@ -1243,6 +1232,8 @@ contains
             write(iulog,*) 'energy balance in canopy ',p,', err=',err(p)
          end do
          
+      end if
+
     end associate
 
 

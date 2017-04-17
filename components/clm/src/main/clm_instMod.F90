@@ -107,7 +107,6 @@ module clm_instMod
   type(lnd2glc_type)                                  :: lnd2glc_vars
   type(glc_diagnostics_type)                          :: glc_diagnostics_vars
   class(soil_water_retention_curve_type), allocatable :: soil_water_retention_curve
-  type(EDbio_type)                                    :: EDbio_vars
   type(phosphorusstate_type)                          :: phosphorusstate_vars
   type(phosphorusflux_type)                           :: phosphorusflux_vars
   type(clm_bgc_interface_data_type)                   :: clm_bgc_data
