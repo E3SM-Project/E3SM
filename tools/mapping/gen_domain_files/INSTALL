@@ -7,9 +7,9 @@ Prior to building, you must make sure environment variables CIMEROOT and CIME_MO
 (1) $ cd src
 (2) $ $CIMEROOT/tools/configure --machine [machine name] --macros-format Makefile
 (3) Bash users:
-    $ . .env_mach_specific.sh
+    $ . ./.env_mach_specific.sh
     csh users:
-    $ source .env_mach_specific.csh
+    $ source ./.env_mach_specific.csh
 (4) $ gmake
 
 Note: in the second step, replace [machine name] with the machine you are
