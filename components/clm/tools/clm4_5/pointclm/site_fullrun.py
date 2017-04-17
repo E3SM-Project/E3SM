@@ -4,6 +4,7 @@ import getpass, os, sys, csv, math
 from optparse import OptionParser
 import subprocess
 import numpy
+import re
 
 parser = OptionParser();
 
@@ -133,7 +134,7 @@ def submit(fname, submit_type='qsub', job_depend=''):
         os.system(submit_type+' '+fname+' > temp/jobinfo')
     myinput = open('temp/jobinfo')
     for s in myinput:
-        thisjob = (s.split('.')[0]).strip('\n')
+        thisjob = re.search('[0-9]+', s).group(0)
     myinput.close()
     os.system('rm temp/jobinfo')
     return thisjob
