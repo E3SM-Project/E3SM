@@ -437,7 +437,10 @@ class Case(object):
                     self.set_lookup_value("USER_MODS_DIR"      , user_mods_dir)
                     self.set_lookup_value("PES_SPEC_FILE"      ,
                                    files.get_value("PES_SPEC_FILE"     , {"component":component}, resolved=False))
-                    logger.info("Compset longname is %s " %(match))
+                    compset_info = "Compset longname is %s"%(match)
+                    if self._user_mods is not None:
+                        compset_info += " with user_mods directory %s"%(self._user_mods)
+                    logger.info(compset_info)
                     logger.info("Compset specification file is %s" %(compsets_filename))
                     logger.info("Pes     specification file is %s" %(pesfile))
                     return compset_alias, science_support
@@ -935,7 +938,10 @@ class Case(object):
 
         # Open a new README.case file in $self._caseroot
         append_status(" ".join(sys.argv), "README.case", caseroot=self._caseroot)
-        append_status("Compset longname is %s"%self.get_value("COMPSET"),
+        compset_info = "Compset longname is %s"%(self.get_value("COMPSET"))
+        if self._user_mods is not None:
+            compset_info += " with user_mods directory %s"%(self._user_mods)
+        append_status(compset_info,
                       "README.case", caseroot=self._caseroot)
         append_status("Compset specification file is %s" %
                       (self.get_value("COMPSETS_SPEC_FILE")),
@@ -949,10 +955,6 @@ class Case(object):
             comp_grid = "%s_GRID"%component_class
             append_status("%s is %s"%(comp_grid,self.get_value(comp_grid)),
                           "README.case", caseroot=self._caseroot)
-        if self._user_mods is not None:
-            note = "This compset includes user_mods %s"%self._user_mods
-            append_status(note, "README.case", caseroot=self._caseroot)
-            logger.info(note)
         if not clone:
             self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
