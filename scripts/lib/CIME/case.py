@@ -949,6 +949,10 @@ class Case(object):
             comp_grid = "%s_GRID"%component_class
             append_status("%s is %s"%(comp_grid,self.get_value(comp_grid)),
                           "README.case", caseroot=self._caseroot)
+        if self._user_mods is not None:
+            note = "This compset includes user_mods %s"%self._user_mods
+            append_status(note, "README.case", caseroot=self._caseroot)
+            logger.info(note)
         if not clone:
             self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
