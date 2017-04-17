@@ -1,24 +1,8 @@
 #! /bin/csh -fe
-
 ### This script was created 2015-11-15 by Philip Cameron-Smith (pjc@llnl.gov) and Peter Caldwell
 ### and incorporates some features originally from Hui Wan, Kai Zhang, and Balwinder Singh.
 ### Significant improvements from Michael Deakin and Chris Golaz.
 ###
-set first_argument = $1
-if ( $first_argument != '' ) then
- echo 'This script does everything needed to configure/compile/run a case. As such, it'
- echo 'provides complete provenance for each run and makes sharing with newbies easy. Future'
- echo 'users should make sure that everything required for a run is in this script, the ACME'
- echo 'git repo, or the inputdata svn repo.'
- echo '** This script accepts no arguments. Please edit the script as needed and resubmit without arguments. **'
- exit 5
-endif
-
-# NOTE: CIME 5 and git commands are not cwd agnostic, so compute the absolute paths, then cd to the directories as needed
-set this_script_name = `basename $0`
-set relative_dir = `dirname $0`
-set this_script_dir = `cd $relative_dir ; pwd -P`
-set this_script_path = $this_script_dir/$this_script_name
 
 ###===================================================================
 ### THINGS USERS USUALLY CHANGE (SEE END OF SECTION FOR GUIDANCE)
@@ -36,22 +20,24 @@ setenv project       fy150001
 ### SOURCE CODE OPTIONS
 set fetch_code     = false
 set acme_tag       = master
-set tag_name       = ACME
+set tag_name       = default
 
 ### CUSTOM CASE_NAME
 set case_name = ${tag_name}.${job_name}.${resolution}
 
 ### BUILD OPTIONS
 set debug_compile  = false
+set old_executable = false
 
 ### AUTOMATIC DELETION OPTIONS
 set seconds_before_delete_source_dir = -1
 set seconds_before_delete_case_dir   = 10
+set seconds_before_delete_bld_dir    = -1
 set seconds_before_delete_run_dir    = -1
 
 ### SUBMIT OPTIONS
 set submit_run       = true
-set debug_queue      = false
+set debug_queue      = true
 
 ### PROCESSOR CONFIGURATION
 set processor_config = S
@@ -61,7 +47,10 @@ set model_start_type = initial
 set restart_files_dir = none
 
 ### DIRECTORIES
-set code_root_dir    = `cd $this_script_dir/..; pwd -P`
+set code_root_dir               = default
+set case_build_dir              = default
+set case_run_dir                = default
+set short_term_archive_root_dir = default
 
 ### LENGTH OF SIMULATION, RESTARTS, AND ARCHIVING
 set stop_units       = ndays
@@ -121,6 +110,16 @@ set cpl_hist_num   = 1
 #    Compiling in debug mode will stop the run at the actual location an error occurs, and provide more helpful output.
 #    However, it runs about 10 times slower, and is not bit-for-bit the same because some optimizations make tiny change to the
 #    numerics.
+#old_executable: If this is a path to an executable, then it is used instead of recompiling (it is copied across).
+#    If TRUE then skip the build step entirely.
+#    If FALSE then build a new executable (using any already compiled files). If you want a clean build then
+#    set seconds_before_delete_bld_dir>=0.
+#    NOTE: The executable that will be copied should be the same as would be created by compiling (for provenance).
+#    NOTE: The path should either be an absolute path, or a path relative to the case_scripts directory.
+#    NOTE: old_executable=true is a risk to provenance, so this feature may be removed in the future.
+#          However the build system currently rebuilds a few files every time which takes several minutes.
+#          When this gets fixed the cost of deleting this feature will be minor.
+
 
 ### AUTOMATIC DELETION OPTIONS (4)
 
@@ -207,23 +206,121 @@ set cpl_hist_num   = 1
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #===========================================
-# DEFINE THINGS NEEDED LATER:
+# VERSION OF THIS SCRIPT
+#===========================================
+set script_ver = 3.0.5
+
+#===========================================
+# DEFINE ALIASES
 #===========================================
 
 alias lowercase "echo \!:1 | tr '[A-Z]' '[a-z]'"  #make function which lowercases any strings passed to it.
 alias uppercase "echo \!:1 | tr '[a-z]' '[A-Z]'"  #make function which uppercases any strings passed to it.
 
-alias print 'eval "echo run_acme: \!*"'
-alias newline "echo ''"
+alias acme_print 'echo run_acme: \!*'
+alias acme_newline "echo ''"
 
 #===========================================
-# DOCUMENT WHICH VERSION OF THIS SCRIPT IS BEING USED:
+# ALERT THE USER IF THEY TRY TO PASS ARGUMENTS
 #===========================================
-set script_ver = 3.0.2
+set first_argument = $1
+if ( $first_argument != '' ) then
+ echo 'This script does everything needed to configure/compile/run a case. As such, it'
+ echo 'provides complete provenance for each run and makes sharing with newbies easy. Future'
+ echo 'users should make sure that everything required for a run is in this script, the ACME'
+ echo 'git repo, or the inputdata svn repo.'
+ echo '** This script accepts no arguments. Please edit the script as needed and resubmit without arguments. **'
+ exit 5
+endif
 
-newline
-print '++++++++ run_acme starting ('`date`'), version '$script_ver' ++++++++'
-newline
+acme_newline
+acme_print '++++++++ run_acme starting ('`date`'), version '$script_ver' ++++++++'
+acme_newline
+
+#===========================================
+# DETERMINE THE LOCATION AND NAME OF THE SCRIPT
+#===========================================
+
+# NOTE: CIME 5 and git commands are not cwd agnostic, so compute the absolute paths, then cd to the directories as needed
+set this_script_name = `basename $0`
+set relative_dir = `dirname $0`
+set this_script_dir = `cd $relative_dir ; pwd -P`
+set this_script_path = $this_script_dir/$this_script_name
+
+#===========================================
+# SETUP DEFAULTS
+#===========================================
+
+if ( `lowercase $code_root_dir` == default ) then
+  set code_root_dir = `cd $this_script_dir/..; pwd -P`
+endif
+
+if ( `lowercase $tag_name` == default ) then
+  set pwd_temp       = `pwd`
+  set tag_name       = ${pwd_temp:t}
+  acme_print '$tag_name = '$tag_name
+endif
+
+#===========================================
+# BASIC ERROR CHECKING
+#===========================================
+
+if ( `lowercase $old_executable` == true ) then
+  if ( $seconds_before_delete_source_dir >= 0 ) then
+    acme_print 'ERROR: It is unlikely that you want to delete the source code and then use the existing compiled executable.'
+    acme_print '       Hence, this script will abort to avoid making a mistake.'
+    acme_print '       $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir'      $old_executable = '$old_executable
+    exit 11
+  endif
+
+  if ( $seconds_before_delete_bld_dir >= 0 ) then
+    acme_print 'ERROR: It makes no sense to delete the source-compiled code and then use the existing compiled executable.'
+    acme_print '       Hence, this script will abort to avoid making a mistake.'
+    acme_print '       $seconds_before_delete_bld_dir = '$seconds_before_delete_bld_dir'      $old_executable = '$old_executable
+    exit 12
+  endif
+
+  if ( `lowercase $case_build_dir` == default ) then
+    acme_print 'WARNING: run_acme must be run interactively when using the default build directory and old executables'
+    acme_print '         To remedy this, either set $case_build_dir to the path of the executables'
+    acme_print '         If this is an interactive shell, deactivate this test'
+    exit 13
+  endif
+endif
+
+if ( `lowercase $case_build_dir` == default && $seconds_before_delete_bld_dir >= 0 ) then
+  acme_print 'ERROR: run_acme cannot delete the build directory when CIME chooses it'
+  acme_print '       To remedy this, either set $case_build_dir to the path of the executables or disable deleting the directory'
+  exit 14
+endif
+
+if ( `lowercase $case_run_dir` == default && $seconds_before_delete_run_dir >= 0 ) then
+  acme_print 'ERROR: run_acme cannot delete the run directory when CIME chooses it'
+  acme_print '       To remedy this, either set $case_run_dir to the path of the executables or disable deleting the directory'
+  exit 15
+endif
+
+if ( $num_submits >1 && ( $stop_units != $restart_units || $stop_num != $restart_num ) ) then
+  acme_print 'WARNING: It makes no sense to have chained submissions unless the run is producing appropriate restarts!'
+  acme_print '         The run length and restarts do not match exactly. '
+  acme_print '         It is hard to check definitively, so stopping just in case.'
+  acme_print '         If the settings are OK then deactivate this test.'
+  acme_print '         $stop_units     = '$stop_units
+  acme_print '         $stop_num       = '$stop_num
+  acme_print '         $restart_units  = '$restart_units
+  acme_print '         $restart_num    = '$restart_num
+  acme_print '         $num_submits    = '$num_submits
+  exit 16
+endif
+
+if ( `lowercase $debug_queue` == true && ( $num_submits >1 || `lowercase $do_short_term_archiving` == true ) ) then
+  acme_print 'ERROR: Supercomputer centers generally do not allow job chaining in debug queues'
+  acme_print '       You should either use a different queue, or submit a single job without archiving.'
+  acme_print '       $debug_queue             = '$debug_queue
+  acme_print '       $num_submits             = '$num_submits
+  acme_print '       $do_short_term_archiving = '$do_short_term_archiving
+  exit 17
+endif
 
 #===========================================
 # DOWNLOAD SOURCE CODE IF NEEDED:
@@ -233,31 +330,31 @@ newline
 ###       https://acme-climate.atlassian.net/wiki/display/Docs/Installing+the+ACME+Model
 
 if ( `lowercase $fetch_code` == true ) then
-  print 'Downloading code from the ACME git repository.'
+  acme_print 'Downloading code from the ACME git repository.'
   if ( -d $code_root_dir/$tag_name ) then
     if ( $seconds_before_delete_source_dir >= 0 ) then
       set num_seconds_until_delete = $seconds_before_delete_source_dir
-      print 'Removing old code directory '$code_root_dir/$tag_name' in '$num_seconds_until_delete' seconds.'
-      print 'To abort, press ctrl-C'
+      acme_print 'Removing old code directory '$code_root_dir/$tag_name' in '$num_seconds_until_delete' seconds.'
+      acme_print 'To abort, press ctrl-C'
       while ( ${num_seconds_until_delete} > 0 )
-         print ' '${num_seconds_until_delete}'  seconds until deletion.'
+         acme_print ' '${num_seconds_until_delete}'  seconds until deletion.'
          sleep 1
          @ num_seconds_until_delete = ${num_seconds_until_delete} - 1
       end
       rm -fr $code_root_dir/$tag_name
-      print 'Deleted '$code_root_dir/$tag_name
+      acme_print 'Deleted '$code_root_dir/$tag_name
     else
-      print 'ERROR: Your branch tag already exists, so dying instead of overwriting.'
-      print '          You likely want to either set fetch_code=false, change $tag_name, or'
-      print '          change seconds_before_delete_source_dir.'
-      print '          Note: $fetch_code = '$fetch_code
-      print '                $code_root_dir/$tag_name = '$code_root_dir/$tag_name
-      print '                $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir
+      acme_print 'ERROR: Your branch tag already exists, so dying instead of overwriting.'
+      acme_print '          You likely want to either set fetch_code=false, change $tag_name, or'
+      acme_print '          change seconds_before_delete_source_dir.'
+      acme_print '          Note: $fetch_code = '$fetch_code
+      acme_print '                $code_root_dir/$tag_name = '$code_root_dir/$tag_name
+      acme_print '                $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir
       exit 20
     endif #$seconds_before_delete_source_dir >=0
   endif #$code_root_dir exists
 
-  print 'Cloning repository into $tag_name = '$tag_name'  under $code_root_dir = '$code_root_dir
+  acme_print 'Cloning repository into $tag_name = '$tag_name'  under $code_root_dir = '$code_root_dir
   mkdir -p $code_root_dir
   git clone git@github.com:ACME-Climate/ACME.git $code_root_dir/$tag_name     # This will put repository, with all code, in directory $tag_name
   ## Setup git hooks
@@ -270,23 +367,23 @@ if ( `lowercase $fetch_code` == true ) then
   git submodule update --init
 
   if ( `lowercase $acme_tag` == master ) then
-    newline
-    ##print 'Detaching from the master branch to avoid accidental changes to master by user.'
+    acme_newline
+    ##acme_print 'Detaching from the master branch to avoid accidental changes to master by user.'
     ##git checkout --detach
     echo 'KLUDGE: git version on anvil (1.7.1) is too old to be able to detach'
     echo 'edison uses git version 1.8.5.6 and it can git checkout --detach'
   else
-    newline
-    print 'Checking out branch ${acme_tag} = '${acme_tag}
+    acme_newline
+    acme_print 'Checking out branch ${acme_tag} = '${acme_tag}
     git checkout ${acme_tag}
   endif
 
 endif
 
-newline
-print '$case_name        = '$case_name
+acme_newline
+acme_print '$case_name        = '$case_name
 
-#===========================================
+#============================================
 # DELETE PREVIOUS DIRECTORIES (IF REQUESTED)
 #============================================
 ### Remove existing case_scripts directory (so it doesn't have to be done manually every time)
@@ -300,23 +397,64 @@ set case_scripts_dir = `pwd -P`/$case_name
 if ( -d $case_scripts_dir ) then
   if ( ${seconds_before_delete_case_dir} >= 0 ) then
     set num_seconds_until_delete = $seconds_before_delete_case_dir
-    newline
-    print 'Removing old $case_scripts_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
-    print 'To abort, press ctrl-C'
+    acme_newline
+    acme_print 'Removing old $case_scripts_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
+    acme_print 'To abort, press ctrl-C'
     while ( ${num_seconds_until_delete} > 0 )
-      print ' '${num_seconds_until_delete}'  seconds until deletion.'
+      acme_print ' '${num_seconds_until_delete}'  seconds until deletion.'
       sleep 1
       @ num_seconds_until_delete = ${num_seconds_until_delete} - 1
     end
- #  ls -ld $case_scripts_dir     # For testing this script.
     rm -fr $case_scripts_dir
-    print ' Deleted $case_scripts_dir directory for : '${case_name}
+    acme_print ' Deleted $case_scripts_dir directory for : '${case_name}
   else
-    print 'WARNING: $case_scripts_dir='$case_scripts_dir' exists '
-    print '         and is not being removed because seconds_before_delete_case_dir<0.'
-    print '         But create_newcase always fails when the case directory exists, so this script will now abort.'
-    print '         To fix this, either delete the case_scripts directory manually, or change seconds_before_delete_case_dir'
+    acme_print 'WARNING: $case_scripts_dir='$case_scripts_dir' exists '
+    acme_print '         and is not being removed because seconds_before_delete_case_dir<0.'
+    acme_print '         But create_newcase always fails when the case directory exists, so this script will now abort.'
+    acme_print '         To fix this, either delete the case_scripts directory manually, or change seconds_before_delete_case_dir'
     exit 35
+  endif
+endif
+
+### Remove existing build directory (to force a clean compile).  This is good for a new run, but not usually necessary while developing.
+
+if ( `lowercase $case_build_dir` != default && -d $case_build_dir ) then
+  if ( ${seconds_before_delete_bld_dir} >= 0 ) then
+    set num_seconds_until_delete = $seconds_before_delete_bld_dir
+    acme_newline
+    acme_print 'Removing old $case_build_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
+    acme_print 'To abort, press ctrl-C'
+    while ( ${num_seconds_until_delete} > 0 )
+      acme_print ' '${num_seconds_until_delete}'  seconds until deletion.'
+      sleep 1
+      @ num_seconds_until_delete = ${num_seconds_until_delete} - 1
+    end
+    rm -fr $case_build_dir
+    acme_print ' Deleted $case_build_dir directory for '${case_name}
+  else
+    acme_print 'NOTE: $case_build_dir='$case_build_dir' exists '
+    acme_print '      and is not being removed because seconds_before_delete_bld_dir<0.'
+  endif
+endif
+
+### Remove existing run directory (for a clean start).  This is good for a new run, but often not usually necessary while developing.
+
+if ( `lowercase $case_run_dir` != default &&  -d $case_run_dir ) then
+  if ( ${seconds_before_delete_run_dir} >= 0 ) then
+    set num_seconds_until_delete = $seconds_before_delete_run_dir
+    acme_newline
+    acme_print 'Removing old $case_run_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
+    acme_print 'To abort, press ctrl-C'
+    while ( ${num_seconds_until_delete} > 0 )
+     acme_print ' '${num_seconds_until_delete}'  seconds until deletion.'
+     sleep 1
+     @ num_seconds_until_delete = ${num_seconds_until_delete} - 1
+    end
+    rm -fr $case_run_dir
+    acme_print ' Deleted $case_run_dir directory for '${case_name}
+  else
+    acme_print 'NOTE: $case_run_dir='$case_run_dir' exists '
+    acme_print '      and is not being removed because seconds_before_delete_run_dir<0.'
   endif
 endif
 
@@ -352,10 +490,19 @@ switch ( $lower_case )
     set std_proc_configuration = 'M'
     breaksw
   default:
-    print 'ERROR: $processor_config='$processor_config' is not recognized'
+    acme_print 'ERROR: $processor_config='$processor_config' is not recognized'
     exit 40
     breaksw
 endsw
+
+#================================================================================
+# MAKE FILES AND DIRECTORIES CREATED BY THIS SCRIPT READABLE BY EVERYONE IN GROUP
+#================================================================================
+# Note:  we also want to change the group id for the files.
+#        But this can only be done once the run_root_dir has been created,
+#        so it is done later.
+# TODO:  CIME does this to some extent; determine how much and
+umask 022
 
 set cime_dir = ${code_root_dir}/${tag_name}/cime
 set create_newcase_exe = $cime_dir/scripts/create_newcase
@@ -370,9 +517,9 @@ if ( -f ${create_newcase_exe} ) then
   set shortterm_archive_script = $case_scripts_dir/case.st_archive
   set longterm_archive_script = $case_scripts_dir/case.lt_archive
 else                                                                   # No version of create_newcase found
-  print 'ERROR: ${create_newcase_exe} not found'
-  print '       This is most likely because fetch_code should be true.'
-  print '       At the moment, $fetch_code = '$fetch_code
+  acme_print 'ERROR: ${create_newcase_exe} not found'
+  acme_print '       This is most likely because fetch_code should be true.'
+  acme_print '       At the moment, $fetch_code = '$fetch_code
   exit 45
 endif
 
@@ -386,25 +533,31 @@ if ( `lowercase $machine` != default ) then
   set configure_options = "$configure_options --mach ${machine}"
 endif
 
-newline
-print '-------- Starting create_newcase --------'
-newline
+acme_newline
+acme_print '-------- Starting create_newcase --------'
+acme_newline
 
-print $create_newcase_exe $configure_options
+acme_print $create_newcase_exe $configure_options
 $create_newcase_exe $configure_options
 cd ${case_name}
 
-newline
-print '-------- Finished create_newcase --------'
-newline
+acme_newline
+acme_print '-------- Finished create_newcase --------'
+acme_newline
 
-echo `pwd`
+#================================================
+# UPDATE VARIABLES WHICH REQUIRE A CASE TO BE SET
+#================================================
 
 if ( `lowercase $machine` == default ) then
   set machine = `$xmlquery_exe MACH --value`
 endif
-
-set run_root_dir = `$xmlquery_exe CIME_OUTPUT_ROOT --value`
+if ( `lowercase $case_build_dir` == default ) then
+  set case_build_dir = `$xmlquery_exe EXEROOT --value`
+endif
+if ( `lowercase $case_run_dir` == default ) then
+  set case_run_dir = `$xmlquery_exe RUNDIR --value`
+endif
 
 #================================
 # SET WALLTIME FOR CREATE_NEWCASE
@@ -414,7 +567,7 @@ if ( `lowercase $walltime` == default ) then
   if ( `lowercase $debug_queue` == true ) then
     set walltime = '0:30:00'
   else
-    if ( `lowercase $machine` == 'cab' || `lowercase $machine` == 'sierra' ) then
+    if ( `lowercase $machine` == 'cab' || `lowercase $machine` == 'syrah' ) then
       set walltime = '1:29:00'
     else
       set walltime = '2:00:00'
@@ -441,22 +594,6 @@ $xmlchange_exe JOB_WALLCLOCK_TIME=$walltime
 #cp /global/u1/p/petercal/junk/streams.ocean $case_scripts_dir/SourceMods/src.mpas-o/
 
 #============================================================
-#MAKE GROUP PERMISSIONS to $PROJECT FOR THIS DIRECTORY
-#============================================================
-#this stuff, combined with the umask command above, makes
-#stuff in $run_root_dir readable by everyone in acme group.
-
-if ( `lowercase $machine` == anvil ) then
-  set run_root_dir = `$xmlquery_exe --value RUNDIR`
-  chgrp climate $run_root_dir
-  chmod g+s     $run_root_dir
-  chgrp climate $case_scripts_dir
-endif
-
-#both run_root_dir and case_scripts_dir are created by create_newcase,
-#so run_root_dir group isn't inherited for case_scripts_dir
-
-#============================================================
 # COPY THIS SCRIPT TO THE CASE DIRECTORY TO ENSURE PROVENANCE
 #============================================================
 
@@ -465,39 +602,15 @@ set script_provenance_name = $this_script_name.`date +%F_%T_%Z`
 mkdir -p $script_provenance_dir
 cp -f $this_script_path $script_provenance_dir/$script_provenance_name
 
-#========================================================
-# CREATE LOGICAL LINKS BETWEEN RUN_ROOT & THIS_SCRIPT_DIR
-#========================================================
-
-#NOTE: This is to make it easy for the user to cd to the case directory
-#NOTE: Starting the suffix wit 'a' helps to keep this near the script in ls
-#      (but in practice the behavior depends on the LC_COLLATE system variable).
-
-print 'Creating logical links to make navigating easier.'
-print 'Note: Beware of using ".." with the links, since the behavior of shell commands can vary.'
-
-# Link in this_script_dir case_dir
-set run_dir_link = $this_script_dir/$this_script_name=a_run_link
-
-print ${run_dir_link}
-
-if ( -l $run_dir_link ) then
-  rm -f $run_dir_link
-endif
-print "run_root ${run_root_dir}"
-print "run_dir ${run_dir_link}"
-
-ln -s $run_root_dir $run_dir_link
-
 #================================================
 # COPY AUTO_CHAIN_RUNS SCRIPT TO CASE_SCRIPTS_DIR
 #================================================
 
-print 'copy auto_chain script, in case it is needed'
+acme_print 'copying auto_chain script, in case it is needed'
 
 set auto_chain_run_file = ./auto_chain_runs.$machine
 if ( -fx ${this_script_dir}/${auto_chain_run_file}  ) then
-  print 'Copying '${auto_chain_run_file}' to '${case_scripts_dir}
+  acme_print 'Copying '${auto_chain_run_file}' to '${case_scripts_dir}
   cp ${this_script_dir}/${auto_chain_run_file} ${case_scripts_dir}/${auto_chain_run_file}
 endif
 
@@ -529,106 +642,45 @@ if ( `lowercase $processor_config` == '1' ) then
     $xmlchange_exe --id $layout_name --val $sequential_or_concurrent
   end
 
-else if ( `lowercase $processor_config` == 'custom173' ) then
+else if ( `lowercase $processor_config` == 'customknl' ) then
 
-  print 'Setting custom processor configuration, because $processor_config = '$processor_config
-###   This space is to allow a custom processor configuration to be defined.
-###   If your layout will be useful to other people, then please get it added to the standard
-###   configurations in the ACME repository.
+  acme_print 'using custom layout for cori-knl because $processor_config = '$processor_config
 
-###   NOTE: It is shorter and more robust to implement the PE configuration changes using xmlchange
-###         rather than embedding the whole env_mach_pes.xml file
+  ./xmlchange MAX_TASKS_PER_NODE="64"
+  ./xmlchange PES_PER_NODE="256"
 
-# These were chosen based on the smallest pe layouts of provided input files
-  $xmlchange_exe --id NTASKS_ATM --val 2700
-  $xmlchange_exe --id NTHRDS_ATM --val 1
-  $xmlchange_exe --id ROOTPE_ATM --val 0
+  ./xmlchange NTASKS_ATM="5400"
+  ./xmlchange ROOTPE_ATM="0"
 
-  $xmlchange_exe --id NTASKS_LND --val 312
-  $xmlchange_exe --id NTHRDS_LND --val 1
-  $xmlchange_exe --id ROOTPE_LND --val 2400
+  ./xmlchange NTASKS_LND="320"
+  ./xmlchange ROOTPE_LND="5120"
 
-  $xmlchange_exe --id NTASKS_ICE --val 2400
-  $xmlchange_exe --id NTHRDS_ICE --val 1
-  $xmlchange_exe --id ROOTPE_ICE --val 0
+  ./xmlchange NTASKS_ICE="5120"
+  ./xmlchange ROOTPE_ICE="0"
 
-  $xmlchange_exe --id NTASKS_OCN --val 1440
-  $xmlchange_exe --id NTHRDS_OCN --val 1
-  $xmlchange_exe --id ROOTPE_OCN --val 2712
+  ./xmlchange NTASKS_OCN="3840"
+  ./xmlchange ROOTPE_OCN="5440"
 
-  $xmlchange_exe --id NTASKS_CPL --val 2400
-  $xmlchange_exe --id NTHRDS_CPL --val 1
-  $xmlchange_exe --id ROOTPE_CPL --val 0
+  ./xmlchange NTASKS_CPL="5120"
+  ./xmlchange ROOTPE_CPL="0"
 
-  $xmlchange_exe --id NTASKS_GLC --val 312
-  $xmlchange_exe --id NTHRDS_GLC --val 1
-  $xmlchange_exe --id ROOTPE_GLC --val 2400
+  ./xmlchange NTASKS_GLC="320"
+  ./xmlchange ROOTPE_GLC="5120"
 
-  $xmlchange_exe --id NTASKS_ROF --val 312
-  $xmlchange_exe --id NTHRDS_ROF --val 1
-  $xmlchange_exe --id ROOTPE_ROF --val 2400
+  ./xmlchange NTASKS_ROF="320"
+  ./xmlchange ROOTPE_ROF="5120"
 
-  $xmlchange_exe --id NTASKS_WAV --val 2400
-  $xmlchange_exe --id NTHRDS_WAV --val 1
-  $xmlchange_exe --id ROOTPE_WAV --val 0
+  ./xmlchange NTASKS_WAV="5120"
+  ./xmlchange ROOTPE_WAV="0"
 
-  set sequential_or_concurrent = 'concurrent'
-  foreach layout_name ( NINST_ATM_LAYOUT NINST_LND_LAYOUT NINST_ICE_LAYOUT NINST_OCN_LAYOUT NINST_GLC_LAYOUT NINST_ROF_LAYOUT NINST_WAV_LAYOUT )
-    $xmlchange_exe --id $layout_name --val $sequential_or_concurrent
-  end
-
-else if ( `lowercase $processor_config` == 'custom375' ) then
-
-  print 'Setting custom processor configuration, because $processor_config = '$processor_config
-###   This space is to allow a custom processor configuration to be defined.
-###   If your layout will be useful to other people, then please get it added to the standard
-###   configurations in the ACME repository.
-
-###   NOTE: It is shorter and more robust to implement the PE configuration changes using xmlchange
-###         rather than embedding the whole env_mach_pes.xml file
-
-# These were chosen based on the smallest pe layouts of provided input files
-  $xmlchange_exe --id NTASKS_ATM --val 5400
-  $xmlchange_exe --id NTHRDS_ATM --val 1
-  $xmlchange_exe --id ROOTPE_ATM --val 0
-
-  $xmlchange_exe --id NTASKS_LND --val 600
-  $xmlchange_exe --id NTHRDS_LND --val 1
-  $xmlchange_exe --id ROOTPE_LND --val 4800
-
-  $xmlchange_exe --id NTASKS_ICE --val 4800
-  $xmlchange_exe --id NTHRDS_ICE --val 1
-  $xmlchange_exe --id ROOTPE_ICE --val 0
-
-  $xmlchange_exe --id NTASKS_OCN --val 3600
-  $xmlchange_exe --id NTHRDS_OCN --val 1
-  $xmlchange_exe --id ROOTPE_OCN --val 5400
-
-  $xmlchange_exe --id NTASKS_CPL --val 4800
-  $xmlchange_exe --id NTHRDS_CPL --val 1
-  $xmlchange_exe --id ROOTPE_CPL --val 0
-
-  $xmlchange_exe --id NTASKS_GLC --val 600
-  $xmlchange_exe --id NTHRDS_GLC --val 1
-  $xmlchange_exe --id ROOTPE_GLC --val 4800
-
-  $xmlchange_exe --id NTASKS_ROF --val 600
-  $xmlchange_exe --id NTHRDS_ROF --val 1
-  $xmlchange_exe --id ROOTPE_ROF --val 4800
-
-  $xmlchange_exe --id NTASKS_WAV --val 4800
-  $xmlchange_exe --id NTHRDS_WAV --val 1
-  $xmlchange_exe --id ROOTPE_WAV --val 0
-
-  set sequential_or_concurrent = 'concurrent'
-  foreach layout_name ( NINST_ATM_LAYOUT NINST_LND_LAYOUT NINST_ICE_LAYOUT NINST_OCN_LAYOUT NINST_GLC_LAYOUT NINST_ROF_LAYOUT NINST_WAV_LAYOUT )
-    $xmlchange_exe --id $layout_name --val $sequential_or_concurrent
-  end
-
-
-### The following couple of lines are for when no custom configuration is set (eg, in the archived version)
-#    print 'Custom processor configuration not defined.  Please edit this script.'
-#    exit 150
+  ./xmlchange NTHRDS_ATM="1"
+  ./xmlchange NTHRDS_LND="1"
+  ./xmlchange NTHRDS_ICE="1"
+  ./xmlchange NTHRDS_OCN="1"
+  ./xmlchange NTHRDS_CPL="1"
+  ./xmlchange NTHRDS_GLC="1"
+  ./xmlchange NTHRDS_ROF="1"
+  ./xmlchange NTHRDS_WAV="1"
 
 endif
 
@@ -690,7 +742,8 @@ set input_data_dir = `$xmlquery_exe DIN_LOC_ROOT --value`
 #$xmlchange_exe --id CAM_CONFIG_OPTS --val "-phys cam5 -chem linoz_mam3"
 
 ## Chris Golaz: build with COSP
-#./xmlchange -file env_build.xml -id CAM_CONFIG_OPTS -append -val "-cosp"
+#NOTE: xmlchange has a bug which requires append to be specified with quotes and a leading space
+$xmlchange_exe --id CAM_CONFIG_OPTS --append -val " -cosp"
 
 #===========================
 # SET THE PARTITION OF NODES
@@ -699,7 +752,7 @@ set input_data_dir = `$xmlquery_exe DIN_LOC_ROOT --value`
 if ( `lowercase $debug_queue` == true ) then
   if ( $machine == cab || $machine == sierra ) then
     $xmlchange_exe --id JOB_QUEUE --val 'pdebug'
-  else
+  else if ($machine != skybridge ) then
     $xmlchange_exe --id JOB_QUEUE --val 'debug'
   endif
 endif
@@ -710,29 +763,64 @@ endif
 
 #note configure -case turned into cesm_setup in cam5.2
 
-newline
-print '-------- Starting case.setup --------'
-newline
+acme_newline
+acme_print '-------- Starting case.setup --------'
+acme_newline
 
-print $case_setup_exe
+acme_print $case_setup_exe
 
 $case_setup_exe --reset
 
-newline
-print '-------- Finished case.setup  --------'
-newline
+acme_newline
+acme_print '-------- Finished case.setup  --------'
+acme_newline
+
+#============================================================
+#MAKE GROUP PERMISSIONS to $PROJECT FOR THIS DIRECTORY
+#============================================================
+#this stuff, combined with the umask command above, makes
+#stuff in $run_root_dir readable by everyone in acme group.
+
+set run_root_dir = `cd $case_run_dir/..; pwd -P`
+
+#both run_root_dir and case_scripts_dir are created by create_newcase,
+#so run_root_dir group isn't inherited for case_scripts_dir
+
+#========================================================
+# CREATE LOGICAL LINKS BETWEEN RUN_ROOT & THIS_SCRIPT_DIR
+#========================================================
+
+#NOTE: This is to make it easy for the user to cd to the case directory
+#NOTE: Starting the suffix wit 'a' helps to keep this near the script in ls
+#      (but in practice the behavior depends on the LC_COLLATE system variable).
+
+acme_print 'Creating logical links to make navigating easier.'
+acme_print 'Note: Beware of using ".." with the links, since the behavior of shell commands can vary.'
+
+# Link in this_script_dir case_dir
+set run_dir_link = $this_script_dir/$this_script_name=a_run_link
+
+acme_print ${run_dir_link}
+
+if ( -l $run_dir_link ) then
+  rm -f $run_dir_link
+endif
+acme_print "run_root ${run_root_dir}"
+acme_print "run_dir ${run_dir_link}"
+
+ln -s $run_root_dir $run_dir_link
 
 #============================================
 # SET BUILD OPTIONS
 #============================================
 
 if ( `uppercase $debug_compile` != 'TRUE' && `uppercase $debug_compile` != 'FALSE' ) then
-  print 'ERROR: $debug_compile can be true or false but is instead '$debug_compile
+  acme_print 'ERROR: $debug_compile can be true or false but is instead '$debug_compile
   exit 220
 endif
 
 if ( `lowercase $machine` == 'edison' && `uppercase $debug_compile` == 'TRUE' ) then
-  print 'ERROR: Edison currently has a compiler bug and crashes when compiling in debug mode (Nov 2015)'
+  acme_print 'ERROR: Edison currently has a compiler bug and crashes when compiling in debug mode (Nov 2015)'
   exit 222
 endif
 
@@ -774,17 +862,54 @@ EOF
 
 #NOTE: This will either build the code (if needed and $old_executable=false) or copy an existing executable.
 
-newline
-print '-------- Starting Build --------'
-newline
+if ( `lowercase $old_executable` == false ) then
+  acme_newline
+  acme_print '-------- Starting Build --------'
+  acme_newline
 
-print ${case_build_exe}
-${case_build_exe}
+  acme_print ${case_build_exe}
+  ${case_build_exe}
 
-newline
-print '-------- Finished Build --------'
-newline
-
+  acme_newline
+  acme_print '-------- Finished Build --------'
+  acme_newline
+else if ( `lowercase $old_executable` == true ) then
+  if ( -x $case_build_dir/$acme_exe ) then       #use executable previously generated for this case_name.
+    acme_print 'Skipping build because $old_executable='$old_executable
+    acme_newline
+    #create_newcase sets BUILD_COMPLETE to FALSE. By using an old executable you're certifying
+    #that you're sure the old executable is consistent with the new case... so be sure you're right!
+    #NOTE: This is a risk to provenance, so this feature may be removed in the future [PJC].
+    #      However the build system currently rebuilds several files every time which takes many minutes.
+    #      When this gets fixed the cost of deleting this feature will be minor.
+    #      (Also see comments for user options at top of this file.)
+    acme_print 'WARNING: Setting BUILD_COMPLETE = TRUE.  This is a little risky, but trusting the user.'
+    $xmlchange_exe --id BUILD_COMPLETE --val TRUE
+  else
+    acme_print 'ERROR: $old_executable='$old_executable' but no executable exists for this case.'
+    acme_print '                Expected to find executable = '$case_build_dir/$acme_exe
+    exit 297
+  endif
+else
+  if ( -x $old_executable ) then #if absolute pathname exists and is executable.
+    #create_newcase sets BUILD_COMPLETE to FALSE. By copying in an old executable you're certifying
+    #that you're sure the old executable is consistent with the new case... so be sure you're right!
+    #NOTE: This is a risk to provenance, so this feature may be removed in the future [PJC].
+    #      However the build system currently rebuilds several files every time which takes many minutes.
+    #      When this gets fixed the cost of deleting this feature will be minor.
+    #      (Also see comments for user options at top of this file.)
+    #
+    #NOTE: The alternative solution is to set EXEROOT in env_build.xml.
+    #      That is cleaner and quicker, but it means that the executable is outside this directory,
+    #      which weakens provenance if this directory is captured for provenance.
+    acme_print 'WARNING: Setting BUILD_COMPLETE = TRUE.  This is a little risky, but trusting the user.'
+    $xmlchange_exe --id BUILD_COMPLETE --val TRUE
+    cp -fp $old_executable $case_build_dir/
+  else
+    acme_print 'ERROR: $old_executable='$old_executable' does not exist or is not an executable file.'
+    exit 297
+  endif
+endif
 
 #============================================
 # QUEUE OPTIONS
@@ -809,7 +934,7 @@ set machine = `lowercase $machine`
 
 ### Only specially authorized people can use the special_acme qos on Cori or Edison. Don't uncomment unless you're one.
 ### if ( `lowercase $debug_queue` == false && ( $machine == core || $machine == edison ) ) then
-###   sed -i /"#SBATCH \( \)*--partition"/a"#SBATCH  --qos=special_acme"  ${case_run_exe}
+###   sed -i /"#SBATCH \( \)*--account"/a"#SBATCH  --qos=special_acme"  ${case_run_exe}
 ### endif
 
 #============================================
@@ -854,8 +979,8 @@ else if ( $machine == titan || $machine == eos ) then
     sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $longterm_archive_script
 
 else
-    print 'WARNING: This script does not have batch directives for $machine='$machine
-    print '         Assuming default ACME values.'
+    acme_print 'WARNING: This script does not have batch directives for $machine='$machine
+    acme_print '         Assuming default ACME values.'
 endif
 
 #============================================
@@ -863,12 +988,14 @@ endif
 #============================================
 
 $xmlchange_exe --id DOUT_S    --val `uppercase $do_short_term_archiving`
+if ( `lowercase $short_term_archive_root_dir` != default ) then
+  $xmlchange_exe --id DOUT_S_ROOT --val $short_term_archive_root_dir
+endif
 
 $xmlchange_exe --id DOUT_L_MS --val `uppercase $do_long_term_archiving`
 
 # DOUT_L_MSROOT is the directory in your account on the local mass storage system (typically an HPSS tape system)
 $xmlchange_exe --id DOUT_L_MSROOT --val "ACME_simulation_output/${case_name}"
-
 
 #============================================
 # COUPLER HISTORY OUTPUT
@@ -901,8 +1028,8 @@ $xmlchange_exe --id HIST_N      --val $cpl_hist_num
 # SETUP SIMULATION INITIALIZATION
 #============================================
 
-newline
-print '$model_start_type = '${model_start_type}'  (This is NOT necessarily related to RUN_TYPE)'
+acme_newline
+acme_print '$model_start_type = '${model_start_type}'  (This is NOT necessarily related to RUN_TYPE)'
 
 set model_start_type = `lowercase $model_start_type`
 #-----------------------------------------------------------------------------------------------
@@ -942,23 +1069,23 @@ else if ( $model_start_type == 'branch' ) then
   ### the next lines attempt to automatically extract all needed info for setting up the branch run.
   set rpointer_filename = "${restart_files_dir}/rpointer.drv"
   if ( ! -f $rpointer_filename ) then
-    print 'ERROR: ${rpointer_filename} does not exist. It is needed to extract RUN_REFDATE.'
-    print "       This may be because you should set model_start_type to 'initial' or 'continue' rather than 'branch'."
-    print '       ${rpointer_filename} = '{rpointer_filename}
+    acme_print 'ERROR: ${rpointer_filename} does not exist. It is needed to extract RUN_REFDATE.'
+    acme_print "       This may be because you should set model_start_type to 'initial' or 'continue' rather than 'branch'."
+    acme_print '       ${rpointer_filename} = '{rpointer_filename}
     exit 370
   endif
   set restart_coupler_filename = `cat $rpointer_filename`
   set restart_case_name = ${restart_coupler_filename:r:r:r:r}         # Extract out the case name for the restart files.
   set restart_filedate = ${restart_coupler_filename:r:e:s/-00000//}   # Extract out the date (yyyy-mm-dd).
-  print '$restart_case_name = '$restart_case_name
-  print '$restart_filedate  = '$restart_filedate
+  acme_print '$restart_case_name = '$restart_case_name
+  acme_print '$restart_filedate  = '$restart_filedate
 
   ### the next line gets the YYYY-MM of the month before the restart time. Needed for staging history files.
   set restart_prevdate = `date -d "${restart_filedate} - 1 month" +%Y-%m`
 
-  print '$restart_prevdate  = '$restart_prevdate
+  acme_print '$restart_prevdate  = '$restart_prevdate
 
-  print 'Copying stuff for branch run'
+  acme_print 'Copying stuff for branch run'
   cp ${restart_files_dir}/${restart_case_name}.cam.r.${restart_filedate}-00000.nc $case_run_dir
   cp ${restart_files_dir}/${restart_case_name}.cam.rs.${restart_filedate}-00000.nc $case_run_dir
   cp ${restart_files_dir}/${restart_case_name}.clm2.r.${restart_filedate}-00000.nc $case_run_dir
@@ -981,7 +1108,7 @@ else if ( $model_start_type == 'branch' ) then
 
 else
 
-  print 'ERROR: $model_start_type = '${model_start_type}' is unrecognized.   Exiting.'
+  acme_print 'ERROR: $model_start_type = '${model_start_type}' is unrecognized.   Exiting.'
   exit 380
 
 endif
@@ -1005,33 +1132,33 @@ endif
 # where you may need to change srun to the appropriate submit command for your system, etc.
 
 
-newline
-print '-------- Starting Submission to Run Queue --------'
-newline
+acme_newline
+acme_print '-------- Starting Submission to Run Queue --------'
+acme_newline
 
 if ( `lowercase $submit_run` == 'true' ) then
   if ( $num_submits == 1 ) then
-    print '         SUBMITTING A SINGLE JOB.'
+    acme_print '         SUBMITTING A SINGLE JOB.'
     ${case_submit_exe}
   else if ( $num_submits <= 0 ) then
-    print '$num_submits <= 0 so NOT submitting a job.'
-    print '$num_submits = '$num_submits
+    acme_print '$num_submits <= 0 so NOT submitting a job.'
+    acme_print '$num_submits = '$num_submits
   else if ( `lowercase $debug_queue` == 'true' && $num_submits > 1 ) then
-    print 'WARNING: $num_submits > 1  and  $debug_queue = "TRUE"'
-    print '         Submitting chained jobs to the debug queue is usually forbidden'
-    print '         $num_submits = '$num_submits
-    print '         SUBMITTING JUST A SINGLE JOB.'
+    acme_print 'WARNING: $num_submits > 1  and  $debug_queue = "TRUE"'
+    acme_print '         Submitting chained jobs to the debug queue is usually forbidden'
+    acme_print '         $num_submits = '$num_submits
+    acme_print '         SUBMITTING JUST A SINGLE JOB.'
     ${case_submit_exe}
   else if ( ! -x ./auto_chain_runs.$machine && $num_submits > 1 ) then
-    print 'WARNING: $num_submits > 1  but auto_chain_runs.$machine excutable cannot be found.'
-    print '         $num_submits = '$num_submits
-    print '         $machine     = '$machine
-    print '         SUBMITTING JUST A SINGLE JOB.'
+    acme_print 'WARNING: $num_submits > 1  but auto_chain_runs.$machine excutable cannot be found.'
+    acme_print '         $num_submits = '$num_submits
+    acme_print '         $machine     = '$machine
+    acme_print '         SUBMITTING JUST A SINGLE JOB.'
     ${case_submit_exe}
   else
-    print 'executing 'auto_chain_runs.$machine
-    print '$num_submits = '$num_submits
-    rintprint '$do_short_term_archiving = '`uppercase $do_short_term_archiving`
+    acme_print 'executing 'auto_chain_runs.$machine
+    acme_print '$num_submits = '$num_submits
+    acme_print '$do_short_term_archiving = '`uppercase $do_short_term_archiving`
      '$do_long_term_archiving  = '`uppercase $do_long_term_archiving`
     # To avoid the error checking in the ACME scripts, it is necessary to tell ACME the archiving is FALSE, and then implement it manually.
     $xmlchange_exe --id DOUT_S    --val 'FALSE'
@@ -1039,12 +1166,12 @@ if ( `lowercase $submit_run` == 'true' ) then
     ./auto_chain_runs.$machine  $num_submits -1 `uppercase $do_short_term_archiving` `uppercase $do_long_term_archiving` ${case_run_exe}
   endif
 else
-    print 'Run NOT submitted because $submit_run = '$submit_run
+    acme_print 'Run NOT submitted because $submit_run = '$submit_run
 endif
 
-newline
-print '-------- Finished Submission to Run Queue --------'
-newline
+acme_newline
+acme_print '-------- Finished Submission to Run Queue --------'
+acme_newline
 
 #=================================================
 # DO POST-SUBMISSION THINGS (IF ANY)
@@ -1052,9 +1179,9 @@ newline
 
 # Actions after the run submission go here.
 
-newline
-print '++++++++ run_acme Completed ('`date`') ++++++++'
-newline
+acme_newline
+acme_print '++++++++ run_acme Completed ('`date`') ++++++++'
+acme_newline
 
 #**********************************************************************************
 ### --- end of script - there are no commands beyond here, just useful comments ---
@@ -1136,9 +1263,16 @@ newline
 # 3.0.0    2016-12-15    Initial update for CIME5. Change script names, don't move the case directory
 #                        as it's broken by the update, use xmlchange to set up the custom PE Layout.
 #                        Remove support for CIME2 and pre-cime versions.  (MD)
-# 3.0.1    2017-01-26    Setup to run A_WCYCL1850S simulation at ne30 resolution.  (CG) 
+# 3.0.1    2017-01-26    Setup to run A_WCYCL1850S simulation at ne30 resolution.  (CG)
 # 3.0.2    2017-02-13    Activated logical links by default, and tweaked the default settings. (PJC)
-
+# 3.0.3    2017-03-24    Added cori-knl support, made walltime an input variable, changed umask to 022, and
+#                        deleted run_name since it wasn't being used any more.
+# 3.0.4    2017-03-31    Added version to ACME repository. Working on using more defaults from CIME.
+#                        Use 'print' and 'newline' for standardized output (MD)
+# 3.0.5    2017-04-07    Restored functionality to delete of run and build directories, and reuse other builds.
+#                        Merged in PMC's changes from 3.0.4. Enabled using CIME defaults for more functionality
+#                        Renamed 'print' and 'newline' to 'acme_print' and 'acme_newline'
+#                        to disambiguate them from system commands (MD)
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
 ### ---------- Desired features still to be implemented ------------
@@ -1165,4 +1299,3 @@ newline
 
 ### To add a new line:
 # sed -i /"PBS -j oe"/a"#PBS -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}" ${case_run_exe}
-
