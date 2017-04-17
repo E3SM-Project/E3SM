@@ -95,7 +95,9 @@ class Case(object):
         self._components = []
         self._component_classes = []
         self._is_env_loaded = False
-
+        # these are user_mods as defined in the compset
+        # Command Line user_mods are handled seperately
+        self._user_mods = None
         self.thread_count = None
         self.total_tasks = None
         self.tasks_per_node = None
@@ -419,7 +421,7 @@ class Case(object):
             # If the file exists, read it and see if there is a match for the compset alias or longname
             if (os.path.isfile(compsets_filename)):
                 compsets = Compsets(compsets_filename)
-                match, compset_alias, science_support = compsets.get_compset_match(name=compset_name)
+                match, compset_alias, science_support, self._user_mods = compsets.get_compset_match(name=compset_name)
                 pesfile = files.get_value("PES_SPEC_FILE"     , {"component":component})
                 if match is not None:
                     self._pesfile = pesfile
@@ -435,7 +437,10 @@ class Case(object):
                     self.set_lookup_value("USER_MODS_DIR"      , user_mods_dir)
                     self.set_lookup_value("PES_SPEC_FILE"      ,
                                    files.get_value("PES_SPEC_FILE"     , {"component":component}, resolved=False))
-                    logger.info("Compset longname is %s " %(match))
+                    compset_info = "Compset longname is %s"%(match)
+                    if self._user_mods is not None:
+                        compset_info += " with user_mods directory %s"%(self._user_mods)
+                    logger.info(compset_info)
                     logger.info("Compset specification file is %s" %(compsets_filename))
                     logger.info("Pes     specification file is %s" %(pesfile))
                     return compset_alias, science_support
@@ -944,7 +949,10 @@ class Case(object):
 
         # Open a new README.case file in $self._caseroot
         append_status(" ".join(sys.argv), "README.case", caseroot=self._caseroot)
-        append_status("Compset longname is %s"%self.get_value("COMPSET"),
+        compset_info = "Compset longname is %s"%(self.get_value("COMPSET"))
+        if self._user_mods is not None:
+            compset_info += " with user_mods directory %s"%(self._user_mods)
+        append_status(compset_info,
                       "README.case", caseroot=self._caseroot)
         append_status("Compset specification file is %s" %
                       (self.get_value("COMPSETS_SPEC_FILE")),
@@ -958,19 +966,35 @@ class Case(object):
             comp_grid = "%s_GRID"%component_class
             append_status("%s is %s"%(comp_grid,self.get_value(comp_grid)),
                           "README.case", caseroot=self._caseroot)
+        if self._user_mods is not None:
+            note = "This compset includes user_mods %s"%self._user_mods
+            append_status(note, "README.case", caseroot=self._caseroot)
+            logger.info(note)
         if not clone:
             self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
 
     def apply_user_mods(self, user_mods_dir=None):
-        if user_mods_dir is not None:
-            if os.path.isabs(user_mods_dir):
-                user_mods_path = user_mods_dir
-            else:
-                user_mods_path = self.get_value('USER_MODS_DIR')
-                user_mods_path = os.path.join(user_mods_path, user_mods_dir)
-            self.set_value("USER_MODS_FULLPATH",user_mods_path)
-            apply_user_mods(self._caseroot, user_mods_path)
+        """
+        User mods can be specified on the create_newcase command line (usually when called from create test)
+        or they can be in the compset definition, or both.
+        """
+
+        if self._user_mods is None:
+            compset_user_mods_resolved = None
+        else:
+            compset_user_mods_resolved = self.get_resolved_value(self._user_mods)
+
+        # This looping order will lead to the specified user_mods_dir taking
+        # precedence over self._user_mods, if there are any conflicts.
+        for user_mods in (compset_user_mods_resolved, user_mods_dir):
+            if user_mods is not None:
+                if os.path.isabs(user_mods):
+                    user_mods_path = user_mods
+                else:
+                    user_mods_path = self.get_value('USER_MODS_DIR')
+                    user_mods_path = os.path.join(user_mods_path, user_mods)
+                apply_user_mods(self._caseroot, user_mods_path)
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None):
         if cime_output_root is None:

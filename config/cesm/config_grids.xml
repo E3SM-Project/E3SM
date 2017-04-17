@@ -361,11 +361,18 @@
       <mask>gx1v7</mask>
     </model_grid>
 
-    <model_grid alias="f09_f09" not_compset="_POP" >
+    <model_grid alias="f09_f09" not_compset="_POP">
       <grid name="atm">0.9x1.25</grid>
       <grid name="lnd">0.9x1.25</grid>
       <grid name="ocnice">0.9x1.25</grid>
       <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f09_f09_mnull" compset="_DOCN%SAQUAP|DOCN%DAQUAP" >
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">0.9x1.25</grid>
+      <mask>null</mask>
     </model_grid>
 
     <model_grid alias="f09_f09_mg16" not_compset="_POP" >
@@ -504,6 +511,13 @@
       <grid name="lnd">1.9x2.5</grid>
       <grid name="ocnice">1.9x2.5</grid>
       <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f19_f19_mnull" compset="_DOCN%SAQUAP|DOCN%DAQUAP" >
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">1.9x2.5</grid>
+      <mask>null</mask>
     </model_grid>
 
     <model_grid alias="f19_f19_mg17" not_compset="_POP">
@@ -959,9 +973,11 @@
     <domain name="0.9x1.25">
       <nx>288</nx>  <ny>192</ny>
       <file grid="atm|lnd" mask="gx1v6">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</file>
-      <file grid="ocnice" mask="gx1v6">domain.ocn.0.9x1.25_gx1v6_090403.nc</file>
+      <file grid="ocnice"  mask="gx1v6">domain.ocn.0.9x1.25_gx1v6_090403.nc</file>
       <file grid="atm|lnd" mask="gx1v7">domain.lnd.fv0.9x1.25_gx1v7.151020.nc</file>
-      <file grid="ocnice" mask="gx1v7">domain.ocn.fv0.9x1.25_gx1v7.151020.nc</file>
+      <file grid="ocnice"  mask="gx1v7">domain.ocn.fv0.9x1.25_gx1v7.151020.nc</file>
+      <file grid="atm|lnd" mask="null">/glade/u/home/benedict/ys/datain/domain.aqua.fv0.9x1.25.nc</file>
+      <file grid="ocnice"  mask="null">/glade/u/home/benedict/ys/datain/domain.aqua.fv0.9x1.25.nc</file>
       <desc>0.9x1.25 is FV 1-deg grid:</desc>
     </domain>
 
@@ -969,6 +985,7 @@
       <nx>144</nx>  <ny>96</ny>
       <file grid="atm|lnd" mask="gx1v6">domain.lnd.fv1.9x2.5_gx1v6.090206.nc</file>
       <file grid="ocnice"  mask="gx1v6">domain.ocn.1.9x2.5_gx1v6_090403.nc</file>
+      <file grid="ocnice"  mask="null">domain.aqua.fv1.9x2.5.nc</file>
       <desc>1.9x2.5 is FV 2-deg grid:</desc>
     </domain>
 
@@ -1483,7 +1500,7 @@
       <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_ww3a_splice_170214.nc</map>
     </gridmap>
 
-    <gridmap atm_grid="T31" wav_grid="ww3a">
+    <gridmap atm_grid="48x96" wav_grid="ww3a">
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T31/map_T31_TO_ww3a_bilin_131104.nc</map>
     </gridmap>
 

@@ -47,7 +47,9 @@
     <desc>List of streams used for the given docn_mode.</desc>
     <values>
       <value docn_mode="prescribed" >prescribed</value>
+      <value docn_mode="pres_aquap" >prescribed</value>
       <value docn_mode="som"        >som</value>
+      <value docn_mode="som_aquap"  >som</value>
       <value docn_mode="interannual">interannual</value>
       <value docn_mode="copyall"    >copyall</value>
     </values>
@@ -312,7 +314,9 @@
     <values>
       <value docn_mode="null"       >NULL</value>
       <value docn_mode="prescribed" >SSTDATA</value>
+      <value docn_mode="pres_aquap" >SSTDATA</value>
       <value docn_mode="som"        >SOM</value>
+      <value docn_mode="som_aquap"  >SOM</value>
       <value docn_mode="interannual">IAF</value>
       <value docn_mode="copyall"    >COPYALL</value>
     </values>
