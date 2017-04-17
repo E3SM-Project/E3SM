@@ -153,6 +153,8 @@ def _archive_history_files(case, archive, archive_entry,
                 newsuffix = compname + ".*" + suffix
             elif compname == "mpascice":
                 newsuffix = compname + ".*" + suffix
+            elif compname == "mpasli":
+                newsuffix = compname + ".*" + suffix
             else:
                 if ninst_string:
                     newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
@@ -241,6 +243,10 @@ def _archive_restarts(case, archive, archive_entry,
                restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
 	    elif compname == "mpascice":
                pattern = r"mpascice.rst\d*.*"
+               pfile = re.compile(pattern)
+               restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+	    elif compname == "mpasli":
+               pattern = r"mpasli.rst\d*.*"
                pfile = re.compile(pattern)
                restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
 	    else:
