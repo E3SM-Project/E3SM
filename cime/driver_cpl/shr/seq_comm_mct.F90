@@ -1473,14 +1473,12 @@ contains
   integer function seq_comm_getnthreads()
 
     implicit none
-    integer :: omp_get_num_threads
+    integer :: omp_get_max_threads
     character(*),parameter :: subName =   '(seq_comm_getnthreads) '
 
     seq_comm_getnthreads = -1
 #ifdef _OPENMP
-!$OMP PARALLEL
-    seq_comm_getnthreads = omp_get_num_threads()
-!$OMP END PARALLEL
+    seq_comm_getnthreads = omp_get_max_threads()
 #endif
 
   end function seq_comm_getnthreads
