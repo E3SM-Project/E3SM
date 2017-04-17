@@ -150,7 +150,7 @@ class TestScheduler(object):
 
         if parallel_jobs is None:
             self._parallel_jobs = min(len(test_names),
-                                      int(self._machobj.get_value("MAX_TASKS_PER_NODE")))
+                                      self._machobj.get_value("MAX_TASKS_PER_NODE"))
         else:
             self._parallel_jobs = parallel_jobs
 

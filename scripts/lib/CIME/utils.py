@@ -714,9 +714,9 @@ def convert_to_type(value, type_str, vid=""):
                 expect(False, "Entry %s was listed as type int but value '%s' is not valid int" % (vid, value))
 
         elif type_str == "logical":
-            expect(value in ["TRUE", "FALSE","true","false"],
+            expect(value.upper() in ["TRUE", "FALSE"],
                    "Entry %s was listed as type logical but had val '%s' instead of TRUE or FALSE" % (vid, value))
-            value = value == "TRUE" or value == "true"
+            value = value.upper() == "TRUE"
 
         elif type_str == "real":
             try:
@@ -726,6 +726,36 @@ def convert_to_type(value, type_str, vid=""):
 
         else:
             expect(False, "Unknown type '%s'" % type_str)
+
+    return value
+
+def convert_to_unknown_type(value):
+    """
+    Convert value to it's real type by probing conversions.
+    """
+    if value is not None:
+
+        # Attempt to convert to logical
+        if value.upper() in ["TRUE", "FALSE"]:
+            return value.upper() == "TRUE"
+
+        # Attempt to convert to integer
+        try:
+            value = int(eval(value))
+        except:
+            pass
+        else:
+            return value
+
+        # Attempt to convert to float
+        try:
+            value = float(value)
+        except:
+            pass
+        else:
+            return value
+
+        # Just treat as string
 
     return value
 
