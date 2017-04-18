@@ -87,8 +87,9 @@ module pio
   integer,parameter,public :: PIO_rearr_comm_fc_1d_io2comp = 2
   integer,parameter,public :: PIO_rearr_comm_fc_2d_disable = 3
   integer, public, parameter :: PIO_REARR_COMM_UNLIMITED_PEND_REQ = -1
+  integer, public, parameter :: PIO_NOERR=0
 
-
+  public :: PIO_set_rearr_opts
   public :: PIO_def_dim
   public :: PIO_enddef
   public :: PIO_FILE_IS_OPEN
@@ -272,6 +273,18 @@ contains
     type (file_desc_t) :: file
     type (io_desc_t) :: iodesc
   end subroutine freedecomp_file
+
+  integer function PIO_set_rearr_opts(iosystem, comm_type, fcd,&
+                              enable_hs_c2i, enable_isend_c2i,&
+                              max_pend_req_c2i,&
+                              enable_hs_i2c, enable_isend_i2c,&
+                              max_pend_req_i2c) result(ierr)
+    type (iosystem_desc_t), intent(inout)  :: iosystem
+    integer, intent(in) :: comm_type, fcd
+    logical, intent(in) :: enable_hs_c2i, enable_hs_i2c
+    logical, intent(in) :: enable_isend_c2i, enable_isend_i2c
+    integer, intent(in) :: max_pend_req_c2i, max_pend_req_i2c
+  end function PIO_set_rearr_opts
 
   integer function get_att_desc_{TYPE} (File,varDesc,name,value) result(ierr)
     type (File_desc_t), intent(inout) , target :: File
