@@ -88,8 +88,8 @@ class EnvMachSpecific(EnvBase):
             self._load_module_modules(modules_to_load)
         elif (module_system == "soft"):
             self._load_soft_modules(modules_to_load)
-        elif (module_system == "dotkit"):
-            self._load_dotkit_modules(modules_to_load)
+        elif (module_system == "generic"):
+            self._load_modules_generic(modules_to_load)
         elif (module_system == "none"):
             self._load_none_modules(modules_to_load)
         else:
@@ -112,7 +112,7 @@ class EnvMachSpecific(EnvBase):
         elif (module_system == "soft"):
             # Does soft really not provide this capability?
             return ""
-        elif (module_system == "dotkit"):
+        elif (module_system == "generic"):
             return run_cmd_no_fail("%suse -lv" % source_cmd)
         elif (module_system == "none"):
             return ""
@@ -281,7 +281,7 @@ class EnvMachSpecific(EnvBase):
             else:
                 os.environ[key] = newenv[key]
 
-    def _load_dotkit_modules(self, modules_to_load):
+    def _load_modules_generic(self, modules_to_load):
         sh_init_cmd = self.get_module_system_init_path("sh")
         sh_mod_cmd = self.get_module_system_cmd_path("sh")
 
