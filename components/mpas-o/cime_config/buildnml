@@ -285,7 +285,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '		output_interval="00-01-00_00:00:00">' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '	<stream name="mesh"/>' . "\n";
-	print $stream_file '	<stream name="real_world"/>' . "\n";
 	print $stream_file '	<var_struct name="tracers"/>' . "\n";
 	print $stream_file '	<var name="layerThickness"/>' . "\n";
 	print $stream_file '	<var name="ssh"/>' . "\n";
