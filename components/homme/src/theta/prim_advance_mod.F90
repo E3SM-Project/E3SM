@@ -105,10 +105,14 @@ contains
     integer              , intent(in)            :: nete
     logical,               intent(in)            :: compute_diagnostics
 
-    real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w,dampfac
-    real (kind=real_kind) ::  itertol,itererrmax,maximumval(nets:nete,6)
-    real (kind=real_kind) ::  maxvalue,maximumvalvec(6),statesave(nets:nete,np,np,nlev,6)
+    real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
+    real (kind=real_kind) ::  itertol,statesave(nets:nete,np,np,nlev,6)
     real (kind=real_kind) ::  statesave2(nets:nete,np,np,nlev,6)
+    real (kind=real_kind) ::  itererrmax
+    real (kind=real_kind) ::  fimp_stagevalues(nets:nete,np,np,nlev,6,10)
+    real (kind=real_kind) ::  fexp_stagevalues(nets:nete,np,np,nlev,6,10)
+    real (kind=real_kind) ::  expvalues(nets:nete,np,np,nlev,6)
+    real (kind=real_kind) ::  Arki(10)
 
     integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage,k, qn0
     integer :: n,i,j,lx,lenx,maxiter,itercount
@@ -143,7 +147,7 @@ contains
 !                 optimal: for windspeeds ~120m/s,gravity: 340m/2
 !                 run with qsplit=1
 !                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
-!
+! 
 
 ! default weights for computing mean dynamics fluxes
     eta_ave_w = 1d0/qsplit
@@ -303,17 +307,17 @@ contains
     ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
        call t_startf("U3-5stage_timestep")
-       call compute_and_apply_rhs_imex(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,eta_ave_w/4,.false.)
+       call compute_and_apply_rhs_imex_nonstiff(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,0.d0,1.d0)
        ! u2 = u0 + dt/5 RHS(u1)
-       call compute_and_apply_rhs_imex(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,.false.)
+       call compute_and_apply_rhs_imex_nonstiff(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
        ! u3 = u0 + dt/3 RHS(u2)
-       call compute_and_apply_rhs_imex(np1,n0,np1,qn0,dt/3,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,.false.)
+       call compute_and_apply_rhs_imex_nonstiff(np1,n0,np1,qn0,dt/3,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
        ! u4 = u0 + 2dt/3 RHS(u3)
-       call compute_and_apply_rhs_imex(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,.false.)
+       call compute_and_apply_rhs_imex_nonstiff(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
        ! compute (5*u1/4 - u0/4) in timelevel nm1:
        do ie=nets,nete
           elem(ie)%state%v(:,:,:,:,nm1)= (5*elem(ie)%state%v(:,:,:,:,nm1) &
@@ -328,59 +332,119 @@ contains
                   - elem(ie)%state%phi(:,:,:,n0) )/4
        enddo
        ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
-       call compute_and_apply_rhs_imex(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,3*eta_ave_w/4,.false.)
-
-      itercount=1 
+       call compute_and_apply_rhs_imex_nonstiff(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,0.d0,1.d0)
+ 
       maxiter=1000
       itertol=1e-8
-      dampfac=1.0
-      itererrmax=2.0*itertol
-      do ie=nets,nete
-        statesave(ie,:,:,:,1) = elem(ie)%state%v(:,:,1,:,np1)
-        statesave(ie,:,:,:,2) = elem(ie)%state%v(:,:,2,:,np1)
-        statesave(ie,:,:,:,3) = elem(ie)%state%w(:,:,:,np1)
-        statesave(ie,:,:,:,4) = elem(ie)%state%phi(:,:,:,np1)
-        statesave(ie,:,:,:,5) = elem(ie)%state%theta_dp_cp(:,:,:,np1)
-        statesave(ie,:,:,:,6) = elem(ie)%state%dp3d(:,:,:,np1)
-      end do      
-
- !     call fp_iteration_impeuler(elem,np1,n0,nm1,qn0,hvcoord,dt,hybrid,&
- !           deriv,nets,nete,eta_ave_w,itertol,maxiter,itererrmax,itercount,.false.)
-       
-      call compute_and_apply_rhs_imex_stiff(np1,n0,nm1,qn0,dt2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol,dampfac,statesave)
  
-      do ie=nets,nete
-    !    print *, maxval( elem(ie)%state%phi(:,:,:,n0) - elem(ie)%state%phi(:,:,:,np1) )
-      end do
-      do ie=nets,nete
-        statesave(ie,:,:,:,1) = elem(ie)%state%v(:,:,1,:,np1)
-        statesave(ie,:,:,:,2) = elem(ie)%state%v(:,:,2,:,np1)
-        statesave(ie,:,:,:,3) = elem(ie)%state%w(:,:,:,np1)
-        statesave(ie,:,:,:,4) = elem(ie)%state%phi(:,:,:,np1)
-        statesave(ie,:,:,:,5) = elem(ie)%state%theta_dp_cp(:,:,:,np1)
-        statesave(ie,:,:,:,6) = elem(ie)%state%dp3d(:,:,:,np1)
-      end do
-
-      print *, 'maxiter  ', 'itertol  ', 'rel'
-      print*, maxiter,itertol, itertol/norm2(statesave)
+     call state_save(elem,statesave,n0,nets,nete)
+     call state_save(elem,statesave2,np1,nets,nete)
+     call state_read(elem,statesave2,n0,nets,nete)
+     call  compute_stage_value_dirk_stiff(np1,n0,n0,qn0,dt2,elem,hvcoord,hybrid,&
+       deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol,1.d0)
+     call state_read(elem,statesave,n0,nets,nete)
+     print *, 'maxiter', maxiter
 !==========================================================================================
-    else if (method==8) then ! Jacobian free Newton-Krylov
-      itercount=1 
-      maxiter=10000
-      itertol=1e-3
-      itererrmax=2.0*itertol
-      do ie=nets,nete
-        elem(ie)%state%v(:,:,1,:,np1)   = elem(ie)%state%v(:,:,1,:,n0)
-        elem(ie)%state%v(:,:,2,:,np1)   = elem(ie)%state%v(:,:,2,:,n0)
-        elem(ie)%state%w(:,:,:,np1)     = elem(ie)%state%w(:,:,:,n0)
-        elem(ie)%state%phi(:,:,:,np1)   = elem(ie)%state%phi(:,:,:,n0)
-        elem(ie)%state%theta_dp_cp(:,:,:,np1) = elem(ie)%state%theta_dp_cp(:,:,:,n0)
-        elem(ie)%state%dp3d(:,:,:,np1)  = elem(ie)%state%dp3d(:,:,:,n0)
-      end do
+    else if (method==8) then  ! ARS232 from (Ascher et al., 1997)
+      ! save un0 in statesave  
+      call state_save(elem,statesave,n0,nets,nete)
+
+      ! g1 = un0, save n(g1) in fexp_stagevalues 
+      call compute_and_apply_rhs_imex_nonstiff(np1,n0,n0,qn0,1.d0,elem,&
+        hvcoord,hybrid,deriv,nets,nete,.false.,0d0,1.d0,0.d0,0.d0)
+      call state_save(elem,fexp_stagevalues(:,:,:,:,:,1),np1,nets,nete)
+
+      ! set un0 = un0+dt*gamma*n(g1) 
+      call compute_and_apply_rhs_imex_nonstiff(n0,n0,n0,qn0,(1.d0-1.d0/sqrt(2.d0))*dt,elem,&
+        hvcoord,hybrid,deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+     
+      ! set original un0/g1 to be the initial guess for g2
+      call state_read(elem,statesave,np1,nets,nete)
+
+      maxiter=1000
+      itertol=1e-8
+      ! compute g2
+      print *, 'entering first solve'
+      call  compute_stage_value_dirk_stiff(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
+       deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol,(1.d0-1.d0/sqrt(2.d0)))
+      print *, 'itertol1', 'maxiter1'
+      print *, itertol, maxiter
+
+      !  compute and save n(g2) in fexp_stagevalues
+      call compute_and_apply_rhs_imex_nonstiff(n0,n0,np1,qn0,1.d0,elem,&
+        hvcoord,hybrid,deriv,nets,nete,.false.,0d0,1.d0,0.d0,0.d0)
+      call state_save(elem,fexp_stagevalues(:,:,:,:,:,2),n0,nets,nete)
+ 
+      ! save s(g2) in  fimp_stagevalues
+      call compute_and_apply_rhs_imex_nonstiff(n0,n0,np1,qn0,1.d0,elem,&
+        hvcoord,hybrid,deriv,nets,nete,.false.,0d0,0.d0,1.d0,0.d0)
+      call state_save(elem,fimp_stagevalues(:,:,:,:,:,2),n0,nets,nete)
+
+      ! put un0 back at un0
+      call state_read(elem,statesave,n0,nets,nete)
+      ! set un0 = un0+dt*delta*n(g1)
+      call state_add(elem,fexp_stagevalues(:,:,:,:,:,1),n0 ,nets,nete,&
+        -2.d0*sqrt(2.d0)*dt/3.d0,1.d0)
+
+      ! set un0 = un0 + dt*delta*n(g1) + dt*(1-delta)*n(g2)
+      call state_add(elem,fexp_stagevalues(:,:,:,:,:,2),n0 ,nets,nete,&
+        (1.d0+2.d0*sqrt(2.d0)/3.d0)*dt,1.d0)
+
+     ! set un0 = un0 + dt*delta*n(g1) +	dt*(1-delta)*n(g2) + dt*(1-gamma)*s(g2)
+      call state_add(elem,fimp_stagevalues(:,:,:,:,:,2),n0 ,nets,nete,&
+        (1.d0/sqrt(2.d0))*dt,1.d0)
+
+      ! set original un0 to be the initial guess for g3
+      call state_read(elem,statesave,np1,nets,nete)
+
+      maxiter=1000
+      itertol=1e-8
+     ! compute g3
+      print *, 'entering second solve'
+      call compute_stage_value_dirk_stiff(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol,(1.d0-1.d0/sqrt(2.d0)))
+      print *, 'itertol1', 'maxiter1'
+      print *, itertol, maxiter
+
+      !  save n(g3) in fexp_stagevalues
+      call compute_and_apply_rhs_imex_nonstiff(n0,nm1,np1,qn0,1.d0,elem,&
+        hvcoord,hybrid,deriv,nets,nete,.false.,0d0,1.d0,0.d0,0.d0)
+      call state_save(elem,fexp_stagevalues(:,:,:,:,:,3),n0,nets,nete)
+
+      ! save s(g3) in  fimp_stagevalues
+      call compute_and_apply_rhs_imex_nonstiff(n0,nm1,np1,qn0,1.d0,elem,&
+        hvcoord,hybrid,deriv,nets,nete,.false.,0d0,0.d0,1.d0,0.d0)
+      call state_save(elem,fimp_stagevalues(:,:,:,:,:,3),n0,nets,nete)
+
+      ! save un0 back to what it was at the beginning of the time-step
+      call state_read(elem,statesave(:,:,:,:,:),n0,nets,nete)
       
-        print*, itercount, itererrmax 
+      ! update the numerical solution using the stage values
+      do ie=nets,nete
+        elem(ie)%state%v(:,:,1,:,np1)         = statesave(ie,:,:,:,1) + &
+          dt*( 1.d0*(fexp_stagevalues(ie,:,:,:,1,2)+fimp_stagevalues(ie,:,:,:,1,2))/sqrt(2.d0)   &
+          +(1.d0-1.d0/sqrt(2.d0))*(fexp_stagevalues(ie,:,:,:,1,3)+fimp_stagevalues(ie,:,:,:,1,3)))
+        elem(ie)%state%v(:,:,2,:,np1)         = statesave(ie,:,:,:,2) + &
+        dt*( 1.d0*(fexp_stagevalues(ie,:,:,:,2,2)+fimp_stagevalues(ie,:,:,:,2,2))/sqrt(2.d0)     &
+          +(1.d0-1.d0/sqrt(2.d0))*(fexp_stagevalues(ie,:,:,:,2,3)+fimp_stagevalues(ie,:,:,:,2,3)))
+        elem(ie)%state%w(:,:,:,np1)           = statesave(ie,:,:,:,3) + &
+        dt*( 1.d0*(fexp_stagevalues(ie,:,:,:,3,2)+fimp_stagevalues(ie,:,:,:,3,2))/sqrt(2.d0)     &
+          +(1.d0-1.d0/sqrt(2.d0))*(fexp_stagevalues(ie,:,:,:,3,3)+fimp_stagevalues(ie,:,:,:,3,3)))
+        elem(ie)%state%phi(:,:,:,np1)         = statesave(ie,:,:,:,4) + &
+        dt*( 1.d0*(fexp_stagevalues(ie,:,:,:,4,2)+fimp_stagevalues(ie,:,:,:,4,2))/sqrt(2.d0)     &
+          +(1.d0-1.d0/sqrt(2.d0))*(fexp_stagevalues(ie,:,:,:,4,3)+fimp_stagevalues(ie,:,:,:,4,3)))
+        elem(ie)%state%theta_dp_cp(:,:,:,np1) = statesave(ie,:,:,:,5) + &
+        dt*( 1.d0*(fexp_stagevalues(ie,:,:,:,5,2)+fimp_stagevalues(ie,:,:,:,5,2))/sqrt(2.d0)     &
+          +(1.d0-1.d0/sqrt(2.d0))*(fexp_stagevalues(ie,:,:,:,5,3)+fimp_stagevalues(ie,:,:,:,5,3)))
+        elem(ie)%state%dp3d(:,:,:,np1)        = statesave(ie,:,:,:,6) + &
+        dt*( 1.d0*(fexp_stagevalues(ie,:,:,:,6,2)+fimp_stagevalues(ie,:,:,:,6,2))/sqrt(2.d0)     &
+          +(1.d0-1.d0/sqrt(2.d0))*(fexp_stagevalues(ie,:,:,:,6,3)+fimp_stagevalues(ie,:,:,:,6,3)))
+      end do
+    else if (method==9) then ! use ARS243 from (Ascher et al, 1997)
+    
+          
+ 
     else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
@@ -931,25 +995,6 @@ contains
         ! d(p-nh) / d(p-hyrdostatic)
         dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
      endif
- !    print *, 'maxvalue exner', maxval(exner(:,:,:))
-
-     do i=1,np
-       do j=1,np
-         do k=1,nlev
-           if (isnan(exner(i,j,k))) then
-             print *, 'exner pressure is NaN'
-             if (k > 1) then
-  !             print *, 'k  ' , 'phik - phik-1 < 0'
-   !            print *, k, maxval(phi(:,:,k)-phi(:,:,k-1))
-             end if 
-             stop
-           end if
-         end do
-       end do
-     end do
-
-
-
 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
@@ -1735,7 +1780,7 @@ contains
        end if
      enddo
     if (stiff) then
-
+ 
     else
      kptr=0
      call edgeVpack(edge6, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr, ie)
@@ -1790,8 +1835,486 @@ contains
   call t_stopf('compute_and_apply_rhs_imex')
 
   end subroutine compute_and_apply_rhs_imex
+
+
+!==================================== non-stiff =================================================================
+!================================================================================================================
+!================================================================================================================
+!================================================================================================================
+!================================================================================================================
+!================================================================================================================
+!================================================================================================================
+!================================================================================================================
+!================================================================================================================
+!================================================================================================================
  
 
+ subroutine compute_and_apply_rhs_imex_nonstiff(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
+       deriv,nets,nete,compute_diagnostics,eta_ave_w,scale1,scale2,scale3)
+  ! ===================================
+  ! compute the RHS, accumulate into u(np1) and apply DSS
+  !
+  !           u(np1) = u(nm1) + dt2*DSS[ RHS(u(n0)) ]
+  !
+  ! This subroutine was orgininally called to compute a leapfrog timestep
+  ! but by adjusting np1,nm1,n0 and dt2, many other timesteps can be
+  ! accomodated.  For example, setting nm1=np1=n0 this routine will
+  ! take a forward euler step, overwriting the input with the output.
+  !
+  !    qn0 = timelevel used to access Qdp() in order to compute virtual Temperature
+  !
+  ! ===================================
+  use kinds, only : real_kind
+  use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
+  use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
+  use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
+  use edgetype_mod, only : edgedescriptor_t
+  use bndry_mod, only : bndry_exchangev
+  use control_mod, only : moisture, qsplit, use_cpstar, rsplit, swest
+  use hybvcoord_mod, only : hvcoord_t
+
+  use physical_constants, only : cp, cpwater_vapor, Rgas, kappa, Rwater_vapor,p0, g
+  use physics_mod, only : virtual_specific_heat, virtual_temperature
+  use prim_si_mod, only : preq_vertadv_v, preq_vertadv_upwind, preq_omega_ps, preq_hydrostatic_v2
+
+  use time_mod, only : tevolve
+
+  implicit none
+  integer, intent(in) :: np1,nm1,n0,qn0,nets,nete
+  real*8, intent(in) :: dt2
+  logical, intent(in)  :: compute_diagnostics
+
+  type (hvcoord_t)     , intent(in) :: hvcoord
+  type (hybrid_t)      , intent(in) :: hybrid
+  type (element_t)     , intent(inout), target :: elem(:)
+  type (derivative_t)  , intent(in) :: deriv
+  real (kind=real_kind) :: eta_ave_w,scale1,scale2,scale3  ! weighting for eta_dot_dpdn mean flux, scale of unm1
+
+  ! local
+  real (kind=real_kind), pointer, dimension(:,:,:)   :: phi
+  real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
+  real (kind=real_kind), pointer, dimension(:,:,:)   :: theta_dp_cp
+   
+  real (kind=real_kind) :: kappa_star(np,np,nlev)
+  real (kind=real_kind) :: theta_cp(np,np,nlev)
+  real (kind=real_kind) :: omega_p(np,np,nlev)
+  real (kind=real_kind) :: vort(np,np,nlev)      ! vorticity
+  real (kind=real_kind) :: divdp(np,np,nlev)     
+  real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
+  real (kind=real_kind) :: dpnh(np,np,nlev)    ! 
+  real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
+  real (kind=real_kind) :: dpnh_dp(np,np,nlev)   ! dpnh / dp3d  
+  real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)  ! vertical velocity at interfaces
+  real (kind=real_kind) :: KE(np,np,nlev)           ! Kinetic energy
+  real (kind=real_kind) :: gradexner(np,np,2,nlev)  ! grad(p^kappa)   
+  real (kind=real_kind) :: gradphi(np,np,2,nlev)     
+  real (kind=real_kind) :: gradKE(np,np,2,nlev)  ! grad(0.5 u^T u )
+  
+  real (kind=real_kind) :: v_gradw(np,np,nlev)     
+  real (kind=real_kind) :: v_gradtheta(np,np,nlev)     
+  real (kind=real_kind) :: v_theta(np,np,2,nlev)
+  real (kind=real_kind) :: div_v_theta(np,np,nlev)
+  real (kind=real_kind) :: v_gradphi(np,np,nlev)
+  real (kind=real_kind) :: v_gradKE(np,np,nlev)     
+  real (kind=real_kind) :: vdp(np,np,2,nlev)
+
+  real (kind=real_kind) :: vtens1(np,np,nlev)
+  real (kind=real_kind) :: vtens2(np,np,nlev)
+  real (kind=real_kind) :: v_vadv(np,np,2,nlev)   ! velocity vertical advection
+  real (kind=real_kind) :: s_state(np,np,nlev,2)  ! scalars w,theta,phi
+  real (kind=real_kind) :: s_vadv(np,np,nlev,3)   ! scalar vertical advection 
+  real (kind=real_kind) :: s_theta_dp_cpadv(np,np,nlev)
+  real (kind=real_kind) :: stens(np,np,nlev,3)    ! tendencies w,theta,phi
+
+  real (kind=real_kind) ::  temp(np,np,nlev)
+  real (kind=real_kind), dimension(np,np)      :: sdot_sum   ! temporary field
+  real (kind=real_kind), dimension(np,np,2)    :: vtemp     ! generic gradient storage
+  real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn
+  integer :: i,j,k,kptr,ie
+
+  call t_startf('compute_and_apply_rhs_imex_nonstiff')
+  do ie=nets,nete
+     dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
+     theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,n0)
+     theta_cp(:,:,:) = theta_dp_cp(:,:,:)/dp3d(:,:,:)
+     phi => elem(ie)%state%phi(:,:,:,n0)
+
+     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+
+     call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
+             kappa_star,pnh,dpnh,exner) ! ,exner_i)
+    
+     if (theta_hydrostatic_mode) then
+        ! Compute Hydrostatic equation
+        do k=1,nlev
+           temp(:,:,k) = kappa_star(:,:,k)*theta_dp_cp(:,:,k)*exner(:,:,k)/pnh(:,:,k)
+        enddo
+        !call preq_hydrostatic(phi,elem(ie)%state%phis,T_v,p,dp)
+        call preq_hydrostatic_v2(phi,elem(ie)%state%phis,temp)
+        dpnh_dp(:,:,:) = 1
+     else
+        ! d(p-nh) / d(p-hyrdostatic)
+        dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
+     endif
+
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+     do k=1,nlev
+        vdp(:,:,1,k) = elem(ie)%state%v(:,:,1,k,n0)*dp3d(:,:,k)
+        vdp(:,:,2,k) = elem(ie)%state%v(:,:,2,k,n0)*dp3d(:,:,k)
+
+        ! ================================
+        ! Accumulate mean Vel_rho flux in vn0
+        ! ================================
+        elem(ie)%derived%vn0(:,:,:,k)=elem(ie)%derived%vn0(:,:,:,k)+eta_ave_w*vdp(:,:,:,k)
+
+        divdp(:,:,k)=divergence_sphere(vdp(:,:,:,k),deriv,elem(ie))
+        vort(:,:,k)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,n0),deriv,elem(ie))
+
+     enddo
+
+
+     ! Compute omega_p according to CCM-3
+     !call preq_omega_ps(omega_p,hvcoord,p,vgrad_p,divdp)
+     ! how will we compute this?  omega_p = 1/p Dp/Dt
+     omega_p = 0
+
+
+     ! ==================================================
+     ! zero partial sum for accumulating sum
+     !    (div(v_k) + v_k.grad(lnps))*dsigma_k = div( v dp )
+     ! used by eta_dot_dpdn and lnps tendency
+     ! ==================================================
+     sdot_sum=0
+
+
+     ! ==================================================
+     ! Compute eta_dot_dpdn
+     ! save sdot_sum as this is the -RHS of ps_v equation
+     ! ==================================================
+     if (rsplit>0) then
+        ! VERTICALLY LAGRANGIAN:   no vertical motion
+        eta_dot_dpdn=0
+        s_vadv=0
+        s_theta_dp_cpadv=0
+        v_vadv=0
+     else
+        do k=1,nlev
+           ! ==================================================
+           ! add this term to PS equation so we exactly conserve dry mass
+           ! ==================================================
+           sdot_sum(:,:) = sdot_sum(:,:) + divdp(:,:,k)
+           eta_dot_dpdn(:,:,k+1) = sdot_sum(:,:)
+           
+        end do
+
+
+        ! ===========================================================
+        ! at this point, eta_dot_dpdn contains integral_etatop^eta[ divdp ]
+        ! compute at interfaces:
+        !    eta_dot_dpdn = -dp/dt - integral_etatop^eta[ divdp ]
+        ! for reference: at mid layers we have:
+        !    omega = v grad p  - integral_etatop^eta[ divdp ]
+        ! ===========================================================
+        do k=1,nlev-1
+           eta_dot_dpdn(:,:,k+1) = hvcoord%hybi(k+1)*sdot_sum(:,:) - eta_dot_dpdn(:,:,k+1)
+        end do
+
+        eta_dot_dpdn(:,:,1     ) = 0.0D0
+        eta_dot_dpdn(:,:,nlev+1) = 0.0D0
+
+        ! ===========================================================
+        ! Compute vertical advection of T and v from eq. CCM2 (3.b.1)
+        ! ==============================================
+        ! TODO: remove theta from s_state and s_vadv
+        s_state(:,:,:,1)=elem(ie)%state%w(:,:,:,n0)
+        s_state(:,:,:,2)=elem(ie)%state%phi(:,:,:,n0)
+        call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,2,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
+        !call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
+        !call preq_vertadv_upwind(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
+
+        !    this loop constructs d( eta-dot * theta_dp_cp)/deta
+        !   d( eta_dot_dpdn * theta*cp)
+        !  so we need to compute theta_cp form theta_dp_cp and average to interfaces
+        k=1
+        s_theta_dp_cpadv(:,:,k)= &
+             eta_dot_dpdn(:,:,k+1)* (theta_cp(:,:,k+1)+theta_cp(:,:,k))/2  
+
+        k=nlev
+        s_theta_dp_cpadv(:,:,k)= - &
+             eta_dot_dpdn(:,:,k)  * (theta_cp(:,:,k)+theta_cp(:,:,k-1))/2  
+
+        do k=2,nlev-1
+           s_theta_dp_cpadv(:,:,k)= &
+              eta_dot_dpdn(:,:,k+1)* (theta_cp(:,:,k+1)+theta_cp(:,:,k))/2  - &
+              eta_dot_dpdn(:,:,k)  * (theta_cp(:,:,k)+theta_cp(:,:,k-1))/2  
+        end do
+     endif
+
+
+     ! ================================
+     ! accumulate mean vertical flux:
+     ! ================================
+#if (defined COLUMN_OPENMP)
+     !$omp parallel do private(k)
+#endif
+     do k=1,nlev  !  Loop index added (AAM)
+        elem(ie)%derived%eta_dot_dpdn(:,:,k) = &
+             elem(ie)%derived%eta_dot_dpdn(:,:,k) + eta_ave_w*eta_dot_dpdn(:,:,k)
+        elem(ie)%derived%omega_p(:,:,k) = &
+             elem(ie)%derived%omega_p(:,:,k) + eta_ave_w*omega_p(:,:,k)
+     enddo
+     elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) = &
+             elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)
+
+
+
+     ! ==============================================
+     ! Compute phi + kinetic energy term: 10*nv*nv Flops
+     ! ==============================================
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,i,j,v1,v2,KE,vtemp)
+#endif
+
+     vertloop: do k=1,nlev
+                   
+        ! ================================================
+        ! w,theta,phi tendencies:
+        ! ================================================
+        vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%w(:,:,k,n0),deriv,elem(ie)%Dinv)
+        v_gradw(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
+             +elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2) 
+        stens(:,:,k,1) = (-s_vadv(:,:,k,1) - v_gradw(:,:,k))*scale1 - scale2*g*(1-dpnh_dp(:,:,k) )
+        v_theta(:,:,1,k) = elem(ie)%state%v(:,:,1,k,n0)*               &
+          elem(ie)%state%theta_dp_cp(:,:,k,n0)
+        v_theta(:,:,2,k) =                                             &
+          elem(ie)%state%v(:,:,2,k,n0)                                 &
+          *elem(ie)%state%theta_dp_cp(:,:,k,n0)
+        div_v_theta(:,:,k)=divergence_sphere(v_theta(:,:,:,k),deriv,elem(ie))
+        stens(:,:,k,2)=(-s_theta_dp_cpadv(:,:,k)-div_v_theta(:,:,k))*scale1
+
+        gradphi(:,:,:,k) = gradient_sphere(phi(:,:,k),deriv,elem(ie)%Dinv)
+
+        v_gradphi(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*gradphi(:,:,1,k) &
+             +elem(ie)%state%v(:,:,2,k,n0)*gradphi(:,:,2,k) 
+        ! use of s_vadv(:,:,k,2) here is correct since this corresponds to etadot d(phi)/deta
+        stens(:,:,k,3) =  (-s_vadv(:,:,k,2) - v_gradphi(:,:,k))*scale1 + scale2*g*elem(ie)%state%w(:,:,k,n0)
+
+        do j=1,np
+           do i=1,np
+              v1     = elem(ie)%state%v(i,j,1,k,n0)
+              v2     = elem(ie)%state%v(i,j,2,k,n0)
+              KE(i,j,k)=0.5D0*( v1*v1 + v2*v2 )
+           end do
+        end do
+        gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
+  
+     gradexner(:,:,:,k) = gradient_sphere(exner(:,:,k),deriv,elem(ie)%Dinv)        
+
+        do j=1,np
+           do i=1,np
+              v1     = elem(ie)%state%v(i,j,1,k,n0)
+              v2     = elem(ie)%state%v(i,j,2,k,n0)
+              v_gradKE(i,j,k)=v1*gradKE(i,j,1,k)+v2*gradKE(i,j,2,k)
+
+              vtens1(i,j,k) = (-v_vadv(i,j,1,k) &
+                   + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
+                   - gradKE(i,j,1,k) -gradphi(i,j,1,k)*dpnh_dp(i,j,k) &
+                   -theta_cp(i,j,k)*gradexner(i,j,1,k))*scale1
+
+              vtens2(i,j,k) = (-v_vadv(i,j,2,k) &
+                   - v1*(elem(ie)%fcor(i,j) + vort(i,j,k)) &
+                   - gradKE(i,j,2,k) -gradphi(i,j,2,k)*dpnh_dp(i,j,k) &
+                   -theta_cp(i,j,k)*gradexner(i,j,2,k))*scale1
+           end do
+        end do     
+     end do vertloop
+
+     
+#ifdef ENERGY_DIAGNOSTICS
+     ! =========================================================
+     !
+     ! diagnostics
+     ! recomputes some gradients that were not saved above
+     ! uses:  sdot_sum(), eta_dot_dpdn(), grad_ps()
+     ! grad_phi(), dp3d(), p(), theta_vadv(), v_vadv(), divdp()
+     ! =========================================================
+ 
+     ! =========================================================
+     ! (AAM) - This section has accumulations over vertical levels.
+     !   Be careful if implementing OpenMP
+     ! =========================================================
+
+     if (compute_diagnostics) then
+        elem(ie)%accum%KEhoriz1=0
+        elem(ie)%accum%PEhoriz1=0
+        elem(ie)%accum%PEhoriz2=0
+        elem(ie)%accum%KE1=0
+        elem(ie)%accum%KE2=0
+        elem(ie)%accum%KEvert1=0
+        elem(ie)%accum%KEvert2=0
+        elem(ie)%accum%IEvert1=0
+        elem(ie)%accum%IEvert2=0
+        elem(ie)%accum%PEvert1=0
+        elem(ie)%accum%PEvert2=0
+        elem(ie)%accum%T01=0
+        elem(ie)%accum%T2=0
+        elem(ie)%accum%S1=0
+        elem(ie)%accum%S2=0
+        elem(ie)%accum%P1=0
+        elem(ie)%accum%P2=0
+        ! See element_state.F90 for an account of what these variables are defined as
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,i,j,v1,v2,vtemp,KE,d_eta_dot_dpdn_dn)
+#endif
+        do k =1,nlev
+          do j=1,np
+            do i=1,np                
+                  d_eta_dot_dpdn_dn=(eta_dot_dpdn(i,j,k+1)-                    &
+                  eta_dot_dpdn(i,j,k))
+               !  Form KEhoriz1
+                  elem(ie)%accum%KEhoriz1(i,j)=elem(ie)%accum%KEhoriz1(i,j)    &
+                  -v_gradKE(i,j,k)*dp3d(i,j,k) - KE(i,j,k)*divdp(i,j,k)
+                  elem(ie)%accum%KE1(i,j)=elem(ie)%accum%KE1(i,j)              &
+                  -v_gradKE(i,j,k)*dp3d(i,j,k) 
+                  elem(ie)%accum%KE2(i,j)=elem(ie)%accum%KE2(i,j)              &
+                  -KE(i,j,k)*divdp(i,j,k)
+               !  Form KEhoriz2
+                  elem(ie)%accum%KEhoriz2(i,j)=elem(ie)%accum%KEhoriz2(i,j)-   &
+                  dp3d(i,j,k) * elem(ie)%state%w(i,j,k,n0) * v_gradw(i,j,k)    &
+                  -0.5*(elem(ie)%state%w(i,j,k,n0))**2 * divdp(i,j,k) 
+               !  Form KEvert1
+                  elem(ie)%accum%KEvert1(i,j)=elem(ie)%accum%KEvert1(i,j)-     &
+                  (elem(ie)%state%v(i,j,1,k,n0) * v_vadv(i,j,1,k) +            &
+                  elem(ie)%state%v(i,j,2,k,n0) *v_vadv(i,j,2,k))*dp3d(i,j,k)-  &      
+                  0.5*((elem(ie)%state%v(i,j,1,k,n0))**2 +                     &
+                       (elem(ie)%state%v(i,j,2,k,n0))**2)*d_eta_dot_dpdn_dn
+               !  Form KEvert2
+                  elem(ie)%accum%KEvert2(i,j)=elem(ie)%accum%KEvert2(i,j)      &
+                  -s_vadv(i,j,k,1)*(elem(ie)%state%w(i,j,k,n0))*dp3d(i,j,k)    &   
+                  -d_eta_dot_dpdn_dn*(elem(ie)%state%w(i,j,k,n0))**2
+               !  Form IEvert1
+                  elem(ie)%accum%IEvert1(i,j)=elem(ie)%accum%IEvert1(i,j)      &
+                  -exner(i,j,k)*s_theta_dp_cpadv(i,j,k)                        
+               !  Form IEvert2
+                  elem(ie)%accum%IEvert2(i,j)=elem(ie)%accum%IEvert2(i,j)      &
+                  +dpnh(i,j,k)*s_vadv(i,j,k,2)
+               !  Form PEhoriz1
+                  elem(ie)%accum%PEhoriz1(i,j)=(elem(ie)%accum%PEhoriz1(i,j))  &
+                  -phi(i,j,k)*divdp(i,j,k) 
+               !  Form PEhoriz2                                                &
+                  elem(ie)%accum%PEhoriz2(i,j)=elem(ie)%accum%PEhoriz2(i,j)    &
+                  -dp3d(i,j,k)*v_gradphi(i,j,k)      
+               !  Form PEvert1
+                  elem(ie)%accum%PEvert1(i,j) = (elem(ie)%accum%PEvert1(i,j))   &
+                  -phi(i,j,k)*d_eta_dot_dpdn_dn                                 
+               !  Form PEvert2
+                  elem(ie)%accum%PEvert2(i,j) = elem(ie)%accum%PEvert2(i,j)     &
+                  -dp3d(i,j,k)*s_theta_dp_cpadv(i,j,k)
+               !  Form T01
+                  elem(ie)%accum%T01(i,j)=elem(ie)%accum%T01(i,j)               &
+                  -(elem(ie)%state%theta_dp_cp(i,j,k,n0))                       &
+                  *(gradexner(i,j,1,k)*elem(ie)%state%v(i,j,1,k,n0) +           &
+                  gradexner(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))              
+               !  Form S1 
+                  elem(ie)%accum%S1(i,j)=elem(ie)%accum%S1(i,j)                 &
+                  -exner(i,j,k)*div_v_theta(i,j,k)
+               !  Form T2 
+                  elem(ie)%accum%T2(i,j)=elem(ie)%accum%T2(i,j)+                & 
+                  (g*(elem(ie)%state%w(i,j,k,n0))-                              &
+                  v_gradphi(i,j,k))*dpnh(i,j,k)                                 
+               !  Form S2
+                  elem(ie)%accum%S2(i,j)=elem(ie)%accum%S2(i,j)                 &
+                  -g*(elem(ie)%state%w(i,j,k,n0))+v_gradphi(i,j,k)              &
+                  *dpnh(i,j,k)
+               !  Form P1
+                  elem(ie)%accum%P1(i,j)=elem(ie)%accum%P1(i,j)                 &
+                  -g*(elem(ie)%state%w(i,j,k,n0)) * dp3d(i,j,k)
+               !  Form P2
+                  elem(ie)%accum%P2(i,j)=elem(ie)%accum%P2(i,j)                 &
+                  + g * (elem(ie)%state%w(i,j,k,n0)) * dp3d(i,j,k)
+              enddo
+            enddo
+          enddo 
+     endif
+#endif
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+     do k=1,nlev
+        elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%v(:,:,1,k,nm1) &
+          + dt2*vtens1(:,:,k) )
+        elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%v(:,:,2,k,nm1) &
+          +  dt2*vtens2(:,:,k) )
+        elem(ie)%state%w(:,:,k,np1)    = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%w(:,:,k,nm1)   &
+          + dt2*stens(:,:,k,1))
+        elem(ie)%state%theta_dp_cp(:,:,k,np1) = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%theta_dp_cp(:,:,k,nm1) &
+          + dt2*stens(:,:,k,2))
+        elem(ie)%state%phi(:,:,k,np1)   = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%phi(:,:,k,nm1) & 
+          + dt2*stens(:,:,k,3))
+
+        elem(ie)%state%dp3d(:,:,k,np1) = &
+             elem(ie)%spheremp(:,:) * (scale3 * elem(ie)%state%dp3d(:,:,k,nm1) - &
+             scale1*dt2 * (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
+        
+     enddo
+
+     kptr=0
+     call edgeVpack(edge6, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr, ie)
+     kptr=kptr+nlev
+     call edgeVpack(edge6, elem(ie)%state%theta_dp_cp(:,:,:,np1),nlev,kptr,ie)
+     kptr=kptr+nlev
+     call edgeVpack(edge6, elem(ie)%state%w(:,:,:,np1),nlev,kptr,ie)
+     kptr=kptr+nlev
+     call edgeVpack(edge6, elem(ie)%state%phi(:,:,:,np1),nlev,kptr,ie)
+     kptr=kptr+nlev
+     call edgeVpack(edge6, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,ie)
+   end do ! end do for the ie=nets,nete loop
+
+  call t_startf('caar_bexchV')
+  call bndry_exchangeV(hybrid,edge6)
+  call t_stopf('caar_bexchV')
+
+  do ie=nets,nete
+     kptr=0
+     call edgeVunpack(edge6, elem(ie)%state%dp3d(:,:,:,np1), nlev, kptr, ie)
+     kptr=kptr+nlev
+     call edgeVunpack(edge6, elem(ie)%state%theta_dp_cp(:,:,:,np1), nlev, kptr, ie)
+     kptr=kptr+nlev
+     call edgeVunpack(edge6, elem(ie)%state%w(:,:,:,np1), nlev, kptr, ie)
+     kptr=kptr+nlev
+     call edgeVunpack(edge6, elem(ie)%state%phi(:,:,:,np1), nlev, kptr, ie)
+     kptr=kptr+nlev
+     call edgeVunpack(edge6, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
+
+      
+     ! ====================================================
+     ! Scale tendencies by inverse mass matrix
+     ! ====================================================
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+     do k=1,nlev
+        elem(ie)%state%dp3d(:,:,k,np1) =elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
+        elem(ie)%state%theta_dp_cp(:,:,k,np1)=elem(ie)%rspheremp(:,:)*elem(ie)%state%theta_dp_cp(:,:,k,np1)
+        elem(ie)%state%w(:,:,k,np1)    =elem(ie)%rspheremp(:,:)*elem(ie)%state%w(:,:,k,np1)
+        elem(ie)%state%phi(:,:,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%phi(:,:,k,np1)
+        elem(ie)%state%v(:,:,1,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
+        elem(ie)%state%v(:,:,2,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
+     end do
+  end do
+
+
+  call t_stopf('compute_and_apply_rhs_imex_nonstiff')
+
+  end subroutine compute_and_apply_rhs_imex_nonstiff
+ 
+
+
+
+
+! ====================================== stiff =================================================================
 !================================================================================================================
 !================================================================================================================
 !================================================================================================================
@@ -1804,7 +2327,7 @@ contains
 
 
   subroutine compute_and_apply_rhs_imex_stiff(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
-       deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol,dampfac,statesave)
+       deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol,statesave) !Arki,stagevalues)
   ! ===================================
   ! compute the RHS, accumulate into u(np1) and apply DSS
   !
@@ -1844,12 +2367,10 @@ contains
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
   type (derivative_t)  , intent(in) :: deriv
-  real (kind=real_kind) :: dampfac,eta_ave_w  ! weighting for eta_dot_dpdn mean flux
+  real (kind=real_kind) :: eta_ave_w  ! weighting for eta_dot_dpdn mean flux
   real (kind=real_kind) :: statesave(nets:nete,np,np,nlev,6)
 
   ! local
-  logical :: stiff
-
   real (kind=real_kind), pointer, dimension(:,:,:)   :: phi
   real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
   real (kind=real_kind), pointer, dimension(:,:,:)   :: theta_dp_cp
@@ -1872,8 +2393,6 @@ contains
   real (kind=real_kind) ::  itererr, itererrmax
   integer :: i,j,k,l,kptr,ie,itercount,itercountmax
 
-  stiff = .false.
- ! stiff = .true.
   itercountmax=1
   itererrmax=0.d0
   resnormmax=0.d0
@@ -1883,7 +2402,7 @@ contains
   do ie=nets,nete 
     itercount=1
     itererr = 2.0*itertol       
-    do while ((itercount < maxiter).and.((itererr > itertol).or.(resnorm > itertol)) )
+    do while ((itercount < maxiter).and.((itererr > itertol).or.(resnorm > 1e-5)) )
       
       dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
       theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,np1)
@@ -1904,32 +2423,26 @@ contains
 !$omp parallel do private(k)
 #endif
       do k=1,2*nlev
-        
+           
         e(:,:,:)=0.0   
         e(:,:,k)=1.0  
-
-        phi(:,:,:)=phi(:,:,:)+epsie*e(:,:,nlev+1:2*nlev)
-        
-        call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
-         
-        call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&     
-          kappa_star,pnh,dpnh,exner) ! ,exner_i)
-        dpnh_dp2(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
-         phi(:,:,:)=phi(:,:,:)-epsie*e(:,:,nlev+1:2*nlev)
-
+           
        ! compute the new dpnh_dp at the perturbed values
        ! use the pointers only  
-
-        dFn(:,:,1:nlev,1) = elem(ie)%state%w(:,:,1:nlev,np1)+epsie*e(:,:,1:nlev)- &
-          statesave(ie,:,:,1:nlev,3)+dt2*g*(1.0-dpnh_dp2(:,:,1:nlev))
-
-        dFn(:,:,nlev+1:2*nlev,1) = elem(ie)%state%phi(:,:,1:nlev,np1)            &
-          + epsie*e(:,:,nlev+1:2*nlev) - statesave(ie,:,:,1:nlev,4)              &
-          - dt2*g*(elem(ie)%state%w(:,:,1:nlev,np1)+e(:,:,1:nlev)*epsie)
-      
-    !    Jac(:,:,:,k)=(dFn(:,:,:,1)-Fn(:,:,:,1))/epsie 
-         Jac(:,:,1:nlev,k)=e(:,:,1:nlev)+g*dt2*(dpnh_dp(:,:,:)-dpnh_dp2(:,:,:))/epsie 
-         Jac(:,:,nlev+1:2*nlev,k)=e(:,:,nlev+1:2*nlev)-g*dt2*e(:,:,1:nlev)
+              
+        phi(:,:,:)=phi(:,:,:)+epsie*e(:,:,nlev+1:2*nlev)
+                 
+        call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+                  
+        call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&     
+          kappa_star,pnh,dpnh,exner) ! ,exner_i)
+            
+        dpnh_dp2(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
+        phi(:,:,:)=phi(:,:,:)-epsie*e(:,:,nlev+1:2*nlev)
+              
+       ! Form the approximate Jacobian
+        Jac(:,:,1:nlev,k)=e(:,:,1:nlev)+g*dt2*(dpnh_dp(:,:,:)-dpnh_dp2(:,:,:))/epsie 
+        Jac(:,:,nlev+1:2*nlev,k)=e(:,:,nlev+1:2*nlev)-g*dt2*e(:,:,1:nlev)
       end do
  
       call mgs(Jac,Q,R)
@@ -1944,7 +2457,7 @@ contains
         end do
       end do               
                         
-      call backsubstitution(R,-dampfac*QtFn,x,linsolveerror)
+      call backsubstitution(R,-QtFn,x,linsolveerror)
                                   
       elem(ie)%state%w(:,:,1:nlev,np1) = elem(ie)%state%w(:,:,1:nlev,np1)     &
         + x(:,:,1:nlev,1)
@@ -1964,17 +2477,293 @@ contains
       if (resnorm > resnormmax) then 
         resnormmax = resnorm
       end if 
-      maxiter=itercountmax
-      if (itererrmax > resnormmax) then 
-        itertol=itererrmax
-      else
-        itertol= resnormmax
-      end if 
   end do
+  maxiter=itercountmax
+  if (itererrmax > resnormmax) then 
+    itertol=itererrmax
+  else
+    itertol= resnormmax
+  end if 
+
+! now compte the apply the boundary exchange 
+! ==========================================  
+  do ie=nets,nete
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+     do k=1,nlev
+        elem(ie)%state%dp3d(:,:,k,np1) =elem(ie)%spheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
+        elem(ie)%state%theta_dp_cp(:,:,k,np1)=elem(ie)%spheremp(:,:)*elem(ie)%state%theta_dp_cp(:,:,k,np1)
+        elem(ie)%state%w(:,:,k,np1)    =elem(ie)%spheremp(:,:)*elem(ie)%state%w(:,:,k,np1)
+        elem(ie)%state%phi(:,:,k,np1)  =elem(ie)%spheremp(:,:)*elem(ie)%state%phi(:,:,k,np1)
+        elem(ie)%state%v(:,:,1,k,np1)  =elem(ie)%spheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
+        elem(ie)%state%v(:,:,2,k,np1)  =elem(ie)%spheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
+     end do
+
+     kptr=0
+     call edgeVpack(edge6, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr, ie)
+     kptr=kptr+nlev
+     call edgeVpack(edge6, elem(ie)%state%theta_dp_cp(:,:,:,np1),nlev,kptr,ie)
+     kptr=kptr+nlev
+     call edgeVpack(edge6, elem(ie)%state%w(:,:,:,np1),nlev,kptr,ie)
+     kptr=kptr+nlev
+     call edgeVpack(edge6, elem(ie)%state%phi(:,:,:,np1),nlev,kptr,ie)
+     kptr=kptr+nlev
+     call edgeVpack(edge6, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,ie)
+  end do
+  call t_startf('caar_bexchV')
+  call bndry_exchangeV(hybrid,edge6)
+  call t_stopf('caar_bexchV')
+  do ie=nets,nete
+     kptr=0
+     call edgeVunpack(edge6, elem(ie)%state%dp3d(:,:,:,np1), nlev, kptr, ie)
+     kptr=kptr+nlev
+     call edgeVunpack(edge6, elem(ie)%state%theta_dp_cp(:,:,:,np1), nlev, kptr, ie)
+     kptr=kptr+nlev
+     call edgeVunpack(edge6, elem(ie)%state%w(:,:,:,np1), nlev, kptr, ie)
+     kptr=kptr+nlev
+     call edgeVunpack(edge6, elem(ie)%state%phi(:,:,:,np1), nlev, kptr, ie)
+     kptr=kptr+nlev
+     call edgeVunpack(edge6, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
+
+     
+     ! ====================================================
+     ! Scale tendencies by inverse mass matrix
+     ! ====================================================
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+     do k=1,nlev
+        elem(ie)%state%dp3d(:,:,k,np1) =elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
+        elem(ie)%state%theta_dp_cp(:,:,k,np1)=elem(ie)%rspheremp(:,:)*elem(ie)%state%theta_dp_cp(:,:,k,np1)
+        elem(ie)%state%w(:,:,k,np1)    =elem(ie)%rspheremp(:,:)*elem(ie)%state%w(:,:,k,np1)
+        elem(ie)%state%phi(:,:,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%phi(:,:,k,np1)
+        elem(ie)%state%v(:,:,1,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
+        elem(ie)%state%v(:,:,2,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
+     end do
+  end do
+
   call t_stopf('compute_and_apply_rhs_imex_stiff')
 
   end subroutine compute_and_apply_rhs_imex_stiff
 
+
+
+  subroutine compute_stage_value_dirk_stiff(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
+       deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol,aii)
+  !===================================================================================
+  ! this subroutine solves a stage value equation for a DIRK method which takes the form 
+  ! gi = un0 + dt* sum(1:i-1)(aij n(gj)+a2ij s(gj)) + dt *a2ii s(gi) := y + dt a2ii s(gi)
+  ! It is assumed that un0 has the value of y and the computed value of gi is stored at 
+  ! unp1
+  !===================================================================================
+  use kinds, only : real_kind
+  use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
+  use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
+  use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
+  use edgetype_mod, only : edgedescriptor_t
+  use bndry_mod, only : bndry_exchangev
+  use control_mod, only : moisture, qsplit, use_cpstar, rsplit, swest
+  use hybvcoord_mod, only : hvcoord_t
+
+  use physical_constants, only : cp, cpwater_vapor, Rgas, kappa, Rwater_vapor,p0, g
+  use physics_mod, only : virtual_specific_heat, virtual_temperature
+  use prim_si_mod, only : preq_vertadv_v, preq_vertadv_upwind, preq_omega_ps, preq_hydrostatic_v2
+
+  use time_mod, only : tevolve
+
+  implicit none
+  integer, intent(in) :: np1,nm1,n0,qn0,nets,nete
+  real*8, intent(in) :: dt2
+  logical, intent(in)  :: compute_diagnostics
+  integer :: maxiter
+  real*8 :: itertol
+
+  type (hvcoord_t)     , intent(in) :: hvcoord
+  type (hybrid_t)      , intent(in) :: hybrid
+  type (element_t)     , intent(inout), target :: elem(:)
+  type (derivative_t)  , intent(in) :: deriv
+  real (kind=real_kind) :: eta_ave_w  ! weighting for eta_dot_dpdn mean flux
+  real (kind=real_kind) :: aii ! the i,i entry  of the implicit Runge-Kutta matrix of a DIRK method  
+
+  ! local
+  real (kind=real_kind), pointer, dimension(:,:,:)   :: phi
+  real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
+  real (kind=real_kind), pointer, dimension(:,:,:)   :: theta_dp_cp
+   
+  real (kind=real_kind) :: kappa_star(np,np,nlev)
+  real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
+  real (kind=real_kind) :: dpnh(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
+  real (kind=real_kind) :: dpnh_dp(np,np,nlev),dpnh_dp2(np,np,nlev)    !    ! dpnh / dp3d  
+  real (kind=real_kind) :: temp(np,np,nlev)
+  real (kind=real_kind) :: Jac(np,np,2*nlev,2*nlev), Q(np,np,2*nlev,2*nlev)
+  real (kind=real_kind) :: R(np,np,2*nlev,2*nlev), Qt(2*nlev,2*nlev)
+  real (kind=real_kind) :: e(np,np,2*nlev)
+  real (kind=real_kind) :: Fn(np,np,2*nlev,1),x(np,np,2*nlev,1),epsie
+  real (kind=real_kind) :: dFn(np,np,2*nlev,1)
+  real (kind=real_kind) :: QtFn(np,np,2*nlev,1), Fntemp(2*nlev,1)
+  real (kind=real_kind) :: res(np,np,2*nlev),resnorm,resnormmax
+  real (kind=real_kind) :: stagevaluesum(np,np,nlev,6),linsolveerror
+
+  real (kind=real_kind) ::  itererr, itererrmax
+  integer :: i,j,k,l,kptr,ie,itercount,itercountmax
+
+  itercountmax=1
+  itererrmax=0.d0
+  resnormmax=0.d0
+
+  epsie=1e-6
+  call t_startf('compute_stage_value_dirk_stiff')
+
+  do ie=nets,nete 
+
+    itercount=1
+    itererr = 2.0*itertol      
+
+    do while ((itercount < maxiter).and.((itererr > itertol).or.(resnorm > itertol*1.d2)) )
+  
+      dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
+      theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,np1)
+      phi => elem(ie)%state%phi(:,:,:,np1)
+           
+      call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+          
+      call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
+      kappa_star,pnh,dpnh,exner) ! ,exner_i)
+           
+      dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
+                
+      Fn(:,:,1:nlev,1) = elem(ie)%state%w(:,:,:,np1)-elem(ie)%state%w(:,:,:,n0) &
+        +aii*dt2*g*(1.0-dpnh_dp(:,:,:))
+                
+      Fn(:,:,nlev+1:2*nlev,1) = elem(ie)%state%phi(:,:,:,np1)-elem(ie)%state%phi(:,:,:,n0) &
+        -aii*dt2*g*elem(ie)%state%w(:,:,:,np1)      
+              
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+      do k=1,2*nlev
+           
+        e(:,:,:)=0.0   
+        e(:,:,k)=1.0  
+           
+       ! compute the new dpnh_dp at the perturbed values
+       ! use the pointers only  
+              
+        phi(:,:,:)=phi(:,:,:)+epsie*e(:,:,nlev+1:2*nlev)
+                 
+        call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+                  
+        call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&     
+          kappa_star,pnh,dpnh,exner) ! ,exner_i)
+            
+        dpnh_dp2(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
+        phi(:,:,:)=phi(:,:,:)-epsie*e(:,:,nlev+1:2*nlev)
+              
+       ! Form the approximate Jacobian
+        Jac(:,:,1:nlev,k)=e(:,:,1:nlev)+aii*dt2*g*(dpnh_dp(:,:,:)-dpnh_dp2(:,:,:))/epsie 
+        Jac(:,:,nlev+1:2*nlev,k)=e(:,:,nlev+1:2*nlev)-aii*dt2*g*e(:,:,1:nlev)
+      end do
+ 
+      call mgs(Jac,Q,R)
+    
+      do i=1,np
+        do j=1,np
+          Qt(:,:)=Q(i,j,:,:)
+          Fntemp(:,1)=Fn(i,j,:,1)
+          Qt=transpose(Qt)
+          Fntemp=matmul(Qt,Fntemp)
+          QtFn(i,j,:,1) = Fntemp(:,1)
+        end do
+      end do               
+                        
+      call backsubstitution(R,-QtFn,x,linsolveerror)
+      elem(ie)%state%w(:,:,:,np1)   = elem(ie)%state%w(:,:,:,np1) + x(:,:,1:nlev,1)                          
+      elem(ie)%state%phi(:,:,:,np1) = elem(ie)%state%phi(:,:,:,np1) + x(:,:,nlev+1:2*nlev,1)                          
+      itererr=norm2(x)
+      resnorm=norm2(Fn)
+      itercount=itercount+1
+     end do                   
+
+      if (itercount > itercountmax) then
+        itercountmax=itercount
+      endif
+      if (itererr > itererrmax) then 
+        itererrmax=itererr
+      end if 
+      if (resnorm > resnormmax) then 
+        resnormmax = resnorm
+      end if 
+  end do
+  maxiter=itercountmax
+  if (itererrmax > resnormmax) then 
+    itertol=itererrmax
+  else
+    itertol= resnormmax
+  end if 
+
+! now compute the apply the boundary exchange 
+! ==========================================  
+  do ie=nets,nete
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+     do k=1,nlev
+        elem(ie)%state%dp3d(:,:,k,np1) =elem(ie)%spheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
+        elem(ie)%state%theta_dp_cp(:,:,k,np1)=elem(ie)%spheremp(:,:)*elem(ie)%state%theta_dp_cp(:,:,k,np1)
+        elem(ie)%state%w(:,:,k,np1)    =elem(ie)%spheremp(:,:)*elem(ie)%state%w(:,:,k,np1)
+        elem(ie)%state%phi(:,:,k,np1)  =elem(ie)%spheremp(:,:)*elem(ie)%state%phi(:,:,k,np1)
+        elem(ie)%state%v(:,:,1,k,np1)  =elem(ie)%spheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
+        elem(ie)%state%v(:,:,2,k,np1)  =elem(ie)%spheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
+     end do
+
+     kptr=0
+     call edgeVpack(edge6, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr, ie)
+     kptr=kptr+nlev
+     call edgeVpack(edge6, elem(ie)%state%theta_dp_cp(:,:,:,np1),nlev,kptr,ie)
+     kptr=kptr+nlev
+     call edgeVpack(edge6, elem(ie)%state%w(:,:,:,np1),nlev,kptr,ie)
+     kptr=kptr+nlev
+     call edgeVpack(edge6, elem(ie)%state%phi(:,:,:,np1),nlev,kptr,ie)
+     kptr=kptr+nlev
+     call edgeVpack(edge6, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,ie)
+  end do
+  call t_startf('caar_bexchV')
+  call bndry_exchangeV(hybrid,edge6)
+  call t_stopf('caar_bexchV')
+  do ie=nets,nete
+     kptr=0
+     call edgeVunpack(edge6, elem(ie)%state%dp3d(:,:,:,np1), nlev, kptr, ie)
+     kptr=kptr+nlev
+     call edgeVunpack(edge6, elem(ie)%state%theta_dp_cp(:,:,:,np1), nlev, kptr, ie)
+     kptr=kptr+nlev
+     call edgeVunpack(edge6, elem(ie)%state%w(:,:,:,np1), nlev, kptr, ie)
+     kptr=kptr+nlev
+     call edgeVunpack(edge6, elem(ie)%state%phi(:,:,:,np1), nlev, kptr, ie)
+     kptr=kptr+nlev
+     call edgeVunpack(edge6, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
+
+     
+     ! ====================================================
+     ! Scale tendencies by inverse mass matrix
+     ! ====================================================
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+     do k=1,nlev
+        elem(ie)%state%dp3d(:,:,k,np1) =elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
+        elem(ie)%state%theta_dp_cp(:,:,k,np1)=elem(ie)%rspheremp(:,:)*elem(ie)%state%theta_dp_cp(:,:,k,np1)
+        elem(ie)%state%w(:,:,k,np1)    =elem(ie)%rspheremp(:,:)*elem(ie)%state%w(:,:,k,np1)
+        elem(ie)%state%phi(:,:,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%phi(:,:,k,np1)
+        elem(ie)%state%v(:,:,1,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
+        elem(ie)%state%v(:,:,2,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
+     end do
+  end do
+
+  call t_stopf('compute_stage_value_dirk_stiff')
+
+  end subroutine compute_stage_value_dirk_stiff
 
 
  
@@ -2155,6 +2944,69 @@ contains
    end do
   
   end subroutine
+
+  subroutine state_save(elem,state,n,nets,nete)
+
+    type (element_t),			intent(inout), target :: elem(:)!   
+    real (kind=real_kind), intent(inout) :: state(nets:nete,np,np,nlev,6)
+    integer                             :: n,nets,nete
+
+    integer :: ie
+    do ie=nets,nete
+      state(ie,:,:,:,1) = elem(ie)%state%v(:,:,1,:,n)
+      state(ie,:,:,:,2) = elem(ie)%state%v(:,:,2,:,n)
+      state(ie,:,:,:,3) = elem(ie)%state%w(:,:,:,n)
+      state(ie,:,:,:,4) = elem(ie)%state%phi(:,:,:,n)
+      state(ie,:,:,:,5) = elem(ie)%state%theta_dp_cp(:,:,:,n)
+      state(ie,:,:,:,6) = elem(ie)%state%dp3d(:,:,:,n)
+    end do
+
+  end subroutine state_save
+
+  subroutine state_read(elem,state,n,nets,nete)
+   
+    type (element_t),			intent(inout), target :: elem(:)!   
+    real (kind=real_kind), intent(inout) :: state(nets:nete,np,np,nlev,6)
+    integer                            :: n,nets,nete
+
+    integer :: ie
+    do ie=nets,nete
+      elem(ie)%state%v(:,:,1,:,n)         = state(ie,:,:,:,1)
+      elem(ie)%state%v(:,:,2,:,n)         = state(ie,:,:,:,2)
+      elem(ie)%state%w(:,:,:,n)           = state(ie,:,:,:,3)
+      elem(ie)%state%phi(:,:,:,n)         = state(ie,:,:,:,4)
+      elem(ie)%state%theta_dp_cp(:,:,:,n) = state(ie,:,:,:,5)
+      elem(ie)%state%dp3d(:,:,:,n)        = state(ie,:,:,:,6)
+    end do
+
+  end subroutine state_read
+
+
+  subroutine state_add(elem,state,n,nets,nete,scale1,scale2)
+
+    type (element_t),			intent(inout), target :: elem(:)
+    real (kind=real_kind), intent(inout) :: state(nets:nete,np,np,nlev,6)
+    real (kind=real_kind), intent(in)    ::  scale1,scale2
+    integer                             :: n,nets,nete
+
+    integer :: ie
+
+    do ie=nets,nete
+      elem(ie)%state%v(:,:,1,:,n)         = state(ie,:,:,:,1)*scale1 &
+        + elem(ie)%state%v(:,:,1,:,n)*scale2
+      elem(ie)%state%v(:,:,2,:,n)         = state(ie,:,:,:,2)*scale1 & 
+        + elem(ie)%state%v(:,:,2,:,n)*scale2
+      elem(ie)%state%w(:,:,:,n)           = state(ie,:,:,:,3)*scale1 &
+        + elem(ie)%state%w(:,:,:,n)*scale2
+      elem(ie)%state%phi(:,:,:,n)         = state(ie,:,:,:,4)*scale1 &
+        + elem(ie)%state%phi(:,:,:,n)*scale2
+      elem(ie)%state%theta_dp_cp(:,:,:,n) = state(ie,:,:,:,5)*scale1 &
+        + elem(ie)%state%theta_dp_cp(:,:,:,n)*scale2
+      elem(ie)%state%dp3d(:,:,:,n)        = state(ie,:,:,:,6)*scale1 &
+        + elem(ie)%state%dp3d(:,:,:,n)*scale2
+    end do
+
+  end subroutine state_add
 
 end module prim_advance_mod
 
