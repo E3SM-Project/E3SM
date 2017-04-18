@@ -873,7 +873,7 @@ module mpas_timekeeping
       type (MPAS_Alarm_type), pointer :: alarmPtr
 
       type (MPAS_TimeInterval_type) :: nowInterval, nowRemainder
-      integer :: nDivs
+      integer (kind=I8KIND) :: nDivs
       integer :: threadNum
 
       threadNum = mpas_threading_get_thread_num()
@@ -1616,10 +1616,10 @@ module mpas_timekeeping
       type (MPAS_Time_type), intent(in) :: ref_time
       type (MPAS_TimeInterval_type), intent(in) :: num
       type (MPAS_TimeInterval_type), intent(in) :: den
-      integer, intent(out) :: n
+      integer (kind=I8KIND), intent(out) :: n
       type (MPAS_TimeInterval_type), intent(out) :: rem
 
-      integer :: m
+      integer (kind=I8KIND) :: m
       type (MPAS_Time_type) :: target_time
       type (MPAS_Time_type) :: updated_time
 
@@ -1634,7 +1634,7 @@ module mpas_timekeeping
       !
       if (den == zero) then
          call mpas_log_write('mpas_interval_division: Attempting to divide by zero.', MPAS_LOG_WARN)
-         n = 0
+         n = 0_I8KIND
          rem = zero
          return
       end if
@@ -1647,7 +1647,7 @@ module mpas_timekeeping
       ! numerator == denominator
       !
       if (target_time == updated_time) then
-         n = 1
+         n = 1_I8KIND
          rem = zero
          return
       end if
@@ -1657,29 +1657,29 @@ module mpas_timekeeping
       ! denominator > numerator
       !
       if ( target_time < updated_time ) then
-         n = 0
+         n = 0_I8KIND
          rem = num
          return
       end if
 
       ! One interval of den already fits into num
-      n = 1
+      n = 1_I8KIND
 
       ! Search forward, doubling the interval each time
       do while (target_time > updated_time)
-         n = n * 2
+         n = n * 2_I8KIND
          temp = den * n
          updated_time = ref_time + temp
       end do
 
-      n = n / 2
+      n = n / 2_I8KIND
       m = n
       temp = den * n
       updated_time = ref_time + temp
 
 
       ! Search backward, halving the interval each time
-      do while ( m > 0 )
+      do while ( m > 0_I8KIND )
          temp = den * m
 
          if ( updated_time + temp <= target_time ) then
@@ -1687,7 +1687,7 @@ module mpas_timekeeping
             n = n + m
          end if
 
-         m = m / 2
+         m = m / 2_I8KIND
       end do
 
       rem = target_time - updated_time
