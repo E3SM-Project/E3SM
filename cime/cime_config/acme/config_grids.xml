@@ -1721,6 +1721,13 @@
       <LND2ATM_FMAPNAME>cpl/gridmaps/fv0.23x0.31/map_fv0.23x0.31_to_ne120np4_aave_110331.nc</LND2ATM_FMAPNAME>
       <LND2ATM_SMAPNAME>cpl/gridmaps/fv0.23x0.31/map_fv0.23x0.31_to_ne120np4_aave_110331.nc</LND2ATM_SMAPNAME>
     </gridmap>
+    <gridmap atm_grid="ne120np4" ocn_grid="oRRS18to6v3_ICG">
+      <ATM2OCN_FMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_to_oRRS18to6v3_aave.170111.nc</ATM2OCN_FMAPNAME>
+      <ATM2OCN_VMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_to_oRRS18to6v3_conserve.170111.nc</ATM2OCN_VMAPNAME>
+      <ATM2OCN_SMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_to_oRRS18to6v3_conserve.170111.nc</ATM2OCN_SMAPNAME>
+      <OCN2ATM_FMAPNAME>cpl/gridmaps/oRRS18to6v3/map_oRRS18to6v3_to_ne120np4_aave.170111.nc</OCN2ATM_FMAPNAME>
+      <OCN2ATM_SMAPNAME>cpl/gridmaps/oRRS18to6v3/map_oRRS18to6v3_to_ne120np4_aave.170111.nc</OCN2ATM_SMAPNAME>
+    </gridmap>
 
     <gridmap atm_grid="ne240np4" ocn_grid="gx1v6">
       <ATM2OCN_FMAPNAME>cpl/gridmaps/ne240np4/map_ne240np4_to_gx1v6_aave_110428.nc</ATM2OCN_FMAPNAME>
