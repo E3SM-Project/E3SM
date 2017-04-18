@@ -1086,7 +1086,7 @@ class Case(object):
         # special case for aprun
         if executable == "aprun":
             aprun_cmd, num_nodes = get_aprun_cmd_for_case(self, run_exe)
-            expect(num_nodes == self.num_nodes, "Not using optimized num nodes")
+            expect( (num_nodes + self.spare_nodes) == self.num_nodes, "Not using optimized num nodes")
             return aprun_cmd + " " + run_misc_suffix
         else:
             mpi_arg_string = " ".join(args.values())
