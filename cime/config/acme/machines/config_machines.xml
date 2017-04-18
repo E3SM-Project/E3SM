@@ -1096,10 +1096,11 @@
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 	 <PES_PER_NODE>16</PES_PER_NODE>
 	 <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
+	 <SAVE_TIMING_DIR>/usr/gdata/climdat/timing_performance</SAVE_TIMING_DIR>
          <mpirun mpilib="default">
            <executable>srun</executable>
          </mpirun>
-	 <module_system type="dotkit">
+	 <module_system type="generic">
 	   <cmd_path lang="sh">use</cmd_path>
 	   <cmd_path lang="csh">use</cmd_path> 
            <init_path lang="csh">/usr/global/tools/dotkit/init.csh</init_path>
@@ -1145,10 +1146,11 @@
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 	 <PES_PER_NODE>16</PES_PER_NODE>
 	 <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
+	 <SAVE_TIMING_DIR>/usr/gdata/climdat/timing_performance</SAVE_TIMING_DIR>
          <mpirun mpilib="default">
            <executable>srun</executable>
          </mpirun>
-	 <module_system type="dotkit">
+	 <module_system type="generic">
 	   <cmd_path lang="sh">use</cmd_path>
 	   <cmd_path lang="csh">use</cmd_path> 
            <init_path lang="csh">/usr/global/tools/dotkit/init.csh</init_path>
