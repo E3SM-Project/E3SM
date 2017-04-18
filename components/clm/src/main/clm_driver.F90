@@ -45,7 +45,7 @@ module clm_driver
   use SurfaceAlbedoMod       , only : SurfaceAlbedo
   use UrbanAlbedoMod         , only : UrbanAlbedo
   !
-  use SurfaceRadiationMod    , only : SurfaceRadiation
+  use SurfaceRadiationMod    , only : SurfaceRadiation, CanopySunShadeFractions
   use UrbanRadiationMod      , only : UrbanRadiation
   !clm_bgc_interface
   use CNEcosystemDynMod      , only : CNEcosystemDynNoLeaching1, CNEcosystemDynNoLeaching2
@@ -463,6 +463,25 @@ contains
        call t_startf('surfrad')
 
        ! Surface Radiation primarily for non-urban columns 
+
+       ! Most of the surface radiation calculations are agnostic to the forest-model
+       ! but the calculations of the fractions of sunlit and shaded canopies 
+       ! are specific, calculate them first.
+       ! The nourbanp filter is set in dySubgrid_driver (earlier in this call)
+       ! over the patch index range defined by bounds_clump%begp:bounds_proc%endp
+       
+       if(use_ed) then
+          ! (FATES-INTERF)
+          !           call clm_fates%fates(nc)%canopy_sunshade_fracs(filter(nc)%nourbanp,      &
+          !                filter(nc)%num_nourbanp,                                            &
+          !                atm2lnd_vars, canopystate_vars)
+          ! (FATES-INTERF) put error call, flag for development
+          call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
+       else
+          call CanopySunShadeFractions(filter(nc)%num_nourbanp, filter(nc)%nourbanp,    &
+                                       atm2lnd_vars, surfalb_vars, canopystate_vars,    &
+                                       solarabs_vars)
+       end if
 
        call SurfaceRadiation(bounds_clump,                                 &
             filter(nc)%num_nourbanp, filter(nc)%nourbanp,                  &
