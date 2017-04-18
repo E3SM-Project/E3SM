@@ -328,28 +328,26 @@ class TestScheduler(object):
     def _shell_cmd_for_phase(self, test, cmd, phase, from_dir=None):
     ###########################################################################
         while True:
-            rc, output, _ = run_cmd(cmd, combine_output=True, from_dir=from_dir)
+            rc, output, errput = run_cmd(cmd, from_dir=from_dir)
             if rc != 0:
                 self._log_output(test,
                                  "%s FAILED for test '%s'.\nCommand: %s\nOutput: %s\n" %
-                                 (phase, test, cmd, output))
+                                 (phase, test, cmd, output + "\n" + errput))
                 # Temporary hack to get around odd file descriptor use by
                 # buildnml scripts.
                 if "bad interpreter" in output:
                     time.sleep(1)
                     continue
                 else:
-                    break
+                    return False, errput
             else:
                 # We don't want "RUN PASSED" in the TestStatus.log if the only thing that
                 # succeeded was the submission.
                 phase = "SUBMIT" if phase == RUN_PHASE else phase
                 self._log_output(test,
                                  "%s PASSED for test '%s'.\nCommand: %s\nOutput: %s\n" %
-                                 (phase, test, cmd, output))
-                break
-
-        return rc == 0
+                                 (phase, test, cmd, output + "\n" + errput))
+                return True, errput
 
     ###########################################################################
     def _create_newcase_phase(self, test):
@@ -379,9 +377,12 @@ class TestScheduler(object):
             testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
             test_mod_file = os.path.join(testmods_dir, component, modspath)
             if not os.path.exists(test_mod_file):
-                self._log_output(test, "Missing testmod file '%s'" % test_mod_file)
-                return False
+                error = "Missing testmod file '%s'" % test_mod_file
+                self._log_output(test, error)
+                return False, error
+
             create_newcase_cmd += " --user-mods-dir %s" % test_mod_file
+
         mpilib = None
         if case_opts is not None:
             for case_opt in case_opts: # pylint: disable=not-an-iterable
@@ -539,7 +540,7 @@ class TestScheduler(object):
             if self._input_dir is not None:
                 case.set_value("DIN_LOC_ROOT", self._input_dir)
 
-        return True
+        return True, ""
 
     ###########################################################################
     def _setup_phase(self, test):
@@ -548,8 +549,9 @@ class TestScheduler(object):
         rv = self._shell_cmd_for_phase(test, "./case.setup", SETUP_PHASE, from_dir=test_dir)
 
         # It's OK for this command to fail with baseline diffs but not catastrophically
-        cmdstat, output, _ = run_cmd("./case.cmpgen_namelists", combine_output=True, from_dir=test_dir)
-        expect(cmdstat in [0, TESTS_FAILED_ERR_CODE], "Fatal error in case.cmpgen_namelists: %s" % output)
+        if rv[0]:
+            cmdstat, output, _ = run_cmd("./case.cmpgen_namelists", combine_output=True, from_dir=test_dir)
+            expect(cmdstat in [0, TESTS_FAILED_ERR_CODE], "Fatal error in case.cmpgen_namelists: %s" % output)
 
         return rv
 
@@ -583,11 +585,10 @@ class TestScheduler(object):
             return run(test)
         except (SystemExit, Exception) as e:
             exc_tb = sys.exc_info()[2]
-            errput = "Test '%s' failed in phase '%s' with exception '%s'" % (test, phase, str(e))
+            errput = "Test '%s' failed in phase '%s' with exception '%s'\n" % (test, phase, str(e))
+            errput += traceback.format_tb(exc_tb)
             self._log_output(test, errput)
-            logger.warning("Caught exception: %s" % str(e))
-            traceback.print_tb(exc_tb)
-            return False
+            return False, errput
 
     ###########################################################################
     def _get_procs_needed(self, test, phase, threads_in_flight=None, no_batch=False):
@@ -644,7 +645,7 @@ class TestScheduler(object):
     def _consumer(self, test, test_phase, phase_method):
     ###########################################################################
         before_time = time.time()
-        success = self._run_catch_exceptions(test, test_phase, phase_method)
+        success, errors = self._run_catch_exceptions(test, test_phase, phase_method)
         elapsed_time = time.time() - before_time
         status  = (TEST_PEND_STATUS if test_phase == RUN_PHASE and not \
                    self._no_batch else TEST_PASS_STATUS) if success else TEST_FAIL_STATUS
@@ -662,7 +663,9 @@ class TestScheduler(object):
                 (test_phase, test, elapsed_time, status)
 
         if not success:
-            status_str += "    Case dir: %s" % self._get_test_dir(test)
+            status_str += "\n    Case dir: %s\n" % self._get_test_dir(test)
+            status_str += "    Errors were:\n        %s\n" % "\n        ".join(errors.splitlines())
+
         logger.info(status_str)
 
         if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE]:
