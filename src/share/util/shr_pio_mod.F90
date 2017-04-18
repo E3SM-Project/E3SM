@@ -428,6 +428,19 @@ contains
     pio_async_interface = .false.   ! pio tasks are a subset of component tasks
     pio_rearranger = PIO_REARR_SUBSET
 
+    pio_rearr_comm_type = 'p2p'
+    pio_rearr_comm_fcd = '2denable'
+    pio_rearr_comm_max_pend_req_comp2io = 0
+    pio_rearr_comm_enable_hs_comp2io = .true.
+    pio_rearr_comm_enable_isend_comp2io = .false.
+    pio_rearr_comm_max_pend_req_io2comp = 0
+    pio_rearr_comm_enable_hs_io2comp = .true.
+    pio_rearr_comm_enable_isend_io2comp = .false.
+
+
+
+
+
     if(iamroot) then
        unitn=shr_file_getunit()
        open( unitn, file=trim(nlfilename), status='old' , iostat=ierr)
