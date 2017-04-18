@@ -5984,10 +5984,10 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%T62_l%T62_oi%oQU120_r%rx1.+_g%null_w%null">
+  <grid name="a%T62_l%T62_oi%oQU120_r%rx1.+">
     <mach name="cetus">
-      <pes compset=".*DATM.+SLND_MPASCICE_MPASO_DROF.+SGLC_SWAV" pesize="any">
-        <comment>T62_oQU120.CMPASO-NYF on 16 nodes pure-MPI</comment>
+      <pes compset=".*MPAS.*" pesize="any">
+        <comment>T62_oQU120 grid for MPAS tests on 16 nodes pure-MPI</comment>
         <ntasks>
           <ntasks_atm>64</ntasks_atm>
           <ntasks_lnd>64</ntasks_lnd>
