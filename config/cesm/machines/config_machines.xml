@@ -219,8 +219,10 @@
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
+	<arg name="anum_tasks"> -np $TOTALPES</arg>
 	<arg name="labelstdout">-p "%g:"</arg>
-	<arg name="threadplacement"> omplace </arg>
+	<!-- the omplace argument needs to be last -->
+	<arg name="zthreadplacement"> omplace </arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">
