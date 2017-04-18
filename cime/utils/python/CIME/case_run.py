@@ -190,7 +190,6 @@ def case_run(case):
 ###############################################################################
     # Set up the run, run the model, do the postrun steps
     run_with_submit = case.get_value("RUN_WITH_SUBMIT")
-    mach = case.get_value("MACH")
     expect(run_with_submit,
            "You are not calling the run script via the submit script. "
            "As a result, short-term archiving will not be called automatically."
@@ -200,8 +199,7 @@ def case_run(case):
     # If we need to produce core files, we need to try to ensure that the
     # system will support them
     try:
-       	if mach != 'grizzly':
-            resource.setrlimit(resource.RLIMIT_CORE, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+        resource.setrlimit(resource.RLIMIT_CORE, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
     except:
         pass
 
