@@ -186,7 +186,7 @@ contains
     character(len=256):: locfn                ! local file name
     character(len=16384) :: rList             ! list of fields for SM multiply
     integer           :: unitn                ! unit for namelist file
-    integer,parameter :: dbug = 3             ! 0 = none, 1=normal, 2=much, 3=max
+    integer,parameter :: dbug = 1             ! 0 = none, 1=normal, 2=much, 3=max
     logical :: lexist                         ! File exists
     character(len= 7) :: runtyp(4)            ! run type
     integer ,allocatable :: gindex(:)         ! global index
