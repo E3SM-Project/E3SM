@@ -2024,7 +2024,7 @@ if ($cosp) { $cfg_cppdefs .= ' -DUSE_COSP'; }
 if ($clubb_sgs == 1) {
     $cfg_cppdefs .= ' -DCLUBB_SGS';
     $cfg_cppdefs .= ' -DCLUBB_CAM';
-    $cfg_cppdefs .= ' -DNO_LAPACK_ISNAN';
+    #$cfg_cppdefs .= ' -DNO_LAPACK_ISNAN';
     $cfg_cppdefs .= " -DCLUBB_REAL_TYPE=dp";
 }
 
