@@ -667,7 +667,7 @@ using a fortran linker.
   <MPI_LIB_NAME MPILIB="mvapich2"> mpich</MPI_LIB_NAME>
   <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
   <SLIBS>
-    <append>$SHELL{${NETCDF_PATH}/bin/nf-config --flibs}</append>
+    <append>-L$NETCDF_PATH/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
 </compiler>
 
