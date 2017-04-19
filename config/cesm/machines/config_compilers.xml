@@ -988,6 +988,7 @@ using a fortran linker.
   <CMAKE_OPTS>
     <append DEBUG="TRUE"> -DPIO_ENABLE_LOGGING=ON </append>
   </CMAKE_OPTS>
+  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_noMPI_noOpenMP</PFUNIT_PATH>
   <PFUNIT_PATH MPILIB="mpt" compile_threaded="true">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_MPI_openMP</PFUNIT_PATH>
   <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
@@ -1033,6 +1034,7 @@ using a fortran linker.
   <MPICXX MPILIB="mpich2">mpiicpc</MPICXX>
   <PAPI_INC MPILIB="mpich2"> /glade/apps/opt/papi/5.3.0/intel/12.1.5/include/</PAPI_INC>
   <PAPI_LIB MPILIB="mpich2">/glade/apps/opt/papi/5.3.0/intel/12.1.5/lib64 </PAPI_LIB>
+  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.1_yellowstone_Intel15.0.1_noMPI_noOpenMP</PFUNIT_PATH>
   <PFUNIT_PATH MPILIB="mpich2" compile_threaded="true">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.1_Intel15.0.1_MPI</PFUNIT_PATH>
   <!-- Needed due to the way that netcdf is loaded on yellowstone -->
   <SCC MPILIB="mpi-serial">icc</SCC>
