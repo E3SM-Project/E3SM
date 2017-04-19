@@ -10,6 +10,7 @@ from standard_script_setup import *
 from CIME.BuildTools.configure import configure
 from CIME.utils import run_cmd_no_fail, stringify_bool
 from CIME.XML.machines import Machines
+from CIME.XML.compilers import Compilers
 from CIME.XML.env_mach_specific import EnvMachSpecific
 from xml_test_list import TestSuiteSpec, suites_from_xml
 import subprocess
@@ -272,6 +273,8 @@ def _main():
         compiler = machobj.get_default_compiler()
         logger.warn("Compiler is %s"%compiler)
 
+    compilerobj = Compilers(machobj, compiler=compiler, mpilib=mpilib)
+
     debug = not build_optimized
     os_ = machobj.get_value("OS")
 
@@ -289,8 +292,8 @@ def _main():
     os.environ["MPILIB"] = mpilib
     if use_openmp:
         os.environ["compile_threaded"] = "true"
-    os.environ["CC"] = find_executable("mpicc")
-    os.environ["FC"] = find_executable("mpif90")
+    os.environ["CC"] = compilerobj.get_value('MPICC')
+    os.environ["FC"] = compilerobj.get_value('MPIFC')
     os.environ["UNIT_TEST_HOST"] = socket.gethostname()
 
     if no_mpirun:
