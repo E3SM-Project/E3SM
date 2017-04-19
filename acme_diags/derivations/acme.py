@@ -22,7 +22,11 @@ def process_derived_var(var_key, derived_vars_dict, nc_file, parameter):
 
 def _add_user_derived_vars(derived_vars_dict, parameter):
     for k, v in parameter.derived_variables.iteritems():
-        derived_vars_dict[k] = v
+        # append the user defined vars to the already defined ones
+        if k in derived_vars_dict:
+            derived_vars_dict[k].append(v)
+        else:
+            derived_vars_dict[k] = v
 
 
 def _get_correct_derivation(var_key, derived_vars_dict, nc_file):
@@ -188,6 +192,13 @@ def restoa(fsnt, flnt):
 # If 'PRECT' is not available, but both 'PRECC' and 'PRECT' are available in the netcdf variable keys,
 # PRECT is calculated using fuction prect() with precc and precl as inputs.
 derived_variables = {
+    'PRECT': [
+        (['pr'], rename),
+        (['PRECC', 'PRECL'], lambda precc, precl: prect(precc , precl))
+    ],
+}
+
+old_derived_variables = {
     'PRECT': [
         (['pr'], rename),
         (['PRECC', 'PRECL'], lambda precc, precl: prect(precc , precl))
