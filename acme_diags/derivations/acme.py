@@ -21,12 +21,13 @@ def process_derived_var(var_key, derived_vars_dict, nc_file, parameter):
 
 
 def _add_user_derived_vars(derived_vars_dict, parameter):
-    for k, v in parameter.derived_variables.iteritems():
+    for key, derived_vars in parameter.derived_variables.iteritems():
         # append the user defined vars to the already defined ones
-        if k in derived_vars_dict:
-            derived_vars_dict[k].append(v)
+        if key in derived_vars_dict:
+            for v in derived_vars:
+                derived_vars_dict[key].append(v)
         else:
-            derived_vars_dict[k] = v
+                derived_vars_dict[key] = derived_vars
 
 
 def _get_correct_derivation(var_key, derived_vars_dict, nc_file):

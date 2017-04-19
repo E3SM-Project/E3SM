@@ -46,6 +46,31 @@ class TestACMEDerivations(unittest.TestCase):
             acme.process_derived_var('PRECT', wrong_derived_var, precc_file, self.parameter)
         precc_file.close()
 
+    def test_that_process_derived_var_adds_to_dict(self):
+        # the one that's usually in the parameters file
+        derived_var_dict = {
+            'PRECT': [(['test'], lambda x: x)]
+        }
+        # use this instead of the acme.derived_variables one
+        default_derived_vars = {
+            'PRECT': [
+                (['pr'],  lambda x: x),
+                (['PRECC'], lambda x: 'this is some function')
+            ],
+        }
+
+        # add derived_var_dict to default_derived_vars
+        precc_file = cdms2.open(get_abs_file_path('precc.nc'))
+        self.parameter.derived_variables = derived_var_dict
+        acme.process_derived_var('PRECT', default_derived_vars, precc_file, self.parameter)
+        precc_file.close()
+
+        # check that (['test'], lambda x: x) was inserted correctly
+        for derived_var in default_derived_vars['PRECT']:
+            if ['test'] == derived_var[0]:
+                return  # everything is okay
+        self.fail("Failed to insert test derived variable")
+
     def test_mask_by_passes(self):
         precc_file = cdms2.open(get_abs_file_path('precc.nc'))
         prcc = precc_file('PRECC')
