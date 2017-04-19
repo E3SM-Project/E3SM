@@ -3568,7 +3568,7 @@ module atm_time_integration
 
             if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then  ! only for owned cells
   
-               ! speclal treatment of calculations involving edges between hexagonal cells
+               ! special treatment of calculations involving edges between hexagonal cells
                ! original code retained in select "default" case
                ! be sure to see additional declarations near top of subroutine
                select case(nAdvCellsForEdge(iEdge))
@@ -3602,6 +3602,8 @@ module atm_time_integration
                   end do
                end select
 
+            else
+               flux_arr(:,iEdge) = 0.0_RKIND
             end if
 
          end do
