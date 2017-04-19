@@ -15,7 +15,6 @@ module tracer_data
   use cam_abortutils,   only : endrun
   use cam_logfile,  only : iulog
   
-  use scamMod, only : scm_observed_aero, single_column
   use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_index
   use time_manager, only : set_time_float_from_date, set_date_from_time_float
   use pio,          only : file_desc_t, var_desc_t, &

@@ -141,8 +141,8 @@ subroutine readiopdata( )
    logical have_srf              ! value at surface is available
    logical fill_ends             ! 
    logical have_cnst(pcnst)
-   real(r8), allocatable :: dplevs( : ), aitken( :)
-   integer, allocatable :: dmods( : ), dsps( : )
+   real(r8), allocatable :: dplevs( : )
+   integer, allocatable :: dmods( : )
    real(r8) dummy
    real(r8) lat,xlat
    real(r8) srf(1)                  ! value at surface
@@ -263,10 +263,6 @@ subroutine readiopdata( )
       allocate(dmods(nmod))
       dmods=-999
    end if
-   if (.not.allocated(aitken)) then
-      allocate(aitken(nmod))
-      aitken= 1.0e30_R8
-   end if
    if (.not.allocated(scm_num)) then
       allocate(scm_num(nmod))
       scm_num= 1.0e30_R8
@@ -279,9 +275,9 @@ subroutine readiopdata( )
       allocate(scm_std(nmod))
       scm_std= 1.0e30_R8
    end if
-   if (.not.allocated(dsps)) then
-      allocate(dsps(nsps))
-      dsps=-999
+   if (.not.allocated(scm_div)) then
+      allocate(scm_div(nmod,nsps))
+      scm_div= 1.0e30_R8
    end if
    
   status = NF90_INQ_VARID( ncid, 'mod', mod_varID )
@@ -292,16 +288,6 @@ subroutine readiopdata( )
    end if
 
    call handle_ncerr( nf90_get_var (ncid, mod_varID, dmods(:nmod)),&
-                    'readiopdata.F90', __LINE__)
-  
-status = NF90_INQ_VARID( ncid, 'sps', sps_varID )
-   if ( status .ne. nf90_noerr ) then
-      write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
-      status = NF90_CLOSE ( ncid )
-      return
-   end if
-
-   call handle_ncerr( nf90_get_var (ncid, sps_varID, dsps(:nsps)),&
                     'readiopdata.F90', __LINE__)
 
 status = NF90_INQ_VARID( ncid, 'scm_num', mod_varID )
@@ -314,7 +300,7 @@ status = NF90_INQ_VARID( ncid, 'scm_num', mod_varID )
    call handle_ncerr( nf90_get_var (ncid, mod_varID, scm_num(:nmod)),&
                     'readiopdata.F90', __LINE__)
   
-status = NF90_INQ_VARID( ncid, 'scm_diam', mod_varID )
+status = NF90_INQ_VARID( ncid, 'scm_dgnum', mod_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
       status = NF90_CLOSE ( ncid )
@@ -333,13 +319,6 @@ status = NF90_INQ_VARID( ncid, 'scm_std', mod_varID )
 
    call handle_ncerr( nf90_get_var (ncid, mod_varID, scm_std(:nmod)),&
                     'readiopdata.F90', __LINE__)
-    
-   if (.not.allocated(scm_div)) then
-      allocate(scm_div(nmod,nsps))
-      scm_div= 1.0e30_R8
-   end if
-   ! allocate(scm_aitken_div(nsps))
-   ! allocate(scm_coarse_div(nsps))
 
 status = NF90_INQ_VARID( ncid, 'scm_accum_div', sps_varID )
    if ( status .ne. nf90_noerr ) then

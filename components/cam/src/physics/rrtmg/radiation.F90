@@ -866,12 +866,12 @@ end function radiation_nextsw_cday
     call get_rlat_all_p(lchnk, ncol, clat)
     call get_rlon_all_p(lchnk, ncol, clon)
     call zenith (calday, clat, clon, coszrs, ncol, dt_avg)
-
-    call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
-
+    
     if (swrad_off) then
        coszrs(:)=0._r8 ! coszrs is only output for zenith
-    endif
+    endif    
+
+    call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
 
     ! Gather night/day column indices.
     Nday = 0
@@ -1177,10 +1177,6 @@ end function radiation_nextsw_cday
                        lu,           ld)
                   call t_stopf ('rad_rrtmg_lw')
 
-                  do i=1,ncol
-                     lwcf(i)=flutc(i) - flut(i)
-                  end do
-
                   if (lwrad_off) then
                      qrl(:,:) = 0._r8
                      qrlc(:,:) = 0._r8
@@ -1195,6 +1191,10 @@ end function radiation_nextsw_cday
                      fcnl(:,:) = 0._r8
                      fldsc(:) = 0._r8
                   end if !lwrad_off
+		  
+		  do i=1,ncol
+                     lwcf(i)=flutc(i) - flut(i)
+                  end do
 
                   !  Output fluxes at 200 mb
                   call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fnl, fln200)
