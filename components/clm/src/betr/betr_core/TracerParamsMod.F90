@@ -1368,7 +1368,7 @@ contains
        if(j==nlevsoi)then
          qflx_adv(c,j) = qcharge(c) * 1.e-3_r8
        else
-         qflx_adv(c,j) = 1.e-3_r8 * (h2osoi_liq(c,j+1)-h2osoi_liq_copy(c,j+1))/dtime + qflx_adv(c,j+1) + qflx_rootsoi(c,j+1)
+         qflx_adv(c,j) = 1.e-3_r8 * (h2osoi_liq(c,j+1)-h2osoi_liq_copy(c,j+1))/dtime + qflx_adv(c,j+1) + qflx_rootsoi(c,j+1)*1.e-3_r8
        endif
 
      enddo
@@ -1380,7 +1380,7 @@ contains
      c = filter_hydrologyc(fc)
 
      !obtain the corrected infiltration
-     qflx_infl(c) = (h2osoi_liq(c,1)-h2osoi_liq_copy(c,1))/dtime + (qflx_rootsoi(c,1)+qflx_adv(c,1))*1.e3_r8
+     qflx_infl(c) = (h2osoi_liq(c,1)-h2osoi_liq_copy(c,1))/dtime + qflx_rootsoi(c,1) + qflx_adv(c,1)*1.e3_r8
      !the predicted net infiltration
      infl_tmp=qflx_gross_infl_soil(c)-qflx_gross_evap_soil(c)
      diff=qflx_infl(c)-infl_tmp

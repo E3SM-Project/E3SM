@@ -717,7 +717,7 @@ contains
             qflx_adv_local(c,jtops(c)-1) = safe_div(qflx_adv(c,jtops(c)-1),aqu2bulkcef_mobile_col(c,jtops(c),j),eps=loc_eps)
             do l = jtops(c), ubj
                qflx_adv_local(c,l)     = safe_div(qflx_adv(c,l),aqu2bulkcef_mobile_col(c,l,j),eps=loc_eps)
-               qflx_rootsoi_local(c,l) = safe_div(qflx_rootsoi(c,l),aqu2bulkcef_mobile_col(c,l,j),eps=loc_eps)
+               qflx_rootsoi_local(c,l) = safe_div(qflx_rootsoi(c,l)*1.e-3_r8,aqu2bulkcef_mobile_col(c,l,j),eps=loc_eps)
             enddo
          enddo
 
