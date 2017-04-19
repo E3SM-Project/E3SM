@@ -658,7 +658,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
-	print $stream_file '        packages="timeSeriesStatsMontlyAMPKG"' . "\n";
+	print $stream_file '        packages="timeSeriesStatsMonthlyAMPKG"' . "\n";
 	print $stream_file '        runtime_format="single_file">' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '    <var name="daysSinceStartOfSim"/>' . "\n";
@@ -737,6 +737,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '        filename_interval="output_interval"' . "\n";
         print $stream_file '        clobber_mode="truncate"' . "\n";
         print $stream_file '        input_interval="initial_only"' . "\n";
+        print $stream_file '        packages="timeSeriesStatsDailyAMPKG"' . "\n";
         print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
         print $stream_file '</stream>' . "\n";
         print $stream_file '' . "\n";
@@ -746,6 +747,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '        filename_interval="output_interval"' . "\n";
         print $stream_file '        clobber_mode="truncate"' . "\n";
         print $stream_file '        input_interval="initial_only"' . "\n";
+        print $stream_file '        packages="timeSeriesStatsMonthlyAMPKG"' . "\n";
         print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
         print $stream_file '</stream>' . "\n";
         print $stream_file '' . "\n";
@@ -755,6 +757,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '        filename_interval="output_interval"' . "\n";
         print $stream_file '        clobber_mode="truncate"' . "\n";
         print $stream_file '        input_interval="initial_only"' . "\n";
+        print $stream_file '        packages="timeSeriesStatsClimatologyAMPKG"' . "\n";
         print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
         print $stream_file '</stream>' . "\n";
         print $stream_file '' . "\n";
@@ -764,6 +767,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '        filename_interval="output_interval"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        input_interval="initial_only"' . "\n";
+	print $stream_file '        packages="timeSeriesStatsCustomAMPKG"' . "\n";
 	print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
