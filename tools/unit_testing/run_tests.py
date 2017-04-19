@@ -64,9 +64,9 @@ runs "make clean"."""
     parser.add_argument("--no-color",  action="store_false",
                       help="""Turn off colorized output."""
     )
-    parser.add_argument("--compiler",  default="gnu",
+    parser.add_argument("--compiler",
                         help="""Compiler vendor for build (supported depends on machine).
-Only used for lookup in CIME Machines files."""
+                        If not specified, use the default for this machine."""
                         )
     parser.add_argument("--enable-genf90", action="store_true",
                         default=True,
@@ -83,19 +83,23 @@ requires genf90.pl to be in the user's path."""
 
     parser.add_argument("--mpilib",
     help="""MPI Library to use in build.
-Required argument (until we can get this from config_machines)
-Must match an MPILIB option in config_compilers.xml.
-e.g., for yellowstone, can use 'mpich2'."""
+    If not specified, use the default for this machine/compiler.
+    Must match an MPILIB option in config_compilers.xml.
+    e.g., for yellowstone, can use 'mpich2'."""
     )
-    parser.add_argument(
-        "--mpirun-command", default="",
-        help="""Command to use to run an MPI executable.
 
-If not specified, does not use any mpirun prefix to run executables."""
+    parser.add_argument("--no-mpirun", action="store_true",
+                        help="""If specified, then run executables without an mpirun command""")
+
+    parser.add_argument("--mpirun-command",
+        help="""Command to use to run an MPI executable.
+        If not specified, uses the default for this machine.
+        Ignored if --no-mpirun is specified."""
         )
     parser.add_argument(
-        "--test-spec-dir",
-        help="""Location where tests are specified."""
+        "--test-spec-dir", default=".",
+        help="""Location where tests are specified.
+        Defaults to current directory."""
         )
     parser.add_argument(
     "-T", "--ctest-args",
@@ -110,9 +114,8 @@ This is only necessary if using a CIME build type, if the user wants to
 override the command provided by Machines."""
     )
     parser.add_argument(
-        "--use-openmp",  action="store_true",
-        default=False,
-        help="""Turn on OPENMP support for tests."""
+        "--no-openmp",  action="store_true",
+        help="""Default is to include OPENMP support for tests; this option excludes openmp"""
     )
     parser.add_argument(
         "--xml-test-list",
@@ -133,8 +136,8 @@ override the command provided by Machines."""
 
     return output, args.build_dir, args.build_optimized, args.clean,\
         args.cmake_args, args.compiler, args.enable_genf90, args.machine, args.machines_dir,\
-        args.make_j, args.mpilib, args.mpirun_command, args.test_spec_dir, args.ctest_args,\
-        args.use_openmp, args.xml_test_list, args.verbose
+        args.make_j, args.mpilib, args.no_mpirun, args.mpirun_command, args.test_spec_dir, args.ctest_args,\
+        args.no_openmp, args.xml_test_list, args.verbose
 
 
 def cmake_stage(name, test_spec_dir, build_optimized, mpirun_command, output, cmake_args=None, clean=False, verbose=False, enable_genf90=True, color=True):
@@ -167,9 +170,9 @@ def cmake_stage(name, test_spec_dir, build_optimized, mpirun_command, output, cm
         cmake_command = [
             "cmake",
             test_spec_dir,
-            "-DCIME_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"externals","CMake")),
+            "-DCIME_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"src","externals","CMake")),
             "-DCMAKE_BUILD_TYPE="+build_type,
-            "-DPFUNIT_MPIRUN="+mpirun_command,
+            "-DPFUNIT_MPIRUN='"+mpirun_command+"'",
             ]
         if verbose:
             cmake_command.append("-Wdev")
@@ -177,7 +180,7 @@ def cmake_stage(name, test_spec_dir, build_optimized, mpirun_command, output, cm
         if enable_genf90:
             cmake_command.append("-DENABLE_GENF90=ON")
             genf90_dir = os.path.join(
-                _CIMEROOT, "externals", "genf90"
+                _CIMEROOT,"src","externals","genf90"
                 )
             cmake_command.append("-DCMAKE_PROGRAM_PATH="+genf90_dir)
 
@@ -216,9 +219,11 @@ def make_stage(name, output, make_j, clean=False, verbose=True):
 def _main():
     output, build_dir, build_optimized, clean,\
         cmake_args, compiler, enable_genf90, machine, machines_dir,\
-        make_j, mpilib, mpirun_command, test_spec_dir, ctest_args,\
-        use_openmp, xml_test_list, verbose \
+        make_j, mpilib, no_mpirun, mpirun_command, test_spec_dir, ctest_args,\
+        no_openmp, xml_test_list, verbose \
         = parse_command_line(sys.argv)
+
+    use_openmp = not no_openmp
 
 #=================================================
 # Find directory and file paths.
@@ -241,14 +246,6 @@ def _main():
             )
 
 
-
-
-# Search for the CESM root directory.
-# First check the option. If not specified, look to see if there's a tools
-# directory two levels up (just as a sanity check).
-    if machine is None:
-        machine="yellowstone"
-
     if machines_dir is not None:
         machines_file = os.path.join(machines_dir, "config_machines.xml")
         machobj = Machines(infile=machines_file, machine=machine)
@@ -269,8 +266,10 @@ def _main():
 #=================================================
     if mpilib is None:
         mpilib = machobj.get_default_MPIlib()
+        logger.warn("Using mpilib: %s"%mpilib)
     if compiler is None:
         compiler = machobj.get_default_compiler()
+        logger.warn("Compiler is %s"%compiler)
 
     debug = not build_optimized
     os_ = machobj.get_value("OS")
@@ -280,8 +279,22 @@ def _main():
     #
     configure(machobj, build_dir, ["CMake"], compiler, mpilib, debug, os_)
     machspecific = EnvMachSpecific(build_dir)
+
+    if no_mpirun:
+        mpirun_command = ""
+    elif mpirun_command is None:
+        mpi_attribs = {
+            "compiler" : compiler,
+            "mpilib"   : mpilib,
+            "threaded" : use_openmp,
+            "unit_testing" : True
+        }
+
+        # We can get away with specifying case=None since we're using exe_only=True
+        mpirun_command, _ = machspecific.get_mpirun(case=None, attribs=mpi_attribs, exe_only=True)
+        logger.warn("mpirun command is '%s'"%mpirun_command)
+
     machspecific.load_env(compiler, debug, mpilib)
-    logger.warn("Compiler is %s"%compiler)
     os.environ["OS"] = os_
     os.environ["COMPILER"] = compiler
     os.environ["DEBUG"] = stringify_bool(debug)

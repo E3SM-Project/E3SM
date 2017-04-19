@@ -1,7 +1,8 @@
 PROJECT(CPRNC C Fortran)
 
+ 	
 execute_process(COMMAND ../configure --macros-format=CMake WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{CIMEROOT}/externals/CMake")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{CIMEROOT}/src/externals/CMake")
 
 INCLUDE(Macros.cmake)
 
@@ -9,7 +10,7 @@ ENABLE_LANGUAGE(Fortran)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{CIMEROOT}/externals/pio2/cmake)
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{CIMEROOT}/src/externals/pio2/cmake)
 
 # Defining NETCDF_LIBRARIES and NETCDF_INCLUDE_DIR enables bypassing
 #   the search for Netcdf
@@ -20,7 +21,7 @@ ENDIF ()
 
 ADD_CUSTOM_COMMAND(
   OUTPUT ${PROJECT_BINARY_DIR}/compare_vars_mod.F90
-  COMMAND perl ${PROJECT_SOURCE_DIR}/../../externals/genf90/genf90.pl
+  COMMAND perl ${PROJECT_SOURCE_DIR}/../../src/externals/genf90/genf90.pl
     ${PROJECT_SOURCE_DIR}/compare_vars_mod.F90.in > ${PROJECT_BINARY_DIR}/compare_vars_mod.F90
 )
 

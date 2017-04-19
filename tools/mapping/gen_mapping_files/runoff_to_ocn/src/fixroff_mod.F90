@@ -1,8 +1,3 @@
-!===============================================================================
-! SVN $Id: fixroff_mod.F90 35698 2012-03-22 23:59:57Z kauff $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/gen_mapping_files/runoff_to_ocn/src/fixroff_mod.F90 $
-!===============================================================================
-
 MODULE fixroff_mod
 
    use shr_sys_mod
