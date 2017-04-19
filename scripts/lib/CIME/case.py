@@ -1129,7 +1129,7 @@ class Case(object):
             "unit_testing" : False
             }
 
-        executable, args = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
+        executable, mpi_arg_string = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
 
         # special case for aprun
         if  executable is not None and "aprun" in executable:
@@ -1140,10 +1140,10 @@ class Case(object):
         else:
             mpi_arg_string = " ".join(args.values())
 
-            if self.get_value("BATCH_SYSTEM") == "cobalt":
-                mpi_arg_string += " : "
+        if self.get_value("BATCH_SYSTEM") == "cobalt":
+            mpi_arg_string += " : "
 
-            return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
+        return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
 
     def set_model_version(self, model):
         version = "unknown"

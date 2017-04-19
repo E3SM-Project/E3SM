@@ -2217,7 +2217,7 @@ def _main_func():
         else:
             setattr(args, log_param, False)
 
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.handle_standard_logging_options(args, None)
 
     write_provenance_info()
 

@@ -637,7 +637,7 @@ class _LessThanFilter(logging.Filter):
         #non-zero return means we log this message
         return 1 if record.levelno < self.max_level else 0
 
-def handle_standard_logging_options(args):
+def handle_standard_logging_options(args, parser):
     """
     Guide to logging in CIME.
 
@@ -659,6 +659,11 @@ def handle_standard_logging_options(args):
     # Change warnings and above to go to stderr
     stderr_stream_handler = logging.StreamHandler(stream=sys.stderr)
     stderr_stream_handler.setLevel(logging.WARNING)
+
+    # scripts_regression_tests is the only thing that should pass a None argument in parser
+    if parser is not None:
+        _check_for_invalid_args(args[1:])
+        args = parser.parse_args(args[1:])
 
     # --verbose adds to the message format but does not impact the log level
     if args.verbose:
@@ -682,6 +687,8 @@ def handle_standard_logging_options(args):
         root_logger.setLevel(logging.WARN)
     else:
         root_logger.setLevel(logging.INFO)
+    return args
+
 
 def get_logging_options():
     """
@@ -1228,6 +1235,16 @@ def run_and_log_case_status(func, phase, caseroot='.'):
         append_case_status(phase, "success", caseroot=caseroot)
 
     return rv
+
+def _check_for_invalid_args(args):
+    for arg in args:
+        if arg.startswith("--"):
+            continue
+        if arg.startswith("-") and len(arg) > 2:
+            expect(False, "Invalid argument %s\n  Arguments should begin with -- or be single character (-s)\n  Use --help for a complete list of available options"%arg)
+
+
+
 
 class SharedArea(object):
     """
