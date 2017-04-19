@@ -2456,6 +2456,32 @@ end if
           reff_cosp(1:ncol,1:pver,8) = 0._r8
       end where
 
+      ! reset negative values to avoid COSP warning
+      where (rel(1:ncol,1:pver) .lt. 0.0_r8)
+          reff_cosp(1:ncol,1:pver,1) = 0.0_r8
+      end where
+      where (rei(1:ncol,1:pver) .lt. 0.0_r8)
+          reff_cosp(1:ncol,1:pver,2) = 0.0_r8
+      end where
+      where (ls_reffrain(1:ncol,1:pver) .lt. 0.0_r8)
+          reff_cosp(1:ncol,1:pver,3) = 0.0_r8
+      end where
+      where (ls_reffsnow(1:ncol,1:pver) .lt. 0.0_r8)
+          reff_cosp(1:ncol,1:pver,4) = 0.0_r8
+      end where
+      where (cv_reffliq(1:ncol,1:pver) .lt. 0.0_r8)
+          reff_cosp(1:ncol,1:pver,5) = 0.0_r8
+      end where
+      where (cv_reffice(1:ncol,1:pver) .lt. 0.0_r8)
+          reff_cosp(1:ncol,1:pver,6) = 0.0_r8
+      end where
+      where (ls_reffrain(1:ncol,1:pver) .lt. 0.0_r8)
+          reff_cosp(1:ncol,1:pver,7) = 0.0_r8
+      end where
+      where (ls_reffsnow(1:ncol,1:pver) .lt. 0.0_r8)
+          reff_cosp(1:ncol,1:pver,8) = 0.0_r8
+      end where
+
    end if  !!if cam5
 
    !! Make sure interpolated values are not less than 0 - COSP was complaining and resetting small negative values to zero.
