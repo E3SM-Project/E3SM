@@ -178,13 +178,19 @@ class N_TestUnitTest(unittest.TestCase):
         cls._testroot = os.path.join(TEST_ROOT, 'TestUnitTests')
         cls._testdirs = []
 
+    def _has_unit_test_support(self):
+        default_compiler = MACHINE.get_default_compiler()
+        compiler = Compilers(MACHINE, compiler=default_compiler)
+        pfunit_path = compiler.get_optional_compiler_node("PFUNIT_PATH")
+        if pfunit_path is None:
+            return False
+        else:
+            return True
+
     def test_a_unit_test(self):
         cls = self.__class__
-        machine           = MACHINE.get_machine_name()
-        compiler          = MACHINE.get_default_compiler()
-        if (machine != "yellowstone" or compiler != "intel"):
-            #TODO: get rid of this restriction
-            self.skipTest("Skipping TestUnitTest - only supported on yellowstone with intel")
+        if not self._has_unit_test_support():
+            self.skipTest("Skipping TestUnitTest - PFUNIT_PATH not found for the default compiler on this machine")
         test_dir = os.path.join(cls._testroot,"unit_tester_test")
         cls._testdirs.append(test_dir)
         os.makedirs(test_dir)
@@ -199,11 +205,8 @@ class N_TestUnitTest(unittest.TestCase):
         if (FAST_ONLY):
             self.skipTest("Skipping slow test")
 
-        machine           = MACHINE.get_machine_name()
-        compiler          = MACHINE.get_default_compiler()
-        if (machine != "yellowstone" or compiler != "intel"):
-            #TODO: get rid of this restriction
-            self.skipTest("Skipping TestUnitTest - only supported on yellowstone with intel")
+        if not self._has_unit_test_support():
+            self.skipTest("Skipping TestUnitTest - PFUNIT_PATH not found for the default compiler on this machine")
 
         test_dir = os.path.join(cls._testroot,"driver_f90_tests")
         cls._testdirs.append(test_dir)

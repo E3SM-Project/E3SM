@@ -992,6 +992,7 @@ using a fortran linker.
   <CMAKE_OPTS>
     <append DEBUG="TRUE"> -DPIO_ENABLE_LOGGING=ON </append>
   </CMAKE_OPTS>
+  <PFUNIT_PATH>$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_MPI_openMP</PFUNIT_PATH>
   <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>

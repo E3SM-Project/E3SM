@@ -225,6 +225,12 @@
 	<arg name="zthreadplacement"> omplace </arg>
       </arguments>
     </mpirun>
+    <mpirun mpilib="default" unit_testing="true">
+      <!-- The only place we can build and run the unit tests is on cheyenne's
+           shared nodes. However, running mpi jobs on the shared nodes currently
+           requires some workarounds; these workarounds are implemented here -->
+      <executable>/opt/sgi/mpt/mpt-2.15/bin/mpirun $ENV{UNIT_TEST_HOST} -np 1 </executable>
+    </mpirun>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
     </mpirun>
@@ -263,6 +269,12 @@
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
       <env name="MPI_TYPE_DEPTH">16</env>
+    </environment_variables>
+    <environment_variables unit_testing="true">
+      <!-- It's possible that we also need to set:
+           LD_LIBRARY_PATH=/opt/sgi/mpt/mpt-2.15/lib:$LD_LIBRARY_PATH
+      -->
+      <env name="MPI_USE_ARRAY">false</env>
     </environment_variables>
   </machine>
 
