@@ -73,7 +73,7 @@ subroutine assert_all_can_fail(this)
   class(TestAssertArray), intent(inout) :: this
   call assert_all_wrapper([.false.], 1, this%rank, &
        "Expected failure.")
-  call assertExceptionRaised("ABORTED: Expected failure.")
+  call assertExceptionRaised("ABORTED: ERROR: Expected failure.")
 end subroutine assert_all_can_fail
 
 @Test
@@ -84,7 +84,7 @@ subroutine assert_all_partial_false_fails(this)
   test_array = [( mod(i,2) == 0, i = 1, size(test_array) )]
   call assert_all_wrapper(test_array, 2, this%rank, &
        "Expected failure.")
-  call assertExceptionRaised("ABORTED: Expected failure.")
+  call assertExceptionRaised("ABORTED: ERROR: Expected failure.")
 end subroutine assert_all_partial_false_fails
 
 @Test
@@ -92,7 +92,7 @@ subroutine assert_any_size_zero_fails(this)
   class(TestAssertArray), intent(inout) :: this
   call assert_any_wrapper([logical::], 0, this%rank, &
        "Expected failure.")
-  call assertExceptionRaised("ABORTED: Expected failure.")
+  call assertExceptionRaised("ABORTED: ERROR: Expected failure.")
 end subroutine assert_any_size_zero_fails
 
 @Test
@@ -107,7 +107,7 @@ subroutine assert_any_can_fail(this)
   class(TestAssertArray), intent(inout) :: this
   call assert_any_wrapper([.false.], 1, this%rank, &
        "Expected failure.")
-  call assertExceptionRaised("ABORTED: Expected failure.")
+  call assertExceptionRaised("ABORTED: ERROR: Expected failure.")
 end subroutine assert_any_can_fail
 
 @Test

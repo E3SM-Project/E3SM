@@ -11,39 +11,47 @@ MODULE ESMF_Stubs
 ! Bogus typedefs
    TYPE ESMF_Grid
       INTEGER :: dummy
-   END TYPE
+   END TYPE ESMF_Grid
 
    TYPE ESMF_GridComp
       INTEGER :: dummy
-   END TYPE
+   END TYPE ESMF_GridComp
 
    TYPE ESMF_State
       INTEGER :: dummy
-   END TYPE
+   END TYPE ESMF_State
 
    TYPE ESMF_VM
       INTEGER :: dummy
-   END TYPE
+   END TYPE ESMF_VM
 
    TYPE ESMF_END_FLAG
       INTEGER :: dummy
-   END TYPE
-   TYPE(ESMF_END_FLAG), PARAMETER ::  &
-      ESMF_END_ABORT   = ESMF_END_FLAG(1), &
-      ESMF_END_NORMAL  = ESMF_END_FLAG(2), &
+   END TYPE ESMF_END_FLAG
+   TYPE(ESMF_END_FLAG), PARAMETER ::                &
+      ESMF_END_ABORT   = ESMF_END_FLAG(1),          &
+      ESMF_END_NORMAL  = ESMF_END_FLAG(2),          &
       ESMF_END_KEEPMPI = ESMF_END_FLAG(3)
 
    TYPE ESMF_MsgType
       INTEGER :: mtype
-   END TYPE
-   TYPE(ESMF_MsgType), PARAMETER  ::      &
-      ESMF_LOG_INFO  =   ESMF_MsgType(1), &
-      ESMF_LOG_WARNING = ESMF_MsgType(2), &
+   END TYPE ESMF_MsgType
+   TYPE(ESMF_MsgType), PARAMETER  ::                &
+      ESMF_LOG_INFO  =   ESMF_MsgType(1),           &
+      ESMF_LOG_WARNING = ESMF_MsgType(2),           &
       ESMF_LOG_ERROR =   ESMF_MsgType(3)
 
    TYPE ESMF_LOG
       INTEGER :: dummy
-   END TYPE
+   END TYPE ESMF_LOG
+
+   TYPE ESMF_LogKind_Flag
+      INTEGER :: dummy
+   END TYPE ESMF_LogKind_Flag
+   TYPE(ESMF_LogKind_Flag), PARAMETER ::            &
+        ESMF_LOGKIND_NONE = ESMF_LogKind_Flag(1),   &
+        ESMF_LOGKIND_SINGLE = ESMF_LogKind_Flag(2), &
+        ESMF_LOGKIND_MULTI = ESMF_LogKind_Flag(3)
 
    LOGICAL, private, save :: initialized = .false.
 
@@ -52,17 +60,20 @@ MODULE ESMF_Stubs
    PUBLIC ESMF_LogWrite, ESMF_LOG, ESMF_MsgType, ESMF_END_FLAG
    PUBLIC ESMF_LOG_INFO, ESMF_LOG_WARNING, ESMF_LOG_ERROR
    PUBLIC ESMF_END_ABORT, ESMF_END_NORMAL, ESMF_END_KEEPMPI
+   PUBLIC ESMF_LogKind_Flag
+   PUBLIC ESMF_LOGKIND_NONE, ESMF_LOGKIND_SINGLE, ESMF_LOGKIND_MULTI
 
 CONTAINS
 
 
 ! NOOP
-   SUBROUTINE ESMF_Initialize( vm, defaultCalendar, rc )
+   SUBROUTINE ESMF_Initialize( vm, defaultCalendar, logkindflag, rc )
       USE ESMF_BaseMod
       USE ESMF_CalendarMod
 !     USE ESMF_TimeMod,     only: defaultCal
       TYPE(ESMF_VM),           INTENT(IN   ), OPTIONAL :: vm
       TYPE(ESMF_CalKind_Flag), INTENT(IN   ), OPTIONAL :: defaultCalendar
+      TYPE(ESMF_LogKind_Flag), INTENT(IN   ), OPTIONAL :: logkindflag
       INTEGER,                 INTENT(  OUT), OPTIONAL :: rc
 
       TYPE(ESMF_CalKind_Flag) :: defaultCalType
