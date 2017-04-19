@@ -1054,10 +1054,10 @@ CONTAINS
       TH2(I)=THGB(I)+DTG*PSIT2/PSIT
       !***  BE CERTAIN THAT THE 2-M THETA IS BRACKETED BY
       !***  THE VALUES AT THE SURFACE AND LOWEST MODEL LEVEL.
-      IF ((TH1D(I)>THGB(I) .AND. (TH2(I)<THGB(I) .OR. TH2(I)>TH1D(I))) .OR. &
-          (TH1D(I)<THGB(I) .AND. (TH2(I)>THGB(I) .OR. TH2(I)<TH1D(I)))) THEN
-          TH2(I)=THGB(I) + 2.*(TH1D(I)-THGB(I))/ZA(I)
-      ENDIF
+!      IF ((TH1D(I)>THGB(I) .AND. (TH2(I)<THGB(I) .OR. TH2(I)>TH1D(I))) .OR. &
+!          (TH1D(I)<THGB(I) .AND. (TH2(I)>THGB(I) .OR. TH2(I)<TH1D(I)))) THEN
+!          TH2(I)=THGB(I) + 2.*(TH1D(I)-THGB(I))/ZA(I)
+!      ENDIF
       T2(I)=TH2(I)*(PSFC(I)/100.)**ROVCP
 
       Q2(I)=QSFCMR(I)+(QV1D(I)-QSFCMR(I))*PSIQ2/PSIQ
