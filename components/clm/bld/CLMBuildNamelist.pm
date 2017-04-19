@@ -3924,7 +3924,7 @@ sub main {
 
   my $physv = config_files::clm_phys_vers->new( $cfg->get('phys') );
   my $cesmroot   = abs_path( "$nl_flags{'cfgdir'}/../../../");
-  my $drvblddir  = "$cesmroot/cime/driver_cpl/bld";
+  my $drvblddir  = "$cesmroot/cime/src/drivers/mct/bld";
   my $definition = read_namelist_definition($drvblddir, \%opts, \%nl_flags, $physv);
   my $defaults   = read_namelist_defaults($drvblddir, \%opts, \%nl_flags, $cfg, $physv);
 

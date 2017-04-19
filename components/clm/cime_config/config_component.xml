@@ -119,7 +119,7 @@
   <entry id="CLM_CO2_TYPE">
     <type>char</type>
     <valid_values>constant,diagnostic,prognostic</valid_values>
-    <list>1</list>
+    <!--list>1</list-->
     <default_value>constant</default_value>
     <values>
       <value compset="_CAM.*_CLM"     >diagnostic</value>

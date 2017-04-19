@@ -178,8 +178,8 @@ EOF
   }
   # List of input options
   my %inputopts;
-  my $datmblddir             = "$cfgdir/../../../cime/components/data_comps/datm/bld";
-  my $drvblddir              = "$cfgdir/../../../cime/driver_cpl/bld";
+  my $datmblddir             = "$cfgdir/../../../cime/src/components/data_comps/datm/bld";
+  my $drvblddir              = "$cfgdir/../../../cime/src/drivers/mct/bld";
   my $model                  = $opts{'model'};
   my @nl_definition_files    = ( "$datmblddir/namelist_files/namelist_definition_datm.xml",
                                  "$drvblddir/namelist_files/namelist_definition_drv.xml",

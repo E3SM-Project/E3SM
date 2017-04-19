@@ -5,7 +5,7 @@ config_pes_converter.py -- convert (or verify) config_pesfrom CIME2 format
 
 The location of these files are needed by the script:
     CIME2: cime/machines-acme/config_pes.xml
-    CIME5: cime_config/acme/allactive/config_pesall.xml
+    CIME5: config/acme/allactive/config_pesall.xml
 """
 
 
