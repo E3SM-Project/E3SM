@@ -328,12 +328,14 @@ def _main():
         os.environ["compile_threaded"] = "true"
     else:
         os.environ["compile_threaded"] = "false"
+
+    compiler_attrs = {'MPILIB': mpilib}
     if use_mpi:
-        os.environ["CC"] = compilerobj.get_value('MPICC')
-        os.environ["FC"] = compilerobj.get_value('MPIFC')
+        os.environ["CC"] = compilerobj.get_value('MPICC', compiler_attrs)
+        os.environ["FC"] = compilerobj.get_value('MPIFC', compiler_attrs)
     else:
-        os.environ["CC"] = compilerobj.get_value('SCC')
-        os.environ["FC"] = compilerobj.get_value('SFC')
+        os.environ["CC"] = compilerobj.get_value('SCC', compiler_attrs)
+        os.environ["FC"] = compilerobj.get_value('SFC', compiler_attrs)
     os.environ["UNIT_TEST_HOST"] = socket.gethostname()
 
     if not use_mpi:
