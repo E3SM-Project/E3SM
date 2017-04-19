@@ -208,6 +208,7 @@ contains
     real(r8) :: lpc(bounds%begp:bounds%endp)   ! leaf P concentration (gP leaf/m^2)
     real(r8) :: sum_nscaler              
     real(r8) :: total_lai
+    real(r8),parameter :: tiny_val=1.e-14_r8
     !------------------------------------------------------------------------------
 
     ! Temperature and soil water response functions
@@ -738,7 +739,7 @@ contains
 
                cs = cair(p) - 1.4_r8/gb_mol(p) * an(p,iv) * forc_pbot(c)
                cs = max(cs,1.e-06_r8)
-               if(abs(gs_mol(p,iv)-bbb(p))<1.e-14_r8)then
+               if(abs(gs_mol(p,iv)-bbb(p))<tiny_val)then
                   ci_z(p,iv) = cair(p) - an(p,iv) * forc_pbot(c) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
                else
                   ci_z(p,iv) = ciold
@@ -1041,13 +1042,12 @@ contains
     real(r8) :: fa, fb
     real(r8) :: x1, f0, f1
     real(r8) :: x, dx
-    real(r8), parameter :: eps = 1.e-2_r8      !relative accuracy
-    real(r8), parameter :: eps1= 1.e-4_r8
     integer,  parameter :: itmax = 40          !maximum number of iterations
     real(r8) :: tol,minx,minf
     real(r8) :: ci_val(5)
     real(r8) :: fi_val(5)
     integer  :: ii, mi
+    real(r8) :: tiny_val=1.e-14_r8
     associate(&
       c3flag     => photosyns_vars%c3flag_patch             , & ! Output: [logical  (:)   ]  true if C3 and false if C4   
       cp         => photosyns_vars%cp_patch  & !Intput: [real(r8) (:)   ]  CO2 compensation point (Pa)
@@ -1056,7 +1056,7 @@ contains
     call ci_func(x0, f0, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
          atm2lnd_vars, photosyns_vars)
 
-    if(abs(f0) < 1.e-14_r8)return
+    if(abs(f0) < tiny_val)return
     ci_val(3)=x0
     fi_val(3)=f0
     !compute the minimum ci value
@@ -1096,17 +1096,6 @@ contains
                lmr_z, par_z, rh_can, gs_mol, &
                atm2lnd_vars, photosyns_vars)
        x0=x
-       if(x0<0._r8)then
-         write(iulog,*)'negative after brent',x0
-       endif
-    else
-      ! write(iulog,'(I8,13(X,E15.8),X,L8)')p,ci_val(1),fi_val(1),ci_val(2),fi_val(2),&
-      !   ci_val(3),fi_val(3),ci_val(4),fi_val(4),ci_val(5),fi_val(5),photosyns_vars%aj_patch(p,iv),&
-      !   photosyns_vars%ag_patch(p,iv),photosyns_vars%an_patch(p,iv), all(fi_val<0._r8)
-      ! write(iulog,*)'no solution for ci and gs_mol is forced to be the minimum for pft',p
-      ! write(iulog,*)'no solution found for ci'
-      ! call endrun(decomp_index=p, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
-      
     endif
    end associate 
   end subroutine hybrid
