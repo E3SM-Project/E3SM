@@ -31,11 +31,11 @@
 			description="if true, apply monthly salinity restoring"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_salinity_restoring_constant_piston_velocity" type="real" default_value="0.0" units="m/year"
+		<nml_option name="config_salinity_restoring_constant_piston_velocity" type="real" default_value="1.585e-5" units="m/year"
 			description="maximum allowable difference between surface salinity and climatology"
 			possible_values="any non-negative number"
 		/>
-		<nml_option name="config_salinity_restoring_max_difference" type="real" default_value="0.5" units="psu"
+		<nml_option name="config_salinity_restoring_max_difference" type="real" default_value="100.0" units="psu"
 			description="maximum allowable difference between surface salinity and climatology"
 			possible_values="any non-negative number"
 		/>
