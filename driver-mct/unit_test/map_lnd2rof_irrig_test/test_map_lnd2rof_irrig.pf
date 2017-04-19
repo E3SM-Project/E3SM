@@ -73,10 +73,10 @@ contains
 
     nlnd = map_l2r%get_n_source_points()
     nrof = map_l2r%get_n_dest_points()
-    call shr_assert(map_r2l%get_n_dest_points() == nlnd, errMsg(sourcefile, __LINE__))
-    call shr_assert(map_r2l%get_n_source_points() == nrof, errMsg(sourcefile, __LINE__))
-    call shr_assert(size(irrig_l) == nlnd, errMsg(sourcefile, __LINE__))
-    call shr_assert(size(volr_r) == nrof, errMsg(sourcefile, __LINE__))
+    call shr_assert(map_r2l%get_n_dest_points() == nlnd, file=sourcefile, line=__LINE__)
+    call shr_assert(map_r2l%get_n_source_points() == nrof, file=sourcefile, line=__LINE__)
+    call shr_assert(size(irrig_l) == nlnd, file=sourcefile, line=__LINE__)
+    call shr_assert(size(volr_r) == nrof, file=sourcefile, line=__LINE__)
 
     call create_aVect_with_data_rows_are_points(this%l2r_l, &
          attr_tags = [irrig_flux_field], &

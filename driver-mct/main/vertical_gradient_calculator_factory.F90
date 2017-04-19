@@ -55,7 +55,7 @@ contains
     !-----------------------------------------------------------------------
 
     nelev = size(elevclass_names)
-    SHR_ASSERT_ALL((ubound(elevclass_bounds) == (/nelev/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL_FL((ubound(elevclass_bounds) == (/nelev/)), __FILE__, __LINE__)
 
     call extract_data_from_attr_vect(attr_vect, fieldname, toponame, elevclass_names, &
          field, topo)
