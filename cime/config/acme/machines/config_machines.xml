@@ -1091,7 +1091,7 @@
          <BASELINE_ROOT>/p/lscratchd/$CCSMUSER/ccsm_baselines</BASELINE_ROOT>
          <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
-         <SUPPORTED_BY>wlin -at- bnl.gov</SUPPORTED_BY>
+         <SUPPORTED_BY>bogenschutz1 -at- llnl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 	 <PES_PER_NODE>16</PES_PER_NODE>
@@ -1128,20 +1128,20 @@
 
 <machine MACH="syrah">
          <DESC>LLNL Linux Cluster, Linux (pgi), 16 pes/node, batch system is Slurm</DESC>
-         <COMPILERS>intel,pgi</COMPILERS>
+         <COMPILERS>intel, pgi</COMPILERS>
          <MPILIBS>mpich,mpi-serial</MPILIBS>
          <RUNDIR>/p/lscratche/$CCSMUSER/ACME/$CASE/run</RUNDIR>
          <EXEROOT>/p/lscratche/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/p/lscratche/$USER</CESMSCRATCHROOT>
+         <CIME_OUTPUT_ROOT>/p/lscratche/$USER</CIME_OUTPUT_ROOT>
          <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/p/lscratche/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/p/lscratchd/$CCSMUSER/ccsm_baselines</CCSM_BASELINE>
+         <BASELINE_ROOT>/p/lscratchd/$CCSMUSER/ccsm_baselines</BASELINE_ROOT>
          <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
-         <SUPPORTED_BY>wlin -at- bnl.gov</SUPPORTED_BY>
+         <SUPPORTED_BY>bogenschutz1 -at- llnl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 	 <PES_PER_NODE>16</PES_PER_NODE>
