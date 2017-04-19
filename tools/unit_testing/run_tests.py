@@ -13,6 +13,7 @@ from CIME.XML.machines import Machines
 from CIME.XML.env_mach_specific import EnvMachSpecific
 from xml_test_list import TestSuiteSpec, suites_from_xml
 import subprocess
+import socket
 #=================================================
 # Standard library modules.
 #=================================================
@@ -277,8 +278,20 @@ def _main():
     # Create the environment, and the Macros.cmake file
     #
     #
-    configure(machobj, build_dir, ["CMake"], compiler, mpilib, debug, os_)
-    machspecific = EnvMachSpecific(build_dir)
+    configure(machobj, build_dir, ["CMake"], compiler, mpilib, debug, os_,
+              unit_testing=True)
+    machspecific = EnvMachSpecific(build_dir, unit_testing=True)
+
+    machspecific.load_env(compiler, debug, mpilib)
+    os.environ["OS"] = os_
+    os.environ["COMPILER"] = compiler
+    os.environ["DEBUG"] = stringify_bool(debug)
+    os.environ["MPILIB"] = mpilib
+    if use_openmp:
+        os.environ["compile_threaded"] = "true"
+    os.environ["CC"] = find_executable("mpicc")
+    os.environ["FC"] = find_executable("mpif90")
+    os.environ["UNIT_TEST_HOST"] = socket.gethostname()
 
     if no_mpirun:
         mpirun_command = ""
@@ -292,17 +305,8 @@ def _main():
 
         # We can get away with specifying case=None since we're using exe_only=True
         mpirun_command, _ = machspecific.get_mpirun(case=None, attribs=mpi_attribs, exe_only=True)
+        mpirun_command = machspecific.get_resolved_value(mpirun_command)
         logger.warn("mpirun command is '%s'"%mpirun_command)
-
-    machspecific.load_env(compiler, debug, mpilib)
-    os.environ["OS"] = os_
-    os.environ["COMPILER"] = compiler
-    os.environ["DEBUG"] = stringify_bool(debug)
-    os.environ["MPILIB"] = mpilib
-    if use_openmp:
-        os.environ["compile_threaded"] = "true"
-    os.environ["CC"] = find_executable("mpicc")
-    os.environ["FC"] = find_executable("mpif90")
 
 #=================================================
 # Run tests.
