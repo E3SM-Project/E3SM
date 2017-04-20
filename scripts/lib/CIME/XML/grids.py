@@ -113,7 +113,7 @@ class Grids(GenericXML):
                     component_grids = self._get_component_grids(lname)
                     return lname, component_grids
         expect (False,
-                "grid '%s'  is not supported, use manage_case to determine supported grids " %name)
+                "grid '%s'  is not supported, use query_case to determine supported grids " %name)
 
     def _read_config_grids_v2(self, name, compset):
         """
