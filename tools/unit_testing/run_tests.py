@@ -358,7 +358,6 @@ def _main():
     else:
         os.environ["compile_threaded"] = "false"
 
-    compiler_attrs = {'MPILIB': mpilib}
     if use_mpi:
         os.environ["CC"] = get_compiler(compilerobj, 'MPICC', mpilib)
         os.environ["FC"] = get_compiler(compilerobj, 'MPIFC', mpilib)
