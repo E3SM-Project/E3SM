@@ -387,6 +387,8 @@ end subroutine clubb_init_cnst
     do_rainturb        = .false.   ! Initialize to false
     do_expldiff        = .false.   ! Initialize to false
     relvar_fix         = .false.   ! Initialize to false
+    clubb_do_adv       = .false.   ! Initialize to false
+    clubb_do_deep      = .false.   ! Initialize to false
 
     !  Read namelist to determine if CLUBB history should be called
     if (masterproc) then
