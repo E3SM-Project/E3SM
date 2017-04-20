@@ -300,7 +300,7 @@ status = NF90_INQ_VARID( ncid, 'scm_num', mod_varID )
    call handle_ncerr( nf90_get_var (ncid, mod_varID, scm_num(:nmod)),&
                     'readiopdata.F90', __LINE__)
   
-status = NF90_INQ_VARID( ncid, 'scm_dgnum', mod_varID )
+status = NF90_INQ_VARID( ncid, 'scm_diam', mod_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
       status = NF90_CLOSE ( ncid )

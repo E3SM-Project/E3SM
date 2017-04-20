@@ -1140,7 +1140,7 @@ contains
 
     if(single_column .and. scm_observed_aero) then
 
-      call ver_profile_aero(pp, state(begchunk)%pmid)
+      call ver_profile_aero(pp)
       ! The following do loop gets the species properties and calculates the aerosol
       ! mass mixing ratio of each species from observed total number and size distribution
       ! properties in the unit kg/m^3 for the 3 modes. Data is read from the forcing file.
@@ -1411,34 +1411,29 @@ contains
    
 !---------------------------------------------------------------------------
 !This subroutine generates a heavyside type profiles for the observed aerosol.
-!This setting is constant profile upto 500mb and then exponentially decreasing to zero
-!at the top of the atmosphere. The level of initial decay is controlled by
-!"initial_val". Larger then -3.5 pushes the decay point up and smaller brings it
-!closer to the surface.
+!This setting is constant profile in the lower atmosphere and then exponentially 
+!decreasing to zero at the top of the atmosphere. The level of initial decay is 
+!controlled by "initial_val". Larger than -3.5 pushes the decay point up and smaller 
+!brings it closer to the surface.
 !   
-   subroutine ver_profile_aero(vertprof_aero, pmid_aero)
+   subroutine ver_profile_aero(vertprof_aero)
               use mo_constants, only : pi
               use ppgrid,       only:  pcols,pver
          
          implicit none
          real(r8), intent(inout) :: vertprof_aero(pver)
-         real(r8), intent(in) :: pmid_aero(pcols,pver)
          real(r8) :: initial_val = -3.5_r8
-         integer :: k,counti
-         
-         counti=0   
+         integer :: k
+            
          do k=1,pver
-           if(pmid_aero(1,k)/100..le.500._r8) then
-             counti=counti+1
+           if(k==1) then
+             vertprof_aero(k)=0._r8
+           elseif(k==2) then
+             vertprof_aero(k)=1._r8/(1._r8 + exp(-2._r8*initial_val * pi)) 
+           else
+             vertprof_aero(k)=1._r8/(1._r8 + exp(-2._r8*(initial_val * pi + pi/4._r8*(k-2)))) 
            endif
-          if(k==1) then
-           vertprof_aero(k)=0._r8
-          elseif(k==2) then
-            vertprof_aero(k)=1._r8/(1._r8 + exp(-2._r8*initial_val * pi)) 
-          else
-            vertprof_aero(k)=1._r8/(1._r8 + exp(-2._r8*(initial_val * pi + pi/4._r8*(k-2)))) 
-          endif
-        enddo 
+         enddo 
    end subroutine ver_profile_aero
 
 !------------------------------------------------------------------------
