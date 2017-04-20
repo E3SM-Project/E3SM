@@ -2620,8 +2620,8 @@
         <command name="rm">hdf5</command>
         <command name="rm">parallel-netcdf</command>
         <command name="load">python/2.7.12</command>
-        <!-- <command name="rm">subversion</command> -->
-        <!-- <command name="load">subversion/1.8.3</command> -->
+        <command name="rm">subversion</command>
+        <command name="load">subversion/1.9.3</command>
         <command name="rm">cmake</command>
         <command name="load">cmake/3.6.1</command>
       </modules>
@@ -2656,6 +2656,7 @@
         <env name="HDF5_PATH" mpilib="!mpi-serial">`which h5dump | xargs dirname | xargs dirname`</env>
         <env name="ESSL_PATH">/sw/summitdev/essl/5.5.0-20161110</env>
         <env name="NETLIB_LAPACK_PATH">/autofs/nccs-svm1_sw/summitdev/.spack/opt/spack/20170224/linux-rhel7-ppc64le/xl-20161123/netlib-lapack-3.6.1-7y4cztmzhlmtfu2pl5cwz2bk4hhpeixh</env>
+        <env name="LD_LIBRARY_PATH">$ENV{LD_LIBRARY_PATH}:/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4/lib</env>
         <!-- <env name="NETLIB_LAPACK_PATH">`echo '#include <lapacke.h>' | cpp -H -o /dev/null 2>&amp;1 | head -n1 | cut -f2 -d' ' | xargs dirname | xargs dirname`</env> -->
       </environment_variables>
     </module_system>
@@ -2666,7 +2667,7 @@
 >>>>>>> Preliminary machine config for Summitdev:cime/cime_config/acme/machines/config_machines.xml
 <default_run_suffix>
   <default_run_exe>${EXEROOT}/acme.exe </default_run_exe>
-  <default_run_misc_suffix> >> acme.log.$LID 2>&amp;1 </default_run_misc_suffix>
+  <default_run_misc_suffix> >> acme.log.$ENV{LID} 2>&amp;1 </default_run_misc_suffix>
 </default_run_suffix>
 
 </config_machines>

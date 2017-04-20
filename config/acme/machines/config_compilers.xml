@@ -1035,6 +1035,7 @@ for mct, etc.
   <ADD_FFLAGS_NOOPT> -O0 -g -qfree=f90  </ADD_FFLAGS_NOOPT>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <!-- <ADD_LDFLAGS>-qstaticlink=libnetcdf:libnetcdff:libhdf5_hl:libhdf5:libessl:liblapack </ADD_LDFLAGS> -->
   <ADD_SLIBS>-L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib64 -llapack</ADD_SLIBS>
 </compiler>
 
