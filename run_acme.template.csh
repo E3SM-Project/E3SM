@@ -208,7 +208,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.5
+set script_ver = 3.0.6
 
 #===========================================
 # DEFINE ALIASES
@@ -267,6 +267,7 @@ endif
 
 if ( `lowercase $old_executable` == true ) then
   if ( $seconds_before_delete_source_dir >= 0 ) then
+    acme_newline
     acme_print 'ERROR: It is unlikely that you want to delete the source code and then use the existing compiled executable.'
     acme_print '       Hence, this script will abort to avoid making a mistake.'
     acme_print '       $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir'      $old_executable = '$old_executable
@@ -274,18 +275,23 @@ if ( `lowercase $old_executable` == true ) then
   endif
 
   if ( $seconds_before_delete_bld_dir >= 0 ) then
+    acme_newline
     acme_print 'ERROR: It makes no sense to delete the source-compiled code and then use the existing compiled executable.'
     acme_print '       Hence, this script will abort to avoid making a mistake.'
     acme_print '       $seconds_before_delete_bld_dir = '$seconds_before_delete_bld_dir'      $old_executable = '$old_executable
     exit 12
   endif
 
-  if ( `lowercase $case_build_dir` == default ) then
-    acme_print 'WARNING: run_acme must be run interactively when using the default build directory and old executables'
-    acme_print '         To remedy this, either set $case_build_dir to the path of the executables'
-    acme_print '         If this is an interactive shell, deactivate this test'
-    exit 13
-  endif
+#  if ( `lowercase $case_build_dir` == default ) then       ## PJC: it looks like CIME doesn't ask what to do interatively any more.  What does CIME choose to do?
+#    acme_newline
+#    acme_print 'WARNING: CIME will ask user what to do if a directory already exists.'  
+#    acme_print '         This is done interactively, so will be a problem if run_acme is being run in the background.'
+#    acme_print '         Continuing on the assumption that run_acme is being run interactively.'
+##    acme_print 'WARNING: run_acme must be run interactively when using the default build directory and old executables'
+##    acme_print '         To remedy this, either set $case_build_dir to the path of the executables'
+##    acme_print '         If this is an interactive shell, deactivate this test'
+##    exit 13
+#  endif
 endif
 
 if ( `lowercase $case_build_dir` == default && $seconds_before_delete_bld_dir >= 0 ) then
@@ -392,7 +398,10 @@ acme_print '$case_name        = '$case_name
 ### Note: To turn off the deletion, set $num_seconds_until_delete to be negative.
 ###       To delete immediately, set $num_seconds_until_delete to be zero.
 
-set case_scripts_dir = `pwd -P`/$case_name
+#set case_scripts_dir = `pwd -P`/$case_name
+
+set scratch_dir = $SCRATCH/acme_scratch/edison/      #pjc hack to put case_scripts with bld and run, until --script-root is implemented in CIME.
+set case_scripts_dir = $scratch_dir/$case_name/case_scripts   #pjc hack to put case_scripts with bld and run, until --script-root is implemented in CIME.
 
 if ( -d $case_scripts_dir ) then
   if ( ${seconds_before_delete_case_dir} >= 0 ) then
@@ -527,7 +536,8 @@ endif
 # CREATE CASE_SCRIPTS DIRECTORY AND POPULATE WITH NEEDED FILES
 #=============================================================
 
-set configure_options = "--case ${case_name} --compset ${compset} --res ${resolution} --project ${project} --pecount ${std_proc_configuration}"
+#set configure_options = "--case ${case_name} --compset ${compset} --res ${resolution} --project ${project} --pecount ${std_proc_configuration}"
+set configure_options = "--case $case_scripts_dir --compset ${compset} --res ${resolution} --project ${project} --pecount ${std_proc_configuration} --output-root $scratch_dir "    #pjc hack to put case_scripts with bld and run, until --script-root is implemented in CIME.
 
 if ( `lowercase $machine` != default ) then
   set configure_options = "$configure_options --mach ${machine}"
@@ -539,11 +549,15 @@ acme_newline
 
 acme_print $create_newcase_exe $configure_options
 $create_newcase_exe $configure_options
-cd ${case_name}
+
+#cd ${case_name}
+cd ${case_scripts_dir}         #pjc hack to put case_scripts with bld and run, until --script-root is implemented in CIME.
 
 acme_newline
 acme_print '-------- Finished create_newcase --------'
 acme_newline
+
+    $xmlchange_exe --id CASE --val $case_name    #pjc hack to put case_scripts with bld and run, until --script-root is implemented in CIME.
 
 #================================================
 # UPDATE VARIABLES WHICH REQUIRE A CASE TO BE SET
@@ -622,7 +636,6 @@ endif
 
 if ( `lowercase $processor_config` == '1' ) then
 
-  # NOTE: xmlchange won't work with shell variables for the id, so we have to write it out in full.
   set ntasks = 1
   set nthrds = 1
   set sequential_or_concurrent = 'sequential'
@@ -1273,6 +1286,8 @@ acme_newline
 #                        Merged in PMC's changes from 3.0.4. Enabled using CIME defaults for more functionality
 #                        Renamed 'print' and 'newline' to 'acme_print' and 'acme_newline'
 #                        to disambiguate them from system commands (MD)
+# 3.0.6    2017-04-19    Hack to put case_scripts back in directory with bld & run. (PJC)
+
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
 ### ---------- Desired features still to be implemented ------------
