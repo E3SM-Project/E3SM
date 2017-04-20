@@ -25,12 +25,11 @@ def _get_batch_job_id_for_syslog(case):
     else:
         return None
 
-def save_build_provenance_acme(case, lid=None):
+def _save_build_provenance_acme(case, lid):
     cimeroot = case.get_value("CIMEROOT")
     exeroot = case.get_value("EXEROOT")
     caseroot = case.get_value("CASEROOT")
 
-    lid = os.environ["LID"] if lid is None else lid
     # Save git describe
     describe_prov = os.path.join(exeroot, "GIT_DESCRIBE.%s" % lid)
     if os.path.exists(describe_prov):
@@ -73,8 +72,7 @@ def save_build_provenance_acme(case, lid=None):
                 os.remove(generic_name)
             os.symlink(the_match, generic_name)
 
-
-def save_build_provenance_cesm(case, lid=None): # pylint: disable=unused-argument
+def _save_build_provenance_cesm(case, lid): # pylint: disable=unused-argument
     version = case.get_value("MODEL_VERSION")
     # version has already been recorded
     caseroot = case.get_value("CASEROOT")
@@ -84,17 +82,14 @@ def save_build_provenance_cesm(case, lid=None): # pylint: disable=unused-argumen
 def save_build_provenance(case, lid=None):
     with SharedArea():
         model = case.get_value("MODEL")
+        lid = os.environ["LID"] if lid is None else lid
+
         if model == "acme":
-            save_build_provenance_acme(case, lid=lid)
+            _save_build_provenance_acme(case, lid)
         elif model == "cesm":
-            save_build_provenance_cesm(case, lid=lid)
+            _save_build_provenance_cesm(case, lid)
 
-def save_prerun_provenance_acme(case, lid=None):
-    if not case.get_value("SAVE_TIMING"):
-        return
-
-    lid = os.environ["LID"] if lid is None else lid
-
+def _save_prerun_timing_acme(case, lid):
     timing_dir = case.get_value("SAVE_TIMING_DIR")
     if timing_dir is None or timing_dir == 'UNSET':
         logger.warning("ACME requires SAVE_TIMING_DIR to be set in order to save timings. Skipping save timings")
@@ -194,7 +189,11 @@ def save_prerun_provenance_acme(case, lid=None):
     else:
         run_cmd_no_fail("git describe", arg_stdout=os.path.join(full_timing_dir, "GIT_DESCRIBE.%s" % lid), from_dir=os.path.dirname(cimeroot))
 
-def save_prerun_provenance_cesm(case, lid=None): # pylint: disable=unused-argument
+def _save_prerun_provenance_acme(case, lid):
+    if case.get_value("SAVE_TIMING"):
+        _save_prerun_timing_acme(case, lid)
+
+def _save_prerun_provenance_cesm(case, lid): # pylint: disable=unused-argument
     pass
 
 def save_prerun_provenance(case, lid=None):
@@ -209,29 +208,26 @@ def save_prerun_provenance(case, lid=None):
 
         model = case.get_value("MODEL")
         if model == "acme":
-            save_prerun_provenance_acme(case, lid=lid)
+            _save_prerun_provenance_acme(case, lid)
         elif model == "cesm":
-            save_prerun_provenance_cesm(case, lid=lid)
+            _save_prerun_provenance_cesm(case, lid)
 
-def save_postrun_provenance_cesm(case, lid=None):
+def _save_postrun_provenance_cesm(case, lid):
     save_timing = case.get_value("SAVE_TIMING")
     if save_timing:
-        lid = os.environ["LID"] if lid is None else lid
         rundir = case.get_value("RUNDIR")
         timing_dir = case.get_value("SAVE_TIMING_DIR")
         timing_dir = os.path.join(timing_dir, case.get_value("CASE"))
         shutil.move(os.path.join(rundir,"timing"),
                     os.path.join(timing_dir,"timing."+lid))
 
-def save_postrun_provenance_acme(case, lid):
-    save_timing = case.get_value("SAVE_TIMING")
-    if not save_timing:
-        return
-
-    lid = os.environ["LID"] if lid is None else lid
-
+def _save_postrun_timing_acme(case, lid):
     rundir = case.get_value("RUNDIR")
     timing_dir = case.get_value("SAVE_TIMING_DIR")
+    if timing_dir is None or timing_dir == 'UNSET':
+        logger.warning("ACME requires SAVE_TIMING_DIR to be set in order to save timings. Skipping save timings")
+        return
+
     caseroot = case.get_value("CASEROOT")
     mach = case.get_value("MACH")
     base_case = case.get_value("CASE")
@@ -299,10 +295,17 @@ def save_postrun_provenance_acme(case, lid):
             if not filename.endswith(".gz"):
                 gzip_existing_file(os.path.join(root, filename))
 
+def _save_postrun_provenance_acme(case, lid):
+    save_timing = case.get_value("SAVE_TIMING")
+    if not save_timing:
+        _save_postrun_timing_acme(case, lid)
+
 def save_postrun_provenance(case, lid=None):
     with SharedArea():
         model = case.get_value("MODEL")
+        lid = os.environ["LID"] if lid is None else lid
+
         if model == "acme":
-            save_postrun_provenance_acme(case, lid=lid)
+            _save_postrun_provenance_acme(case, lid)
         elif model == "cesm":
-            save_postrun_provenance_cesm(case, lid=lid)
+            _save_postrun_provenance_cesm(case, lid)
