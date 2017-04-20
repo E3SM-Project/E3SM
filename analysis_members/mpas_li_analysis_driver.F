@@ -24,6 +24,8 @@ module li_analysis_driver
    use mpas_timekeeping
    use mpas_timer
    use mpas_stream_manager
+   use mpas_io_units
+   use mpas_abort
 
    use li_constants
    use li_global_stats

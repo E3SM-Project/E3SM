@@ -27,6 +27,8 @@ module li_time_integration_fe
    use mpas_dmpar
    use mpas_timer
    use mpas_vector_reconstruction
+   use mpas_io_units
+
    use li_advection
    use li_calving, only: li_calve_ice, li_restore_calving_front
    use li_thermal, only: li_thermal_solver

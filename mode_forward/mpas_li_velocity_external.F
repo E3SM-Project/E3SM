@@ -20,6 +20,8 @@ module li_velocity_external
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_timer
+   use mpas_io_units
+
    use li_setup
    use, intrinsic :: iso_c_binding
    use mpas_constants, only: gravity

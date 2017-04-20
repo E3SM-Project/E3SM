@@ -27,6 +27,8 @@ module li_thermal
    use mpas_constants
    use mpas_dmpar
    use mpas_timer
+   use mpas_abort
+
    use li_setup
    use li_mask
    use li_constants

@@ -25,6 +25,7 @@ module li_mask
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_timer
+   use mpas_io_units
    use li_setup
 
    implicit none

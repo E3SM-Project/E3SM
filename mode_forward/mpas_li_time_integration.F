@@ -26,6 +26,8 @@ module li_time_integration
    use mpas_constants
    use mpas_dmpar
    use mpas_timekeeping
+   use mpas_io_units
+
    use li_time_integration_fe
    use li_setup
    use li_constants

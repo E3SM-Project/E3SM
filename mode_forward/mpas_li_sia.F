@@ -24,6 +24,8 @@ module li_sia
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
+   use mpas_log
+   use mpas_io_units   
    use li_mask
    use li_setup
 
@@ -347,7 +349,7 @@ contains
 
      ! === error check
      if (err > 0) then
-         write (stderrUnit,*) "An error has occurred in li_sia_solve."
+         call mpas_log_write("An error has occurred in li_sia_solve.", MPAS_LOG_ERR)
      endif
 
    !--------------------------------------------------------------------

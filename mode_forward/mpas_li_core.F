@@ -10,7 +10,7 @@ module li_core
    use mpas_framework
    use mpas_timekeeping
    use li_analysis_driver
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log
 
    implicit none
    private
@@ -244,7 +244,7 @@ module li_core
 
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
-          call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_core_init. Aborting...")
+          call mpas_log_write("An error has occurred in li_core_init. Aborting...", MPAS_LOG_CRIT)
       endif
 
    !--------------------------------------------------------------------
@@ -437,7 +437,7 @@ module li_core
          ! === error check and exit
          call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
          if (globalErr > 0) then
-             call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_core_run. Aborting...")
+             call mpas_log_write("An error has occurred in li_core_run. Aborting...", MPAS_LOG_CRIT)
          endif
 
       end do
@@ -522,7 +522,7 @@ module li_core
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
-          call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_core_finalize. Aborting...")
+          call mpas_log_write("An error has occurred in li_core_finalize. Aborting...", MPAS_LOG_CRIT)
       endif
 
       call mpas_timer_stop("land ice finalize")
@@ -689,7 +689,7 @@ module li_core
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
-          call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_core_initial_solve. Aborting...")
+          call mpas_log_write("An error has occurred in li_core_initial_solve. Aborting...", MPAS_LOG_ERR)
       endif
 
 
@@ -828,7 +828,7 @@ module li_core
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in landice_init_block."
+          call mpas_log_write("An error has occurred in landice_init_block.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -938,7 +938,7 @@ module li_core
             call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=err_tmp)
             ierr = ior(ierr,err_tmp)
             if(startTime + runduration /= stopTime) then
-               write(stderrUnit,*) 'Warning: config_run_duration and config_stop_time are inconsistent: using config_run_duration.'
+               call mpas_log_write('config_run_duration and config_stop_time are inconsistent: using config_run_duration.', MPAS_LOG_WARN)
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
@@ -951,8 +951,8 @@ module li_core
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=err_tmp)
          ierr = ior(ierr,err_tmp)
       else
-         write(stderrUnit,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
-         ierr = 1
+          call mpas_log_write('Neither config_run_duration nor config_stop_time were specified.', MPAS_LOG_ERR)
+          ierr = 1
       end if
 
       ! Set up the adaptiveTimestepForceInterval alarm.
@@ -972,7 +972,7 @@ module li_core
 
       ! === error check
       if (ierr > 0) then
-          write (stderrUnit,*) "An error has occurred in li_simulation_clock_init."
+          call mpas_log_write("An error has occurred in li_simulation_clock_init.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
