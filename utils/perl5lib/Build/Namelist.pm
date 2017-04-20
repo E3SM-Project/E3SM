@@ -627,8 +627,8 @@ my $valint = "[+-]?[0-9]+";
 my $valint_repeat = "${valint}\\*$valint";
 
 # Logical data.
-my $vallogical1 = "\\.[Tt][Rr][Uu][Ee]\\.";
-my $vallogical2 = "\\.[Ff][Aa][Ll][Ss][Ee]\\.";
+my $vallogical1 = "\\.?[Tt][Rr][Uu][Ee]\\.?";
+my $vallogical2 = "\\.?[Ff][Aa][Ll][Ss][Ee]\\.?";
 my $vallogical = "$vallogical1|$vallogical2";
 my $vallogical_repeat = "${valint}\\*$vallogical1|${valint}\\*$vallogical2";
 
