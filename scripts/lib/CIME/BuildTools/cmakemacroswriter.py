@@ -89,7 +89,8 @@ class CMakeMacroWriter(MacroWriterBase):
         >>> s.getvalue()
         u'set(foo "bar")\\n'
         """
-        self.write_line("set(" + name + ' "' + value + '")')
+        value_transformed = self._transform_value(name, value)
+        self.write_line("set(" + name + ' "' + value_transformed + '")')
 
     def start_ifeq(self, left, right):
         """Write out a statement to start a conditional block.
@@ -117,3 +118,42 @@ class CMakeMacroWriter(MacroWriterBase):
         """
         self.indent_left()
         self.write_line("endif()")
+
+    def _transform_value(self, name, value):
+        """Some elements need their values transformed in some way for CMake to handle them properly.
+        This method does those transformations.
+
+        Args:
+        - name (str): name of element
+        - value (str): value of element
+
+        Returns transformed value
+        """
+
+        value_transformed = value
+        if self._element_needs_whitespace_removal(name):
+            value_transformed = value_transformed.strip()
+
+        return value_transformed
+
+    def _element_needs_whitespace_removal(self, name):
+        """Returns True if the given element needs whitespace removed
+
+        Args:
+        - name (str): name of element
+        """
+
+        # These compiler variables are only handled correctly if white space is removed
+        vars_that_need_whitespace_removal = (
+            'MPICC',
+            'MPICXX',
+            'MPIFC',
+            'SCC',
+            'SCXX',
+            'SFC'
+        )
+
+        if name in vars_that_need_whitespace_removal:
+            return True
+        else:
+            return False
