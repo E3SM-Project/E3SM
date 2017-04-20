@@ -206,7 +206,7 @@
       <value compset="GEOS_CAM4%SSOA"   >sd_cam4_trop_strat_soa</value>
       <value compset="AR95_CAM[45]"     >scam_arm95</value>
       <value compset="AR97_CAM[45]"     >scam_arm97</value>
-      <value compset="SCM5_CAM5"        >scam_generic</value>
+      <value compset="SCAM_CAM5"        >scam_generic</value>
       <value compset="PIPD_CAM5"        >1850-PD_cam5</value>
     </values>
     <group>run_component_cam</group>
