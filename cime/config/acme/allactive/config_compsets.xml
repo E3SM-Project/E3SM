@@ -178,21 +178,4 @@
   <lname>1850_CAM5_CLM45%BGC_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
 </compset>
 
-<compset>
-  <alias>E1850C5CNECACTCBC</alias>
-  <lname>1850_CAM5_CLM45%CNECACTCBC_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>E20TRC5CNECACTCBC</alias>
-  <lname>20TR_CAM5_CLM45%CNECACTCBC_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
-</compset>
-
-<entries>
-  <entry id="RUN_STARTDATE">
-    <values>
-      <value  compset="20TR_CAM">1850-01-01</value>
-    </values>
-  </entry>
-</entries>
 </compsets>
