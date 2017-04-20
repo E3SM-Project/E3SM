@@ -65,7 +65,7 @@
     </submit_args>
   </batch_system>
 
-  <batch_system type="lsf" version="9.1">
+  <batch_system type="lsf" version="10.1">
     <batch_query args=" -w" >bjobs</batch_query>
     <batch_submit>bsub</batch_submit>
     <batch_redirect>&lt;</batch_redirect>
@@ -82,7 +82,8 @@
       <directive                       > -n {{ total_tasks }} </directive>
       <directive                       > -R "span[ptile={{ tasks_per_node }}]"</directive>
       <directive                       > -N  </directive>
-      <directive default="poe"         > -a {{ poe }} </directive>
+	  <!-- The following option causes problems with lsf version on Summitdev. -->
+      <!-- <directive default="poe"         > -a {{ poe }} </directive> -->
       <directive default="acme.stdout" > -o {{ output_error_path }}.%J  </directive>
       <directive default="acme.stderr" > -e {{ output_error_path }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
@@ -393,6 +394,7 @@
      <directives>
        <directive>-A {{ project }}</directive>
        <directive>-l nodes={{ num_nodes }}</directive>
+       <directive>-env "all"</directive>
      </directives>
      <queues>
        <queue walltimemax="02:00:00" jobmin="0" jobmax="299008" default="true">batch</queue>
