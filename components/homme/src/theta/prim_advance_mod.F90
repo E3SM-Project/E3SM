@@ -86,7 +86,7 @@ contains
     use edge_mod,       only: edgevpack, edgevunpack, initEdgeBuffer
     use edgetype_mod,   only: EdgeBuffer_t
     use reduction_mod,  only: reductionbuffer_ordered_1d_t
-    use time_mod,       only: timelevel_qdp, tevolve
+    use time_mod,       only: timelevel_qdp
 
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
@@ -282,43 +282,15 @@ contains
        call abortmp('ERROR: bad choice of tstep_type')
     endif
 
-!    call prim_printstate(elem,tl,hybrid,hvcoord,nets,nete)
 
     ! ==============================================
     ! Time-split Horizontal diffusion: nu.del^2 or nu.del^4
     ! U(*) = U(t+1)  + dt2 * HYPER_DIFF_TERM(t+1)
     ! ==============================================
-#ifdef ENERGY_DIAGNOSTICS
-    if (compute_diagnostics) then
-       do ie = nets,nete
-          elem(ie)%accum%DIFF(:,:,:,:)=elem(ie)%state%v(:,:,:,:,np1)
-          elem(ie)%accum%DIFFTHETA(:,:,:)=elem(ie)%state%theta_dp_cp(:,:,:,np1)
-       enddo
-    endif
-#endif
-
     ! note:time step computes u(t+1)= u(t*) + RHS.
     ! for consistency, dt_vis = t-1 - t*, so this is timestep method dependent
     ! forward-in-time, hypervis applied to dp3d
     call advance_hypervis(edge6,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
-
-#ifdef ENERGY_DIAGNOSTICS
-    if (compute_diagnostics) then
-       do ie = nets,nete
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-         do k=1,nlev  !  Loop index added (AAM)
-          elem(ie)%accum%DIFF(:,:,:,k)=( elem(ie)%state%v(:,:,:,k,np1) -&
-               elem(ie)%accum%DIFF(:,:,:,k) ) / dt_vis
-          elem(ie)%accum%DIFFTHETA(:,:,k)=( elem(ie)%state%theta_dp_cp(:,:,k,np1) -&
-               elem(ie)%accum%DIFFTHETA(:,:,k) ) / dt_vis
-         enddo
-       enddo
-    endif
-#endif
-
-    tevolve=tevolve+dt
 
     call t_stopf('prim_advance_exp')
     end subroutine prim_advance_exp
@@ -749,8 +721,6 @@ contains
   use physics_mod, only : virtual_specific_heat, virtual_temperature
   use prim_si_mod, only : preq_vertadv_v, preq_vertadv_upwind, preq_omega_ps, preq_hydrostatic_v2
 
-  use time_mod, only : tevolve
-
   implicit none
   integer, intent(in) :: np1,nm1,n0,qn0,nets,nete
   real*8, intent(in) :: dt2
@@ -1018,13 +988,17 @@ contains
      ! =========================================================
 
      if (compute_diagnostics) then
-        elem(ie)%accum%KEhoriz1=0
+        elem(ie)%accum%KEu_horiz1=0
+        elem(ie)%accum%KEu_horiz2=0
+        elem(ie)%accum%KEu_vert1=0
+        elem(ie)%accum%KEu_vert2=0
+        elem(ie)%accum%KEw_horiz1=0
+        elem(ie)%accum%KEw_horiz2=0
+        elem(ie)%accum%KEw_vert1=0
+        elem(ie)%accum%KEw_vert2=0
+
         elem(ie)%accum%PEhoriz1=0
         elem(ie)%accum%PEhoriz2=0
-        elem(ie)%accum%KE1=0
-        elem(ie)%accum%KE2=0
-        elem(ie)%accum%KEvert1=0
-        elem(ie)%accum%KEvert2=0
         elem(ie)%accum%IEvert1=0
         elem(ie)%accum%IEvert2=0
         elem(ie)%accum%PEvert1=0
@@ -1037,34 +1011,35 @@ contains
         elem(ie)%accum%P2=0
         ! See element_state.F90 for an account of what these variables are defined as
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,vtemp,KE,d_eta_dot_dpdn_dn)
+!$omp parallel do private(k,i,j,d_eta_dot_dpdn_dn)
 #endif
         do k =1,nlev
           do j=1,np
             do i=1,np                
-                  d_eta_dot_dpdn_dn=(eta_dot_dpdn(i,j,k+1)-                    &
-                  eta_dot_dpdn(i,j,k))
-               !  Form KEhoriz1
-                  elem(ie)%accum%KEhoriz1(i,j)=elem(ie)%accum%KEhoriz1(i,j)    &
-                  -v_gradKE(i,j,k)*dp3d(i,j,k) - KE(i,j,k)*divdp(i,j,k)
-                  elem(ie)%accum%KE1(i,j)=elem(ie)%accum%KE1(i,j)              &
+                  d_eta_dot_dpdn_dn=(eta_dot_dpdn(i,j,k+1)-eta_dot_dpdn(i,j,k))
+               !  Form horiz advection of KE-u
+                  elem(ie)%accum%KEu_horiz1(i,j)=elem(ie)%accum%KEu_horiz1(i,j)              &
                   -v_gradKE(i,j,k)*dp3d(i,j,k) 
-                  elem(ie)%accum%KE2(i,j)=elem(ie)%accum%KE2(i,j)              &
+                  elem(ie)%accum%KEu_horiz2(i,j)=elem(ie)%accum%KEu_horiz2(i,j)              &
                   -KE(i,j,k)*divdp(i,j,k)
-               !  Form KEhoriz2
-                  elem(ie)%accum%KEhoriz2(i,j)=elem(ie)%accum%KEhoriz2(i,j)-   &
-                  dp3d(i,j,k) * elem(ie)%state%w(i,j,k,n0) * v_gradw(i,j,k)    &
-                  -0.5*(elem(ie)%state%w(i,j,k,n0))**2 * divdp(i,j,k) 
-               !  Form KEvert1
-                  elem(ie)%accum%KEvert1(i,j)=elem(ie)%accum%KEvert1(i,j)-     &
+               !  Form horiz advection of KE-w
+                  elem(ie)%accum%KEw_horiz1(i,j)=elem(ie)%accum%KEw_horiz1(i,j)-   &
+                  dp3d(i,j,k) * elem(ie)%state%w(i,j,k,n0) * v_gradw(i,j,k)    
+                  elem(ie)%accum%KEw_horiz2(i,j)=elem(ie)%accum%KEw_horiz2(i,j)-   &
+                  0.5*(elem(ie)%state%w(i,j,k,n0))**2 * divdp(i,j,k) 
+               !  Form vertical advection of KE-u 
+                  elem(ie)%accum%KEu_vert1(i,j)=elem(ie)%accum%KEu_vert1(i,j)- &
                   (elem(ie)%state%v(i,j,1,k,n0) * v_vadv(i,j,1,k) +            &
-                  elem(ie)%state%v(i,j,2,k,n0) *v_vadv(i,j,2,k))*dp3d(i,j,k)-  &      
+                  elem(ie)%state%v(i,j,2,k,n0) *v_vadv(i,j,2,k))*dp3d(i,j,k)
+                  elem(ie)%accum%KEu_vert2(i,j)=elem(ie)%accum%KEu_vert2(i,j)- &
                   0.5*((elem(ie)%state%v(i,j,1,k,n0))**2 +                     &
                        (elem(ie)%state%v(i,j,2,k,n0))**2)*d_eta_dot_dpdn_dn
-               !  Form KEvert2
-                  elem(ie)%accum%KEvert2(i,j)=elem(ie)%accum%KEvert2(i,j)      &
-                  -s_vadv(i,j,k,1)*(elem(ie)%state%w(i,j,k,n0))*dp3d(i,j,k)    &   
-                  -d_eta_dot_dpdn_dn*(elem(ie)%state%w(i,j,k,n0))**2
+               !  Form vertical advection of KE-w
+                  elem(ie)%accum%KEw_vert1(i,j)=elem(ie)%accum%KEw_vert1(i,j)      &
+                  -s_vadv(i,j,k,1)*elem(ie)%state%w(i,j,k,n0)*dp3d(i,j,k)    
+                  elem(ie)%accum%KEw_vert2(i,j)=elem(ie)%accum%KEw_vert2(i,j)      &
+                  -0.5*d_eta_dot_dpdn_dn*(elem(ie)%state%w(i,j,k,n0)**2)
+
                !  Form IEvert1
                   elem(ie)%accum%IEvert1(i,j)=elem(ie)%accum%IEvert1(i,j)      &
                   -exner(i,j,k)*s_theta_dp_cpadv(i,j,k)                        
@@ -1093,11 +1068,11 @@ contains
                   -exner(i,j,k)*div_v_theta(i,j,k)
                !  Form T2 
                   elem(ie)%accum%T2(i,j)=elem(ie)%accum%T2(i,j)+                & 
-                  (g*(elem(ie)%state%w(i,j,k,n0))-                              &
-                  v_gradphi(i,j,k))*dpnh(i,j,k)                                 
+                  (g*elem(ie)%state%w(i,j,k,n0)-v_gradphi(i,j,k))               &
+                  *dpnh(i,j,k)                                 
                !  Form S2
                   elem(ie)%accum%S2(i,j)=elem(ie)%accum%S2(i,j)                 &
-                  -g*(elem(ie)%state%w(i,j,k,n0))+v_gradphi(i,j,k)              &
+                  +(v_gradphi(i,j,k)-g*elem(ie)%state%w(i,j,k,n0))              &
                   *dpnh(i,j,k)
                !  Form P1
                   elem(ie)%accum%P1(i,j)=elem(ie)%accum%P1(i,j)                 &
