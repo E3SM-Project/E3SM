@@ -57,11 +57,11 @@ def parse_command_line(args):
 
     parser.add_argument("--compiler", "-compiler",
                         help="Specify a compiler. "
-                        "To see list of supported compilers for each machine, use the utility query_case in this directory")
+                        "To see list of supported compilers for each machine, use the utility query_config in this directory")
 
     parser.add_argument("--mpilib", "-mpilib",
                         help="Specify the mpilib. "
-                        "To see list of supported mpilibs for each machine, use the utility query_case in this directory. "
+                        "To see list of supported mpilibs for each machine, use the utility query_config in this directory. "
                         "The default is the first listing in MPILIBS in config_machines.xml")
 
     parser.add_argument("--clean", action="store_true",

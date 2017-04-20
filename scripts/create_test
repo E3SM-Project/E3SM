@@ -124,7 +124,7 @@ OR
 
     parser.add_argument("--mpilib",
                         help="Specify the mpilib. "
-                        "To see list of supported mpilibs for each machine, use the utility query_case in this directory. "
+                        "To see list of supported mpilibs for each machine, use the utility query_config in this directory. "
                         "The default is the first listing in MPILIBS in config_machines.xml")
 
     if model == "cesm":
