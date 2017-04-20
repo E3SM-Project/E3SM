@@ -998,7 +998,7 @@
     </module_system>
     <environment_variables>
       <env name="NETCDF_PATH">`which nc-config | xargs dirname | xargs dirname`</env>
-      <env name="PNETCDF_PATH">`which pnetcdf_version | xargs dirname | xargs dirname`</env>
+      <env name="PNETCDF_PATH" mpilib="!mpi-serial">`which pnetcdf_version | xargs dirname | xargs dirname`</env>
     </environment_variables>
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
