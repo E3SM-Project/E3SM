@@ -330,6 +330,11 @@ def _main():
         os.environ["compile_threaded"] = "false"
 
     os.environ["UNIT_TEST_HOST"] = socket.gethostname()
+    if "NETCDF_PATH" in os.environ and not "NETCDF" in os.environ:
+        # The CMake Netcdf find utility that we use (from pio2) seems to key off
+        # of the environment variable NETCDF, but not NETCDF_PATH
+        logger.info("Setting NETCDF environment variable: %s"%os.environ["NETCDF_PATH"])
+        os.environ["NETCDF"] = os.environ["NETCDF_PATH"]
 
     if not use_mpi:
         mpirun_command = ""
