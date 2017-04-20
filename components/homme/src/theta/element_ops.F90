@@ -55,29 +55,33 @@ contains
 
   subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   implicit none
-  type (element_t), intent(in) :: elem
-  character(len=*), intent(in) :: name
-  real (kind=real_kind), intent(out)  :: field(np,np,nlev)
-  type (hvcoord_t),     intent(in)    :: hvcoord          
-  integer, intent(in) :: nt
-  integer, intent(in) :: ntQ
+  type (element_t),       intent(in) :: elem
+  character(len=*),       intent(in) :: name
+  real (kind=real_kind),  intent(out):: field(np,np,nlev)
+  type (hvcoord_t),       intent(in) :: hvcoord
+  integer,                intent(in) :: nt
+  integer,                intent(in) :: ntQ
+
+  integer :: k
+  real(kind=real_kind) :: tmp(np,np,nlev)
 
   select case(name)
-  case ('temperature')
-     call get_temperature(elem,field,hvcoord,nt,ntQ)
-  case ('pottemp')
-     call get_pottemp(elem,field,hvcoord,nt,ntQ)
-  case ('phi')
-     field = elem%state%phi(:,:,:,nt)
-     !field = elem%derived%phi(:,:,:)
-  case ('dpnh_dp')
-     call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
+  case ('temperature'); call get_temperature(elem,field,hvcoord,nt,ntQ)
+  case ('pottemp');     call get_pottemp(elem,field,hvcoord,nt,ntQ)
+  case ('phi');         field = elem%state%phi(:,:,:,nt)
+  case ('dpnh_dp');     call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
+  case ('pnh');         call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt,ntQ)
+  case ('exner');       call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt,ntQ)
   case ('omega')
-!     do k=1,nlev
-!        field(:,:,k)=elem%derived%omega_p(:,:,k)*&
-!             (hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt))
-!     end do
-     field(:,:,:)=elem%state%w(:,:,:,nt)
+      do k=1,nlev
+        field(:,:,k)=elem%derived%omega_p(:,:,k) * &
+        (hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt))
+     end do
+  case ('p');
+    do k=1,nlev
+      field(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
+    enddo
+  case ('w');           field(:,:,:)=elem%state%w(:,:,:,nt)
   case default
      print *,'name = ',trim(name)
      call abortmp('ERROR: get_field name not supported in this model')
@@ -86,11 +90,11 @@ contains
   end subroutine
 
 
-
+  !_____________________________________________________________________
   subroutine get_pottemp(elem,pottemp,hvcoord,nt,ntQ)
-!
-! Should only be called outside timestep loop, state variables on reference levels
-!
+  !
+  ! Should only be called outside timestep loop, state variables on reference levels
+  !
   implicit none
     
   type (element_t), intent(in)        :: elem
@@ -115,11 +119,11 @@ contains
   end subroutine get_pottemp
   
 
-
+  !_____________________________________________________________________
   subroutine get_temperature(elem,temperature,hvcoord,nt,ntQ)
-!
-! Should only be called outside timestep loop, state variables on reference levels
-!
+  !
+  ! Should only be called outside timestep loop, state variables on reference levels
+  !
   implicit none
   
   type (element_t), intent(in)        :: elem
@@ -165,9 +169,7 @@ contains
   end subroutine get_temperature
 
 
-
-
-
+  !_____________________________________________________________________
   subroutine get_dpnh_dp(elem,dpnh_dp,hvcoord,nt,ntQ)
   implicit none
   
@@ -198,14 +200,40 @@ contains
   dpnh_dp = dpnh/dp
   end subroutine 
 
+  !_____________________________________________________________________
+  subroutine get_nonhydro_pressure(elem,pnh,exner,hvcoord,nt,ntQ)
+    implicit none
+    
+    type (element_t),       intent(in)  :: elem
+    real (kind=real_kind),  intent(out) :: pnh(np,np,nlev)
+    real (kind=real_kind),  intent(out) :: exner(np,np,nlev)
+    type (hvcoord_t),       intent(in)  :: hvcoord
+    integer,                intent(in)  :: nt
+    integer,                intent(in)  :: ntQ
+    
+    real (kind=real_kind), dimension(np,np,nlev) :: dp,dpnh,kappa_star
+    integer :: k
+
+    do k=1,nlev
+      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+      (hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
+    enddo
+
+    call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
+
+    call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
+         dp,elem%state%phi(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
+         pnh,dpnh,exner)
+
+  end subroutine
 
 
-
+  !_____________________________________________________________________
   subroutine get_kappa_star(kappa_star,Qdp,dp)
-!
-! note: interface written in this way so that it can be called outside timelevel loop,
-! where dp is computed from reverence levels, or inside timelevel loop where dp = prognostic dp3d
-!
+  !
+  ! note: interface written in this way so that it can be called outside timelevel loop,
+  ! where dp is computed from reverence levels, or inside timelevel loop where dp = prognostic dp3d
+  !
   implicit none
   real (kind=real_kind), intent(out)  :: kappa_star(np,np,nlev)
   real (kind=real_kind), intent(in)   :: Qdp(np,np,nlev)
@@ -233,13 +261,12 @@ contains
   endif
   end subroutine 
 
-
-
+  !_____________________________________________________________________
   subroutine get_cp_star(cp_star,Qdp,dp)
-!
-! note: interface written in this way so that it can be called outside timelevel loop,
-! where dp is computed from reverence levels, or inside timelevel loop where dp = prognostic dp3d
-!
+  !
+  ! note: interface written in this way so that it can be called outside timelevel loop,
+  ! where dp is computed from reverence levels, or inside timelevel loop where dp = prognostic dp3d
+  !
   implicit none
   real (kind=real_kind), intent(out)  :: cp_star(np,np,nlev)
   real (kind=real_kind),     intent(in)    :: Qdp(np,np,nlev)
@@ -259,21 +286,18 @@ contains
   end subroutine 
 
 
-
-
-
-
+  !_____________________________________________________________________
   subroutine get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,phis,kappa_star,pnh,dpnh,exner,exner_i_out)
   implicit none
-!
-! compute exner pressure, nh presure
-!
-! input:  dp3d, Qdp (if use_moisture), phi, phis, theta
-! output:  pnh, dphn, exner, exner_i
-!       for k=2..nlev, use the equation of state:  pnh/e = rho*Rstar*theta
-!                                                    rho   = -dp3d/dphi 
-!
-!  
+  !
+  ! compute exner pressure, nh presure
+  !
+  ! input:  dp3d, Qdp (if use_moisture), phi, phis, theta
+  ! output:  pnh, dphn, exner, exner_i
+  !       for k=2..nlev, use the equation of state:  pnh/e = rho*Rstar*theta
+  !                                                    rho   = -dp3d/dphi 
+  !
+  !  
   type (hvcoord_t),     intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
   real (kind=real_kind), intent(in) :: theta_dp_cp(np,np,nlev)   
   real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)   
@@ -294,8 +318,6 @@ contains
   real (kind=real_kind) :: theta_i(np,np,nlevp) 
   real (kind=real_kind) :: exner_i(np,np,nlevp) 
   integer :: k
-
-
 
   if (theta_hydrostatic_mode) then
      ! hydrostatic pressure
@@ -378,9 +400,6 @@ contains
 
 
 
-
-
-
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
 #endif
@@ -402,34 +421,31 @@ contains
   end subroutine get_pnh_and_exner
 
 
-
-
-
-
+  !_____________________________________________________________________
   subroutine copy_state(elem,nin,nout)
   implicit none
   
   type (element_t), intent(inout)   :: elem
   integer :: nin,nout
 
-  elem%state%v(:,:,:,:,nout)=elem%state%v(:,:,:,:,nin)
-  elem%state%w(:,:,:,nout)   =elem%state%w(:,:,:,nin)
-  elem%state%theta_dp_cp(:,:,:,nout)   =elem%state%theta_dp_cp(:,:,:,nin)
-  elem%state%phi(:,:,:,nout)   =elem%state%phi(:,:,:,nin)
-  elem%state%dp3d(:,:,:,nout)=elem%state%dp3d(:,:,:,nin)
-  elem%state%ps_v(:,:,nout)  =elem%state%ps_v(:,:,nin)
+  elem%state%v(:,:,:,:,nout)  =elem%state%v(:,:,:,:,nin)
+  elem%state%w(:,:,:,nout)    =elem%state%w(:,:,:,nin)
+  elem%state%theta_dp_cp(:,:,:,nout) =elem%state%theta_dp_cp(:,:,:,nin)
+  elem%state%phi(:,:,:,nout)  =elem%state%phi(:,:,:,nin)
+  elem%state%dp3d(:,:,:,nout) =elem%state%dp3d(:,:,:,nin)
+  elem%state%ps_v(:,:,nout)   =elem%state%ps_v(:,:,nin)
   end subroutine copy_state
 
 
-
+  !_____________________________________________________________________
   subroutine set_thermostate(elem,temperature,hvcoord,nt,ntQ)
-!
-! Assuming a hydrostatic intital state and given surface pressure,
-! and no moisture, compute theta and phi 
-!
-! input:  ps_v, temperature
-! ouput:  state variables:   theta_dp_cp, phi
-!
+  !
+  ! Assuming a hydrostatic intital state and given surface pressure,
+  ! and no moisture, compute theta and phi 
+  !
+  ! input:  ps_v, temperature
+  ! ouput:  state variables:   theta_dp_cp, phi
+  !
   implicit none
   
   type (element_t), intent(inout)   :: elem
@@ -476,11 +492,9 @@ contains
   end subroutine set_thermostate
 
 
-
-
-
-
+  !_____________________________________________________________________
   subroutine set_hydrostatic_phi(hvcoord,phis,theta_dp_cp,dp,phi)
+
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! inverse of get_pnh_and_exner() for dry hydrostatic case
   ! used to initialize phi for dry test cases
@@ -498,7 +512,6 @@ contains
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: p_i(np,np,nlev+1)
-
   real (kind=real_kind) :: dp_theta_R(np,np,nlev)
   integer :: k
 
@@ -526,19 +539,18 @@ contains
           dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa / p_i(:,:,k)
   enddo
 
-
   end subroutine
 
-
-
- 
+  !_____________________________________________________________________
   subroutine set_theta_ref(hvcoord,dp,theta_ref)
+
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! inverse of get_pnh_and_exner() for dry hydrostatic case
   ! used to initialize phi for dry test cases
   ! used to compute background phi for reference state
   ! in both the above uses, we can assume dry and we dont need to compute kappa_star
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   implicit none
   
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
@@ -551,9 +563,9 @@ contains
   real (kind=real_kind) :: T0,T1
   integer :: k
 
-! reference T = 288K.  reference lapse rate = 6.5K/km   = .0065 K/m
-! Tref = T0+T1*exner
-! Thetaref = T0/exner + T1
+  ! reference T = 288K.  reference lapse rate = 6.5K/km   = .0065 K/m
+  ! Tref = T0+T1*exner
+  ! Thetaref = T0/exner + T1
   T1 = .0065*288d0*Cp/g ! = 191
   T0 = 288d0-T1         ! = 97
 
@@ -570,13 +582,11 @@ contains
      theta_ref(:,:,k) = (T0/exner(:,:,k) + T1)
   enddo
 
-
   end subroutine
 
 
-
- 
-  subroutine set_state(u,v,w,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
+  !_____________________________________________________________________
+  subroutine set_state(u,v,w,T,ps,phis,p,dp,zm,g,i,j,k,elem,n0,n1)
 !
 ! set state variables at node(i,j,k) at layer midpoints
 ! used by idealized tests for dry initial conditions
@@ -589,16 +599,16 @@ contains
   ! set prognostic state variables at level midpoints
   elem%state%v   (i,j,1,k,n0:n1) = u
   elem%state%v   (i,j,2,k,n0:n1) = v
-  elem%state%w   (i,j,k,n0:n1)   = w
-  elem%state%ps_v(i,j,n0:n1)     = ps
-  elem%state%phi(i,j,k,n0:n1)      = g*zm
+  elem%state%w   (i,j,k,  n0:n1) = w
+  elem%state%ps_v(i,j,    n0:n1) = ps
+  elem%state%phi (i,j,k,  n0:n1) = g*zm
   elem%state%phis(i,j)           = phis
   elem%state%theta_dp_cp(i,j,k,n0:n1)=T*Cp*dp*((p/p0)**(-kappa))
 
   end subroutine set_state
 
 
-
+  !_____________________________________________________________________
   subroutine set_forcing_rayleigh_friction(elem, f_d, u0,v0, n)
 !
 ! test cases which use rayleigh friciton will call this with the relaxation coefficient
@@ -621,8 +631,7 @@ contains
 
 
 
-
-
+  !_____________________________________________________________________
   subroutine tests_finalize(elem, hvcoord,ns,ne)
 !
 ! Now that all variables have been initialized, set phi to be in hydrostatic balance

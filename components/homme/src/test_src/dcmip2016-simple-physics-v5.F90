@@ -74,7 +74,7 @@
 !            J. Adv. Model. Earth Syst., Vol. 4, M04001, doi:10.1029/2011MS000099
 !-----------------------------------------------------------------------
 
-SUBROUTINE SIMPLE_PHYSICS(pcols, pver, dtime, lat, t, q, u, v, pmid, pint, pdel, rpdel, ps, precl, test)
+SUBROUTINE SIMPLE_PHYSICS_V5(pcols, pver, dtime, lat, t, q, u, v, pmid, pint, pdel, rpdel, ps, precl, test)
 
   ! use physics_types     , only: physics_dme_adjust   ! This is for CESM/CAM
   ! use cam_diagnostics,    only: diag_phys_writeout   ! This is for CESM/CAM
@@ -485,5 +485,5 @@ SUBROUTINE SIMPLE_PHYSICS(pcols, pver, dtime, lat, t, q, u, v, pmid, pint, pdel,
   !  call physics_dme_adjust(state, tend, qini, dtime)   ! This is for CESM/CAM
 
    return
-end subroutine SIMPLE_PHYSICS
+end subroutine SIMPLE_PHYSICS_V5
 

@@ -46,17 +46,20 @@ module interp_movie_mod
 #undef V_IS_LATLON
 #if defined(_PRIM)
 #define V_IS_LATLON
-  integer, parameter :: varcnt = 37 !45
+  integer, parameter :: varcnt = 40 !45
   integer, parameter :: maxdims =  5
   character*(*), parameter :: varnames(varcnt)=(/'ps       ', &
                                                  'geos     ', &
                                                  'zeta     ', &
                                                  'dp3d     ', &
+                                                 'p        ', &
+                                                 'pnh      ', &
                                                  'div      ', &
                                                  'T        ', &
                                                  'Th       ', &
                                                  'u        ', &
                                                  'v        ', &
+                                                 'w        ', &
                                                  'ke       ', &
                                                  'Q        ', &
                                                  'Q2       ', &
@@ -86,8 +89,8 @@ module interp_movie_mod
                                                  'hybi     ', &
                                                  'time     '/)
   integer, parameter :: vartype(varcnt)=(/PIO_double,PIO_double,PIO_double,PIO_double,&
-                                          PIO_double,&
-                                          PIO_double,PIO_double,PIO_double,PIO_double,&
+                                          PIO_double,PIO_double,PIO_double, &
+                                          PIO_double,PIO_double,PIO_double,PIO_double, PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
@@ -100,7 +103,7 @@ module interp_movie_mod
                                           PIO_double,PIO_double,&
                                           PIO_double/)
   logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,&
-                                              .false.,&   
+                                              .false.,.false., .false., .false., &
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
@@ -115,11 +118,14 @@ module interp_movie_mod
        1,2,0,0,0,  &   ! geos
        1,2,3,5,0,  &   ! zeta
        1,2,3,5,0,  &   ! dp3d
+       1,2,3,5,0,  &   ! p
+       1,2,3,5,0,  &   ! pnh
        1,2,3,5,0,  &   ! div
        1,2,3,5,0,  &   ! T
        1,2,3,5,0,  &   ! Th
        1,2,3,5,0,  &   ! u
        1,2,3,5,0,  &   ! v
+       1,2,3,5,0,  &   ! w
        1,2,3,5,0,  &   ! ke
        1,2,3,5,0,  &   ! Q
        1,2,3,5,0,  &   ! Q2
@@ -304,30 +310,32 @@ contains
     !call nf_global_attribute(ncdf, 'np', np)
     !call nf_global_attribute(ncdf, 'ne', ne)
 
-    call nf_variable_attributes(ncdf, 'ps', 'surface pressure','Pa')
-    call nf_variable_attributes(ncdf, 'u', 'longitudinal wind component','meters/second')
-    call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
+    call nf_variable_attributes(ncdf, 'ps',   'surface pressure','Pa')
+    call nf_variable_attributes(ncdf, 'u',    'longitudinal wind component','meters/second')
+    call nf_variable_attributes(ncdf, 'v',    'latitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'zeta', 'Relative vorticity','1/s')
 #if defined(_PRIM)
-    call nf_variable_attributes(ncdf, 'geo', 'Geopotential','m^2/s^2')
+    call nf_variable_attributes(ncdf, 'geo',  'Geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'geos', 'Surface geopotential','m^2/s^2')
-    call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
+    call nf_variable_attributes(ncdf, 'T',    'Temperature','degrees kelvin')
     call nf_variable_attributes(ncdf, 'dp3d', 'delta p','Pa')
-    call nf_variable_attributes(ncdf, 'Q', 'concentration','kg/kg')
-    call nf_variable_attributes(ncdf, 'Q2', 'concentration','kg/kg')
-    call nf_variable_attributes(ncdf, 'Q3', 'concentration','kg/kg')
-    call nf_variable_attributes(ncdf, 'Q4', 'concentration','kg/kg')
-    call nf_variable_attributes(ncdf, 'Q5', 'concentration','kg/kg')
-    call nf_variable_attributes(ncdf, 'lev' ,'hybrid level at midpoints' ,'level','positive','down') !,'formula_terms','a: hyam b: hybm p0: P0 ps: PS')
-    call nf_variable_attributes(ncdf, 'ilev','hybrid level at interfaces','level','positive','down') !,'formula_terms','a: hyai b: hybi p0: P0 ps: PS')
-    call nf_variable_attributes(ncdf, 'hyam','hybrid A coefficiet at layer midpoints' ,'dimensionless') 
-    call nf_variable_attributes(ncdf, 'hybm','hybrid B coefficiet at layer midpoints' ,'dimensionless') 
-    call nf_variable_attributes(ncdf, 'hyai','hybrid A coefficiet at layer interfaces' ,'dimensionless') 
-    call nf_variable_attributes(ncdf, 'hybi','hybrid B coefficiet at layer interfaces' ,'dimensionless') 
+    call nf_variable_attributes(ncdf, 'p',    'hydrostatic pressure','Pa')
+    call nf_variable_attributes(ncdf, 'pnh',  'total (nonhydrostatic) pressure','Pa')
+    call nf_variable_attributes(ncdf, 'Q',    'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'Q2',   'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'Q3',   'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'Q4',   'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'Q5',   'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'lev' , 'hybrid level at midpoints' ,'level','positive','down')
+    call nf_variable_attributes(ncdf, 'ilev', 'hybrid level at interfaces','level','positive','down')
+    call nf_variable_attributes(ncdf, 'hyam', 'hybrid A coefficiet at layer midpoints' ,'dimensionless')
+    call nf_variable_attributes(ncdf, 'hybm', 'hybrid B coefficiet at layer midpoints' ,'dimensionless')
+    call nf_variable_attributes(ncdf, 'hyai', 'hybrid A coefficiet at layer interfaces' ,'dimensionless')
+    call nf_variable_attributes(ncdf, 'hybi', 'hybrid B coefficiet at layer interfaces' ,'dimensionless')
 #endif
-    call nf_variable_attributes(ncdf, 'gw', 'gauss weights','dimensionless')
-    call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
-    call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
+    call nf_variable_attributes(ncdf, 'gw',   'gauss weights','dimensionless')
+    call nf_variable_attributes(ncdf, 'lat',  'column latitude','degrees_north')
+    call nf_variable_attributes(ncdf, 'lon',  'column longitude','degrees_east')
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
 
     call nf_output_init_complete(ncdf)
@@ -770,6 +778,36 @@ contains
                 deallocate(datall)
              end if
 
+             if(nf_selectedvar('p', output_varnames)) then
+                if (par%masterproc) print *,'writing p...'
+                allocate(datall(ncnt,nlev))
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call get_field(elem(ie),'p',temp3d,hvcoord,n0,n0_Q)
+                   call interpolate_scalar(interpdata(ie),temp3d, &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='p')
+                deallocate(datall)
+             end if
+
+             if(nf_selectedvar('pnh', output_varnames)) then
+                if (par%masterproc) print *,'writing pnh...'
+                allocate(datall(ncnt,nlev))
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call get_field(elem(ie),'pnh',temp3d,hvcoord,n0,n0_Q)
+                   call interpolate_scalar(interpdata(ie),temp3d, &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='pnh')
+                deallocate(datall)
+             end if
+
              if(nf_selectedvar('ke', output_varnames)) then
                 if (par%masterproc) print *,'writing ke...'
                 allocate(datall(ncnt,nlev))
@@ -841,6 +879,24 @@ contains
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='geo')
                 deallocate(datall)
+             end if
+
+             if(nf_selectedvar('w', output_varnames)) then
+                if (par%masterproc) print *,'writing w...'
+                allocate(datall(ncnt,nlev), var3d(np,np,nlev,nelemd))
+                do ie=1,nelemd
+                   call get_field(elem(ie),'w',var3d(:,:,:,ie),hvcoord,n0,n0_Q)
+                end do
+                call make_C0(var3d,elem,par)
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), var3d(:,:,:,ie), &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='w')
+                deallocate(datall,var3d)
              end if
 
              if(nf_selectedvar('omega', output_varnames)) then

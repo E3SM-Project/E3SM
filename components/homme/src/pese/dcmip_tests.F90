@@ -7,7 +7,7 @@
 #include "config.h"
 #endif
 
-module dcmip_tests
+module dcmip12_wrapper
 
 ! Implementation of the dcmip2012 dycore tests for the PESE dynamics target
 
@@ -785,6 +785,6 @@ subroutine set_tracers(q,nq, dp,i,j,k,lat,lon,elem)
   enddo
 
 end subroutine
-end module dcmip_tests
+end module dcmip12_wrapper
 
 #endif

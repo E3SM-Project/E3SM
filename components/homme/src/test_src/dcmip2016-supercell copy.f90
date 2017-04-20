@@ -535,15 +535,16 @@ CONTAINS
     end if
 
     ! Iterate using fixed point method
-    do iter = 1, 20
+    do iter = 1, 200
 
       zc = (za * (pb - p) - zb * (pa - p)) / (pb - pa)
 
       CALL supercell_z(lon, lat, zc, pc, thetav, rho, q, pert)
 
-      !write(*,*) pc
+      !print *,"pc=",pc," zc=",zc
 
-      if (abs((pc - p) / p) .lt. 1.d-12) then
+       !if (abs((pc - p) / p) .lt. 1.d-14) then
+       if (abs((pc - p) / p) .lt. 1.d-12) then
         exit
       end if
 
@@ -556,8 +557,9 @@ CONTAINS
       end if
     end do
 
-    if (iter .eq. 21) then
+    if (iter .eq. 201) then
       write(*,*) 'Iteration failed to converge'
+      print *,"pc=",pc," zc=",zc
       stop
     end if
 

@@ -4,10 +4,11 @@
 
 macro(preqx_acc_setup)
 
-SET(TARGET_DIR      ${HOMME_SOURCE_DIR}/src/preqx_acc)
-SET(UTILS_SHARE_DIR ${HOMME_SOURCE_DIR}/utils/csm_share)
-SET(SRC_DIR         ${HOMME_SOURCE_DIR}/src)
-SET(SRC_SHARE_DIR   ${HOMME_SOURCE_DIR}/src/share)
+SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/preqx_acc)
+SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
+SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
+SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
+SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
 SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/cime/share/timing)
 
 # Make INCLUDE_DIRS global so the tests can access it
@@ -15,7 +16,7 @@ SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                             ${UTILS_TIMING_DIR} )
 
 SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/preqx_acc)
-FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90 ${SRC_SHARE_DIR}/*.F90 ${SRC_SHARE_DIR}/sb81/*.F90 )
+FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90 ${SRC_SHARE_DIR}/*.F90 ${SRC_SHARE_DIR}/sb81/*.F90 ${TEST_SRC_DIR}/*.F90)
 
 SET(PREQX_SRCS_F90
   ${TARGET_F90}
@@ -33,14 +34,6 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/restart_io_mod.F90 
   ${SRC_DIR}/surfaces_mod.F90 
   ${SRC_DIR}/test_mod.F90
-  ${SRC_DIR}/test_src/asp_tests.F90
-  ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
-  ${SRC_DIR}/test_src/dcmip2012_test1_2_3.F90
-  ${SRC_DIR}/test_src/dcmip2012_test4.F90
-  ${SRC_DIR}/test_src/dcmip2012_test5.F90
-  ${SRC_DIR}/test_src/dcmip_tests.F90
-  ${SRC_DIR}/test_src/mtests.F90
-  ${SRC_DIR}/test_src/held_suarez_mod.F90 
   ${SRC_DIR}/restart_io_mod.F90 
   ${SRC_DIR}/common_io_mod.F90
   ${SRC_DIR}/pio_io_mod.F90 

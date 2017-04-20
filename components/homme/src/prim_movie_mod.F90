@@ -521,6 +521,19 @@ contains
                 end do
                 call nf_put_var(ncdf(ios),var3d,start, count, name='Th')
              end if
+
+            if(nf_selectedvar('rho', output_varnames)) then
+                if (par%masterproc) print *,'writing rho...'
+                st=1
+                do ie=1,nelemd
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call get_field(elem(ie),'rho',vartmp,hvcoord,n0,n0_Q)
+                   call UniquePoints(elem(ie)%idxP,nlev,vartmp,var3d(st:en,:))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var3d,start, count, name='T')
+             end if
+
              if(nf_selectedvar('u', output_varnames)) then
                 if (par%masterproc) print *,'writing u...'
                 st=1

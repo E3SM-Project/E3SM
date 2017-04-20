@@ -5,7 +5,7 @@
 #ifndef CAM
 #include "config.h"
 
-module dcmip_tests
+module dcmip12_wrapper
 
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
@@ -519,6 +519,7 @@ subroutine dcmip2012_test3(elem,hybrid,hvcoord,nets,nete)
 
 end subroutine
 
+!_____________________________________________________________________
 subroutine dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
 
   type(element_t),    intent(inout), target :: elem(:)
@@ -528,15 +529,15 @@ subroutine dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
   integer,  parameter :: zcoords = 0                          ! we are not using z coords
   logical,  parameter :: use_eta = .true.                     ! we are using hybrid eta coords
 
-!Some params from dcmip2012 tests need to be pulled to this level.
-!ps is needed to set pressure before the main int routine is called.
   real(rl), parameter :: ps_test = 100000.0d0
+
   integer :: i,j,k,ie                                                   !
   real(rl):: lon,lat,hyam,hybm
   real(rl):: p,z,phis,u,v,w,T,ps,rho,dp    !pointwise field values
   real(rl):: q,q1,q2,qarray(3),pressure
   integer :: qs
-  if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 4: baroclinic'
+
+  if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 4: baroclinic wave'
 
   ! set initial conditions
 
@@ -546,14 +547,15 @@ subroutine dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
       do j=1,np; do i=1,np
         call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
 
-!test4_baroclinic_wave(moist,X,lon,lat,p,z,zcoords,u,v,w,t,phis,ps,rho,q,q1,q2)
-!moist 0 or 1, X is Earth scale factor, zcoord=0, q is vapor, q1, q2 
+        !test4_baroclinic_wave(moist,X,lon,lat,p,z,zcoords,u,v,w,t,phis,ps,rho,q,q1,q2)
+        !moist 0 or 1, X is Earth scale factor, zcoord=0, q is vapor, q1, q2
         call test4_baroclinic_wave(dcmip4_moist,dcmip4_X,lon,lat,&
                                    pressure,z,zcoords,u,v,w,T,phis,ps,rho,q,q1,q2)
         qarray(1)=q; qarray(2)=q1; qarray(3)=q2;
         dp = pressure_thickness(ps,k,hvcoord)
         call set_state(u,v,w,T,ps,phis,pressure,dp,zm(k),g, i,j,k,elem(ie),1,nt)
-!init only <=qsize tracers
+
+        !init only <=qsize tracers
         qs = min(qsize,3)
         call set_tracers(qarray(1:qs),qs, dp,i,j,k,lat,lon,elem(ie))
       enddo; enddo; enddo; 
@@ -666,5 +668,5 @@ subroutine set_tracers(q,nq, dp,i,j,k,lat,lon,elem)
   enddo
 
 end subroutine
-end module dcmip_tests
+end module dcmip12_wrapper
 #endif
