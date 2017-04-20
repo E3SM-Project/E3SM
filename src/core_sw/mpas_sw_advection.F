@@ -11,6 +11,7 @@ module sw_advection
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
+   use mpas_log
 
 
    contains
@@ -586,7 +587,7 @@ module sw_advection
       cz = 0.5*(az + bz)
    
       if (cx == 0. .and. cy == 0. .and. cz == 0.) then
-         write(0,*) 'Error: arc_bisect: A and B are diametrically opposite'
+         call mpas_log_write('arc_bisect: A and B are diametrically opposite', MPAS_LOG_ERR)
       else
          d = sqrt(cx*cx + cy*cy + cz*cz)
          cx = r * cx / d
@@ -616,7 +617,7 @@ module sw_advection
       integer :: i,j
    
       if ( (ne<n) .or. (ne<m) ) then
-         write(6,*) ' error in poly_fit_2 inversion ',m,n,ne
+         call mpas_log_write(' error in poly_fit_2 inversion $i $i $i', MPAS_LOG_ERR, intArgs=(/m,n,ne/))
          stop
       end if
    
@@ -832,7 +833,7 @@ end subroutine sw_elgs
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, cellsOnCell, verticesOnCell
 
-      if (debug) write(0,*) ' in def weight calc '
+      if (debug) call mpas_log_write(' in def weight calc ')
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
@@ -863,11 +864,11 @@ end subroutine sw_elgs
 
       pii = 2.*asin(1.0)
 
-      if (debug) write(0,*) ' beginning cell loop '
+      if (debug) call mpas_log_write(' beginning cell loop ')
 
       do iCell = 1, nCells
 
-         if (debug) write(0,*) ' cell loop ', iCell
+         if (debug) call mpas_log_write(' cell loop $i', intArgs=(/iCell/))
 
          cell_list(1) = iCell
          do i = 2, nEdgesOnCell(iCell)+1
@@ -877,7 +878,7 @@ end subroutine sw_elgs
 
 !  check to see if we are reaching outside the halo
 
-         if (debug) write(0,*) ' points ', n
+         if (debug) call mpas_log_write(' points $i', intArgs=(/n/))
 
          do_the_cell = .true.
          do i = 1, n
@@ -973,7 +974,7 @@ end subroutine sw_elgs
             area_cell = area_cell + 0.25*(xp(i)+xp(ip1))*(yp(ip1)-yp(i)) - 0.25*(yp(i)+yp(ip1))*(xp(ip1)-xp(i))
             area_cellt = area_cellt + (0.25*(xp(i)+xp(ip1))*cos(thetat(i)) + 0.25*(yp(i)+yp(ip1))*sin(thetat(i)))*dl
          end do
-         if (debug) write(0,*) ' area_cell, area_cellt ',area_cell, area_cellt,area_cell-area_cellt
+         if (debug) call mpas_log_write(' area_cell, area_cellt $r $r $r', realArgs=(/area_cell, area_cellt,area_cell-area_cellt/))
 
          do i = 1, n-1
             ip1 = i+1
@@ -993,7 +994,7 @@ end subroutine sw_elgs
 
       end do
 
-      if (debug) write(0,*) ' exiting def weight calc '
+      if (debug) call mpas_log_write(' exiting def weight calc ')
 
    end subroutine sw_initialize_deformation_weights
 

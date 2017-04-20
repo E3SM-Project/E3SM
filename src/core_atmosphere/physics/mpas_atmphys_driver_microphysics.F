@@ -269,8 +269,8 @@
  integer:: i,icell,icount,istep,j,k,kk
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '---enter subroutine driver_microphysics:'
+!call mpas_log_write('')
+!call mpas_log_write('---enter subroutine driver_microphysics:')
 
 !... allocation of microphysics arrays:
 !$OMP MASTER
@@ -357,8 +357,8 @@
        trim(microp_scheme) == "mp_thompson") then
        call compute_radar_reflectivity(diag_physics,its,ite)
     else
-       write(0,*) '*** NOTICE: NOT computing simulated radar reflectivity'
-       write(0,*) '            since WSM6 or Thompson microphysics scheme was not selected'
+       call mpas_log_write('*** NOTICE: NOT computing simulated radar reflectivity')
+       call mpas_log_write('            since WSM6 or Thompson microphysics scheme was not selected')
     end if
 
     !calculate the relative humidity over water if the temperature is strictly greater than 0.C,
@@ -380,8 +380,8 @@
  call deallocate_microphysics
 !$OMP END MASTER
 
-!write(0,*) '---enter subroutine driver_microphysics:'
-!write(0,*)
+!call mpas_log_write('---enter subroutine driver_microphysics:')
+!call mpas_log_write('')
 
  end subroutine driver_microphysics
 

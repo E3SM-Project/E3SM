@@ -9,6 +9,7 @@ module soundings
 
     use mpas_kind_types, only : RKIND, StrKIND
     use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type
+    use mpas_log, only : mpas_log_write
 
     public :: soundings_setup, &
               soundings_compute, &
@@ -51,7 +52,7 @@ module soundings
 
         use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type, dm_info
         use mpas_pool_routines, only : mpas_pool_get_subpool, mpas_pool_get_dimension, mpas_pool_get_array, mpas_pool_get_config
-        use mpas_io_units, only : stderrUnit, mpas_new_unit, mpas_release_unit
+        use mpas_io_units, only :  mpas_new_unit, mpas_release_unit
         use mpas_timekeeping, only : MPAS_timeInterval_type, MPAS_time_type, MPAS_set_timeInterval, &
                                      MPAS_get_clock_time, MPAS_add_clock_alarm, MPAS_NOW
         use mpas_dmpar, only : IO_NODE, mpas_dmpar_bcast_int, mpas_dmpar_bcast_logical, mpas_dmpar_bcast_char
@@ -98,7 +99,7 @@ module soundings
         call mpas_dmpar_bcast_logical(dminfo, exists)
 
         if (.not. exists) then
-            write(stderrUnit,*) 'Sounding location file ''sounding_locations.txt'' not found.'
+            call mpas_log_write('Sounding location file ''sounding_locations.txt'' not found.')
             return
         end if
       
@@ -114,7 +115,7 @@ module soundings
         call mpas_dmpar_bcast_int(dminfo, ierr)
 
         if (ierr /= 0) then
-            write(stderrUnit,*) 'Error opening sounding location file ''sounding_locations.txt'''
+            call mpas_log_write('Error opening sounding location file ''sounding_locations.txt''')
             if (dminfo % my_proc_id == IO_NODE) then
                 call mpas_release_unit(sndUnit)
             end if
@@ -141,7 +142,7 @@ module soundings
             return
         end if
 
-        write(stderrUnit,*) 'Read ', nSoundings, ' sounding locations from ''sounding_locations.txt'''
+        call mpas_log_write('Read $i sounding locations from ''sounding_locations.txt''', intArgs=(/nSoundings/))
 
         if (dminfo % my_proc_id == IO_NODE) then
             rewind(sndUnit)
@@ -202,7 +203,6 @@ module soundings
     !-----------------------------------------------------------------------
     subroutine soundings_compute()
 
-        use mpas_io_units, only : stderrUnit
         use mpas_derived_types, only : MPAS_pool_type
         use mpas_pool_routines, only : MPAS_pool_get_dimension, MPAS_pool_get_array
         use mpas_timekeeping, only : MPAS_time_type, MPAS_is_alarm_ringing, MPAS_reset_clock_alarm, MPAS_get_clock_time, &
@@ -240,11 +240,11 @@ module soundings
             call MPAS_pool_get_array(diag, 'uReconstructZonal', uReconstructZonal)
             call MPAS_pool_get_array(diag, 'uReconstructMeridional', uReconstructMeridional)
 
-!            write(stderrUnit,*) '--- Writing soundings at '//trim(nowString)//'---'
+!            call mpas_log_write('--- Writing soundings at '//trim(nowString)//'---')
 
             do iStn=1,nSoundings
                 if (stationOwned(iStn)) then
-!                    write(stderrUnit,*) 'Writing sounding for station '//trim(stationNames(iStn))
+!                    call mpas_log_write('Writing sounding for station '//trim(stationNames(iStn)))
 
                     write(fname,'(a,i4.4,i2.2,i2.2,i2.2,i2.2,a)') trim(stationNames(iStn))//'.', yyyy, mm, dd, h, m, '.snd'
                     open(97,file=trim(fname),form='formatted',status='replace')
@@ -296,7 +296,7 @@ module soundings
 
             call MPAS_reset_clock_alarm(simulationClock, 'soundingAlarm')
         else
-!            write(stderrUnit,*) '--- Not yet time to write soundings ---'
+!            call mpas_log_write('--- Not yet time to write soundings ---')
         end if
    
     end subroutine soundings_compute

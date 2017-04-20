@@ -24,6 +24,7 @@ module ocn_surface_area_weighted_averages
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
+   use mpas_log
 
    use ocn_constants
    use ocn_diagnostics_routines
@@ -305,9 +306,8 @@ contains
          ! test to make sure the arrays are big enough
          nDefinedDataFields = size(avgValueWithinOceanRegion,dim=1)
          if (nDefinedDataFields > nSfcAreaWeightedAvgFields) then
-             write (stderrUnit,*) 'Abort: nDefinedDataFields > nSfcAreaWeightedAvgFields'
-             write (stderrUnit,*) '     :  increase size of ocn_surface_area_weighted_averages scratch space'
-             call mpas_dmpar_abort(dminfo)
+             call mpas_log_write("Abort: nDefinedDataFields > nLayerVolWeightedAvgFields" // &
+                "    increase size of ocn_layer_volume_weighted_averages scratch space", MPAS_LOG_CRIT )
          endif
 
          ! get pointers to data that will be analyzed

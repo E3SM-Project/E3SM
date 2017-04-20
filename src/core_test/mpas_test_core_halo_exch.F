@@ -15,7 +15,7 @@ module test_core_halo_exch
    use mpas_field_routines
    use mpas_dmpar
    use mpas_threading
-   use mpas_io_units
+   use mpas_log
    use mpas_timer
 
    implicit none
@@ -51,32 +51,32 @@ module test_core_halo_exch
 
       call mpas_timer_start('halo exch tests')
       if ( threadNum == 0 ) then
-         write(stderrUnit, *) ' - Performing exchange group tests'
+         call mpas_log_write(' - Performing exchange group tests')
       end if
       call test_core_halo_exch_group_test(domain, threadErrs, iErr)
       call mpas_threading_barrier()
       if ( threadNum == 0 ) then
-         write(stderrUnit, *) '    -- Return code: ', iErr
+         call mpas_log_write('    -- Return code: $i', intArgs=(/iErr/))
          err = ior(err, iErr)
       end if
 
       if ( threadNum == 0 ) then
-         write(stderrUnit, *) ' - Performing single field halo exchange tests'
+         call mpas_log_write(' - Performing single field halo exchange tests')
       end if
       call test_core_halo_exch_single_field_test(domain, threadErrs, iErr)
       call mpas_threading_barrier()
       if ( threadNum == 0 ) then
-         write(stderrUnit, *) '    -- Return code: ', iErr
+         call mpas_log_write('    -- Return code: $i', intArgs=(/iErr/))
          err = ior(err, iErr)
       end if
 
       if ( threadNum == 0 ) then
-         write(stderrUnit, *) ' - Performing old halo exchange tests'
+         call mpas_log_write(' - Performing old halo exchange tests')
       end if
       call test_core_halo_exch_full_test(domain, threadErrs, iErr)
       call mpas_threading_barrier()
       if ( threadNum == 0 ) then
-         write(stderrUnit, *) '    -- Return code: ', iErr
+         call mpas_log_write('    -- Return code: $i', intArgs=(/iErr/))
          err = ior(err, iErr)
       end if
 
@@ -1115,7 +1115,7 @@ module test_core_halo_exch
 
          ! Validate that all differences are zero.
 #ifdef HALO_EXCH_DEBUG
-         write(stderrUnit, *) '     -- Testing persistent cell fields'
+         call mpas_log_write('     -- Testing persistent cell fields')
 #endif
          if ( sum(real5D) /= 0.0_RKIND ) then
             threadErrs(threadNum) = 1
@@ -1149,7 +1149,7 @@ module test_core_halo_exch
             threadErrs(threadNum) = 1
          end if
 #ifdef HALO_EXCH_DEBUG
-         write(stderrUnit, *) '     -- Test result: ', threadErrs(threadNum)
+         call mpas_log_write('     -- Test result: $i', intArgs=(/threadErrs(threadNum)/))
 #endif
 
          ! Compare persistent edge fields
@@ -1194,7 +1194,7 @@ module test_core_halo_exch
 
          ! Validate that all differences are zero.
 #ifdef HALO_EXCH_DEBUG
-         write(stderrUnit, *) '     -- Testing persistent Edge fields'
+         call mpas_log_write('     -- Testing persistent Edge fields')
 #endif
          if ( sum(real5D) /= 0.0_RKIND ) then
             threadErrs(threadNum) = 1
@@ -1228,7 +1228,7 @@ module test_core_halo_exch
             threadErrs(threadNum) = 1
          end if
 #ifdef HALO_EXCH_DEBUG
-         write(stderrUnit, *) '     -- Test result: ', threadErrs(threadNum)
+         call mpas_log_write('     -- Test result: $i', intArgs=(/threadErrs(threadNum)/))
 #endif
 
          ! Compare persistent vertex fields
@@ -1273,7 +1273,7 @@ module test_core_halo_exch
 
          ! Validate that all differences are zero.
 #ifdef HALO_EXCH_DEBUG
-         write(stderrUnit, *) '     -- Testing persistent Vertex fields'
+         call mpas_log_write('     -- Testing persistent Vertex fields')
 #endif
          if ( sum(real5D) /= 0.0_RKIND ) then
             threadErrs(threadNum) = 1
@@ -1299,7 +1299,7 @@ module test_core_halo_exch
             threadErrs(threadNum) = 1
          end if
 #ifdef HALO_EXCH_DEBUG
-         write(stderrUnit, *) '     -- Test result: ', threadErrs(threadNum)
+         call mpas_log_write('     -- Test result: $i', intArgs=(/threadErrs(threadNum)/))
 #endif
 
          ! Compare scratch cell fields
@@ -1344,7 +1344,7 @@ module test_core_halo_exch
 
          ! Validate that all differences are zero.
 #ifdef HALO_EXCH_DEBUG
-         write(stderrUnit, *) '     -- Testing scratch cell fields'
+         call mpas_log_write('     -- Testing scratch cell fields')
 #endif
          if ( sum(real5D) /= 0.0_RKIND ) then
             threadErrs(threadNum) = 1
@@ -1378,7 +1378,7 @@ module test_core_halo_exch
             threadErrs(threadNum) = 1
          end if
 #ifdef HALO_EXCH_DEBUG
-         write(stderrUnit, *) '     -- Test result: ', threadErrs(threadNum)
+         call mpas_log_write('     -- Test result: $i', intArgs=(/threadErrs(threadNum)/))
 #endif
 
          ! Compare scratch edge fields
@@ -1423,7 +1423,7 @@ module test_core_halo_exch
 
          ! Validate that all differences are zero.
 #ifdef HALO_EXCH_DEBUG
-         write(stderrUnit, *) '     -- Testing scratch edge fields'
+         call mpas_log_write('     -- Testing scratch edge fields')
 #endif
          if ( sum(real5D) /= 0.0_RKIND ) then
             threadErrs(threadNum) = 1
@@ -1457,7 +1457,7 @@ module test_core_halo_exch
             threadErrs(threadNum) = 1
          end if
 #ifdef HALO_EXCH_DEBUG
-         write(stderrUnit, *) '     -- Test result: ', threadErrs(threadNum)
+         call mpas_log_write('     -- Test result: $i', intArgs=(/threadErrs(threadNum)/)
 #endif
 
          ! Compare scratch vertex fields
@@ -1502,7 +1502,7 @@ module test_core_halo_exch
 
          ! Validate that all differences are zero.
 #ifdef HALO_EXCH_DEBUG
-         write(stderrUnit, *) '     -- Testing scratch vertex fields'
+         call mpas_log_write('     -- Testing scratch vertex fields')
 #endif
          if ( sum(real5D) /= 0.0_RKIND ) then
             threadErrs(threadNum) = 1
@@ -1536,7 +1536,7 @@ module test_core_halo_exch
             threadErrs(threadNum) = 1
          end if
 #ifdef HALO_EXCH_DEBUG
-         write(stderrUnit, *) '     -- Test result: ', threadErrs(threadNum)
+         call mpas_log_write('     -- Test result: $i', intArgs=(/threadErrs(threadNum)/))
 #endif
 
          block => block % next

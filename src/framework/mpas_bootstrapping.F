@@ -16,8 +16,7 @@ module mpas_bootstrapping
    use mpas_sort
    use mpas_timekeeping
    use mpas_io_streams
-   use mpas_io_units
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log
 
 
    integer :: readCellStart, readCellEnd, nReadCells
@@ -150,13 +149,9 @@ module mpas_bootstrapping
 
       inputHandle = MPAS_io_open(trim(mesh_filename), MPAS_IO_READ, mesh_iotype, domain % ioContext, ierr=ierr)
       if (ierr /= MPAS_IO_NOERR) then
-         write(stderrUnit,*) ' '
-         write(stderrUnit,*) '************************************************************************************'
-         write(stderrUnit,*) 'Error: Could not open input file '''//trim(mesh_filename)//''' to read mesh fields'
-         write(stderrUnit,*) '************************************************************************************'
-         call mpas_dmpar_abort(domain % dminfo)
+         call mpas_log_write('Could not open input file '''//trim(mesh_filename)//''' to read mesh fields', MPAS_LOG_CRIT)
       else
-         write(stderrUnit,*) 'Bootstrapping framework with mesh fields from input file '''//trim(mesh_filename)//''''
+         call mpas_log_write('Bootstrapping framework with mesh fields from input file '''//trim(mesh_filename)//'''')
       end if
 
 
@@ -265,8 +260,8 @@ module mpas_bootstrapping
       !
       call MPAS_io_get_att(inputHandle, 'on_a_sphere', c_on_a_sphere, ierr=ierr)
       if (ierr /= MPAS_IO_NOERR) then
-         write(stderrUnit,*) 'Warning: Attribute on_a_sphere not found in '//trim(mesh_filename)
-         write(stderrUnit,*) '   Setting on_a_sphere to ''YES'''
+         call mpas_log_write('Attribute on_a_sphere not found in '//trim(mesh_filename), MPAS_LOG_WARN)
+         call mpas_log_write('   Setting on_a_sphere to ''YES''', MPAS_LOG_WARN)
          domain % on_a_sphere = .true.
       else
          if (index(c_on_a_sphere, 'YES') /= 0) then
@@ -278,8 +273,8 @@ module mpas_bootstrapping
 
       call MPAS_io_get_att(inputHandle, 'sphere_radius', r_sphere_radius, ierr=ierr)
       if (ierr /= MPAS_IO_NOERR) then
-         write(stderrUnit,*) 'Warning: Attribute sphere_radius not found in '//trim(mesh_filename)
-         write(stderrUnit,*) '   Setting sphere_radius to 1.0'
+         call mpas_log_write('Attribute sphere_radius not found in '//trim(mesh_filename), MPAS_LOG_WARN)
+         call mpas_log_write('   Setting sphere_radius to 1.0', MPAS_LOG_WARN)
          domain % sphere_radius = 1.0
       else
          domain % sphere_radius = r_sphere_radius
@@ -291,15 +286,15 @@ module mpas_bootstrapping
       !
       call MPAS_io_get_att(inputHandle, 'file_id', c_file_id, ierr=ierr)
       if ( ierr /= MPAS_IO_NOERR) then
-         write(stderrUnit, *) 'Warning: Attribute file_id not found in '//trim(mesh_filename)
-         write(stderrUnit, *) '  Using '''' for the previous file_id.'
+         call mpas_log_write('Attribute file_id not found in '//trim(mesh_filename), MPAS_LOG_WARN)
+         call mpas_log_write('  Using '''' for the previous file_id.', MPAS_LOG_WARN)
          c_file_id = ''
       end if
 
       call MPAS_io_get_att(inputHandle, 'parent_id', c_parent_id, ierr=ierr)
       if ( ierr /= MPAS_IO_NOERR) then
-         write(stderrUnit, *) 'Warning: Attribute parent_id not found in '//trim(mesh_filename)
-         write(stderrUnit, *) '  Setting parent_id to '''''
+         call mpas_log_write('Attribute parent_id not found in '//trim(mesh_filename), MPAS_LOG_WARN)
+         call mpas_log_write('  Setting parent_id to ''''', MPAS_LOG_WARN)
          c_parent_id = ''
       end if
 
@@ -311,8 +306,8 @@ module mpas_bootstrapping
 
       call MPAS_io_get_att(inputHandle, 'mesh_spec', c_mesh_spec, ierr=ierr)
       if ( ierr /= MPAS_IO_NOERR) then
-         write(stderrUnit, *) 'Warning: Attribute mesh_spec not found in '//trim(mesh_filename)
-         write(stderrUnit, *) '  Setting mesh_spec to ''0.0'''
+         call mpas_log_write('Attribute mesh_spec not found in '//trim(mesh_filename), MPAS_LOG_WARN)
+         call mpas_log_write('  Setting mesh_spec to ''0.0''', MPAS_LOG_WARN)
          domain % mesh_spec = '0.0'
       else
         domain % mesh_spec = c_mesh_spec
@@ -324,8 +319,8 @@ module mpas_bootstrapping
       if ( .not. domain % on_a_sphere ) then
          call MPAS_io_get_att(inputHandle, 'is_periodic', c_is_periodic, ierr=ierr)
          if ( ierr /= MPAS_IO_NOERR ) then
-            write(stderrUnit, *) 'Warning: is_periodic attribute not found in '//trim(mesh_filename)
-            write(stderrUnit, *) '   Setting is_periodic to .false.'
+            call mpas_log_write('is_periodic attribute not found in '//trim(mesh_filename), MPAS_LOG_WARN)
+            call mpas_log_write('   Setting is_periodic to .false.', MPAS_LOG_WARN)
             domain % is_periodic = .false.
          else
             if (index(c_is_periodic, 'YES') /= 0) then
@@ -341,14 +336,14 @@ module mpas_bootstrapping
       if ( domain % is_periodic ) then
          call MPAS_io_get_att(inputHandle, 'x_period', r_x_period, ierr=ierr)
          if ( ierr /= MPAS_IO_NOERR ) then
-            call mpas_dmpar_global_abort('ERROR: Required attribute ''x_period'' missing from periodic input mesh. Exiting...')
+            call mpas_log_write('Required attribute ''x_period'' missing from periodic input mesh. Exiting...')
          else
             domain % x_period = r_x_period
          end if
 
          call MPAS_io_get_att(inputHandle, 'y_period', r_y_period, ierr=ierr)
          if ( ierr /= MPAS_IO_NOERR ) then
-            call mpas_dmpar_global_abort('ERROR: Required attribute ''y_period'' missing from periodic input mesh. Exiting...')
+            call mpas_log_write('Required attribute ''y_period'' missing from periodic input mesh. Exiting...')
          else
             domain % y_period = r_y_period
          end if
@@ -459,11 +454,11 @@ module mpas_bootstrapping
       err_level = mpas_pool_get_error_level()
       call mpas_pool_set_error_level(MPAS_POOL_SILENT)
 
-      write(stderrUnit, *) ' '
-      write(stderrUnit, *) ' '
+      call mpas_log_write(' ')
+      call mpas_log_write(' ')
 
       ! Reading dimensions from streams
-      write(stderrUnit,'(a)') 'Reading dimensions from input streams ...'
+      call mpas_log_write('Reading dimensions from input streams ...')
       call mpas_stream_mgr_begin_iteration(domain % streamManager)
       do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID = streamName, directionProperty = streamDirection, &
                                                  activeProperty = streamActive) )
@@ -504,9 +499,9 @@ module mpas_bootstrapping
             ! If to determine if file was opened or not.
             if ( err_local == MPAS_IO_NOERR ) then
 
-               write(stderrUnit, *) ' '
-               write(stderrUnit, *) '----- reading dimensions from stream '''//trim(streamName)//''' using file ' &
-                                    //trim(streamFilename)
+               call mpas_log_write(' ')
+               call mpas_log_write('----- reading dimensions from stream '''//trim(streamName)//''' using file ' &
+                                    //trim(streamFilename) )
 
                ! Iterate over list of dimensions we determined we need from the above loop
                call mpas_pool_begin_iteration(streamDimensions)
@@ -520,20 +515,18 @@ module mpas_bootstrapping
 
                      ! If to see if dimension was read or not
                      if ( err_local == MPAS_IO_NOERR ) then
-                        write(stderrUnit,'(a,a20,a,i8)') '       ', trim(poolItr % memberName), ' =', tempDim
+                        call mpas_log_write('       ' // trim(poolItr % memberName) // ' = $i', intArgs=(/tempDim/) )
 
                         if ( .not. associated(dimValue) ) then
                            call mpas_pool_add_dimension(readableDimensions, poolItr % memberName, tempDim)
                         else if ( dimValue /= tempDim .and. dimValue == MPAS_MISSING_DIM ) then
                            dimValue = tempDim
                         else if ( dimValue /= tempDim ) then
-                           write(stderrUnit, *) '********************************************************************************'
-                           write(stderrUnit, *) 'ERROR: Dimension ' // trim(poolItr % membername) &
-                                                // ' was read with an inconsistent value.'
-                           call mpas_dmpar_global_abort('********************************************************************************')
+                           call mpas_log_write('Dimension ' // trim(poolItr % membername) &
+                                                // ' was read with an inconsistent value.', MPAS_LOG_CRIT)
                         end if
                      else
-                        write(stderrUnit,'(a,a20,a)') '       ', trim(poolItr % memberName), ' *** not found in stream ***'
+                        call mpas_log_write('       ' // trim(poolItr % memberName) // ' *** not found in stream ***')
                      end if
 
                   end if
@@ -542,9 +535,9 @@ module mpas_bootstrapping
                ! Close file
                call mpas_io_close(inputHandle)
             else
-               write(stderrUnit, *) ' '
-               write(stderrUnit, *) '  *** unable to open input file '//trim(streamFilename)//' for stream ''' &
-                                    //trim(streamName)//''''
+               call mpas_log_write(' ')
+               call mpas_log_write('  *** unable to open input file '//trim(streamFilename)//' for stream ''' &
+                                    //trim(streamName)//'''')
             end if
 
             ! Destroy pool that contains list of streams dimensions
@@ -552,17 +545,17 @@ module mpas_bootstrapping
 
          else if ( .not. streamActive .and. ( streamDirection == MPAS_STREAM_INPUT .or. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) ) then
 
-            write(stderrUnit, *) ' '
-            write(stderrUnit, *) '----- skipping inactive stream '''//trim(streamName)//''''
+            call mpas_log_write(' ')
+            call mpas_log_write('----- skipping inactive stream '''//trim(streamName)//'''')
             
          end if
 
       end do
 
-      write(stderrUnit, *) ' '
-      write(stderrUnit, *) '----- done reading dimensions from input streams -----'
-      write(stderrUnit, *) ' '
-      write(stderrUnit, *) ' '
+      call mpas_log_write(' ')
+      call mpas_log_write('----- done reading dimensions from input streams -----')
+      call mpas_log_write(' ')
+      call mpas_log_write(' ')
 
       call mpas_pool_set_error_level(err_level)
 

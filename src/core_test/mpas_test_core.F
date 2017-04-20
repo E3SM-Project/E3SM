@@ -114,9 +114,9 @@ module test_core
       !
       call test_core_test_sorting(domain, iErr)
       if (iErr == 0) then
-         write(stderrUnit,*) ' * Sorting tests: SUCCESS'
+         call mpas_log_write(' * Sorting tests: SUCCESS')
       else
-         write(stderrUnit,*) ' * Sorting tests: FAILURE'
+         call mpas_log_write(' * Sorting tests: FAILURE', MPAS_LOG_ERR)
       end if
 
       iErr = 0
@@ -132,25 +132,25 @@ module test_core
       call test_core_halo_exch_test(domain, threadErrs, iErr)
       !$omp end parallel
       if ( iErr == 0 ) then
-         write(stderrUnit, *) ' * Halo Exchange Test: SUCCESS'
+         call mpas_log_write(' * Halo Exchange Test: SUCCESS')
       else
-         write(stderrUnit, *) ' * Halo Exchange Test: FAILURE'
+         call mpas_log_write(' * Halo Exchange Test: FAILURE', MPAS_LOG_ERR)
       end if
 
       !$omp parallel default(firstprivate) shared(domain, threadErrs)
       call test_core_test_fields(domain, threadErrs, ierr)
        if ( iErr == 0 ) then
-         write(stderrUnit, *) ' * Field Tests: SUCCESS'
+         call mpas_log_write(' * Field Tests: SUCCESS')
       else
-         write(stderrUnit, *) ' * Field Tests: FAILURE'
+         call mpas_log_write(' * Field Tests: FAILURE', MPAS_LOG_ERR)
       end if
       !$omp end parallel
 
       call test_core_streams_test(domain, threadErrs, iErr)
       if ( iErr == 0 ) then
-         write(stderrUnit, *) 'Stream I/O tests: SUCCESS'
+         call mpas_log_write('Stream I/O tests: SUCCESS')
       else
-         write(stderrUnit, *) 'Stream I/O tests: FAILURE'
+         call mpas_log_write('Stream I/O tests: FAILURE', MPAS_LOG_ERR)
       end if
 
 

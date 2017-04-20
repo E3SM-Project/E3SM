@@ -12,6 +12,7 @@ module atm_advection
    use mpas_pool_routines
    use mpas_constants
    use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log, only : mpas_log_write
 
 
    contains
@@ -390,23 +391,6 @@ module atm_advection
  
       end do ! end of loop over cells
 
-!      write(0,*) ' check for deriv2 coefficients, iEdge 4 '
-!
-!      iEdge = 4
-!      j = 1
-!      iCell = grid % cellsOnEdge % array(1,iEdge)
-!      write(0,*) ' j, icell, coef ',j,iCell,deriv_two(j,1,iEdge)
-!      do j=2,7
-!         write(0,*) ' j, icell, coef ',j,grid % CellsOnCell % array(j-1,iCell),deriv_two(j,1,iEdge)
-!      end do
-!
-!      j = 1
-!      iCell = grid % cellsOnEdge % array(2,iEdge)
-!      write(0,*) ' j, icell, coef ',j,iCell,deriv_two(j,2,iEdge)
-!      do j=2,7
-!         write(0,*) ' j, icell, coef ',j,grid % CellsOnCell % array(j-1,iCell),deriv_two(j,2,iEdge)
-!      end do
-
    end subroutine atm_initialize_advection_rk
 
 
@@ -569,7 +553,7 @@ module atm_advection
       cz = 0.5*(az + bz)
    
       if (cx == 0. .and. cy == 0. .and. cz == 0.) then
-         write(0,*) 'Error: arc_bisect: A and B are diametrically opposite'
+         call mpas_log_write('arc_bisect: A and B are diametrically opposite', messageType=MPAS_LOG_CRIT)
       else
          d = sqrt(cx*cx + cy*cy + cz*cz)
          cx = r * cx / d
@@ -599,8 +583,7 @@ module atm_advection
       integer, dimension(n) :: indx
    
       if ( (ne < n) .or. (ne < m) ) then
-         write(stderrUnit,*) ' error in poly_fit_2 inversion ',m,n,ne
-         call mpas_dmpar_global_abort('ERROR: in poly_fit_2 inversion')
+         call mpas_log_write('poly_fit_2: inversion $i $i $i', messageType=MPAS_LOG_CRIT, intArgs=(/m,n,ne/))
       end if
    
       a(1:m,1:n) = a_in(1:m,1:n)
@@ -627,12 +610,6 @@ module atm_advection
 !         b = matmul(ata_inv,at)
 !      end if
       b_out(1:n,1:m) = b(1:n,1:m)
-
-!     do i=1,n
-!        write(6,*) ' i, indx ',i,indx(i)
-!     end do
-!
-!     write(6,*) ' '
 
    end subroutine poly_fit_2
 
@@ -802,11 +779,7 @@ module atm_advection
       logical :: do_the_cell
       real (kind=RKIND) :: area_cell, sint2, cost2, sint_cost, area_cellt
 
-      logical, parameter :: debug = .false.
 
-      if (debug) write(0,*) ' in def weight calc '
-
-      
       call mpas_pool_get_array(mesh, 'defc_a', defc_a)
       call mpas_pool_get_array(mesh, 'defc_b', defc_b)
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
@@ -826,11 +799,7 @@ module atm_advection
 
       pii = 2.*asin(1.0)
 
-      if (debug) write(0,*) ' beginning cell loop '
-
       do iCell = 1, nCells
-
-         if (debug) write(0,*) ' cell loop ', iCell
 
          cell_list(1) = iCell
          do i=2,nEdgesOnCell(iCell)+1
@@ -839,8 +808,6 @@ module atm_advection
          n = nEdgesOnCell(iCell) + 1
 
 !  check to see if we are reaching outside the halo
-
-         if (debug) write(0,*) ' points ', n
 
          do_the_cell = .true.
          do i=1,n
@@ -948,7 +915,6 @@ module atm_advection
             area_cell = area_cell + 0.25*(xp(i)+xp(ip1))*(yp(ip1)-yp(i)) - 0.25*(yp(i)+yp(ip1))*(xp(ip1)-xp(i))
             area_cellt = area_cellt + (0.25*(xp(i)+xp(ip1))*cos(thetat(i)) + 0.25*(yp(i)+yp(ip1))*sin(thetat(i)))*dl
          end do
-         if (debug) write(0,*) ' area_cell, area_cellt ',area_cell, area_cellt,area_cell-area_cellt
 
          do i=1,n-1
             ip1 = i+1
@@ -967,8 +933,6 @@ module atm_advection
          end do
 
       end do
-
-      if (debug) write(0,*) ' exiting def weight calc '
 
    end subroutine atm_initialize_deformation_weights
 
