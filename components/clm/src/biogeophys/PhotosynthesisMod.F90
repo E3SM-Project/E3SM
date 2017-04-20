@@ -730,7 +730,7 @@ contains
 
                ! if (an(p,iv) < 0._r8) gs_mol(p,iv) = bbb(p)
                ! Brutely force an to zero if gs_mol is at its minimal value
-               if(abs(gs_mol(p,iv)-bbb(p))<1.e-14_r8)then
+               if(abs(gs_mol(p,iv)-bbb(p))<tiny_val)then
                   an(p,iv)=0._r8
                   ag(p,iv)=lmr_z(p,iv)
                endif
