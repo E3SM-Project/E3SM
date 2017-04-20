@@ -25,6 +25,8 @@ cat > $run/Walltime.Remaining <<EOF1
 $remaining $sample_interval
 EOF1
 /bin/cp --preserve=timestamps $run/acme.log.$lid $dir/acme.log.$lid.$remaining
+qstat -r acme > $dir/qstatr.$lid.$remaining
+qstat -1 -n acme > $dir/qstatn.$lid.$remaining
 
 while ($remaining > 0)
   echo "Wallclock time remaining: $remaining" >> $dir/atm.log.$lid.step
@@ -41,7 +43,8 @@ while ($remaining > 0)
   echo "Wallclock time remaining: $remaining" >> $dir/cpl.log.$lid.step
   tail -n 4 $dir/cpl.log.$lid.step-all >> $dir/cpl.log.$lid.step
   /bin/cp --preserve=timestamps -u $timing/* $dir
-  qstat -f acme > $dir/qstatf.$lid.$remaining
+  qstat -r acme > $dir/qstatr.$lid.$remaining
+  qstat -1 -n acme > $dir/qstatn.$lid.$remaining
   chmod a+r $dir/*
   sleep $sample_interval
   set remaining = `qstat -f $jid | grep -F Walltime.Remaining | sed 's/ *Walltime.Remaining = *\([0-9]*\) */\1/' `
