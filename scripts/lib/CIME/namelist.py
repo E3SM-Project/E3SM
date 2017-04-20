@@ -1440,11 +1440,14 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
             self._advance()
         return True
 
-    def _expect_char(self, chars):
+    def _expect_char(self, chars, RETURN=False):
         """Raise an error if the wrong character is present.
 
         Does not return anything, but raises a `_NamelistParseError` if `chars`
         does not contain the character at the current position.
+
+        The RETURN optional is used to allow for checking of consecutive
+        characters such as '+='
 
         >>> x = _NamelistParser('ab')
         >>> x._expect_char('a')
@@ -1455,13 +1458,17 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         _NamelistParseError: Error in parsing namelist: expected 'a' but found 'b'
         >>> x._expect_char('ab')
         """
-        if self._curr() not in chars:
+        if self._curr() not in chars and not RETURN:
             if len(chars) == 1:
                 char_description = repr(str(chars))
             else:
                 char_description = "one of the characters in %r" % str(chars)
             raise _NamelistParseError("expected %s but found %r" %
                                       (char_description, str(self._curr())))
+        elif self._curr() in chars and RETURN:
+            return True
+        elif self._curr() not in chars and RETURN:
+            return False
 
     def _parse_namelist_group_name(self):
         r"""Parses and returns a namelist group name at the current position.
@@ -1536,7 +1543,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         _NamelistParseError: Error in parsing namelist: '' is not a valid variable name
         """
         old_pos = self._pos
-        separators = (' ', '\n', '=') if allow_equals else (' ', '\n')
+        separators = (' ', '\n', '=', '+') if allow_equals else (' ', '\n')
         while self._curr() not in separators:
             self._advance()
         text = self._text[old_pos:self._pos]
@@ -1964,10 +1971,15 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         SystemExit: ERROR: Too many values for array foo(1:2)
         >>> _NamelistParser("foo=1,")._parse_name_and_values(allow_eof_end=True)
         (u'foo', [u'1', u''])
+        >>> _NamelistParser("foo+=1")._parse_name_and_values(allow_eof_end=True)
+        (u'foo', [u'1'])
         """
         name = self._parse_variable_name()
 
         self._eat_whitespace()
+        # check to see if we have a "+="
+        if self._expect_char("+", RETURN=True):
+            self._advance()
         self._expect_char("=")
         try:
             self._advance()
