@@ -149,7 +149,7 @@ class Case(object):
             }
 
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
-        if executable == "aprun":
+        if "aprun" in executable:
             self.num_nodes = get_aprun_cmd_for_case(self, "acme.exe")[1]
             self.spare_nodes = env_mach_pes.get_spare_nodes(self.num_nodes)
             self.num_nodes += self.spare_nodes
@@ -1119,10 +1119,10 @@ class Case(object):
         executable, args = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
 
         # special case for aprun
-        if executable == "aprun":
-            aprun_cmd, num_nodes = get_aprun_cmd_for_case(self, run_exe)
+        if  "aprun" in executable:
+            aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)
             expect(num_nodes == self.num_nodes, "Not using optimized num nodes")
-            return aprun_cmd + " " + run_misc_suffix
+            return executable + aprun_args + " " + run_misc_suffix
         else:
             mpi_arg_string = " ".join(args.values())
 
