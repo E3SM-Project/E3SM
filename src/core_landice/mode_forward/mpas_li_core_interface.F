@@ -12,7 +12,6 @@ module li_core_interface
    use mpas_dmpar
    use mpas_constants
    use mpas_attlist
-   use mpas_io_units
    use mpas_log
    use li_core
    use li_analysis_driver
@@ -118,17 +117,17 @@ module li_core_interface
 
       if (trim(config_velocity_solver) == 'sia') then
          SIAvelocityActive = .true.
-         write (stdoutUnit,*) 'The SIAVelocity package and associated variables and streams have been ', &
-            'enabled because the SIA velocity solver is selected.'
+         call mpas_log_write('The SIAVelocity package and associated variables and streams have been ' // &
+            'enabled because the SIA velocity solver is selected.')
       else
          higherOrderVelocityActive = .true.
-         write (stdoutUnit,*) "The 'higherOrderVelocity' package and associated variables have been ', &
-            'enabled because a higher-order velocity solver is selected."
+         call mpas_log_write("The 'higherOrderVelocity' package and associated variables have been " // &
+            "enabled because a higher-order velocity solver is selected.")
       end if
 
       if (config_SGH) then
          hydroActive = .true.
-         write(stdOutUnit,*) "The 'hydro' package and assocated variables have been enabled because 'config_SGH' is set to .true."
+         call mpas_log_write("The 'hydro' package and assocated variables have been enabled because 'config_SGH' is set to .true.")
       endif
 
       ! call setup packages in analysis driver

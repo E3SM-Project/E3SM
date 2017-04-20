@@ -25,7 +25,6 @@ module li_sia
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_log
-   use mpas_io_units   
    use li_mask
    use li_setup
 
@@ -196,16 +195,16 @@ contains
          ! don't make this a fatal error.
          !err = ior(err, err_tmp)
          if (err_tmp > 0) then
-            write (stderrUnit,*) "Warning: The 'from_vertex_barycentric' option for 'config_sia_tangent_slope_calculation' " &
+            call mpas_log_write("The 'from_vertex_barycentric' option for 'config_sia_tangent_slope_calculation' " &
                  // "does NOT work across the periodicity in periodic meshes.  However, it does work within the interior " &
-                 // "of the mesh."
+                 // "of the mesh.", MPAS_LOG_WARN)
          endif
          call mpas_deallocate_scratch_field(vertexIndicesField, .true.)
       endif
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_sia_block_init."
+          call mpas_log_write("An error has occurred in li_sia_block_init.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------

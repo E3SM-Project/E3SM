@@ -172,13 +172,13 @@ module li_core
          call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
          if (trim(simulationStartTime)=="no_date_available") then
             if (config_do_restart) then
-               write(stderrUnit,*) "Warning: simulationStartTime is undefined but this is a restart, ", &
-                  "so setting its value to the current start time which may be incorrect."
+               call mpas_log_write("simulationStartTime is undefined but this is a restart, " // &
+                  "so setting its value to the current start time which may be incorrect.", MPAS_LOG_WARN)
             endif
             simulationStartTime = startTimeStamp
          elseif ((trim(simulationStartTime)/="no_date_available") .and. (.not. config_do_restart)) then
-            write(stderrUnit,*) "Warning: This is a cold start but simulationStartTime is already defined, ", &
-               "so its value may be incorrect."
+            call mpas_log_write("This is a cold start but simulationStartTime is already defined, " // &
+               "so its value may be incorrect.", MPAS_LOG_WARN)
          endif
 
          ! compute time since start of simulation, in days
@@ -343,8 +343,7 @@ module li_core
       do while (.not. mpas_is_clock_stop_time(domain % clock))
 
          itimestep = itimestep + 1
-         write(stderrUnit,*) 'Starting timestep number ', iTimeStep
-         write(stdoutUnit,*) 'Starting timestep number ', iTimeStep
+         call mpas_log_write('Starting timestep number $i', intArgs=(/iTimeStep/), flushNow=.true.)
 
 
          ! ===
@@ -613,8 +612,7 @@ module li_core
       err = ior(err, err_tmp)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
       err = ior(err, err_tmp)
-      write(stderrUnit,*) 'Initial timestep ', trim(timeStamp)
-      write(stdoutUnit,*) 'Initial timestep ', trim(timeStamp)
+      call mpas_log_write('Initial timestep ' // trim(timeStamp))
 
 
       ! ===
@@ -945,7 +943,7 @@ module li_core
          call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=err_tmp)
          ierr = ior(ierr,err_tmp)
          if (stopTime .lt. startTime) then
-            write(stderrUnit,*) 'Error: config_stop_time is earlier than config_start_time!'
+            call mpas_log_write('config_stop_time is earlier than config_start_time!', MPAS_LOG_ERR)
             ierr = 1
          endif
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=err_tmp)

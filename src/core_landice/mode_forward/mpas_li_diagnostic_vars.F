@@ -27,6 +27,8 @@ module li_diagnostic_vars
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_timer
+   use mpas_log
+
    use li_velocity
    use li_mask
 
@@ -355,8 +357,8 @@ contains
       enddo
 
       if (divideSingularityFound .and. config_print_thickness_advection_info) then
-         write (stderrUnit,*) 'Notice: In calculating apparentDiffusivity, one or more cells have been ignored ', &
-            'due to flat slope and low velocity (assumed to be a divide where diffusivity is undefined).'
+         call mpas_log_write('Notice: In calculating apparentDiffusivity, one or more cells have been ignored ' // &
+            'due to flat slope and low velocity (assumed to be a divide where diffusivity is undefined).')
       endif
 
       call mpas_deallocate_scratch_field(slopeReconstructXField, .true.)
@@ -540,7 +542,7 @@ contains
           ! Make sure lowerSurface calculation is reasonable.  This check could be deleted once this has been throroughly tested.
           do iCell = 1, nCells
              if (lowerSurface(iCell) < bedTopography(iCell)) then
-                write (stderrUnit,*) 'lowerSurface less than bedTopography at cell:', iCell
+                call mpas_log_write('lowerSurface less than bedTopography at cell:i $i', intArgs=(/iCell/))
                 err = 1
              endif
           end do
@@ -629,7 +631,7 @@ contains
                 call mpas_tangential_vector_1d(normalSlopeEdge, meshPool, &
                        includeHalo=.true., tangentialVector=tangentSlopeEdge)
              case default
-                write (stdErrUnit,*) 'Error: Invalid value for config_sia_tangent_slope_calculation.'
+                call mpas_log_write('Invalid value for config_sia_tangent_slope_calculation.', MPAS_LOG_ERR)
                 err = 1
              end select
 
@@ -734,7 +736,7 @@ contains
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in diagnostic_solve_before_velocity."
+          call mpas_log_write("An error has occurred in diagnostic_solve_before_velocity.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -848,7 +850,7 @@ contains
             !!!h_edge = (thickness(k) + thickness(k) ) / 2.0  ! 2nd order
          end do
       else
-          !write(stdoutUnit,*) 'layerThicknessEdge not calculated!'
+          !call mpas_log_write('layerThicknessEdge not calculated!')
       endif
 
       ! Note: The outmost layerThicknessEdge may be wrong if its upwind cell is off this block -
@@ -857,11 +859,11 @@ contains
 
       !WHL - debug - Commented out, but might be useful for future debugging
 !      if (config_print_thickness_advection_info) then
-!         write(stderrUnit,*) ' '
-!         write(stderrUnit,*) 'End of timestep: iCell (global), new thickness:'
+!         call mpas_log_write(' ')
+!         call mpas_log_write('End of timestep: iCell (global), new thickness:'
 !         do iCell = 1, nCells
 !            if (thickness(iCell) > 0.0_RKIND) then
-!               write(stderrUnit,*) indexToCellID(iCell), thickness(iCell)
+!               call mpas_log_write('$i $r', intArgs=(/indexToCellID(iCell)/), realArgs=(/thickness(iCell)/))
 !            endif
 !         enddo
 !      endif

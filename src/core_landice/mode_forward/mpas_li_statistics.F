@@ -26,6 +26,8 @@ module li_statistics
    use mpas_constants
    use mpas_dmpar
    use mpas_timer
+   use mpas_log
+
    use li_setup
    use li_mask
    use li_constants
@@ -167,6 +169,8 @@ module li_statistics
 
      integer :: iCell, iCell1, iCell2, iEdge, kLevel
      integer :: proc
+
+     character (len=StrKIND) :: msg !< local variable to build messages
 
      block => domain % blocklist
      dminfo => domain % dminfo
@@ -569,51 +573,74 @@ module li_statistics
      ! Write global and local stats to the log file
 
      if (dminfo % my_proc_id == IO_NODE) then
-        write(stdoutUnit,*) ' '
-        write(stdoutUnit,'(a60)') '------------------------------------------------------------'
-        write(stdoutUnit,*) ' '
-        write(stdoutUnit,'(a25,a20)')          'Global statistics: time =', trim(xtime)
-        write(stdoutUnit,'(a25,i8)')           '               timestep =', itimestep
-        write(stdoutUnit,*) ' '
-        write(stdoutUnit,'(a32,e24.16)')       'Total ice area (km^2)           ',   &
+        call mpas_log_write(' ')
+        call mpas_log_write('------------------------------------------------------------')
+        call mpas_log_write(' ')
+        write(msg, '(a25,a20)')          'Global statistics: time =', trim(xtime)
+        call mpas_log_write(msg)
+        write(msg, '(a25,i8)')           '               timestep =', itimestep
+        call mpas_log_write(msg)
+        call mpas_log_write(' ')
+        write(msg, '(a32,e24.16)')       'Total ice area (km^2)           ',   &
                                        globalIceAreaSum*1.0e-6_RKIND       ! convert from m^2 to km^2
-        write(stdoutUnit,'(a32,e24.16)')       'Total ice volume (km^3)         ',   &
+        call mpas_log_write(msg)
+        write(msg,'(a32,e24.16)')       'Total ice volume (km^3)         ',   &
                                        globalIceVolumeSum*1.0e-9_RKIND     ! convert from m^3 to km^3
-        write(stdoutUnit,'(a32,e24.16)')       'Total ice energy (J)            ',   &
+        call mpas_log_write(msg)
+        write(msg,'(a32,e24.16)')       'Total ice energy (J)            ',   &
                                        globalIceEnergySum
-        write(stdoutUnit,'(a32,f24.16,i8)')    'Max thickness (m), cell         ',   &
+        call mpas_log_write(msg)
+        write(msg,'(a32,f24.16,i8)')    'Max thickness (m), cell         ',   &
                                        globalThicknessMax, thicknessMaxlocCell
-        write(stdoutUnit,'(a32,f24.16,i8)')    'Min thickness (m), cell         ',   &
+        call mpas_log_write(msg)
+        write(msg,'(a32,f24.16,i8)')    'Min thickness (m), cell         ',   &
                                        globalThicknessMin, thicknessMinlocCell
-        write(stdoutUnit,'(a32,f24.16)')       'Mean thickness (m)              ',   &
+        call mpas_log_write(msg)
+        write(msg,'(a32,f24.16)')       'Mean thickness (m)              ',   &
                                        globalthicknessMean
-        write(stdoutUnit,'(a32,f24.16,i8,i4)') 'Max temperature (C), cell, level',   &
+        call mpas_log_write(msg)
+        write(msg,'(a32,f24.16,i8,i4)') 'Max temperature (C), cell, level',   &
                                        globalTemperatureMax - kelvin_to_celsius, temperatureMaxlocCell, temperatureMaxlocLevel
-        write(stdoutUnit,'(a32,f24.16,i8,i4)') 'Min temperature (C), cell, level',   &
+        call mpas_log_write(msg)
+        write(msg,'(a32,f24.16,i8,i4)') 'Min temperature (C), cell, level',   &
                                        globalTemperatureMin - kelvin_to_celsius , temperatureMinlocCell, temperatureMinlocLevel
-        write(stdoutUnit,'(a32,f24.16)')       'Mean temperature (C)            ',   &
+        call mpas_log_write(msg)
+        write(msg,'(a32,f24.16)')       'Mean temperature (C)            ',   &
                                        globalTemperatureMean - kelvin_to_celsius
-        write(stdoutUnit,'(a32,f24.16,i8,i4)') 'Max velocity (m/yr), edge, level',   &
+        call mpas_log_write(msg)
+        write(msg,'(a32,f24.16,i8,i4)') 'Max velocity (m/yr), edge, level',   &
                                        globalVelocityMax * scyr, velocityMaxlocEdge, velocityMaxlocLevel
-        write(stdoutUnit,'(a32,f24.16,i8,i4)') 'Max basal velo (m/yr), edge     ',   &
+        call mpas_log_write(msg)
+        write(msg,'(a32,f24.16,i8,i4)') 'Max basal velo (m/yr), edge     ',   &
                                        globalBasalVelocityMax * scyr, basalVelocityMaxlocEdge
-        write(stdoutUnit,*) ' '
-        write(stdoutUnit,'(a30,i6)')  'Column diagnostics: cell ID = ', statsCellID
-        write(stdoutUnit,'(a30,3i6)') 'Local cell ID, block, proc =  ', diagnosticCell, diagnosticBlockID, diagnosticProcID
-        write(stdoutUnit,*) ' '
-        write(stdoutUnit,'(a25,f24.16)') 'Upper surface (m)        ', diagnosticUpperSurface
-        write(stdoutUnit,'(a25,f24.16)') 'Thickness (m)            ', diagnosticThickness
-        write(stdoutUnit,'(a25,f24.16)') 'Bed topography (m)       ', diagnosticBedTopography
-        write(stdoutUnit,'(a25,f24.16)') 'Sfc mass balance (m/yr)  ', diagnosticSfcMassBal
-        write(stdoutUnit,*) ' '
-        write(stdoutUnit,'(a55)') 'Sigma        Ice speed (m/yr)       Ice temperature (C)'
-        write(stdoutUnit,'(f6.4, a25, f24.16)') 0.0_RKIND, '------', diagnosticSurfaceTemperature - kelvin_to_celsius
+        call mpas_log_write(msg)
+        call mpas_log_write(' ')
+        write(msg,'(a30,i6)')  'Column diagnostics: cell ID = ', statsCellID
+        call mpas_log_write(msg)
+        write(msg,'(a30,3i6)') 'Local cell ID, block, proc =  ', diagnosticCell, diagnosticBlockID, diagnosticProcID
+        call mpas_log_write(msg)
+        call mpas_log_write(' ')
+        write(msg,'(a25,f24.16)') 'Upper surface (m)        ', diagnosticUpperSurface
+        call mpas_log_write(msg)
+        write(msg,'(a25,f24.16)') 'Thickness (m)            ', diagnosticThickness
+        call mpas_log_write(msg)
+        write(msg,'(a25,f24.16)') 'Bed topography (m)       ', diagnosticBedTopography
+        call mpas_log_write(msg)
+        write(msg,'(a25,f24.16)') 'Sfc mass balance (m/yr)  ', diagnosticSfcMassBal
+        call mpas_log_write(msg)
+        call mpas_log_write(' ')
+        write(msg,'(a55)') 'Sigma        Ice speed (m/yr)       Ice temperature (C)'
+        call mpas_log_write(msg)
+        write(msg,'(f6.4, a25, f24.16)') 0.0_RKIND, '------', diagnosticSurfaceTemperature - kelvin_to_celsius
+        call mpas_log_write(msg)
         do kLevel = 1, nVertLevels
-           write(stdoutUnit,'(f6.4, f25.16, f24.16)') &
+           write(msg,'(f6.4, f25.16, f24.16)') &
                 layerCenterSigma(kLevel), diagnosticSpeed(kLevel), diagnosticTemperature(kLevel) - kelvin_to_celsius
+        call mpas_log_write(msg)
         end do
-        write(stdoutUnit,'(f6.4, a25, f24.16)') 1.0_RKIND, '------', diagnosticBasalTemperature - kelvin_to_celsius
-        write(stdoutUnit,*) ' '
+        write(msg,'(f6.4, a25, f24.16)') 1.0_RKIND, '------', diagnosticBasalTemperature - kelvin_to_celsius
+        call mpas_log_write(msg)
+        call mpas_log_write(' ')
      endif   ! my_proc_id = IO_NODE
 
      ! clean up

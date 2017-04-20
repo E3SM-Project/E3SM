@@ -28,6 +28,8 @@ module li_subglacial_hydro
    use mpas_timekeeping
    use mpas_constants, only: gravity
    use mpas_timer
+   use mpas_log
+
    use li_setup
    use li_constants
    use li_mask
@@ -122,12 +124,12 @@ module li_subglacial_hydro
 
       call mpas_timer_start("hydro init")
 
-      write(stdoutUnit,*) 'Beginning subglacial hydro init.'
+      call mpas_log_write('Beginning subglacial hydro init.')
 
       ! Check number of halos
       call mpas_pool_get_config(liConfigs, 'config_num_halos', config_num_halos)
       if (config_num_halos < 1) then
-         write (stdErrUnit,*) "ERROR: Subglacial hydrology requires config_num_halos >= 1"
+         call mpas_log_write("Subglacial hydrology requires config_num_halos >= 1", MPAS_LOG_ERR)
          err = ior(err, 1)
       endif
 
@@ -135,8 +137,8 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep', config_SGH_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
       if (config_adaptive_timestep .and. config_SGH_adaptive_timestep) then
-         write (stdErrUnit,*) "ERROR: Subglacial hydrology cannot use its own adaptive time stepper ", &
-            "if primary time stepper is adaptive.  This may be relaxed in the future."
+         call mpas_log_write("Subglacial hydrology cannot use its own adaptive time stepper " // &
+            "if primary time stepper is adaptive.  This may be relaxed in the future.", MPAS_LOG_ERR)
          err = ior(err, 1)
       endif
 
@@ -181,7 +183,7 @@ module li_subglacial_hydro
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_SGH_init."
+          call mpas_log_write("An error has occurred in li_SGH_init.", MPAS_LOG_ERR)
       endif
 
       call mpas_timer_stop("hydro init")
@@ -262,7 +264,7 @@ module li_subglacial_hydro
          return
       endif
 
-      write(stdoutUnit,*) 'Beginning subglacial hydro solve.'
+      call mpas_log_write('Beginning subglacial hydro solve.')
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_drainage', Cd)
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_max', tillMax)
 
@@ -406,7 +408,7 @@ module li_subglacial_hydro
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_SGH_solve."
+          call mpas_log_write("An error has occurred in li_SGH_solve.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -464,7 +466,7 @@ module li_subglacial_hydro
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_SGH_finalize."
+          call mpas_log_write("An error has occurred in li_SGH_finalize.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -609,8 +611,8 @@ module li_subglacial_hydro
       select case (trim(config_SGH_tangent_slope_calculation))
       case ('from_vertex_barycentric', 'from_vertex_barycentric_kiteareas')
          ! TODO: add these options if desired
-         write (stdErrUnit,*) "Error: 'from_vertex_barycentric' and 'from_vertex_barycentric_kiteareas'", &
-           " are not yet supported for the config_SGH_tangent_slope_calculation option."
+         call mpas_log_write("'from_vertex_barycentric' and 'from_vertex_barycentric_kiteareas'" // &
+           " are not yet supported for the config_SGH_tangent_slope_calculation option.", MPAS_LOG_ERR)
          err = 1
 !         do iEdge = 1, nEdgesSolve
 !            ! Only calculate slope for edges that have ice on at least one side.
@@ -625,7 +627,7 @@ module li_subglacial_hydro
          call mpas_tangential_vector_1d(hydropotentialBaseSlopeNormal, meshPool, &
                   includeHalo=.false., tangentialVector=hydropotentialBaseSlopeTangent)
       case default
-         write (stdErrUnit,*) 'Error: Invalid value for config_SGH_tangent_slope_calculation.'
+         call mpas_log_write('Invalid value for config_SGH_tangent_slope_calculation.', MPAS_LOG_ERR)
          err = 1
       end select
 
@@ -801,7 +803,7 @@ module li_subglacial_hydro
          !   technically need to check the interval til completion, because we might already be partway through the deltat
          proposedDt = min(proposedDt, maxDt)
 
-         write(stdOutUnit,*) '  Setting SGH time step (seconds) to:', proposedDt
+         call mpas_log_write('  Setting SGH time step to: $r seconds', realArgs=(/proposedDt/))
 
       else ! not SGH adaptive
          ! master dt could change if using master adaptive time stepper, so update it in case
@@ -827,18 +829,18 @@ module li_subglacial_hydro
 
 
       ! optional: always write out for debugging
-      write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure:", &
-         deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure
+      call mpas_log_write("deltatSGH=$r, deltatSGHadvec=$r, deltatSGHdiffu=$r, deltatSGHpressure=$r", &
+         realArgs=(/deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure/))
 
       ! compare timesteps
       if (deltatSGH > deltatSGHadvec) then
-         write(stdErrUnit,*) "WARNING: deltatSGH > deltatSGHadvec  ", deltatSGH, deltatSGHadvec
+         call mpas_log_write("deltatSGH > deltatSGHadvec  $r > $r", MPAS_LOG_WARN, realArgs=(/deltatSGH, deltatSGHadvec/))
       endif
       if (deltatSGH > deltatSGHdiffu) then
-         write(stdErrUnit,*) "WARNING: deltatSGH > deltatSGHdiffu  ", deltatSGH, deltatSGHdiffu
+         call mpas_log_write("deltatSGH > deltatSGHdiffu  $r > $r", MPAS_LOG_WARN, realArgs=(/deltatSGH, deltatSGHdiffu/))
       endif
       if (deltatSGH > deltatSGHpressure) then
-         write(stdErrUnit,*) "WARNING: deltatSGH > deltatSGHpressure  ", deltatSGH, deltatSGHpressure
+         call mpas_log_write("deltatSGH > deltatSGHpressure  $r > $r", MPAS_LOG_WARN, realArgs=(/deltatSGH, deltatSGHpressure/))
       endif
 
 
@@ -982,7 +984,7 @@ module li_subglacial_hydro
          end where
 
       case default
-         write(stdErrUnit,*) "ERROR: Invalid option specified for config_SGH_pressure_calc:", config_SGH_pressure_calc
+         call mpas_log_write("Invalid option specified for config_SGH_pressure_calc:" // config_SGH_pressure_calc, MPAS_LOG_ERR)
          err = ior(err, 1)
       end select
 

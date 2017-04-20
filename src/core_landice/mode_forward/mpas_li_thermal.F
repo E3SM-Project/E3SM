@@ -28,6 +28,7 @@ module li_thermal
    use mpas_dmpar
    use mpas_timer
    use mpas_abort
+   use mpas_log
 
    use li_setup
    use li_mask
@@ -243,21 +244,23 @@ module li_thermal
          call mpas_pool_get_array(thermalPool, 'basalHeatFlux', basalHeatFlux)
 
          if (config_print_thermal_info) then
-            write(stdoutUnit,*) 'Initialize thermal solver, config_temperature_init = ', trim(config_temperature_init)
+            call mpas_log_write('Initialize thermal solver, config_temperature_init = ' // trim(config_temperature_init))
          endif
 
          ! init for surfaceAirTemperature
          !TODO - Allow for reading surfaceAirTemperature from an external file
          if (trim(config_surface_air_temperature_source) == 'constant') then
             surfaceAirTemperature(:) = config_surface_air_temperature_value
-            if (config_print_thermal_info) write(stdoutUnit,*) 'Initialize sfc air temp:', config_surface_air_temperature_value
+            if (config_print_thermal_info) &
+               call mpas_log_write('Initialize sfc air temp: $r', realArgs=(/config_surface_air_temperature_value/))
          endif
 
          ! init for basalHeatFlux
          !TODO - Allow for reading basalHeatFlux from an external file
          if (trim(config_basal_heat_flux_source) == 'constant') then
             basalHeatFlux(:) = config_basal_heat_flux_value
-            if (config_print_thermal_info) write(stdoutUnit,*) 'Initialize basal heat flux:', config_basal_heat_flux_value
+            if (config_print_thermal_info) &
+               call mpas_log_write('Initialize basal heat flux: $r', realArgs=(/config_basal_heat_flux_value/))
          endif
 
          ! Precompute some grid quantities used in the vertical temperature solve
@@ -284,9 +287,9 @@ module li_thermal
             (layerInterfaceSigma(k+1) - layerCenterSigma(k)) )
 
          if (config_print_thermal_info) then
-            write(stdoutUnit,*) 'dsigmaTerm coefficients:'
+            call mpas_log_write('dsigmaTerm coefficients:')
             do k = 1, nVertLevels
-               write(stdoutUnit,*) k, dsigmaTerm(k,1), dsigmaTerm(k,2)
+               call mpas_log_write("$i $r $r", intArgs=(/k/), realArgs=(/dsigmaTerm(k,1), dsigmaTerm(k,2)/))
             enddo
          endif
 
@@ -294,15 +297,15 @@ module li_thermal
 
          if (config_print_thermal_info .and. (circular_shelf_test .or. dome_test)) then
 
-            write(stdoutUnit,*) ' '
+            call mpas_log_write(' ')
 
             if (circular_shelf_test) then
 
-               write(stdoutUnit,*) 'Circular shelf test:'
+               call mpas_log_write('Circular shelf test:')
 
             elseif (dome_test) then
 
-               write(stdoutUnit,*) 'Dome test:'
+               call mpas_log_write('Dome test:')
 !                  write(stdoutUnit,*) ' '
 !                  write(stdoutUnit,*) 'Cells with ice: iCell, thickness'
 !                  do iCell = 1, nCellsSolve
@@ -316,31 +319,31 @@ module li_thermal
             !WHL - debug dome - Adjust thickness slightly so the central cell has the same thickness as in CISM
 !!            thickness(:) = thickness(:) * 707.1068115234375000_RKIND / 707.10678118654755_RKIND
 
-            write(stdoutUnit,*) ' '
-            write(stdoutUnit,*) 'Initial thickness'
-            do iRow = nRows, 1, -1
-               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stdoutUnit,'(a3)',advance='no') '    '
-               endif
-               do i = nCellsPerRow/2 - 2, nCellsPerRow
-                  iCell = (iRow-1)*nCellsPerRow + i
-                  write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
-               enddo
-               write(stdoutUnit,*) ' '
-            enddo
-
-            write(stdoutUnit,*) ' '
-            write(stdoutUnit,*) 'Initial surfaceAirTemperature'
-            do iRow = nRows, 1, -1
-               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stdoutUnit,'(a3)',advance='no') '    '
-               endif
-               do i = nCellsPerRow/2 - 2, nCellsPerRow
-                  iCell = (iRow-1)*nCellsPerRow + i
-                  write(stdoutUnit,'(f8.2)',advance='no') surfaceAirTemperature(iCell)
-               enddo
-               write(stdoutUnit,*) ' '
-            enddo
+!            call mpas_log_write(' ')
+!            call mpas_log_write('Initial thickness')
+!            do iRow = nRows, 1, -1
+!               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!                  write(stdoutUnit,'(a3)',advance='no') '    '
+!               endif
+!               do i = nCellsPerRow/2 - 2, nCellsPerRow
+!                  iCell = (iRow-1)*nCellsPerRow + i
+!                  write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
+!               enddo
+!               write(stdoutUnit,*) ' '
+!            enddo
+!
+!            write(stdoutUnit,*) ' '
+!            write(stdoutUnit,*) 'Initial surfaceAirTemperature'
+!            do iRow = nRows, 1, -1
+!               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!                  write(stdoutUnit,'(a3)',advance='no') '    '
+!               endif
+!               do i = nCellsPerRow/2 - 2, nCellsPerRow
+!                  iCell = (iRow-1)*nCellsPerRow + i
+!                  write(stdoutUnit,'(f8.2)',advance='no') surfaceAirTemperature(iCell)
+!               enddo
+!               write(stdoutUnit,*) ' '
+!            enddo
 
          endif  ! circ shelf or dome
 
@@ -363,14 +366,14 @@ module li_thermal
             ! nothing to do; temperature was read from the restart file
             !TODO - Make sure waterfrac is also read, if needed
             if (config_print_thermal_info) then
-               write(stdoutUnit,*) 'Initialized ice temperature from the restart file'
+               call mpas_log_write('Initialized ice temperature from the restart file')
             endif
 
          elseif (trim(config_temperature_init) == 'file') then
 
             ! Temperature was read from the input file
             if (config_print_thermal_info) then
-               write(stdoutUnit,*) 'Initialized ice temperature from the input file'
+               call mpas_log_write('Initialized ice temperature from the input file')
             endif
 
             ! initialize waterfrac, in case we are using the enthalpy solver
@@ -390,7 +393,7 @@ module li_thermal
             waterfrac(:,:) = 0.0_RKIND
 
             if (config_print_thermal_info) then
-               write(stdoutUnit,*) 'Initialized ice column temperature to the surface air temperature'
+               call mpas_log_write('Initialized ice column temperature to the surface air temperature')
             endif
 
          elseif (trim(config_temperature_init) == 'linear') then
@@ -417,54 +420,54 @@ module li_thermal
             enddo  ! iCell
 
             if (config_print_thermal_info) then
-               write(stdoutUnit,*) 'Initialized a linear temperature profile in each column'
+               call mpas_log_write('Initialized a linear temperature profile in each column')
 
                !WHL - debug
-               if (circular_shelf_test .or. dome_test) then
-
-                  write(stdoutUnit,*) ' '
-                  write(stdoutUnit,*) 'Initial layer 1 temperature'
-                  iLayer = 1
-                  do iRow = nRows, 1, -1
-                     if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                        write(stdoutUnit,'(a3)',advance='no') '    '
-                     endif
-                     do i = nCellsPerRow/2 - 2, nCellsPerRow
-                        iCell = (iRow-1)*nCellsPerRow + i
-                        write(stdoutUnit,'(f8.2)',advance='no') temperature(iLayer,iCell)
-                     enddo
-                     write(stdoutUnit,*) ' '
-                  enddo
-
-                  write(stdoutUnit,*) ' '
-                  write(stdoutUnit,*) 'Initial basal temperature'
-                  do iRow = nRows, 1, -1
-                     if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                        write(stdoutUnit,'(a3)',advance='no') '    '
-                     endif
-                     do i = nCellsPerRow/2 - 2, nCellsPerRow
-                        iCell = (iRow-1)*nCellsPerRow + i
-                        write(stdoutUnit,'(f8.2)',advance='no') basalTemperature(iCell)
-                     enddo
-                     write(stdoutUnit,*) ' '
-                  enddo
-
-                  do iCell = 1, nCellsSolve
-                     if (indexToCellID(iCell) == config_stats_cell_ID) then
-                        write(stdoutUnit,*) ' '
-                        write(stdoutUnit,*) 'Diagnostic cell =', iCell
-                        write(stdoutUnit,*) 'Thickness =', thickness(iCell)
-                        write(stdoutUnit,*) ' '
-                        write(stdoutUnit,*) 'Temperature profile (C):'
-                        write(stdoutUnit,*) 'Sfc:', surfaceTemperature(iCell) - kelvin_to_celsius
-                        do iLayer = 1, nVertLevels
-                           write(stdoutUnit,*) iLayer, layerCenterSigma(iLayer), temperature(iLayer,iCell) - kelvin_to_celsius
-                        enddo
-                        write(stdoutUnit,*) 'Bed:', basalTemperature(iCell) - kelvin_to_celsius
-                     endif
-                  enddo
-
-               endif  ! shelf or dome test
+!               if (circular_shelf_test .or. dome_test) then
+!
+!                  call mpas_log_write(' ')
+!                  call mpas_log_write('Initial layer 1 temperature')
+!                  iLayer = 1
+!                  do iRow = nRows, 1, -1
+!                     if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!                        write(stdoutUnit,'(a3)',advance='no') '    '
+!                     endif
+!                     do i = nCellsPerRow/2 - 2, nCellsPerRow
+!                        iCell = (iRow-1)*nCellsPerRow + i
+!                        write(stdoutUnit,'(f8.2)',advance='no') temperature(iLayer,iCell)
+!                     enddo
+!                     write(stdoutUnit,*) ' '
+!                  enddo
+!
+!                  write(stdoutUnit,*) ' '
+!                  write(stdoutUnit,*) 'Initial basal temperature'
+!                  do iRow = nRows, 1, -1
+!                     if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!                        call mpas_log_write('    '
+!                     endif
+!                     do i = nCellsPerRow/2 - 2, nCellsPerRow
+!                        iCell = (iRow-1)*nCellsPerRow + i
+!                        write(stdoutUnit,'(f8.2)',advance='no') basalTemperature(iCell)
+!                     enddo
+!                     write(stdoutUnit,*) ' '
+!                  enddo
+!
+!                  do iCell = 1, nCellsSolve
+!                     if (indexToCellID(iCell) == config_stats_cell_ID) then
+!                        write(stdoutUnit,*) ' '
+!                        write(stdoutUnit,*) 'Diagnostic cell =', iCell
+!                        write(stdoutUnit,*) 'Thickness =', thickness(iCell)
+!                        write(stdoutUnit,*) ' '
+!                        write(stdoutUnit,*) 'Temperature profile (C):'
+!                        write(stdoutUnit,*) 'Sfc:', surfaceTemperature(iCell) - kelvin_to_celsius
+!                        do iLayer = 1, nVertLevels
+!                           write(stdoutUnit,*) iLayer, layerCenterSigma(iLayer), temperature(iLayer,iCell) - kelvin_to_celsius
+!                        enddo
+!                        write(stdoutUnit,*) 'Bed:', basalTemperature(iCell) - kelvin_to_celsius
+!                     endif
+!                  enddo
+!
+!               endif  ! shelf or dome test
 
             endif  ! config_print_thermal_info
 
@@ -492,7 +495,7 @@ module li_thermal
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_thermal_init."
+          call mpas_log_write("An error has occurred in li_thermal_init.", MPAS_LOG_ERR)
       endif
 
       call mpas_timer_stop("thermal init")
@@ -754,7 +757,7 @@ module li_thermal
 
 
       if (config_print_thermal_info) then
-         write(stdoutUnit,*) 'Solving for temperature, config_thermal_solver = ', trim(config_thermal_solver)
+         call mpas_log_write('Solving for temperature, config_thermal_solver = ' // trim(config_thermal_solver))
       endif
 
 
@@ -768,8 +771,8 @@ module li_thermal
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
       if (deltat <= 0.0_RKIND) then
-         write(stderrUnit,*) 'ERROR: li_thermal_solver was called with invalid deltat =', deltat
-         call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_thermal. Aborting...")
+         call mpas_log_write('li_thermal_solver was called with invalid deltat = $r', MPAS_LOG_ERR, realArgs=(/deltat/))
+         call mpas_log_write("An error has occurred in li_thermal. Aborting...", MPAS_LOG_CRIT)
       endif
 
 
@@ -834,7 +837,7 @@ module li_thermal
          call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
 
          if (config_print_thermal_info) then
-            write(stdoutUnit,*) 'Solving for temperature, config_thermal_solver = ', trim(config_thermal_solver)
+            call mpas_log_write('Solving for temperature, config_thermal_solver = ' // trim(config_thermal_solver))
          endif
 
          ! calculate masks - so we know where the ice is floating
@@ -874,19 +877,19 @@ module li_thermal
             allocate(diffusivity(nVertLevels+1))
 
             if (config_print_thermal_info) then
-               write(stdoutUnit,*) ' '
+               call mpas_log_write(' ')
                do iCell = 1, nCellsSolve
                   if (indexToCellID(iCell) == config_stats_cell_ID) then
-                     write(stdoutUnit,*) 'thickness =', thickness(iCell)
-                     write(stdoutUnit,*) 'surfaceAirTemperature =', surfaceAirTemperature(iCell)
-                     write(stdoutUnit,*) ' '
-                     write(stdoutUnit,*) 'Initial column temperatures, iCell =', iCell
-                     write(stdoutUnit,*) 0, surfaceTemperature(iCell)
+                     call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
+                     call mpas_log_write('surfaceAirTemperature = $r', realArgs=(/surfaceAirTemperature(iCell)/))
+                     call mpas_log_write(' ')
+                     call mpas_log_write('Initial column temperatures, iCell = $i', intArgs=(/iCell/))
+                     call mpas_log_write("0 $r", realArgs=(/surfaceTemperature(iCell)/))
                      do k = 1, nVertLevels
-                        write(stdoutUnit,*) k, temperature(k,iCell)
+                        call mpas_log_write("$i $r", intArgs=(/k/), realArgs=(/temperature(k,iCell)/))
                      enddo
-                     write(stdoutUnit,*) nVertLevels+1, basalTemperature(iCell)
-                     write(stdoutUnit,*) 'Loop over cells'
+                     call mpas_log_write("$i $r", intArgs=(/nVertLevels+1/), realArgs=(/basalTemperature(iCell)/))
+                     call mpas_log_write('Loop over cells')
                   endif
                enddo
             endif
@@ -933,15 +936,16 @@ module li_thermal
                      basalEnthalpy = basalTemperature(iCell) * rhoi*cp_ice
 
                      if (verboseColumn) then
-                        write(stdoutUnit,*) ' '
-                        write(stdoutUnit,*) 'Before prognostic enthalpy, iCell =', indexToCellID(iCell)
-                        write(stdoutUnit,*) 'thickness =', thickness(iCell)
-                        write(stdoutUnit,*) 'Temperature (C), waterfrac, enthalpy/(rhoi*cp_ice):'
-                        write(stdoutUnit,*) 0, surfaceEnthalpy/(rhoi*cp_ice)
+                        call mpas_log_write(' ')
+                        call mpas_log_write('Before prognostic enthalpy, iCell = $i', intArgs=(/indexToCellID(iCell)/))
+                        call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
+                        call mpas_log_write('Temperature (C), waterfrac, enthalpy/(rhoi*cp_ice):')
+                        call mpas_log_write('0 $r', realArgs=(/surfaceEnthalpy/(rhoi*cp_ice)/))
                         do k = 1, nVertLevels
-                           write(stdoutUnit,*) k, temperature(k,iCell), waterfrac(k,iCell), enthalpy(k,iCell)/(rhoi*cp_ice)
+                           call mpas_log_write('$i $r $r $r', intArgs=(/k/), realArgs= &
+                              (/temperature(k,iCell), waterfrac(k,iCell), enthalpy(k,iCell)/(rhoi*cp_ice)/))
                         enddo
-                        write(stdoutUnit,*) nVertLevels+1, basalEnthalpy/(rhoi*cp_ice)
+                        call mpas_log_write('$i $r', intArgs=(/nVertLevels+1/), realArgs=(/basalEnthalpy/(rhoi*cp_ice)/))
                      endif
 
                      ! Compute initial internal energy in column (for energy conservation check)
@@ -975,11 +979,12 @@ module li_thermal
                           rhs)
 
                      if (verboseColumn) then
-                        write(stdoutUnit,*) ' '
-                        write(stdoutUnit,*) 'After matrix elements, iCell =', indexToCellID(iCell)
-                        write(stdoutUnit,*) 'k, subd, diag, supd, rhs/(rhoi*ci):'
+                        call mpas_log_write(' ')
+                        call mpas_log_write('After matrix elements, iCell = $i', intArgs=(/indexToCellID(iCell)/))
+                        call mpas_log_write('k, subd, diag, supd, rhs/(rhoi*ci):')
                         do k = 1, nVertLevels+2
-                           write(stdoutUnit,*) k-1, subdiagonal(k), diagonal(k), superdiagonal(k), rhs(k)/(rhoi*cp_ice)
+                           call mpas_log_write('$i $r $r $r $r', intArgs=(/k-1/), realArgs= &
+                              (/subdiagonal(k), diagonal(k), superdiagonal(k), rhs(k)/(rhoi*cp_ice)/))
                         enddo
                      endif
 
@@ -1029,15 +1034,16 @@ module li_thermal
                           basalTemperature(iCell))
 
                      if (verboseColumn) then
-                        write(stdoutUnit,*) ' '
-                        write(stdoutUnit,*) 'After prognostic enthalpy, iCell =', indexToCellID(iCell)
-                        write(stdoutUnit,*) 'thickness =', thickness(iCell)
-                        write(stdoutUnit,*) 'Temperature, waterfrac, enthalpy/(rhoi*cp_ice):'
-                        write(stdoutUnit,*) 0, surfaceEnthalpy/(rhoi*cp_ice)
+                        call mpas_log_write(' ')
+                        call mpas_log_write('After prognostic enthalpy, iCell = $i', intArgs=(/indexToCellID(iCell)/))
+                        call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
+                        call mpas_log_write('Temperature, waterfrac, enthalpy/(rhoi*cp_ice):')
+                        call mpas_log_write('0 $r', realArgs=(/surfaceEnthalpy/(rhoi*cp_ice)/))
                         do k = 1, nVertLevels
-                           write(stdoutUnit,*) k, temperature(k,iCell), waterfrac(k,iCell), enthalpy(k,iCell)/(rhoi*cp_ice)
+                           call mpas_log_write('$i $r $r $r', intArgs=(/k/), realArgs= &
+                              (/temperature(k,iCell), waterfrac(k,iCell), enthalpy(k,iCell)/(rhoi*cp_ice)/))
                         enddo
-                        write(stdoutUnit,*) nVertLevels+1, basalEnthalpy/(rhoi*cp_ice)
+                        call mpas_log_write('$i $r', intArgs=(/nVertLevels+1/), realArgs=(/basalEnthalpy/(rhoi*cp_ice)/))
                      endif
 
                      ! Compute final internal energy in column (for energy conservation check)
@@ -1050,14 +1056,14 @@ module li_thermal
                   else    ! temperature solver
 
                      if (verboseColumn) then
-                        write(stdoutUnit,*) ' '
-                        write(stdoutUnit,*) 'Before prognostic temperature, iCell =', indexToCellID(iCell)
-                        write(stdoutUnit,*) 'thickness =', thickness(iCell)
-                        write(stdoutUnit,*) 0, surfaceTemperature(iCell)
+                        call mpas_log_write(' ')
+                        call mpas_log_write('Before prognostic temperature, iCell = $i', intArgs=(/indexToCellID(iCell)/))
+                        call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
+                        call mpas_log_write('0 $r', realArgs=(/surfaceTemperature(iCell)/))
                         do k = 1, nVertLevels
-                           write(stdoutUnit,*) k, temperature(k,iCell)
+                           call mpas_log_write('$i $r', intArgs=(/k/), realArgs=(/temperature(k,iCell)/))
                         enddo
-                        write(stdoutUnit,*) nVertLevels+1, basalTemperature(iCell)
+                        call mpas_log_write('$i $r', intArgs=(/nVertLevels+1/), realArgs=(/basalTemperature(iCell)/))
                      endif
 
                      ! Compute initial internal energy in column (for energy conservation check)
@@ -1088,12 +1094,13 @@ module li_thermal
                           rhs)
 
                      if (verboseColumn) then
-                        write(stdoutUnit,*) ' '
-                        write(stdoutUnit,*) 'deltat =', deltat
-                        write(stdoutUnit,*) 'After matrix elements, iCell =', indexToCellID(iCell)
-                        write(stdoutUnit,*) 'k, subd, diag, supd, rhs:'
+                        call mpas_log_write(' ')
+                        call mpas_log_write('deltat = $r', realArgs=(/deltat/))
+                        call mpas_log_write('After matrix elements, iCell = $i', intArgs=(/indexToCellID(iCell)/))
+                        call mpas_log_write('k, subd, diag, supd, rhs:')
                         do k = 1, nVertLevels+2
-                           write(stdoutUnit,*) k-1, subdiagonal(k), diagonal(k), superdiagonal(k), rhs(k)
+                           call mpas_log_write('$i $r $r $r $r', intArgs=(/k-1/), realArgs= &
+                              (/subdiagonal(k), diagonal(k), superdiagonal(k), rhs(k)/))
                         enddo
                      endif
 
@@ -1126,14 +1133,14 @@ module li_thermal
                         (1.0_RKIND - layerCenterSigma(nVertLevels))
 
                      if (verboseColumn) then
-                        write(stdoutUnit,*) ' '
-                        write(stdoutUnit,*) 'After prognostic temperature, iCell =', indexToCellID(iCell)
-                        write(stdoutUnit,*) 'thickness =', thickness(iCell)
-                        write(stdoutUnit,*) 0, surfaceTemperature(iCell)
+                        call mpas_log_write(' ')
+                        call mpas_log_write('After prognostic temperature, iCell = $i', intArgs=(/indexToCellID(iCell)/))
+                        call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
+                        call mpas_log_write('0 $r', realArgs=(/surfaceTemperature(iCell)/))
                         do k = 1, nVertLevels
-                           write(stdoutUnit,*) k, temperature(k,iCell)
+                           call mpas_log_write('$i $r', intArgs=(/k/), realArgs=(/temperature(k,iCell)/))
                         enddo
-                        write(stdoutUnit,*) nVertLevels+1, basalTemperature(iCell)
+                        call mpas_log_write('$i $r', intArgs=(/nVertLevels+1/), realArgs=(/basalTemperature(iCell)/))
                      endif
 
                      ! Compute final internal energy in column (for energy conservation check)
@@ -1154,9 +1161,9 @@ module li_thermal
                   columnHeatDissipation = columnHeatDissipation * thickness(iCell)*rhoi*cp_ice
 
                   if (verboseColumn) then
-                     write(stdoutUnit,*) ' '
-                     write(stdoutUnit,*) 'heatDissipation:', heatDissipation(:,iCell)
-                     write(stdoutUnit,*) 'columnHeatDissipation:', columnHeatDissipation
+                     call mpas_log_write(' ')
+                     call mpas_log_write('heatDissipation: $r', realArgs=(/heatDissipation(:,iCell)/))
+                     call mpas_log_write('columnHeatDissipation: $r', realArgs=(/columnHeatDissipation/))
                   endif
 
                   ! Verify that the net input of energy into the column is equal to the change in internal energy.
@@ -1167,30 +1174,30 @@ module li_thermal
                   if (abs((finalEnergy - initialEnergy - deltaEnergy) / deltat) > 1.0e-8_RKIND) then
 
                      if (verboseColumn) then
-                        write(stdoutUnit,*) 'Ice thickness:', thickness(iCell)
-                        write(stdoutUnit,*) 'config_thermal_thickness:', config_thermal_thickness
-                        write(stdoutUnit,*) ' '
-                        write(stdoutUnit,*) 'Interior fluxes:'
-                        write(stdoutUnit,*) 'sfc conductive flx (W/m^2, positive down)=', surfaceConductiveFlux(iCell)
-                        write(stdoutUnit,*) 'bed conductive flx (W/m^2, positive down)=', basalConductiveFlux(iCell)
-                        write(stdoutUnit,*) 'column heat dissipation (W/m^2) =', columnHeatDissipation
-                        write(stdoutUnit,*) 'Net flux (W/m^2) =', deltaEnergy/deltat
-                        write(stdoutUnit,*) ' '
-                        write(stdoutUnit,*) 'deltaEnergy (J/m^2) =', deltaEnergy
-                        write(stdoutUnit,*) 'initialEnergy (J/m^2) =', initialEnergy
-                        write(stdoutUnit,*) 'finalEnergy (J/m^2) =', finalEnergy
-                        write(stdoutUnit,*) ' '
-                        write(stdoutUnit,*) 'Energy imbalance (J/m^2)=', finalEnergy - initialEnergy - deltaEnergy
-                        write(stdoutUnit,*) ' '
-                        write(stdoutUnit,*) 'Basal fluxes:'
-                        write(stdoutUnit,*) 'frictional =', basalFrictionFlux(iCell)
-                        write(stdoutUnit,*) 'geothermal =', basalHeatFlux(iCell)
-                        write(stdoutUnit,*) 'flux for bottom melting =', &
-                           basalFrictionFlux(iCell) + basalHeatFlux(iCell) + basalConductiveFlux(iCell)
+                        call mpas_log_write('Ice thickness: $r', realArgs=(/thickness(iCell)/))
+                        call mpas_log_write('config_thermal_thickness: $r', realArgs=(/config_thermal_thickness/))
+                        call mpas_log_write(' ')
+                        call mpas_log_write('Interior fluxes:')
+                        call mpas_log_write('sfc conductive flx (W/m^2, positive down)=$r', realArgs=(/surfaceConductiveFlux(iCell)/))
+                        call mpas_log_write('bed conductive flx (W/m^2, positive down)=$r', realArgs=(/basalConductiveFlux(iCell)/))
+                        call mpas_log_write('column heat dissipation (W/m^2) =$r', realArgs=(/columnHeatDissipation/))
+                        call mpas_log_write('Net flux (W/m^2) =$r', realArgs=(/deltaEnergy/deltat/))
+                        call mpas_log_write(' ')
+                        call mpas_log_write('deltaEnergy (J/m^2) =$r', realArgs=(/deltaEnergy/))
+                        call mpas_log_write('initialEnergy (J/m^2) =$r', realArgs=(/initialEnergy/))
+                        call mpas_log_write('finalEnergy (J/m^2) =$r', realArgs=(/finalEnergy/))
+                        call mpas_log_write(' ')
+                        call mpas_log_write('Energy imbalance (J/m^2)=$r', realArgs=(/finalEnergy - initialEnergy - deltaEnergy/))
+                        call mpas_log_write(' ')
+                        call mpas_log_write('Basal fluxes:')
+                        call mpas_log_write('frictional =$r', realArgs=(/basalFrictionFlux(iCell)/))
+                        call mpas_log_write('geothermal =$r', realArgs=(/basalHeatFlux(iCell)/))
+                        call mpas_log_write('flux for bottom melting =$r', &
+                           realArgs=(/basalFrictionFlux(iCell) + basalHeatFlux(iCell) + basalConductiveFlux(iCell)/))
                      endif   ! verboseColumn
 
-                     write(stderrUnit,*) 'li_thermal, energy conservation error: iCell, imbalance (W/m2):', &
-                                         indexToCellID(iCell), (finalEnergy - initialEnergy - deltaEnergy)/deltat
+                     call mpas_log_write('li_thermal, energy conservation error: iCell=$i, imbalance=$r (W/m2):', MPAS_LOG_ERR, &
+                                         intArgs=(/indexToCellID(iCell)/), realArgs=(/(finalEnergy - initialEnergy - deltaEnergy)/deltat/))
                      err = 1
 
                   endif  ! energy conservation error
@@ -1256,23 +1263,23 @@ module li_thermal
                mintemp = minval(temperature(:,iCell))
 
                if (maxtemp > maxtempThreshold) then
-                  write(stderrUnit,*) 'maxtemp > maxtempThreshold: iCell, maxtemp =', iCell, maxtemp
-                  write(stderrUnit,*) 'thickness =', thickness(iCell)
-                  write(stderrUnit,*) 'temperature:'
+                  call mpas_log_write('maxtemp > maxtempThreshold: iCell=$i, maxtemp = $r', intArgs=(/iCell/), realArgs=(/maxtemp/))
+                  call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
+                  call mpas_log_write('temperature:')
                   do k = 1, nVertLevels
-                     write(stderrUnit,*) k, temperature(k,iCell)
+                     call mpas_log_write('$i $r', intArgs=(/k/), realArgs=(/temperature(k,iCell)/))
                   enddo
-                  call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_thermal. Aborting...")
+                  call mpas_log_write("An error has occurred in li_thermal. Aborting...", MPAS_LOG_CRIT)
                endif
 
                if (mintemp < mintempThreshold) then
-                  write(stderrUnit,*) 'mintemp < mintempThreshold: iCell, mintemp =', iCell, mintemp
-                  write(stderrUnit,*) 'thickness =', thickness(iCell)
-                  write(stderrUnit,*) 'temperature:'
+                  call mpas_log_write('mintemp < mintempThreshold: iCell=$i, mintemp = $r', intArgs=(/iCell/), realArgs=(/mintemp/))
+                  call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
+                  call mpas_log_write('temperature:')
                   do k = 1, nVertLevels
-                     write(stderrUnit,*) k, temperature(k,iCell)
+                     call mpas_log_write('$i $r', intArgs=(/k/), realArgs=(/temperature(k,iCell)/))
                   enddo
-                  call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_thermal. Aborting...")
+                  call mpas_log_write("An error has occurred in li_thermal. Aborting...", MPAS_LOG_CRIT)
                endif
 
             enddo   ! iCell
@@ -1311,9 +1318,9 @@ module li_thermal
             basalMassBal(iCell) = groundedBasalMassBal(iCell) + floatingBasalMassBal(iCell)
 
             if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-               write(stdoutUnit,*) 'iCell, basal mass balance (m/yr) (grounded, floating, total):', &
-                    iCell, groundedBasalMassBal(iCell)*scyr/rhoi, floatingBasalMassBal(iCell)*scyr/rhoi, &
-                    basalMassBal(iCell)*scyr/rhoi
+               call mpas_log_write('iCell=$i, basal mass balance (m/yr): grounded=$r, floating=$r, total=$r', &
+                    intArgs=(/iCell/), realArgs=(/groundedBasalMassBal(iCell)*scyr/rhoi, floatingBasalMassBal(iCell)*scyr/rhoi, &
+                    basalMassBal(iCell)*scyr/rhoi/))
             endif
 
          enddo
@@ -1348,7 +1355,7 @@ module li_thermal
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) 'An error has occurred in li_thermal_solver'
+          call mpas_log_write('An error has occurred in li_thermal_solver', MPAS_LOG_ERR)
       endif
 
     end subroutine li_thermal_solver
@@ -1521,7 +1528,7 @@ module li_thermal
         allocate(flowParamAEdge(nVertLevels))
 
         if (config_print_thermal_info) then
-           write(stdoutUnit,*) 'Compute SIA heat dissipation'
+           call mpas_log_write('Compute SIA heat dissipation')
         endif
 
         ! compute the heat dissipation on edges
@@ -1569,9 +1576,9 @@ module li_thermal
            heatDissipation(:,iCell) = 0.0_RKIND
 
            if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-              write(stdoutUnit,*) ' '
-              write(stdoutUnit,*) 'Heat dissipation, iCell (local, global ID) =', iCell, indexToCellID(iCell)
-              write(stdoutUnit,*) 'iEdgeOnCell, iEdge, weightEdge, heatDissipationEdge (layer 1)'
+              call mpas_log_write(' ')
+              call mpas_log_write('Heat dissipation, iCell:local=$i, global ID=$i', intArgs=(/iCell, indexToCellID(iCell)/))
+              call mpas_log_write('iEdgeOnCell, iEdge, weightEdge, heatDissipationEdge (layer 1)')
            endif
 
            do iEdgeOnCell = 1, nEdgesOnCell(iCell)
@@ -1582,15 +1589,16 @@ module li_thermal
               heatDissipation(:,iCell) = heatDissipation(:,iCell) + weightEdge * heatDissipationEdge(:,iEdge)
 
               if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-                 write(stdoutUnit,*) iEdgeOnCell, iEdge, weightEdge, heatDissipationEdge(1,iEdge), heatDissipation(1,iCell)
+                 call mpas_log_write('$i $i $r $r $r', intArgs=(/iEdgeOnCell, iEdge/), realArgs= &
+                    (/weightEdge, heatDissipationEdge(1,iEdge), heatDissipation(1,iCell)/))
               endif
 
            enddo  ! iEdgeOnCell
 
            if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-              write(stdoutUnit,*) 'heatDissipation (deg/s) for cell', iCell
+              call mpas_log_write('heatDissipation (deg/s) for cell $i', intArgs=(/iCell/))
               do iLayer = 1, nVertLevels
-                 write(stdoutUnit,*) iLayer, heatDissipation(iLayer,iCell) / (rhoi*cp_ice)
+                 call mpas_log_write('$i $r', intArgs=(/iLayer/), realArgs=(/heatDissipation(iLayer,iCell) / (rhoi*cp_ice)/))
               enddo
            endif
 
@@ -1709,7 +1717,7 @@ module li_thermal
         call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
         call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
 
-        if (config_print_thermal_info) write(stdoutUnit,*) 'Compute basal friction flux'
+        if (config_print_thermal_info) call mpas_log_write('Compute basal friction flux')
 
         ! Compute basal frictional heating for each cell
 
@@ -1718,8 +1726,8 @@ module li_thermal
            basalFrictionFlux(iCell) = beta(iCell) * basalSpeed(iCell)
 
            if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-              write(stdoutUnit,*) 'iCell, beta, basalSpeed, basalFrictionFlux:', &
-                   iCell, beta(iCell), basalSpeed(iCell), basalFrictionFlux(iCell)
+              call mpas_log_write('iCell=$i, beta=$r, basalSpeed=$r, basalFrictionFlux=$r', &
+                   intArgs=(/iCell/), realArgs=(/beta(iCell), basalSpeed(iCell), basalFrictionFlux(iCell)/))
            endif
 
         enddo
@@ -2792,8 +2800,8 @@ module li_thermal
 
       else
 
-         write(stderrUnit,*) 'ERROR: Unknown option selected for config_basal_mass_bal_float:', trim(config_basal_mass_bal_float)
-         ! TODO: Actually throw an error and abort the model!
+         call mpas_log_write('Unknown option selected for config_basal_mass_bal_float:' // trim(config_basal_mass_bal_float), MPAS_LOG_CRIT)
+         ! TODO: pass back error code to calling routine
 
       endif   ! config_basal_mass_bal_float
 
