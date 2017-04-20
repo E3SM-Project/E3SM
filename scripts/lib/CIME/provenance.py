@@ -130,9 +130,9 @@ def save_prerun_provenance_acme(case, lid=None):
             run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
     elif mach == "titan":
-        for cmd, filename in [("qstat -f >", "qstatf"),
-                              ("qstat -f %s >" % job_id, "qstatf_jobid"),
+        for cmd, filename in [("qstat -f %s >" % job_id, "qstatf_jobid"),
                               ("xtnodestat >", "xtnodestat"),
+                              # ("qstat -f >", "qstatf"),
                               # ("xtdb2proc -f", "xtdb2proc"),
                               ("showq >", "showq")]:
             full_cmd = cmd + " " + filename
@@ -143,7 +143,7 @@ def save_prerun_provenance_acme(case, lid=None):
         # run_cmd_no_fail("./mdiag_reduce.csh", arg_stdout=mdiag_reduce, from_dir=os.path.join(caseroot, "Tools"))
         # gzip_existing_file(mdiag_reduce)
     elif mach == "anvil":
-        for cmd, filename in [("qstat -f acme >", "qstatf"),
+        for cmd, filename in [("qstat -f -1 acme >", "qstatf"),
                               ("qstat -f %s >" % job_id, "qstatf_jobid"),
                               ("qstat -r acme >", "qstatr")]:
             full_cmd = cmd + " " + filename
