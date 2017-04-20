@@ -2,23 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 include(ExternalProject)
 set(CIME_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
-# This block needs to happen before the 'project' line.
-#
-# FIXME(wjs, 2017-04-20) If we can get this working, we should move it into a
-# new file that can be included, like CIME_initial_setup. All top-level
-# CMakeLists.txt files (i.e., CLM and CAM right now) will need to include this,
-# too.
-include(${CMAKE_BINARY_DIR}/Macros.cmake RESULT_VARIABLE FOUND)
-if(NOT FOUND)
-  message(FATAL_ERROR "You must generate a Macros.cmake file using CIME's configure")
-endif()
-if("$ENV{MPILIB}" STREQUAL "mpi-serial")
-  set(CMAKE_C_COMPILER ${SCC})
-  set(CMAKE_Fortran_COMPILER ${SFC})
-else()
-  set(CMAKE_C_COMPILER ${MPICC})
-  set(CMAKE_Fortran_COMPILER ${MPIFC})
-endif()
+list(APPEND CMAKE_MODULE_PATH ${CIME_CMAKE_MODULE_DIRECTORY})
+include(CIME_initial_setup)
 
 project(cime_tests Fortran C)
 
@@ -26,7 +11,6 @@ project(cime_tests Fortran C)
 # need to duplicate this cmake code
 list(APPEND CMAKE_MODULE_PATH "${CIME_ROOT}/src/externals/pio2/cmake")
 
-list(APPEND CMAKE_MODULE_PATH ${CIME_CMAKE_MODULE_DIRECTORY})
 include(CIME_utils)
 find_package(NetCDF COMPONENTS C Fortran)
 include_directories(${NetCDF_C_INCLUDE_DIRS} ${NetCDF_Fortran_INCLUDE_DIRS})

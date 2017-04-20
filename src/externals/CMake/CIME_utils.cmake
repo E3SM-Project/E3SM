@@ -3,6 +3,10 @@
 # This module contains statements that would otherwise be boilerplate in
 # most CIME tests. It enables CTest testing, handles the USE_COLOR and
 # ENABLE_GENF90 arguments, and includes several other modules.
+#
+# Some of the things done here must be done AFTER the 'project' line in the main
+# CMakeLists.txt file. This assumes that CIME_initial_setup has already been
+# included.
 
 #==========================================================================
 # Copyright (c) 2013-2014, University Corporation for Atmospheric Research
