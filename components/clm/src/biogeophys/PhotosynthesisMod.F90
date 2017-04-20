@@ -1393,10 +1393,6 @@ contains
       ! Net photosynthesis. Exit iteration if an < 0
 
       an(p,iv) = ag(p,iv) - lmr_z
-!      if (an(p,iv) < 0._r8) then
-!         fval = 0._r8
-!         return
-!      endif
       ! Quadratic gs_mol calculation with an known. Valid for an >= 0.
       ! With an <= 0, then gs_mol = bbb
       if(an(p,iv)<=0.0)then
