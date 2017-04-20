@@ -255,10 +255,7 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
 
     ! check that we know how to handle the mode
 
-    if (trim(rof_mode) == 'NULL'            .or. &
-        trim(rof_mode) == 'CPLHIST'         .or. &
-        trim(rof_mode) == 'DIATREN_ANN_RX1' .or. &
-        trim(rof_mode) == 'DIATREN_IAF_RX1') then
+    if (trim(rof_mode) == 'NULL' .or. trim(rof_mode) == 'COPYALL') then
         if (my_task == master_task) write(logunit,F00) 'rof mode = ',trim(rof_mode)
     else
       write(logunit,F00) ' ERROR illegal rof mode = ',trim(rof_mode)
