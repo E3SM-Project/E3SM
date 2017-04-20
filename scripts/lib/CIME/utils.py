@@ -1241,7 +1241,10 @@ def _check_for_invalid_args(args):
         if arg.startswith("--"):
             continue
         if arg.startswith("-") and len(arg) > 2:
-            expect(False, "Invalid argument %s\n  Arguments should begin with -- or be single character (-s)\n  Use --help for a complete list of available options"%arg)
+            if arg == "-value":
+                logger.warn("This argument is deprecated, please use -%s"%arg)
+            else:
+                expect(False, "Invalid argument %s\n  Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options"%arg)
 
 
 

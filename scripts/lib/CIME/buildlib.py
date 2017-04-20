@@ -30,9 +30,7 @@ def parse_input(argv):
     parser.add_argument("bldroot",
                         help="root for building library")
 
-    args = parser.parse_args()
-
-    handle_standard_logging_options(args)
+    args = handle_standard_logging_options(argv, parser)
 
     return args.caseroot, args.libroot, args.bldroot
 

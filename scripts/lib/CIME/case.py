@@ -1132,8 +1132,8 @@ class Case(object):
         executable, mpi_arg_string = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
 
         # special case for aprun
-        if  executable is not None and "aprun" in executable:
-            aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)
+        if executable is not None and "aprun" in executable:
+            aprun_cmd, num_nodes = get_aprun_cmd_for_case(self, run_exe)
             expect(num_nodes == self.num_nodes, "Not using optimized num nodes")
             return executable + aprun_args + " " + run_misc_suffix
 
