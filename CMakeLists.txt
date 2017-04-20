@@ -2,6 +2,24 @@ cmake_minimum_required(VERSION 2.8)
 include(ExternalProject)
 set(CIME_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
+# This block needs to happen before the 'project' line.
+#
+# FIXME(wjs, 2017-04-20) If we can get this working, we should move it into a
+# new file that can be included, like CIME_initial_setup. All top-level
+# CMakeLists.txt files (i.e., CLM and CAM right now) will need to include this,
+# too.
+include(${CMAKE_BINARY_DIR}/Macros.cmake RESULT_VARIABLE FOUND)
+if(NOT FOUND)
+  message(FATAL_ERROR "You must generate a Macros.cmake file using CIME's configure")
+endif()
+if("$ENV{MPILIB}" STREQUAL "mpi-serial")
+  set(CMAKE_C_COMPILER ${SCC})
+  set(CMAKE_Fortran_COMPILER ${SFC})
+else()
+  set(CMAKE_C_COMPILER ${MPICC})
+  set(CMAKE_Fortran_COMPILER ${MPIFC})
+endif()
+
 project(cime_tests Fortran C)
 
 # We rely on pio for cmake utilities like findnetcdf.cmake, so that we don't
@@ -31,7 +49,7 @@ ExternalProject_add(mct_project
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}
   SOURCE_DIR ${MCT_ROOT}
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/mct
-  CONFIGURE_COMMAND ${MCT_ROOT}/configure ${ENABLE_MPI_SERIAL} --enable-debugging --prefix=${CMAKE_CURRENT_BINARY_DIR} CFLAGS=${CFLAGS} FCFLAGS=${FFLAGS} SRCDIR=${MCT_ROOT} DEBUG="-g"
+  CONFIGURE_COMMAND ${MCT_ROOT}/configure ${ENABLE_MPI_SERIAL} --enable-debugging --prefix=${CMAKE_CURRENT_BINARY_DIR} CC=${CMAKE_C_COMPILER} FC=${CMAKE_Fortran_COMPILER} CFLAGS=${CFLAGS} FCFLAGS=${FFLAGS} SRCDIR=${MCT_ROOT} DEBUG="-g"
   BUILD_COMMAND $(MAKE) SRCDIR=${MCT_ROOT}
   # Leave things in <BINARY_DIR> rather than "installing", because we have
   # no need to move things around inside of the CMake binary directory. Also,

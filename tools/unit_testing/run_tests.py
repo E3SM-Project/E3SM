@@ -243,35 +243,6 @@ def find_pfunit(compilerobj, mpilib, use_openmp):
 You must specify PFUNIT_PATH in config_compilers.xml, with attributes MPILIB and compile_threaded."""%(mpilib, attrs['compile_threaded']))
     logger.info("Using PFUNIT_PATH: %s"%pfunit_path.text)
 
-def get_compiler(compilerobj, compiler_type, mpilib):
-    """Get the specific name of the given compiler from config_compilers.xml.
-
-    Aborts if no compiler is found.
-
-    Args:
-    - compilerobj: Object of type Compilers
-    - compiler_type: String: MPICC, MPIFC, SCC or SFC
-    - mpilib: String: mpi library - 'mpi-serial', 'mpich', etc.
-    """
-
-    compiler_attrs = {'MPILIB': mpilib}
-    compiler = compilerobj.get_optional_compiler_node(compiler_type, compiler_attrs)
-    if compiler is None:
-        # This can happen if no MPILIB attribute is specified for this
-        # machine/compiler/compiler_type. So try again without this attribute.
-        compiler = compilerobj.get_optional_compiler_node(compiler_type)
-
-    expect(compiler is not None,
-           """Could not find the specific compiler for this machine and compiler, with
-compiler type %s and mpilib %s."""%(compiler_type, mpilib))
-
-    compiler_resolved = compilerobj.get_resolved_value(compiler.text)
-    if (not os.path.isabs(compiler_resolved)):
-        # Sometimes we end up with a compiler that is simply 'mpif90'. Turn it
-        # into a full path here.
-        compiler_resolved = find_executable(compiler_resolved.strip())
-    return compiler_resolved
-
 #=================================================
 # Iterate over input suite specs, building the tests.
 #=================================================
@@ -358,14 +329,6 @@ def _main():
     else:
         os.environ["compile_threaded"] = "false"
 
-    if use_mpi:
-        os.environ["CC"] = get_compiler(compilerobj, 'MPICC', mpilib)
-        os.environ["FC"] = get_compiler(compilerobj, 'MPIFC', mpilib)
-    else:
-        os.environ["CC"] = get_compiler(compilerobj, 'SCC', mpilib)
-        os.environ["FC"] = get_compiler(compilerobj, 'SFC', mpilib)
-    logger.info("CC is %s"%os.environ["CC"])
-    logger.info("FC is %s"%os.environ["FC"])
     os.environ["UNIT_TEST_HOST"] = socket.gethostname()
 
     if not use_mpi:
