@@ -331,11 +331,11 @@ def _main():
 
     compiler_attrs = {'MPILIB': mpilib}
     if use_mpi:
-        os.environ["CC"] = compilerobj.get_value('MPICC', compiler_attrs)
-        os.environ["FC"] = compilerobj.get_value('MPIFC', compiler_attrs)
+        os.environ["CC"] = compilerobj.get_optional_compiler_node('MPICC', compiler_attrs).text
+        os.environ["FC"] = compilerobj.get_optional_compiler_node('MPIFC', compiler_attrs).text
     else:
-        os.environ["CC"] = compilerobj.get_value('SCC', compiler_attrs)
-        os.environ["FC"] = compilerobj.get_value('SFC', compiler_attrs)
+        os.environ["CC"] = compilerobj.get_optional_compiler_node('SCC', compiler_attrs).text
+        os.environ["FC"] = compilerobj.get_optional_compiler_node('SFC', compiler_attrs).text
     os.environ["UNIT_TEST_HOST"] = socket.gethostname()
 
     if not use_mpi:
