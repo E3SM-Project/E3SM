@@ -552,10 +552,6 @@
 
  end select radiation_lw_select
 
-!format:
- 101 format(i3,2i6,12(1x,e15.8))
- 102 format(i6,12(1x,e15.8))
-
  end subroutine radiation_lw_from_MPAS
 
 !=================================================================================================================
@@ -662,7 +658,7 @@
  call mpas_pool_get_array(diag_physics,'abstot',abstot)
  call mpas_pool_get_array(diag_physics,'emstot',emstot)
 
-!write(0,*) '--- writing absnxt,abstot,and emstot to restart =', l_camlw
+!call mpas_log_write('--- writing absnxt,abstot,and emstot to restart = $l', logicArgs=(/l_camlw/))
  do j = jts,jte
  do n = 1,cam_abs_dim1
  do k = kts,kte
@@ -746,11 +742,7 @@
  real(kind=RKIND):: radt,xtime_m
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,100)
-
-!formats:
- 100 format(/,' --- enter subroutine driver_radiation_lw: ',i6)
- 101 format(i8,12(1x,e15.8))
+!call mpas_log_write(' --- enter subroutine driver_radiation_lw: ')
 
  call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
 
@@ -794,7 +786,7 @@
 !... convert the radiation time_step to minutes:
        radt = dt_radtlw/60.
 
-!      write(0,*) '--- enter subroutine camrad_lw: doabsems=',doabsems
+!      call mpas_log_write('--- enter subroutine camrad_lw: doabsems=$l',logicArgs=(/doabsems/))
        call camrad( dolw = .true. , dosw = .false. ,                                         &
                 p_phy         = pres_hyd_p    , p8w           = pres2_hyd_p   ,              &
                 pi_phy        = pi_p          , t_phy         = t_p           ,              &
@@ -851,7 +843,7 @@
 !copy local arrays to MPAS grid:
  call radiation_lw_to_MPAS(diag_physics,tend_physics,its,ite)
 
-!write(0,*) '--- end subroutine driver_radiation_lw.'
+!call mpas_log_write('--- end subroutine driver_radiation_lw.')
 
  end subroutine driver_radiation_lw
 

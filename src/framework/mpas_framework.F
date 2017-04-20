@@ -53,10 +53,10 @@ module mpas_framework
 
       allocate(dminfo)
       call mpas_dmpar_init(dminfo, mpi_comm)
+
+      ! LOGTODO: delete the rest of this, change name of this routine to mpas_framework_dmpar_init?
       call mpas_io_units_init(stdoutUnit_in, stderrUnit_in)
 
-      write(stderrUnit,'(a,i5,a,i5,a)') 'task ', dminfo % my_proc_id, ' of ', dminfo % nprocs, &
-           ' is running'
       call open_streams(dminfo % my_proc_id, dminfo % nprocs)
 
    end subroutine mpas_framework_init_phase1!}}}

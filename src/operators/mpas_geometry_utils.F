@@ -11,9 +11,8 @@ module mpas_geometry_utils
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
-   use mpas_io_units
    use mpas_vector_operations
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log
 
    implicit none
 
@@ -178,7 +177,7 @@ module mpas_geometry_utils
       cz = 0.5*(az + bz)
 
       if (cx == 0. .and. cy == 0. .and. cz == 0.) then
-         write(stderrUnit,*) 'Error: arc_bisect: A and B are diametrically opposite'
+         call mpas_log_write('arc_bisect: A and B are diametrically opposite', MPAS_LOG_CRIT)
       else
          d = sqrt(cx*cx + cy*cy + cz*cz)
          cx = r * cx / d
@@ -258,8 +257,7 @@ module mpas_geometry_utils
 !      integer :: i,j
 
       if ( (ne < n) .or. (ne < m) ) then
-         write(stderrUnit,*) ' error in poly_fit_2 inversion ',m,n,ne
-         call mpas_dmpar_global_abort('ERROR: in subroutine poly_fit_2()')
+         call mpas_log_write(' error in poly_fit_2 inversion. m=$i n=$i ne=$i', MPAS_LOG_CRIT, intArgs=(/m,n,ne/))
       end if
 
 !      a(1:m,1:n) = a_in(1:n,1:m)
@@ -289,10 +287,10 @@ module mpas_geometry_utils
       b_out(1:n,1:m) = b(1:n,1:m)
 
 !     do i=1,n
-!        write(stderrUnit,*) ' i, indx ',i,indx(i)
+!        call mpas_log_write(' i=$i, indx=$i ', intArgs=(i,indx(i)))
 !     end do
 !
-!     write(stderrUnit,*) ' '
+!     call mpas_log_write(' ')
 
    end subroutine mpas_poly_fit_2!}}}
 
@@ -335,7 +333,7 @@ module mpas_geometry_utils
 
       call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
       if (vertexDegree /= 3) then
-         write (stderrUnit,*) 'Error: Barycentric weights can only be calculated if vertexDegree is 3'
+         call mpas_log_write('Barycentric weights can only be calculated if vertexDegree is 3', MPAS_LOG_ERR)
          ierr = 1
          return
       endif
@@ -353,7 +351,7 @@ module mpas_geometry_utils
 
       error = abs(weight_a + weight_b + weight_c - 1.0_RKIND)
       if (error > 1.0e-12_RKIND) then
-          write (stderrUnit,*) 'Error: Barycentric weights sum to substantially different from 1.0. error:', error  !, triangleArea, weight_a, weight_b, weight_c
+          call mpas_log_write('Barycentric weights sum to substantially different from 1.0. error: $r', MPAS_LOG_ERR, realArgs=(/error/))  !, triangleArea, weight_a, weight_b, weight_c
          ierr = 1
       endif
 
@@ -475,7 +473,7 @@ module mpas_geometry_utils
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
 
       if (vertexDegree /= 3) then
-         write (stderrUnit,*) 'Error: Barycentric weights can only be calculated if vertexDegree is 3'
+         call mpas_log_write('Error: Barycentric weights can only be calculated if vertexDegree is 3', MPAS_LOG_ERR)
          ierr = 1
          return
       endif
@@ -805,7 +803,7 @@ module mpas_geometry_utils
 
       call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
       if (vertexDegree /= 3) then
-         write (stderrUnit,*) 'Error: Barycentric weights can only be calculated if vertexDegree is 3'
+         call mpas_log_write('Error: Barycentric weights can only be calculated if vertexDegree is 3', MPAS_LOG_ERR)
          ierr = 1
          return
       endif
@@ -862,18 +860,18 @@ module mpas_geometry_utils
 
       ! 1/8 of spherical area = pi*r*r/8 = pi/2 for r=1.0
       if (abs((mpas_triangle_signed_area_sphere(a,b,c,sphereRadius) - pii/2.0_RKIND)/(pii/2.0_RKIND)) > eps) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_triangle_signed_area_sphere: unit sphere area wrong.'
+         call mpas_log_write('Error in mpas_unit_test_triangle_signed_area_sphere: unit sphere area wrong.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_triangle_signed_area_sphere: unit sphere area ok - SUCCESS'
+         call mpas_log_write('mpas_unit_test_triangle_signed_area_sphere: unit sphere area ok - SUCCESS')
       endif
 
       ! 1/8 of spherical area = pi*r*r/8 = pi/2 for r=1.0
       if (abs((mpas_triangle_signed_area_sphere(a,c,b,sphereRadius) + pii/2.0_RKIND)/(pii/2.0_RKIND)) > eps) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_triangle_signed_area_sphere: unit sphere area sign wrong.'
+         call mpas_log_write('Error in mpas_unit_test_triangle_signed_area_sphere: unit sphere area sign wrong.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_triangle_signed_area_sphere: unit sphere area sign ok - SUCCESS'
+         call mpas_log_write('mpas_unit_test_triangle_signed_area_sphere: unit sphere area sign ok - SUCCESS')
       endif
 
       ! 1/8 of spherical area = pi*r*r/8 = r*r*pi/2 for r=sphereRadius
@@ -882,11 +880,11 @@ module mpas_geometry_utils
       b = b*sphereRadius
       c = c*sphereRadius
       if (abs((mpas_triangle_signed_area_sphere(a,b,c,sphereRadius) - pii/2.0_RKIND*sphereRadius*sphereRadius)/(pii/2.0_RKIND*sphereRadius*sphereRadius)) > eps) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_triangle_signed_area_sphere: radius sphere area wrong.'
-         write(stderrUnit,*) mpas_triangle_signed_area_sphere(a,b,c,sphereRadius) - pii/2.0_RKIND*sphereRadius*sphereRadius
+         call mpas_log_write('Error in mpas_unit_test_triangle_signed_area_sphere: radius sphere area wrong.', MPAS_LOG_ERR)
+         call mpas_log_write('$r', MPAS_LOG_ERR, realArgs=(/mpas_triangle_signed_area_sphere(a,b,c,sphereRadius) - pii/2.0_RKIND*sphereRadius*sphereRadius/))
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_triangle_signed_area_sphere: radius sphere area ok - SUCCESS'
+         call mpas_log_write('mpas_unit_test_triangle_signed_area_sphere: radius sphere area ok - SUCCESS')
       endif
 
 
@@ -931,17 +929,17 @@ module mpas_geometry_utils
       point2 = (/ -0.01, 0.5, 0.0 /)
 
       if (.not. mpas_point_in_polygon(point1, trianglePoints, .false.)) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_in_triangle: point1 calculated to be outside of triangle.'
+         call mpas_log_write('Error in mpas_unit_test_in_triangle: point1 calculated to be outside of triangle.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_in_triangle: point1 test - SUCCESS'
+         call mpas_log_write('mpas_unit_test_in_triangle: point1 test - SUCCESS')
       endif
 
       if (mpas_point_in_polygon(point2, trianglePoints, .false.)) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_in_triangle: point2 calculated to be inside of triangle.'
+         call mpas_log_write('Error in mpas_unit_test_in_triangle: point2 calculated to be inside of triangle.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_in_triangle: point2 test - SUCCESS'
+         call mpas_log_write('mpas_unit_test_in_triangle: point2 test - SUCCESS')
       endif
 
    end subroutine mpas_unit_test_in_triangle !}}}
@@ -992,19 +990,19 @@ module mpas_geometry_utils
       call mpas_calculate_barycentric_weights(point1, trianglePoints(1,:), trianglePoints(2,:), trianglePoints(3,:), meshPool,     &
              weights(1), weights(2), weights(3), ierr)
       if (maxval(abs(weights - (/ 0.33333333333333333, 0.33333333333333333, 0.33333333333333333 /) )) > eps) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_bary_weights: point1 weights have error greater than tolerance.'
+         call mpas_log_write('Error in mpas_unit_test_bary_weights: point1 weights have error greater than tolerance.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_bary_weights: point1 test - SUCCESS'
+         call mpas_log_write('mpas_unit_test_bary_weights: point1 test - SUCCESS')
       endif
 
       call mpas_calculate_barycentric_weights(point2, trianglePoints(1,:), trianglePoints(2,:), trianglePoints(3,:), meshPool,     &
              weights(1), weights(2), weights(3), ierr)
       if (maxval(abs(weights - (/ 1.0, 0.0, 0.0 /) )) > eps) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_bary_weights: point1 weights have error greater than tolerance.'
+         call mpas_log_write('Error in mpas_unit_test_bary_weights: point1 weights have error greater than tolerance.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_bary_weights: point2 test - SUCCESS'
+         call mpas_log_write('mpas_unit_test_bary_weights: point2 test - SUCCESS')
       endif
 
    end subroutine mpas_unit_test_bary_weights !}}}
@@ -1103,12 +1101,12 @@ module mpas_geometry_utils
          !{{{
 
          ! search neighbors via greedy algorithm
-         !write(stderrUnit,*) 'get_cell_id', lastCell
+         !call mpas_log_write('get_cell_id $i', intArgs=(/lastCell/))
          cellGuess = lastCell
          cellID = -1
          ! loop over closest cells to make this a greedy method
          do while (cellID /= cellGuess)
-            !write(stderrUnit,*) cellGuess, cellID
+            !call mpas_log_write("$i $i", intArgs=(/cellGuess, cellID/))
 
             ! we have a known cell
             cellID = cellGuess
@@ -1152,7 +1150,7 @@ module mpas_geometry_utils
             dy = xPoint(2) - xCell(2,cellID)
             dz = xPoint(3) - xCell(3,cellID)
             r2Min = dx*dx + dy*dy + dz*dz
-            !write(stderrUnit,*) 'r2Min_1 =', r2Min, ' cellID = ', cellID
+            !call mpas_log_write('r2Min_1 = $r cellID = $i', intArgs=(/cellID/), realArgs=(/r2Min/))
 
             ! loop over all the other on the existing cell to see if we have found a closer cell
             do iPoint = 1, nEdgesOnCell(cellGuess)
@@ -1169,7 +1167,7 @@ module mpas_geometry_utils
                   r2Min = r2
                end if
             end do
-            !write(stderrUnit,*) 'r2Min_2 = ' ,r2Min, ' cellguess = ', cellguess
+            !call mpas_log_write('r2Min_2 = $r cellguess = $i', intArgs=(/cellguess/), realArgs=(/r2Min/))
          end do
          !}}}
       end if
@@ -1405,7 +1403,7 @@ module mpas_geometry_utils
 
       ierr = 0
 #if MPAS_DEBUG
-      write(stderrUnit,*) 'starting mpas_unit_test_wachspress_hexagon'
+      call mpas_log_write('starting mpas_unit_test_wachspress_hexagon')
 #endif
       ! set on a plane
       call mpas_pool_create_pool(meshPool)
@@ -1426,10 +1424,10 @@ module mpas_geometry_utils
       lambda = mpas_wachspress_coordinates(nVertices, vertCoords, pointInterp, meshPool)
       interpValue = mpas_wachspress_interpolate(lambda, vertValues)
       if (abs(interpValue - 3.0_RKIND) > eps) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_wachspress_hexagon: test1 - FAILED.'
+         call mpas_log_write('Error in mpas_unit_test_wachspress_hexagon: test1 - FAILED.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_wachspress_hexagon:  test1 - SUCCESS'
+         call mpas_log_write('mpas_unit_test_wachspress_hexagon:  test1 - SUCCESS')
       end if
 
       ! interpolation at vertex
@@ -1438,15 +1436,15 @@ module mpas_geometry_utils
       lambda = mpas_wachspress_coordinates(nVertices, vertCoords, pointInterp, meshPool)
       interpValue = mpas_wachspress_interpolate(lambda, vertValues)
       if (abs(interpValue - 4.0_RKIND) > eps) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_wachspress_hexagon: test2 - FAILED.'
+         call mpas_log_write('Error in mpas_unit_test_wachspress_hexagon: test2 - FAILED.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_wachspress_hexagon:  test2 - SUCCESS'
+         call mpas_log_write('mpas_unit_test_wachspress_hexagon:  test2 - SUCCESS')
       end if
 
       call mpas_pool_destroy_pool(meshPool)
 #if MPAS_DEBUG
-      write(stderrUnit,*) 'finished mpas_unit_test_wachspress_hexagon'
+      call mpas_log_write('finished mpas_unit_test_wachspress_hexagon')
 #endif
 
    end subroutine mpas_unit_test_wachspress_hexagon!}}}
@@ -1492,7 +1490,7 @@ module mpas_geometry_utils
 
       ierr = 0
 #if MPAS_DEBUG
-      write(stderrUnit,*) 'starting mpas_unit_test_wachspress_triangle'
+      call mpas_log_write('starting mpas_unit_test_wachspress_triangle')
 #endif
       ! set on a plane
       call mpas_pool_create_pool(meshPool)
@@ -1510,10 +1508,10 @@ module mpas_geometry_utils
       lambda = mpas_wachspress_coordinates(nVertices, vertCoords, pointInterp, meshPool)
       interpValue = mpas_wachspress_interpolate(lambda, vertValues)
       if (abs(interpValue - 3.75_RKIND) > eps) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_wachspress_triangle: test1 - FAILED.'
+         call mpas_log_write('Error in mpas_unit_test_wachspress_triangle: test1 - FAILED.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_wachspress_triangle: test1 - SUCCESS'
+         call mpas_log_write('mpas_unit_test_wachspress_triangle: test1 - SUCCESS')
       end if
 
       ! interpolation at vertex
@@ -1522,15 +1520,15 @@ module mpas_geometry_utils
       lambda = mpas_wachspress_coordinates(nVertices, vertCoords, pointInterp, meshPool)
       interpValue = mpas_wachspress_interpolate(lambda, vertValues)
       if (abs(interpValue - 4.0_RKIND) > eps) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_wachspress_triangle: test2 - FAILED.'
+         call mpas_log_write('Error in mpas_unit_test_wachspress_triangle: test2 - FAILED.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_wachspress_triangle: test2 - SUCCESS'
+         call mpas_log_write('mpas_unit_test_wachspress_triangle: test2 - SUCCESS')
       end if
 
       call mpas_pool_destroy_pool(meshPool)
 #if MPAS_DEBUG
-      write(stderrUnit,*) 'finished mpas_unit_test_wachspress_triangle'
+      call mpas_log_write('finished mpas_unit_test_wachspress_triangle')
 #endif
 
    end subroutine mpas_unit_test_wachspress_triangle!}}}
@@ -1561,7 +1559,7 @@ module mpas_geometry_utils
       ! test for singularities at the poles
       if(xyzPoint(1) == 0.0_RKIND .and. xyzPoint(2) == 0.0_RKIND) then
 #ifdef MPAS_DEBUG
-        write(stderrUnit,*) 'Point is located at a pole, cannot convert accurately to lat/lon velocity!'
+        call mpas_log_write('Point is located at a pole, cannot convert accurately to lat/lon velocity!', MPAS_LOG_WARN)
 #endif
         ! velocity is undefined but return 0s for testing purposes
         Uzon = 0.0_RKIND
@@ -1624,10 +1622,10 @@ module mpas_geometry_utils
       call mpas_convert_xyz_velocity_to_latlon(zonalVel, meridVel, sphereLocation, velocity)
       if (abs(zonalVel - 0.0_RKIND ) > eps .or. &
           abs(meridVel - 1.0_RKIND ) > eps) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test1 - FAILED.'
+         call mpas_log_write('Error in mpas_unit_test_velocity_conversion: test1 - FAILED.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_velocity_conversion: test1 - SUCCESS'
+         call mpas_log_write('mpas_unit_test_velocity_conversion: test1 - SUCCESS')
       end if
 
       ! equator case (merid vel)
@@ -1636,10 +1634,10 @@ module mpas_geometry_utils
       call mpas_convert_xyz_velocity_to_latlon(zonalVel, meridVel, sphereLocation, velocity)
       if (abs(zonalVel - 0.0_RKIND ) > eps .or. &
           abs(meridVel - 1.0_RKIND ) > eps) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test2 - FAILED.'
+         call mpas_log_write('Error in mpas_unit_test_velocity_conversion: test2 - FAILED.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_velocity_conversion: test2 - SUCCESS'
+         call mpas_log_write('mpas_unit_test_velocity_conversion: test2 - SUCCESS')
       end if
 
       ! pole case
@@ -1648,10 +1646,10 @@ module mpas_geometry_utils
       call mpas_convert_xyz_velocity_to_latlon(zonalVel, meridVel, sphereLocation, velocity)
       if (abs(zonalVel - 0.0_RKIND ) > eps .or. &
           abs(meridVel - 0.0_RKIND ) > eps) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test3 - FAILED.'
+         call mpas_log_write('Error in mpas_unit_test_velocity_conversion: test3 - FAILED.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_velocity_conversion: test3 - SUCCESS'
+         call mpas_log_write('mpas_unit_test_velocity_conversion: test3 - SUCCESS')
       end if
 
       ! equator case (zonal vel)
@@ -1660,10 +1658,10 @@ module mpas_geometry_utils
       call mpas_convert_xyz_velocity_to_latlon(zonalVel, meridVel, sphereLocation, velocity)
       if (abs(zonalVel - 1.0_RKIND ) > eps .or. &
           abs(meridVel - 0.0_RKIND ) > eps) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test3 - FAILED.'
+         call mpas_log_write('Error in mpas_unit_test_velocity_conversion: test3 - FAILED.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_velocity_conversion: test3 - SUCCESS'
+         call mpas_log_write('mpas_unit_test_velocity_conversion: test3 - SUCCESS')
       end if
 
       ! equator case (zonal vel)
@@ -1672,10 +1670,10 @@ module mpas_geometry_utils
       call mpas_convert_xyz_velocity_to_latlon(zonalVel, meridVel, sphereLocation, velocity)
       if (abs(zonalVel - 1.0_RKIND ) > eps .or. &
           abs(meridVel - 0.0_RKIND ) > eps) then
-         write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test4 - FAILED.'
+         call mpas_log_write('Error in mpas_unit_test_velocity_conversion: test4 - FAILED.', MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_velocity_conversion: test4 - SUCCESS'
+         call mpas_log_write('mpas_unit_test_velocity_conversion: test4 - SUCCESS')
       end if
 
    end subroutine mpas_unit_test_velocity_conversion!}}}

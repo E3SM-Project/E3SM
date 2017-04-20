@@ -27,7 +27,7 @@ module ocn_core
    use mpas_timekeeping
    use mpas_dmpar
    use mpas_timer
-   use mpas_io_units
+   use mpas_log
 
    use ocn_forward_mode
    use ocn_analysis_mode
