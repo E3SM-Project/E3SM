@@ -20,8 +20,6 @@ module restFileMod
   use clm_varcon           , only : c13ratio, c14ratio
   use clm_varcon           , only : nameg, namel, namec, namep, nameCohort
   use ch4Mod               , only : ch4_type
-  use EDRestVectorMod      , only : EDRest
-  use EDBioType            , only : EDbio_type
   use CNCarbonFluxType     , only : carbonflux_type
   use CNCarbonStateType    , only : carbonstate_type
   use CNDVType             , only : dgvs_type
@@ -97,7 +95,7 @@ contains
        ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-       waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+       waterflux_vars, waterstate_vars,                                               &
        phosphorusstate_vars, phosphorusflux_vars,                                     &
        betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
        rdate, noptr)
@@ -131,9 +129,8 @@ contains
     type(temperature_type)   , intent(in)    :: temperature_vars
     type(waterstate_type)    , intent(inout) :: waterstate_vars  ! due to EDrest call
     type(waterflux_type)     , intent(in)    :: waterflux_vars
-    type(EDbio_type)         , intent(inout) :: EDbio_vars       ! due to EDrest call
-    type(phosphorusstate_type),intent(inout)    :: phosphorusstate_vars
-    type(phosphorusflux_type) ,intent(in)     :: phosphorusflux_vars
+    type(phosphorusstate_type),intent(inout) :: phosphorusstate_vars
+    type(phosphorusflux_type) ,intent(in)    :: phosphorusflux_vars
     type(tracerstate_type)   , intent(inout) :: tracerstate_vars ! due to Betrrest call
     type(BeTRTracer_Type)    , intent(in)    :: betrtracer_vars
     type(tracerflux_type)    , intent(inout) :: tracerflux_vars
@@ -238,16 +235,6 @@ contains
        call dgvs_vars%Restart(bounds, ncid, flag='define')
     end if
 
-    if (use_ed) then
-       call EDRest(bounds,  ncid, flag='define', &
-            waterstate_vars=waterstate_vars, &
-            canopystate_vars=canopystate_vars, &
-            EDbio_vars=EDbio_vars, &
-            carbonstate_vars=carbonstate_vars, &
-            nitrogenstate_vars=nitrogenstate_vars, &
-            carbonflux_vars=carbonflux_vars) 
-    end if
-
     if (use_betr) then
        call tracerstate_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
        call tracerflux_vars%Restart( bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
@@ -336,16 +323,6 @@ contains
        call dgvs_vars%Restart(bounds, ncid, flag='write')
     end if
 
-    if (use_ed) then
-       call EDRest( bounds, ncid, flag='write', & 
-            waterstate_vars=waterstate_vars, &
-            canopystate_vars=canopystate_vars, &
-            EDbio_vars=EDbio_vars, & 
-            carbonstate_vars=carbonstate_vars, &
-            nitrogenstate_vars=nitrogenstate_vars, &
-            carbonflux_vars=carbonflux_vars) 
-    end if
-
     if (use_betr) then
        call tracerstate_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
        call tracerflux_vars%Restart( bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
@@ -381,7 +358,7 @@ contains
        ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-       waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+       waterflux_vars, waterstate_vars,                                               &
        phosphorusstate_vars,phosphorusflux_vars,                                      &
        betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
     !
@@ -419,7 +396,6 @@ contains
     type(surfalb_type)       , intent(inout) :: surfalb_vars
     type(waterstate_type)    , intent(inout) :: waterstate_vars
     type(waterflux_type)     , intent(inout) :: waterflux_vars
-    type(EDbio_type)         , intent(inout) :: EDbio_vars
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     type(tracerstate_type)   , intent(inout) :: tracerstate_vars ! due to Betrrest call
@@ -508,16 +484,6 @@ contains
 
     if (use_cndv) then
        call dgvs_vars%Restart(bounds, ncid, flag='read')
-    end if
-
-    if (use_ed) then
-       call EDRest( bounds, ncid, flag='read', & 
-            waterstate_vars=waterstate_vars, &
-            canopystate_vars=canopystate_vars, &
-            EDbio_vars=EDbio_vars, & 
-            carbonstate_vars=carbonstate_vars, &
-            nitrogenstate_vars=nitrogenstate_vars, &
-            carbonflux_vars=carbonflux_vars) 
     end if
 
     if (use_betr) then
@@ -987,6 +953,7 @@ contains
        call check_dim(ncid, namel, numl)
        call check_dim(ncid, namec, numc)
        call check_dim(ncid, namep, nump)
+       ! (FATES-INTERF) CHECK THIS
        if ( use_ed ) call check_dim(ncid, nameCohort  , numCohort)
     end if
     call check_dim(ncid, 'levsno'  , nlevsno)
