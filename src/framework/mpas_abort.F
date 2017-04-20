@@ -27,7 +27,7 @@ module mpas_abort
    subroutine mpas_dmpar_global_abort(mesg, deferredAbort)!{{{
    
       use mpas_kind_types, only : StrKIND
-      use mpas_io_units, only : stderrUnit, stdoutUnit, mpas_new_unit
+      use mpas_io_units, only : mpas_new_unit
       use mpas_threading, only : mpas_threading_get_thread_num
    
 #ifdef _MPI
@@ -64,16 +64,6 @@ module mpas_abort
       end if
    
       threadNum = mpas_threading_get_thread_num()
-   
-      if ( threadNum == 0 ) then
-         write(stderrUnit,*) trim(mesg)
-      end if
-   
-   
-      if (.not. local_deferredAbort) then
-         close(stderrUnit)
-         close(stdoutUnit)
-      end if
    
 #ifdef _MPI
       call MPI_Comm_rank(MPI_COMM_WORLD, my_proc_id, mpi_ierr)
