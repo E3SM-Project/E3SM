@@ -171,14 +171,18 @@ CONTAINS
           20 continue
           n = n+1
           zn = zhere - fpiF(p,gr,zhere)/fpidFdz(gr,zhere)
-          if (n.gt.20) then
-              PRINT *,'FPI did not converge after 20 interations in q & T!!!'
+          !if (n.gt.20) then
+          if (n.gt.40) then
+
+              !PRINT *,'FPI did not converge after 20 interations in q & T!!!'
+PRINT *,'FPI did not converge after 40 interations in q & T!!!'
           else if ( abs(zn-zhere)/abs(zn) > deltaz) then
               zhere = zn
               goto 20
           end if
           height = zn
        end if
+       z=height
     end if
 
     !------------------------------------------------

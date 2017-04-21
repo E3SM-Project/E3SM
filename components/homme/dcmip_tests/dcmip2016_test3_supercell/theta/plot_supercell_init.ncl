@@ -69,13 +69,16 @@ begin
 ;  theta = datafile->Th (0,::-1,:,:)
   u     = datafile->u  (0,::-1,:,:)
   qv    = datafile->Q  (0,::-1,:,:)
-  p     = datafile->pnh(0,::-1,:,:)
+;  p     = datafile->pnh(0,::-1,:,:)
   geo   = datafile->geo(0,::-1,:,:)
   lat   = datafile->lat
 
 
-theta=datafile->Q2  (0,::-1,:,:)
-t = datafile->Q3  (0,::-1,:,:)
+theta = datafile->Q2  (0,::-1,:,:)
+t     = datafile->Q3  (0,::-1,:,:)
+p     = datafile->Q4  (0,::-1,:,:)
+u     = datafile->Q5  (0,::-1,:,:)
+
 
   p  = p/100.0  ; convert to hectopascals
   qv = qv*1000.0; convert to g/kg
@@ -166,7 +169,7 @@ t = datafile->Q3  (0,::-1,:,:)
   res_thetad@tiYAxisString     = "Altitude (km)"
   res_thetad@gsnCenterString   = "~F5~q~F~~B~v~E~  - ~F5~q~F~~B~v,eq~E~"
   res_thetad@gsnRightString    = "(K)"
-  plot(3) = gsn_csm_contour(wks,thetad(:,:,0),res_thetad)
+  plot(3) = gsn_csm_contour(wks,thetad(:,:,180),res_thetad)
 
 ; ---
 
@@ -192,7 +195,7 @@ t = datafile->Q3  (0,::-1,:,:)
   res_pd@tiYAxisString     = "Altitude (km)"
   res_pd@gsnCenterString   = "p - p~B~eq~E~"
   res_pd@gsnRightString    = "(hPa)"
-  plot(5) = gsn_csm_contour(wks,pd(:,:,0),res_pd)
+  plot(5) = gsn_csm_contour(wks,pd(:,:,180),res_pd)
 
 ;  res_t@cnLevelSelectionMode= "ManualLevels"
 ;  res_t@cnLevelSpacingF   = 0.1

@@ -35,7 +35,10 @@ begin
   data = addfile(data_file,"r")
 
   w_5km = data->W((/6,12,18,24/),0,:,:)
-  rho_5km = data->Rho((/6,12,18,24/),0,:,:)
+  w_5km = lonFlip(w_5km)
+
+;rho_5km = data->Rho((/6,12,18,24/),0,:,:)
+
   rhoqr_5km = data->RhoQr((/6,12,18,24/),0,:,:)
 
   qr_5km = rhoqr_5km / rho_5km

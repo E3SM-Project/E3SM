@@ -8,8 +8,8 @@
   test_case         = "dcmip2016_test3"         ! test identifier
   theta_hydrostatic_mode = .false.
   rsplit            = 1
-  ne                = 7                         ! number of elements per cube face
-  qsize             = 3                         ! num tracer fields: qv,qc,qr
+  ne                = 15                         ! number of elements per cube face
+  qsize             = 5                         ! num tracer fields: qv,qc,qr
   nmax              = 36000                     ! 7200s(120min)/tstep
   statefreq         = 10                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
@@ -37,7 +37,7 @@
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 0 !3,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
   output_frequency  = 100 !900,                      ! 900 seconds (15 minutes)
-  output_varnames1  ='T','p','pnh','geo','u','v','w','Th','Q','Q2','Q3'   ! variables to write to file
+  output_varnames1  ='T','p','pnh','geo','u','v','w','Th','Q','Q2','Q3','Q4','Q5'   ! variables to write to file
   interp_nlon       = 360
   interp_nlat       = 181
   interp_type       = 0                         ! 0=native grid, 1=bilinear
