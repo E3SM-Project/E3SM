@@ -25,9 +25,7 @@ def parse_input(argv):
     parser.add_argument("caseroot", default=os.getcwd(),
                         help="Case directory")
 
-    args = parser.parse_args()
-
-    handle_standard_logging_options(args)
+    args = handle_standard_logging_options(argv, parser)
 
     return args.caseroot
 
