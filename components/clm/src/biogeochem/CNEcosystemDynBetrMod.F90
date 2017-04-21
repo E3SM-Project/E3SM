@@ -515,6 +515,7 @@ module CNEcosystemDynBetrMod
     !
     use ColumnType               , only : column_type
     use PatchType                , only : patch_type
+    use CNPrecisionControlMod, only: CNPrecisionControl
     implicit none
     type(bounds_type)        , intent(in)    :: bounds
     type(column_type)        , intent(in)    :: col
@@ -535,6 +536,9 @@ module CNEcosystemDynBetrMod
     type(phosphorusstate_type),intent(inout) :: phosphorusstate_vars
 
     call t_startf('CNsumBetr')
+
+    call CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars,phosphorusstate_vars)
 
     call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
 

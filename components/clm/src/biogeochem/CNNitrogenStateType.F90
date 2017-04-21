@@ -22,7 +22,7 @@ module CNNitrogenStateType
   use PatchType              , only : pft
   use clm_varctl             , only : use_pflotran, pf_cmode
   use clm_varctl             , only : nu_com
-
+  use GridcellType           , only : grc
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -198,7 +198,10 @@ module CNNitrogenStateType
      procedure , private :: InitAllocate
      procedure , private :: InitHistory
      procedure , private :: InitCold
-     procedure , private  :: Summary_betr
+     procedure , private :: Summary_betr
+     procedure , public  :: display_col
+     procedure , public  :: display_colp
+     procedure , public  :: display_totpft
   end type nitrogenstate_type
   !------------------------------------------------------------------------
 
@@ -274,7 +277,7 @@ contains
     allocate(this%totvegn_patch            (begp:endp))                   ; this%totvegn_patch            (:)   = nan
     allocate(this%totpftn_patch            (begp:endp))                   ; this%totpftn_patch            (:)   = nan
     allocate(this%plant_n_buffer_patch    (begp:endp))                   ; this%plant_n_buffer_patch    (:)   = nan
-    allocate(this%plant_n_buffer_col    (begp:endp))                     ; this%plant_n_buffer_col    (:)   = nan
+    allocate(this%plant_n_buffer_col    (begc:endc))                     ; this%plant_n_buffer_col    (:)   = nan
     allocate(this%sminn_vr_col             (begc:endc,1:nlevdecomp_full)) ; this%sminn_vr_col             (:,:) = nan
     allocate(this%ntrunc_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%ntrunc_vr_col            (:,:) = nan
     allocate(this%smin_no3_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_vr_col          (:,:) = nan
@@ -1412,12 +1415,12 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: fi,i     ! loop index
-    integer :: j,k      ! indices
+    integer :: j,k,c      ! indices
     !------------------------------------------------------------------------
 
     do fi = 1,num_patch
        i = filter_patch(fi)
-
+       c = pft%column(i)
        this%leafn_patch(i)              = value_patch
        this%leafn_storage_patch(i)      = value_patch
        this%leafn_xfer_patch(i)         = value_patch
@@ -1583,14 +1586,12 @@ contains
             this%totsomn_col(c) + &
             this%sminn_col(c) + &
             this%totprodn_col(c) + &
-            this%seedn_col(c) + &
-            this%plant_n_buffer_col(c)
+            this%seedn_col(c)
 
        this%totabgn_col (c) =  &
             this%totpftn_col(c) + &
             this%totprodn_col(c) + &
-            this%seedn_col(c) + &
-            this%plant_n_buffer_col(c)
+            this%seedn_col(c) 
 
        this%totblgn_col(c) = &
             this%cwdn_col(c) + &
@@ -1626,7 +1627,7 @@ contains
 
     do fp = 1,num_soilp
        p = filter_soilp(fp)
-
+       c = pft%column(p)
        ! displayed vegetation nitrogen, excluding storage (DISPVEGN)
        this%dispvegn_patch(p) = &
             this%leafn_patch(p)      + &
@@ -1669,11 +1670,13 @@ contains
            this%dispvegn_patch(p) + &
            this%storvegn_patch(p)
 
+
       ! total pft-level carbon (add pft_ntrunc)
       this%totpftn_patch(p) = &
            this%totvegn_patch(p) + &
            this%ntrunc_patch(p) + &
            this%plant_n_buffer_patch(p)
+
 
    end do
 
@@ -1685,10 +1688,6 @@ contains
         this%totpftn_patch(bounds%begp:bounds%endp), &
         this%totpftn_col(bounds%begc:bounds%endc))
 
-   call p2c(bounds, num_soilc, filter_soilc, &
-        this%plant_n_buffer_patch(bounds%begp:bounds%endp), &
-        this%plant_n_buffer_col(bounds%begc:bounds%endc))
-
    if(is_active_betr_bgc)then
       call this%Summary_betr(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
       return
@@ -1697,6 +1696,7 @@ contains
    if (use_nitrif_denitrif) then
       do fc = 1,num_soilc
          c = filter_soilc(fc)
+
          this%smin_no3_col(c) = 0._r8
          this%smin_nh4_col(c) = 0._r8
          if(use_pflotran .and. pf_cmode) then
@@ -1907,20 +1907,20 @@ contains
            this%totsomn_col(c) + &
            this%sminn_col(c) + &
            this%totprodn_col(c) + &
-           this%seedn_col(c) + &
-           this%ntrunc_col(c)
+           this%seedn_col(c)  + &
+           this%ntrunc_col(c) 
 
       this%totabgn_col (c) =  &
            this%totpftn_col(c) + &
            this%totprodn_col(c) + &
-           this%seedn_col(c) + &
-           this%ntrunc_col(c)
+           this%seedn_col(c) 
 
       this%totblgn_col(c) = &
            this%cwdn_col(c) + &
            this%totlitn_col(c) + &
            this%totsomn_col(c) + &
-           this%sminn_col(c)
+           this%sminn_col(c) + &
+           this%ntrunc_col(c) 
 
    end do
 
@@ -1955,4 +1955,78 @@ contains
 
   end subroutine nbuffer_update
 
+
+  subroutine display_col(this, c)
+
+  use clm_varctl          , only : iulog
+
+  class (nitrogenstate_type) :: this
+  integer, intent(in) :: c
+  write(iulog,*)'----------------------------'
+  write(iulog,*)'totcoln=',this%totcoln_col(c)
+  write(iulog,*)'totpftn=', this%totpftn_col(c) 
+  write(iulog,*)'cwdn=', this%cwdn_col(c) 
+  write(iulog,*)'totlitn=',  this%totlitn_col(c) 
+  write(iulog,*)'totsomn=',  this%totsomn_col(c)
+  write(iulog,*)'sminn=',  this%sminn_col(c)
+  write(iulog,*)'totprodn=',this%totprodn_col(c)
+  write(iulog,*)'seedn=', this%seedn_col(c) 
+  write(iulog,*)'ntrunc=',  this%ntrunc_col(c)
+
+  end subroutine display_col
+
+
+  subroutine display_colp(this,c)
+
+  use clm_varctl          , only : iulog
+  use clm_varpar                , only :  max_patch_per_col
+  class (nitrogenstate_type) :: this
+  integer, intent(in) :: c
+
+  integer :: pi,p 
+  write(iulog,*)'------------------------'
+  do pi = 1,max_patch_per_col
+    if (pi <= col%npfts(c)) then
+      p = col%pfti(c) + pi - 1
+      if (pft%active(p)) then
+        write(iulog,*)'totpftn p=',p,pi,this%totpftn_patch(p)
+      endif
+    endif
+  enddo
+  end subroutine display_colp
+
+  subroutine display_totpft(this, p)
+
+  use clm_varctl          , only : iulog
+  use clm_varpar                , only :  max_patch_per_col
+  class (nitrogenstate_type) :: this
+  integer, intent(in) :: p
+
+  write(iulog,*)'--------------------------------'
+  write(iulog,*)'pi =',p
+  write(iulog,*)'totpft=',this%totpftn_patch(p)
+  write(iulog,*)'totvegn=',this%totvegn_patch(p)
+  write(iulog,*)'ntrunc=',this%ntrunc_patch(p)
+  write(iulog,*)'plant_n_buffer=',this%plant_n_buffer_patch(p)
+  write(iulog,*)'stor leafn_storage=', this%leafn_storage_patch(p)      
+  write(iulog,*)'stor frootn_storage=',this%frootn_storage_patch(p)     
+  write(iulog,*)'stor livestemn_storage=',this%livestemn_storage_patch(p)  
+  write(iulog,*)'stor deadstemn_storage=',this%deadstemn_storage_patch(p)  
+  write(iulog,*)'stor livecrootn_storage=',this%livecrootn_storage_patch(p) 
+  write(iulog,*)'stor deadcrootn_storage=',this%deadcrootn_storage_patch(p) 
+  write(iulog,*)'stor leafn_xfer=',this%leafn_xfer_patch(p)         
+  write(iulog,*)'stor frootn_xfer=',this%frootn_xfer_patch(p)        
+  write(iulog,*)'stor livestemn_xfer=',this%livestemn_xfer_patch(p)     
+  write(iulog,*)'stor deadstemn_xfer=',this%deadstemn_xfer_patch(p)     
+  write(iulog,*)'stor livecrootn_xfer=',this%livecrootn_xfer_patch(p)    
+  write(iulog,*)'stor deadcrootn_xfer=',this%deadcrootn_xfer_patch(p)    
+  write(iulog,*)'stor npool=',this%npool_patch(p)              
+  write(iulog,*)'stor retransn=',this%retransn_patch(p)
+  write(iulog,*)'disp leafn=', this%leafn_patch(p)      
+  write(iulog,*)'disp frootn=',this%frootn_patch(p)     
+  write(iulog,*)'disp livestemn=',this%livestemn_patch(p)  
+  write(iulog,*)'disp deadstemn=',this%deadstemn_patch(p)  
+  write(iulog,*)'disp livecrootn=',this%livecrootn_patch(p) 
+  write(iulog,*)'disp deadcrootn=', this%deadcrootn_patch(p)
+  end subroutine display_totpft
 end module CNNitrogenStateType
