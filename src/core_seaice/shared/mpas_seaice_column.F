@@ -89,7 +89,11 @@ module seaice_column
           index_pondArea, &              ! nt_apnd
           index_pondDepth, &             ! nt_hpnd
           index_pondLidThickness, &      ! nt_ipnd
-          index_aerosols                 ! nt_aero
+          index_aerosols, &              ! nt_aero
+          index_snowIceMass, &           ! nt_smice
+          index_snowLiquidMass, &        ! nt_smliq
+          index_snowGrainRadius, &       ! nt_rsnw
+          index_snowDensity              ! nt_rhos
 
      !-----------------------------------------------------------------------
      ! biogeochemistry
@@ -244,7 +248,8 @@ contains
          config_use_column_package, &
          config_do_restart, &
          config_use_column_biogeochemistry, &
-         config_use_column_shortwave
+         config_use_column_shortwave, &
+         config_use_column_snow
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
@@ -266,6 +271,11 @@ contains
 
        ! history variables
        call init_column_history_variables(domain)
+
+       ! snow
+       call MPAS_pool_get_config(domain % configs, "config_use_column_snow", config_use_column_snow)
+       if (config_use_column_snow) &
+            call init_column_snow(domain)
 
        ! shortwave
        call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
@@ -420,6 +430,160 @@ contains
     end do
 
   end subroutine init_column_thermodynamic_profiles
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_column_snow
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date 1 April 2017
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_column_snow(domain)
+
+    use cice_constants, only: &
+         cicePuny, &
+         ciceDensitySnow
+
+    type(domain_type), intent(in) :: &
+         domain
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers, &
+         tracers_aggregate, &
+         snow
+
+    logical, pointer :: &
+         config_use_snow_density, &
+         config_use_snow_grain_radius
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         snowIceMass, &
+         snowLiquidMass, &
+         snowDensity, &
+         snowVolumeCategory, &
+         snowGrainRadius
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         snowMeltMassCategory
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         snowDensityViaContent, &
+         snowDensityViaCompaction, &
+         snowMeltMassCell, &
+         snowVolumeCell
+         
+    real(kind=RKIND), pointer :: &
+         config_fallen_snow_radius
+
+    integer, pointer :: &
+         nCellsSolve, &
+         nSnowLayers, &
+         nCategories
+
+    integer :: &
+         iCell, &
+         iSnowLayer, &
+         iCategory
+
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_density", config_use_snow_density)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
+    call MPAS_pool_get_config(domain % configs, "config_fallen_snow_radius", config_fallen_snow_radius)
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+       call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
+       call MPAS_pool_get_subpool(block % structs, "snow", snow)
+
+       call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+       call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+       call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
+
+       call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+       call MPAS_pool_get_array(tracers_aggregate, "snowVolumeCell", snowVolumeCell)
+
+       if (config_use_snow_density) then
+
+          call MPAS_pool_get_array(snow, "snowDensityViaContent", snowDensityViaContent)
+          call MPAS_pool_get_array(snow, "snowDensityViaCompaction", snowDensityViaCompaction)
+          call MPAS_pool_get_array(snow, "snowMeltMassCategory", snowMeltMassCategory)
+          call MPAS_pool_get_array(snow, "snowMeltMassCell", snowMeltMassCell)
+
+          call MPAS_pool_get_array(tracers, "snowIceMass", snowIceMass, 1)
+          call MPAS_pool_get_array(tracers, "snowLiquidMass", snowLiquidMass, 1)
+          call MPAS_pool_get_array(tracers, "snowDensity", snowDensity, 1)
+
+          snowIceMass(:,:,:)          = 0.0_RKIND
+          snowLiquidMass(:,:,:)       = 0.0_RKIND
+          snowDensity(:,:,:)          = 0.0_RKIND
+          snowDensityViaContent(:)    = 0.0_RKIND
+          snowDensityViaCompaction(:) = 0.0_RKIND
+          snowMeltMassCategory(:,:)   = 0.0_RKIND
+          snowMeltMassCell(:)         = 0.0_RKIND
+
+          do iCell = 1, nCellsSolve
+
+             do iCategory = 1, nCategories
+                if (snowVolumeCategory(1,iCategory,iCell) .gt. 0.0_RKIND) then
+                   do iSnowLayer = 1, nSnowLayers
+                      snowIceMass(iSnowLayer,iCategory,iCell) = ciceDensitySnow
+                      snowDensity(iSnowLayer,iCategory,iCell) = ciceDensitySnow
+                      snowDensityViaContent(iCell) = snowDensityViaContent(iCell) &
+                         + snowVolumeCategory(1,iCategory,iCell) * &
+                         (snowIceMass(iSnowLayer,iCategory,iCell) + &
+                         snowLiquidMass(iSnowLayer,iCategory,iCell))
+                      snowDensityViaCompaction(iCell) = snowDensityViaCompaction(iCell) &
+                         + snowVolumeCategory(1,iCategory,iCell) * &
+                         snowDensity(iSnowLayer,iCategory,iCell)
+                   enddo
+                endif
+             enddo
+             if (snowVolumeCell(iCell) .gt.  cicePuny) then
+                snowDensityViaContent(iCell) = snowDensityViaContent(iCell)/ &
+                   (snowVolumeCell(iCell) * real(nSnowLayers,kind=RKIND))  !!!CHECK THIS!!!
+                snowDensityViaCompaction(iCell) = snowDensityViaCompaction(iCell)/ &
+                   (snowVolumeCell(iCell) * real(nSnowLayers,kind=RKIND))
+             else
+                snowDensityViaContent(iCell)    = 0.0_RKIND
+                snowDensityViaCompaction(iCell) = 0.0_RKIND
+             endif
+
+          enddo
+       endif !config_use_snow_density
+
+       if (config_use_snow_grain_radius) then
+
+          call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
+
+          snowGrainRadius(:,:,:) = 0.0_RKIND
+
+          do iCell = 1, nCellsSolve
+
+             do iCategory = 1, nCategories
+                if (snowVolumeCategory(1,iCategory,iCell) .gt. 0.0_RKIND) then
+                   do iSnowLayer = 1, nSnowLayers
+                      snowGrainRadius(iSnowLayer,iCategory,iCell) = config_fallen_snow_radius
+                   enddo
+                endif
+             enddo
+          enddo
+       endif ! config_use_snow_grain_radius
+
+       block => block % next
+    end do
+
+  end subroutine init_column_snow
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1010,13 +1174,24 @@ contains
 
     logical, pointer :: &
          config_use_column_package, &
-         config_use_column_shortwave
+         config_use_column_shortwave, &
+         config_use_column_snow
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
 
     if (config_use_column_package) then
 
        call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
+       call MPAS_pool_get_config(domain % configs, "config_use_column_snow", config_use_column_snow)
+
+       !-----------------------------------------------------------------
+       ! snow
+       !-----------------------------------------------------------------
+
+       call mpas_timer_start("Column snow")
+       if (config_use_column_snow) &
+            call column_snow(domain)
+       call mpas_timer_stop("Column snow")
 
        !-----------------------------------------------------------------
        ! Shortwave radiation
@@ -1083,14 +1258,16 @@ contains
          shortwave, &
          ponds, &
          aerosols, &
-         diagnostics
+         diagnostics, &
+         snow
 
     ! configs
     real(kind=RKIND), pointer :: &
          config_dt
 
     logical, pointer :: &
-         config_use_aerosols
+         config_use_aerosols, &
+         config_use_snow_liquid_ponds
 
     ! dimensions
     integer, pointer :: &
@@ -1174,7 +1351,10 @@ contains
          frazilFormation, &
          meltOnset, &
          freezeOnset, &
-         oceanHeatFluxIceBottom
+         oceanHeatFluxIceBottom, &
+         openWaterArea, &
+         snowLossToLeads, &
+         snowMeltMassCell
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          iceAreaCategoryInitial, &
@@ -1200,7 +1380,9 @@ contains
          sensibleHeatFluxCouple, &
          surfaceHeatFluxCouple, &
          surfaceConductiveFluxCouple, &
-         snowThicknessChangeCategory
+         snowThicknessChangeCategory, &
+         snowMeltMassCategory, &
+         snowRadiusRadiationCategory
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -1222,7 +1404,10 @@ contains
          snowScatteringAerosol, &
          snowBodyAerosol, &
          iceScatteringAerosol, &
-         iceBodyAerosol
+         iceBodyAerosol, &
+         snowIceMass, &
+         snowLiquidMass, &
+         snowGrainRadius
 
     integer, dimension(:), pointer :: &
          indexToCellID
@@ -1271,9 +1456,11 @@ contains
        call MPAS_pool_get_subpool(block % structs, "ponds", ponds)
        call MPAS_pool_get_subpool(block % structs, "aerosols", aerosols)
        call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnostics)
+       call MPAS_pool_get_subpool(block % structs, "snow", snow)
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
+       call MPAS_pool_get_config(block % configs, "config_use_snow_liquid_ponds", config_use_snow_liquid_ponds)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
@@ -1288,6 +1475,7 @@ contains
        call MPAS_pool_get_array(icestate, "iceAreaCategoryInitial", iceAreaCategoryInitial)
        call MPAS_pool_get_array(icestate, "iceVolumeCategoryInitial", iceVolumeCategoryInitial)
        call MPAS_pool_get_array(icestate, "snowVolumeCategoryInitial", snowVolumeCategoryInitial)
+       call MPAS_pool_get_array(icestate, "openWaterArea", openWaterArea)
 
        call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)
        call MPAS_pool_get_array(tracers_aggregate, "iceVolumeCell", iceVolumeCell)
@@ -1311,6 +1499,9 @@ contains
        call MPAS_pool_get_array(tracers, "snowBodyAerosol", snowBodyAerosol, 1)
        call MPAS_pool_get_array(tracers, "iceScatteringAerosol", iceScatteringAerosol, 1)
        call MPAS_pool_get_array(tracers, "iceBodyAerosol", iceBodyAerosol, 1)
+       call MPAS_pool_get_array(tracers, "snowIceMass", snowIceMass, 1)
+       call MPAS_pool_get_array(tracers, "snowLiquidMass", snowLiquidMass, 1)
+       call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
 
        call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
        call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
@@ -1416,6 +1607,10 @@ contains
        call MPAS_pool_get_array(diagnostics, "meltOnset", meltOnset)
        call MPAS_pool_get_array(diagnostics, "freezeOnset", freezeOnset)
 
+       call MPAS_pool_get_array(snow, "snowLossToLeads", snowLossToLeads)
+       call MPAS_pool_get_array(snow, "snowMeltMassCell", snowMeltMassCell)
+       call MPAS_pool_get_array(snow, "snowMeltMassCategory", snowMeltMassCategory)
+
        ! aerosols
        if (config_use_aerosols) then
 
@@ -1485,6 +1680,7 @@ contains
                nIceLayers, &
                nSnowLayers, &
                nAerosols, &
+               openWaterArea(iCell), &
                iceAreaCategoryInitial(:,iCell), &
                iceVolumeCategoryInitial(:,iCell), &
                snowVolumeCategoryInitial(:,iCell), &
@@ -1500,6 +1696,8 @@ contains
                snowEnthalpy(:,:,iCell), &
                iceEnthalpy(:,:,iCell), &
                iceSalinity(:,:,iCell), &
+               snowIceMass(:,:,iCell), &
+               snowLiquidMass(:,:,iCell), &
                levelIceArea(1,:,iCell), &
                levelIceVolume(1,:,iCell), &
                pondArea(1,:,iCell), &
@@ -1507,6 +1705,8 @@ contains
                pondLidThickness(1,:,iCell), &
                iceAge(1,:,iCell), &
                firstYearIceArea(1,:,iCell), &
+               snowGrainRadius(:,:,iCell), &
+               config_use_snow_liquid_ponds, &
                specificSnowAerosol(:,:,:), &
                specificIceAerosol(:,:,:), &
                uAirVelocity(iCell), &
@@ -1553,6 +1753,7 @@ contains
                snowfallRate(iCell), &
                rainfallRate(iCell), &
                pondFreshWaterFlux(iCell), &
+               snowLossToLeads(iCell), &
                surfaceHeatFlux(iCell), &
                surfaceHeatFluxCategory(:,iCell), &
                surfaceConductiveFlux(iCell), &
@@ -1590,6 +1791,8 @@ contains
                lateralIceMelt(iCell), &
                snowMelt(iCell), &
                snowMeltCategory(:,iCell), &
+               snowMeltMassCell(iCell), &
+               snowMeltMassCategory(:,iCell), &
                congelation(iCell), &
                congelationCategory(:,iCell), &
                snowiceFormation(iCell), &
@@ -2090,6 +2293,244 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
+!  column_snow
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date 3rd April 2017
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine column_snow(domain)
+
+    use ice_colpkg, only: &
+         colpkg_step_snow, &
+         colpkg_clear_warnings, &
+         colpkg_get_warnings
+
+    use cice_constants, only: &
+         cicePuny
+
+    type(domain_type), intent(inout) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers, &
+         tracers_aggregate, &
+         atmos_forcing, &
+         snow, &
+         ocean_fluxes, &
+         atmos_coupling
+
+    logical, pointer :: &
+         config_use_snow_density, &
+         config_use_snow_grain_radius, &
+         config_use_column_biogeochemistry
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         snowIceMass, &
+         snowLiquidMass, &
+         snowDensity, &
+         snowVolumeCategory, &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         levelIceArea, &
+         levelIceVolume, &
+         iceEnthalpy, &
+         snowEnthalpy, &
+         iceSalinity, &
+         surfaceTemperature, &
+         snowGrainRadius, &
+         snowPropertyTau, &
+         snowPropertyKappa, &
+         snowPropertyRate
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         snowMeltMassCategory
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         windSpeed, &
+         oceanFreshWaterFlux, &
+         oceanHeatFlux, &
+         snowLossToLeads, &
+         snowfallRate, &
+         iceAreaCell, &
+         iceVolumeCell, &
+         snowVolumeCell, &
+         snowDensityViaContent, &
+         snowDensityViaCompaction, &
+         snowMeltMassCell
+         
+    real(kind=RKIND), pointer :: &
+         config_dt, &
+         config_new_snow_density, &
+         config_max_snow_density, &
+         config_minimum_wind_compaction, &
+         config_wind_compaction_factor
+
+    integer, pointer :: &
+         nCellsSolve, &
+         nSnowLayers, &
+         nIceLayers, &
+         nCategories, &
+         nSnowTemperatureIndex, &
+         nSnowTemperatureGradIndex, &
+         nSnowDensityIndex
+
+    integer :: &
+         iCell, &
+         iSnowLayer, &
+         iIceLayer, &
+         iCategory
+
+    logical :: &
+         abortFlag, &
+         setGetPhysicsTracers, &
+         setGetBGCTracers
+
+    real(kind=RKIND), dimension(:,:), allocatable :: &
+         effectiveSnowDensityCategory
+
+    character(len=strKIND) :: &
+         abortMessage, &
+         abortLocation
+
+    character(len=strKINDWarnings), dimension(:), allocatable :: &
+         warnings
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+       call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
+       call MPAS_pool_get_subpool(block % structs, "snow", snow)
+       call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
+       call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", ocean_fluxes)
+       call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
+
+       call MPAS_pool_get_config(block % configs, "config_use_snow_density", config_use_snow_density)
+       call MPAS_pool_get_config(block % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
+       call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
+       call MPAS_pool_get_config(block % configs, "config_new_snow_density", config_new_snow_density)
+       call MPAS_pool_get_config(block % configs, "config_max_snow_density", config_max_snow_density)
+       call MPAS_pool_get_config(block % configs, "config_minimum_wind_compaction", config_minimum_wind_compaction)
+       call MPAS_pool_get_config(block % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
+       call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+
+       call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+       call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+       call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
+       call MPAS_pool_get_dimension(mesh, "nIceLayers", nIceLayers)
+       call MPAS_pool_get_dimension(mesh, "T", nSnowTemperatureIndex)
+       call MPAS_pool_get_dimension(mesh, "dTdz", nSnowTemperatureGradIndex)
+       call MPAS_pool_get_dimension(mesh, "sno_dns", nSnowDensityIndex)
+
+       call MPAS_pool_get_array(snow, "snowDensityViaContent", snowDensityViaContent)
+       call MPAS_pool_get_array(snow, "snowDensityViaCompaction", snowDensityViaCompaction)
+       call MPAS_pool_get_array(snow, "snowMeltMassCategory", snowMeltMassCategory)
+       call MPAS_pool_get_array(snow, "snowMeltMassCell", snowMeltMassCell)
+       call MPAS_pool_get_array(snow, "snowLossToLeads", snowLossToLeads)
+       call MPAS_pool_get_array(snow, "snowPropertyTau", snowPropertyTau)
+       call MPAS_pool_get_array(snow, "snowPropertyKappa", snowPropertyKappa)
+       call MPAS_pool_get_array(snow, "snowPropertyRate", snowPropertyRate)
+
+       call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+       call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+       call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+       call MPAS_pool_get_array(tracers, "snowIceMass", snowIceMass, 1)
+       call MPAS_pool_get_array(tracers, "snowLiquidMass", snowLiquidMass, 1)
+       call MPAS_pool_get_array(tracers, "snowDensity", snowDensity, 1)
+       call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
+       call MPAS_pool_get_array(tracers, "levelIceArea", levelIceArea, 1)
+       call MPAS_pool_get_array(tracers, "levelIceVolume", levelIceVolume, 1)
+       call MPAS_pool_get_array(tracers, "iceEnthalpy", iceEnthalpy, 1)
+       call MPAS_pool_get_array(tracers, "snowEnthalpy", snowEnthalpy, 1)
+       call MPAS_pool_get_array(tracers, "iceSalinity", iceSalinity, 1)
+       call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
+
+       call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)
+       call MPAS_pool_get_array(tracers_aggregate, "snowVolumeCell", snowVolumeCell)
+
+       call MPAS_pool_get_array(atmos_coupling, "snowfallRate", snowfallRate)
+
+       call MPAS_pool_get_array(atmos_forcing, "windSpeed", windSpeed)
+
+       call MPAS_pool_get_array(ocean_fluxes, "oceanFreshWaterFlux", oceanFreshWaterFlux)
+       call MPAS_pool_get_array(ocean_fluxes, "oceanHeatFlux", oceanHeatFlux)
+
+       setGetPhysicsTracers = .true.
+       setGetBGCTracers     = config_use_column_biogeochemistry
+
+       allocate(effectiveSnowDensityCategory(1:nSnowLayers,1:nCategories))
+
+       do iCell = 1, nCellsSolve
+
+          effectiveSnowDensityCategory(:,:) = 0.0_RKIND
+          
+          ! set the category tracer array
+          call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+
+          call colpkg_clear_warnings()
+          call colpkg_step_snow (&
+               config_dt, &
+               windSpeed(iCell), &
+               nIceLayers, &
+               nSnowLayers, &
+               nCategories, &
+               iceAreaCell(iCell), &
+               iceAreaCategory(1,:,iCell), &
+               iceVolumeCategory(1,:,iCell), &
+               snowVolumeCategory(1,:,iCell), &
+               levelIceArea(1,:,iCell), &
+               levelIceVolume(1,:,iCell), &
+               snowIceMass(:,:,iCell), &
+               snowLiquidMass(:,:,iCell), &
+               effectiveSnowDensityCategory(:,:), &
+               snowDensityViaContent(iCell), &
+               snowDensity(:,:,iCell), &
+               snowDensityViaCompaction(iCell), &
+               snowGrainRadius(:,:,iCell), &
+               iceEnthalpy(1,:,iCell), &
+               iceSalinity(1,:,iCell), &
+               surfaceTemperature(1,:,iCell), &
+               snowEnthalpy(:,:,iCell), &
+               oceanFreshWaterFlux(iCell), &
+               oceanHeatFlux(iCell), &
+               snowLossToLeads(iCell), &
+               snowfallRate(iCell), &
+               config_new_snow_density, &
+               config_max_snow_density, &
+               config_minimum_wind_compaction, &
+               config_wind_compaction_factor, &
+               snowPropertyTau(:,:,:), &
+               snowPropertyKappa(:,:,:), &
+               snowPropertyRate(:,:,:), &
+               nSnowTemperatureIndex, &
+               nSnowTemperatureGradIndex, &
+               nSnowDensityIndex)
+
+          call colpkg_get_warnings(warnings)
+          call column_write_warnings(warnings)
+
+          ! get category tracer array
+          call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+
+       enddo !iCell
+
+       deallocate(effectiveSnowDensityCategory)
+
+       block => block % next
+    end do
+
+  end subroutine column_snow
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
 !  column_radiation
 !
 !> \brief
@@ -2126,7 +2567,8 @@ contains
          ponds, &
          aerosols, &
          biogeochemistry, &
-         snicar
+         snicar, &
+         snow
 
     ! configs
     real(kind=RKIND), pointer :: &
@@ -2136,8 +2578,11 @@ contains
          config_use_shortwave_bioabsorption, &
          config_use_brine, &
          config_use_modal_aerosols, &
-         config_use_zaerosols, &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry!, &
+!         config_use_snow_redistribution
+
+    character(len=strKIND), pointer :: &
+         config_snow_redistribution
 
     ! dimensions
     integer, pointer :: &
@@ -2196,7 +2641,8 @@ contains
          aerosolSingleScatterAlbedo5band, &
          modalAsymmetryParameter5band, &
          modalMassExtinctionCrossSection5band, &
-         modalSingleScatterAlbedo5band
+         modalSingleScatterAlbedo5band, &
+         snowRadiusRadiationCategory
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -2217,8 +2663,8 @@ contains
          brineFraction, &
          modalBCabsorptionParameter, &
          bioTracerShortwave, &
-         modalBCabsorptionParameter5band
-
+         modalBCabsorptionParameter5band, &
+         snowGrainRadius
 
     real(kind=RKIND), pointer :: &
          dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
@@ -2267,7 +2713,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
     call MPAS_pool_get_config(domain % configs, "config_use_modal_aerosols",config_use_modal_aerosols)
-    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols",config_use_zaerosols)
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry",config_use_column_biogeochemistry)
 
     block => domain % blocklist
@@ -2281,8 +2726,10 @@ contains
        call MPAS_pool_get_subpool(block % structs, "aerosols", aerosols)
        call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
        call MPAS_pool_get_subpool(block % structs, "snicar", snicar)
+       call MPAS_pool_get_subpool(block % structs, "snow", snow)
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
+       call MPAS_pool_get_config(block % configs, "config_snow_redistribution", config_snow_redistribution)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
@@ -2310,6 +2757,7 @@ contains
        call MPAS_pool_get_array(tracers, "iceScatteringAerosol", iceScatteringAerosol, 1)
        call MPAS_pool_get_array(tracers, "iceBodyAerosol", iceBodyAerosol, 1)
        call MPAS_pool_get_array(tracers, "brineFraction", brineFraction, 1)
+       call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
 
        call MPAS_pool_get_array(atmos_coupling, "shortwaveVisibleDirectDown", shortwaveVisibleDirectDown)
        call MPAS_pool_get_array(atmos_coupling, "shortwaveVisibleDiffuseDown", shortwaveVisibleDiffuseDown)
@@ -2364,7 +2812,9 @@ contains
        call MPAS_pool_get_array(snicar, "modalSingleScatterAlbedo5band", modalSingleScatterAlbedo5band)
        call MPAS_pool_get_array(snicar, "modalAsymmetryParameter5band", modalAsymmetryParameter5band)
        call MPAS_pool_get_array(snicar, "modalBCabsorptionParameter5band", modalBCabsorptionParameter5band)
-       
+
+       call MPAS_pool_get_array(snow, "snowRadiusRadiationCategory", snowRadiusRadiationCategory)
+
        ! calendar type
        call MPAS_pool_get_config(block % configs, "config_calendar_type", config_calendar_type)
        if (trim(config_calendar_type) == "gregorian") then
@@ -2415,7 +2865,6 @@ contains
                config_dt, &
                nCategories, &
                nAlgae, &
-               config_use_zaerosols, &
                nBioLayers, &
                ciceTracerObject % nTracers, &
                ciceTracerObject % nBioTracers, &
@@ -2438,7 +2887,9 @@ contains
                pondArea(1,:,iCell), &
                pondDepth(1,:,iCell), &
                pondLidThickness(1,:,iCell), &
-               aerosolsArray, & ! aeron, dimension(:,:), intent(in)
+               config_snow_redistribution, &
+               snowGrainRadius(:,:,iCell), &
+               aerosolsArray, &
                bioTracerShortwave(:,:,iCell), &
                tracerArrayCategory, & ! trcrn, dimension(:,:), intent(in)
                latCell(iCell), &
@@ -2493,7 +2944,8 @@ contains
                modalMassExtinctionCrossSection5band(:,:), &
                modalSingleScatterAlbedo5band(:,:), &
                modalAsymmetryParameter5band(:,:), &
-               modalBCabsorptionParameter5band(:,:,:))
+               modalBCabsorptionParameter5band(:,:,:), &
+               snowRadiusRadiationCategory(:,iCell))
 
           call column_write_warnings(.false.)
 
@@ -4693,7 +5145,9 @@ contains
          config_use_humics, &
          config_use_DON, &
          config_use_iron, &
-         config_use_zaerosols
+         config_use_zaerosols, &
+         config_use_snow_density, &
+         config_use_snow_grain_radius
 
     integer, pointer :: &
          nIceLayers, &
@@ -4721,6 +5175,8 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_density", config_use_snow_density)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
@@ -4791,6 +5247,16 @@ contains
     if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) &
          tracerObject % nTracers = tracerObject % nTracers + 1
+
+    ! snow density (ice mass, liquid mass, density)
+    if (config_use_snow_density) then
+       tracerObject % nTracers = tracerObject % nTracers + nSnowLayers*3
+    endif
+
+    ! snow grain radius
+    if (config_use_snow_grain_radius) then
+       tracerObject % nTracers = tracerObject % nTracers + nSnowLayers
+    endif
 
     ! aerosols
     if (config_use_aerosols) &
@@ -4953,7 +5419,10 @@ contains
          config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
-         config_use_aerosols
+         config_use_aerosols, &
+         config_use_snow_density, &
+         config_use_snow_grain_radius
+
     integer :: &
          nTracers
 
@@ -4970,6 +5439,8 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_density", config_use_snow_density)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nIceLayers", nIceLayers)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nSnowLayers", nSnowLayers)
@@ -5036,6 +5507,26 @@ contains
        tracerObject % index_pondLidThickness = nTracers
     endif
 
+    ! snow density
+    tracerObject % index_snowIceMass = indexMissingValue
+    tracerObject % index_snowLiquidMass = indexMissingValue
+    tracerObject % index_snowDensity = indexMissingValue
+    if (config_use_snow_density) then
+       tracerObject % index_snowIceMass = nTracers + 1
+       nTracers = nTracers + nSnowLayers
+       tracerObject % index_snowLiquidMass = nTracers + 1
+       nTracers = nTracers + nSnowLayers
+       tracerObject % index_snowDensity = nTracers + 1
+       nTracers = nTracers + nSnowLayers
+    endif
+
+    ! snow grain radius
+    tracerObject % index_snowGrainRadius = indexMissingValue
+    if (config_use_snow_grain_radius) then
+       tracerObject % index_snowGrainRadius = nTracers + 1
+       nTracers = nTracers + nSnowLayers
+    endif
+    
     ! aerosols
     tracerObject % index_aerosols = indexMissingValue
     if (config_use_aerosols) then
@@ -5075,7 +5566,9 @@ contains
          config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
-         config_use_aerosols
+         config_use_aerosols, &
+         config_use_snow_density, &
+         config_use_snow_grain_radius
 
     integer :: &
          iIceLayer, &
@@ -5094,6 +5587,8 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_density", config_use_snow_density)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nIceLayers", nIceLayers)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nSnowLayers", nSnowLayers)
@@ -5145,6 +5640,22 @@ contains
        tracerObject % parentIndex(tracerObject % index_pondArea)         = 0
        tracerObject % parentIndex(tracerObject % index_pondDepth)        = 2 + tracerObject % index_pondArea
        tracerObject % parentIndex(tracerObject % index_pondLidThickness) = 2 + tracerObject % index_pondArea
+    endif
+
+    ! snow density
+    if (config_use_snow_density) then
+       do iSnowLayer = 1, nSnowLayers
+          tracerObject % parentIndex(tracerObject % index_snowIceMass) = 2
+          tracerObject % parentIndex(tracerObject % index_snowLiquidMass) = 2
+          tracerObject % parentIndex(tracerObject % index_snowDensity) = 2
+       enddo ! iSnowLayer
+    endif
+
+    ! snow grain radius
+    if (config_use_snow_grain_radius) then
+       do iSnowLayer = 1, nSnowLayers
+          tracerObject % parentIndex(tracerObject % index_snowGrainRadius) = 2
+       enddo ! iSnowLayer
     endif
 
     ! aerosols
@@ -5493,7 +6004,9 @@ contains
          config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
-         config_use_aerosols
+         config_use_aerosols, &
+         config_use_snow_density, &
+         config_use_snow_grain_radius
 
     integer, pointer :: &
          nIceLayers, &
@@ -5518,7 +6031,11 @@ contains
          snowScatteringAerosol, &
          snowBodyAerosol, &
          iceScatteringAerosol, &
-         iceBodyAerosol
+         iceBodyAerosol, &
+         snowIceMass, &
+         snowLiquidMass, &
+         snowGrainRadius, &
+         snowDensity
 
     integer :: &
          nTracers, &
@@ -5531,6 +6048,8 @@ contains
     call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
+    call MPAS_pool_get_config(block % configs, "config_use_snow_density", config_use_snow_density)
+    call MPAS_pool_get_config(block % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
     call MPAS_pool_get_dimension(block % dimensions, "nIceLayers", nIceLayers)
     call MPAS_pool_get_dimension(block % dimensions, "nSnowLayers", nSnowLayers)
@@ -5553,6 +6072,11 @@ contains
     call MPAS_pool_get_array(tracers, "snowBodyAerosol", snowBodyAerosol, 1)
     call MPAS_pool_get_array(tracers, "iceScatteringAerosol", iceScatteringAerosol, 1)
     call MPAS_pool_get_array(tracers, "iceBodyAerosol", iceBodyAerosol, 1)
+    call MPAS_pool_get_array(tracers, "snowIceMass", snowIceMass, 1)
+    call MPAS_pool_get_array(tracers, "snowLiquidMass", snowLiquidMass, 1)
+    call MPAS_pool_get_array(tracers, "snowDensity", snowDensity, 1)
+    call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
+
 
     nTracers = 1
 
@@ -5609,6 +6133,22 @@ contains
        nTracers = nTracers + 1
     end if
 
+    ! snow density (ice mass, liquid mass, density)
+    if (config_use_snow_density) then
+       tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:) = snowIceMass(:,:,iCell)
+       nTracers = nTracers + nSnowLayers
+       tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:) = snowLiquidMass(:,:,iCell)
+       nTracers = nTracers + nSnowLayers
+       tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:) = snowDensity(:,:,iCell)
+       nTracers = nTracers + nSnowLayers
+    endif
+
+    ! snow grain radius
+    if (config_use_snow_grain_radius) then
+       tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:) = snowGrainRadius(:,:,iCell)
+       nTracers = nTracers + nSnowLayers
+    endif
+
     ! aerosols
     if (config_use_aerosols) then
        do iAerosol = 1, nAerosols
@@ -5653,7 +6193,10 @@ contains
          config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
-         config_use_aerosols
+         config_use_aerosols, &
+         config_use_snow_density, &
+         config_use_snow_grain_radius
+
 
     integer, pointer :: &
          nIceLayers, &
@@ -5678,7 +6221,11 @@ contains
          snowScatteringAerosol, &
          snowBodyAerosol, &
          iceScatteringAerosol, &
-         iceBodyAerosol
+         iceBodyAerosol, &
+         snowIceMass, &
+         snowLiquidMass, &
+         snowGrainRadius, &
+         snowDensity
 
     integer :: &
          nTracers, &
@@ -5691,6 +6238,8 @@ contains
     call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
+    call MPAS_pool_get_config(block % configs, "config_use_snow_density", config_use_snow_density)
+    call MPAS_pool_get_config(block % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
     call MPAS_pool_get_dimension(block % dimensions, "nIceLayers", nIceLayers)
     call MPAS_pool_get_dimension(block % dimensions, "nSnowLayers", nSnowLayers)
@@ -5713,6 +6262,10 @@ contains
     call MPAS_pool_get_array(tracers, "snowBodyAerosol", snowBodyAerosol, 1)
     call MPAS_pool_get_array(tracers, "iceScatteringAerosol", iceScatteringAerosol, 1)
     call MPAS_pool_get_array(tracers, "iceBodyAerosol", iceBodyAerosol, 1)
+    call MPAS_pool_get_array(tracers, "snowIceMass", snowIceMass, 1)
+    call MPAS_pool_get_array(tracers, "snowLiquidMass", snowLiquidMass, 1)
+    call MPAS_pool_get_array(tracers, "snowDensity", snowDensity, 1)
+    call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
 
     nTracers = 1
 
@@ -5769,6 +6322,22 @@ contains
        nTracers = nTracers + 1
     end if
 
+    ! snow density (ice mass, liquid mass, density)
+    if (config_use_snow_density) then
+       snowIceMass(:,:,iCell) = tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:)
+       nTracers = nTracers + nSnowLayers
+       snowLiquidMass(:,:,iCell) = tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:)
+       nTracers = nTracers + nSnowLayers
+       snowDensity(:,:,iCell) = tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:)
+       nTracers = nTracers + nSnowLayers
+    endif
+
+    ! snow grain radius
+    if (config_use_snow_grain_radius) then
+       snowGrainRadius(:,:,iCell) = tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:)
+       nTracers = nTracers + nSnowLayers
+    endif
+
     ! aerosols
     if (config_use_aerosols) then
        do iAerosol = 1, nAerosols
@@ -5813,7 +6382,9 @@ contains
          config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
-         config_use_aerosols
+         config_use_aerosols, &
+         config_use_snow_density, &
+         config_use_snow_grain_radius
 
     integer, pointer :: &
          nIceLayers, &
@@ -5840,7 +6411,11 @@ contains
          snowScatteringAerosolCell, &
          snowBodyAerosolCell, &
          iceScatteringAerosolCell, &
-         iceBodyAerosolCell
+         iceBodyAerosolCell, &
+         snowIceMassCell, &
+         snowLiquidMassCell, &
+         snowGrainRadiusCell, &
+         snowDensityCell
 
     integer :: &
          nTracers, &
@@ -5853,6 +6428,8 @@ contains
     call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
+    call MPAS_pool_get_config(block % configs, "config_use_snow_density", config_use_snow_density)
+    call MPAS_pool_get_config(block % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
     call MPAS_pool_get_dimension(block % dimensions, "nIceLayers", nIceLayers)
     call MPAS_pool_get_dimension(block % dimensions, "nSnowLayers", nSnowLayers)
@@ -5875,6 +6452,10 @@ contains
     call MPAS_pool_get_array(tracers_aggregate, "snowBodyAerosolCell", snowBodyAerosolCell)
     call MPAS_pool_get_array(tracers_aggregate, "iceScatteringAerosolCell", iceScatteringAerosolCell)
     call MPAS_pool_get_array(tracers_aggregate, "iceBodyAerosolCell", iceBodyAerosolCell)
+    call MPAS_pool_get_array(tracers_aggregate, "snowIceMassCell", snowIceMassCell)
+    call MPAS_pool_get_array(tracers_aggregate, "snowLiquidMassCell", snowLiquidMassCell)
+    call MPAS_pool_get_array(tracers_aggregate, "snowDensityCell", snowDensityCell)
+    call MPAS_pool_get_array(tracers_aggregate, "snowGrainRadiusCell", snowGrainRadiusCell)
 
     nTracers = 1
 
@@ -5931,6 +6512,22 @@ contains
        nTracers = nTracers + 1
     end if
 
+    ! snow density (ice mass, liquid mass, density)
+    if (config_use_snow_density) then
+       tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1) = snowIceMassCell(:,iCell)
+       nTracers = nTracers + nSnowLayers
+       tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1) = snowLiquidMassCell(:,iCell)
+       nTracers = nTracers + nSnowLayers
+       tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1) = snowDensityCell(:,iCell)
+       nTracers = nTracers + nSnowLayers
+    endif
+
+    ! snow grain radius
+    if (config_use_snow_grain_radius) then
+       tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1) = snowGrainRadiusCell(:,iCell)
+       nTracers = nTracers + nSnowLayers
+    endif
+
     ! aerosols
     if (config_use_aerosols) then
        do iAerosol = 1, nAerosols
@@ -5975,7 +6572,9 @@ contains
          config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
-         config_use_aerosols
+         config_use_aerosols, &
+         config_use_snow_density, &
+         config_use_snow_grain_radius
 
     integer, pointer :: &
          nIceLayers, &
@@ -6002,7 +6601,11 @@ contains
          snowScatteringAerosolCell, &
          snowBodyAerosolCell, &
          iceScatteringAerosolCell, &
-         iceBodyAerosolCell
+         iceBodyAerosolCell, &
+         snowIceMassCell, &
+         snowLiquidMassCell, &
+         snowGrainRadiusCell, &
+         snowDensityCell
 
     integer :: &
          nTracers, &
@@ -6015,6 +6618,8 @@ contains
     call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
+    call MPAS_pool_get_config(block % configs, "config_use_snow_density", config_use_snow_density)
+    call MPAS_pool_get_config(block % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
     call MPAS_pool_get_dimension(block % dimensions, "nIceLayers", nIceLayers)
     call MPAS_pool_get_dimension(block % dimensions, "nSnowLayers", nSnowLayers)
@@ -6037,6 +6642,10 @@ contains
     call MPAS_pool_get_array(tracers_aggregate, "snowBodyAerosolCell", snowBodyAerosolCell)
     call MPAS_pool_get_array(tracers_aggregate, "iceScatteringAerosolCell", iceScatteringAerosolCell)
     call MPAS_pool_get_array(tracers_aggregate, "iceBodyAerosolCell", iceBodyAerosolCell)
+    call MPAS_pool_get_array(tracers_aggregate, "snowIceMassCell", snowIceMassCell)
+    call MPAS_pool_get_array(tracers_aggregate, "snowLiquidMassCell", snowLiquidMassCell)
+    call MPAS_pool_get_array(tracers_aggregate, "snowDensityCell", snowDensityCell)
+    call MPAS_pool_get_array(tracers_aggregate, "snowGrainRadiusCell", snowGrainRadiusCell)
 
     nTracers = 1
 
@@ -6092,6 +6701,22 @@ contains
        pondLidThicknessCell(iCell) = tracerArrayCell(nTracers)
        nTracers = nTracers + 1
     end if
+
+    ! snow density (ice mass, liquid mass, density)
+    if (config_use_snow_density) then
+       snowIceMassCell(:,iCell) = tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1)
+       nTracers = nTracers + nSnowLayers
+       snowLiquidMassCell(:,iCell) = tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1)
+       nTracers = nTracers + nSnowLayers
+       snowDensityCell(:,iCell) = tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1)
+       nTracers = nTracers + nSnowLayers
+    endif
+
+    ! snow grain radius
+    if (config_use_snow_grain_radius) then
+       snowGrainRadiusCell(:,iCell) = tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1)
+       nTracers = nTracers + nSnowLayers
+    endif
 
     ! aerosols
     if (config_use_aerosols) then
@@ -8314,7 +8939,9 @@ contains
          config_use_humics, &
          config_use_nonreactive, &
          config_use_vertical_biochemistry, &
-         config_use_skeletal_biochemistry
+         config_use_skeletal_biochemistry, &
+         config_use_snow_density, &
+         config_use_snow_grain_radius
 
     logical :: &
          use_meltponds, &
@@ -8342,6 +8969,8 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_nonreactive", config_use_nonreactive)
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_density", config_use_snow_density)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
     use_nitrogen = .false.
     if (config_use_skeletal_biochemistry .or. config_use_vertical_biochemistry) &
@@ -8357,6 +8986,8 @@ contains
          config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
+         config_use_snow_density, &
+         config_use_snow_grain_radius, &
          config_use_aerosols, &
          config_use_brine, &
          config_use_vertical_zsalinity, &
@@ -8380,6 +9011,8 @@ contains
     !tr_pond_cesm = config_use_cesm_meltponds
     !tr_pond_lvl  = config_use_level_meltponds
     !tr_pond_topo = config_use_topo_meltponds
+    !tr_snow      = config_use_snow_density
+    !tr_rsnw      = config_use_snow_grain_radius
     !tr_aero      = config_use_aerosols
     !tr_brine     = config_use_brine
     !tr_bgc_S     = config_use_vertical_zsalinity
@@ -8462,6 +9095,10 @@ contains
     !     nt_hpnd, &       ! melt pond depth
     !     nt_ipnd, &       ! melt pond refrozen lid thickness
     !     nt_aero, &       ! starting index for aerosols in ice
+    !     nt_smice, &      ! snow ice mass 
+    !     nt_smliq, &      ! snow liquid mass
+    !     nt_rsnw, &       ! snow grain radius
+    !     nt_rhos, &       ! snow density tracer
     !     nt_fbri, &       ! volume fraction of ice with dynamic salt (hinS/vicen*aicen)
     !     nt_bgc_Nit, &    ! nutrients
     !     nt_bgc_Am, &     !
@@ -8523,6 +9160,10 @@ contains
          tracerObject % index_pondDepth, &
          tracerObject % index_pondLidThickness, &
          tracerObject % index_aerosols, &
+         tracerObject % index_snowIceMass, &
+         tracerObject % index_snowLiquidMass, &
+         tracerObject % index_snowGrainRadius, &
+         tracerObject % index_snowDensity, &
          tracerObject % index_verticalAerosolsConc, &
          tracerObject % index_algaeConc, &
          tracerObject % index_algalCarbon, &
@@ -8586,6 +9227,10 @@ contains
     !nt_hpnd       = tracerObject % index_pondDepth
     !nt_ipnd       = tracerObject % index_pondLidThickness
     !nt_aero       = tracerObject % index_aerosols
+    !nt_smice      = tracerObject % index_snowIceMass
+    !nt_rsnw       = tracerObject % index_snowGrainRadius
+    !nt_rhos       = tracerObject % index_snowDensity
+    !nt_smliq      = tracerObject % index_snowLiquidMass
     !nt_fbri       = tracerObject % index_brineFraction
     !nt_zaeros     = tracerObject % index_verticalAerosolsConc
     !nt_bgc_N      = tracerObject % index_algaeConc
@@ -8831,7 +9476,7 @@ contains
     !     F_abs_chl_diatoms  , &
     !     F_abs_chl_sp       , &
     !     F_abs_chl_phaeo    , &
-    !     ratio_C2N_proteins
+    !     ratio_C2N_proteins 
 
     use ice_colpkg, only: &
          colpkg_init_parameters
@@ -8853,7 +9498,8 @@ contains
          config_pond_refreezing_type, &
          config_ocean_heat_transfer_type, &
          config_sea_freezing_temperature_type, &
-         config_skeletal_bgc_flux_type
+         config_skeletal_bgc_flux_type, &
+         config_snow_redistribution
 
     logical, pointer :: &
          config_calc_surface_temperature, &
@@ -8868,7 +9514,8 @@ contains
          config_use_skeletal_biochemistry, &
          config_use_vertical_zsalinity, &
          config_use_modal_aerosols, &
-         config_use_snicar
+         config_use_snicar, &
+         config_use_snow_liquid_ponds
 
     real(kind=RKIND), pointer :: &
          config_min_friction_velocity, &
@@ -9019,7 +9666,13 @@ contains
          config_scales_absorption_diatoms, &
          config_scales_absorption_small_plankton, &
          config_scales_absorption_phaeocystis, &
-         config_ratio_C_to_N_proteins
+         config_ratio_C_to_N_proteins, &
+         config_fallen_snow_radius, &
+         config_new_snow_density, &
+         config_max_snow_density, &
+         config_minimum_wind_compaction, &
+         config_wind_compaction_factor, &
+         config_max_dry_snow_radius
 
     integer, pointer :: &
          config_boundary_layer_iteration_number
@@ -9214,6 +9867,14 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_scales_absorption_small_plankton", config_scales_absorption_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_scales_absorption_phaeocystis", config_scales_absorption_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_proteins", config_ratio_C_to_N_proteins)
+    call MPAS_pool_get_config(domain % configs, "config_snow_redistribution", config_snow_redistribution)
+    call MPAS_pool_get_config(domain % configs, "config_fallen_snow_radius", config_fallen_snow_radius)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_liquid_ponds", config_use_snow_liquid_ponds)
+    call MPAS_pool_get_config(domain % configs, "config_new_snow_density", config_new_snow_density)
+    call MPAS_pool_get_config(domain % configs, "config_max_snow_density", config_max_snow_density)
+    call MPAS_pool_get_config(domain % configs, "config_minimum_wind_compaction", config_minimum_wind_compaction)
+    call MPAS_pool_get_config(domain % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
+    call MPAS_pool_get_config(domain % configs, "config_max_dry_snow_radius", config_max_dry_snow_radius)
 
     call colpkg_init_parameters(&
          config_cice_int("config_thermodynamics_type", config_thermodynamics_type), &
@@ -9392,7 +10053,15 @@ contains
          config_scales_absorption_diatoms, &
          config_scales_absorption_small_plankton, &
          config_scales_absorption_phaeocystis, &
-         config_ratio_C_to_N_proteins)
+         config_ratio_C_to_N_proteins, &
+         config_snow_redistribution, &
+         config_use_snow_liquid_ponds, &
+         config_fallen_snow_radius, &
+         config_max_dry_snow_radius, &
+         config_new_snow_density, &
+         config_max_snow_density, &
+         config_minimum_wind_compaction, &
+         config_wind_compaction_factor)
 
     !-----------------------------------------------------------------------
     ! Parameters for thermodynamics
@@ -10153,6 +10822,34 @@ contains
     ! l_skS:
     ! 0.02 characteristic skeletal layer thickness (m) (zsalinity)
     !l_skS = config_zsalinity_gravity_drainage_scale
+
+    !-----------------------------------------------------------------------
+    ! Parameters for snow
+    !-----------------------------------------------------------------------
+
+    ! rsnw_fall:
+    ! fallen snow grain radius (um)
+    ! rsnw_fall = config_fallen_snow_radius
+
+    ! rsnw_tmax:
+    ! maximum dry metamorphism snow grain radius (um)
+    ! rsnw_tmax = config_max_dry_snow_radius
+
+    ! rhosnew:
+    ! new snow density (kg/m^3)
+    ! rhosnew = config_new_snow_density
+
+    ! rhosmax:
+    ! maximum snow density (kg/m^3)
+    ! rhosmax = config_max_snow_density
+
+    ! windmin:
+    ! minimum wind speed to compact snow (m/s)
+    ! windmin = config_minimum_wind_compaction 
+
+    ! drhosdwind:
+    ! wind compaction factor (kg s/m^4)
+    ! drhosdwind = config_wind_compaction_factor
 
   end subroutine init_column_package_configs
 
@@ -11177,21 +11874,26 @@ contains
     type(block_type), pointer :: block
 
     type(MPAS_pool_type), pointer :: &
-         oceanFluxesPool
+         oceanFluxesPool, &
+         snowPool
 
     real(kind=RKIND), dimension(:), pointer :: &
          oceanFreshWaterFlux, &
          oceanSaltFlux, &
          oceanHeatFlux, &
-         oceanShortwaveFlux
+         oceanShortwaveFlux, &
+         snowLossToLeads, &
+         snowMeltMassCell
 
     logical, pointer :: &
-         config_use_column_package
+         config_use_column_package, &
+         config_use_column_snow
 
     block => domain % blocklist
     do while (associated(block))
 
        call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
+       call MPAS_pool_get_config(block % configs, "config_use_column_snow", config_use_column_snow)
 
        if (config_use_column_package) then
 
@@ -11206,6 +11908,17 @@ contains
           oceanSaltFlux(:)       = 0.0_RKIND
           oceanHeatFlux(:)       = 0.0_RKIND
           oceanShortwaveFlux(:)  = 0.0_RKIND
+
+          if (config_use_column_snow) then
+             call MPAS_pool_get_subpool(block % structs, "snow", snowPool)
+
+             call MPAS_pool_get_array(snowPool, "snowLossToLeads", snowLossToLeads)
+             call MPAS_pool_get_array(snowPool, "snowMeltMassCell", snowMeltMassCell)
+
+             snowLossToLeads(:) = 0.0_RKIND
+             snowMeltMassCell(:) = 0.0_RKIND
+
+          endif ! config_use_column_snow
 
        endif ! config_use_column_package
 
@@ -12064,7 +12777,8 @@ contains
          tracersAggregatePool, &
          pondsPool, &
          shortwavePool, &
-         dragPool
+         dragPool, &
+         snowPool
 
     ! atmospheric fluxes
     real(kind=RKIND), dimension(:), pointer :: &
@@ -12087,6 +12801,18 @@ contains
          snowMelt, &
          basalIceMelt, &
          lateralIceMelt
+
+    ! snow model
+    real(kind=RKIND), dimension(:), pointer :: &
+         snowLossToLeads, &
+         snowMeltMassCell, &
+         snowDensityViaContent, &
+         snowDensityViaCompaction, &
+         snowRadiusRadiation
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         snowMeltMassCategory, &
+         snowRadiusRadiationCategory
 
     ! diagnostic tendencies
     real(kind=RKIND), dimension(:), pointer :: &
@@ -12131,7 +12857,8 @@ contains
     logical, pointer :: &
          config_use_ice_age, &
          config_use_form_drag, &
-         config_use_column_package
+         config_use_column_package, &
+         config_use_column_snow
 
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
 
@@ -12272,6 +12999,29 @@ contains
              dragFloeSeparation           = 0.0_RKIND
 
           endif ! config_use_form_drag
+
+          ! snow
+          call MPAS_pool_get_config(block % configs, "config_use_column_snow", config_use_column_snow)
+          if (config_use_column_snow) then
+
+             call MPAS_pool_get_subpool(block % structs, "snow", snowPool)
+             call MPAS_pool_get_array(snowPool, "snowLossToLeads", snowLossToLeads)
+             call MPAS_pool_get_array(snowPool, "snowMeltMassCell", snowMeltMassCell)
+             call MPAS_pool_get_array(snowPool, "snowMeltMassCategory", snowMeltMassCategory)
+             call MPAS_pool_get_array(snowPool, "snowDensityViaContent", snowDensityViaContent)
+             call MPAS_pool_get_array(snowPool, "snowDensityViaCompaction", snowDensityViaCompaction)
+             call MPAS_pool_get_array(snowPool, "snowRadiusRadiation", snowRadiusRadiation)
+             call MPAS_pool_get_array(snowPool, "snowRadiusRadiationCategory", snowRadiusRadiationCategory)
+
+             snowLossToLeads             = 0.0_RKIND
+             snowMeltMassCell            = 0.0_RKIND
+             snowMeltMassCategory        = 0.0_RKIND
+             snowDensityViaContent       = 0.0_RKIND
+             snowDensityViaCompaction    = 0.0_RKIND
+             snowRadiusRadiation         = 0.0_RKIND
+             snowRadiusRadiationCategory = 0.0_RKIND
+
+          end if ! config_use_column_snow
 
           block => block % next
        end do
