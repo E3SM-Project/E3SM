@@ -296,8 +296,7 @@ def _save_postrun_timing_acme(case, lid):
                 gzip_existing_file(os.path.join(root, filename))
 
 def _save_postrun_provenance_acme(case, lid):
-    save_timing = case.get_value("SAVE_TIMING")
-    if not save_timing:
+    if case.get_value("SAVE_TIMING"):
         _save_postrun_timing_acme(case, lid)
 
 def save_postrun_provenance(case, lid=None):
