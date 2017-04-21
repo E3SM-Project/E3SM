@@ -32,9 +32,9 @@ module mpas_atm_dimensions
 
     subroutine mpas_atm_set_dims(nVertLevels_val, maxEdges_val, maxEdges2_val, num_scalars_val)
 
+        use mpas_derived_types, only : MPAS_LOG_ERR, MPAS_LOG_CRIT
         use mpas_kind_types, only : StrKIND
-        use mpas_io_units, only : stderrUnit
-        use mpas_abort, only : mpas_dmpar_global_abort
+        use mpas_log, only : mpas_log_write
 
         implicit none
 
@@ -57,12 +57,12 @@ module mpas_atm_dimensions
             write(errstring1,'(a,i4)') '       At compile, CONST_NVERTLEVELS=', CONST_NVERTLEVELS
             write(errstring2,'(a,i4)') '       At runtime, nVertLevels=', nVertLevels_val
 
-            call mpas_dmpar_global_abort('********************************************************************************',deferredAbort=.true.)
-            call mpas_dmpar_global_abort('ERROR: Dimension nVertLevels read from input file does not match the value used', deferredAbort=.true.)
-            call mpas_dmpar_global_abort('       when compiling MPAS-Atmosphere:',                                          deferredAbort=.true.)
-            call mpas_dmpar_global_abort(trim(errstring1),                                                                  deferredAbort=.true.)
-            call mpas_dmpar_global_abort(trim(errstring2),                                                                  deferredAbort=.true.)
-            call mpas_dmpar_global_abort('********************************************************************************',deferredAbort=.true.)
+            call mpas_log_write('********************************************************************************',messageType=MPAS_LOG_ERR)
+            call mpas_log_write('ERROR: Dimension nVertLevels read from input file does not match the value used', messageType=MPAS_LOG_ERR)
+            call mpas_log_write('       when compiling MPAS-Atmosphere:',                                          messageType=MPAS_LOG_ERR)
+            call mpas_log_write(trim(errstring1),                                                                  messageType=MPAS_LOG_ERR)
+            call mpas_log_write(trim(errstring2),                                                                  messageType=MPAS_LOG_ERR)
+            call mpas_log_write('********************************************************************************',messageType=MPAS_LOG_ERR)
             write(errbuf,'(a,i4,a1,i4,a)') trim(errbuf)//' nVertlevels: ', CONST_NVERTLEVELS, '/', nVertLevels_val, '    '
             nerrors = nerrors + 1
         end if
@@ -71,12 +71,12 @@ module mpas_atm_dimensions
             write(errstring1,'(a,i4)')'       At compile, CONST_MAXEDGES=', CONST_MAXEDGES
             write(errstring2,'(a,i4)')'       At runtime, maxEdges=', maxEdges_val
 
-            call mpas_dmpar_global_abort('********************************************************************************',deferredAbort=.true.)
-            call mpas_dmpar_global_abort('ERROR: Dimension maxEdges read from input file does not match the value used',    deferredAbort=.true.)
-            call mpas_dmpar_global_abort('       when compiling MPAS-Atmosphere:',                                          deferredAbort=.true.)
-            call mpas_dmpar_global_abort(trim(errstring1),                                                                  deferredAbort=.true.)
-            call mpas_dmpar_global_abort(trim(errstring2),                                                                  deferredAbort=.true.)
-            call mpas_dmpar_global_abort('********************************************************************************',deferredAbort=.true.)
+            call mpas_log_write('********************************************************************************',messageType=MPAS_LOG_ERR)
+            call mpas_log_write('ERROR: Dimension maxEdges read from input file does not match the value used',    messageType=MPAS_LOG_ERR)
+            call mpas_log_write('       when compiling MPAS-Atmosphere:',                                          messageType=MPAS_LOG_ERR)
+            call mpas_log_write(trim(errstring1),                                                                  messageType=MPAS_LOG_ERR)
+            call mpas_log_write(trim(errstring2),                                                                  messageType=MPAS_LOG_ERR)
+            call mpas_log_write('********************************************************************************',messageType=MPAS_LOG_ERR)
             write(errbuf,'(a,i4,a1,i4,a)') trim(errbuf)//' maxEdges: ', CONST_MAXEDGES, '/', maxEdges_val, '    '
             nerrors = nerrors + 1
         end if
@@ -85,12 +85,12 @@ module mpas_atm_dimensions
             write(errstring1,'(a,i4)')'       At compile, CONST_MAXEDGES2=', CONST_MAXEDGES2
             write(errstring2,'(a,i4)')'       At runtime, maxEdges2=', maxEdges2_val
 
-            call mpas_dmpar_global_abort('********************************************************************************',deferredAbort=.true.)
-            call mpas_dmpar_global_abort('ERROR: Dimension maxEdges2 read from input file does not match the value used',   deferredAbort=.true.)
-            call mpas_dmpar_global_abort('       when compiling MPAS-Atmosphere:',                                          deferredAbort=.true.)
-            call mpas_dmpar_global_abort(trim(errstring1),                                                                  deferredAbort=.true.)
-            call mpas_dmpar_global_abort(trim(errstring2),                                                                  deferredAbort=.true.)
-            call mpas_dmpar_global_abort('********************************************************************************',deferredAbort=.true.)
+            call mpas_log_write('********************************************************************************',messageType=MPAS_LOG_ERR)
+            call mpas_log_write('ERROR: Dimension maxEdges2 read from input file does not match the value used',   messageType=MPAS_LOG_ERR)
+            call mpas_log_write('       when compiling MPAS-Atmosphere:',                                          messageType=MPAS_LOG_ERR)
+            call mpas_log_write(trim(errstring1),                                                                  messageType=MPAS_LOG_ERR)
+            call mpas_log_write(trim(errstring2),                                                                  messageType=MPAS_LOG_ERR)
+            call mpas_log_write('********************************************************************************',messageType=MPAS_LOG_ERR)
             write(errbuf,'(a,i4,a1,i4,a)') trim(errbuf)//' maxEdges2: ', CONST_MAXEDGES2, '/', maxEdges2_val, '    '
             nerrors = nerrors + 1
         end if
@@ -99,18 +99,18 @@ module mpas_atm_dimensions
             write(errstring1,'(a,i4)')'       At compile, CONST_NUM_SCALARS=', CONST_NUM_SCALARS
             write(errstring2,'(a,i4)')'       At runtime, num_scalars=', num_scalars_val
 
-            call mpas_dmpar_global_abort('********************************************************************************',deferredAbort=.true.)
-            call mpas_dmpar_global_abort('ERROR: Number of scalars read from input file does not match the value used',     deferredAbort=.true.)
-            call mpas_dmpar_global_abort('       when compiling MPAS-Atmosphere:',                                          deferredAbort=.true.)
-            call mpas_dmpar_global_abort(trim(errstring1),                                                                  deferredAbort=.true.)
-            call mpas_dmpar_global_abort(trim(errstring2),                                                                  deferredAbort=.true.)
-            call mpas_dmpar_global_abort('********************************************************************************',deferredAbort=.true.)
+            call mpas_log_write('********************************************************************************',messageType=MPAS_LOG_ERR)
+            call mpas_log_write('ERROR: Number of scalars read from input file does not match the value used',     messageType=MPAS_LOG_ERR)
+            call mpas_log_write('       when compiling MPAS-Atmosphere:',                                          messageType=MPAS_LOG_ERR)
+            call mpas_log_write(trim(errstring1),                                                                  messageType=MPAS_LOG_ERR)
+            call mpas_log_write(trim(errstring2),                                                                  messageType=MPAS_LOG_ERR)
+            call mpas_log_write('********************************************************************************',messageType=MPAS_LOG_ERR)
             write(errbuf,'(a,i4,a1,i4,a)') trim(errbuf)//' num_scalars: ', CONST_NUM_SCALARS, '/', num_scalars_val, '    '
             nerrors = nerrors + 1
         end if
 
         if (nerrors > 0) then
-            call mpas_dmpar_global_abort(trim(errbuf))
+            call mpas_log_write(trim(errbuf), messageType=MPAS_LOG_CRIT)
         end if
 #else
         nVertLevels = nVertLevels_val

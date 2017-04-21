@@ -151,7 +151,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-      if ( on_a_sphere ) call mpas_dmpar_global_abort('MPAS-ocean: ERROR: The sea mount configuration can only be applied to ' &
+      if ( on_a_sphere ) call mpas_log_write('MPAS-ocean: ERROR: The sea mount configuration can only be applied to ' &
                                                    // 'a planar mesh. Exiting...')
 
       allocate(interfaceLocations(nVertLevelsP1))
@@ -293,7 +293,7 @@ contains
                  densityCell = config_sea_mount_density_coef_exp - config_sea_mount_density_gradient_exp * exp( z &
                              / config_sea_mount_density_depth_exp)
               else
-                 call mpas_dmpar_global_abort('MPAS-ocean: Error: Incorrect config_sea_mount_stratification_type: ' &
+                 call mpas_log_write('MPAS-ocean: Error: Incorrect config_sea_mount_stratification_type: ' &
                                               // config_sea_mount_stratification_type)
               end if
 
@@ -360,7 +360,7 @@ contains
       if(config_vert_levels <= 0 .and. config_sea_mount_vert_levels > 0) then
          config_vert_levels = config_sea_mount_vert_levels
       else if (config_vert_levels <= 0) then
-         write(stderrUnit,*) 'ERROR: Validation failed for sea mount. Not given a usable value for vertical levels.'
+         call mpas_log_write( 'ERROR: Validation failed for sea mount. Not given a usable value for vertical levels.')
          iErr = 1
       end if
 

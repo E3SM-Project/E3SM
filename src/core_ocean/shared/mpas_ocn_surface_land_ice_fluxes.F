@@ -541,7 +541,9 @@ contains
                nCellsSolve, &
                err)
             if(err .ne. 0) then
-               call mpas_dmpar_global_abort("MPAS-ocean: ERROR: compute_HJ99_melt_fluxes failed.")
+               call mpas_log_write( &
+                  'ERROR: compute_HJ99_melt_fluxes failed.', &
+                  MPAS_LOG_CRIT)
             end if
 
             ! freezing solution
@@ -560,7 +562,9 @@ contains
                nCellsSolve, &
                err)
             if(err .ne. 0) then
-               call mpas_dmpar_global_abort("MPAS-ocean: ERROR: compute_melt_fluxes failed.")
+               call mpas_log_write( &
+                  'ERROR: compute_melt_fluxes failed.', &
+                  MPAS_LOG_CRIT)
             end if
 
             do iCell = 1, nCellsSolve
@@ -588,7 +592,9 @@ contains
                nCellsSolve, &
                err)
             if(err .ne. 0) then
-               call mpas_dmpar_global_abort("MPAS-ocean: ERROR: compute_melt_fluxes failed.")
+               call mpas_log_write( &
+                  'ERROR: compute_melt_fluxes failed.', &
+                  MPAS_LOG_CRIT)
             end if
          end if
 
@@ -670,10 +676,11 @@ contains
       else if ( trim(config_land_ice_flux_formulation) == 'HollandJenkins' ) then
          hollandJenkinsOn = .true.
       else
-         write(stderrUnit, *) "ERROR: config_land_ice_flux_formulation not one of 'ISOMIP', 'Jenkins', or 'HollandJenkins'."
+         call mpas_log_write( &
+            "MPAS-ocean: ERROR: config_land_ice_flux_formulation not one of 'ISOMIP', 'Jenkins', " &
+               // "or 'HollandJenkins'.", &
+               MPAS_LOG_CRIT)
          err = 1
-         call mpas_dmpar_global_abort("MPAS-ocean: ERROR: config_land_ice_flux_formulation not one of 'ISOMIP', 'Jenkins', " &
-                                      // "or 'HollandJenkins'.")
       end if
 
       cp_land_ice = config_land_ice_flux_cp_ice
@@ -966,8 +973,10 @@ contains
       ! The positive root is the one we want (salinity is strictly positive)
       outInterfaceSalinity(iCell) = (-b + sqrt(b**2 - 4.0_RKIND*a*c*oceanSalinity(iCell)))/(2.0_RKIND*a)
       if (outInterfaceSalinity(iCell) .le. 0.0_RKIND) then
-        err = 1
-        call mpas_dmpar_global_abort('MPAS-ocean: ERROR: interfaceSalinity is negative...')
+         err = 1
+         call mpas_log_write( &
+            'ERROR: interfaceSalinity is negative..', &
+            MPAS_LOG_CRIT)
       end if
       outInterfaceTemperature(iCell) = dTf_dS*outInterfaceSalinity(iCell)+T0
 

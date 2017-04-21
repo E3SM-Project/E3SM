@@ -119,18 +119,18 @@ contains
       call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
 
       if ( .not. on_a_sphere ) then
-         write(stderrUnit, *) 'Warning: Only spherical meshes can been expanded.'
-         write(stderrUnit, *) 'Skipping expansion'
+         call mpas_log_write( 'Warning: Only spherical meshes can been expanded.')
+         call mpas_log_write( 'Skipping expansion')
          return
       end if
 
       if ( sphere_radius == 0.0_RKIND ) then
-         write(stderrUnit, *) 'ERROR: Sphere radius is 0.0'
+         call mpas_log_write( 'ERROR: Sphere radius is 0.0')
          err = 1
          return
       end if
 
-      write(stderrUnit, *) 'Expanding mesh to a radius of size: ', newRadius, 'm'
+      call mpas_log_write( 'Expanding mesh to a radius of size: $f m.', realArgs=(/ newRadius /) )
 
       call mpas_stream_mgr_begin_iteration(stream_manager)
       do while (mpas_stream_mgr_get_next_stream(stream_manager, streamID, directionProperty))

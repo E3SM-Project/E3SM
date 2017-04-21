@@ -11,9 +11,10 @@
  use atm_advection
  use mpas_dmpar
  use mpas_pool_routines
+ use mpas_derived_types, only : MPAS_LOG_WARN, MPAS_LOG_ERR, MPAS_LOG_CRIT
+ use mpas_log, only : mpas_log_write
  use init_atm_hinterp
  use init_atm_llxy
- use mpas_abort, only : mpas_dmpar_global_abort
 
  use mpas_atmphys_utilities
 
@@ -96,8 +97,8 @@
 !--------------------------------------------------------------------------------------------------
 
 
- write(0,*)
- write(0,*) '--- enter subroutine init_atm_static:'
+ call mpas_log_write('')
+ call mpas_log_write('--- enter subroutine init_atm_static:')
 
  call mpas_pool_get_config(configs, 'config_geog_data_path', config_geog_data_path)
  call mpas_pool_get_config(configs, 'config_landuse_data', config_landuse_data)
@@ -209,12 +210,12 @@
        ismax_lu = 20
        write(mminlu,'(a)') 'MODIFIED_IGBP_MODIS_NOAH'
     case default
-         call mpas_dmpar_global_abort('*****************************************************************', deferredAbort=.true.)
-         call mpas_dmpar_global_abort('Invalid land use dataset '''//trim(config_landuse_data) &
-                                       //''' selected for config_landuse_data',                            deferredAbort=.true.)
-         call mpas_dmpar_global_abort('   Possible options are: ''USGS'', ''MODIFIED_IGBP_MODIS_NOAH''',   deferredAbort=.true.)
-         call mpas_dmpar_global_abort('*****************************************************************', deferredAbort=.true.)
-         call mpas_dmpar_global_abort('Please correct the namelist.')
+         call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+         call mpas_log_write('Invalid land use dataset '''//trim(config_landuse_data) &
+                                       //''' selected for config_landuse_data',                   messageType=MPAS_LOG_ERR)
+         call mpas_log_write('   Possible options are: ''USGS'', ''MODIFIED_IGBP_MODIS_NOAH''',   messageType=MPAS_LOG_ERR)
+         call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+         call mpas_log_write('Please correct the namelist.', messageType=MPAS_LOG_CRIT)
  end select surface_input_select0
 
 
@@ -242,7 +243,7 @@
        iTileEnd = iTileStart + nx - 1 - 6
        write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
              'topo_30s/',iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
-       write(0,*) trim(fname)
+       call mpas_log_write(trim(fname))
 
        call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
                          scalefactor,wordsize,istatus)
@@ -272,7 +273,7 @@
  end do
  deallocate(rarray)
  deallocate(nhs)
- write(0,*) '--- end interpolate TER'
+ call mpas_log_write('--- end interpolate TER')
 
 
 !
@@ -284,12 +285,12 @@
     case('MODIFIED_IGBP_MODIS_NOAH')
        geog_sub_path = 'modis_landuse_20class_30s/'
     case default
-       call mpas_dmpar_global_abort('*****************************************************************', deferredAbort=.true.)
-       call mpas_dmpar_global_abort('Invalid land use dataset '''//trim(config_landuse_data) &
-                                     //''' selected for config_landuse_data',                            deferredAbort=.true.)
-       call mpas_dmpar_global_abort('   Possible options are: ''USGS'', ''MODIFIED_IGBP_MODIS_NOAH''',   deferredAbort=.true.)
-       call mpas_dmpar_global_abort('*****************************************************************', deferredAbort=.true.)
-       call mpas_dmpar_global_abort('Please correct the namelist.')
+       call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+       call mpas_log_write('Invalid land use dataset '''//trim(config_landuse_data) &
+                                     //''' selected for config_landuse_data',                   messageType=MPAS_LOG_ERR)
+       call mpas_log_write('   Possible options are: ''USGS'', ''MODIFIED_IGBP_MODIS_NOAH''',   messageType=MPAS_LOG_ERR)
+       call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+       call mpas_log_write('Please correct the namelist.', messageType=MPAS_LOG_CRIT)
  end select surface_input_select1
  nx = 1200
  ny = 1200
@@ -310,7 +311,7 @@
        iTileEnd = iTileStart + nx - 1
        write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
              trim(geog_sub_path),iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
-       write(0,*) trim(fname)
+       call mpas_log_write(trim(fname))
 
        call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
                          scalefactor,wordsize,istatus)
@@ -349,7 +350,7 @@ if (rarray(i,j,1) == 0) cycle
  end do
  deallocate(rarray)
  deallocate(ncat)
- write(0,*) '--- end interpolate LU_INDEX'
+ call mpas_log_write('--- end interpolate LU_INDEX')
 
 
 !
@@ -374,7 +375,7 @@ if (rarray(i,j,1) == 0) cycle
        iTileEnd = iTileStart + nx - 1
        write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
              'soiltype_top_30s/',iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
-       write(0,*) trim(fname)
+       call mpas_log_write(trim(fname))
 
        call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
                          scalefactor,wordsize,istatus)
@@ -408,7 +409,7 @@ if (rarray(i,j,1) == 0) cycle
  end do
  deallocate(rarray)
  deallocate(ncat)
- write(0,*) '--- end interpolate SOILCAT_TOP'
+ call mpas_log_write('--- end interpolate SOILCAT_TOP')
 
 
 !
@@ -433,7 +434,7 @@ if (rarray(i,j,1) == 0) cycle
        iTileEnd = iTileStart + nx - 1
        write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
              'soiltype_bot_30s/',iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
-       write(0,*) trim(fname)
+       call mpas_log_write(trim(fname))
 
        call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
                          scalefactor,wordsize,istatus)
@@ -467,7 +468,7 @@ if (rarray(i,j,1) == 0) cycle
  end do
  deallocate(rarray)
  deallocate(ncat)
- write(0,*) '--- end interpolate SOILCAT_BOT'
+ call mpas_log_write('--- end interpolate SOILCAT_BOT')
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -484,15 +485,15 @@ if (rarray(i,j,1) == 0) cycle
         soilcat_top(iCell) == 14 .or. &
         soilcat_bot(iCell) == 14) then
         if (lu_index(iCell) /= iswater_lu) then
-            write(0,*) 'Turning lu_index into water at ', iCell
+            call mpas_log_write('Turning lu_index into water at $i', intArgs=(/iCell/))
             lu_index(iCell) = iswater_lu
         end if
         if (soilcat_top(iCell) /= 14) then
-            write(0,*) 'Turning soilcat_top into water at ', iCell
+            call mpas_log_write('Turning soilcat_top into water at $i', intArgs=(/iCell/))
             soilcat_top(iCell) = 14
         end if
         if (soilcat_bot(iCell) /= 14) then
-            write(0,*) 'Turning soilcat_bot into water at ', iCell
+            call mpas_log_write('Turning soilcat_bot into water at $i', intArgs=(/iCell/))
             soilcat_bot(iCell) = 14
         end if
     end if
@@ -506,7 +507,7 @@ if (rarray(i,j,1) == 0) cycle
  do iCell=1, nCells
     if (lu_index(iCell) /= iswater_lu) landmask(iCell) = 1
  end do
- write(0,*) '--- end interpolate LANDMASK'
+ call mpas_log_write('--- end interpolate LANDMASK')
 
 
 !
@@ -533,7 +534,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'soiltemp_1deg/',1,'-',180,'.',1,'-',180
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned, endian, &
                    scalefactor,wordsize,istatus)
@@ -542,7 +543,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
             'soiltemp_1deg/',181,'-',360,'.',1,'-',180
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  call read_geogrid(fname, len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
                         scalefactor,wordsize,istatus)
@@ -579,7 +580,7 @@ if (rarray(i,j,1) == 0) cycle
  end do
  deallocate(rarray)
  deallocate(soiltemp_1deg)
- write(0,*) '--- end interpolate SOILTEMP'
+ call mpas_log_write('--- end interpolate SOILTEMP')
 
 
 !
@@ -606,7 +607,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'maxsnowalb/',1,'-',180,'.',1,'-',180
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, & 
                    scalefactor,wordsize,istatus)
@@ -615,7 +616,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'maxsnowalb/',181,'-',360,'.',1,'-',180
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
                    scalefactor,wordsize,istatus)
@@ -653,7 +654,7 @@ if (rarray(i,j,1) == 0) cycle
  snoalb(:) = snoalb(:) / 100.0
  deallocate(rarray)
  deallocate(maxsnowalb)
- write(0,*) '--- end interpolate SNOALB'
+ call mpas_log_write('--- end interpolate SNOALB')
 
 
 !
@@ -680,7 +681,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'greenfrac/',1,'-',1250,'.',1,'-',1250
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, & 
                    scalefactor,wordsize,istatus)
@@ -689,7 +690,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'greenfrac/',1251,'-',2500,'.',1,'-',1250
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
                    scalefactor,wordsize,istatus)
@@ -724,7 +725,7 @@ if (rarray(i,j,1) == 0) cycle
  end do
  deallocate(rarray)
  deallocate(vegfra)
- write(0,*) '--- end interpolate GREENFRAC'
+ call mpas_log_write('--- end interpolate GREENFRAC')
 
 
 !
@@ -751,7 +752,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'albedo_ncep/',1,'-',1250,'.',1,'-',1250
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
                    scalefactor, wordsize, istatus)
@@ -760,7 +761,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'albedo_ncep/',1251,'-',2500,'.',1,'-',1250
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, & 
                    scalefactor,wordsize,istatus)
@@ -792,7 +793,7 @@ if (rarray(i,j,1) == 0) cycle
  end do
  deallocate(rarray)
  deallocate(vegfra)
- write(0,*) '--- end interpolate ALBEDO12M'
+ call mpas_log_write('--- end interpolate ALBEDO12M')
 
 
  end subroutine init_atm_static
@@ -869,8 +870,8 @@ if (rarray(i,j,1) == 0) cycle
  call mpas_pool_get_array(mesh, 'var2d', var2d)
 
 
- write(0,*)
- write(0,*) '--- enter subroutine init_atm_static_orogwd:'
+ call mpas_log_write('')
+ call mpas_log_write('--- enter subroutine init_atm_static_orogwd:')
 
  call mpas_pool_get_config(configs, 'config_geog_data_path', config_geog_data_path)
 
@@ -909,7 +910,7 @@ if (rarray(i,j,1) == 0) cycle
        iTileEnd = iTileStart + nx -1
        write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)//'varsso/', &
              iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
-       write(0,*) trim(fname)
+       call mpas_log_write(trim(fname))
 
        call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
                          scalefactor,wordsize,istatus)
@@ -940,7 +941,7 @@ if (rarray(i,j,1) == 0) cycle
  enddo
  deallocate(rarray)
  deallocate(nhs)
- write(0,*) '--- end interpolate VARSSO'
+ call mpas_log_write('--- end interpolate VARSSO')
 
 !... statistic fields needed for the parameterization of gravity wavwe drag over orography. The
 !input directory depends on the mesh resolution, and the mesh must be a uniform mesh.
@@ -949,12 +950,12 @@ if (rarray(i,j,1) == 0) cycle
  mindcEdge = minval(dcEdge(1:nEdges))
  maxdcEdge = maxval(dcEdge(1:nEdges))
 
- write(0,*)
- write(0,*) 'BEGIN INTERPOLATION OF STATISTICAL FIELDS FOR GRAVITY WAVE DRAG OVER OROGRAPHY'
- write(0,*) 'min MeshD  =', minMeshD
- write(0,*) 'max MeshD  =', maxMeshD
- write(0,*) 'min dcEdge =', mindcEdge
- write(0,*) 'max dcEdge =', maxdcEdge
+ call mpas_log_write('')
+ call mpas_log_write('BEGIN INTERPOLATION OF STATISTICAL FIELDS FOR GRAVITY WAVE DRAG OVER OROGRAPHY')
+ call mpas_log_write('min MeshD  = $r', realArgs=(/minMeshD/))
+ call mpas_log_write('max MeshD  = $r', realArgs=(/maxMeshD/))
+ call mpas_log_write('min dcEdge = $r', realArgs=(/mindcEdge/))
+ call mpas_log_write('max dcEdge = $r', realArgs=(/maxdcEdge/))
 
  dir_gwdo = '   '
  if(minMeshD == 1.0_RKIND .and. maxMeshD == 1.0_RKIND) then
@@ -966,21 +967,17 @@ if (rarray(i,j,1) == 0) cycle
     elseif(mindcEdge .ge. 40000._RKIND .and. maxdcEdge .lt. 70000._RKIND) then
        dir_gwdo = 'orogwd_30m'
     else
-       write(0,*)
-!      write(mess,*) 'GWDO: Interpolation not available. The initialization will abort'
-!      call physics_error_fatal(mess)
-       write(mess,*) 'GWDO: Interpolation not available. Set config_gwdo_scheme = .false.'
+       call mpas_log_write('')
+       call mpas_log_write('GWDO: Interpolation not available. Set config_gwdo_scheme = .false.', messageType=MPAS_LOG_WARN)
        return
     endif
  else
-    write(0,*)
-!   write(mess,*) 'GWDO: The input mesh must be a uniform mesh. The initialization will abort'
-!   call physics_error_fatal(mess)
-    write(mess,*) 'GWDO: The input mesh must be a uniform mesh. Set config_gwdo_scheme = .false.'
+    call mpas_log_write('')
+    call mpas_log_write('GWDO: The input mesh must be a uniform mesh. Set config_gwdo_scheme = .false.', messageType=MPAS_LOG_WARN)
     return
  endif
- write(0,*) 'dir_gwdo   =    ', trim(dir_gwdo)
- write(0,*)
+ call mpas_log_write('dir_gwdo   =    '//trim(dir_gwdo))
+ call mpas_log_write('')
 
 !
 ! Interpolate CON:
@@ -1049,7 +1046,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
        trim(geog_data_path)//trim(dir_gwdo)//'/con/',1,'-',nx,'.',1,'-',ny
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  allocate(xarray(nx,ny))
  allocate(rarray(nx,ny,nz))
@@ -1083,7 +1080,7 @@ if (rarray(i,j,1) == 0) cycle
  enddo
  deallocate(rarray)
  deallocate(xarray)
- write(0,*) '--- end interpolate CON'
+ call mpas_log_write('--- end interpolate CON')
 
 !
 ! Interpolate OA1:
@@ -1152,7 +1149,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
        trim(geog_data_path)//trim(dir_gwdo)//'/oa1/',1,'-',nx,'.',1,'-',ny
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  allocate(xarray(nx,ny))
  allocate(rarray(nx,ny,nz))
@@ -1186,7 +1183,7 @@ if (rarray(i,j,1) == 0) cycle
  enddo
  deallocate(rarray)
  deallocate(xarray)
- write(0,*) '--- end interpolate OA1'
+ call mpas_log_write('--- end interpolate OA1')
 
 !
 ! Interpolate OA2:
@@ -1254,7 +1251,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
        trim(geog_data_path)//trim(dir_gwdo)//'/oa2/',1,'-',nx,'.',1,'-',ny
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  allocate(xarray(nx,ny))
  allocate(rarray(nx,ny,nz))
@@ -1288,7 +1285,7 @@ if (rarray(i,j,1) == 0) cycle
  enddo
  deallocate(rarray)
  deallocate(xarray)
- write(0,*) '--- end interpolate OA2'
+ call mpas_log_write('--- end interpolate OA2')
 
 !
 ! Interpolate OA3:
@@ -1357,7 +1354,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
        trim(geog_data_path)//trim(dir_gwdo)//'/oa3/',1,'-',nx,'.',1,'-',ny
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  allocate(xarray(nx,ny))
  allocate(rarray(nx,ny,nz))
@@ -1391,7 +1388,7 @@ if (rarray(i,j,1) == 0) cycle
  enddo
  deallocate(rarray)
  deallocate(xarray)
- write(0,*) '--- end interpolate OA3'
+ call mpas_log_write('--- end interpolate OA3')
 
 !
 ! Interpolate OA4:
@@ -1460,7 +1457,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
        trim(geog_data_path)//trim(dir_gwdo)//'/oa4/',1,'-',nx,'.',1,'-',ny
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  allocate(xarray(nx,ny))
  allocate(rarray(nx,ny,nz))
@@ -1494,7 +1491,7 @@ if (rarray(i,j,1) == 0) cycle
  enddo
  deallocate(rarray)
  deallocate(xarray)
- write(0,*) '--- end interpolate OA4'
+ call mpas_log_write('--- end interpolate OA4')
 
 !
 ! Interpolate OL1:
@@ -1563,7 +1560,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
        trim(geog_data_path)//trim(dir_gwdo)//'/ol1/',1,'-',nx,'.',1,'-',ny
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  allocate(xarray(nx,ny))
  allocate(rarray(nx,ny,nz))
@@ -1597,7 +1594,7 @@ if (rarray(i,j,1) == 0) cycle
  enddo
  deallocate(rarray)
  deallocate(xarray)
- write(0,*) '--- end interpolate OL1'
+ call mpas_log_write('--- end interpolate OL1')
 
 !
 ! Interpolate OL2:
@@ -1666,7 +1663,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
        trim(geog_data_path)//trim(dir_gwdo)//'/ol2/',1,'-',nx,'.',1,'-',ny
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  allocate(xarray(nx,ny))
  allocate(rarray(nx,ny,nz))
@@ -1700,7 +1697,7 @@ if (rarray(i,j,1) == 0) cycle
  enddo
  deallocate(rarray)
  deallocate(xarray)
- write(0,*) '--- end interpolate OL2'
+ call mpas_log_write('--- end interpolate OL2')
 
 !
 ! Interpolate OL3:
@@ -1769,7 +1766,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
        trim(geog_data_path)//trim(dir_gwdo)//'/ol3/',1,'-',nx,'.',1,'-',ny
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  allocate(xarray(nx,ny))
  allocate(rarray(nx,ny,nz))
@@ -1803,7 +1800,7 @@ if (rarray(i,j,1) == 0) cycle
  enddo
  deallocate(rarray)
  deallocate(xarray)
- write(0,*) '--- end interpolate OL3'
+ call mpas_log_write('--- end interpolate OL3')
 
 !
 ! Interpolate OL4:
@@ -1872,7 +1869,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
        trim(geog_data_path)//trim(dir_gwdo)//'/ol4/',1,'-',nx,'.',1,'-',ny
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
  allocate(xarray(nx,ny))
  allocate(rarray(nx,ny,nz))
@@ -1906,7 +1903,7 @@ if (rarray(i,j,1) == 0) cycle
  enddo
  deallocate(rarray)
  deallocate(xarray)
- write(0,*) '--- end interpolate OL4'
+ call mpas_log_write('--- end interpolate OL4')
 
 !
 ! Interpolate VAR2D:
@@ -1975,7 +1972,7 @@ if (rarray(i,j,1) == 0) cycle
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
        trim(geog_data_path)//trim(dir_gwdo)//'/var/',1,'-',nx,'.',1,'-',ny
- write(0,*) trim(fname)
+ call mpas_log_write(trim(fname))
 
 
  allocate(xarray(nx,ny))
@@ -2010,7 +2007,7 @@ if (rarray(i,j,1) == 0) cycle
  enddo
  deallocate(rarray)
  deallocate(xarray)
- write(0,*) '--- end interpolate VAR2D'
+ call mpas_log_write('--- end interpolate VAR2D')
 
  end subroutine init_atm_static_orogwd
 
@@ -2023,7 +2020,7 @@ if (rarray(i,j,1) == 0) cycle
  character (len=*), intent(in) :: fname
 
  if (istatus /= 0) then
-     call mpas_dmpar_global_abort('ERROR: Could not read file '//trim(fname))
+     call mpas_log_write('Could not read file '//trim(fname), messageType=MPAS_LOG_CRIT)
  end if
 
  end subroutine init_atm_check_read_error

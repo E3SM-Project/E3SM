@@ -49,6 +49,7 @@ module mpas_subdriver
       use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
       use mpas_timekeeping, only : mpas_get_clock_time, mpas_get_time
       use mpas_bootstrapping, only : mpas_bootstrap_framework_phase1, mpas_bootstrap_framework_phase2
+      use mpas_log
  
       implicit none
 
@@ -155,6 +156,7 @@ module mpas_subdriver
       !
       call mpas_framework_init_phase1(domain_ptr % dminfo)
 
+
 #ifdef CORE_ATMOSPHERE
       call atm_setup_core(corelist)
       call atm_setup_domain(domain_ptr)
@@ -183,6 +185,16 @@ module mpas_subdriver
       call test_setup_core(corelist)
       call test_setup_domain(domain_ptr)
 #endif
+
+      ! Set up the log manager as early as possible so we can use it for any errors/messages during subsequent init steps
+      ! We need:
+      ! 1) domain_ptr to be allocated,
+      ! 2) dmpar_init complete to access dminfo,
+      ! 3) *_setup_core to assign the setup_log function pointer
+      ierr = domain_ptr % core % setup_log(domain_ptr % logInfo, domain_ptr)
+      if ( ierr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Log setup failed for core ' // trim(domain_ptr % core % coreName))
+      end if
 
       if ( readNamelistArg ) then
          domain_ptr % namelist_filename = namelistFile
@@ -219,7 +231,7 @@ module mpas_subdriver
          call mpas_dmpar_global_abort('ERROR: Clock setup failed for core ' // trim(domain_ptr % core % coreName))
       end if
 
-      write(stderrUnit,*) 'Reading streams configuration from file '//trim(domain_ptr % streams_filename)
+      call mpas_log_write('Reading streams configuration from file '//trim(domain_ptr % streams_filename))
       inquire(file=trim(domain_ptr % streams_filename), exist=streamsExists)
 
       if ( .not. streamsExists ) then
@@ -277,7 +289,7 @@ module mpas_subdriver
           call mpas_set_timeInterval(filename_interval, timeString=filename_interval_temp, ierr=ierr)
           call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, blockID, mesh_filename, ierr)
       end if
-      write(stderrUnit, *) ' ** Attempting to bootstrap MPAS framework using stream: ', trim(mesh_stream)
+      call mpas_log_write(' ** Attempting to bootstrap MPAS framework using stream: ' // trim(mesh_stream))
       call mpas_bootstrap_framework_phase1(domain_ptr, mesh_filename, mesh_iotype)
 
       !
@@ -334,7 +346,8 @@ module mpas_subdriver
    subroutine mpas_finalize()
 
       use mpas_stream_manager, only : MPAS_stream_mgr_finalize
-   
+      use mpas_log, only : mpas_log_finalize
+
       implicit none
 
       integer :: iErr
@@ -353,6 +366,12 @@ module mpas_subdriver
       call mpas_timer_write()
       call mpas_timer_finalize(domain_ptr)
 
+      ! Print out log stats and close log file
+      !   (do this after timer stats are printed)
+      call mpas_log_finalize(iErr)
+      if ( iErr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Log finalize failed for core ' // trim(domain_ptr % core % coreName))
+      end if
 
       !
       ! Finalize infrastructure

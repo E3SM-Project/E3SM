@@ -184,7 +184,7 @@ contains
            timeLevelIn=1)
 
        if(iErr .ne. 0) then
-         write(stderrUnit,*) 'ERROR: ocn_equation_of_state_density failed.'
+         call mpas_log_write( 'ERROR: ocn_equation_of_state_density failed.')
          return
        end if
 
@@ -224,7 +224,7 @@ contains
              timeLevelIn=1)
 
          if(iErr .ne. 0) then
-           write(stderrUnit,*) 'ERROR: ocn_equation_of_state_density failed.'
+           call mpas_log_write( 'ERROR: ocn_equation_of_state_density failed.')
            return
          end if
 
@@ -299,7 +299,7 @@ contains
            timeLevelIn=1)
 
        if(iErr .ne. 0) then
-         write(stderrUnit,*) 'ERROR: ocn_equation_of_state_density failed.'
+         call mpas_log_write( 'ERROR: ocn_equation_of_state_density failed.')
          return
        end if
 
@@ -347,7 +347,7 @@ contains
      call ocn_init_vertical_grid(domain, updateWithSSH=.true., iErr=iErr)
 
      if(iErr .ne. 0) then
-       write(stderrUnit,*) 'ERROR: ocn_init_vertical_grid failed.'
+       call mpas_log_write( 'ERROR: ocn_init_vertical_grid failed.')
        return
      end if
 
@@ -376,7 +376,7 @@ contains
                                       origMaxLevelCell, maxLevelCell, &
                                       activeTracers, iErr)
        if(iErr .ne. 0) then
-         write(stderrUnit,*) 'ERROR: interpolate_activeTracers failed.'
+         call mpas_log_write( 'ERROR: interpolate_activeTracers failed.')
          return
        end if
 
@@ -454,7 +454,7 @@ contains
         .and. config_iterative_init_variable .ne. 'landIcePressure_from_top_density' &
         .and. config_iterative_init_variable .ne. 'landIcePressure') then
        iErr = 1
-       write(stderrUnit,*) 'ERROR: invalid value for config_iterative_init_variable', trim(config_iterative_init_variable)
+       call mpas_log_write( 'ERROR: invalid value for config_iterative_init_variable'// trim(config_iterative_init_variable))
        return
      end if
      call mpas_pool_get_config(ocnConfigs, 'config_use_rx1_constraint', config_use_rx1_constraint)
@@ -483,7 +483,7 @@ contains
          do iCell = 1, nCells
            call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
            if(iErr .ne. 0) then
-             write(stderrUnit,*) 'ERROR: ocn_alter_bottomDepth_for_pbcs failed.'
+             call mpas_log_write( 'ERROR: ocn_alter_bottomDepth_for_pbcs failed.')
              return
            end if
          end do
@@ -498,7 +498,7 @@ contains
        call ocn_init_vertical_grid_with_max_rx1(domain, iErr)
 
        if(iErr .ne. 0) then
-         write(stderrUnit,*) 'ERROR: ocn_init_vertical_grid_with_max_rx1 failed.'
+         call mpas_log_write( 'ERROR: ocn_init_vertical_grid_with_max_rx1 failed.')
          return
        end if
 
@@ -545,7 +545,7 @@ contains
            end if
 
            if(iErr .ne. 0) then
-             write(stderrUnit,*) 'ERROR: ocn_compute_layerThickness_zMid_from_bottomDepth failed.'
+             call mpas_log_write( 'ERROR: ocn_compute_layerThickness_zMid_from_bottomDepth failed.')
              return
            end if
          end do !iCell

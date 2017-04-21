@@ -25,6 +25,7 @@ module ocn_debug_diagnostics
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
+   use mpas_io_units
 
    use ocn_constants
    use ocn_diagnostics_routines

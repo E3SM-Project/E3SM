@@ -25,6 +25,7 @@ module li_velocity
 
    use mpas_derived_types
    use mpas_pool_routines
+   use mpas_log
 !!!   use li_lifev
    use li_sia
    use li_setup
@@ -108,7 +109,7 @@ contains
 
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
-      write(*,*) 'Using ', trim(config_velocity_solver), ' dynamical core.'
+      call mpas_log_write('Using ' // trim(config_velocity_solver) // ' dynamical core.')
       select case (config_velocity_solver)
       case ('sia')
           call li_sia_init(domain, err)
@@ -120,14 +121,14 @@ contains
 !!!          call li_lifev_init(domain, err)
 !!!          call li_phg_init(domain, err)
       case default
-          write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+          call mpas_log_write(trim(config_velocity_solver) // ' is not a valid land ice velocity solver option.', MPAS_LOG_ERR)
           err = 1
           return
       end select
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in li_timestep."
+          call mpas_log_write("An error has occurred in li_timestep.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -192,14 +193,14 @@ contains
 !!!      case ('Stokes')
 !!!          call li_lifev_block_init(block, err)
       case default
-          write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+          call mpas_log_write(trim(config_velocity_solver) // ' is not a valid land ice velocity solver option.', MPAS_LOG_ERR)
           err = 1
           return
       end select
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in li_velocity_block_init."
+          call mpas_log_write("An error has occurred in li_velocity_block_init.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -279,7 +280,7 @@ contains
 !!!      case ('Stokes')
 !!!          call li_lifev_solve(mesh, state, timeLevel, err)
       case default
-          write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+          call mpas_log_write(trim(config_velocity_solver) // ' is not a valid land ice velocity solver option.', MPAS_LOG_ERR)
           err = 1
           return
       end select
@@ -298,7 +299,7 @@ contains
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in li_velocity_solve."
+          call mpas_log_write("An error has occurred in li_velocity_solve.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -363,14 +364,14 @@ contains
 !!!      case ('Stokes')
 !!!          call li_lifev_finalize(domain, err)
       case default
-          write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+          call mpas_log_write(trim(config_velocity_solver) // ' is not a valid land ice velocity solver option.', MPAS_LOG_ERR)
           err = 1
           return
       end select
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in li_velocity_finalize."
+          call mpas_log_write("An error has occurred in li_velocity_finalize.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------

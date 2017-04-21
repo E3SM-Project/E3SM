@@ -500,9 +500,7 @@ contains
         config_AM_eliassenPalm_rhomax_buoycoor)
 
       if(config_AM_eliassenPalm_debug) then
-         write(stderrUnit, *) ' '
-         write(stderrUnit, *) 'starting ocn_compute_epft'
-         write(stderrUnit, *) ' '
+         call mpas_log_write( 'starting ocn_compute_epft')
       end if
 
       block => domain % blocklist
@@ -1333,9 +1331,7 @@ contains
       endif
 
       if(config_AM_eliassenPalm_debug) then
-         write(stderrUnit, *) ' '
-         write(stderrUnit, *) 'exiting ocn_compute_epft'
-         write(stderrUnit, *) ' '
+         call mpas_log_write( 'exiting ocn_compute_epft')
       end if
 
     end subroutine ocn_compute_eliassen_palm!}}}
@@ -1582,13 +1578,11 @@ contains
       enddo
 
       if (printWarning) then
-         write(stderrUnit,*)
-         write(stderrUnit,*) ' *** WARNING: in eliassen_palm analysis member, subroutine check_potentialDensityRef_range.'
-         write(stderrUnit,*) '  One or more columns in the ocean domain have densities that are not'
-         write(stderrUnit,*) '  contained in the defined buoyancy space of the EPFT module'
-         if (iCellMinBound.gt.0) write(stderrUnit,*) '  fluid is lighter than min buoyancy at cell: ',iCellMinBound
-         if (iCellMaxBound.gt.0) write(stderrUnit,*) '  fluid is lighter than max buoyancy at cell: ',iCellMaxBound
-         write(stderrUnit,*)
+         call mpas_log_write( ' *** WARNING: in eliassen_palm analysis member, subroutine check_potentialDensityRef_range.', MPAS_LOG_WARN)
+         call mpas_log_write( '  One or more columns in the ocean domain have densities that are not')
+         call mpas_log_write( '  contained in the defined buoyancy space of the EPFT module')
+         if (iCellMinBound.gt.0) call mpas_log_write( '  Fluid is lighter than min buoyancy at cell: $i',MPAS_LOG_OUT,intArgs=(/ iCellMinBound /) )
+         if (iCellMaxBound.gt.0) call mpas_log_write( '  Fluid is lighter than max buoyancy at cell: $i',MPAS_LOG_OUT,intArgs=(/ iCellMaxBound /) )
       end if
 
    end subroutine check_potentialDensityRef_range!}}}

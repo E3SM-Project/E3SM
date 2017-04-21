@@ -10,6 +10,7 @@ module sw_test_cases
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
+   use mpas_log
 
 
    contains
@@ -38,11 +39,11 @@ module sw_test_cases
       call mpas_pool_get_config(domain % configs, 'config_test_case', config_test_case)
 
       if (config_test_case == 0) then
-         write(0,*) 'Using initial conditions supplied in input file'
+         call mpas_log_write('Using initial conditions supplied in input file')
 
       else if (config_test_case == 1) then
-         write(0,*) 'Setting up shallow water test case 1'
-         write(0,*) ' -- Advection of Cosine Bell over the Pole'
+         call mpas_log_write('Setting up shallow water test case 1')
+         call mpas_log_write(' -- Advection of Cosine Bell over the Pole')
 
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
@@ -57,8 +58,8 @@ module sw_test_cases
          end do
 
       else if (config_test_case == 2) then
-         write(0,*) 'Setting up shallow water test case 2'
-         write(0,*) ' -- Setup shallow water test case 2: Global Steady State Nonlinear Zonal Geostrophic Flow'
+         call mpas_log_write('Setting up shallow water test case 2')
+         call mpas_log_write(' -- Setup shallow water test case 2: Global Steady State Nonlinear Zonal Geostrophic Flow')
 
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
@@ -73,8 +74,8 @@ module sw_test_cases
          end do
 
       else if (config_test_case == 5) then
-         write(0,*) 'Setting up shallow water test case 5'
-         write(0,*) ' -- Setup shallow water test case 5: Zonal Flow over an Isolated Mountain'
+         call mpas_log_write('Setting up shallow water test case 5')
+         call mpas_log_write(' -- Setup shallow water test case 5: Zonal Flow over an Isolated Mountain')
 
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
@@ -89,8 +90,8 @@ module sw_test_cases
          end do
 
       else if (config_test_case == 6) then
-         write(0,*) 'Setting up shallow water test case 6'
-         write(0,*) ' -- Rossby-Haurwitz Wave'
+         call mpas_log_write('Setting up shallow water test case 6')
+         call mpas_log_write(' -- Rossby-Haurwitz Wave')
 
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
@@ -105,7 +106,7 @@ module sw_test_cases
          end do
 
       else
-         write(0,*) 'Only test case 1, 2, 5, and 6 are currently supported.'
+         call mpas_log_write('Only test case 1, 2, 5, and 6 are currently supported.')
          stop
       end if
 

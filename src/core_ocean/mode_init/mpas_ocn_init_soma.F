@@ -171,11 +171,11 @@ contains
 
       ! error checking
       if(.not. on_a_sphere) then
-        write(stderrUnit, *) 'ERROR: SOMA test case can only be defined on a spherical mesh.'
+        call mpas_log_write( 'ERROR: SOMA test case can only be defined on a spherical mesh.')
         iErr = 1
         return
       else
-       write(stderrUnit, *) 'SOMA test case using spherical radius of size: ', sphereRadius
+        call mpas_log_write( 'SOMA test case using spherical radius of size: $f ', realArgs=(/ sphereRadius /) )
       end if
 
       ! assign config variables
@@ -192,7 +192,7 @@ contains
       lonCenter = config_soma_center_longitude * pii / 180.0_RKIND
 
       ! Setup the vertical grid and layerThickness initial condition
-      write(stderrUnit,*) 'setting up vertical grid and layer thickness'
+      call mpas_log_write( 'setting up vertical grid and layer thickness')
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -225,7 +225,7 @@ contains
       end do
 
       ! Set bathymetry
-      write(stderrUnit,*) 'setting up bathymetry'
+      call mpas_log_write( 'setting up bathymetry')
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -298,7 +298,7 @@ contains
        end do
 
       ! Set forcing boundary conditions and initial conditions for temperature and salinity
-      write(stderrUnit,*) 'setting up forcing and initial T/S conditions'
+      call mpas_log_write( 'setting up forcing and initial T/S conditions')
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -400,7 +400,7 @@ contains
         block_ptr => block_ptr % next
       end do
 
-      write(stderrUnit,*) 'exiting ocn_init_setup_soma'
+      call mpas_log_write( 'exiting ocn_init_setup_soma')
 
    !--------------------------------------------------------------------
 
@@ -440,7 +440,7 @@ contains
       if(config_vert_levels <= 0 .and. config_soma_vert_levels > 0) then
          config_vert_levels = config_soma_vert_levels
       else if (config_vert_levels <= 0) then
-         write(stderrUnit,*) 'ERROR: Validation failed for SOMA. Not given a usable value for vertical levels.'
+         call mpas_log_write( 'ERROR: Validation failed for SOMA. Not given a usable value for vertical levels.')
          iErr = 1
       end if
 

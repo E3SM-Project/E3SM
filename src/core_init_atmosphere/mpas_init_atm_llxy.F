@@ -137,7 +137,9 @@ MODULE init_atm_llxy
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+   USE MPAS_DERIVED_TYPES, ONLY : MPAS_LOG_ERR, MPAS_LOG_CRIT
    USE MPAS_KIND_TYPES
+   USE MPAS_LOG, ONLY : MPAS_LOG_WRITE
 
    INTEGER, PARAMETER :: HH=4, VV=5
 
@@ -323,8 +325,8 @@ MODULE init_atm_llxy
               .NOT.PRESENT(knownj) .OR. &
               .NOT.PRESENT(stdlon) .OR. &
               .NOT.PRESENT(dx) ) THEN
-            PRINT '(A,I2)', 'The following are mandatory parameters for projection code : ', proj_code
-            PRINT '(A)', ' truelat1, truelat2, lat1, lon1, knowni, knownj, stdlon, dx'
+            CALL mpas_log_write('The following are mandatory parameters for projection code : $i', intArgs=(/proj_code/), messageType=MPAS_LOG_ERR)
+            CALL mpas_log_write(' truelat1, truelat2, lat1, lon1, knowni, knownj, stdlon, dx', messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'MAP_INIT' )
          END IF
       ELSE IF ( proj_code == PROJ_PS ) THEN
@@ -335,8 +337,8 @@ MODULE init_atm_llxy
               .NOT.PRESENT(knownj) .OR. &
               .NOT.PRESENT(stdlon) .OR. &
               .NOT.PRESENT(dx) ) THEN
-            PRINT '(A,I2)', 'The following are mandatory parameters for projection code : ', proj_code
-            PRINT '(A)', ' truelat1, lat1, lon1, knonwi, knownj, stdlon, dx'
+            CALL mpas_log_write('The following are mandatory parameters for projection code : $i', intArgs=(/proj_code/), messageType=MPAS_LOG_ERR)
+            CALL mpas_log_write(' truelat1, lat1, lon1, knonwi, knownj, stdlon, dx', messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'MAP_INIT' )
          END IF
       ELSE IF ( proj_code == PROJ_PS_WGS84 ) THEN
@@ -347,8 +349,8 @@ MODULE init_atm_llxy
               .NOT.PRESENT(knownj) .OR. &
               .NOT.PRESENT(stdlon) .OR. &
               .NOT.PRESENT(dx) ) THEN
-            PRINT '(A,I2)', 'The following are mandatory parameters for projection code : ', proj_code
-            PRINT '(A)', ' truelat1, lat1, lon1, knonwi, knownj, stdlon, dx'
+            CALL mpas_log_write('The following are mandatory parameters for projection code : $i', intArgs=(/proj_code/), messageType=MPAS_LOG_ERR)
+            CALL mpas_log_write(' truelat1, lat1, lon1, knonwi, knownj, stdlon, dx', messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'MAP_INIT' )
          END IF
       ELSE IF ( proj_code == PROJ_ALBERS_NAD83 ) THEN
@@ -360,8 +362,8 @@ MODULE init_atm_llxy
               .NOT.PRESENT(knownj) .OR. &
               .NOT.PRESENT(stdlon) .OR. &
               .NOT.PRESENT(dx) ) THEN
-            PRINT '(A,I2)', 'The following are mandatory parameters for projection code : ', proj_code
-            PRINT '(A)', ' truelat1, truelat2, lat1, lon1, knonwi, knownj, stdlon, dx'
+            CALL mpas_log_write('The following are mandatory parameters for projection code : $i', intArgs=(/proj_code/), messageType=MPAS_LOG_ERR)
+            CALL mpas_log_write(' truelat1, truelat2, lat1, lon1, knonwi, knownj, stdlon, dx', messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'MAP_INIT' )
          END IF
       ELSE IF ( proj_code == PROJ_MERC ) THEN
@@ -371,8 +373,8 @@ MODULE init_atm_llxy
               .NOT.PRESENT(knowni) .OR. &
               .NOT.PRESENT(knownj) .OR. &
               .NOT.PRESENT(dx) ) THEN
-            PRINT '(A,I2)', 'The following are mandatory parameters for projection code : ', proj_code
-            PRINT '(A)', ' truelat1, lat1, lon1, knowni, knownj, dx'
+            CALL mpas_log_write('The following are mandatory parameters for projection code : $i', intArgs=(/proj_code/), messageType=MPAS_LOG_ERR)
+            CALL mpas_log_write(' truelat1, lat1, lon1, knowni, knownj, dx', messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'MAP_INIT' )
          END IF
       ELSE IF ( proj_code == PROJ_LATLON ) THEN
@@ -382,16 +384,16 @@ MODULE init_atm_llxy
               .NOT.PRESENT(knownj) .OR. &
               .NOT.PRESENT(lat1) .OR. &
               .NOT.PRESENT(lon1) ) THEN
-            PRINT '(A,I2)', 'The following are mandatory parameters for projection code : ', proj_code
-            PRINT '(A)', ' latinc, loninc, knowni, knownj, lat1, lon1'
+            CALL mpas_log_write('The following are mandatory parameters for projection code : $i', intArgs=(/proj_code/), messageType=MPAS_LOG_ERR)
+            CALL mpas_log_write(' latinc, loninc, knowni, knownj, lat1, lon1', messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'MAP_INIT' )
          END IF
       ELSE IF ( proj_code == PROJ_CYL ) THEN
          IF ( .NOT.PRESENT(latinc) .OR. &
               .NOT.PRESENT(loninc) .OR. &
               .NOT.PRESENT(stdlon) ) THEN
-            PRINT '(A,I2)', 'The following are mandatory parameters for projection code : ', proj_code
-            PRINT '(A)', ' latinc, loninc, stdlon'
+            CALL mpas_log_write('The following are mandatory parameters for projection code : $i', intArgs=(/proj_code/), messageType=MPAS_LOG_ERR)
+            CALL mpas_log_write(' latinc, loninc, stdlon', messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'MAP_INIT' )
          END IF
       ELSE IF ( proj_code == PROJ_CASSINI ) THEN
@@ -404,8 +406,8 @@ MODULE init_atm_llxy
               .NOT.PRESENT(knowni) .OR. &
               .NOT.PRESENT(knownj) .OR. &
               .NOT.PRESENT(stdlon) ) THEN
-            PRINT '(A,I2)', 'The following are mandatory parameters for projection code : ', proj_code
-            PRINT '(A)', ' latinc, loninc, lat1, lon1, knowni, knownj, lat0, lon0, stdlon'
+            CALL mpas_log_write('The following are mandatory parameters for projection code : $i', intArgs=(/proj_code/), messageType=MPAS_LOG_ERR)
+            CALL mpas_log_write(' latinc, loninc, lat1, lon1, knowni, knownj, lat0, lon0, stdlon', messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'MAP_INIT' )
          END IF
       ELSE IF ( proj_code == PROJ_GAUSS ) THEN
@@ -413,8 +415,8 @@ MODULE init_atm_llxy
               .NOT.PRESENT(lat1) .OR. &
               .NOT.PRESENT(lon1) .OR. &
               .NOT.PRESENT(loninc) ) THEN
-            PRINT '(A,I2)', 'The following are mandatory parameters for projection code : ', proj_code
-            PRINT '(A)', ' nlat, lat1, lon1, loninc'
+            CALL mpas_log_write('The following are mandatory parameters for projection code : $i', intArgs=(/proj_code/), messageType=MPAS_LOG_ERR)
+            CALL mpas_log_write(' nlat, lat1, lon1, loninc', messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'MAP_INIT' )
          END IF
       ELSE IF ( proj_code == PROJ_ROTLL ) THEN
@@ -425,20 +427,20 @@ MODULE init_atm_llxy
               .NOT.PRESENT(lat1) .OR. &
               .NOT.PRESENT(lon1) .OR. &
               .NOT.PRESENT(stagger) ) THEN
-            PRINT '(A,I2)', 'The following are mandatory parameters for projection code : ', proj_code
-            PRINT '(A)', ' ixdim, jydim, phi, lambda, lat1, lon1, stagger'
+            CALL mpas_log_write('The following are mandatory parameters for projection code : $i', intArgs=(/proj_code/), messageType=MPAS_LOG_ERR)
+            CALL mpas_log_write(' ixdim, jydim, phi, lambda, lat1, lon1, stagger', messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'MAP_INIT' )
          END IF
       ELSE
-         PRINT '(A,I2)', 'Unknown projection code: ', proj_code
+         CALL mpas_log_write('Unknown projection code: $i', intArgs=(/proj_code/), messageType=MPAS_LOG_ERR)
          CALL llxy_error_fatal ( 'MAP_INIT' )
       END IF
   
       ! Check for validity of mandatory variables in proj
       IF ( PRESENT(lat1) ) THEN
          IF ( ABS(lat1) .GT. 90. ) THEN
-            PRINT '(A)', 'Latitude of origin corner required as follows:'
-            PRINT '(A)', '    -90N <= lat1 < = 90.N'
+            CALL mpas_log_write('Latitude of origin corner required as follows:', messageType=MPAS_LOG_ERR)
+            CALL mpas_log_write('    -90N <= lat1 < = 90.N', messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'MAP_INIT' )
          ENDIF
       ENDIF
@@ -453,8 +455,8 @@ MODULE init_atm_llxy
                iter = iter + 1
             END DO
             IF (abs(dummy_lon1) > 180.) THEN
-               PRINT '(A)', 'Longitude of origin required as follows:'
-               PRINT '(A)', '   -180E <= lon1 <= 180W'
+               CALL mpas_log_write('Longitude of origin required as follows:', messageType=MPAS_LOG_ERR)
+               CALL mpas_log_write('   -180E <= lon1 <= 180W', messageType=MPAS_LOG_ERR)
                CALL llxy_error_fatal ( 'MAP_INIT' )
             ENDIF
          ENDIF
@@ -470,8 +472,8 @@ MODULE init_atm_llxy
                iter = iter + 1
             END DO
             IF (abs(dummy_lon0) > 180.) THEN
-               PRINT '(A)', 'Longitude of pole required as follows:'
-               PRINT '(A)', '   -180E <= lon0 <= 180W'
+               CALL mpas_log_write('Longitude of pole required as follows:', messageType=MPAS_LOG_ERR)
+               CALL mpas_log_write('   -180E <= lon0 <= 180W', messageType=MPAS_LOG_ERR)
                CALL llxy_error_fatal ( 'MAP_INIT' )
             ENDIF
          ENDIF
@@ -479,7 +481,7 @@ MODULE init_atm_llxy
   
       IF ( PRESENT(dx) ) THEN
          IF ((dx .LE. 0.).AND.(proj_code .NE. PROJ_LATLON)) THEN
-            PRINT '(A)', 'Require grid spacing (dx) in meters be positive'
+            CALL mpas_log_write('Require grid spacing (dx) in meters be positive', messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'MAP_INIT' )
          ENDIF
       ENDIF
@@ -494,8 +496,8 @@ MODULE init_atm_llxy
                iter = iter + 1
             END DO
             IF (abs(dummy_stdlon) > 180.) THEN
-               PRINT '(A)', 'Need orientation longitude (stdlon) as: '
-               PRINT '(A)', '   -180E <= stdlon <= 180W' 
+               CALL mpas_log_write('Need orientation longitude (stdlon) as: ', messageType=MPAS_LOG_ERR)
+               CALL mpas_log_write('   -180E <= stdlon <= 180W' , messageType=MPAS_LOG_ERR)
                CALL llxy_error_fatal ( 'MAP_INIT' )
             ENDIF
          ENDIF
@@ -503,7 +505,7 @@ MODULE init_atm_llxy
   
       IF ( PRESENT(truelat1) ) THEN
          IF (ABS(truelat1).GT.90.) THEN
-            PRINT '(A)', 'Set true latitude 1 for all projections'
+            CALL mpas_log_write('Set true latitude 1 for all projections', messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'MAP_INIT' )
          ENDIF
       ENDIF
@@ -598,7 +600,7 @@ MODULE init_atm_llxy
       REAL (KIND=RKIND), INTENT(OUT)                    :: j
   
       IF (.NOT.proj%init) THEN
-         PRINT '(A)', 'You have not called map_set for this projection'
+         CALL mpas_log_write('You have not called map_set for this projection', messageType=MPAS_LOG_ERR)
          CALL llxy_error_fatal ( 'LATLON_TO_IJ' )
       ENDIF
   
@@ -635,7 +637,7 @@ MODULE init_atm_llxy
             CALL llij_rotlatlon(lat,lon,proj,i,j)
    
          CASE DEFAULT
-            PRINT '(A,I2)', 'Unrecognized map projection code: ', proj%code
+            CALL mpas_log_write('Unrecognized map projection code: $i', intArgs=(/proj%code/), messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'LATLON_TO_IJ' )
     
       END SELECT
@@ -657,7 +659,7 @@ MODULE init_atm_llxy
       REAL (KIND=RKIND), INTENT(OUT)                   :: lon
   
       IF (.NOT.proj%init) THEN
-         PRINT '(A)', 'You have not called map_set for this projection'
+         CALL mpas_log_write('You have not called map_set for this projection', messageType=MPAS_LOG_ERR)
          CALL llxy_error_fatal ( 'IJ_TO_LATLON' )
       ENDIF
       SELECT CASE (proj%code)
@@ -690,7 +692,7 @@ MODULE init_atm_llxy
             CALL ijll_rotlatlon(i, j, proj, lat, lon)
    
          CASE DEFAULT
-            PRINT '(A,I2)', 'Unrecognized map projection code: ', proj%code
+            CALL mpas_log_write('Unrecognized map projection code: $i', intArgs=(/proj%code/), messageType=MPAS_LOG_ERR)
             CALL llxy_error_fatal ( 'IJ_TO_LATLON' )
   
       END SELECT
@@ -1942,10 +1944,10 @@ MODULE init_atm_llxy
       !  Just a sanity check.
  
       IF ( ABS(proj%gauss_lat(1) - proj%lat1) .GT. 0.01 ) THEN
-         PRINT '(A)','Oops, something is not right with the Gaussian latitude computation.'
-         PRINT '(A,F8.3,A)','The input data gave the starting latitude as ',proj%lat1,'.'
-         PRINT '(A,F8.3,A)','This routine computed the starting latitude as +-',ABS(proj%gauss_lat(1)),'.'
-         PRINT '(A,F8.3,A)','The difference is larger than 0.01 degrees, which is not expected.'
+         CALL mpas_log_write('Oops, something is not right with the Gaussian latitude computation.', messageType=MPAS_LOG_ERR)
+         CALL mpas_log_write('The input data gave the starting latitude as $r.', realArgs=(/proj%lat1/), messageType=MPAS_LOG_ERR)
+         CALL mpas_log_write('This routine computed the starting latitude as +-$r.', realArgs=(/ABS(proj%gauss_lat(1))/), messageType=MPAS_LOG_ERR)
+         CALL mpas_log_write('The difference is larger than 0.01 degrees, which is not expected.', messageType=MPAS_LOG_ERR)
          CALL llxy_error_fatal ( 'Gaussian_latitude_computation' )
       END IF
  
@@ -2208,7 +2210,7 @@ MODULE init_atm_llxy
          !  Everything still OK?
   
          IF ( .NOT. found ) THEN
-            PRINT '(A)','Troubles in river city.  No bounding values of latitude found in the Gaussian routines.'
+            CALL mpas_log_write('Troubles in river city.  No bounding values of latitude found in the Gaussian routines.')
             CALL llxy_error_fatal ( 'Gee_no_bounding_lats_Gaussian' )
          END IF
  
@@ -2223,13 +2225,11 @@ MODULE init_atm_llxy
 
    SUBROUTINE llxy_error_fatal(mesg)
 
-      USE mpas_abort, ONLY : mpas_dmpar_global_abort
-
       IMPLICIT NONE
 
       CHARACTER (LEN=*), INTENT(IN) :: mesg
 
-      CALL mpas_dmpar_global_abort(trim(mesg))
+      CALL mpas_log_write(trim(mesg), messageType=MPAS_LOG_CRIT)
 
    END SUBROUTINE llxy_error_fatal
   

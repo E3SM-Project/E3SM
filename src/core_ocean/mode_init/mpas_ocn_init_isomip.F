@@ -185,7 +185,7 @@ contains
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      if ( on_a_sphere ) call mpas_dmpar_global_abort(&
+      if ( on_a_sphere ) call mpas_log_write(&
            'MPAS-ocean: ERROR: The ISOMIP configuration can only be applied to a planar mesh. Exiting...')
 
       ySouth = config_isomip_southern_boundary
@@ -355,7 +355,7 @@ contains
           end if
 
           if(.not. associated(activeTracers)) then
-            write(stderrUnit,*) 'ERROR: isomip test case needs activeTracers package to be active.'
+            call mpas_log_write( 'ERROR: isomip test case needs activeTracers package to be active.')
             return
           end if
 
@@ -400,7 +400,7 @@ contains
       call ocn_init_ssh_and_landIcePressure_vertical_grid(domain, iErr)
 
       if(iErr .ne. 0) then
-        write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_landIcePressure_vertical_grid failed.'
+        call mpas_log_write( 'ERROR: ocn_init_ssh_and_landIcePressure_vertical_grid failed.')
         return
       end if
 
@@ -409,7 +409,7 @@ contains
       call ocn_init_ssh_and_landIcePressure_balance(domain, iErr)
 
       if(iErr .ne. 0) then
-         write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_landIcePressure_balance failed.'
+         call mpas_log_write( 'ERROR: ocn_init_ssh_and_landIcePressure_balance failed.')
          return
       end if
 
@@ -421,7 +421,7 @@ contains
         call ocn_compute_Haney_number(domain, iErr)
 
         if(iErr .ne. 0) then
-           write(stderrUnit,*) 'ERROR: ocn_compute_Haney_number failed.'
+           call mpas_log_write( 'ERROR: ocn_compute_Haney_number failed.')
            return
         end if
 
@@ -470,7 +470,7 @@ contains
       if(config_vert_levels <= 0 .and. config_isomip_vert_levels > 0) then
          config_vert_levels = config_isomip_vert_levels
       else if (config_vert_levels <= 0) then
-         write(stderrUnit,*) 'ERROR: Validation failed for isomip. Not given a usable value for vertical levels.'
+         call mpas_log_write( 'ERROR: Validation failed for isomip. Not given a usable value for vertical levels.')
          iErr = 1
       end if
 
@@ -478,7 +478,7 @@ contains
 
       if((trim(config_isomip_vertical_level_distribution) .ne. "constant") &
          .and. (trim(config_isomip_vertical_level_distribution) .ne. "boundary_layer"))  then
-         write(stderrUnit,*) 'ERROR: Validation failed for isomip. Bad vertical level distribution.'
+         call mpas_log_write( 'ERROR: Validation failed for isomip. Bad vertical level distribution.')
          iErr = 1
          return
       end if

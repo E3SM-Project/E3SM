@@ -23,10 +23,9 @@
 
         use mpas_kind_types
         use mpas_derived_types
-        use mpas_io_units
         use mpas_dmpar
         use mpas_threading
-        use mpas_abort, only : mpas_dmpar_global_abort
+        use mpas_log
 
 #ifdef MPAS_PERF_MOD_TIMERS
         use perf_mod
@@ -272,15 +271,13 @@
           ! Timer to stop should be timer_root % current_timer, since you should only be allowed to stop the most 
           ! recently started timer
           if ( .not. associated(timer_root % current_timer) ) then
-             write(stderrUnit, *) 'ERROR: Trying to stop a timer when no timer has been started.'
-             call mpas_dmpar_global_abort('ERROR: Incorrect timer usage')
+             call mpas_log_write('Trying to stop a timer when no timer has been started.', MPAS_LOG_CRIT)
           end if
 
           if ( .not. timer_root % current_timer % nlen == nlen ) then
              if ( .not. timer_root % current_timer % timer_name(1:timer_root % current_timer % nlen) == trimmed_name(1:nlen) ) then
-                write(stderrUnit, * ) 'ERROR: Trying to stop timer ', trim(trimmed_name), ' when ', &
-                                      trim(timer_root % current_timer % timer_name), ' is the most recently started timer.'
-                call mpas_dmpar_global_abort('ERROR: Incorrect timer usage')
+                call mpas_log_write('Trying to stop timer ' // trim(trimmed_name) // ' when ' // &
+                           trim(timer_root % current_timer % timer_name) // ' is the most recently started timer.', MPAS_LOG_CRIT)
              end if
           end if
 
@@ -326,25 +323,29 @@
        subroutine mpas_timer_write_header()!{{{
 
 #ifdef MPAS_NATIVE_TIMERS
-          write(stdoutUnit, *) ''
-          write(stdoutUnit, *) ''
-          write(stdoutUnit, *) ' Timer information: '
-          write(stdoutUnit, *) '    Globals are computed across all threads and processors'
-          write(stdoutUnit, *) ''
-          write(stdoutUnit, *) ' Columns:'
-          write(stdoutUnit, *) '    total time: Global max of accumulated time spent in timer'
-          write(stdoutUnit, *) '    calls: Total number of times this timer was started / stopped.'
-          write(stdoutUnit, *) '    min: Global min of time spent in a single start / stop'
-          write(stdoutUnit, *) '    max: Global max of time spent in a single start / stop'
-          write(stdoutUnit, *) '    avg: Global max of average time spent in a single start / stop'
-          write(stdoutUnit, *) '    pct_tot: Percent of the timer at level 1'
-          write(stdoutUnit, *) '    pct_par: Percent of the parent timer (one level up)'
-          write(stdoutUnit, *) '    par_eff: Parallel efficiency, global average total time / global max total time'
-          write(stdoutUnit, *) ''
-          write(stdoutUnit, *) ''
 
-          write(stdoutUnit,'(3x, a10, 34x, a15, a12, a11, a15, a15, a13, a10, a12)') 'timer_name', 'total', 'calls', 'min', 'max', &
+          character(len=StrKIND) :: msg
+
+          call mpas_log_write('')
+          call mpas_log_write('')
+          call mpas_log_write(' Timer information: ')
+          call mpas_log_write('    Globals are computed across all threads and processors')
+          call mpas_log_write('')
+          call mpas_log_write(' Columns:')
+          call mpas_log_write('    total time: Global max of accumulated time spent in timer')
+          call mpas_log_write('    calls: Total number of times this timer was started / stopped.')
+          call mpas_log_write('    min: Global min of time spent in a single start / stop')
+          call mpas_log_write('    max: Global max of time spent in a single start / stop')
+          call mpas_log_write('    avg: Global max of average time spent in a single start / stop')
+          call mpas_log_write('    pct_tot: Percent of the timer at level 1')
+          call mpas_log_write('    pct_par: Percent of the parent timer (one level up)')
+          call mpas_log_write('    par_eff: Parallel efficiency, global average total time / global max total time')
+          call mpas_log_write('')
+          call mpas_log_write('')
+
+          write(msg,'(3x, a10, 34x, a15, a12, a11, a15, a15, a13, a10, a12)') 'timer_name', 'total', 'calls', 'min', 'max', &
                     'avg', 'pct_tot', 'pct_par', 'par_eff'
+          call mpas_log_write(msg)
 #endif
 
         end subroutine mpas_timer_write_header!}}}
@@ -369,6 +370,7 @@
 
           real (kind=RKIND) :: percent_inc, percent_exc, efficiency
           real (kind=RKIND) :: global_time, global_max_total, global_ave_total
+          character(len=StrKIND) :: msg
 
 #ifdef MPAS_GPTL_TIMERS
 #ifdef MPAS_DEBUG
@@ -393,7 +395,7 @@
 
           do while ( associated(current_timer) )
              if ( current_timer % running(1) ) then
-                write(stderrUnit, *) 'ERROR: Timer ', trim(current_timer % timer_name), ' is still running.'
+                call mpas_log_write('Timer ' // trim(current_timer % timer_name) // ' is still running.', MPAS_LOG_ERR)
              end if
 
              if ( .not. current_timer % printed ) then
@@ -444,10 +446,11 @@
                 end if
 
                 ! Print current_timer
-                write(stdoutUnit,'(i2, 1x, a45, f15.5, i10, 3f15.5, 1x, f8.2, 3x, f8.2, 3x, f8.2)') levels, indentation(1:levels-1) // &
+                write(msg,'(i2, 1x, a45, f15.5, i10, 3f15.5, 1x, f8.2, 3x, f8.2, 3x, f8.2)') levels, indentation(1:levels-1) // &
                           current_timer % timer_name, current_timer % total_time(1), current_timer % calls, &
                           current_timer % min_time(1), current_timer % max_time(1), current_timer % avg_time(1), &
                           percent_inc * 100.0_RKIND, percent_exc * 100.0_RKIND, efficiency
+                call mpas_log_write(msg)
                 current_timer % printed = .true.
              end if
 

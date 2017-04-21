@@ -30,6 +30,7 @@ module ocn_time_integration_split
    use mpas_timer
    use mpas_threading
    use mpas_timekeeping
+   use mpas_log
 
    use ocn_tendency
    use ocn_diagnostics
@@ -1913,12 +1914,10 @@ module ocn_time_integration_split
       end if
 
       if (trim(config_time_integrator) == 'split_explicit') then
-         write(stderrUnit, *) ''
-         write(stderrUnit, *) '*******************************************************************************'
-         write(stderrUnit, *) 'INFO: The split explicit time integration is configured to use: ', nBtrSubcycles, &
-            'barotropic subcycles'
-         write(stderrUnit, *) '*******************************************************************************'
-         write(stderrUnit, *) ''
+         call mpas_log_write( '*******************************************************************************')
+         call mpas_log_write( 'The split explicit time integration is configured to use: $i barotropic subcycles', &
+            intArgs=(/ nBtrSubcycles /) )
+         call mpas_log_write( '*******************************************************************************')
       end if
 
       if ( .not. config_do_restart ) then
@@ -1956,12 +1955,10 @@ module ocn_time_integration_split
 
             elseif (trim(config_time_integrator) == 'split_explicit') then
 
-               write(stderrUnit, *) ''
-               write(stderrUnit, *) '*******************************************************************************'
-               write(stderrUnit, *) 'INFO: The split explicit time integration is configured to use: ', nBtrSubcycles, &
-                  ' barotropic subcycles'
-               write(stderrUnit, *) '*******************************************************************************'
-               write(stderrUnit, *) ''
+               call mpas_log_write( '*******************************************************************************')
+               call mpas_log_write( 'The split explicit time integration is configured to use: $i barotropic subcycles', &
+                  intArgs=(/ nBtrSubcycles /) )
+               call mpas_log_write( '*******************************************************************************')
 
                if (config_filter_btr_mode) then
                   do iCell = 1, nCells

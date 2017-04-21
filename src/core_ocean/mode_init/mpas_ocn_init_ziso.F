@@ -157,7 +157,7 @@ contains
     call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
     if(config_init_configuration .ne. trim('ziso')) return
 
-    write(stderrUnit,*) 'Starting initialization of Zonally periodic Idealized Southern Ocean (ZISO)'
+    call mpas_log_write( 'Starting initialization of Zonally periodic Idealized Southern Ocean (ZISO)')
 
     ! get config variables !{{{
     call mpas_pool_get_config(domain % configs, 'config_use_debugTracers', config_use_debugTracers)
@@ -203,7 +203,7 @@ contains
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
     ! test if configure settings are invalid
-    if ( on_a_sphere ) call mpas_dmpar_global_abort('MPAS-ocean: ERROR: The ZISO configuration can only be ' &
+    if ( on_a_sphere ) call mpas_log_write('MPAS-ocean: ERROR: The ZISO configuration can only be ' &
                                                  // 'applied to a planar mesh. Exiting...')
 
     ! Define interface locations
@@ -295,17 +295,17 @@ contains
        call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
        ! tests to make sure these are allocated
        if (.not. associated(windStressZonal) .or. .not. associated(windStressMeridional)) then
-         call mpas_dmpar_global_abort("MPAS-ocean: windStressZonal and / or windStressMeridional are not allocated")
+         call mpas_log_write("MPAS-ocean: windStressZonal and / or windStressMeridional are not allocated")
        end if
 
        call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
        if (.not. associated(tracersSurfaceRestoringFieldsPool)) then
-         call mpas_dmpar_global_abort("MPAS-ocean: tracersSurfaceRestoringFieldsPool not allocated.")
+         call mpas_log_write("MPAS-ocean: tracersSurfaceRestoringFieldsPool not allocated.")
        end if
        call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
        if (.not. associated(activeTracersPistonVelocity)) then
-         call mpas_dmpar_global_abort("MPAS-ocean: activeTracersPistonVelocity not allocated.")
+         call mpas_log_write("MPAS-ocean: activeTracersPistonVelocity not allocated.")
        end if
        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, &
                  'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
@@ -499,7 +499,7 @@ contains
              distanceY = config_ziso_meridional_extent/2.0_RKIND-yCell(iCell)
              distance = sqrt(distanceY**2+distanceX**2)
              scaleFactor = exp(-distance/config_ziso_meridional_extent*20.0_RKIND)
-             if (scaleFactor.gt.0.9_RKIND) write(stderrUnit,*) ' frazil production likely at this cell: ', iCell
+             if (scaleFactor.gt.0.9_RKIND) call mpas_log_write( ' frazil production likely at this cell: $i', intArgs=(/ iCell /) )
              do k = 1, nVertLevels
                 frazil_temperature = config_ziso_frazil_temperature_anomaly &
                     + config_ziso_initial_temp_t2 * tanh(refZMid(k) / config_ziso_initial_temp_h1) &
@@ -517,11 +517,8 @@ contains
 
        end do  ! do iCell
 
-       ! write warning to stderrUnit
        if(config_ziso_frazil_enable) then
-         write(stderrUnit,*)
-         write(stderrUnit,*) ' this test case is configured for the testing of the frazil algorithm'
-         write(stderrUnit,*)
+         call mpas_log_write( ' This test case is configured for the testing of the frazil algorithm')
        endif
 
        ! Set Coriolis parameters, if other than zero
@@ -538,7 +535,7 @@ contains
        block_ptr => block_ptr % next
     end do  ! do while(associated(block_ptr))
 
-    write(stderrUnit,*) 'Finishing initialization of Zonally periodic Idealized Southern Ocean (ZISO)'
+    call mpas_log_write( 'Finishing initialization of Zonally periodic Idealized Southern Ocean (ZISO)')
     !--------------------------------------------------------------------
 
   end subroutine ocn_init_setup_ziso!}}}
@@ -576,7 +573,7 @@ contains
       if(config_vert_levels <= 0 .and. config_ziso_vert_levels > 0) then
          config_vert_levels = config_ziso_vert_levels
       else if (config_vert_levels <= 0) then
-         write(stderrUnit,*) 'ERROR: Validation failed for ziso. Not given a usable value for vertical levels.'
+         call mpas_log_write( 'ERROR: Validation failed for ziso. Not given a usable value for vertical levels.')
          iErr = 1
       end if
 

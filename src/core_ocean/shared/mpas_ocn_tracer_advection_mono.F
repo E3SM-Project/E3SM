@@ -484,11 +484,15 @@ module ocn_tracer_advection_mono
           do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
               if(tracer_new(k,iCell) < tracer_min(k, iCell)-eps) then
-                write(stderrUnit,*) 'Minimum out of bounds on tracer ', iTracer, tracer_min(k, iCell), tracer_new(k,iCell)
+                 call mpas_log_write( &
+                    'Minimum out of bounds on tracer: $i $f $f ', &
+                    MPAS_LOG_WARN, intArgs=(/iTracer/), realArgs=(/ tracer_min(k, iCell), tracer_new(k,iCell) /) )
               end if
 
               if(tracer_new(k,iCell) > tracer_max(k,iCell)+eps) then
-                write(stderrUnit,*) 'Maximum out of bounds on tracer ', iTracer, tracer_max(k, iCell), tracer_new(k,iCell)
+                 call mpas_log_write( &
+                    'Maximum out of bounds on tracer: $i $f $f ', &
+                    MPAS_LOG_WARN, intArgs=(/iTracer/), realArgs=(/ tracer_max(k, iCell), tracer_new(k,iCell) /) )
               end if
             end do
           end do
@@ -565,12 +569,16 @@ module ocn_tracer_advection_mono
       else
           vert2ndOrder = .true.
           if(vert_adv_order /= 2) then
-            write(stderrUnit,*) 'Invalid value for vert_adv_order, defaulting to 2nd order'
+             call mpas_log_write( &
+                'Invalid value for vert_adv_order, defaulting to 2nd order', &
+                MPAS_LOG_WARN)
           end if
       end if
 
       if (nHalos < 3) then
-        call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Monotonic advection cannot be used with less than 3 halos.')
+         call mpas_log_write( &
+            'ERROR: Monotonic advection cannot be used with less than 3 halos.', &
+            MPAS_LOG_CRIT)
       end if
 
       positiveDzDk = dzdk_positive

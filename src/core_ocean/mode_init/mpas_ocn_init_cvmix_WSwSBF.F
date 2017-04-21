@@ -461,8 +461,8 @@ contains
       if(config_vert_levels <= 0 .and. config_cvmix_WSwSBF_vert_levels > 0) then
          config_vert_levels = config_cvmix_WSwSBF_vert_levels
       else if(config_vert_levels <= 0) then
-         write(stderrUnit,*) 'ERROR: Validation failed for CVMix WSwSBF unit test case. Not given a usable value for ' &
-                          // 'vertical levels.'
+         call mpas_log_write( 'ERROR: Validation failed for CVMix WSwSBF unit test case. Not given a usable value for ' &
+                          // 'vertical levels.')
          iErr = 1
       end if
 

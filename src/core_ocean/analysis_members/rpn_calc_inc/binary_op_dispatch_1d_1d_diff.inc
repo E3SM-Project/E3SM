@@ -3,7 +3,7 @@
       else
         if (type_checking) then
           if (stack(stack_pointer - 1) % d1 % isDecomposed) then
-            call mpas_dmpar_global_abort(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
+            call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
             trim(op_name) // ' in expression #' // &
             trim(expression_names(exp_number)) // ' tried to operate ' // &
             'on two 1d arrays, with different dimensions, where the first ' // &

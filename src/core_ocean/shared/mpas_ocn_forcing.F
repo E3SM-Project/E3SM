@@ -23,7 +23,7 @@ module ocn_forcing
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_timekeeping
-   use mpas_io_units
+   use mpas_log
    use mpas_dmpar
    use ocn_constants
 

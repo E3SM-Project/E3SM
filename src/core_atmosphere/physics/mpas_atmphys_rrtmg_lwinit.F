@@ -14,6 +14,7 @@
  use mpas_derived_types
  use mpas_atmphys_constants
  use mpas_atmphys_utilities
+ use mpas_log, only : mpas_log_write
 
 !wrf physics
  use module_ra_rrtmg_lw
@@ -210,7 +211,7 @@
          fracrefao, fracrefbo, kao, kbo, kao_mn2, kbo_mn2, selfrefo, forrefo
 
       if(istat /= 0) then
-         write(0,*)
+         call mpas_log_write('')
          write(errmess,'(A,I4)') 'module_ra_rrtmg_lw: error reading RRTMG_LW_DATA on unit ', &
                rrtmg_unit
          call physics_error_fatal(errmess)

@@ -25,6 +25,7 @@ module li_time_integration
    use mpas_pool_routines
    use mpas_constants
    use mpas_dmpar
+   use mpas_log
    use li_time_integration_fe
    use li_setup
 
@@ -114,11 +115,11 @@ module li_time_integration
       case ('forward_euler')
          call li_time_integrator_forwardeuler(domain, dt, err_tmp)
       case ('rk4')
-         write(0,*) trim(config_time_integration), ' is not currently supported.'
+         call mpas_log_write(trim(config_time_integration) // ' is not currently supported.', MPAS_LOG_ERR)
          call mpas_dmpar_abort(domain % dminfo)
          err_tmp = 1
       case default
-         write(0,*) trim(config_time_integration), ' is not a valid land ice time integration option.'
+         call mpas_log_write(trim(config_time_integration) // ' is not a valid land ice time integration option.', MPAS_LOG_ERR)
          err_tmp = 1
       end select
       err = ior(err,err_tmp)
@@ -141,7 +142,7 @@ module li_time_integration
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in li_timestep."
+          call mpas_log_write("An error has occurred in li_timestep.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------

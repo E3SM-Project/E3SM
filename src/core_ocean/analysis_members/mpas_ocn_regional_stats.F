@@ -702,7 +702,7 @@ character (len=StrKIND) function operator_naming(enum)
   else if (enum == SOS_OP) then
     operator_naming = SOS_TOKEN
   else
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: The impossible happened. ' // &
       'Tried creating an operator of unknown kind in regional stats AM.')
   end if
@@ -727,7 +727,7 @@ character (len=StrKIND) function element_naming(enum)
   else if (enum == VERTEX_REGION) then
     element_naming = VERTEX_TOKEN
   else
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: The impossible happened. ' // &
       'Tried creating an element of unknown kind in regional stats AM.')
   end if
@@ -752,7 +752,7 @@ character (len=StrKIND) function dimension_naming(elem_type)
   else if (elem_type == VERTEX_REGION) then
     dimension_naming = VERTEX_DIM
   else
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: The impossible happened. ' // &
       'Tried creating a element dimension name of unknown kind in ' // &
       'regional stats AM.')
@@ -787,21 +787,21 @@ logical function check_real_element_dim(all_fields, field_name, elem_name)
   call mpas_pool_get_field_info(all_fields, field_name, info)
 
   if (info % fieldType /= MPAS_POOL_REAL) then
-    write(stdErrUnit,*) &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' WARNING: field "' // &
       trim(field_name) // '" listed in the ' // &
       'output stream, for regional stats analysis member, ' // &
       'is not real. Regional stats will not be applied to ' // &
-      'this field.'
+      'this field.')
 
     check_real_element_dim = .false.
   else if (info % nDims < 1) then
-    write(stdErrUnit,*) &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' WARNING: field "' // &
       trim(field_name) // '" listed in the ' // &
       'output stream, for regional stats analysis member, ' // &
       'is 0D. Regional stats will not be applied to ' // &
-      'this field.'
+      'this field.')
 
     check_real_element_dim = .false.
   else
@@ -823,12 +823,12 @@ logical function check_real_element_dim(all_fields, field_name, elem_name)
     end if
 
     if (.not. has_elem) then
-      write(stdErrUnit,*) &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' WARNING: field "' // &
         trim(field_name) // '" listed in the output stream, ' // &
         'for regional stats analysis member, does not have ' // &
         trim(elem_name) // ' as its last dimension. Regional stats ' // &
-        'will not be applied to this field.'
+        'will not be applied to this field.')
     end if
 
     check_real_element_dim = has_elem
@@ -913,7 +913,7 @@ character (len=StrKIND) function mask_naming(elem_type)
     mask_naming = &
       trim(MASK_DATA_PREFIX) // trim(VERTEX_CAMEL) // trim(MASK_DATA_SUFFIX)
   else
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: The impossible happened. ' // &
       'Tried to create a name for a mask field of unknown type.')
   end if
@@ -944,7 +944,7 @@ character (len=StrKIND) function fix_region_name(string)
   tl = len_trim(copy)
 
   if (tl < 1) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: a region name, from the  ' // &
       'region mask input for the regional stats analysis member, the ' // &
       'is an empty string.')
@@ -1247,19 +1247,19 @@ subroutine start_state(domain, instance, err)
     MAX_REGIONS_SUFFIX, max_regions_per)
 
   if (number_of_regions < 1) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: number of regions dimension is ' // &
       'less than 1 for the regional stats analysis member.')
   end if
 
   if (number_of_groups < 1) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: number of region groups ' // &
       'dimension is less than 1 for the regional stats analysis member.')
   end if
 
   if (max_regions_per < 1) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: maximum number of regions per ' // &
       'group dimension is less than 1 for the regional stats analysis member.')
   end if
@@ -1290,7 +1290,7 @@ subroutine start_state(domain, instance, err)
     regions % operation = SOS_OP
   else
     ! error if unknown operation
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: unknown operation in ' // &
       'regional stats analysis member configuration.')
   end if
@@ -1312,7 +1312,7 @@ subroutine start_state(domain, instance, err)
     regions % region_element = VERTEX_REGION
   else
     ! error if unknown element type
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: unknown region element type in ' // &
       'regional stats analysis member configuration.')
   end if
@@ -1339,14 +1339,14 @@ subroutine start_state(domain, instance, err)
     call mpas_pool_get_field_info(maskPool, regions % masking_field, info)
 
     if (info % fieldType /= MPAS_POOL_INTEGER) then
-      call mpas_dmpar_global_abort( &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' ERROR: the mask ' // &
         trim(regions % masking_field) // &
         ' for the regional stats AM is not a integer field.')
     end if
 
     if (info % nDims /= 2) then
-      call mpas_dmpar_global_abort( &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' ERROR: the mask ' // &
         trim(regions % masking_field) // &
         ' for the regional stats AM is not a 2D field.')
@@ -1355,7 +1355,7 @@ subroutine start_state(domain, instance, err)
     call mpas_pool_get_field(maskPool, regions % masking_field, mask)
 
     if (.not. check_element_dim(mask % dimNames, elem_name)) then
-      call mpas_dmpar_global_abort( &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' ERROR: the mask ' // &
         trim(regions % masking_field) // &
         ' for the regional stats AM needs to have ' // trim(elem_name) // &
@@ -1377,7 +1377,7 @@ subroutine start_state(domain, instance, err)
     regions % function_oned = MUL_FUNC
   else
     ! error if unknown operation
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // &
       ' ERROR: unknown 1d weighting function in ' // &
       'regional stats analysis member configuration.')
@@ -1385,7 +1385,7 @@ subroutine start_state(domain, instance, err)
 
   if (regions % function_oned == MUL_FUNC .and. &
       (regions % operation == MIN_OP .or. regions % operation == MAX_OP)) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: 1d weighting function in ' // &
       'regional stats analysis member can only "mul" if the' // &
       'if the operation is "avg", "sum", or "sos"')
@@ -1405,7 +1405,7 @@ subroutine start_state(domain, instance, err)
     regions % function_twod = MUL_FUNC
   else
     ! error if unknown operation
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // &
       ' ERROR: unknown 2d weighting function in ' // &
       'regional stats analysis member configuration.')
@@ -1413,7 +1413,7 @@ subroutine start_state(domain, instance, err)
 
   if (regions % function_twod == MUL_FUNC .and. &
       (regions % operation == MIN_OP .or. regions % operation == MAX_OP)) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: 2d weighting function in ' // &
       'regional stats analysis member can only "mul" if the' // &
       'if the operation is "avg", "sum", or "sos"')
@@ -1439,7 +1439,7 @@ subroutine start_state(domain, instance, err)
   end do
 
   if (regions % group_index == 0) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: unable to find the region group ' // &
       'named "' // trim(config_results) // '" in the region mask input stream')
   end if
@@ -1453,7 +1453,7 @@ subroutine start_state(domain, instance, err)
   call mpas_pool_get_config(domain % configs, field_name, config_results)
 
   if (config_results == NONE_TOKEN) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: input stream for regional ' // &
       'stats AM cannot be "none". It needs to point to the region/mask stream.')
   end if
@@ -1463,14 +1463,14 @@ subroutine start_state(domain, instance, err)
   call mpas_pool_get_config(domain % configs, field_name, config_results_2)
 
   if (config_results == NONE_TOKEN) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: restart stream for regional ' // &
       'stats AM cannot be "none". It needs to point to the region/mask stream.')
   end if
 
   ! make sure input and restart are the same
   if (config_results /= config_results_2) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: the input and restart stream ' // &
       'for regional stats AM need to be the same to ensure that it ' // &
       'has the same behavior on start and restart.')
@@ -1487,14 +1487,14 @@ subroutine start_state(domain, instance, err)
       regions % vertical_mask, info)
 
     if (info % fieldType /= MPAS_POOL_INTEGER) then
-      call mpas_dmpar_global_abort( &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' ERROR: the vertical mask ' // &
         trim(regions % vertical_mask) // &
         'for the regional stats AM is not an integer field.')
     end if
 
     if (info % nDims /= 2) then
-      call mpas_dmpar_global_abort( &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' ERROR: the vertical mask ' // &
         trim(regions % vertical_mask) // &
         ' for the regional stats AM is not a 2D field.')
@@ -1504,7 +1504,7 @@ subroutine start_state(domain, instance, err)
       regions % vertical_mask, mask)
 
     if (.not. check_element_dim(mask % dimNames, elem_name)) then
-      call mpas_dmpar_global_abort( &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' ERROR: the vertical mask ' // &
         trim(regions % vertical_mask) // &
         ' for the regional stats AM needs to have ' // trim(elem_name) // &
@@ -1512,7 +1512,7 @@ subroutine start_state(domain, instance, err)
     end if
 
     if (check_vertical_dim(mask % dimNames, regions % vertical_dim) == 0) then
-      call mpas_dmpar_global_abort( &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' ERROR: the vertical mask ' // &
         trim(regions % vertical_mask) // &
         ' for the regional stats AM does not have ' // &
@@ -1530,7 +1530,7 @@ subroutine start_state(domain, instance, err)
 
   if (regions % function_oned == ID_FUNC) then
     if (regions % weights_oned /= NONE_TOKEN) then
-      call mpas_dmpar_global_abort( &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' ERROR: 1d weighting field "' // &
         trim(regions % weights_oned) // '" is not set to "none" ' // &
         'when the 1d weighting function is set to "id" in ' // &
@@ -1539,7 +1539,7 @@ subroutine start_state(domain, instance, err)
   else
     ! weighting field & info
     if (regions % weights_oned == NONE_TOKEN) then
-      call mpas_dmpar_global_abort( &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' ERROR: 1d weighting field "' // &
         trim(regions % weights_oned) // '" is set to "none" ' // &
         'when the 1d weighting function is something other than "id" in ' // &
@@ -1549,7 +1549,7 @@ subroutine start_state(domain, instance, err)
         regions % weights_oned, info)
 
       if (info % nDims /= 1) then
-        call mpas_dmpar_global_abort( &
+        call mpas_log_write( &
           trim(CURRENT_CORE_NAME) // &
           ' ERROR: the listed 1d weighting field "' // &
           trim(regions % weights_oned) // &
@@ -1562,14 +1562,14 @@ subroutine start_state(domain, instance, err)
           regions % weights_oned, oned_field)
 
         if (.not. check_element_dim(oned_field % dimNames, elem_name)) then
-          call mpas_dmpar_global_abort( &
+          call mpas_log_write( &
             trim(CURRENT_CORE_NAME) // ' ERROR: 1d weighting field "' // &
             regions % weights_oned // &
             '" in regional stats AM needs to have ' // &
             elem_name // ' dimensioni as its last dimension.')
         end if
       else
-        call mpas_dmpar_global_abort( &
+        call mpas_log_write( &
           trim(CURRENT_CORE_NAME) // ' ERROR: 1d weighting field "' // &
           trim(regions % weights_oned) // '" listed in the ' // &
           'namelist, for regional stats analysis member ' // &
@@ -1585,14 +1585,14 @@ subroutine start_state(domain, instance, err)
 
   if (.not. active_vertical) then
     if (regions % function_twod /= ID_FUNC) then
-      call mpas_dmpar_global_abort( &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' ERROR: vertical dimension is not set ' // &
         'in regional stats AM when the 2d weight function is something ' // &
         'than "id"')
     end if
   else if (regions % function_twod == ID_FUNC) then
     if (regions % weights_twod /= NONE_TOKEN) then
-      call mpas_dmpar_global_abort( &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' ERROR: 2d weighting field "' // &
         trim(regions % weights_twod) // '" is not set to "none"' // &
         'when the 2d weighting function is set to "id", in ' // &
@@ -1601,7 +1601,7 @@ subroutine start_state(domain, instance, err)
   else
     ! weighting field & info
     if (regions % weights_twod == NONE_TOKEN) then
-      call mpas_dmpar_global_abort( &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' ERROR: 2d weighting field "' // &
         trim(regions % weights_twod) // '" is set to "none"' // &
         'when the 2d weighting function is something other than "id" in ' // &
@@ -1611,7 +1611,7 @@ subroutine start_state(domain, instance, err)
         regions % weights_twod, info)
 
       if (info % nDims /= 2) then
-        call mpas_dmpar_global_abort( &
+        call mpas_log_write( &
           trim(CURRENT_CORE_NAME) // &
           ' ERROR: the listed 2d weighting field "' // &
           trim(regions % weights_twod) // &
@@ -1624,7 +1624,7 @@ subroutine start_state(domain, instance, err)
           regions % weights_twod, twod_field)
 
         if (.not. check_element_dim(twod_field % dimNames, elem_name)) then
-          call mpas_dmpar_global_abort( &
+          call mpas_log_write( &
             trim(CURRENT_CORE_NAME) // ' ERROR: 2d weighting field "' // &
             regions % weights_twod // &
             '" in regional stats AM needs to have ' // &
@@ -1633,7 +1633,7 @@ subroutine start_state(domain, instance, err)
 
         if (check_vertical_dim(twod_field % dimNames, &
             regions % vertical_dim) == 0) then
-          call mpas_dmpar_global_abort( &
+          call mpas_log_write( &
             trim(CURRENT_CORE_NAME) // ' ERROR: 2d weighting field "' // &
             regions % weights_twod // &
             '" in regional stats AM needs to have ' // &
@@ -1641,7 +1641,7 @@ subroutine start_state(domain, instance, err)
             ' vertical dimension as its second to last dimension.')
         end if
       else
-        call mpas_dmpar_global_abort( &
+        call mpas_log_write( &
           trim(CURRENT_CORE_NAME) // ' ERROR: 2d weighting field "' // &
           trim(regions % weights_twod) // '" listed in the ' // &
           'namelist, for regional stats analysis member ' // &
@@ -1660,13 +1660,13 @@ subroutine start_state(domain, instance, err)
   ! verify selection is OK
   last = regions % num_regions_per(regions % group_index)
   if (last > max_regions_per) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: the number of regions for ' // &
       'selected group, in the regional stats analysis member, ' // &
       'is greater than the maximum number of regions dimension.')
   end if
   if (last < 1) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: the number of regions for ' // &
       'selection group, in the regional stats analysis member, ' // &
       'is less than 1.')
@@ -1675,7 +1675,7 @@ subroutine start_state(domain, instance, err)
   do b = 1, last
     v = regions % groups(b, regions % group_index)
     if ((v < 1) .or. (v > number_of_regions)) then
-      call mpas_dmpar_global_abort( &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' ERROR: a region index found ' // &
         'in the list of regions for the selected group in the ' // &
         'regional stats analysis member is out of bounds for the size ' // &
@@ -1693,7 +1693,7 @@ subroutine start_state(domain, instance, err)
   call mpas_pool_get_config(domain % configs, field_name, output_stream_name)
 
   if (output_stream_name == NONE_TOKEN) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: output stream cannot be "none" ' // &
       'for regional stats.')
   end if
@@ -1734,7 +1734,7 @@ subroutine start_state(domain, instance, err)
   end do
 
   if (regions % number_of_variables < 1) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: there are no fields ' // &
       'in the regional stats output stream "' // trim(output_stream_name) // &
       '" that regional stats can be applied to.')
@@ -1958,7 +1958,7 @@ subroutine add_new_field(info, all_fields, inpool, outpool, &
 
   ! duplicate field and add new field to inpool, outpool
   if ((info % nDims == 0) .or. (info % fieldType /= MPAS_POOL_REAL)) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: the impossible happened. ' // &
       'Tried to create an output field for an input field that ' // &
       'regional stats AM cannot support.')
@@ -2063,7 +2063,7 @@ subroutine typed_operate(dminfo, blocklist, regions, variable) !{{{
     else if (regions % operation == SOS_OP) then
       call operate1r_sos(dminfo, blocklist, regions, variable)
     else
-      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
         'the impossible happened - tried to operate with an unknown ' // &
         'operator in the regional stats AM')
     end if
@@ -2099,7 +2099,7 @@ subroutine typed_operate(dminfo, blocklist, regions, variable) !{{{
         call operate2r_sos(dminfo, blocklist, regions, variable)
       end if
     else
-      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
         'the impossible happened - tried to operate with an unknown ' // &
         'operator in the regional stats AM')
     end if
@@ -2135,7 +2135,7 @@ subroutine typed_operate(dminfo, blocklist, regions, variable) !{{{
         call operate3r_sos(dminfo, blocklist, regions, variable)
       end if
     else
-      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
         'the impossible happened - tried to operate with an unknown ' // &
         'operator in the regional stats AM')
     end if
@@ -2171,7 +2171,7 @@ subroutine typed_operate(dminfo, blocklist, regions, variable) !{{{
         call operate4r_sos(dminfo, blocklist, regions, variable)
       end if
     else
-      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
         'the impossible happened - tried to operate with an unknown ' // &
         'operator in the regional stats AM')
     end if
@@ -2207,12 +2207,12 @@ subroutine typed_operate(dminfo, blocklist, regions, variable) !{{{
         call operate5r_sos(dminfo, blocklist, regions, variable)
       end if
     else
-      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
         'the impossible happened - tried to operate with an unknown ' // &
         'operator in the regional stats AM')
     end if
   else
-    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+    call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
       'the impossible happened - tried to operate on a real field "' // &
       trim(variable % input_name) // '"that does not have 1-5 ' // &
       'dimensionality in the regional stats AM')

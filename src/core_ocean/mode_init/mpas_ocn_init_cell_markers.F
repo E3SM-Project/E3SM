@@ -88,8 +88,8 @@ contains
 
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-      if ( on_a_sphere ) write(stderrUnit, *) 'WARNING: Can only mark north boundaries of planar meshes. ' &
-                                           // 'Skipping marking of cells...'
+      if ( on_a_sphere ) call mpas_log_write( 'WARNING: Can only mark north boundaries of planar meshes. ' &
+                                           // 'Skipping marking of cells...')
 
       call mpas_pool_get_array(meshPool, 'yCell', yCell)
       call mpas_pool_get_array(meshPool, 'cullCell', cullCell)
@@ -137,8 +137,8 @@ contains
 
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-      if ( on_a_sphere ) write(stderrUnit, *) 'WARNING: Can only mark north boundaries of planar meshes. ' &
-                                           // 'Skipping marking of cells...'
+      if ( on_a_sphere ) call mpas_log_write( 'WARNING: Can only mark north boundaries of planar meshes. ' &
+                                           // 'Skipping marking of cells...')
 
       call mpas_pool_get_array(meshPool, 'yCell', yCell)
       call mpas_pool_get_array(meshPool, 'cullCell', cullCell)
@@ -186,8 +186,8 @@ contains
 
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-      if ( on_a_sphere ) write(stderrUnit, *) 'WARNING: Can only mark north boundaries of planar meshes. ' &
-                                           // 'Skipping marking of cells...'
+      if ( on_a_sphere ) call mpas_log_write( 'WARNING: Can only mark north boundaries of planar meshes. ' &
+                                           // 'Skipping marking of cells...')
 
       call mpas_pool_get_array(meshPool, 'xCell', xCell)
       call mpas_pool_get_array(meshPool, 'cullCell', cullCell)
@@ -235,8 +235,8 @@ contains
 
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-      if ( on_a_sphere ) write(stderrUnit, *) 'WARNING: Can only mark north boundaries of planar meshes. ' &
-                                           // 'Skipping marking of cells...'
+      if ( on_a_sphere ) call mpas_log_write( 'WARNING: Can only mark north boundaries of planar meshes. ' &
+                                           // 'Skipping marking of cells...')
 
       call mpas_pool_get_array(meshPool, 'xCell', xCell)
       call mpas_pool_get_array(meshPool, 'cullCell', cullCell)

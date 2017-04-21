@@ -17,10 +17,10 @@
 !>  used in implementation of Lagrangian Particles Tracking.
 !-----------------------------------------------------------------------
 #define COMMA ,
-#define LIGHT_DEBUG_WRITE(M) !  write(stderrUnit,*) M
-#define LIGHT_DEBUG_ALL_WRITE(M) !  write(stderrUnit,*) M
-#define LIGHT_WARNING_WRITE(M)  write(stderrUnit,*) 'WARNING: '//M
-#define LIGHT_ERROR_WRITE(M)  write(stderrUnit,*) 'ERROR: '//M
+#define LIGHT_DEBUG_WRITE(Z) !  print *, Z
+#define LIGHT_DEBUG_ALL_WRITE(Z) !  print *, Z
+#define LIGHT_WARNING_WRITE(Z)  print *, Z
+#define LIGHT_ERROR_WRITE(Z)  print *, Z
 
 module ocn_particle_list
 
@@ -477,7 +477,7 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       ! their sending processors
       if(associated(currentBlocks)) then
         nBlocks = size(currentBlocks)
-        !write(stderrUnit,*) 'nBlocks = ', nBlocks, ' currentBlocks = ', currentBlocks
+        !print *,  'nBlocks = ', nBlocks, ' currentBlocks = ', currentBlocks
         allocate(ioProcNeighs(nBlocks))
         do i=1, nBlocks
           call mpas_get_owning_proc(domain % dminfo, currentBlocks(i), ioProcNeighs(i))
@@ -654,9 +654,9 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       call MPI_WaitAll(nsendProcNeighs, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
 #endif
 
-      ! "add" receiving and sending lists into a complete list
+      ! "add" receiving and sending lists into a comple list
       completeList = completeList .or. sendProcSendList
-      !write(stderrUnit,*) 'completeList = ', completeList
+      !print *,  'completeList = ', completeList
 
       ! convert complete list into a unique list of processor numbers
       allocate(intArray(nProcs))
@@ -825,7 +825,7 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
      ! deallocate listPLSend and listPLRecv
      if (copyOnly) then
        ! just empty the list without destroying the particle data
-       !write(stderrUnit,*) 'just emptying the particlelist'
+       !call mpas_log_write( 'just emptying the particlelist')
        call empty_list_particlelists(listPLSend)
      else
        ! remove list of particles as well as particle data because it was just sent to the other processors
@@ -1861,9 +1861,9 @@ integer function count_particlelist_particles(particlelist) !{{{
     type (mpas_particle_list_type), pointer :: ParticleLinkCurr
 
     count_particlelist_particles = 0
-    !write(stderrUnit,*) 'count_particlelist'
+    !call mpas_log_write( 'count_particlelist')
     !if(.not.associated(particlelist)) then
-    !  write(stdoutunit,*) 'particleLinkCurr not associated'
+    !  call mpas_log_write( 'particleLinkCurr not associated')
     !  return
     !end if
 
@@ -1984,9 +1984,9 @@ integer function count_particlelist(particlelist) !{{{
     type (mpas_particle_list_type), pointer :: ParticleLinkCurr
 
     count_particlelist = 0
-    !write(stderrUnit,*) 'count_particlelist'
+    !call mpas_log_write( 'count_particlelist')
     !if(.not.associated(particlelist)) then
-    !  write(stdoutunit,*) 'particleLinkCurr not associated'
+    !  call mpas_log_write( 'particleLinkCurr not associated')
     !  return
     !end if
 
@@ -1996,7 +1996,7 @@ integer function count_particlelist(particlelist) !{{{
     do while (associated(particleLinkCurr))
       ! increment the list
       count_particlelist = count_particlelist + 1
-      !write(stderrUnit,*) 'count_particlelist = ', count_particlelist
+      !print *,  'count_particlelist = ', count_particlelist
       ! get next item on the list
       particleLinkCurr => particleLinkCurr % next
     end do
@@ -2635,7 +2635,7 @@ end subroutine empty_list_particlelists!}}}
       end do
 
       ! get unique array for complete list
-      !if(associated(tempIntegerArray)) write(stderrUnit,*) 'tempIntegerArray = ', tempIntegerArray
+      !if(associated(tempIntegerArray)) print *,  'tempIntegerArray = ', tempIntegerArray
       call uniqueIntegerList(tempIntegerArray, attrData)
 
       if (associated(tempIntegerArray)) deallocate(tempIntegerArray)
@@ -2740,7 +2740,7 @@ end subroutine empty_list_particlelists!}}}
           if(particleProc /= domain % dminfo % my_proc_id) then
             ! we need to move the particle to a list for export to particleProc
             ! get index for array and place particle in list at that index location
-            !write(stderrUnit,*) 'get array index'
+            !call mpas_log_write( 'get array index')
             arrayIndex = find_index(procNeighs, particleProc)
             if(arrayIndex == -1) LIGHT_ERROR_WRITE('Found processor is not on list of "halo" processors!')
             LIGHT_DEBUG_WRITE('ammending particle to processor index  ' COMMA  arrayIndex)
@@ -2769,7 +2769,7 @@ end subroutine empty_list_particlelists!}}}
 
                   particlelisttemp => particlelisttemp % prev
                   ! just need to remove the single link, particle memory needs to stay intact
-                  !write(stderrunit,*) 'deallocating link ', loc(particlelist)
+                  !print *,  'deallocating link ', loc(particlelist)
                   ! deallocate link and get next link
                   deallocate(particlelist)
                   particlelist => particlelisttemp
@@ -2777,7 +2777,7 @@ end subroutine empty_list_particlelists!}}}
                   LIGHT_DEBUG_ALL_WRITE('in tail of list')
                   ! case of tail
                   nullify(particlelisttemp % next)
-                  !write(stderrunit,*) 'deallocating link ', loc(particlelist)
+                  !print *,  'deallocating link ', loc(particlelist)
                   ! deallocate link and get next link
                   deallocate(particlelist)
                   ! no other links to process
@@ -2790,7 +2790,7 @@ end subroutine empty_list_particlelists!}}}
                   nullify(particlelisttemp % prev)
                   deallocate(particlelist)
                   block % particlelist => particlelisttemp
-                  !write(stderrunit,*) 'deallocating link ', loc(particlelist)
+                  !print *,  'deallocating link ', loc(particlelist)
                   ! deallocate link and get next link
                   particlelist => particlelisttemp
                 else
@@ -3046,7 +3046,7 @@ end subroutine allocate_list_particlelists !}}}
          block => domain % blocklist
          LIGHT_DEBUG_ALL_WRITE('blockNum = '  COMMA  blockNum)
          blocksearch: do while(associated(block))
-           !write(stderrunit,*) 'blockID = ', block % blockID, 'blockNum = ', blockNum
+           !print *,  'blockID = ', block % blockID, 'blockNum = ', blockNum
            if (block % blockID == blockNum) then
              ! we have the correct block
              exit blocksearch
@@ -3057,7 +3057,7 @@ end subroutine allocate_list_particlelists !}}}
          ! check to make sure block is correct
          LIGHT_DEBUG_ALL_WRITE('blockNum = ' COMMA  blockNum)
          if (blockNum /= block % blockID) then
-           LIGHT_ERROR_WRITE('block is not correct! for blockNum =' COMMA blockNum COMMA ' and blockID = ' COMMA block % blockID)
+           LIGHT_DEBUG_WRITE('block is not correct! for blockNum =' COMMA blockNum COMMA ' and blockID = ' COMMA block % blockID)
          end if
 
          ! move the particle to the block
@@ -3148,7 +3148,7 @@ end subroutine allocate_list_particlelists !}}}
      end do
 
 #ifdef MPAS_DEBUG
-     if(find_index == -1) LIGHT_ERROR_WRITE('Error: Index number ' COMMA num COMMA ' not found in array!')
+     if(find_index == -1) LIGHT_WARNING_WRITE('Error: Index number ' COMMA num COMMA ' not found in array!')
 #endif
 
    end function find_index !}}}
@@ -3233,14 +3233,14 @@ end subroutine allocate_list_particlelists !}}}
      call mpas_pool_begin_iteration(lagrPartTrackPool)
      do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
        if (dimItr % memberType == MPAS_POOL_FIELD) then
-         !write(stderrUnit,*) 'transfering ', trim(dimItr % memberName)
+         !print *,  'transfering ', trim(dimItr % memberName)
          if (dimItr % dataType == MPAS_POOL_REAL) then
            ! recv
            j = 1
            do i=1,numProcs
              if(nPartRecv(i) > 0) then
                allocate(array1DRealRecv(i)%val(nPartRecv(i)))
-              !write(stderrUnit,*) 'receiving real ', trim(dimItr % memberName), ' from ', procNeighs(i)
+              !print *,  'receiving real ', trim(dimItr % memberName), ' from ', procNeighs(i)
                ! receive communicated data
 #ifdef _MPI
                call MPI_IRecv(array1DRealRecv(i)%val, nPartRecv(i), MPI_REALKIND, procNeighs(i), procNeighs(i), &
@@ -3254,7 +3254,7 @@ end subroutine allocate_list_particlelists !}}}
            do i=1,numProcs
              if (nPartSend(i) > 0) then
                allocate(array1DRealSend(i)%val(nPartSend(i)))
-               !write(stderrUnit,*) 'sending real ', trim(dimItr % memberName), ' to ', procNeighs(i)
+               !print *,  'sending real ', trim(dimItr % memberName), ' to ', procNeighs(i)
                call get_nonhalo_data_from_particle_list_array(listSend(i)%list, dimItr % memberName, &
                  array1DRealSend(i)%val)
 #ifdef _MPI
@@ -3268,11 +3268,11 @@ end subroutine allocate_list_particlelists !}}}
 #ifdef _MPI
           call MPI_WaitAll(numRecv, recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
 #endif
-          if (mpi_ierr /= 0) LIGHT_ERROR_WRITE('recv: mpi_ierr = ' COMMA mpi_ierr)
+          if (mpi_ierr /= 0) call mpas_log_write('recv: mpi_ierr = ' COMMA mpi_ierr)
 #ifdef _MPI
           call MPI_WaitAll(numSends, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
 #endif
-          if (mpi_ierr /= 0) LIGHT_ERROR_WRITE('send: mpi_ierr = ' COMMA mpi_ierr)
+          if (mpi_ierr /= 0) call mpas_log_write('send: mpi_ierr = ' COMMA mpi_ierr)
 
           ! store values
           j = 1
@@ -3291,7 +3291,7 @@ end subroutine allocate_list_particlelists !}}}
            do i=1,numProcs
              if(nPartRecv(i) > 0) deallocate(array1DRealRecv(i)%val)
            end do
-          !write(stderrUnit,*) 'finished'
+          !call mpas_log_write( 'finished'
 
         elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
           ! recv
@@ -3300,12 +3300,12 @@ end subroutine allocate_list_particlelists !}}}
             if(nPartRecv(i) > 0) then
               allocate(array1DIntRecv(i)%val(nPartRecv(i)))
               ! receive communicated data
-              !write(stderrUnit,*) 'receiving int ', trim(dimItr % memberName), ' from ', procNeighs(i)
+              !print *,  'receiving int ', trim(dimItr % memberName), ' from ', procNeighs(i)
 #ifdef _MPI
               call MPI_IRecv(array1DIntRecv(i)%val, nPartRecv(i), MPI_INTEGERKIND, procNeighs(i), procNeighs(i), &
                 domain % dminfo % comm, recvRequestID(j), mpi_ierr)
 #endif
-              !if( trim(dimItr % memberName) == 'currentBlock') write(stderrUnit,*) 'currentBlock received ', &
+              !if( trim(dimItr % memberName) == 'currentBlock') print *,  'currentBlock received ', &
               !                                                 nPartRecv(i), ' from', procNeighs(i), ' = ', array1DIntRecv(i)%val
               j = j + 1
             end if
@@ -3315,9 +3315,9 @@ end subroutine allocate_list_particlelists !}}}
           do i=1,numProcs
             if(nPartSend(i) > 0) then
               allocate(array1DIntSend(i)%val(nPartSend(i)))
-              !write(stderrUnit,*) 'sending int ', trim(dimItr % memberName), ' to ', procNeighs(i)
+              !print *,  'sending int ', trim(dimItr % memberName), ' to ', procNeighs(i)
               call get_nonhalo_data_from_particle_list_array(listSend(i)%list, dimItr % memberName, array1DIntSend(i)%val)
-              !if( trim(dimItr % memberName) == 'currentBlock') write(stderrUnit,*) 'currentBlock sent ',nPartSend(i), &
+              !if( trim(dimItr % memberName) == 'currentBlock') print *,  'currentBlock sent ',nPartSend(i), &
               !                                                 ' to ', procNeighs(i), ' = ', array1DIntSend(i)%val
 #ifdef _MPI
               call MPI_ISend(array1DIntSend(i)%val, nPartSend(i), MPI_INTEGERKIND, procNeighs(i), &
@@ -3330,14 +3330,14 @@ end subroutine allocate_list_particlelists !}}}
 #ifdef _MPI
           call MPI_WaitAll(numRecv, recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
 #endif
-          if (mpi_ierr /= 0) LIGHT_ERROR_WRITE('mpi_ierr = ' COMMA mpi_ierr)
+          if (mpi_ierr /= 0) call mpas_log_write('mpi_ierr = ' COMMA mpi_ierr)
 #ifdef _MPI
           call MPI_WaitAll(numSends, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
 #endif
-          if (mpi_ierr /= 0) write(stderrUnit,*) 'mpi_ierr = ', mpi_ierr
+          if (mpi_ierr /= 0) print *,  'mpi_ierr = ', mpi_ierr
 
           !do i=1,numProcs
-          !  if(nPartRecv(i) > 0) write(stderrUnit,*) 'Received ', trim(dimItr % memberName), ' = ', array1DIntRecv(i) % val
+          !  if(nPartRecv(i) > 0) print *,  'Received ', trim(dimItr % memberName), ' = ', array1DIntRecv(i) % val
           !end do
 
           ! store values
@@ -3355,9 +3355,9 @@ end subroutine allocate_list_particlelists !}}}
           do i=1,numProcs
             if(nPartRecv(i) > 0) deallocate(array1DIntRecv(i)%val)
           end do
-          !write(stderrUnit,*) 'finished'
+          !call mpas_log_write( 'finished')
         else
-           !write(stderrunit,*) "Different field type than implemented during nonHalo communication!"
+           !call mpas_log_write( "Different field type than implemented during nonHalo communication!")
          end if
        elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
          ! ignore dimensions for now and have this code so they aren't printed as an error message
@@ -3453,14 +3453,14 @@ end subroutine allocate_list_particlelists !}}}
      call mpas_pool_begin_iteration(lagrPartTrackPool)
      do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
        if (dimItr % memberType == MPAS_POOL_FIELD) then
-         !write(stderrUnit,*) 'transfering ', trim(dimItr % memberName)
+         !print *,  'transfering ', trim(dimItr % memberName)
          if (dimItr % dataType == MPAS_POOL_REAL) then
            ! recv
            j = 1
            do i=1,numProcs
              if(nPartRecv(i) > 0) then
                allocate(array1DRealRecv(i)%val(nPartRecv(i)))
-              !write(stderrUnit,*) 'receiving real ', trim(dimItr % memberName), ' from ', procNeighs(i)
+              !print *,  'receiving real ', trim(dimItr % memberName), ' from ', procNeighs(i)
                ! receive communicated data
 #ifdef _MPI
                call MPI_IRecv(array1DRealRecv(i)%val, nPartRecv(i), MPI_REALKIND, procNeighs(i), procNeighs(i), &
@@ -3474,7 +3474,7 @@ end subroutine allocate_list_particlelists !}}}
            do i=1,numProcs
              if (nPartSend(i) > 0) then
                allocate(array1DRealSend(i)%val(nPartSend(i)))
-               !write(stderrUnit,*) 'sending real ', trim(dimItr % memberName), ' to ', procNeighs(i)
+               !print *,  'sending real ', trim(dimItr % memberName), ' to ', procNeighs(i)
                call get_halo_data_from_particle_list_array(listSend(i)%list, dimItr % memberName, &
                  array1DRealSend(i)%val)
 #ifdef _MPI
@@ -3488,11 +3488,11 @@ end subroutine allocate_list_particlelists !}}}
 #ifdef _MPI
           call MPI_WaitAll(numRecv, recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
 #endif
-          if (mpi_ierr /= 0) LIGHT_ERROR_WRITE('recv: mpi_ierr = ' COMMA mpi_ierr)
+          if (mpi_ierr /= 0) call mpas_log_write('recv: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
 #ifdef _MPI
           call MPI_WaitAll(numSends, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
 #endif
-          if (mpi_ierr /= 0) LIGHT_ERROR_WRITE('send: mpi_ierr = ' COMMA mpi_ierr)
+          if (mpi_ierr /= 0) call mpas_log_write('recv: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
 
           ! store values
           j = 1
@@ -3511,7 +3511,7 @@ end subroutine allocate_list_particlelists !}}}
            do i=1,numProcs
              if(nPartRecv(i) > 0) deallocate(array1DRealRecv(i)%val)
            end do
-          !write(stderrUnit,*) 'finished'
+          !print *,  'finished'
 
         elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
           ! recv
@@ -3520,12 +3520,12 @@ end subroutine allocate_list_particlelists !}}}
             if(nPartRecv(i) > 0) then
               allocate(array1DIntRecv(i)%val(nPartRecv(i)))
               ! receive communicated data
-              !write(stderrUnit,*) 'receiving int ', trim(dimItr % memberName), ' from ', procNeighs(i)
+              !print *,  'receiving int ', trim(dimItr % memberName), ' from ', procNeighs(i)
 #ifdef _MPI
               call MPI_IRecv(array1DIntRecv(i)%val, nPartRecv(i), MPI_INTEGERKIND, procNeighs(i), procNeighs(i), &
                 domain % dminfo % comm, recvRequestID(j), mpi_ierr)
 #endif
-              !if( trim(dimItr % memberName) == 'currentBlock') write(stderrUnit,*) 'currentBlock received ',nPartRecv(i), &
+              !if( trim(dimItr % memberName) == 'currentBlock') print *,  'currentBlock received ',nPartRecv(i), &
               !                                                 ' from', procNeighs(i), ' = ', array1DIntRecv(i)%val
               j = j + 1
             end if
@@ -3535,9 +3535,9 @@ end subroutine allocate_list_particlelists !}}}
           do i=1,numProcs
             if(nPartSend(i) > 0) then
               allocate(array1DIntSend(i)%val(nPartSend(i)))
-              !write(stderrUnit,*) 'sending int ', trim(dimItr % memberName), ' to ', procNeighs(i)
+              !print *,  'sending int ', trim(dimItr % memberName), ' to ', procNeighs(i)
               call get_halo_data_from_particle_list_array(listSend(i)%list, dimItr % memberName, array1DIntSend(i)%val)
-              !if( trim(dimItr % memberName) == 'currentBlock') write(stderrUnit,*) 'currentBlock sent ',nPartSend(i), ' to ', &
+              !if( trim(dimItr % memberName) == 'currentBlock') print *,  'currentBlock sent ',nPartSend(i), ' to ', &
               !                                                 procNeighs(i), ' = ', array1DIntSend(i)%val
 #ifdef _MPI
               call MPI_ISend(array1DIntSend(i)%val, nPartSend(i), MPI_INTEGERKIND, procNeighs(i), &
@@ -3550,14 +3550,14 @@ end subroutine allocate_list_particlelists !}}}
 #ifdef _MPI
           call MPI_WaitAll(numRecv, recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
 #endif
-          if (mpi_ierr /= 0) LIGHT_ERROR_WRITE('mpi_ierr = ' COMMA mpi_ierr)
+          if (mpi_ierr /= 0) call mpas_log_write('recv: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
 #ifdef _MPI
           call MPI_WaitAll(numSends, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
 #endif
-          if (mpi_ierr /= 0) LIGHT_ERROR_WRITE('mpi_ierr = ' COMMA mpi_ierr)
+          if (mpi_ierr /= 0) call mpas_log_write('recv: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
 
           !do i=1,numProcs
-          !  if(nPartRecv(i) > 0) write(stderrUnit,*) 'Received ', trim(dimItr % memberName), ' = ', array1DIntRecv(i) % val
+          !  if(nPartRecv(i) > 0) print *,  'Received ', trim(dimItr % memberName), ' = ', array1DIntRecv(i) % val
           !end do
 
           ! store values
@@ -3575,9 +3575,9 @@ end subroutine allocate_list_particlelists !}}}
           do i=1,numProcs
             if(nPartRecv(i) > 0) deallocate(array1DIntRecv(i)%val)
           end do
-          !write(stderrUnit,*) 'finished'
+          !call mpas_log_write( 'finished')
         else
-           !write(stderrunit,*) "Different field type than implemented during halo communication!"
+           !call mpas_log_write( "Different field type than implemented during halo communication!")
          end if
        elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
          ! ignore dimensions for now and have this code so they aren't printed as an error message
@@ -4040,9 +4040,9 @@ end subroutine allocate_list_particlelists !}}}
       do while (associated(block))
 
         ! write out all blockNeighs and procNeighs
-        write(stderrUnit,*) 'blockID = ', block % blockID
-        write(stderrUnit,*) 'blockNeighs = ', block % blockNeighs
-        write(stderrUnit,*) 'procNeighs = ', block % procNeighs
+        call mpas_log_write( 'blockID = $i ', intArgs=(/  block % blockID /) )
+        call mpas_log_write( 'blockNeighs = i ', intArgs=(/ block % blockNeighs /) )
+        call mpas_log_write( 'procNeighs = i ', intArgs=(/ block % procNeighs /) )
 
         block => block % next
       end do
@@ -4058,15 +4058,15 @@ end subroutine allocate_list_particlelists !}}}
 
      numNeighs = size(procNeighs)
 
-     write(stderrUnit,*) 'myproc, procNeighs'
+     call mpas_log_write( 'myproc, procNeighs')
      do i=1,numNeighs
-       write(stderrUnit,*) myproc, procNeighs(i)
+       print *,  myproc, procNeighs(i)
      end do
      if(associated(ioProcNeighs)) then
-       write(stderrUnit,*) 'myproc, ioProcNeighs'
+       call mpas_log_write( 'myproc, ioProcNeighs')
        numNeighs = size(ioProcNeighs)
        do i=1,numNeighs
-         write(stderrUnit,*) myproc, ioProcNeighs(i)
+         print *,  myproc, ioProcNeighs(i)
        end do
      end if
 
@@ -4083,9 +4083,9 @@ end subroutine allocate_list_particlelists !}}}
        ! THIS LINE CAUSED A VERY, VERY, VERY NASTY BUG-- BE CAREFUL ABOUT GETTING THE LOCATION OF POTENTIALLY NULLS!
        nPartList = count_particlelist(block % particlelist)
        nPartList_particles = count_particlelist_particles(block % particlelist)
-       write(stderrUnit,*) 'block = ', block % blockID, ' nPartList= ',  nPartList, ' nparticles = ', nPartList_particles
+       print *,  'block = ', block % blockID, ' nPartList= ',  nPartList, ' nparticles = ', nPartList_particles
        if (nPartList > nPartList_particles) then
-         write(stderrUnit,*) 'Possible error! ', nPartList - nPartList_particles, ' particles on particle list is not allocated!'
+         print *,  'Possible error! ', nPartList - nPartList_particles, ' particles on particle list is not allocated!'
        end if
 
        block => block % next
@@ -4111,7 +4111,7 @@ end subroutine allocate_list_particlelists !}}}
 
        block => block % next
      end do
-     write(stderrUnit,*) 'number of particles on processor = ', countOnProc
+     print *,  'number of particles on processor = ', countOnProc
 
    end subroutine test_currentBlock !}}}
 
@@ -4125,10 +4125,10 @@ end subroutine allocate_list_particlelists !}}}
      sumtot = 0
      do i = 1, nlist
        listparticles = count_particlelist(listPL(i)%list)
-       write(stderrUnit,*) 'list i=',i,' nparticles=', listparticles
+       print *,  'list i=',i,' nparticles=', listparticles
        sumtot = sumtot + listparticles
      end do
-     write(stderrunit,*) 'total_on_list=', sumtot
+     print *,  'total_on_list=', sumtot
    end subroutine test_num_particles_on_particlelist !}}}
 !}}}
 

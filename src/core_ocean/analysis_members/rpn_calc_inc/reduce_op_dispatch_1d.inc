@@ -3,7 +3,7 @@
   if (type_checking) then
     ! check size of stack
     if (stack_pointer < 1) then
-      call mpas_dmpar_global_abort(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
         'expression #' // trim(expression_names(exp_number)) // &
         ' tried to ' // trim(op_name) // ' when there ' // &
         'were no operands on the stack, in the RPN calculator AM')
@@ -14,7 +14,7 @@
 
   if (type_checking) then
     if (a_nd < 1) then
-      call mpas_dmpar_global_abort(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
         'expression #' // trim(expression_names(exp_number)) // &
         ' tried to ' // trim(op_name) // ' when the ' // &
         'operand on the stack is 0d, in the RPN calculator AM')

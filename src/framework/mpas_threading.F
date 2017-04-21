@@ -16,15 +16,9 @@
 !
 !-----------------------------------------------------------------------
 
-#define COMMA ,
-#define THREADING_DEBUG_WRITE(M) ! write(stderrUnit, *) M
-#define THREADING_WARN_WRITE(M) write(stderrUnit, *) 'WARNING: '//M
-#define THREADING_ERROR_WRITE(M) write(stderrUnit, *) 'ERROR: '//M
-
 module mpas_threading
 
    use mpas_kind_types
-   use mpas_io_units
 
    implicit none
    private

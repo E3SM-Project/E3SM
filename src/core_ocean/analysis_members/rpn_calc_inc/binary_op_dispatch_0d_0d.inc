@@ -3,7 +3,7 @@
   if (type_checking) then
     ! check size of stack
     if (stack_pointer < 2) then
-      call mpas_dmpar_global_abort(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
         'expression #' // trim(expression_names(exp_number)) // &
         ' tried to ' // trim(op_name) // ' when there ' // &
         'were less than two operands on the stack, in the RPN calculator AM')

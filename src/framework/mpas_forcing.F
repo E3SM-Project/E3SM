@@ -14,9 +14,9 @@ module mpas_forcing
 
 #define COMMA ,
 #define FORCING_DEBUG_DO(M) !M
-#define FORCING_DEBUG_WRITE(M) !write(stderrUnit,*) M
-#define FORCING_WARNING_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
-#define FORCING_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
+#define FORCING_DEBUG_WRITE(M) !call mpas_log_write( M )
+#define FORCING_WARNING_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_WARN)
+#define FORCING_ERROR_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_ERR)
 
   use mpas_derived_types
   use mpas_field_routines
@@ -24,7 +24,8 @@ module mpas_forcing
   use mpas_timekeeping
   use mpas_io_streams
   use mpas_stream_manager
-  use mpas_abort, only : mpas_dmpar_global_abort
+  use mpas_log
+  use mpas_io_units
 
   implicit none
 
@@ -123,7 +124,7 @@ contains
        do while (associated(forcingGroupNew % next))
           if (trim(forcingGroupNew % forcingGroupName) == trim(forcingGroupName)) then
              FORCING_ERROR_WRITE('-- Forcing: forcing group name already exists: '//trim(forcingGroupName))
-             call MPAS_dmpar_global_abort('Forcing: forcing group name already exists')
+             call mpas_log_write('Forcing: forcing group name already exists', MPAS_LOG_CRIT)
           endif
           forcingGroupNew => forcingGroupNew % next
        enddo
@@ -498,8 +499,8 @@ contains
        forcingStreamNew % variable_interval_backward_ptr => variable_interval_backward
 
     else
-       FORCING_ERROR_WRITE('-- Forcing: create_new_forcing_stream: incorrect forcing interval specification: '//trim(forcingName))
-       call MPAS_dmpar_global_abort('Forcing: incorrect forcing interval specification')
+       call mpas_log_write('Forcing: create_new_forcing_stream: incorrect forcing interval specification' // &
+                            trim(forcingName), MPAS_LOG_CRIT)
     endif
 
     ! get initial forcing times
@@ -521,8 +522,7 @@ contains
     call mpas_stream_mgr_get_clock(streamManager, streamClock, ierr)
     streamAlarmID = trim(forcingStreamID)//'_input'
     if (mpas_is_alarm_defined(streamClock, streamAlarmID, ierr)) then
-       FORCING_ERROR_WRITE('-- Forcing: create_new_forcing_stream: stream has alarm defined: '//trim(streamAlarmID))
-       call MPAS_dmpar_global_abort('Forcing: stream has alarm defined')
+       call mpas_log_write('Forcing: create_new_forcing_stream: stream has alarm defined'//trim(streamAlarmID), MPAS_LOG_CRIT)
     endif
 
     ! set the initialization type
@@ -533,9 +533,8 @@ contains
            trim(forcingInitializationType) == "next") then
           forcingStreamNew % forcingInitializationType = trim(forcingInitializationType)
        else
-          FORCING_ERROR_WRITE('-- Forcing: create_new_forcing_stream: invalid forcing initialization type: '//trim(forcingInitializationType))
-          FORCING_ERROR_WRITE('-- Forcing: create_new_forcing_stream: for forcing name: '//trim(forcingName))
-          call MPAS_dmpar_global_abort('Forcing: invalid forcing initialization type')
+          call mpas_log_write('Forcing: invalid forcing initialization type: ' // trim(forcingInitializationType) // &
+                              'for forcing name: ' // trim(forcingName), MPAS_LOG_CRIT )
        endif
     endif
 
@@ -619,15 +618,15 @@ contains
 
     ! check interpolationType
     if (trim(forcingStream % interpolationType) /= trim(interpolationType)) then
-       FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream incompatible interpolation types in stream '//trim(forcingStream % forcingStreamID))
-       call MPAS_dmpar_global_abort('Forcing: incompatible interpolation types in stream')
+       call mpas_log_write('Forcing: add_forcing_field_to_forcing_stream: incompatible interpolation types in stream: ' // &
+           trim(forcingStream % forcingStreamID), MPAS_LOG_CRIT )
     endif
 
     ! check forcingReferenceTime
     call mpas_set_time(forcingReferenceTime, dateTimeString=forcingReferenceTimeStr)
     if (forcingStream % forcingReferenceTime /= forcingReferenceTime) then
-       FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream incompatible forcing reference times in stream '//trim(forcingStream % forcingStreamID))
-       call MPAS_dmpar_global_abort('Forcing: incompatible forcing reference times in stream')
+       call mpas_log_write('Forcing: add_forcing_field_to_forcing_stream: incompatible forcing reference times in stream: ' &
+                            //trim(forcingStream % forcingStreamID), MPAS_LOG_CRIT)
     endif
 
     ! check forcing interval optional arguments
@@ -635,29 +634,29 @@ contains
 
        ! constant interval present in forcing specification
        if (present(variable_interval_forward) .or. present(variable_interval_backward)) then
-          FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: overspecified forcing interval: '//trim(forcingName))
-          call MPAS_dmpar_global_abort('Forcing: overspecified forcing interval')
+          call mpas_log_write('Forcing: add_forcing_field_to_forcing_stream: overspecified forcing interval: ' &
+                               //trim(forcingName), MPAS_LOG_CRIT)
        endif
        if (associated(forcingStream % variable_interval_forward_ptr)) then
-          FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: incompatible forcing interval specification: '//trim(forcingName))
-          call MPAS_dmpar_global_abort('Forcing: incompatible forcing interval specification')
+          call mpas_log_write('Forcing: add_forcing_field_to_forcing_stream: incompatible forcing interval specification: ' &
+                               //trim(forcingName), MPAS_LOG_CRIT)
        endif
        call mpas_set_timeInterval(forcingIntervalConstant, timeString=forcingIntervalStr)
        if (forcingStream % forcingIntervalConstant /= forcingIntervalConstant) then
-          FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: incompatible constant forcing intervals: '//trim(forcingName))
-          call MPAS_dmpar_global_abort('Forcing: incompatible constant forcing intervals')
+          call mpas_log_write('Forcing: add_forcing_field_to_forcing_stream: incompatible constant forcing intervals: ' &
+                               //trim(forcingName), MPAS_LOG_CRIT)
        endif
 
     else
 
        ! variable interval present in forcing specification
        if (.not. present(variable_interval_forward) .or. .not. present(variable_interval_backward)) then
-          FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: underspecified forcing interval: '//trim(forcingName))
-          call MPAS_dmpar_global_abort('Forcing: underspecified forcing interval')
+          call mpas_log_write('Forcing: add_forcing_field_to_forcing_stream: underspecified forcing interval: ' &
+                               //trim(forcingName), MPAS_LOG_CRIT)
        endif
        if (.not. associated(forcingStream % variable_interval_forward_ptr)) then
-          FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: incompatible forcing interval specification: '//trim(forcingName))
-          call MPAS_dmpar_global_abort('Forcing: incompatible forcing interval specification')
+          call mpas_log_write('Forcing: add_forcing_field_to_forcing_stream: incompatible forcing interval specification: ' &
+                               //trim(forcingName), MPAS_LOG_CRIT)
        endif
        forcingStream % variable_interval_forward_test_ptr  => variable_interval_forward
        forcingStream % variable_interval_backward_test_ptr => variable_interval_backward
@@ -665,8 +664,8 @@ contains
                             forcingStream % variable_interval_forward_ptr) .or. &
            .not. associated(forcingStream % variable_interval_backward_test_ptr, &
                             forcingStream % variable_interval_backward_ptr)) then
-          FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: incompatible non-constant forcing intervals: '//trim(forcingName))
-          call MPAS_dmpar_global_abort('Forcing: incompatible non-constant forcing intervals')
+          call mpas_log_write('Forcing: add_forcing_field_to_forcing_stream: incompatible non-constant forcing intervals: ' &
+                               //trim(forcingName), MPAS_LOG_CRIT)
        endif
 
     endif
@@ -681,8 +680,8 @@ contains
        do while (associated(forcingFieldNew % next))
           if (trim(forcingFieldNew % forcingName) == trim(forcingName)) then
              ! forcing already exists
-             FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: '//trim(forcingStream % forcingStreamID)//' field already exists: '//trim(forcingName))
-             call MPAS_dmpar_global_abort('Forcing: field already exists')
+             call mpas_log_write('Forcing: add_forcing_field_to_forcing_stream: field ' //trim(forcingStream % forcingStreamID) &
+                                  // ' already exists: ' // trim(forcingName), MPAS_LOG_CRIT)
           endif
           forcingFieldNew => forcingFieldNew % next
        enddo
@@ -698,7 +697,7 @@ contains
           FORCING_ERROR_WRITE('-- Forcing: stream initialization type: '//trim(forcingStream % forcingInitializationType))
           FORCING_ERROR_WRITE('-- Forcing: field initialization type: '//trim(forcingInitializationType))
           FORCING_ERROR_WRITE('-- Forcing: for forcing name: '//trim(forcingName))
-          call MPAS_dmpar_global_abort('Forcing: inconsistent initialization type')
+          call mpas_log_write('Forcing: inconsistent initialization type', MPAS_LOG_CRIT)
        endif
     endif
 
@@ -1107,8 +1106,7 @@ contains
             ierr=ierr)
 
        if (ierr /= 0) then
-          FORCING_ERROR_WRITE('-- Forcing: get_initial_forcing_data: READ: ' COMMA ierr)
-          call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_read')
+          call mpas_log_write('Forcing: get_initial_forcing_data: READ: $i', MPAS_LOG_CRIT, intArgs=(/ierr/))
        endif
 
        FORCING_DEBUG_WRITE('-- Forcing: get_initial_forcing_data: ' COMMA iTime COMMA trim(forcingStream % forcingStreamID) COMMA " " COMMA trim(forcingTimeStr))
@@ -1429,16 +1427,15 @@ contains
             ierr=ierr)
 
        if (ierr /= 0) then
-          FORCING_ERROR_WRITE('-- Forcing: mpas_forcing_get_forcing: READ: ' COMMA ierr)
-          call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_read')
+          call mpas_log_write('Forcing: mpas_forcing_get_forcing: READ: $i', MPAS_LOG_CRIT, intArgs=(/ierr/))
        endif
 
-       FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: READ: ' COMMA trim(forcingStream % forcingStreamID) COMMA " " COMMA trim(forcingTimeCycleStr))
+       FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: READ: ' // trim(forcingStream % forcingStreamID) // " " // trim(forcingTimeCycleStr))
 
     endif ! forcingAlarmID ringing
 
     FORCING_DEBUG_DO(call mpas_get_time(currentTime, dateTimeString=forcingTimeStr))
-    FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: FORCING: ' COMMA trim(forcingStream % forcingStreamID) COMMA " " COMMA trim(forcingTimeStr) COMMA " " COMMA trim(forcingTimeStrAll))
+    FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: FORCING: ' // trim(forcingStream % forcingStreamID) // " " // trim(forcingTimeStr) // " " // trim(forcingTimeStrAll))
 
     ! interpolate data
     call forcing_data_interpolation(&
@@ -1494,8 +1491,7 @@ contains
        stencilSizeLower = 2
        stencilSizeUpper = 2
     case default
-       FORCING_ERROR_WRITE('-- Forcing: Unknown forcing interpolation type: '//trim(interpolationType))
-       call MPAS_dmpar_global_abort('Forcing: Unknown forcing interpolation type')
+       call mpas_log_write('Forcing: Unknown forcing interpolation type'//trim(interpolationType), MPAS_LOG_CRIT)
     end select
 
   end subroutine interpolation_time_stencil_info!}}}
@@ -1532,8 +1528,7 @@ contains
     case ("four_point_polynomial")
        call get_interpolants_four_point_polynomial(interpolants, forcingStream, currentTime)
     case default
-       FORCING_ERROR_WRITE('-- Forcing: Unknown forcing interpolation type: '//trim(forcingStream % interpolationType))
-       call MPAS_dmpar_global_abort('Forcing: Unknown forcing interpolation type')
+       call mpas_log_write('Forcing: Unknown forcing interpolation type'//trim(forcingStream % interpolationType), MPAS_LOG_CRIT)
     end select
 
   end subroutine get_interpolants!}}}
@@ -1765,14 +1760,12 @@ contains
     call MPAS_stream_mgr_set_property(&
          streamManager, trim(forcingStream % forcingStreamID), MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=ierr)
     if (ierr /= 0) then
-       FORCING_ERROR_WRITE('-- Forcing: setup_input_fields: MPAS_stream_mgr_set_property: ' COMMA ierr)
-       call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_set_property')
+       call mpas_log_write('Forcing: setup_input_fields: MPAS_stream_mgr_set_property: $i', MPAS_LOG_CRIT, intArgs=(/ierr/))
     endif
     call MPAS_stream_mgr_remove_field(&
          streamManager, trim(forcingStream % forcingStreamID), trim(forcingField % fieldname), ierr=ierr)
     if (ierr /= 0) then
-       FORCING_ERROR_WRITE('-- Forcing: setup_input_fields: MPAS_stream_mgr_remove_field: ' COMMA ierr)
-       call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_remove_field')
+       call mpas_log_write('Forcing: setup_input_fields: MPAS_stream_mgr_remove_field: $i', MPAS_LOG_CRIT, intArgs=(/ierr/))
     endif
 
     ! loop over blocks
@@ -1784,8 +1777,8 @@ contains
        forcingPoolInfo % nDims = -1
        call MPAS_pool_get_field_info(forcingPoolOutput, trim(forcingField % fieldname), forcingPoolInfo)
        if (forcingPoolInfo % nDims == -1) then
-          FORCING_ERROR_WRITE('-- Forcing: setup_input_fields: field ' COMMA trim(forcingField % fieldname) COMMA ' does not exist in pool: ' COMMA trim(forcingField % poolname))
-          call MPAS_dmpar_global_abort('Forcing: Error: fieldname does not exist in poolname')
+          call mpas_log_write('Forcing: setup_input_fields: fieldname ' //trim(forcingField % fieldname) // &
+               ' does not exist in poolname: ' // trim(forcingField % poolname), MPAS_LOG_CRIT)
        endif
 
        ! create the new input forcing pool if needed
@@ -2103,10 +2096,8 @@ contains
        else
 
           ! unsupported forcing type
-          
-          FORCING_ERROR_WRITE('-- Forcing: Forcing only supports REAL and INTEGER data types')
-          FORCING_ERROR_WRITE('-- Forcing: Field type: ' COMMA forcingPoolInfo % fieldType)
-          call MPAS_dmpar_global_abort('Forcing: Forcing only supports REAL and INTEGER data types')
+          call mpas_log_write('Forcing: Forcing only supports REAL and INTEGER data types. Field type=$i', MPAS_LOG_CRIT, &
+               intArgs=(/forcingPoolInfo % fieldType/))
 
        endif
 
@@ -2122,14 +2113,12 @@ contains
     call MPAS_stream_mgr_add_field(&
          streamManager, trim(forcingStream % forcingStreamID), trim(fieldnameInput), ierr=ierr)
     if (ierr /= 0) then
-       FORCING_ERROR_WRITE('-- Forcing: setup_input_fields: MPAS_stream_mgr_add_field: ' COMMA ierr)
-       call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_add_field')
+       call mpas_log_write('Forcing: setup_input_fields: MPAS_stream_mgr_add_field: $i', MPAS_LOG_CRIT, intArgs=(/ierr/))
     endif
     call MPAS_stream_mgr_set_property(&
          streamManager, trim(forcingStream % forcingStreamID), MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=ierr)
     if (ierr /= 0) then
-       FORCING_ERROR_WRITE('-- Forcing: setup_input_fields: MPAS_stream_mgr_set_property: ' COMMA ierr)
-       call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_set_property')
+       call mpas_log_write('Forcing: setup_input_fields: MPAS_stream_mgr_set_property: $i', MPAS_LOG_CRIT, intArgs=(/ierr/))
     endif
 
   end subroutine setup_input_fields!}}}
@@ -2422,7 +2411,8 @@ contains
 
           if (forcingFieldInput % contentsTimeLevs < 2) then
              FORCING_ERROR_WRITE('-- Forcing: forcing_shift_data: too few timelevels Pool: '//trim(poolnameInput)//' Field: '//trim(fieldnameInput))
-             call MPAS_dmpar_global_abort('Forcing: too few timelevels in Pool')
+             call mpas_log_write('Forcing: forcing_shift_data: too few timelevels in Pool: '//trim(poolnameInput)// &
+                   ' Field: '//trim(fieldnameInput), MPAS_LOG_CRIT)
           endif
 
           if (forcingFieldInput % contentsType == MPAS_POOL_REAL) then

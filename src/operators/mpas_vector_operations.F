@@ -21,6 +21,7 @@ module mpas_vector_operations
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
+   use mpas_log
 
    implicit none
    private
@@ -925,20 +926,20 @@ contains
 
       xnew = mpas_fix_periodicity(x1, xc, xLen)
       if (abs(xnew - pii ) > eps) then
-         write(stderrUnit,*) "Error in mpas_unit_test_fix_periodicity: ", &
-           "x1's periodicity fix has error greater than tolerance -- FAILED."
+         call mpas_log_write("Error in mpas_unit_test_fix_periodicity: " // &
+           "x1's periodicity fix has error greater than tolerance -- FAILED.", MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_fix_periodicity: x1 test - SUCCESS'
+         call mpas_log_write('mpas_unit_test_fix_periodicity: x1 test - SUCCESS')
       endif
 
       xnew = mpas_fix_periodicity(x2, xc, xLen)
       if (abs(xnew - pii ) > eps) then
-         write(stderrUnit,*) "Error in mpas_unit_test_fix_periodicity: ", &
-           "x2's periodicity fix has error greater than tolerance -- FAILED."
+         call mpas_log_write("Error in mpas_unit_test_fix_periodicity: " // &
+           "x2's periodicity fix has error greater than tolerance -- FAILED.", MPAS_LOG_ERR)
          ierr = 1
       else
-         write(stderrUnit,*) 'mpas_unit_test_fix_periodicity: x2 test - SUCCESS'
+         call mpas_log_write('mpas_unit_test_fix_periodicity: x2 test - SUCCESS')
       endif
 
    end subroutine mpas_unit_test_fix_periodicity!}}}

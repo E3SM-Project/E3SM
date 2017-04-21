@@ -701,7 +701,9 @@ contains
                ! exponential decay tendency
                !
                 if (config_use_tracerGroup_exponential_decay) then
-                     write (stderrUnit,'(a)') 'exponential decay not fully tested'
+                     call mpas_log_write( &
+                        "WARNING: exponential decay not fully tested", &
+                        MPAS_LOG_WARN)
                      call mpas_timer_start("exponential decay " // trim(groupItr % memberName))
                      call mpas_pool_get_subpool(forcingPool, 'tracersExponentialDecayFields', tracersExponentialDecayFieldsPool)
                      modifiedGroupName = trim(groupItr % memberName) // "ExponentialDecayRate"
@@ -719,7 +721,9 @@ contains
                !
                 if (config_use_tracerGroup_idealAge_forcing) then
                      call mpas_timer_start("ideal age " // trim(groupItr % memberName))
-                     write (stderrUnit,'(a)') 'ideal age not fully tested'
+                     call mpas_log_write( &
+                        "WARNING: ideal age not fully tested", &
+                        MPAS_LOG_WARN)
                      call mpas_pool_get_subpool(forcingPool, 'tracersIdealAgeFields', tracersIdealAgeFieldsPool)
                      modifiedGroupName = trim(groupItr % memberName) // "IdealAgeMask"
                      call mpas_pool_get_array(tracersIdealAgeFieldsPool, trim(modifiedGroupName), tracerGroupIdealAgeMask)
@@ -736,7 +740,9 @@ contains
                !
                 if (config_use_tracerGroup_ttd_forcing) then
                      call mpas_timer_start("TTD " // trim(groupItr % memberName))
-                     write (stderrUnit,'(a)') 'TTD not fully tested'
+                     call mpas_log_write( &
+                        "WARNING: TTD not fully tested", &
+                        MPAS_LOG_WARN)
                      call mpas_pool_get_subpool(forcingPool, 'tracersTTDFields', tracersTTDFieldsPool)
                      modifiedGroupName = trim(groupItr % memberName) // "TTDMask"
                      call mpas_pool_get_array(tracersTTDFieldsPool, trim(modifiedGroupName), tracerGroupTTDMask)

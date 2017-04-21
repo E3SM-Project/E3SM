@@ -522,10 +522,6 @@
 
  end select radiation_sw_select
 
-!format:
- 101 format(i3,2i6,12(1x,e15.8))
- 102 format(i6,12(1x,e15.8))
-
  end subroutine radiation_sw_from_MPAS
 
 !=================================================================================================================
@@ -664,20 +660,9 @@
  real(kind=RKIND):: radt,xtime_m
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,100) itimestep
+!call mpas_log_write(' --- enter subroutine driver_radiation_sw: $i',intArgs=(/itimestep/))
 
  call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
-
-!formats:
- 100 format(/,' --- enter subroutine driver_radiation_sw: ',i6)
- 101 format('     ITIMESTEP   =', i6   ,/, &
-            '     YEAR        =', i6   ,/, &
-            '     JULDAY      =', i6   ,/, &
-            '     GMT         =', f16.9,/, &
-            '     XTIME_M     =', f16.9,/, &
-            '     CURR_JULDAY =', f16.9,/, &
-            '     SOLCON      =', f16.9,/, &
-            '     DECLIN      =', f16.9)
 
  xtime_m = xtime_s/60.
 
@@ -687,7 +672,14 @@
 !... calculates solar declination:
 !call radconst(declin,solcon,julday,degrad,dpd)
  call radconst(declin,solcon,curr_julday,degrad,dpd)
-!write(0,101) itimestep,year,julday,gmt,xtime_m,curr_julday,solcon,declin
+!call mpas_log_write('     ITIMESTEP   = $i', intArgs=(/itimestep/))
+!call mpas_log_write('     YEAR        = $i', intArgs=(/year/))
+!call mpas_log_write('     JULDAY      = $i', intArgs=(/julday/))
+!call mpas_log_write('     GMT         = $r', realArgs=(/gmt/))
+!call mpas_log_write('     XTIME_M     = $r', realArgs=(/xtime_m/))
+!call mpas_log_write('     CURR_JULDAY = $r', realArgs=(/curr_julday/))
+!call mpas_log_write('     SOLCON      = $r', realArgs=(/solcon/))
+!call mpas_log_write('     DECLIN      = $r', realArgs=(/declin/))
 
 !... convert the radiation time_step to minutes:
  radt = dt_radtsw/60.
@@ -780,7 +772,7 @@
 !copy local arrays to MPAS grid:
  call radiation_sw_to_MPAS(diag_physics,tend_physics,its,ite)
 
-!write(0,*) '--- end subroutine driver_radiation_sw.'
+!call mpas_log_write('--- end subroutine driver_radiation_sw.')
 
  end subroutine driver_radiation_sw
 

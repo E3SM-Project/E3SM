@@ -18,10 +18,10 @@
 !>  diagnostics
 !-----------------------------------------------------------------------
 #define COMMA ,
-#define LIGHT_DEBUG_WRITE(M) !  write(stderrUnit,*) M
-#define LIGHT_DEBUG_ALL_WRITE(M) !  write(stderrUnit,*) M
-#define LIGHT_WARNING_WRITE(M)  write(stderrUnit,*) 'WARNING: '//M
-#define LIGHT_ERROR_WRITE(M)  write(stderrUnit,*) 'ERROR: '//M
+#define LIGHT_DEBUG_WRITE(Z) ! print *, Z 
+#define LIGHT_DEBUG_ALL_WRITE(Z) !  print *, Z 
+#define LIGHT_WARNING_WRITE(Z)  print *, Z 
+#define LIGHT_ERROR_WRITE(Z)  print *, Z 
 
 module ocn_lagrangian_particle_tracking
 
@@ -302,7 +302,7 @@ contains
       err = 0
 
       !! don't do compute for debugging purposes
-      !write(stderrUnit,*) 'Computing Lagrangian Particle Tracking -- NO COMPUTATION!'
+      !call mpas_log_write( 'Computing Lagrangian Particle Tracking -- NO COMPUTATION!')
       !return
 
       dminfo = domain % dminfo
@@ -962,7 +962,7 @@ contains
 
       ! transfer particles to their appropriate blocks (ioBlock) via MPI
       ! note, don't necessarily need to have g_ionSend and g_ionRecv comeout
-      !write(stderrUnit,*) 'g_ioProcNeighs = ', g_ioProcNeighs
+      !call mpas_log_write( 'g_ioProcNeighs = $i',MPAS_LOG_OUT, intArgs=(/  g_ioProcNeighs /) )
 #ifdef MPAS_DEBUG
       call mpas_timer_start("trans_from_block_to_blockLPT")
 #endif
@@ -1121,7 +1121,7 @@ contains
 
 #ifdef MPAS_DEBUG
      ! check to make sure the horizontal location is valid, otherwise report an error
-     !write(stderrUnit,*) 'max verticesOnCell = ', maxval(verticesOnCell(:,iCell)), 'nVertices = ', size(xVertex)
+     ! call mpas_log_write( 'max verticesOnCell = $i nVertices = $i',MPAS_LOG_OUT, intArgs=(/ maxval(verticesOnCell(:,iCell)), size(xVertex) /) )
      if (on_a_sphere .or. .not. is_periodic) then
        if(.not. point_in_cell(nCellVertices, &
          xVertex(verticesOnCell(1:nCellVertices,iCell)), &
@@ -1270,7 +1270,7 @@ contains
       type (field2DReal), pointer :: uVV, vVV, wVV
       real (kind=RKIND), dimension(:,:), pointer :: potentialDensity
 
-      !write(stderrUnit,*) 'inialize_vertex_velocity start'
+      !call mpas_log_write( 'inialize_vertex_velocity start')
 
       call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_filter_number', filterNum)
 
@@ -1315,7 +1315,7 @@ contains
           call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel=timeLev)
 
           ! get new time level velocity (linear RBF)
-          !write(stderrUnit,*) 'uVV= ', uVV % array
+          !call mpas_log_write( 'uVV= $f',MPAS_LOG_OUT, realArgs=(/ uVV % array /) ) ! This is an array, not sure if log will work.
 #ifdef MPAS_DEBUG
           call mpas_timer_start("init_reconst_filter_LPT")
 #endif
@@ -1329,7 +1329,7 @@ contains
 
         block => block %  next
       end do
-      !write(stderrUnit,*) 'inialize_vertex_velocity end'
+      !call mpas_log_write( 'inialize_vertex_velocity end')
 
    end subroutine initalize_fields!}}}
 
@@ -2080,7 +2080,7 @@ contains
         ! will definitely be some error with this type of computation because the buoyancy is not available at this location
         ! the time interpolation, as a consequency, can mix velocities from different buoyancy surfaces in order to advect
         ! the particle
-        !write(stderrUnit,*) 'iLevel = ', iLevel
+        !call mpas_log_write( 'iLevel = $i',MPAS_LOG_OUT, intArgs=(/ iLevel /) )
       end if
 
       call particle_vertical_treatment(verticalTreatment, indexLevel, nCellVertices, verticesOnCell(:,iCell), &
@@ -2496,13 +2496,13 @@ contains
 
      uvCell = 0.0_RKIND
 
-     !write(stderrUnit,*) 'interp'
+     !call mpas_log_write( 'interp' )
      if(iLevel < 1) then
        if(iLevel == 0) then
-         !write(stderrUnit,*) 'nCellVertices = ', nCellVertices, 'buoyancyInterp= ', phiInterp
+         !print *, 'nCellVertices = ', nCellVertices, 'buoyancyInterp= ', phiInterp
          do aVertex = 1, nCellVertices
            theVertex = verticesOnCell(aVertex)
-           !write(stderrUnit,*) maxloc(phiVals,1), phiVals(1:nVertLevels), uVertexVelocity(1:nVertLevels,theVertex)
+           !print *, maxloc(phiVals,1), phiVals(1:nVertLevels), uVertexVelocity(1:nVertLevels,theVertex)
            uvCell(1,aVertex) = uVertexVelocity(maxloc(phiVals(1:nVertLevels),1), theVertex)
            uvCell(2,aVertex) = vVertexVelocity(maxloc(phiVals(1:nVertLevels),1), theVertex)
            uvCell(3,aVertex) = wVertexVelocity(maxloc(phiVals(1:nVertLevels),1), theVertex)
@@ -2579,7 +2579,7 @@ contains
      ! make sure to mask all boundary vertexes to be zero to enforce boundary conditions
      do aVertex = 1, nCellVertices
        theVertex = verticesOnCell(aVertex)
-       !write(stderrUnit,*) boundaryVertex(theVertex)
+       !print *, boundaryVertex(theVertex)
        ! make all the boundary values be zero to prevent particle from horizontally leaving cell
        uvCell(1,aVertex) = uvCell(1,aVertex) * (1-boundaryVertex(theVertex))
        uvCell(2,aVertex) = uvCell(2,aVertex) * (1-boundaryVertex(theVertex))
@@ -2618,7 +2618,7 @@ contains
      integer, intent(out) :: iLow, iHigh                              !< interpolation indices
 
      ! assumes increasing index is in decreasing phi space, and phiInterp in range of phiVals
-     !write(stderrUnit,*) 'phiInterp = ', phiInterp, 'phiVals = ', phiVals, 'nVertLevels = ', nVertLevels, 'iLevel = ', iLevel
+     !print *, 'phiInterp = ', phiInterp, 'phiVals = ', phiVals, 'nVertLevels = ', nVertLevels, 'iLevel = ', iLevel
      if(phiInterp > phiVals(iLevel)) then
        iHigh = iLevel + 1
        iLow  = iLevel
@@ -2630,9 +2630,9 @@ contains
      ! check to make sure points are in range
      ! optimization point: smarter algorithm won't have to call this ever
      if(.not.((phiInterp <= phiVals(iHigh)) .and. (phiInterp >= phiVals(iLow)))) then
-       !write(stderrUnit,*) 'fast interpolation failed, trying general, brute force search for interpolation bounds'
-       !write(stderrUnit,*) 'iLow = ', iLow, ' iHigh = ', iHigh
-       !write(stderrUnit,*) 'phiInterp = ', phiInterp , ' phiLow =',  phiVals(iLow), ' phiHigh = ', phiVals(iHigh)
+       !call mpas_log_write( 'fast interpolation failed, trying general, brute force search for interpolation bounds')
+       !print *,  'iLow = ', iLow, ' iHigh = ', iHigh
+       !print *,  'phiInterp = ', phiInterp , ' phiLow =',  phiVals(iLow), ' phiHigh = ', phiVals(iHigh)
        call get_bounding_indices_brute_force(nVertLevels, phiInterp, phiVals, iLow, iHigh)
      end if
 
@@ -2693,12 +2693,12 @@ contains
        write(message, *) 'phiInterp = ', phiInterp, ' phiLow =', phiVals(iLow), ' phiHigh = ', phiVals(iHigh)
        LIGHT_DEBUG_ALL_WRITE(message)
      else
-       write(stderrUnit,*) 'brute force interpolation failed with phiInterp = ', phiInterp, ' phiLow = ', phiVals(iLow), &
+       print *,  'brute force interpolation failed with phiInterp = ', phiInterp, ' phiLow = ', phiVals(iLow), &
                         ' phiHigh = ', phiVals(iHigh)
        LIGHT_DEBUG_ALL_WRITE(' phiVals = ' COMMA phiVals(1:nVertLevels))
      end if
 
-     write(stderrUnit,*) 'Warning!: brute force interpolation used, boundary condition may be wrong!'
+     call mpas_log_write( 'Warning!: brute force interpolation used, boundary condition may be wrong!')
 #endif
 
    end subroutine get_bounding_indices_brute_force!}}}
@@ -2751,7 +2751,7 @@ contains
          alpha = (zSubStep - zTop(iLevel))/(zTop(iLevel+1)- zTop(iLevel))
 #ifdef MPAS_DEBUG
        else
-         write(stderrUnit,*) 'Error with vertical velocity interpolation!'
+         call mpas_log_write( 'Error with vertical velocity interpolation!')
 #endif
        end if
        interp_vert_velocity_to_zlevel = alpha * vertVelocityTop(iLevel)+ (1.0_RKIND - alpha) * vertVelocityTop(iLevel+1)

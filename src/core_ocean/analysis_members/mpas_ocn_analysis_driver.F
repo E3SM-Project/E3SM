@@ -24,7 +24,7 @@ module ocn_analysis_driver
    use mpas_timekeeping
    use mpas_timer
    use mpas_stream_manager
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log
 
    use ocn_constants
    use ocn_global_stats
@@ -301,7 +301,7 @@ contains
             call mpas_timer_start(timerName)
 
 #ifdef MPAS_DEBUG
-            write(stderrUnit,*) '      Bootstrapping AM ' // poolItr % memberName(1:nameLength)
+            call mpas_log_write( '      Bootstrapping AM ' // poolItr % memberName(1:nameLength))
 #endif
             call ocn_bootstrap_analysis_members(domain, poolItr % memberName(1:nameLength), ierr=err)
 
@@ -319,7 +319,7 @@ contains
                   ! If the stream is set to 'none' nullify the config, so it doesn't get read in
                   nullify(config_AM_restart_stream)
                else if ( .not. mpas_stream_mgr_stream_exists(domain % streamManager, config_AM_restart_stream) ) then
-                  call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Stream named ''' // trim(config_AM_restart_stream) // &
+                  call mpas_log_write('MPAS-ocean: ERROR: Stream named ''' // trim(config_AM_restart_stream) // &
                                                ''' does not exist in config for analysis member ''' // &
                                                trim(poolItr % memberName(1:nameLength)) // '''')
                end if
@@ -331,7 +331,7 @@ contains
                   ! If the stream is set to 'none' nullify the config, so it doesn't get read in
                   nullify(config_AM_input_stream)
                else if ( .not. mpas_stream_mgr_stream_exists(domain % streamManager, config_AM_input_stream) ) then
-                  call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Stream named ''' // trim(config_AM_input_stream) // &
+                  call mpas_log_write('MPAS-ocean: ERROR: Stream named ''' // trim(config_AM_input_stream) // &
                                                ''' does not exist in config for analysis member ''' // &
                                                trim(poolItr % memberName(1:nameLength)) // '''')
                end if
@@ -440,7 +440,7 @@ contains
 
          if ( config_AM_enable ) then
 #ifdef MPAS_DEBUG
-            write(stderrUnit,*) '      Initializing AM ' // poolItr % memberName(1:nameLength)
+            call mpas_log_write( '      Initializing AM ' // poolItr % memberName(1:nameLength))
 #endif
             timerName = trim(initTimerPrefix) // poolItr % memberName(1:nameLength)
             call mpas_timer_start(timerName)
@@ -470,13 +470,12 @@ contains
                end do
 
                if ( .not. streamFound ) then
-                  call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Stream ' // trim(config_AM_output_stream) // &
-                                               ' does not exist. Exiting...')
+                  call mpas_log_write('ERROR: Stream ' // trim(config_AM_output_stream) // ' does not exist. Exiting...', MPAS_LOG_CRIT)
                end if
             end if
 
             if ( config_AM_compute_interval == 'output_interval' .and. config_AM_output_stream == 'none') then
-               call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Analysis member has compute_interval of ''output_interval'' ' // &
+               call mpas_log_write('MPAS-ocean: ERROR: Analysis member has compute_interval of ''output_interval'' ' // &
                                             'without an output stream.')
             end if
 
@@ -588,7 +587,7 @@ contains
             if ( config_AM_compute_on_startup ) then
                timerName = trim(computeStartupTimerPrefix) // poolItr % memberName(1:nameLength)
 #ifdef MPAS_DEBUG
-               write(stderrUnit,*) '      Computing AM ' // poolItr % memberName(1:nameLength)
+               call mpas_log_write( '      Computing AM ' // poolItr % memberName(1:nameLength))
 #endif
                call mpas_timer_start(timerName)
                call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
@@ -601,14 +600,15 @@ contains
                call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
                if ( config_AM_output_stream /= 'none' ) then
 #ifdef MPAS_DEBUG
-                  write(stderrUnit,*) '      Writing AM ' // poolItr % memberName(1:nameLength)
+                  call mpas_log_write( '      Writing AM ' // poolItr % memberName(1:nameLength))
 #endif
                   call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, &
                                              forceWriteNow=.true., ierr=err_tmp)
                end if
-               if (.not. config_AM_compute_on_startup) then
-                  write(stderrUnit, *) ' *** WARNING: write_on_startup called without compute_on_startup for analysis member: ' &
-                    // poolItr % memberName(1:nameLength) // '.'
+            else
+               if ( config_AM_write_on_startup ) then
+                  call mpas_log_write('write_on_startup called without compute_on_startup for analysis member: ' &
+                     // poolItr % memberName(1:nameLength) // '. Skipping output...', MPAS_LOG_WARN)
                end if
             end if
 
@@ -706,7 +706,7 @@ contains
                if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=config_AM_output_stream, &
                     direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
 #ifdef MPAS_DEBUG
-                  write(stderrUnit,*) '      Computing AM ' // poolItr % memberName(1:nameLength)
+                  call mpas_log_write( '      Computing AM ' // poolItr % memberName(1:nameLength))
 #endif
                   call mpas_timer_start(timerName)
                   call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
@@ -715,7 +715,7 @@ contains
             else if ( mpas_is_alarm_ringing(domain % clock, alarmName, ierr=err_tmp) ) then
                call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp)
 #ifdef MPAS_DEBUG
-               write(stderrUnit,*) '      Computing AM ' // poolItr % memberName(1:nameLength)
+               call mpas_log_write( '      Computing AM ' // poolItr % memberName(1:nameLength))
 #endif
                call mpas_timer_start(timerName)
                call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
@@ -790,7 +790,7 @@ contains
 
          if ( config_AM_enable ) then
 #ifdef MPAS_DEBUG
-            write(stderrUnit,*) '      Preparing AM ' // poolItr % memberName(1:nameLength) // ' for restart write'
+            call mpas_log_write( '      Preparing AM ' // poolItr % memberName(1:nameLength) // ' for restart write')
 #endif
             timerName = trim(restartTimerPrefix) // poolItr % memberName(1:nameLength)
             call mpas_timer_start(timerName)
@@ -881,7 +881,7 @@ contains
             nullify(config_AM_backwardOffset)
             nullify(config_AM_forwardOffset)
 #ifdef MPAS_DEBUG
-            write(stderrUnit,*) '      Writing AM ' // poolItr % memberName(1:nameLength)
+            call mpas_log_write( '      Writing AM ' // poolItr % memberName(1:nameLength))
 #endif
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_output_stream'
             call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
@@ -897,9 +897,9 @@ contains
 
                if ( associated(config_AM_backwardOffset) ) then
                   if ( associated(config_AM_forwardOffset) ) then
-                     write(stderrUnit, *) 'WARNING: Both backward and forward offsets are set for AM ' // &
-                        poolItr % memberName(1:nameLength)
-                     write(stderrUnit, *) '         will only use backward offset. Forward offset will be ignored.'
+                     call mpas_log_write( 'Both backward and forward offsets are set for AM ' // &
+                        poolItr % memberName(1:nameLength), MPAS_LOG_WARN)
+                     call mpas_log_write( '         will only use backward offset. Forward offset will be ignored.')
                   end if
                   call mpas_set_timeinterval(offsetInt, timeString=config_AM_backwardOffset, ierr=err_tmp)
                   outputTime = nowTime - offsetInt
@@ -991,7 +991,7 @@ contains
 
          if ( config_AM_enable ) then
 #ifdef MPAS_DEBUG
-            write(stderrUnit,*) '      Finalizing AM ' // poolItr % memberName(1:nameLength)
+            call mpas_log_write( '      Finalizing AM ' // poolItr % memberName(1:nameLength))
 #endif
             timerName = trim(finalizeTimerPrefix) // poolItr % memberName(1:nameLength)
             call mpas_timer_start(timerName)
