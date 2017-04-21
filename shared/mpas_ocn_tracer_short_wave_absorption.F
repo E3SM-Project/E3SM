@@ -163,9 +163,11 @@ contains
 
       if(.not. config_use_activeTracers_surface_bulk_forcing) then
          if(trim(config_sw_absorption_type) .ne. 'none') then
-              write(stderrUnit,*) 'ERROR: you have specified bulk_forcing off with shortwave absorption on'
-              write(stderrUnit,*) 'either set config_sw_absorption_type to none or enable activeTracers_surface_bulk_forcing'
-              err = 1
+            call mpas_log_write( &
+               'ERROR: you have specified bulk_forcing off with shortwave absorption on ' // &
+               'either set config_sw_absorption_type to none or enable activeTracers_surface_bulk_forcing', &
+                MPAS_LOG_CRIT)
+             err = 1
          endif
          return
       endif
@@ -176,7 +178,9 @@ contains
       else if ( trim( config_sw_absorption_type ) == 'ohlmann00' ) then
          call ocn_tracer_short_wave_absorption_variable_init(domain, err)
       else if ( trim( config_sw_absorption_type ) .ne. 'none') then
-         write(stderrUnit,*) 'Incorrect option for config_sw_absorption_type. Options are: jerlov or ohlmann00 or none'
+         call mpas_log_write( &
+            'Incorrect option for config_sw_absorption_type. Options are: jerlov or ohlmann00 or none', &
+            MPAS_LOG_CRIT)
          err = 1
          return
       end if

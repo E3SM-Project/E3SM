@@ -225,8 +225,10 @@ contains
       case ('ohlmann00')
          call ocn_init_shortwave_forcing_ohlmann(domain)
       case default
-         write(stderrUnit,*) "Shortwave parameterization type unknown: ", trim(config_sw_absorption_type)
-         call MPAS_dmpar_global_abort('MPAS-ocean: Unknown config_sw_absortion_type')
+         call mpas_log_write( &
+            'Shortwave parameterization type unknown: config_sw_absortion_type=' // trim(config_sw_absorption_type) // &
+            ' Options are: jerlov or ohlmann00 or none', &
+            MPAS_LOG_CRIT)
       end select
 
 

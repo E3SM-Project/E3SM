@@ -6,7 +6,7 @@
 
     ! check that elem_name is in the dim list
     if (.not. check_element_dim(src % dimNames, elem_name)) then
-      call mpas_dmpar_global_abort( &
+      call mpas_log_write( &
         trim(CURRENT_CORE_NAME) // ' ERROR: element dimension "' // &
         elem_name // '" was not found in field "' // src % fieldName // &
         ', which is required for the current regional stats AM' // &

@@ -27,7 +27,6 @@ module ocn_core
    use mpas_timekeeping
    use mpas_dmpar
    use mpas_timer
-   use mpas_io_units
    use mpas_threading
 
    use ocn_forward_mode
@@ -69,11 +68,9 @@ module ocn_core
 
       numThreads = mpas_threading_get_max_threads()
 
-      write(stderrUnit, *) ''
-      write(stderrUnit, *) ' *****************************************************************************'
-      write(stderrUnit, *) ' MPI Task ', domain % dminfo % my_proc_id, ' has access to ', numThreads, ' threads'
-      write(stderrUnit, *) ' *****************************************************************************'
-      write(stderrUnit, *) ''
+      call mpas_log_write( ' *****************************************************************************')
+      call mpas_log_write( ' MPI Task $i has access to $i threads', intArgs=(/domain % dminfo % my_proc_id, numThreads/) )
+      call mpas_log_write( ' *****************************************************************************')
 
       if ( trim(config_ocean_run_mode) == 'forward' ) then
          ierr = ocn_forward_mode_init(domain, startTimeStamp)

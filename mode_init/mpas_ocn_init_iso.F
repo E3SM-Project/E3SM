@@ -346,11 +346,11 @@ contains
 
 
       if(.not. on_a_sphere) then
-        write(stderrUnit, *) 'ERROR: ISO test case can only be defined on a spherical mesh.'
+        call mpas_log_write( 'ERROR: ISO test case can only be defined on a spherical mesh.')
         iErr = 1
         return
       else
-       write(stderrUnit, *) 'ISO test case using spherical radius of size: ', sphereRadius
+       call mpas_log_write( 'ISO test case using spherical radius of size: $f', realArgs=(/ sphereRadius /) )
       end if
 
       ! Define interface locations
@@ -887,7 +887,7 @@ contains
       if(config_vert_levels <= 0 .and. config_iso_vert_levels > 0) then
          config_vert_levels = config_iso_vert_levels
       else if (config_vert_levels <= 0) then
-         write(stderrUnit,*) 'ERROR: Validation failed for ISO. Not given a usable value for vertical levels.'
+         call mpas_log_write( 'ERROR: Validation failed for ISO. Not given a usable value for vertical levels.')
          iErr = 1
       end if
 

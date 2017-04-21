@@ -119,7 +119,7 @@ module ocn_lagrangian_particle_tracking_reset
        call mpas_set_timeInterval(timeInterval, timeString=trim(config_AM_lagrPartTrack_reset_global_timestamp))
        call mpas_get_timeInterval(timeInterval, dt=globalResetTimeValue)
 
-       !write(stderrUnit,*) 'resetTimeValue = ', globalResetTimeValue
+       !print *,  'resetTimeValue = ', globalResetTimeValue
 
        block => block %  next
      end do
@@ -277,15 +277,15 @@ module ocn_lagrangian_particle_tracking_reset
        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
        case default
-         write(stderrUnit,*) 'WARNING: reset criteria in config_AM_lagrPartTrack_reset_criteria=', &
-           trim(config_AM_lagrPartTrack_reset_criteria),' unknown! Cannot restart.'
+         call mpas_log_write( 'WARNING: reset criteria in config_AM_lagrPartTrack_reset_criteria=' // &
+           trim(config_AM_lagrPartTrack_reset_criteria) // ' unknown! Cannot restart.')
 
      end select
 
      ! reset particle block, cell, and position to reset values
      if (resetParticle) then
 
-       !write(stderrUnit,*) 'reseting particle'
+       !call mpas_log_write( 'reseting particle')
 
        ! get data
        call mpas_pool_get_array(particle % haloDataPool, 'currentBlock', currentBlock)

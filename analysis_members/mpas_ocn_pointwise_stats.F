@@ -18,9 +18,10 @@
 !-----------------------------------------------------------------------
 
 #define COMMA ,
-#define PWAM_DEBUG_WRITE(M) ! write(stderrUnit,*) M
-#define PWAM_WARNING_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
-#define PWAM_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
+#define PWAM_DEBUG_WRITE(Z) !  call mpas_log_write( Z )
+#define PWAM_DEBUG_ALL_WRITE(Z) !  call mpas_log_write( Z )
+#define PWAM_WARNING_WRITE(Z)  call mpas_log_write( Z , MPAS_LOG_WARN )
+#define PWAM_ERROR_WRITE(Z) call mpas_log_write( Z , MPAS_LOG_CRIT )
 
 module ocn_pointwise_stats
 
@@ -1008,7 +1009,8 @@ contains
                block => block % next
             end do
 
-            PWAM_DEBUG_WRITE(' -- Reducing field ' // trim(poolItr % memberName) // ' with nElements = ' COMMA nElements)
+            call mpas_log_write( ' -- Reducing field ' // trim(poolItr % memberName) // ' with nElements = $i', &
+                 intArgs=(/  nElements /) )
             ! Need to sum field across processors
             if ( fieldInfo % fieldType == MPAS_POOL_REAL ) then
                allocate( tempRealArrLocal(nElements) )

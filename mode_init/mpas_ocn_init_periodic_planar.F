@@ -128,7 +128,7 @@ contains
     call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
     if(config_init_configuration .ne. trim('periodic_planar')) return
 
-    write(stderrUnit,*) 'Starting initialization of planar periodic grid'
+    call mpas_log_write( 'Starting initialization of planar periodic grid')
 
     ! get config variables !{{{
     call mpas_pool_get_config(domain % configs, 'config_write_cull_cell_mask', config_write_cull_cell_mask)
@@ -146,7 +146,7 @@ contains
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
     ! test if configure settings are invalid
-    if ( on_a_sphere ) call mpas_dmpar_global_abort('MPAS-ocean: IERROR: The planar periodic configuration can ' &
+    if ( on_a_sphere ) call mpas_log_write('MPAS-ocean: IERROR: The planar periodic configuration can ' &
                                                  // 'only be applied to a planar mesh. Exiting...')
 
     ! Define interface locations
@@ -339,7 +339,6 @@ contains
        end do
 
        !boundaryVertex => block_ptr % mesh % boundaryVertex % array(1,:)
-       !!write(stdoutUnit,*) boundaryVertex(:)
        !block_ptr % scratch % psiVertex % array = &
        !  boundaryVertex * &
        !  sum(boundaryVertex * block_ptr % scratch % psiVertex % array) &
@@ -356,7 +355,7 @@ contains
     end do  ! do while(associated(block_ptr))
     call mpas_deallocate_scratch_field(psiVertexField, .false.)
 
-    write(stderrUnit,*) 'Finishing initialization of periodic_planar'
+    call mpas_log_write( 'Finishing initialization of periodic_planar')
     !--------------------------------------------------------------------
 
   end subroutine ocn_init_setup_periodic_planar!}}}
@@ -395,7 +394,7 @@ contains
       if(config_vert_levels <= 0 .and. config_periodic_planar_vert_levels > 0) then
          config_vert_levels = config_periodic_planar_vert_levels
       else if (config_vert_levels <= 0) then
-         write(stderrUnit,*) 'IERROR: Validation failed for periodic_planar. Not given a usable value for vertical levels.'
+         call mpas_log_write( 'IERROR: Validation failed for periodic_planar. Not given a usable value for vertical levels.')
          iErr = 1
       end if
 

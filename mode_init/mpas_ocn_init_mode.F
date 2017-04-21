@@ -115,7 +115,7 @@ module ocn_init_mode
       call ocn_constants_init(domain % configs, domain % packages)
 
       if ( ierr /= 0 ) then
-         call mpas_dmpar_global_abort("MPAS-ocean: ERROR: Failed validation...")
+         call mpas_log_write("MPAS-ocean: ERROR: Failed validation...")
       end if
 
       !
@@ -144,7 +144,7 @@ module ocn_init_mode
       call ocn_equation_of_state_init(err_tmp)
       ierr = ior(ierr, err_tmp)
       if(ierr.eq.1) then
-          call mpas_dmpar_global_abort('MPAS-ocean: ERROR: An error was encountered while initializing the MPAS-Ocean init mode')
+          call mpas_log_write('MPAS-ocean: ERROR: An error was encountered while initializing the MPAS-Ocean init mode')
       endif
 
       !
@@ -209,14 +209,14 @@ module ocn_init_mode
          if (trim(config_stop_time) /= "none") then
             call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=err_tmp)
             if(startTime + runduration /= stopTime) then
-               write(stderrUnit,*) 'Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.'
+               call mpas_log_write( 'Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.')
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
          call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=err_tmp)
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=err_tmp)
       else
-         write(stderrUnit, *) ' Warning: config_run_duration and config_start_time were "none", setting run duration to 1 second.'
+         call mpas_log_write( ' Warning: config_run_duration and config_start_time were "none", setting run duration to 1 second.')
          call mpas_set_timeInterval(runDuration, timeString="0000_00:00:01", ierr=err_tmp)
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, runDuration=runDuration, ierr=err_tmp)
       end if
@@ -267,7 +267,7 @@ module ocn_init_mode
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
 
       call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
-      write(stderrUnit, *) ' Generating configuration: ' // trim(config_init_configuration)
+      call mpas_log_write( ' Generating configuration: ' // trim(config_init_configuration))
 
       call ocn_init_setup_baroclinic_channel(domain, ierr)
       call ocn_init_setup_lock_exchange(domain, ierr)
@@ -286,7 +286,7 @@ module ocn_init_mode
       call ocn_init_setup_isomip_plus(domain, ierr)
       !call ocn_init_setup_TEMPLATE(domain, ierr)
 
-      write(stderrUnit, *) ' Completed setup of: ' // trim(config_init_configuration)
+      call mpas_log_write( ' Completed setup of: ' // trim(config_init_configuration))
       call mpas_timer_start('io_write', .false.)
       call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
       call mpas_timer_stop('io_write')

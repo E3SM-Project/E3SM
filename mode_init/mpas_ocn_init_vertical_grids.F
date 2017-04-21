@@ -90,14 +90,14 @@ contains
          call ocn_generate_100layerACMEv1_vertical_grid(interfaceLocations)
       else if ( trim(gridType) == '1dCVTgenerator' ) then
          if (.not. present(configPool)) then
-            call mpas_dmpar_global_abort("MPAS-ocean: ERROR: requesting a 1d CVT vertical grid generation " &
+            call mpas_log_write("MPAS-ocean: ERROR: requesting a 1d CVT vertical grid generation " &
                                       // "without passing the corresponding parameters. Exiting...")
          else
             call ocn_generate_1dCVT_vertical_grid(configPool, interfaceLocations)
          end if
       else
-         write(stderrUnit, *) ' WARNING: '//trim(gridType)//' is an invalid vertical grid choice. No vertical ' &
-                           // 'grid will be generated.'
+         call mpas_log_write( ' WARNING: '//trim(gridType)//' is an invalid vertical grid choice. No vertical ' &
+                           // 'grid will be generated.')
       end if
 
    end subroutine ocn_generate_vertical_grid!}}}
@@ -121,7 +121,7 @@ contains
       real (kind=RKIND) :: layerSpacing
       integer :: nInterfaces, iInterface
 
-      write(stderrUnit,* ) ' ---- Generating uniform vertical grid ---- '
+      call mpas_log_write( ' ---- Generating uniform vertical grid ---- ')
 
       nInterfaces = size(interfaceLocations, dim=1)
       layerSpacing = 1.0_RKIND / (nInterfaces - 1)
@@ -156,7 +156,7 @@ contains
       nInterfaces = size(interfaceLocations, dim=1)
 
       if ( nInterfaces /= 61 ) then
-         call mpas_dmpar_global_abort("MPAS-ocean: ERROR: Vertical grid must have 60 layers to "// &
+         call mpas_log_write("MPAS-ocean: ERROR: Vertical grid must have 60 layers to "// &
                                       "apply 60 Layer PHC grid. Exiting...")
       end if
 
@@ -250,7 +250,7 @@ contains
       nInterfaces = size(interfaceLocations, dim=1)
 
       if ( nInterfaces /= 43 ) then
-         call mpas_dmpar_global_abort("MPAS-ocean: ERROR: Vertical grid must have 42 layers "// &
+         call mpas_log_write("MPAS-ocean: ERROR: Vertical grid must have 42 layers "// &
                                       "to apply 42 Layer WOCE grid. Exiting...")
       end if
 
@@ -327,7 +327,7 @@ contains
       nInterfaces = size(interfaceLocations, dim=1)
 
       if ( nInterfaces /= 101 ) then
-         call mpas_dmpar_global_abort("MPAS-ocean: ERROR: Vertical grid must have 100 layers to "// &
+         call mpas_log_write("MPAS-ocean: ERROR: Vertical grid must have 100 layers to "// &
                                       "apply 100 Layer PHC grid. Exiting...")
       end if
 
@@ -531,8 +531,8 @@ contains
       zMid(:) = 0.0_RKIND
 
       if(present(ssh) .and. .not. present(restingThickness)) then
-         write (stderrUnit,*) ' Error: ssh present but restingThickness not present ' &
-                           // 'in ocn_compute_layerThickness_zMid_from_bottomDepth'
+         call mpas_log_write( ' Error: ssh present but restingThickness not present ' &
+                           // 'in ocn_compute_layerThickness_zMid_from_bottomDepth')
          iErr = 1
          return
       end if
@@ -625,7 +625,7 @@ contains
             elseif (config_pbc_alteration_type .eq. 'full_cell') then
                bottomDepth = refBottomDepth(maxLevelCell)
             else
-               write (stderrUnit,*) ' Error: Incorrect choice of config_pbc_alteration_type: ', config_pbc_alteration_type
+               call mpas_log_write( ' Error: Incorrect choice of config_pbc_alteration_type: '// config_pbc_alteration_type)
                iErr = 1
             endif
          endif
@@ -741,11 +741,11 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'globalRx1Max', globalRx1Max, 1)
       do k = 1,nVertLevels
          call mpas_dmpar_max_real(domain % dminfo, rx1MaxLevel(k), globalRx1Max)
-         write (stdoutUnit,'(a, i4, a, es10.2)') '  max of rx1 in level', k, ':', globalRx1Max
+         print '(a, i4, a, es10.2)', '  max of rx1 in level', k, ':', globalRx1Max
       end do
 
       call mpas_dmpar_max_real(domain % dminfo, localMaxRx1Edge, globalRx1Max)
-      write (stdoutUnit,'(a, es10.2)') ' global max of rx1:', globalRx1Max
+      print '(a, es10.2)', ' global max of rx1:', globalRx1Max
 
       deallocate(rx1MaxLevel)
 
@@ -1273,11 +1273,11 @@ contains
           block_ptr => block_ptr % next
         end do
         call mpas_dmpar_max_real(domain % dminfo, localMaxRx1Edge, globalRx1Max)
-        write (stdoutUnit,'(a, i5, a, es10.2)') ' iter:', iterIndex, ' global max of rx1:', globalRx1Max
+        print '(a, i5, a, es10.2)', ' iter:', iterIndex, ' global max of rx1:', globalRx1Max
         call mpas_dmpar_min_real(domain % dminfo, localStretchMin, globalVerticalStretchMin)
-        write (stdoutUnit,'(a, es10.2)') '            global min of verticalStretch:', globalVerticalStretchMin
+        print '(a, es10.2)', '            global min of verticalStretch:', globalVerticalStretchMin
         call mpas_dmpar_max_real(domain % dminfo, localStretchMax, globalVerticalStretchMax)
-        write (stdoutUnit,'(a, es10.2)') '            global max of verticalStretch:', globalVerticalStretchMax
+        print '(a, es10.2)', '            global max of verticalStretch:', globalVerticalStretchMax
 
       end do !iterIndex
 
@@ -1322,7 +1322,7 @@ contains
             ! initialize with PBCs
             call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
             if(iErr .ne. 0) then
-              write(stderrUnit,*) 'ERROR: ocn_alter_bottomDepth_for_pbcs failed.'
+              call mpas_log_write( 'ERROR: ocn_alter_bottomDepth_for_pbcs failed.')
               return
             end if
           else

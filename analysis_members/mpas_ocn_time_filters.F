@@ -128,7 +128,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_AM_timeFilters_initialize_filters', initializeFilters)
       if (initializeFilters) then
 #ifdef TIME_FILTERS_DEBUG
-        write(stderrUnit,*) 'initializing time filters'
+        call mpas_log_write( 'initializing time filters')
 #endif
 
         ! loop over all blocks and make assignments
@@ -184,12 +184,12 @@ contains
       call mpas_pool_get_subpool(block % structs, 'mesh', statePool)
       call mpas_pool_get_array(statePool, 'latEdge', latEdge)
       call mpas_pool_get_array(statePool, 'lonEdge', lonEdge)
-      write(stderrUnit,*) 'lon = ', 180.0_RKIND/pii*lonEdge(iEdgeOutput), ' lat = ', 180.0_RKIND/pii*latEdge(iEdgeOutput), &
+      print *,  'lon = ', 180.0_RKIND/pii*lonEdge(iEdgeOutput), ' lat = ', 180.0_RKIND/pii*latEdge(iEdgeOutput), &
                           ' iklevel=',iklevel, ' iEdgeOutput=',iEdgeOutput, ' iBlockOutput = ', iBlockOutput
 #endif
 
 #ifdef TIME_FILTERS_DEBUG
-        write(stderrUnit,*) 'finished initializing time filters'
+        call mpas_log_write( 'finished initializing time filters')
 #endif
 
    end subroutine ocn_init_time_filters!}}}
@@ -273,7 +273,7 @@ contains
       dminfo = domain % dminfo
 
 #ifdef TIME_FILTERS_DEBUG
-        write(stderrUnit,*) 'start computing time filters'
+        call mpas_log_write( 'start computing time filters')
 #endif
 
       ! get dt
@@ -286,7 +286,7 @@ contains
       call mpas_get_timeInterval(timeStepESMF, dt=tau)
 
 #ifdef TIME_FILTERS_DEBUG
-          !write(stderrUnit,*) 'dt = ', dt, ' tau = ', tau
+          !print *,  'dt = ', dt, ' tau = ', tau
 #endif
 
       block => domain % blocklist
@@ -324,7 +324,7 @@ contains
             end do
 #ifdef TIME_FILTERS_DEBUG
             if (iEdge == iEdgeOutput .and. iBlock == iBlockOutput) then
-                write(stderrUnit,*) 'vl=', normalVelocityLowPass(iklevel, iEdge), ' v=', normalVelocity(iklevel, iEdge)
+                print *,  'vl=', normalVelocityLowPass(iklevel, iEdge), ' v=', normalVelocity(iklevel, iEdge)
             end if
 #endif
          end do
@@ -373,7 +373,7 @@ contains
       end if
 
 #ifdef TIME_FILTERS_DEBUG
-        write(stderrUnit,*) 'finished computing time filters'
+        call mpas_log_write( 'finished computing time filters')
 #endif
 
    end subroutine ocn_compute_time_filters!}}}

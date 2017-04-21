@@ -596,11 +596,11 @@ logical function check_real_time(all_fields, field_name)
   check = info % fieldType == MPAS_POOL_REAL
 
   if(.not. check) then
-    write(stdErrUnit,*) trim(CURRENT_CORE_NAME) // &
+    call mpas_log_write( trim(CURRENT_CORE_NAME) // &
       ' WARNING: field "' // trim(field_name) // '" listed in the ' // &
       'output stream, for time series stats analysis member ' // &
       'stream, is not real. Time series stats will not be applied to ' // &
-      'this field.'
+      'this field.')
   else
     if(info % nDims == 0) then
       call mpas_pool_get_field(all_fields, field_name, r0, 1)
@@ -623,11 +623,11 @@ logical function check_real_time(all_fields, field_name)
     end if
 
     if (.not. check) then
-      write(stdErrUnit,*) trim(CURRENT_CORE_NAME) // &
+      call mpas_log_write( trim(CURRENT_CORE_NAME) // &
         ' WARNING: field "' // trim(field_name) // '" listed in the ' // &
         'output stream, for time series stats analysis member ' // &
         'stream, does not have a time dimension. Time series stats will ' // &
-        'not be applied to this field.'
+        'not be applied to this field.')
     end if
   end if
 
@@ -863,7 +863,7 @@ subroutine start_state(domain, instance, series, valid_input, err)
   call mpas_pool_get_config(domain % configs, config, output_stream_name)
 
   if (output_stream_name == NONE_TOKEN) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: stream cannot be "none" ' // &
       'for time series stats.')
   end if
@@ -898,7 +898,7 @@ subroutine start_state(domain, instance, series, valid_input, err)
   end do
 
   if (series % number_of_variables < 1) then
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: there are no fields ' // &
       'in the time series stats output stream "' // trim(output_stream_name) &
       // '" that time series stats can be applied to.')
@@ -1090,13 +1090,13 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
   end do
 
   if (.not. emptyRestartStream) then
-    write(stderrUnit, *) trim(CURRENT_CORE_NAME) // ' ERROR: stream named ''' &
+    call mpas_log_write( trim(CURRENT_CORE_NAME) // ' ERROR: stream named ''' &
       // trim(restart_stream_name) // ''' is not empty, but is used in ' // &
       'an restart instance of the time series stats analysis member. ' // &
       'This restart stream will be built based on the contents of the ''' // &
       trim(output_stream_name) // ''' stream. Please ensure it is empty ' // &
-      'in the streams input file.'
-    call mpas_dmpar_global_abort( &
+      'in the streams input file.')
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // &
       'ERROR: misconfigured restart stream for time series stats ' // &
       ' analysis member.')
@@ -1267,7 +1267,7 @@ character (len=StrKIND) function operator_naming (operator_enum)
   else if (operator_enum == SOS_OP) then
     operator_naming = SOS_TOKEN
   else
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: the impossible happened - ' // &
       'tried to create an operation in the time series stats ' // &
       'analysis member of unknown kind')
@@ -1298,7 +1298,7 @@ integer function operator_enum (token)
   else if (trim(token) == SOS_TOKEN) then
     operator_enum = SOS_OP
   else
-    call mpas_dmpar_global_abort( &
+    call mpas_log_write( &
       trim(CURRENT_CORE_NAME) // ' ERROR: unknown operation "' // &
       trim(token) // '" requested in the time ' // &
       'series stats analysis member configuration')
@@ -1355,7 +1355,7 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   call set_times(series, alarms, domain % clock, RESET_INTERVALS, &
     config_results, ok, err)
   if (.not. ok) then
-    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // &
+    call mpas_log_write(trim(CURRENT_CORE_NAME) // &
       ' ERROR: number of listed times in ' // &
       'reset_intervals is not consistent with number of listed times ' // &
       'in reference_times in time series stats analysis member ' // &
@@ -1368,7 +1368,7 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   call set_times(series, alarms, domain % clock, REPEAT_INTERVALS, &
     config_results, ok, err)
   if (.not. ok) then
-    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // &
+    call mpas_log_write(trim(CURRENT_CORE_NAME) // &
       ' ERROR: number of listed times in ' // &
       'repeat_intervals is not consistent with number of listed times ' // &
       'in reference_times in time series stats analysis member ' // &
@@ -1381,7 +1381,7 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   call set_times(series, alarms, domain % clock, DURATION_INTERVALS, &
     config_results, ok, err)
   if (.not. ok) then
-    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // &
+    call mpas_log_write(trim(CURRENT_CORE_NAME) // &
       ' ERROR: number of listed times in ' // &
       'duration_intervals is not consistent with number of listed times ' // &
       'in reference_times in time series stats analysis member ' // &
@@ -1397,10 +1397,10 @@ subroutine get_alarms(domain, instance, series, alarms, err)
        alarms(b) % reset_interval, n, rem)
 
     if (n > 1 .or. (n == 1 .and. rem /= zero)) then
-      write(stderrUnit,*) trim(CURRENT_CORE_NAME) // &
+      call mpas_log_write( trim(CURRENT_CORE_NAME) // &
         'WARNING: repeat_interval > ' // &
         'reset_interval in time series stats analysis member ' // &
-        'configuration. Truncating repeat_interval.'
+        'configuration. Truncating repeat_interval.')
       alarms(b) % repeat_interval = alarms(b) % reset_interval
     end if
 
@@ -1409,10 +1409,10 @@ subroutine get_alarms(domain, instance, series, alarms, err)
        alarms(b) % repeat_interval, n, rem)
 
     if (n > 1 .or. (n == 1 .and. rem /= zero)) then
-      write(stderrUnit,*) trim(CURRENT_CORE_NAME) // &
+      call mpas_log_write( trim(CURRENT_CORE_NAME) // &
         'WARNING: duration_interval > ' // &
         'repeat_interval in time series stats analysis member ' // &
-        'configuration. Truncating duration_interval.'
+        'configuration. Truncating duration_interval.')
       alarms(b) % repeat_interval = alarms(b) % reset_interval
     end if
   end do
@@ -1738,7 +1738,7 @@ subroutine add_new_field(info, inname, outname, all_fields, amPool)!{{{
   else if (info % nDims == 5) then
     call copy_field_5r(inname, all_fields, amPool, outname)
   else
-    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+    call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
       'the impossible happened - tried to copy a real field "' // &
       trim(inname) // '" that does not have 0-5 dimensionality')
   end if
@@ -1875,7 +1875,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
     else if (operation == SOS_OP) then
       call operate0r_sos(block, variable, buffers)
     else
-      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
         'the impossible happened - tried to operate with an ' // &
         'unknown operator in the time series stats AM')
     end if
@@ -1891,7 +1891,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
     else if (operation == SOS_OP) then
       call operate1r_sos(block, variable, buffers)
     else
-      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
         'the impossible happened - tried to operate with an ' // &
         'unknown operator in the time series stats AM')
     end if
@@ -1907,7 +1907,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
     else if (operation == SOS_OP) then
       call operate2r_sos(block, variable, buffers)
     else
-      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
         'the impossible happened - tried to operate with an ' // &
         'unknown operator in the time series stats AM')
     end if
@@ -1923,7 +1923,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
     else if (operation == SOS_OP) then
       call operate3r_sos(block, variable, buffers)
     else
-      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
         'the impossible happened - tried to operate with an ' // &
         'unknown operator in the time series stats AM')
     end if
@@ -1939,7 +1939,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
     else if (operation == SOS_OP) then
       call operate4r_sos(block, variable, buffers)
     else
-      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
         'the impossible happened - tried to operate with an ' // &
         'unknown operator in the time series stats AM')
     end if
@@ -1955,12 +1955,12 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
     else if (operation == SOS_OP) then
       call operate5r_sos(block, variable, buffers)
     else
-      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
         'the impossible happened - tried to operate with an ' // &
         'unknown operator in the time series stats AM')
     end if
   else
-    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+    call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
       'the impossible happened - tried to operate on a real field "' // &
       trim(variable % input_name) // '" that does not have 0-5 ' // &
       'dimensionality in the time series stats AM')

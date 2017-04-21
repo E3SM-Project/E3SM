@@ -145,7 +145,7 @@ contains
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
     ! you may restrict your case geometry as follows:
-    ! if ( on_a_sphere ) call mpas_dmpar_global_abort('MPAS-ocean: ERROR: The TEMPLATE configuration can only be applied ' &
+    ! if ( on_a_sphere ) call mpas_log_write('MPAS-ocean: ERROR: The TEMPLATE configuration can only be applied ' &
     !                                              // 'to a planar mesh. Exiting...')
 
     allocate(interfaceLocations(nVertLevelsP1))
@@ -319,7 +319,7 @@ contains
       if(config_vert_levels <= 0 .and. config_TEMPLATE_vert_levels > 0) then
          config_vert_levels = config_TEMPLATE_vert_levels
       else if (config_vert_levels <= 0) then
-         write(stderrUnit,*) 'IERROR: Validation failed for TEMPLATE. Not given a usable value for vertical levels.'
+         call mpas_log_write( 'IERROR: Validation failed for TEMPLATE. Not given a usable value for vertical levels.')
          iErr = 1
       end if
 

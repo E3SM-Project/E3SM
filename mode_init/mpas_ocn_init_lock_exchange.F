@@ -132,7 +132,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-      if ( on_a_sphere ) call mpas_dmpar_global_abort('MPAS-ocean: ERROR: The lock exchange configuration can not be ' &
+      if ( on_a_sphere ) call mpas_log_write('MPAS-ocean: ERROR: The lock exchange configuration can not be ' &
                                                    // 'applied to spherical meshes')
 
       ! Define interface locations
@@ -237,7 +237,7 @@ contains
                         activeTracers(index_temperature, nVertLevels/2+1:nVertLevels, iCell) = &
                            config_lock_exchange_cold_temperature
                   else
-                     call mpas_dmpar_global_abort('MPAS-ocean: Error: wrong choice of config_lock_exchange_direction')
+                     call mpas_log_write('MPAS-ocean: Error: wrong choice of config_lock_exchange_direction')
                   end if
                end if
 
@@ -256,7 +256,7 @@ contains
                   layerThickness(2:nVertLevels, iCell) = config_lock_exchange_isopycnal_min_thickness
                end if
             else
-               call mpas_dmpar_global_abort('MPAS-ocean: Error: wrong choice of config_lock_exchange_layer_type')
+               call mpas_log_write('MPAS-ocean: Error: wrong choice of config_lock_exchange_layer_type')
             end if
 
             ! Set salinity
@@ -336,7 +336,7 @@ contains
       if(config_vert_levels <= 0 .and. config_lock_exchange_vert_levels > 0) then
          config_vert_levels = config_lock_exchange_vert_levels
       else if(config_vert_levels <= 0) then
-         write(stderrUnit,*) 'ERROR: Validation failed for lock exchange test case. Not given a usable value for vertical levels.'
+         call mpas_log_write( 'ERROR: Validation failed for lock exchange test case. Not given a usable value for vertical levels.')
          iErr = 1
       end if
 
