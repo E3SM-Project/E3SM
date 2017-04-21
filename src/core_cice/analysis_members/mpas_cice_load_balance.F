@@ -24,7 +24,7 @@ module cice_load_balance
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
-   use mpas_abort
+   use mpas_log, only: mpas_log_write
 
    implicit none
    private
@@ -173,7 +173,7 @@ contains
 
       call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nProcs", nProcs)
       if (nProcs /= domain % dminfo % nprocs) then
-         call MPAS_dmpar_global_abort("MPAS-seaice: Error: mpas_cice_load_balance: wrong nProcs set")
+         call mpas_log_write('mpas_cice_load_balance: wrong nProcs set', MPAS_LOG_CRIT)
       endif
 
       call MPAS_pool_get_subpool(domain % blocklist % structs, "loadBalanceAM", loadBalanceAMPool)

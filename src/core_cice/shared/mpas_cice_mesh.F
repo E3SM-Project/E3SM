@@ -15,8 +15,7 @@ module cice_mesh
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_dmpar
-  use mpas_io_units
-  use mpas_abort
+  use mpas_log, only: mpas_log_write
 
   implicit none
 
@@ -170,7 +169,7 @@ contains
              ! get the old radius
              call mpas_pool_get_config(meshPool, 'sphere_radius', oldRadius)
 
-             write(stderrUnit, *) 'Expanding mesh to a radius of size: ', earthRadius, 'm'
+             call mpas_log_write('Expanding mesh to a radius of size: $rm', realArgs=(/earthRadius/))
 
              call mpas_stream_mgr_begin_iteration(domain % streamManager)
              do while (mpas_stream_mgr_get_next_stream(domain % streamManager, streamID, directionProperty))
@@ -281,9 +280,9 @@ contains
 
           if (on_a_sphere .and. sphere_radius /= earthRadius) then
 
-             write(stderrUnit,*) "Error: rescale_mesh: inconsistent radii"
-             write(stderrUnit,*) "sphere_radius: ", sphere_radius, ", earthRadius: ", earthRadius
-             call MPAS_dmpar_global_abort('MPAS-seaice: rescale_mesh: inconsistent radii')
+             call mpas_log_write(&
+                  "rescale_mesh: inconsistent radii: sphere_radius: $r, earthRadius: $r", &
+                  messageType=MPAS_LOG_CRIT, realArgs=(/sphere_radius,earthRadius/))
 
           endif
 

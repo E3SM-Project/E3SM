@@ -14,7 +14,7 @@ module cice_velocity_solver_unit_tests
 
   use mpas_derived_types
   use mpas_pool_routines
-  use mpas_io_units
+  use mpas_log, only: mpas_log_write
 
   implicit none
 
@@ -801,8 +801,7 @@ contains
 
     else
 
-       write(stderrUnit,*) "Unknown test case: ", trim(test_type)
-       stop
+       call mpas_log_write("spherical_test_strain_velocities: Unknown test case: "//trim(test_type), MPAS_LOG_CRIT)
 
     endif
 
@@ -1800,8 +1799,8 @@ contains
 
     else
 
-       write(stderrUnit,*) "Unknown test case: ", trim(test_type)
-       stop
+       call mpas_log_write("spherical_test_divergence_stress_stresses: Unknown test case: "//trim(test_type), &
+            MPAS_LOG_CRIT)
 
     endif
 

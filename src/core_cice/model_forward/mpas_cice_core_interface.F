@@ -13,6 +13,7 @@ module cice_core_interface
    use mpas_io_units
    use cice_core
    use cice_analysis_driver
+   use mpas_log, only: mpas_log_write
 
    public
 
@@ -40,6 +41,7 @@ module cice_core_interface
       core % setup_packages => cice_setup_packages
       core % setup_decompositions => cice_setup_decompositions
       core % setup_clock => cice_setup_clock
+      core % setup_log => cice_setup_log
       core % get_mesh_stream => cice_get_mesh_stream
       core % setup_immutable_streams => cice_setup_immutable_streams
       core % setup_derived_dimensions => cice_setup_derived_dimensions
@@ -184,7 +186,7 @@ module cice_core_interface
            else
 
               ! unknown value of config_variational_basis
-              write(*,*) "Unknown variational scheme: ", trim(config_variational_basis)
+              call mpas_log_write("Unknown variational scheme: "//trim(config_variational_basis))
               ierr = 1
 
            endif ! config_variational_basis
@@ -192,7 +194,7 @@ module cice_core_interface
         else
 
            ! unknown value of config_stress_divergence_scheme
-           write(*,*) "Unknown stress divergence scheme: ", trim(config_stress_divergence_scheme)
+           call mpas_log_write("Unknown stress divergence scheme: "//trim(config_stress_divergence_scheme))
            ierr = 1
 
         endif ! config_stress_divergence_scheme
@@ -557,7 +559,7 @@ module cice_core_interface
       decompFunc => mpas_uniform_decomp
 
       if ( associated(decompList) ) then
-         write(0,*) ' It is associated (decompList that is)'
+         call mpas_log_write(' It is associated (decompList that is)')
       end if
 
       call mpas_decomp_register_method(decompList, 'uniform', decompFunc, iErr)
@@ -600,6 +602,47 @@ module cice_core_interface
 
    end function cice_setup_clock!}}}
 
+   !***********************************************************************
+   !
+   !  function cice_setup_log
+   !
+   !> \brief   Log setup routine
+   !> \author  Matt Hoffman, Adrian K. Turner
+   !> \date    21 March 2017
+   !> \details
+   !>  The purpose of this routine is to set up the logging manager
+   !>  and allow the core to specify details of the configuration.
+   !
+   !-----------------------------------------------------------------------
+   function cice_setup_log(logInfo, domain) result(iErr)!{{{
+
+      use mpas_derived_types
+      use mpas_log
+
+      implicit none
+
+      type (mpas_log_type), intent(inout), pointer :: logInfo  !< logging information object to set up
+      type (domain_type), intent(in), pointer :: domain  !< domain object to provide info for setting up log manager
+      integer :: iErr
+
+      ! Local variables
+      integer :: local_err
+
+      iErr = 0
+
+      ! Initialize log manager
+      call mpas_log_init(logInfo, domain, err=local_err)
+      iErr = ior(iErr, local_err)
+
+      ! Set core specific options here
+      ! (At present, there are not any.  There could eventually be choices about the file naming conventions
+      !  or other settings controlling behavior.)
+
+      ! After core has had a chance to modify log defaults, open the output log
+      call mpas_log_open(err=local_err)
+      iErr = ior(iErr, local_err)
+
+   end function cice_setup_log!}}}
 
    !***********************************************************************
    !

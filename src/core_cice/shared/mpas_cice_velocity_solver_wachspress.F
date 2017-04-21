@@ -15,8 +15,7 @@ module cice_velocity_solver_wachspress
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_timer
-  use mpas_io_units
-  use mpas_abort
+  use mpas_log, only: mpas_log_write
 
   implicit none
 
@@ -1197,8 +1196,7 @@ contains
     else
 
        ! unknown integration type
-       write(stderrUnit,*) "Unknown wachspress integration type: "//trim(integrationType)
-       call MPAS_dmpar_global_abort("MPAS-seaice: Unknown wachspress integration type: "//trim(integrationType))
+       call mpas_log_write("get_integration_factors: Unknown wachspress integration type: "//trim(integrationType), MPAS_LOG_CRIT)
 
     endif
 
@@ -1344,7 +1342,7 @@ contains
     normalizationFactor = 2.0_RKIND
 
     if (modulo(integrationOrder,2) /= 0) then
-       write(stderrUnit,*) "WARNING: get_integration_factors_dunavant: odd orders of integration not recommended"
+       call mpas_log_write("get_integration_factors_dunavant: odd orders of integration not recommended", MPAS_LOG_WARN)
     endif
 
     select case (integrationOrder)
@@ -1621,8 +1619,9 @@ contains
 
     case default
 
-       write(stderrUnit,*) "Unimplemented integration order for Dunavant wachspress integration"
-       call MPAS_dmpar_global_abort("MPAS-seaice: Unimplemented integration order for Dunavant wachspress integration")
+       call mpas_log_write(&
+            "get_integration_factors_dunavant: Unimplemented integration order for Dunavant wachspress integration", &
+            MPAS_LOG_CRIT)
 
     end select
 
@@ -1849,8 +1848,9 @@ contains
 
     case default
 
-       write(stderrUnit,*) "Unimplemented integration order for Fekete wachspress integration"
-       call MPAS_dmpar_global_abort("MPAS-seaice: Unimplemented integration order for Fekete wachspress integration")
+       call mpas_log_write(&
+            "get_integration_factors_fekete: Unimplemented integration order for Fekete wachspress integration", &
+            MPAS_LOG_CRIT)
 
     end select
 

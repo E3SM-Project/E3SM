@@ -24,8 +24,7 @@ module cice_advection_incremental_remap
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_timer
-   use mpas_io_units
-   use mpas_abort
+   use mpas_log, only: mpas_log_write
 
    use cice_advection_incremental_remap_tracers, only: &
         tracer_type, &
@@ -264,20 +263,20 @@ contains
          indexToVertexID, & ! global index for each vertex on a block
          indexToEdgeID      ! global index for each edge on a block
 
-    integer :: i, n, iCell, iEdge, iVertex, iCellNeighbor, iEdgeNeighbor
+    integer :: i, n, iCell, iEdge, iVertex, iCellNeighbor, iEdgeNeighbor, j
     integer :: iVertexOnCell, iEdgeOnCell, iCellOnEdge, iCellOnCell, iVertexOnEdge, iEdgeOnEdge, iEdgeOnVertex
     integer :: nCellsOnEdgeRemap, nEdgesOnEdgeRemap, nVerticesOnEdgeRemap
 
     character(len=strKIND) :: &
-         errorMessage ! error message for global abort
+         errorMessage ! error message for critical error
 
     ! check the number of halos against the vertex degree
     call check_halo_layer_number(domain)
 
     if (verboseInit) then
-       write(stderrUnit,*) ' '
-       write(stderrUnit,*) 'In cice_init_advection_incremental_remap'
-       write(stderrUnit,*) 'Add tracers to linked list'
+       call mpas_log_write(' ')
+       call mpas_log_write('In cice_init_advection_incremental_remap')
+       call mpas_log_write('Add tracers to linked list')
     endif
 
     ! construct a linked list of tracers
@@ -290,7 +289,7 @@ contains
 
     do while (associated(block))
 
-       if (verboseInit) write(stderrUnit,*) 'Get arrays from pools'
+       if (verboseInit) call mpas_log_write('Get arrays from pools')
 
        ! get pools
        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -302,7 +301,7 @@ contains
        call mpas_pool_get_config(configPool, 'config_rotate_cartesian_grid', config_rotate_cartesian_grid)
        call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-       if (verboseInit) write(stderrUnit,*) 'rotate =', config_rotate_cartesian_grid
+       if (verboseInit) call mpas_log_write('rotate = $l', logicArgs=(/config_rotate_cartesian_grid/))
 
        ! get mesh dimensions
        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -394,9 +393,9 @@ contains
 
           if (verboseInit) then
              if (ctestOnProc) then
-                write(stderrUnit,*) 'ctestGlobal, local ctest, block:', ctestGlobal, ctest, ctestBlockID
+                call mpas_log_write('ctestGlobal: $i, local ctest: $i, block: $i', intArgs=(/ctestGlobal,ctest,ctestBlockID/))
              else
-                write(stderrUnit,*) 'Not on this proc: ctestGlobal =', ctestGlobal
+                call mpas_log_write('Not on this proc: ctestGlobal = $i', intArgs=(/ctestGlobal/))
              endif
           endif
 
@@ -415,9 +414,9 @@ contains
 
           if (verboseInit) then
              if (etestOnProc) then
-                write(stderrUnit,*) 'etestGlobal, local etest, block:', etestGlobal, etest, etestBlockID
+                call mpas_log_write('etestGlobal: $i, local etest: $i, block: $i', intArgs=(/etestGlobal,etest,etestBlockID/))
              else
-                write(stderrUnit,*) 'Not on this proc: etestGlobal =', etestGlobal
+                call mpas_log_write('Not on this proc: etestGlobal = $i', intArgs=(/etestGlobal/))
              endif
           endif
 
@@ -436,9 +435,9 @@ contains
 
           if (verboseInit) then
              if (vtestOnProc) then
-                write(stderrUnit,*) 'vtestGlobal, local vtest, block:', vtestGlobal, vtest, vtestBlockID
+                call mpas_log_write('vtestGlobal: $i, local vtest: $i, block: $i', intArgs=(/vtestGlobal,vtest,vtestBlockID/))
              else
-                write(stderrUnit,*) 'Not on this proc: vtestGlobal =', vtestGlobal
+                call mpas_log_write('Not on this proc: vtestGlobal =', intArgs=(/vtestGlobal/))
              endif
           endif
 
@@ -464,14 +463,14 @@ contains
                nEdges)
 
           if (verboseInit) then
-             write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'Rotated the global Cell, Vertex and Edge vectors'
+             call mpas_log_write(' ')
+             call mpas_log_write('Rotated the global Cell, Vertex and Edge vectors')
              if (ctestOnProc .and. block % localBlockID == ctestBlockID) then
                 iCell = ctest
-                write(stderrUnit,*) 'iCell, xCell, yCell, zCell:', &
-                                     iCell, xCell(iCell), yCell(iCell), zCell(iCell)
-                write(stderrUnit,*) 'Rotated iCell, xCell, yCell, zCell:', &
-                                     iCell, xCellRotate(iCell), yCellRotate(iCell), zCellRotate(iCell)
+                call mpas_log_write('iCell, xCell, yCell, zCell: $i $r $r $r', &
+                                     intArgs=(/iCell/), realArgs=(/xCell(iCell), yCell(iCell), zCell(iCell)/))
+                call mpas_log_write('Rotated iCell, xCell, yCell, zCell: $i $r $r $r', &
+                                     intArgs=(/iCell/), realArgs=(/xCellRotate(iCell), yCellRotate(iCell), zCellRotate(iCell)/))
              endif
           endif
 
@@ -514,17 +513,21 @@ contains
 
           if (verboseInit .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
              iCell = ctest
-             write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'Defined local to global transformations'
-             write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'iCell, transCellToGlobal'
+             call mpas_log_write(' ')
+             call mpas_log_write('Defined local to global transformations')
+             call mpas_log_write(' ')
+             call mpas_log_write('iCell, transCellToGlobal')
              do n = 1, 3
-                write(stderrUnit,*) transCellToGlobal(n,:,iCell)
+                do j = 1, size(transCellToGlobal,2)
+                   call mpas_log_write('$i %i $r', intArgs=(/n,j/), realArgs=(/transCellToGlobal(n,j,iCell)/))
+                enddo ! j
              enddo
-             write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'iCell, transGlobalToCell'
+             call mpas_log_write(' ')
+             call mpas_log_write('iCell, transGlobalToCell')
              do n = 1, 3
-                write(stderrUnit,*) transGlobalToCell(n,:,iCell)
+                do j = 1, size(transCellToGlobal,2)
+                   call mpas_log_write('$i %i $r', intArgs=(/n,j/), realArgs=(/transGlobalToCell(n,j,iCell)/))
+                enddo ! j
              enddo
           endif
 
@@ -576,35 +579,39 @@ contains
        if (verboseInit .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
 
           iCell = ctest
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'iCell (local ID, global ID) =', iCell, indexToCellID(iCell)
+          call mpas_log_write(' ')
+          call mpas_log_write('iCell (local ID, global ID) = $i $i', intArgs=(/iCell, indexToCellID(iCell)/))
 
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'cellsOnCell:'
+          call mpas_log_write(' ')
+          call mpas_log_write('cellsOnCell:')
           do iCellOnCell = 1, nEdgesOnCell(iCell)
-             write(stderrUnit,*) iCellOnCell, cellsOnCell(iCellOnCell, iCell), &
-                  indexToCellID(cellsOnCell(iCellOnCell,iCell))
+             call mpas_log_write('$i $i $i', &
+                  intArgs=(/ iCellOnCell, cellsOnCell(iCellOnCell, iCell), &
+                             indexToCellID(cellsOnCell(iCellOnCell,iCell)) /))
           enddo
 
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'edgesOnCell:'
+          call mpas_log_write(' ')
+          call mpas_log_write('edgesOnCell:')
           do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-             write(stderrUnit,*) iEdgeOnCell, edgesOnCell(iEdgeOnCell, iCell), &
-                  indexToEdgeID(edgesOnCell(iEdgeOnCell,iCell))
+             call mpas_log_write('$i $i $i', &
+                  intArgs=(/iEdgeOnCell, edgesOnCell(iEdgeOnCell, iCell), &
+                            indexToEdgeID(edgesOnCell(iEdgeOnCell,iCell)) /))
           enddo
 
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'verticesOnCell:'
+          call mpas_log_write(' ')
+          call mpas_log_write('verticesOnCell:')
           do iVertexOnCell = 1, nEdgesOnCell(iCell)
-             write(stderrUnit,*) iVertexOnCell, verticesOnCell(iVertexOnCell,iCell), &
-                  indexToVertexID(verticesOnCell(iVertexOnCell,iCell))
+             call mpas_log_write('$i $i $i', &
+                  intArgs=(/iVertexOnCell, verticesOnCell(iVertexOnCell,iCell), &
+                            indexToVertexID(verticesOnCell(iVertexOnCell,iCell)) /))
           enddo
 
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'xVertexOnCell, yVertexOnCell:'
+          call mpas_log_write(' ')
+          call mpas_log_write('xVertexOnCell, yVertexOnCell:')
           do iVertexOnCell = 1, nEdgesOnCell(iCell)
-             write(stderrUnit,*) iVertexOnCell, xVertexOnCell(iVertexOnCell, iCell), &
-                  yVertexOnCell(iVertexOnCell, iCell)
+             call mpas_log_write('$i $r $r', &
+                  intArgs=(/iVertexOnCell/), realArgs=(/xVertexOnCell(iVertexOnCell, iCell), &
+                            yVertexOnCell(iVertexOnCell, iCell) /))
           enddo
 
        endif   ! ctestOnProc & ctestBlockID
@@ -613,21 +620,23 @@ contains
        if (verboseInit .and. etestOnProc .and. block % localBlockID == etestBlockID) then
 
           iEdge = etest
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'iEdge (local ID, global ID) =', iEdge, indexToEdgeID(iEdge)
+          call mpas_log_write(' ')
+          call mpas_log_write('iEdge (local ID, global ID) = $i $i', intArgs=(/iEdge, indexToEdgeID(iEdge)/))
 
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'cellsOnEdge:'
+          call mpas_log_write(' ')
+          call mpas_log_write('cellsOnEdge:')
           do iCellOnEdge = 1, 2
-             write(stderrUnit,*) iCellOnEdge, cellsOnEdge(iCellOnEdge, iEdge), &
-                  indexToCellID(cellsOnEdge(iCellOnEdge, iEdge))
+             call mpas_log_write('$i $i $i', &
+                  intArgs=(/iCellOnEdge, cellsOnEdge(iCellOnEdge, iEdge), &
+                            indexToCellID(cellsOnEdge(iCellOnEdge, iEdge)) /))
           enddo
 
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'verticesOnEdge:'
+          call mpas_log_write(' ')
+          call mpas_log_write('verticesOnEdge:')
           do iVertexOnEdge = 1, 2
-             write(stderrUnit,*) iVertexOnEdge, verticesOnEdge(iVertexOnEdge, iEdge), &
-                  indexToVertexID(verticesOnEdge(iVertexOnEdge, iEdge))
+             call mpas_log_write('$i $i $i', &
+                  intArgs=(/iVertexOnEdge, verticesOnEdge(iVertexOnEdge, iEdge), &
+                            indexToVertexID(verticesOnEdge(iVertexOnEdge, iEdge)) /))
           enddo
 
           if (vertexDegree == 3) then   ! hex mesh
@@ -640,37 +649,37 @@ contains
              nVerticesOnEdgeRemap = 8
           endif
 
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'cellsOnEdgeRemap:'
+          call mpas_log_write(' ')
+          call mpas_log_write('cellsOnEdgeRemap:')
           do iCellOnEdge = 1, nCellsOnEdgeRemap
              iCellNeighbor = cellsOnEdgeRemap(iCellOnEdge,iEdge)
              if (iCellNeighbor >= 1) then
-                write(stderrUnit,*) iCellOnEdge, iCellNeighbor, indexToCellID(iCellNeighbor)
+                call mpas_log_write('$i $i $i', intArgs=(/iCellOnEdge, iCellNeighbor, indexToCellID(iCellNeighbor)/))
              else  ! no global ID if local ID = 0
-                write(stderrUnit,*) iCellOnEdge, iCellNeighbor
+                call mpas_log_write('$i $i', intArgs=(/iCellOnEdge, iCellNeighbor/))
              endif
           enddo
 
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'edgesOnEdgeRemap:'
+          call mpas_log_write(' ')
+          call mpas_log_write('edgesOnEdgeRemap:')
           do iEdgeOnEdge = 1, nEdgesOnEdgeRemap
              iEdgeNeighbor = edgesOnEdgeRemap(iEdgeOnEdge,iEdge)
              if (iEdgeNeighbor >= 1) then
-                write(stderrUnit,*) iEdgeOnEdge, iEdgeNeighbor, indexToEdgeID(iEdgeNeighbor)
+                call mpas_log_write('$i $i $i', intArgs=(/iEdgeOnEdge, iEdgeNeighbor, indexToEdgeID(iEdgeNeighbor)/))
              else  ! no global ID if local ID = 0
-                write(stderrUnit,*) iEdgeOnEdge, iEdgeNeighbor
+                call mpas_log_write('$i $i', intArgs=(/iEdgeOnEdge, iEdgeNeighbor/))
              endif
           enddo
 
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'xVertexOnEdge, yVertexOnEdge:', indexToEdgeID(iEdge)
-          write(stderrUnit,*) 'vertex, x, y:'
+          call mpas_log_write(' ')
+          call mpas_log_write('xVertexOnEdge, yVertexOnEdge: $i', intArgs=(/indexToEdgeID(iEdge)/))
+          call mpas_log_write('vertex, x, y:')
           do iVertexOnEdge = 1, nVerticesOnEdgeRemap
-             write(stderrUnit,*) iVertexOnEdge, xVertexOnEdge(iVertexOnEdge,iEdge), &
-                  yVertexOnEdge(iVertexOnEdge,iEdge)
+             call mpas_log_write('$i $r $r', intArgs=(/iVertexOnEdge/), realArgs=(/xVertexOnEdge(iVertexOnEdge,iEdge), &
+                  yVertexOnEdge(iVertexOnEdge,iEdge)/))
           enddo
 
-          write(stderrUnit,*) ' '
+          call mpas_log_write(' ')
 
        endif  ! etestOnProc & etestBlockID
 
@@ -678,13 +687,13 @@ contains
        if (verboseInit .and. vtestOnProc .and. block % localBlockID == vtestBlockID) then
 
           iVertex = vtest
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'iVertex (local ID, global ID) =', iVertex, indexToVertexID(iVertex)
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'edgesOnVertex:'
+          call mpas_log_write(' ')
+          call mpas_log_write('iVertex (local ID, global ID) = $i $i', intArgs=(/iVertex, indexToVertexID(iVertex)/))
+          call mpas_log_write(' ')
+          call mpas_log_write('edgesOnVertex:')
           do iEdgeOnVertex = 1, vertexDegree
-             write(stderrUnit,*) iEdgeOnVertex, edgesOnVertex(iEdgeOnVertex,iVertex), &
-                  indexToEdgeID(edgesOnVertex(iEdgeOnVertex,iVertex))
+             call mpas_log_write('$i $i $i', intArgs=(/iEdgeOnVertex, edgesOnVertex(iEdgeOnVertex,iVertex), &
+                  indexToEdgeID(edgesOnVertex(iEdgeOnVertex,iVertex))/))
           enddo
 
        endif
@@ -703,23 +712,23 @@ contains
 
        if (verboseInit .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
           iCell = ctest
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'Grid cell averages, iCell =', indexToCellID(iCell)
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'x', geomAvgCell % x(iCell)
-          write(stderrUnit,*) 'y', geomAvgCell % y(iCell)
-          write(stderrUnit,*) 'xx', geomAvgCell % xx(iCell)
-          write(stderrUnit,*) 'xy', geomAvgCell % xy(iCell)
-          write(stderrUnit,*) 'yy', geomAvgCell % yy(iCell)
-          write(stderrUnit,*) 'xxx', geomAvgCell % xxx(iCell)
-          write(stderrUnit,*) 'xxy', geomAvgCell % xxy(iCell)
-          write(stderrUnit,*) 'xyy', geomAvgCell % xyy(iCell)
-          write(stderrUnit,*) 'yyy', geomAvgCell % yyy(iCell)
-          write(stderrUnit,*) 'xxxx', geomAvgCell % xxxx(iCell)
-          write(stderrUnit,*) 'xxxy', geomAvgCell % xxxy(iCell)
-          write(stderrUnit,*) 'xxyy', geomAvgCell % xxyy(iCell)
-          write(stderrUnit,*) 'xyyy', geomAvgCell % xyyy(iCell)
-          write(stderrUnit,*) 'yyyy', geomAvgCell % yyyy(iCell)
+          call mpas_log_write(' ')
+          call mpas_log_write('Grid cell averages, iCell = $i', intArgs=(/indexToCellID(iCell)/))
+          call mpas_log_write(' ')
+          call mpas_log_write('x $r', realArgs=(/geomAvgCell % x(iCell)/))
+          call mpas_log_write('y $r', realArgs=(/geomAvgCell % y(iCell)/))
+          call mpas_log_write('xx $r', realArgs=(/geomAvgCell % xx(iCell)/))
+          call mpas_log_write('xy $r', realArgs=(/geomAvgCell % xy(iCell)/))
+          call mpas_log_write('yy $r', realArgs=(/geomAvgCell % yy(iCell)/))
+          call mpas_log_write('xxx $r', realArgs=(/geomAvgCell % xxx(iCell)/))
+          call mpas_log_write('xxy $r', realArgs=(/geomAvgCell % xxy(iCell)/))
+          call mpas_log_write('xyy $r', realArgs=(/geomAvgCell % xyy(iCell)/))
+          call mpas_log_write('yyy $r', realArgs=(/geomAvgCell % yyy(iCell)/))
+          call mpas_log_write('xxxx $r', realArgs=(/geomAvgCell % xxxx(iCell)/))
+          call mpas_log_write('xxxy $r', realArgs=(/geomAvgCell % xxxy(iCell)/))
+          call mpas_log_write('xxyy $r', realArgs=(/geomAvgCell % xxyy(iCell)/))
+          call mpas_log_write('xyyy $r', realArgs=(/geomAvgCell % xyyy(iCell)/))
+          call mpas_log_write('yyyy $r', realArgs=(/geomAvgCell % yyyy(iCell)/))
        endif   ! ctestOnProc & ctestBlockID
 
        ! compute coefficients needed for reconstructing tracer gradients at cell centers
@@ -738,11 +747,14 @@ contains
 
        if (verboseInit .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
           iCell = ctest
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'Reconstruction coefficients, iCell =', indexToCellID(iCell)
-          write(stderrUnit,*) ' '
+          call mpas_log_write(' ')
+          call mpas_log_write('Reconstruction coefficients, iCell = $i', intArgs=(/indexToCellID(iCell)/))
+          call mpas_log_write(' ')
           do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-             write(stderrUnit,*) iEdgeOnCell, coeffsReconstruct(:,iEdgeOnCell,iCell)
+             do j = 1, size(coeffsReconstruct, 1)
+                call mpas_log_write('$i $i $r', &
+                     intArgs=(/iEdgeOnCell, j/), realArgs=(/coeffsReconstruct(j,iEdgeOnCell,iCell)/))
+             enddo ! j
           enddo
        endif   ! ctestOnProc & ctestBlockID
 
@@ -771,8 +783,7 @@ contains
        weightQuadPoint(1:3) = w1TriangleQP    ! 0.010995...
        weightQuadPoint(4:6) = w2TriangleQP    ! 0.022338...
     else
-       write(stderrUnit,*) 'ERROR: must have nQuadPoints = 3 or 6 for IR transport'
-       call mpas_dmpar_global_abort('MPAS-seaice: IR must have nQuadPoints = 3 or 6 for IR transport')
+       call mpas_log_write('ERROR: must have nQuadPoints = 3 or 6 for IR transport', MPAS_LOG_CRIT)
     endif
 
     ! check for non-positive cell areas
@@ -780,28 +791,25 @@ contains
     !       for some cells on a spherical quad mesh.
     do iCell = 1, nCellsSolve
        if (areaCell(iCell) <= 0.0_RKIND) then
-          write(stderrUnit,*) ' '
-          write(errorMessage,*) 'Bad cell area, iCell, area:', iCell, areaCell(iCell)
-          write(stderrUnit,*) trim(errorMessage)
-!!          write(stderrUnit,*) 'cellsOnCell:', cellsOnCell(:,iCell)
-          call mpas_dmpar_global_abort('MPAS-seaice: IR: '//trim(errorMessage))
+          call mpas_log_write('IR: Bad cell area, iCell $i, area: $r',&
+               MPAS_LOG_CRIT, intArgs=(/iCell/), realArgs=(/areaCell(iCell)/))
        endif
     enddo
 
     ! uncomment to get a list of cells and edges with local and global IDs
     if (verboseInit) then
-       write(stderrUnit,*) 'nCells, nEdges, nVertices:', nCells, nEdges, nVertices
-       write(stderrUnit,*) 'nCellsSolve, nEdgesSolve, nVerticesSolve:', nCellsSolve, nEdgesSolve, nVerticesSolve
-       write(stderrUnit,*) ' '
+       call mpas_log_write('nCells, nEdges, nVertices: $i $i $i', intArgs=(/nCells, nEdges, nVertices/))
+       call mpas_log_write('nCellsSolve, nEdgesSolve, nVerticesSolve: $i $i $i', intArgs=(/nCellsSolve, nEdgesSolve, nVerticesSolve/))
+       call mpas_log_write(' ')
 
-       !  write(stderrUnit,*) 'Cells (local ID, global ID)'
+       !  call mpas_log_write('Cells (local ID, global ID)')
        do iCell = 1, nCells
-          !  write(stderrUnit,*) iCell, indexToCellID(iCell)
+          !  call mpas_log_write('$i $i', intArgs=(/iCell, indexToCellID(iCell)/))
        enddo
 
-       !  write(stderrUnit,*) 'Edges (local ID, global ID)'
+       !  call mpas_log_write('Edges (local ID, global ID)')
        do iEdge = 1, nEdges
-          !  write(stderrUnit,*) iEdge, indexToEdgeID(iEdge)
+          !  call mpas_log_write('$i $i', intArgs=(/iEdge, indexToEdgeID(iEdge)/))
        enddo
     endif
 
@@ -847,19 +855,19 @@ contains
     if (config_num_halos < numHalosOptimal) then
 
        ! too few layers
-       write(stderrUnit,*) "Error: too few halo layers for incremental remapping"
-       write(stderrUnit,*) "-- vertexDegree:     ", vertexDegree
-       write(stderrUnit,*) "-- config_num_halos: ", config_num_halos
-       write(stderrUnit,*) "-- numHalosOptimal:  ", numHalosOptimal
-       call MPAS_dmpar_global_abort("MPAS-seaice: IR too few halo layers for incremental remapping")
+       call mpas_log_write("IR: too few halo layers for incremental remapping", MPAS_LOG_ERR)
+       call mpas_log_write("-- vertexDegree:     $i", MPAS_LOG_ERR, intArgs=(/vertexDegree/))
+       call mpas_log_write("-- config_num_halos: $i", MPAS_LOG_ERR, intArgs=(/config_num_halos/))
+       call mpas_log_write("-- numHalosOptimal:  $i", MPAS_LOG_ERR, intArgs=(/numHalosOptimal/))
+       call mpas_log_write("MPAS-seaice: IR too few halo layers for incremental remapping", MPAS_LOG_CRIT)
 
     else if (config_num_halos > numHalosOptimal) then
 
        ! too many layers
-       write(stderrUnit,*) "Warning: too many halo layers for incremental remapping"
-       write(stderrUnit,*) "-- vertexDegree:     ", vertexDegree
-       write(stderrUnit,*) "-- config_num_halos: ", config_num_halos
-       write(stderrUnit,*) "-- numHalosOptimal:  ", numHalosOptimal
+       call mpas_log_write("Warning: too many halo layers for incremental remapping")
+       call mpas_log_write("-- vertexDegree:     ", vertexDegree)
+       call mpas_log_write("-- config_num_halos: ", config_num_halos)
+       call mpas_log_write("-- numHalosOptimal:  ", numHalosOptimal)
 
     endif
 
@@ -1264,8 +1272,8 @@ contains
              iCell = cellsOnEdge(iCellOnEdge,iEdge)
              if (iCell < 1 .or. iCell > nCells) then
                 remapEdge(iEdge) = 0
-!!                write(stderrUnit,*) 'Excluding edge, iedge (local, global):', iEdge, indexToEdgeID(iEdge)
-!!                write(stderrUnit,*) 'Cell neighbors:', cellsOnEdge(1,iEdge), cellsOnEdge(2,iEdge)
+!!                call mpas_log_write('Excluding edge, iedge (local, global): $i $i', intArgs=(/iEdge, indexToEdgeID(iEdge)/))
+!!                call mpas_log_write('Cell neighbors: $i $i', intArgs=(/cellsOnEdge(1,iEdge), cellsOnEdge(2,iEdge)/))
                 exit
              endif   ! cell neighbor does not exist
           enddo   ! iCellOnEdge
@@ -1273,10 +1281,10 @@ contains
     enddo
 
     if (verboseInit) then
-!!       write(stderrUnit,*) 'Edges not used for IR:'
+!!       call mpas_log_write('Edges not used for IR:')
        do iEdge = 1, nEdges
           if (remapEdge(iEdge) == 0) then
-!!             write(stderrUnit,*) iEdge
+!!             call mpas_log_write('$i', intArgs=(/iEdge/))
           endif
        enddo
     endif
@@ -1334,13 +1342,12 @@ contains
                 if (point_in_half_plane(edgeVertex(:,1), edgeVertex(:,2), cellCenter(:))) then
                    ! cell 1 is in the left half-plane, as required
                 else
-                   write(errorMessage,*) 'cell 1 is not in the left half-plane: iEdge (local, global ID) =', &
-                        iEdge, indexToEdgeID(iEdge)
-                   write(stderrUnit,*) 'ERROR: '//trim(errorMessage)
-                   write(stderrUnit,*) 'edgeVertex(:,1):', edgeVertex(:,1)
-                   write(stderrUnit,*) 'edgeVertex(:,2):', edgeVertex(:,2)
-                   write(stderrUnit,*) 'cellCenter(:):', cellCenter(:)
-                   call mpas_dmpar_global_abort('MPAS-seaice: IR: '//trim(errorMessage))
+                   call mpas_log_write('cell 1 is not in the left half-plane: iEdge (local, global ID) = $i $i', &
+                        MPAS_LOG_ERR, intArgs=(/iEdge, indexToEdgeID(iEdge)/))
+                   call mpas_log_write('edgeVertex(:,1): $r', MPAS_LOG_ERR, realArgs=(/edgeVertex(:,1)/))
+                   call mpas_log_write('edgeVertex(:,2): $r', MPAS_LOG_ERR, realArgs=(/edgeVertex(:,2)/))
+                   call mpas_log_write('cellCenter(:): $r', MPAS_LOG_ERR, realArgs=(/cellCenter(:)/))
+                   call mpas_log_write('IR: '//trim(errorMessage), MPAS_LOG_CRIT)
                 endif
 
              endif  ! neighbor cell exists
@@ -1373,13 +1380,11 @@ contains
                 if (point_in_half_plane(edgeVertex(:,1), edgeVertex(:,2), cellCenter(:))) then
                    ! cell 1 is in the left half-plane, as required
                 else
-                   write(errorMessage,*) 'cell 1 is not in the left half-plane: iEdge (local, global ID) =', &
-                        iEdge, indexToEdgeID(iEdge)
-                   write(stderrUnit,*) 'ERROR: '//trim(errorMessage)
-                   write(stderrUnit,*) 'edgeVertex(:,1):', edgeVertex(:,1)
-                   write(stderrUnit,*) 'edgeVertex(:,2):', edgeVertex(:,2)
-                   write(stderrUnit,*) 'cellCenter(:):', cellCenter(:)
-                   call mpas_dmpar_global_abort('MPAS-seaice: IR: '//trim(errorMessage))
+                   call mpas_log_write('cell 1 is not in the left half-plane: iEdge (local, global ID) =', &
+                        MPAS_LOG_ERR, intArgs=(/iEdge, indexToEdgeID(iEdge)/))
+                   call mpas_log_write('edgeVertex(:,1): $r', MPAS_LOG_ERR, realArgs=(/edgeVertex(:,1)/))
+                   call mpas_log_write('edgeVertex(:,2): $r', MPAS_LOG_ERR, realArgs=(/edgeVertex(:,2)/))
+                   call mpas_log_write('cellCenter(:): $r', MPAS_LOG_CRIT, realArgs=(/cellCenter(:)/))
                 endif
 
              endif  ! neighbor cell exists
@@ -1790,8 +1795,8 @@ contains
                   minLengthEdgesOnVertex(iVertex) = edgeLength
 
 !!             if (verboseInit .and. vtestOnProc .and. block % localBlockID == vtestBlockID) then
-!!                write(stderrUnit,*) 'iVertex, iEdge, edgeLength, minLength:', &
-!!                     iVertex, iEdge, edgeLength, minLengthEdgesOnVertex(iVertex)
+!!                call mpas_log_write('iVertex, iEdge, edgeLength, minLength: $i $i $r $r', &
+!!                     intArgs=(/iVertex, iEdge/), realArgs=(/edgeLength, minLengthEdgesOnVertex(iVertex)/))
 !!             endif
 
           endif  ! edge exists
@@ -1896,8 +1901,9 @@ contains
 !                           + transGlobalToCell(3,3,iCell) * workVector(3)
 
 !             if (iCell == ctest) then
-!                write(stderrUnit,*) 'Local:', &
-!                     iVertexOnCell, xVertexOnCell(iVertexOnCell,iCell), yVertexOnCell(iVertexOnCell,iCell), workVector(3)
+!                call mpas_log_write('Local: $i $r $r $r', &
+!                     intArgs=(/iVertexOnCell/), &
+!                     realArgs=(/xVertexOnCell(iVertexOnCell,iCell), yVertexOnCell(iVertexOnCell,iCell), workVector(3)/))
 !             endif
 
           enddo  ! VertexOnCell
@@ -1967,22 +1973,22 @@ contains
              if (dotProduct >= 0.0_RKIND) then
                 continue
              else
-!                write(stderrUnit,*) 'Violation: iCell, zCell, dotProduct:', iCell, zCell(iCell), dotProduct
-                write(stderrUnit,*) 'ERROR: IR requires convex cells with vertices arranged CCW around the cell'
-                write(stderrUnit,*) 'Violation for cell:', iCell
-                write(stderrUnit,*) 'iVertexOnCell, xVertex, yVertex, zVertex:'
+                call mpas_log_write('IR requires convex cells with vertices arranged CCW around the cell', MPAS_LOG_ERR)
+                call mpas_log_write('Violation for cell: $i', MPAS_LOG_ERR, intArgs=(/iCell/))
+                call mpas_log_write('iVertexOnCell, xVertex, yVertex, zVertex:', MPAS_LOG_ERR)
                 do iVertexCell = 1, nEdgesOnCell(iCell)
                    iVertex = verticesOnCell(iVertexCell,iCell)
-                   write(stderrUnit,*) iVertexCell, xVertex(iVertex), yVertex(iVertex), zVertex(iVertex)
+                   call mpas_log_write('$i $r $r $r', MPAS_LOG_ERR, &
+                        intArgs=(/iVertexCell/), realArgs=(/xVertex(iVertex), yVertex(iVertex), zVertex(iVertex)/))
                 enddo
-                call mpas_dmpar_global_abort('MPAS-seaice: IR requires convex cells with vertices arranged CCW around the cell')
+                call mpas_log_write('IR requires convex cells with vertices arranged CCW around the cell', MPAS_LOG_CRIT)
              endif
 
           enddo   ! iVertexOnCell
 
        enddo   ! iCell
 
-       if (verboseInit) write(stderrUnit,*) 'CCW ordering of cell vertices on a sphere is OK'
+       if (verboseInit) call mpas_log_write('CCW ordering of cell vertices on a sphere is OK')
 
     endif  ! on a sphere
 
@@ -2010,22 +2016,21 @@ contains
           if (crossProduct >= 0.0_RKIND) then
              continue
           else
-!             write(stderrUnit,*) 'Violation: iCell, zCell, crossProduct:', iCell, zCell(iCell), crossProduct
-             write(stderrUnit,*) 'ERROR: IR requires convex cells with vertices arranged CCW around the cell'
-             write(stderrUnit,*) 'Violation for cell:', iCell
-             write(stderrUnit,*) 'iVertexOnCell, xVertexOnCell, yVertexOnCell:'
+             call mpas_log_write('ERROR: IR requires convex cells with vertices arranged CCW around the cell', MPAS_LOG_ERR)
+             call mpas_log_write('Violation for cell: $i', MPAS_LOG_ERR, intArgs=(/iCell/))
+             call mpas_log_write('iVertexOnCell, xVertexOnCell, yVertexOnCell:', MPAS_LOG_ERR)
              do iVertexCell = 1, nEdgesOnCell(iCell)
-                write(stderrUnit,*) iVertexCell, xVertexOnCell(iVertexCell,iCell), yVertexOnCell(iVertexCell,iCell)
+                call mpas_log_write('$i $r $r', MPAS_LOG_ERR, &
+                     intArgs=(/iVertexCell/), realArgs=(/xVertexOnCell(iVertexCell,iCell), yVertexOnCell(iVertexCell,iCell)/))
              enddo
-             call mpas_dmpar_global_abort(&
-                  'MPAS-seaice: IR requires convex cells with vertices arranged CCW around the cell: check')
+             call mpas_log_write('MPAS-seaice: IR requires convex cells with vertices arranged CCW around the cell: check')
           endif
 
        enddo   ! iVertexOnCell
 
     enddo   ! iCell
 
-    if (verboseInit) write(stderrUnit,*) 'CCW ordering of cell vertices on local tangent plane is OK'
+    if (verboseInit) call mpas_log_write('CCW ordering of cell vertices on local tangent plane is OK')
 
   end subroutine get_vertex_on_cell_coordinates
 
@@ -2225,14 +2230,14 @@ contains
 
           if (verboseGeomAvg .and. ctestOnProc) then
              if (iCell == ctest) then
-                write(stderrUnit,*) ' '
-                write(stderrUnit,*) 'edge =', iEdgeOnCell
-                write(stderrUnit,*) 'x1, y1:', x1Vertex, y1Vertex
-                write(stderrUnit,*) 'x2, y2:', x2Vertex, y2Vertex
-                write(stderrUnit,*) 'x3, y3:', x3Vertex, y3Vertex
-                write(stderrUnit,*) 'quad point x, y, w:'
+                call mpas_log_write(' ')
+                call mpas_log_write('edge = $i', intArgs=(/iEdgeOnCell/))
+                call mpas_log_write('x1, y1: $r $r', realArgs=(/x1Vertex, y1Vertex/))
+                call mpas_log_write('x2, y2: $r $r', realArgs=(/x2Vertex, y2Vertex/))
+                call mpas_log_write('x3, y3: $r $r', realArgs=(/x3Vertex, y3Vertex/))
+                call mpas_log_write('quad point x, y, w:')
                 do n = 1, 6
-                   write(stderrUnit,*) n, xQP(n), yQP(n), wQP(n)
+                   call mpas_log_write('$i $r $r $r', intArgs=(/n/), realArgs=(/xQP(n), yQP(n), wQP(n)/))
                 enddo
              endif
           endif
@@ -2274,22 +2279,22 @@ contains
 
           if (verboseGeomAvg .and. ctestOnProc) then
              if (iCell == ctest) then
-                write(stderrUnit,*) ' '
-                write(stderrUnit,*) 'Averages for edge ', iEdgeOnCell
-                write(stderrUnit,*) 'x:', xavg
-                write(stderrUnit,*) 'y:', yavg
-                write(stderrUnit,*) 'xx:', xxavg
-                write(stderrUnit,*) 'xy:', xyavg
-                write(stderrUnit,*) 'yy:', yyavg
-                write(stderrUnit,*) 'xxx:', xxxavg
-                write(stderrUnit,*) 'xxy:', xxyavg
-                write(stderrUnit,*) 'xyy:', xyyavg
-                write(stderrUnit,*) 'yyy:', yyyavg
-                write(stderrUnit,*) 'xxxx:', xxxxavg
-                write(stderrUnit,*) 'xxxy:', xxxyavg
-                write(stderrUnit,*) 'xxyy:', xxyyavg
-                write(stderrUnit,*) 'xyyy:', xyyyavg
-                write(stderrUnit,*) 'yyyy:', yyyyavg
+                call mpas_log_write(' ')
+                call mpas_log_write('Averages for edge $i', intArgs=(/iEdgeOnCell/))
+                call mpas_log_write('x: $r', realArgs=(/xavg/))
+                call mpas_log_write('y: $r', realArgs=(/yavg/))
+                call mpas_log_write('xx: $r', realArgs=(/xxavg/))
+                call mpas_log_write('xy: $r', realArgs=(/xyavg/))
+                call mpas_log_write('yy: $r', realArgs=(/yyavg/))
+                call mpas_log_write('xxx: $r', realArgs=(/xxxavg/))
+                call mpas_log_write('xxy: $r', realArgs=(/xxyavg/))
+                call mpas_log_write('xyy: $r', realArgs=(/xyyavg/))
+                call mpas_log_write('yyy: $r', realArgs=(/yyyavg/))
+                call mpas_log_write('xxxx: $r', realArgs=(/xxxxavg/))
+                call mpas_log_write('xxxy: $r', realArgs=(/xxxyavg/))
+                call mpas_log_write('xxyy: $r', realArgs=(/xxyyavg/))
+                call mpas_log_write('xyyy: $r', realArgs=(/xyyyavg/))
+                call mpas_log_write('yyyy: $r', realArgs=(/yyyyavg/))
              endif
           endif
 
@@ -2405,8 +2410,8 @@ contains
     endif
 
     if (verboseRun) then
-       write(stderrUnit,*) ' '
-       write(stderrUnit,*) 'In cice_incremental remap: timeLevel =', timeLevel
+       call mpas_log_write(' ')
+       call mpas_log_write('In cice_incremental remap: timeLevel = $i', intArgs=(/timeLevel/))
     endif
 
     ! halo updates
@@ -2418,7 +2423,7 @@ contains
 
     if (updateHaloInit) then
 
-       if (verboseRun) write(stderrUnit,*) 'Doing initial halo updates for velocity, mass and tracers'
+       if (verboseRun) call mpas_log_write('Doing initial halo updates for velocity, mass and tracers')
 
        call mpas_timer_start("incr remap init halo")
        ! velocity
@@ -2449,7 +2454,7 @@ contains
 
     do while (associated(block))
 
-       if (verboseRun) write(stderrUnit,*) 'Convert volume to thickness'
+       if (verboseRun) call mpas_log_write('Convert volume to thickness')
 
        ! get tracer pool and work array
        call mpas_pool_get_subpool(block % structs, 'tracers', tracerPool)
@@ -2496,7 +2501,7 @@ contains
     call mpas_timer_start("incr remap blocks")
     do while (associated(block))
 
-       if (verboseRun) write(stderrUnit,*) 'Call incremental_remap_block: block =', block % localBlockID
+       if (verboseRun) call mpas_log_write('Call incremental_remap_block: block = $i', intArgs=(/block % localBlockID/))
 
        ! get dynamics time step
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
@@ -2520,7 +2525,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_conservation_check", configConservationCheck)
     if (configConservationCheck) then
 
-       if (verboseRun) write(stderrUnit,*) 'Check conservation'
+       if (verboseRun) call mpas_log_write('Check conservation')
 
        call mpas_timer_start("incr remap tracer cons check")
        call check_tracer_conservation(dminfo, tracersHead)
@@ -2535,7 +2540,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_monotonicity_check", configMonotonicityCheck)
     if (configMonotonicityCheck) then
 
-       if (verboseRun) write(stderrUnit,*) 'Check monotonicity'
+       if (verboseRun) call mpas_log_write('Check monotonicity')
 
        call mpas_timer_start("incr remap tracer mono check")
        call check_tracer_monotonicity(domain, tracersHead)
@@ -2553,7 +2558,7 @@ contains
 
     do while (associated(block))
 
-       if (verboseRun) write(stderrUnit,*) 'Convert thickness to volume'
+       if (verboseRun) call mpas_log_write('Convert thickness to volume')
 
        ! get tracer pool and work array
        call mpas_pool_get_subpool(block % structs, 'tracers', tracerPool)
@@ -2597,7 +2602,7 @@ contains
 
     if (updateHaloFinal) then
 
-       if (verboseRun) write(stderrUnit,*) 'Doing final halo updates for mass and tracers'
+       if (verboseRun) call mpas_log_write('Doing final halo updates for mass and tracers')
 
        ! mass and tracers
        call mpas_timer_start("incr remap final halo")
@@ -2606,7 +2611,7 @@ contains
 
     endif  ! halo update
 
-    if (verboseRun) write(stderrUnit,*) 'Done in IR'
+    if (verboseRun) call mpas_log_write('Done in IR')
 
   end subroutine cice_run_advection_incremental_remap
 
@@ -2906,14 +2911,15 @@ contains
        first_call = .false.
        thisTracer => tracersHead  ! point to the mass-like field, iceAreaCategory
        if (verboseGlobal .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'Cells with initial ice:'
-          write(stderrUnit,*) 'iCell (local), iCell(global), ice area, xCell, yCell, zCell:'
+          call mpas_log_write(' ')
+          call mpas_log_write('Cells with initial ice:')
+          call mpas_log_write('iCell (local), iCell(global), ice area, xCell, yCell, zCell:')
           if (thisTracer % ndims == 2) then  ! the pointer to iceAreaCategory should always be 2D, but check just in case
              do iCell = 1, nCellsSolve
                 if (thisTracer % array2D(iCatTest,iCell) > 0.0_RKIND) then
-                   write(stderrUnit,*) iCell, indexToCellID(iCell), thisTracer % array2D(iCatTest,iCell), &
-                        xCell(iCell), yCell(iCell), zCell(iCell)
+                   call mpas_log_write("$i $i $r $r $r $r", &
+                        intArgs=(/iCell, indexToCellID(iCell)/), &
+                        realArgs=(/thisTracer % array2D(iCatTest,iCell), xCell(iCell), yCell(iCell), zCell(iCell)/))
                 endif
              enddo
           endif  ! ndims
@@ -2934,12 +2940,12 @@ contains
     !       not used in computations.
     !-------------------------------------------------------------------
 
-    if (verboseRun) write(stderrUnit,*) 'Make masks'
+    if (verboseRun) call mpas_log_write('Make masks')
 
     call MPAS_pool_get_config(block % configs, "config_monotonicity_check", configMonotonicityCheck)
     if (configMonotonicityCheck) then
 
-       if (verboseRun) write(stderrUnit,*) 'Compute local mins and maxes'
+       if (verboseRun) call mpas_log_write('Compute local mins and maxes')
 
        call mpas_timer_start("incr remap masks")
        call make_masks(&
@@ -2972,7 +2978,7 @@ contains
     ! Construct each tracer field as a linear function of x and y in each cell
     !-------------------------------------------------------------------
 
-    if (verboseRun) write(stderrUnit,*) 'Construct fields'
+    if (verboseRun) call mpas_log_write('Construct fields')
 
     call mpas_timer_start("incr remap construct fields")
     call construct_linear_tracer_fields(&
@@ -3002,9 +3008,9 @@ contains
     !-------------------------------------------------------------------
 
     if (verboseRun) then
-       write(stderrUnit,*) 'Find departure points'
-       write(stderrUnit,*) 'Max (uvel, vvel) =', maxval(uVelocity), maxval(vVelocity)
-       write(stderrUnit,*) 'Max (uvel, vvel)*dt =', maxval(uVelocity)*dt, maxval(vVelocity)*dt
+       call mpas_log_write('Find departure points')
+       call mpas_log_write('Max (uvel, vvel) = $r $r', realArgs=(/maxval(uVelocity), maxval(vVelocity)/))
+       call mpas_log_write('Max (uvel, vvel)*dt = $r $r', realArgs=(/maxval(uVelocity)*dt, maxval(vVelocity)*dt/))
     endif
 
     call mpas_timer_start("incr remap departure points")
@@ -3026,7 +3032,7 @@ contains
     !       all edges of locally owned cells.
     !-------------------------------------------------------------------
 
-    if (verboseRun) write(stderrUnit,*) 'Locate departure triangles'
+    if (verboseRun) call mpas_log_write('Locate departure triangles')
 
     call mpas_timer_start("incr remap departure triangles")
     call find_departure_triangles(&
@@ -3060,14 +3066,14 @@ contains
 
     if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
        iEdge = etest
-       write(stderrUnit,*) ' '
-       write(stderrUnit,*) 'Triangles, iEdge =', indexToEdgeID(iEdge)
+       call mpas_log_write(' ')
+       call mpas_log_write('Triangles, iEdge = $i', intArgs=(/indexToEdgeID(iEdge)/))
        do n = 1, nTriPerEdgeRemap
           iCell = iCellTriangle(n,iEdge)
           if (iCell >= 1 .and. iCell <= nCells) then
-             write(stderrUnit,*) n, 'cell, area =', indexToCellID(iCell), triangleArea(n,iEdge)
+             call mpas_log_write('$i cell, area = $i $r', intArgs=(/n, indexToCellID(iCell)/), realArgs=(/triangleArea(n,iEdge)/))
              do m = 1, 3
-                write(stderrUnit,*) m, xTriangle(m,n,iEdge), yTriangle(m,n,iEdge)
+                call mpas_log_write('$i $r $r', intArgs=(/m/), realArgs=(/xTriangle(m,n,iEdge), yTriangle(m,n,iEdge)/))
              enddo
           endif
        enddo
@@ -3087,13 +3093,13 @@ contains
 
     if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
        iEdge = etest
-       write(stderrUnit,*) ' '
-       write(stderrUnit,*) 'Quad points, iEdge =', indexToEdgeID(iEdge)
+       call mpas_log_write(' ')
+       call mpas_log_write('Quad points, iEdge = $i', intArgs=(/indexToEdgeID(iEdge)/))
        do n = 1, nTriPerEdgeRemap
           if (maxval(xTriangle(:,n,iEdge)) /= 0.0_RKIND) then
-             write(stderrUnit,*) 'Triangle', n
+             call mpas_log_write('Triangle', intArgs=(/n/))
              do m = 1, nQuadPoints
-                write(stderrUnit,*) m, xTriangle(m,n,iEdge), yTriangle(m,n,iEdge)
+                call mpas_log_write('$i $r $r', intArgs=(/m/), realArgs=(/xTriangle(m,n,iEdge), yTriangle(m,n,iEdge)/))
              enddo
           endif
        enddo
@@ -3124,21 +3130,21 @@ contains
 
        do while(associated(thisTracer))
           if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
-             write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'Fluxes, iEdge, tracer =', indexToEdgeID(iEdge), trim(thisTracer % tracerName)
+             call mpas_log_write(' ')
+             call mpas_log_write('Fluxes, iEdge, tracer = $i '//trim(thisTracer % tracerName), intArgs=(/indexToEdgeID(iEdge)/))
              if (thisTracer % ndims == 2) then
                 nCategories = size(thisTracer % edgeFlux2D, 1)
-                write(stderrUnit,*)'category, flux:'
+                call mpas_log_write('category, flux:')
                 do iCat = 1, nCategories
-                   write(stderrUnit,*) iCat, thisTracer % edgeFlux2D(iCat,iEdge)
+                   call mpas_log_write('$i $r', intArgs=(/iCat/), realArgs=(/thisTracer % edgeFlux2D(iCat,iEdge)/))
                 enddo
              elseif (thisTracer % ndims == 3) then
                 nLayers = size(thisTracer % edgeFlux3D, 1)
                 nCategories = size(thisTracer % edgeFlux3D, 2)
-                write(stderrUnit,*)'layer, category, flux:'
+                call mpas_log_write('layer, category, flux:')
                 do iLayer = 1, nLayers
                    do iCat = 1, nCategories
-                      write(stderrUnit,*) iLayer, iCat, thisTracer % edgeFlux3D(iLayer,iCat,iEdge)
+                      call mpas_log_write("$i $i $r", intArgs=(/iLayer, iCat/), realArgs=(/thisTracer % edgeFlux3D(iLayer,iCat,iEdge)/))
                    enddo
                 enddo
              endif
@@ -3170,8 +3176,8 @@ contains
     if (configRecoverTracerMeansCheck) then
 
        if (verboseRun) then
-          write(stderrUnit,*) 'Recover tracer means'
-          write(stderrUnit,*) 'WARNING: This subroutine will considerably increase the computation time for IR'
+          call mpas_log_write('Recover tracer means')
+          call mpas_log_write('WARNING: This subroutine will considerably increase the computation time for IR')
        endif
 
        call mpas_timer_start("incr remap recover tracer means")
@@ -3254,7 +3260,7 @@ contains
 
     if (zapSmallMass) then
 
-       if (verboseRun) write(stderrUnit,*) 'Zap small mass'
+       if (verboseRun) call mpas_log_write('Zap small mass')
 
        call zap_small_mass(&
             tracersHead,   &
@@ -3276,21 +3282,21 @@ contains
           count = count + 1
 
           iCell = ctest
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'New values, iCell, tracer =', indexToCellID(iCell), trim(thisTracer % tracerName)
+          call mpas_log_write(' ')
+          call mpas_log_write('New values, iCell, tracer = $i '//trim(thisTracer % tracerName), intArgs=(/indexToCellID(iCell)/))
           if (thisTracer % ndims == 2) then
-             write(stderrUnit,*)'category, value:'
+             call mpas_log_write('category, value:')
              nCategories = size(thisTracer % array2D, 1)
              do iCat = 1, nCategories
-                write(stderrUnit,*) iCat, thisTracer % array2D(iCat,iCell)
+                call mpas_log_write("$i $f", intArgs=(/iCat/), realArgs=(/thisTracer % array2D(iCat,iCell)/))
              enddo
           elseif (thisTracer % ndims == 3) then
-             write(stderrUnit,*)'layer, category, value:'
+             call mpas_log_write('layer, category, value:')
              nLayers = size(thisTracer % array3D, 1)
              nCategories = size(thisTracer % array3D, 2)
              do iCat = 1, nCategories
                 do iLayer = 1, nLayers
-                   write(stderrUnit,*) iLayer, iCat, thisTracer % array3D(iLayer,iCat,iCell)
+                   call mpas_log_write('$i $i $r', intArgs=(/iLayer, iCat/), realArgs=(/thisTracer % array3D(iLayer,iCat,iCell)/))
                 enddo
              enddo
           endif  ! ndims
@@ -3304,14 +3310,15 @@ contains
 
     thisTracer => tracersHead  ! point to the mass-like field, iceAreaCategory
     if (verboseGlobal .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
-       write(stderrUnit,*) ' '
-       write(stderrUnit,*) 'Cells with ice:'
-       write(stderrUnit,*) 'iCell (local), iCell(global), ice area, xCell, yCell, zCell:'
+       call mpas_log_write(' ')
+       call mpas_log_write('Cells with ice:')
+       call mpas_log_write('iCell (local), iCell(global), ice area, xCell, yCell, zCell:')
        if (thisTracer % ndims == 2) then  ! the pointer to iceAreaCategory should always be 2D, but check just in case
           do iCell = 1, nCellsSolve
              if (thisTracer % array2D(iCatTest,iCell) > 0.0_RKIND) then
-                write(stderrUnit,*) iCell, indexToCellID(iCell), thisTracer % array2D(iCatTest,iCell), &
-                     xCell(iCell), yCell(iCell), zCell(iCell)
+                call mpas_log_write("$i $i $f $f $f $f", &
+                     intArgs=(/iCell, indexToCellID(iCell)/), &
+                     realArgs=(/thisTracer % array2D(iCatTest,iCell), xCell(iCell), yCell(iCell), zCell(iCell)/))
              endif
           enddo
        endif  ! ndims
@@ -3601,8 +3608,8 @@ contains
     do while (associated(thisTracer))
 
        if (verboseConstruct) then
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'tracer: ', trim(thisTracer % tracerName)
+          call mpas_log_write(' ')
+          call mpas_log_write('tracer: '//trim(thisTracer % tracerName))
        endif
 
        ! initialize quantities needed for tracer reconstruction
@@ -3723,9 +3730,9 @@ contains
 
           if (verboseConstruct .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
              iCell = ctest
-             write(stderrUnit,*) '  Limited center gradient:', thisTracer % xGrad2D(iCatTest,iCell), &
-                                                               thisTracer % yGrad2D(iCatTest,iCell)
-             write(stderrUnit,*) 'Center value:', thisTracer % center2D(iCatTest,iCell)
+             call mpas_log_write('Limited center gradient: $f $f', &
+                  realArgs=(/thisTracer % xGrad2D(iCatTest,iCell), thisTracer % yGrad2D(iCatTest,iCell)/))
+             call mpas_log_write('Center value: $f', realArgs=(/thisTracer % center2D(iCatTest,iCell)/))
           endif
 
           ! if this tracer has children, then compute its barycenter, as required for reconstruction of the child tracer
@@ -3806,9 +3813,8 @@ contains
 
              elseif (thisTracer % nParents == 3) then
 
-                write(stderrUnit,*) 'IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children'
-                call mpas_dmpar_global_abort(&
-                     'MPAS-seaice: IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children')
+                call mpas_log_write('IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children', &
+                     MPAS_LOG_CRIT)
 
              endif   ! nParents
 
@@ -3904,9 +3910,9 @@ contains
 
           if (verboseConstruct .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
              iCell = ctest
-             write(stderrUnit,*) '  Limited center gradient:', thisTracer % xGrad3D(iLayerTest,iCatTest,iCell), &
-                                                               thisTracer % yGrad3D(iLayerTest,iCatTest,iCell)
-             write(stderrUnit,*) 'Center value:', thisTracer % center3D(iLayer,iCat,iCell)
+             call mpas_log_write('Limited center gradient: $r $r', &
+                  realArgs=(/thisTracer % xGrad3D(iLayerTest,iCatTest,iCell), thisTracer % yGrad3D(iLayerTest,iCatTest,iCell)/))
+             call mpas_log_write('Center value: $r', realArgs=(/thisTracer % center3D(iLayer,iCat,iCell)/))
           endif
 
           ! if this tracer has children, then compute its barycenter, as required for reconstruction of the child tracer
@@ -4089,9 +4095,8 @@ contains
 
                 elseif (thisTracer % nParents == 3) then
 
-                   write(stderrUnit,*) 'ERROR: IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children'
-                   call mpas_dmpar_global_abort(&
-                        'MPAS-seaice: IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children')
+                   call mpas_log_write('IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children', &
+                        MPAS_LOG_CRIT)
 
                 endif   ! parentTracer % ndims
 
@@ -4327,18 +4332,19 @@ contains
 
        if (verboseConstruct .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
           if (iCell == ctest) then
-             write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'iCat, iCell =', iCatTest, indexToCellID(iCell)
-             write(stderrUnit,*) 'field value =', field(iCatTest,iCell)
-             write(stderrUnit,*) 'neighbor values and edge gradients:'
+             call mpas_log_write(' ')
+             call mpas_log_write('iCat, iCell = $i $i', intArgs=(/iCatTest, indexToCellID(iCell)/))
+             call mpas_log_write('field value = $r', realArgs=(/field(iCatTest,iCell)/))
+             call mpas_log_write('neighbor values and edge gradients:')
              do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                 iCellNeighbor = cellsOnCell(iEdgeOnCell,iCell)
                 iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                write(stderrUnit,*) iEdgeOnCell, indexToEdgeID(iEdge), &
-                     field(iCatTest,iCellNeighbor), normalGrad(iCatTest,iEdgeOnCell)
+                call mpas_log_write("$i $i $r $r", intArgs=(/iEdgeOnCell, indexToEdgeID(iEdge)/), &
+                     realArgs=(/field(iCatTest,iCellNeighbor), normalGrad(iCatTest,iEdgeOnCell)/))
              enddo
-             write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'Unlimited center gradient:', xGrad(iCatTest,iCell), yGrad(iCatTest,iCell), zGrad(iCatTest)
+             call mpas_log_write(' ')
+             call mpas_log_write('Unlimited center gradient: $r $r $r', &
+                  realArgs=(/xGrad(iCatTest,iCell), yGrad(iCatTest,iCell), zGrad(iCatTest)/))
           endif
        endif
 
@@ -4563,19 +4569,19 @@ contains
 
        if (verboseConstruct .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
           if (iCell == ctest) then
-             write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'iLayer, iCat, iCell =', iLayerTest, iCatTest, indexToCellID(iCell)
-             write(stderrUnit,*) 'field value =', field(iLayerTest,iCatTest,iCell)
-             write(stderrUnit,*) 'neighbor values and edge gradients:'
+             call mpas_log_write(' ')
+             call mpas_log_write('iLayer, iCat, iCell = $i $i $i', intArgs=(/iLayerTest, iCatTest, indexToCellID(iCell)/))
+             call mpas_log_write('field value = $r', realArgs=(/field(iLayerTest,iCatTest,iCell)/))
+             call mpas_log_write('neighbor values and edge gradients:')
              do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                 iCellNeighbor = cellsOnCell(iEdgeOnCell,iCell)
                 iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                write(stderrUnit,*) iEdgeOnCell, indexToEdgeID(iEdge), &
-                     field(iLayerTest,iCatTest,iCellNeighbor), normalGrad(iLayerTest,iCatTest,iEdgeOnCell)
+                call mpas_log_write('$i $i $r $r', intArgs=(/iEdgeOnCell, indexToEdgeID(iEdge)/), &
+                     realArgs=(/field(iLayerTest,iCatTest,iCellNeighbor), normalGrad(iLayerTest,iCatTest,iEdgeOnCell)/))
              enddo
-             write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'Unlimited center gradient:', &
-                  xGrad(iLayerTest,iCatTest,iCell), yGrad(iLayerTest,iCatTest,iCell), zGrad(iLayerTest,iCatTest)
+             call mpas_log_write(' ')
+             call mpas_log_write('Unlimited center gradient: $r $r $r', &
+                  realArgs=(/xGrad(iLayerTest,iCatTest,iCell), yGrad(iLayerTest,iCatTest,iCell), zGrad(iLayerTest,iCatTest)/))
           endif
        endif
 
@@ -5019,8 +5025,7 @@ contains
 
     if (.not. (present(xBarycenter2D) .and. present(yBarycenter2D)) .and.  &
         .not. (present(xBarycenter3D) .and. present(yBarycenter3D))) then
-       write(stderrUnit,*) 'ERROR: Subroutine limit_tracer_gradient_3d requires input barycenter coordinates'
-       call mpas_dmpar_global_abort('MPAS-seaice: IR subroutine limit_tracer_gradient_3d requires input barycenter coordinates')
+       call mpas_log_write('IR subroutine limit_tracer_gradient_3d requires input barycenter coordinates', MPAS_LOG_CRIT)
     endif
 
     nLayers     = size(field, 1)
@@ -5284,13 +5289,13 @@ contains
 
        if (trajectoryLength > minLengthEdgesOnVertex(iVertex)) then
           write(errorMessage,*) 'Potential CFL violation in IR advection, global vertex ID =', indexToVertexID(iVertex)
-          write(stderrUnit,*) 'WARNING: '//trim(errorMessage)
+          call mpas_log_write(trim(errorMessage), MPAS_LOG_WARN)
           call cice_warning_message(domain, errorMessage)
           write(errorMessage,*) 'Speed at vertex =', trajectoryLength/dt
-          write(stderrUnit,*) trim(errorMessage)
+          call mpas_log_write(trim(errorMessage), MPAS_LOG_WARN)
           call cice_warning_message(domain, errorMessage)
           write(errorMessage,*) 'Maximum safe speed =', minLengthEdgesOnVertex(iVertex)/dt
-          write(stderrUnit,*) trim(errorMessage)
+          call mpas_log_write(trim(errorMessage), MPAS_LOG_WARN)
           call cice_warning_message(domain, errorMessage)
        endif
 
@@ -5519,16 +5524,16 @@ contains
     integer :: n
 
     if (verboseGeometry) then
-       write(stderrUnit,*) 'In find_departure_triangles'
-       write(stderrUnit,*) 'nCells, maxEdges =', nCells, maxEdges
+       call mpas_log_write('In find_departure_triangles')
+       call mpas_log_write('nCells, maxEdges = $i $i', intArgs=(/nCells, maxEdges/))
 
        if (etestOnProc .and. block % localBlockID == etestBlockID) then
           iEdge = etest
-          write(stderrUnit,*) 'cellsOnEdgeRemap, test edge =', indexToEdgeID(iEdge)
+          call mpas_log_write('cellsOnEdgeRemap, test edge = $i', intArgs=(/indexToEdgeID(iEdge)/))
           do n = 1, 6
              iCell = cellsOnEdgeRemap(n,iEdge)
              if (iCell >= 1) then
-                write(stderrUnit,*) indexToCellID(iCell)
+                call mpas_log_write("$i", intArgs=(/indexToCellID(iCell)/))
              endif
           enddo
        endif
@@ -5574,8 +5579,8 @@ contains
 
           if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
              if (iEdge == etest) then
-                write(stderrUnit,*) ' '
-                write(stderrUnit,*) 'Departure points, iEdge =', indexToEdgeID(iEdge)
+                call mpas_log_write(' ')
+                call mpas_log_write('Departure points, iEdge = $i', intArgs=(/indexToEdgeID(iEdge)/))
              endif
           endif
 
@@ -5590,7 +5595,9 @@ contains
 
              if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
                 if (iEdge == etest) then
-                   write(stderrUnit,*) indexToVertexID(iVertex), departurePoint(1,iVertexOnEdge), departurePoint(2,iVertexOnEdge)
+                   call mpas_log_write("$i $r $r", &
+                        intArgs=(/indexToVertexID(iVertex)/), &
+                        realArgs=(/departurePoint(1,iVertexOnEdge), departurePoint(2,iVertexOnEdge)/))
                 endif
              endif
 
@@ -5631,19 +5638,19 @@ contains
 
           if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
              if (iEdge == etest) then
-                write(stderrUnit,*) ' '
-                write(stderrUnit,*) 'edge vertex 1:', edgeVertex(:,1)
-                write(stderrUnit,*) 'edge vertex 2:', edgeVertex(:,2)
-                write(stderrUnit,*) 'Distance 1:', &
-                     sqrt( (edgeVertex(1,1) - departurePoint(1,1))**2 + (edgeVertex(2,1) - departurePoint(2,1))**2 )
-                write(stderrUnit,*) 'Distance 2:', &
-                     sqrt( (edgeVertex(1,2) - departurePoint(1,2))**2 + (edgeVertex(2,2) - departurePoint(2,2))**2 )
-                write(stderrUnit,*) 'Length of edge:', &
-                     sqrt( (edgeVertex(1,2) - edgeVertex(1,1))**2 + (edgeVertex(2,2) - edgeVertex(2,1))**2 )
-                write(stderrUnit,*) 'Length of D12:', &
-                     sqrt( (departurePoint(1,2) - departurePoint(1,1))**2 + (departurePoint(2,2) - departurePoint(2,1))**2 )
-                write(stderrUnit,*) 'dp1 in left half plane = ', dpInHalfPlane(1)
-                write(stderrUnit,*) 'dp2 in left half plane = ', dpInHalfPlane(2)
+                call mpas_log_write(' ')
+                call mpas_log_write('edge vertex 1: $r', realArgs=(/edgeVertex(:,1)/))
+                call mpas_log_write('edge vertex 2: $r', realArgs=(/edgeVertex(:,2)/))
+                call mpas_log_write('Distance 1: $r', realArgs=(/&
+                     sqrt( (edgeVertex(1,1) - departurePoint(1,1))**2 + (edgeVertex(2,1) - departurePoint(2,1))**2 )/))
+                call mpas_log_write('Distance 2: $r', realArgs=(/&
+                     sqrt( (edgeVertex(1,2) - departurePoint(1,2))**2 + (edgeVertex(2,2) - departurePoint(2,2))**2 )/))
+                call mpas_log_write('Length of edge: $r', realArgs=(/&
+                     sqrt( (edgeVertex(1,2) - edgeVertex(1,1))**2 + (edgeVertex(2,2) - edgeVertex(2,1))**2 )/))
+                call mpas_log_write('Length of D12: $r', realArgs=(/&
+                     sqrt( (departurePoint(1,2) - departurePoint(1,1))**2 + (departurePoint(2,2) - departurePoint(2,1))**2 )/))
+                call mpas_log_write('dp1 in left half plane = $l', logicArgs=(/dpInHalfPlane(1)/))
+                call mpas_log_write('dp2 in left half plane = $l', logicArgs=(/dpInHalfPlane(2)/))
              endif
           endif
 
@@ -6142,17 +6149,17 @@ contains
 
                 if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
                    if (iEdge == etest) then
-                      write(stderrUnit,*) ' '
-                      write(stderrUnit,*) 'vertices in edge-based coordinates, iTri =', iTri
+                      call mpas_log_write(' ')
+                      call mpas_log_write('vertices in edge-based coordinates, iTri = $i', intArgs=(/iTri/))
                       do n = 1, 3
-                         write(stderrUnit,*) n, xTriangle(n,iTri,iEdge), yTriangle(n,iTri,iEdge)
+                         call mpas_log_write("$i $r $r", intArgs=(/n/), realArgs=(/xTriangle(n,iTri,iEdge), yTriangle(n,iTri,iEdge)/))
                       enddo
-                      write(stderrUnit,*) 'edge-based triangle area =',  &
+                      call mpas_log_write('edge-based triangle area = $f', realArgs=(/ &
                            abs (0.5_RKIND * ( (xTriangle(2,iTri,iEdge) - xTriangle(1,iTri,iEdge)) * &
                                               (yTriangle(3,iTri,iEdge) - yTriangle(1,iTri,iEdge))  &
                                             - (yTriangle(2,iTri,iEdge) - yTriangle(1,iTri,iEdge)) * &
-                                              (xTriangle(3,iTri,iEdge) - xTriangle(1,iTri,iEdge)) ) )
-                      write(stderrUnit,*) 'source cell =', indexToCellID(iCell)
+                                              (xTriangle(3,iTri,iEdge) - xTriangle(1,iTri,iEdge)) ) )/))
+                      call mpas_log_write('source cell = $i', intArgs=(/indexToCellID(iCell)/))
                    endif
                 endif
 
@@ -6180,11 +6187,11 @@ contains
 
                 if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
                    if (iEdge == etest) then
-                      write(stderrUnit,*) 'vertices in cell-based coordinates, iTri =', iTri
+                      call mpas_log_write('vertices in cell-based coordinates, iTri = $i', intArgs=(/iTri/))
                       do n = 1, 3
-                         write(stderrUnit,*) n, xTriangle(n,iTri,iEdge), yTriangle(n,iTri,iEdge)
+                         call mpas_log_write('$i $f $f', intArgs=(/n/), realArgs=(/xTriangle(n,iTri,iEdge), yTriangle(n,iTri,iEdge)/))
                       enddo
-                      write(stderrUnit,*) 'cell-based triangle area =', abs(triangleArea(iTri,iEdge))
+                      call mpas_log_write('cell-based triangle area = $f', realArgs=(/abs(triangleArea(iTri,iEdge))/))
                    endif
                 endif
 
@@ -6363,10 +6370,8 @@ contains
             crossProduct)
 
        if (abs(crossProduct) < eps11) then  ! the two vectors are (nearly) parallel; something is wrong
-          write(errorMessage,*) 'basis vectors for IR coordinate transformations must not be parallel: iEdge, iCell =', &
-               iEdge, iCell
-          write(stderrUnit,*) 'ERROR: '//trim(errorMessage)
-          call mpas_dmpar_global_abort('MPAS-seaice: IR: '//trim(errorMessage))
+          call mpas_log_write('IR: basis vectors for IR coordinate transformations must not be parallel: iEdge, iCell =', &
+               MPAS_LOG_CRIT, intArgs=(/iEdge, iCell/))
        endif
 
        if (crossProduct > 0.0_RKIND) then
@@ -6592,8 +6597,7 @@ contains
 
     else   ! nQuadPoint /= 3 or 6
 
-       write(stderrUnit,*) 'ERROR: must have nQuadPoints = 3 or 6'
-       call mpas_dmpar_global_abort('MPAS-seaice: IR must have nQuadPoints = 3 or 6')
+       call mpas_log_write('IR must have nQuadPoints = 3 or 6', MPAS_LOG_CRIT)
 
     endif            ! nQuadPoints
 
@@ -6687,14 +6691,13 @@ contains
     do while (associated(thisTracer))
 
        if (verboseFluxes) then
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'Tracer: ', trim(thisTracer % tracerName)
+          call mpas_log_write(' ')
+          call mpas_log_write('Tracer: '//trim(thisTracer % tracerName))
        endif
 
        ! check that nParents <= 3
        if (thisTracer % nParents > 3) then
-          write(stderrUnit,*) 'ERROR: Tracer has > 3 parents:', trim(thisTracer % tracerName)
-          call mpas_dmpar_global_abort('MPAS-seaice: IR: Tracer has > 3 parents: '//trim(thisTracer % tracerName))
+          call mpas_log_write('Tracer has > 3 parents: '//trim(thisTracer % tracerName), MPAS_LOG_CRIT)
        endif
 
        ! initialize edge flux and allocate tracerIntegral array
@@ -6743,7 +6746,7 @@ contains
 
        if (verboseFluxes) then
           if (thisTracer % nParents > 0) then
-             write(stderrUnit,*) 'Parent: ', trim(parentTracer % tracerName)
+             call mpas_log_write('Parent: '//trim(parentTracer % tracerName))
           endif
        endif
 
@@ -6813,16 +6816,18 @@ contains
                       do iqp = 1, nQuadPoints
                          do iCat = 1, nCategories
                             if (thisTracer % triangleValue2D(iCat,iqp,iTri,iEdge) < 0.0_RKIND) then
-                               write(stderrUnit,*)'ERROR: Negative reconstructed ice area'
-                               write(stderrUnit,*)'nCells =', nCells
-                               write(stderrUnit,*)'iCat, iCell, global iCell:', iCat, iCell, indexToCellID(iCell)
-                               write(stderrUnit,*)'iEdge, global iEdge, iTri, iqp:', iEdge, indexToEdgeID(iEdge), iTri, iqp
-                               write(stderrUnit,*)'triangle area:', triangleArea(iTri,iEdge)
-                               write(stderrUnit,*)'tracer val:', thisTracer % triangleValue2D(iCat,iqp,iTri,iEdge)
-                               write(stderrUnit,*)'center val:', thisTracer % center2D(iCat,iCell)
-                               write(stderrUnit,*)'x gradient:', thisTracer % xGrad2D(iCat,iCell)
-                               write(stderrUnit,*)'y gradient:', thisTracer % yGrad2D(iCat,iCell)
-                               call mpas_dmpar_global_abort('MPAS-seaice: IR negative reconstructed ice area (nDims == 2)')
+                               call mpas_log_write('Negative reconstructed ice area', MPAS_LOG_ERR)
+                               call mpas_log_write('nCells = $i', MPAS_LOG_ERR, intArgs=(/nCells/))
+                               call mpas_log_write('iCat, iCell, global iCell: $i $i $i', MPAS_LOG_ERR, &
+                                    intArgs=(/iCat, iCell, indexToCellID(iCell)/))
+                               call mpas_log_write('iEdge, global iEdge, iTri, iqp: $i $i $i $i', MPAS_LOG_ERR, &
+                                    intArgs=(/iEdge, indexToEdgeID(iEdge), iTri, iqp/))
+                               call mpas_log_write('triangle area: $r', MPAS_LOG_ERR, realArgs=(/triangleArea(iTri,iEdge)/))
+                               call mpas_log_write('tracer val: $r', MPAS_LOG_ERR, realArgs=(/thisTracer % triangleValue2D(iCat,iqp,iTri,iEdge)/))
+                               call mpas_log_write('center val: $r', MPAS_LOG_ERR, realArgs=(/thisTracer % center2D(iCat,iCell)/))
+                               call mpas_log_write('x gradient: $r', MPAS_LOG_ERR, realArgs=(/thisTracer % xGrad2D(iCat,iCell)/))
+                               call mpas_log_write('y gradient: $r', MPAS_LOG_ERR, realArgs=(/thisTracer % yGrad2D(iCat,iCell)/))
+                               call mpas_log_write('IR negative reconstructed ice area (nDims == 2)', MPAS_LOG_CRIT)
                             endif  ! negative area
                          enddo   ! iCat
                       enddo   ! iqp
@@ -6905,17 +6910,18 @@ contains
                          do iCat = 1, nCategories
                             do iLayer = 1, nLayers
                                if (thisTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge) < 0.0_RKIND) then
-                                  write(stderrUnit,*)'ERROR: Negative reconstructed ice area'
-                                  write(stderrUnit,*)'nCells =', nCells
-                                  write(stderrUnit,*)'iLayer, iCat, iCell, global iCell:', &
-                                       iLayer, iCat, iCell, indexToCellID(iCell)
-                                  write(stderrUnit,*)'iEdge, global iEdge, iTri, iqp:', iEdge, indexToEdgeID(iEdge), iTri, iqp
-                                  write(stderrUnit,*)'triangle area:', triangleArea(iTri,iEdge)
-                                  write(stderrUnit,*)'tracer val:', thisTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge)
-                                  write(stderrUnit,*)'center val:', thisTracer % center3D(iLayer,iCat,iCell)
-                                  write(stderrUnit,*)'x gradient:', thisTracer % xGrad3D(iLayer,iCat,iCell)
-                                  write(stderrUnit,*)'y gradient:', thisTracer % yGrad3D(iLayer,iCat,iCell)
-                                  call mpas_dmpar_global_abort('MPAS-seaice: IR negative reconstructed ice area (nDims == 3)')
+                                  call mpas_log_write('Negative reconstructed ice area')
+                                  call mpas_log_write('nCells = $i', intArgs=(/nCells/))
+                                  call mpas_log_write('iLayer, iCat, iCell, global iCell: $i $i $i $i', &
+                                       intArgs=(/iLayer, iCat, iCell, indexToCellID(iCell)/))
+                                  call mpas_log_write('iEdge, global iEdge, iTri, iqp: $i $i $i $i', &
+                                       intArgs=(/iEdge, indexToEdgeID(iEdge), iTri, iqp/))
+                                  call mpas_log_write('triangle area: $r', realArgs=(/triangleArea(iTri,iEdge)/))
+                                  call mpas_log_write('tracer val: $r', realArgs=(/thisTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge)/))
+                                  call mpas_log_write('center val: $r', realArgs=(/thisTracer % center3D(iLayer,iCat,iCell)/))
+                                  call mpas_log_write('x gradient: $r', realArgs=(/thisTracer % xGrad3D(iLayer,iCat,iCell)/))
+                                  call mpas_log_write('y gradient: $r', realArgs=(/thisTracer % yGrad3D(iLayer,iCat,iCell)/))
+                                  call mpas_log_write('MPAS-seaice: IR negative reconstructed ice area (nDims == 3)')
                                endif  ! negative area
                             enddo   ! iLayer
                          enddo   ! iCat
@@ -7242,9 +7248,9 @@ contains
 
              if (ctestOnProc .and. block % localBlockID == ctestBlockID) then
                 if (verboseFluxes .and. iCell == ctest .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
-                   write(stderrUnit,*) ' '
-                   write(stderrUnit,*) 'Update: iCell, tracer =', indexToCellID(iCell), trim(thisTracer % tracerName)
-                   write(stderrUnit,*) 'Edge, flux from cell:'
+                   call mpas_log_write(' ')
+                   call mpas_log_write('Update: iCell, tracer = $i '//trim(thisTracer % tracerName), intArgs=(/indexToCellID(iCell)/))
+                   call mpas_log_write('Edge, flux from cell:')
                 endif
              endif
 
@@ -7268,7 +7274,7 @@ contains
 
                 if (verboseFluxes .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
                    if (iCell == ctest .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
-                      write(stderrUnit,*) indexToEdgeID(iEdge), thisTracer % edgeFlux2D(iCatTest,iEdge)*edgeSignOnCell
+                      call mpas_log_write("$i $r", intArgs=(/indexToEdgeID(iEdge)/), realArgs=(/thisTracer % edgeFlux2D(iCatTest,iEdge)*edgeSignOnCell/))
                    endif
                 endif
 
@@ -7289,13 +7295,13 @@ contains
 
              if (verboseFluxes .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
                 if (iCell == ctest .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
-                   write(stderrUnit,*) 'cell area:', areaCell(iCell)
-                   write(stderrUnit,*) 'iceAreaCategory, massTracerProduct:', thisTracer % massTracerProduct2D(iCatTest,iCell)
-                   write(stderrUnit,*) 'flux/area:', fluxFromCell2D(iCatTest) / areaCell(iCell)
-                   write(stderrUnit,*) 'difference:', &
-                        (thisTracer % massTracerProduct2D(iCatTest,iCell) - (fluxFromCell2D(iCatTest) / areaCell(iCell)))
-                   write(stderrUnit,*) 'parent massTracerProduct:', parentTracer % massTracerProduct2D(iCatTest,iCell)
-                   write(stderrUnit,*) 'new value:', thisTracer % array2D(iCatTest,iCell)
+                   call mpas_log_write('cell area: $r', realArgs=(/areaCell(iCell)/))
+                   call mpas_log_write('iceAreaCategory, massTracerProduct: $r', realArgs=(/thisTracer % massTracerProduct2D(iCatTest,iCell)/))
+                   call mpas_log_write('flux/area: $r', realArgs=(/fluxFromCell2D(iCatTest) / areaCell(iCell)/))
+                   call mpas_log_write('difference: $r', &
+                        realArgs=(/(thisTracer % massTracerProduct2D(iCatTest,iCell) - (fluxFromCell2D(iCatTest) / areaCell(iCell)))/))
+                   call mpas_log_write('parent massTracerProduct: $r', realArgs=(/parentTracer % massTracerProduct2D(iCatTest,iCell)/))
+                   call mpas_log_write('new value: $r', realArgs=(/thisTracer % array2D(iCatTest,iCell)/))
                 endif
              endif
 
@@ -7323,9 +7329,9 @@ contains
 
              if (ctestOnProc .and. block % localBlockID == ctestBlockID) then
                 if (verboseFluxes .and. iCell == ctest .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
-                   write(stderrUnit,*) ' '
-                   write(stderrUnit,*) 'Update: iCell, tracer =', indexToCellID(iCell), trim(thisTracer % tracerName)
-                   write(stderrUnit,*) 'Edge, flux from cell:'
+                   call mpas_log_write(' ')
+                   call mpas_log_write('Update: iCell, tracer = $i '//trim(thisTracer % tracerName), indexToCellID(iCell))
+                   call mpas_log_write('Edge, flux from cell:')
                 endif
              endif
 
@@ -7349,7 +7355,8 @@ contains
 
                 if (verboseFluxes .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
                    if (iCell == ctest .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
-                      write(stderrUnit,*) indexToEdgeID(iEdge), thisTracer % edgeFlux3D(iLayerTest,iCatTest,iEdge)*edgeSignOnCell
+                      call mpas_log_write("$i $r", intArgs=(/indexToEdgeID(iEdge)/), &
+                           realArgs=(/thisTracer % edgeFlux3D(iLayerTest,iCatTest,iEdge)*edgeSignOnCell/))
                    endif
                 endif
 
@@ -7375,10 +7382,10 @@ contains
 
                 if (verboseFluxes .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
                    if (iCell == ctest .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
-                      write(stderrUnit,*) 'cell area:', areaCell(iCell)
-                      write(stderrUnit,*) 'massTracerProduct:', thisTracer % massTracerProduct3D(iLayerTest,iCatTest,iCell)
-                      write(stderrUnit,*) 'parent massTracerProduct:', parentTracer % massTracerProduct2D(iCatTest,iCell)
-                      write(stderrUnit,*) 'new value:', thisTracer % array3D(iLayerTest,iCatTest,iCell)
+                      call mpas_log_write('cell area: $r', realArgs=(/areaCell(iCell)/))
+                      call mpas_log_write('massTracerProduct: $r', realArgs=(/thisTracer % massTracerProduct3D(iLayerTest,iCatTest,iCell)/))
+                      call mpas_log_write('parent massTracerProduct: $r', realArgs=(/parentTracer % massTracerProduct2D(iCatTest,iCell)/))
+                      call mpas_log_write('new value: $r', realArgs=(/thisTracer % array3D(iLayerTest,iCatTest,iCell)/))
                    endif
                 endif
 
@@ -7408,11 +7415,11 @@ contains
 
                 if (verboseFluxes .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
                    if (iCell == ctest .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
-                      write(stderrUnit,*) 'cell area:', areaCell(iCell)
-                      write(stderrUnit,*) 'massTracerProduct:', thisTracer % massTracerProduct3D(iLayerTest,iCatTest,iCell)
-                      write(stderrUnit,*) 'parent massTracerProduct:', &
-                           parentTracer % massTracerProduct3D(iLayerTest,iCatTest,iCell)
-                      write(stderrUnit,*) 'new value:', thisTracer % array3D(iLayerTest,iCatTest,iCell)
+                      call mpas_log_write('cell area: $r', realArgs=(/areaCell(iCell)/))
+                      call mpas_log_write('massTracerProduct: $r', realArgs=(/thisTracer % massTracerProduct3D(iLayerTest,iCatTest,iCell)/))
+                      call mpas_log_write('parent massTracerProduct: $r', &
+                           realArgs=(/parentTracer % massTracerProduct3D(iLayerTest,iCatTest,iCell)/))
+                      call mpas_log_write('new value: $r', realArgs=(/thisTracer % array3D(iLayerTest,iCatTest,iCell)/))
                    endif
                 endif
 
@@ -7439,11 +7446,8 @@ contains
              do iCell = 1, nCellsSolve
                 do iCat = 1, nCategories
                    if (thisTracer % array2D(iCat,iCell) < 0.0_RKIND) then
-                      write(stderrUnit,*) ' '
-                      write(errorMessage,*) 'Negative mass in IR: iCat, iCell, value:', &
-                           iCat, iCell, thisTracer % array2D(iCat,iCell)
-                      write(stderrUnit,*) 'ERROR: '//trim(errorMessage)
-                      call mpas_dmpar_global_abort('MPAS-seaice: IR: '//trim(errorMessage))
+                      call mpas_log_write('IR: Negative mass in IR: iCat, iCell, value: $i $i $r', &
+                           intArgs=(/iCat, iCell/), realArgs=(/thisTracer % array2D(iCat,iCell)/))
                    endif
                 enddo
              enddo
@@ -7454,11 +7458,8 @@ contains
                 do iCat = 1, nCategories
                    do iLayer = 1, nLayers
                       if (thisTracer % array3D(iLayer,iCat,iCell) < 0.0_RKIND) then
-                         write(stderrUnit,*) ' '
-                         write(errorMessage,*) 'Negative mass in IR: iLayer, iCat, iCell, value:',  &
-                              iLayer, iCat, iCell, thisTracer % array3D(iLayer,iCat,iCell)
-                         write(stderrUnit,*) 'ERROR: '//trim(errorMessage)
-                         call mpas_dmpar_global_abort('MPAS-seaice: IR: '//trim(errorMessage))
+                         call mpas_log_write('IR: Negative mass in IR: iLayer, iCat, iCell, value: $i $i $i $r',  &
+                              intArgs=(/iLayer, iCat, iCell/), realArgs=(/thisTracer % array3D(iLayer,iCat,iCell)/))
                       endif
                    enddo
                 enddo
@@ -7606,7 +7607,7 @@ contains
 
        if (verboseConstruct .and. ctestOnProc) then
           if (iCell == ctest) then
-             write(stderrUnit,*) 'Reconstructed mass*tracer products for cell ', iCell
+             call mpas_log_write('Reconstructed mass*tracer products for cell $i', intArgs=(/iCell/))
           endif
        endif
 
@@ -7652,8 +7653,9 @@ contains
 
           if (verboseConstruct .and. ctestOnProc) then
              if (iCell == ctest) then
-                write(stderrUnit,*) ' '
-                write(stderrUnit,*) 'Edge triangle, fracEdgeArea:', iEdgeOnCell, fracEdgeArea(iEdgeOnCell)
+                call mpas_log_write(' ')
+                call mpas_log_write('Edge triangle, fracEdgeArea: $i $r', &
+                     intArgs=(/iEdgeOnCell/), realArgs=(/fracEdgeArea(iEdgeOnCell)/))
              endif
           endif
 
@@ -7673,7 +7675,8 @@ contains
 
           if (verboseConstruct .and. ctestOnProc) then
              if (iCell == ctest) then
-                write(stderrUnit,*) 'Vertices:', x1Vertex, y1Vertex, x2Vertex, y2Vertex, x3Vertex, y3Vertex
+                call mpas_log_write('Vertices: $r $r $r $r $r $r', &
+                     realArgs=(/x1Vertex, y1Vertex, x2Vertex, y2Vertex, x3Vertex, y3Vertex/))
              endif
           endif
 
@@ -7748,8 +7751,8 @@ contains
 
                 if (verboseConstruct .and. ctestOnProc) then
                    if (iCell == ctest) then
-                      write(stderrUnit,*) '   Tracer, triangle value: ', &
-                           trim(thisTracer % tracerName), thisTracer % massTracerProductTriangle2D(iCatTest)
+                      call mpas_log_write('   Tracer, triangle value: $r' //trim(thisTracer % tracerName), &
+                           realArgs=(/thisTracer % massTracerProductTriangle2D(iCatTest)/))
                    endif
                 endif
 
@@ -7809,8 +7812,8 @@ contains
 
                 if (verboseConstruct .and. ctestOnProc) then
                    if (iCell == ctest) then
-                      write(stderrUnit,*) '   Tracer, triangle value:', &
-                           trim(thisTracer % tracerName), thisTracer % massTracerProductTriangle3D(iLayerTest,iCatTest)
+                      call mpas_log_write('   Tracer, triangle value: '//trim(thisTracer % tracerName)//' $f', &
+                           realArgs=(/thisTracer % massTracerProductTriangle3D(iLayerTest,iCatTest)/))
                    endif
                 endif
 
@@ -7844,21 +7847,25 @@ contains
                 ! Relative errors are largest for tracers with 3 parents (e.g., pond depth)
                 difference = thisTracer % massTracerProductCell2D(iCat) - thisTracer % massTracerProduct2D(iCat,iCell)
                 if (abs(difference) > eps11 * abs(thisTracer % massTracerProduct2D(iCat,iCell)) .and. abs(difference) > eps11) then
-                   write(stderrUnit,*) 'WARNING: Reconstructed tracer does not recover the mean, iCat, iCell, tracer =', &
-                        iCat, iCell, trim(thisTracer % tracerName)
-                   write(stderrUnit,*) 'Product of means:     ', thisTracer % massTracerProduct2D(iCat,iCell)
-                   write(stderrUnit,*) 'Reconstructed product:', thisTracer % massTracerProductCell2D(iCat)
-                   write(stderrUnit,*) 'Difference:           ', difference
+                   call mpas_log_write(&
+                        'Reconstructed tracer does not recover the mean, iCat, iCell, tracer = $i $i $r '&
+                        //trim(thisTracer % tracerName), MPAS_LOG_WARN, intArgs=(/iCat, iCell/))
+                   call mpas_log_write(&
+                        'Product of means:      $r', MPAS_LOG_WARN, realArgs=(/thisTracer % massTracerProduct2D(iCat,iCell)/))
+                   call mpas_log_write(&
+                        'Reconstructed product: $r', MPAS_LOG_WARN, realArgs=(/thisTracer % massTracerProductCell2D(iCat)/))
+                   call mpas_log_write(&
+                        'Difference:            $r', MPAS_LOG_WARN, realArgs=(/difference/))
                 endif
 
              enddo
 
              if (verboseConstruct .and. ctestOnProc) then
                 if (iCell == ctest) then
-                   write(stderrUnit,*) '   Tracer, reconstructed and desired value of mass*tracer: ', &
-                        trim(thisTracer % tracerName),  &
+                   call mpas_log_write('   Tracer, reconstructed and desired value of mass*tracer: '//&
+                        trim(thisTracer % tracerName)//"$r $r",  realArgs=(/&
                         thisTracer % massTracerProductCell2D(iCatTest), &
-                        thisTracer % massTracerProduct2D(iCatTest,iCell)
+                        thisTracer % massTracerProduct2D(iCatTest,iCell)/))
                 endif
              endif
 
@@ -7871,11 +7878,15 @@ contains
                         thisTracer % massTracerProductCell3D(iLayer,iCat) - thisTracer % massTracerProduct3D(iLayer,iCat,iCell)
                    if (abs(difference) > eps11 * abs(thisTracer % massTracerProduct3D(iLayer,iCat,iCell)) .and. &
                         abs(difference) > eps11) then
-                      write(stderrUnit,*) 'WARNING: Reconstructed tracer does not recover the mean, iCat, iCell, tracer =', &
-                           iCat, iCell, trim(thisTracer % tracerName)
-                      write(stderrUnit,*) 'Product of means:     ', thisTracer % massTracerProduct3D(iLayer,iCat,iCell)
-                      write(stderrUnit,*) 'Reconstructed product:', thisTracer % massTracerProductCell3D(iLayer,iCat)
-                      write(stderrUnit,*) 'Difference:           ', difference
+                      call mpas_log_write(&
+                           'Reconstructed tracer does not recover the mean, iCat, iCell, tracer = $i $i'//&
+                           trim(thisTracer % tracerName), MPAS_LOG_WARN, intArgs=(/iCat, iCell/))
+                      call mpas_log_write('Product of means:      $r', &
+                           MPAS_LOG_WARN, realArgs=(/thisTracer % massTracerProduct3D(iLayer,iCat,iCell)/))
+                      call mpas_log_write('Reconstructed product: $r', &
+                           MPAS_LOG_WARN, realArgs=(/thisTracer % massTracerProductCell3D(iLayer,iCat)/))
+                      call mpas_log_write('Difference:            $r', &
+                           MPAS_LOG_WARN, realArgs=(/difference/))
                    endif
 
                 enddo   ! iLayer
@@ -7883,10 +7894,10 @@ contains
 
              if (verboseConstruct .and. ctestOnProc) then
                 if (iCell == ctest) then
-                   write(stderrUnit,*) '   Tracer, reconstructed and desired value of  mass*tracer: ', &
-                        trim(thisTracer % tracerName),  &
+                   call mpas_log_write('   Tracer, reconstructed and desired value of  mass*tracer: '//&
+                        trim(thisTracer % tracerName)//" $r $r", realArgs=(/ &
                         thisTracer % massTracerProductCell3D(iLayerTest,iCatTest), &
-                        thisTracer % massTracerProduct3D(iLayerTest,iCatTest,iCell)
+                        thisTracer % massTracerProduct3D(iLayerTest,iCatTest,iCell)/))
                 endif
              endif
 
@@ -8008,12 +8019,12 @@ contains
 
           if (verboseRun) then
              if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. trim(thisTracer % tracerName) == 'iceVolumeCategory') then
-                write(stderrUnit,*) ' '
-                write(stderrUnit,*) 'Check conservation: ', trim(thisTracer % tracerName)
+                call mpas_log_write(' ')
+                call mpas_log_write('Check conservation: '//trim(thisTracer % tracerName))
                 if (init) then
-                   write(stderrUnit,*) 'Initial sum on block:', thisTracer % globalSumInit2D(1)
+                   call mpas_log_write('Initial sum on block: $r', realArgs=(/thisTracer % globalSumInit2D(1)/))
                 else
-                   write(stderrUnit,*) 'Final sum on block:', thisTracer % globalSumFinal2D(1)
+                   call mpas_log_write('Final sum on block: $r', realArgs=(/thisTracer % globalSumFinal2D(1)/))
                 endif
              endif
           endif   ! verbose
@@ -8044,12 +8055,12 @@ contains
 
           if (verboseRun) then
              if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. trim(thisTracer % tracerName) == 'iceVolumeCategory') then
-                write(stderrUnit,*) ' '
-                write(stderrUnit,*) 'Check conservation: ', trim(thisTracer % tracerName)
+                call mpas_log_write(' ')
+                call mpas_log_write('Check conservation: '//trim(thisTracer % tracerName))
                 if (init) then
-                   write(stderrUnit,*) 'Initial sum on block:', thisTracer % globalSumInit3D(1,1)
+                   call mpas_log_write('Initial sum on block: $r', realArgs=(/thisTracer % globalSumInit3D(1,1)/))
                 else
-                   write(stderrUnit,*) 'Final sum on block:', thisTracer % globalSumFinal3D(1,1)
+                   call mpas_log_write('Final sum on block: $r', realArgs=(/thisTracer % globalSumFinal3D(1,1)/))
                 endif
              endif
           endif   ! verbose
@@ -8115,9 +8126,10 @@ contains
              if (verboseRun .and. iCat == 1) then
                 if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. &
                     trim(thisTracer % tracerName) == 'iceVolumeCategory') then
-                   write(stderrUnit,*) ' '
-                   write(stderrUnit,*) 'Tracer conservation, init global sum, final global sum: ', trim(thisTracer % tracerName), &
-                        thisTracer % globalSumInit2D(iCat), thisTracer % globalSumFinal2D(iCat)
+                   call mpas_log_write(' ')
+                   call mpas_log_write('Tracer conservation, init global sum, final global sum: '//&
+                        trim(thisTracer % tracerName)//' $r $r', &
+                        realArgs=(/thisTracer % globalSumInit2D(iCat), thisTracer % globalSumFinal2D(iCat)/))
                 endif
              endif
 
@@ -8130,12 +8142,11 @@ contains
 
                 !TODO - Verify that eps11 will work as a threshold
                 if (abs(ratio) > eps11) then
-                   write(errorMessage,*) 'Tracer conservation error: tracer, category =', trim(thisTracer % tracerName), iCat
-                   write(stderrUnit,*) trim(errorMessage)
-                   write(stderrUnit,*) 'Init value, final value:', &
-                        thisTracer % globalSumInit2D(iCat), thisTracer % globalSumFinal2D(iCat)
-                   write(stderrUnit,*) 'Difference, ratio:', difference, ratio
-                   call mpas_dmpar_global_abort('MPAS-seaice: IR: '//trim(errorMessage))
+                   call mpas_log_write('IR: Tracer conservation error: tracer, category ='//&
+                        trim(thisTracer % tracerName)//" $i", MPAS_LOG_ERR, intArgs=(/iCat/))
+                   call mpas_log_write('Init value, final value: $r $r', MPAS_LOG_ERR, &
+                        realArgs=(/thisTracer % globalSumInit2D(iCat), thisTracer % globalSumFinal2D(iCat)/))
+                   call mpas_log_write('Difference, ratio: $r $r', MPAS_LOG_CRIT, realArgs=(/difference, ratio/))
                 endif
 
              endif
@@ -8161,10 +8172,10 @@ contains
                 if (verboseRun .and. iCat == 1 .and. iLayer == 1) then
                    if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. &
                        trim(thisTracer % tracerName) == 'iceVolumeCategory') then
-                      write(stderrUnit,*) ' '
-                      write(stderrUnit,*) 'Tracer conservation, init global sum, final global sum: ', &
-                           trim(thisTracer % tracerName), &
-                           thisTracer % globalSumInit3D(iLayer,iCat), thisTracer % globalSumFinal3D(iLayer,iCat)
+                      call mpas_log_write(' ')
+                      call mpas_log_write('Tracer conservation, init global sum, final global sum: '//&
+                           trim(thisTracer % tracerName)//" $r $r", realArgs=(/&
+                           thisTracer % globalSumInit3D(iLayer,iCat), thisTracer % globalSumFinal3D(iLayer,iCat)/))
                    endif
                 endif
 
@@ -8175,13 +8186,12 @@ contains
 
                    !TODO - Verify that eps11 will work as a threshold
                    if (abs(ratio) > eps11) then
-                      write(errorMessage,*) 'Tracer conservation error: tracer, category, layer =', &
-                           trim(thisTracer % tracerName), iCat, iLayer
-                      write(stderrUnit,*) trim(errorMessage)
-                      write(stderrUnit,*) 'Init value, final value:', &
-                           thisTracer % globalSumInit3D(iLayer,iCat), thisTracer % globalSumFinal3D(iLayer,iCat)
-                      write(stderrUnit,*) 'Difference, ratio:', difference, ratio
-                      call mpas_dmpar_global_abort('MPAS-seaice: IR: '//trim(errorMessage))
+                      call mpas_log_write('IR: Tracer conservation error: tracer, category, layer ='//&
+                           trim(thisTracer % tracerName)//' $i $i', MPAS_LOG_ERR, intArgs=(/iCat, iLayer/))
+                      call mpas_log_write('Init value, final value: $r $r', MPAS_LOG_ERR, &
+                           realArgs=(/thisTracer % globalSumInit3D(iLayer,iCat), thisTracer % globalSumFinal3D(iLayer,iCat)/))
+                      call mpas_log_write('Difference, ratio: $r $r', MPAS_LOG_CRIT, &
+                           realArgs=(/difference, ratio/))
                    endif
 
                 endif
@@ -8499,25 +8509,31 @@ contains
 
                          if (thisTracer % array2D(iCat,iCell) < thisTracer % localMin2D(iCat,iCell) - toleranceMin) then
 
-                            write(stderrUnit,*) ' '
-                            write(stderrUnit,*) 'IR advection, monotonicity violation!'
-                            write(stderrUnit,*) 'Tracer, iCat, iCell =', trim(thisTracer % tracerName), iCat, iCell
-                            write(stderrUnit,*) 'Old min value in neighborhood =', thisTracer % localMin2D(iCat,iCell)
-                            write(stderrUnit,*) 'New value in cell =', thisTracer % array2D(iCat,iCell)
-                            write(stderrUnit,*) 'Tolerance, difference:', toleranceMin,  &
-                                 thisTracer % localMin2D(iCat,iCell) - thisTracer % array2D(iCat,iCell)
-                            call mpas_dmpar_global_abort('MPAS-seaice: IR advection, monotonicity violation (min, nDims == 2)')
+                            call mpas_log_write(' ', MPAS_LOG_ERR)
+                            call mpas_log_write('IR advection, monotonicity violation!', MPAS_LOG_ERR)
+                            call mpas_log_write('Tracer, iCat, iCell ='//trim(thisTracer % tracerName)//" $i $i", &
+                                 MPAS_LOG_ERR, intArgs=(/iCat, iCell/))
+                            call mpas_log_write('Old min value in neighborhood = $f', &
+                                 MPAS_LOG_ERR, realArgs=(/thisTracer % localMin2D(iCat,iCell)/))
+                            call mpas_log_write('New value in cell = $r', &
+                                 MPAS_LOG_ERR, realArgs=(/thisTracer % array2D(iCat,iCell)/))
+                            call mpas_log_write('Tolerance, difference: $r $r', MPAS_LOG_ERR, &
+                                 realArgs=(/toleranceMin, thisTracer % localMin2D(iCat,iCell) - thisTracer % array2D(iCat,iCell)/))
+                            call mpas_log_write('IR advection, monotonicity violation (min, nDims == 2)', MPAS_LOG_CRIT)
 
                          elseif (thisTracer % array2D(iCat,iCell) > thisTracer % localMax2D(iCat,iCell) + toleranceMax) then
 
-                            write(stderrUnit,*) ' '
-                            write(stderrUnit,*) 'IR advection, monotonicity violation!'
-                            write(stderrUnit,*) 'Tracer, iCat, iCell =', trim(thisTracer % tracerName), iCat, iCell
-                            write(stderrUnit,*) 'Old max value in neighborhood =', thisTracer % localMax2D(iCat,iCell)
-                            write(stderrUnit,*) 'New value in cell =', thisTracer % array2D(iCat,iCell)
-                            write(stderrUnit,*) 'Tolerance, difference:', toleranceMax,  &
-                                 thisTracer % array2D(iCat,iCell) - thisTracer % localMax2D(iCat,iCell)
-                            call mpas_dmpar_global_abort('MPAS-seaice: IR advection, monotonicity violation (max, nDims == 2)')
+                            call mpas_log_write(' ', MPAS_LOG_ERR)
+                            call mpas_log_write('IR advection, monotonicity violation!', MPAS_LOG_ERR)
+                            call mpas_log_write('Tracer, iCat, iCell = '//trim(thisTracer % tracerName)//' $i $i', &
+                                 MPAS_LOG_ERR, intArgs=(/iCat, iCell/))
+                            call mpas_log_write('Old max value in neighborhood = $r', &
+                                 MPAS_LOG_ERR, realArgs=(/thisTracer % localMax2D(iCat,iCell)/))
+                            call mpas_log_write('New value in cell = $r', &
+                                 MPAS_LOG_ERR, realArgs=(/thisTracer % array2D(iCat,iCell)/))
+                            call mpas_log_write('Tolerance, difference: $r $r', MPAS_LOG_ERR, &
+                                 realArgs=(/toleranceMax, thisTracer % array2D(iCat,iCell) - thisTracer % localMax2D(iCat,iCell)/))
+                            call mpas_log_write('IR advection, monotonicity violation (max, nDims == 2)', MPAS_LOG_CRIT)
 
                          endif
 
@@ -8618,28 +8634,34 @@ contains
                             if (thisTracer % array3D(iLayer,iCat,iCell) < &
                                 thisTracer % localMin3D(iLayer,iCat,iCell) - toleranceMin) then
 
-                               write(stderrUnit,*) ' '
-                               write(stderrUnit,*) 'IR advection, monotonicity violation!'
-                               write(stderrUnit,*) 'Tracer, iLayer,iCat, iCell =', &
-                                    trim(thisTracer % tracerName), iLayer,iCat, iCell
-                               write(stderrUnit,*) 'Old min value in neighborhood =', thisTracer % localMin3D(iLayer,iCat,iCell)
-                               write(stderrUnit,*) 'New value in cell =', thisTracer % array3D(iLayer,iCat,iCell)
-                               write(stderrUnit,*) 'Tolerance, difference:', toleranceMin,  &
-                                    thisTracer % localMin3D(iLayer,iCat,iCell) - thisTracer % array3D(iLayer,iCat,iCell)
-                               call mpas_dmpar_global_abort('MPAS-seaice: IR advection, monotonicity violation (min, nDims == 3)')
+                               call mpas_log_write(' ', MPAS_LOG_ERR)
+                               call mpas_log_write('IR advection, monotonicity violation!', MPAS_LOG_ERR)
+                               call mpas_log_write('Tracer, iLayer,iCat, iCell = '//&
+                                    trim(thisTracer % tracerName)//' $i $i $i', &
+                                    MPAS_LOG_ERR, intArgs=(/iLayer, iCat, iCell/))
+                               call mpas_log_write('Old min value in neighborhood = $r', MPAS_LOG_ERR, &
+                                    realArgs=(/thisTracer % localMin3D(iLayer,iCat,iCell)/))
+                               call mpas_log_write('New value in cell = $r', MPAS_LOG_ERR, &
+                                    realArgs=(/thisTracer % array3D(iLayer,iCat,iCell)/))
+                               call mpas_log_write('Tolerance, difference: $r $r', MPAS_LOG_ERR, &
+                                    realArgs=(/toleranceMin, thisTracer % localMin3D(iLayer,iCat,iCell) - thisTracer % array3D(iLayer,iCat,iCell)/))
+                               call mpas_log_write('IR advection, monotonicity violation (min, nDims == 3)', MPAS_LOG_CRIT)
 
                             elseif (thisTracer % array3D(iLayer,iCat,iCell) > &
                                     thisTracer % localMax3D(iLayer,iCat,iCell) + toleranceMax) then
 
-                               write(stderrUnit,*) ' '
-                               write(stderrUnit,*) 'IR advection, monotonicity violation!'
-                               write(stderrUnit,*) 'Tracer, iLayer,iCat, iCell =', &
-                                    trim(thisTracer % tracerName), iLayer,iCat, iCell
-                               write(stderrUnit,*) 'Old max value in neighborhood =', thisTracer % localMax3D(iLayer,iCat,iCell)
-                               write(stderrUnit,*) 'New value in cell =', thisTracer % array3D(iLayer,iCat,iCell)
-                               write(stderrUnit,*) 'Tolerance, difference:', toleranceMax,  &
-                                    thisTracer % array3D(iLayer,iCat,iCell) - thisTracer % localMax3D(iLayer,iCat,iCell)
-                               call mpas_dmpar_global_abort('MPAS-seaice: IR advection, monotonicity violation (max, nDims == 3)')
+                               call mpas_log_write(' ', MPAS_LOG_ERR)
+                               call mpas_log_write('IR advection, monotonicity violation!', MPAS_LOG_ERR)
+                               call mpas_log_write('Tracer, iLayer,iCat, iCell = '//&
+                                    trim(thisTracer % tracerName)//' $i $i $i', &
+                                    MPAS_LOG_ERR, intArgs=(/iLayer, iCat, iCell/))
+                               call mpas_log_write('Old max value in neighborhood = $r', MPAS_LOG_ERR, &
+                                    realArgs=(/thisTracer % localMax3D(iLayer,iCat,iCell)/))
+                               call mpas_log_write('New value in cell = $r', MPAS_LOG_ERR, &
+                                    realArgs=(/thisTracer % array3D(iLayer,iCat,iCell)/))
+                               call mpas_log_write('Tolerance, difference: $r $r', MPAS_LOG_ERR, &
+                                    realArgs=(/toleranceMax, thisTracer % array3D(iLayer,iCat,iCell) - thisTracer % localMax3D(iLayer,iCat,iCell)/))
+                               call mpas_log_write('IR advection, monotonicity violation (max, nDims == 3)', MPAS_LOG_CRIT)
 
                             endif
 
@@ -8722,7 +8744,7 @@ contains
              if (thisTracer % array2D(iCat,iCell) > 0.0_RKIND .and. &
                  thisTracer % array2D(iCat,iCell) < smallMassThreshold) then
 
-!!                write(stderrUnit,*) 'Zap mass: iCell, iCat =', iCell, iCat
+!!                call mpas_log_write('Zap mass: iCell, iCat = $i $i', intArgs=(/iCell, iCat/))
 
                 ! zero out the mass and mask for this category and cell
                 thisTracer % array2D(iCat,iCell) = 0.0_RKIND
@@ -8739,8 +8761,7 @@ contains
     elseif (thisTracer % ndims == 3) then
 
        ! mass-like field must be 2D
-       write(stderrUnit,*) 'ERROR: mass-like field must be 2D'
-       call mpas_dmpar_global_abort('MPAS-seaice: IR: mass-like field must be 2D')
+       call mpas_log_write('IR: mass-like field must be 2D', MPAS_LOG_CRIT)
 
     endif   ! ndims
 
@@ -8763,7 +8784,8 @@ contains
                    thisTracer % array2D(iCat,iCell) = 0.0_RKIND
                    thisTracer % arrayMask2D(iCat,iCell) = 0
 
-!!                   write(stderrUnit,*) 'Zap tracer: name, iCell, iCat = ', trim(thisTracer % tracerName), iCell, iCat
+!!                   call mpas_log_write('Zap tracer: name, iCell, iCat = '//trim(thisTracer % tracerName)//' $i $i', &
+!!                   intArgs=(/iCell, iCat/))
 
                 endif
 
@@ -8783,7 +8805,8 @@ contains
                    thisTracer % array3D(:,iCat,iCell) = 0.0_RKIND
                    thisTracer % arrayMask3D(:,iCat,iCell) = 0
 
-!!                   write(stderrUnit,*) 'Zap tracer: name, iCell, iCat = ', trim(thisTracer % tracerName), iCell, iCat
+!!                   call mpas_log_write('Zap tracer: name, iCell, iCat = '//trim(thisTracer % tracerName)//' $i $i' &
+!!                   intArgs=(/iCell, iCat/)
 
                 endif
 

@@ -18,8 +18,7 @@ module cice_forcing
   use mpas_timekeeping
   use mpas_forcing
   use mpas_stream_manager
-  use mpas_io_units
-  use mpas_abort
+  use mpas_log, only: mpas_log_write
 
   implicit none
 
@@ -113,8 +112,7 @@ contains
     case ("CORE")
        call init_atmospheric_forcing_CORE(domain)
     case default
-       write(stderrUnit,*) "Atmospheric forcing type unknown: ", trim(config_atmospheric_forcing_type)
-       call MPAS_dmpar_global_abort('MPAS-seaice: Unknown config_atmospheric_forcing_type')
+       call mpas_log_write("Atmospheric forcing type unknown: "//trim(config_atmospheric_forcing_type), MPAS_LOG_CRIT)
     end select
 
   end subroutine init_atmospheric_forcing
@@ -960,8 +958,7 @@ contains
     case ("mm_per_sec","mks")
        precipitationFactor = 1.0_RKIND
     case default
-       write(stderrUnit,*) "Unknown config_precipitation_units"
-       call MPAS_dmpar_global_abort('MPAS-seaice: Unknown config_precipitation_units')
+       call mpas_log_write("Unknown config_precipitation_units: "//trim(config_forcing_precipitation_units), MPAS_LOG_CRIT)
     end select
 
   end subroutine init_precipitation_factor
@@ -1156,8 +1153,7 @@ contains
     case ("ncar")
        call init_oceanic_forcing_ncar(domain)
     case default
-       write(stderrUnit,*) "Oceanic forcing type unknown: ", trim(config_forcing_sst_type)
-       call MPAS_dmpar_global_abort('MPAS-seaice: Unknown config_forcing_sst_type')
+       call mpas_log_write("Oceanic forcing type unknown: "//trim(config_forcing_sst_type), MPAS_LOG_CRIT)
     end select
 
   end subroutine init_oceanic_forcing
@@ -1913,7 +1909,7 @@ contains
          poolName  = "ocean_coupling", &
          fieldName = "seaSurfaceTemperature"
 
-    write(stderrUnit,*) trim(poolName), " ", trim(fieldName)
+    call mpas_log_write(trim(poolName)//" "//trim(fieldName))
 
     call MPAS_pool_get_subpool(block % structs, trim(poolName), pool)
 

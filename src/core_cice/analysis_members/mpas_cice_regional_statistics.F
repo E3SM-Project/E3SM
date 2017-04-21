@@ -25,7 +25,7 @@ module cice_regional_statistics
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
-   use mpas_abort
+   use mpas_log, only: mpas_log_write
 
    implicit none
    private
@@ -526,8 +526,9 @@ contains
                 if (inputFieldInfo % fieldType   /= MPAS_POOL_REAL .or. &
                     inputFieldInfo % nDims       >  2 .or. &
                     inputFieldInfo % nTimeLevels /= 1) then
-                   call MPAS_dmpar_global_abort(&
-                        "MPAS-seaice: init_runtime_regional_statistics: input field wrong type: "//trim(inputFieldName))
+                   call mpas_log_write(&
+                        "init_runtime_regional_statistics: input field wrong type: "//trim(inputFieldName), &
+                        MPAS_LOG_CRIT)
                 endif
 
                 ! check if field is active
@@ -542,9 +543,9 @@ contains
                       ! get the input field
                       call MPAS_pool_get_field(block % allFields, trim(inputFieldName), inputField1D)
                       if (trim(inputField1D % dimNames(1)) /= "nCells") then
-                         call MPAS_dmpar_global_abort(&
-                              "MPAS-seaice: init_runtime_regional_statistics: input field wrong dimensions: "//&
-                              trim(inputFieldName))
+                         call mpas_log_write(&
+                              "init_runtime_regional_statistics: input field wrong dimensions: "//&
+                              trim(inputFieldName), MPAS_LOG_CRIT)
                       endif
 
                       ! create a new field
@@ -559,9 +560,9 @@ contains
                       ! get the input field
                       call MPAS_pool_get_field(block % allFields, trim(inputFieldName), inputField2D)
                       if (trim(inputField2D % dimNames(2)) /= "nCells") then
-                         call MPAS_dmpar_global_abort(&
-                              "MPAS-seaice: init_runtime_regional_statistics: input field wrong dimensions: "//&
-                              trim(inputFieldName))
+                         call mpas_log_write(&
+                              "init_runtime_regional_statistics: input field wrong dimensions: "//&
+                              trim(inputFieldName), MPAS_LOG_CRIT)
                       endif
 
                       ! create a new field
@@ -690,7 +691,7 @@ contains
        reductionNew => reductionHead
        do while (associated(reductionNew % next))
           if (trim(reductionNew % reductionName) == trim(reductionName)) then
-             call MPAS_dmpar_global_abort('MPAS-seaice: ????')
+             call mpas_log_write('MPAS-seaice: add_reduction', MPAS_LOG_CRIT)
           endif
           reductionNew => reductionNew % next
        enddo

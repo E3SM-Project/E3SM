@@ -14,6 +14,7 @@ module cice_testing
 
   use mpas_derived_types
   use mpas_pool_routines
+  use mpas_log, only: mpas_log_write
 
   implicit none
 
@@ -692,7 +693,7 @@ contains
 !    iceVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND
 !    snowVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND
 
-!!    write(stderrUnit,*) 'Initial cells with ice (localID, globalID):'
+!!    call mpas_log_write('Initial cells with ice (localID, globalID):')
 
     do iCell = 1, nCellsSolve
        if (indexToCellID(iCell) >= iCellPoint .and. indexToCellID(iCell) <= iCellPoint+9) then
@@ -700,10 +701,10 @@ contains
           surfaceTemperature(:,:,iCell) = 1.0_RKIND
           iceVolumeCategory(:,:,iCell) = 1.0_RKIND
           snowVolumeCategory(:,:,iCell) = 1.0_RKIND
-!!          write(stderrUnit,*) iCell, indexToCellID(iCell)
+!!          call mpas_log_write("$i $i", intArgs=(/iCell,indexToCellID(iCell)/))
        endif
     enddo
-!!    write(stderrUnit,*) ' '
+!!    call mpas_log_write(' ')
 
   end subroutine cice_init_square_point_test_case_hex
 

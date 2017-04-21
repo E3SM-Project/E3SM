@@ -17,8 +17,7 @@ module cice_velocity_solver
   use mpas_timekeeping
   use mpas_dmpar
   use mpas_timer
-  use mpas_io_units
-  use mpas_abort
+  use mpas_log, only: mpas_log_write
 
   implicit none
 
@@ -171,8 +170,7 @@ contains
 
           else
 
-             write(stderrUnit,*) "Error: config_stress_divergence_scheme unknown: ", trim(config_stress_divergence_scheme)
-             call MPAS_dmpar_global_abort('MPAS-seaice: config_stress_divergence_scheme unknown')
+             call MPAS_log_write("config_stress_divergence_scheme unknown: "//trim(config_stress_divergence_scheme), MPAS_LOG_CRIT)
 
           endif
 
