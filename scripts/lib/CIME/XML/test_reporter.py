@@ -1,5 +1,5 @@
 """
-Interface to the archive.xml file.  This class inherits from GenericXML.py
+Interface to the testreporter xml.  This class inherits from GenericXML.py
 
 """
 
