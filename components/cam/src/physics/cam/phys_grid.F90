@@ -301,7 +301,7 @@ module phys_grid
    integer, private, parameter :: modmin_alltoall = 11
    integer, private, parameter :: modmax_alltoall = 13
 # endif
-   integer, private, parameter :: def_alltoall = -1                ! default
+   integer, private, parameter :: def_alltoall = 1                ! default
    integer, private :: phys_alltoall = def_alltoall
 
 contains
