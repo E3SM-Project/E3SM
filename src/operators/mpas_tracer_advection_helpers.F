@@ -23,7 +23,7 @@ module mpas_tracer_advection_helpers
    use mpas_pool_routines
    use mpas_sort
    use mpas_geometry_utils
-   use mpas_io_units
+   use mpas_log
 
    implicit none
    save
@@ -386,7 +386,7 @@ module mpas_tracer_advection_helpers
       err = 0
 
       if(polynomial_order > 2) then
-        write (stderrUnit,*) 'Polynomial for second derivitave can only be 2'
+        call mpas_log_write('Polynomial for second derivitave can only be 2', MPAS_LOG_ERR)
         err = 1
         return
       end if
@@ -697,24 +697,6 @@ module mpas_tracer_advection_helpers
       deallocate(thetae)
       deallocate(theta_abs)
       deallocate(angle_2d)
-
-
-!      write(stderrUnit,*) ' check for deriv2 coefficients, iEdge 4 '
-!
-!      iEdge = 4
-!      j = 1
-!      iCell = cellsOnEdge(1,iEdge)
-!      write(stderrUnit,*) ' j, icell, coef ',j,iCell,deriv_two(j,1,iEdge)
-!      do j=2,7
-!         write(stderrUnit,*) ' j, icell, coef ',j, cellsOnCell(j-1,iCell),deriv_two(j,1,iEdge)
-!      end do
-!
-!      j = 1
-!      iCell = cellsOnEdge(2,iEdge)
-!      write(stderrUnit,*) ' j, icell, coef ',j,iCell,deriv_two(j,2,iEdge)
-!      do j=2,7
-!         write(stderrUnit,*) ' j, icell, coef ',j, cellsOnCell(j-1,iCell),deriv_two(j,2,iEdge)
-!      end do
 
    end subroutine mpas_initialize_deriv_two!}}}
 

@@ -12,6 +12,7 @@ module mpas_atm_iau
  use mpas_kind_types
  use mpas_dmpar
  use mpas_constants   
+ use mpas_log, only : mpas_log_write
 
  !public :: atm_compute_iau_coef, atm_add_tend_anal_incr  
       
@@ -64,12 +65,12 @@ module mpas_atm_iau
       if(trim(iau_opt) == 'on') then   ! HA: We should be able to expand this for more options later on.
             
          nsteps_iau = nint(time_window_sec / dt)
-         !if(debug) write(0,*) 'atm_compute_iau_coef: nsteps_iau =',nsteps_iau
+         !if(debug) call mpas_log_write('atm_compute_iau_coef: nsteps_iau = $i', intArgs=(/nsteps_iau/))
       
          if(itimestep <= nsteps_iau) then
             !wgt_iau = 1./nsteps_iau     
             wgt_iau = 1.0_RKIND / time_window_sec
-            if(debug) write(0,*) 'atm_compute_iau_coef: wgt_iau =', wgt_iau
+            if(debug) call mpas_log_write('atm_compute_iau_coef: wgt_iau = $r', realArgs=(/wgt_iau/))
          end if
       
       end if  
@@ -161,7 +162,7 @@ module mpas_atm_iau
 !     initialize the tendency for potential temperature
       tend_th = 0._RKIND
       
-!      write(0,*) 'atm_add_tend_anal_incr: wgt_iau =',wgt_iau
+!      call mpas_log_write('atm_add_tend_anal_incr: wgt_iau = $r', realArgs=(/wgt_iau/))
 
 !     add coupled tendencies for u on edges
       do i = 1, nEdgesSolve

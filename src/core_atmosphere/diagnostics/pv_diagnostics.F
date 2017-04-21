@@ -761,7 +761,7 @@ module pv_diagnostics
       call mpas_pool_get_array(diag, 'vort_pv', vort_pv)
       call mpas_pool_get_array(diag, 'iLev_DT', iLev_DT)
       
-      !write(0,*) 'Interpolating u,v,theta,vort to pv '
+      !call mpas_log_write('Interpolating u,v,theta,vort to pv ')
       
       call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
                      ertel_pv, uZonal, u_pv, missingVal, iLev_DT)
@@ -780,7 +780,7 @@ module pv_diagnostics
       call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
                      ertel_pv, vVort, vort_pv, missingVal, iLev_DT)
       deallocate(vVort)
-      !write(0,*) 'Done interpolating '
+      !call mpas_log_write('Done interpolating ')
    end subroutine interp_pv_diagnostics     
    
    subroutine interp_pvBudget_diagnostics(mesh, diag, pvuVal, missingVal)
@@ -814,13 +814,13 @@ module pv_diagnostics
       call mpas_pool_get_array(diag, 'depv_dt_fric_pv', depv_dt_fric_pv)
       call mpas_pool_get_array(diag, 'iLev_DT', iLev_DT)
       
-      !write(0,*) 'Interpolating u,v,theta,vort to pv '
+      !call mpas_log_write('Interpolating u,v,theta,vort to pv ')
       
       call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
                      ertel_pv, depv_dt_diab, depv_dt_diab_pv, missingVal, iLev_DT)
       call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
                      ertel_pv, depv_dt_fric, depv_dt_fric_pv, missingVal, iLev_DT)
-      !write(0,*) 'Done interpolating '
+      !call mpas_log_write('Done interpolating ')
    end subroutine interp_pvBudget_diagnostics
    
    subroutine interp_pv( nCells, nLevels, interpVal, &
@@ -1258,7 +1258,7 @@ module pv_diagnostics
       end do
       
       !nick szapiro
-!      write(0,*) "Calculating epv"
+!      call mpas_log_write('Calculating epv')
       
       !need halo cells for everything w/ horizontal derivative
       call mpas_pool_get_field(state, 'w', w_f, time_lev)
@@ -1569,7 +1569,7 @@ module pv_diagnostics
       call mpas_pool_get_array(state, 'scalars', scalars, time_lev)
       
       !nick szapiro
-!      write(0,*) "Calculating pvBudget"
+!      call mpas_log_write('Calculating pvBudget')
       
       !need halo cells for everything w/ horizontal derivative
       !Dtheta/Dt

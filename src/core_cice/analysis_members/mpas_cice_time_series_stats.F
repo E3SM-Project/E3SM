@@ -21,6 +21,8 @@ module cice_time_series_stats
   use mpas_dmpar
   use mpas_timekeeping
   use mpas_stream_manager
+  use mpas_io_units
+  use mpas_abort
 
   !use cice_constants
   !use cice_diagnostics_routines

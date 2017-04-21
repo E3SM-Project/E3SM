@@ -1,12 +1,12 @@
 module mpas_stream_list
 
 #define COMMA ,
-#define LIST_DEBUG_WRITE(M) ! write(stderrUnit,*) M
-#define LIST_WARN_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
-#define LIST_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
+#define LIST_DEBUG_WRITE(M) ! call mpas_log_write(M)
+#define LIST_WARN_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_WARN)
+#define LIST_ERROR_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_ERR)
 
     use mpas_kind_types, only : StrKIND
-    use mpas_io_units, only : stderrUnit
+    use mpas_log
     use mpas_derived_types
 
 
@@ -276,9 +276,9 @@ module mpas_stream_list
             call check_regex_match(c_pattern, c_test_string, c_match)
 
             if ( c_match == -1 ) then
-                write(stderrUnit, *) 'ERROR: Regular expression matching failed.'
-                write(stderrUnit, *) '       Pattern was: ', trim(streamPattern)
-                write(stderrUnit, *) '       Test string was: ', trim(node % name)
+                call mpas_log_write('Regular expression matching failed.', MPAS_LOG_ERR)
+                call mpas_log_write('       Pattern was: ' // trim(streamPattern), MPAS_LOG_ERR)
+                call mpas_log_write('       Test string was: ' // trim(node % name), MPAS_LOG_ERR)
             end if
 
             if ( c_match == 1 ) then
@@ -315,15 +315,15 @@ module mpas_stream_list
         integer :: i
 
         i = 1
-        write(stderrUnit,*) '----------------------------'
-        write(stderrUnit,*) 'List contains:'
+        call mpas_log_write('----------------------------')
+        call mpas_log_write('List contains:')
         node => list % head
         do while (associated(node))
-            write(stderrUnit,'(a,i3,a)') '    ', i, ') '//trim(node % name)
+            call mpas_log_write('    $i) '//trim(node % name), intArgs=(/i/))
             i = i + 1
             node => node % next
         end do
-        write(stderrUnit,*) '----------------------------'
+        call mpas_log_write('----------------------------')
 
     end subroutine printlist!}}}
 

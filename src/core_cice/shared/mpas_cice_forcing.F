@@ -18,6 +18,8 @@ module cice_forcing
   use mpas_timekeeping
   use mpas_forcing
   use mpas_stream_manager
+  use mpas_io_units
+  use mpas_abort
 
   implicit none
 

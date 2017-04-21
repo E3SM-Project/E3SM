@@ -15,6 +15,8 @@ module cice_mesh
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_dmpar
+  use mpas_io_units
+  use mpas_abort
 
   implicit none
 

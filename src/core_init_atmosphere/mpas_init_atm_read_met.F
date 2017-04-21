@@ -48,6 +48,9 @@ module init_atm_read_met
    !
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine read_met_init(fg_source, source_is_constant, datestr, istatus)
+
+      use mpas_derived_types, only : MPAS_LOG_ERR
+      use mpas_log, only : mpas_log_write
  
       implicit none
   
@@ -76,7 +79,7 @@ module init_atm_read_met
          inquire(unit=input_unit, opened=is_used)
          if (.not. is_used) exit
       end do 
-      if (input_unit > 100) write(0,*) 'Error: In read_met_init(), couldn''t find an available Fortran unit.'
+      if (input_unit > 100) call mpas_log_write('In read_met_init(), couldn''t find an available Fortran unit.', messageType=MPAS_LOG_ERR)
       open(unit=input_unit, file=trim(filename), status='old', form='unformatted', iostat=io_status)
 
       if (io_status > 0) istatus = 1
@@ -92,6 +95,9 @@ module init_atm_read_met
    !
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine read_next_met_field(fg_data, istatus)
+
+      use mpas_derived_types, only : MPAS_LOG_ERR
+      use mpas_log, only : mpas_log_write
  
       implicit none
   
@@ -167,7 +173,7 @@ module init_atm_read_met
 
          ! ?????????
          else
-            write(0,*) 'Error: Unrecognized projection code ',fg_data % iproj,' when reading from '//trim(filename)
+            call mpas_log_write('Unrecognized projection code $i when reading from '//trim(filename), intArgs=(/fg_data % iproj/), messageType=MPAS_LOG_ERR)
      
          end if
      
@@ -252,7 +258,7 @@ module init_atm_read_met
      
          ! ?????????
          else
-            write(0,*) 'Error: Unrecognized projection code ',fg_data % iproj,' when reading from '//trim(filename)
+            call mpas_log_write('Unrecognized projection code $i when reading from '//trim(filename), intArgs=(/fg_data % iproj/), messageType=MPAS_LOG_ERR)
      
          end if
   
@@ -363,7 +369,7 @@ module init_atm_read_met
      
          ! ?????????
          else
-            write(0,*) 'Error: Unrecognized projection code ',fg_data % iproj,' when reading from '//trim(filename)
+            call mpas_log_write('Unrecognized projection code $i when reading from '//trim(filename), intArgs=(/fg_data % iproj/), messageType=MPAS_LOG_ERR)
      
          end if
   
@@ -395,8 +401,8 @@ module init_atm_read_met
          istatus = 0
 
       else
-         write(0,*) 'Error: Didn''t recognize format version of data in '//trim(filename)//'.\n'// &
-                    'Found version ',fg_data % version,' but expected either 3, 4, or 5. This could be an endian problem.'
+         call mpas_log_write('Didn''t recognize format version of data in '//trim(filename)//'.', messageType=MPAS_LOG_ERR)
+         call mpas_log_write('Found version $i but expected either 3, 4, or 5. This could be an endian problem.', intArgs=(/fg_data % version/), messageType=MPAS_LOG_ERR)
       end if
   
       return

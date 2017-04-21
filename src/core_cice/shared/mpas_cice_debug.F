@@ -14,6 +14,7 @@ module cice_debug
 
   use mpas_derived_types
   use mpas_pool_routines
+  use mpas_io_units
 
   implicit none
 

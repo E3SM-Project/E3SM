@@ -24,6 +24,7 @@ module cice_conservation_check
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
+   use mpas_io_units
 
    implicit none
    private

@@ -26,6 +26,7 @@ module li_tendency
    use mpas_pool_routines
    use mpas_constants
    use mpas_dmpar
+   use mpas_log
    use li_setup
 !!!   use li_mask
 !!!   use mpas_tracer_advection
@@ -191,7 +192,7 @@ module li_tendency
       case ('none')  !===================================================
         ! Do nothing
       case default  !===================================================
-        write(0,*) trim(config_thickness_advection), ' is not a valid thickness advection option.'
+        call mpas_log_write(trim(config_thickness_advection) // ' is not a valid thickness advection option.', MPAS_LOG_ERR)
         err_tmp = 1
       end select  !===================================================
       err = ior(err,err_tmp)
@@ -236,7 +237,7 @@ module li_tendency
 
       ! === error check
       if (err > 0) then
-         write (0,*) "An error has occurred in li_tendency_thickness."
+         call mpas_log_write("An error has occurred in li_tendency_thickness.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -670,12 +671,12 @@ module li_tendency
       err = ior(err,err_tmp)
 
       if (err > 0) then
-         write(0,*) 'CFL violation on this processor on ', err, ' level-edges!  Maximum allowable time step (seconds) for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString)
+         call mpas_log_write('CFL violation on this processor on $i level-edges!  Maximum allowable time step (seconds) for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString), MPAS_LOG_ERR, intArgs=(/err/))
          err = 1
       endif
 
       if (config_print_thickness_advection_info) then
-         write(6,*) '  Maximum allowable time step (s) on THIS processor is (Days_hhh:mmm:sss):   ' // trim(allowableDtMinString)
+         call mpas_log_write('  Maximum allowable time step (s) on THIS processor is (Days_hhh:mmm:sss):   ' // trim(allowableDtMinString))
       endif
 
       ! Optional check for mass conservation
@@ -687,7 +688,7 @@ module li_tendency
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in tend_layerThickness_fo_upwind."
+          call mpas_log_write("An error has occurred in tend_layerThickness_fo_upwind.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------

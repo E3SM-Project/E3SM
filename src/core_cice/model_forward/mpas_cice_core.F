@@ -12,6 +12,7 @@ module cice_core
    use cice_analysis_driver
    use cice_column
    use mpas_threading
+   use mpas_abort
 
    private
    public :: &

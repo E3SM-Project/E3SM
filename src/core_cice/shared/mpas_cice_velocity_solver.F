@@ -17,6 +17,8 @@ module cice_velocity_solver
   use mpas_timekeeping
   use mpas_dmpar
   use mpas_timer
+  use mpas_io_units
+  use mpas_abort
 
   implicit none
 

@@ -24,6 +24,8 @@ module cice_analysis_driver
    use mpas_timekeeping
    use mpas_timer
    use mpas_stream_manager
+   use mpas_io_units
+   use mpas_abort
 
    use cice_high_frequency_output
    use cice_temperatures

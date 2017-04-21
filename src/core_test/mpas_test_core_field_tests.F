@@ -15,7 +15,7 @@ module test_core_field_tests
    use mpas_field_routines
    use mpas_dmpar
    use mpas_threading
-   use mpas_io_units
+   use mpas_log
    use mpas_timer
    use mpas_attlist
 
@@ -52,12 +52,12 @@ module test_core_field_tests
 
       call mpas_timer_start('field tests')
       if ( threadNum == 0 ) then
-         write(stderrUnit, *) ' - Performing attribute list tests'
+         call mpas_log_write(' - Performing attribute list tests')
       end if
       call test_core_attribute_list_test(domain, threadErrs, iErr)
       call mpas_threading_barrier()
       if ( threadNum == 0 ) then
-         write(stderrUnit, *) '    -- Return code: ', iErr
+         call mpas_log_write('    -- Return code: $i', intArgs=(/iErr/))
          err = ior(err, iErr)
       end if
 
@@ -130,27 +130,27 @@ module test_core_field_tests
 
          if ( srcInt /= destInt ) then
             threadErrs( threadNum ) = 1
-            write(stderrUnit, *) '     ERROR: Duplicate int does not match'
+            call mpas_log_write('      Duplicate int does not match', MPAS_LOG_ERR)
          end if
 
          if ( sum(destIntA) /= 0 ) then
             threadErrs( threadNum ) = 1
-            write(stderrUnit, *) '     ERROR: Duplicate int array does not match'
+            call mpas_log_write('     Duplicate int array does not match', MPAS_LOG_ERR)
          end if
 
          if ( srcReal /= destReal ) then
             threadErrs( threadNum ) = 1
-            write(stderrUnit, *) '     ERROR: Duplicate real does not match'
+            call mpas_log_write('     Duplicate real does not match', MPAS_LOG_ERR)
          end if
 
          if ( sum(destRealA) /= 0.0_RKIND ) then
             threadErrs( threadNum ) = 1
-            write(stderrUnit, *) '     ERROR: Duplicate real array does not match'
+            call mpas_log_write('     Duplicate real array does not match', MPAS_LOG_ERR)
          end if
 
          if ( trim(srcText) /= trim(destText) ) then
             threadErrs( threadNum ) = 1
-            write(stderrUnit, *) '      ERROR: Duplicate string does not match'
+            call mpas_log_write('      Duplicate string does not match', MPAS_LOG_ERR)
          end if
 
          call mpas_deallocate_attlist(srcList)

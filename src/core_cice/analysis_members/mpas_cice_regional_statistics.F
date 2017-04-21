@@ -25,6 +25,7 @@ module cice_regional_statistics
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
+   use mpas_abort
 
    implicit none
    private

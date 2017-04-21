@@ -21,6 +21,8 @@ module cice_column
   use mpas_pool_routines
   use mpas_timekeeping
   use mpas_timer
+  use mpas_io_units
+  use mpas_abort
 
   use cice_debug
 

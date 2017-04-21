@@ -15,6 +15,8 @@ module cice_velocity_solver_wachspress
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_timer
+  use mpas_io_units
+  use mpas_abort
 
   implicit none
 

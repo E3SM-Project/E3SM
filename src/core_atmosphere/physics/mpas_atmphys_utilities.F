@@ -9,7 +9,6 @@
  module mpas_atmphys_utilities
 
  use mpas_kind_types
- use mpas_abort, only : mpas_dmpar_global_abort
 
  implicit none
  private
@@ -30,16 +29,14 @@
  subroutine physics_message(str)
 !=================================================================================================================
 
+ use mpas_log, only : mpas_log_write
+
 !input arguments:
  character(len=*),intent(in):: str
 
 !-----------------------------------------------------------------------------------------------------------------
 
-!#ifdef _MPI
-! write(0,*) trim(str)
-!#endif
-!print*,trim(str)
-write(0,*) trim(str)
+ call mpas_log_write(trim(str))
 
  end subroutine physics_message
 
@@ -47,15 +44,18 @@ write(0,*) trim(str)
  subroutine physics_error_fatal(str)
 !=================================================================================================================
 
+ use mpas_derived_types, only : MPAS_LOG_ERR, MPAS_LOG_CRIT
+ use mpas_log, only : mpas_log_write
+
 !input arguments:
  character(len=*),intent(in):: str
 
 !--------------------------------------------------------------------------------------------------
 
- call mpas_dmpar_global_abort(' ',                                                                          deferredAbort=.true.)
- call mpas_dmpar_global_abort('------------------------------ FATAL CALLED ------------------------------', deferredAbort=.true.)
- call mpas_dmpar_global_abort(trim(str),                                                                    deferredAbort=.true.)
- call mpas_dmpar_global_abort('ERROR: MPAS core_physics abort')
+ call mpas_log_write(' ',                                                                          messageType=MPAS_LOG_ERR)
+ call mpas_log_write('------------------------------ FATAL CALLED ------------------------------', messageType=MPAS_LOG_ERR)
+ call mpas_log_write(trim(str),                                                                    messageType=MPAS_LOG_ERR)
+ call mpas_log_write('MPAS core_physics abort', messageType=MPAS_LOG_CRIT)
  
  end subroutine physics_error_fatal
 

@@ -8,6 +8,9 @@
 !=================================================================================================================
  module mpas_atmphys_functions
 
+ use mpas_derived_types, only : MPAS_LOG_ERR
+ use mpas_log, only : mpas_log_write
+
  implicit none
  private
  public:: gammln,gammp,wgamma,rslf,rsif
@@ -54,7 +57,7 @@
         H=H*DEL
         IF(ABS(DEL-1.).LT.gEPS)GOTO 1
  11   CONTINUE
-      PRINT *, 'A TOO LARGE, ITMAX TOO SMALL IN GCF'
+      CALL MPAS_LOG_WRITE('A TOO LARGE, ITMAX TOO SMALL IN GCF', MESSAGETYPE=MPAS_LOG_ERR)
  1    GAMMCF=EXP(-X+A*LOG(X)-GLN)*H
       END SUBROUTINE GCF
 !  (C) Copr. 1986-92 Numerical Recipes Software 2.02
@@ -73,7 +76,7 @@
       REAL:: AP,DEL,SUM
       GLN=GAMMLN(A)
       IF(X.LE.0.)THEN
-        IF(X.LT.0.) PRINT *, 'X < 0 IN GSER'
+        IF(X.LT.0.) CALL MPAS_LOG_WRITE('X < 0 IN GSER', MESSAGETYPE=MPAS_LOG_ERR)
         GAMSER=0.
         RETURN
       ENDIF
@@ -86,7 +89,7 @@
         SUM=SUM+DEL
         IF(ABS(DEL).LT.ABS(SUM)*gEPS)GOTO 1
  11   CONTINUE
-      PRINT *,'A TOO LARGE, ITMAX TOO SMALL IN GSER'
+      CALL MPAS_LOG_WRITE('A TOO LARGE, ITMAX TOO SMALL IN GSER', MESSAGETYPE=MPAS_LOG_ERR)
  1    GAMSER=SUM*EXP(-X+A*LOG(X)-GLN)
       END SUBROUTINE GSER
 !  (C) Copr. 1986-92 Numerical Recipes Software 2.02
@@ -125,7 +128,7 @@
       REAL:: GAMMCF,GAMSER,GLN
       GAMMP = 0.
       IF((X.LT.0.) .OR. (A.LE.0.)) THEN
-        PRINT *, 'BAD ARGUMENTS IN GAMMP'
+        CALL MPAS_LOG_WRITE('BAD ARGUMENTS IN GAMMP', MESSAGETYPE=MPAS_LOG_ERR)
         RETURN
       ELSEIF(X.LT.A+1.)THEN
         CALL GSER(GAMSER,A,X,GLN)

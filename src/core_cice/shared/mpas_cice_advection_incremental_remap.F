@@ -24,6 +24,8 @@ module cice_advection_incremental_remap
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_timer
+   use mpas_io_units
+   use mpas_abort
 
    use cice_advection_incremental_remap_tracers, only: &
         tracer_type, &

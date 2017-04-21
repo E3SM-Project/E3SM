@@ -27,6 +27,7 @@ module li_diagnostic_vars
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_timer
+   use mpas_log
    use li_velocity
    use li_mask
 
@@ -374,7 +375,7 @@ contains
           ! Make sure lowerSurface calculation is reasonable.  This check could be deleted once this has been throroughly tested.
           do iCell = 1, nCells
              if (lowerSurface(iCell) < bedTopography(iCell)) then
-                write (0,*) 'lowerSurface less than bedTopography at cell:', iCell
+                call mpas_log_write('lowerSurface less than bedTopography at cell: $i', MPAS_LOG_ERR, intArgs=(/iCell/))
                 err = 1
              endif
           end do
@@ -394,7 +395,7 @@ contains
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in diagnostic_solve_before_velocity."
+          call mpas_log_write("An error has occurred in diagnostic_solve_before_velocity.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
