@@ -181,7 +181,9 @@ class N_TestUnitTest(unittest.TestCase):
     def _has_unit_test_support(self):
         default_compiler = MACHINE.get_default_compiler()
         compiler = Compilers(MACHINE, compiler=default_compiler)
-        pfunit_path = compiler.get_optional_compiler_node("PFUNIT_PATH")
+        attrs = {'MPILIB': 'mpi-serial', 'compile_threaded': 'false'}
+        pfunit_path = compiler.get_optional_compiler_node("PFUNIT_PATH",
+                                                          attributes=attrs)
         if pfunit_path is None:
             return False
         else:
