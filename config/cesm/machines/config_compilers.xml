@@ -995,6 +995,8 @@ using a fortran linker.
   <PFUNIT_PATH>$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_MPI_openMP</PFUNIT_PATH>
   <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <ESMF_LIBDIR DEBUG="FALSE">/glade/u/home/fvitt/esmf_7_0_0_intel17/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
+  <ESMF_LIBDIR DEBUG="TRUE" >/glade/u/home/fvitt/esmf_7_0_0_intel17/esmf/lib/libg/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="laramie">
