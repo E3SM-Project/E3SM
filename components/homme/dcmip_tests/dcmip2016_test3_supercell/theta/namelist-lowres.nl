@@ -8,7 +8,7 @@
   test_case         = "dcmip2016_test3"         ! test identifier
   theta_hydrostatic_mode = .false.
   rsplit            = 1
-  ne                = 15                         ! number of elements per cube face
+  ne                = 7 !15                         ! number of elements per cube face
   qsize             = 5                         ! num tracer fields: qv,qc,qr
   nmax              = 36000                     ! 7200s(120min)/tstep
   statefreq         = 10                        ! number of steps between screen dumps

@@ -22,7 +22,7 @@ use hybrid_mod,           only: hybrid_t
 use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
 use kinds,                only: rl=>real_kind, iulog
 use parallel_mod,         only: abortmp
-use element_ops,          only: set_state, copy_state, tests_finalize, set_forcing_rayleigh_friction
+use element_ops,          only: set_state, copy_state, tests_finalize, set_forcing_rayleigh_friction, set_thermostate
 use physical_constants,   only: p0, g
 
 implicit none
@@ -140,7 +140,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
   type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
   integer,            intent(in)            :: nets,nete                ! start, end element index
 
-  integer,  parameter :: zcoords  = 0 !1                                   ! 0 -> use p coords
+  integer,  parameter :: zcoords  = 0                                   ! 0 -> use p coords
   integer,  parameter :: pert     = 1                                   ! 1 -> add thermal perturbation
   real(rl), parameter :: ztop     = 20000_rl                            ! top of model at 20km
 
@@ -179,23 +179,22 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
 
         if(zcoords==0) then
-          ! set initial conditions on eta levels
+          ! set initial conditions at const eta levels
 
           ! get surface pressure at lat, lon, z=0
           z=0; call supercell_test(lon,lat,p,z,1,u,v,T,thetav,ps,rho,q(1),pert)
 
           ! get hydrostatic pressure level
           p  =  p0*hvcoord%hyam(k) + ps*hvcoord%hybm(k)
-          dp = (hvcoord%hyai(k+1)-hvcoord%hyai(k))*p0 + (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps
+          dp = pressure_thickness(ps,k,hvcoord)
+
         endif
 
         if(zcoords==1) then
-          ! set initial conditions on z surfaces
-
+          ! set initial conditions at const z levels
           call supercell_z(lon, lat, zi(k)  , p_i1, thetav, rho, q(1), pert)
           call supercell_z(lon, lat, zi(k+1), p_i2, thetav, rho, q(1), pert)
           dp = p_i2-p_i1
-
           z = zm(k)
         endif
 
@@ -203,20 +202,20 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
         w    = 0 ! no vertical motion
         phis = 0 ! no topography
+        q(2) = 0 ! no initial clouds
+        q(3) = 0 ! no initial rain
 
         ! temoporary: store fields in q for plotting/debugging
-        q(2) = thetav   !0 ! no initial clouds
-        q(3) = T        !0 ! no initial rain
-        q(4) = p
-        q(5) = u
-
-        !print *," u=",u," T=",T," ps=",ps," z=",z," p=",p," dp=",dp, " q=",q(1)," dp=",dp
+        !q(2) = thetav   !0 ! no initial clouds
+        !q(3) = T        !0 ! no initial rain
+        !q(4) = p
+        !q(5) = u
 
         call set_state(u,v,w,T,ps,phis,p,dp,z,g,i,j,k,elem(ie),1,nt)
         call set_tracers(q,qsize_d, dp,i,j,k,lat,lon,elem(ie))
-
       enddo; enddo
     enddo
+    call tests_finalize(elem(ie),hvcoord,1,nt)
 
   enddo
 
