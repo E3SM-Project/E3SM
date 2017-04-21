@@ -7,7 +7,7 @@ module TemperatureType
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : bounds_type
   use abortutils      , only : endrun
-  use clm_varctl      , only : use_ed, use_cndv, iulog
+  use clm_varctl      , only : use_cndv, iulog
   use clm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevlak, nlevurb, crop_prog 
   use clm_varcon      , only : spval
   use GridcellType    , only : grc
@@ -465,7 +465,7 @@ contains
          avgflag='A', long_name='vegetation temperature (last 240hrs)', &
          ptr_patch=this%t_veg240_patch, default='inactive')
 
-    if (crop_prog .or. use_ed) then
+    if (crop_prog) then
        this%gdd0_patch(begp:endp) = spval
        call hist_addfld1d (fname='GDD0', units='ddays', &
             avgflag='A', long_name='Growing degree days base  0C from planting', &
@@ -936,14 +936,6 @@ contains
             subgrid_type='pft', numlev=1, init_value=SHR_CONST_TKFRZ)
     end if
 
-    if ( use_ed ) then
-
-       call init_accum_field (name='ED_GDD0', units='K', &
-            desc='growing degree-days base 0C from planting', accum_type='runaccum', accum_period=not_used, &
-            subgrid_type='pft', numlev=1, init_value=0._r8)
-
-    end if
-
     if ( crop_prog )then
 
        ! All GDD summations are relative to the planting date (Kucharik & Brye 2003)
@@ -1048,12 +1040,6 @@ contains
        this%t_ref2m_min_inst_u_patch(begp:endp) =  spval
     end if
 
-    if ( use_ed ) then
-!       write(iulog,*) 'SPM before this one line 1040 '
-       call extract_accum_field ('ED_GDD0', rbufslp, nstep)
-       this%gdd0_patch(begp:endp) = rbufslp(begp:endp)
-    end if
-
     if ( crop_prog ) then
 
        call extract_accum_field ('GDD0', rbufslp, nstep)
@@ -1073,17 +1059,15 @@ contains
   end subroutine InitAccVars
 
   !-----------------------------------------------------------------------
-  subroutine UpdateAccVars (this, EDbio_vars, bounds)
+  subroutine UpdateAccVars (this, bounds)
     !
     ! USES
     use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
     use clm_time_manager , only : get_step_size, get_nstep, is_end_curr_day, get_curr_date
     use accumulMod       , only : update_accum_field, extract_accum_field, accumResetVal
-    use EDBioType        , only : EDbio_type
     !
     ! !ARGUMENTS:
     class(temperature_type)                :: this
-    type(EDbio_type)       , intent(inout) :: EDbio_vars
     type(bounds_type)      , intent(in)    :: bounds
     !
     ! !LOCAL VARIABLES:
@@ -1228,47 +1212,6 @@ contains
        call extract_accum_field ('TDM5', this%t_a5min_patch, nstep)
 
     end if
-
-    if ( use_ed ) then
-
-       ! Accumulate and extract GDD0 for ED
-       do p = bounds%begp,bounds%endp
-
-          g = pft%gridcell(p)
-
-          if(grc%latdeg(g) >= 0._r8)then
-             m = 1
-          else
-             m = 6
-          endif
-
-          ! FIX(RF,032414) - is this accumulation a bug in the normal phenology code,
-          ! as it means to count from november but ctually counts from january?
-          if ( month==m .and. day==1 .and. secs==int(dtime) ) then
-             rbufslp(p) = -99999._r8 ! reset ED_GDD
-          else
-             rbufslp(p) = max(0._r8, min(26._r8, this%t_ref2m_patch(p)-SHR_CONST_TKFRZ)) &
-                  * dtime/SHR_CONST_CDAY
-          end if
-
-          if( EDbio_vars%phen_cd_status_patch(p) == 2 ) then ! we have over-counted past the maximum possible range
-             rbufslp(p) = -99999._r8 !don't understand how this doens't make it negative, but it doesn't. RF
-          endif
-
-          if( grc%latdeg(g) >= 0._r8.and.month >= 7 ) then !do not accumulate in latter half of year.
-             rbufslp(p) = -99999._r8
-          endif
-
-          if( grc%latdeg(g) < 0._r8.and.month < 6 ) then !do not accumulate in earlier half of year.
-             rbufslp(p) = -99999._r8
-          endif
-
-       end do
-
-       call update_accum_field  ( 'ED_GDD0', rbufslp, nstep )
-       call extract_accum_field ( 'ED_GDD0', EDbio_vars%ED_GDD_patch, nstep )
-
-    endif
 
     if ( crop_prog )then
 
