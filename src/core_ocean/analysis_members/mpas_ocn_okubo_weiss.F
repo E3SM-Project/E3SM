@@ -881,8 +881,7 @@ contains
                ! Found a new eddy.
                curCC = curCC + 1
                if (curCC > nLocalCCs) then
-                  call mpas_log_write("ERROR: curCC > nLocalCCs") !, curCC, nLocalCCs
-                  call mpas_log_write("THIS IS A BUG!")
+                  call mpas_log_write("curCC > nLocalCCs.  THIS IS A BUG!", MPAS_LOG_CRIT) !, curCC, nLocalCCs
                end if
                ! Put this cell into the list of cells to be processed as
                ! seed for the flood fill of this eddy
