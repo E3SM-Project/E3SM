@@ -140,7 +140,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
   type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
   integer,            intent(in)            :: nets,nete                ! start, end element index
 
-  integer,  parameter :: zcoords  = 1                                   ! 0 -> use p coords
+  integer,  parameter :: zcoords  = 0 !1                                   ! 0 -> use p coords
   integer,  parameter :: pert     = 1                                   ! 1 -> add thermal perturbation
   real(rl), parameter :: ztop     = 20000_rl                            ! top of model at 20km
 
@@ -204,11 +204,11 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
         w    = 0 ! no vertical motion
         phis = 0 ! no topography
 
-! temoporary: store fields in q for plotting
-q(2) = thetav   !0 ! no initial clouds
-q(3) = T        !0 ! no initial rain
-q(4) = p
-q(5) = u
+        ! temoporary: store fields in q for plotting/debugging
+        q(2) = thetav   !0 ! no initial clouds
+        q(3) = T        !0 ! no initial rain
+        q(4) = p
+        q(5) = u
 
         !print *," u=",u," T=",T," ps=",ps," z=",z," p=",p," dp=",dp, " q=",q(1)," dp=",dp
 

@@ -14,15 +14,14 @@ begin
 ; Input parameters
 ;************************************************
 
-;datafilename = "../../../tempestmodel/test/dcmip2016/outSupercellTest/out.0000-01-01-00000.nc"
- datafilename = "./movies/dcmip2016_test31.nc"
+ datafilename = "./movies/dcmip2016_test31_z.nc"
 
 
 ;************************************************
 ; Initialize workspace
 ;************************************************
 
-  wks = gsn_open_wks("pdf","init")
+  wks = gsn_open_wks("pdf","init_z")
 
 ;************************************************
 ; Plot resources [options]
@@ -65,19 +64,19 @@ begin
   datafile = addfile(datafilename, "r")
 
   lev   = datafile->lev
-;  t     = datafile->T  (0,::-1,:,:)
-;  theta = datafile->Th (0,::-1,:,:)
-  u     = datafile->u  (0,::-1,:,:)
   qv    = datafile->Q  (0,::-1,:,:)
-;  p     = datafile->pnh(0,::-1,:,:)
   geo   = datafile->geo(0,::-1,:,:)
   lat   = datafile->lat
 
+    theta = datafile->Th (0,::-1,:,:)
+  t     = datafile->T  (0,::-1,:,:)
+    u     = datafile->u  (0,::-1,:,:)
+    p     = datafile->pnh(0,::-1,:,:)
 
-theta = datafile->Q2  (0,::-1,:,:)
-t     = datafile->Q3  (0,::-1,:,:)
-p     = datafile->Q4  (0,::-1,:,:)
-u     = datafile->Q5  (0,::-1,:,:)
+;theta = datafile->Q2  (0,::-1,:,:)
+;  t     = datafile->Q3  (0,::-1,:,:)
+;  p     = datafile->Q4  (0,::-1,:,:)
+;  u     = datafile->Q5  (0,::-1,:,:)
 
 
   p  = p/100.0  ; convert to hectopascals
@@ -86,6 +85,7 @@ u     = datafile->Q5  (0,::-1,:,:)
   delete(u@long_name)
   delete(p@long_name)
   delete(qv@long_name)
+  delete(theta@long_name)
 
 ;   rho = datafile->Rho
 ;   qv    = datafile->RhoQv / rho * 1000.0
@@ -143,7 +143,7 @@ u     = datafile->Q5  (0,::-1,:,:)
   res_qv@tiYAxisString     = "Altitude (km)"
   res_qv@gsnCenterString   = "Specific Humidity"
   res_qv@gsnRightString    = "(g/kg)"
-  plot(1) = gsn_csm_contour(wks,qv(:,:,180),res_qv)
+  plot(1) = gsn_csm_contour(wks,qv(:,:,0),res_qv)
 
 ; ---
 
@@ -154,6 +154,8 @@ u     = datafile->Q5  (0,::-1,:,:)
   res_theta@gsnCenterString   = "Virtual Potential Temperature (~F5~q~F~~B~v~E~  )"
   res_theta@gsnRightString    = "(K)"
   plot(2) = gsn_csm_contour(wks,theta(:,:,0),res_theta)
+
+; ---
 
   res_thetad@cnLevelSelectionMode= "ManualLevels"
   res_thetad@cnLevelSpacingF   = 0.2
@@ -180,6 +182,8 @@ u     = datafile->Q5  (0,::-1,:,:)
   res_p@gsnCenterString   = "Pressure (p)"
   res_p@gsnRightString    = "(hPa)"
   plot(4) = gsn_csm_contour(wks,p(:,:,0),res_p)
+
+; ---
 
   res_pd@cnLevelSelectionMode= "ManualLevels"
   res_pd@cnLevelSpacingF   = 0.1

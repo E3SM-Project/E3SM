@@ -14,13 +14,13 @@ begin
 ; Input parameters
 ;************************************************
 
-datafilename = "./movies/dcmip2016_test31.nc"
+datafilename = "./movies/dcmip2016_test31_z.nc"
 
 ;************************************************
 ; Initialize workspace
 ;************************************************
 
-  wks = gsn_open_wks("pdf","init_p2")
+  wks = gsn_open_wks("pdf","init_z2")
 
 ;************************************************
 ; Plot resources [options]
@@ -59,19 +59,20 @@ datafilename = "./movies/dcmip2016_test31.nc"
   datafile = addfile(datafilename, "r")
 
   lev   = datafile->lev
-;  t     = datafile->T  (0,::-1,:,:)
-;  theta = datafile->Th (0,::-1,:,:)
-;  u     = datafile->u  (0,::-1,:,:)
   qv    = datafile->Q  (0,::-1,:,:)
-;  p     = datafile->pnh(0,::-1,:,:)
   geo   = datafile->geo(0,::-1,:,:)
   lat   = datafile->lat
   lon   = datafile->lon
 
-theta = datafile->Q2  (0,::-1,:,:)
-t     = datafile->Q3  (0,::-1,:,:)
-p     = datafile->Q4  (0,::-1,:,:)
-u     = datafile->Q5  (0,::-1,:,:)
+  t     = datafile->T  (0,::-1,:,:)
+  theta = datafile->Th (0,::-1,:,:)
+  u     = datafile->u  (0,::-1,:,:)
+  p     = datafile->pnh(0,::-1,:,:)
+
+;  theta = datafile->Q2  (0,::-1,:,:)
+;  t     = datafile->Q3  (0,::-1,:,:)
+;  p     = datafile->Q4  (0,::-1,:,:)
+;  u     = datafile->Q5  (0,::-1,:,:)
 
 
   delete(t@long_name)
@@ -138,7 +139,7 @@ print("min thetap ="+min(thetap))
   res_t@gsnCenterString   = "Temperature (T)"
   res_t@gsnRightString    = "(K)"
 ;  plot(0) = gsn_csm_contour(wks,t(:,:,0),res_t)
-plot(0) = gsn_csm_contour(wks,t(:,:,180),res_t)
+plot(0) = gsn_csm_contour(wks,t(:,:,0),res_t)
 
   res_td@cnLevelSelectionMode= "ManualLevels"
   res_td@cnLevelSpacingF   = 0.2
