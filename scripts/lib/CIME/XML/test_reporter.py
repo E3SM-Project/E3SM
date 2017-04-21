@@ -52,13 +52,6 @@ class TestReporter(GenericXML):
     
         self.root=tlelem
 
-
-
-    def dumpxml(self):
-        #
-        # Print testreport XML string to screen
-        #
-        GenericXML.write(self,outfile="TestRecord.xml")
         
     def add_result(self,test_name,test_status):
         #
