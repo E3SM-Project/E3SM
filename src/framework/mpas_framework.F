@@ -42,22 +42,15 @@ module mpas_framework
 !>  MPI, the log unit numbers.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_framework_init_phase1(dminfo, mpi_comm, stdoutUnit_in, stderrUnit_in)!{{{
+   subroutine mpas_framework_init_phase1(dminfo, mpi_comm)!{{{
 
       implicit none
 
       type (dm_info), pointer :: dminfo
       integer, intent(in), optional :: mpi_comm
 
-      integer, intent(in), optional :: stdoutUnit_in, stderrUnit_in
-
       allocate(dminfo)
       call mpas_dmpar_init(dminfo, mpi_comm)
-
-      ! LOGTODO: delete the rest of this, change name of this routine to mpas_framework_dmpar_init?
-      call mpas_io_units_init(stdoutUnit_in, stderrUnit_in)
-
-      call open_streams(dminfo % my_proc_id, dminfo % nprocs)
 
    end subroutine mpas_framework_init_phase1!}}}
 

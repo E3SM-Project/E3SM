@@ -26,7 +26,6 @@ OBJS = mpas_kind_types.o \
        mpas_forcing.o \
        mpas_c_interfacing.o \
        random_id.o \
-       streams.o \
        pool_hash.o \
        mpas_derived_types.o \
        mpas_domain_routines.o \
@@ -75,7 +74,7 @@ mpas_decomp.o: mpas_derived_types.o mpas_stream_manager.o mpas_log.o
 
 mpas_hash.o : mpas_derived_types.o
 
-mpas_dmpar.o: mpas_sort.o streams.o mpas_kind_types.o mpas_derived_types.o mpas_hash.o mpas_threading.o mpas_pool_routines.o mpas_log.o
+mpas_dmpar.o: mpas_sort.o mpas_kind_types.o mpas_derived_types.o mpas_hash.o mpas_threading.o mpas_pool_routines.o mpas_log.o
 
 mpas_sort.o: mpas_kind_types.o mpas_log.o
 
