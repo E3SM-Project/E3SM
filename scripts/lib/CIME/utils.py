@@ -1246,9 +1246,6 @@ def _check_for_invalid_args(args):
             else:
                 expect(False, "Invalid argument %s\n  Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options"%arg)
 
-
-
-
 class SharedArea(object):
     """
     Enable 0002 umask within this manager
