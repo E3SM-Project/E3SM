@@ -1129,7 +1129,7 @@ class Case(object):
             "unit_testing" : False
             }
 
-        executable, mpi_arg_string = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
+        executable, mpi_arg_list = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
 
         # special case for aprun
         if executable is not None and "aprun" in executable:
@@ -1138,7 +1138,7 @@ class Case(object):
             return executable + aprun_args + " " + run_misc_suffix
 
         else:
-            mpi_arg_string = " ".join(args.values())
+            mpi_arg_string = " ".join(mpi_arg_list)
 
         if self.get_value("BATCH_SYSTEM") == "cobalt":
             mpi_arg_string += " : "
