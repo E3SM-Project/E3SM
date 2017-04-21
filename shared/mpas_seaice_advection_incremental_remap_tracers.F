@@ -166,6 +166,8 @@ contains
          pkgColumnTracerLevelIceActive, &
          pkgColumnTracerPondsActive, &
          pkgColumnTracerLidThicknessActive, &
+         pkgColumnTracerSnowDensityActive, &
+         pkgColumnTracerSnowGrainRadiusActive, &
          pkgColumnTracerAerosolsActive, &
          pkgColumnBiogeochemistryActive, &
          pkgTracerBrineActive, &
@@ -233,6 +235,10 @@ contains
                                                                pkgColumnTracerPondsActive)
     call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerLidThicknessActive', &
                                                                pkgColumnTracerLidThicknessActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerSnowDensityActive', &
+                                                               pkgColumnTracerSnowDensityActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerSnowGrainRadiusActive', &
+                                                               pkgColumnTracerSnowGrainRadiusActive)
     call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerAerosolsActive', &
                                                                pkgColumnTracerAerosolsActive)
     call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnBiogeochemistryActive', &
@@ -313,6 +319,18 @@ contains
 
     if (pkgColumnTracerLidThicknessActive) then
        call add_tracer_to_tracer_linked_list(tracersHead, 'pondLidThickness',     'pondArea')
+    endif
+
+    ! snow density
+    if (pkgColumnTracerSnowDensityActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'snowIceMass',    'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'snowLiquidMass', 'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'snowDensity',    'snowVolumeCategory')
+    endif
+
+    ! snow grain radius
+    if (pkgColumnTracerSnowDensityActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'snowGrainRadius','snowVolumeCategory')
     endif
 
     if (pkgColumnTracerAerosolsActive) then
