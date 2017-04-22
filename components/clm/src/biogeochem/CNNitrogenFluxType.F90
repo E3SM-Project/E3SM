@@ -1254,6 +1254,7 @@ contains
     end do
 
        do l = 1, ndecomp_cascade_transitions
+          if(trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))=='')exit
           ! vertically integrated fluxes
           !-- mineralization/immobilization fluxes (none from CWD)
           if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
@@ -1358,6 +1359,7 @@ contains
          ptr_col=this%som_n_leached_col, default='inactive')
 
     do k = 1, ndecomp_pools
+       if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
        if ( .not. decomp_cascade_con%is_cwd(k) ) then
           this%decomp_npools_leached_col(begc:endc,k) = spval
           data1dptr => this%decomp_npools_leached_col(:,k)

@@ -2764,6 +2764,7 @@ contains
         this%m_decomp_cpools_to_fire_col(begc:endc,:)      = spval
         this%m_decomp_cpools_to_fire_vr_col(begc:endc,:,:) = spval
         do k = 1, ndecomp_pools
+           if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
            if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
               data1dptr => this%m_decomp_cpools_to_fire_col(:,k)
               fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'
@@ -2799,7 +2800,7 @@ contains
           this%decomp_cascade_ctransfer_col(begc:endc,:)      = spval
           this%decomp_cascade_ctransfer_vr_col(begc:endc,:,:) = spval
           do l = 1, ndecomp_cascade_transitions
-
+           if(trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))=='')exit
            ! output the vertically integrated fluxes only as  default
            !-- HR fluxes (none from CWD)
            if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
@@ -2903,6 +2904,7 @@ contains
           this%decomp_cpools_leached_col(begc:endc,:) = spval
           this%decomp_cpools_transport_tendency_col(begc:endc,:,:) = spval
           do k = 1, ndecomp_pools
+           if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
            if ( .not. decomp_cascade_con%is_cwd(k) ) then
               data1dptr => this%decomp_cpools_leached_col(:,k)
               fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_LEACHING'

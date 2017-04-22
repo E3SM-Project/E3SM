@@ -728,11 +728,11 @@ contains
          !those variables are now ouput in betr
          this%decomp_cpools_col(begc:endc,:) = spval
          do l  = 1, ndecomp_pools
-            if ( nlevdecomp_full > 1 ) then
+            if(trim(decomp_cascade_con%decomp_pool_name_history(l))=='')exit
+            if ( nlevdecomp_full > 1) then
                data2dptr => this%decomp_cpools_vr_col(:,:,l)
                fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
                longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C (vertically resolved)'
-
                call hist_addfld2d (fname=fieldname, units='gC/m^3',  type2d='levdcmp', &
                   avgflag='A', long_name=longname, &
                   ptr_col=data2dptr)
