@@ -81,11 +81,14 @@ module docn_comp_mod
   integer(IN)   :: kh,kqbot
 
   type(shr_strdata_type) :: SDOCN
-  type(mct_rearr) :: rearr
-  type(mct_avect) :: avstrm   ! av of data from stream
-  real(R8), pointer :: somtp(:)
-  real(R8), pointer :: tfreeze(:)
-  integer , pointer :: imask(:)
+  type(mct_rearr)        :: rearr
+  type(mct_avect)        :: avstrm       ! av of data from stream
+  real(R8), pointer      :: somtp(:)
+  real(R8), pointer      :: tfreeze(:)
+  integer , pointer      :: imask(:)
+  real(R8), pointer      :: xc(:), yc(:) ! arryas of model latitudes and longitudes
+  integer(IN)            :: aquap_option
+
   character(len=*),parameter :: flds_strm = 'strm_h:strm_qbot'
 
   integer(IN),parameter :: ktrans = 29
@@ -144,6 +147,8 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
     integer(IN)   :: nunit       ! unit number
     integer(IN)   :: kmask       ! field reference
+    integer(IN)   :: klat        ! field reference
+    integer(IN)   :: klon        ! field reference
     logical       :: ocn_present    ! flag
     logical       :: ocn_prognostic ! flag
     logical       :: ocnrof_prognostic  ! flag
@@ -292,12 +297,22 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
 
     ocn_mode = trim(SDOCN%dataMode)
 
+    if (ocn_mode(1:5) == 'AQUAP') then
+       if (len_trim(ocn_mode) == 6) then
+          read(ocn_mode(6:6),'(i)') aquap_option
+       else if (len_trim(ocn_mode) == 7) then
+          read(ocn_mode(6:7),'(i)') aquap_option
+       end if
+       ocn_mode = 'AQUAP'
+    end if
+
     ! check that we know how to handle the mode
 
-    if (trim(ocn_mode) == 'NULL' .or. &
+    if (trim(ocn_mode) == 'NULL'    .or. &
         trim(ocn_mode) == 'SSTDATA' .or. &
         trim(ocn_mode) == 'COPYALL' .or. &
-        trim(ocn_mode) == 'IAF' .or. &
+        trim(ocn_mode) == 'AQUAP'   .or. &
+        trim(ocn_mode) == 'IAF'     .or. &
         trim(ocn_mode) == 'SOM') then
       if (my_task == master_task) &
          write(logunit,F00) ' ocn mode = ',trim(ocn_mode)
@@ -426,9 +441,17 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     allocate(somtp(lsize))
     allocate(tfreeze(lsize))
     allocate(imask(lsize))
+    allocate(xc(lsize))
+    allocate(yc(lsize))
 
     kmask = mct_aVect_indexRA(ggrid%data,'mask')
     imask(:) = nint(ggrid%data%rAttr(kmask,:))
+
+    klon = mct_aVect_indexRA(ggrid%data,'lon')
+    xc(:) = ggrid%data%rAttr(klon,:)
+
+    klat = mct_aVect_indexRA(ggrid%data,'lat')
+    yc(:) = ggrid%data%rAttr(klat,:)
 
     call t_stopf('docn_initmctavs')
 
@@ -639,6 +662,8 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
 
    call t_startf('docn_mode')
 
+   write(6,*)'DEBUG: case is ',trim(ocn_mode)
+
    select case (trim(ocn_mode))
 
    case('COPYALL') 
@@ -655,6 +680,13 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
          o2x%rAttr(kdhdy,n) = 0.0_R8
          o2x%rAttr(kq   ,n) = 0.0_R8
          o2x%rAttr(kswp ,n) = swp
+      enddo
+
+   case('AQUAP')
+      lsize = mct_avect_lsize(o2x)
+      call prescribed_sst(xc, yc, lsize, aquap_option, o2x%rAttr(kt,:))
+      do n = 1,lsize
+         o2x%rAttr(kt,n) = o2x%rAttr(kt,n) 
       enddo
 
    case('IAF')
@@ -800,8 +832,210 @@ subroutine docn_comp_final()
    call t_stopf('DOCN_FINAL')
 
 end subroutine docn_comp_final
+
 !===============================================================================
 !===============================================================================
 
+subroutine prescribed_sst(rlat, rlon, lsize, sst_option, sst)
+
+  real(R8)     , intent(in)    :: rlat(:)
+  real(R8)     , intent(in)    :: rlon(:)
+  integer(IN)  , intent(in)    :: lsize
+  integer(IN)  , intent(in)    :: sst_option
+  real(R8)     , intent(inout) :: sst(:)
+
+  ! local
+  integer  :: i
+  real(r8) :: tmp, tmp1, pi
+
+  real(r8), parameter :: pio180     = SHR_CONST_PI/180._r8
+
+  ! Parameters for zonally symmetric experiments
+  real(r8), parameter ::   t0_max     = 27._r8
+  real(r8), parameter ::   t0_min     = 0._r8
+  real(r8), parameter ::   maxlat     = 60._r8*pio180
+  real(r8), parameter ::   shift      = 5._r8*pio180
+  real(r8), parameter ::   shift9     = 10._r8*pio180
+  real(r8), parameter ::   shift10    = 15._r8*pio180
+
+  ! Parameters for zonally asymmetric experiments
+  real(r8), parameter ::   t0_max6    = 1._r8
+  real(r8), parameter ::   t0_max7    = 3._r8
+  real(r8), parameter ::   latcen     = 0._r8*pio180
+  real(r8), parameter ::   loncen     = 0._r8*pio180
+  real(r8), parameter ::   latrad6    = 15._r8*pio180
+  real(r8), parameter ::   latrad8    = 30._r8*pio180
+  real(r8), parameter ::   lonrad     = 30._r8*pio180
+  !-------------------------------------------------------------------------------
+
+  pi = SHR_CONST_PI
+
+  ! Control
+
+  if (sst_option < 1 .or. sst_option > 10) then
+     call shr_sys_abort ('prescribed_sst: ERROR: sst_option must be between 1 and 10')
+  end if
+
+  write(6,*)'DEBUG: sst_option = ',sst_option
+
+  if (sst_option == 1 .or. sst_option == 6 .or. sst_option == 7 .or. sst_option == 8) then
+     do i = 1,lsize
+        if (abs(rlat(i)) > maxlat) then
+           sst(i) = t0_min
+        else
+           tmp = sin(rlat(i)*pi*0.5_r8/maxlat)
+           tmp = 1._r8 - tmp*tmp
+           sst(i) = tmp*(t0_max - t0_min) + t0_min
+        end if
+     end do
+     write(6,*)'DEBUG:',i,sst(i)
+  end if
+
+  ! Flat
+
+  if (sst_option == 2) then
+     do i = 1,lsize
+        if (abs(rlat(i)) > maxlat) then
+           sst(i) = t0_min
+        else
+           tmp = sin(rlat(i)*pi*0.5_r8/maxlat)
+           tmp = 1._r8 - tmp*tmp*tmp*tmp
+           sst(i) = tmp*(t0_max - t0_min) + t0_min
+        end if
+     end do
+  end if
+
+  ! Qobs
+
+  if (sst_option == 3) then
+     do i = 1,lsize
+        if (abs(rlat(i)) > maxlat) then
+           sst(i) = t0_min
+        else
+           tmp = sin(rlat(i)*pi*0.5_r8/maxlat)
+           tmp = (2._r8 - tmp*tmp*tmp*tmp - tmp*tmp)*0.5_r8
+           sst(i) = tmp*(t0_max - t0_min) + t0_min
+        end if
+     end do
+  end if
+
+  ! Peaked
+
+  if (sst_option == 4) then
+     do i = 1,lsize
+        if (abs(rlat(i)) > maxlat) then
+           sst(i) = t0_min
+        else
+           tmp = (maxlat - abs(rlat(i)))/maxlat
+           tmp1 = 1._r8 - tmp
+           sst(i) = t0_max*tmp + t0_min*tmp1
+        end if
+     end do
+  end if
+
+  ! Control-5N
+
+  if (sst_option == 5) then
+     do i = 1,lsize
+        if (abs(rlat(i)) > maxlat) then
+           sst(i) = t0_min
+        else if (rlat(i) > shift) then
+           tmp = sin((rlat(i)-shift)*pi*0.5_r8/(maxlat-shift))
+           tmp = 1._r8 - tmp*tmp
+           sst(i) = tmp*(t0_max - t0_min) + t0_min
+        else
+           tmp = sin((rlat(i)-shift)*pi*0.5_r8/(maxlat+shift))	
+           tmp = 1._r8 - tmp*tmp
+           sst(i) = tmp*(t0_max - t0_min) + t0_min
+        end if
+     end do
+  end if
+
+  ! 1KEQ
+
+  if (sst_option == 6) then
+     do i = 1,lsize
+        if (abs(rlat(i)-latcen) <= latrad6) then
+           tmp1 = cos((rlat(i)-latcen)*pi*0.5_r8/latrad6)
+           tmp1 = tmp1*tmp1
+           tmp = abs(rlon(i)-loncen)
+           tmp = min(tmp , 2._r8*pi-tmp)
+           if(tmp <= lonrad) then
+              tmp = cos(tmp*pi*0.5_r8/lonrad)
+              tmp = tmp*tmp
+              sst(i) = sst(i) + t0_max6*tmp*tmp1
+           end if
+        end if
+     end do
+  end if
+
+  ! 3KEQ
+
+  if (sst_option == 7) then
+     do i = 1,lsize
+        if (abs(rlat(i)-latcen) <= latrad6) then
+           tmp1 = cos((rlat(i)-latcen)*pi*0.5_r8/latrad6)
+           tmp1 = tmp1*tmp1
+           tmp = abs(rlon(i)-loncen)
+           tmp = min(tmp , 2._r8*pi-tmp)
+           if (tmp <= lonrad) then
+              tmp = cos(tmp*pi*0.5_r8/lonrad)
+              tmp = tmp*tmp
+              sst(i) = sst(i) + t0_max7*tmp*tmp1
+           end if
+        end if
+     end do
+  end if
+
+  ! 3KW1
+
+  if (sst_option == 8) then
+     do i = 1,lsize
+        if (abs(rlat(i)-latcen) <= latrad8) then
+           tmp1 = cos((rlat(i)-latcen)*pi*0.5_r8/latrad8)
+           tmp1 = tmp1*tmp1
+           tmp = cos(rlon(i)-loncen)
+           sst(i) = sst(i) + t0_max7*tmp*tmp1
+        end if
+     end do
+  end if
+
+  ! Control-10N
+
+  if (sst_option == 9) then
+     do i = 1,lsize
+        if (abs(rlat(i)) > maxlat) then
+           sst(i) = t0_min
+        else if (rlat(i) > shift9) then
+           tmp = sin((rlat(i)-shift9)*pi*0.5_r8/(maxlat-shift9))
+           tmp = 1._r8 - tmp*tmp
+           sst(i) = tmp*(t0_max - t0_min) + t0_min
+        else
+           tmp = sin((rlat(i)-shift9)*pi*0.5_r8/(maxlat+shift9))
+           tmp = 1._r8 - tmp*tmp
+           sst(i) = tmp*(t0_max - t0_min) + t0_min
+        end if
+     end do
+  end if
+
+  ! Control-15N
+
+  if (sst_option == 10) then
+     do i = 1,lsize
+        if (abs(rlat(i)) > maxlat) then
+           sst(i) = t0_min
+        else if(rlat(i) > shift10) then
+           tmp = sin((rlat(i)-shift10)*pi*0.5_r8/(maxlat-shift10))
+           tmp = 1._r8 - tmp*tmp
+           sst(i) = tmp*(t0_max - t0_min) + t0_min
+        else
+           tmp = sin((rlat(i)-shift10)*pi*0.5_r8/(maxlat+shift10))
+           tmp = 1._r8 - tmp*tmp
+           sst(i) = tmp*(t0_max - t0_min) + t0_min
+        end if
+     end do
+  end if
+
+end subroutine prescribed_sst
 
 end module docn_comp_mod

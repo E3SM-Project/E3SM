@@ -15,7 +15,7 @@
 
   <entry id="DOCN_MODE">
     <type>char</type>
-    <valid_values>prescribed,pres_aquap,som,som_aquap,copyall,interannual,null</valid_values>
+    <valid_values>prescribed,aquap1,aquap2,aquap3,aquap4,aquap5,aquap6,aquap7,aquap8,aquap9,aquap10,som,som_aquap,copyall,interannual,null</valid_values>
     <default_value>prescribed</default_value>
     <values>
       <value compset="_DOCN%NULL">null</value>
@@ -24,9 +24,16 @@
       <value compset="_DOCN%US20">us20</value>
       <value compset="_DOCN%IAF">interannual</value>
       <value compset="_DOCN%COPY">copyall</value>
-      <value compset="_DOCN%DAQUAP">pres_aquap</value>
-      <value compset="_DOCN%SAQUAP">som_aquap</value>
-      <value compset="_DOCN%WW3">ww3</value>
+      <value compset="_DOCN%AQUAP1">aquap1</value>
+      <value compset="_DOCN%AQUAP2">aquap2</value>
+      <value compset="_DOCN%AQUAP3">aquap3</value>
+      <value compset="_DOCN%AQUAP4">aquap4</value>
+      <value compset="_DOCN%AQUAP5">aquap5</value>
+      <value compset="_DOCN%AQUAP6">aquap6</value>
+      <value compset="_DOCN%AQUAP7">aquap7</value>
+      <value compset="_DOCN%AQUAP8">aquap8</value>
+      <value compset="_DOCN%AQUAP9">aquap9</value>
+      <value compset="_DOCN%AQUAP10">aquap10</value>
     </values>
     <group>run_component_docn</group>
     <file>env_run.xml</file>
@@ -215,6 +222,7 @@
     <desc compset="_DOCN%SOM" >docn slab ocean mode:</desc>
     <desc compset="_DOCN%DOM" >docn data mode:</desc>
     <desc compset="_DOCN%IAF" >docn interannual mode:</desc>
+    <desc compset="_DOCN%AQUAP">docn aquaplanet mode:</desc> 
   </description>
 
   <help>
