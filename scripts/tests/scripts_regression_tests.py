@@ -1384,6 +1384,24 @@ class K_TestCimeCase(TestCreateTestCommon):
             expected_cores = 16 * case.cores_per_task
             self.assertEqual(case.get_value("TOTAL_CORES"), expected_cores)
 
+    ###########################################################################
+    def test_cime_case_xmlchange_append(self):
+    ###########################################################################
+        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s --force-procs 16 --force-threads 8"
+                              % (SCRIPT_DIR, self._baseline_name, self._testroot, self._testroot))
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial_P16x8.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        run_cmd_assert_result(self, "./xmlchange --id PIO_CONFIG_OPTS --val='-opt1'", from_dir=casedir)
+        result = run_cmd_assert_result(self, "./xmlquery --value PIO_CONFIG_OPTS", from_dir=casedir)
+        self.assertEqual(result, "-opt1")
+
+        run_cmd_assert_result(self, "./xmlchange --id PIO_CONFIG_OPTS --val='-opt2' --append", from_dir=casedir)
+        result = run_cmd_assert_result(self, "./xmlquery --value PIO_CONFIG_OPTS", from_dir=casedir)
+        self.assertEqual(result, "-opt1 -opt2")
+
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
 ###############################################################################
