@@ -552,7 +552,8 @@ class Case(object):
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
                   user_grid=False, gridfile=None, ninst=1, test=False,
-                  walltime=None, queue=None, output_root=None, run_unsupported=False, answer=None):
+                  walltime=None, queue=None, output_root=None, run_unsupported=False, answer=None,
+                  input_dir=None):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
@@ -820,6 +821,9 @@ class Case(object):
 
         # Set TOTAL_CORES
         self.set_value("TOTAL_CORES", self.total_tasks * self.cores_per_task )
+
+        if input_dir is not None:
+            self.set_value("DIN_LOC_ROOT", os.path.abspath(input_dir))
 
     def get_compset_var_settings(self):
         compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))

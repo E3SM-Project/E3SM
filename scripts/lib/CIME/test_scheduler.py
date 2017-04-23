@@ -365,6 +365,8 @@ class TestScheduler(object):
             create_newcase_cmd += " --project %s " % self._project
         if self._output_root is not None:
             create_newcase_cmd += " --output-root %s " % self._output_root
+        if self._input_dir is not None:
+            create_newcase_cmd += " --input-dir %s " % self._input_dir
 
         if test_mods is not None:
             files = Files()
@@ -536,9 +538,6 @@ class TestScheduler(object):
             envtest.set_initial_values(case)
             case.set_value("TEST", True)
             case.set_value("SAVE_TIMING", self._save_timing)
-
-            if self._input_dir is not None:
-                case.set_value("DIN_LOC_ROOT", self._input_dir)
 
         return True, ""
 
