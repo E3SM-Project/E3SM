@@ -662,8 +662,6 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
 
    call t_startf('docn_mode')
 
-   write(6,*)'DEBUG: case is ',trim(ocn_mode)
-
    select case (trim(ocn_mode))
 
    case('COPYALL') 
@@ -684,9 +682,12 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
 
    case('AQUAP')
       lsize = mct_avect_lsize(o2x)
+      do n = 1,lsize
+         o2x%rAttr(kt,n) = 0.0_r8
+      end do
       call prescribed_sst(xc, yc, lsize, aquap_option, o2x%rAttr(kt,:))
       do n = 1,lsize
-         o2x%rAttr(kt,n) = o2x%rAttr(kt,n) 
+         o2x%rAttr(kt,n) = o2x%rAttr(kt,n) + TkFrz
       enddo
 
    case('IAF')
@@ -836,10 +837,10 @@ end subroutine docn_comp_final
 !===============================================================================
 !===============================================================================
 
-subroutine prescribed_sst(rlat, rlon, lsize, sst_option, sst)
+subroutine prescribed_sst(xc, yc, lsize, sst_option, sst)
 
-  real(R8)     , intent(in)    :: rlat(:)
-  real(R8)     , intent(in)    :: rlon(:)
+  real(R8)     , intent(in)    :: xc(:)  !degrees
+  real(R8)     , intent(in)    :: yc(:)  !degrees
   integer(IN)  , intent(in)    :: lsize
   integer(IN)  , intent(in)    :: sst_option
   real(R8)     , intent(inout) :: sst(:)
@@ -847,8 +848,9 @@ subroutine prescribed_sst(rlat, rlon, lsize, sst_option, sst)
   ! local
   integer  :: i
   real(r8) :: tmp, tmp1, pi
+  real(r8) :: rlon(lsize), rlat(lsize)
 
-  real(r8), parameter :: pio180     = SHR_CONST_PI/180._r8
+  real(r8), parameter :: pio180 = SHR_CONST_PI/180._r8
 
   ! Parameters for zonally symmetric experiments
   real(r8), parameter ::   t0_max     = 27._r8
@@ -857,7 +859,7 @@ subroutine prescribed_sst(rlat, rlon, lsize, sst_option, sst)
   real(r8), parameter ::   shift      = 5._r8*pio180
   real(r8), parameter ::   shift9     = 10._r8*pio180
   real(r8), parameter ::   shift10    = 15._r8*pio180
-
+  
   ! Parameters for zonally asymmetric experiments
   real(r8), parameter ::   t0_max6    = 1._r8
   real(r8), parameter ::   t0_max7    = 3._r8
@@ -870,13 +872,16 @@ subroutine prescribed_sst(rlat, rlon, lsize, sst_option, sst)
 
   pi = SHR_CONST_PI
 
+  ! convert xc and yc from degrees to radians
+
+  rlon(:) = xc(:) * pio180
+  rlat(:) = yc(:) * pio180
+
   ! Control
 
   if (sst_option < 1 .or. sst_option > 10) then
      call shr_sys_abort ('prescribed_sst: ERROR: sst_option must be between 1 and 10')
   end if
-
-  write(6,*)'DEBUG: sst_option = ',sst_option
 
   if (sst_option == 1 .or. sst_option == 6 .or. sst_option == 7 .or. sst_option == 8) then
      do i = 1,lsize
@@ -888,7 +893,6 @@ subroutine prescribed_sst(rlat, rlon, lsize, sst_option, sst)
            sst(i) = tmp*(t0_max - t0_min) + t0_min
         end if
      end do
-     write(6,*)'DEBUG:',i,sst(i)
   end if
 
   ! Flat
@@ -972,7 +976,7 @@ subroutine prescribed_sst(rlat, rlon, lsize, sst_option, sst)
   ! 3KEQ
 
   if (sst_option == 7) then
-     do i = 1,lsize
+     do i = 1, lsize
         if (abs(rlat(i)-latcen) <= latrad6) then
            tmp1 = cos((rlat(i)-latcen)*pi*0.5_r8/latrad6)
            tmp1 = tmp1*tmp1
@@ -990,7 +994,7 @@ subroutine prescribed_sst(rlat, rlon, lsize, sst_option, sst)
   ! 3KW1
 
   if (sst_option == 8) then
-     do i = 1,lsize
+     do i = 1, lsize
         if (abs(rlat(i)-latcen) <= latrad8) then
            tmp1 = cos((rlat(i)-latcen)*pi*0.5_r8/latrad8)
            tmp1 = tmp1*tmp1
@@ -1003,7 +1007,7 @@ subroutine prescribed_sst(rlat, rlon, lsize, sst_option, sst)
   ! Control-10N
 
   if (sst_option == 9) then
-     do i = 1,lsize
+     do i = 1, lsize
         if (abs(rlat(i)) > maxlat) then
            sst(i) = t0_min
         else if (rlat(i) > shift9) then
@@ -1021,7 +1025,7 @@ subroutine prescribed_sst(rlat, rlon, lsize, sst_option, sst)
   ! Control-15N
 
   if (sst_option == 10) then
-     do i = 1,lsize
+     do i = 1, lsize
         if (abs(rlat(i)) > maxlat) then
            sst(i) = t0_min
         else if(rlat(i) > shift10) then
