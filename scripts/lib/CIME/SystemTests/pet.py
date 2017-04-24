@@ -30,6 +30,12 @@ class PET(SystemTestsCompareTwo):
             if self._case.get_value("NTHRDS_%s"%comp) <= 1:
                 self._case.set_value("NTHRDS_%s"%comp, 2)
 
+                # Need to halve NTASKS since we have double the threads
+                ntasks = self._case.get_value("NTASKS_%s" % comp)
+                if ntasks > 1:
+                    ntasks /= 2
+                    self._case.set_value("NTASKS_%s" % comp, ntasks)
+
         # Need to redo case_setup because we may have changed the number of threads
         case_setup(self._case, reset=True)
 
