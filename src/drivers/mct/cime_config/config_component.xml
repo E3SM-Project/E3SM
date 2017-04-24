@@ -915,15 +915,6 @@
     <desc>timer output depth</desc>
   </entry>
 
-  <entry id="SAVE_TIMING_DIR">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value>timing</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>Where to auto archive timing data</desc>
-  </entry>
-
   <entry id="PROFILE_PAPI_ENABLE">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
