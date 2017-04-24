@@ -18,6 +18,16 @@ from acme_diags.derivations import acme
 from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
+def findfile(path_name,data_name,season):
+    """locate file name based on data_name and season"""
+    dir_files = os.listdir(path_name)
+    for filename in dir_files:
+        if filename.startswith(data_name) and season in filename:
+            return path_name+filename
+     
+    raise IOError(
+        "No file found based on given path_name and data_name")
+       
 
 def make_parameters(orginal_parameter):
     """ Create multiple parameters given a list of
@@ -171,7 +181,7 @@ for parameter in parameters:
     reference_data_path = parameter.reference_data_path
     test_data_path = parameter.test_data_path
 
-    var = parameter.variables
+    variables = parameter.variables
     seasons = parameter.season
     ref_name = parameter.ref_name
     test_name = parameter.test_name
@@ -182,203 +192,76 @@ for parameter in parameters:
             filename1 = parameter.test_path
             print filename1
         else:
-            test_files = glob.glob(os.path.join(
-                test_data_path, '*' + test_name + '*.nc'))
-            for filename in fnmatch.filter(test_files, '*' + season + '*'):
-                print filename
-                filename1 = filename
+            try:
+                filename1 = findfile(test_data_path, test_name, season)
+                print filename1
+            except IOError:
+                print 'No file found for %s and %s' %(test_name, season)
+                continue
+        #    test_files = glob.glob(os.path.join(
+        #        test_data_path, '*' + test_name + '*.nc'))
+        #    for filename in fnmatch.filter(test_files, '*' + season + '*'):
+        #        print filename
+        #        filename1 = filename
 
         if hasattr(parameter, 'reference_path'):
             filename2 = parameter.reference_path
             print filename2
         else:
-            ref_files = glob.glob(os.path.join(
-                reference_data_path, '*' + ref_name + '*.nc'))
-            print ref_files, '*'+'/' + ref_name + '_' + season + '*'
-            for filename in fnmatch.filter(ref_files, '*'+'/' + ref_name + '_' + season + '*'):
-            #for filename in fnmatch.filter(ref_files, '*' + season + '*'):
-                print filename
-                filename2 = filename
+            try:
+                filename2 = findfile(reference_data_path, ref_name, season)
+                print filename2
+            except IOError:
+                print 'No file found for %s and %s' %(ref_name ,season)
+                continue
+        #    ref_files = glob.glob(os.path.join(
+        #        reference_data_path, '*' + ref_name + '*.nc'))
+        #    print ref_files, '*'+'/' + ref_name + '_' + season + '*'
+        #    for filename in fnmatch.filter(ref_files, '*'+'/' + ref_name + '_' + season + '*'):
+        #    #for filename in fnmatch.filter(ref_files, '*' + season + '*'):
+        #        print filename
+        #        filename2 = filename
 
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
 
-        mv1 = acme.process_derived_var(
-            var, acme.derived_variables, f_mod, parameter)
-        mv2 = acme.process_derived_var(
-            var, acme.derived_variables, f_obs, parameter)
-
-        # special case, cdms didn't properly convert mask with fill value
-        # -999.0, filed issue with denise
-        if ref_name == 'WARREN':
-            # this is cdms2 for bad mask, denise's fix should fix
-            mv2 = MV2.masked_where(mv2 == -0.9, mv2)
-            # following should move to derived variable
-        if ref_name == 'WILLMOTT' or ref_name == 'CLOUDSAT':
-            print mv2.fill_value
-            # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
-            # this is cdms2 for bad mask, denise's fix should fix
-            mv2 = MV2.masked_where(mv2 == -999., mv2)
-
-            # following should move to derived variable
-            if var == 'PRECT_LAND':
-                days_season = {'ANN': 365, 'DJF': 90,
-                               'MAM': 92, 'JJA': 92, 'SON': 91}
-                # mv1 = mv1 * days_season[season] * 0.1 #following AMWG
-                # approximate way to convert to seasonal cumulative
-                # precipitation, need to have solution in derived variable,
-                # unit convert from mm/day to cm
-                mv2 = mv2 / days_season[season] / \
-                    0.1  # convert cm to mm/day instead
-                mv2.units = 'mm/day'
-
-        # for variables without z axis:
-        if mv1.getLevel() == None and mv2.getLevel() == None:
-            if len(regions) == 0:
-                regions = ['global']
-
-            for region in regions:
-                print region
-                domain = None
-                # if region != 'global':
-                if region.find('land') != -1 or region.find('ocean') != -1:
-                    if region.find('land') != -1:
-                        land_ocean_frac = f_mod('LANDFRAC')
-                    elif region.find('ocean') != -1:
-                        land_ocean_frac = f_mod('OCNFRAC')
-                    region_value = regions_specs[region]['value']
-                    print 'region_value', region_value, mv1
-
-                    mv1_domain = mask_by(
-                        mv1, land_ocean_frac, low_limit=region_value)
-                    mv2_domain = mv2.regrid(
-                        mv1.getGrid(), parameter.regrid_tool, parameter.regrid_method)
-                    mv2_domain = mask_by(
-                        mv2_domain, land_ocean_frac, low_limit=region_value)
-                else:
-                    mv1_domain = mv1
-                    mv2_domain = mv2
-
-                print region
-                try:
-                    domain = regions_specs[region]['domain']
-                    print domain
-                except:
-                    print("no domain selector")
-                mv1_domain = mv1_domain(domain)
-                mv2_domain = mv2_domain(domain)
-                mv1_domain.units = mv1.units
-                mv2_domain.units = mv1.units
-
-                parameter.output_file = '_'.join(
-                    [ref_name, var, season, region])
-                parameter.main_title = str(' '.join([var, season, region]))
-
-                # regrid towards lower resolution of two variables for
-                # calculating difference
-                mv1_reg, mv2_reg = regrid_to_lower_res(
-                    mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
-
-                # if var is 'SST' or var is 'TREFHT_LAND': #special case
-
-                if var == 'TREFHT_LAND'or var == 'SST':  # use "==" instead of "is"
-                    if ref_name == 'WILLMOTT':
-                        mv2_reg = MV2.masked_where(
-                            mv2_reg == mv2_reg.fill_value, mv2_reg)
-                        print ref_name
-
-                        # if mv.mask is False:
-                        #    mv = MV2.masked_less_equal(mv, mv._FillValue)
-                        #    print "*************",mv.count()
-                    land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
-                    mv1_reg = MV2.masked_where(land_mask, mv1_reg)
-                    mv2_reg = MV2.masked_where(land_mask, mv2_reg)
-
-                diff = mv1_reg - mv2_reg
-                metrics_dict = create_metrics(
-                    mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
-                if hasattr(parameter, 'plot'):
-                    parameter.plot(mv2_domain, mv1_domain, diff,
-                                   metrics_dict, parameter)
-                else:
-
-		    plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                if season is seasons[0]:
-                    viewer.add_row('%s %s' % (var, region))
-                    if hasattr(mv1,"long_name"):
-                        viewer.add_col(mv1.long_name)
-                    else:
-                        viewer.add_col('%s' % var)
-                viewer.set_row('%s %s' % (var, region))
-                files = [parameter.case_id + '/' + parameter.output_file +
-                         ext for ext in ['_test.nc', '_ref.nc', '_test.nc']]
-                formatted_files = [{'url': f, 'title': f} for f in files]
-                viewer.add_col(parameter.case_id + '/' + parameter.output_file +
-                               '.png', is_file=True, title=season, other_files=formatted_files)
-
-                save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
-
-        elif mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
-            plev = parameter.levels
-            print 'selected pressure level', plev
-            f_mod = cdms2.open(filename1)
-            for filename in [filename1, filename2]:
-                f_in = cdms2.open(filename)
-                mv = f_in[var]  # Square brackets for metadata preview
-                mv_plv = mv.getLevel()
-
-                # var(time,lev,lon,lat) convert from hybrid level to pressure
-                if mv_plv.long_name.lower().find('hybrid') != -1:
-                    # Parentheses actually load the transient variable
-                    mv = f_in(var)
-                    hyam = f_in('hyam')
-                    hybm = f_in('hybm')
-                    ps = f_in('PS') / 100.  # convert unit from 'Pa' to mb
-                    p0 = 1000.  # mb
-                    levels_orig = cdutil.vertical.reconstructPressureFromHybrid(
-                        ps, hyam, hybm, p0)
-                    levels_orig.units = 'mb'
-                    mv_p = cdutil.vertical.logLinearInterpolation(
-                        mv, levels_orig, plev)
-
-                elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1:  # levels are presure levels
-
-                    mv = f_in(var)
-                    #mv = acme.process_derived_var(var, acme.derived_variables, f_in)
-                    if ref_name == 'AIRS':
-                        # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
-                        print mv.fill_value
-                        # this is cdms2 for bad mask, denise's fix should fix
-                        mv = MV2.masked_where(mv == mv.fill_value, mv)
-                    # Construct pressure level for interpolation
-                    levels_orig = MV2.array(mv_plv[:])
-                    levels_orig.setAxis(0, mv_plv)
-                    # grow 1d levels_orig to mv dimention
-                    mv, levels_orig = genutil.grower(mv, levels_orig)
-                    # levels_orig.info()
-                    # logLinearInterpolation only takes positive down plevel:
-                    # "I :      interpolation field (usually Pressure or depth)
-                    # from TOP (level 0) to BOTTOM (last level), i.e P value
-                    # going up with each level"
-                    mv_p = cdutil.vertical.logLinearInterpolation(
-                        mv[:, ::-1, ], levels_orig[:, ::-1, ], plev)
-
-                else:
-                    raise RuntimeError(
-                        "Vertical level is neither hybrid nor pressure. Abort")
-
-                if filename == filename1:
-                    mv1_p = mv_p
-
-                if filename == filename2:
-                    mv2_p = mv_p
-
-            for ilev in range(len(plev)):
-                mv1 = mv1_p[:, ilev, ]
-                mv2 = mv2_p[:, ilev, ]
+        for var in variables: 
+            print '***********', variables
+            print var
+            mv1 = acme.process_derived_var(
+                var, acme.derived_variables, f_mod, parameter)
+            mv2 = acme.process_derived_var(
+                var, acme.derived_variables, f_obs, parameter)
+    
+            # special case, cdms didn't properly convert mask with fill value
+            # -999.0, filed issue with denise
+            if ref_name == 'WARREN':
+                # this is cdms2 for bad mask, denise's fix should fix
+                mv2 = MV2.masked_where(mv2 == -0.9, mv2)
+                # following should move to derived variable
+            if ref_name == 'WILLMOTT' or ref_name == 'CLOUDSAT':
+                print mv2.fill_value
+                # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
+                # this is cdms2 for bad mask, denise's fix should fix
+                mv2 = MV2.masked_where(mv2 == -999., mv2)
+    
+                # following should move to derived variable
+                if var == 'PRECT_LAND':
+                    days_season = {'ANN': 365, 'DJF': 90,
+                                   'MAM': 92, 'JJA': 92, 'SON': 91}
+                    # mv1 = mv1 * days_season[season] * 0.1 #following AMWG
+                    # approximate way to convert to seasonal cumulative
+                    # precipitation, need to have solution in derived variable,
+                    # unit convert from mm/day to cm
+                    mv2 = mv2 / days_season[season] / \
+                        0.1  # convert cm to mm/day instead
+                    mv2.units = 'mm/day'
+    
+            # for variables without z axis:
+            if mv1.getLevel() == None and mv2.getLevel() == None:
                 if len(regions) == 0:
                     regions = ['global']
-
+    
                 for region in regions:
                     print region
                     domain = None
@@ -390,7 +273,7 @@ for parameter in parameters:
                             land_ocean_frac = f_mod('OCNFRAC')
                         region_value = regions_specs[region]['value']
                         print 'region_value', region_value, mv1
-
+    
                         mv1_domain = mask_by(
                             mv1, land_ocean_frac, low_limit=region_value)
                         mv2_domain = mv2.regrid(
@@ -400,61 +283,203 @@ for parameter in parameters:
                     else:
                         mv1_domain = mv1
                         mv2_domain = mv2
-
+    
                     print region
                     try:
-                        # if region.find('global') == -1:
                         domain = regions_specs[region]['domain']
                         print domain
                     except:
-                        print ("no domain selector")
+                        print("no domain selector")
                     mv1_domain = mv1_domain(domain)
                     mv2_domain = mv2_domain(domain)
                     mv1_domain.units = mv1.units
                     mv2_domain.units = mv1.units
-
+    
                     parameter.output_file = '_'.join(
-                        [ref_name, var, str(int(plev[ilev])), season, region])
-                    parameter.main_title = str(
-                        ' '.join([var, str(int(plev[ilev])), 'mb', season, region]))
-
-                    # Regrid towards lower resolution of two variables for
+                        [ref_name, var, season, region])
+                    parameter.main_title = str(' '.join([var, season, region]))
+    
+                    # regrid towards lower resolution of two variables for
                     # calculating difference
                     mv1_reg, mv2_reg = regrid_to_lower_res(
                         mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
-
-                    # Plotting
+    
+                    # if var is 'SST' or var is 'TREFHT_LAND': #special case
+    
+                    if var == 'TREFHT_LAND'or var == 'SST':  # use "==" instead of "is"
+                        if ref_name == 'WILLMOTT':
+                            mv2_reg = MV2.masked_where(
+                                mv2_reg == mv2_reg.fill_value, mv2_reg)
+                            print ref_name
+    
+                            # if mv.mask is False:
+                            #    mv = MV2.masked_less_equal(mv, mv._FillValue)
+                            #    print "*************",mv.count()
+                        land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
+                        mv1_reg = MV2.masked_where(land_mask, mv1_reg)
+                        mv2_reg = MV2.masked_where(land_mask, mv2_reg)
+    
                     diff = mv1_reg - mv2_reg
                     metrics_dict = create_metrics(
                         mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
-
                     if hasattr(parameter, 'plot'):
-                        parameter.plot(mv2_domain, mv1_domain,
-                                       diff, metrics_dict, parameter)
+                        parameter.plot(mv2_domain, mv1_domain, diff,
+                                       metrics_dict, parameter)
                     else:
-                        plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-
+    
+    		        plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                     if season is seasons[0]:
-                        viewer.add_row('%s %s %s' % (
-                            var, str(int(plev[ilev])) + 'mb', region))
+                        viewer.add_row('%s %s' % (var, region))
                         if hasattr(mv1,"long_name"):
                             viewer.add_col(mv1.long_name)
                         else:
                             viewer.add_col('%s' % var)
-                    viewer.set_row('%s %s %s' %
-                                   (var, str(int(plev[ilev])) + 'mb', region))
+                    viewer.set_row('%s %s' % (var, region))
                     files = [parameter.case_id + '/' + parameter.output_file +
                              ext for ext in ['_test.nc', '_ref.nc', '_test.nc']]
                     formatted_files = [{'url': f, 'title': f} for f in files]
                     viewer.add_col(parameter.case_id + '/' + parameter.output_file +
                                    '.png', is_file=True, title=season, other_files=formatted_files)
-
-                    save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
-            f_in.close()
-        
-        else:
-            raise RuntimeError(
-                "Dimensions of two variables are difference. Abort")
+    
+#                    save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
+    
+            elif mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
+                plev = parameter.levels
+                print 'selected pressure level', plev
+                f_mod = cdms2.open(filename1)
+                for filename in [filename1, filename2]:
+                    f_in = cdms2.open(filename)
+                    mv = f_in[var]  # Square brackets for metadata preview
+                    mv_plv = mv.getLevel()
+    
+                    # var(time,lev,lon,lat) convert from hybrid level to pressure
+                    if mv_plv.long_name.lower().find('hybrid') != -1:
+                        # Parentheses actually load the transient variable
+                        mv = f_in(var)
+                        hyam = f_in('hyam')
+                        hybm = f_in('hybm')
+                        ps = f_in('PS') / 100.  # convert unit from 'Pa' to mb
+                        p0 = 1000.  # mb
+                        levels_orig = cdutil.vertical.reconstructPressureFromHybrid(
+                            ps, hyam, hybm, p0)
+                        levels_orig.units = 'mb'
+                        mv_p = cdutil.vertical.logLinearInterpolation(
+                            mv, levels_orig, plev)
+    
+                    elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1:  # levels are presure levels
+    
+                        mv = f_in(var)
+                        #mv = acme.process_derived_var(var, acme.derived_variables, f_in)
+                        if ref_name == 'AIRS':
+                            # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
+                            print mv.fill_value
+                            # this is cdms2 for bad mask, denise's fix should fix
+                            mv = MV2.masked_where(mv == mv.fill_value, mv)
+                        # Construct pressure level for interpolation
+                        levels_orig = MV2.array(mv_plv[:])
+                        levels_orig.setAxis(0, mv_plv)
+                        # grow 1d levels_orig to mv dimention
+                        mv, levels_orig = genutil.grower(mv, levels_orig)
+                        # levels_orig.info()
+                        # logLinearInterpolation only takes positive down plevel:
+                        # "I :      interpolation field (usually Pressure or depth)
+                        # from TOP (level 0) to BOTTOM (last level), i.e P value
+                        # going up with each level"
+                        mv_p = cdutil.vertical.logLinearInterpolation(
+                            mv[:, ::-1, ], levels_orig[:, ::-1, ], plev)
+    
+                    else:
+                        raise RuntimeError(
+                            "Vertical level is neither hybrid nor pressure. Abort")
+    
+                    if filename == filename1:
+                        mv1_p = mv_p
+    
+                    if filename == filename2:
+                        mv2_p = mv_p
+    
+                for ilev in range(len(plev)):
+                    mv1 = mv1_p[:, ilev, ]
+                    mv2 = mv2_p[:, ilev, ]
+                    if len(regions) == 0:
+                        regions = ['global']
+    
+                    for region in regions:
+                        print region
+                        domain = None
+                        # if region != 'global':
+                        if region.find('land') != -1 or region.find('ocean') != -1:
+                            if region.find('land') != -1:
+                                land_ocean_frac = f_mod('LANDFRAC')
+                            elif region.find('ocean') != -1:
+                                land_ocean_frac = f_mod('OCNFRAC')
+                            region_value = regions_specs[region]['value']
+                            print 'region_value', region_value, mv1
+    
+                            mv1_domain = mask_by(
+                                mv1, land_ocean_frac, low_limit=region_value)
+                            mv2_domain = mv2.regrid(
+                                mv1.getGrid(), parameter.regrid_tool, parameter.regrid_method)
+                            mv2_domain = mask_by(
+                                mv2_domain, land_ocean_frac, low_limit=region_value)
+                        else:
+                            mv1_domain = mv1
+                            mv2_domain = mv2
+    
+                        print region
+                        try:
+                            # if region.find('global') == -1:
+                            domain = regions_specs[region]['domain']
+                            print domain
+                        except:
+                            print ("no domain selector")
+                        mv1_domain = mv1_domain(domain)
+                        mv2_domain = mv2_domain(domain)
+                        mv1_domain.units = mv1.units
+                        mv2_domain.units = mv1.units
+    
+                        parameter.output_file = '_'.join(
+                            [ref_name, var, str(int(plev[ilev])), season, region])
+                        parameter.main_title = str(
+                            ' '.join([var, str(int(plev[ilev])), 'mb', season, region]))
+    
+                        # Regrid towards lower resolution of two variables for
+                        # calculating difference
+                        mv1_reg, mv2_reg = regrid_to_lower_res(
+                            mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
+    
+                        # Plotting
+                        diff = mv1_reg - mv2_reg
+                        metrics_dict = create_metrics(
+                            mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
+    
+                        if hasattr(parameter, 'plot'):
+                            parameter.plot(mv2_domain, mv1_domain,
+                                           diff, metrics_dict, parameter)
+                        else:
+                            plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+    
+                        if season is seasons[0]:
+                            viewer.add_row('%s %s %s' % (
+                                var, str(int(plev[ilev])) + 'mb', region))
+                            if hasattr(mv1,"long_name"):
+                                viewer.add_col(mv1.long_name)
+                            else:
+                                viewer.add_col('%s' % var)
+                        viewer.set_row('%s %s %s' %
+                                       (var, str(int(plev[ilev])) + 'mb', region))
+                        files = [parameter.case_id + '/' + parameter.output_file +
+                                 ext for ext in ['_test.nc', '_ref.nc', '_test.nc']]
+                        formatted_files = [{'url': f, 'title': f} for f in files]
+                        viewer.add_col(parameter.case_id + '/' + parameter.output_file +
+                                       '.png', is_file=True, title=season, other_files=formatted_files)
+    
+                        save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
+                f_in.close()
+            
+            else:
+                raise RuntimeError(
+                    "Dimensions of two variables are difference. Abort")
         f_obs.close()
         f_mod.close()
 

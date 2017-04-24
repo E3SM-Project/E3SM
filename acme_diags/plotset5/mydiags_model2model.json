@@ -3,7 +3,7 @@
 
           {
       "case_id": "set5_model_to_model",
-      "variables": "CLDTOT",
+      "variables": ["CLDTOT"],
       "season": ["ANN","DJF","MAM","JJA","SON"],
       "region": [],
       "levels": []
