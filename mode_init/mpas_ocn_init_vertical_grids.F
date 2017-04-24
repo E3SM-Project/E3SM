@@ -741,11 +741,11 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'globalRx1Max', globalRx1Max, 1)
       do k = 1,nVertLevels
          call mpas_dmpar_max_real(domain % dminfo, rx1MaxLevel(k), globalRx1Max)
-         print '(a, i4, a, es10.2)', '  max of rx1 in level', k, ':', globalRx1Max
+         call mpas_log_write ('  max of rx1 in level $i :  %f', intArgs=(/ k /),  realArgs=(/ globalRx1Max /))
       end do
 
       call mpas_dmpar_max_real(domain % dminfo, localMaxRx1Edge, globalRx1Max)
-      print '(a, es10.2)', ' global max of rx1:', globalRx1Max
+      call mpas_log_write ('global max of rx1: $f', realArgs=(/ globalRx1Max /))
 
       deallocate(rx1MaxLevel)
 
