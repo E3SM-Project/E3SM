@@ -2576,7 +2576,7 @@ subroutine seq_infodata_Exchange(infodata,ID,type)
     call shr_mpi_bcast(infodata%precip_fact,        mpicom, pebcast=cplpe)
     call shr_mpi_bcast(infodata%glcrun_alarm,       mpicom, pebcast=cplpe)
     call shr_mpi_bcast(infodata%glc_g2lupdate,      mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%glc_valid_input,  mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(infodata%glc_valid_input,    mpicom, pebcast=cplpe)
     call seq_infodata_pauseresume_bcast(infodata,   mpicom, pebcast=cplpe)
   endif
 
