@@ -399,7 +399,7 @@ contains
       maxiter=1000
       itertol=1e-8
       ! solve for g2 using initial guess un0 and store at un0
-      call compute_stage_value_dirk_stiff_mod(n0,np1,np1,qn0,dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk_stiff(n0,np1,np1,qn0,dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol)
 
       ! write un0 to unp1
@@ -423,7 +423,7 @@ contains
       maxiter=1000
       itertol=1e-8
      ! solve for g3
-      call compute_stage_value_dirk_stiff_mod(n0,np1,np1,qn0,dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk_stiff(n0,np1,np1,qn0,dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol)
 
     ! set unp1 to un0
@@ -465,7 +465,7 @@ contains
       call state_read(elem,statesave,np1,nets,nete)
                                   
       ! solve g2 = un + dt * n(g1) + dt * s(g2) for g2 and save at unp1     
-      call compute_stage_value_dirk_stiff_mod(np1,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk_stiff(np1,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w/3,maxiter,itertol)
                  
      ! set un0 = un
@@ -493,7 +493,7 @@ contains
       call state_read(elem,statesave,np1,nets,nete)
 					
       ! solve for g3 and save at unp1
-      call compute_stage_value_dirk_stiff_mod(np1,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk_stiff(np1,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,2*eta_ave_w/3,maxiter,itertol)
 
       ! set un0 = un
@@ -2189,12 +2189,12 @@ contains
 
               vtens1(i,j,k) = (-v_vadv(i,j,1,k) &
                    + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
-                   - gradKE(i,j,1,k) -0.d0*gradphi(i,j,1,k)*dpnh_dp(i,j,k) &
+                   - gradKE(i,j,1,k) - gradphi(i,j,1,k)*dpnh_dp(i,j,k) &
                    -theta_cp(i,j,k)*gradexner(i,j,1,k))*scale1
 
               vtens2(i,j,k) = (-v_vadv(i,j,2,k) &
                    - v1*(elem(ie)%fcor(i,j) + vort(i,j,k)) &
-                   - gradKE(i,j,2,k) -0.d0*gradphi(i,j,2,k)*dpnh_dp(i,j,k) &
+                   - gradKE(i,j,2,k) - gradphi(i,j,2,k)*dpnh_dp(i,j,k) &
                    -theta_cp(i,j,k)*gradexner(i,j,2,k))*scale1
            end do
         end do     
@@ -2848,240 +2848,6 @@ contains
   call t_stopf('compute_stage_value_dirk_stiff')
 
   end subroutine compute_stage_value_dirk_stiff
-
-
-  subroutine compute_stage_value_dirk_stiff_mod(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
-       deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol)
-  !===================================================================================
-  ! this subroutine solves a stage value equation for a DIRK method which takes the form 
-  ! gi = un0 + dt* sum(1:i-1)(aij n(gj)+a2ij s(gj)) + dt *a2ii s(gi) := y + dt a2ii s(gi)
-  ! It is assumed that un0 has the value of y and the computed value of gi is stored at 
-  ! unp1
-  !===================================================================================
-  use kinds, only : real_kind
-  use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
-  use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
-  use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
-  use edgetype_mod, only : edgedescriptor_t
-  use bndry_mod, only : bndry_exchangev
-  use control_mod, only : moisture, qsplit, use_cpstar, rsplit, swest
-  use hybvcoord_mod, only : hvcoord_t
-
-  use physical_constants, only : cp, cpwater_vapor, Rgas, kappa, Rwater_vapor,p0, g
-  use physics_mod, only : virtual_specific_heat, virtual_temperature
-  use prim_si_mod, only : preq_vertadv_v, preq_vertadv_upwind, preq_omega_ps, preq_hydrostatic_v2
-
-  use time_mod, only : tevolve
-
-  implicit none
-  integer, intent(in) :: np1,nm1,n0,qn0,nets,nete
-  real*8, intent(in) :: dt2
-  logical, intent(in)  :: compute_diagnostics
-  integer :: maxiter
-  real*8 :: itertol
-
-  type (hvcoord_t)     , intent(in) :: hvcoord
-  type (hybrid_t)      , intent(in) :: hybrid
-  type (element_t)     , intent(inout), target :: elem(:)
-  type (derivative_t)  , intent(in) :: deriv
-  real (kind=real_kind) :: eta_ave_w  ! weighting for eta_dot_dpdn mean flux
-
-  ! local
-  real (kind=real_kind), pointer, dimension(:,:,:)   :: phi
-  real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
-  real (kind=real_kind), pointer, dimension(:,:,:)   :: theta_dp_cp
-   
-  real (kind=real_kind) :: kappa_star(np,np,nlev)
-  real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
-  real (kind=real_kind) :: dpnh(np,np,nlev)
-  real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
-  real (kind=real_kind) :: gradphi(np,np,2,nlev)
-  real (kind=real_kind) :: dpnh_dp(np,np,nlev),dpnh_dp2(np,np,nlev)    !    ! dpnh / dp3d  
-  real (kind=real_kind) :: temp(np,np,nlev)
-  real (kind=real_kind) :: Jac(np,np,2*nlev,2*nlev), Q(np,np,2*nlev,2*nlev)
-  real (kind=real_kind) :: R(np,np,2*nlev,2*nlev), Qt(2*nlev,2*nlev)
-  real (kind=real_kind) :: e(np,np,2*nlev)
-  real (kind=real_kind) :: Fn(np,np,2*nlev,1),x(np,np,2*nlev,1),epsie
-  real (kind=real_kind) :: dFn(np,np,2*nlev,1)
-  real (kind=real_kind) :: QtFn(np,np,2*nlev,1), Fntemp(2*nlev,1)
-  real (kind=real_kind) :: res(np,np,2*nlev),resnorm,resnormmax
-  real (kind=real_kind) :: stagevaluesum(np,np,nlev,6),linsolveerror
-
-  real (kind=real_kind) ::  itererr, itererrmax
-  integer :: i,j,k,l,kptr,ie,itercount,itercountmax
-
-  itercountmax=1
-  itererrmax=0.d0
-  resnormmax=0.d0
-
-  epsie=1e-4
-  call t_startf('compute_stage_value_dirk_stiff_mod')
-
-  do ie=nets,nete 
-
-    itercount=1
-    itererr = 2.0*itertol      
-
-    do while ((itercount < maxiter).and.((itererr > itertol).or.(resnorm > itertol*1.d2)) )
-  
-      dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
-      theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,np1)
-      phi => elem(ie)%state%phi(:,:,:,np1)
-           
-      call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
-          
-      call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
-      kappa_star,pnh,dpnh,exner) ! ,exner_i)
-           
-      dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
-                
-      Fn(:,:,1:nlev,1) = elem(ie)%state%w(:,:,:,np1)-elem(ie)%state%w(:,:,:,n0) &
-        +dt2*g*(1.0-dpnh_dp(:,:,:))
-                
-      Fn(:,:,nlev+1:2*nlev,1) = elem(ie)%state%phi(:,:,:,np1)-elem(ie)%state%phi(:,:,:,n0) &
-        -dt2*g*elem(ie)%state%w(:,:,:,np1)     
-  
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-      do k=1,2*nlev
-           
-        e(:,:,:)=0.0   
-        e(:,:,k)=1.0  
-           
-       ! compute the new dpnh_dp at the perturbed values
-       ! use the pointers only  
-              
-        phi(:,:,:)=phi(:,:,:)+epsie*e(:,:,nlev+1:2*nlev)
-                 
-        call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
-                  
-        call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&     
-          kappa_star,pnh,dpnh,exner) ! ,exner_i)
-            
-        dpnh_dp2(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
-        phi(:,:,:)=phi(:,:,:)-epsie*e(:,:,nlev+1:2*nlev)
-              
-       ! Form the approximate Jacobian
-        Jac(:,:,1:nlev,k)=e(:,:,1:nlev)+dt2*g*(dpnh_dp(:,:,:)-dpnh_dp2(:,:,:))/epsie 
-        Jac(:,:,nlev+1:2*nlev,k)=e(:,:,nlev+1:2*nlev)-dt2*g*e(:,:,1:nlev)
-      end do
- 
-      call mgs(Jac,Q,R)
-    
-      do i=1,np
-        do j=1,np
-          Qt(:,:)=Q(i,j,:,:)
-          Fntemp(:,1)=Fn(i,j,:,1)
-          Qt=transpose(Qt)
-          Fntemp=matmul(Qt,Fntemp)
-          QtFn(i,j,:,1) = Fntemp(:,1)
-        end do
-      end do               
-                        
-      call backsubstitution(R,-QtFn,x,linsolveerror)
-      elem(ie)%state%w(:,:,:,np1)   = elem(ie)%state%w(:,:,:,np1) + x(:,:,1:nlev,1)                          
-      elem(ie)%state%phi(:,:,:,np1) = elem(ie)%state%phi(:,:,:,np1) + x(:,:,nlev+1:2*nlev,1)                          
-      itererr=norm2(x)
-      resnorm=norm2(Fn)
-      itercount=itercount+1
-!      if ( (isnan(itererr)).or.(isnan(resnorm))) then 
-!        print *, 'bad NaN'
-!        print *, 'itererr ', itererr
-!        print *, 'resnorm ', resnorm
-!        stop
-!      end if
-!      print *, itercount, itererr,resnorm
-     end do                   
-     
-     do k=1,nlev
-       gradphi(:,:,:,k) = gradient_sphere(phi(:,:,k),deriv,elem(ie)%Dinv)
-       elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%state%v(:,:,1,k,np1) -dt2* &
-         gradphi(:,:,1,k)*dpnh_dp(:,:,k)
-       elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%state%v(:,:,2,k,np1) -dt2* &
-         gradphi(:,:,2,k)*dpnh_dp(:,:,k)
-     end do
-     
-      if (itercount > itercountmax) then
-        itercountmax=itercount
-      endif
-      if (itererr > itererrmax) then 
-        itererrmax=itererr
-      end if 
-      if (resnorm > resnormmax) then 
-        resnormmax = resnorm
-      end if 
-
-      
-  end do
-  maxiter=itercountmax
-  if (itererrmax > resnormmax) then 
-    itertol=itererrmax
-  else
-    itertol= resnormmax
-  end if 
-
-! now compute the apply the boundary exchange 
-! ==========================================  
-  do ie=nets,nete
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-     do k=1,nlev
-        elem(ie)%state%dp3d(:,:,k,np1) =elem(ie)%spheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
-        elem(ie)%state%theta_dp_cp(:,:,k,np1)=elem(ie)%spheremp(:,:)*elem(ie)%state%theta_dp_cp(:,:,k,np1)
-        elem(ie)%state%w(:,:,k,np1)    =elem(ie)%spheremp(:,:)*elem(ie)%state%w(:,:,k,np1)
-        elem(ie)%state%phi(:,:,k,np1)  =elem(ie)%spheremp(:,:)*elem(ie)%state%phi(:,:,k,np1)
-        elem(ie)%state%v(:,:,1,k,np1)  =elem(ie)%spheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
-        elem(ie)%state%v(:,:,2,k,np1)  =elem(ie)%spheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
-     end do
-
-     kptr=0
-     call edgeVpack(edge6, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr, ie)
-     kptr=kptr+nlev
-     call edgeVpack(edge6, elem(ie)%state%theta_dp_cp(:,:,:,np1),nlev,kptr,ie)
-     kptr=kptr+nlev
-     call edgeVpack(edge6, elem(ie)%state%w(:,:,:,np1),nlev,kptr,ie)
-     kptr=kptr+nlev
-     call edgeVpack(edge6, elem(ie)%state%phi(:,:,:,np1),nlev,kptr,ie)
-     kptr=kptr+nlev
-     call edgeVpack(edge6, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,ie)
-  end do
-  call t_startf('caar_bexchV')
-  call bndry_exchangeV(hybrid,edge6)
-  call t_stopf('caar_bexchV')
-  do ie=nets,nete
-     kptr=0
-     call edgeVunpack(edge6, elem(ie)%state%dp3d(:,:,:,np1), nlev, kptr, ie)
-     kptr=kptr+nlev
-     call edgeVunpack(edge6, elem(ie)%state%theta_dp_cp(:,:,:,np1), nlev, kptr, ie)
-     kptr=kptr+nlev
-     call edgeVunpack(edge6, elem(ie)%state%w(:,:,:,np1), nlev, kptr, ie)
-     kptr=kptr+nlev
-     call edgeVunpack(edge6, elem(ie)%state%phi(:,:,:,np1), nlev, kptr, ie)
-     kptr=kptr+nlev
-     call edgeVunpack(edge6, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
-
-     
-     ! ====================================================
-     ! Scale tendencies by inverse mass matrix
-     ! ====================================================
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-     do k=1,nlev
-        elem(ie)%state%dp3d(:,:,k,np1) =elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
-        elem(ie)%state%theta_dp_cp(:,:,k,np1)=elem(ie)%rspheremp(:,:)*elem(ie)%state%theta_dp_cp(:,:,k,np1)
-        elem(ie)%state%w(:,:,k,np1)    =elem(ie)%rspheremp(:,:)*elem(ie)%state%w(:,:,k,np1)
-        elem(ie)%state%phi(:,:,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%phi(:,:,k,np1)
-        elem(ie)%state%v(:,:,1,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
-        elem(ie)%state%v(:,:,2,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
-     end do
-  end do
-
-  call t_stopf('compute_stage_value_dirk_stiff_mod')
-
-  end subroutine compute_stage_value_dirk_stiff_mod
 
 
  
