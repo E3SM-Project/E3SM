@@ -95,19 +95,27 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     # Set up create_test command and run it
     #
 
-    baseline_args = ""
-    if (generate_baselines):
-        baseline_args = "-g -b %s" % baseline_name
-    elif (baseline_compare):
-        baseline_args = "-c -b %s" % baseline_name
-
-    batch_args = "--no-batch" if no_batch else ""
-    pjob_arg = "" if parallel_jobs is None else "-j %d" % parallel_jobs
-    walltime_arg = "" if walltime is None else " --walltime %s" % walltime
-
     test_id = "%s_%s" % (test_id_root, CIME.utils.get_timestamp())
-    create_test_cmd = "./create_test %s --test-root %s -t %s --machine %s --compiler %s %s %s %s %s" % \
-                      (test_suite, test_root, test_id, machine.get_machine_name(), compiler, baseline_args, batch_args, pjob_arg, walltime_arg)
+    create_test_args = [test_suite, "--test-root %s" % test_root, "-t %s" % test_id, "--machine %s" % machine.get_machine_name(), "--compiler %s" % compiler]
+    if (generate_baselines):
+        create_test_args.append("-g -b %s" % baseline_name)
+    elif (baseline_compare):
+        create_test_args.append("-c -b %s" % baseline_name)
+
+    if scratch_root != machine.get_value("CIME_OUTPUT_ROOT"):
+        create_test_args.append("--output-root=%s" % scratch_root)
+
+    if no_batch:
+        create_test_args.append("--no-batch")
+
+    if parallel_jobs is not None:
+        create_test_args.append("-j %d" % parallel_jobs)
+
+    if walltime is not None:
+        create_test_args.append(" --walltime %s" % walltime)
+
+
+    create_test_cmd = "./create_test %s" % " ".join(create_test_args)
 
     if (not CIME.wait_for_tests.SIGNAL_RECEIVED):
         create_test_stat = CIME.utils.run_cmd(create_test_cmd, from_dir=CIME.utils.get_scripts_root(),
