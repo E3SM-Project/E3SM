@@ -585,7 +585,7 @@ class TestScheduler(object):
         except (SystemExit, Exception) as e:
             exc_tb = sys.exc_info()[2]
             errput = "Test '%s' failed in phase '%s' with exception '%s'\n" % (test, phase, str(e))
-            errput += traceback.format_tb(exc_tb)
+            errput += ''.join(traceback.format_tb(exc_tb))
             self._log_output(test, errput)
             return False, errput
 
