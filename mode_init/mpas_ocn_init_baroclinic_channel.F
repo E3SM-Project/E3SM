@@ -151,8 +151,8 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-      if ( on_a_sphere ) call mpas_log_write('MPAS-ocean: ERROR: The baroclinic channel configuration ' &
-                                                   // 'can only be applied to a planar mesh. Exiting...')
+      if ( on_a_sphere ) call mpas_log_write('The baroclinic channel configuration ' &
+              // 'can only be applied to a planar mesh. Exiting...', MPAS_LOG_CRIT)
 
       allocate(interfaceLocations(nVertLevelsP1))
       call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
@@ -363,7 +363,7 @@ contains
       if(config_vert_levels <= 0 .and. config_baroclinic_channel_vert_levels > 0) then
          config_vert_levels = config_baroclinic_channel_vert_levels
       else if (config_vert_levels <= 0) then
-         call mpas_log_write( 'ERROR: Validation failed for baroclinic channel. Not given a usable value for vertical levels.')
+         call mpas_log_write( 'Validation failed for baroclinic channel. Not given a usable value for vertical levels.', MPAS_LOG_CRIT)
          iErr = 1
       end if
 

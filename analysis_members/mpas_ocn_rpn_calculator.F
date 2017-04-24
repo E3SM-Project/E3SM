@@ -134,20 +134,20 @@ subroutine ocn_init_rpn_calculator(domain, err)!{{{
 
       ! check the stack size
       if (stack_pointer /= 1) then
-        call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
+        call mpas_log_write( &
           'expression #' // trim(expression_names(i)) // &
           ' in the RPN calculator AM ' // &
           'resulted in the stack size not being equal to 1: ' // &
           'i.e., the return result of the expression should be the only ' // &
-          'value on the stack after evaluation')
+          'value on the stack after evaluation', MPAS_LOG_CRIT)
       end if
 
       ! check that it's a new value
       if (stack(stack_pointer) % symbol_type /= IS_TEMPORARY) then
-        call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
+        call mpas_log_write( &
           'expression #' // trim(expression_names(i)) // &
           ' in the RPN calculator AM did not calculate anything, ' // &
-          ' i.e., it only pushed a variable onto the stack')
+          ' i.e., it only pushed a variable onto the stack', MPAS_LOG_CRIT)
       end if
 
       ! rename the stack field and put in allFields pool
@@ -155,10 +155,10 @@ subroutine ocn_init_rpn_calculator(domain, err)!{{{
       call mpas_pool_get_config(domain % configs, config, config_result)
 
       if (trim(config_result) == (NONE_TOKEN)) then
-        call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
+        call mpas_log_write( &
           'expression #' // trim(expression_names(i)) // &
           ' in the RPN calculator AM was set, but the output field name ' // &
-          'for that expression was set to "none"')
+          'for that expression was set to "none"', MPAS_LOG_CRIT)
       end if
 
       if (stack(1) % number_of_dims == 0) then
@@ -174,10 +174,10 @@ subroutine ocn_init_rpn_calculator(domain, err)!{{{
         call mpas_pool_add_field(domain % blocklist % allFields, &
           config_result, stack(1) % d2)
       else
-        call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
+        call mpas_log_write( &
           'the impossible happened, the dimensions of the result on the ' // &
           'stack, for expression #' // trim(expression_names(i)) // &
-          ' was not between 0 and 2 in the RPN calculator AM')
+          ' was not between 0 and 2 in the RPN calculator AM', MPAS_LOG_CRIT)
       end if
       field_name = config_result
 
@@ -398,10 +398,10 @@ subroutine eval_expression (domain, expression, exp_number, &
         symbol_type - IS_VARIABLE, stack, stack_pointer, typechecking)
     ! symbol not found
     else
-      call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: "' // &
+      call mpas_log_write( &
         trim(symbol) // '" found in expression #' // &
         trim(expression_names(exp_number)) // &
-        ' in the RPN calculator AM was not found.')
+        ' in the RPN calculator AM was not found.', MPAS_LOG_CRIT)
     end if
 
     ! get the next symbol
@@ -546,10 +546,10 @@ subroutine eval_operator (exp_number, &
   ! else if (op_index == SUM_OP) then
   !  call sum_operator(exp_number, stack, stack_pointer, type_checking)
   else
-    call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
+    call mpas_log_write( &
       'the impossible happened, tried to apply an unknown operator ' // &
       'in expression #' // trim(expression_names(exp_number)) // &
-      ' in the RPN calculator AM')
+      ' in the RPN calculator AM', MPAS_LOG_CRIT)
   end if
 
 end subroutine eval_operator!}}}
@@ -590,10 +590,10 @@ subroutine eval_variable (domain, exp_number, &
 
   if (type_checking) then
     if (trim(config_result) == trim(NONE_TOKEN)) then
-      call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write( &
         'the MPAS field assigned to variable ' // &
         trim(variable_names(var_index)) // ' was evaluated, but it is ' // &
-        'currently set to "none"')
+        'currently set to "none"', MPAS_LOG_CRIT)
     end if
   end if
 
@@ -603,20 +603,20 @@ subroutine eval_variable (domain, exp_number, &
   ! check if it's real
   if (type_checking) then
     if (info % fieldType /= MPAS_POOL_REAL) then
-      call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write( &
         'the MPAS field "' // trim(config_result) // &
         '"assigned to variable ' // &
         trim(variable_names(var_index)) // ' in the RPN calculator AM is ' // &
-        'not a real field')
+        'not a real field', MPAS_LOG_CRIT)
     end if
 
     ! check if it's 0D-2D
     if (info % nDims > 2) then
-      call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write( &
         'the MPAS field "' // trim(config_result) // &
         '"assigned to variable ' // &
         trim(variable_names(var_index)) // ' in the RPN calculator AM is ' // &
-        'not a 0D, 1D, or 2D field')
+        'not a 0D, 1D, or 2D field', MPAS_LOG_CRIT)
     end if
   end if
 
@@ -935,15 +935,15 @@ subroutine minus_operator ( &
   call minus_op_0d_0d(stack, stack_pointer)
 #include "rpn_calc_inc/binary_op_dispatch_0d_1d.inc"
   if (type_checking) then
-    call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
-      'unable to subtract a 1d from a 0d in expression #' // &
-      trim(expression_names(exp_number)) // ' in the RPN calculator AM')
+    call mpas_log_write( &
+      'Unable to subtract a 1d from a 0d in expression #' // &
+      trim(expression_names(exp_number)) // ' in the RPN calculator AM', MPAS_LOG_CRIT)
   end if
 #include "rpn_calc_inc/binary_op_dispatch_0d_2d.inc"
   if (type_checking) then
-    call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
-      'unable to subtract a 2d from a 0d in expression #' // &
-      trim(expression_names(exp_number)) // ' in the RPN calculator AM')
+    call mpas_log_write( &
+      'Unable to subtract a 2d from a 0d in expression #' // &
+      trim(expression_names(exp_number)) // ' in the RPN calculator AM', MPAS_LOG_CRIT)
   end if
 #include "rpn_calc_inc/binary_op_dispatch_1d_0d.inc"
   call minus_op_1d_0d(stack, stack_pointer)
@@ -953,15 +953,15 @@ subroutine minus_operator ( &
   call minus_op_1d_1d_diff(stack, stack_pointer)
 #include "rpn_calc_inc/binary_op_dispatch_1d_2d_first.inc"
   if (type_checking) then
-    call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
-      'unable to subtract a 2d from a 1d in expression #' // &
-      trim(expression_names(exp_number)) // ' in the RPN calculator AM')
+    call mpas_log_write( &
+      'Unable to subtract a 2d from a 1d in expression #' // &
+      trim(expression_names(exp_number)) // ' in the RPN calculator AM', MPAS_LOG_CRIT)
   end if
 #include "rpn_calc_inc/binary_op_dispatch_1d_2d_second.inc"
   if (type_checking) then
-    call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
-      'unable to subtract a 2d from a 1d in expression #' // &
-      trim(expression_names(exp_number)) // ' in the RPN calculator AM')
+    call mpas_log_write( &
+      'Unable to subtract a 2d from a 1d in expression #' // &
+      trim(expression_names(exp_number)) // ' in the RPN calculator AM', MPAS_LOG_CRIT)
   end if
 #include "rpn_calc_inc/binary_op_dispatch_2d_0d.inc"
   call minus_op_2d_0d(stack, stack_pointer)
@@ -1041,15 +1041,15 @@ subroutine div_operator ( &
   call div_op_0d_0d(stack, stack_pointer)
 #include "rpn_calc_inc/binary_op_dispatch_0d_1d.inc"
   if (type_checking) then
-    call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
-      'unable to divide a 0d by a 1d in expression #' // &
-      trim(expression_names(exp_number)) // ' in the RPN calculator AM')
+    call mpas_log_write( &
+      'Unable to divide a 0d by a 1d in expression #' // &
+      trim(expression_names(exp_number)) // ' in the RPN calculator AM', MPAS_LOG_CRIT)
   end if
 #include "rpn_calc_inc/binary_op_dispatch_0d_2d.inc"
   if (type_checking) then
-    call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
-      'unable to divide a 0d by a 2d in expression #' // &
-      trim(expression_names(exp_number)) // ' in the RPN calculator AM')
+    call mpas_log_write( &
+      'Unable to divide a 0d by a 2d in expression #' // &
+      trim(expression_names(exp_number)) // ' in the RPN calculator AM', MPAS_LOG_CRIT)
   end if
 #include "rpn_calc_inc/binary_op_dispatch_1d_0d.inc"
   call div_op_1d_0d(stack, stack_pointer)
@@ -1059,15 +1059,15 @@ subroutine div_operator ( &
   call div_op_1d_1d_diff(stack, stack_pointer)
 #include "rpn_calc_inc/binary_op_dispatch_1d_2d_first.inc"
   if (type_checking) then
-    call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
-      'unable to divide a 1d by a 2d in expression #' // &
-      trim(expression_names(exp_number)) // ' in the RPN calculator AM')
+    call mpas_log_write( &
+      'Unable to divide a 1d by a 2d in expression #' // &
+      trim(expression_names(exp_number)) // ' in the RPN calculator AM', MPAS_LOG_CRIT)
   end if
 #include "rpn_calc_inc/binary_op_dispatch_1d_2d_second.inc"
   if (type_checking) then
-    call mpas_log_write(trim(MPAS_CORE_NAME) // ' ERROR: ' // &
-      'unable to divide a 1d by a 2d in expression #' // &
-      trim(expression_names(exp_number)) // ' in the RPN calculator AM')
+    call mpas_log_write( &
+      'Unable to divide a 1d by a 2d in expression #' // &
+      trim(expression_names(exp_number)) // ' in the RPN calculator AM', MPAS_LOG_CRIT)
   end if
 #include "rpn_calc_inc/binary_op_dispatch_2d_0d.inc"
   call div_op_2d_0d(stack, stack_pointer)

@@ -255,7 +255,7 @@ module ocn_forward_mode
       ierr = ior(ierr, err_tmp)
 
       if(ierr.eq.1) then
-          call mpas_log_write('ERROR: An error was encountered while initializing the MPAS-Ocean forward mode')
+          call mpas_log_write('An error was encountered while initializing the MPAS-Ocean forward mode', MPAS_LOG_CRIT)
       endif
 
       call ocn_init_metadata(domain)
@@ -273,17 +273,18 @@ module ocn_forward_mode
           config_vert_coord_movement.ne.'impermeable_interfaces'.and. &
           config_vert_coord_movement.ne.'user_specified') then
          call mpas_log_write(' Incorrect choice of config_vert_coord_movement.')
-         call mpas_log_write('ERROR: Incorrect choice of config_vert_coord_movement.')
+         call mpas_log_write('Incorrect choice of config_vert_coord_movement.', MPAS_LOG_CRIT)
       endif
 
-      if(config_vert_coord_movement .ne. 'impermeable_interfaces' .and. config_pressure_gradient_type .eq. 'MontgomeryPotential') then
-         call mpas_log_write(' Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type')
-         call mpas_log_write('ERROR: Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type')
+      if (config_vert_coord_movement .ne. 'impermeable_interfaces' &
+             .and. config_pressure_gradient_type .eq. 'MontgomeryPotential') then
+         call mpas_log_write( &
+             'Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type', MPAS_LOG_CRIT)
       end if
 
       if (config_filter_btr_mode.and. &
           config_vert_coord_movement.ne.'fixed')then
-         call mpas_log_write('ERROR: filter_btr_mode has only been tested with config_vert_coord_movement=fixed.')
+         call mpas_log_write('filter_btr_mode has only been tested with config_vert_coord_movement=fixed.', MPAS_LOG_CRIT)
       endif
 
       ! find the maximum value of the meshDensity
@@ -311,7 +312,7 @@ module ocn_forward_mode
          call ocn_init_routines_block(block, dt, ierr)
 
          if(ierr.eq.1) then
-             call mpas_log_write('ERROR: An error was encountered in ocn_init_routines_block')
+             call mpas_log_write('An error was encountered in ocn_init_routines_block', MPAS_LOG_CRIT)
          endif
 
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
@@ -344,8 +345,8 @@ module ocn_forward_mode
       ierr = ior(ierr, err_tmp)
 
       if(ierr.eq.1) then
-          call mpas_log_write('MPAS-ocean: ERROR: An error was encountered while initializing ' &
-                                    // 'the analysis members in the MPAS-Ocean forward mode')
+          call mpas_log_write('An error was encountered while initializing ' &
+               // 'the analysis members in the MPAS-Ocean forward mode', MPAS_LOG_CRIT)
       endif
 
    end function ocn_forward_mode_init!}}}

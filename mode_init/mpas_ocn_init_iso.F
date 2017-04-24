@@ -346,7 +346,7 @@ contains
 
 
       if(.not. on_a_sphere) then
-        call mpas_log_write( 'ERROR: ISO test case can only be defined on a spherical mesh.')
+        call mpas_log_write( 'ISO test case can only be defined on a spherical mesh.', MPAS_LOG_CRIT)
         iErr = 1
         return
       else
@@ -887,7 +887,7 @@ contains
       if(config_vert_levels <= 0 .and. config_iso_vert_levels > 0) then
          config_vert_levels = config_iso_vert_levels
       else if (config_vert_levels <= 0) then
-         call mpas_log_write( 'ERROR: Validation failed for ISO. Not given a usable value for vertical levels.')
+         call mpas_log_write( 'Validation failed for ISO. Not given a usable value for vertical levels.', MPAS_LOG_CRIT)
          iErr = 1
       end if
 

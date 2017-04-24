@@ -173,8 +173,8 @@ contains
       call mpas_pool_get_array(tracersPool, 'DMSTracers', DMSTracers, 1)
       call mpas_pool_get_array(tracersPool, 'MacroMoleculesTracers', MacroMoleculesTracers, 1)
 
-      if ( .not. on_a_sphere ) call mpas_log_write('MPAS-ocean: ERROR: The global ocean configuration can ' &
-                                                         // 'only be applied to a spherical mesh. Exiting...')
+      if ( .not. on_a_sphere ) call mpas_log_write('The global ocean configuration can ' &
+           // 'only be applied to a spherical mesh. Exiting...', MPAS_LOG_CRIT)
 
       call mpas_pool_get_config(domain % configs, 'config_global_ocean_cull_inland_seas', &
             config_global_ocean_cull_inland_seas)
@@ -216,7 +216,7 @@ contains
       call ocn_init_ssh_and_landIcePressure_vertical_grid(domain, iErr)
 
       if(iErr .ne. 0) then
-        call mpas_log_write( 'ERROR: ocn_init_ssh_and_landIcePressure_vertical_grid failed.')
+        call mpas_log_write( 'ocn_init_ssh_and_landIcePressure_vertical_grid failed.', MPAS_LOG_CRIT)
         call mpas_dmpar_finalize(domain % dminfo)
       end if
 
@@ -506,7 +506,7 @@ contains
          call ocn_init_ssh_and_landIcePressure_balance(domain, iErr)
 
          if(iErr .ne. 0) then
-            call mpas_log_write( 'ERROR: ocn_init_ssh_and_landIcePressure_balance failed.')
+            call mpas_log_write( 'ocn_init_ssh_and_landIcePressure_balance failed.', MPAS_LOG_CRIT)
             call mpas_dmpar_finalize(domain % dminfo)
          end if
 
@@ -522,7 +522,7 @@ contains
       call mpas_log_write( 'Compute Haney number')
       call ocn_compute_Haney_number(domain, iErr)
       if(iErr .ne. 0) then
-         call mpas_log_write( 'ERROR: ocn_compute_Haney_number failed.')
+         call mpas_log_write( 'ocn_compute_Haney_number failed.', MPAS_LOG_CRIT)
          call mpas_dmpar_finalize(domain % dminfo)
       end if
 
@@ -926,7 +926,7 @@ contains
              end if
 
           else
-             call mpas_log_write( 'ERROR: Invalid choice of config_global_ocean_topography_method.')
+             call mpas_log_write( 'Invalid choice of config_global_ocean_topography_method.', MPAS_LOG_CRIT)
              iErr = 1
              call mpas_dmpar_finalize(domain % dminfo)
           endif
@@ -1207,7 +1207,7 @@ contains
                                                         inXPeriod = 2.0_RKIND * pii)
 
           else
-             call mpas_log_write( 'ERROR: Invalid choice of config_global_ocean_topography_method.')
+             call mpas_log_write( 'Invalid choice of config_global_ocean_topography_method.', MPAS_LOG_CRIT)
              iErr = 1
              call mpas_dmpar_finalize(domain % dminfo)
           endif
@@ -1242,7 +1242,7 @@ contains
                    modifySSHMask(iCell) = 1
                 end if
              else
-                call mpas_log_write( 'ERROR: Invalid choice of config_iterative_init_variable.')
+                call mpas_log_write( 'Invalid choice of config_iterative_init_variable.', MPAS_LOG_CRIT)
                 iErr = 1
                 call mpas_dmpar_finalize(domain % dminfo)
              end if
@@ -2170,7 +2170,7 @@ contains
                  inXPeriod = 2.0_RKIND * pii)
 
          else
-            call mpas_log_write( 'ERROR: Invalid choice of config_global_ocean_tracer_method.')
+            call mpas_log_write( 'Invalid choice of config_global_ocean_tracer_method.', MPAS_LOG_CRIT)
             iErr = 1
             call mpas_dmpar_finalize(domain % dminfo)
          endif
@@ -2346,7 +2346,7 @@ contains
                   lonCell, latCell, ecosysForcingField, nCells, &
                   inXPeriod = 2.0_RKIND * pii)
           else
-             call mpas_log_write( 'ERROR: Invalid choice of config_global_ocean_ecosys_method.')
+             call mpas_log_write( 'Invalid choice of config_global_ocean_ecosys_method.', MPAS_LOG_CRIT)
              iErr = 1
              call mpas_dmpar_finalize(domain % dminfo)
           endif
@@ -2598,7 +2598,7 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
                                                     lonCell, latCell, clearSkyRadiation, nCells, &
                                                     inXPeriod = 2.0_RKIND * pii)
      else
-         call mpas_log_write( 'ERROR: Invalid choice of config_global_ocean_swData_method.')
+         call mpas_log_write( 'Invalid choice of config_global_ocean_swData_method.', MPAS_LOG_CRIT)
          iErr = 1
          call mpas_dmpar_finalize(domain % dminfo)
       endif
@@ -2831,7 +2831,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
                                                        inXPeriod = 2.0_RKIND*pii)
 
           else
-             call mpas_log_write( 'ERROR: Invalid choice of config_global_ocean_windstress_method.')
+             call mpas_log_write( 'Invalid choice of config_global_ocean_windstress_method.', MPAS_LOG_CRIT)
              iErr = 1
              call mpas_dmpar_finalize(domain % dminfo)
           endif
@@ -3089,14 +3089,15 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
       end if
 
       if (trim(config_global_ocean_depth_file) == 'none') then
-         call mpas_log_write( 'ERROR: Validation failed for global ocean. Invalid filename for config_global_ocean_depth_file')
+         call mpas_log_write( 'Validation failed for global ocean. ' &
+             // 'Invalid filename for config_global_ocean_depth_file', MPAS_LOG_CRIT)
          iErr = 1
          return
       end if
 
       inputFile = MPAS_io_open(config_global_ocean_depth_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
       if (iErr .ne. 0) then
-         call mpas_log_write( 'ERROR: could not open file '// trim(config_global_ocean_depth_file))
+         call mpas_log_write( 'could not open file '// trim(config_global_ocean_depth_file), MPAS_LOG_CRIT)
          return
       end if
 
@@ -3105,20 +3106,22 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
       call MPAS_io_close(inputFile, iErr)
 
       if (trim(config_global_ocean_temperature_file) == 'none') then
-         call mpas_log_write( 'ERROR: Validation failed for global ocean. Invalid filename for config_global_ocean_temperature_file')
+         call mpas_log_write( 'Validation failed for global ocean. ' &
+             // 'Invalid filename for config_global_ocean_temperature_file', MPAS_LOG_CRIT)
          iErr = 1
          return
       end if
 
       if (trim(config_global_ocean_salinity_file) == 'none') then
-         call mpas_log_write( 'ERROR: Validation failed for global ocean. Invalid filename for config_global_ocean_salinity_file')
+         call mpas_log_write( 'Validation failed for global ocean. ' &
+             // 'Invalid filename for config_global_ocean_salinity_file', MPAS_LOG_CRIT)
          iErr = 1
          return
       end if
 
       inputFile = MPAS_io_open(config_global_ocean_temperature_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
       if (iErr .ne. 0) then
-         call mpas_log_write( 'ERROR: could not open file '// trim(config_global_ocean_temperature_file))
+         call mpas_log_write( 'could not open file '// trim(config_global_ocean_temperature_file), MPAS_LOG_CRIT)
          return
       end if
 
@@ -3131,13 +3134,15 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
       if (config_global_ocean_tracer_vert_levels <= 0 .and. nDepthTracer > 0) then
          config_global_ocean_tracer_vert_levels = nDepthTracer
       else if(config_global_ocean_tracer_vert_levels <= 0) then
-         call mpas_log_write( 'ERROR: Validation failed for global ocean. Value of config_global_ocean_tracer_vert_levels=-1 ' // &
-              'but nDepthTracer was not correctly read from input file.')
+         call mpas_log_write( 'Validation failed for global ocean. ' &
+              // 'Value of config_global_ocean_tracer_vert_levels=-1 ' &
+              // 'but nDepthTracer was not correctly read from input file.', MPAS_LOG_CRIT)
          iErr = 1
       end if
 
       if (trim(config_global_ocean_windstress_file) == 'none') then
-         call mpas_log_write( 'ERROR: Validation failed for global ocean. Invalid filename for config_global_ocean_windstress_file')
+         call mpas_log_write( 'Validation failed for global ocean. ' &
+             // 'Invalid filename for config_global_ocean_windstress_file', MPAS_LOG_CRIT)
          iErr = 1
          return
       end if
@@ -3150,14 +3155,15 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
       call MPAS_io_close(inputFile, iErr)
 
       if (trim(config_global_ocean_topography_file) == 'none') then
-         call mpas_log_write( 'ERROR: Validation failed for global ocean. Invalid filename for config_global_ocean_topography_file')
+         call mpas_log_write( 'Validation failed for global ocean. ' &
+             // 'Invalid filename for config_global_ocean_topography_file', MPAS_LOG_CRIT)
          iErr = 1
          return
       end if
 
       inputFile = MPAS_io_open(config_global_ocean_topography_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
       if (iErr .ne. 0) then
-         call mpas_log_write( 'ERROR: could not open file '// trim(config_global_ocean_topography_file))
+         call mpas_log_write( 'could not open file '// trim(config_global_ocean_topography_file), MPAS_LOG_CRIT)
          return
       end if
 
@@ -3168,7 +3174,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 
       inputFile = MPAS_io_open(config_global_ocean_windstress_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
       if (iErr .ne. 0) then
-         call mpas_log_write( 'ERROR: could not open file '// trim(config_global_ocean_windstress_file))
+         call mpas_log_write( 'could not open file '// trim(config_global_ocean_windstress_file), MPAS_LOG_CRIT)
          return
       end if
 
@@ -3180,14 +3186,14 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
       if (config_vert_levels <= 0 .and. nDepthOutput > 0) then
          config_vert_levels = nDepthOutput
       else if(config_vert_levels <= 0) then
-         call mpas_log_write( 'ERROR: Validation failed for global ocean. Not given a usable value for vertical levels.')
+         call mpas_log_write( 'Validation failed for global ocean. Not given a usable value for vertical levels.', MPAS_LOG_CRIT)
          iErr = 1
       end if
 
       if ( config_use_ecosysTracers ) then
          if (trim(config_global_ocean_ecosys_file) == 'none') then
             call mpas_log_write( &
-              'ERROR: Validation failed for global ocean. Invalid filename for config_global_ocean_windstress_file')
+              'Validation failed for global ocean. Invalid filename for config_global_ocean_windstress_file', MPAS_LOG_CRIT)
             iErr = 1
             return
          end if
@@ -3203,8 +3209,9 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
          if (config_global_ocean_ecosys_vert_levels <= 0 .and. nDepthEcosys > 0) then
             config_global_ocean_ecosys_vert_levels = nDepthEcosys
          else if(config_global_ocean_ecosys_vert_levels <= 0) then
-            call mpas_log_write( 'ERROR: Validation failed for global ocean. Value of config_global_ocean_ecosys_vert_levels=-1, '//&
-                 'but nDepthEcosys was not correctly read from input file.')
+            call mpas_log_write( 'Validation failed for global ocean. ' &
+                 // 'Value of config_global_ocean_ecosys_vert_levels=-1, ' &
+                 // 'but nDepthEcosys was not correctly read from input file.', MPAS_LOG_CRIT)
             iErr = 1
          end if
 
@@ -3212,15 +3219,15 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 
       if ( config_global_ocean_depress_by_land_ice) then
          if (trim(config_global_ocean_land_ice_topo_file) == 'none') then
-            call mpas_log_write( 'ERROR: Validation failed for global ocean. '// &
-               'Invalid filename for config_global_ocean_land_ice_topo_file')
+            call mpas_log_write( 'Validation failed for global ocean. '// &
+               'Invalid filename for config_global_ocean_land_ice_topo_file', MPAS_LOG_CRIT)
             iErr = 1
             return
          end if
 
          inputFile = MPAS_io_open(config_global_ocean_land_ice_topo_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
          if (iErr .ne. 0) then
-            call mpas_log_write( 'ERROR: could not open file '// trim(config_global_ocean_land_ice_topo_file))
+            call mpas_log_write( 'could not open file '// trim(config_global_ocean_land_ice_topo_file), MPAS_LOG_CRIT)
             return
          end if
 

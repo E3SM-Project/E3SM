@@ -577,7 +577,7 @@ module ocn_tracer_advection_mono
 
       if (nHalos < 3) then
          call mpas_log_write( &
-            'ERROR: Monotonic advection cannot be used with less than 3 halos.', &
+            'Monotonic advection cannot be used with less than 3 halos.', &
             MPAS_LOG_CRIT)
       end if
 

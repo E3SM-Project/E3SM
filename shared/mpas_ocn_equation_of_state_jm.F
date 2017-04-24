@@ -273,7 +273,7 @@ contains
           k_displaced_local = 0
         else
            call mpas_log_write( &
-             'MPAS-ocean: ERROR: tracersSurfaceLayerValue must be present when displacement_type is ' &
+             'tracersSurfaceLayerValue must be present when displacement_type is ' &
                                     // '''surfaceDisplaced'' in JM EOS', &
                MPAS_LOG_CRIT)
         endif
@@ -319,7 +319,7 @@ contains
              enddo
            else
              call mpas_log_write( &
-               ' MPAS-ocean: ERROR: tracersSurfaceLayerValue must be present in JM EOS call',  &
+               'tracersSurfaceLayerValue must be present in JM EOS call',  &
                MPAS_LOG_CRIT)
            endif
          else

@@ -164,7 +164,7 @@ contains
       if(.not. config_use_activeTracers_surface_bulk_forcing) then
          if(trim(config_sw_absorption_type) .ne. 'none') then
             call mpas_log_write( &
-               'ERROR: you have specified bulk_forcing off with shortwave absorption on ' // &
+               'You have specified bulk_forcing off with shortwave absorption on ' // &
                'either set config_sw_absorption_type to none or enable activeTracers_surface_bulk_forcing', &
                 MPAS_LOG_CRIT)
              err = 1
