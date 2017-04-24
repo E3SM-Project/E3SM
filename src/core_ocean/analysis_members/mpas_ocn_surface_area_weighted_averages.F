@@ -309,7 +309,7 @@ contains
          ! test to make sure the arrays are big enough
          nDefinedDataFields = size(avgValueWithinOceanRegion,dim=1)
          if (nDefinedDataFields > nSfcAreaWeightedAvgFields) then
-             call mpas_log_write("Abort: nDefinedDataFields > nLayerVolWeightedAvgFields" // &
+             call mpas_log_write("nDefinedDataFields > nLayerVolWeightedAvgFields" // &
                 "    increase size of ocn_layer_volume_weighted_averages scratch space", MPAS_LOG_CRIT )
          endif
 

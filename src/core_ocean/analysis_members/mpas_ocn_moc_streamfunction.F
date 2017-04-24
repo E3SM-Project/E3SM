@@ -442,7 +442,8 @@ contains
 
       if (transectsInAddGroup .ne. regionsInAddGroup) then
          !!!FAIL HORRIBLY!!!
-         print *, 'transectsInGroup count does not match regionsInGroup count!', transectsInAddGroup, regionsInAddGroup
+         call mpas_log_write ('transectsInGroup count does not match regionsInGroup count!' )
+         !print *, transectsInAddGroup, regionsInAddGroup
       end if
 
       err = 0
