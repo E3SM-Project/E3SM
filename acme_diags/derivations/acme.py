@@ -334,12 +334,12 @@ derived_variables = {
         ('CLDHGH'): lambda cldhgh: convert_units(cldhgh, target_units="%")
     },
     'CLDLOW': {
-        ('CLDLOW'), lambda cldlow: convert_units(cldlow, target_units="%")
+        ('CLDLOW'): lambda cldlow: convert_units(cldlow, target_units="%")
     },
     'CLDMED': {
-        ('CLDMED'), lambda cldmed: convert_units(cldmed, target_units="%")
+        ('CLDMED'): lambda cldmed: convert_units(cldmed, target_units="%")
     },
     'CLDTOT': {
-        ('CLDTOT'), lambda cldtot: convert_units(cldtot, target_units="%")
+        ('CLDTOT'): lambda cldtot: convert_units(cldtot, target_units="%")
     }
 }

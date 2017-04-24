@@ -194,7 +194,9 @@ for parameter in parameters:
         else:
             ref_files = glob.glob(os.path.join(
                 reference_data_path, '*' + ref_name + '*.nc'))
+            print ref_files, '*'+'/' + ref_name + '_' + season + '*'
             for filename in fnmatch.filter(ref_files, '*'+'/' + ref_name + '_' + season + '*'):
+            #for filename in fnmatch.filter(ref_files, '*' + season + '*'):
                 print filename
                 filename2 = filename
 

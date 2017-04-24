@@ -1,0 +1,13 @@
+{
+    "set5": [
+
+          {
+      "case_id": "set5_model_to_model",
+      "variables": "CLDTOT",
+      "season": ["ANN","DJF","MAM","JJA","SON"],
+      "region": [],
+      "levels": []
+               } 
+           ] 
+}
+
