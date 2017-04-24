@@ -637,7 +637,7 @@ class _LessThanFilter(logging.Filter):
         #non-zero return means we log this message
         return 1 if record.levelno < self.max_level else 0
 
-def handle_standard_logging_options(args, parser):
+def handle_standard_logging_options(args, parser=None):
     """
     Guide to logging in CIME.
 
@@ -1241,8 +1241,8 @@ def _check_for_invalid_args(args):
         if arg.startswith("--"):
             continue
         if arg.startswith("-") and len(arg) > 2:
-            if arg == "-value":
-                logger.warn("This argument is deprecated, please use -%s"%arg)
+            if arg == "-value" or arg == "-noecho":
+                logger.warn("This argument is depricated, please use -%s"%arg)
             else:
                 expect(False, "Invalid argument %s\n  Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options"%arg)
 
