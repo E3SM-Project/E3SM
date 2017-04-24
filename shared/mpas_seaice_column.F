@@ -463,7 +463,9 @@ contains
 
     logical, pointer :: &
          config_use_snow_density, &
-         config_use_snow_grain_radius
+         config_use_snow_grain_radius, &
+         config_do_restart_snow_density, &
+         config_do_restart_snow_grain_radius
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          snowIceMass, &
@@ -497,6 +499,8 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_snow_density", config_use_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
     call MPAS_pool_get_config(domain % configs, "config_fallen_snow_radius", config_fallen_snow_radius)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart_snow_density", config_do_restart_snow_density)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart_snow_grain_radius", config_do_restart_snow_grain_radius)
 
     block => domain % blocklist
     do while (associated(block))
@@ -524,60 +528,66 @@ contains
           call MPAS_pool_get_array(tracers, "snowLiquidMass", snowLiquidMass, 1)
           call MPAS_pool_get_array(tracers, "snowDensity", snowDensity, 1)
 
-          snowIceMass(:,:,:)          = 0.0_RKIND
-          snowLiquidMass(:,:,:)       = 0.0_RKIND
-          snowDensity(:,:,:)          = 0.0_RKIND
-          snowDensityViaContent(:)    = 0.0_RKIND
-          snowDensityViaCompaction(:) = 0.0_RKIND
-          snowMeltMassCategory(:,:)   = 0.0_RKIND
-          snowMeltMassCell(:)         = 0.0_RKIND
+          if (.not. config_do_restart_snow_density) then
 
-          do iCell = 1, nCellsSolve
+             snowIceMass(:,:,:)          = 0.0_RKIND
+             snowLiquidMass(:,:,:)       = 0.0_RKIND
+             snowDensity(:,:,:)          = 0.0_RKIND
+             snowDensityViaContent(:)    = 0.0_RKIND
+             snowDensityViaCompaction(:) = 0.0_RKIND
+             snowMeltMassCategory(:,:)   = 0.0_RKIND
+             snowMeltMassCell(:)         = 0.0_RKIND
 
-             do iCategory = 1, nCategories
-                if (snowVolumeCategory(1,iCategory,iCell) .gt. 0.0_RKIND) then
-                   do iSnowLayer = 1, nSnowLayers
-                      snowIceMass(iSnowLayer,iCategory,iCell) = ciceDensitySnow
-                      snowDensity(iSnowLayer,iCategory,iCell) = ciceDensitySnow
-                      snowDensityViaContent(iCell) = snowDensityViaContent(iCell) &
-                         + snowVolumeCategory(1,iCategory,iCell) * &
-                         (snowIceMass(iSnowLayer,iCategory,iCell) + &
-                         snowLiquidMass(iSnowLayer,iCategory,iCell))
-                      snowDensityViaCompaction(iCell) = snowDensityViaCompaction(iCell) &
-                         + snowVolumeCategory(1,iCategory,iCell) * &
-                         snowDensity(iSnowLayer,iCategory,iCell)
-                   enddo
-                endif
-             enddo
-             if (snowVolumeCell(iCell) .gt.  cicePuny) then
-                snowDensityViaContent(iCell) = snowDensityViaContent(iCell)/ &
-                   (snowVolumeCell(iCell) * real(nSnowLayers,kind=RKIND))  !!!CHECK THIS!!!
-                snowDensityViaCompaction(iCell) = snowDensityViaCompaction(iCell)/ &
-                   (snowVolumeCell(iCell) * real(nSnowLayers,kind=RKIND))
-             else
-                snowDensityViaContent(iCell)    = 0.0_RKIND
-                snowDensityViaCompaction(iCell) = 0.0_RKIND
-             endif
+             do iCell = 1, nCellsSolve
 
-          enddo
+                do iCategory = 1, nCategories
+                   if (snowVolumeCategory(1,iCategory,iCell) .gt. 0.0_RKIND) then
+                      do iSnowLayer = 1, nSnowLayers
+                         snowIceMass(iSnowLayer,iCategory,iCell) = ciceDensitySnow
+                         snowDensity(iSnowLayer,iCategory,iCell) = ciceDensitySnow
+                         snowDensityViaContent(iCell) = snowDensityViaContent(iCell) &
+                            + snowVolumeCategory(1,iCategory,iCell) * &
+                            (snowIceMass(iSnowLayer,iCategory,iCell) + &
+                            snowLiquidMass(iSnowLayer,iCategory,iCell))
+                         snowDensityViaCompaction(iCell) = snowDensityViaCompaction(iCell) &
+                            + snowVolumeCategory(1,iCategory,iCell) * &
+                            snowDensity(iSnowLayer,iCategory,iCell)
+                      enddo !iSnowLayer
+                   endif !snowVolumeCategory
+                enddo !iCategory
+                if (snowVolumeCell(iCell) .gt.  cicePuny) then
+                   snowDensityViaContent(iCell) = snowDensityViaContent(iCell)/ &
+                      (snowVolumeCell(iCell) * real(nSnowLayers,kind=RKIND))  !!!CHECK THIS!!!
+                   snowDensityViaCompaction(iCell) = snowDensityViaCompaction(iCell)/ &
+                      (snowVolumeCell(iCell) * real(nSnowLayers,kind=RKIND))
+                else
+                   snowDensityViaContent(iCell)    = 0.0_RKIND
+                   snowDensityViaCompaction(iCell) = 0.0_RKIND
+                endif !snowVolumeCell
+
+             enddo ! iCell
+          endif ! config_do_restart_snow_density
        endif !config_use_snow_density
 
        if (config_use_snow_grain_radius) then
+          if (.not. config_do_restart_snow_grain_radius) then
 
-          call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
+             call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
 
-          snowGrainRadius(:,:,:) = 0.0_RKIND
+             snowGrainRadius(:,:,:) = 0.0_RKIND
 
-          do iCell = 1, nCellsSolve
+             do iCell = 1, nCellsSolve
 
-             do iCategory = 1, nCategories
-                if (snowVolumeCategory(1,iCategory,iCell) .gt. 0.0_RKIND) then
-                   do iSnowLayer = 1, nSnowLayers
-                      snowGrainRadius(iSnowLayer,iCategory,iCell) = config_fallen_snow_radius
-                   enddo
-                endif
+                do iCategory = 1, nCategories
+                   if (snowVolumeCategory(1,iCategory,iCell) .gt. 0.0_RKIND) then
+                      do iSnowLayer = 1, nSnowLayers
+                         snowGrainRadius(iSnowLayer,iCategory,iCell) = config_fallen_snow_radius
+                      enddo
+                   endif
+                enddo
              enddo
-          enddo
+
+          endif ! config_do_restart_snow_grain_radius
        endif ! config_use_snow_grain_radius
 
        block => block % next
