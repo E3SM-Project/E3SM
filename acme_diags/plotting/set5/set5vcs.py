@@ -9,11 +9,20 @@ from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
 # Expensive to init inside plot()
 vcs_canvas = vcs.init(bg=True)
+textcombined_objs = {}
 
+def managetextcombined(tt_name, to_name):
+    """ Caches textcombined objects. """
+    new_name = "%s:::%s" % (tt_name, to_name)
+    mytc = textcombined_objs.get(new_name, None)
+    if mytc is None:
+        mytc = vcs_canvas.createtextcombined(Tt_source=tt_name, To_source=to_name)
+        textcombined_objs[new_name] = mytc
+    return mytc
 
 def plot_min_max_mean(canvas, metrics_dict, ref_test_or_diff):
-    """ canvas is a vcs.Canvas, metrics_dict is a dict and 
-    ref_test_or_diff is a string """
+    """ canvas is a vcs.Canvas, metrics_dict is a dict and
+    ref_test_or_diff is a string. """
     var_min = '%.2f' % metrics_dict[ref_test_or_diff]['min']
     var_max = '%.2f' % metrics_dict[ref_test_or_diff]['max']
     var_mean = '%.2f' % metrics_dict[ref_test_or_diff]['mean']
@@ -23,19 +32,13 @@ def plot_min_max_mean(canvas, metrics_dict, ref_test_or_diff):
  
     # can be either 'reference', 'test' or 'diff'
     plot = ref_test_or_diff
-    min_label = canvas.createtextcombined(Tt_source = plot + '_min_label',
-                                          To_source = plot + '_min_label')
-    max_label = canvas.createtextcombined(Tt_source = plot + '_max_label',
-                                          To_source = plot + '_max_label')
-    mean_label = canvas.createtextcombined(Tt_source = plot + '_mean_label',
-                                           To_source = plot + '_mean_label')
+    min_label = managetextcombined(plot + '_min_label', plot + '_min_label')
+    max_label = managetextcombined(plot + '_max_label', plot + '_max_label')
+    mean_label = managetextcombined(plot + '_mean_label', plot + '_mean_label')
 
-    min_value = canvas.createtextcombined(Tt_source = plot + '_min_value',
-                                          To_source = plot + '_min_value')
-    max_value = canvas.createtextcombined(Tt_source = plot + '_max_value',
-                                          To_source = plot + '_max_value')
-    mean_value = canvas.createtextcombined(Tt_source = plot + '_mean_value',
-                                           To_source = plot + '_mean_value')
+    min_value = managetextcombined(plot + '_min_value', plot + '_min_value')
+    max_value = managetextcombined(plot + '_max_value', plot + '_max_value')
+    mean_value = managetextcombined(plot + '_mean_value', plot + '_mean_value')
 
     min_value.string = var_min
     max_value.string = var_max
@@ -53,17 +56,13 @@ def plot_rmse_and_corr(canvas, metrics_dict):
     rmse_str = '%.2f' % metrics_dict['misc']['rmse']
     corr_str = '%.2f' % metrics_dict['misc']['corr']
 
-    rmse_label = canvas.createtextcombined(Tt_source = 'diff_plot_comment1_title',
-                                           To_source = 'diff_plot_comment1_title')
-    corr_label = canvas.createtextcombined(Tt_source = 'diff_plot_comment2_title',
-                                           To_source = 'diff_plot_comment2_title')
+    rmse_label = managetextcombined('diff_plot_comment1_title', 'diff_plot_comment1_title')
+    corr_label = managetextcombined('diff_plot_comment2_title', 'diff_plot_comment2_title')
     rmse_label.string = 'RMSE'
     corr_label.string = 'CORR'
 
-    rmse_value = canvas.createtextcombined(Tt_source = 'diff_plot_comment1_value',
-                                           To_source = 'diff_plot_comment1_value')
-    corr_value = canvas.createtextcombined(Tt_source = 'diff_plot_comment2_value',
-                                           To_source = 'diff_plot_comment2_value')
+    rmse_value = managetextcombined('diff_plot_comment1_value', 'diff_plot_comment1_value')
+    corr_value = managetextcombined('diff_plot_comment2_value', 'diff_plot_comment2_value')
 
     rmse_value.string = rmse_str
     corr_value.string = corr_str
@@ -95,7 +94,6 @@ def add_cyclic(var):
     return var(longitude=(lon[0],lon[0]+360.0,'coe'))
 
 def plot(reference, test, diff, metrics_dict, parameter):
-
     case_id = parameter.case_id
     if not os.path.exists(case_id):
         os.makedirs(case_id)
@@ -110,7 +108,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'set5')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5.json'))
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5_new.json'))
-    
+
     template_test = vcs_canvas.gettemplate('plotset5_0_x_0')
     template_ref = vcs_canvas.gettemplate('plotset5_0_x_1')
     template_diff = vcs_canvas.gettemplate('plotset5_0_x_2')
@@ -163,8 +161,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     plot_rmse_and_corr(vcs_canvas, metrics_dict)
 
     # Plotting the main title
-    main_title = vcs_canvas.createtextcombined(Tt_source = 'main_title',
-                                               To_source = 'main_title')
+    main_title = managetextcombined('main_title', 'main_title')
     main_title.string = parameter.main_title
     vcs_canvas.plot(main_title)
 
