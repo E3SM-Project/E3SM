@@ -1,10 +1,7 @@
 import CIME.wait_for_tests
 from CIME.utils import expect
-from CIME.XML.machines import Machines
 
 import os, shutil, glob, signal, logging
-
-_MACHINE = Machines()
 
 ###############################################################################
 def cleanup_queue(set_of_jobs_we_created):
@@ -27,20 +24,20 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                         arg_cdash_build_name, cdash_project,
                         arg_test_suite,
                         cdash_build_group, baseline_compare,
-                        scratch_root, parallel_jobs, walltime):
+                        scratch_root, parallel_jobs, walltime,
+                        machine, compiler):
 ###############################################################################
     """
     Return True if all tests passed
     """
-    use_batch = _MACHINE.has_batch_system() and not no_batch
-    compiler = _MACHINE.get_default_compiler()
-    test_suite = _MACHINE.get_value("TESTS")
-    proxy = _MACHINE.get_value("PROXY")
+    use_batch = machine.has_batch_system() and not no_batch
+    test_suite = machine.get_value("TESTS")
+    proxy = machine.get_value("PROXY")
     test_suite = test_suite if arg_test_suite is None else arg_test_suite
     test_root = os.path.join(scratch_root, "jenkins")
 
     if (use_batch):
-        batch_system = _MACHINE.get_value("BATCH_SYSTEM")
+        batch_system = machine.get_value("BATCH_SYSTEM")
         expect(batch_system is not None, "Bad XML. Batch machine has no batch_system configuration.")
 
     #
@@ -101,7 +98,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     baseline_args = ""
     if (generate_baselines):
         baseline_args = "-g -b %s" % baseline_name
-    elif (baseline_compare == "yes"):
+    elif (baseline_compare):
         baseline_args = "-c -b %s" % baseline_name
 
     batch_args = "--no-batch" if no_batch else ""
@@ -109,8 +106,8 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     walltime_arg = "" if walltime is None else " --walltime %s" % walltime
 
     test_id = "%s_%s" % (test_id_root, CIME.utils.get_timestamp())
-    create_test_cmd = "./create_test %s --test-root %s -t %s %s %s %s %s" % \
-                      (test_suite, test_root, test_id, baseline_args, batch_args, pjob_arg, walltime_arg)
+    create_test_cmd = "./create_test %s --test-root %s -t %s --machine %s --compiler %s %s %s %s %s" % \
+                      (test_suite, test_root, test_id, machine.get_machine_name(), compiler, baseline_args, batch_args, pjob_arg, walltime_arg)
 
     if (not CIME.wait_for_tests.SIGNAL_RECEIVED):
         create_test_stat = CIME.utils.run_cmd(create_test_cmd, from_dir=CIME.utils.get_scripts_root(),
