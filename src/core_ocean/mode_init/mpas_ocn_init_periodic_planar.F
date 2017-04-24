@@ -146,8 +146,8 @@ contains
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
     ! test if configure settings are invalid
-    if ( on_a_sphere ) call mpas_log_write('MPAS-ocean: IERROR: The planar periodic configuration can ' &
-                                                 // 'only be applied to a planar mesh. Exiting...')
+    if ( on_a_sphere ) call mpas_log_write('The planar periodic configuration can ' &
+           // 'only be applied to a planar mesh. Exiting...', MPAS_LOG_CRIT)
 
     ! Define interface locations
     allocate(interfaceLocations(nVertLevelsP1))
@@ -394,7 +394,7 @@ contains
       if(config_vert_levels <= 0 .and. config_periodic_planar_vert_levels > 0) then
          config_vert_levels = config_periodic_planar_vert_levels
       else if (config_vert_levels <= 0) then
-         call mpas_log_write( 'IERROR: Validation failed for periodic_planar. Not given a usable value for vertical levels.')
+         call mpas_log_write( 'Validation failed for periodic_planar. Not given a usable value for vertical levels.', MPAS_LOG_CRIT)
          iErr = 1
       end if
 

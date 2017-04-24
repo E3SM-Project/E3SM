@@ -856,8 +856,8 @@ contains
       !
       if (config_use_cvmix_shear) then
         if (.not. config_use_cvmix_background .and. trim(config_cvmix_shear_mixing_scheme) == 'PP') then
-            call mpas_log_write("ERROR: config_use_cvmix_shear cannot be used with with config_cvmix_shear_mixing_scheme = 'PP'")
-            call mpas_log_write("       without config_use_cvmix_background = .true.")
+            call mpas_log_write("config_use_cvmix_shear cannot be used with with config_cvmix_shear_mixing_scheme = 'PP'" &
+                 // "       without config_use_cvmix_background = .true.", MPAS_LOG_CRIT)
             err = 1
             return
         end if
@@ -879,7 +879,7 @@ contains
 
         ! config_cvmix_convective_basedOnBVF is not supported at this time
         if (.not.config_cvmix_convective_basedOnBVF) then
-            call mpas_log_write("ERROR: config_cvmix_convective_basedOnBVF = .false. is not supported. Change to true.")
+            call mpas_log_write("config_cvmix_convective_basedOnBVF = .false. is not supported. Change to true.", MPAS_LOG_CRIT)
             err = 1
             return
         endif
@@ -913,11 +913,11 @@ contains
       if (config_use_cvmix_kpp) then
         if(config_cvmix_kpp_matching.eq."MatchBoth") then
            call mpas_log_write( &
-              "WARNING: use of option MatchBoth is discouraged, use SimpleShapes instead", &
+              "Use of option MatchBoth is discouraged, use SimpleShapes instead", &
                MPAS_LOG_WARN)
         elseif(.not. config_cvmix_kpp_matching.eq."SimpleShapes") then
            call mpas_log_write( &
-              "ERROR: unknown value for config_cvmix_kpp_matching., supported values are:" // &
+              "Unknown value for config_cvmix_kpp_matching., supported values are:" // &
               "         SimpleShapes or MatchBoth", &
               MPAS_LOG_CRIT)
            err = 1

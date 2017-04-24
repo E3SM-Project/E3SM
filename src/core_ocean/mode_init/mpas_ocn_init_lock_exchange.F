@@ -132,8 +132,8 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-      if ( on_a_sphere ) call mpas_log_write('MPAS-ocean: ERROR: The lock exchange configuration can not be ' &
-                                                   // 'applied to spherical meshes')
+      if ( on_a_sphere ) call mpas_log_write('The lock exchange configuration can not be ' &
+             // 'applied to spherical meshes', MPAS_LOG_CRIT)
 
       ! Define interface locations
       allocate( interfaceLocations( nVertLevelsP1 ) )
@@ -336,7 +336,7 @@ contains
       if(config_vert_levels <= 0 .and. config_lock_exchange_vert_levels > 0) then
          config_vert_levels = config_lock_exchange_vert_levels
       else if(config_vert_levels <= 0) then
-         call mpas_log_write( 'ERROR: Validation failed for lock exchange test case. Not given a usable value for vertical levels.')
+         call mpas_log_write( 'Validation failed for lock exchange test case. Not given a usable value for vertical levels.', MPAS_LOG_CRIT)
          iErr = 1
       end if
 

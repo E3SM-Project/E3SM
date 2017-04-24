@@ -542,7 +542,7 @@ contains
                err)
             if(err .ne. 0) then
                call mpas_log_write( &
-                  'ERROR: compute_HJ99_melt_fluxes failed.', &
+                  'compute_HJ99_melt_fluxes failed.', &
                   MPAS_LOG_CRIT)
             end if
 
@@ -563,7 +563,7 @@ contains
                err)
             if(err .ne. 0) then
                call mpas_log_write( &
-                  'ERROR: compute_melt_fluxes failed.', &
+                  'compute_melt_fluxes failed.', &
                   MPAS_LOG_CRIT)
             end if
 
@@ -593,7 +593,7 @@ contains
                err)
             if(err .ne. 0) then
                call mpas_log_write( &
-                  'ERROR: compute_melt_fluxes failed.', &
+                  'compute_melt_fluxes failed.', &
                   MPAS_LOG_CRIT)
             end if
          end if
@@ -677,7 +677,7 @@ contains
          hollandJenkinsOn = .true.
       else
          call mpas_log_write( &
-            "MPAS-ocean: ERROR: config_land_ice_flux_formulation not one of 'ISOMIP', 'Jenkins', " &
+            "config_land_ice_flux_formulation not one of 'ISOMIP', 'Jenkins', " &
                // "or 'HollandJenkins'.", &
                MPAS_LOG_CRIT)
          err = 1
@@ -975,7 +975,7 @@ contains
       if (outInterfaceSalinity(iCell) .le. 0.0_RKIND) then
          err = 1
          call mpas_log_write( &
-            'ERROR: interfaceSalinity is negative..', &
+            'interfaceSalinity is negative.', &
             MPAS_LOG_CRIT)
       end if
       outInterfaceTemperature(iCell) = dTf_dS*outInterfaceSalinity(iCell)+T0
