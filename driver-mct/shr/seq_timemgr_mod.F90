@@ -56,9 +56,11 @@ module seq_timemgr_mod
    public :: seq_timemgr_restartAlarmIsOn    ! Is a restart alarm ringing
    public :: seq_timemgr_stopAlarmIsOn       ! Is a stop alarm ringing
    public :: seq_timemgr_historyAlarmIsOn    ! Is a history alarm ringing
-
-   ! --- Data that belongs to the driver (but is here to avoid loops)
-   character(SHR_KIND_CS),public :: seq_timemgr_pause_component_list  ! Pause - resume components
+   public :: seq_timemgr_pauseAlarmIsOn      ! Is a pause alarm ringing
+   ! --- ESP components need to know about the state of other components
+   public :: seq_timemgr_pause_active        ! Pause/resume is enabled
+   public :: seq_timemgr_pause_component_index ! Index of named component
+   public :: seq_timemgr_pause_component_active ! .true. is comp should pause
 
  ! ! PUBLIC PARAMETERS:
 
@@ -209,6 +211,9 @@ module seq_timemgr_mod
       seq_timemgr_alarm_pause      = 'seq_timemgr_alarm_pause   ', &
       seq_timemgr_alarm_barrier    = 'seq_timemgr_alarm_barrier '
 
+   ! Active pause - resume components
+   logical, private :: pause_active(max_clocks) = .false.
+
    type EClock_pointer     ! needed for array of pointers
       type(ESMF_Clock),pointer :: EClock => null()
    end type EClock_pointer
@@ -219,13 +224,15 @@ module seq_timemgr_mod
       type(ESMF_Alarm) :: EAlarm(max_clocks,max_alarms) ! array of clock alarms
    end type seq_timemgr_type
  
-   ! --- Private local data -------------------------------------------------------
+   ! --- Private local data ----------------------------------------------------
 
-   type(ESMF_Calendar), target, save :: seq_timemgr_cal        ! calendar
-   character(SHR_KIND_CL)      ,save :: seq_timemgr_calendar   ! calendar string
-   logical :: seq_timemgr_end_restart  ! write restarts at end of run?
-   logical, save :: seq_timemgr_setCalendar = .false.          ! if calendar has been set
-   integer, parameter :: SecPerDay = 86400         ! Seconds per day
+   type(ESMF_Calendar), target, save :: seq_timemgr_cal      ! calendar
+   character(SHR_KIND_CL)      ,save :: seq_timemgr_calendar ! calendar string
+   integer, parameter                :: SecPerDay = 86400    ! Seconds per day
+
+   integer :: seq_timemgr_pause_sig_index  ! Index of pause comp with smallest dt
+   logical :: seq_timemgr_esp_run_on_pause ! Run ESP component on pause cycle
+   logical :: seq_timemgr_end_restart      ! write restarts at end of run?
 
 !===============================================================================
 
@@ -246,7 +253,6 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
                                            
 ! !USES:
    use pio, only : file_desc_T
-   use shr_string_mod, only : shr_string_toupper
    use shr_file_mod,   only : shr_file_getunit, shr_file_freeunit
    use shr_mpi_mod,    only : shr_mpi_bcast
    use seq_io_read_mod
@@ -280,10 +286,11 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     type(ESMF_Time)             :: StopTime1          ! Stop time
     type(ESMF_Time)             :: StopTime2          ! Stop time
     type(ESMF_TimeInterval)     :: TimeStep           ! Clock time-step
-    type(ESMF_TimeInterval)     :: AlarmInterval      ! Alarm interval
     type(ESMF_CalKind_Flag)     :: esmf_caltype       ! local esmf calendar
     integer                     :: rc                 ! Return code
-    integer                     :: n                  ! index
+    integer                     :: n, i               ! index
+    logical                     :: found
+    integer                     :: min_dt             ! smallest time step
     integer                     :: dtime(max_clocks)  ! time-step to use
     integer                     :: offset(max_clocks) ! run offset
     integer                     :: unitn              ! i/o unit number
@@ -335,8 +342,8 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     integer(SHR_KIND_IN)    :: wav_cpl_offset        ! Wav coupling interval
     integer(SHR_KIND_IN)    :: rof_cpl_offset        ! Runoff coupling interval
     integer(SHR_KIND_IN)    :: esp_cpl_offset        ! Esp coupling interval
+    logical                 :: esp_run_on_pause      ! Run ESP on pause cycle
     logical                 :: end_restart           ! Write restart at end of run
-    integer(SHR_KIND_IN)    :: nlUnit                ! Namelist unit number
     integer(SHR_KIND_IN)    :: ierr                  ! Return code
 
     character(len=*), parameter ::  F0A = "(2A,A)"
@@ -356,7 +363,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
          atm_cpl_offset, lnd_cpl_offset, ocn_cpl_offset,         &
          ice_cpl_offset, glc_cpl_dt, glc_cpl_offset, glc_avg_period, &
          wav_cpl_dt, wav_cpl_offset, esp_cpl_dt, esp_cpl_offset, &
-         rof_cpl_dt, rof_cpl_offset, end_restart
+         rof_cpl_dt, rof_cpl_offset, esp_run_on_pause, end_restart
 !-------------------------------------------------------------------------------
 ! Notes:
 !-------------------------------------------------------------------------------
@@ -428,6 +435,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        rof_cpl_offset   = 0
        wav_cpl_offset   = 0
        esp_cpl_offset   = 0
+       esp_run_on_pause = .true.
        end_restart      = .true.
 
        !---------------------------------------------------------------------------
@@ -536,6 +544,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        write(logunit,F0A) trim(subname),' pause_option   = ',trim(pause_option)
        write(logunit,F0I) trim(subname),' pause_n        = ',pause_n
        write(logunit,F0A) trim(subname),' pause_component_list = ',trim(pause_component_list)
+       write(logunit,F0L) trim(subname),' esp_run_on_pause = ',esp_run_on_pause
        write(logunit,F0A) trim(subname),' history_option = ',trim(history_option)
        write(logunit,F0I) trim(subname),' history_n      = ',history_n
        write(logunit,F0I) trim(subname),' history_ymd    = ',history_ymd
@@ -659,6 +668,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     call shr_mpi_bcast( rof_cpl_offset,       mpicom )
     call shr_mpi_bcast( wav_cpl_offset,       mpicom )
     call shr_mpi_bcast( esp_cpl_offset,       mpicom )
+    call shr_mpi_bcast( esp_run_on_pause,     mpicom )
     call shr_mpi_bcast( end_restart,          mpicom )
 
     ! --- derive a couple things ---
@@ -686,8 +696,60 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
 
     ! --- Initialize generic stuff --- 
     seq_timemgr_calendar             = shr_cal_calendarName(calendar)
+    seq_timemgr_esp_run_on_pause     = esp_run_on_pause
     seq_timemgr_end_restart          = end_restart
-    seq_timemgr_pause_component_list = pause_component_list
+    ! --- Figure out which components (if any) are doing pause this run
+    rc = 1
+    i = 1
+    if (trim(pause_component_list) == 'all') then
+      pause_active = .true.
+    else if (trim(pause_component_list) == 'none') then
+      pause_active = .false.
+    else
+      do
+        i = scan(trim(pause_component_list(rc:)), ':') - 1
+        if ((i < 0) .and. (len_trim(pause_component_list) >= rc)) then
+          i = len_trim(pause_component_list(rc:))
+        end if
+        if (i > 0) then
+          found = .false.
+          do n = 1, max_clocks
+            if (pause_component_list(rc:rc+i-1) == trim(seq_timemgr_clocks(n))) then
+              pause_active(n) = .true.
+              found = .true.
+              exit
+            end if
+          end do
+          ! Special case for cpl -- synonym for drv
+          if ((.not. found) .and. (pause_component_list(rc:rc+i-1) == 'cpl')) then
+            pause_active(seq_timemgr_nclock_drv) = .true.
+            found = .true.
+          end if
+          if (.not. found) then
+            call shr_sys_abort(subname//': unknown pause component, '//pause_component_list(rc:rc+i-1))
+          end if
+          rc = rc + i
+          if (pause_component_list(rc:rc) == ':') then
+            rc = rc + 1
+          end if
+          if (rc >= len_trim(pause_component_list)) then
+            exit
+          end if
+        else
+          exit
+        end if
+      end do
+    end if
+    if ( ANY(pause_active) .and.                                              &
+         (trim(pause_option) /= seq_timemgr_optNONE)  .and.                   &
+         (trim(pause_option) /= seq_timemgr_optNever)) then
+       do n = 1, max_clocks
+          if (pause_active(n)) then
+             write(logunit, '(4a)') subname, ': Pause active for ',           &
+                  trim(seq_timemgr_clocks(n)),' component'
+          end if
+       end do
+    end if
 
     ! --- Create the new calendar if not already set ------
     if ( trim(seq_timemgr_calendar) == trim(seq_timemgr_noleap)) then
@@ -726,12 +788,29 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     dtime(seq_timemgr_nclock_drv) = maxval(dtime)
     dtime(seq_timemgr_nclock_drv) = minval(dtime)
 
+    ! --- For figuring pause cycle
+    min_dt = maxval(dtime)
+    seq_timemgr_pause_sig_index = -1
+
     do n = 1,max_clocks
        if ( mod(dtime(n),dtime(seq_timemgr_nclock_drv)) /= 0) then
           write(logunit,*) trim(subname),' ERROR: dtime inconsistent = ',dtime
           call shr_sys_abort( subname//' :coupling intervals not compatible' )
        endif
+       if (pause_active(n) .and. (dtime(n) < min_dt)) then
+          min_dt = dtime(n)
+          seq_timemgr_pause_sig_index = n
+       end if
     enddo
+    if (ANY(pause_active)) then
+       if (seq_timemgr_pause_sig_index < 1) then
+          write(logunit, *) subname,"ERROR: No pause_sig_index even with active pause"
+          call shr_sys_abort(subname//"ERROR: No pause_sig_index even with active pause")
+       end if
+    else
+       ! Don't try to run ESP on non-existent pauses
+       seq_timemgr_esp_run_on_pause = .false.
+    end if
 
     ! --- Initialize component and driver clocks and alarms common to components and driver clocks ---
 
@@ -743,8 +822,9 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
           EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_run),  &
-          option  = seq_timemgr_optNSeconds,         &
-          opt_n   = dtime(n), RefTime = CurrTime,    &
+          option  = seq_timemgr_optNSeconds, &
+          opt_n   = dtime(n),                &
+          RefTime = CurrTime,                &
           alarmname = trim(seq_timemgr_alarm_run))
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
@@ -761,7 +841,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
           option  = seq_timemgr_optDate, &
           opt_ymd = stop_ymd,            &
           opt_tod = stop_tod,            &
-          RefTime = StartTime,            &
+          RefTime = StartTime,           &
           alarmname = trim(seq_timemgr_alarm_datestop))
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
@@ -813,12 +893,21 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        endif
 
        ! Set the pause option if pause/resume is active
-       call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock,                    &
-            EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_pause),           &
-            option  = pause_option,                                           &
-            opt_n   = pause_n,                                                &
-            RefTime = StartTime,                                              &
-            alarmname = trim(seq_timemgr_alarm_pause))
+       if (pause_active(n)) then
+         call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock,                  &
+              EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_pause),         &
+              option  = pause_option,                                         &
+              opt_n   = pause_n,                                              &
+              RefTime = CurrTime,                                             &
+              alarmname = trim(seq_timemgr_alarm_pause))
+       else
+         call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock,                  &
+              EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_pause),         &
+              option  = seq_timemgr_optNever,                                 &
+              opt_n   = -1,                                                   &
+              RefTime = StartTime,                                            &
+              alarmname = trim(seq_timemgr_alarm_pause))
+       endif
 
     enddo
 
@@ -905,16 +994,6 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        RefTime = OffsetTime,                    &
        alarmname = trim(seq_timemgr_alarm_wavrun))
 
-    call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_esp), rc=rc )
-    OffsetTime = CurrTime + TimeStep
-    call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
-       EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_esprun),  &
-       option  = seq_timemgr_optNSeconds,       &
-       opt_n   = dtime(seq_timemgr_nclock_esp), &
-       RefTime = OffsetTime,                    &
-       alarmname = trim(seq_timemgr_alarm_esprun))
-
-    ! --- this is the glcrun alarm (there ^) offset by a -dtime of the driver
     call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_glc), rc=rc )
     OffsetTime = CurrTime + TimeStep
     call ESMF_TimeIntervalSet( TimeStep, s=-offset(seq_timemgr_nclock_drv), rc=rc )
@@ -963,6 +1042,15 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        opt_n   = dtime(seq_timemgr_nclock_ocn), &
        RefTime = OffsetTime,                    &
        alarmname = trim(seq_timemgr_alarm_ocnnext))
+
+    call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_esp), rc=rc )
+    OffsetTime = CurrTime + TimeStep
+    call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
+       EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_esprun),  &
+       option  = seq_timemgr_optNSeconds,       &
+       opt_n   = dtime(seq_timemgr_nclock_esp), &
+       RefTime = OffsetTime,                    &
+       alarmname = trim(seq_timemgr_alarm_esprun))
 
 end subroutine seq_timemgr_clockInit
 
@@ -1027,9 +1115,6 @@ subroutine seq_timemgr_EClockGetData( EClock, curr_yr, curr_mon, curr_day,    &
     integer(SHR_KIND_IN) :: ymd               ! Date (YYYYMMDD)
     integer(SHR_KIND_IN) :: tod               ! time of day (sec)
     integer(SHR_KIND_IN) :: ldtime            ! local dtime
-    integer(SHR_KIND_IN) :: intyrs            ! alarm variable
-    integer(SHR_KIND_IN) :: intmon            ! alarm variable
-    integer(SHR_KIND_IN) :: intsec            ! alarm variable
     integer(SHR_KIND_IN) :: days              ! number of whole days in time interval
     integer(SHR_KIND_IN) :: seconds           ! number of seconds in time interval
     integer(SHR_KIND_IN) :: acount            ! number of valid alarms
@@ -1222,6 +1307,16 @@ subroutine seq_timemgr_clockAdvance( SyncClock, force_stop, force_stop_ymd, forc
       call seq_timemgr_ESMFCodeCheck(rc, msg=subname//"Error from esp ESMF_ClockAdvance")
    endif
 
+   ! Special handling of ESP component if linked to pause cycles
+   if (seq_timemgr_esp_run_on_pause) then
+      ! We need to figure out if any pause clock is ringing
+      call seq_timemgr_alarmSetOff(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock,seq_timemgr_alarm_esprun)
+      if (seq_timemgr_alarmIsOn(SyncClock%ECP(seq_timemgr_pause_sig_index)%EClock,seq_timemgr_alarm_pause)) then
+         call seq_timemgr_alarmSetOn(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock,seq_timemgr_alarm_esprun)
+      end if
+   end if
+
+   ! Special handling of restart alarm if end_restart is .true.
    if (seq_timemgr_end_restart) then
       do n = 1,max_clocks
          if (seq_timemgr_alarmIsOn(SyncClock%ECP(n)%EClock,seq_timemgr_alarm_stop) .or. &
@@ -1269,7 +1364,6 @@ subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_to
     logical :: update_nextalarm               ! update next alarm
     type(ESMF_Time) :: CurrTime               ! Current Time
     type(ESMF_Time) :: NextAlarm              ! Next restart alarm time
-    type(ESMF_Time) :: AltAlarm               ! Alternate alarm time
     type(ESMF_TimeInterval) :: AlarmInterval  ! Alarm interval
 
 !-------------------------------------------------------------------------------
@@ -1573,7 +1667,6 @@ subroutine seq_timemgr_AlarmSetOn( EClock, alarmname)
     logical :: found
     logical :: set
     character(len=64) :: name
-    type(ESMF_Alarm),pointer :: EAlarm
     type(ESMF_Alarm),pointer :: EAlarm_list(:)
     integer(SHR_KIND_IN) :: AlarmCount ! Number of valid alarms
 
@@ -1655,7 +1748,6 @@ subroutine seq_timemgr_AlarmSetOff( EClock, alarmname)
     logical :: found
     logical :: set
     character(len=64) :: name
-    type(ESMF_Alarm),pointer :: EAlarm
     type(ESMF_Alarm),pointer :: EAlarm_list(:)
     integer(SHR_KIND_IN) :: AlarmCount ! Number of valid alarms
 
@@ -1735,10 +1827,8 @@ logical function seq_timemgr_alarmIsOn( EClock, alarmname)
     integer :: n
     integer :: rc
     logical :: found
-    logical :: set
     character(len=64) :: name
     type(ESMF_Time) :: ETime1, ETime2
-    type(ESMF_Alarm),pointer :: EAlarm
     type(ESMF_Alarm),pointer :: EAlarm_list(:)
     integer(SHR_KIND_IN) :: AlarmCount ! Number of valid alarms
 
@@ -1811,7 +1901,6 @@ logical function seq_timemgr_restartAlarmIsOn( EClock)
     type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
 
     !----- local -----
-    integer :: rc
     character(len=*), parameter :: subname = '(seq_timemgr_restartAlarmIsOn) '
 
 !-------------------------------------------------------------------------------
@@ -1872,7 +1961,6 @@ logical function seq_timemgr_historyAlarmIsOn( EClock)
     type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
 
     !----- local -----
-    integer :: rc
     character(len=*), parameter :: subname = '(seq_timemgr_historyAlarmIsOn) '
 
 !-------------------------------------------------------------------------------
@@ -1883,6 +1971,137 @@ logical function seq_timemgr_historyAlarmIsOn( EClock)
        seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_history)
 
 end function seq_timemgr_historyAlarmIsOn
+
+!===============================================================================
+!===============================================================================
+! !IROUTINE: seq_timemgr_pauseAlarmIsOn -- check if an alarm is ringing
+!   
+! !DESCRIPTION:
+!   
+!     check if an alarm is ringing
+!      
+! !INTERFACE: ------------------------------------------------------------------
+
+logical function seq_timemgr_pauseAlarmIsOn( EClock)
+
+    implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+    type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
+
+!EOP
+
+    !----- local -----
+    character(len=*), parameter :: subname = '(seq_timemgr_pauseAlarmIsOn) '
+
+!-------------------------------------------------------------------------------
+! Notes:
+!-------------------------------------------------------------------------------
+
+    seq_timemgr_pauseAlarmIsOn =  &
+       seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_pause)
+
+  end function seq_timemgr_pauseAlarmIsOn
+
+!===============================================================================
+!===============================================================================
+! !IROUTINE: seq_timemgr_pause_active -- Is pause/resume active this run?
+!   
+! !DESCRIPTION:
+!   
+!     Return .true. if any component is configured for pause/resume
+!      
+! !INTERFACE: ------------------------------------------------------------------
+
+  logical function seq_timemgr_pause_active()
+
+!    !INPUT/OUTPUT PARAMETERS:
+
+!EOP
+
+!-------------------------------------------------------------------------------
+! Notes:
+!-------------------------------------------------------------------------------
+
+    seq_timemgr_pause_active = ANY(pause_active)
+
+  end function seq_timemgr_pause_active
+
+!===============================================================================
+!===============================================================================
+! !IROUTINE: seq_timemgr_pause_component_index -- return an index for a component
+!   
+! !DESCRIPTION:
+!   
+!     Look up a component's internal index for faster processing
+!      
+! !INTERFACE: ------------------------------------------------------------------
+
+  integer function seq_timemgr_pause_component_index(component_name)
+
+!    !INPUT/OUTPUT PARAMETERS:
+
+     character(len=*), intent(IN) :: component_name
+
+!EOP
+
+     !----- local -----
+     integer                     :: ind
+     character(len=*), parameter :: subname = '(seq_timemgr_pause_component_index) '
+
+!-------------------------------------------------------------------------------
+! Notes:
+!-------------------------------------------------------------------------------
+     seq_timemgr_pause_component_index = 0
+     do ind = 1, max_clocks
+        if (trim(component_name) == trim(seq_timemgr_clocks(ind))) then
+           seq_timemgr_pause_component_index = ind
+           exit
+        end if
+     end do
+     if (seq_timemgr_pause_component_index < 1) then
+        if (trim(component_name) == 'cpl') then
+           seq_timemgr_pause_component_index = seq_timemgr_nclock_drv
+        end if
+     end if
+     if (seq_timemgr_pause_component_index < 1) then
+        call shr_sys_abort(subname//': No index for component '//trim(component_name))
+     end if
+
+  end function seq_timemgr_pause_component_index
+
+!===============================================================================
+!===============================================================================
+! !IROUTINE: seq_timemgr_pause_component_active -- Check if component paused
+!   
+! !DESCRIPTION:
+!   
+!     Return .true. if component is active in driver pause
+!      
+! !INTERFACE: ------------------------------------------------------------------
+
+  logical function seq_timemgr_pause_component_active(component_index)
+
+!    !INPUT/OUTPUT PARAMETERS:
+
+     integer, intent(IN) :: component_index
+
+!EOP
+
+    !----- local -----
+    character(len=*), parameter :: subname = '(seq_timemgr_pause_component_active) '
+
+!-------------------------------------------------------------------------------
+! Notes:
+!-------------------------------------------------------------------------------
+
+    if ((component_index < 1) .or. (component_index > max_clocks)) then
+       call shr_sys_abort(subname//': component_index out of range')
+    end if
+    seq_timemgr_pause_component_active = pause_active(component_index)
+
+  end function seq_timemgr_pause_component_active
 
 !===============================================================================
 !===============================================================================
