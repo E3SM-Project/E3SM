@@ -13,12 +13,14 @@ logger = logging.getLogger(__name__)
 # get_type) otherwise need to implement own functions and make GenericXML parent class
 class EnvMachSpecific(EnvBase):
     # pylint: disable=unused-argument
-    def __init__(self, caseroot, infile="env_mach_specific.xml",components=None):
+    def __init__(self, caseroot, infile="env_mach_specific.xml",
+                 components=None, unit_testing=False):
         """
         initialize an object interface to file env_mach_specific.xml in the case directory
         """
         fullpath = infile if os.path.isabs(infile) else os.path.join(caseroot, infile)
         EnvBase.__init__(self, caseroot, fullpath)
+        self._unit_testing = unit_testing
 
     def populate(self, machobj):
         """Add entries to the file using information from a Machines object."""
@@ -108,7 +110,7 @@ class EnvMachSpecific(EnvBase):
             source_cmd = ""
 
         if (module_system == "module"):
-            return run_cmd_no_fail("%smodule list 2>&1" % source_cmd)
+            return run_cmd_no_fail("%smodule list" % source_cmd, combine_output=True)
         elif (module_system == "soft"):
             # Does soft really not provide this capability?
             return ""
@@ -126,7 +128,7 @@ class EnvMachSpecific(EnvBase):
         """
         with open(filename, "w") as f:
             f.write(self.list_modules())
-        run_cmd_no_fail("echo -e '\n' >> %s && env >> %s" % (filename, filename))
+        run_cmd_no_fail("echo -e '\n' && env", arg_stdout=filename)
 
     def make_env_mach_specific_file(self, compiler, debug, mpilib, shell):
         modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)
@@ -190,6 +192,10 @@ class EnvMachSpecific(EnvBase):
             return False
         elif ("debug" in attribs and
             not self._match("TRUE" if debug else "FALSE", attribs["debug"].upper())):
+            return False
+        elif ("unit_testing" in attribs and
+              not self._match("TRUE" if self._unit_testing else "FALSE",
+                              attribs["unit_testing"].upper())):
             return False
 
         return True
@@ -321,7 +327,7 @@ class EnvMachSpecific(EnvBase):
         cmd_nodes = self.get_optional_node("cmd_path", attributes={"lang":lang})
         return cmd_nodes.text if cmd_nodes is not None else None
 
-    def get_mpirun(self, case, attribs, check_members=None, job="case.run"):
+    def get_mpirun(self, case, attribs, check_members=None, job="case.run", exe_only=False):
         """
         Find best match, return (executable, {arg_name : text})
         """
@@ -372,16 +378,17 @@ class EnvMachSpecific(EnvBase):
         the_match = best_match if best_match is not None else default_match
 
         # Now that we know the best match, compute the arguments
-        arg_node = self.get_optional_node("arguments", root=the_match)
-        if arg_node is not None:
-            arg_nodes = self.get_nodes("arg", root=arg_node)
-            for arg_node in arg_nodes:
-                arg_value = transform_vars(arg_node.text,
-                                           case=case,
-                                           subgroup=job,
-                                           check_members=check_members,
-                                           default=arg_node.get("default"))
-                args[arg_node.get("name")] = arg_value
+        if not exe_only:
+            arg_node = self.get_optional_node("arguments", root=the_match)
+            if arg_node is not None:
+                arg_nodes = self.get_nodes("arg", root=arg_node)
+                for arg_node in arg_nodes:
+                    arg_value = transform_vars(arg_node.text,
+                                               case=case,
+                                               subgroup=job,
+                                               check_members=check_members,
+                                               default=arg_node.get("default"))
+                    args[arg_node.get("name")] = arg_value
 
         exec_node = self.get_node("executable", root=the_match)
         expect(exec_node is not None,"No executable found")

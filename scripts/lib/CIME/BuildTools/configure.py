@@ -23,7 +23,8 @@ from CIME.XML.env_mach_specific import EnvMachSpecific
 
 logger = logging.getLogger(__name__)
 
-def configure(machobj, output_dir, macros_format, compiler, mpilib, debug, sysos):
+def configure(machobj, output_dir, macros_format, compiler, mpilib, debug,
+              sysos, unit_testing=False):
     """Add Macros, Depends, and env_mach_specific files to a directory.
 
     Arguments:
@@ -34,17 +35,19 @@ def configure(machobj, output_dir, macros_format, compiler, mpilib, debug, sysos
     compiler - String containing the compiler vendor to configure for.
     mpilib - String containing the MPI implementation to configure for.
     debug - Boolean specifying whether debugging options are enabled.
+    unit_testing - Boolean specifying whether we're running unit tests (as
+                   opposed to a system run)
     """
     # Macros generation.
     suffixes = {'Makefile': 'make', 'CMake': 'cmake'}
-    macro_maker = Compilers(machobj)
+    macro_maker = Compilers(machobj, compiler=compiler, mpilib=mpilib)
     for form in macros_format:
         out_file_name = os.path.join(output_dir,"Macros."+suffixes[form])
         macro_maker.write_macros_file(macros_file=out_file_name, output_format=suffixes[form])
 
     _copy_depends_files(machobj.get_machine_name(), machobj.machines_dir, output_dir, compiler)
     _generate_env_mach_specific(output_dir, machobj, compiler, mpilib,
-                                debug, sysos)
+                                debug, sysos, unit_testing)
 
 def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
     """
@@ -64,7 +67,8 @@ def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
                 shutil.copyfile(dfile, outputdfile)
 
 
-def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug, sysos):
+def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug,
+                                sysos, unit_testing):
     """
     env_mach_specific generation.
     """
@@ -72,7 +76,7 @@ def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug, sy
     if os.path.exists(ems_path):
         logger.warn("%s already exists, delete to replace"%ems_path)
         return
-    ems_file = EnvMachSpecific(output_dir)
+    ems_file = EnvMachSpecific(output_dir, unit_testing=unit_testing)
     ems_file.populate(machobj)
     ems_file.write()
     for shell in ('sh', 'csh'):

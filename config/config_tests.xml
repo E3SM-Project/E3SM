@@ -158,12 +158,53 @@ LAR    long term archive test
 
 DAE    data assimilation test: non answer changing
 
+PRE    pause-resume test: by default a BFB test of pause-resume cycling
+
 ======================================================================
     Other component-specific tests
 ======================================================================
 
 LII    CLM initial condition interpolation test
 
+======================================================================
+    Infrastructural tests for CIME. These are used by scripts_regression_tests.
+    Users won't generally run these.
+======================================================================
+
+
+TESTBUILDFAIL     Insta-fail build step. Used to confirm that failed
+                  builds are caught and reported correctly.
+
+TESTBUILDFAILEXC  Insta-fail build step by failing to init. Used to test
+                  correct behavior when exceptions are generated.
+
+TESTRUNFAIL       Insta-fail run step. Used to confirm that model run
+                  failures are caught and reported correctly.
+
+TESTRUNFAILEXC    Insta-fail run step via exception. Used to test correct
+                  correct behavior when exceptions are generated.
+
+TESTRUNPASS       Insta-pass run step. Used to test that run that work
+                  are reported correctly.
+
+TESTMEMLEAKFAIL   Insta-fail memleak step. Used to test that memleaks are
+                  detected and reported correctly.
+
+TESTMEMLEAKPASS   Insta-pass memleak step. Used to test that non-memleaks are
+                  reported correctly.
+
+TESTRUNDIFF       Produces a canned hist file. Env var TESTRUNDIFF_ALTERNATE can
+                  be used to cause a DIFF. Used to check that baseline diffs are
+                  detected and reported correctly.
+
+TESTTESTDIFF      Simulates internal test diff (non baseline). Used to check that
+                  internal comparison failures are detected and reported correctly.
+
+TESTRUNSLOWPASS   After 5 minutes of sleep, pass run step. Used to test timeouts
+                  and kills.
+
+NODEFAIL          Tests restart upon detected node failure. Generates fake failures,
+                  the number of which is controlled by NODEFAIL_NUM_FAILS.
 
 -->
 
@@ -359,6 +400,22 @@ LII    CLM initial condition interpolation test
     <STOP_N>11</STOP_N>
     <CHECK_TIMING>FALSE</CHECK_TIMING>
     <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="NODEFAIL">
+    <DESC>For testing infra only. Tests restart upon detected node failure</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>nsteps</STOP_OPTION>
+    <OCN_NCPL>$ATM_NCPL</OCN_NCPL>
+    <STOP_N>11</STOP_N>
+    <REST_N>$STOP_N / 2 + 1</REST_N>
+    <REST_OPTION>$STOP_OPTION</REST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <NODE_FAIL_REGEX>JGF FAKE NODE FAIL</NODE_FAIL_REGEX>
+    <PCT_SPARE_NODES>300</PCT_SPARE_NODES>
   </test>
 
   <test NAME="ICP">

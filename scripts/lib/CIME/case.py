@@ -10,7 +10,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
-from CIME.utils                     import get_build_threaded, get_current_commit
+from CIME.utils                     import get_current_commit
 from CIME.check_lockedfiles         import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -32,6 +32,7 @@ from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
 from CIME.user_mod_support          import apply_user_mods
 from CIME.case_setup import case_setup
+from CIME.aprun import get_aprun_cmd_for_case
 
 logger = logging.getLogger(__name__)
 
@@ -94,17 +95,19 @@ class Case(object):
         self._components = []
         self._component_classes = []
         self._is_env_loaded = False
-
-
+        # these are user_mods as defined in the compset
+        # Command Line user_mods are handled seperately
+        self._user_mods = None
         self.thread_count = None
+        self.total_tasks = None
         self.tasks_per_node = None
         self.num_nodes = None
+        self.spare_nodes = None
         self.tasks_per_numa = None
         self.cores_per_task = None
         # check if case has been configured and if so initialize derived
         if self.get_value("CASEROOT") is not None:
-            self.initialize_derived_attributes()
-
+            self._initialize_derived_attributes()
 
     def check_if_comp_var(self, vid):
         vid = vid
@@ -116,20 +119,21 @@ class Case(object):
                 return vid, comp, iscompvar
         return vid, comp, iscompvar
 
-    def initialize_derived_attributes(self):
+    def _initialize_derived_attributes(self):
         """
         These are derived variables which can be used in the config_* files
         for variable substitution using the {{ var }} syntax
         """
-        env_mach_pes = self.get_env("mach_pes")
-        comp_classes = self.get_values("COMP_CLASSES")
-        total_tasks  = env_mach_pes.get_total_tasks(comp_classes)
-        pes_per_node = self.get_value("PES_PER_NODE")
+        env_mach_pes  = self.get_env("mach_pes")
+        env_mach_spec = self.get_env('mach_specific')
+        comp_classes  = self.get_values("COMP_CLASSES")
+        pes_per_node  = self.get_value("PES_PER_NODE")
 
+        self.total_tasks = env_mach_pes.get_total_tasks(comp_classes)
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
-        self.tasks_per_node = env_mach_pes.get_tasks_per_node(total_tasks, self.thread_count)
-        logger.debug("total_tasks %s thread_count %s"%(total_tasks, self.thread_count))
-        self.num_nodes = env_mach_pes.get_total_nodes(total_tasks, self.thread_count)
+        self.tasks_per_node = env_mach_pes.get_tasks_per_node(self.total_tasks, self.thread_count)
+        logger.debug("total_tasks %s thread_count %s"%(self.total_tasks, self.thread_count))
+
         self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
         smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / pes_per_node))
 
@@ -137,7 +141,21 @@ class Case(object):
         threads_per_core = 1 if (threads_per_node <= pes_per_node) else smt_factor
         self.cores_per_task = self.thread_count / threads_per_core
 
-        return total_tasks
+        mpi_attribs = {
+            "compiler" : self.get_value("COMPILER"),
+            "mpilib"   : self.get_value("MPILIB"),
+            "threaded" : self.get_build_threaded(),
+            "unit_testing" : False
+            }
+
+        executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
+        if "aprun" in executable:
+            self.num_nodes = get_aprun_cmd_for_case(self, "acme.exe")[1]
+            self.spare_nodes = env_mach_pes.get_spare_nodes(self.num_nodes)
+            self.num_nodes += self.spare_nodes
+        else:
+            self.num_nodes, self.spare_nodes = env_mach_pes.get_total_nodes(self.total_tasks, self.thread_count)
+            self.num_nodes += self.spare_nodes
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
@@ -388,7 +406,7 @@ class Case(object):
         either a longname or an alias.  This will also set the
         compsets and pes specfication files.
         """
-        science_support = {}
+        science_support = []
         compset_alias = None
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are %s" % components)
@@ -403,7 +421,7 @@ class Case(object):
             # If the file exists, read it and see if there is a match for the compset alias or longname
             if (os.path.isfile(compsets_filename)):
                 compsets = Compsets(compsets_filename)
-                match, compset_alias, science_support = compsets.get_compset_match(name=compset_name)
+                match, compset_alias, science_support, self._user_mods = compsets.get_compset_match(name=compset_name)
                 pesfile = files.get_value("PES_SPEC_FILE"     , {"component":component})
                 if match is not None:
                     self._pesfile = pesfile
@@ -419,7 +437,10 @@ class Case(object):
                     self.set_lookup_value("USER_MODS_DIR"      , user_mods_dir)
                     self.set_lookup_value("PES_SPEC_FILE"      ,
                                    files.get_value("PES_SPEC_FILE"     , {"component":component}, resolved=False))
-                    logger.info("Compset longname is %s " %(match))
+                    compset_info = "Compset longname is %s"%(match)
+                    if self._user_mods is not None:
+                        compset_info += " with user_mods directory %s"%(self._user_mods)
+                    logger.info(compset_info)
                     logger.info("Compset specification file is %s" %(compsets_filename))
                     logger.info("Pes     specification file is %s" %(pesfile))
                     return compset_alias, science_support
@@ -432,7 +453,8 @@ class Case(object):
             self.set_lookup_value("PES_SPEC_FILE", pesfile)
         else:
             expect(False,
-                   "Could not find a compset match for either alias or longname in %s" %(compset_name))
+                   "Could not find a compset match for either alias or longname in %s\n"%(compset_name)
+                   + "You may need the --user-compset argument.")
 
         return None, science_support
 
@@ -530,7 +552,8 @@ class Case(object):
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
                   user_grid=False, gridfile=None, ninst=1, test=False,
-                  walltime=None, queue=None, output_root=None, run_unsupported=False):
+                  walltime=None, queue=None, output_root=None, run_unsupported=False, answer=None,
+                  input_dir=None):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
@@ -568,8 +591,14 @@ class Case(object):
         #--------------------------------------------
         # set machine values in env_xxx files
         machobj = Machines(machine=machine_name)
+        probed_machine = machobj.probe_machine_name()
         machine_name = machobj.get_machine_name()
-        self.set_value("MACH",machine_name)
+        self.set_value("MACH", machine_name)
+        if probed_machine != machine_name and probed_machine is not None:
+            logger.warning("WARNING: User-selected machine '%s' does not match probed machine '%s'" % (machine_name, probed_machine))
+        else:
+            logger.info("Machine is %s" % machine_name)
+
         nodenames = machobj.get_node_names()
         nodenames =  [x for x in nodenames if
                       '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
@@ -684,7 +713,12 @@ class Case(object):
             if compclass == "CPL":
                 continue
             key = "NINST_%s"%compclass
-            mach_pes_obj.set_value(key, ninst)
+            # ESP models are currently limited to 1 instance
+            if compclass == "ESP":
+                mach_pes_obj.set_value(key, 1)
+            else:
+                mach_pes_obj.set_value(key, ninst)
+
             key = "NTASKS_%s"%compclass
             if key not in pes_ntasks.keys():
                 mach_pes_obj.set_value(key,1)
@@ -752,7 +786,11 @@ class Case(object):
             logging.debug("wdir is %s"%wdir)
             if os.path.exists(wdir):
                 expect(not test, "Directory %s already exists, aborting test"% wdir)
-                response = raw_input("\nDirectory %s already exists, (r)eplace, (a)bort, or (u)se existing?"% wdir)
+                if answer is None:
+                    response = raw_input("\nDirectory %s already exists, (r)eplace, (a)bort, or (u)se existing?"% wdir)
+                else:
+                    response = answer
+
                 if response.startswith("r"):
                     shutil.rmtree(wdir)
                 else:
@@ -771,10 +809,10 @@ class Case(object):
         if test:
             self.set_value("TEST",True)
 
-        total_tasks = self.initialize_derived_attributes()
+        self._initialize_derived_attributes()
 
         # Make sure that parallel IO is not specified if total_tasks==1
-        if total_tasks == 1:
+        if self.total_tasks == 1:
             for compclass in self._component_classes:
                 key = "PIO_TYPENAME_%s"%compclass
                 pio_typename = self.get_value(key)
@@ -782,7 +820,10 @@ class Case(object):
                     self.set_value(key, "netcdf")
 
         # Set TOTAL_CORES
-        self.set_value("TOTAL_CORES", total_tasks * self.cores_per_task )
+        self.set_value("TOTAL_CORES", self.total_tasks * self.cores_per_task )
+
+        if input_dir is not None:
+            self.set_value("DIN_LOC_ROOT", os.path.abspath(input_dir))
 
     def get_compset_var_settings(self):
         compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
@@ -912,7 +953,10 @@ class Case(object):
 
         # Open a new README.case file in $self._caseroot
         append_status(" ".join(sys.argv), "README.case", caseroot=self._caseroot)
-        append_status("Compset longname is %s"%self.get_value("COMPSET"),
+        compset_info = "Compset longname is %s"%(self.get_value("COMPSET"))
+        if self._user_mods is not None:
+            compset_info += " with user_mods directory %s"%(self._user_mods)
+        append_status(compset_info,
                       "README.case", caseroot=self._caseroot)
         append_status("Compset specification file is %s" %
                       (self.get_value("COMPSETS_SPEC_FILE")),
@@ -926,19 +970,35 @@ class Case(object):
             comp_grid = "%s_GRID"%component_class
             append_status("%s is %s"%(comp_grid,self.get_value(comp_grid)),
                           "README.case", caseroot=self._caseroot)
+        if self._user_mods is not None:
+            note = "This compset includes user_mods %s"%self._user_mods
+            append_status(note, "README.case", caseroot=self._caseroot)
+            logger.info(note)
         if not clone:
             self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
 
     def apply_user_mods(self, user_mods_dir=None):
-        if user_mods_dir is not None:
-            if os.path.isabs(user_mods_dir):
-                user_mods_path = user_mods_dir
-            else:
-                user_mods_path = self.get_value('USER_MODS_DIR')
-                user_mods_path = os.path.join(user_mods_path, user_mods_dir)
-            self.set_value("USER_MODS_FULLPATH",user_mods_path)
-            apply_user_mods(self._caseroot, user_mods_path)
+        """
+        User mods can be specified on the create_newcase command line (usually when called from create test)
+        or they can be in the compset definition, or both.
+        """
+
+        if self._user_mods is None:
+            compset_user_mods_resolved = None
+        else:
+            compset_user_mods_resolved = self.get_resolved_value(self._user_mods)
+
+        # This looping order will lead to the specified user_mods_dir taking
+        # precedence over self._user_mods, if there are any conflicts.
+        for user_mods in (compset_user_mods_resolved, user_mods_dir):
+            if user_mods is not None:
+                if os.path.isabs(user_mods):
+                    user_mods_path = user_mods
+                else:
+                    user_mods_path = self.get_value('USER_MODS_DIR')
+                    user_mods_path = os.path.join(user_mods_path, user_mods)
+                apply_user_mods(self._caseroot, user_mods_path)
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None):
         if cime_output_root is None:
@@ -987,6 +1047,10 @@ class Case(object):
             orig_exeroot = self.get_value("EXEROOT")
             newcase.set_value("EXEROOT", orig_exeroot)
             newcase.set_value("BUILD_COMPLETE","TRUE")
+            orig_bld_complete = self.get_value("BUILD_COMPLETE")
+            if not orig_bld_complete:
+                logger.warn("\nWARNING: Creating a clone with --keepexe before building the original case may cause PIO_TYPENAME to be invalid in the clone")
+                logger.warn("Avoid this message by building case one before you clone.\n")
         else:
             newcase.set_value("BUILD_COMPLETE","FALSE")
 
@@ -1052,24 +1116,24 @@ class Case(object):
         mpi_attribs = {
             "compiler" : self.get_value("COMPILER"),
             "mpilib"   : self.get_value("MPILIB"),
-            "threaded" : get_build_threaded(self)
+            "threaded" : self.get_build_threaded(),
+            "unit_testing" : False
             }
 
         executable, args = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
-        # special case for aprun if using < 1 full node
-        if executable == "aprun":
-            totalpes = self.get_value("TOTALPES")
-            pes_per_node = self.get_value("PES_PER_NODE")
-            if totalpes < pes_per_node:
-                args["tasks_per_node"] = "-N "+str(totalpes)
 
-        mpi_arg_string = " ".join(args.values())
+        # special case for aprun
+        if  "aprun" in executable:
+            aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)
+            expect(num_nodes == self.num_nodes, "Not using optimized num nodes")
+            return executable + aprun_args + " " + run_misc_suffix
+        else:
+            mpi_arg_string = " ".join(args.values())
 
+            if self.get_value("BATCH_SYSTEM") == "cobalt":
+                mpi_arg_string += " : "
 
-        if self.get_value("BATCH_SYSTEM") == "cobalt":
-            mpi_arg_string += " : "
-
-        return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
+            return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
 
     def set_model_version(self, model):
         version = "unknown"
@@ -1099,6 +1163,13 @@ class Case(object):
             env_module = self.get_env("mach_specific")
             env_module.load_env(compiler=compiler,debug=debug, mpilib=mpilib)
             self._is_env_loaded = True
+
+    def get_build_threaded(self):
+        """
+        Returns True if current settings require a threaded build/run.
+        """
+        force_threaded = self.get_value("BUILD_THREADED")
+        return bool(force_threaded) or self.thread_count > 1
 
     def _check_testlists(self, compset_alias, grid_name, files):
         """

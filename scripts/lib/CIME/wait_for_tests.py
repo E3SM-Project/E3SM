@@ -170,7 +170,7 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
             if (os.path.exists(tarball)):
                 os.remove(tarball)
 
-            CIME.utils.run_cmd_no_fail("tar -cf - %s | gzip -c > %s" % (log_dir, tarball))
+            CIME.utils.run_cmd_no_fail("tar -cf - %s | gzip -c" % log_dir, arg_stdout=tarball)
             base64 = CIME.utils.run_cmd_no_fail("base64 %s" % tarball)
 
             xml_text = \

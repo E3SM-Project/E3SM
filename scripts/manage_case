@@ -131,9 +131,6 @@ def parse_command_line(args):
     parser.add_argument("--query-grids", action="store_true",
                         help="Query supported model grids for %s model" %cime_model)
 
-    parser.add_argument("--grids-shortname",
-                        help="Query model grids for input grid short name for %s model - not implemented yet" %cime_model)
-
     parser.add_argument("--grids-alias",
                         help="Query model grids for input grid  alias for %s model - not implemented yet" %cime_model)
 

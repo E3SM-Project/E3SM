@@ -8,11 +8,13 @@ sys.path.append(os.path.join(_CIMEROOT, "tools", "unit_testing", "python"))
 
 from standard_script_setup import *
 from CIME.BuildTools.configure import configure
-from CIME.utils import run_cmd_no_fail, stringify_bool
+from CIME.utils import run_cmd_no_fail, stringify_bool, expect
 from CIME.XML.machines import Machines
+from CIME.XML.compilers import Compilers
 from CIME.XML.env_mach_specific import EnvMachSpecific
 from xml_test_list import TestSuiteSpec, suites_from_xml
 import subprocess
+import socket
 #=================================================
 # Standard library modules.
 #=================================================
@@ -64,9 +66,9 @@ runs "make clean"."""
     parser.add_argument("--no-color",  action="store_false",
                       help="""Turn off colorized output."""
     )
-    parser.add_argument("--compiler",  default="gnu",
+    parser.add_argument("--compiler",
                         help="""Compiler vendor for build (supported depends on machine).
-Only used for lookup in CIME Machines files."""
+                        If not specified, use the default for this machine."""
                         )
     parser.add_argument("--enable-genf90", action="store_true",
                         default=True,
@@ -81,21 +83,28 @@ requires genf90.pl to be in the user's path."""
                         help="""Number of processes to use for build."""
                         )
 
+    parser.add_argument("--use-mpi", action="store_true",
+                        help="""If specified, run unit tests with an mpi-enabled version
+                        of pFUnit, via mpirun. (Default is to use a serial build without
+                        mpirun.) This requires a pFUnit build with MPI support.""")
+
     parser.add_argument("--mpilib",
-    help="""MPI Library to use in build.
-Required argument (until we can get this from config_machines)
-Must match an MPILIB option in config_compilers.xml.
-e.g., for yellowstone, can use 'mpich2'."""
+                        help="""MPI Library to use in build.
+                        If not specified, use the default for this machine/compiler.
+                        Must match an MPILIB option in config_compilers.xml.
+                        e.g., for yellowstone, can use 'mpich2'.
+                        Only relevant if --use-mpi is specified."""
+    )
+
+    parser.add_argument("--mpirun-command",
+                        help="""Command to use to run an MPI executable.
+                        If not specified, uses the default for this machine.
+                        Only relevant if --use-mpi is specified."""
     )
     parser.add_argument(
-        "--mpirun-command", default="",
-        help="""Command to use to run an MPI executable.
-
-If not specified, does not use any mpirun prefix to run executables."""
-        )
-    parser.add_argument(
-        "--test-spec-dir",
-        help="""Location where tests are specified."""
+        "--test-spec-dir", default=".",
+        help="""Location where tests are specified.
+        Defaults to current directory."""
         )
     parser.add_argument(
     "-T", "--ctest-args",
@@ -111,8 +120,9 @@ override the command provided by Machines."""
     )
     parser.add_argument(
         "--use-openmp",  action="store_true",
-        default=False,
-        help="""Turn on OPENMP support for tests."""
+        help="""If specified, include OpenMP support for tests.
+        (Default is to run without OpenMP support.) This requires a pFUnit build with
+        OpenMP support."""
     )
     parser.add_argument(
         "--xml-test-list",
@@ -133,16 +143,19 @@ override the command provided by Machines."""
 
     return output, args.build_dir, args.build_optimized, args.clean,\
         args.cmake_args, args.compiler, args.enable_genf90, args.machine, args.machines_dir,\
-        args.make_j, args.mpilib, args.mpirun_command, args.test_spec_dir, args.ctest_args,\
+        args.make_j, args.use_mpi, args.mpilib, args.mpirun_command, args.test_spec_dir, args.ctest_args,\
         args.use_openmp, args.xml_test_list, args.verbose
 
 
-def cmake_stage(name, test_spec_dir, build_optimized, mpirun_command, output, cmake_args=None, clean=False, verbose=False, enable_genf90=True, color=True):
+def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_command, output,
+                cmake_args=None, clean=False, verbose=False, enable_genf90=True, color=True):
     """Run cmake in the current working directory.
 
     Arguments:
     name - Name for output messages.
     test_spec_dir - Test specification directory to run CMake on.
+    use_mpiserial (logical) - If True, we'll tell CMake to include mpi-serial for tests
+                              that need it
     build_optimized (logical) - If True, we'll build in optimized rather than debug mode
     """
     # Clear CMake cache.
@@ -169,8 +182,10 @@ def cmake_stage(name, test_spec_dir, build_optimized, mpirun_command, output, cm
             test_spec_dir,
             "-DCIME_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"src","externals","CMake")),
             "-DCMAKE_BUILD_TYPE="+build_type,
-            "-DPFUNIT_MPIRUN="+mpirun_command,
+            "-DPFUNIT_MPIRUN='"+mpirun_command+"'",
             ]
+        if use_mpiserial:
+            cmake_command.append("-DUSE_MPI_SERIAL=ON")
         if verbose:
             cmake_command.append("-Wdev")
 
@@ -208,6 +223,26 @@ def make_stage(name, output, make_j, clean=False, verbose=True):
 
     run_cmd_no_fail(" ".join(make_command), arg_stdout=None, arg_stderr=subprocess.STDOUT)
 
+def find_pfunit(compilerobj, mpilib, use_openmp):
+    """Find the pfunit installation we'll be using, and print its path
+
+    Aborts if necessary information cannot be found.
+
+    Args:
+    - compilerobj: Object of type Compilers
+    - mpilib: String giving the mpi library we're using
+    - use_openmp: Boolean
+    """
+    attrs = {"MPILIB": mpilib,
+             "compile_threaded": "true" if use_openmp else "false"
+             }
+
+    pfunit_path = compilerobj.get_optional_compiler_node("PFUNIT_PATH", attributes=attrs)
+    expect(pfunit_path is not None,
+           """PFUNIT_PATH not found for this machine and compiler, with MPILIB=%s and compile_threaded=%s.
+You must specify PFUNIT_PATH in config_compilers.xml, with attributes MPILIB and compile_threaded."""%(mpilib, attrs['compile_threaded']))
+    logger.info("Using PFUNIT_PATH: %s"%pfunit_path.text)
+
 #=================================================
 # Iterate over input suite specs, building the tests.
 #=================================================
@@ -216,7 +251,7 @@ def make_stage(name, output, make_j, clean=False, verbose=True):
 def _main():
     output, build_dir, build_optimized, clean,\
         cmake_args, compiler, enable_genf90, machine, machines_dir,\
-        make_j, mpilib, mpirun_command, test_spec_dir, ctest_args,\
+        make_j, use_mpi, mpilib, mpirun_command, test_spec_dir, ctest_args,\
         use_openmp, xml_test_list, verbose \
         = parse_command_line(sys.argv)
 
@@ -241,21 +276,13 @@ def _main():
             )
 
 
-
-
-# Search for the CESM root directory.
-# First check the option. If not specified, look to see if there's a tools
-# directory two levels up (just as a sanity check).
-    if machine is None:
-        machine="yellowstone"
-
     if machines_dir is not None:
         machines_file = os.path.join(machines_dir, "config_machines.xml")
         machobj = Machines(infile=machines_file, machine=machine)
     else:
         machobj = Machines(machine=machine)
 
-# Create build directory if necessary.
+    # Create build directory if necessary.
     build_dir = os.path.abspath(build_dir)
 
     if not os.path.isdir(build_dir):
@@ -264,13 +291,23 @@ def _main():
     # Switch to the build directory.
     os.chdir(build_dir)
 
-#=================================================
-# Functions to perform various stages of build.
-#=================================================
-    if mpilib is None:
+    #=================================================
+    # Functions to perform various stages of build.
+    #=================================================
+
+    if not use_mpi:
+        mpilib = "mpi-serial"
+    elif mpilib is None:
         mpilib = machobj.get_default_MPIlib()
+        logger.info("Using mpilib: %s"%mpilib)
+
     if compiler is None:
         compiler = machobj.get_default_compiler()
+        logger.info("Compiler is %s"%compiler)
+
+    compilerobj = Compilers(machobj, compiler=compiler, mpilib=mpilib)
+
+    find_pfunit(compilerobj, mpilib=mpilib, use_openmp=use_openmp)
 
     debug = not build_optimized
     os_ = machobj.get_value("OS")
@@ -278,18 +315,41 @@ def _main():
     # Create the environment, and the Macros.cmake file
     #
     #
-    configure(machobj, build_dir, ["CMake"], compiler, mpilib, debug, os_)
-    machspecific = EnvMachSpecific(build_dir)
+    configure(machobj, build_dir, ["CMake"], compiler, mpilib, debug, os_,
+              unit_testing=True)
+    machspecific = EnvMachSpecific(build_dir, unit_testing=True)
+
     machspecific.load_env(compiler, debug, mpilib)
-    logger.warn("Compiler is %s"%compiler)
     os.environ["OS"] = os_
     os.environ["COMPILER"] = compiler
     os.environ["DEBUG"] = stringify_bool(debug)
     os.environ["MPILIB"] = mpilib
     if use_openmp:
         os.environ["compile_threaded"] = "true"
-    os.environ["CC"] = find_executable("mpicc")
-    os.environ["FC"] = find_executable("mpif90")
+    else:
+        os.environ["compile_threaded"] = "false"
+
+    os.environ["UNIT_TEST_HOST"] = socket.gethostname()
+    if "NETCDF_PATH" in os.environ and not "NETCDF" in os.environ:
+        # The CMake Netcdf find utility that we use (from pio2) seems to key off
+        # of the environment variable NETCDF, but not NETCDF_PATH
+        logger.info("Setting NETCDF environment variable: %s"%os.environ["NETCDF_PATH"])
+        os.environ["NETCDF"] = os.environ["NETCDF_PATH"]
+
+    if not use_mpi:
+        mpirun_command = ""
+    elif mpirun_command is None:
+        mpi_attribs = {
+            "compiler" : compiler,
+            "mpilib"   : mpilib,
+            "threaded" : use_openmp,
+            "unit_testing" : True
+        }
+
+        # We can get away with specifying case=None since we're using exe_only=True
+        mpirun_command, _ = machspecific.get_mpirun(case=None, attribs=mpi_attribs, exe_only=True)
+        mpirun_command = machspecific.get_resolved_value(mpirun_command)
+        logger.info("mpirun command is '%s'"%mpirun_command)
 
 #=================================================
 # Run tests.
@@ -315,7 +375,8 @@ def _main():
 
             if not os.path.islink("Macros.cmake"):
                 os.symlink(os.path.join(build_dir,"Macros.cmake"), "Macros.cmake")
-            cmake_stage(name, directory, build_optimized, mpirun_command, output, verbose=verbose,
+            use_mpiserial = not use_mpi
+            cmake_stage(name, directory, build_optimized, use_mpiserial, mpirun_command, output, verbose=verbose,
                         enable_genf90=enable_genf90, cmake_args=cmake_args)
             make_stage(name, output, make_j, clean=clean, verbose=verbose)
 

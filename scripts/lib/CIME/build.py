@@ -254,10 +254,9 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             my_file = "PYTHONPATH=%s:%s:$PYTHONPATH %s"%(os.path.join(cimeroot,"scripts","Tools"),
                                                           os.path.join(cimeroot,"scripts","lib"), my_file)
         logger.info("Building %s with output to file %s"%(lib,file_build))
-        with open(file_build, "w") as fd:
-            stat = run_cmd("%s %s %s %s 2>&1" %
-                           (my_file, full_lib_path, os.path.join(exeroot,sharedpath), caseroot),
-                           from_dir=exeroot,arg_stdout=fd)[0]
+        stat = run_cmd("%s %s %s %s" %
+                       (my_file, full_lib_path, os.path.join(exeroot,sharedpath), caseroot),
+                       from_dir=exeroot, combine_output=True, arg_stdout=file_build)[0]
 
         analyze_build_log(lib, file_build, compiler)
         expect(stat == 0, "ERROR: buildlib.%s failed, cat %s" % (lib, file_build))
@@ -302,6 +301,7 @@ def _build_model_thread(config_dir, compclass, caseroot, libroot, bldroot, incro
                         thread_bad_results, smp, compiler):
 ###############################################################################
     logger.info("Building %s with output to %s"%(compclass, file_build))
+    t1 = time.time()
     with open(file_build, "w") as fd:
         stat = run_cmd("MODEL=%s SMP=%s %s/buildlib %s %s %s " %
                        (compclass, stringify_bool(smp), config_dir, caseroot, libroot, bldroot),
@@ -314,6 +314,8 @@ def _build_model_thread(config_dir, compclass, caseroot, libroot, bldroot, incro
     for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
         shutil.copy(mod_file, incroot)
 
+    t2 = time.time()
+    logger.info("%s built in %f seconds" % (compclass, (t2 - t1)))
 
 ###############################################################################
 def _clean_impl(case, cleanlist, clean_all):
@@ -336,7 +338,7 @@ def _clean_impl(case, cleanlist, clean_all):
         expect(cleanlist is not None and len(cleanlist) > 0,"Empty cleanlist not expected")
         debug           = case.get_value("DEBUG")
         use_esmf_lib    = case.get_value("USE_ESMF_LIB")
-        build_threaded  = case.get_value("BUILD_THREADED")
+        build_threaded  = case.get_build_threaded()
         gmake           = case.get_value("GMAKE")
         caseroot        = case.get_value("CASEROOT")
         casetools       = case.get_value("CASETOOLS")
@@ -395,7 +397,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only):
     # needs to be unset before building again.
     if "MODEL" in os.environ.keys():
         del os.environ["MODEL"]
-    build_threaded      = case.get_value("BUILD_THREADED")
+    build_threaded      = case.get_build_threaded()
     casetools           = case.get_value("CASETOOLS")
     exeroot             = case.get_value("EXEROOT")
     incroot             = case.get_value("INCROOT")
@@ -514,6 +516,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only):
                                cimeroot, libroot, lid, compiler)
 
     if not sharedlib_only:
+        os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
         logs.extend(_build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
                                 lid, caseroot, cimeroot, compiler))
 

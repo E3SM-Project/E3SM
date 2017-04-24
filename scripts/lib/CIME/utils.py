@@ -4,7 +4,7 @@ Warning: you cannot use CIME Classes in this module as it causes circular depend
 """
 import logging, gzip, sys, os, time, re, shutil, glob, string, random
 import stat as statlib
-
+import warnings
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
 logger = logging.getLogger(__name__)
@@ -20,14 +20,43 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         ...
     SystemExit: ERROR: error2
     """
-    if (not condition):
+    # Without this line we get a futurewarning on the use of condition below
+    warnings.filterwarnings("ignore")
+    if not condition:
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        raise exc_type("%s %s" % (error_prefix,error_msg))
+        raise exc_type("%s %s"%(error_prefix,error_msg))
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
+
+def check_name(fullname, additional_chars=None, fullpath=False):
+    """
+    check for unallowed characters in name, this routine only
+    checks the final name and does not check if path exists or is
+    writable
+
+    >>> check_name("test.id", additional_chars=".")
+    False
+    >>> check_name("case.name", fullpath=False)
+    True
+    >>> check_name("/some/file/path/case.name", fullpath=True)
+    True
+    """
+
+    chars = '<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
+    if additional_chars is not None:
+        chars += additional_chars
+    if fullpath:
+        _, name = os.path.split(fullname)
+    else:
+        name = fullname
+    match = re.search(r"["+re.escape(chars)+"]", name)
+    if match is not None:
+        logger.warn("Illegal character %s found in name %s"%(match.group(0), name))
+        return False
+    return True
 
 # Should only be called from get_cime_config()
 def _read_cime_config_file():
@@ -141,9 +170,15 @@ def get_model():
                       and model != "xml_schemas"])
     expect(False, msg)
 
+def _convert_to_fd(filearg, from_dir):
+    if not filearg.startswith("/") and from_dir is not None:
+        filearg = os.path.join(from_dir, filearg)
+
+    return open(filearg, "a")
+
 _hack=object()
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
-            arg_stdout=_hack, arg_stderr=_hack, env=None):
+            arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
     """
     Wrapper around subprocess to make it much more convenient to run shell commands
 
@@ -153,10 +188,15 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     import subprocess # Not safe to do globally, module not available in older pythons
 
     # Real defaults for these value should be subprocess.PIPE
-    if (arg_stdout is _hack):
+    if arg_stdout is _hack:
         arg_stdout = subprocess.PIPE
-    if (arg_stderr is _hack):
-        arg_stderr = subprocess.PIPE
+    elif isinstance(arg_stdout, str):
+        arg_stdout = _convert_to_fd(arg_stdout, from_dir)
+
+    if arg_stderr is _hack:
+        arg_stderr = subprocess.STDOUT if combine_output else subprocess.PIPE
+    elif isinstance(arg_stderr, str):
+        arg_stderr = _convert_to_fd(arg_stdout, from_dir)
 
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
         logger.info("RUN: %s" % cmd)
@@ -179,6 +219,12 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     errput = errput.strip() if errput is not None else errput
     stat = proc.wait()
 
+    if isinstance(arg_stdout, file):
+        arg_stdout.close() # pylint: disable=no-member
+
+    if isinstance(arg_stderr, file) and arg_stderr is not arg_stdout:
+        arg_stderr.close() # pylint: disable=no-member
+
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
         if stat != 0:
             logger.info("  stat: %d\n" % stat)
@@ -190,7 +236,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     return stat, output, errput
 
 def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
-                    arg_stdout=_hack, arg_stderr=_hack):
+                    arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
     """
     Wrapper around subprocess to make it much more convenient to run shell commands.
     Expects command to work. Just returns output string.
@@ -205,10 +251,18 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
 
     >>> run_cmd_no_fail('grep foo', input_str='foo')
     'foo'
+
+    >>> run_cmd_no_fail('echo THE ERROR >&2', combine_output=True)
+    'THE ERROR'
     """
-    stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout, arg_stderr)
-    expect(stat == 0, "Command: '%s' failed with error '%s'%s" %
-           (cmd, errput, "" if from_dir is None else " from dir '%s'" % from_dir))
+    stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout, arg_stderr, env, combine_output)
+    if stat != 0:
+        # If command produced no errput, put output in the exception since we
+        # have nothing else to go on.
+        errput = output if not errput else errput
+        expect(False, "Command: '%s' failed with error '%s'%s" %
+               (cmd, errput, "" if from_dir is None else " from dir '%s'" % from_dir))
+
     return output
 
 def check_minimum_python_version(major, minor):
@@ -660,9 +714,9 @@ def convert_to_type(value, type_str, vid=""):
                 expect(False, "Entry %s was listed as type int but value '%s' is not valid int" % (vid, value))
 
         elif type_str == "logical":
-            expect(value in ["TRUE", "FALSE","true","false"],
+            expect(value.upper() in ["TRUE", "FALSE"],
                    "Entry %s was listed as type logical but had val '%s' instead of TRUE or FALSE" % (vid, value))
-            value = value == "TRUE" or value == "true"
+            value = value.upper() == "TRUE"
 
         elif type_str == "real":
             try:
@@ -672,6 +726,36 @@ def convert_to_type(value, type_str, vid=""):
 
         else:
             expect(False, "Unknown type '%s'" % type_str)
+
+    return value
+
+def convert_to_unknown_type(value):
+    """
+    Convert value to it's real type by probing conversions.
+    """
+    if value is not None:
+
+        # Attempt to convert to logical
+        if value.upper() in ["TRUE", "FALSE"]:
+            return value.upper() == "TRUE"
+
+        # Attempt to convert to integer
+        try:
+            value = int(eval(value))
+        except:
+            pass
+        else:
+            return value
+
+        # Attempt to convert to float
+        try:
+            value = float(value)
+        except:
+            pass
+        else:
+            return value
+
+        # Just treat as string
 
     return value
 
@@ -733,6 +817,25 @@ def convert_to_babylonian_time(seconds):
 
     return "%02d:%02d:%02d" % (hours, minutes, seconds)
 
+def get_time_in_seconds(timeval, unit):
+    """
+    Convert a time from 'unit' to seconds
+    """
+    if 'nyear' in unit:
+        dmult = 365 * 24 * 3600
+    elif 'nmonth' in unit:
+        dmult = 30 * 24 * 3600
+    elif 'nday' in unit:
+        dmult = 24 * 3600
+    elif 'nhour' in unit:
+        dmult = 3600
+    elif 'nminute' in unit:
+        dmult = 60
+    else:
+        dmult = 1
+
+    return dmult * timeval
+
 def compute_total_time(job_cost_map, proc_pool):
     """
     Given a map: jobname -> (procs, est-time), return a total time
@@ -775,14 +878,91 @@ def compute_total_time(job_cost_map, proc_pool):
 
     return current_time
 
+def format_time(time_format, input_format, input_time):
+    """
+    Converts the string input_time from input_format to time_format
+    Valid format specifiers are "%H", "%M", and "%S"
+    % signs must be followed by an H, M, or S and then a separator
+    Separators can be any string without digits or a % sign
+    Each specifier can occur more than once in the input_format,
+    but only the first occurence will be used.
+    An example of a valid format: "%H:%M:%S"
+    Unlike strptime, this does support %H >= 24
+
+    >>> format_time("%H:%M:%S", "%H", "43")
+    '43:00:00'
+    >>> format_time("%H  %M", "%M,%S", "59,59")
+    '0  59'
+    >>> format_time("%H, %S", "%H:%M:%S", "2:43:9")
+    '2, 09'
+    """
+    input_fields = input_format.split("%")
+    expect(input_fields[0] == input_time[:len(input_fields[0])],
+           "Failed to parse the input time; does not match the header string")
+    input_time = input_time[len(input_fields[0]):]
+    timespec = {"H": None, "M": None, "S": None}
+    maxvals = {"M": 60, "S": 60}
+    DIGIT_CHECK = re.compile('[^0-9]*')
+    # Loop invariants given input follows the specs:
+    # field starts with H, M, or S
+    # input_time starts with a number corresponding with the start of field
+    for field in input_fields[1:]:
+        # Find all of the digits at the start of the string
+        spec = field[0]
+        value_re = re.match(r'\d*', input_time)
+        expect(value_re is not None,
+               "Failed to parse the input time for the '%s' specifier, expected an integer"
+               % spec)
+        value = value_re.group(0)
+        expect(spec in timespec, "Unknown time specifier '" + spec + "'")
+        # Don't do anything if the time field is already specified
+        if timespec[spec] is None:
+            # Verify we aren't exceeding the maximum value
+            if spec in maxvals:
+                expect(int(value) < maxvals[spec],
+                       "Failed to parse the '%s' specifier: A value less than %d is expected"
+                       % (spec, maxvals[spec]))
+            timespec[spec] = value
+        input_time = input_time[len(value):]
+        # Check for the separator string
+        expect(len(re.match(DIGIT_CHECK, field).group(0)) == len(field),
+               "Numbers are not permissible in separator strings")
+        expect(input_time[:len(field) - 1] == field[1:],
+               "The separator string (%s) doesn't match '%s'" % (field[1:], input_time))
+        input_time = input_time[len(field) - 1:]
+    output_fields = time_format.split("%")
+    output_time = output_fields[0]
+    # Used when a value isn't given
+    min_len_spec = {"H": 1, "M": 2, "S": 2}
+    # Loop invariants given input follows the specs:
+    # field starts with H, M, or S
+    # output_time
+    for field in output_fields[1:]:
+        expect(field == output_fields[-1] or len(field) > 1,
+               "Separator strings are required to properly parse times")
+        spec = field[0]
+        expect(spec in timespec, "Unknown time specifier '" + spec + "'")
+        if timespec[spec] is not None:
+            output_time += "0" * (min_len_spec[spec] - len(timespec[spec]))
+            output_time += timespec[spec]
+        else:
+            output_time += "0" * min_len_spec[spec]
+        output_time += field[1:]
+    return output_time
+
 def append_status(msg, sfile, caseroot='.'):
     """
     Append msg to sfile in caseroot
     """
     ctime = time.strftime("%Y-%m-%d %H:%M:%S: ")
+
+    # Reduce empty lines in CaseStatus. It's a very concise file
+    # and does not need extra newlines for readability
+    line_ending = "" if sfile == "CaseStatus" else "\n"
+
     with open(os.path.join(caseroot, sfile), "a") as fd:
-        fd.write(ctime + msg + "\n")
-        fd.write("\n ---------------------------------------------------\n\n")
+        fd.write(ctime + msg + line_ending)
+        fd.write("\n ---------------------------------------------------\n" + line_ending)
 
 def append_testlog(msg, caseroot='.'):
     """
@@ -868,17 +1048,6 @@ def wait_for_unlocked(filepath):
         finally:
             if file_object:
                 file_object.close()
-
-def get_build_threaded(case):
-    """Returns True if current settings require a threaded build/run."""
-    force_threaded = case.get_value("BUILD_THREADED")
-    if force_threaded:
-        return True
-    comp_classes = case.get_values("COMP_CLASSES")
-    for comp_class in comp_classes:
-        if case.get_value("NTHRDS_%s"%comp_class) > 1:
-            return True
-    return False
 
 def gunzip_existing_file(filepath):
     with gzip.open(filepath, "rb") as fd:

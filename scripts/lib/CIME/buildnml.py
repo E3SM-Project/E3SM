@@ -118,6 +118,5 @@ def create_namelist_infile(case, user_nl_file, namelist_infile, infile_text=""):
             lines_output.append(line)
 
     lines_output.append("/ \n")
-
     with open(namelist_infile, "w") as file_infile:
         file_infile.write("\n".join(lines_output))

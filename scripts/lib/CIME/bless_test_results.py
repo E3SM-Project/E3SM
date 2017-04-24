@@ -114,7 +114,12 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
 
                 # Bless hist files
                 if hist_bless:
-                    success, reason = bless_history(test_name, test_dir, baseline_name, baseline_root, compiler, report_only, force)
+                    if "HOMME" in test_name:
+                        success = False
+                        reason = "HOMME tests cannot be blessed with bless_for_tests"
+                    else:
+                        success, reason = bless_history(test_name, test_dir, baseline_name, baseline_root, compiler, report_only, force)
+
                     if (not success):
                         broken_blesses.append((test_name, reason))
 

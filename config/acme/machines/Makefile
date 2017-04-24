@@ -455,6 +455,7 @@ FFLAGS += $(FPPDEFS)
 FFLAGS_NOOPT += $(FPPDEFS)
 
 
+
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
 # The following is for the COSP simulator code:
 COSP_LIBDIR:=$(EXEROOT)/atm/obj/cosp

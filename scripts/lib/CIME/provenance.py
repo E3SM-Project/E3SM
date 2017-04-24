@@ -35,7 +35,7 @@ def save_build_provenance_acme(case, lid=None):
     describe_prov = os.path.join(exeroot, "GIT_DESCRIBE.%s" % lid)
     if os.path.exists(describe_prov):
         os.remove(describe_prov)
-    run_cmd_no_fail("git describe > %s" % describe_prov, from_dir=cimeroot)
+    run_cmd_no_fail("git describe", arg_stdout=describe_prov, from_dir=cimeroot)
 
     # Save HEAD
     headfile = os.path.join(cimeroot, ".git", "logs", "HEAD")
@@ -119,12 +119,12 @@ def save_prerun_provenance_acme(case, lid=None):
     if mach == "mira":
         for cmd, filename in [("qstat -lf", "qstatf"), ("qstat -lf %s" % job_id, "qstatf_jobid")]:
             filename = "%s.%s" % (filename, lid)
-            run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
+            run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
     elif mach in ["edison", "cori-haswell", "cori-knl"]:
         for cmd, filename in [("sqs -f", "sqsf"), ("sqs -w -a", "sqsw"), ("sqs -f %s" % job_id, "sqsf_jobid"), ("squeue", "squeuef")]:
             filename = "%s.%s" % (filename, lid)
-            run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
+            run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
     elif mach == "titan":
         for cmd, filename in [("xtdb2proc -f", "xtdb2proc"),
@@ -137,7 +137,7 @@ def save_prerun_provenance_acme(case, lid=None):
             gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
 
         mdiag_reduce = os.path.join(full_timing_dir, "mdiag_reduce." + lid)
-        run_cmd_no_fail("./mdiag_reduce.csh > %s" % mdiag_reduce, from_dir=os.path.join(caseroot, "Tools"))
+        run_cmd_no_fail("./mdiag_reduce.csh", arg_stdout=mdiag_reduce, from_dir=os.path.join(caseroot, "Tools"))
         gzip_existing_file(mdiag_reduce)
 
     # copy/tar SourceModes
@@ -190,9 +190,9 @@ def save_prerun_provenance_acme(case, lid=None):
 
     # Save state of repo
     if os.path.exists(os.path.join(cimeroot, ".git")):
-        run_cmd_no_fail("git describe > %s" % os.path.join(full_timing_dir, "GIT_DESCRIBE.%s" % lid), from_dir=cimeroot)
+        run_cmd_no_fail("git describe", arg_stdout=os.path.join(full_timing_dir, "GIT_DESCRIBE.%s" % lid), from_dir=cimeroot)
     else:
-        run_cmd_no_fail("git describe > %s" % os.path.join(full_timing_dir, "GIT_DESCRIBE.%s" % lid), from_dir=os.path.dirname(cimeroot))
+        run_cmd_no_fail("git describe", arg_stdout=os.path.join(full_timing_dir, "GIT_DESCRIBE.%s" % lid), from_dir=os.path.dirname(cimeroot))
 
 def save_prerun_provenance_cesm(case, lid=None): # pylint: disable=unused-argument
     pass

@@ -9,7 +9,7 @@ from CIME.preview_namelists import create_dirs, create_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.machines      import Machines
 from CIME.BuildTools.configure import configure
-from CIME.utils             import get_cime_root, run_and_log_case_status
+from CIME.utils             import get_cime_root, run_and_log_case_status, get_model
 from CIME.test_status       import *
 
 import shutil
@@ -69,7 +69,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
     din_loc_root = case.get_value("DIN_LOC_ROOT")
     testcase     = case.get_value("TESTCASE")
     expect(not (not os.path.isdir(din_loc_root) and testcase != "SBN"),
-           "inputdata root is not a directory: \"$din_loc_root\" ")
+           "inputdata root is not a directory: %s" % din_loc_root)
 
     # Check that userdefine settings are specified before expanding variable
     for vid, value in case:
@@ -127,11 +127,17 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
                 continue
             ninst  = case.get_value("NINST_%s" % comp)
             ntasks = case.get_value("NTASKS_%s" % comp)
+            # ESP models are currently limited to 1 instance
+            expect((comp != "ESP") or (ninst == 1),
+                   "ESP components may only have one instance")
             if ninst > ntasks:
                 if ntasks == 1:
                     case.set_value("NTASKS_%s" % comp, ninst)
                 else:
                     expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst, comp, ntasks))
+
+        # Set TOTAL_CORES
+        case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
 
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
@@ -147,10 +153,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
             logger.debug("at update TOTALPES = %s"%pestot)
             case.set_value("TOTALPES", pestot)
             thread_count = env_mach_pes.get_max_thread_count(models)
-            if thread_count > 1:
-                case.set_value("BUILD_THREADED", True)
-
-            expect(not (case.get_value("BUILD_THREADED")  and compiler == "nag"),
+            build_threaded = case.get_build_threaded()
+            expect(not (build_threaded and compiler == "nag"),
                    "it is not possible to run with OpenMP if using the NAG Fortran compiler")
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
@@ -158,7 +162,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
             # create batch files
             logger.info("Creating batch script case.run")
             env_batch = case.get_env("batch")
-            num_nodes = env_mach_pes.get_total_nodes(pestot, thread_count)
+            num_nodes = case.num_nodes
             tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
             for job in env_batch.get_jobs():
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
@@ -186,6 +190,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
         # Create user_nl files for the required number of instances
         if not os.path.exists("user_nl_cpl"):
             logger.info("Creating user_nl_xxx files for components and cpl")
+
         # loop over models
         for model in models:
             comp = case.get_value("COMP_%s" % model)
@@ -210,7 +215,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
                 logger.info("Finished testcase.setup")
 
         # Some tests need namelists created here (ERP) - so do this if are in test mode
-        if test_mode:
+        if test_mode or get_model() == "acme":
             logger.info("Generating component namelists as part of setup")
             create_namelists(case)
 
@@ -219,7 +224,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
         env_module.make_env_mach_specific_file(compiler, debug, mpilib, "sh")
         env_module.make_env_mach_specific_file(compiler, debug, mpilib, "csh")
         env_module.save_all_env_info("software_environment.txt")
-
 
 def adjust_pio_layout(case, new_pio_stride):
 
@@ -233,9 +237,9 @@ def adjust_pio_layout(case, new_pio_stride):
         if pio_stride != new_stride:
             logger.info("Resetting  PIO_STRIDE_%s to %s"%(comp, new_stride))
             case.set_value("PIO_STRIDE_%s"%comp, new_stride)
-            if pio_numtasks != new_numtasks:
-                logger.info("Resetting  PIO_NUMTASKS_%s to %s"%(comp, new_numtasks))
-                case.set_value("PIO_NUMTASKS_%s"%comp, new_numtasks)
+        if pio_numtasks != new_numtasks:
+            logger.info("Resetting  PIO_NUMTASKS_%s to %s"%(comp, new_numtasks))
+            case.set_value("PIO_NUMTASKS_%s"%comp, new_numtasks)
 
 
 ###############################################################################

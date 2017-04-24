@@ -114,6 +114,13 @@ OR
     parser.add_argument("-q", "--queue", default=None,
                         help="Force batch system to use a certain queue")
 
+    parser.add_argument("--handle-preexisting-dirs", dest="answer", choices=("a", "r", "u"), default=None,
+                        help="Pre-answer what to do pre-existing bld/exe dirs. Valid answers are (a)bort (r)eplace or (u)se existing."
+                        "This can be useful if you need to run create_newcase non-iteractively.")
+
+    parser.add_argument("-i", "--input-dir",
+                        help="Use a non-default location for input files")
+
     args = parser.parse_args()
 
     CIME.utils.handle_standard_logging_options(args)
@@ -143,12 +150,17 @@ OR
     if model == "cesm":
         run_unsupported = args.run_unsupported
 
+    expect(CIME.utils.check_name(args.case, fullpath=True),
+           "Illegal case name argument provided")
+
+    if args.input_dir is not None:
+        args.input_dir = os.path.abspath(args.input_dir)
 
     return args.case, args.compset, args.res, args.machine, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.user_mods_dir, args.user_compset, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst, \
-        args.walltime, args.queue, args.output_root, run_unsupported
+        args.walltime, args.queue, args.output_root, run_unsupported, args.answer, args.input_dir
 
 ###############################################################################
 def _main_func(description):
@@ -159,7 +171,7 @@ def _main_func(description):
         mpilib, project, pecount,  \
         user_mods_dir, user_compset, pesfile, \
         user_grid, gridfile, srcroot, test, ninst, walltime, queue, \
-        output_root, run_unsupported = parse_command_line(sys.argv, cimeroot, description)
+        output_root, run_unsupported, answer, input_dir = parse_command_line(sys.argv, cimeroot, description)
 
     caseroot = os.path.abspath(caseroot)
 
@@ -180,7 +192,8 @@ def _main_func(description):
                        user_compset=user_compset, pesfile=pesfile,
                        user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
                        walltime=walltime, queue=queue, output_root=output_root,
-                       run_unsupported=run_unsupported)
+                       run_unsupported=run_unsupported, answer=answer,
+                       input_dir=input_dir)
 
         case.create_caseroot()
 
@@ -189,7 +202,7 @@ def _main_func(description):
         if user_mods_dir is not None:
             if os.path.isdir(user_mods_dir):
                 user_mods_dir = os.path.abspath(user_mods_dir)
-            case.apply_user_mods(user_mods_dir)
+        case.apply_user_mods(user_mods_dir)
 
     # Lock env_case.xml
     lock_file("env_case.xml", caseroot)

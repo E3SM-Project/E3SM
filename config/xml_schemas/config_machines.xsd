@@ -7,6 +7,7 @@
   <xs:attribute name="mpilib" type="xs:string"/>
   <xs:attribute name="debug" type="xs:boolean"/>
   <xs:attribute name="threaded" type="xs:boolean"/>
+  <xs:attribute name="unit_testing" type="xs:boolean"/>
   <xs:attribute name="type" type="xs:NCName"/>
   <xs:attribute name="lang" type="xs:NCName"/>
   <xs:attribute name="name" type="xs:NCName"/>
@@ -133,6 +134,7 @@
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute ref="threaded"/>
+      <xs:attribute ref="unit_testing"/>
     </xs:complexType>
   </xs:element>
   <xs:element name="arguments">
@@ -186,6 +188,7 @@
       <xs:attribute ref="debug"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute ref="compiler"/>
+      <xs:attribute ref="unit_testing"/>
     </xs:complexType>
   </xs:element>
   <xs:element name="env">

@@ -140,11 +140,20 @@ def _main_func(description):
         if netcdf4_parallel_found:
             valid_values += ",netcdf4p,netcdf4c"
         logger.warn("Updating valid_values for PIO_TYPENAME: %s", valid_values)
+
         case.set_valid_values("PIO_TYPENAME",valid_values)
         # nothing means use the general default
         valid_values += ",nothing"
-        for comp in ("ATM","CPL","OCN","WAV","GLC","ICE","ROF","LND"):
-            case.set_valid_values("%s_PIO_TYPENAME"%comp,valid_values)
+        
+        for comp in case.get_values("COMP_CLASSES"):
+            comp_pio_typename = "%s_PIO_TYPENAME"%comp
+            case.set_valid_values(comp_pio_typename,valid_values)
+            current_value = case.get_value(comp_pio_typename)
+            if current_value not in valid_values:
+                logger.warn("Resetting PIO_TYPENAME to netcdf for component %s"%comp)
+                case.set_value(comp_pio_typename,"netcdf")
+
+
 
 if (__name__ == "__main__"):
     _main_func(__doc__)

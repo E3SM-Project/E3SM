@@ -72,14 +72,17 @@ def create_namelists(case):
             compname = "drv"
         else:
             compname = case.get_value("COMP_%s" % model_str.upper())
+
         cmd = os.path.join(config_dir, "buildnml")
         do_run_cmd = False
+        # This code will try to import and run each buildnml as a subroutine
+        # if that fails it will run it as a program in a seperate shell
         try:
             with open(cmd, 'r') as f:
                 first_line = f.readline()
             if "python" in first_line:
-                logger.info("   Calling %s buildnml"%compname)
                 mod = imp.load_source("buildnml", cmd)
+                logger.info("   Calling %s buildnml"%compname)
                 mod.buildnml(case, caseroot, compname)
             else:
                 raise SyntaxError
@@ -94,9 +97,10 @@ def create_namelists(case):
             raise
 
         if do_run_cmd:
-            logger.debug("   Running %s buildnml"%compname)
+            logger.info("   Running %s buildnml"%compname)
             case.flush()
-            run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=False)
+            output = run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=False)
+            logger.info(output)
             # refresh case xml object from file
             case.read_xml()
 

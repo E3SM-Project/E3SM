@@ -1,4 +1,4 @@
-<components>
+<components version="2.0">
 
   <comp_archive_spec compname="cam" compclass="atm">
     <rest_file_extension>\.[ri]\..*</rest_file_extension>
@@ -168,19 +168,6 @@
     </rpointer>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="dart" compclass="esp">
-    <rest_file_extension>inflate_restart.*</rest_file_extension>
-    <hist_file_extension>True_State.*</hist_file_extension>
-    <hist_file_extension>Prior_Diag.*</hist_file_extension>
-    <hist_file_extension>Posterior_Diag.*</hist_file_extension>
-    <hist_file_extension>obs_seq.*</hist_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.unset</rpointer_file>
-      <rpointer_content >unset</rpointer_content>
-    </rpointer>
-  </comp_archive_spec>
-
   <comp_archive_spec compname="cpl" compclass="cpl">
     <rest_file_extension>\.r\..*</rest_file_extension>
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
@@ -188,6 +175,21 @@
     <rpointer>
       <rpointer_file>rpointer.cpl</rpointer_file>
       <rpointer_content >$CASE.cpl.r.$DATENAME.nc</rpointer_content>
+    </rpointer>
+  </comp_archive_spec>
+
+  <comp_archive_spec compclass="esp" compname="dart">
+    <rest_file_extension>inflate_restart.*</rest_file_extension>
+    <hist_file_extension>\.True_State.*</hist_file_extension>
+    <hist_file_extension>\.Prior_Diag.*</hist_file_extension>
+    <hist_file_extension>\.Posterior_Diag.*</hist_file_extension>
+    <hist_file_extension>\..+\.posterior*</hist_file_extension>
+    <hist_file_extension>\..+\.prior*</hist_file_extension>
+    <hist_file_extension>\..+$_obs_seq.*</hist_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer.unset</rpointer_file>
+      <rpointer_content>unset</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 
