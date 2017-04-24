@@ -92,7 +92,7 @@ def save_build_provenance(case, lid=None):
 def _save_prerun_timing_acme(case, lid):
     timing_dir = case.get_value("SAVE_TIMING_DIR")
     if timing_dir is None or timing_dir == 'UNSET':
-        logger.warning("ACME requires SAVE_TIMING_DIR to be set in order to save timings. Skipping save timings")
+        logger.warning("ACME requires SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive timings")
         return
 
     logger.info("timing dir is %s" % timing_dir)
@@ -222,13 +222,28 @@ def _save_postrun_provenance_cesm(case, lid):
                     os.path.join(timing_dir,"timing."+lid))
 
 def _save_postrun_timing_acme(case, lid):
+    caseroot = case.get_value("CASEROOT")
     rundir = case.get_value("RUNDIR")
     timing_dir = case.get_value("SAVE_TIMING_DIR")
+
+    # tar timings
+    rundir_timing_dir = os.path.join(rundir, "timing." + lid)
+    shutil.move(os.path.join(rundir, "timing"), rundir_timing_dir)
+    with tarfile.open("%s.tar.gz" % rundir_timing_dir, "w:gz") as tfd:
+        tfd.add(rundir_timing_dir, arcname=os.path.basename(rundir_timing_dir))
+
+    shutil.rmtree(rundir_timing_dir)
+
+    gzip_existing_file(os.path.join(caseroot, "timing", "acme_timing_stats.%s" % lid))
+
+    # JGF: not sure why we do this
+    timing_saved_file = "timing.%s.saved" % lid
+    touch(os.path.join(caseroot, "timing", timing_saved_file))
+
     if timing_dir is None or timing_dir == 'UNSET':
-        logger.warning("ACME requires SAVE_TIMING_DIR to be set in order to save timings. Skipping save timings")
+        logger.warning("ACME requires SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive timings")
         return
 
-    caseroot = case.get_value("CASEROOT")
     mach = case.get_value("MACH")
     base_case = case.get_value("CASE")
     full_timing_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), base_case, lid)
@@ -247,20 +262,8 @@ def _save_postrun_timing_acme(case, lid):
             finally:
                 os.remove(syslog_jobid_path)
 
-    # copy/tar timings
-    rundir_timing_dir = os.path.join(rundir, "timing." + lid)
-    shutil.move(os.path.join(rundir, "timing"), rundir_timing_dir)
-    with tarfile.open("%s.tar.gz" % rundir_timing_dir, "w:gz") as tfd:
-        tfd.add(rundir_timing_dir, arcname=os.path.basename(rundir_timing_dir))
-
-    shutil.rmtree(rundir_timing_dir)
+    # copy timings
     copy_umask("%s.tar.gz" % rundir_timing_dir, full_timing_dir)
-
-    gzip_existing_file(os.path.join(caseroot, "timing", "acme_timing_stats.%s" % lid))
-
-    # JGF: not sure why we do this
-    timing_saved_file = "timing.%s.saved" % lid
-    touch(os.path.join(caseroot, "timing", timing_saved_file))
 
     #
     # save output files and logs
