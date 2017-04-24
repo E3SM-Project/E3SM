@@ -349,150 +349,171 @@ contains
       delta = -2.d0*sqrt(2.d0)/3.d0
       gamma = 1.d0 - 1.d0/sqrt(2.d0)
 
-      ! compute g2=un0+dt*gamma*f(un0) and save in unp1
+      ! compute g2=un0+dt*gamma*n(un0) and save in unp1
       call compute_and_apply_rhs_imex_nonstiff(np1,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,1.d0,1.d0)      
+        deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,0.d0,1.d0)      
+     
+      ! save un0 as statesave
+      call state_save(elem,statesave,n0,nets,nete)
+
+      ! form un0 + dt*delta*n(g1) at save at un0     
+      call compute_and_apply_rhs_imex_nonstiff(n0,n0,n0,qn0,delta*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,0.d0,1.d0)
+
+      ! compute g3=(un0+dt*delta*n(g1))+dt*(1-delta)*n(g2) and save at unp1
+      call compute_and_apply_rhs_imex_nonstiff(n0,n0,np1,qn0,(1-delta)*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,0.d0,1.d0)
+   
+      ! form unp1 = dt*(1-gamma)*n(g2)
+      call compute_and_apply_rhs_imex_nonstiff(np1,n0,np1,qn0,(1.d0-gamma)*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,0.d0,0.d0)    
+      ! form unp1 = dt*(1-gamma)*n(g2)+dt*gamma*n(g3)
+      call compute_and_apply_rhs_imex_nonstiff(np1,n0,n0,qn0,(1.d0-gamma)*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,0.d0,0.d0)
+
+      ! form unp1 = un0 + dt*(1-gamma)*f(g2)+dt*gamma*f(g3)
+      call state_add(elem,statesave,np1,nets,nete,1.d0,1.d0)
+    
+      maxiter=1000
+      itertol=1e-8
+      call state_read(elem,statesave,np1,nets,nete)
+      call compute_stage_value_dirk_stiff(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
+       deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol)
+
+      call state_read(elem,statesave,n0,nets,nete)
+      call t_stopf("ARS232_timestep")
+!============================================================================================
+    else if (method==9) then ! ARS232 from (Ascher et al., 1997), nh-imex
+      call t_startf("ARS232_timestep")
+      delta = -2.d0*sqrt(2.d0)/3.d0
+      gamma = 1.d0 - 1.d0/sqrt(2.d0)
+
 
       ! save un0 as statesave
       call state_save(elem,statesave,n0,nets,nete)
 
-      ! form un0 + dt*(1-gamma)*f(g2) at save at un0     
-      call compute_and_apply_rhs_imex_nonstiff(n0,n0,n0,qn0,(1-gamma)*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,1.d0,1.d0)
-
-      ! compute g3=(un0+dt*delta*f(g1))+dt*(1-delta)*f(g2) and save at unp1
-      call compute_and_apply_rhs_imex_nonstiff(np1,np1,np1,qn0,(1-delta)*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,1.d0,1.d0)
-   
-      ! form unp1 = un0+dt*(1-gamma)*f(g2)+dt*gamma*f(g3)
-      call compute_and_apply_rhs_imex_nonstiff(np1,n0,np1,qn0,gamma*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,1.d0,1.d0)    
-
-      call state_save(elem,statesave2,np1,nets,nete)
-      call state_read(elem,statesave2,n0,nets,nete)
-
-     maxiter=1000
-      itertol=1e-8 
-   
-      call compute_stage_value_dirk_stiff(np1,np1,n0,qn0,dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol)
-
-      call state_read(elem,statesave,n0,nets,nete)
-  
-      call t_stopf("ARS232_timestep")
-!============================================================================================
-    else if (method==9) then ! ARS232 from (Ascher et al., 1997), nh-imex
-    ! for ne = 16, seems to have a CFL of between 25 and 50 seconds 
-      call t_startf("ARS232_timestep")
-      call state_save(elem,statesave,n0,nets,nete)
-      delta = -2.d0*sqrt(2.d0)/3.d0
-      gamma = 1.d0 - 1.d0/sqrt(2.d0)
-
       ! compute un0+dt*gamma*n(un0) and save in unp1
       call compute_and_apply_rhs_imex_nonstiff(np1,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,0.d0,1.d0)      
+        deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,0.d0,1.d0)          
 
-   maxiter=1000
-      itertol=1e-8 
-      ! solve g2 = un0 + dt*gamma*n(un0) + dt*gamma*s(g2) and store at un0
-      call compute_stage_value_dirk_stiff(n0,np1,np1,qn0,gamma*dt,elem,hvcoord,hybrid,&
+      maxiter=1000
+      itertol=1e-8
+      ! solve for g2 using initial guess un0 and store at un0
+      call compute_stage_value_dirk_stiff(n0,np1,np1,qn0,dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol)
 
-      ! set unp1 <- un0 i.e. unp1 is g1
-      call state_read(elem,statesave,np1,nets,nete)
-    
-      ! save g2 as statesave2
-      call state_save(elem,statesave2,n0,nets,nete)     
+      ! write un0 to unp1
+      call state_save(elem,statesave,np1,nets,nete)
 
-      ! form un0 + dt*delta*n(g1) at save at unp1     
+      ! form un0 + dt*delta*n(g1) at save at up1     
       call compute_and_apply_rhs_imex_nonstiff(np1,np1,np1,qn0,delta*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,0.d0,1.d0)
 
-      ! form un0 + dt*delta*n(g1) + dt*(1-delta)*n(g2) and save at unp1
+      ! compute (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2) and save at unp1
       call compute_and_apply_rhs_imex_nonstiff(np1,np1,n0,qn0,(1-delta)*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,0.d0,1.d0)
    
-      ! form un0 + dt*delta*n(g1) + dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2)
+     ! compute (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+(1-gamma)*s(g2) and save at unp1
       call compute_and_apply_rhs_imex_nonstiff(np1,np1,n0,qn0,(1-gamma)*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w/2,0.d0,1.d0,1.d0)
 
-   maxiter=1000
-      itertol=1e-8 
-      ! solve g3 =  un0 + dt*delta*n(g1) + dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2)+gamma*s(g3)
-      ! using g2 as initial guess and save the result at un0
-      call compute_stage_value_dirk_stiff(n0,np1,np1,qn0,gamma*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol)
+     ! save g2 at statesave2
+      call state_save(elem,statesave2,n0,nets,nete)
 
-      ! up1 = un0
-      call state_read(elem,statesave,np1,nets,nete)
+      maxiter=1000
+      itertol=1e-8
+     ! solve for g3
+      call compute_stage_value_dirk_stiff(n0,np1,np1,qn0,dt,elem,hvcoord,hybrid,&
+       deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol)
 
-      ! unp1 = un0 + dt*gamma*(n(g3)+s(g3))
-      call compute_and_apply_rhs_imex_nonstiff(np1,np1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
+    ! set unp1 to un0
+     call state_read(elem,statesave,np1,nets,nete)
+
+    ! set unp1 = un0 + dt *(1-gamma)*(n(g3)+s(g3))
+     call compute_and_apply_rhs_imex_nonstiff(np1,np1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,1.d0,1.d0)
 
-      ! un0 = g2
-      call state_read(elem,statesave2,n0,nets,nete)
+    ! set un0 to be g2
+     call state_read(elem,statesave2,n0,nets,nete)
 
-      ! unp1 = un0 + dt*gamma*(n(g3)+s(g3))+dt*(1-gamma)*(n(g2)+s(g2))
-      call compute_and_apply_rhs_imex_nonstiff(np1,np1,n0,qn0,(1.d0-gamma)*dt,elem,hvcoord,hybrid,&
+    ! set unp1 = un0 + dt *gamma*(n(g3)+s(g3))+ dt *(1-gamma)*(n(g2)+s(g2))
+
+     call compute_and_apply_rhs_imex_nonstiff(np1,np1,n0,qn0,(1.d0-gamma)*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,1.d0,1.d0)
 
-   
+    ! set un0 back to un0
       call state_read(elem,statesave,n0,nets,nete)
-  
       call t_stopf("ARS232_timestep")
 !
  !================================================================================================
-    elseif (method==10) then ! SSP2 222
-      call t_startf("SSP2_timestep")
+    elseif (method==10) then ! AS233
+      call t_startf("ARS233_timestep")
+                                        
+      gamma = (3.d0 + sqrt(3.d0))/6.d0      
+                                        
+      ! save un0 as statesave
       call state_save(elem,statesave,n0,nets,nete)
-      maxiter=1000
-      itertol=1e-8
+                                       
+      ! set un0 = un + dt * n(un) = un + dt * gamma * n(g1)
+      call compute_and_apply_rhs_imex_nonstiff(n0,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w/3,1.d0,0.d0,1.d0)
+              
+      maxiter = 1000
+      itertol = 1e-8
+
+      ! set initial guess for g2 to be g1=un
       call state_read(elem,statesave,np1,nets,nete)
-      ! solve g1 = xn0 + dt*gamma*s(g1) for g1 using xn0 as initial guess
+                                  
+      ! solve g2 = un + dt * n(g1) + dt * s(g2) for g2 and save at unp1     
       call compute_stage_value_dirk_stiff(np1,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w/4,maxiter,itertol)
-
-      ! xn0 = n(g1)+s(g1)
-      call compute_and_apply_rhs_imex_nonstiff(n0,n0,np1,qn0,1.d0,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,1.d0,0.d0)
-      ! store s(g1)+n(g1) in statesave2
-      call state_save(elem,statesave2,n0,nets,nete)
-
-      ! set xn=xn
+        deriv,nets,nete,compute_diagnostics,eta_ave_w/3,maxiter,itertol)
+                 
+     ! set un0 = un
       call state_read(elem,statesave,n0,nets,nete)
 
-      ! set xn = xn+dt*n(g1)
-      call compute_and_apply_rhs_imex_nonstiff(n0,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,0.d0,1.d0)
-      
-      ! set xn = xn+dt*n(g1)+dt*(1-2*gamma)*s(g1)
-      call compute_and_apply_rhs_imex_nonstiff(n0,n0,np1,qn0,(1.d0-2.d0*gamma)*dt,   &
-        elem,hvcoord,hybrid,deriv,nets,nete,compute_diagnostics,eta_ave_w/4,0.d0,1.d0,1.d0)
-    
-      maxiter=1000
-      itertol=1e-8
-      ! solve g2 = xn = xn+dt*n(g1)+dt*(1-2*gamma)*s(g1) + dt*gamma*s(g2) for g2
-      ! using g1 as initial guess 
-      call compute_stage_value_dirk_stiff(np1,n0,np1,qn0,gamma*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w/4,maxiter,itertol)
-    
-      !      set xn0 to be itself again
+      ! un0 = un + dt * (gamma-1)*n(g1)
+      call compute_and_apply_rhs_imex_nonstiff(n0,n0,n0,qn0,(gamma-1.d0)*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,2*eta_ave_w/3,1.d0,0.d0,1.d0)
+
+      ! un0 = un0 + dt*2*(1-gamma)*n(g2)
+      call compute_and_apply_rhs_imex_nonstiff(n0,n0,np1,qn0,2.d0*(1.d0-gamma)*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,2*eta_ave_w/3,1.d0,0.d0,1.d0)
+
+      ! un0 = un0 + dt*(1-2*gamma)*s(g2)
+      call compute_and_apply_rhs_imex_nonstiff(n0,n0,np1,qn0,(1.d0-2.d0*gamma)*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,2*eta_ave_w/3,0.d0,1.d0,1.d0)
+
+      maxiter = 1000
+      itertol = 1e-8
+
+      ! save g2 at statesave2
+      call state_save(elem,statesave2,np1,nets,nete)
+
+      ! set initial guess for g3 to be g2
+      call state_read(elem,statesave,np1,nets,nete)
+					
+      ! solve for g3 and save at unp1
+      call compute_stage_value_dirk_stiff(np1,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,2*eta_ave_w/3,maxiter,itertol)
+
+      ! set un0 = un
       call state_read(elem,statesave,n0,nets,nete)
-  
-      ! set xnp1 =xn0 +  0.5*dt*(n(g2)+n(g2))
-      call compute_and_apply_rhs_imex_nonstiff(np1,n0,np1,qn0,0.5d0*dt,   &
-        elem,hvcoord,hybrid,deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,1.d0,1.d0)
-      ! set xn0 = n(g1)+s(g1)
+
+      ! unp1 = un + 0.5*dt*(n(g3)+s(g3))
+      call compute_and_apply_rhs_imex_nonstiff(np1,n0,np1,qn0,0.5d0*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w,1.d0,1.d0,1.d0)
+
+      ! set un0 = g2
       call state_read(elem,statesave2,n0,nets,nete)
+     
+      !	unp1 = up1 + 0.5*dt*(n(g2)+s(g2))
+      call compute_and_apply_rhs_imex_nonstiff(np1,np1,n0,qn0,0.5d0*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w,1.d0,1.d0,1.d0)
 
-      ! xnp1 =xn0 +  0.5*dt*(n(g2)+n(g2))+dt*0.5*dt*(n(g1)+n(g1))
-      call state_add(elem,statesave2,np1,nets,nete,dt*0.5d0,1.d0)
-   
-      ! set xn0 to be itself again 
+      ! set un0 = un 
       call state_read(elem,statesave,n0,nets,nete)
-    
-      call t_stopf("SSP2_timestep")
+
+      call t_stopf("ARS233_timestep")
     else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
