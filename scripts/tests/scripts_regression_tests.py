@@ -2241,7 +2241,8 @@ def _main_func():
             print "All pass, removing directory:", TEST_ROOT
             if os.path.exists(TEST_ROOT):
                 shutil.rmtree(TEST_ROOT)
-            raise
+
+        raise
 
 if (__name__ == "__main__"):
     _main_func()
