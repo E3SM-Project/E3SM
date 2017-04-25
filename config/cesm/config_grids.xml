@@ -176,6 +176,13 @@
       <mask>usgs</mask>
     </model_grid>
 
+    <model_grid alias="T42_T42_mnull" compset="_DOCN%SAQUAP|DOCN%AQUAP">
+      <grid name="atm">T42</grid>
+      <grid name="lnd">T42</grid>
+      <grid name="ocnice">T42</grid>
+      <mask>null</mask>
+    </model_grid>
+
     <model_grid alias="T85_T85" not_compset="_POP">
       <grid name="atm">T85</grid>
       <grid name="lnd">T85</grid>
@@ -368,7 +375,7 @@
       <mask>gx1v6</mask>
     </model_grid>
 
-    <model_grid alias="f09_f09_mnull" compset="_DOCN%SAQUAP|DOCN%DAQUAP" >
+    <model_grid alias="f09_f09_mnull" compset="_DOCN%SAQUAP|DOCN%AQUAP" >
       <grid name="atm">0.9x1.25</grid>
       <grid name="lnd">0.9x1.25</grid>
       <grid name="ocnice">0.9x1.25</grid>
@@ -513,7 +520,7 @@
       <mask>gx1v6</mask>
     </model_grid>
 
-    <model_grid alias="f19_f19_mnull" compset="_DOCN%SAQUAP|DOCN%DAQUAP" >
+    <model_grid alias="f19_f19_mnull" compset="_DOCN%SAQUAP|DOCN%AQUAP" >
       <grid name="atm">1.9x2.5</grid>
       <grid name="lnd">1.9x2.5</grid>
       <grid name="ocnice">1.9x2.5</grid>
@@ -565,6 +572,13 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <model_grid alias="f02_f02_mnull" compset="_DOCN%SAQUAP|DOCN%AQUAP">
+      <grid name="atm">f02</grid>
+      <grid name="lnd">f02</grid>
+      <grid name="ocnice">f02</grid>
+      <mask>null</mask>
+    </model_grid>
+
     <model_grid alias="f02_f02_mg16" not_compset="_POP">
       <grid name="atm">0.23x0.31</grid>
       <grid name="lnd">0.23x0.31</grid>
@@ -607,11 +621,25 @@
       <mask>gx3v7</mask>
     </model_grid>
 
+    <model_grid alias="f45_f45_mnull" compset="_DOCN%SAQUAP|DOCN%AQUAP">
+      <grid name="atm">f45</grid>
+      <grid name="lnd">f45</grid>
+      <grid name="ocnice">f45</grid>
+      <mask>null</mask>
+    </model_grid>
+
     <model_grid alias="f10_f10" not_compset="_POP">
       <grid name="atm">10x15</grid>
       <grid name="lnd">10x15</grid>
       <grid name="ocnice">10x15</grid>
       <mask>usgs</mask>
+    </model_grid>
+
+    <model_grid alias="f10_f10_mnull" compset="_DOCN%SAQUAP|DOCN%AQUAP">
+      <grid name="atm">f10</grid>
+      <grid name="lnd">f10</grid>
+      <grid name="ocnice">f10</grid>
+      <mask>null</mask>
     </model_grid>
 
     <!--  spectral element grids -->
@@ -741,6 +769,13 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <model_grid alias="ne30_ne30_mnull" compset="_DOCN%SAQUAP|DOCN%AQUAP">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">ne30np4</grid>
+      <grid name="ocnice">ne30np4</grid>
+      <mask>null</mask>
+    </model_grid>
+
     <model_grid alias="ne30_ne30_mg16" not_compset="_POP">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">ne30np4</grid>
@@ -781,6 +816,13 @@
       <grid name="lnd">ne120np4</grid>
       <grid name="ocnice">ne120np4</grid>
       <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="ne120_ne120_mnull" compset="_DOCN%SAQUAP|DOCN%AQUAP">
+      <grid name="atm">ne120np4</grid>
+      <grid name="lnd">ne120np4</grid>
+      <grid name="ocnice">ne120np4</grid>
+      <mask>null</mask>
     </model_grid>
 
     <model_grid alias="ne120_ne120_mg16" not_compset="_POP">

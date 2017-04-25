@@ -297,6 +297,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
 
     ocn_mode = trim(SDOCN%dataMode)
 
+    ! Special logic for aquaplanet
     if (ocn_mode(1:5) == 'AQUAP') then
        if (len_trim(ocn_mode) == 6) then
           read(ocn_mode(6:6),'(i)') aquap_option
@@ -610,16 +611,13 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
    !--------------------
 
    call t_startf('docn_unpack')
-
-!  lsize = mct_avect_lsize(x2o)
-!  nflds_x2o = mct_avect_nRattr(x2o)
-
-!   do nf=1,nflds_x2o
-!   do n=1,lsize
-!     ?? = x2o%rAttr(nf,n)
-!   enddo
-!   enddo
-
+   !  lsize = mct_avect_lsize(x2o)
+   !  nflds_x2o = mct_avect_nRattr(x2o)
+   !   do nf=1,nflds_x2o
+   !   do n=1,lsize
+   !     ?? = x2o%rAttr(nf,n)
+   !   enddo
+   !   enddo
    call t_stopf('docn_unpack')
 
    !--------------------
@@ -683,7 +681,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
    case('AQUAP')
       lsize = mct_avect_lsize(o2x)
       do n = 1,lsize
-         o2x%rAttr(kt,n) = 0.0_r8
+         o2x%rAttr(:,n) = 0.0_r8
       end do
       call prescribed_sst(xc, yc, lsize, aquap_option, o2x%rAttr(kt,:))
       do n = 1,lsize
