@@ -301,7 +301,7 @@ for parameter in parameters:
                     save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
     
             elif mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
-                plev = parameter.levels
+                plev = parameter.plevs
                 print 'selected pressure level', plev
                 f_mod = cdms2.open(filename1)
                 for filename in [filename1, filename2]:
