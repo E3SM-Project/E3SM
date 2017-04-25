@@ -740,7 +740,7 @@ contains
       character(len=StrKIND) :: timeStamp, streamName
       type (MPAS_timeInterval_type) :: timeStep
       integer :: ierr, streamDirection, iam
-      logical :: streamActive
+      logical :: streamActive, debugOn
       logical, pointer :: config_write_output_on_startup
       logical, save :: first=.true.
       character (len=StrKIND), pointer :: config_restart_timestamp_name
@@ -749,9 +749,14 @@ contains
 
       iam = domain % dminfo % my_proc_id
 
+      debugOn = .false.
+#ifdef MPAS_DEBUG
+      debugOn = .true.
+#endif
+ 
       ! Set MPAS Log module instance
       mpas_log_info => domain % logInfo
-      call mpas_log_write("=== Beginning ice_run_mct ===")
+      if (debugOn) call mpas_log_write("=== Beginning ice_run_mct ===")
 
       call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
@@ -810,32 +815,33 @@ contains
 
         currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
+        ! write time stamp on every step
         call mpas_log_write('Doing timestep ' // trim(timeStamp))
 
         ! pre-timestep analysis computation
-        call mpas_log_write('   Starting analysis precompute', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Starting analysis precompute', masterOnly=.true.)
         call cice_analysis_precompute(domain, ierr)
-        call mpas_log_write('   Finished analysis precompute', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Finished analysis precompute', masterOnly=.true.)
 
-        call mpas_log_write('   Starting forward update', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Starting forward update', masterOnly=.true.)
         call mpas_timer_start("time integration", .false.)
         call cice_timestep(domain, domain % clock, itimestep)
         call mpas_timer_stop("time integration")
-        call mpas_log_write('   Finished forward update', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Finished forward update', masterOnly=.true.)
 
         ! update analysis members
-        call mpas_log_write('   Starting AM compute', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Starting AM compute', masterOnly=.true.)
         call cice_analysis_compute(domain, ierr)
-        call mpas_log_write('   Finished AM compute', masterOnly=.true.)
-        call mpas_log_write('   Starting AM restart', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Finished AM compute', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Starting AM restart', masterOnly=.true.)
         call cice_analysis_restart(domain, ierr)
-        call mpas_log_write('   Finished AM restart', masterOnly=.true.)
-        call mpas_log_write('   Starting AM write', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Finished AM restart', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Starting AM write', masterOnly=.true.)
         call cice_analysis_write(domain, ierr)
-        call mpas_log_write('   Finished AM write', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Finished AM write', masterOnly=.true.)
 
         ! Reset the restart alarm to prevent restart files being written without the coupler requesting it.
-        call mpas_log_write('   Resetting restart stream alarms', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Resetting restart stream alarms', masterOnly=.true.)
         call mpas_stream_mgr_begin_iteration(domain % streamManager)
         do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                    directionProperty=streamDirection, activeProperty=streamActive) )
@@ -843,29 +849,29 @@ contains
               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=streamName, ierr=ierr)
            end if
         end do
-        call mpas_log_write('   Resetting restart stream alarms complete', masterOnly=.true.)
-        call mpas_log_write('   Writing output streams', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Resetting restart stream alarms complete', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Writing output streams', masterOnly=.true.)
         call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
         call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='output', ierr=ierr)
 
         call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
         call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
-        call mpas_log_write('   Finished writing output streams', masterOnly=.true.)
-        call mpas_log_write('Completed timestep ' // trim(timeStamp))
+        if (debugOn) call mpas_log_write('   Finished writing output streams', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('Completed timestep ' // trim(timeStamp))
      end do
 
       ! Check if coupler wants us to write a restart file.
       ! We only write restart files at the end of a coupling interval
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
          ! Write a restart file, because the coupler asked for it.
-         call mpas_log_write('Writing restart streams', masterOnly=.true.)
+         if (debugOn) call mpas_log_write('Writing restart streams', masterOnly=.true.)
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
          do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                     directionProperty=streamDirection, activeProperty=streamActive) )
             if ( streamActive .and. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) then
-               call mpas_log_write('    Writing stream: ' // trim(streamName), masterOnly=.true.)
+               if (debugOn) call mpas_log_write('    Writing stream: ' // trim(streamName), masterOnly=.true.)
                call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true., streamID=streamName, iErr=iErr)
-               call mpas_log_write('    Finished Writing stream: ' // trim(streamName), masterOnly=.true.)
+               if (debugOn) call mpas_log_write('    Finished Writing stream: ' // trim(streamName), masterOnly=.true.)
             end if
          end do
 
@@ -874,13 +880,13 @@ contains
             write(22, *) trim(timeStamp)
             close(22)
          end if
-         call mpas_log_write('Finished writing restart streams', masterOnly=.true.)
+         if (debugOn) call mpas_log_write('Finished writing restart streams', masterOnly=.true.)
       end if
 
       ! Export state to coupler
-      call mpas_log_write('Exporting state', masterOnly=.true.)
+      if (debugOn) call mpas_log_write('Exporting state', masterOnly=.true.)
       call ice_export_mct(i2x_i, ierr)
-      call mpas_log_write('Finished exporting state', masterOnly=.true.)
+      if (debugOn) call mpas_log_write('Finished exporting state', masterOnly=.true.)
 
       ! Check if clocks are in sync
 !TODO?      call check_clocks_sync(domain % clock, Eclock, ierr)
@@ -897,7 +903,7 @@ contains
          call mpas_log_write('Internal mpas clock not in sync with sync clock', MPAS_LOG_CRIT)
       end if
 
-      call mpas_log_write('=== Completed ice_run_mct. ===', flushNow=.true.)
+      if (debugOn) call mpas_log_write('=== Completed ice_run_mct. ===', flushNow=.true.)
 
       ! Reset I/O logs
       call shr_file_setLogUnit (shrlogunit)

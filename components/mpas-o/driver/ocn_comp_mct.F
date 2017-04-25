@@ -819,7 +819,7 @@ contains
 
       ! Set MPAS Log module instance
       mpas_log_info => domain % logInfo
-      call mpas_log_write("=== Beginning ocn_run_mct ===")
+      if (debugOn) call mpas_log_write("=== Beginning ocn_run_mct ===")
 
       call mpas_pool_get_config(domain_ptr % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
@@ -867,7 +867,8 @@ contains
 
          currTime = mpas_get_clock_time(domain_ptr % clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-         call mpas_log_write( 'Doing timestep '//trim(timeStamp))
+         ! write time stamp at every step
+         call mpas_log_write('Doing timestep ' // trim(timeStamp))
 
          ! Build forcing arrays.
          if (debugOn) call mpas_log_write('   Building forcing arrays')
@@ -1011,7 +1012,7 @@ contains
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
 
-      call mpas_log_write('=== Completed ocn_run_mct. ===', flushNow=.true.)
+      if (debugOn) call mpas_log_write('=== Completed ocn_run_mct. ===', flushNow=.true.)
 
 
 !-----------------------------------------------------------------------
