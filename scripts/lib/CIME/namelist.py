@@ -987,9 +987,12 @@ class Namelist(object):
         >>> x.set_variable_value('foo', 'bar(2)', [u'3'], var_size=4)
         >>> x.get_variable_value('foo', 'bar')
         [u'1', u'3']
-        >>> x.set_variable_value('foo', 'bar', [u'2'])
+        >>> x.set_variable_value('foo', 'bar(1)', [u'2'])
         >>> x.get_variable_value('foo', 'bar')
         [u'2', u'3']
+        >>> x.set_variable_value('foo', 'bar', [u'1'])
+        >>> x.get_variable_value('foo', 'bar')
+        [u'1']
         >>> x.set_variable_value('foo', 'bazz', [u'3'])
         >>> x.set_variable_value('Brack', 'baR', [u'4'])
         >>> x.get_variable_value('foo', 'bazz')
@@ -1003,6 +1006,7 @@ class Namelist(object):
         group_name = group_name.lower()
 
         minindex, maxindex, step = get_fortran_variable_indices(variable_name, var_size)
+        original_var = variable_name
         variable_name = get_fortran_name_only(variable_name.lower())
 
         expect(minindex > 0, "Indices < 1 not supported in CIME interface to fortran namelists... lower bound=%s"%minindex)
@@ -1019,12 +1023,16 @@ class Namelist(object):
         if minindex > tlen:
             self._groups[group_name][variable_name].extend(['']*(minindex-tlen-1))
 
-        for i in range(minindex, maxindex+2*step, step):
-            while len(self._groups[group_name][variable_name]) < i:
-                self._groups[group_name][variable_name].append('')
-            self._groups[group_name][variable_name][i-1] = value.pop(0)
-            if len(value) == 0:
-                break
+        # only replace items which are in index notation
+        if FORTRAN_NAME_REGEX.search(original_var).group(2) is not None:
+            for i in range(minindex, maxindex+2*step, step):
+                while len(self._groups[group_name][variable_name]) < i:
+                    self._groups[group_name][variable_name].append('')
+                self._groups[group_name][variable_name][i-1] = value.pop(0)
+                if len(value) == 0:
+                    break
+        else:
+            self._groups[group_name][variable_name] = value
 
 
     def delete_variable(self, group_name, variable_name):
@@ -1440,7 +1448,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
             self._advance()
         return True
 
-    def _expect_char(self, chars, RETURN=False):
+    def _expect_char(self, chars):
         """Raise an error if the wrong character is present.
 
         Does not return anything, but raises a `_NamelistParseError` if `chars`
@@ -1458,17 +1466,13 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         _NamelistParseError: Error in parsing namelist: expected 'a' but found 'b'
         >>> x._expect_char('ab')
         """
-        if self._curr() not in chars and not RETURN:
+        if self._curr() not in chars:
             if len(chars) == 1:
                 char_description = repr(str(chars))
             else:
                 char_description = "one of the characters in %r" % str(chars)
             raise _NamelistParseError("expected %s but found %r" %
                                       (char_description, str(self._curr())))
-        elif self._curr() in chars and RETURN:
-            return True
-        elif self._curr() not in chars and RETURN:
-            return False
 
     def _parse_namelist_group_name(self):
         r"""Parses and returns a namelist group name at the current position.
@@ -1667,7 +1671,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         return False
 
     def _look_ahead_for_plusequals(self, pos):
-        r"""Look ahead to see if the next whitespace character is '='.
+        r"""Look ahead to see if the next two non-whitespace character are '+='.
 
         The `pos` argument is the position in the text to start from while
         looking. This function returns a boolean.
@@ -1824,7 +1828,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         separators = [' ', '\n', ',', '/']
         if allow_name:
             separators.append('=')
-            separators.append('+=')
+            separators.append('+')
         while new_pos != self._len and self._text[new_pos] not in separators:
             # allow commas if they are inside ()
             if self._text[new_pos] == '(':
@@ -1957,7 +1961,8 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         r"""Parse and return a variable name and values assigned to that name.
 
         The return value of this function is a tuple containing (a) the name of
-        the variable in a string, and (b) a list of the variable's values. Null
+        the variable in a string, (b) a list of the variable's values, and
+        (c) whether or not to add the found value to existing variable. Null
         values are represented by the empty string.
 
         If `allow_eof_end=True`, the end of the sequence of values might come
@@ -2018,7 +2023,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
 
         self._eat_whitespace()
         # check to see if we have a "+="
-        if self._expect_char("+", RETURN=True):
+        if self._curr() == '+':
             self._advance()
             addto=True  # tell parser that we want to add to dictionary values
         self._expect_char("=")
@@ -2103,9 +2108,11 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
             name, values, addto = self._parse_name_and_values()
             dsettings = []
             if self._groupless:
-                if name in self._settings and not addto:
-                    values = merge_literal_lists(self._settings[name], values)
-                elif name in self._settings and addto:
+                if name in self._settings:
+                    dsettings = self._settings[name]
+                if not addto:
+                    values = merge_literal_lists(dsettings, values)
+                else:
                     values = self._settings[name] + values
                 self._settings[name] = values
             else:
@@ -2169,10 +2176,11 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         if self._groupless and self._curr() != '&':
             while self._pos < self._len:
                 name, values, addto = self._parse_name_and_values(allow_eof_end=True)
-                if name in self._settings and not addto:
-                    values = merge_literal_lists(self._settings[name], values)
-                elif name in self._settings and addto:
-                    values = self._settings[name] + values
+                if name in self._settings:
+                    if addto:
+                        values = self._settings[name] + values
+                    else:
+                        values = merge_literal_lists(self._settings[name], values)
                 self._settings[name] = values
             return self._settings
         # Loop over namelist groups in the file.
