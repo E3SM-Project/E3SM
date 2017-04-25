@@ -138,6 +138,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
 
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
+
+            case.initialize_derived_attributes()
         else:
             check_pelayouts_require_rebuild(case, models)
 
@@ -155,6 +157,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
                    "it is not possible to run with OpenMP if using the NAG Fortran compiler")
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
+
+            case.initialize_derived_attributes()
 
             # create batch files
             logger.info("Creating batch script case.run")
@@ -186,8 +190,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
 
         # Set TOTAL_CORES
         case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
-
-        case.initialize_derived_attributes()
 
         # Create user_nl files for the required number of instances
         if not os.path.exists("user_nl_cpl"):
