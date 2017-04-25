@@ -136,9 +136,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
                 else:
                     expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst, comp, ntasks))
 
-        # Set TOTAL_CORES
-        case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
-
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
         else:
@@ -186,6 +183,11 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
             case.flush()
             logger.debug("at copy TOTALPES = %s"%case.get_value("TOTALPES"))
             lock_file("env_mach_pes.xml")
+
+        # Set TOTAL_CORES
+        case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
+
+        case.initialize_derived_attributes()
 
         # Create user_nl files for the required number of instances
         if not os.path.exists("user_nl_cpl"):
