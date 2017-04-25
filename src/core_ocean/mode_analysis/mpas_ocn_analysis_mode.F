@@ -122,7 +122,7 @@ module ocn_analysis_mode
 
          call ocn_init_routines_block(block, dt, ierr)
          if(ierr.eq.1) then
-             call mpas_log_write('ERROR: An error was encountered in ocn_init_routines_block', MPAS_LOG_CRIT)
+             call mpas_log_write('An error was encountered in ocn_init_routines_block', MPAS_LOG_CRIT)
          endif
 
          xtime = startTimeStamp

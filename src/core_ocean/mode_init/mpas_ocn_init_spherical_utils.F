@@ -125,7 +125,7 @@ contains
       end if
 
       if ( sphere_radius == 0.0_RKIND ) then
-         call mpas_log_write( 'ERROR: Sphere radius is 0.0')
+         call mpas_log_write( 'Sphere radius is 0.0', MPAS_LOG_CRIT)
          err = 1
          return
       end if

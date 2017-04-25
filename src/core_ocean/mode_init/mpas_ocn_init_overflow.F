@@ -342,7 +342,7 @@ contains
       if(config_vert_levels <= 0 .and. config_overflow_vert_levels > 0) then
          config_vert_levels = config_overflow_vert_levels
       else if(config_vert_levels <= 0) then
-         call mpas_log_write( 'ERROR: Validation failed for overflow test case. Not given a usable value for vertical levels.')
+         call mpas_log_write( 'Validation failed for overflow test case. Not given a usable value for vertical levels.', MPAS_LOG_CRIT)
          iErr = 1
       end if
 

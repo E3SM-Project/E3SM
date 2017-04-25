@@ -864,8 +864,7 @@ subroutine start_state(domain, instance, series, valid_input, err)
 
   if (output_stream_name == NONE_TOKEN) then
     call mpas_log_write( &
-      trim(CURRENT_CORE_NAME) // ' ERROR: stream cannot be "none" ' // &
-      'for time series stats.')
+      'Stream cannot be "none" for time series stats.', MPAS_LOG_CRIT)
   end if
 
   ! count the number of variables
@@ -899,9 +898,8 @@ subroutine start_state(domain, instance, series, valid_input, err)
 
   if (series % number_of_variables < 1) then
     call mpas_log_write( &
-      trim(CURRENT_CORE_NAME) // ' ERROR: there are no fields ' // &
-      'in the time series stats output stream "' // trim(output_stream_name) &
-      // '" that time series stats can be applied to.')
+      'In the time series stats output stream "' // trim(output_stream_name) &
+       // '" that time series stats can be applied to.', MPAS_LOG_CRIT)
   end if
 
   ! count the number of buffers
@@ -1090,16 +1088,15 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
   end do
 
   if (.not. emptyRestartStream) then
-    call mpas_log_write( trim(CURRENT_CORE_NAME) // ' ERROR: stream named ''' &
+    call mpas_log_write( 'Stream named ''' &
       // trim(restart_stream_name) // ''' is not empty, but is used in ' // &
       'an restart instance of the time series stats analysis member. ' // &
       'This restart stream will be built based on the contents of the ''' // &
       trim(output_stream_name) // ''' stream. Please ensure it is empty ' // &
       'in the streams input file.')
     call mpas_log_write( &
-      trim(CURRENT_CORE_NAME) // &
-      'ERROR: misconfigured restart stream for time series stats ' // &
-      ' analysis member.')
+      'Misconfigured restart stream for time series stats ' // &
+      ' analysis member.', MPAS_LOG_CRIT)
   end if
 
   ! create and put the counter, xtime_start, xtime_end in the streams
@@ -1268,9 +1265,9 @@ character (len=StrKIND) function operator_naming (operator_enum)
     operator_naming = SOS_TOKEN
   else
     call mpas_log_write( &
-      trim(CURRENT_CORE_NAME) // ' ERROR: the impossible happened - ' // &
+      'The impossible happened - ' // &
       'tried to create an operation in the time series stats ' // &
-      'analysis member of unknown kind')
+      'analysis member of unknown kind', MPAS_LOG_CRIT)
   end if
 end function operator_naming
 
@@ -1299,9 +1296,9 @@ integer function operator_enum (token)
     operator_enum = SOS_OP
   else
     call mpas_log_write( &
-      trim(CURRENT_CORE_NAME) // ' ERROR: unknown operation "' // &
+      'Unknown operation "' // &
       trim(token) // '" requested in the time ' // &
-      'series stats analysis member configuration')
+      'series stats analysis member configuration', MPAS_LOG_CRIT)
   end if
 end function operator_enum
 
@@ -1355,11 +1352,11 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   call set_times(series, alarms, domain % clock, RESET_INTERVALS, &
     config_results, ok, err)
   if (.not. ok) then
-    call mpas_log_write(trim(CURRENT_CORE_NAME) // &
-      ' ERROR: number of listed times in ' // &
+    call mpas_log_write( &
+      'Number of listed times in ' // &
       'reset_intervals is not consistent with number of listed times ' // &
       'in reference_times in time series stats analysis member ' // &
-      'configuration.')
+      'configuration.', MPAS_LOG_CRIT)
   end if
 
   ! configure repeat intervals
@@ -1368,11 +1365,11 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   call set_times(series, alarms, domain % clock, REPEAT_INTERVALS, &
     config_results, ok, err)
   if (.not. ok) then
-    call mpas_log_write(trim(CURRENT_CORE_NAME) // &
-      ' ERROR: number of listed times in ' // &
+    call mpas_log_write( &
+      'Number of listed times in ' // &
       'repeat_intervals is not consistent with number of listed times ' // &
       'in reference_times in time series stats analysis member ' // &
-      'configuration.')
+      'configuration.', MPAS_LOG_CRIT)
   end if
 
   ! configure duration intervals
@@ -1381,11 +1378,11 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   call set_times(series, alarms, domain % clock, DURATION_INTERVALS, &
     config_results, ok, err)
   if (.not. ok) then
-    call mpas_log_write(trim(CURRENT_CORE_NAME) // &
-      ' ERROR: number of listed times in ' // &
+    call mpas_log_write( &
+      'Number of listed times in ' // &
       'duration_intervals is not consistent with number of listed times ' // &
       'in reference_times in time series stats analysis member ' // &
-      'configuration.')
+      'configuration.', MPAS_LOG_CRIT)
   end if
 
   ! check if some of the time configuration is sensible
@@ -1738,9 +1735,9 @@ subroutine add_new_field(info, inname, outname, all_fields, amPool)!{{{
   else if (info % nDims == 5) then
     call copy_field_5r(inname, all_fields, amPool, outname)
   else
-    call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+    call mpas_log_write( &
       'the impossible happened - tried to copy a real field "' // &
-      trim(inname) // '" that does not have 0-5 dimensionality')
+      trim(inname) // '" that does not have 0-5 dimensionality', MPAS_LOG_CRIT)
   end if
 
 end subroutine add_new_field!}}}
@@ -1875,9 +1872,9 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
     else if (operation == SOS_OP) then
       call operate0r_sos(block, variable, buffers)
     else
-      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write( &
         'the impossible happened - tried to operate with an ' // &
-        'unknown operator in the time series stats AM')
+        'unknown operator in the time series stats AM', MPAS_LOG_CRIT)
     end if
   else if (info % nDims == 1) then
     if (operation == AVG_OP) then
@@ -1891,9 +1888,9 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
     else if (operation == SOS_OP) then
       call operate1r_sos(block, variable, buffers)
     else
-      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write( &
         'the impossible happened - tried to operate with an ' // &
-        'unknown operator in the time series stats AM')
+        'unknown operator in the time series stats AM', MPAS_LOG_CRIT)
     end if
   else if (info % nDims == 2) then
     if (operation == AVG_OP) then
@@ -1907,9 +1904,9 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
     else if (operation == SOS_OP) then
       call operate2r_sos(block, variable, buffers)
     else
-      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write( &
         'the impossible happened - tried to operate with an ' // &
-        'unknown operator in the time series stats AM')
+        'unknown operator in the time series stats AM', MPAS_LOG_CRIT)
     end if
   else if (info % nDims == 3) then
     if (operation == AVG_OP) then
@@ -1923,9 +1920,9 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
     else if (operation == SOS_OP) then
       call operate3r_sos(block, variable, buffers)
     else
-      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
+      call mpas_log_write( &
         'the impossible happened - tried to operate with an ' // &
-        'unknown operator in the time series stats AM')
+        'unknown operator in the time series stats AM', MPAS_LOG_CRIT)
     end if
   else if (info % nDims == 4) then
     if (operation == AVG_OP) then
@@ -1939,9 +1936,9 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
     else if (operation == SOS_OP) then
       call operate4r_sos(block, variable, buffers)
     else
-      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
-        'the impossible happened - tried to operate with an ' // &
-        'unknown operator in the time series stats AM')
+      call mpas_log_write( &
+        'The impossible happened - tried to operate with an ' // &
+         'unknown operator in the time series stats AM', MPAS_LOG_CRIT)
     end if
   else if (info % nDims == 5) then
     if (operation == AVG_OP) then
@@ -1955,15 +1952,15 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
     else if (operation == SOS_OP) then
       call operate5r_sos(block, variable, buffers)
     else
-      call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
-        'the impossible happened - tried to operate with an ' // &
-        'unknown operator in the time series stats AM')
+      call mpas_log_write( &
+        'The impossible happened - tried to operate with an ' // &
+         'unknown operator in the time series stats AM', MPAS_LOG_CRIT)
     end if
   else
-    call mpas_log_write(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
-      'the impossible happened - tried to operate on a real field "' // &
+    call mpas_log_write( &
+      'The impossible happened - tried to operate on a real field "' // &
       trim(variable % input_name) // '" that does not have 0-5 ' // &
-      'dimensionality in the time series stats AM')
+      'dimensionality in the time series stats AM', MPAS_LOG_CRIT)
   end if
 
 end subroutine typed_operate!}}}

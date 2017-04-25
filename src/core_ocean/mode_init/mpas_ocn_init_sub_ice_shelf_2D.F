@@ -152,9 +152,8 @@ module ocn_init_sub_ice_shelf_2D
      call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-     ! you may restrict your case geometry as follows:
-     if ( on_a_sphere ) call mpas_log_write('MPAS-ocean: ERROR: The sub_ice_shelf_2D configuration ' &
-                                                  // 'can only be applied to a planar mesh. Exiting...')
+     if ( on_a_sphere ) call mpas_log_write('The sub_ice_shelf_2D configuration can ' &
+          // 'only be applied to a planar mesh. Exiting...', MPAS_LOG_CRIT)
 
      allocate(interfaceLocations(nVertLevelsP1))
      call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
@@ -284,7 +283,7 @@ module ocn_init_sub_ice_shelf_2D
      call ocn_init_ssh_and_landIcePressure_vertical_grid(domain, iErr)
 
      if(iErr .ne. 0) then
-        call mpas_log_write( 'ERROR: ocn_init_ssh_and_landIcePressure_vertical_grid failed.')
+        call mpas_log_write( 'ocn_init_ssh_and_landIcePressure_vertical_grid failed.', MPAS_LOG_CRIT)
         call mpas_dmpar_finalize(domain % dminfo)
      end if
 
@@ -330,14 +329,14 @@ module ocn_init_sub_ice_shelf_2D
      call ocn_init_ssh_and_landIcePressure_balance(domain, iErr)
 
      if(iErr .ne. 0) then
-        call mpas_log_write( 'ERROR: ocn_init_ssh_and_landIcePressure_balance failed.')
+        call mpas_log_write( 'ocn_init_ssh_and_landIcePressure_balance failed.', MPAS_LOG_CRIT)
         call mpas_dmpar_finalize(domain % dminfo)
      end if
 
      call ocn_compute_Haney_number(domain, iErr)
 
      if(iErr .ne. 0) then
-        call mpas_log_write( 'ERROR: ocn_compute_Haney_number failed.')
+        call mpas_log_write( 'ocn_compute_Haney_number failed.', MPAS_LOG_CRIT)
         call mpas_dmpar_finalize(domain % dminfo)
      end if
 
@@ -384,7 +383,7 @@ module ocn_init_sub_ice_shelf_2D
      if(config_vert_levels <= 0 .and. config_sub_ice_shelf_2D_vert_levels > 0) then
         config_vert_levels = config_sub_ice_shelf_2D_vert_levels
      else if (config_vert_levels <= 0) then
-        call mpas_log_write( 'IERROR: Validation failed for sub_ice_shelf_2D. Not given a usable value for vertical levels.')
+        call mpas_log_write( 'Validation failed for sub_ice_shelf_2D. Not given a usable value for vertical levels.', MPAS_LOG_CRIT)
         iErr = 1
      end if
 

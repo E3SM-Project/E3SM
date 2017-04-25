@@ -154,7 +154,7 @@ contains
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      if ( on_a_sphere ) call mpas_log_write('ERROR: ISOMIP+ can only be applied to a planar mesh.  Exiting...')
+      if ( on_a_sphere ) call mpas_log_write('ISOMIP+ can only be applied to a planar mesh.  Exiting...', MPAS_LOG_CRIT)
 
       call mpas_pool_get_config(domain % configs, 'config_isomip_plus_vertical_level_distribution', &
          config_isomip_plus_vertical_level_distribution)
@@ -213,7 +213,7 @@ contains
       call ocn_init_ssh_and_landIcePressure_vertical_grid(domain, iErr)
 
       if(iErr .ne. 0) then
-        call mpas_log_write( 'ERROR: ocn_init_ssh_and_landIcePressure_vertical_grid failed.')
+        call mpas_log_write( 'ocn_init_ssh_and_landIcePressure_vertical_grid failed.', MPAS_LOG_CRIT)
         return
       end if
 
@@ -252,7 +252,7 @@ contains
       call ocn_init_ssh_and_landIcePressure_balance(domain, iErr)
 
       if(iErr .ne. 0) then
-        call mpas_log_write( 'ERROR: ocn_init_ssh_and_landIcePressure_balance failed.')
+        call mpas_log_write( 'ocn_init_ssh_and_landIcePressure_balance failed.', MPAS_LOG_CRIT)
         return
       end if
 
@@ -355,7 +355,7 @@ contains
       call ocn_compute_Haney_number(domain, iErr)
 
       if(iErr .ne. 0) then
-        call mpas_log_write( 'ERROR: ocn_compute_Haney_number failed.')
+        call mpas_log_write( 'ocn_compute_Haney_number failed.', MPAS_LOG_CRIT)
         return
       end if
 
@@ -734,8 +734,8 @@ contains
 
       call mpas_pool_get_config(configPool, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
       if(config_land_ice_flux_mode .ne. 'standalone' .and. config_land_ice_flux_mode .ne. 'coupled') then
-         call mpas_log_write( 'ERROR: Validation failed for isomip_plus. config_land_ice_flux_mode must either'// &
-            ' be standalone or coupled.')
+         call mpas_log_write( 'Validation failed for isomip_plus. config_land_ice_flux_mode must either'// &
+            ' be standalone or coupled.', MPAS_LOG_CRIT)
          iErr = 1
          return
       end if
@@ -746,7 +746,7 @@ contains
       if(config_vert_levels <= 0 .and. config_isomip_plus_vert_levels > 0) then
          config_vert_levels = config_isomip_plus_vert_levels
       else if (config_vert_levels <= 0) then
-         call mpas_log_write( 'ERROR: Validation failed for isomip_plus. Not given a usable value for vertical levels.')
+         call mpas_log_write( 'Validation failed for isomip_plus. Not given a usable value for vertical levels.', MPAS_LOG_CRIT)
          iErr = 1
          return
       end if
@@ -755,7 +755,7 @@ contains
          config_isomip_plus_vertical_level_distribution)
 
       if(trim(config_isomip_plus_vertical_level_distribution) .ne. "constant") then
-         call mpas_log_write( 'ERROR: Validation failed for isomip_plus. Bad vertical level distribution.')
+         call mpas_log_write( 'Validation failed for isomip_plus. Bad vertical level distribution.', MPAS_LOG_CRIT)
          iErr = 1
          return
       end if
@@ -764,36 +764,36 @@ contains
       call mpas_pool_get_config(configPool, 'config_isomip_plus_topography_file', config_isomip_plus_topography_file)
 
       if (trim(config_isomip_plus_topography_file) == 'none') then
-         call mpas_log_write( 'ERROR: Validation failed for ISOMIP+. Invalid filename for config_isomip_plus_topography_file')
+         call mpas_log_write( 'Validation failed for ISOMIP+. Invalid filename for config_isomip_plus_topography_file', MPAS_LOG_CRIT)
          iErr = 1
          return
       end if
 
       inputFile = MPAS_io_open(config_isomip_plus_topography_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
       if(iErr > 0) then
-         call mpas_log_write( 'ERROR: Validation failed for isomip_plus. Could not open file:'// &
-            trim(config_isomip_plus_topography_file) )
+         call mpas_log_write( 'Validation failed for isomip_plus. Could not open file:'// &
+            trim(config_isomip_plus_topography_file) , MPAS_LOG_CRIT)
          return
       end if
 
       call MPAS_io_inq_dim(inputFile, 'x', nxTopo, iErr)
       if(iErr /= 0) then
-         call mpas_log_write( 'ERROR: Validation failed for isomip_plus. Could not find dim x in file:'// &
-            trim(config_isomip_plus_topography_file) )
+         call mpas_log_write( 'Validation failed for isomip_plus. Could not find dim x in file:'// &
+            trim(config_isomip_plus_topography_file) , MPAS_LOG_CRIT)
          return
       end if
 
       call MPAS_io_inq_dim(inputFile, 'y', nyTopo, iErr)
       if(iErr /= 0) then
-         call mpas_log_write( 'ERROR: Validation failed for isomip_plus. Could not find dim y in file:'// &
-            trim(config_isomip_plus_topography_file) )
+         call mpas_log_write( 'Validation failed for isomip_plus. Could not find dim y in file:'// &
+            trim(config_isomip_plus_topography_file) , MPAS_LOG_CRIT)
          return
       end if
 
       call MPAS_io_close(inputFile, iErr)
       if(iErr /= 0) then
-         call mpas_log_write( 'ERROR: Validation failed for isomip_plus. Could not close file:'// &
-            trim(config_isomip_plus_topography_file))
+         call mpas_log_write( 'Validation failed for isomip_plus. Could not close file:'// &
+            trim(config_isomip_plus_topography_file), MPAS_LOG_CRIT)
          return
       end if
 

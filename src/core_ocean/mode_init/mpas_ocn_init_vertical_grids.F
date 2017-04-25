@@ -90,8 +90,8 @@ contains
          call ocn_generate_100layerACMEv1_vertical_grid(interfaceLocations)
       else if ( trim(gridType) == '1dCVTgenerator' ) then
          if (.not. present(configPool)) then
-            call mpas_log_write("MPAS-ocean: ERROR: requesting a 1d CVT vertical grid generation " &
-                                      // "without passing the corresponding parameters. Exiting...")
+            call mpas_log_write("MPAS-ocean: requesting a 1d CVT vertical grid generation " &
+                                      // "without passing the corresponding parameters. Exiting...", MPAS_LOG_CRIT)
          else
             call ocn_generate_1dCVT_vertical_grid(configPool, interfaceLocations)
          end if
@@ -156,8 +156,8 @@ contains
       nInterfaces = size(interfaceLocations, dim=1)
 
       if ( nInterfaces /= 61 ) then
-         call mpas_log_write("MPAS-ocean: ERROR: Vertical grid must have 60 layers to "// &
-                                      "apply 60 Layer PHC grid. Exiting...")
+         call mpas_log_write("MPAS-ocean: Vertical grid must have 60 layers to "// &
+                                      "apply 60 Layer PHC grid. Exiting...", MPAS_LOG_CRIT)
       end if
 
       interfaceLocations(1) = 0.0_RKIND
@@ -250,8 +250,8 @@ contains
       nInterfaces = size(interfaceLocations, dim=1)
 
       if ( nInterfaces /= 43 ) then
-         call mpas_log_write("MPAS-ocean: ERROR: Vertical grid must have 42 layers "// &
-                                      "to apply 42 Layer WOCE grid. Exiting...")
+         call mpas_log_write("MPAS-ocean: Vertical grid must have 42 layers "// &
+                                      "to apply 42 Layer WOCE grid. Exiting...", MPAS_LOG_CRIT)
       end if
 
       interfaceLocations(1) = 0.0_RKIND
@@ -327,8 +327,8 @@ contains
       nInterfaces = size(interfaceLocations, dim=1)
 
       if ( nInterfaces /= 101 ) then
-         call mpas_log_write("MPAS-ocean: ERROR: Vertical grid must have 100 layers to "// &
-                                      "apply 100 Layer PHC grid. Exiting...")
+         call mpas_log_write("MPAS-ocean: Vertical grid must have 100 layers to "// &
+                                      "apply 100 Layer PHC grid. Exiting...", MPAS_LOG_CRIT)
       end if
 
       interfaceLocations(  1) =  0.0000E+00_RKIND
@@ -741,11 +741,11 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'globalRx1Max', globalRx1Max, 1)
       do k = 1,nVertLevels
          call mpas_dmpar_max_real(domain % dminfo, rx1MaxLevel(k), globalRx1Max)
-         print '(a, i4, a, es10.2)', '  max of rx1 in level', k, ':', globalRx1Max
+         call mpas_log_write ('  max of rx1 in level $i :  %f', intArgs=(/ k /),  realArgs=(/ globalRx1Max /))
       end do
 
       call mpas_dmpar_max_real(domain % dminfo, localMaxRx1Edge, globalRx1Max)
-      print '(a, es10.2)', ' global max of rx1:', globalRx1Max
+      call mpas_log_write ('global max of rx1: $f', realArgs=(/ globalRx1Max /))
 
       deallocate(rx1MaxLevel)
 
@@ -1322,7 +1322,7 @@ contains
             ! initialize with PBCs
             call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
             if(iErr .ne. 0) then
-              call mpas_log_write( 'ERROR: ocn_alter_bottomDepth_for_pbcs failed.')
+              call mpas_log_write( 'ocn_alter_bottomDepth_for_pbcs failed.', MPAS_LOG_CRIT)
               return
             end if
           else
