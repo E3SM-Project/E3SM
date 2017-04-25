@@ -3,7 +3,7 @@
 
           {
       "case_id": "set5_CRU",
-      "variables": "TREFHT_LAND",
+      "variables": ["TREFHT_LAND"],
       "ref_name": "CRU",
       "reference_name": "IPCC/CRU climatology1961-90",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -14,7 +14,7 @@
                 },
           {
       "case_id": "set5_SST_HadISST",
-      "variables": "SST",
+      "variables": ["SST"],
       "ref_name": "HadISST_CL",
       "reference_name": "HadISST/OI.v2 (Climatology) 1982-2001",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -24,7 +24,7 @@
                 },
           {
       "case_id": "set5_SST_HadISST",
-      "variables": "SST",
+      "variables": ["SST"],
       "ref_name": "HadISST_PI",
       "reference_name": "HadISST/OI.v2 (Pre-Indust) 1870-1900",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -34,7 +34,7 @@
                 },
           {
       "case_id": "set5_SST_HadISST",
-      "variables": "SST",
+      "variables": ["SST"],
       "ref_name": "HadISST_PD",
       "reference_name": "HadISST/OI.v2 (Present Day) 1999-2008",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -44,7 +44,7 @@
                 },
           {
       "case_id": "set5_LEGATES",
-      "variables": "PRECT",
+      "variables": ["PRECT"],
       "ref_name": "LEGATES",
       "reference_name": "Legates & Willmott 1920-1980",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -55,7 +55,7 @@
                 },
           {
       "case_id": "set5_LEGATES",
-      "variables": "TREFHT",
+      "variables": ["TREFHT"],
       "ref_name": "LEGATES",
       "reference_name": "Legates & Willmott 1920-1980",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -65,7 +65,7 @@
                 },
           {
       "case_id": "set5_WILLMOTT",
-      "variables": "TREFHT_LAND",
+      "variables": ["TREFHT_LAND"],
       "ref_name": "WILLMOTT",
       "reference_name": "Willmott & Matsuura 1950-99",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -75,7 +75,7 @@
                 },
           {
       "case_id": "set5_WILLMOTT",
-      "variables": "PRECT_LAND",
+      "variables": ["PRECT_LAND"],
       "ref_name": "WILLMOTT",
       "reference_name": "Willmott & Matsuura 1950-99",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -85,7 +85,7 @@
                 },
           {
       "case_id": "set5_NVAP",
-      "variables": "PREH2O",
+      "variables": ["PREH2O"],
       "ref_name": "NVAP",
       "reference_name": "NVAP 1988-1999",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -96,7 +96,7 @@
                 },
           {
       "case_id": "set5_WHOI",
-      "variables": "QFLX",
+      "variables": ["QFLX"],
       "ref_name": "WHOI",
       "reference_name": "Woods Hole OAFLUX 1958-2006",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -107,7 +107,7 @@
                 },
           {
       "case_id": "set5_WHOI",
-      "variables": "LHFLX",
+      "variables": ["LHFLX"],
       "ref_name": "WHOI",
       "reference_name": "Woods Hole OAFLUX 1958-2006",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -118,7 +118,7 @@
                 },
           {
       "case_id": "set5_GPCP",
-      "variables": "PRECT",
+      "variables": ["PRECT"],
       "ref_name": "GPCP",
       "reference_name": "GPCP (yrs1979-2009)",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -129,7 +129,7 @@
                 },
            {
       "case_id": "set5_XIEARKIN",
-      "variables": "PRECT",
+      "variables": ["PRECT"],
       "ref_name": "XIEARKIN",
       "reference_name": "CMAP 1979-1998",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -139,7 +139,7 @@
                 },
           {
       "case_id": "set5_PRECL",
-      "variables": "PRECT_LAND",
+      "variables": ["PRECT_LAND"],
       "ref_name": "PRECL",
       "reference_name": "PREC/L (CMAP) 1948-2001",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -150,7 +150,7 @@
                 },
           {
       "case_id": "set5_UWisc_LWP",
-      "variables": "TGCLDLWP_OCN",
+      "variables": ["TGCLDLWP_OCN"],
       "ref_name": "UWisc_LWP",
       "reference_name": "UWisc 1988-2008",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -161,7 +161,7 @@
                 },
           {
       "case_id": "set5_SSMI",
-      "variables": "PRECT_OCN",
+      "variables": ["PRECT_OCN"],
       "ref_name": "SSMI",
       "reference_name": "SSM/I (Wentz) 1987-2000",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -172,7 +172,7 @@
                 },
           {
       "case_id": "set5_SSMI",
-      "variables": "PREH2O_OCN",
+      "variables": ["PREH2O_OCN"],
       "ref_name": "SSMI",
       "reference_name": "SSM/I (Wentz) 1987-2000",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -183,7 +183,7 @@
                 },
           {
       "case_id": "set5_SSMI",
-      "variables": "TGCLDLWP_OCN",
+      "variables": ["TGCLDLWP_OCN"],
       "ref_name": "SSMI",
       "reference_name": "SSM/I (Wentz) 1987-2000",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -194,7 +194,7 @@
                 },
           {
       "case_id": "set5_TRMM",
-      "variables": "PRECT",
+      "variables": ["PRECT"],
       "ref_name": "TRMM",
       "reference_name": "TRMM (3B43) 1998-2009",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -204,7 +204,7 @@
                 },
           {
       "case_id": "set5_LARYEA",
-      "variables": "SHFLX",
+      "variables": ["SHFLX"],
       "ref_name": "LARYEA",
       "reference_name": "Large-Yeager 1984-2004",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -215,7 +215,7 @@
                 },
           {
       "case_id": "set5_LARYEA",
-      "variables": "QFLX",
+      "variables": ["QFLX"],
       "ref_name": "LARYEA",
       "reference_name": "Large-Yeager 1984-2004",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -226,7 +226,7 @@
                 },
           {
       "case_id": "set5_LARYEA",
-      "variables": "FLNS",
+      "variables": ["FLNS"],
       "ref_name": "LARYEA",
       "reference_name": "Large-Yeager 1984-2004",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -237,7 +237,7 @@
                 },
           {
       "case_id": "set5_LARYEA",
-      "variables": "FSNS",
+      "variables": ["FSNS"],
       "ref_name": "LARYEA",
       "reference_name": "Large-Yeager 1984-2004",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -248,7 +248,7 @@
                 },
           {
       "case_id": "set5_CERES-EBAF",
-      "variables": "ALBEDO",
+      "variables": ["ALBEDO"],
       "ref_name": "CERES-EBAF",
       "reference_name": "CERES-EBAF March 2000-Feb 2013",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -259,7 +259,7 @@
                 },
           {
       "case_id": "set5_CERES-EBAF",
-      "variables": "ALBEDOC",
+      "variables": ["ALBEDOC"],
       "ref_name": "CERES-EBAF",
       "reference_name": "CERES-EBAF March 2000-Feb 2013",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -270,7 +270,7 @@
                 },
           {
       "case_id": "set5_CERES-EBAF",
-      "variables": "FLUT",
+      "variables": ["FLUT"],
       "ref_name": "CERES-EBAF",
       "reference_name": "CERES-EBAF March 2000-Feb 2013",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -281,7 +281,7 @@
                 },
           {
       "case_id": "set5_CERES-EBAF",
-      "variables": "FLUTC",
+      "variables": ["FLUTC"],
       "ref_name": "CERES-EBAF",
       "reference_name": "CERES-EBAF March 2000-Feb 2013",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -292,7 +292,7 @@
                 },
           {
       "case_id": "set5_CERES-EBAF",
-      "variables": "FSNTOA",
+      "variables": ["FSNTOA"],
       "ref_name": "CERES-EBAF",
       "reference_name": "CERES-EBAF March 2000-Feb 2013",
       "contour_levels":[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390, 420],
@@ -303,7 +303,7 @@
                 },
           {
       "case_id": "set5_CERES-EBAF",
-      "variables": "FSNTOAC",
+      "variables": ["FSNTOAC"],
       "ref_name": "CERES-EBAF",
       "reference_name": "CERES-EBAF March 2000-Feb 2013",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -314,7 +314,7 @@
                 },
           {
       "case_id": "set5_CERES-EBAF",
-      "variables": "SWCF",
+      "variables": ["SWCF"],
       "ref_name": "CERES-EBAF",
       "reference_name": "CERES-EBAF March 2000-Feb 2013",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -325,7 +325,7 @@
                 },
           {
       "case_id": "set5_CERES-EBAF",
-      "variables": "LWCF",
+      "variables": ["LWCF"],
       "ref_name": "CERES-EBAF",
       "reference_name": "CERES-EBAF March 2000-Feb 2013",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -336,7 +336,7 @@
                 },
           {
       "case_id": "set5_CERES-EBAF",
-      "variables": "RESTOM",
+      "variables": ["RESTOM"],
       "ref_name": "CERES-EBAF",
       "reference_name": "CERES-EBAF March 2000-Feb 2013",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -345,7 +345,7 @@
                 },
           {
       "case_id": "set5_ERBE",
-      "variables": "FLUT",
+      "variables": ["FLUT"],
       "ref_name": "ERBE",
       "reference_name": "ERBE Feb1985-Apr1989",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -356,7 +356,7 @@
                 },
           {
       "case_id": "set5_ERBE",
-      "variables": "FLUTC",
+      "variables": ["FLUTC"],
       "ref_name": "ERBE",
       "reference_name": "ERBE Feb1985-Apr1989",
       "contour_levels":[120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 280, 290, 300, 310],
@@ -367,7 +367,7 @@
                 },
           {
       "case_id": "set5_ERBE",
-      "variables": "FSNTOA",
+      "variables": ["FSNTOA"],
       "ref_name": "ERBE",
       "reference_name": "ERBE Feb1985-Apr1989",
       "contour_levels":[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390, 420],
@@ -378,7 +378,7 @@
                 },
           {
       "case_id": "set5_ERBE",
-      "variables": "FSNTOAC",
+      "variables": ["FSNTOAC"],
       "ref_name": "ERBE",
       "reference_name": "ERBE Feb1985-Apr1989",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -389,7 +389,7 @@
                 },
           {
       "case_id": "set5_ERBE",
-      "variables": "SWCF",
+      "variables": ["SWCF"],
       "ref_name": "ERBE",
       "reference_name": "ERBE Feb1985-Apr1989",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -400,7 +400,7 @@
                 },
           {
       "case_id": "set5_ERBE",
-      "variables": "LWCF",
+      "variables": ["LWCF"],
       "ref_name": "ERBE",
       "reference_name": "ERBE Feb1985-Apr1989",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -411,7 +411,7 @@
                 },
           {
       "case_id": "set5_ERBE",
-      "variables": "RESTOM",
+      "variables": ["RESTOM"],
       "ref_name": "ERBE",
       "reference_name": "ERBE Feb1985-Apr1989",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -420,7 +420,7 @@
                 },
           {
       "case_id": "set5_ISCCPFD",
-      "variables": "FLDS",
+      "variables": ["FLDS"],
       "ref_name": "ISCCPFD",
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -429,7 +429,7 @@
                 },
           {
       "case_id": "set5_ISCCPFD",
-      "variables": "FLDS",
+      "variables": ["FLDS"],
       "ref_name": "ISCCPFD",
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -438,7 +438,7 @@
                 },
           {
       "case_id": "set5_ISCCPFD",
-      "variables": "FLDSC",
+      "variables": ["FLDSC"],
       "ref_name": "ISCCPFD",
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -447,7 +447,7 @@
                 },
           {
       "case_id": "set5_ISCCPFD",
-      "variables": "FSDS",
+      "variables": ["FSDS"],
       "ref_name": "ISCCPFD",
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -456,7 +456,7 @@
                 },
           {
       "case_id": "set5_ISCCPFD",
-      "variables": "FSDSC",
+      "variables": ["FSDSC"],
       "ref_name": "ISCCPFD",
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -465,7 +465,7 @@
                 },
           {
       "case_id": "set5_ISCCPFD",
-      "variables": "FLNS",
+      "variables": ["FLNS"],
       "ref_name": "ISCCPFD",
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -476,7 +476,7 @@
                 },
           {
       "case_id": "set5_ISCCPFD",
-      "variables": "FLNSC",
+      "variables": ["FLNSC"],
       "ref_name": "ISCCPFD",
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -485,7 +485,7 @@
                 },
           {
       "case_id": "set5_ISCCPFD",
-      "variables": "FSNS",
+      "variables": ["FSNS"],
       "ref_name": "ISCCPFD",
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -496,7 +496,7 @@
                 },
           {
       "case_id": "set5_ISCCPFD",
-      "variables": "FSNSC",
+      "variables": ["FSNSC"],
       "ref_name": "ISCCPFD",
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -505,7 +505,7 @@
                 },
           {
       "case_id": "set5_ISCCPFD",
-      "variables": "SWCFSRF",
+      "variables": ["SWCFSRF"],
       "ref_name": "ISCCPFD",
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -516,7 +516,7 @@
                 },
           {
       "case_id": "set5_ISCCPFD",
-      "variables": "LWCFSRF",
+      "variables": ["LWCFSRF"],
       "contour_levels":[5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 95, 100, 105],
       "diff_levels":[-35, -30, -15, -10, -6, -4, -2, 0, 2, 4, 6, 10, 15, 30, 35],
       "ref_name": "ISCCPFD",
@@ -527,7 +527,7 @@
                 },
           {
       "case_id": "set5_WARREN",
-      "variables": "CLDTOT",
+      "variables": ["CLDTOT"],
       "ref_name": "WARREN",
       "reference_name": "Warren Cloud Surface OBS",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -536,7 +536,7 @@
                 },
           {
       "case_id": "set5_WARREN",
-      "variables": "CLDLOW",
+      "variables": ["CLDLOW"],
       "ref_name": "WARREN",
       "reference_name": "Warren Cloud Surface OBS",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -545,7 +545,7 @@
                 },
           {
       "case_id": "set5_CLOUDSAT",
-      "variables": "CLDHGH",
+      "variables": ["CLDHGH"],
       "ref_name": "CLOUDSAT",
       "reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -554,7 +554,7 @@
                 },
           {
       "case_id": "set5_CLOUDSAT",
-      "variables": "CLDLOW",
+      "variables": ["CLDLOW"],
       "ref_name": "CLOUDSAT",
       "reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -563,7 +563,7 @@
                 },
           {
       "case_id": "set5_CLOUDSAT",
-      "variables": "CLDMED",
+      "variables": ["CLDMED"],
       "ref_name": "CLOUDSAT",
       "reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -572,7 +572,7 @@
                 },
           {
       "case_id": "set5_CLOUDSAT",
-      "variables": "CLDTOT",
+      "variables": ["CLDTOT"],
       "ref_name": "CLOUDSAT",
       "reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -581,7 +581,7 @@
                 },
            {
       "case_id": "set5_MERRA",
-      "variables": "T",
+      "variables": ["T"],
       "ref_name": "MERRA",
       "reference_name": "MERRA Analysis 1979-2013 NASA",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -590,7 +590,7 @@
                 },
           {
       "case_id": "set5_MERRA",
-      "variables": "U",
+      "variables": ["U"],
       "ref_name": "MERRA",
       "reference_name": "MERRA Analysis 1979-2013 NASA",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -599,7 +599,7 @@
                 },
           {
       "case_id": "set5_MERRA",
-      "variables": "Z3",
+      "variables": ["Z3"],
       "ref_name": "MERRA",
       "reference_name": "MERRA Analysis 1979-2013 NASA",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -608,7 +608,7 @@
                 },
           {
       "case_id": "set5_MERRA",
-      "variables": "PREH2O",
+      "variables": ["PREH2O"],
       "ref_name": "MERRA",
       "reference_name": "MERRA Analysis 1979-2013 NASA",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -619,7 +619,7 @@
                 },
           {
       "case_id": "set5_MERRA",
-      "variables": "PSL",
+      "variables": ["PSL"],
       "ref_name": "MERRA",
       "reference_name": "MERRA Analysis 1979-2013 NASA",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -628,7 +628,7 @@
                 },
           {
       "case_id": "set5_ERA40",
-      "variables": "LHFLX",
+      "variables": ["LHFLX"],
       "ref_name": "ERA40",
       "reference_name": "ERA40 Reanalysis 1980-2001",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -639,7 +639,7 @@
                 },
           {
       "case_id": "set5_ERA40",
-      "variables": "PREH2O",
+      "variables": ["PREH2O"],
       "ref_name": "ERA40",
       "reference_name": "ERA40 Reanalysis 1980-2001",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -650,7 +650,7 @@
                 },
           {
       "case_id": "set5_ERA40",
-      "variables": "U",
+      "variables": ["U"],
       "ref_name": "ERA40",
       "reference_name": "ERA40 Reanalysis 1980-2001",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -659,7 +659,7 @@
                 },
           {
       "case_id": "set5_ERA40",
-      "variables": "Z3",
+      "variables": ["Z3"],
       "ref_name": "ERA40",
       "reference_name": "ERA40 Reanalysis 1980-2001",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -668,7 +668,7 @@
                 },
           {
       "case_id": "set5_ERA40",
-      "variables": "T",
+      "variables": ["T"],
       "ref_name": "ERA40",
       "reference_name": "ERA40 Reanalysis 1980-2001",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -677,7 +677,7 @@
                 },
           {
       "case_id": "set5_ERAI",
-      "variables": "LHFLX",
+      "variables": ["LHFLX"],
       "ref_name": "ERAI",
       "reference_name": "ERA-Interim Reanalysis 1989-2005",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -688,7 +688,7 @@
                 },
           {
       "case_id": "set5_ERAI",
-      "variables": "PRECT",
+      "variables": ["PRECT"],
       "ref_name": "ERAI",
       "reference_name": "ERA-Interim Reanalysis 1989-2005",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -699,7 +699,7 @@
                 },
           {
       "case_id": "set5_ERAI",
-      "variables": "PREH2O",
+      "variables": ["PREH2O"],
       "ref_name": "ERAI",
       "reference_name": "ERA-Interim Reanalysis 1989-2005",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -710,7 +710,7 @@
                 },
           {
       "case_id": "set5_ERAI",
-      "variables": "U",
+      "variables": ["U"],
       "ref_name": "ERAI",
       "reference_name": "ERA-Interim Reanalysis 1989-2005",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -719,7 +719,7 @@
                 },
           {
       "case_id": "set5_ERAI",
-      "variables": "Z3",
+      "variables": ["Z3"],
       "ref_name": "ERAI",
       "reference_name": "ERA-Interim Reanalysis 1989-2005",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -728,7 +728,7 @@
                 },
           {
       "case_id": "set5_ERAI",
-      "variables": "T",
+      "variables": ["T"],
       "ref_name": "ERAI",
       "reference_name": "ERA-Interim Reanalysis 1989-2005",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -737,7 +737,7 @@
                 },
           {
       "case_id": "set5_JRA25",
-      "variables": "LHFLX",
+      "variables": ["LHFLX"],
       "ref_name": "JRA25",
       "reference_name": "JRA25 Reanalysis 1979-2004",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -748,7 +748,7 @@
                 },
           {
       "case_id": "set5_JRA25",
-      "variables": "SHFLX",
+      "variables": ["SHFLX"],
       "ref_name": "JRA25",
       "reference_name": "JRA25 Reanalysis 1979-2004",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -757,7 +757,7 @@
                 },
           {
       "case_id": "set5_JRA25",
-      "variables": "TREFHT",
+      "variables": ["TREFHT"],
       "ref_name": "JRA25",
       "reference_name": "JRA25 Reanalysis 1979-2004",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -768,7 +768,7 @@
                 },
           {
       "case_id": "set5_JRA25",
-      "variables": "PREH2O",
+      "variables": ["PREH2O"],
       "ref_name": "JRA25",
       "reference_name": "JRA25 Reanalysis 1979-2004",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -779,7 +779,7 @@
                 },
           {
       "case_id": "set5_JRA25",
-      "variables": "TREFHT",
+      "variables": ["TREFHT"],
       "ref_name": "JRA25",
       "reference_name": "JRA25 Reanalysis 1979-2004",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -790,7 +790,7 @@
                 },
           {
       "case_id": "set5_JRA25",
-      "variables": "U",
+      "variables": ["U"],
       "ref_name": "JRA25",
       "reference_name": "JRA25 Reanalysis 1979-2004",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -799,7 +799,7 @@
                 },
           {
       "case_id": "set5_JRA25",
-      "variables": "Z3",
+      "variables": ["Z3"],
       "ref_name": "JRA25",
       "reference_name": "JRA25 Reanalysis 1979-2004",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -808,7 +808,7 @@
                 },
           {
       "case_id": "set5_JRA25",
-      "variables": "T",
+      "variables": ["T"],
       "ref_name": "JRA25",
       "reference_name": "JRA25 Reanalysis 1979-2004",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -817,7 +817,7 @@
                 },
           {
       "case_id": "set5_AIRS",
-      "variables": "T",
+      "variables": ["T"],
       "ref_name": "AIRS",
       "reference_name": "AIRS IR Sounder 2002-06",
       "season": ["ANN","DJF","MAM","JJA","SON"],
@@ -826,4 +826,5 @@
                } 
            ] 
 }
+
 

@@ -7,7 +7,7 @@ test_name = '20160520.A_WCYCL1850.ne30'
 regrid_tool = 'esmf'
 regrid_method = 'linear'
 
-backend = 'vcs'
+backend = 'cartopy'
 
 diff_title = 'test - reference'
 diff_colormap = 'bl_to_darkred'
