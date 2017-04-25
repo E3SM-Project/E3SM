@@ -136,11 +136,10 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
                 else:
                     expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst, comp, ntasks))
 
-        # Set TOTAL_CORES
-        case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
-
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
+
+            case.initialize_derived_attributes()
         else:
             check_pelayouts_require_rebuild(case, models)
 
@@ -159,6 +158,12 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
 
+            # Make sure pio settings are consistent
+            if adjust_pio:
+                adjust_pio_layout(case, tasks_per_node)
+
+            case.initialize_derived_attributes()
+
             # create batch files
             logger.info("Creating batch script case.run")
             env_batch = case.get_env("batch")
@@ -176,16 +181,15 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
                     logger.info("Writing %s script from input template %s" % (job, input_batch_script))
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
 
-            # Make sure pio settings are consistant
-            if adjust_pio:
-                adjust_pio_layout(case, tasks_per_node)
-
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
             logger.info("Locking file env_mach_pes.xml")
             case.flush()
             logger.debug("at copy TOTALPES = %s"%case.get_value("TOTALPES"))
             lock_file("env_mach_pes.xml")
+
+        # Set TOTAL_CORES
+        case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
 
         # Create user_nl files for the required number of instances
         if not os.path.exists("user_nl_cpl"):

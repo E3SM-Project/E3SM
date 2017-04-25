@@ -107,7 +107,7 @@ class Case(object):
         self.cores_per_task = None
         # check if case has been configured and if so initialize derived
         if self.get_value("CASEROOT") is not None:
-            self._initialize_derived_attributes()
+            self.initialize_derived_attributes()
 
     def check_if_comp_var(self, vid):
         vid = vid
@@ -119,7 +119,7 @@ class Case(object):
                 return vid, comp, iscompvar
         return vid, comp, iscompvar
 
-    def _initialize_derived_attributes(self):
+    def initialize_derived_attributes(self):
         """
         These are derived variables which can be used in the config_* files
         for variable substitution using the {{ var }} syntax
@@ -809,7 +809,7 @@ class Case(object):
         if test:
             self.set_value("TEST",True)
 
-        self._initialize_derived_attributes()
+        self.initialize_derived_attributes()
 
         # Make sure that parallel IO is not specified if total_tasks==1
         if self.total_tasks == 1:
