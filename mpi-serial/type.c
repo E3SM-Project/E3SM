@@ -448,6 +448,23 @@ int MPI_Type_hvector(int count, int blocklen, MPI_Aint stride,
   return Type_hvector(count, blocklen, stride, old_ptr, new_ptr);
 }
 
+FC_FUNC( mpi_type_create_hvector, MPI_TYPE_CREATE_HVECTOR )
+         (int * count,   long * blocklen, long * stride,
+          int * oldtype, int * newtype,   int * ierr)
+{
+  *ierr = MPI_Type_create_hvector(*count, *blocklen, *stride, *oldtype, newtype);
+}
+
+int MPI_Type_create_hvector(int count, int blocklen, MPI_Aint stride,
+                     MPI_Datatype oldtype, MPI_Datatype * newtype)
+{
+  Datatype old_ptr = *(Datatype*) mpi_handle_to_datatype(oldtype);
+  Datatype * new_ptr;
+
+  mpi_alloc_handle(newtype, (void**) &new_ptr);
+  return Type_hvector(count, blocklen, stride, old_ptr, new_ptr);
+}
+
 
 int Type_hvector(int count, int blocklen, MPI_Aint stride,
                       Datatype oldtype, Datatype *newtype)
