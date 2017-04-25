@@ -91,8 +91,8 @@ def save_build_provenance(case, lid=None):
 
 def _save_prerun_timing_acme(case, lid):
     timing_dir = case.get_value("SAVE_TIMING_DIR")
-    if timing_dir is None or timing_dir == 'UNSET':
-        logger.warning("ACME requires SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive timings")
+    if timing_dir is None or not os.path.isdir(timing_dir):
+        logger.warning("SAVE_TIMING_DIR '%s' is not vald. ACME requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive timings" % timing_dir)
         return
 
     logger.info("timing dir is %s" % timing_dir)
@@ -240,8 +240,8 @@ def _save_postrun_timing_acme(case, lid):
     timing_saved_file = "timing.%s.saved" % lid
     touch(os.path.join(caseroot, "timing", timing_saved_file))
 
-    if timing_dir is None or timing_dir == 'UNSET':
-        logger.warning("ACME requires SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive timings")
+    if timing_dir is None or not os.path.isdir(timing_dir):
+        logger.warning("SAVE_TIMING_DIR '%s' is not vald. ACME requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive timings" % timing_dir)
         return
 
     mach = case.get_value("MACH")
