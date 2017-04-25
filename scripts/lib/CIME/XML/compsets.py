@@ -80,10 +80,11 @@ class Compsets(GenericXML):
                 compsets[alias] = lname
             return compsets
 
-    def print_values(self):
+    def print_values(self, help=True):
         help_text = self.get_value(name="help")
         compsets_text = self.get_value("names")
-        logger.info(" %s " %help_text)
+        if help:
+            logger.info(" %s " %help_text)
 
         logger.info("       --------------------------------------")
         logger.info("       Compset Short Name: Compset Long Name ")

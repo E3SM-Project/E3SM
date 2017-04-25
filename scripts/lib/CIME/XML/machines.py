@@ -91,7 +91,7 @@ class Machines(GenericXML):
             machines.append(mach)
         return machines
 
-    def probe_machine_name(self):
+    def probe_machine_name(self, warn=True):
         """
         Find a matching regular expression for hostname
         in the NODENAME_REGEX field in the file.   First match wins.
