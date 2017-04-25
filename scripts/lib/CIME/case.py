@@ -373,10 +373,6 @@ class Case(object):
             self._caseroot = value
         result = None
 
-        env_test = self.get_env("test", allow_missing=True)
-        if env_test:
-            chkval = env_test.get_test_parameter(item)
-
         for env_file in self._env_entryid_files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
@@ -1201,7 +1197,11 @@ class Case(object):
                    error_prefix="STOP: ")
 
     def set_file(self, xmlfile):
+        """
+        force the case object to consider only xmlfile
+        """
         expect(os.path.isfile(xmlfile), "Could not find file %s"%xmlfile)
+
         gfile = GenericXML(infile=xmlfile)
         ftype = gfile.get_id()
 
@@ -1222,7 +1222,9 @@ class Case(object):
                 elif ftype == "env_test.xml":
                     new_env_file = EnvTest(infile=xmlfile)
             if new_env_file is not None:
-                self._env_entryid_files[idx] = new_env_file
+                self._env_entryid_files = []
+                self._env_generic_files = []
+                self._env_entryid_files.append(new_env_file)
                 break
         if new_env_file is None:
             for idx, env_file in enumerate(self._env_generic_files):
@@ -1234,7 +1236,9 @@ class Case(object):
                     else:
                         expect(False, "No match found for file type %s"%ftype)
                 if new_env_file is not None:
-                    self._env_generic_files[idx] = new_env_file
+                    self._env_entryid_files = []
+                    self._env_generic_files = []
+                    self._env_generic_files.append(new_env_file)
                     break
 
         self._files = self._env_entryid_files + self._env_generic_files
