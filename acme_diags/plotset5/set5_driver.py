@@ -474,7 +474,7 @@ for parameter in parameters:
                         viewer.add_col(parameter.case_id + '/' + parameter.output_file +
                                        '.png', is_file=True, title=season, other_files=formatted_files)
     
-                        save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
+                        #save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
                 f_in.close()
             
             else:
