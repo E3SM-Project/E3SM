@@ -158,6 +158,10 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
 
+            # Make sure pio settings are consistent
+            if adjust_pio:
+                adjust_pio_layout(case, tasks_per_node)
+
             case.initialize_derived_attributes()
 
             # create batch files
@@ -176,10 +180,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
                 elif job != "case.test":
                     logger.info("Writing %s script from input template %s" % (job, input_batch_script))
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
-
-            # Make sure pio settings are consistant
-            if adjust_pio:
-                adjust_pio_layout(case, tasks_per_node)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
