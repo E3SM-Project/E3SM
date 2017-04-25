@@ -297,7 +297,8 @@ contains
     io_system => shr_pio_getiosys(ocnid)
 
     pio_iotype = shr_pio_getiotype(ocnid)
-    call MPAS_io_set_iotype(domain % iocontext, pio_iotype)
+!    call MPAS_io_set_iotype(domain % iocontext, pio_iotype)
+    call MPAS_io_unset_iotype(domain % iocontext)
 
     stdout_shr = shr_file_getUnit()
 #ifndef MPAS_DEBUG
