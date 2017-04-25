@@ -30,48 +30,52 @@ begin
 ;     lat:   arbitrary
 ;----------------------------------------------------------------------------
 
-  data_file = "/glade/scratch/konrads/:w"
+  data_file = "./movies/dcmip2016_test31.nc"
+  data      = addfile(data_file,"r")
 
-  data = addfile(data_file,"r")
+  time = data->time
+  min_per_day = 60*24
 
-  w_5km = data->W((/6,12,18,24/),0,:,:)
-  w_5km = lonFlip(w_5km)
+  t1  = closest_val(30.0/min_per_day , time) -1
+  t2  = closest_val(60.0/min_per_day , time) -1
+  t3  = closest_val(90.0/min_per_day , time) -1
+  t4  = closest_val(120.0/min_per_day, time) -1
+print(t1)
+print(t2)
+print(t3)
+print(t4)
+  times  = (/t1,t2,t3,t4/)
+  w_5km  = data->w (times,29,:,:)
+  qr_5km = data->Q2(times,29,:,:)
 
-;rho_5km = data->Rho((/6,12,18,24/),0,:,:)
+geo    = data->geo(times,:,:,:)
+print("levels="+geo(0,:,1,1)/9.81)
 
-  rhoqr_5km = data->RhoQr((/6,12,18,24/),0,:,:)
+  w_5km  = lonFlip(w_5km )
+  qr_5km = lonFlip(qr_5km)
 
-  qr_5km = rhoqr_5km / rho_5km
-  copy_VarCoords(rho_5km, qr_5km)
-
-;****************************************************************************
-; DO NOT EDIT BELOW THIS LINE
-;****************************************************************************
-
-;------------------------------------------------
-; Workspace
-;------------------------------------------------
-  wks = gsn_open_wks("eps","plot_supercell_5km_xsec")   
-
+  ;------------------------------------------------
+  ; Workspace
+  ;------------------------------------------------
+  wks = gsn_open_wks("pdf","5km_xsec")
   gsn_merge_colormaps(wks,"temp_diff_18lev","sunshine_9lev")
 
-;------------------------------------------------
-; Plot resources [options]
-;------------------------------------------------
-  plot = new(2,graphic)
-  wplot = new(3,graphic)
+  ;------------------------------------------------
+  ; Plot resources [options]
+  ;------------------------------------------------
+  plot   = new(2,graphic)
+  wplot  = new(3,graphic)
   qrplot = new(3,graphic)
 
-; Resources:
+  ; Resources:
   res                     = True
-
   res@gsnDraw             = False
   res@gsnFrame            = False
 
   res@vpKeepAspect        = True
   res@vpWidthF            = 0.4
   res@vpHeightF           = 0.8
-;  res@gsnSpreadColors     = True
+; res@gsnSpreadColors     = True
   res@gsnMaximize         = True
   res@gsnPaperOrientation = "portrait"
 
@@ -94,7 +98,7 @@ begin
   res@gsnContourZeroLineThicknessF = 0.0
   res@gsnContourNegLineDashPattern = 1
 
-;  res@lbLabelBarOn = False
+; res@lbLabelBarOn = False
   res@tmYLLabelsOn = False
 
   resw = res
@@ -113,9 +117,9 @@ begin
   resqr@cnMinLevelValF = 1.0
   resqr@cnMaxLevelValF = 12.0
 
-;------------------------------------------------
-; Vertical velocity plots
-;------------------------------------------------
+  ;------------------------------------------------
+  ; Vertical velocity plots
+  ;------------------------------------------------
 
   resw@trXMinF = -20.0
   resw@trXMaxF =  20.0
@@ -135,9 +139,9 @@ begin
 
   mergedw = gsn_attach_plots(plot(0), (/wplot(0),wplot(1),wplot(2)/), False, False)
 
-;------------------------------------------------
-; Rain water plots
-;------------------------------------------------
+  ;------------------------------------------------
+  ; Rain water plots
+  ;------------------------------------------------
 
   resqr@trXMinF = -20.0
   resqr@trXMaxF =  20.0
@@ -157,9 +161,9 @@ begin
 
   mergedqr = gsn_attach_plots(plot(1), (/qrplot(0),qrplot(1),qrplot(2)/), False, False)
 
-;------------------------------------------------
-; Panel plot
-;------------------------------------------------
+  ;------------------------------------------------
+  ; Panel plot
+  ;------------------------------------------------
 
   pres = True
   pres@gsnPanelBottom = 0.1

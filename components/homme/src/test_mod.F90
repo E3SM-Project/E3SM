@@ -22,7 +22,7 @@ use baroclinic_inst_mod,  only: binst_init_state, jw_baroclinic
 use dcmip12_wrapper,      only: dcmip2012_test1_1, dcmip2012_test1_2, dcmip2012_test1_3,&
                                 dcmip2012_test2_0, dcmip2012_test2_x, dcmip2012_test3,  &
                                 dcmip2012_test4_init, mtest_init
-use dcmip16_wrapper,      only: dcmip2016_test1, dcmip2016_test2, dcmip2016_test3
+use dcmip16_wrapper,      only: dcmip2016_test1, dcmip2016_test2, dcmip2016_test3, dcmip2016_test3_forcing
 use held_suarez_mod,      only: hs0_init_state
 
 implicit none
@@ -134,6 +134,9 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
   select case(test_case)
     case('dcmip2012_test2_1');  call dcmip2012_test2_x_forcing(elem, hybrid,hvcoord,nets,nete,n,dt)
     case('dcmip2012_test2_2');  call dcmip2012_test2_x_forcing(elem, hybrid,hvcoord,nets,nete,n,dt)
+    !case('dcmip2016_test1');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,n,n_tracer,dt,1, 0,-1)
+    !case('dcmip2016_test2');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,n,n_tracer,dt,2, 0, 0)
+    case('dcmip2016_test3');    call dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,n,n_tracer,dt,3, 0,-1)
     case('mtest1');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
     case('mtest2');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
     case('mtest3');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)

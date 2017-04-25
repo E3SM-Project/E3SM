@@ -587,11 +587,11 @@ contains
 
   !_____________________________________________________________________
   subroutine set_state(u,v,w,T,ps,phis,p,dp,zm,g,i,j,k,elem,n0,n1)
-!
-! set state variables at node(i,j,k) at layer midpoints
-! used by idealized tests for dry initial conditions
-! so we use constants cp, kappa  
-!
+  !
+  ! set state variables at node(i,j,k) at layer midpoints
+  ! used by idealized tests for dry initial conditions
+  ! so we use constants cp, kappa  
+  !
   real(real_kind),  intent(in)    :: u,v,w,T,ps,phis,p,dp,zm,g
   integer,          intent(in)    :: i,j,k,n0,n1
   type(element_t),  intent(inout) :: elem
@@ -607,6 +607,44 @@ contains
 
   end subroutine set_state
 
+ !_____________________________________________________________________
+  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,zm,g,i,j,elem,hvcoord,nt,ntQ)
+
+    ! get state variables at layer midpoints
+    ! used by idealized tests to compute idealized physics forcing terms
+
+    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,zm
+    real(real_kind), intent(in)    :: g
+    integer,         intent(in)    :: i,j,nt,ntQ
+    type(element_t), intent(inout) :: elem
+    type (hvcoord_t),intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+
+    real(real_kind) , dimension(np,np,nlev) :: phi,dpnh,cp_star,kappa_star
+    real(real_kind) , dimension(np,np) :: phis
+
+    integer :: k
+
+    ! set prognostic state variables at level midpoints
+    u   = elem%state%v   (:,:,1,:,nt)
+    v   = elem%state%v   (:,:,2,:,nt)
+    w   = elem%state%w   (:,:,  :,nt)
+    phi = elem%state%phi (:,:,  :,nt)
+    phis= elem%state%phis(:,:)
+
+    zm  = phi/g
+
+    do k=1,nlev
+       dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
+    enddo
+
+    call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
+    call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
+    call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,phi,phis,kappa_star,pnh,dpnh,exner)
+
+    theta = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star*dp)
+    T     = theta*exner
+
+  end subroutine get_state
 
   !_____________________________________________________________________
   subroutine set_forcing_rayleigh_friction(elem, f_d, u0,v0, n)
