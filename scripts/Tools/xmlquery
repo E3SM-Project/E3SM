@@ -63,7 +63,7 @@ epilog=textwrap.dedent(__doc__))
                         help="variable name in env_*.xml file ( <entry_id id='variable_name'>value</entry_id> )")
 
     parser.add_argument("-file" , "--file",
-                        help="deprecated option, do not use")
+                        help="specify the file you want to query")
 
     parser.add_argument("-subgroup","--subgroup",
                         help="apply to this subgroup only")
@@ -120,7 +120,7 @@ epilog=textwrap.dedent(__doc__))
 
     return variables, args.subgroup, args.caseroot, args.listall, args.fileonly, \
         args.value, args.no_resolve, args.raw, args.description, args.group, args.full, \
-        args.type, args.valid_values, args.partial_match
+        args.type, args.valid_values, args.partial_match, args.file
 
 def get_value_as_string(case, var, attribute=None, resolved=False, subgroup=None):
     thistype = case.get_type_info(var)
@@ -189,10 +189,12 @@ def _main_func():
     # Initialize command line parser and get command line options
     variables, subgroup, caseroot, listall,  fileonly, \
         value, no_resolve, raw, description, group, full, dtype, \
-        valid_values, partial_match = parse_command_line(sys.argv)
+        valid_values, partial_match, xmlfile = parse_command_line(sys.argv)
 
     # Initialize case ; read in all xml files from caseroot
     with Case(caseroot) as case:
+        if xmlfile:
+            case.set_file(xmlfile)
         if listall or partial_match:
             all_variables = sorted(case.get_record_fields(None, "varid"))
             if partial_match:

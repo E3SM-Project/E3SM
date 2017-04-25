@@ -30,6 +30,7 @@ from CIME.XML.env_build             import EnvBuild
 from CIME.XML.env_run               import EnvRun
 from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
+from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
 from CIME.case_setup import case_setup
 from CIME.aprun import get_aprun_cmd_for_case
@@ -1199,7 +1200,12 @@ class Case(object):
                    "Override this warning with the --run-unsupported option to create_newcase.",
                    error_prefix="STOP: ")
 
-    def set_file(self, xmlfile, ftype):
+    def set_file(self, xmlfile):
+        expect(os.path.isfile(xmlfile), "Could not find file %s"%xmlfile)
+        gfile = GenericXML(infile=xmlfile)
+        ftype = gfile.get_id()
+
+        logger.warn("setting case file to %s"%xmlfile)
         new_env_file = None
         for idx, env_file in enumerate(self._env_entryid_files):
             if os.path.basename(env_file.filename) == ftype:

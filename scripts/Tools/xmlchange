@@ -14,7 +14,6 @@ from standard_script_setup import *
 
 from CIME.utils import expect, convert_to_type, append_case_status
 from CIME.case import Case
-from CIME.XML.generic_xml import GenericXML
 
 import re
 
@@ -96,12 +95,7 @@ def xmlchange(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup,
     with Case(caseroot, read_only=False) as case:
 
         if xmlfile:
-            expect(os.path.isfile(xmlfile), "Could not find file %s"%xmlfile)
-            gfile = GenericXML(infile=xmlfile)
-            ftype = gfile.get_id()
-            if os.path.abspath(os.path.join(caseroot,ftype)) != os.path.abspath(xmlfile):
-                logger.warn("setting case file to %s"%xmlfile)
-                case.set_file(xmlfile, ftype)
+            case.set_file(xmlfile)
 
         env_mach_pes = case.get_env("mach_pes")
         env_mach_pes.set_components(case.get_values("COMP_CLASSES"))
