@@ -59,6 +59,7 @@
       <value mach="lawrencium-lr3">netcdf</value>
       <value mach="cades">netcdf</value>
       <value mach="grizzly">netcdf</value>
+      <value mach="wolf">netcdf</value>
       <value mpilib="mpi-serial">netcdf</value>
     </values>
   </entry>
