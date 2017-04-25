@@ -6,7 +6,7 @@ reference_data_path = '/Users/zhang40/Documents/ACME_simulations/'
 test_name = '20160520.A_WCYCL1850.ne30'
 ref_name = '20160520.A_WCYCL1850.ne30'
 
-backend = 'vcs'
+backend = 'cartopy'
 diff_title = 'Test - Reference'
 diff_colormap = 'bl_to_darkred'
 

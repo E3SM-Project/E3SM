@@ -150,21 +150,21 @@ def save_ncfiles(test, ref, diff, parameter):
     # Save test file
     file_test = cdms2.open(parameter.case_id + '/' +
                            parameter.output_file + '_test.nc', 'w+')
-    test.id = parameter.variables
+    test.id = parameter.var_id
     file_test.write(test)
     file_test.close()
 
     # Save reference file
     file_ref = cdms2.open(parameter.case_id + '/' +
                           parameter.output_file + '_ref.nc', 'w+')
-    ref.id = parameter.variables
+    ref.id = parameter.var_id
     file_ref.write(ref)
     file_ref.close()
 
     # Save difference file
     file_diff = cdms2.open(parameter.case_id + '/' +
                            parameter.output_file + '_diff.nc', 'w+')
-    diff.id = parameter.variables + '(test - reference)'
+    diff.id = parameter.var_id + '(test - reference)'
     file_diff.write(diff)
     file_diff.close()
 
@@ -228,6 +228,7 @@ for parameter in parameters:
         for var in variables: 
             print '***********', variables
             print var
+            parameter.var_id = var
             mv1 = acme.process_derived_var(
                 var, acme.derived_variables, f_mod, parameter)
             mv2 = acme.process_derived_var(
@@ -341,7 +342,7 @@ for parameter in parameters:
                     viewer.add_col(parameter.case_id + '/' + parameter.output_file +
                                    '.png', is_file=True, title=season, other_files=formatted_files)
     
-#                    save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
+                    save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
     
             elif mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
                 plev = parameter.levels
@@ -474,7 +475,7 @@ for parameter in parameters:
                         viewer.add_col(parameter.case_id + '/' + parameter.output_file +
                                        '.png', is_file=True, title=season, other_files=formatted_files)
     
-                        #save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
+                        save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
                 f_in.close()
             
             else:
