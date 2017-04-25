@@ -1,4 +1,3 @@
-
 #ifndef _MPI_H_
 #define _MPI_H_
 
@@ -409,6 +408,9 @@ extern int MPI_Type_vector(int count, int blocklen, int stride, MPI_Datatype old
                            MPI_Datatype *newtype);
 
 extern int MPI_Type_hvector(int count, int blocklen, MPI_Aint stride,
+                            MPI_Datatype oldtype, MPI_Datatype *newtype);
+
+extern int MPI_Type_create_hvector(int count, int blocklen, MPI_Aint stride,
                             MPI_Datatype oldtype, MPI_Datatype *newtype);
 
 extern int MPI_Type_indexed(int count, int *blocklens, int *displacements,
