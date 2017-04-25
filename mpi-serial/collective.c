@@ -488,27 +488,6 @@ int MPI_Alltoallw(void *sendbuf, int *sendcounts,
 }
 
 
-/*********/
-
-
-FC_FUNC( mpi_op_create , MPI_OP_CREATE )
-  ( void *function, int *commute, int *op, int *ierror )
-{
-  *ierror=MPI_Op_create(function,*commute,op);
-}
-
-
-
-int MPI_Op_create(MPI_User_function *function, int commute, MPI_Op *op)
-{
-  *op=MPI_OP_NULL;
-
-  return(MPI_SUCCESS);
-
-}
-
-
-
 
 /*********/
 
