@@ -1,43 +1,45 @@
 !
-! namelist for dcmip2012 test2-1: nonhydro mountain waves without shear
+! preqx: namelist for dcmip2016 test 3: supercell storm (small planet X=120)
 !_______________________________________________________________________
 &ctl_nl
   nthreads          = 1
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2016_test3"         ! test identifier
-  rsplit            = 3
-  ne                = 7                         ! number of elements per cube face
-  qsize             = 0                         ! num tracer fields
-  nmax              = 7200                      ! 7200s / 0.1s per step = 72000 steps
-  statefreq         = 360                       ! number of steps between screen dumps
+  rsplit            = 1
+  ne                = 7 !15                         ! number of elements per cube face
+  qsize             = 4                         ! num tracer fields: qv,qc,qr
+  nmax              = 36000                     ! 7200s(120min)/tstep
+  statefreq         = 10                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
-  tstep             = 1.0                       ! largest timestep in seconds
+  tstep             = 0.2                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
-  tstep_type        = 5                         ! 1 => default method
-  nu                = 2.2e9                     ! reduced planet hyperviscosity hv/500^3
-  nu_s              = 2.2e9
-  nu_p              = 2.2e9
-  hypervis_order    = 2                         ! 2 = hyperviscosity
-  hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
-  rearth            = 12752.0                   ! reduced planet radius rearth = a/500.0
-  omega             = 0.0                       ! earth angular speed = 0.0
-  dcmip2_x_ueq      = 20.0                      ! windspeed at equator  (m/s)
-  dcmip2_x_h0       = 250.0                     ! mountain height       (m)
-  dcmip2_x_d        = 5000.0                    ! mountain half-width   (m)
-  dcmip2_x_xi       = 8000.0                    ! mountain wavelength   (m)
+  tstep_type        = 5
+  rsplit            = 1
+  qsplit            = 1
+  nu                = 1.239e10 !4.57e10 !1500 !5.8e8      ! 1e15/(120)^3
+  nu_s              = 1.239e10 !4.57e10 !500 !5.8e8
+  nu_p              = 1.239e10 !4.57e10 !500 !5.8e8
+  hypervis_order    = 2 !1                         ! 2 = hyperviscosity
+  hypervis_subcycle = 3                         ! 1 = no hyperviz subcycling
+  rearth            = 53133                     ! 6.376E6  / 120
+  omega             = 7.292D-5 !8.7504e-3                 ! 7.292D-5 * 120
+  moisture          = 'dry'
+  se_ftype          = 0
 /
 &vert_nl
   vform             = "ccm"                     ! vertical coordinate type "ccm"=hybrid pressure/terrain
   vanalytic         = 1                         ! set vcoords in initialization routine
-  vtop              = 3.2818e-2                 ! vertical coordinate at top of atm (z=30km)
+  vtop              = 5e-2                      ! vertical coordinate at top of atm (z=20km)
 /
 &analysis_nl
   output_dir        = "./movies/"               ! destination dir for netcdf file
-  output_timeunits  = 3,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
-  output_frequency  = 720,                      ! 720 seconds (10+1 outputs)
-  output_varnames1  ='T','ps','u','v','omega','geo'   ! variables to write to file
+  output_timeunits  = 0 !3,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
+  output_frequency  = 100 !900,                      ! 900 seconds (15 minutes)
+  output_varnames1  ='T','p','pnh','geo','u','v','w','Th','Q','Q2','Q3','Q4','Q5'   ! variables to write to file
+  interp_nlon       = 360
+  interp_nlat       = 181
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16         

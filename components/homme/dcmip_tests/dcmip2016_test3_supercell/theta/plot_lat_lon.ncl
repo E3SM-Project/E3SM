@@ -40,7 +40,7 @@ do time=0,ntimes-1,5
   var  = linint1_n_Wrap(z_eta,var,False,z,0,0)
   var0 = linint1_n_Wrap(z_eta,var0,False,z,0,0)
 
-  slice = var(10,:,:)
+  slice = var(9,:,:)
 
   res                     = True          ; plot mods desired
   res@gsnMaximize         = True         ; Maximize size of plot in frame

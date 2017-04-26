@@ -188,10 +188,8 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
           p  =  p0*hvcoord%hyam(k) + ps*hvcoord%hybm(k)
           dp = pressure_thickness(ps,k,hvcoord)
 
-        endif
-
-        if(zcoords==1) then
-          ! set initial conditions at const z levels
+        else
+        !   set initial conditions at const z levels
           call supercell_z(lon, lat, zi(k)  , p_i1, thetav, rho, q(1), pert)
           call supercell_z(lon, lat, zi(k+1), p_i2, thetav, rho, q(1), pert)
           dp = p_i2-p_i1
@@ -277,12 +275,13 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test,
 
     elem(ie)%derived%FM(:,:,1,:) = (u - u0)/dt
     elem(ie)%derived%FM(:,:,2,:) = (v - v0)/dt
-    elem(ie)%derived%FM(:,:,3,:) = 0
+
     elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
+
     elem(ie)%derived%FQ(:,:,:,1) = (qv-qv0)/dt
     elem(ie)%derived%FQ(:,:,:,2) = (qc-qc0)/dt
     elem(ie)%derived%FQ(:,:,:,3) = (qr-qr0)/dt
-!print *,"T-T0= ",T-T0
+
     elem(ie)%state%Qdp(:,:,1,4,ntQ) = precl*dp(:,:,1) ! store precl in level 1 of tracer #4
   enddo
 
