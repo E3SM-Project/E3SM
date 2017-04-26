@@ -992,7 +992,7 @@ class Namelist(object):
         [u'2', u'3']
         >>> x.set_variable_value('foo', 'bar', [u'1'])
         >>> x.get_variable_value('foo', 'bar')
-        [u'1']
+        [u'1', u'3']
         >>> x.set_variable_value('foo', 'bazz', [u'3'])
         >>> x.set_variable_value('Brack', 'baR', [u'4'])
         >>> x.get_variable_value('foo', 'bazz')
@@ -1023,16 +1023,12 @@ class Namelist(object):
         if minindex > tlen:
             self._groups[group_name][variable_name].extend(['']*(minindex-tlen-1))
 
-        # only replace items which are in index notation
-        if FORTRAN_NAME_REGEX.search(original_var).group(2) is not None:
-            for i in range(minindex, maxindex+2*step, step):
-                while len(self._groups[group_name][variable_name]) < i:
-                    self._groups[group_name][variable_name].append('')
-                self._groups[group_name][variable_name][i-1] = value.pop(0)
-                if len(value) == 0:
-                    break
-        else:
-            self._groups[group_name][variable_name] = value
+        for i in range(minindex, maxindex+2*step, step):
+            while len(self._groups[group_name][variable_name]) < i:
+                self._groups[group_name][variable_name].append('')
+            self._groups[group_name][variable_name][i-1] = value.pop(0)
+            if len(value) == 0:
+                break
 
 
     def delete_variable(self, group_name, variable_name):
@@ -1453,9 +1449,6 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
 
         Does not return anything, but raises a `_NamelistParseError` if `chars`
         does not contain the character at the current position.
-
-        The RETURN optional is used to allow for checking of consecutive
-        characters such as '+='
 
         >>> x = _NamelistParser('ab')
         >>> x._expect_char('a')
@@ -2110,10 +2103,10 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
             if self._groupless:
                 if name in self._settings:
                     dsettings = self._settings[name]
+                    if addto:
+                        values = self._settings[name] + values
                 if not addto:
                     values = merge_literal_lists(dsettings, values)
-                else:
-                    values = self._settings[name] + values
                 self._settings[name] = values
             else:
                 group = self._settings[group_name]
@@ -2146,10 +2139,6 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         OrderedDict([(u'foo', [u"'bar'", u"'bazz'", u'']), (u'foo2', [u'2*5', u'6'])])
         >>> _NamelistParser("!blah \n foo='bar'", groupless=True).parse_namelist()
         OrderedDict([(u'foo', [u"'bar'"])])
-        >>> _NamelistParser("foo='bar', foo='bazz'", groupless=True).parse_namelist()
-        OrderedDict([(u'foo', [u"'bazz'"])])
-        >>> _NamelistParser("foo='bar', foo=", groupless=True).parse_namelist()
-        OrderedDict([(u'foo', [u"'bar'"])])
         >>> _NamelistParser("foo='bar', foo(3)='bazz'", groupless=True).parse_namelist()
         OrderedDict([(u'foo', [u"'bar'"]), (u'foo(3)', [u"'bazz'"])])
         >>> _NamelistParser("foo(2)='bar'", groupless=True).parse_namelist()
@@ -2160,6 +2149,10 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         OrderedDict([(u'foo', [u"'bazz'"])])
         >>> _NamelistParser("foo='bar'\n foo+='bazz'", groupless=True).parse_namelist()
         OrderedDict([(u'foo', [u"'bar'", u"'bazz'"])])
+        >>> _NamelistParser("foo='bar', foo='bazz'", groupless=True).parse_namelist()
+        OrderedDict([(u'foo', [u"'bazz'"])])
+        >>> _NamelistParser("foo='bar', foo=", groupless=True).parse_namelist()
+        OrderedDict([(u'foo', [u"'bar'"])])
         >>> _NamelistParser("foo='bar', 'bazz'\n foo+='ban'", groupless=True).parse_namelist()
         OrderedDict([(u'foo', [u"'bar'", u"'bazz'", u"'ban'"])])
         """
