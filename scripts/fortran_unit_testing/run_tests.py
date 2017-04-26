@@ -20,7 +20,6 @@ import socket
 #=================================================
 from printer import Printer
 from shutil import rmtree
-from distutils.spawn import find_executable
 # This violates CIME policy - move to CIME/XML directory
 from xml.etree.ElementTree import ElementTree
 
