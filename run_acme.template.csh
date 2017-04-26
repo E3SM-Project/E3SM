@@ -379,17 +379,18 @@ acme_newline
 acme_print '$case_name        = '$case_name
 
 #============================================
-# DELETE PREVIOUS DIRECTORIES (IF REQUESTED)
+# DETERMINE THE SCRATCH DIRECTORY TO USE
 #============================================
-### Determine the case_scripts directory
-### Remove existing case_scripts directory (so it doesn't have to be done manually every time)
-### Note: This script causes create_newcase to generate a temporary directory (part of a workaround to put the case_name into the script names)
-###       If something goes wrong, this temporary directory is sometimes left behind, so we need to delete it too.
-### Note: To turn off the deletion, set $num_seconds_until_delete to be negative.
-###       To delete immediately, set $num_seconds_until_delete to be zero.
 
 if ( $case_root_dir == default ) then
-  if ( ! $?{SCRATCH} ) then
+  ### NOTE: csh doesn't short-circuit; so we can't check whether $SCRATCH exists or whether it's empty in the same condition
+  if ( ! $?SCRATCH ) then
+    acme_newline
+    acme_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
+    acme_print '         To avoid any issues, set $case_root_dir to a scratch filesystem'
+    set case_root_dir = ${HOME}/acme_cases
+  else
+    ### Verify that $SCRATCH is not an empty string
     if ( "${SCRATCH}" == "" ) then
       set case_root_dir = ${HOME}/acme_cases
       acme_newline
@@ -398,10 +399,18 @@ if ( $case_root_dir == default ) then
     else
       set case_root_dir = ${SCRATCH}/acme_scratch
     endif
-  else
-    set case_root_dir = ${SCRATCH}/acme_scratch
   endif
 endif
+
+#============================================
+# DELETE PREVIOUS DIRECTORIES (IF REQUESTED)
+#============================================
+### Determine the case_scripts directory
+### Remove existing case_scripts directory (so it doesn't have to be done manually every time)
+### Note: This script causes create_newcase to generate a temporary directory (part of a workaround to put the case_name into the script names)
+###       If something goes wrong, this temporary directory is sometimes left behind, so we need to delete it too.
+### Note: To turn off the deletion, set $num_seconds_until_delete to be negative.
+###       To delete immediately, set $num_seconds_until_delete to be zero.
 
 set case_scripts_dir = ${case_root_dir}/${case_name}/case_scripts
 
@@ -538,7 +547,7 @@ endif
 # DETERMINE THE OPTIONS FOR CREATE_NEWCASE
 #=============================================================
 
-set configure_options = "--case ${case_name} --compset ${compset} --res ${resolution} --project ${project} --pecount ${std_proc_configuration}"
+set configure_options = "--case ${case_scripts_dir} --compset ${compset} --res ${resolution} --project ${project} --pecount ${std_proc_configuration} --handle-preexisting-dirs a"
 
 if ( `lowercase $machine` != default ) then
   set configure_options = "${configure_options} --mach ${machine}"
@@ -552,8 +561,10 @@ if ( `lowercase $case_run_dir` == default ) then
   set case_run_dir = ${case_root_dir}/${case_name}/run
 endif
 
-build_root=`cd ${case_build_dir}/..; pwd -P`
-run_root=`cd ${case_run_dir}/..; pwd -P`
+mkdir -p ${case_build_dir}
+set build_root = `cd ${case_build_dir}/..; pwd -P`
+mkdir -p ${case_run_dir}
+set run_root = `cd ${case_run_dir}/..; pwd -P`
 
 if ( ${build_root} == ${run_root} ) then
   set configure_options = "${configure_options} --output-root ${build_root}"
@@ -592,12 +603,12 @@ endif
 if ( `lowercase $case_build_dir` == default ) then
   set case_build_dir = ${case_root_dir}/${case_name}/bld
 endif
-${xmlchange_exe} EXEROOT=${case_root_dir}
+${xmlchange_exe} EXEROOT=${case_build_dir}
 
 if ( `lowercase $case_run_dir` == default ) then
   set case_run_dir = ${case_scripts_dir}/${case_name}/run
 endif
-${xmlchange_exe} RUNDIR=${case_build_dir}
+${xmlchange_exe} RUNDIR=${case_run_dir}
 
 #================================
 # SET WALLTIME FOR CREATE_NEWCASE
@@ -814,9 +825,9 @@ acme_newline
 acme_print '-------- Starting case.setup --------'
 acme_newline
 
-acme_print $case_setup_exe
+acme_print ${case_setup_exe}
 
-$case_setup_exe --reset
+${case_setup_exe} --reset
 
 acme_newline
 acme_print '-------- Finished case.setup  --------'
