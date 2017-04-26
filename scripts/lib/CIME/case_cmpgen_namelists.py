@@ -129,7 +129,10 @@ def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None
             logging.warning(warn)
         finally:
             ts.set_status(NAMELIST_PHASE, TEST_PASS_STATUS if success else TEST_FAIL_STATUS)
-            append_status(output, logfile_name, caseroot=caseroot)
+            try:
+                append_status(output, logfile_name, caseroot=caseroot)
+            except IOError:
+                pass
 
         return success
 
