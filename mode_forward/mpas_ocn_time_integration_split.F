@@ -1961,6 +1961,7 @@ module ocn_time_integration_split
       type (mpas_timeInterval_type) :: fullTimeStep, barotropicTimeStep, remainder, zeroInterval
 
       integer :: iErr
+      integer (kind=I8KIND) :: nBtrSubcyclesI8
 
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
@@ -1975,7 +1976,10 @@ module ocn_time_integration_split
       call mpas_set_timeInterval( fullTimeStep , timeString=config_dt )
       call mpas_set_timeInterval( barotropicTimeStep, timeString=config_btr_dt )
 
-      call mpas_interval_division( nowTime, fullTimeStep, barotropicTimeStep, nBtrSubcycles, remainder )
+      ! transfer to I8 for division step
+      nBtrSubcyclesI8 = nBtrSubcycles
+      call mpas_interval_division( nowTime, fullTimeStep, barotropicTimeStep, nBtrSubcyclesI8, remainder )
+      nBtrSubcycles = nBtrSubcyclesI8
 
       if ( remainder > zeroInterval ) then
          nBtrSubcycles = nBtrSubcycles + 1
