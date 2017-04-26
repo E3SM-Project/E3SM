@@ -107,7 +107,7 @@ contains
 
     do p = bounds%begp,bounds%endp   
 
-       if (pft%itype(p) /= noveg) then
+       if (pft%itype(p) /= noveg .and. .not.pft%is_fates(p)) then
           c = pft%column(p)
           do lev = 1, ubj-1
              rootfr(p,lev) = .5_r8*( exp(-roota_par(pft%itype(p)) * col%zi(c,lev-1))  &

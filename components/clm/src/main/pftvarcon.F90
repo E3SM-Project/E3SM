@@ -864,7 +864,12 @@ contains
        
     call ncd_pio_closefile(ncid)
 
+
     do i = 0, mxpft
+
+       ! (FATES-INTERF) Later, depending on how the team plans to structure the crop model
+       ! or other modules that co-exist while FATES is on, we may want to preserve these pft definitions
+       ! on non-fates columns.  For now, they are incompatible (rgk 04-2017)
        if(.not. use_ed)then
           if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
              write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &
@@ -907,11 +912,9 @@ contains
     if (use_cndv) then
        fcur(:) = fcurdv(:)
     end if
-    !
-    ! Do some error checking, but not if ED is on.
-    !
-    ! FIX(SPM,032414) double check if some of these should be on...
 
+    ! (FATES-INTERF) FATES will not change mxpft, it has its own pft list and maximums
+    ! so this logic should not be necessary. Leaving it for now.  (rgk 04-2017)
     if( .not. use_ed ) then
        if ( npcropmax /= mxpft )then
           call endrun(msg=' ERROR: npcropmax is NOT the last value'//errMsg(__FILE__, __LINE__))

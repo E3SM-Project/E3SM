@@ -65,6 +65,7 @@ module clm_driver
   use ch4Mod                 , only : ch4
   use DUSTMod                , only : DustDryDep, DustEmission
   use VOCEmissionMod         , only : VOCEmission
+  use EDBGCDynMod            , only : EDBGCDyn
   !
   use filterMod              , only : setFilters
   !
@@ -926,25 +927,55 @@ contains
 
          else ! use_ed
 
-           call carbonflux_vars%SetValues(&
-               filter(nc)%num_soilp, filter(nc)%soilp, 0._r8, filter(nc)%num_soilc, filter(nc)%soilc, 0._r8)
-           if ( use_c13 ) then
-             call c13_carbonflux_vars%SetValues(&
-                  filter(nc)%num_soilp, filter(nc)%soilp, 0._r8, filter(nc)%num_soilc, filter(nc)%soilc, 0._r8)
-           end if
-           if ( use_c14 ) then
-             call c14_carbonflux_vars%SetValues(&
-                  filter(nc)%num_soilp, filter(nc)%soilp, 0._r8, filter(nc)%num_soilc, filter(nc)%soilc, 0._r8)
-           end if
-           call nitrogenflux_vars%SetValues(&
-                  filter(nc)%num_soilp, filter(nc)%soilp, 0._r8, filter(nc)%num_soilc, filter(nc)%soilc, 0._r8)
+  
 
            ! (FATES-INTERF) put error call, flag for development
            call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
-          
+
+           
+           if ( is_beg_curr_day() ) then ! run ED at the start of each day
+              
+              if ( masterproc ) then
+                 write(iulog,*)  'clm: calling FATES model ', get_nstep()
+              end if
+              
+!!              call clm_fates%dynamics_driv( nc, bounds_clump,                        &
+!!                    atm2lnd_inst, soilstate_inst, temperature_inst,                   &
+!!                    waterstate_inst, canopystate_inst, soilbiogeochem_carbonflux_inst,&
+!!                    frictionvel_inst)
+              
+              ! TODO(wjs, 2016-04-01) I think this setFilters call should be replaced by a
+              ! call to reweight_wrapup, if it's needed at all.
+              ! (FATES-INTERF) Note that setFilters is commented out
+              !! call setFilters( bounds_clump, glc_behavior )
+              
+           end if
+
          end if  ! end of if-use_ed
 
          call t_stopf('ecosysdyn')
+
+         ! ------------------------------------------------------------------------------
+         ! Perform reduced capacity soil-bgc only calculations when FATES/ED is on
+         ! ------------------------------------------------------------------------------
+         if ( use_ed ) then
+
+            ! (FATES-INTERF) put error call, flag for development
+            call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
+            
+            call EDBGCDyn(bounds_clump,                               &
+                  filter(nc)%num_soilc, filter(nc)%soilc,             &
+                  filter(nc)%num_soilp, filter(nc)%soilp,             &
+                  carbonflux_vars, carbonstate_vars, cnstate_vars,    &
+                  c13_carbonflux_vars, c13_carbonstate_vars,          &
+                  c14_carbonflux_vars, c14_carbonstate_vars,          &
+                  canopystate_vars, soilstate_vars, temperature_vars, &
+                  ch4_vars, nitrogenflux_vars, nitrogenstate_vars,    &
+                  phosphorusstate_vars, phosphorusflux_vars)
+
+         end if
+
+
 
          ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
          call t_startf('depvel')

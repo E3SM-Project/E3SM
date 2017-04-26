@@ -11,7 +11,7 @@ module  PhotosynthesisMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use abortutils          , only : endrun
-  use clm_varctl          , only : iulog, use_c13, use_c14, use_cn, use_cndv
+  use clm_varctl          , only : iulog, use_c13, use_c14, use_cn, use_cndv, use_ed
   use clm_varpar          , only : nlevcan
   use clm_varcon          , only : namep
   use decompMod           , only : bounds_type
@@ -888,10 +888,12 @@ contains
          p = filterp(f)
          g = pft%gridcell(p)
 
-         fpsn(p)    = psnsun(p)   *laisun(p) + psnsha(p)   *laisha(p)
-         fpsn_wc(p) = psnsun_wc(p)*laisun(p) + psnsha_wc(p)*laisha(p)
-         fpsn_wj(p) = psnsun_wj(p)*laisun(p) + psnsha_wj(p)*laisha(p)
-         fpsn_wp(p) = psnsun_wp(p)*laisun(p) + psnsha_wp(p)*laisha(p)
+         if (.not.use_ed) then
+            fpsn(p)    = psnsun(p)   *laisun(p) + psnsha(p)   *laisha(p)
+            fpsn_wc(p) = psnsun_wc(p)*laisun(p) + psnsha_wc(p)*laisha(p)
+            fpsn_wj(p) = psnsun_wj(p)*laisun(p) + psnsha_wj(p)*laisha(p)
+            fpsn_wp(p) = psnsun_wp(p)*laisun(p) + psnsha_wp(p)*laisha(p)
+         end if
 
          if (use_cn) then
             if ( use_c13 ) then

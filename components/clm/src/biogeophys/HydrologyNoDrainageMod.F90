@@ -76,6 +76,7 @@ contains
     use BeTRTracerType       , only : betrtracer_type        
     use clm_varctl           , only : use_vsfm
     use SoilHydrologyMod     , only : DrainageVSFM
+    use SoilWaterMovementMod, only : Compute_EffecRootFrac_And_VertTranSink_Default
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -208,6 +209,14 @@ contains
               temperature_vars, soilhydrology_vars, soilstate_vars, &
               waterstate_vars, waterflux_vars)
       endif
+
+      ! Calculate the root water uptake due to transpiration demand, per column soil layer
+      call Compute_EffecRootFrac_And_VertTranSink_Default(bounds, num_hydrologyc, &
+            filter_hydrologyc, soilstate_vars, waterflux_vars)
+
+      ! If FATES plant hydraulics is turned on, over-ride default transpiration sink calculation
+      ! (INTERF-FATES)
+      !if( use_ed ) call clm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, soilstate_inst, waterflux_inst)
 
       call SoilWater(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
             soilhydrology_vars, soilstate_vars, waterflux_vars, waterstate_vars, temperature_vars, &

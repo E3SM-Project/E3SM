@@ -308,6 +308,14 @@ module CNCarbonFluxType
      real(r8), pointer :: somc_fire_col                             (:)     ! (gC/m2/s) carbon emissions due to peat burning
 
      ! decomposition fluxes
+     ! (FATES-INTERF) FATES passes in BCs to update a portion of the following terms:
+     ! CDK put these in the restart, but the base variable decomp_cpools_sourcesink_col
+     ! is not in the restart. Checking with CDK as to why the fates side variable required restart.
+     !! cf_soil%decomp_cpools_sourcesink_col(c,j,i_met_lit)
+     !! cf_soil%decomp_cpools_sourcesink_col(c,j,i_cel_lit)
+     !! cf_soil%decomp_cpools_sourcesink_col(c,j,i_lig_lit)
+
+
      real(r8), pointer :: decomp_cpools_sourcesink_col              (:,:,:) ! change in decomposing c pools. Used to update concentrations concurrently with vertical transport (gC/m3/timestep)  
      real(r8), pointer :: decomp_cascade_hr_vr_col                  (:,:,:) ! vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
      real(r8), pointer :: decomp_cascade_hr_col                     (:,:)   ! vertically-integrated (diagnostic) het. resp. from decomposing C pools (gC/m2/s)
@@ -450,6 +458,7 @@ contains
      begp = bounds%begp; endp = bounds%endp
      begc = bounds%begc; endc = bounds%endc
 
+     if (.not.use_ed) then
      allocate(this%m_leafc_to_litter_patch                   (begp:endp)) ; this%m_leafc_to_litter_patch                   (:) = nan
      allocate(this%m_frootc_to_litter_patch                  (begp:endp)) ; this%m_frootc_to_litter_patch                  (:) = nan
      allocate(this%m_leafc_storage_to_litter_patch           (begp:endp)) ; this%m_leafc_storage_to_litter_patch           (:) = nan
@@ -654,6 +663,8 @@ contains
      allocate(this%annavg_agnpp_patch                (begp:endp))                  ; this%annavg_agnpp_patch  (:) = spval ! To detect first year
      allocate(this%annavg_bgnpp_patch                (begp:endp))                  ; this%annavg_bgnpp_patch  (:) = spval ! To detect first year
 
+     end if ! if(.not.use_ed)
+
      allocate(this%t_scalar_col                      (begc:endc,1:nlevdecomp_full)); this%t_scalar_col (:,:)=spval
      allocate(this%w_scalar_col                      (begc:endc,1:nlevdecomp_full)); this%w_scalar_col (:,:)=spval
      allocate(this%o_scalar_col                      (begc:endc,1:nlevdecomp_full)); this%o_scalar_col (:,:)=spval
@@ -839,6 +850,8 @@ contains
 
      ! add history fields for all CLAMP CN variables
 
+
+     if (.not.use_ed) then
      if (carbon_type == 'c12') then
         if (crop_prog) then
            this%grainc_to_food_patch(begp:endp) = spval
@@ -2707,6 +2720,7 @@ contains
              avgflag='A', long_name='C14 total patch-level fire C loss', &
              ptr_patch=this%fire_closs_patch)
      endif
+    end if   !(.not.use_ed)
 
      !-------------------------------
      ! C flux variables - native to column 
@@ -3087,15 +3101,17 @@ contains
              avgflag='A', long_name='NEE minus LAND_USE_FLUX, negative for update', &
              ptr_col=this%landuptake_col)
 
-        this%annsum_npp_patch(begp:endp) = spval
-        call hist_addfld1d (fname='ANNSUM_NPP', units='gC/m^2/yr', &
-             avgflag='A', long_name='annual sum of NPP', &
-             ptr_patch=this%annsum_npp_patch, default='inactive')
-
-        this%annsum_npp_col(begc:endc) = spval
-        call hist_addfld1d (fname='CANNSUM_NPP', units='gC/m^2/s', &
-             avgflag='A', long_name='annual sum of column-level NPP', &
-             ptr_col=this%annsum_npp_col, default='inactive')
+        if(.not.use_ed) then
+           this%annsum_npp_patch(begp:endp) = spval
+           call hist_addfld1d (fname='ANNSUM_NPP', units='gC/m^2/yr', &
+                 avgflag='A', long_name='annual sum of NPP', &
+                 ptr_patch=this%annsum_npp_patch, default='inactive')
+           
+           this%annsum_npp_col(begc:endc) = spval
+           call hist_addfld1d (fname='CANNSUM_NPP', units='gC/m^2/s', &
+                 avgflag='A', long_name='annual sum of column-level NPP', &
+                 ptr_col=this%annsum_npp_col, default='inactive')
+        end if
 
      end if
 
@@ -3529,11 +3545,11 @@ contains
              ptr_col=this%product_closs_col)
      endif
      
-     if (carbon_type == 'c13') then
+     if (carbon_type == 'c13' .and. .not.use_ed ) then
         this%xsmrpool_c13ratio_patch(begp:endp) = spval
         call hist_addfld1d (fname='XSMRPOOL_C13RATIO', units='proportion', &
-             avgflag='A', long_name='C13/C(12+13) ratio for xsmrpool', &
-             ptr_patch=this%xsmrpool_c13ratio_patch, default='inactive')
+              avgflag='A', long_name='C13/C(12+13) ratio for xsmrpool', &
+              ptr_patch=this%xsmrpool_c13ratio_patch, default='inactive')
      endif
 
    end subroutine InitHistory
@@ -3577,6 +3593,8 @@ contains
        end if
     end do
 
+    if (.not.use_ed) then
+
     do p = bounds%begp,bounds%endp
        l = pft%landunit(p)
 
@@ -3615,6 +3633,8 @@ contains
           this%plant_calloc_patch(p)          = 0._r8
        end if
     end do
+
+    end if !(.not.use_ed)
 
     do c = bounds%begc, bounds%endc
        l = col%landunit(c)
@@ -3708,9 +3728,17 @@ contains
     character(len=128) :: varname   ! temporary
     !------------------------------------------------------------------------
 
+    
+    ! -------------------------------------------
+    ! None of these restarts are needed for FATES
+    ! -------------------------------------------
+    if (use_ed) return
+
     !-------------------------------
     ! Prognostic crop variables
     !-------------------------------
+
+    
 
     if (crop_prog) then
 
@@ -3904,6 +3932,7 @@ contains
     integer :: j,k,l    ! indices
     !------------------------------------------------------------------------
 
+    if(.not.use_ed) then
     do fi = 1,num_patch
        i = filter_patch(fi)
 
@@ -4064,11 +4093,8 @@ contains
        this%gresp_storage_to_xfer_patch(i)               = value_patch
        this%livestemc_to_deadstemc_patch(i)              = value_patch
        this%livecrootc_to_deadcrootc_patch(i)            = value_patch
-       if (.not. use_ed) then
-          !TODO - fix this when use_cn and use_ed are truly separate
-          this%gpp_patch(i)                              = value_patch
-          this%gpp_before_downreg_patch(i)               = value_patch
-       end if
+       this%gpp_patch(i)                                 = value_patch
+       this%gpp_before_downreg_patch(i)                  = value_patch
        this%mr_patch(i)                                  = value_patch
        this%current_gr_patch(i)                          = value_patch
        this%transfer_gr_patch(i)                         = value_patch
@@ -4076,10 +4102,7 @@ contains
        this%gr_patch(i)                                  = value_patch
        this%ar_patch(i)                                  = value_patch
        this%rr_patch(i)                                  = value_patch
-       if (.not. use_ed) then
-          !TODO - fix this when use_cn and use_ed are truly separate
-          this%npp_patch(i)                              = value_patch 
-       end if
+       this%npp_patch(i)                                 = value_patch 
        this%agnpp_patch(i)                               = value_patch
        this%bgnpp_patch(i)                               = value_patch
        this%litfall_patch(i)                             = value_patch
@@ -4096,6 +4119,7 @@ contains
        this%woodc_loss_patch(i)                          = value_patch
        this%xsmrpool_turnover_patch(i)                   = value_patch
     end do
+    end if !(.not.use_ed)
 
     if ( crop_prog )then
        do fi = 1,num_patch
@@ -4336,6 +4360,7 @@ contains
         )
 
     ! patch loop
+    if (.not.use_ed) then 
     do fp = 1,num_soilp
        p = filter_soilp(fp)
 
@@ -4698,8 +4723,9 @@ contains
           end do
        endif
     endif
+    end if ! if(.not.use_ed)then
 
-    ! column variables
+    ! column soil variables
 
     ! some zeroing
     do fc = 1,num_soilc
@@ -4707,7 +4733,7 @@ contains
        this%cwdc_loss_col(c)          = 0._r8
        this%som_c_leached_col(c)      = 0._r8
     end do
-    
+
     if ( (.not. is_active_betr_bgc           ) .and. &
          (.not. (use_pflotran .and. pf_cmode))) then
 
@@ -4752,6 +4778,8 @@ contains
     !! CSummary_interface: hr_col(c) will be used below
     !----------------------------------------------------------------
      
+    if(.not.use_ed)then
+
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        ! total soil respiration, heterotrophic + root respiration (SR)
@@ -4842,6 +4870,13 @@ contains
             this%landuseflux_col(c)
     end do
 
+    end if !if(.not.use_ed)then
+
+    ! (FATES-INTERF) to-do: identify which variables are left when fates bgc light is running
+    ! and only summarize on those.  Several of the variables below this statement are relevant
+    ! but many are not. Also: find out where these summary products are used and evaluate the meaning
+    ! of not setting /or  setting here (rgk 04-2017)
+
     ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
 
     if ( (.not. is_active_betr_bgc)           .and. &
@@ -4927,9 +4962,10 @@ contains
                this%decomp_cpools_leached_col(c,l)
        end do
       end do
-    endif
+   endif
     
     ! debug
+    if (.not.use_ed) then
     do fc = 1,num_soilc
         c = filter_soilc(fc)
         this%plant_to_litter_cflux(c) = 0._r8
@@ -4952,6 +4988,7 @@ contains
                 this%fire_mortality_c_to_cwdc_col(c,j)* dzsoi_decomp(j)
         end do
     end do
+  end if
     
   end associate
   end subroutine Summary
