@@ -20,15 +20,16 @@ def compare_namelists(case, baseline_name, baseline_root, logfile_name, compiler
     return success
 
 ###############################################################################
-def compare_history(case, baseline_name, baseline_root, compiler):
+def compare_history(case, baseline_name, baseline_root, log_id, compiler):
 ###############################################################################
     if get_model() == "acme":
         baseline_full_dir = os.path.join(baseline_root, compiler, baseline_name, case.get_value("CASEBASEID"))
     else:
         baseline_full_dir = os.path.join(baseline_root, baseline_name, case.get_value("CASEBASEID"))
 
+    outfile_suffix = "%s.%s" % (baseline_name, log_id)
     result, comments = compare_baseline(case, baseline_dir=baseline_full_dir,
-                                        outfile_suffix=None)
+                                        outfile_suffix=outfile_suffix)
 
     return result, comments
 
@@ -117,7 +118,7 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
                             all_pass_or_skip = False
 
                     if do_compare:
-                        success, detailed_comments = compare_history(case, baseline_name, baseline_root, compiler)
+                        success, detailed_comments = compare_history(case, baseline_name, baseline_root, log_id, compiler)
                         if success:
                             compare_result = TEST_PASS_STATUS
                         else:
