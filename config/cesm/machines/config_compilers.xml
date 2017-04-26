@@ -701,6 +701,10 @@ using a fortran linker.
   <LDFLAGS>
     <append> -lpthread</append>
   </LDFLAGS>
+  <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_NAG_3_0</PFUNIT_PATH>
+  <SLIBS>
+    <append> -L/usr/local/nag/lib/NAG_Fortran </append>
+  </SLIBS>
 </compiler>
 
 <compiler MACH="hobart" COMPILER="pgi">
