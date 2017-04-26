@@ -701,6 +701,9 @@ using a fortran linker.
   <LDFLAGS>
     <append> -lpthread</append>
   </LDFLAGS>
+  <SLIBS>
+    <append> -L/usr/local/nag/lib/NAG_Fortran </append>
+  </SLIBS>
 </compiler>
 
 <compiler MACH="hobart" COMPILER="pgi">
