@@ -159,6 +159,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
             case.set_value("COST_PES", cost_pes)
 
             # Make sure pio settings are consistent
+            tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
             if adjust_pio:
                 adjust_pio_layout(case, tasks_per_node)
 
@@ -168,7 +169,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
             logger.info("Creating batch script case.run")
             env_batch = case.get_env("batch")
             num_nodes = case.num_nodes
-            tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
             for job in env_batch.get_jobs():
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
                 if job == "case.test" and testcase is not None and not test_mode:
