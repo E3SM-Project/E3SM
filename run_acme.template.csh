@@ -14,7 +14,7 @@ set compset        = A_WCYCL1850
 set resolution     = ne4np4_oQU240
 set machine        = default
 set walltime       = 00:10
-setenv project       fy150001
+setenv project       default
 
 ### SOURCE CODE OPTIONS
 set fetch_code     = false
@@ -89,6 +89,7 @@ set cpl_hist_num   = 1
 #walltime: How long to reserve the nodes for. The format is HH:MM(:SS); ie 00:10 -> 10 minutes.
 #    Setting this to 'default' has the script determine a reasonable value for most runs.
 #project: what bank to charge for your run time. May not be needed on some machines.
+#    Setting this to 'default' has CIME determine what project to use
 #    NOTE: project must be an *environment* variable on some systems.
 
 ### SOURCE CODE OPTIONS (2)
@@ -128,6 +129,7 @@ set cpl_hist_num   = 1
 #seconds_before_delete_case_dir : Similar to above, but remove the old case_scripts directory. Since create_newcase dies whenever
 #    the case_scripts directory exists, it only makes sense to use $seconds_before_delete_case_dir<0 if you want to be extra careful and
 #    only delete the case_scripts directory manually.
+#seconds_before_delete_bld_dir : As above, but the old bld directory will be deleted.  This makes for a clean start.
 #seconds_before_delete_run_dir : As above, but the old run directory will be deleted.  This makes for a clean start.
 
 ### SUBMIT OPTIONS (5)
@@ -388,16 +390,16 @@ if ( $acme_simulations_dir == default ) then
     acme_newline
     acme_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
     acme_print '         To avoid any issues, set $acme_simulations_dir to a scratch filesystem'
-    set acme_simulations_dir = ${HOME}/acme_simulations
+    set acme_simulations_dir = ${HOME}/ACME_simulations
   else
     ### Verify that $SCRATCH is not an empty string
     if ( "${SCRATCH}" == "" ) then
-      set acme_simulations_dir = ${HOME}/acme_simulations
+      set acme_simulations_dir = ${HOME}/ACME_simulations
       acme_newline
       acme_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
       acme_print '         To avoid any issues, set $acme_simulations_dir to a scratch filesystem'
     else
-      set acme_simulations_dir = ${SCRATCH}/acme_simulations
+      set acme_simulations_dir = ${SCRATCH}/ACME_simulations
     endif
   endif
 endif
@@ -547,7 +549,7 @@ endif
 # DETERMINE THE OPTIONS FOR CREATE_NEWCASE
 #=============================================================
 
-set configure_options = "--case ${case_scripts_dir} --compset ${compset} --res ${resolution} --project ${project} --pecount ${std_proc_configuration} --handle-preexisting-dirs u"
+set configure_options = "--case ${case_scripts_dir} --compset ${compset} --res ${resolution} --pecount ${std_proc_configuration} --handle-preexisting-dirs u"
 
 if ( `lowercase $machine` != default ) then
   set configure_options = "${configure_options} --mach ${machine}"
@@ -568,6 +570,12 @@ set run_root = `cd ${case_run_dir}/..; pwd -P`
 
 if ( ${build_root} == ${run_root} ) then
   set configure_options = "${configure_options} --output-root ${build_root}"
+endif
+
+if ( `lowercase $project` == default ) then
+  unsetenv project
+else
+  set configure_options = "${configure_options} --project ${project}"
 endif
 
 #=============================================================
@@ -609,6 +617,16 @@ if ( `lowercase $case_run_dir` == default ) then
   set case_run_dir = ${case_scripts_dir}/${case_name}/run
 endif
 ${xmlchange_exe} RUNDIR=${case_run_dir}
+
+if ( ! $?project ) then
+  setenv project `$xmlquery_exe PROJECT --subgroup case.run --value`
+else
+  if ( $project == "" ) then
+    setenv project `$xmlquery_exe PROJECT --subgroup case.run --value`
+  endif
+endif
+
+acme_print "Project used for submission: ${project}"
 
 #================================
 # SET WALLTIME FOR CREATE_NEWCASE
