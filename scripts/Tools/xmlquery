@@ -138,15 +138,21 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
     """
     results = {}
     comp_classes = case.get_values("COMP_CLASSES")
+    if xmlfile:
+        case.set_file(xmlfile)
     for var in variables:
-        if subgroup is not None:
+        if xmlfile:
+            groups = ['none']
+        elif subgroup is not None:
             groups = [subgroup]
         else:
             groups = case.get_record_fields(var, "group")
-        if xmlfile and not groups:
+
+        if xmlfile:
+            value =  case.get_value(var, resolved=resolved)
             results['none'] = {}
             results['none'][var] = {}
-            results['none'][var]['value'] = case.get_value(var, resolved=resolved)
+            results['none'][var]['value']  = value
         else:
             expect(groups, " No results found for variable %s"%var)
         for group in groups:
@@ -197,8 +203,6 @@ def _main_func():
 
     # Initialize case ; read in all xml files from caseroot
     with Case(caseroot) as case:
-        if xmlfile:
-            case.set_file(xmlfile)
         if listall or partial_match:
             all_variables = sorted(case.get_record_fields(None, "varid"))
             if partial_match:
