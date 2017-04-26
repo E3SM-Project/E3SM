@@ -1,4 +1,5 @@
 import copy
+from collections import OrderedDict
 from numbers import Number
 import cdms2
 from genutil import udunits
@@ -22,8 +23,16 @@ def _add_user_derived_vars(derived_vars_dict, parameter):
         # append the user-defined vars to the already defined ones
         # add to an existing entry, otherwise create a new one
         if key in derived_vars_dict:
-            for v in user_derived_vars:
-                derived_vars_dict[key][v] = user_derived_vars[v]
+            if isinstance(user_derived_vars, OrderedDict):
+                new_dict = OrderedDict(user_derived_vars)  # has user-defined vars first
+                # add all of the default ones to the end of new_dict
+                for v in derived_vars_dict[key]:
+                    new_dict[v] = derived_vars_dict[key][v]
+                derived_vars_dict[key] = new_dict
+            else:
+                # in regular dict, just add all of the user values to default dict
+                for v in user_derived_vars:
+                    derived_vars_dict[key][v] = user_derived_vars[v]
         else:
             derived_vars_dict[key] = user_derived_vars
 
@@ -198,148 +207,148 @@ def restoa(fsnt, flnt):
 # PRECT is calculated using fuction prect() with precc and precl as inputs.
 
 derived_variables = {
-    'PRECT': {
-        ('pr'): rename,
-        ('PRECC', 'PRECL'): lambda precc, precl: prect(precc, precl)
-    },
-    'SST': {
-        ('SST'): lambda sst: convert_units(sst, target_units="degC"),
-        ('TS', 'OCNFRAC'): lambda ts, ocnfrac: mask_by(
-            convert_units(ts, target_units="degC"), ocnfrac, low_limit=0.9)
-    },
-    'PREH2O': {
-        ('TMQ'): rename
-    },
-    'ALBEDO': {
-        ('ALBEDO'): rename,
-        ('SOLIN', 'FSNTOA'): lambda solin, fsntoa: albedo(solin, fsntoa)
-    },
-    'ALBEDOC': {
-        ('ALBEDOC'): rename,
-        ('SOLIN', 'FSNTOAC'): lambda solin, fsntoac: albedoc(solin, fsntoac)
-    },
-    'SWCF': {
-        ('SWCF'): rename,
-        ('FSNTOA', 'FSNTOAC'): lambda fsntoa, fsntoac: swcf(fsntoa, fsntoac)
-    },
-    'SWCFSRF': {
-        ('SWCFSRF'): rename,
-        ('FSNS', 'FSNSC'): lambda fsns, fsnsc: swcfsrf(fsns, fsnsc)
-    },
-    'LWCF': {
-        ('LWCF'): rename,
-        ('FLNTOA', 'FLNTOAC'): lambda flntoa, flntoac: lwcf(flntoa, flntoac)
-    },
-    'LWCFSRF': {
-        ('LWCFSRF'): rename,
-        ('FLNSC', 'FLNS'): lambda flns, flnsc: lwcfsrf(flnsc, flns)
-    },
-    'FLNS': {
-        ('FLNS'): rename
-    },
-    'FLNSC': {
-        ('FLNSC'): rename
-    },
-    'FLDS': {
-        ('FLDS'): rename
-    },
-    'FLDSC': {
-        ('FLDSC'): rename,
-        ('TS', 'FLNSC'): lambda ts, flnsc: fldsc(ts, flnsc)
-    },
-    'FSNS': {
-        ('FSNS'): rename
-    },
-    'FSNSC': {
-        ('FSNSC'): rename
-    },
-    'FSDS': {
-        ('FSDS'): rename
-    },
-    'FSDSC': {
-        ('FSDSC'): rename
-    },
-    'FLUT': {
-        ('FLUT'): rename
-    },
-    'FLUTC': {
-        ('FLUTC'): rename
-    },
-    'FSNTOA': {
-        ('FSNTOA'): rename
-    },
-    'FSNTOAC': {
+    'PRECT': OrderedDict([
+        (('pr'), rename),
+        (('PRECC', 'PRECL'), lambda precc, precl: prect(precc, precl))
+    ]),
+    'SST': OrderedDict([
+        (('SST'), lambda sst: convert_units(sst, target_units="degC")),
+        (('TS', 'OCNFRAC'), lambda ts, ocnfrac: mask_by(
+            convert_units(ts, target_units="degC"), ocnfrac, low_limit=0.9))
+    ]),
+    'PREH2O': OrderedDict([
+        (('TMQ'), rename)
+    ]),
+    'ALBEDO': OrderedDict([
+        (('ALBEDO'), rename),
+        (('SOLIN', 'FSNTOA'), lambda solin, fsntoa: albedo(solin, fsntoa))
+    ]),
+    'ALBEDOC': OrderedDict([
+        (('ALBEDOC'), rename),
+        (('SOLIN', 'FSNTOAC'), lambda solin, fsntoac: albedoc(solin, fsntoac))
+    ]),
+    'SWCF': OrderedDict([
+        (('SWCF'), rename),
+        (('FSNTOA', 'FSNTOAC'), lambda fsntoa, fsntoac: swcf(fsntoa, fsntoac))
+    ]),
+    'SWCFSRF': OrderedDict([
+        (('SWCFSRF'), rename),
+        (('FSNS', 'FSNSC'), lambda fsns, fsnsc: swcfsrf(fsns, fsnsc))
+    ]),
+    'LWCF': OrderedDict([
+        (('LWCF'), rename),
+        (('FLNTOA', 'FLNTOAC'), lambda flntoa, flntoac: lwcf(flntoa, flntoac))
+    ]),
+    'LWCFSRF': OrderedDict([
+        (('LWCFSRF'), rename),
+        (('FLNSC', 'FLNS'), lambda flns, flnsc: lwcfsrf(flnsc, flns))
+    ]),
+    'FLNS': OrderedDict([
+        (('FLNS'), rename)
+    ]),
+    'FLNSC': OrderedDict([
+        (('FLNSC'), rename)
+    ]),
+    'FLDS': OrderedDict([
+        (('FLDS'), rename)
+    ]),
+    'FLDSC': OrderedDict([
+        (('FLDSC'), rename),
+        (('TS', 'FLNSC'), lambda ts, flnsc: fldsc(ts, flnsc))
+    ]),
+    'FSNS': OrderedDict([
+        (('FSNS'), rename)
+    ]),
+    'FSNSC': OrderedDict([
+        (('FSNSC'), rename)
+    ]),
+    'FSDS': OrderedDict([
+        (('FSDS'), rename)
+    ]),
+    'FSDSC': OrderedDict([
+        (('FSDSC'), rename)
+    ]),
+    'FLUT': OrderedDict([
+        (('FLUT'), rename)
+    ]),
+    'FLUTC': OrderedDict([
+        (('FLUTC'), rename)
+    ]),
+    'FSNTOA': OrderedDict([
+        (('FSNTOA'), rename)
+    ]),
+    'FSNTOAC': OrderedDict([
         # Note: CERES_EBAF data in amwg obs sets misspells "units" as "lunits"
-        ('FSNTOAC'): rename
-    },
-    'RESTOM': {
-        ('RESTOA'): rename,
-        ('FSNT', 'FLNT'): lambda fsnt, flnt: restom(fsnt,flnt)
-    },
-    'RESTOA': {
-        ('RESTOA'): rename,
-        ('FSNT', 'FLNT'): lambda fsnt, flnt: restoa(fsnt,flnt)
-    },
-    'TREFHT_LAND': {
-        ('TREFHT_LAND'): rename,
-        ('TREFHT', 'LANDFRAC'): lambda trefht, landfrac: mask_by(
-            convert_units(trefht, target_units="K"), landfrac, low_limit=0.65)
-    },
-    'PRECT_LAND': {
-        ('PRECIP_LAND'): rename,
+        (('FSNTOAC'), rename)
+    ]),
+    'RESTOM': OrderedDict([
+        (('RESTOA'), rename),
+        (('FSNT', 'FLNT'), lambda fsnt, flnt: restom(fsnt, flnt))
+    ]),
+    'RESTOA': OrderedDict([
+        (('RESTOA'), rename),
+        (('FSNT', 'FLNT'), lambda fsnt, flnt: restoa(fsnt, flnt))
+    ]),
+    'TREFHT_LAND': OrderedDict([
+        (('TREFHT_LAND'), rename),
+        (('TREFHT', 'LANDFRAC'), lambda trefht, landfrac: mask_by(
+            convert_units(trefht, target_units="K"), landfrac, low_limit=0.65))
+    ]),
+    'PRECT_LAND': OrderedDict([
+        (('PRECIP_LAND'), rename),
         # 0.5 just to match amwg
-        ('PRECC', 'PRECL', 'LANDFRAC'): lambda precc, precl, landfrac: mask_by(
-           prect(precc , precl), landfrac, low_limit=0.5)
-    },
-    'Z3': {
-        ('Z3'): lambda z3: convert_units(z3, target_units="hectometer")
-    },
-    'PSL': {
-        ('PSL'): lambda psl: convert_units(psl, target_units="mbar")
-    },
-    'T': {
-        ('T'): lambda t: convert_units(t, target_units="K")
-    },
-    'U': {
-        ('U'): lambda u: convert_units(u, target_units="m/s")
-    },
-    'TREFHT': {
-        ('TREFHT'): lambda t: convert_units(t, target_units="K")
-    },
-    'TREFHT': {
-        ('TREFHT'): lambda t: convert_units(t, target_units="K")
-    },
-    'QFLX': {
-        ('QFLX'): lambda qflx: qflxconvert_units(qflx)
-    },
-    'LHFLX': {
-        ('LHFLX'): rename
-    },
-    'SHFLX': {
-        ('SHFLX'): rename
-    },
-    'TGCLDLWP_OCN': {
-        ('TGCLDLWP_OCEAN'): lambda x: convert_units(x, target_units='g/m^2'),
-        ('TGCLDLWP', 'OCNFRAC'): lambda tgcldlwp, ocnfrac: mask_by(convert_units(tgcldlwp, target_units="g/m^2"), ocnfrac, low_limit=0.65)
-    },
-    'PRECT_OCN': {
-        ('PRECT_OCEAN'): lambda x: convert_units(x, target_units='mm/day'),
-        ('PRECC', 'PRECL', 'OCNFRAC'): lambda a, b, ocnfrac: mask_by(aplusb(a, b, target_units="mm/day"), ocnfrac, low_limit=0.65)
-    },
-    'PREH2O_OCN': {
-        ('PREH2O_OCEAN'): lambda x: convert_units(x, target_units='mm'),
-        ('TMQ', 'OCNFRAC'): lambda preh2o, ocnfrac: mask_by(preh2o, ocnfrac, low_limit=0.65)
-    },
-    'CLDHGH': {
-        ('CLDHGH'): lambda cldhgh: convert_units(cldhgh, target_units="%")
-    },
-    'CLDLOW': {
-        ('CLDLOW'): lambda cldlow: convert_units(cldlow, target_units="%")
-    },
-    'CLDMED': {
-        ('CLDMED'): lambda cldmed: convert_units(cldmed, target_units="%")
-    },
-    'CLDTOT': {
-        ('CLDTOT'): lambda cldtot: convert_units(cldtot, target_units="%")
-    }
+        (('PRECC', 'PRECL', 'LANDFRAC'), lambda precc, precl, landfrac: mask_by(
+            prect(precc, precl), landfrac, low_limit=0.5))
+    ]),
+    'Z3': OrderedDict([
+        (('Z3'), lambda z3: convert_units(z3, target_units="hectometer"))
+    ]),
+    'PSL': OrderedDict([
+        (('PSL'), lambda psl: convert_units(psl, target_units="mbar"))
+    ]),
+    'T': OrderedDict([
+        (('T'), lambda t: convert_units(t, target_units="K"))
+    ]),
+    'U': OrderedDict([
+        (('U'), lambda u: convert_units(u, target_units="m/s"))
+    ]),
+    'TREFHT': OrderedDict([
+        (('TREFHT'), lambda t: convert_units(t, target_units="K"))
+    ]),
+    'TREFHT': OrderedDict([
+        (('TREFHT'), lambda t: convert_units(t, target_units="K"))
+    ]),
+    'QFLX': OrderedDict([
+        (('QFLX'), lambda qflx: qflxconvert_units(qflx))
+    ]),
+    'LHFLX': OrderedDict([
+        (('LHFLX'), rename)
+    ]),
+    'SHFLX': OrderedDict([
+        (('SHFLX'), rename)
+    ]),
+    'TGCLDLWP_OCN': OrderedDict([
+        (('TGCLDLWP_OCEAN'), lambda x: convert_units(x, target_units='g/m^2')),
+        (('TGCLDLWP', 'OCNFRAC'), lambda tgcldlwp, ocnfrac: mask_by(convert_units(tgcldlwp, target_units="g/m^2"), ocnfrac, low_limit=0.65))
+    ]),
+    'PRECT_OCN': OrderedDict([
+        (('PRECT_OCEAN'), lambda x: convert_units(x, target_units='mm/day')),
+        (('PRECC', 'PRECL', 'OCNFRAC'), lambda a, b, ocnfrac: mask_by(aplusb(a, b, target_units="mm/day"), ocnfrac, low_limit=0.65))
+    ]),
+    'PREH2O_OCN': OrderedDict([
+        (('PREH2O_OCEAN'), lambda x: convert_units(x, target_units='mm')),
+        (('TMQ', 'OCNFRAC'), lambda preh2o, ocnfrac: mask_by(preh2o, ocnfrac, low_limit=0.65))
+    ]),
+    'CLDHGH': OrderedDict([
+        (('CLDHGH'), lambda cldhgh: convert_units(cldhgh, target_units="%"))
+    ]),
+    'CLDLOW': OrderedDict([
+        (('CLDLOW'), lambda cldlow: convert_units(cldlow, target_units="%"))
+    ]),
+    'CLDMED': OrderedDict([
+        (('CLDMED'), lambda cldmed: convert_units(cldmed, target_units="%"))
+    ]),
+    'CLDTOT': OrderedDict([
+        (('CLDTOT'), lambda cldtot: convert_units(cldtot, target_units="%"))
+    ])
 }
