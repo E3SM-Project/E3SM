@@ -47,7 +47,7 @@ set restart_files_dir = none
 
 ### DIRECTORIES
 set code_root_dir               = default
-set case_root_dir               = default
+set acme_simulations_dir        = default
 set case_build_dir              = default
 set case_run_dir                = default
 set short_term_archive_root_dir = default
@@ -382,22 +382,22 @@ acme_print '$case_name        = '$case_name
 # DETERMINE THE SCRATCH DIRECTORY TO USE
 #============================================
 
-if ( $case_root_dir == default ) then
+if ( $acme_simulations_dir == default ) then
   ### NOTE: csh doesn't short-circuit; so we can't check whether $SCRATCH exists or whether it's empty in the same condition
   if ( ! $?SCRATCH ) then
     acme_newline
     acme_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
-    acme_print '         To avoid any issues, set $case_root_dir to a scratch filesystem'
-    set case_root_dir = ${HOME}/acme_simulations
+    acme_print '         To avoid any issues, set $acme_simulations_dir to a scratch filesystem'
+    set acme_simulations_dir = ${HOME}/acme_simulations
   else
     ### Verify that $SCRATCH is not an empty string
     if ( "${SCRATCH}" == "" ) then
-      set case_root_dir = ${HOME}/acme_simulations
+      set acme_simulations_dir = ${HOME}/acme_simulations
       acme_newline
       acme_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
-      acme_print '         To avoid any issues, set $case_root_dir to a scratch filesystem'
+      acme_print '         To avoid any issues, set $acme_simulations_dir to a scratch filesystem'
     else
-      set case_root_dir = ${SCRATCH}/acme_simulations
+      set acme_simulations_dir = ${SCRATCH}/acme_simulations
     endif
   endif
 endif
@@ -412,7 +412,7 @@ endif
 ### Note: To turn off the deletion, set $num_seconds_until_delete to be negative.
 ###       To delete immediately, set $num_seconds_until_delete to be zero.
 
-set case_scripts_dir = ${case_root_dir}/${case_name}/case_scripts
+set case_scripts_dir = ${acme_simulations_dir}/${case_name}/case_scripts
 
 if ( -d $case_scripts_dir ) then
   if ( ${seconds_before_delete_case_dir} >= 0 ) then
@@ -554,11 +554,11 @@ if ( `lowercase $machine` != default ) then
 endif
 
 if ( `lowercase $case_build_dir` == default ) then
-  set case_build_dir = ${case_root_dir}/${case_name}/build
+  set case_build_dir = ${acme_simulations_dir}/${case_name}/build
 endif
 
 if ( `lowercase $case_run_dir` == default ) then
-  set case_run_dir = ${case_root_dir}/${case_name}/run
+  set case_run_dir = ${acme_simulations_dir}/${case_name}/run
 endif
 
 mkdir -p ${case_build_dir}
@@ -601,7 +601,7 @@ if ( `lowercase $machine` == default ) then
   set machine = `$xmlquery_exe MACH --value`
 endif
 if ( `lowercase $case_build_dir` == default ) then
-  set case_build_dir = ${case_root_dir}/${case_name}/bld
+  set case_build_dir = ${acme_simulations_dir}/${case_name}/bld
 endif
 ${xmlchange_exe} EXEROOT=${case_build_dir}
 
