@@ -8,6 +8,14 @@ from CIME.case import Case
 import os, glob, logging
 
 ###############################################################################
+def append_status_cprnc_log(msg, logfile_name, test_dir):
+###############################################################################
+    try:
+        append_status(msg, logfile_name, caseroot=test_dir)
+    except IOError:
+        pass
+
+###############################################################################
 def compare_namelists(case, baseline_name, baseline_root, logfile_name, compiler):
 ###############################################################################
     if get_model() == "acme":
@@ -20,15 +28,20 @@ def compare_namelists(case, baseline_name, baseline_root, logfile_name, compiler
     return success
 
 ###############################################################################
-def compare_history(case, baseline_name, baseline_root, compiler):
+def compare_history(case, baseline_name, baseline_root, log_id, compiler):
 ###############################################################################
     if get_model() == "acme":
         baseline_full_dir = os.path.join(baseline_root, compiler, baseline_name, case.get_value("CASEBASEID"))
     else:
         baseline_full_dir = os.path.join(baseline_root, baseline_name, case.get_value("CASEBASEID"))
 
-    result, comments = compare_baseline(case, baseline_dir=baseline_full_dir,
-                                        outfile_suffix=None)
+    outfile_suffix = "%s.%s" % (baseline_name, log_id)
+    try:
+        result, comments = compare_baseline(case, baseline_dir=baseline_full_dir,
+                                            outfile_suffix=outfile_suffix)
+    except IOError:
+        result, comments = compare_baseline(case, baseline_dir=baseline_full_dir,
+                                            outfile_suffix=None)
 
     return result, comments
 
@@ -66,12 +79,12 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
         ts = TestStatus(test_dir=test_dir)
         test_name = ts.get_name()
         if (compare_tests in [[], None] or CIME.utils.match_any(test_name, compare_tests)):
-            append_status(
+            append_status_cprnc_log(
                 "Comparing against baseline with compare_test_results:\n" +
                 "Baseline: %s\n"%(baseline_name) +
                 "In baseline_root: %s"%(baseline_root),
                 logfile_name,
-                caseroot=test_dir)
+                test_dir)
 
             if (not hist_only):
                 nl_compare_result = None
@@ -117,7 +130,7 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
                             all_pass_or_skip = False
 
                     if do_compare:
-                        success, detailed_comments = compare_history(case, baseline_name, baseline_root, compiler)
+                        success, detailed_comments = compare_history(case, baseline_name, baseline_root, log_id, compiler)
                         if success:
                             compare_result = TEST_PASS_STATUS
                         else:
@@ -142,9 +155,9 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
 
             print brief_result,
 
-            append_status(brief_result, logfile_name, caseroot=test_dir)
+            append_status_cprnc_log(brief_result, logfile_name, test_dir)
 
             if detailed_comments:
-                append_status("Detailed comments:\n" + detailed_comments, logfile_name, caseroot=test_dir)
+                append_status_cprnc_log("Detailed comments:\n" + detailed_comments, logfile_name, test_dir)
 
     return all_pass_or_skip
