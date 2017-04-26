@@ -547,7 +547,7 @@ endif
 # DETERMINE THE OPTIONS FOR CREATE_NEWCASE
 #=============================================================
 
-set configure_options = "--case ${case_scripts_dir} --compset ${compset} --res ${resolution} --project ${project} --pecount ${std_proc_configuration} --handle-preexisting-dirs a"
+set configure_options = "--case ${case_scripts_dir} --compset ${compset} --res ${resolution} --project ${project} --pecount ${std_proc_configuration} --handle-preexisting-dirs u"
 
 if ( `lowercase $machine` != default ) then
   set configure_options = "${configure_options} --mach ${machine}"
