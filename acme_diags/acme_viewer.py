@@ -1,3 +1,4 @@
+import os
 import glob
 from cdp.cdp_viewer import OutputViewer
 
@@ -19,19 +20,19 @@ def create_viewer(root_dir, parameters):
     ''' Based of the parameters, find
     the files and create the viewer '''
 
-    viewer = OutputViewer(path=parameters[0].case_id, index_name='ACME Diagnostics')
+    viewer = OutputViewer(path=root_dir, index_name='ACME Diagnostics')
     add_page_and_top_row(viewer, parameters)
 
     for parameter in parameters:
-        case_id = parameter.case_id
         viewer.add_group(parameter.case_id)
 
-        # Add all of the .png files from the case_id/ folder
-        files = glob.glob(case_id + '/*.png')
+        # Add all of the .png files from the case_id/ folder'
+        pth = os.path.join(parameter.results_dir, parameter.case_id)
+        files = glob.glob(pth + '/*.png')
         for png_file in files:
             fnm = png_file.replace('.png', '')
             keywords = fnm.split('_')
-            print keywords
+
             if len(keywords) == 5:
                 # 2d vars, format is [set_num, ref_name, var, season, region]
                 row_name = '%s %s' % (keywords[2], keywords[4])
@@ -46,6 +47,7 @@ def create_viewer(root_dir, parameters):
             except RuntimeError:
                 # row of row_name wasn't added, so add it
                 viewer.add_row(row_name)
+                viewer.add_col(keywords[2])
 
             nc_files = [fnm + ext for ext in ['_test.nc', '_ref.nc', '_test.nc']]
             formatted_files = [{'url': f, 'title': f} for f in nc_files]

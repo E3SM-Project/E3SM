@@ -3,7 +3,7 @@ import cdp.cdp_parameter
 
 class ACMEParameter(cdp.cdp_parameter.CDPParameter):
     def __init__(self):
-        self.results_dir = ''
+        self.results_dir = '.'
         self.case_id = ''
         self.reference_data_path = ''
         self.test_data_path = ''

@@ -18,13 +18,12 @@ from acme_diags.derivations import acme
 from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
-def findfile(path_name,data_name,season):
+def findfile(path_name, data_name, season):
     """locate file name based on data_name and season"""
     dir_files = os.listdir(path_name)
     for filename in dir_files:
         if filename.startswith(data_name) and season in filename:
             return path_name+filename
-     
     raise IOError(
         "No file found based on given path_name and data_name")
        
@@ -134,22 +133,22 @@ def save_ncfiles(test, ref, diff, parameter):
     cdms2.setNetcdfShuffleFlag(0)
     cdms2.setCompressionWarnings(0)  # Turn off warning messages
     # Save test file
-    file_test = cdms2.open(parameter.case_id + '/' +
-                           parameter.output_file + '_test.nc', 'w+')
+    file_test = cdms2.open(parameter.results_dir + '/' + parameter.case_id + 
+                           '/' + parameter.output_file + '_test.nc', 'w+')
     test.id = parameter.var_id
     file_test.write(test)
     file_test.close()
 
     # Save reference file
-    file_ref = cdms2.open(parameter.case_id + '/' +
-                          parameter.output_file + '_ref.nc', 'w+')
+    file_ref = cdms2.open(parameter.results_dir + '/' + parameter.case_id + 
+                           '/' + parameter.output_file + '_ref.nc', 'w+')
     ref.id = parameter.var_id
     file_ref.write(ref)
     file_ref.close()
 
     # Save difference file
-    file_diff = cdms2.open(parameter.case_id + '/' +
-                           parameter.output_file + '_diff.nc', 'w+')
+    file_diff = cdms2.open(parameter.results_dir + '/' + parameter.case_id + 
+                           '/' + parameter.output_file + '_diff.nc', 'w+')
     diff.id = parameter.var_id + '(test - reference)'
     file_diff.write(diff)
     file_diff.close()
@@ -157,9 +156,18 @@ def save_ncfiles(test, ref, diff, parameter):
 
 parser = ACMEParser()
 original_parameter = parser.get_parameter(default_vars=False)
+if original_parameter.results_dir == '.':
+    import datetime
+    original_parameter.results_dir = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+
 parameters = make_parameters(original_parameter)
 
 for parameter in parameters:
+    if not os.path.exists(parameter.results_dir):
+        os.makedirs(parameter.results_dir)
+    if not os.path.exists(os.path.join(parameter.results_dir, parameter.case_id)):
+        os.makedirs(os.path.join(parameter.results_dir, parameter.case_id))
+
     reference_data_path = parameter.reference_data_path
     test_data_path = parameter.test_data_path
 
@@ -189,7 +197,7 @@ for parameter in parameters:
                 filename2 = findfile(reference_data_path, ref_name, season)
                 print filename2
             except IOError:
-                print('No file found for %s and %s' % (ref_name ,season))
+                print('No file found for %s and %s' % (ref_name, season))
                 continue
 
         f_mod = cdms2.open(filename1)
@@ -425,4 +433,4 @@ for parameter in parameters:
         f_obs.close()
         f_mod.close()
 
-acme_viewer.create_viewer('.', parameters)
+acme_viewer.create_viewer(original_parameter.results_dir, parameters)
