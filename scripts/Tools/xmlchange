@@ -96,9 +96,9 @@ def xmlchange(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup,
 
         if xmlfile:
             case.set_file(xmlfile)
-
-        env_mach_pes = case.get_env("mach_pes")
-        env_mach_pes.set_components(case.get_values("COMP_CLASSES"))
+        else:
+            env_mach_pes = case.get_env("mach_pes")
+            env_mach_pes.set_components(case.get_values("COMP_CLASSES"))
         if len(listofsettings):
             logger.debug("List of attributes to change: %s" , listofsettings)
 
@@ -113,7 +113,7 @@ def xmlchange(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup,
                     value = case.get_value(xmlid, resolved=False,
                                            subgroup=subgroup)
                     xmlval = "%s %s" % (value, xmlval)
-                if not force:
+                if type_str is not None and not force:
                     xmlval = convert_to_type(xmlval, type_str, xmlid)
 
                 if not dryrun :

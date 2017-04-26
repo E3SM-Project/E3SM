@@ -283,7 +283,8 @@ class Case(object):
                 if resolved and type(result) is str:
                     result = self.get_resolved_value(result)
                     vtype = env_file.get_type_info(item)
-                    result = convert_to_type(result, vtype, item)
+                    if vtype is not None:
+                        result = convert_to_type(result, vtype, item)
                 return result
 
         for env_file in self._env_generic_files:
