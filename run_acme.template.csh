@@ -9,7 +9,6 @@
 ###===================================================================
 
 ### BASIC INFO ABOUT RUN
-set run_name       = run_acme.template
 set job_name       = A_WCYCL1850_template
 set compset        = A_WCYCL1850
 set resolution     = ne4np4_oQU240
@@ -48,6 +47,7 @@ set restart_files_dir = none
 
 ### DIRECTORIES
 set code_root_dir               = default
+set case_root_dir               = default
 set case_build_dir              = default
 set case_run_dir                = default
 set short_term_archive_root_dir = default
@@ -64,6 +64,7 @@ set do_long_term_archiving       = false
 ### SIMULATION OPTIONS
 set atm_output_freq              = -24
 set records_per_atm_output_file  = 40
+set start_date                   = default
 
 ### COUPLER HISTORY FILES
 set do_cpl_hist    = true
@@ -76,8 +77,6 @@ set cpl_hist_num   = 1
 
 ### BASIC INFO ABOUT RUN (1)
 
-#run_name: the run will be named: ${tag_name}.${compset}.${resolution}.${run_name}.  run_name is to explain the
-#    purpose of the run (e.g. run_name=ParallelPhysDyn) or just to ensure the run name is unique (e.g. run_name=test1).
 #job_name: This is only used to name the job in the batch system. The problem is that batch systems often only
 #    provide the first few letters of the job name when reporting on jobs inthe queue, which may not be enough
 #    to distinguish simultaneous jobs.
@@ -182,6 +181,7 @@ set cpl_hist_num   = 1
 #NOTE: If there will be more than one 'history tape' defined in the atm namelist, then
 #    atm_output_freq and records_per_atm_output_file should be a comma-separated list of numbers
 #    (specifying the option for each history tape).
+#start_date: The day that the simulation starts
 
 ### GENERAL NOTES:
 
@@ -267,6 +267,7 @@ endif
 
 if ( `lowercase $old_executable` == true ) then
   if ( $seconds_before_delete_source_dir >= 0 ) then
+    acme_newline
     acme_print 'ERROR: It is unlikely that you want to delete the source code and then use the existing compiled executable.'
     acme_print '       Hence, this script will abort to avoid making a mistake.'
     acme_print '       $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir'      $old_executable = '$old_executable
@@ -274,17 +275,11 @@ if ( `lowercase $old_executable` == true ) then
   endif
 
   if ( $seconds_before_delete_bld_dir >= 0 ) then
+    acme_newline
     acme_print 'ERROR: It makes no sense to delete the source-compiled code and then use the existing compiled executable.'
     acme_print '       Hence, this script will abort to avoid making a mistake.'
     acme_print '       $seconds_before_delete_bld_dir = '$seconds_before_delete_bld_dir'      $old_executable = '$old_executable
     exit 12
-  endif
-
-  if ( `lowercase $case_build_dir` == default ) then
-    acme_print 'WARNING: run_acme must be run interactively when using the default build directory and old executables'
-    acme_print '         To remedy this, either set $case_build_dir to the path of the executables'
-    acme_print '         If this is an interactive shell, deactivate this test'
-    exit 13
   endif
 endif
 
@@ -386,13 +381,29 @@ acme_print '$case_name        = '$case_name
 #============================================
 # DELETE PREVIOUS DIRECTORIES (IF REQUESTED)
 #============================================
+### Determine the case_scripts directory
 ### Remove existing case_scripts directory (so it doesn't have to be done manually every time)
 ### Note: This script causes create_newcase to generate a temporary directory (part of a workaround to put the case_name into the script names)
 ###       If something goes wrong, this temporary directory is sometimes left behind, so we need to delete it too.
 ### Note: To turn off the deletion, set $num_seconds_until_delete to be negative.
 ###       To delete immediately, set $num_seconds_until_delete to be zero.
 
-set case_scripts_dir = `pwd -P`/$case_name
+if ( $case_root_dir == default ) then
+  if ( ! $?{SCRATCH} ) then
+    if ( "${SCRATCH}" == "" ) then
+      set case_root_dir = ${HOME}/acme_cases
+      acme_newline
+      acme_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
+      acme_print '         To avoid any issues, set $case_root_dir to a scratch filesystem'
+    else
+      set case_root_dir = ${SCRATCH}/acme_scratch
+    endif
+  else
+    set case_root_dir = ${SCRATCH}/acme_scratch
+  endif
+endif
+
+set case_scripts_dir = ${case_root_dir}/${case_name}/case_scripts
 
 if ( -d $case_scripts_dir ) then
   if ( ${seconds_before_delete_case_dir} >= 0 ) then
@@ -524,14 +535,33 @@ else                                                                   # No vers
 endif
 
 #=============================================================
-# CREATE CASE_SCRIPTS DIRECTORY AND POPULATE WITH NEEDED FILES
+# DETERMINE THE OPTIONS FOR CREATE_NEWCASE
 #=============================================================
 
 set configure_options = "--case ${case_name} --compset ${compset} --res ${resolution} --project ${project} --pecount ${std_proc_configuration}"
 
 if ( `lowercase $machine` != default ) then
-  set configure_options = "$configure_options --mach ${machine}"
+  set configure_options = "${configure_options} --mach ${machine}"
 endif
+
+if ( `lowercase $case_build_dir` == default ) then
+  set case_build_dir = ${case_root_dir}/${case_name}/bld
+endif
+
+if ( `lowercase $case_run_dir` == default ) then
+  set case_run_dir = ${case_root_dir}/${case_name}/run
+endif
+
+build_root=`cd ${case_build_dir}/..; pwd -P`
+run_root=`cd ${case_run_dir}/..; pwd -P`
+
+if ( ${build_root} == ${run_root} ) then
+  set configure_options = "${configure_options} --output-root ${build_root}"
+endif
+
+#=============================================================
+# CREATE CASE_SCRIPTS DIRECTORY AND POPULATE WITH NEEDED FILES
+#=============================================================
 
 acme_newline
 acme_print '-------- Starting create_newcase --------'
@@ -539,11 +569,18 @@ acme_newline
 
 acme_print $create_newcase_exe $configure_options
 $create_newcase_exe $configure_options
-cd ${case_name}
+
+cd ${case_scripts_dir}
 
 acme_newline
 acme_print '-------- Finished create_newcase --------'
 acme_newline
+
+#================================================
+# CORRECT THE CASE NAME FOR THE OUTPUT FILES
+#================================================
+
+${xmlchange_exe} --id CASE --val ${case_name}
 
 #================================================
 # UPDATE VARIABLES WHICH REQUIRE A CASE TO BE SET
@@ -553,11 +590,14 @@ if ( `lowercase $machine` == default ) then
   set machine = `$xmlquery_exe MACH --value`
 endif
 if ( `lowercase $case_build_dir` == default ) then
-  set case_build_dir = `$xmlquery_exe EXEROOT --value`
+  set case_build_dir = ${case_root_dir}/${case_name}/bld
 endif
+${xmlchange_exe} EXEROOT=${case_root_dir}
+
 if ( `lowercase $case_run_dir` == default ) then
-  set case_run_dir = `$xmlquery_exe RUNDIR --value`
+  set case_run_dir = ${case_scripts_dir}/${case_name}/run
 endif
+${xmlchange_exe} RUNDIR=${case_build_dir}
 
 #================================
 # SET WALLTIME FOR CREATE_NEWCASE
@@ -577,6 +617,14 @@ endif
 
 # Allow the user to specify how long the job taks
 $xmlchange_exe JOB_WALLCLOCK_TIME=$walltime
+
+#================================
+# SET THE STARTDATE FOR THE SIMULATION
+#================================
+
+if ( `lowercase $start_date` != 'default' ) then
+  $xmlchange_exe RUN_STARTDATE=$start_date
+endif
 
 #NOTE: Details of the configuration setup by create_newcase are in $case_scripts_dir/env_case.xml, which should NOT be edited.
 #      It will be used by cesm_setup (formerly 'configure -case').
@@ -622,7 +670,6 @@ endif
 
 if ( `lowercase $processor_config` == '1' ) then
 
-  # NOTE: xmlchange won't work with shell variables for the id, so we have to write it out in full.
   set ntasks = 1
   set nthrds = 1
   set sequential_or_concurrent = 'sequential'
