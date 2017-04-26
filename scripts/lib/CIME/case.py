@@ -1208,7 +1208,7 @@ class Case(object):
 
         logger.warn("setting case file to %s"%xmlfile)
         new_env_file = None
-        for idx, env_file in enumerate(self._env_entryid_files):
+        for env_file in self._env_entryid_files:
             if os.path.basename(env_file.filename) == ftype:
                 if ftype == "env_run.xml":
                     new_env_file = EnvRun(infile=xmlfile)
@@ -1228,7 +1228,7 @@ class Case(object):
                 self._env_entryid_files.append(new_env_file)
                 break
         if new_env_file is None:
-            for idx, env_file in enumerate(self._env_generic_files):
+            for env_file in self._env_generic_files:
                 if os.path.basename(env_file.filename) == ftype:
                     if ftype == "env_archive.xml":
                         new_env_file = EnvArchive(infile=xmlfile)
