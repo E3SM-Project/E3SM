@@ -39,7 +39,7 @@ set submit_run       = true
 set debug_queue      = true
 
 ### PROCESSOR CONFIGURATION
-set processor_config = S
+set processor_config = M
 
 ### STARTUP TYPE
 set model_start_type = initial
@@ -388,16 +388,16 @@ if ( $case_root_dir == default ) then
     acme_newline
     acme_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
     acme_print '         To avoid any issues, set $case_root_dir to a scratch filesystem'
-    set case_root_dir = ${HOME}/acme_cases
+    set case_root_dir = ${HOME}/acme_simulations
   else
     ### Verify that $SCRATCH is not an empty string
     if ( "${SCRATCH}" == "" ) then
-      set case_root_dir = ${HOME}/acme_cases
+      set case_root_dir = ${HOME}/acme_simulations
       acme_newline
       acme_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
       acme_print '         To avoid any issues, set $case_root_dir to a scratch filesystem'
     else
-      set case_root_dir = ${SCRATCH}/acme_scratch
+      set case_root_dir = ${SCRATCH}/acme_simulations
     endif
   endif
 endif
@@ -554,7 +554,7 @@ if ( `lowercase $machine` != default ) then
 endif
 
 if ( `lowercase $case_build_dir` == default ) then
-  set case_build_dir = ${case_root_dir}/${case_name}/bld
+  set case_build_dir = ${case_root_dir}/${case_name}/build
 endif
 
 if ( `lowercase $case_run_dir` == default ) then
