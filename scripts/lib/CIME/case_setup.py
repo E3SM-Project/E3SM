@@ -140,6 +140,9 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
 
             case.initialize_derived_attributes()
+
+            # Set TOTAL_CORES
+            case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
         else:
             check_pelayouts_require_rebuild(case, models)
 
@@ -159,6 +162,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
             case.set_value("COST_PES", cost_pes)
 
             # Make sure pio settings are consistent
+            tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
             if adjust_pio:
                 adjust_pio_layout(case, tasks_per_node)
 
@@ -168,7 +172,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
             logger.info("Creating batch script case.run")
             env_batch = case.get_env("batch")
             num_nodes = case.num_nodes
-            tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
             for job in env_batch.get_jobs():
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
                 if job == "case.test" and testcase is not None and not test_mode:
@@ -181,15 +184,15 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
                     logger.info("Writing %s script from input template %s" % (job, input_batch_script))
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
 
+            # Set TOTAL_CORES
+            case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
+
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
             logger.info("Locking file env_mach_pes.xml")
             case.flush()
             logger.debug("at copy TOTALPES = %s"%case.get_value("TOTALPES"))
             lock_file("env_mach_pes.xml")
-
-        # Set TOTAL_CORES
-        case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
 
         # Create user_nl files for the required number of instances
         if not os.path.exists("user_nl_cpl"):
