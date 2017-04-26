@@ -49,7 +49,7 @@ def create_viewer(root_dir, parameters):
                 viewer.add_row(row_name)
                 viewer.add_col(keywords[2])
 
-            nc_files = [fnm + ext for ext in ['_test.nc', '_ref.nc', '_test.nc']]
+            nc_files = [fnm + ext for ext in ['_test.nc', '_ref.nc', '_diff.nc']]
             formatted_files = [{'url': f, 'title': f} for f in nc_files]
-            viewer.add_col(png_file, is_file=True, title=keywords[-2], other_files=formatted_files)
+            viewer.add_col(os.path.join( '..', png_file), is_file=True, title=keywords[-2], other_files=formatted_files)
     viewer.generate_viewer()
