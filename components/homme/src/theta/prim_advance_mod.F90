@@ -246,7 +246,7 @@ contains
       maxiter=1000
       itertol=1e-8
  
-      call compute_stage_value_dirk_stiff(np1,n0,qn0,dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(np1,n0,qn0,dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol)
   !    print *, 'maxiter', maxiter
        call t_stopf("U3-5stage_timestep")
@@ -265,8 +265,8 @@ contains
                              
       maxiter=1000
       itertol=1e-8
-      ! solve g2 = un0 + dt*gamma*n(g1)+dt*gamma*s(g2) and save at un0
-      call compute_stage_value_dirk_stiff(n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+      ! solve g2 = un0 + dt*gamma*n(g1)+dt*gamma*s(g2) for g2 and save at un0
+      call compute_stage_value_dirk(n0,np1,qn0,dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol)
                                    
       ! save g2 in statesave2
@@ -274,29 +274,31 @@ contains
       ! put un0 back at un0
       call state_read(elem,statesave,n0,nets,nete)
                                         
-      ! form un0 + dt*delta*n(g1) at save at unp1     
+      ! form un0 + dt*delta*n(un0) at save at unp1     
       call compute_andor_apply_rhs(np1,n0,n0,qn0,delta*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,0.d0,1.d0)
 
       ! put g2 back at un0
       call state_read(elem,statesave,n0,nets,nete)
                                       
-      ! compute g3=(un0+dt*delta*n(g1))+dt*(1-delta)*n(g2) and save at unp1
+      ! form un0+dt*delta*n(g1)+dt*(1-delta)*n(g2) and save at unp1
       call compute_andor_apply_rhs(np1,np1,n0,qn0,(1-delta)*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,0.d0,1.d0)
                                    
-      ! compute g3=(un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2) and save at unp1
+      ! compute form (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2) and save at unp1
       call compute_andor_apply_rhs(np1,np1,n0,qn0,(1-gamma)*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,0.d0,1.d0)
                              
-      ! save to n0
+      ! save unp1 to n0
       call state_save(elem,statesave3,np1,nets,nete)
       call state_read(elem,statesave3,n0,nets,nete)      
                         
       maxiter=1000
       itertol=1e-8
-      !	solve for g3
-      call compute_stage_value_dirk_stiff(np1,n0,qn0,dt,elem,hvcoord,hybrid,&
+      !	solve g3 = (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2)+dt*gamma*s(g3)
+      ! for g3 using (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2) as initial guess
+      ! and save at np1
+      call compute_stage_value_dirk(np1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol)
       
       call state_read(elem,statesave,n0,nets,nete)
@@ -307,7 +309,8 @@ contains
          
       ! copy g2 to n0
       call state_read(elem,statesave2,n0,nets,nete)
-          
+       
+     ! form unp1 = un0 + dt * gamma* (n(g3)+s(g3))+dt*(1-gamma)*(n(g2)+s(g2))   
       call compute_andor_apply_rhs(np1,np1,n0,qn0,(1.d0-gamma)*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,1.d0,1.d0)     
             
@@ -1232,7 +1235,7 @@ contains
 !===========================================================================================================
 !===========================================================================================================
 
-  subroutine compute_stage_value_dirk_stiff(np1,n0,qn0,dt2,elem,hvcoord,hybrid,&
+  subroutine compute_stage_value_dirk(np1,n0,qn0,dt2,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol)
   !===================================================================================
   ! this subroutine solves a stage value equation for a DIRK method which takes the form 
@@ -1298,7 +1301,7 @@ contains
   resnormmax=0.d0
 
   epsie=1e-4
-  call t_startf('compute_stage_value_dirk_stiff')
+  call t_startf('compute_stage_value_dirk')
 
   do ie=nets,nete 
 
@@ -1386,9 +1389,9 @@ contains
     itertol= resnormmax
   end if 
 
-  call t_stopf('compute_stage_value_dirk_stiff')
+  call t_stopf('compute_stage_value_dirk')
 
-  end subroutine compute_stage_value_dirk_stiff
+  end subroutine compute_stage_value_dirk
 
 
   subroutine mgs(A,Q,R)
