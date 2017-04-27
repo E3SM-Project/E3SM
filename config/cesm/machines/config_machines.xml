@@ -250,9 +250,6 @@
       <modules compiler="intel">
 	<command name="load">intel/17.0.1</command>
 	<command name="load">mkl</command>
-      </modules>
-<!-- esmf_libs does not seem to be compatible with intel/17.0.1 on cheyenne
-      <modules compiler="intel">
 	<command name="load">esmf_libs</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" debug="true">
@@ -267,7 +264,6 @@
       <modules compiler="intel" mpilib="mpi-serial" debug="false">
 	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
       </modules>
- -->
       <modules compiler="gnu">
 	<command name="load">gnu/6.3.0</command>
       </modules>
