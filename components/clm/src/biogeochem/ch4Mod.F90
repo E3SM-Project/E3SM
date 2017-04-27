@@ -1404,6 +1404,9 @@ contains
          endp                 =>   bounds%endp                                 &
          )
 
+      !calculate incoming carbon fluxes needed for methane production
+      call carbonflux_vars%hr_summary_for_ch4( bounds, num_soilp, filter_soilp, num_soilc, filter_soilc )
+
       redoxlag          = CH4ParamsInst%redoxlag
       redoxlag_vertical = CH4ParamsInst%redoxlag_vertical
       atmch4            = CH4ParamsInst%atmch4

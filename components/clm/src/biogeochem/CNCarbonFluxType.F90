@@ -412,6 +412,7 @@ module CNCarbonFluxType
      procedure , public  :: Summary
      procedure , public  :: summary_cflux_for_ch4
      procedure , public  :: summary_rr
+     procedure , public  :: hr_summary_for_ch4
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory
      procedure , private :: InitCold
@@ -4296,6 +4297,94 @@ contains
     end do
 
   end subroutine ZeroDwt
+    !-----------------------------------------------------------------------
+
+  subroutine hr_summary_for_ch4( this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc )
+
+  !summarize heterotrophic respiration for methane calculation
+  !
+    use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
+  ! !ARGUMENTS:
+    class(carbonflux_type) :: this
+    type(bounds_type), intent(in)  :: bounds
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    integer  :: c,p,j,k,l       ! indices
+    integer  :: fp,fc           ! lake filter indices
+
+    associate(&
+         is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
+         is_soil   =>    decomp_cascade_con%is_soil     & ! Input:  [logical (:) ]  TRUE => pool is a soil pool
+    )
+    ! some zeroing
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%somhr_col(c)              = 0._r8
+       this%lithr_col(c)              = 0._r8
+    enddo
+    ! vertically integrate HR and decomposition cascade fluxes
+    do k = 1, ndecomp_cascade_transitions
+
+     do j = 1,nlevdecomp
+        do fc = 1,num_soilc
+           c = filter_soilc(fc)
+
+           this%decomp_cascade_hr_col(c,k) = &
+              this%decomp_cascade_hr_col(c,k) + &
+              this%decomp_cascade_hr_vr_col(c,j,k) * dzsoi_decomp(j)
+
+        end do
+     end do
+    end do
+
+    ! litter heterotrophic respiration (LITHR)
+    do k = 1, ndecomp_cascade_transitions
+      if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
+        do fc = 1,num_soilc
+           c = filter_soilc(fc)
+           this%lithr_col(c) = &
+              this%lithr_col(c) + &
+              this%decomp_cascade_hr_col(c,k)
+        end do
+     end if
+    end do
+
+    ! soil organic matter heterotrophic respiration (SOMHR)
+    do k = 1, ndecomp_cascade_transitions
+     if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
+        do fc = 1,num_soilc
+           c = filter_soilc(fc)
+           this%somhr_col(c) = &
+              this%somhr_col(c) + &
+              this%decomp_cascade_hr_col(c,k)
+        end do
+     end if
+    end do
+
+    ! total heterotrophic respiration, vertically resolved (HR)
+    do j = 1,nlevdecomp
+      do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%hr_vr_col(c,j) = 0._r8
+      end do
+    end do
+
+    do k = 1, ndecomp_cascade_transitions
+      do j = 1,nlevdecomp
+        do fc = 1,num_soilc
+           c = filter_soilc(fc)
+           this%hr_vr_col(c,j) = &
+                this%hr_vr_col(c,j) + &
+                this%decomp_cascade_hr_vr_col(c,j,k)
+        end do
+      end do
+    end do
+
+    call this%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+    end associate
+  end subroutine hr_summary_for_ch4
 
   !-----------------------------------------------------------------------
   subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -4711,6 +4800,14 @@ contains
     if ( (.not. is_active_betr_bgc           ) .and. &
          (.not. (use_pflotran .and. pf_cmode))) then
 
+      do k = 1, ndecomp_cascade_transitions
+       do j = 1,nlevdecomp
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%decomp_cascade_hr_col(c,k) = 0._r8
+          enddo
+       enddo
+      enddo
       ! vertically integrate HR and decomposition cascade fluxes
       do k = 1, ndecomp_cascade_transitions
 
