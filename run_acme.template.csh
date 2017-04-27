@@ -13,7 +13,7 @@ set job_name       = A_WCYCL1850_template
 set compset        = A_WCYCL1850
 set resolution     = ne4np4_oQU240
 set machine        = default
-set walltime       = 00:10
+set walltime       = default
 setenv project       default
 
 ### SOURCE CODE OPTIONS
@@ -210,7 +210,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.5
+set script_ver = 3.0.6
 
 #===========================================
 # DEFINE ALIASES
@@ -1349,6 +1349,14 @@ acme_newline
 #                        Merged in PMC's changes from 3.0.4. Enabled using CIME defaults for more functionality
 #                        Renamed 'print' and 'newline' to 'acme_print' and 'acme_newline'
 #                        to disambiguate them from system commands (MD)
+# 3.0.6    2017-04-27    Implemented PJC's "hack" in a machine independent way to
+#                        restore the run acme groups preferred directory structure
+#                        Add a warning if the default output directory is in the users home
+#                        Give project a default value; if used, CIME will determine the batch account to use
+#                        Remove the warning about not running in interactive mode;
+#                        use the new CIME option --handle-preexisting-dirs to avoid this potential error
+#                        Fix the usage of xmlchange for the customknl configuration
+#                        Set walltime to default to get more time on Edison (MD)
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
 ### ---------- Desired features still to be implemented ------------
