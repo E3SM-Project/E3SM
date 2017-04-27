@@ -274,7 +274,7 @@ for parameter in parameters:
                     mv1_domain.units = mv1.units
                     mv2_domain.units = mv1.units
     
-                    parameter.output_file = '_'.join(
+                    parameter.output_file = '-'.join(
                         [ref_name, var, season, region])
                     parameter.main_title = str(' '.join([var, season, region]))
     
@@ -403,7 +403,7 @@ for parameter in parameters:
                         mv1_domain.units = mv1.units
                         mv2_domain.units = mv1.units
     
-                        parameter.output_file = '_'.join(
+                        parameter.output_file = '-'.join(
                             [ref_name, var, str(int(plev[ilev])), season, region])
                         parameter.main_title = str(
                             ' '.join([var, str(int(plev[ilev])), 'mb', season, region]))

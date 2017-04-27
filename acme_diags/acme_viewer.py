@@ -35,12 +35,12 @@ def create_viewer(root_dir, parameters, ext):
 
         # Add all of the files with extension ext from the case_id/ folder'
         pth = os.path.join(parameter.results_dir, parameter.case_id)
-        files = glob.glob(pth + '/*.' + ext)  # ex: files[0] = myresults/set5_SST_HadISST/HadISST_CL_SST_SON_global.png
+        files = glob.glob(pth + '/*.' + ext)  # ex: files[0] = myresults/set5_SST_HadISST/HadISST_CL-SST-SON-global.png
 
         for ext_fnm in files:
             fnm = ext_fnm.replace('.' + ext, '')
-            fnm = fnm.split('/')[-1]  # ex: HadISST_CL_SST_SON_global
-            keywords = fnm.split('_')
+            fnm = fnm.split('/')[-1]  # ex: HadISST_CL-SST-SON-global
+            keywords = fnm.split('-')
 
             # 2d vars, format is [ref_name, var, season, region]
             # 3d vars, format is [ref_name, var, plev, season, region]
@@ -49,10 +49,10 @@ def create_viewer(root_dir, parameters, ext):
             season = keywords[-2]
             if keywords[-3].isdigit():  # for when we have a 3d variable, ex: keywords[-3] = 880
                 plev = keywords[-3]
-                var = '_'.join(keywords[1:-4+1])
+                var = keywords[-4]
             else:
                 plev = None
-                var = '_'.join(keywords[1:-3+1])
+                var = keywords[-3]
 
             if plev is None:  # 2d variable
                 row_name = '%s %s' % (var, region)
@@ -69,7 +69,7 @@ def create_viewer(root_dir, parameters, ext):
             if row_name not in row_info:
                 row_info[row_name] = {}
             # format fnm to support relative paths
-            row_info[row_name][season] = os.path.join('..', parameter.case_id, fnm)
+            row_info[row_name][season] = os.path.join(parameter.case_id, fnm)
     
     # add all of the files in from the case_id/ folder in ANN, DJF, MAM, JJA, SON order
     for row_name in row_info.keys():
@@ -79,7 +79,7 @@ def create_viewer(root_dir, parameters, ext):
                 fnm = row_info[row_name][col_season]
                 nc_files = [fnm + nc_ext for nc_ext in ['_test.nc', '_ref.nc', '_diff.nc']]
                 formatted_files = [{'url': f, 'title': f} for f in nc_files]
-                viewer.add_col(os.path.join(fnm + '.' + ext), is_file=True, title=col_season, other_files=formatted_files)
+                viewer.add_col(fnm + '.' + ext, is_file=True, title=col_season, other_files=formatted_files)
             else:
                 # insert a blank value
                 viewer.add_col('-----')
