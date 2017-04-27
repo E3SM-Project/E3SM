@@ -47,6 +47,7 @@ print(t4)
   times  = (/t1,t2,t3,t4/)
   w_5km  = data->w (times,29,:,:)
   qr_5km = data->Q2(times,29,:,:)
+qr_5km=qr_5km*1000
 
 geo    = data->geo(times,:,:,:)
 print("levels="+geo(0,:,1,1)/9.81)
@@ -104,10 +105,10 @@ print("levels="+geo(0,:,1,1)/9.81)
   resw = res
   resw@gsnSpreadColorStart = 8
   resw@gsnSpreadColorEnd = 19
-  resw@cnLevelSelectionMode = "ManualLevels"
-  resw@cnLevelSpacingF = 2.0
-  resw@cnMinLevelValF = -8.0
-  resw@cnMaxLevelValF = 24.0
+;resw@cnLevelSelectionMode = "ManualLevels"
+;  resw@cnLevelSpacingF = 2.0
+;  resw@cnMinLevelValF = -8.0
+;  resw@cnMaxLevelValF = 24.0
 
   resqr = res
   resqr@gsnSpreadColorStart = 21

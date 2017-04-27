@@ -608,12 +608,12 @@ contains
   end subroutine set_state
 
  !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,zm,g,i,j,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,zm,rho,g,i,j,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
     ! used by idealized tests to compute idealized physics forcing terms
 
-    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,zm
+    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,zm,rho
     real(real_kind), intent(in)    :: g
     integer,         intent(in)    :: i,j,nt,ntQ
     type(element_t), intent(inout) :: elem
@@ -643,7 +643,7 @@ contains
 
     theta = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star*dp)
     T     = theta*exner
-
+    rho   = pnh/(Rgas*T)
   end subroutine get_state
 
   !_____________________________________________________________________

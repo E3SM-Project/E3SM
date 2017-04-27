@@ -23,7 +23,7 @@ use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
 use kinds,                only: rl=>real_kind, iulog
 use parallel_mod,         only: abortmp
 use element_ops,          only: set_state, get_state, tests_finalize, set_forcing_rayleigh_friction, set_thermostate
-use physical_constants,   only: p0, g, Rgas
+use physical_constants,   only: p0, g, Rgas, kappa
 
 implicit none
 
@@ -218,7 +218,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 end subroutine
 
 !_______________________________________________________________________
-subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test,prec_type,pbl_type)
+subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt)
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
   type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
@@ -226,21 +226,17 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test,
   integer,            intent(in)            :: nets,nete                ! start, end element index
   integer,            intent(in)            :: nt, ntQ                  ! time level index
   real(rl),           intent(in)            :: dt                       ! time-step size
-  integer,            intent(in)            :: test                     ! dcmip16 test number
-  integer,            intent(in)            :: prec_type                ! precipitation type
-  integer,            intent(in)            :: pbl_type                 ! planetary boundary layer type
 
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl):: lat
-  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,exner,p,dp,qv,qc,qr,rho,z,zi
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,exner,p,dp,qv,qc,qr,rho,z
   real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0
-  real(rl), dimension(np,np)      :: ps,phis,precl
+  real(rl), dimension(np,np)      :: precl
 
   do ie = nets,nete
 
-    call get_state(u,v,w,T,theta,exner,p,dp,z,g,i,j,elem(ie),hvcoord,nt,ntQ)
-    rho = p/(Rgas*T)
-    zi  = z ! todo: get z levels at interfaces?
+    call get_state(u,v,w,T,theta,exner,p,dp,z,rho,g,i,j,elem(ie),hvcoord,nt,ntQ)
+
     qv  = elem(ie)%state%Qdp(:,:,:,1,ntQ)/dp
     qc  = elem(ie)%state%Qdp(:,:,:,2,ntQ)/dp
     qr  = elem(ie)%state%Qdp(:,:,:,3,ntQ)/dp
@@ -251,25 +247,26 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test,
 
       lat = elem(ie)%spherep(i,j)%lat
 
-      !call DCMIP2016_PHYSICS(test, u(i,j,:), v(i,j,:), p(i,j,:),&
-      !  qv(i,j,:), qc(i,j,:), qr(i,j,:), rho(i,j,:), dt, z(i,j,:), zi(i,j,:), &
-      !  lat, nlev, precl, pbl_type, prec_type)
+!call DCMIP2016_PHYSICS(test, u(i,j,:), v(i,j,:), p(i,j,:), theta(i,j,:), T(i,j,:),&
+!        qv(i,j,:), qc(i,j,:), qr(i,j,:), rho(i,j,:), dt, z(i,j,:), zi(i,j,:), &
+!        lat, nlev, precl, pbl_type, prec_type)
 
       CALL KESSLER(        &
-      theta(i,j,:),        &
-      qv(i,j,:),           &
-      qc(i,j,:),           &
-      qr(i,j,:),           &
-      rho(i,j,:),          &
-      exner(i,j,:),        &
-      dt,                  &
-      z(i,j,:),            &
-      nlev,                  &
-      precl(i,j))
+        theta(i,j,:),        &
+        qv(i,j,:),           &
+        qc(i,j,:),           &
+        qr(i,j,:),           &
+        rho(i,j,:),          &
+        exner(i,j,:),        &
+        dt,                  &
+        z(i,j,:),            &
+        nlev,                &
+        precl(i,j))
 
     enddo; enddo;
 
-    T = theta*exner
+    exner = (rho*Rgas*theta/p0)**(kappa/(1-kappa))
+    T     = theta*exner
 
     !print *,"u=",u(1)," v=",v(1), " w= ",w(1), "T=",t(1)," p=",p(1)," dp=",dp(1)," z=",z(1)," qv=",qv(1)," qc=",qc(1)," qr=",qr(1)," precl=",precl
 
@@ -282,7 +279,7 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test,
     elem(ie)%derived%FQ(:,:,:,2) = (qc-qc0)/dt
     elem(ie)%derived%FQ(:,:,:,3) = (qr-qr0)/dt
 
-    elem(ie)%state%Qdp(:,:,1,4,ntQ) = precl*dp(:,:,1) ! store precl in level 1 of tracer #4
+    !elem(ie)%state%Qdp(:,:,1,4,ntQ) = precl*dp(:,:,1) ! store precl in level 1 of tracer #4
   enddo
 
 end subroutine

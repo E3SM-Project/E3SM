@@ -59,10 +59,10 @@ do time=0,ntimes-1,5
 ;  res@trXMinF = -20.0
 ;  res@trXMaxF =  20.0
 
-  res@cnLevelSelectionMode = "ManualLevels"
-  res@cnLevelSpacingF = 2.0
-  res@cnMinLevelValF = -8.0
-  res@cnMaxLevelValF = 24.0
+; res@cnLevelSelectionMode = "ManualLevels"
+;  res@cnLevelSpacingF = 2.0
+;  res@cnMinLevelValF = -8.0
+;  res@cnMaxLevelValF = 24.0
 
   res@cnFillOn            = True          ; turn on color
   res@cnFillPalette       = "gui_default" ; set color map

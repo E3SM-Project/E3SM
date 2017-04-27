@@ -9,7 +9,7 @@
   theta_hydrostatic_mode = .false.
   rsplit            = 1
   ne                = 7 !15                         ! number of elements per cube face
-  qsize             = 5                         ! num tracer fields: qv,qc,qr
+  qsize             = 4                         ! num tracer fields: qv,qc,qr
   nmax              = 36000                     ! 7200s(120min)/tstep
   statefreq         = 10                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
@@ -19,13 +19,13 @@
   tstep_type        = 5
   rsplit            = 1
   qsplit            = 1
-  nu                = 1.239e10 !4.57e10 !1500 !5.8e8      ! 1e15/(120)^3
-  nu_s              = 1.239e10 !4.57e10 !500 !5.8e8
-  nu_p              = 1.239e10 !4.57e10 !500 !5.8e8
+  nu                = 0 !1e10 !4.57e10 !1500 !5.8e8      ! 1e15/(120)^3 *(ne30/ne7)
+  nu_s              = 0 !1e10 !4.57e10 !500 !5.8e8
+  nu_p              = 0 !1e10 !4.57e10 !500 !5.8e8
   hypervis_order    = 2 !1                         ! 2 = hyperviscosity
   hypervis_subcycle = 3                         ! 1 = no hyperviz subcycling
   rearth            = 53133                     ! 6.376E6  / 120
-  omega             = 0 !8.7504e-3                 ! 7.292D-5 * 120
+  omega             = 0
   moisture          = 'dry'
   se_ftype          = 0
 /
@@ -36,9 +36,9 @@
 /
 &analysis_nl
   output_dir        = "./movies/"               ! destination dir for netcdf file
-  output_timeunits  = 0 !3,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
+  output_timeunits  = 3,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
   output_frequency  = 100 !900,                      ! 900 seconds (15 minutes)
-  output_varnames1  ='T','p','pnh','geo','u','v','w','Th','Q','Q2','Q3','Q4','Q5'   ! variables to write to file
+  output_varnames1  ='T','p','pnh','geo','u','v','w','Th','Q','Q2','Q3','Q4'   ! variables to write to file
   interp_nlon       = 360
   interp_nlat       = 181
   interp_type       = 0                         ! 0=native grid, 1=bilinear
