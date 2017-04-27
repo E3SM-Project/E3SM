@@ -317,6 +317,46 @@ contains
       call state_read(elem,statesave,n0,nets,nete)
              
       call t_stopf("ARS232_timestep")
+!===================================================================================================
+    elseif (method==3) then ! explicit ARS232 scheme / hydrostatic debug
+      call t_startf("ARS232_explicit_timestep")
+
+      gamma = 1.d0-1.d0/sqrt(2.d0)
+      delta = -2.d0*sqrt(2.d0)/3.d0
+
+      ! save un0 in statesave
+      call state_save(elem,statesave,n0,nets,nete)
+       
+      ! g2 = un0 + dt*gamma*f(g1) and g1 = un0
+      call compute_andor_apply_rhs(np1,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,1.d0,1.d0)
+
+      ! save g2 in statesave2
+      call state_save(elem,statesave2,np1,nets,nete)
+
+      ! form un0+dt*(1-delta)*f(g2)
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,(1.d0-delta)*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,1.d0,1.d0)
+
+     ! form g3 = un0+dt*(1-delta)*f(g2) + dt*delta*f(g1), g1 = un0 and save in unp1
+      call compute_andor_apply_rhs(np1,np1,n0,qn0,delta*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,1.d0,1.d0)
+
+     ! form un0 + dt*gamma*f(g3) and save at unp1
+     call compute_andor_apply_rhs(np1,n0,np1,qn0,gamma*dt,elem,hvcoord,hybrid,&
+       deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,1.d0,1.d0)
+
+     ! put g2 in un0
+     call state_read(elem,statesave2,n0,nets,nete)
+
+     ! form unp1 =  un0 + dt*gamma*f(g3) + dt*(1-gamma)*f(g2)
+     call compute_andor_apply_rhs(np1,np1,n0,qn0,(1-gamma)*dt,elem,hvcoord,hybrid,&
+       deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,1.d0,1.d0)
+
+     ! put un0 back at n0
+      call state_read(elem,statesave,n0,nets,nete)
+
+      call t_stopf("ARS232_explicit_timestep")
     else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
@@ -756,17 +796,7 @@ contains
   end subroutine advance_hypervis
 
 
-!==================================== non-stiff =================================================================
-!================================================================================================================
-!================================================================================================================
-!================================================================================================================
-!================================================================================================================
-!================================================================================================================
-!================================================================================================================
-!================================================================================================================
-!================================================================================================================
-!================================================================================================================
- 
+!============================ stiff and or non-stiff ============================================
 
  subroutine compute_andor_apply_rhs(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w,scale1,scale2,scale3)
@@ -1291,7 +1321,6 @@ contains
   real (kind=real_kind) :: dFn(np,np,2*nlev,1)
   real (kind=real_kind) :: QtFn(np,np,2*nlev,1), Fntemp(2*nlev,1)
   real (kind=real_kind) :: res(np,np,2*nlev),resnorm,resnormmax
-  real (kind=real_kind) :: stagevaluesum(np,np,nlev,6),linsolveerror
 
   real (kind=real_kind) ::  itererr, itererrmax
   integer :: i,j,k,l,kptr,ie,itercount,itercountmax
@@ -1365,7 +1394,7 @@ contains
         end do
       end do               
                         
-      call backsubstitution(R,-QtFn,x,linsolveerror)
+      call backsubstitution(R,-QtFn,x)
       elem(ie)%state%w(:,:,:,np1)   = elem(ie)%state%w(:,:,:,np1) + x(:,:,1:nlev,1)                          
       elem(ie)%state%phi(:,:,:,np1) = elem(ie)%state%phi(:,:,:,np1) + x(:,:,nlev+1:2*nlev,1)                          
       itererr=norm2(x)
@@ -1428,15 +1457,14 @@ contains
 
 
 
-  subroutine backsubstitution(R,b,x,err)
+  subroutine backsubstitution(R,b,x)
     
     real (kind=real_kind), intent(in) :: R(np,np,2*nlev,2*nlev)
     real (kind=real_kind), intent(in) :: b(np,np,2*nlev)
     real (kind=real_kind), intent(inout) :: x(np,np,2*nlev)
-    real (kind=real_kind), intent(inout) :: err
 
     integer :: i,j
-    real (kind=real_kind) :: sum(np,np),error,errortemp
+    real (kind=real_kind) :: sum(np,np)
     real (kind=real_kind) :: Rtemp(2*nlev,2*nlev)
     real (kind=real_kind) :: btemp(2*nlev,1)
     real (kind=real_kind) :: xtemp(2*nlev,1)
@@ -1449,17 +1477,12 @@ contains
       end do
       x(:,:,i)=sum(:,:)/R(:,:,i,i)
     end do
-    err=0.0
     do i=1,np
       do j=1,np
         Rtemp(:,:)=R(i,j,:,:)
         xtemp(:,1)=x(i,j,:)
         btemp(:,1)=b(i,j,:)
-        errortemp = norm2(matmul(Rtemp(:,:),xtemp(:,1))-btemp(:,1))
-        if (errortemp > err) then
-          err=errortemp
-        end if
-      end do
+     end do
    end do
   
   end subroutine
@@ -1499,33 +1522,6 @@ contains
     end do
 
   end subroutine state_read
-
- 
-  subroutine state_add(elem,state,n,nets,nete,scale1,scale2)
-
-    type (element_t),			intent(inout), target :: elem(:)
-    real (kind=real_kind), intent(inout) :: state(nets:nete,np,np,nlev,6)
-    real (kind=real_kind), intent(in)    ::  scale1,scale2
-    integer                             :: n,nets,nete
-
-    integer :: ie
-
-    do ie=nets,nete
-      elem(ie)%state%v(:,:,1,:,n)         = state(ie,:,:,:,1)*scale1 &
-        + elem(ie)%state%v(:,:,1,:,n)*scale2
-      elem(ie)%state%v(:,:,2,:,n)         = state(ie,:,:,:,2)*scale1 & 
-        + elem(ie)%state%v(:,:,2,:,n)*scale2
-      elem(ie)%state%w(:,:,:,n)           = state(ie,:,:,:,3)*scale1 &
-        + elem(ie)%state%w(:,:,:,n)*scale2
-      elem(ie)%state%phi(:,:,:,n)         = state(ie,:,:,:,4)*scale1 &
-        + elem(ie)%state%phi(:,:,:,n)*scale2
-      elem(ie)%state%theta_dp_cp(:,:,:,n) = state(ie,:,:,:,5)*scale1 &
-        + elem(ie)%state%theta_dp_cp(:,:,:,n)*scale2
-      elem(ie)%state%dp3d(:,:,:,n)        = state(ie,:,:,:,6)*scale1 &
-        + elem(ie)%state%dp3d(:,:,:,n)*scale2
-    end do
-
-  end subroutine state_add
 
 end module prim_advance_mod
 
