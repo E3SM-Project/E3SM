@@ -149,12 +149,8 @@ def _archive_history_files(case, archive, archive_entry,
         for i in range(ninst):
             if compname == 'dart':
                 newsuffix = casename + suffix
-            elif compname == "mpaso":
-                newsuffix = compname + ".*" + suffix
-            elif compname == "mpascice":
-                newsuffix = compname + ".*" + suffix
-            elif compname == "mpasli":
-                newsuffix = compname + ".*" + suffix
+            elif compname.find('mpas') == 0:
+                newsuffix = compname + '.*' + suffix
             else:
                 if ninst_string:
                     newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
@@ -237,35 +233,27 @@ def _archive_restarts(case, archive, archive_entry,
     for suffix in archive.get_rest_file_extensions(archive_entry):
         for i in range(ninst):
             restfiles = ""
-	    if compname == "mpaso":
-               pattern = r"mpaso.rst\d*.*"
-               pfile = re.compile(pattern)
-               restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
-	    elif compname == "mpascice":
-               pattern = r"mpascice.rst\d*.*"
-               pfile = re.compile(pattern)
-               restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
-	    elif compname == "mpasli":
-               pattern = r"mpasli.rst\d*.*"
-               pfile = re.compile(pattern)
-               restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
-	    else:
-               pattern = r"%s\.%s\d*.*" % (casename, compname)
-               if pattern != "dart":
-                   pfile = re.compile(pattern)
-                   files = [f for f in os.listdir(rundir) if pfile.search(f)]
-                   if ninst_strings:
-                       pattern = ninst_strings[i] + suffix + datename
-                       pfile = re.compile(pattern)
-                       restfiles = [f for f in files if pfile.search(f)]
-                   else:
-                       pattern = suffix + datename
-                       pfile = re.compile(pattern)
-                       restfiles = [f for f in files if pfile.search(f)]
-               else:
-                   pattern = suffix
-                   pfile = re.compile(pattern)
-                   restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+            if compname.find("mpas") == 0:
+                pattern = compname + suffix + '_'.join(datename.rsplit('-', 1))
+                pfile = re.compile(pattern)
+                restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+            else:
+                pattern = r"%s\.%s\d*.*" % (casename, compname)
+                if pattern != "dart":
+                    pfile = re.compile(pattern)
+                    files = [f for f in os.listdir(rundir) if pfile.search(f)]
+                    if ninst_strings:
+                        pattern = ninst_strings[i] + suffix + datename
+                        pfile = re.compile(pattern)
+                        restfiles = [f for f in files if pfile.search(f)]
+                    else:
+                        pattern = suffix + datename
+                        pfile = re.compile(pattern)
+                        restfiles = [f for f in files if pfile.search(f)]
+                else:
+                    pattern = suffix
+                    pfile = re.compile(pattern)
+                    restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
 
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
