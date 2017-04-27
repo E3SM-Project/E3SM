@@ -244,8 +244,8 @@ include 'mpif.h'
          desiredThreadLevel = MPI_THREAD_MULTIPLE
          call MPI_Init_thread(desiredThreadLevel, threadLevel, mpi_ierr)
          if ( threadLevel /= desiredThreadLevel ) then
-            call mpas_log_write('MPI implementation gave thread level of $i when $i was requested.', &
-               MPAS_LOG_WARN, intArgs=(/threadLevel, desiredThreadLevel/) )
+            write(0, *) 'WARNING: In mpas_dmpar_init, MPI implementation gave thread level of ', &
+               threadLevel, ' when ', desiredThreadLevel, ' was requested.'
          end if
 #else
          call MPI_Init(mpi_ierr)
