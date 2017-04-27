@@ -237,12 +237,13 @@ MODULE seq_infodata_mod
       integer(SHR_KIND_IN)    :: wav_phase       ! wav phase
       integer(SHR_KIND_IN)    :: esp_phase       ! esp phase
       logical                 :: atm_aero        ! atmosphere aerosols
-      logical                 :: glcrun_alarm    ! glc run alarm
       logical                 :: glc_g2lupdate   ! update glc2lnd fields in lnd model
       type(seq_pause_resume_type), pointer :: pause_resume => NULL()
       real(shr_kind_r8) :: max_cplstep_time  ! abort if cplstep time exceeds this value
       !--- set from restart file ---
       character(SHR_KIND_CL)  :: rest_case_name  ! Short case identification
+      !--- set by driver and may be time varying
+      logical                 :: glc_valid_input  ! is valid accumulated data being sent to prognostic glc
    end type seq_infodata_type
 
    ! --- public interfaces --------------------------------------------------------
@@ -548,6 +549,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        mct_usealltoall       = .false.
        mct_usevector         = .false.
        max_cplstep_time      = 0.0
+
        !---------------------------------------------------------------------------
        ! Read in namelist
        !---------------------------------------------------------------------------
@@ -708,15 +710,14 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        infodata%rof_phase     = 1
        infodata%wav_phase     = 1
        infodata%atm_aero      = .false.
-       infodata%glcrun_alarm  = .false.
        infodata%glc_g2lupdate = .false.
+       infodata%glc_valid_input = .true.
        if (associated(infodata%pause_resume)) then
           deallocate(infodata%pause_resume)
        end if
        nullify(infodata%pause_resume)
 
        infodata%max_cplstep_time = max_cplstep_time
-
        !---------------------------------------------------------------
        ! check orbital mode, reset unused parameters, validate settings
        !---------------------------------------------------------------
@@ -913,7 +914,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
            ice_gnam, rof_gnam, glc_gnam, wav_gnam,                            &
            atm_gnam, ocn_gnam, info_debug, dead_comps, read_restart,          &
            shr_map_dopole, vect_map, aoflux_grid, flux_epbalfact,             &
-           nextsw_cday, precip_fact, flux_epbal, flux_albav, glcrun_alarm,    &
+           nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
            glc_g2lupdate, atm_aero, run_barriers, esmf_map_flag,              &
            do_budgets, do_histinit, drv_threading, flux_diurnal, gust_fac,    &
            budget_inst, budget_daily, budget_month, wall_time_limit,          &
@@ -935,7 +936,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
            reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute,          &
            atm_resume, lnd_resume, ocn_resume, ice_resume,                    &
            glc_resume, rof_resume, wav_resume, cpl_resume,                    &
-           mct_usealltoall, mct_usevector, max_cplstep_time)
+           mct_usealltoall, mct_usevector, max_cplstep_time, glc_valid_input)
 
 
    implicit none
@@ -1094,9 +1095,9 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
    integer(SHR_KIND_IN),   optional, intent(OUT) :: wav_phase               ! wav phase
    integer(SHR_KIND_IN),   optional, intent(OUT) :: esp_phase               ! wav phase
    logical,                optional, intent(OUT) :: atm_aero                ! atmosphere aerosols
-   logical,                optional, intent(OUT) :: glcrun_alarm            ! glc run alarm
    logical,                optional, intent(OUT) :: glc_g2lupdate           ! update glc2lnd fields in lnd model
    real(shr_kind_r8),      optional, intent(out) :: max_cplstep_time
+   logical,                optional, intent(OUT) :: glc_valid_input
    character(SHR_KIND_CL), optional, intent(OUT) :: atm_resume(:) ! atm read resume state
    character(SHR_KIND_CL), optional, intent(OUT) :: lnd_resume(:) ! lnd read resume state
    character(SHR_KIND_CL), optional, intent(OUT) :: ice_resume(:) ! ice read resume state
@@ -1276,7 +1277,6 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
     if ( present(wav_phase)      ) wav_phase      = infodata%wav_phase
     if ( present(esp_phase)      ) esp_phase      = infodata%esp_phase
     if ( present(atm_aero)       ) atm_aero       = infodata%atm_aero
-    if ( present(glcrun_alarm)   ) glcrun_alarm   = infodata%glcrun_alarm
     if ( present(glc_g2lupdate)  ) glc_g2lupdate  = infodata%glc_g2lupdate
     if ( present(atm_resume) ) then
       if (associated(infodata%pause_resume)) then
@@ -1335,6 +1335,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
       end if
     end if
     if ( present(max_cplstep_time) ) max_cplstep_time = infodata%max_cplstep_time
+    if ( present(glc_valid_input)) glc_valid_input = infodata%glc_valid_input
 
 END SUBROUTINE seq_infodata_GetData_explicit
 
@@ -1473,7 +1474,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
            ice_gnam, rof_gnam, glc_gnam, wav_gnam,                            &
            atm_gnam, ocn_gnam, info_debug, dead_comps, read_restart,          &
            shr_map_dopole, vect_map, aoflux_grid, run_barriers,               &
-           nextsw_cday, precip_fact, flux_epbal, flux_albav, glcrun_alarm,    &
+           nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
            glc_g2lupdate, atm_aero, esmf_map_flag, wall_time_limit,           &
            do_budgets, do_histinit, drv_threading, flux_diurnal, gust_fac,    &
            budget_inst, budget_daily, budget_month, force_stop_at,            &
@@ -1495,7 +1496,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
            reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute,          &
            atm_resume, lnd_resume, ocn_resume, ice_resume,                    &
            glc_resume, rof_resume, wav_resume, cpl_resume,                    &
-           mct_usealltoall, mct_usevector )
+           mct_usealltoall, mct_usevector, glc_valid_input)
 
 
    implicit none
@@ -1653,8 +1654,8 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
    integer(SHR_KIND_IN),   optional, intent(IN)    :: wav_phase          ! wav phase
    integer(SHR_KIND_IN),   optional, intent(IN) :: esp_phase             ! esp phase
    logical,                optional, intent(IN) :: atm_aero              ! atm aerosols
-   logical,                optional, intent(IN) :: glcrun_alarm          ! glc run alarm
    logical,                optional, intent(IN) :: glc_g2lupdate         ! update glc2lnd fields in lnd model
+   logical,                optional, intent(IN) :: glc_valid_input
    character(SHR_KIND_CL), optional, intent(IN) :: atm_resume(:)         ! atm resume
    character(SHR_KIND_CL), optional, intent(IN) :: lnd_resume(:)         ! lnd resume
    character(SHR_KIND_CL), optional, intent(IN) :: ice_resume(:)         ! ice resume
@@ -1822,8 +1823,8 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
     if ( present(wav_phase)      ) infodata%wav_phase      = wav_phase
     if ( present(esp_phase)      ) infodata%esp_phase      = esp_phase
     if ( present(atm_aero)       ) infodata%atm_aero       = atm_aero
-    if ( present(glcrun_alarm)   ) infodata%glcrun_alarm   = glcrun_alarm
     if ( present(glc_g2lupdate)  ) infodata%glc_g2lupdate  = glc_g2lupdate
+    if ( present(glc_valid_input) ) infodata%glc_valid_input = glc_valid_input
     if ( present(atm_resume) ) then
       if (associated(infodata%pause_resume)) then
         infodata%pause_resume%atm_resume(:) = atm_resume(:)
@@ -2240,8 +2241,8 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%rof_phase,               mpicom)
     call shr_mpi_bcast(infodata%wav_phase,               mpicom)
     call shr_mpi_bcast(infodata%atm_aero,                mpicom)
-    call shr_mpi_bcast(infodata%glcrun_alarm,            mpicom)
     call shr_mpi_bcast(infodata%glc_g2lupdate,           mpicom)
+    call shr_mpi_bcast(infodata%glc_valid_input,         mpicom)
 
     call seq_infodata_pauseresume_bcast(infodata,        mpicom)
 
@@ -2566,8 +2567,8 @@ subroutine seq_infodata_Exchange(infodata,ID,type)
   if (cpl2r) then
     call shr_mpi_bcast(infodata%nextsw_cday,        mpicom, pebcast=cplpe)
     call shr_mpi_bcast(infodata%precip_fact,        mpicom, pebcast=cplpe)
-    call shr_mpi_bcast(infodata%glcrun_alarm,       mpicom, pebcast=cplpe)
     call shr_mpi_bcast(infodata%glc_g2lupdate,      mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%glc_valid_input,    mpicom, pebcast=cplpe)
     call seq_infodata_pauseresume_bcast(infodata,   mpicom, pebcast=cplpe)
   endif
 
@@ -2910,7 +2911,6 @@ SUBROUTINE seq_infodata_print( infodata )
        write(logunit,F0S) subname,'rof_phase                = ', infodata%rof_phase
        write(logunit,F0S) subname,'wav_phase                = ', infodata%wav_phase
 
-       write(logunit,F0L) subname,'glcrun_alarm             = ', infodata%glcrun_alarm
        write(logunit,F0L) subname,'glc_g2lupdate            = ', infodata%glc_g2lupdate
        if (associated(infodata%pause_resume)) then
          do ind = 1, num_inst_atm

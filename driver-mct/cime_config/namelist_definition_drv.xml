@@ -1387,7 +1387,7 @@
   <!-- group seq_timemgr_inparm    -->
   <!-- =========================== -->
 
-  <entry id="atm_cpl_dt" modify_via_xml="ATM_NCPL">
+  <entry id="atm_cpl_dt" modify_via_xml="ATM_NCPL" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -1398,12 +1398,9 @@
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, and has valid values: hour,day,year,decade
     </desc>
-    <values>
-      <value>-999</value>
-    </values>
   </entry>
 
-  <entry id="lnd_cpl_dt" modify_via_xml="LND_NCPL">
+  <entry id="lnd_cpl_dt" modify_via_xml="LND_NCPL" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -1414,12 +1411,9 @@
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
     </desc>
-    <values>
-      <value>-999</value>
-    </values>
   </entry>
 
-  <entry id="rof_cpl_dt" modify_via_xml="ROF_NCPL">
+  <entry id="rof_cpl_dt" modify_via_xml="ROF_NCPL" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -1428,12 +1422,9 @@
       currently set by default to 10800 seconds.
       default: 10800
     </desc>
-    <values>
-      <value>10800</value>
-    </values>
   </entry>
 
-  <entry id="ice_cpl_dt" modify_via_xml="ICE_NCPL">
+  <entry id="ice_cpl_dt" modify_via_xml="ICE_NCPL" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -1444,12 +1435,9 @@
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
     </desc>
-    <values>
-      <value>-999</value>
-    </values>
   </entry>
 
-  <entry id="ocn_cpl_dt" modify_via_xml="OCN_NCPL">
+  <entry id="ocn_cpl_dt" modify_via_xml="OCN_NCPL" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -1460,12 +1448,9 @@
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
     </desc>
-    <values>
-      <value>-999</value>
-    </values>
   </entry>
 
-  <entry id="glc_cpl_dt" modify_via_xml="GLC_NCPL">
+  <entry id="glc_cpl_dt" modify_via_xml="GLC_NCPL" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -1476,12 +1461,30 @@
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
     </desc>
-    <values>
-      <value>-999</value>
-    </values>
   </entry>
 
-  <entry id="wav_cpl_dt" modify_via_xml="WAV_NCPL">
+  <entry id="glc_avg_period" modify_via_xml="GLC_AVG_PERIOD">
+    <type>char</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <valid_values>glc_coupling_period,yearly</valid_values>
+    <values>
+      <value>$GLC_AVG_PERIOD</value>
+    </values>
+    <desc>
+      Period at which coupler averages fields sent to GLC.
+      This supports doing the averaging to GLC less frequently than GLC is called
+      (i.e., separating the averaging frequency from the calling frequency).
+      This is useful because there are benefits to only averaging the GLC inputs
+      as frequently as they are really needed (yearly for CISM), but GLC needs to
+      still be called more frequently than that in order to support mid-year restarts.
+
+      Setting glc_avg_period to 'glc_coupling_period' means that the averaging is
+      done exactly when the GLC is called (governed by GLC_NCPL).
+    </desc>
+  </entry>
+
+  <entry id="wav_cpl_dt" modify_via_xml="WAV_NCPL" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -1492,9 +1495,6 @@
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
     </desc>
-    <values>
-      <value>-999</value>
-    </values>
   </entry>
 
   <entry id="esp_cpl_dt" skip_default_entry="true">
