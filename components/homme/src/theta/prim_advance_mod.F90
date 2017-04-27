@@ -381,7 +381,7 @@ contains
       a32 = a42*(-2.d0+9.d0*gamma-3.d0*gamma**2)*0.5d0 + &
         a43*(-11.d0+42.d0*gamma-15.d0*gamma**2)*0.25d0 + &
         4.d0 - 12.5d0*gamma + 4.5d0*gamma**2
-      b1 = -1.5d0*gamma**2 - 0.25d0
+      b1 = -1.5d0*gamma**2 +4.d0*gamma- 0.25d0
       b2 = 1.5d0*gamma**2 - 5.d0*gamma+1.25d0
 
       ! save un0 at statesave
@@ -390,7 +390,11 @@ contains
       ! form  un0 + dt*gamma*n(g1) where g1 = un0 and save at unp1
       call compute_andor_apply_rhs(np1,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,0.d0,1.d0)
-      
+ 
+      ! put the value at np1 at n0
+      call state_save(elem,statesave2,np1,nets,nete)
+      call state_read(elem,statesave2,n0,nets,nete)
+     
       maxiter=1000
       itertol=1e-8
       ! solve g2 = un0 + dt*gamma*n(g1)+dt*gamma*s(g2) for g2 and save at un0
@@ -407,17 +411,17 @@ contains
       call compute_andor_apply_rhs(np1,n0,n0,qn0,a31*dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,0.d0,1.d0)
 
-      !	put g2 at n0
-      call state_save(elem,statesave2,n0,nets,nete)
-
-      !	form un0 + dt *	a31 * n(g1) + dt * a32 * n(g2) and save a np1
-      call compute_andor_apply_rhs(np1,np1,n0,qn0,a32*dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,0.d0,1.d0)
+      ! put g2 back at un0
+      call state_read(elem,statesave2,n0,nets,nete)
 
      ! form [] = un0 + dt * a31 * n(g1) + dt * a32 * n(g2) + dt*(1-gamma)*s(g2)/2 &
      !  and save a np1
-      call compute_andor_apply_rhs(np1,np1,n0,qn0,0.5d0*(1-gamma)*dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,compute_diagnostics,eta_ave_w/2,0.d0,1.d0,1.d0)
+      call compute_andor_apply_rhs(np1,np1,n0,qn0,dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w/2,a32,0.5d0*(1-gamma),1.d0)
+
+      !	put the	value at np1 at n0
+      call state_save(elem,statesave3,np1,nets,nete)
+      call state_read(elem,statesave3,n0,nets,nete)
 
       maxiter=1000
       itertol=1e-8
@@ -426,37 +430,33 @@ contains
       call compute_stage_value_dirk(n0,np1,qn0,gamma*dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol)
 
-     ! put g3 at statesave3
-      call state_read(elem,statesave3,n0,nets,nete)
+     ! save g3 at statesave3
+      call state_save(elem,statesave3,n0,nets,nete)
 
-     ! put un0 back at un0
+     ! put un0 back at n0
       call state_read(elem,statesave,n0,nets,nete)
 
-      ! form un0 + dt * a41 * n(g1), where g1 = un0 and save a np1
+      ! form un0 + dt * a41 * n(g1), where g1 = un0 and save at np1
       call compute_andor_apply_rhs(np1,n0,n0,qn0,a41*dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,0.d0,1.d0)
 
       ! put g2 at n0
-      call state_save(elem,statesave2,n0,nets,nete)
-
-      ! form un0+dt*a41*n(g1)+dt*a42*n(g2)
-      call compute_andor_apply_rhs(np1,np1,n0,qn0,a42*dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,0.d0,1.d0)
+      call state_read(elem,statesave2,n0,nets,nete)
 
       ! form un0+dt*a41*n(g1)+dt*a42*n(g2)+dt*b1*s(g2)
-      call compute_andor_apply_rhs(np1,np1,n0,qn0,b1*dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,compute_diagnostics,eta_ave_w/2,0.d0,1.d0,1.d0)
+      call compute_andor_apply_rhs(np1,np1,n0,qn0,dt,elem,hvcoord,hybrid,&
+       deriv,nets,nete,compute_diagnostics,eta_ave_w/2,a42,b1,1.d0)
 
       ! put g3 at n0
-      call state_save(elem,statesave3,n0,nets,nete)
-
-      ! form un0+dt*a41*n(g1)+dt*a42*n(g2)+dt*b1*s(g2)+dt*a43*n(g3)
-      call compute_andor_apply_rhs(np1,np1,n0,qn0,a43*dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,0.d0,1.d0)
+      call state_read(elem,statesave3,n0,nets,nete)
 
       ! form []2=un0+dt*a41*n(g1)+dt*a42*n(g2)+dt*b1*s(g2)+dt*a43*n(g3)+dt*b2*s(g3)
-      call compute_andor_apply_rhs(np1,np1,n0,qn0,b2*dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,compute_diagnostics,eta_ave_w/2,0.d0,1.d0,1.d0)
+      call compute_andor_apply_rhs(np1,np1,n0,qn0,dt,elem,hvcoord,hybrid,&
+       deriv,nets,nete,compute_diagnostics,eta_ave_w/2,a43,b2,1.d0)
+
+      ! put the value at np1 at n0
+      call state_save(elem,statesave4,np1,nets,nete)
+      call state_read(elem,statesave4,n0,nets,nete)
 
       maxiter=1000
       itertol=1e-8
@@ -464,11 +464,8 @@ contains
       ! g3 is the initial guess
       call compute_stage_value_dirk(n0,np1,qn0,gamma*dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w,maxiter,itertol)
-
-     ! put g4 at statesave4
-      call state_read(elem,statesave4,n0,nets,nete)
  
-     ! put un0 at unp1
+     ! put un0 at np1
       call state_read(elem,statesave,np1,nets,nete)
 
      ! at this point g4 is at n0 and un0 is at np1
