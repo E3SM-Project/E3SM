@@ -9,13 +9,12 @@
 ###===================================================================
 
 ### BASIC INFO ABOUT RUN
-set run_name       = run_acme.template
 set job_name       = A_WCYCL1850_template
 set compset        = A_WCYCL1850
 set resolution     = ne4np4_oQU240
 set machine        = default
-set walltime       = 00:10
-setenv project       fy150001
+set walltime       = default
+setenv project       default
 
 ### SOURCE CODE OPTIONS
 set fetch_code     = false
@@ -40,7 +39,7 @@ set submit_run       = true
 set debug_queue      = true
 
 ### PROCESSOR CONFIGURATION
-set processor_config = S
+set processor_config = M
 
 ### STARTUP TYPE
 set model_start_type = initial
@@ -48,6 +47,7 @@ set restart_files_dir = none
 
 ### DIRECTORIES
 set code_root_dir               = default
+set acme_simulations_dir        = default
 set case_build_dir              = default
 set case_run_dir                = default
 set short_term_archive_root_dir = default
@@ -64,6 +64,7 @@ set do_long_term_archiving       = false
 ### SIMULATION OPTIONS
 set atm_output_freq              = -24
 set records_per_atm_output_file  = 40
+set start_date                   = default
 
 ### COUPLER HISTORY FILES
 set do_cpl_hist    = true
@@ -76,8 +77,6 @@ set cpl_hist_num   = 1
 
 ### BASIC INFO ABOUT RUN (1)
 
-#run_name: the run will be named: ${tag_name}.${compset}.${resolution}.${run_name}.  run_name is to explain the
-#    purpose of the run (e.g. run_name=ParallelPhysDyn) or just to ensure the run name is unique (e.g. run_name=test1).
 #job_name: This is only used to name the job in the batch system. The problem is that batch systems often only
 #    provide the first few letters of the job name when reporting on jobs inthe queue, which may not be enough
 #    to distinguish simultaneous jobs.
@@ -90,6 +89,7 @@ set cpl_hist_num   = 1
 #walltime: How long to reserve the nodes for. The format is HH:MM(:SS); ie 00:10 -> 10 minutes.
 #    Setting this to 'default' has the script determine a reasonable value for most runs.
 #project: what bank to charge for your run time. May not be needed on some machines.
+#    Setting this to 'default' has CIME determine what project to use
 #    NOTE: project must be an *environment* variable on some systems.
 
 ### SOURCE CODE OPTIONS (2)
@@ -129,6 +129,7 @@ set cpl_hist_num   = 1
 #seconds_before_delete_case_dir : Similar to above, but remove the old case_scripts directory. Since create_newcase dies whenever
 #    the case_scripts directory exists, it only makes sense to use $seconds_before_delete_case_dir<0 if you want to be extra careful and
 #    only delete the case_scripts directory manually.
+#seconds_before_delete_bld_dir : As above, but the old bld directory will be deleted.  This makes for a clean start.
 #seconds_before_delete_run_dir : As above, but the old run directory will be deleted.  This makes for a clean start.
 
 ### SUBMIT OPTIONS (5)
@@ -182,6 +183,7 @@ set cpl_hist_num   = 1
 #NOTE: If there will be more than one 'history tape' defined in the atm namelist, then
 #    atm_output_freq and records_per_atm_output_file should be a comma-separated list of numbers
 #    (specifying the option for each history tape).
+#start_date: The day that the simulation starts
 
 ### GENERAL NOTES:
 
@@ -208,7 +210,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.5
+set script_ver = 3.0.6
 
 #===========================================
 # DEFINE ALIASES
@@ -267,6 +269,7 @@ endif
 
 if ( `lowercase $old_executable` == true ) then
   if ( $seconds_before_delete_source_dir >= 0 ) then
+    acme_newline
     acme_print 'ERROR: It is unlikely that you want to delete the source code and then use the existing compiled executable.'
     acme_print '       Hence, this script will abort to avoid making a mistake.'
     acme_print '       $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir'      $old_executable = '$old_executable
@@ -274,17 +277,11 @@ if ( `lowercase $old_executable` == true ) then
   endif
 
   if ( $seconds_before_delete_bld_dir >= 0 ) then
+    acme_newline
     acme_print 'ERROR: It makes no sense to delete the source-compiled code and then use the existing compiled executable.'
     acme_print '       Hence, this script will abort to avoid making a mistake.'
     acme_print '       $seconds_before_delete_bld_dir = '$seconds_before_delete_bld_dir'      $old_executable = '$old_executable
     exit 12
-  endif
-
-  if ( `lowercase $case_build_dir` == default ) then
-    acme_print 'WARNING: run_acme must be run interactively when using the default build directory and old executables'
-    acme_print '         To remedy this, either set $case_build_dir to the path of the executables'
-    acme_print '         If this is an interactive shell, deactivate this test'
-    exit 13
   endif
 endif
 
@@ -384,15 +381,40 @@ acme_newline
 acme_print '$case_name        = '$case_name
 
 #============================================
+# DETERMINE THE SCRATCH DIRECTORY TO USE
+#============================================
+
+if ( $acme_simulations_dir == default ) then
+  ### NOTE: csh doesn't short-circuit; so we can't check whether $SCRATCH exists or whether it's empty in the same condition
+  if ( ! $?SCRATCH ) then
+    acme_newline
+    acme_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
+    acme_print '         To avoid any issues, set $acme_simulations_dir to a scratch filesystem'
+    set acme_simulations_dir = ${HOME}/ACME_simulations
+  else
+    ### Verify that $SCRATCH is not an empty string
+    if ( "${SCRATCH}" == "" ) then
+      set acme_simulations_dir = ${HOME}/ACME_simulations
+      acme_newline
+      acme_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
+      acme_print '         To avoid any issues, set $acme_simulations_dir to a scratch filesystem'
+    else
+      set acme_simulations_dir = ${SCRATCH}/ACME_simulations
+    endif
+  endif
+endif
+
+#============================================
 # DELETE PREVIOUS DIRECTORIES (IF REQUESTED)
 #============================================
+### Determine the case_scripts directory
 ### Remove existing case_scripts directory (so it doesn't have to be done manually every time)
 ### Note: This script causes create_newcase to generate a temporary directory (part of a workaround to put the case_name into the script names)
 ###       If something goes wrong, this temporary directory is sometimes left behind, so we need to delete it too.
 ### Note: To turn off the deletion, set $num_seconds_until_delete to be negative.
 ###       To delete immediately, set $num_seconds_until_delete to be zero.
 
-set case_scripts_dir = `pwd -P`/$case_name
+set case_scripts_dir = ${acme_simulations_dir}/${case_name}/case_scripts
 
 if ( -d $case_scripts_dir ) then
   if ( ${seconds_before_delete_case_dir} >= 0 ) then
@@ -524,14 +546,41 @@ else                                                                   # No vers
 endif
 
 #=============================================================
-# CREATE CASE_SCRIPTS DIRECTORY AND POPULATE WITH NEEDED FILES
+# DETERMINE THE OPTIONS FOR CREATE_NEWCASE
 #=============================================================
 
-set configure_options = "--case ${case_name} --compset ${compset} --res ${resolution} --project ${project} --pecount ${std_proc_configuration}"
+set configure_options = "--case ${case_scripts_dir} --compset ${compset} --res ${resolution} --pecount ${std_proc_configuration} --handle-preexisting-dirs u"
 
 if ( `lowercase $machine` != default ) then
-  set configure_options = "$configure_options --mach ${machine}"
+  set configure_options = "${configure_options} --mach ${machine}"
 endif
+
+if ( `lowercase $case_build_dir` == default ) then
+  set case_build_dir = ${acme_simulations_dir}/${case_name}/build
+endif
+
+if ( `lowercase $case_run_dir` == default ) then
+  set case_run_dir = ${acme_simulations_dir}/${case_name}/run
+endif
+
+mkdir -p ${case_build_dir}
+set build_root = `cd ${case_build_dir}/..; pwd -P`
+mkdir -p ${case_run_dir}
+set run_root = `cd ${case_run_dir}/..; pwd -P`
+
+if ( ${build_root} == ${run_root} ) then
+  set configure_options = "${configure_options} --output-root ${build_root}"
+endif
+
+if ( `lowercase $project` == default ) then
+  unsetenv project
+else
+  set configure_options = "${configure_options} --project ${project}"
+endif
+
+#=============================================================
+# CREATE CASE_SCRIPTS DIRECTORY AND POPULATE WITH NEEDED FILES
+#=============================================================
 
 acme_newline
 acme_print '-------- Starting create_newcase --------'
@@ -539,11 +588,18 @@ acme_newline
 
 acme_print $create_newcase_exe $configure_options
 $create_newcase_exe $configure_options
-cd ${case_name}
+
+cd ${case_scripts_dir}
 
 acme_newline
 acme_print '-------- Finished create_newcase --------'
 acme_newline
+
+#================================================
+# CORRECT THE CASE NAME FOR THE OUTPUT FILES
+#================================================
+
+${xmlchange_exe} --id CASE --val ${case_name}
 
 #================================================
 # UPDATE VARIABLES WHICH REQUIRE A CASE TO BE SET
@@ -553,11 +609,24 @@ if ( `lowercase $machine` == default ) then
   set machine = `$xmlquery_exe MACH --value`
 endif
 if ( `lowercase $case_build_dir` == default ) then
-  set case_build_dir = `$xmlquery_exe EXEROOT --value`
+  set case_build_dir = ${acme_simulations_dir}/${case_name}/bld
 endif
+${xmlchange_exe} EXEROOT=${case_build_dir}
+
 if ( `lowercase $case_run_dir` == default ) then
-  set case_run_dir = `$xmlquery_exe RUNDIR --value`
+  set case_run_dir = ${case_scripts_dir}/${case_name}/run
 endif
+${xmlchange_exe} RUNDIR=${case_run_dir}
+
+if ( ! $?project ) then
+  setenv project `$xmlquery_exe PROJECT --subgroup case.run --value`
+else
+  if ( $project == "" ) then
+    setenv project `$xmlquery_exe PROJECT --subgroup case.run --value`
+  endif
+endif
+
+acme_print "Project used for submission: ${project}"
 
 #================================
 # SET WALLTIME FOR CREATE_NEWCASE
@@ -577,6 +646,14 @@ endif
 
 # Allow the user to specify how long the job taks
 $xmlchange_exe JOB_WALLCLOCK_TIME=$walltime
+
+#================================
+# SET THE STARTDATE FOR THE SIMULATION
+#================================
+
+if ( `lowercase $start_date` != 'default' ) then
+  $xmlchange_exe RUN_STARTDATE=$start_date
+endif
 
 #NOTE: Details of the configuration setup by create_newcase are in $case_scripts_dir/env_case.xml, which should NOT be edited.
 #      It will be used by cesm_setup (formerly 'configure -case').
@@ -622,7 +699,6 @@ endif
 
 if ( `lowercase $processor_config` == '1' ) then
 
-  # NOTE: xmlchange won't work with shell variables for the id, so we have to write it out in full.
   set ntasks = 1
   set nthrds = 1
   set sequential_or_concurrent = 'sequential'
@@ -646,41 +722,41 @@ else if ( `lowercase $processor_config` == 'customknl' ) then
 
   acme_print 'using custom layout for cori-knl because $processor_config = '$processor_config
 
-  ./xmlchange MAX_TASKS_PER_NODE="64"
-  ./xmlchange PES_PER_NODE="256"
+  ${xmlchange_exe} MAX_TASKS_PER_NODE="64"
+  ${xmlchange_exe} PES_PER_NODE="256"
 
-  ./xmlchange NTASKS_ATM="5400"
-  ./xmlchange ROOTPE_ATM="0"
+  ${xmlchange_exe} NTASKS_ATM="5400"
+  ${xmlchange_exe} ROOTPE_ATM="0"
 
-  ./xmlchange NTASKS_LND="320"
-  ./xmlchange ROOTPE_LND="5120"
+  ${xmlchange_exe} NTASKS_LND="320"
+  ${xmlchange_exe} ROOTPE_LND="5120"
 
-  ./xmlchange NTASKS_ICE="5120"
-  ./xmlchange ROOTPE_ICE="0"
+  ${xmlchange_exe} NTASKS_ICE="5120"
+  ${xmlchange_exe} ROOTPE_ICE="0"
 
-  ./xmlchange NTASKS_OCN="3840"
-  ./xmlchange ROOTPE_OCN="5440"
+  ${xmlchange_exe} NTASKS_OCN="3840"
+  ${xmlchange_exe} ROOTPE_OCN="5440"
 
-  ./xmlchange NTASKS_CPL="5120"
-  ./xmlchange ROOTPE_CPL="0"
+  ${xmlchange_exe} NTASKS_CPL="5120"
+  ${xmlchange_exe} ROOTPE_CPL="0"
 
-  ./xmlchange NTASKS_GLC="320"
-  ./xmlchange ROOTPE_GLC="5120"
+  ${xmlchange_exe} NTASKS_GLC="320"
+  ${xmlchange_exe} ROOTPE_GLC="5120"
 
-  ./xmlchange NTASKS_ROF="320"
-  ./xmlchange ROOTPE_ROF="5120"
+  ${xmlchange_exe} NTASKS_ROF="320"
+  ${xmlchange_exe} ROOTPE_ROF="5120"
 
-  ./xmlchange NTASKS_WAV="5120"
-  ./xmlchange ROOTPE_WAV="0"
+  ${xmlchange_exe} NTASKS_WAV="5120"
+  ${xmlchange_exe} ROOTPE_WAV="0"
 
-  ./xmlchange NTHRDS_ATM="1"
-  ./xmlchange NTHRDS_LND="1"
-  ./xmlchange NTHRDS_ICE="1"
-  ./xmlchange NTHRDS_OCN="1"
-  ./xmlchange NTHRDS_CPL="1"
-  ./xmlchange NTHRDS_GLC="1"
-  ./xmlchange NTHRDS_ROF="1"
-  ./xmlchange NTHRDS_WAV="1"
+  ${xmlchange_exe} NTHRDS_ATM="1"
+  ${xmlchange_exe} NTHRDS_LND="1"
+  ${xmlchange_exe} NTHRDS_ICE="1"
+  ${xmlchange_exe} NTHRDS_OCN="1"
+  ${xmlchange_exe} NTHRDS_CPL="1"
+  ${xmlchange_exe} NTHRDS_GLC="1"
+  ${xmlchange_exe} NTHRDS_ROF="1"
+  ${xmlchange_exe} NTHRDS_WAV="1"
 
 endif
 
@@ -767,9 +843,9 @@ acme_newline
 acme_print '-------- Starting case.setup --------'
 acme_newline
 
-acme_print $case_setup_exe
+acme_print ${case_setup_exe}
 
-$case_setup_exe --reset
+${case_setup_exe} --reset
 
 acme_newline
 acme_print '-------- Finished case.setup  --------'
@@ -1273,6 +1349,14 @@ acme_newline
 #                        Merged in PMC's changes from 3.0.4. Enabled using CIME defaults for more functionality
 #                        Renamed 'print' and 'newline' to 'acme_print' and 'acme_newline'
 #                        to disambiguate them from system commands (MD)
+# 3.0.6    2017-04-27    Implemented PJC's "hack" in a machine independent way to
+#                        restore the run acme groups preferred directory structure
+#                        Add a warning if the default output directory is in the users home
+#                        Give project a default value; if used, CIME will determine the batch account to use
+#                        Remove the warning about not running in interactive mode;
+#                        use the new CIME option --handle-preexisting-dirs to avoid this potential error
+#                        Fix the usage of xmlchange for the customknl configuration
+#                        Set walltime to default to get more time on Edison (MD)
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
 ### ---------- Desired features still to be implemented ------------
