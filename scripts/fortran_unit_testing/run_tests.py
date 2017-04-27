@@ -4,7 +4,7 @@ import os, sys
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "utils", "python"))
-sys.path.append(os.path.join(_CIMEROOT, "tools", "unit_testing", "python"))
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "fortran_unit_testing", "python"))
 
 from standard_script_setup import *
 from CIME.BuildTools.configure import configure
@@ -20,7 +20,6 @@ import socket
 #=================================================
 from printer import Printer
 from shutil import rmtree
-from distutils.spawn import find_executable
 # This violates CIME policy - move to CIME/XML directory
 from xml.etree.ElementTree import ElementTree
 
