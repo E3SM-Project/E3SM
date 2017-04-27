@@ -4,10 +4,16 @@
 Script to query key CIME shell commands (mpirun and batch submission).
 
 To force a certain mpirun command, use:
-./xmlchange MPI_RUN_COMMAND $your_cmd
+./xmlchange MPI_RUN_COMMAND=$your_cmd
+
+Example:
+./xmlchange MPI_RUN_COMMAND='mpiexec -np 16 --some-flag'
 
 To force a certain qsub command, use:
-./xmlchange --subgroup=case.run BATCH_COMMAND $your_cmd
+./xmlchange --subgroup=case.run BATCH_COMMAND_FLAGS=$your_flags
+
+Example:
+./xmlchange --subgroup=case.run BATCH_COMMAND_FLAGS='--some-flag --other-flag'
 """
 
 from standard_script_setup import *
@@ -29,7 +35,7 @@ OR
     > %s
 """ % ((os.path.basename(args[0]), ) * 4),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=argparse.RawTextHelpFormatter
     )
 
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),

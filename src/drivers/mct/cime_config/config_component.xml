@@ -2602,7 +2602,7 @@
    <desc>The machine wallclock setting.  Default determined in config_machines.xml can be overwritten by testing</desc>
  </entry>
 
-  <entry id="BATCH_COMMAND">
+  <entry id="BATCH_COMMAND_FLAGS">
     <type>char</type>
     <valid_values></valid_values>
     <default_value></default_value>

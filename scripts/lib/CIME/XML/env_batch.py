@@ -371,7 +371,7 @@ class EnvBatch(EnvBase):
             return
 
         submitargs = self.get_submit_args(case, job)
-        args_override = self.get_value("BATCH_COMMAND", subgroup=job)
+        args_override = self.get_value("BATCH_COMMAND_FLAGS", subgroup=job)
         if args_override:
             submitargs = args_override
 
@@ -457,7 +457,7 @@ class EnvBatch(EnvBase):
 
     def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
         if nodename in ("JOB_WALLCLOCK_TIME", "PROJECT", "PROJECT_REQUIRED",
-                        "JOB_QUEUE", "BATCH_COMMAND"):
+                        "JOB_QUEUE", "BATCH_COMMAND_FLAGS"):
             nodes = EnvBase.get_nodes(self, "entry", attributes={"id":nodename},
                                         root=root, xpath=xpath)
         else:
