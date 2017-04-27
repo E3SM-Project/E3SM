@@ -1117,6 +1117,16 @@ class Case(object):
         if mpirun_cmd_override not in ["", None, "UNSET"]:
             return mpirun_cmd_override + " " + run_exe + " " + run_misc_suffix
 
+        # Things that will have to be matched against mpirun element attributes
+        mpi_attribs = {
+            "compiler" : self.get_value("COMPILER"),
+            "mpilib"   : self.get_value("MPILIB"),
+            "threaded" : self.get_build_threaded(),
+            "unit_testing" : False
+            }
+
+        executable, args = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
+
         # special case for aprun
         if  executable is not None and "aprun" in executable:
             aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)
@@ -1124,28 +1134,12 @@ class Case(object):
             return executable + aprun_args + " " + run_misc_suffix
 
         else:
-            # Things that will have to be matched against mpirun element attributes
-            mpi_attribs = {
-                "compiler" : self.get_value("COMPILER"),
-                "mpilib"   : self.get_value("MPILIB"),
-                "threaded" : self.get_build_threaded(),
-                "unit_testing" : False
-                }
+            mpi_arg_string = " ".join(args.values())
 
-            executable, args = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
+            if self.get_value("BATCH_SYSTEM") == "cobalt":
+                mpi_arg_string += " : "
 
-            # special case for aprun
-            if executable == "aprun":
-                aprun_cmd, num_nodes = get_aprun_cmd_for_case(self, run_exe)
-                expect(num_nodes == self.num_nodes, "Not using optimized num nodes")
-                return aprun_cmd + " " + run_misc_suffix
-            else:
-                mpi_arg_string = " ".join(args.values())
-
-                if self.get_value("BATCH_SYSTEM") == "cobalt":
-                    mpi_arg_string += " : "
-
-                return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
+            return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
 
     def set_model_version(self, model):
         version = "unknown"
