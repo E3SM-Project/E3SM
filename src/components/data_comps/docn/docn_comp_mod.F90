@@ -147,6 +147,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
     integer(IN)   :: nunit       ! unit number
     integer(IN)   :: kmask       ! field reference
+    integer(IN)   :: kfrac       ! field reference
     integer(IN)   :: klat        ! field reference
     integer(IN)   :: klon        ! field reference
     logical       :: ocn_present    ! flag
@@ -297,26 +298,31 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
 
     ocn_mode = trim(SDOCN%dataMode)
 
-    ! Special logic for aquaplanet
-    if (ocn_mode(1:5) == 'AQUAP') then
-       if (len_trim(ocn_mode) == 6) then
-          read(ocn_mode(6:6),'(i)') aquap_option
-       else if (len_trim(ocn_mode) == 7) then
-          read(ocn_mode(6:7),'(i)') aquap_option
+    ! Special logic for prescribed aquaplanet
+    if (ocn_mode(1:9) == 'SST_AQUAP') then
+       ! First determine the prescribed aquaplanet option
+       if (len_trim(ocn_mode) == 10) then
+          read(ocn_mode(10:10),'(i)') aquap_option
+       else if (len_trim(ocn_mode) == 11) then
+          read(ocn_mode(10:11),'(i)') aquap_option
        end if
-       ocn_mode = 'AQUAP'
+       ! Now remove the index from the ocn_mode value, to have a generic setting
+       ! for use below
+       ocn_mode = "SST_AQUAP"
     end if
 
     ! check that we know how to handle the mode
 
-    if (trim(ocn_mode) == 'NULL'    .or. &
-        trim(ocn_mode) == 'SSTDATA' .or. &
-        trim(ocn_mode) == 'COPYALL' .or. &
-        trim(ocn_mode) == 'AQUAP'   .or. &
-        trim(ocn_mode) == 'IAF'     .or. &
-        trim(ocn_mode) == 'SOM') then
-      if (my_task == master_task) &
+    if (trim(ocn_mode) == 'NULL'      .or. &
+        trim(ocn_mode) == 'SSTDATA'   .or. &
+        trim(ocn_mode) == 'SST_AQUAP' .or. &
+        trim(ocn_mode) == 'COPYALL'   .or. &
+        trim(ocn_mode) == 'IAF'       .or. &
+        trim(ocn_mode) == 'SOM'       .or. &
+        trim(ocn_mode) == 'SOM_AQUAP') then
+      if (my_task == master_task) then
          write(logunit,F00) ' ocn mode = ',trim(ocn_mode)
+      end if
     else
       write(logunit,F00) ' ERROR illegal ocn mode = ',trim(ocn_mode)
       call shr_sys_abort()
@@ -369,11 +375,11 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     !----------------------------------------------------------------------------
 
     call seq_infodata_PutData(infodata, ocnrof_prognostic=ocnrof_prognostic, &
-      ocn_present=ocn_present, ocn_prognostic=ocn_prognostic, &
-      ocn_nx=SDOCN%nxg, ocn_ny=SDOCN%nyg )
+         ocn_present=ocn_present, ocn_prognostic=ocn_prognostic, &
+         ocn_nx=SDOCN%nxg, ocn_ny=SDOCN%nyg )
 
     !----------------------------------------------------------------------------
-    ! Initialize MCT global seg map, 1d decomp
+    ! Initialize data model MCT global seg map, 1d decomp
     !----------------------------------------------------------------------------
 
     call t_startf('docn_initgsmaps')
@@ -390,14 +396,26 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     call t_stopf('docn_initgsmaps')
 
     !----------------------------------------------------------------------------
-    ! Initialize MCT domain
+    ! Initialize data model MCT domain
     !----------------------------------------------------------------------------
 
     call t_startf('docn_initmctdom')
     if (my_task == master_task) write(logunit,F00) 'copy domains'
     call shr_sys_flush(logunit)
 
-    if (ocn_present) call shr_dmodel_rearrGGrid(SDOCN%grid, ggrid, gsmap, rearr, mpicom)
+    if (ocn_present) then
+       call shr_dmodel_rearrGGrid(SDOCN%grid, ggrid, gsmap, rearr, mpicom)
+    end if
+
+    ! Special logic for either prescribed or som aquaplanet - overwrite and 
+    ! set mask/frac to 1 
+    if (ocn_mode == 'SST_AQUAP' .or. ocn_mode == 'SOM_AQUAP') then
+       kmask = mct_aVect_indexRA(ggrid%data,'mask')
+       ggrid%data%rattr(kmask,:) = 1
+       kfrac = mct_aVect_indexRA(ggrid%data,'frac')
+       ggrid%data%rattr(kfrac,:) = 1.0_r8
+       write(logunit,F00) ' Resetting the data ocean mask and frac to 1 for aquaplanet'
+    end if
 
     call t_stopf('docn_initmctdom')
 
@@ -678,7 +696,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
          o2x%rAttr(kswp ,n) = swp
       enddo
 
-   case('AQUAP')
+   case('SST_AQUAP')
       lsize = mct_avect_lsize(o2x)
       do n = 1,lsize
          o2x%rAttr(:,n) = 0.0_r8
@@ -701,7 +719,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
          o2x%rAttr(kswp ,n) = swp
       enddo
 
-   case('SOM')
+   case('SOM','SOM_AQUAP')
       lsize = mct_avect_lsize(o2x)
       do n = 1,SDOCN%nstreams
          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,avifld,avofld,rearr)
@@ -874,6 +892,8 @@ subroutine prescribed_sst(xc, yc, lsize, sst_option, sst)
 
   rlon(:) = xc(:) * pio180
   rlat(:) = yc(:) * pio180
+
+  write(6,*)"DEBUG: sst_option is ",sst_option
 
   ! Control
 
