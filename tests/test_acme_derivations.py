@@ -126,7 +126,7 @@ class TestACMEDerivations(unittest.TestCase):
         precl_file = cdms2.open(get_abs_file_path('precl.nc'))
         prcl = precl_file('PRECL')
 
-        acme.mask_by(prcc, prcl, low_limit = 2.0)
+        acme.mask_by(prcc, prcl, low_limit=2.0)
         precc_file.close()
         precl_file.close()
 

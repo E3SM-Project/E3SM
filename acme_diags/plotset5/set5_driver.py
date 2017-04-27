@@ -433,4 +433,4 @@ for parameter in parameters:
         f_obs.close()
         f_mod.close()
 
-acme_viewer.create_viewer(original_parameter.results_dir, parameters)
+acme_viewer.create_viewer(original_parameter.results_dir, parameters, 'png')

@@ -17,7 +17,7 @@ requirements:
     - setuptools
 
   run:
-    - cdp
+    - cdp 2017.04.26
     - vcs-nox
     - vtk-cdat-nox >=7.1.0.2017.3
     - cdms2
