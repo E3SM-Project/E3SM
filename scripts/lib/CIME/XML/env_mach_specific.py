@@ -13,12 +13,14 @@ logger = logging.getLogger(__name__)
 # get_type) otherwise need to implement own functions and make GenericXML parent class
 class EnvMachSpecific(EnvBase):
     # pylint: disable=unused-argument
-    def __init__(self, caseroot, infile="env_mach_specific.xml",components=None):
+    def __init__(self, caseroot, infile="env_mach_specific.xml",
+                 components=None, unit_testing=False):
         """
         initialize an object interface to file env_mach_specific.xml in the case directory
         """
         fullpath = infile if os.path.isabs(infile) else os.path.join(caseroot, infile)
         EnvBase.__init__(self, caseroot, fullpath)
+        self._unit_testing = unit_testing
 
     def populate(self, machobj):
         """Add entries to the file using information from a Machines object."""
@@ -190,6 +192,10 @@ class EnvMachSpecific(EnvBase):
             return False
         elif ("debug" in attribs and
             not self._match("TRUE" if debug else "FALSE", attribs["debug"].upper())):
+            return False
+        elif ("unit_testing" in attribs and
+              not self._match("TRUE" if self._unit_testing else "FALSE",
+                              attribs["unit_testing"].upper())):
             return False
 
         return True

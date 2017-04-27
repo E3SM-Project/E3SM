@@ -811,7 +811,6 @@ for mct, etc.
               -L$(LAPACK_LIBDIR) -Wl,-rpath=$(LAPACK_LIBDIR) \
               -L$(BLAS_LIBDIR) -Wl,-rpath=$(BLAS_LIBDIR)
       </ADD_LDFLAGS>
-      <PFUNIT_PATH></PFUNIT_PATH>
 </compiler>
 
 <compiler COMPILER="intel" MACH="titan">
@@ -920,7 +919,6 @@ for mct, etc.
   <LD> mpixlf77_r </LD>
   <NETCDF_PATH>/soft/libraries/netcdf/4.3.3-f4.4.1/cnk-xl/current/</NETCDF_PATH>
   <PNETCDF_PATH>/soft/libraries/pnetcdf/1.6.0/cnk-xl/current/</PNETCDF_PATH>
-  <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_IBM</PFUNIT_PATH>
   <HDF5_PATH>/soft/libraries/hdf5/1.8.14/cnk-xl/current/</HDF5_PATH>
   <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
   <ADD_SLIBS compile_threaded="true"> -L$(IBM_MAIN_DIR)/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$(IBM_MAIN_DIR)/xlsmp/bg/3.1/bglib64 -lxlsmp </ADD_SLIBS>
@@ -943,7 +941,6 @@ for mct, etc.
   <LD> mpixlf77_r </LD>
   <NETCDF_PATH>/soft/libraries/netcdf/4.3.3-f4.4.1/cnk-xl/current/</NETCDF_PATH>
   <PNETCDF_PATH>/soft/libraries/pnetcdf/1.6.0/cnk-xl/current/</PNETCDF_PATH>
-  <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_IBM</PFUNIT_PATH>
   <HDF5_PATH>/soft/libraries/hdf5/1.8.14/cnk-xl/current/</HDF5_PATH>
   <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
   <ADD_SLIBS compile_threaded="true"> -L$(IBM_MAIN_DIR)/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$(IBM_MAIN_DIR)/xlsmp/bg/3.1/bglib64 -lxlsmp </ADD_SLIBS>

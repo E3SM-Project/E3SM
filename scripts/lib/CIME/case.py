@@ -95,7 +95,9 @@ class Case(object):
         self._components = []
         self._component_classes = []
         self._is_env_loaded = False
-
+        # these are user_mods as defined in the compset
+        # Command Line user_mods are handled seperately
+        self._user_mods = None
         self.thread_count = None
         self.total_tasks = None
         self.tasks_per_node = None
@@ -105,7 +107,7 @@ class Case(object):
         self.cores_per_task = None
         # check if case has been configured and if so initialize derived
         if self.get_value("CASEROOT") is not None:
-            self._initialize_derived_attributes()
+            self.initialize_derived_attributes()
 
     def check_if_comp_var(self, vid):
         vid = vid
@@ -117,7 +119,7 @@ class Case(object):
                 return vid, comp, iscompvar
         return vid, comp, iscompvar
 
-    def _initialize_derived_attributes(self):
+    def initialize_derived_attributes(self):
         """
         These are derived variables which can be used in the config_* files
         for variable substitution using the {{ var }} syntax
@@ -147,7 +149,7 @@ class Case(object):
             }
 
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
-        if executable == "aprun":
+        if executable is not None and "aprun" in executable:
             self.num_nodes = get_aprun_cmd_for_case(self, "acme.exe")[1]
             self.spare_nodes = env_mach_pes.get_spare_nodes(self.num_nodes)
             self.num_nodes += self.spare_nodes
@@ -419,7 +421,7 @@ class Case(object):
             # If the file exists, read it and see if there is a match for the compset alias or longname
             if (os.path.isfile(compsets_filename)):
                 compsets = Compsets(compsets_filename)
-                match, compset_alias, science_support = compsets.get_compset_match(name=compset_name)
+                match, compset_alias, science_support, self._user_mods = compsets.get_compset_match(name=compset_name)
                 pesfile = files.get_value("PES_SPEC_FILE"     , {"component":component})
                 if match is not None:
                     self._pesfile = pesfile
@@ -435,7 +437,10 @@ class Case(object):
                     self.set_lookup_value("USER_MODS_DIR"      , user_mods_dir)
                     self.set_lookup_value("PES_SPEC_FILE"      ,
                                    files.get_value("PES_SPEC_FILE"     , {"component":component}, resolved=False))
-                    logger.info("Compset longname is %s " %(match))
+                    compset_info = "Compset longname is %s"%(match)
+                    if self._user_mods is not None:
+                        compset_info += " with user_mods directory %s"%(self._user_mods)
+                    logger.info(compset_info)
                     logger.info("Compset specification file is %s" %(compsets_filename))
                     logger.info("Pes     specification file is %s" %(pesfile))
                     return compset_alias, science_support
@@ -547,7 +552,8 @@ class Case(object):
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
                   user_grid=False, gridfile=None, ninst=1, test=False,
-                  walltime=None, queue=None, output_root=None, run_unsupported=False, answer=None):
+                  walltime=None, queue=None, output_root=None, run_unsupported=False, answer=None,
+                  input_dir=None):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
@@ -585,8 +591,14 @@ class Case(object):
         #--------------------------------------------
         # set machine values in env_xxx files
         machobj = Machines(machine=machine_name)
+        probed_machine = machobj.probe_machine_name()
         machine_name = machobj.get_machine_name()
-        self.set_value("MACH",machine_name)
+        self.set_value("MACH", machine_name)
+        if probed_machine != machine_name and probed_machine is not None:
+            logger.warning("WARNING: User-selected machine '%s' does not match probed machine '%s'" % (machine_name, probed_machine))
+        else:
+            logger.info("Machine is %s" % machine_name)
+
         nodenames = machobj.get_node_names()
         nodenames =  [x for x in nodenames if
                       '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
@@ -701,7 +713,12 @@ class Case(object):
             if compclass == "CPL":
                 continue
             key = "NINST_%s"%compclass
-            mach_pes_obj.set_value(key, ninst)
+            # ESP models are currently limited to 1 instance
+            if compclass == "ESP":
+                mach_pes_obj.set_value(key, 1)
+            else:
+                mach_pes_obj.set_value(key, ninst)
+
             key = "NTASKS_%s"%compclass
             if key not in pes_ntasks.keys():
                 mach_pes_obj.set_value(key,1)
@@ -792,7 +809,7 @@ class Case(object):
         if test:
             self.set_value("TEST",True)
 
-        self._initialize_derived_attributes()
+        self.initialize_derived_attributes()
 
         # Make sure that parallel IO is not specified if total_tasks==1
         if self.total_tasks == 1:
@@ -804,6 +821,9 @@ class Case(object):
 
         # Set TOTAL_CORES
         self.set_value("TOTAL_CORES", self.total_tasks * self.cores_per_task )
+
+        if input_dir is not None:
+            self.set_value("DIN_LOC_ROOT", os.path.abspath(input_dir))
 
     def get_compset_var_settings(self):
         compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
@@ -934,7 +954,10 @@ class Case(object):
 
         # Open a new README.case file in $self._caseroot
         append_status(" ".join(sys.argv), "README.case", caseroot=self._caseroot)
-        append_status("Compset longname is %s"%self.get_value("COMPSET"),
+        compset_info = "Compset longname is %s"%(self.get_value("COMPSET"))
+        if self._user_mods is not None:
+            compset_info += " with user_mods directory %s"%(self._user_mods)
+        append_status(compset_info,
                       "README.case", caseroot=self._caseroot)
         append_status("Compset specification file is %s" %
                       (self.get_value("COMPSETS_SPEC_FILE")),
@@ -948,19 +971,35 @@ class Case(object):
             comp_grid = "%s_GRID"%component_class
             append_status("%s is %s"%(comp_grid,self.get_value(comp_grid)),
                           "README.case", caseroot=self._caseroot)
+        if self._user_mods is not None:
+            note = "This compset includes user_mods %s"%self._user_mods
+            append_status(note, "README.case", caseroot=self._caseroot)
+            logger.info(note)
         if not clone:
             self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
 
     def apply_user_mods(self, user_mods_dir=None):
-        if user_mods_dir is not None:
-            if os.path.isabs(user_mods_dir):
-                user_mods_path = user_mods_dir
-            else:
-                user_mods_path = self.get_value('USER_MODS_DIR')
-                user_mods_path = os.path.join(user_mods_path, user_mods_dir)
-            self.set_value("USER_MODS_FULLPATH",user_mods_path)
-            apply_user_mods(self._caseroot, user_mods_path)
+        """
+        User mods can be specified on the create_newcase command line (usually when called from create test)
+        or they can be in the compset definition, or both.
+        """
+
+        if self._user_mods is None:
+            compset_user_mods_resolved = None
+        else:
+            compset_user_mods_resolved = self.get_resolved_value(self._user_mods)
+
+        # This looping order will lead to the specified user_mods_dir taking
+        # precedence over self._user_mods, if there are any conflicts.
+        for user_mods in (compset_user_mods_resolved, user_mods_dir):
+            if user_mods is not None:
+                if os.path.isabs(user_mods):
+                    user_mods_path = user_mods
+                else:
+                    user_mods_path = self.get_value('USER_MODS_DIR')
+                    user_mods_path = os.path.join(user_mods_path, user_mods)
+                apply_user_mods(self._caseroot, user_mods_path)
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None):
         if cime_output_root is None:
@@ -1075,9 +1114,15 @@ class Case(object):
         run_suffix = run_exe + run_misc_suffix
 
         mpirun_cmd_override = self.get_value("MPI_RUN_COMMAND")
-
         if mpirun_cmd_override not in ["", None, "UNSET"]:
             return mpirun_cmd_override + " " + run_exe + " " + run_misc_suffix
+
+        # special case for aprun
+        if  executable is not None and "aprun" in executable:
+            aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)
+            expect(num_nodes == self.num_nodes, "Not using optimized num nodes")
+            return executable + aprun_args + " " + run_misc_suffix
+
         else:
             # Things that will have to be matched against mpirun element attributes
             mpi_attribs = {

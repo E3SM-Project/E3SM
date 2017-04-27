@@ -188,6 +188,7 @@
       <xs:attribute ref="debug"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute ref="compiler"/>
+      <xs:attribute ref="unit_testing"/>
     </xs:complexType>
   </xs:element>
   <xs:element name="env">

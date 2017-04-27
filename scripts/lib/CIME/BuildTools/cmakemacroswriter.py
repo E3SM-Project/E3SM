@@ -89,7 +89,8 @@ class CMakeMacroWriter(MacroWriterBase):
         >>> s.getvalue()
         u'set(foo "bar")\\n'
         """
-        self.write_line("set(" + name + ' "' + value + '")')
+        value_transformed = self._transform_value(value)
+        self.write_line("set(" + name + ' "' + value_transformed + '")')
 
     def start_ifeq(self, left, right):
         """Write out a statement to start a conditional block.
@@ -117,3 +118,22 @@ class CMakeMacroWriter(MacroWriterBase):
         """
         self.indent_left()
         self.write_line("endif()")
+
+    def _transform_value(self, value):
+        """Some elements need their values transformed in some way for CMake to handle them properly.
+        This method does those transformations.
+
+        Args:
+        - value (str): value of element
+
+        Returns transformed value
+        """
+
+        # Not all variables need leading & trailing whitespace removed, but some
+        # do. In particular, compiler variables (MPICC, MPICXX, MPIFC, SCC,
+        # SCXX, SFC) are only handled correctly if leading & trailing whitespace
+        # is removed. It doesn't seem to hurt to remove whitespace from all
+        # variables.
+        value_transformed = value.strip()
+
+        return value_transformed

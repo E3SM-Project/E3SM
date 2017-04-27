@@ -1,5 +1,148 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 4-14-2017 
+Tag: cime5.3.0-alpha.07
+Answer Changes: None
+Tests on various PRs: by-hand, code_checker, pylint, scripts_regression_tests, 
+       cime_developer with gnu compiler on cheyenne, All gnu debug tests in CESM 
+       test suites, create B compset with ww3 at T31 resolution, 
+       J_TestCreateNewcase, some cesm tests on cori-knl
+Dependencies:
+
+Brief Summary:
+	-Updates to get going on cori-knl
+	-Update domain_b in nnsm map
+	-Fix bug where create_test was not handling user-selected projects correctly 
+	 in the case where the test_root depended on PROJECT.
+	-HOMME Improvement
+	-Unit testing: Determine machine-specific settings automatically
+	-Mapping/update runoff to ocn
+	-Fixes an issue with --user-compset flag
+	-Fixes for cheyenne issue
+	-Validate the case and test_id arguments
+	-Add more checks for gnu in debug mode.
+	-Avoid a problem with pio_typename in clone with keepexe.
+	-Fix blues NETCDFROOT unresolved error.
+	-Fix TOTAL_CORES.
+	-Refactor BUILD_THREADED to match documentation.
+	-Refactor run_cmd to handle file output streams more easily.
+	-More-robust way of getting path to create_test.
+	-Better content in TestStatus.log file.
+	-Improved formatting/content of TestStatus.log
+	-Better handling of poorly implemented batch systems.
+	-Fix atm grid match for T31 atm2wav map.
+	-Change flag for answer to create_newcase
+	-Fix bug in xmlquery, add regr test to catch in future
+	-Improve error message when user forgets --user-compset.
+	-Cleanup TEST_ROOT if everything works.
+	-Reduce newlines in CaseStatus.
+
+User interface changes: 
+	-BUILD_THREADED behaves differently
+	-for create_newcase, --answer becomes --handle-preexisting-dirs
+	-Formatting changes to CaseStatus
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+30243ac Merge pull request #1351 from jedwards4b/cori_update
+1f4c4e9 Merge pull request #1349 from mnlevy1981/mapping/runoff_metadata_bugfix
+7664249 Merge pull request #1348 from ESMCI/jgfouca/fix_custom_proj_test_root
+6156e0a Merge pull request #1346 from ESMCI/jgfouca/homme_improvement
+3779ec1 Merge pull request #1343 from billsacks/run_tests_defaults
+5074c4a Merge pull request #1280 from mnlevy1981/mapping/update_runoff_to_ocn
+60bfc01 Merge pull request #1341 from jedwards4b/user-compset 
+5e79b04 Merge pull request #1340 from jedwards4b/cheyenne_fixes
+37aac0f Merge pull request #1337 from jedwards4b/validate_case_and_test_id_args
+5edf3fa Merge pull request #1339 from billsacks/gnu_debug_checks
+82b6181 Merge pull request #1305 from jedwards4b/clone_keepexe_and_pio_typename
+4d62d80 Merge pull request #1333 from ESMCI/sarich/fix-blues-netcdfroot
+12bc9b3 Merge pull request #1336 from ESMCI/jgfouca/fix_total_cores
+1adf8d1 Merge pull request #1335 from ESMCI/jgfouca/cleanup_build_threaded
+315e849 Merge pull request #1326 from ESMCI/jgfouca/refactor_run_cmd
+997ec60 Merge pull request #1321 from ESMCI/jgfouca/cime_bisect_robustness
+cb7bd10 Merge pull request #1317 from ESMCI/jgfouca/better_testlog_content
+7fb258b Merge pull request #1316 from ESMCI/jgfouca/handle_titan_batch_errs
+2b4f7fe Merge pull request #1320 from billsacks/t31_wav_map
+7370b02 Merge pull request #1311 from ESMCI/jgfouca/better_name_for_answer
+b14ebe0 Merge pull request #1312 from ESMCI/jgfouca/fix_xmlquery_listall
+f741180 Merge pull request #1314 from billsacks/user_compset_errmsg
+243fafa Merge pull request #1310 from ESMCI/jgfouca/better_regr_cleanup
+a4c7ab7 Merge pull request #1307 from ESMCI/jgfouca/remove_useless_newlines_from_casestatus
+
+
+Modified files: git diff --name-status [previous_tag]
+M	README.unit_testing
+M	config/acme/machines/config_machines.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/config_pio.xml
+M	config/xml_schemas/config_machines.xsd
+M	scripts/Tools/cime_bisect
+M	scripts/Tools/xmlquery
+M	scripts/create_clone
+M	scripts/create_newcase
+M	scripts/create_test
+M	scripts/lib/CIME/SystemTests/erp.py
+M	scripts/lib/CIME/SystemTests/homme.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/compsets.py
+M	scripts/lib/CIME/XML/entry_id.py
+M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/aprun.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_run.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/case_st_archive.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/preview_namelists.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/externals/pio1/timing/COPYING
+M	src/externals/pio2/src/gptl/COPYING
+M	src/share/timing/COPYING
+M	src/share/util/mct_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/INSTALL
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/README
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_r05_to_gx1v7_nnsm_e1000r300.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_r05_to_gx3v7_nnsm_e1000r500.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_rx1_to_gx1v7_nnsm_e1000r300.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_rx1_to_gx3v7_nnsm_e1000r500.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_wr50a_to_ar9v4_nnsm_e1000r300.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_wr50a_to_gx3v7_nnsm_e1000r300.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/maps/.gitignore
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/ncl/merge_mapping_files.ncl
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/run_merge_mapping_files.sh
+D	tools/mapping/gen_mapping_files/runoff_to_ocn/runoff_map.nml
+D	tools/mapping/gen_mapping_files/runoff_to_ocn/runoff_map_r05_gx3v7.nml
+D	tools/mapping/gen_mapping_files/runoff_to_ocn/runoff_map_rx1_gx1v6.nml
+D	tools/mapping/gen_mapping_files/runoff_to_ocn/runoff_map_tx01.nml
+D	tools/mapping/gen_mapping_files/runoff_to_ocn/runoff_map_wr50a_ar9v4.nml
+D	tools/mapping/gen_mapping_files/runoff_to_ocn/runoff_map_wr50a_gx3v7.nml
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/Makefile
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/fixroff_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/kind_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/main.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/map_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/mapsort_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/shr_kind_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/shr_sys_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/shr_timer_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/smooth_mod.F90
+M	tools/unit_testing/run_tests.py
+
+======================================================================
+
 Originator:Chris Fischer 
 Date: 4-4-2017
 Tag: cime5.3.0-alpha.06
