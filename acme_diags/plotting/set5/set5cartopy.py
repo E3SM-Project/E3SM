@@ -114,12 +114,9 @@ def plot(reference, test, diff, metrics_dict, parameter):
     fig.suptitle(parameter.main_title, x=0.5, y=0.96, fontsize=18)
 
     # Save figure
-    case_id = parameter.case_id
-    if not os.path.exists(case_id):
-        os.makedirs(case_id)
-    
     for f in parameter.output_format:
         f = f.lower().split('.')[-1]
-        plt.savefig(case_id + '/' + parameter.output_file + '.' + f)
+        fnm = os.path.join(parameter.results_dir, parameter.case_id, parameter.output_file)
 
-        print('Plot saved in: ' + case_id + '/' + parameter.output_file + '.' + f)
+        plt.savefig(fnm + '.' + f)
+        print('Plot saved in: ' + fnm + '.' + f)

@@ -10,7 +10,7 @@ import cdutil
 import genutil
 import cdms2
 import MV2
-from cdp.cdp_viewer import OutputViewer
+from acme_diags import acme_viewer
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_parameter import ACMEParameter
 from acme_diags.plotting.set5.plot import plot
@@ -18,13 +18,12 @@ from acme_diags.derivations import acme
 from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
-def findfile(path_name,data_name,season):
+def findfile(path_name, data_name, season):
     """locate file name based on data_name and season"""
     dir_files = os.listdir(path_name)
     for filename in dir_files:
         if filename.startswith(data_name) and season in filename:
             return path_name+filename
-     
     raise IOError(
         "No file found based on given path_name and data_name")
        
@@ -101,20 +100,6 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     return metrics_dict
 
 
-def add_page_and_top_row(viewer, parameters):
-    """ Setup for OutputViewer """
-    col_labels = ['Description']
-    seasons = []
-    for p in parameters:
-        for s in p.season:
-            if s not in seasons:
-                seasons.append(s)
-    for s in seasons:
-        col_labels.append(s)
-
-    viewer.add_page("Set 5", col_labels)
-
-
 def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
     """masks a variable var to be missing except where maskvar>=low_limit and maskvar<=high_limit. 
     None means to omit the constrint, i.e. low_limit = -infinity or high_limit = infinity. var is changed and returned; we don't make a new variable.
@@ -148,22 +133,22 @@ def save_ncfiles(test, ref, diff, parameter):
     cdms2.setNetcdfShuffleFlag(0)
     cdms2.setCompressionWarnings(0)  # Turn off warning messages
     # Save test file
-    file_test = cdms2.open(parameter.case_id + '/' +
-                           parameter.output_file + '_test.nc', 'w+')
+    file_test = cdms2.open(parameter.results_dir + '/' + parameter.case_id + 
+                           '/' + parameter.output_file + '_test.nc', 'w+')
     test.id = parameter.var_id
     file_test.write(test)
     file_test.close()
 
     # Save reference file
-    file_ref = cdms2.open(parameter.case_id + '/' +
-                          parameter.output_file + '_ref.nc', 'w+')
+    file_ref = cdms2.open(parameter.results_dir + '/' + parameter.case_id + 
+                           '/' + parameter.output_file + '_ref.nc', 'w+')
     ref.id = parameter.var_id
     file_ref.write(ref)
     file_ref.close()
 
     # Save difference file
-    file_diff = cdms2.open(parameter.case_id + '/' +
-                           parameter.output_file + '_diff.nc', 'w+')
+    file_diff = cdms2.open(parameter.results_dir + '/' + parameter.case_id + 
+                           '/' + parameter.output_file + '_diff.nc', 'w+')
     diff.id = parameter.var_id + '(test - reference)'
     file_diff.write(diff)
     file_diff.close()
@@ -171,12 +156,17 @@ def save_ncfiles(test, ref, diff, parameter):
 
 parser = ACMEParser()
 original_parameter = parser.get_parameter(default_vars=False)
+if original_parameter.results_dir == '.':
+    import datetime
+    original_parameter.results_dir = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+
 parameters = make_parameters(original_parameter)
-viewer = OutputViewer(path=parameters[0].case_id, index_name='index name')
-add_page_and_top_row(viewer, parameters)
 
 for parameter in parameters:
-    viewer.add_group(parameter.case_id)
+    if not os.path.exists(parameter.results_dir):
+        os.makedirs(parameter.results_dir)
+    if not os.path.exists(os.path.join(parameter.results_dir, parameter.case_id)):
+        os.makedirs(os.path.join(parameter.results_dir, parameter.case_id))
 
     reference_data_path = parameter.reference_data_path
     test_data_path = parameter.test_data_path
@@ -196,13 +186,8 @@ for parameter in parameters:
                 filename1 = findfile(test_data_path, test_name, season)
                 print filename1
             except IOError:
-                print 'No file found for %s and %s' %(test_name, season)
+                print('No file found for %s and %s' % (test_name, season))
                 continue
-        #    test_files = glob.glob(os.path.join(
-        #        test_data_path, '*' + test_name + '*.nc'))
-        #    for filename in fnmatch.filter(test_files, '*' + season + '*'):
-        #        print filename
-        #        filename1 = filename
 
         if hasattr(parameter, 'reference_path'):
             filename2 = parameter.reference_path
@@ -212,15 +197,8 @@ for parameter in parameters:
                 filename2 = findfile(reference_data_path, ref_name, season)
                 print filename2
             except IOError:
-                print 'No file found for %s and %s' %(ref_name ,season)
+                print('No file found for %s and %s' % (ref_name, season))
                 continue
-        #    ref_files = glob.glob(os.path.join(
-        #        reference_data_path, '*' + ref_name + '*.nc'))
-        #    print ref_files, '*'+'/' + ref_name + '_' + season + '*'
-        #    for filename in fnmatch.filter(ref_files, '*'+'/' + ref_name + '_' + season + '*'):
-        #    #for filename in fnmatch.filter(ref_files, '*' + season + '*'):
-        #        print filename
-        #        filename2 = filename
 
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
@@ -296,7 +274,7 @@ for parameter in parameters:
                     mv1_domain.units = mv1.units
                     mv2_domain.units = mv1.units
     
-                    parameter.output_file = '_'.join(
+                    parameter.output_file = '-'.join(
                         [ref_name, var, season, region])
                     parameter.main_title = str(' '.join([var, season, region]))
     
@@ -327,25 +305,11 @@ for parameter in parameters:
                         parameter.plot(mv2_domain, mv1_domain, diff,
                                        metrics_dict, parameter)
                     else:
-    
-    		        plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                    if season is seasons[0]:
-                        viewer.add_row('%s %s' % (var, region))
-                        if hasattr(mv1,"long_name"):
-                            viewer.add_col(mv1.long_name)
-                        else:
-                            viewer.add_col('%s' % var)
-                    viewer.set_row('%s %s' % (var, region))
-                    files = [parameter.case_id + '/' + parameter.output_file +
-                             ext for ext in ['_test.nc', '_ref.nc', '_test.nc']]
-                    formatted_files = [{'url': f, 'title': f} for f in files]
-                    viewer.add_col(parameter.case_id + '/' + parameter.output_file +
-                                   '.png', is_file=True, title=season, other_files=formatted_files)
-    
+                        plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)    
                     save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
     
             elif mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
-                plev = parameter.levels
+                plev = parameter.plevs
                 print 'selected pressure level', plev
                 f_mod = cdms2.open(filename1)
                 for filename in [filename1, filename2]:
@@ -439,7 +403,7 @@ for parameter in parameters:
                         mv1_domain.units = mv1.units
                         mv2_domain.units = mv1.units
     
-                        parameter.output_file = '_'.join(
+                        parameter.output_file = '-'.join(
                             [ref_name, var, str(int(plev[ilev])), season, region])
                         parameter.main_title = str(
                             ' '.join([var, str(int(plev[ilev])), 'mb', season, region]))
@@ -459,23 +423,8 @@ for parameter in parameters:
                                            diff, metrics_dict, parameter)
                         else:
                             plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-    
-                        if season is seasons[0]:
-                            viewer.add_row('%s %s %s' % (
-                                var, str(int(plev[ilev])) + 'mb', region))
-                            if hasattr(mv1,"long_name"):
-                                viewer.add_col(mv1.long_name)
-                            else:
-                                viewer.add_col('%s' % var)
-                        viewer.set_row('%s %s %s' %
-                                       (var, str(int(plev[ilev])) + 'mb', region))
-                        files = [parameter.case_id + '/' + parameter.output_file +
-                                 ext for ext in ['_test.nc', '_ref.nc', '_test.nc']]
-                        formatted_files = [{'url': f, 'title': f} for f in files]
-                        viewer.add_col(parameter.case_id + '/' + parameter.output_file +
-                                       '.png', is_file=True, title=season, other_files=formatted_files)
-    
-                        save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
+                        save_ncfiles(mv1_domain, mv2_domain, diff, parameter)\
+
                 f_in.close()
             
             else:
@@ -484,4 +433,4 @@ for parameter in parameters:
         f_obs.close()
         f_mod.close()
 
-viewer.generate_viewer()
+acme_viewer.create_viewer(original_parameter.results_dir, parameters, 'png')
