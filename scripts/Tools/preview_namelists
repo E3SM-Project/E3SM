@@ -15,10 +15,10 @@ from CIME.utils             import expect
 import argparse, doctest
 
 ###############################################################################
-def parse_command_line(args):
+def parse_command_line(args, description):
 ###############################################################################
     cime_model = CIME.utils.get_model()
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=description)
     CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
@@ -37,15 +37,14 @@ def parse_command_line(args):
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    args = parse_command_line(sys.argv)
+    args = parse_command_line(sys.argv, description)
     if args.test:
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot = args.caseroot
-    expect(os.path.isfile(os.path.join(caseroot, "CaseStatus")),
+    expect(os.path.isfile(os.path.join(args.caseroot, "CaseStatus")),
            "case.setup must be run prior to running preview_namelists")
-    with Case(caseroot, read_only=False) as case:
+    with Case(args.caseroot, read_only=False) as case:
         create_namelists(case, component=args.component)
 
 if (__name__ == "__main__"):
