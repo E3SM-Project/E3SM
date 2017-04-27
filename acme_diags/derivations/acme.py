@@ -23,16 +23,13 @@ def _add_user_derived_vars(derived_vars_dict, parameter):
         # append the user-defined vars to the already defined ones
         # add to an existing entry, otherwise create a new one
         if key in derived_vars_dict:
-            if isinstance(user_derived_vars, OrderedDict):
-                new_dict = OrderedDict(user_derived_vars)  # has user-defined vars first
-                # add all of the default ones to the end of new_dict
-                for v in derived_vars_dict[key]:
-                    new_dict[v] = derived_vars_dict[key][v]
-                derived_vars_dict[key] = new_dict
-            else:
-                # in regular dict, just add all of the user values to default dict
-                for v in user_derived_vars:
-                    derived_vars_dict[key][v] = user_derived_vars[v]
+            new_dict = OrderedDict(user_derived_vars)  # has user-defined derived vars first
+            # add all of the default derived vars to the end of new_dict
+            for k in derived_vars_dict[key]:
+                if k in new_dict:  # don't overwrite the user-defined var with a default derived var
+                    continue
+                new_dict[k] = derived_vars_dict[key][k]
+            derived_vars_dict[key] = new_dict
         else:
             derived_vars_dict[key] = user_derived_vars
 

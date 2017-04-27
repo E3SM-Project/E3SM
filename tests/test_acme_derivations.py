@@ -73,6 +73,10 @@ class TestACMEDerivations(unittest.TestCase):
         if 'test' not in default_derived_vars['PRECT']:
             self.fail("Failed to insert test derived variable")
 
+        # make sure that test is the first one
+        if 'test' != default_derived_vars['PRECT'].keys()[0]:
+            self.fail("Failed to insert test derived variable before default derived vars")
+
     def test_process_derived_var_adds_duplicate_to_dict(self):
         # the one that's usually in the parameters file
         # the function for PRECC below is different than the one in default_derived_vars
