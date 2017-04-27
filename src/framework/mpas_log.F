@@ -555,7 +555,7 @@ module mpas_log
             ! --- Actually write the message here! ---
             !    We have to treat MPAS_LOG_OUT messages separately from others because that type
             !    does not have a prefix and we want to add a space after the trimmed prefix for other types.
-!$OMP CRITICAL (mpas_log_write)
+!$OMP CRITICAL (mpas_log_write_section)
             write(mpas_log_info % outputLog % unitNum, '(a,a,a)') trim(messageExtendedPrefix), ' ', trim(messageExpanded)
 
             ! Optionally flush the buffer (only attempt if the file is active)
@@ -583,7 +583,7 @@ module mpas_log
             case default
                ! TODO handle this error? (would have encountered it above...)
             end select
-!$OMP END CRITICAL (mpas_log_write)
+!$OMP END CRITICAL (mpas_log_write_section)
 
          endif
       endif
