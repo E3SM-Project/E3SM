@@ -492,7 +492,7 @@ class Case(object):
                 else:
                     yield key, val
 
-    def _set_comp_classes(self, comp_classes):
+    def set_comp_classes(self, comp_classes):
         self._component_classes = comp_classes
         for env_file in self._env_entryid_files:
             env_file.set_components(comp_classes)
@@ -521,7 +521,7 @@ class Case(object):
 
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
-        self._set_comp_classes(drv_comp.get_valid_model_components())
+        self.set_comp_classes(drv_comp.get_valid_model_components())
 
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
