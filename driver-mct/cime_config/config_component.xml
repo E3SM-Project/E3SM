@@ -418,6 +418,23 @@
     </desc>
   </entry>
 
+  <entry id="ESP_RUN_ON_PAUSE">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      ESP component runs after driver 'pause cycle'
+      If any component 'pauses' (see PAUSE_OPTION, PAUSE_N and
+      PAUSE_COMPONENT_LIST XML variables), the ESP component (if
+      present) will be run to process the component 'pause' (restart)
+      files and set any required 'resume' signals.
+      If true, esp_cpl_dt and esp_cpl_offset settings are ignored.
+      default: false
+    </desc>
+  </entry>
+
   <entry id="CONTINUE_RUN">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
