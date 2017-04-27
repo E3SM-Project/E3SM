@@ -174,7 +174,11 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
                 else:
                     value = get_value_as_string(case, var, resolved=resolved, subgroup=group)
 
-            expect(value is not None, " No results found for variable %s"%var)
+            if value is None:
+                if xmlfile:
+                    expect(False, " No results found for variable %s in file %s"%(var, xmlfile))
+                else:
+                    expect(False, " No results found for variable %s"%var)
 
             results[group][var]['value'] = value
 
