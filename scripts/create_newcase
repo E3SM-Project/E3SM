@@ -28,7 +28,7 @@ OR
     parser.add_argument("--case", "-case", required=True,
                         help="(required) Specify the case name. "
                         "If not a full pathname, then the case is created "
-			"under then current working directory ")
+                        "under then current working directory ")
 
     parser.add_argument("--compset", "-compset", required=True,
                         help="(required) Specify a compset. "
@@ -76,7 +76,7 @@ OR
     parser.add_argument("--pesfile",
                         help="Only used and required for --user-compset argument."
                         "Full pathname of the pes specification file"
-			"This argument is required if --user-compset is True")
+            "This argument is required if --user-compset is True")
 
     parser.add_argument("--user-grid", action="store_true",
                         help="If set, then the -grid argument is treated as a user specified grid."
@@ -88,7 +88,7 @@ OR
                         help="Full pathname of config grid file to use"
                         "This should be a copy of config/config_grids.xml"
                         "with the new user grid changes added to it"
-			"This argument is required if --user-grid is True")
+                        "This argument is required if --user-grid is True")
 
     parser.add_argument("--srcroot", default=os.path.dirname(cimeroot),
                         help="Alternative path for source root directory. By default this is set to"
