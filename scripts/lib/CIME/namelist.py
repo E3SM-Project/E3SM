@@ -1538,6 +1538,8 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         Traceback (most recent call last):
             ...
         _NamelistParseError: Error in parsing namelist: '' is not a valid variable name
+        >>> _NamelistParser('foo+= ')._parse_variable_name()
+        u'foo'
         """
         old_pos = self._pos
         separators = (' ', '\n', '=', '+') if allow_equals else (' ', '\n')
@@ -2155,6 +2157,8 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         OrderedDict([(u'foo', [u"'bar'"])])
         >>> _NamelistParser("foo='bar', 'bazz'\n foo+='ban'", groupless=True).parse_namelist()
         OrderedDict([(u'foo', [u"'bar'", u"'bazz'", u"'ban'"])])
+        >>> _NamelistParser("foo+='bar'", groupless=True).parse_namelist()
+        OrderedDict([(u'foo', [u"'bar'"])])
         """
         # Return empty dictionary for empty files.
         if self._len == 0:
