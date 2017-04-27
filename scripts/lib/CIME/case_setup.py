@@ -176,10 +176,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
                 if job == "case.test" and testcase is not None and not test_mode:
                     logger.info("Writing %s script" % job)
-                    testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
-                    # Short term fix to be removed when csh tests are removed
-                    if not os.path.exists(testscript):
-                        env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
+                    env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
                 elif job != "case.test":
                     logger.info("Writing %s script from input template %s" % (job, input_batch_script))
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
@@ -212,14 +209,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
         create_dirs(case)
 
         logger.info("If an old case build already exists, might want to run \'case.build --clean\' before building")
-
-        # Create test script if appropriate
-        # Short term fix to be removed when csh tests are removed
-        if os.path.exists("env_test.xml"):
-            if not os.path.exists("case.test"):
-                logger.info("Starting testcase.setup")
-                run_cmd_no_fail("./testcase.setup -caseroot %s" % caseroot)
-                logger.info("Finished testcase.setup")
 
         # Some tests need namelists created here (ERP) - so do this if are in test mode
         if test_mode or get_model() == "acme":

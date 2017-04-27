@@ -1221,7 +1221,7 @@ def run_and_log_case_status(func, phase, caseroot='.'):
     try:
         rv = func()
     except:
-        e = sys.exc_info()[0]
+        e = sys.exc_info()[1]
         append_case_status(phase, "error", msg=("\n%s" % e), caseroot=caseroot)
         raise
     else:

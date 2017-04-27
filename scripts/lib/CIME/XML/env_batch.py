@@ -281,7 +281,7 @@ class EnvBatch(EnvBase):
 
         return submitargs
 
-    def submit_jobs(self, case, no_batch=False, job=None, batch_args=None):
+    def submit_jobs(self, case, no_batch=False, job=None, batch_args=None, dry_run=False):
         alljobs = self.get_jobs()
         startindex = 0
         jobs = []
@@ -299,16 +299,23 @@ class EnvBatch(EnvBase):
                 if prereq is None or job == firstjob:
                     prereq = True
                 else:
+                    if dry_run:
+                        # Assume build is complete
+                        prereq = prereq.replace("$BUILD_COMPLETE", "True")
                     prereq = case.get_resolved_value(prereq)
                     prereq = eval(prereq)
             except:
                 expect(False,"Unable to evaluate prereq expression '%s' for job '%s'"%(self.get_value('prereq',subgroup=job), job))
+
             if prereq:
-                jobs.append((job,self.get_value('dependency', subgroup=job)))
+                jobs.append((job, self.get_value('dependency', subgroup=job)))
+
             if self.batchtype == "cobalt":
                 break
 
         depid = {}
+        jobcmds = []
+
         for job, dependency in jobs:
             if dependency is not None:
                 deps = dependency.split()
@@ -331,16 +338,21 @@ class EnvBatch(EnvBase):
             if slen == 0:
                 jobid = None
 
-            logger.warn("job is %s"%job)
-            depid[job] = self.submit_single_job(case, job, jobid, no_batch=no_batch, batch_args=batch_args)
+            logger.warn("job is %s" % job)
+            result = self._submit_single_job(case, job, jobid, no_batch=no_batch, batch_args=batch_args, dry_run=dry_run)
+            batch_job_id = str(alljobs.index(job)) if dry_run else result
+            depid[job] = batch_job_id
+            jobcmds.append( (job, result) )
             if self.batchtype == "cobalt":
                 break
 
-        return sorted(list(depid.values()))
+        if dry_run:
+            return jobcmds
+        else:
+            return sorted(list(depid.values()))
 
-    def submit_single_job(self, case, job, depid=None, no_batch=False, batch_args=None):
+    def _submit_single_job(self, case, job, depid=None, no_batch=False, batch_args=None, dry_run=False):
         logger.warn("Submit job %s"%job)
-        caseroot = case.get_value("CASEROOT")
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
         if batch_system is None or batch_system == "none" or no_batch:
             # Import here to avoid circular include
@@ -351,20 +363,17 @@ class EnvBatch(EnvBase):
 
             logger.info("Starting job script %s" % job)
 
-            # Hack until all testcases are ported to python
-            testcase = case.get_value("TESTCASE")
-            cimeroot = get_cime_root()
-            testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
-            if job == "case.test" and testcase is not None and os.path.exists(testscript):
-                run_cmd_no_fail("%s --caseroot %s" % (os.path.join(".", job), caseroot))
-            else:
-                # This is what we want longterm
+            function_name = job.replace(".", "_")
+            if not dry_run:
                 function_name = job.replace(".", "_")
                 locals()[function_name](case)
 
             return
 
         submitargs = self.get_submit_args(case, job)
+        args_override = self.get_value("BATCH_COMMAND_FLAGS", subgroup=job)
+        if args_override:
+            submitargs = args_override
 
         if depid is not None:
             dep_string = self.get_value("depend_string", subgroup=None)
@@ -383,11 +392,14 @@ class EnvBatch(EnvBase):
             if  string is not None:
                 submitcmd += string + " "
 
-        logger.info("Submitting job script %s"%submitcmd)
-        output = run_cmd_no_fail(submitcmd, combine_output=True)
-        jobid = self.get_job_id(output)
-        logger.info("Submitted job id is %s"%jobid)
-        return jobid
+        if dry_run:
+            return submitcmd
+        else:
+            logger.info("Submitting job script %s"%submitcmd)
+            output = run_cmd_no_fail(submitcmd, combine_output=True)
+            jobid = self.get_job_id(output)
+            logger.info("Submitted job id is %s"%jobid)
+            return jobid
 
     def get_batch_system_type(self):
         nodes = self.get_nodes("batch_system")
@@ -445,7 +457,7 @@ class EnvBatch(EnvBase):
 
     def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
         if nodename in ("JOB_WALLCLOCK_TIME", "PROJECT", "PROJECT_REQUIRED",
-                        "JOB_QUEUE"):
+                        "JOB_QUEUE", "BATCH_COMMAND_FLAGS"):
             nodes = EnvBase.get_nodes(self, "entry", attributes={"id":nodename},
                                         root=root, xpath=xpath)
         else:

@@ -864,6 +864,7 @@ class Case(object):
                     os.path.join(toolsdir, "case.submit"),
                     os.path.join(toolsdir, "case.cmpgen_namelists"),
                     os.path.join(toolsdir, "preview_namelists"),
+                    os.path.join(toolsdir, "preview_run"),
                     os.path.join(toolsdir, "check_input_data"),
                     os.path.join(toolsdir, "check_case"),
                     os.path.join(toolsdir, "archive_metadata.sh"),
@@ -1101,9 +1102,9 @@ class Case(object):
 
         return newcase
 
-    def submit_jobs(self, no_batch=False, job=None, batch_args=None):
+    def submit_jobs(self, no_batch=False, job=None, batch_args=None, dry_run=False):
         env_batch = self.get_env('batch')
-        return env_batch.submit_jobs(self, no_batch=no_batch, job=job, batch_args=batch_args)
+        return env_batch.submit_jobs(self, no_batch=no_batch, job=job, batch_args=batch_args, dry_run=dry_run)
 
     def get_mpirun_cmd(self, job="case.run"):
         env_mach_specific = self.get_env('mach_specific')
@@ -1111,6 +1112,10 @@ class Case(object):
         run_misc_suffix = env_mach_specific.get_value("run_misc_suffix")
         run_misc_suffix = "" if run_misc_suffix is None else run_misc_suffix
         run_suffix = run_exe + run_misc_suffix
+
+        mpirun_cmd_override = self.get_value("MPI_RUN_COMMAND")
+        if mpirun_cmd_override not in ["", None, "UNSET"]:
+            return mpirun_cmd_override + " " + run_exe + " " + run_misc_suffix
 
         # Things that will have to be matched against mpirun element attributes
         mpi_attribs = {
@@ -1127,6 +1132,7 @@ class Case(object):
             aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)
             expect(num_nodes == self.num_nodes, "Not using optimized num nodes")
             return executable + aprun_args + " " + run_misc_suffix
+
         else:
             mpi_arg_string = " ".join(args.values())
 
