@@ -96,7 +96,7 @@ contains
          h2osoi_liq         => waterstate_vars%h2osoi_liq_col        , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                            
          h2osoi_vol         => waterstate_vars%h2osoi_vol_col        , & ! Output: [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
          snow_persistence   => waterstate_vars%snow_persistence_col  , & ! Output: [real(r8) (:)   ]  counter for length of time snow-covered
-
+         total_plant_stored_h2o => waterstate_vars%total_plant_stored_h2o_col, & ! Input [real(r8) (:) dynamic water stored in plants]
          qflx_evap_tot      => waterflux_vars%qflx_evap_tot_col      , & ! Input:  [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg     
          qflx_irrig         => waterflux_vars%qflx_irrig_col         , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)                       
          qflx_glcice_melt   => waterflux_vars%qflx_glcice_melt_col   , & ! Input:  [real(r8) (:)]  ice melt (positive definite) (mm H2O/s)      
@@ -178,6 +178,17 @@ contains
          end do
       end do
 
+      ! ---------------------------------------------------------------------------------
+      ! Add stored plant water to the column water balance
+      ! currently, stored plant water is only dynamic when FATES is turned on.
+      ! Other orthogonal modules should not need to worry about this term,
+      ! and it should be zero in all other cases and all other columns.
+      ! ---------------------------------------------------------------------------------
+      do fc = 1, num_nolakec
+         c = filter_nolakec(fc)
+         endwb(c) = endwb(c) + total_plant_stored_h2o(c)
+      end do
+      
       ! Prior to summing up wetland/ice hydrology, calculate land ice contributions/sinks
       ! to this hydrology.
       ! 1) Generate SMB from capped-snow amount.  This is done over istice_mec

@@ -74,7 +74,7 @@ contains
          h2osno       =>    waterstate_vars%h2osno_col     , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
          h2osoi_ice   =>    waterstate_vars%h2osoi_ice_col , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
          h2osoi_liq   =>    waterstate_vars%h2osoi_liq_col , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
-
+         total_plant_stored_h2o => waterstate_vars%total_plant_stored_h2o_col, & ! Input [real(r8) (:) dynamic water stored in plants
          zwt          =>    soilhydrology_vars%zwt_col     , & ! Input:  [real(r8) (:)   ]  water table depth (m)                   
          wa           =>    soilhydrology_vars%wa_col      , & ! Output: [real(r8) (:)   ]  water in the unconfined aquifer (mm)    
          
@@ -115,6 +115,18 @@ contains
                begwb(c) = begwb(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
             end if
          end do
+      end do
+
+      ! ---------------------------------------------------------------------------------
+      ! Add stored plant water to the column water balance
+      ! currently, stored plant water is only dynamic when FATES is turned on.
+      ! Other orthogonal modules should not need to worry about this term,
+      ! and it should be zero in all other cases and all other columns.
+      ! (rgk 02-02-2017)
+      ! ---------------------------------------------------------------------------------
+      do f = 1, num_nolakec
+         c = filter_nolakec(f)
+         begwb(c) = begwb(c) + total_plant_stored_h2o(c)
       end do
 
       do f = 1, num_lakec
@@ -197,7 +209,7 @@ contains
           errh2o                  =>    waterstate_vars%errh2o_col              , & ! Output: [real(r8) (:)   ]  water conservation error (mm H2O)       
           errh2osno               =>    waterstate_vars%errh2osno_col           , & ! Output: [real(r8) (:)   ]  error in h2osno (kg m-2)                
           endwb                   =>    waterstate_vars%endwb_col               , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
-          
+          total_plant_stored_h2o_col => waterstate_vars%total_plant_stored_h2o_col, & ! Input: [real(r8) (:)   ]  water mass in plant tissues (kg m-2)
           dwb                     =>    waterflux_vars%dwb_col                  , & ! Output: [real(r8) (:)   ]  change of water mass within the time step [kg/m2/s]
           qflx_rain_grnd_col      =>    waterflux_vars%qflx_rain_grnd_col       , & ! Input:  [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
           qflx_snow_grnd_col      =>    waterflux_vars%qflx_snow_grnd_col       , & ! Input:  [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]
@@ -362,6 +374,7 @@ contains
              write(iulog,*)'qflx_qrgwl     = ',qflx_qrgwl(indexc)
              write(iulog,*)'qflx_drain     = ',qflx_drain(indexc)
              write(iulog,*)'qflx_snwcp_ice = ',qflx_snwcp_ice(indexc)
+             write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
              write(iulog,*)'clm model is stopping'
              call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
 
@@ -384,7 +397,8 @@ contains
              write(iulog,*)'qflx_flood         = ',qflx_floodc(indexc)
              write(iulog,*)'qflx_snwcp_ice     = ',qflx_snwcp_ice(indexc)
              write(iulog,*)'qflx_glcice_melt   = ',qflx_glcice_melt(indexc)
-             write(iulog,*)'qflx_glcice_frz    = ',qflx_glcice_frz(indexc)
+             write(iulog,*)'qflx_glcice_frz    = ',qflx_glcice_frz(indexc) 
+             write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
              write(iulog,*)'clm model is stopping'
              call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
