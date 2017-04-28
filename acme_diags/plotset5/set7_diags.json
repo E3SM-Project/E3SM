@@ -1,0 +1,15 @@
+{
+    "set5": [
+
+          {
+      "case_id": "set5_ERAI",
+      "variables": ["PSL"],
+      "ref_name": "ERAI",
+      "reference_name": "ERAI",
+      "season": ["ANN"],
+      "region": ["Npolar","Spolar"],
+      "levels": []
+               } 
+           ] 
+}
+
