@@ -20,8 +20,8 @@ regions_specs = {
     'ocean_NHEX': {'value': 0.65, 'domain': cdutil.region.domain(latitude=(30., 90, 'ccb'))},
     'ocean_SHEX': {'value': 0.65, 'domain': cdutil.region.domain(latitude=(-90., -30, 'ccb'))},
     #follow AMWG polar range
-    'Npolar':{'domain': cdutil.region.domain(latitude=(50., 90., 'ccb'))}, 
-    'Spolar':{'domain': cdutil.region.domain(latitude=(-90., -55., 'ccb'))}, 
+    'N_polar':{'domain': cdutil.region.domain(latitude=(50., 90., 'ccb'))}, 
+    'S_polar':{'domain': cdutil.region.domain(latitude=(-90., -55., 'ccb'))}, 
     # Below is for modes of variability
     "NAM": {'domain': cdutil.region.domain(latitude=(20., 90, 'ccb'), longitude=(-180, 180, 'ccb'))},
     "NAO": {'domain': cdutil.region.domain(latitude=(20., 80, 'ccb'), longitude=(-90, 40, 'ccb'))},

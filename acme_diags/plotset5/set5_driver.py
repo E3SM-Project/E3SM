@@ -328,7 +328,16 @@ for parameter in parameters:
                                        metrics_dict, parameter)
                     else:
     
-    		        plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+    		        #plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+                        #start plot7 template
+                        import vcs
+                        x=vcs.init()
+                        polar = vcs.createisofill()
+                        polar.projection = 'polar'
+                        datawc_y1 = -90  #this should extracted from selected domain
+                        datawc_y2 = -55
+                        x.plot(mv1_domain,polar)
+                        
                     if season is seasons[0]:
                         viewer.add_row('%s %s' % (var, region))
                         if hasattr(mv1,"long_name"):
