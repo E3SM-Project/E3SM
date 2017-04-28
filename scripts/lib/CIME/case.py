@@ -30,6 +30,7 @@ from CIME.XML.env_build             import EnvBuild
 from CIME.XML.env_run               import EnvRun
 from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
+from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
 from CIME.case_setup import case_setup
 from CIME.aprun import get_aprun_cmd_for_case
@@ -200,13 +201,14 @@ class Case(object):
         """Returns the root directory for this case."""
         return self._caseroot
 
-    def get_env(self, short_name):
+    def get_env(self, short_name, allow_missing=False):
         full_name = "env_%s.xml" % (short_name)
         for env_file in self._files:
             if os.path.basename(env_file.filename) == full_name:
                 return env_file
-
-        expect(False, "Could not find object for %s in case"%full_name)
+        if allow_missing:
+            return None
+        expect(False,"Could not find object for %s in case"%full_name)
 
     def copy(self, newcasename, newcaseroot, newcimeroot=None, newsrcroot=None):
         newcase = deepcopy(self)
@@ -281,7 +283,8 @@ class Case(object):
                 if resolved and type(result) is str:
                     result = self.get_resolved_value(result)
                     vtype = env_file.get_type_info(item)
-                    result = convert_to_type(result, vtype, item)
+                    if vtype is not None:
+                        result = convert_to_type(result, vtype, item)
                 return result
 
         for env_file in self._env_generic_files:
@@ -370,6 +373,7 @@ class Case(object):
         if item == "CASEROOT":
             self._caseroot = value
         result = None
+
         for env_file in self._env_entryid_files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
@@ -488,7 +492,7 @@ class Case(object):
                 else:
                     yield key, val
 
-    def _set_comp_classes(self, comp_classes):
+    def set_comp_classes(self, comp_classes):
         self._component_classes = comp_classes
         for env_file in self._env_entryid_files:
             env_file.set_components(comp_classes)
@@ -517,7 +521,7 @@ class Case(object):
 
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
-        self._set_comp_classes(drv_comp.get_valid_model_components())
+        self.set_comp_classes(drv_comp.get_valid_model_components())
 
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
@@ -1198,3 +1202,50 @@ class Case(object):
             expect(False, "\nThis compset and grid combination is untested in CESM.  "
                    "Override this warning with the --run-unsupported option to create_newcase.",
                    error_prefix="STOP: ")
+
+    def set_file(self, xmlfile):
+        """
+        force the case object to consider only xmlfile
+        """
+        expect(os.path.isfile(xmlfile), "Could not find file %s"%xmlfile)
+
+        gfile = GenericXML(infile=xmlfile)
+        ftype = gfile.get_id()
+
+        logger.warn("setting case file to %s"%xmlfile)
+        new_env_file = None
+        for env_file in self._env_entryid_files:
+            if os.path.basename(env_file.filename) == ftype:
+                if ftype == "env_run.xml":
+                    new_env_file = EnvRun(infile=xmlfile)
+                elif ftype == "env_build.xml":
+                    new_env_file = EnvBuild(infile=xmlfile)
+                elif ftype == "env_case.xml":
+                    new_env_file = EnvCase(infile=xmlfile)
+                elif ftype == "env_mach_pes.xml":
+                    new_env_file = EnvMachPes(infile=xmlfile)
+                elif ftype == "env_batch.xml":
+                    new_env_file = EnvBatch(infile=xmlfile)
+                elif ftype == "env_test.xml":
+                    new_env_file = EnvTest(infile=xmlfile)
+            if new_env_file is not None:
+                self._env_entryid_files = []
+                self._env_generic_files = []
+                self._env_entryid_files.append(new_env_file)
+                break
+        if new_env_file is None:
+            for env_file in self._env_generic_files:
+                if os.path.basename(env_file.filename) == ftype:
+                    if ftype == "env_archive.xml":
+                        new_env_file = EnvArchive(infile=xmlfile)
+                    elif ftype == "env_mach_specific.xml":
+                        new_env_file = EnvMachSpecific(infile=xmlfile)
+                    else:
+                        expect(False, "No match found for file type %s"%ftype)
+                if new_env_file is not None:
+                    self._env_entryid_files = []
+                    self._env_generic_files = []
+                    self._env_generic_files.append(new_env_file)
+                    break
+
+        self._files = self._env_entryid_files + self._env_generic_files

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # get_type) otherwise need to implement own functions and make GenericXML parent class
 class EnvMachSpecific(EnvBase):
     # pylint: disable=unused-argument
-    def __init__(self, caseroot, infile="env_mach_specific.xml",
+    def __init__(self, caseroot=None, infile="env_mach_specific.xml",
                  components=None, unit_testing=False):
         """
         initialize an object interface to file env_mach_specific.xml in the case directory
