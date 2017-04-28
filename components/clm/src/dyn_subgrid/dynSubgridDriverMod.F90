@@ -212,7 +212,7 @@ contains
        end if
        
        if (use_ed) then
-          call dyn_ED(bounds_clump) ! Verified (RGK 04-2017)
+          call dyn_ED(bounds_clump) ! (FATES-INTERF) Verified (RGK 04-2017)
        end if
 
        if (create_glacier_mec_landunit) then

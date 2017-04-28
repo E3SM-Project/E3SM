@@ -225,27 +225,28 @@ contains
     ! Specified phenology
     ! ============================================================================
 
-    if (use_cn) then 
-       ! For dry-deposition need to call CLMSP so that mlaidiff is obtained
-       if ( n_drydep > 0 .and. drydep_method == DD_XLND ) then
-          call t_startf('interpMonthlyVeg')
-          call interpMonthlyVeg(bounds_proc, canopystate_vars)
-          call t_stopf('interpMonthlyVeg')
-       endif
-
-    else
-       ! Determine weights for time interpolation of monthly vegetation data.
-       ! This also determines whether it is time to read new monthly vegetation and
-       ! obtain updated leaf area index [mlai1,mlai2], stem area index [msai1,msai2],
-       ! vegetation top [mhvt1,mhvt2] and vegetation bottom [mhvb1,mhvb2]. The
-       ! weights obtained here are used in subroutine SatellitePhenology to obtain time
-       ! interpolated values.
-       if (doalb .or. ( n_drydep > 0 .and. drydep_method == DD_XLND )) then
-          call t_startf('interpMonthlyVeg')
-          call interpMonthlyVeg(bounds_proc, canopystate_vars)
-          call t_stopf('interpMonthlyVeg')
+    if (.not.use_ed) then
+       if (use_cn) then 
+          ! For dry-deposition need to call CLMSP so that mlaidiff is obtained
+          if ( n_drydep > 0 .and. drydep_method == DD_XLND ) then
+             call t_startf('interpMonthlyVeg')
+             call interpMonthlyVeg(bounds_proc, canopystate_vars)
+             call t_stopf('interpMonthlyVeg')
+          endif
+          
+       else
+          ! Determine weights for time interpolation of monthly vegetation data.
+          ! This also determines whether it is time to read new monthly vegetation and
+          ! obtain updated leaf area index [mlai1,mlai2], stem area index [msai1,msai2],
+          ! vegetation top [mhvt1,mhvt2] and vegetation bottom [mhvb1,mhvb2]. The
+          ! weights obtained here are used in subroutine SatellitePhenology to obtain time
+          ! interpolated values.
+          if (doalb .or. ( n_drydep > 0 .and. drydep_method == DD_XLND )) then
+             call t_startf('interpMonthlyVeg')
+             call interpMonthlyVeg(bounds_proc, canopystate_vars)
+             call t_stopf('interpMonthlyVeg')
+          end if
        end if
-
     end if
 
     ! ==================================================================================
@@ -336,6 +337,9 @@ contains
 
           call t_stopf('begcnbal')
        end if
+
+       ! (FATES-INTERF) Initiate limited carbon balance on below ground C BGC?
+
     end do
     !$OMP END PARALLEL DO
 
@@ -473,10 +477,7 @@ contains
        
        if(use_ed) then
           ! (FATES-INTERF)
-          !           call clm_fates%fates(nc)%canopy_sunshade_fracs(filter(nc)%nourbanp,      &
-          !                filter(nc)%num_nourbanp,                                            &
-          !                atm2lnd_vars, canopystate_vars)
-          ! (FATES-INTERF) put error call, flag for development
+          !           call clm_fates%wrap_sunfrac(nc,atm2lnd_inst, canopystate_inst)
           call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
        else
           call CanopySunShadeFractions(filter(nc)%num_nourbanp, filter(nc)%nourbanp,    &
@@ -923,11 +924,9 @@ contains
                      waterstate_vars, canopystate_vars)
              end if
 
-           end if  ! end of if-use_cn
+          end if  ! end of if-use_cn
 
-         else ! use_ed
-
-  
+       else ! use_ed
 
            ! (FATES-INTERF) put error call, flag for development
            call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
@@ -950,15 +949,15 @@ contains
               !! call setFilters( bounds_clump, glc_behavior )
               
            end if
+           
+        end if  ! end of if-use_ed
 
-         end if  ! end of if-use_ed
+        call t_stopf('ecosysdyn')
 
-         call t_stopf('ecosysdyn')
-
-         ! ------------------------------------------------------------------------------
-         ! Perform reduced capacity soil-bgc only calculations when FATES/ED is on
-         ! ------------------------------------------------------------------------------
-         if ( use_ed ) then
+        ! ------------------------------------------------------------------------------
+        ! Perform reduced capacity soil-bgc only calculations when FATES/ED is on
+        ! ------------------------------------------------------------------------------
+        if ( use_ed ) then
 
             ! (FATES-INTERF) put error call, flag for development
             call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
@@ -1296,25 +1295,6 @@ contains
        end if
        call t_stopf('d2dgvm')
     end if
-
-    ! ============================================================================
-    ! Call ED model on daily timestep
-    ! ============================================================================
-    
-    if ( use_ed ) then
-       if ( is_beg_curr_day() ) then ! run ED at the start of each day
-          if ( masterproc ) write(iulog,*)  'edtime ed call edmodel ',get_nstep()
-          nclumps = get_proc_clumps()
-          !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
-          do nc = 1,nclumps
-
-             ! CALL FATES DYNAMICS (FATES-INTERF)
-             call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
-
-          end do
-          !$OMP END PARALLEL DO
-       end if
-    end if ! use_ed branch
 
     ! ============================================================================
     ! History/Restart output

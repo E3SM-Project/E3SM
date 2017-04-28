@@ -4778,8 +4778,6 @@ contains
     !! CSummary_interface: hr_col(c) will be used below
     !----------------------------------------------------------------
      
-    if(.not.use_ed)then
-
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        ! total soil respiration, heterotrophic + root respiration (SR)
@@ -4869,8 +4867,6 @@ contains
             this%nee_col(c) - &
             this%landuseflux_col(c)
     end do
-
-    end if !if(.not.use_ed)then
 
     ! (FATES-INTERF) to-do: identify which variables are left when fates bgc light is running
     ! and only summarize on those.  Several of the variables below this statement are relevant
@@ -4965,7 +4961,6 @@ contains
    endif
     
     ! debug
-    if (.not.use_ed) then
     do fc = 1,num_soilc
         c = filter_soilc(fc)
         this%plant_to_litter_cflux(c) = 0._r8
@@ -4988,7 +4983,6 @@ contains
                 this%fire_mortality_c_to_cwdc_col(c,j)* dzsoi_decomp(j)
         end do
     end do
-  end if
     
   end associate
   end subroutine Summary
