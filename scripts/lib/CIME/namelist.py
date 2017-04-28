@@ -2094,6 +2094,10 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> x._parse_namelist_group()
         >>> x._settings
         OrderedDict([(u'foo', [u"'bar'", u"'baz'"])])
+        >>> x = _NamelistParser("&group foo='bar', foo+='baz' /")
+        >>> x._parse_namelist_group()
+        >>> x._settings
+        OrderedDict([(u'group', {u'foo': [u"'bar'", u"'baz'"]})])
         """
         group_name = self._parse_namelist_group_name()
         if not self._groupless:
@@ -2118,7 +2122,10 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
                 group = self._settings[group_name]
                 if name in group:
                     dsettings = group[name]
-                values = merge_literal_lists(dsettings, values)
+                    if addto:
+                        values = group[name] + values
+                if not addto:
+                    values = merge_literal_lists(dsettings, values)
                 group[name] = values
 
     def parse_namelist(self):
