@@ -87,7 +87,7 @@ module CNEcosystemDynBetrMod
     use dynHarvestMod             , only : CNHarvest
     use clm_varpar                , only : crop_prog
     use CNCropHarvestPoolsMod     , only : CNCropHarvestPools
-    use CNAllocationMod           , only : update_plant_stoichiometry
+    use CNAllocationBetrMod       , only : update_plant_stoichiometry
     use PlantMicKineticsMod       , only : PlantMicKinetics_type
     use CNAllocationBetrMod       , only : SetPlantMicNPDemand, CNAllocation3_PlantCNPAlloc
     use CNNStateUpdate3Mod        , only : NStateUpdate3

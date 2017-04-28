@@ -736,13 +736,17 @@ contains
                  PlantMicKinetics_vars,                                         &
                  phosphorusflux_vars, phosphorusstate_vars)
 
-
+           call CNAnnualUpdate(bounds_clump,            &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, &
+                  cnstate_vars, carbonflux_vars)
          endif
 
-       endif
+       endif !end use_betr
 
          ! FIX(SPM,032414)  push these checks into the routines below and/or make this consistent.
          if (.not. use_ed) then
+           if( .not. is_active_betr_bgc) then
            if (use_cn) then
 
              ! fully prognostic canopy structure and C-N biogeochemistry
@@ -874,7 +878,7 @@ contains
              end if
 
            end if  ! end of if-use_cn
-
+           endif !end of if is_active_betr_bgc
          else ! use_ed
 
            call carbonflux_vars%SetValues(&
@@ -930,7 +934,7 @@ contains
                c14_carbonstate_vars, c14_carbonflux_vars, &
                nitrogenstate_vars, nitrogenflux_vars, phosphorusstate_vars, phosphorusflux_vars)
            endif
-         endif
+         endif !end use_betr
 
          if (use_lch4 .and. .not. is_active_betr_bgc) then
            !warning: do not call ch4 before CNAnnualUpdate, which will fail the ch4 model
@@ -991,7 +995,7 @@ contains
                  phosphorusflux_vars, phosphorusstate_vars)
           endif
 
-       endif
+       endif !end use_betr
 
        ! ============================================================================
        ! Check the energy and water balance, also carbon and nitrogen balance

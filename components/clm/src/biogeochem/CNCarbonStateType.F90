@@ -125,6 +125,8 @@ module CNCarbonStateType
      procedure , private :: InitHistory
      procedure , private :: InitCold
      procedure , private :: Summary_betr
+     procedure , public  :: display_totpft
+     procedure , public  :: display_col
   end type carbonstate_type
   !------------------------------------------------------------------------
 
@@ -3171,4 +3173,64 @@ contains
 
   end subroutine Summary
 
+
+  subroutine display_totpft(this, p)
+  use clm_time_manager    , only : get_nstep
+  use clm_varctl          , only : iulog
+  use clm_varpar                , only :  max_patch_per_col
+  class (carbonstate_type) :: this
+  integer, intent(in) :: p
+
+  write(iulog, *)'--------------------------------'
+  write(iulog, *)'p,nstep=',p,get_nstep()  
+  write(iulog, *)'totpftc=', this%totpftc_patch(p)
+  write(iulog, *)'totvegc=', this%totvegc_patch(p)
+  write(iulog, *)'xsmrpool=',this%xsmrpool_patch(p)
+  write(iulog, *)'ctrunc=',  this%ctrunc_patch(p)  
+
+
+
+  write(iulog, *)'dispvegc=',  this%dispvegc_patch(p)
+  write(iulog, *)'leafc=',     this%leafc_patch(p)     
+  write(iulog, *)'frootc=',    this%frootc_patch(p)
+  write(iulog, *)'livestemc=', this%livestemc_patch(p) 
+  write(iulog, *)'deadstemc=', this%deadstemc_patch(p) 
+  write(iulog, *)'livecrootc=',this%livecrootc_patch(p)
+  write(iulog, *)'deadcrootc=',this%deadcrootc_patch(p)
+  write(iulog, *)'--------------------------------'
+
+       ! stored vegetation carbon, excluding cpool (STORVEGC)
+  write(iulog, *)'storvegc=',          this%storvegc_patch(p)
+  write(iulog, *)'cpool=',             this%cpool_patch(p)             
+  write(iulog, *)'leafc_stroage=',     this%leafc_storage_patch(p)      
+  write(iulog, *)'frootc_storage=',    this%frootc_storage_patch(p)    
+  write(iulog, *)'livestemc_storage=', this%livestemc_storage_patch(p)  
+  write(iulog, *)'deadstemc_storage=', this%deadstemc_storage_patch(p) 
+  write(iulog, *)'livecrootc_storage=',this%livecrootc_storage_patch(p)
+  write(iulog, *)'deadcrootc_storage=',this%deadcrootc_storage_patch(p)
+  write(iulog, *)'leafc_xfer=',        this%leafc_xfer_patch(p)        
+  write(iulog, *)'frootc_xfer=',       this%frootc_xfer_patch(p)      
+  write(iulog, *)'livestemc_xfer=',    this%livestemc_xfer_patch(p)    
+  write(iulog, *)'deadstemc_xfer=',    this%deadstemc_xfer_patch(p)    
+  write(iulog, *)'livecrootc_xfer=',   this%livecrootc_xfer_patch(p)    
+  write(iulog, *)'deadcrootc_xfer=',   this%deadcrootc_xfer_patch(p)   
+  write(iulog, *)'gresp_storage=',     this%gresp_storage_patch(p)     
+  write(iulog, *)'gresp_xfer=',        this%gresp_xfer_patch(p)
+  write(iulog, *)'--------------------------------'
+  end subroutine display_totpft
+  
+
+  subroutine display_col(this, c)
+  use clm_varctl          , only : iulog
+  class (carbonstate_type) :: this
+  integer, intent(in) :: c
+
+
+  write(iulog, *)'--------------------------------'
+  write(iulog, *)'c=',c
+  write(iulog, *)'totcolc=',this%totcolc_col(c)
+  write(iulog, *)'totabgc=',this%totabgc_col(c)
+  write(iulog, *)'--------------------------------'
+  
+  end subroutine display_col 
 end module CNCarbonStateType

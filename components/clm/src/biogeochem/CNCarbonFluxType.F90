@@ -400,7 +400,8 @@ module CNCarbonFluxType
      real(r8), pointer :: f_co2_soil_vr_col                         (:,:)   ! total vertically-resolved soil-atm. CO2 exchange (gC/m3/s)
      real(r8), pointer :: f_co2_soil_col                            (:)     ! total soil-atm. CO2 exchange (gC/m2/s)
     !------------------------------------------------------------------------
-
+    ! new diagnostic variables for componentwise carbon flux budget
+     real(r8), pointer :: cflx_plant_to_soilbgc_col(:)
    contains
 
      procedure , public  :: Init
@@ -786,6 +787,7 @@ contains
      allocate(this%f_co2_soil_vr_col             (begc:endc,1:nlevdecomp_full));                 this%f_co2_soil_vr_col             (:,:)   = nan
      allocate(this%f_co2_soil_col                (begc:endc))                  ;                 this%f_co2_soil_col                (:)     = nan
      !------------------------------------------------------------------------
+     allocate(this%cflx_plant_to_soilbgc_col (begc:endc)); this%cflx_plant_to_soilbgc_col(:) = nan
    end subroutine InitAllocate;
 
    !------------------------------------------------------------------------
@@ -4307,7 +4309,7 @@ contains
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     character(len=*)       , intent(in)    :: isotope
 
-    integer :: c, fc 
+    integer :: c, fc, j
 
     ! column-level carbon losses to fire, including pft losses
     do fc = 1,num_soilc
@@ -4364,6 +4366,33 @@ contains
        this%landuptake_col(c) = &
             this%nee_col(c) - &
             this%landuseflux_col(c)
+
+       this%cflx_plant_to_soilbgc_col(c) = 0._r8
+
+       do j = 1, nlevdecomp
+          this%cflx_plant_to_soilbgc_col(c) = this%cflx_plant_to_soilbgc_col(c) + dzsoi_decomp(j) * &
+              (this%phenology_c_to_litr_met_c_col(c,j)     + &
+               this%dwt_frootc_to_litr_met_c_col(c,j)      + &
+               this%gap_mortality_c_to_litr_met_c_col(c,j) + &
+               this%harvest_c_to_litr_met_c_col(c,j)       + &
+               this%m_c_to_litr_met_fire_col(c,j)          + &
+               this%phenology_c_to_litr_cel_c_col(c,j)     + &
+               this%dwt_frootc_to_litr_cel_c_col(c,j)      + &
+               this%gap_mortality_c_to_litr_cel_c_col(c,j) + &
+               this%harvest_c_to_litr_cel_c_col(c,j)       + &
+               this%m_c_to_litr_cel_fire_col(c,j)          + &
+               this%phenology_c_to_litr_lig_c_col(c,j)     + &
+               this%dwt_frootc_to_litr_lig_c_col(c,j)      + &
+               this%gap_mortality_c_to_litr_lig_c_col(c,j) + &
+               this%harvest_c_to_litr_lig_c_col(c,j)       + &
+               this%m_c_to_litr_lig_fire_col(c,j)          + &
+               this%dwt_livecrootc_to_cwdc_col(c,j)        + &
+               this%dwt_deadcrootc_to_cwdc_col(c,j)        + &
+               this%gap_mortality_c_to_cwdc_col(c,j)       + &
+               this%harvest_c_to_cwdc_col(c,j)             + &
+               this%fire_mortality_c_to_cwdc_col(c,j))      
+
+       enddo
     end do
 
     do fc = 1,num_soilc

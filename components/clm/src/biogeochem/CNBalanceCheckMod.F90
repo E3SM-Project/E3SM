@@ -73,6 +73,7 @@ contains
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          col_begcb(c) = totcolc(c)
+ 
       end do
 
     end associate
@@ -244,7 +245,9 @@ contains
             write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
             write(iulog,*)'input=',col_cinputs*dt
             write(iulog,*)'output=',col_coutputs*dt
-            write(iulog,*)'er=',er(c)*dt,carbonflux_vars%hr_col(c)*dt
+            write(iulog,*)'er=',er(c)*dt
+            write(iulog,*)'hr=',carbonflux_vars%hr_col(c)*dt
+            write(iulog,*)'ar=',carbonflux_vars%ar_col(c)*dt
             write(iulog,*)'fire=',col_fire_closs(c)*dt
             write(iulog,*)'dwt=',dwt_closs(c)*dt
             write(iulog,*)'product=',product_closs(c)*dt
@@ -253,6 +256,8 @@ contains
             write(iulog,*)'begcb       = ',col_begcb(c)
             write(iulog,*)'endcb       = ',col_endcb(c),carbonstate_vars%totsomc_col(c)
             write(iulog,*)'delta store = ',col_endcb(c)-col_begcb(c)
+            write(iulog,*)'plant_to_soilbgc=',carbonflux_vars%cflx_plant_to_soilbgc_col(c)*dt
+            write(iulog,*)'end beg'
             call endrun(msg=errMsg(__FILE__, __LINE__))
          end if
       end if !use_ed
