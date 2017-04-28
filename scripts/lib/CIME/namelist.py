@@ -2094,6 +2094,10 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> x._parse_namelist_group()
         >>> x._settings
         OrderedDict([(u'foo', [u"'bar'", u"'baz'"])])
+        >>> x = _NamelistParser("&group foo+='bar' /", groupless=True)
+        >>> x._parse_namelist_group()
+        >>> x._settings
+        OrderedDict([(u'foo', [u"'bar'"])])
         >>> x = _NamelistParser("&group foo='bar', foo+='baz' /")
         >>> x._parse_namelist_group()
         >>> x._settings
