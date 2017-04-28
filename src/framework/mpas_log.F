@@ -849,8 +849,8 @@ module mpas_log
    !>   by one of these indicators:
    !>   $i -> integer, formatted to be length of integer
    !>   $l -> logical, fomatted as 'T' or 'F'
-   !>   $f -> float, formatted as 9 digits of precision for SP mode, 17 for DP mode
-   !>                Floats are formatted using 'G' format which is smart about using
+   !>   $r -> real,  formatted as 9 digits of precision for SP mode, 17 for DP mode
+   !>                Floats are formatted using 'G' format which is smart about
    !>                displaying as a decimal or scientific notation based on the value.
    !>   The variable values to expand are supplied as optional arguments to this
    !>   routine.  The substitution indicators are expanded as they are encountered.
