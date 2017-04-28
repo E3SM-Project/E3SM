@@ -394,9 +394,9 @@ contains
 
     integer :: iam, ierr, npes, unitn
     logical :: iamroot
-    namelist /pio_default_inparm/ pio_stride, pio_root, pio_numiotasks, &
-          pio_typename, pio_async_interface, pio_debug_level, pio_blocksize, &
-          pio_buffer_size_limit, pio_rearranger, &
+    namelist /pio_default_inparm/  &
+          pio_async_interface, pio_debug_level, pio_blocksize, &
+          pio_buffer_size_limit, &
           pio_rearr_comm_type, pio_rearr_comm_fcd, &
           pio_rearr_comm_max_pend_req_comp2io, pio_rearr_comm_enable_hs_comp2io, &
           pio_rearr_comm_enable_isend_comp2io, &
@@ -436,10 +436,6 @@ contains
     pio_rearr_comm_max_pend_req_io2comp = 0
     pio_rearr_comm_enable_hs_io2comp = .true.
     pio_rearr_comm_enable_isend_io2comp = .false.
-
-
-
-
 
     if(iamroot) then
        unitn=shr_file_getunit()
