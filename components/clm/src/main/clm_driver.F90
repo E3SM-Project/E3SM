@@ -928,12 +928,6 @@ contains
            endif
            call ep_betr%StepWithoutDrainage(bounds_clump, col, pft)
 
-           if(is_active_betr_bgc)then
-             call ep_betr%PlantSoilBGCRecv(bounds_clump, col, pft, filter(nc)%num_soilc, filter(nc)%soilc,&
-               carbonstate_vars, carbonflux_vars, c13_carbonstate_vars, c13_carbonflux_vars, &
-               c14_carbonstate_vars, c14_carbonflux_vars, &
-               nitrogenstate_vars, nitrogenflux_vars, phosphorusstate_vars, phosphorusflux_vars)
-           endif
          endif !end use_betr
 
          if (use_lch4 .and. .not. is_active_betr_bgc) then
@@ -983,7 +977,12 @@ contains
           call ep_betr%HistRetrieval(bounds_clump, filter(nc)%num_nolakec, filter(nc)%nolakec)
 
           if(is_active_betr_bgc)then
+
             !extract nitrogen pool and flux from betr
+            call ep_betr%PlantSoilBGCRecv(bounds_clump, col, pft, filter(nc)%num_soilc, filter(nc)%soilc,&
+               carbonstate_vars, carbonflux_vars, c13_carbonstate_vars, c13_carbonflux_vars, &
+               c14_carbonstate_vars, c14_carbonflux_vars, &
+               nitrogenstate_vars, nitrogenflux_vars, phosphorusstate_vars, phosphorusflux_vars)
             !summarize total column nitrogen and carbon
             call CNFluxStateBetrSummary(bounds_clump, col, pft, &
                  filter(nc)%num_soilc, filter(nc)%soilc,                       &

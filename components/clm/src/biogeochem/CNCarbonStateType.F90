@@ -2872,12 +2872,12 @@ contains
        ! total column carbon, including veg and cpool (TOTCOLC)
        ! adding col_ctrunc, seedc
        this%totcolc_col(c) = &
-            this%totpftc_col(c)  + &
-            this%cwdc_col(c)     + &
-            this%totlitc_col(c)  + &
-            this%totsomc_col(c)  + &
-            this%totprodc_col(c) + &
-            this%seedc_col(c)
+            this%totpftc_col(c)  + & !non-sbgc pftc
+            this%totprodc_col(c) + & !non-sbgc product c
+            this%seedc_col(c)    + & !non-sbgc seed c
+            this%cwdc_col(c)     + & !sbgc cwdc
+            this%totlitc_col(c)  + & !sbgc litc
+            this%totsomc_col(c)      !sbgc somc
 
        this%totabgc_col(c) = &
             this%totpftc_col(c)  + &
