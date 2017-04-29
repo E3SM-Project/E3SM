@@ -301,6 +301,8 @@
       If DOCN_MODE is prescribed, datamode will be set to SSTDATA
       If DOCN_MODE is interannual, datamode will be set to IAF
       If DOCN_MODE is som , datamode will be set to SOM
+      If DOCN_MODE is sst_aqup[n], datamode will be set to SST_AQUAP
+      If DOCN_MODE is som_aqup[n], datamode will be set to SOM_AQUAP
       If DOCN_MODE is null, datamode will be set to NULL
 
       default: SSTDATA (prescribed setting for DOCN_MODE)'
