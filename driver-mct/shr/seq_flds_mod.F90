@@ -3166,9 +3166,9 @@ module seq_flds_mod
         call seq_flds_add(x2l_fluxes, ndep_fields)
         call seq_flds_add(x2o_fluxes, ndep_fields)
 
-        longname = 'nitrongen deposition flux'
-        stdname  = 'ndep'
-        units    = 'kg/m2/sec' !TODO (mv) - check this 
+        longname = 'nitrogen deposition flux'
+        stdname  = 'nitrogen_deposition'
+        units    = 'kg(N)/m2/sec' 
 
         call metadata_set(ndep_fields, longname, stdname, units)
      end if
