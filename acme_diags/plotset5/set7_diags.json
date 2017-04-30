@@ -9,6 +9,15 @@
       "season": ["ANN"],
       "region": ["polar_S"],
       "levels": []
+               }, 
+          {
+      "case_id": "set5_GPCP",
+      "variables": ["PRECT"],
+      "ref_name": "GPCP",
+      "reference_name": "GPCP",
+      "season": ["ANN"],
+      "region": ["polar_S"],
+      "levels": []
                } 
            ] 
 }

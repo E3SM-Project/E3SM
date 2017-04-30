@@ -77,6 +77,9 @@ def convert_units(var, target_units):
 
     if not hasattr(var, 'units') and var.id == 'SST':
         var.units = target_units
+    elif not hasattr(var, 'units') and var.id =='ICEFRAC':
+        var.units = target_units
+        var = 100.0 * var
     elif var.units == 'fraction':
         var = 100.0 * var
         var.units = target_units
@@ -341,5 +344,8 @@ derived_variables = {
     },
     'CLDTOT': {
         ('CLDTOT'): lambda cldtot: convert_units(cldtot, target_units="%")
+    },
+    'ICEFRAC': {
+        ('ICEFRAC'): lambda icefrac: convert_units(icefrac, target_units="%")
     }
 }
