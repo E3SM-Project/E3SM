@@ -13,7 +13,8 @@ import MV2
 from cdp.cdp_viewer import OutputViewer
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_parameter import ACMEParameter
-from acme_diags.plotting.set5.plot import plot
+#from acme_diags.plotting.set5.plot import plot
+from acme_diags.plotting.set7.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
@@ -328,15 +329,15 @@ for parameter in parameters:
                                        metrics_dict, parameter)
                     else:
     
-    		        #plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+    		        plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                         #start plot7 template
-                        import vcs
-                        x=vcs.init()
-                        polar = vcs.createisofill()
-                        polar.projection = 'polar'
-                        datawc_y1 = -90  #this should extracted from selected domain
-                        datawc_y2 = -55
-                        x.plot(mv1_domain,polar)
+                        #import vcs
+                        #x=vcs.init()
+                        #polar = vcs.createisofill()
+                        #polar.projection = 'polar'
+                        #datawc_y1 = -90  #this should extracted from selected domain
+                        #datawc_y2 = -55
+                        #x.plot(mv1_domain,polar)
                         
                     if season is seasons[0]:
                         viewer.add_row('%s %s' % (var, region))

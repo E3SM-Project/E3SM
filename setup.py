@@ -5,7 +5,10 @@ data_files = [
     (sys.prefix + '/share/acme_diags/set5',
      ['acme_diags/plotset5/set5_diags_AMWG_default.json',
       'acme_diags/plotting/set5/plot_set_5_new.json',
-      'acme_diags/plotting/set5/plot_set_5.json'
+      'acme_diags/plotting/set5/plot_set_5.json',
+      'acme_diags/plotset5/set7_diags_AMWG_default.json',
+      'acme_diags/plotting/set7/plot_set_7_new.json',
+      'acme_diags/plotting/set7/plot_set_7.json'
      ]
     ),
 ]
@@ -13,7 +16,7 @@ data_files = [
 setup(
     name="acme_diags",
     version="0.1",
-    author="Zeshawn Shaheen, Jill Zhang",
+    author="Zeshawn Shaheen, Chengzhu (Jill) Zhang",
     author_email="aims@llnl.gov",
     description="ACME Diagnostics.",
     scripts=["acme_diags/plotset5/set5_driver.py"],
