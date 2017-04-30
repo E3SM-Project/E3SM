@@ -965,7 +965,9 @@ module mpas_log
                    case ('r')
                       if (iReal <= nReals) then
                          realPrecision = precision(realArgs(iReal))
-                         write(realFormat, '(a, i2.2, a)') '(G0.', realPrecision, ')'
+                         ! Note 7 additional characters may be needed beyond the precision
+                         ! e.g.: -1234567.89012345   G13.6   ->   -0.123457E+07
+                         write(realFormat, '(a, i2.2, a, i2.2, a)') '(G', realPrecision+7,'.', realPrecision, ')'
                          write(varPart, trim(realFormat)) realArgs(iReal)
                          iReal = iReal + 1
                       else
