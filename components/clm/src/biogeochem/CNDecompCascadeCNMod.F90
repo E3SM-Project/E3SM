@@ -1005,6 +1005,14 @@ contains
                 decomp_k(c,j,i_soil4) = k_s4 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
              end do
           end do
+          if (.not.use_ed) then
+             do j = 1,nlevdecomp
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   decomp_k(c,j,i_cwd) = k_frag * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
+                end do
+             end do
+          end if
        else
           do j = 1,nlevdecomp
              do fc = 1,num_soilc
@@ -1018,18 +1026,7 @@ contains
                 decomp_k(c,j,i_soil4) = k_s4 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dt
              end do
           end do
-       end if
-       
-       ! do the same for cwd, but only if ed is not enabled (because ED handles CWD on its own structure
-       if (.not. use_ed) then
-          if (use_vertsoilc) then
-             do j = 1,nlevdecomp
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   decomp_k(c,j,i_cwd) = k_frag * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
-                end do
-             end do
-          else
+          if (.not.use_ed) then
              do j = 1,nlevdecomp
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
@@ -1038,6 +1035,7 @@ contains
              end do
           end if
        end if
+       
 
        if (spinup_state == 1 .and. year >= 40) then 
          !adjust decomposition factors based on scalar factors from first 20 years of simulation
