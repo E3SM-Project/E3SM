@@ -472,11 +472,11 @@ class EnvBatch(EnvBase):
         """
         for queue_node in self.get_all_queues():
             if queue_node.text == queue:
-                jobmin = queue.get("jobmin")
-                jobmax = queue.get("jobmax")
-                jobname = queue.get("jobname")
-                walltimemax = queue.get("walltimemax")
-                strict = queue.get("strict") == "true"
+                jobmin = queue_node.get("jobmin")
+                jobmax = queue_node.get("jobmax")
+                jobname = queue_node.get("jobname")
+                walltimemax = queue_node.get("walltimemax")
+                strict = queue_node.get("strict") == "true"
 
                 return jobmin, jobmax, jobname, walltimemax, strict
 
