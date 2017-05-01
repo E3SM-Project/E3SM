@@ -324,6 +324,7 @@ for parameter in parameters:
                     diff = mv1_reg - mv2_reg
                     metrics_dict = create_metrics(
                         mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
+                    parameter.var_region = region
                     if hasattr(parameter, 'plot'):
                         parameter.plot(mv2_domain, mv1_domain, diff,
                                        metrics_dict, parameter)
@@ -336,6 +337,9 @@ for parameter in parameters:
                         #polar = vcs.createisofill()
                         #polar.projection = 'polar'
                         #print mv1_domain.getLatitude()[0],mv1_domain.getLatitude()[-1]
+                        #print mv2_domain.getLatitude()[0],mv2_domain.getLatitude()[-1]
+                        #print diff.getLatitude()[0],diff.getLatitude()[-1]
+                        #
                         #if region == 'polar_S': 
                         #    polar.datawc_y1 = -90  #this should extracted from selected domain
                         #    polar.datawc_y2 = -55

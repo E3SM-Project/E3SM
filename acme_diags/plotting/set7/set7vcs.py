@@ -139,17 +139,24 @@ def plot(reference, test, diff, metrics_dict, parameter):
     test_isofill.missing = 'grey'
     diff_isofill = vcs.getisofill('diff_isofill')
     diff_isofill.missing = 'grey'
+    if parameter.var_region.lower().find('ploar') !=-1:
     
-    reference_isofill.projection = 'polar'
-    test_isofill.projection = 'polar'
-    diff_isofill.projection = 'polar'
+        reference_isofill.projection = 'polar'
+        test_isofill.projection = 'polar'
+        diff_isofill.projection = 'polar'
+        if parameter.var_region.find('S') !=-1: 
+            lat_y1 = -90 
+            lat_y2 = -55 
+        elif parameter.var_region.find('N') !=-1:
+            lat_y1 = 90 
+            lat_y2 = 50 
  
-    reference_isofill.datawc_y1 = -90  #this should extracted from selected domain
-    reference_isofill.datawc_y2 = -55
-    test_isofill.datawc_y1 = -90  #this should extracted from selected domain
-    test_isofill.datawc_y2 = -55
-    diff_isofill.datawc_y1 = -90  #this should extracted from selected domain
-    diff_isofill.datawc_y2 = -55
+        reference_isofill.datawc_y1 = lat_y1  #this should extracted from selected domain
+        reference_isofill.datawc_y2 = lat_y2
+        test_isofill.datawc_y1 = lat_y1  #this should extracted from selected domain
+        test_isofill.datawc_y2 = lat_y2
+        diff_isofill.datawc_y1 = lat_y1  #this should extracted from selected domain
+        diff_isofill.datawc_y2 = lat_y2
 
 
     set_levels_of_graphics_method(reference_isofill, parameter.contour_levels, reference)
