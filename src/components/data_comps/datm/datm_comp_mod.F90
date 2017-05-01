@@ -475,7 +475,6 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     if (trim(atm_mode) == 'NULL'      .or. &
         trim(atm_mode) == 'CORE2_NYF' .or. &
         trim(atm_mode) == 'CORE2_IAF' .or. &
-        trim(atm_mode) == 'WRF'       .or. &
         trim(atm_mode) == 'CLMNCEP'   .or. &
         trim(atm_mode) == 'CPLHIST'   .or. &
         trim(atm_mode) == 'COPYALL'   ) then
@@ -974,31 +973,6 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
 
    case('CPLHIST')
       ! do nothing extra
-
-   case ('WRF')
-      lsize = mct_avect_lsize(a2x)
-      do n = 1,lsize
-
-         !--- fabricate required swdn components from total swdn ---
-         a2x%rAttr(kswvdr,n) = avstrm%rAttr(sswdn,n)*(0.28_R8)
-         a2x%rAttr(kswndr,n) = avstrm%rAttr(sswdn,n)*(0.31_R8)
-         a2x%rAttr(kswvdf,n) = avstrm%rAttr(sswdn,n)*(0.24_R8)
-         a2x%rAttr(kswndf,n) = avstrm%rAttr(sswdn,n)*(0.17_R8)
-
-         !--- just a diagnostic, not really needed
-         a2x%rAttr(kswnet,n) = avstrm%rAttr(sswdn,n)-avstrm%rAttr(sswup,n)
-
-         !--- convert from hPa
-         a2x%rAttr(kpslv,n) = a2x%rAttr(kpslv,n)*100._R8
-         a2x%rAttr(kpbot,n) = a2x%rAttr(kpbot,n)*100._R8
-
-         !--- tcraig, file has terrain height on it, set to 10m
-         a2x%rAttr(kz,n) = 10.0_R8
-
-         !--- convert to degK from degC
-         a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + tKFrz
-
-      enddo
 
    case('CORE2_NYF','CORE2_IAF')
       if (firstcall) then
