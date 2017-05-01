@@ -903,7 +903,7 @@ contains
          call mpas_log_write('Internal mpas clock not in sync with sync clock', MPAS_LOG_CRIT)
       end if
 
-      if (debugOn) call mpas_log_write('=== Completed ice_run_mct. ===', flushNow=.true.)
+      call mpas_log_write('=== Completed ice_run_mct. ===', flushNow=.true.)
 
       ! Reset I/O logs
       call shr_file_setLogUnit (shrlogunit)
