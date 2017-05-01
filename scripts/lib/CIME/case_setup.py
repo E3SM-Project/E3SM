@@ -156,8 +156,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             case.set_value("TOTALPES", pestot)
             thread_count = env_mach_pes.get_max_thread_count(models)
             build_threaded = case.get_build_threaded()
-            expect(not (build_threaded and compiler == "nag"),
-                   "it is not possible to run with OpenMP if using the NAG Fortran compiler")
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
 
