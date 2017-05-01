@@ -4344,377 +4344,377 @@ contains
     real(r8) :: maxdepth        ! depth to integrate soil variables
     !-----------------------------------------------------------------------
 
-   associate(& 
-        is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
-        is_soil   =>    decomp_cascade_con%is_soil   , & ! Input:  [logical (:) ]  TRUE => pool is a soil pool  
-        is_cwd    =>    decomp_cascade_con%is_cwd      & ! Input:  [logical (:) ]  TRUE => pool is a cwd pool   
-        )
-
+    associate(& 
+          is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
+          is_soil   =>    decomp_cascade_con%is_soil   , & ! Input:  [logical (:) ]  TRUE => pool is a soil pool  
+          is_cwd    =>    decomp_cascade_con%is_cwd      & ! Input:  [logical (:) ]  TRUE => pool is a cwd pool   
+          )
+      
     ! patch loop
     if (.not.use_ed) then 
-    do fp = 1,num_soilp
-       p = filter_soilp(fp)
+       do fp = 1,num_soilp
+           p = filter_soilp(fp)
+          
+           ! calculate pft-level summary carbon fluxes and states
 
-       ! calculate pft-level summary carbon fluxes and states
+           ! gross primary production (GPP)
+           this%gpp_patch(p) = &
+                 this%psnsun_to_cpool_patch(p) + &
+                 this%psnshade_to_cpool_patch(p)
 
-       ! gross primary production (GPP)
-       this%gpp_patch(p) = &
-            this%psnsun_to_cpool_patch(p) + &
-            this%psnshade_to_cpool_patch(p)
+           ! maintenance respiration (MR)
+           if ( trim(isotope) == 'c13' .or. trim(isotope) == 'c14') then
+              this%leaf_mr_patch(p)      = this%leaf_curmr_patch(p)      + this%leaf_xsmr_patch(p)
+              this%froot_mr_patch(p)     = this%froot_curmr_patch(p)     + this%froot_xsmr_patch(p)
+              this%livestem_mr_patch(p)  = this%livestem_curmr_patch(p)  + this%livestem_xsmr_patch(p)
+              this%livecroot_mr_patch(p) = this%livecroot_curmr_patch(p) + this%livecroot_xsmr_patch(p)
+           endif
 
-       ! maintenance respiration (MR)
-       if ( trim(isotope) == 'c13' .or. trim(isotope) == 'c14') then
-          this%leaf_mr_patch(p)      = this%leaf_curmr_patch(p)      + this%leaf_xsmr_patch(p)
-          this%froot_mr_patch(p)     = this%froot_curmr_patch(p)     + this%froot_xsmr_patch(p)
-          this%livestem_mr_patch(p)  = this%livestem_curmr_patch(p)  + this%livestem_xsmr_patch(p)
-          this%livecroot_mr_patch(p) = this%livecroot_curmr_patch(p) + this%livecroot_xsmr_patch(p)
-       endif
+           this%mr_patch(p)  = &
+                 this%leaf_mr_patch(p)     + &
+                 this%froot_mr_patch(p)    + &
+                 this%livestem_mr_patch(p) + &
+                 this%livecroot_mr_patch(p)
 
-       this%mr_patch(p)  = &
-            this%leaf_mr_patch(p)     + &
-            this%froot_mr_patch(p)    + &
-            this%livestem_mr_patch(p) + &
-            this%livecroot_mr_patch(p)
+           ! growth respiration (GR)
+           ! current GR is respired this time step for new growth displayed in this timestep
+           this%current_gr_patch(p) = &
+                 this%cpool_leaf_gr_patch(p)      + &
+                 this%cpool_froot_gr_patch(p)     + &
+                 this%cpool_livestem_gr_patch(p)  + &
+                 this%cpool_deadstem_gr_patch(p)  + &
+                 this%cpool_livecroot_gr_patch(p) + &
+                 this%cpool_deadcroot_gr_patch(p)
 
-       ! growth respiration (GR)
-       ! current GR is respired this time step for new growth displayed in this timestep
-       this%current_gr_patch(p) = &
-            this%cpool_leaf_gr_patch(p)      + &
-            this%cpool_froot_gr_patch(p)     + &
-            this%cpool_livestem_gr_patch(p)  + &
-            this%cpool_deadstem_gr_patch(p)  + &
-            this%cpool_livecroot_gr_patch(p) + &
-            this%cpool_deadcroot_gr_patch(p)
+           ! transfer GR is respired this time step for transfer growth displayed in this timestep
+           this%transfer_gr_patch(p) = &
+                 this%transfer_leaf_gr_patch(p)      + &
+                 this%transfer_froot_gr_patch(p)     + &
+                 this%transfer_livestem_gr_patch(p)  + &
+                 this%transfer_deadstem_gr_patch(p)  + &
+                 this%transfer_livecroot_gr_patch(p) + &
+                 this%transfer_deadcroot_gr_patch(p)
 
-       ! transfer GR is respired this time step for transfer growth displayed in this timestep
-       this%transfer_gr_patch(p) = &
-            this%transfer_leaf_gr_patch(p)      + &
-            this%transfer_froot_gr_patch(p)     + &
-            this%transfer_livestem_gr_patch(p)  + &
-            this%transfer_deadstem_gr_patch(p)  + &
-            this%transfer_livecroot_gr_patch(p) + &
-            this%transfer_deadcroot_gr_patch(p)
+           ! storage GR is respired this time step for growth sent to storage for later display
+           this%storage_gr_patch(p) = &
+                 this%cpool_leaf_storage_gr_patch(p)      + &
+                 this%cpool_froot_storage_gr_patch(p)     + &
+                 this%cpool_livestem_storage_gr_patch(p)  + &
+                 this%cpool_deadstem_storage_gr_patch(p)  + &
+                 this%cpool_livecroot_storage_gr_patch(p) + &
+                 this%cpool_deadcroot_storage_gr_patch(p)
 
-       ! storage GR is respired this time step for growth sent to storage for later display
-       this%storage_gr_patch(p) = &
-            this%cpool_leaf_storage_gr_patch(p)      + &
-            this%cpool_froot_storage_gr_patch(p)     + &
-            this%cpool_livestem_storage_gr_patch(p)  + &
-            this%cpool_deadstem_storage_gr_patch(p)  + &
-            this%cpool_livecroot_storage_gr_patch(p) + &
-            this%cpool_deadcroot_storage_gr_patch(p)
+           if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+              this%mr_patch(p) = &
+                    this%mr_patch(p) + &
+                    this%grain_mr_patch(p)
 
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
-          this%mr_patch(p) = &
-               this%mr_patch(p) + &
-               this%grain_mr_patch(p)
+              this%current_gr_patch(p) = &
+                    this%current_gr_patch(p) + &
+                    this%cpool_grain_gr_patch(p)
 
-          this%current_gr_patch(p) = &
-               this%current_gr_patch(p) + &
-               this%cpool_grain_gr_patch(p)
+              this%transfer_gr_patch(p) = &
+                    this%transfer_gr_patch(p) + &
+                    this%transfer_grain_gr_patch(p)
 
-          this%transfer_gr_patch(p) = &
-               this%transfer_gr_patch(p) + &
-               this%transfer_grain_gr_patch(p)
+              this%storage_gr_patch(p) = &
+                    this%storage_gr_patch(p) + &
+                    this%cpool_grain_storage_gr_patch(p)
+           end if
 
-          this%storage_gr_patch(p) = &
-               this%storage_gr_patch(p) + &
-               this%cpool_grain_storage_gr_patch(p)
-       end if
+           ! GR is the sum of current + transfer + storage GR
+           this%gr_patch(p) = &
+                 this%current_gr_patch(p)  + &
+                 this%transfer_gr_patch(p) + &
+                 this%storage_gr_patch(p)
 
-       ! GR is the sum of current + transfer + storage GR
-       this%gr_patch(p) = &
-            this%current_gr_patch(p)  + &
-            this%transfer_gr_patch(p) + &
-            this%storage_gr_patch(p)
-
-       ! autotrophic respiration (AR)
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
-          this%ar_patch(p) = &
-               this%mr_patch(p) + &
-               this%gr_patch(p) + &
-               this%xsmrpool_to_atm_patch(p) ! xsmr... is -ve (slevis)
-         if (nu_com .ne. 'RD' ) then
-             this%ar_patch(p) = this%ar_patch(p) + &
-                this%xsmrpool_turnover_patch(p)
-          end if
-       else
-          this%ar_patch(p) = &
-               this%mr_patch(p) + &
-               this%gr_patch(p)
-          if (nu_com .ne. 'RD' ) then
-             this%ar_patch(p) = this%ar_patch(p) + &
-                this%xsmrpool_turnover_patch(p)
-          end if
-       end if
-
-
-
-       ! net primary production (NPP)
-       this%npp_patch(p) = &
-            this%gpp_patch(p) - &
-            this%ar_patch(p)
-
-       ! update the annual NPP accumulator, for use in allocation code 
-       if (trim(isotope) == 'bulk') then      
-          this%tempsum_npp_patch(p) = &
-               this%tempsum_npp_patch(p) + &
-               this%npp_patch(p)
-       end if
-
-       ! litterfall (LITFALL)
-
-       this%litfall_patch(p) = &
-            this%leafc_to_litter_patch(p)                     + &
-            this%frootc_to_litter_patch(p)                    + &
-            this%m_leafc_to_litter_patch(p)                   + &
-            this%m_leafc_storage_to_litter_patch(p)           + &
-            this%m_leafc_xfer_to_litter_patch(p)              + &
-            this%m_frootc_to_litter_patch(p)                  + &
-            this%m_frootc_storage_to_litter_patch(p)          + &
-            this%m_frootc_xfer_to_litter_patch(p)             + &
-            this%m_livestemc_to_litter_patch(p)               + &
-            this%m_livestemc_storage_to_litter_patch(p)       + &
-            this%m_livestemc_xfer_to_litter_patch(p)          + &
-            this%m_deadstemc_to_litter_patch(p)               + &
-            this%m_deadstemc_storage_to_litter_patch(p)       + &
-            this%m_deadstemc_xfer_to_litter_patch(p)          + &
-            this%m_livecrootc_to_litter_patch(p)              + &
-            this%m_livecrootc_storage_to_litter_patch(p)      + &
-            this%m_livecrootc_xfer_to_litter_patch(p)         + &
-            this%m_deadcrootc_to_litter_patch(p)              + &
-            this%m_deadcrootc_storage_to_litter_patch(p)      + &
-            this%m_deadcrootc_xfer_to_litter_patch(p)         + &
-            this%m_gresp_storage_to_litter_patch(p)           + &
-            this%m_gresp_xfer_to_litter_patch(p)              + &
-            
-            this%m_leafc_to_litter_fire_patch(p)              + &
-            this%m_leafc_storage_to_litter_fire_patch(p)      + &
-            this%m_leafc_xfer_to_litter_fire_patch(p)         + &
-            this%m_livestemc_to_litter_fire_patch(p)          + &
-            this%m_livestemc_storage_to_litter_fire_patch(p)  + &
-            this%m_livestemc_xfer_to_litter_fire_patch(p)     + &
-            this%m_deadstemc_to_litter_fire_patch(p)          + &
-            this%m_deadstemc_storage_to_litter_fire_patch(p)  + &
-            this%m_deadstemc_xfer_to_litter_fire_patch(p)     + &
-            this%m_frootc_to_litter_fire_patch(p)             + &
-            this%m_frootc_storage_to_litter_fire_patch(p)     + &
-            this%m_frootc_xfer_to_litter_fire_patch(p)        + &
-            this%m_livecrootc_to_litter_fire_patch(p)         + &
-            this%m_livecrootc_storage_to_litter_fire_patch(p) + &
-            this%m_livecrootc_xfer_to_litter_fire_patch(p)    + &
-            this%m_deadcrootc_to_litter_fire_patch(p)         + &
-            this%m_deadcrootc_storage_to_litter_fire_patch(p) + &
-            this%m_deadcrootc_xfer_to_litter_fire_patch(p)    + &
-            this%m_gresp_storage_to_litter_fire_patch(p)      + &
-            this%m_gresp_xfer_to_litter_fire_patch(p)         + &
-            
-            this%hrv_leafc_to_litter_patch(p)                 + &
-            this%hrv_leafc_storage_to_litter_patch(p)         + &
-            this%hrv_leafc_xfer_to_litter_patch(p)            + &
-            this%hrv_frootc_to_litter_patch(p)                + &
-            this%hrv_frootc_storage_to_litter_patch(p)        + &
-            this%hrv_frootc_xfer_to_litter_patch(p)           + &
-            this%hrv_livestemc_to_litter_patch(p)             + &
-            this%hrv_livestemc_storage_to_litter_patch(p)     + &
-            this%hrv_livestemc_xfer_to_litter_patch(p)        + &
-            this%hrv_deadstemc_storage_to_litter_patch(p)     + &
-            this%hrv_deadstemc_xfer_to_litter_patch(p)        + &
-            this%hrv_livecrootc_to_litter_patch(p)            + &
-            this%hrv_livecrootc_storage_to_litter_patch(p)    + &
-            this%hrv_livecrootc_xfer_to_litter_patch(p)       + &
-            this%hrv_deadcrootc_to_litter_patch(p)            + &
-            this%hrv_deadcrootc_storage_to_litter_patch(p)    + &
-            this%hrv_deadcrootc_xfer_to_litter_patch(p)       + &
-            this%hrv_gresp_storage_to_litter_patch(p)         + &
-            this%hrv_gresp_xfer_to_litter_patch(p)
-
-       ! update the annual litfall accumulator, for use in mortality code
-       if (use_cndv) then
-          this%tempsum_litfall_patch(p) = &
-               this%tempsum_litfall_patch(p) + &
-               this%leafc_to_litter_patch(p) + &
-               this%frootc_to_litter_patch(p)
-       end if
-
-       ! patch-level fire losses (VEGFIRE)
-       this%vegfire_patch(p) = 0._r8
-
-       ! patch-level wood harvest
-       this%wood_harvestc_patch(p) = &
-            this%hrv_deadstemc_to_prod10c_patch(p) + &
-            this%hrv_deadstemc_to_prod100c_patch(p)
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
-            this%wood_harvestc_patch(p) = &
-            this%wood_harvestc_patch(p) + &
-            this%hrv_cropc_to_prod1c_patch(p)
-      end if
-
-       ! patch-level carbon losses to fire changed by F. Li and S. Levis
-       this%fire_closs_patch(p) = &
-            this%m_leafc_to_fire_patch(p)                + &
-            this%m_leafc_storage_to_fire_patch(p)        + &
-            this%m_leafc_xfer_to_fire_patch(p)           + &
-            this%m_frootc_to_fire_patch(p)               + &
-            this%m_frootc_storage_to_fire_patch(p)       + &
-            this%m_frootc_xfer_to_fire_patch(p)          + &
-            this%m_livestemc_to_fire_patch(p)            + &
-            this%m_livestemc_storage_to_fire_patch(p)    + &
-            this%m_livestemc_xfer_to_fire_patch(p)       + &
-            this%m_deadstemc_to_fire_patch(p)            + &
-            this%m_deadstemc_storage_to_fire_patch(p)    + &
-            this%m_deadstemc_xfer_to_fire_patch(p)       + &
-            this%m_livecrootc_to_fire_patch(p)           + &
-            this%m_livecrootc_storage_to_fire_patch(p)   + &
-            this%m_livecrootc_xfer_to_fire_patch(p)      + &
-            this%m_deadcrootc_to_fire_patch(p)           + &
-            this%m_deadcrootc_storage_to_fire_patch(p)   + &
-            this%m_deadcrootc_xfer_to_fire_patch(p)      + &
-            this%m_gresp_storage_to_fire_patch(p)        + &
-            this%m_gresp_xfer_to_fire_patch(p)
-
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
-
-          this%litfall_patch(p) =                  &
-               this%litfall_patch(p)             + &
-               this%livestemc_to_litter_patch(p) + &
-               this%grainc_to_food_patch(p)
-       end if
-
-       ! new summary variables for CLAMP
-
-       ! (FROOTC_ALLOC) - fine root C allocation
-       this%frootc_alloc_patch(p) = &
-            this%frootc_xfer_to_frootc_patch(p)    + &
-            this%cpool_to_frootc_patch(p)     
-
-       ! (FROOTC_LOSS) - fine root C loss changed by F. Li and S. Levis
-       this%frootc_loss_patch(p) = &
-            this%m_frootc_to_litter_patch(p)       + &
-            this%m_frootc_to_fire_patch(p)         + &
-            this%m_frootc_to_litter_fire_patch(p)  + &
-            this%hrv_frootc_to_litter_patch(p)     + &
-            this%frootc_to_litter_patch(p)
-       
-       ! (LEAFC_ALLOC) - leaf C allocation
-       this%leafc_alloc_patch(p) = &
-            this%leafc_xfer_to_leafc_patch(p)    + &
-            this%cpool_to_leafc_patch(p)     
-
-       ! (LEAFC_LOSS) - leaf C loss changed by F. Li and S. Levis
-       this%leafc_loss_patch(p) = &
-            this%m_leafc_to_litter_patch(p)      + &
-            this%m_leafc_to_fire_patch(p)        + &
-            this%m_leafc_to_litter_fire_patch(p) + &
-            this%hrv_leafc_to_litter_patch(p)    + &
-            this%leafc_to_litter_patch(p)
-
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
-            this%leafc_loss_patch(p) = &
-            this%leafc_loss_patch(p) + &
-            this%hrv_leafc_to_prod1c_patch(p)
-       end if
+           ! autotrophic respiration (AR)
+           if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+              this%ar_patch(p) = &
+                    this%mr_patch(p) + &
+                    this%gr_patch(p) + &
+                    this%xsmrpool_to_atm_patch(p) ! xsmr... is -ve (slevis)
+              if (nu_com .ne. 'RD' ) then
+                 this%ar_patch(p) = this%ar_patch(p) + &
+                       this%xsmrpool_turnover_patch(p)
+              end if
+           else
+              this%ar_patch(p) = &
+                    this%mr_patch(p) + &
+                    this%gr_patch(p)
+              if (nu_com .ne. 'RD' ) then
+                 this%ar_patch(p) = this%ar_patch(p) + &
+                       this%xsmrpool_turnover_patch(p)
+              end if
+           end if
 
 
-       ! (WOODC_ALLOC) - wood C allocation
-       this%woodc_alloc_patch(p) = &
-            this%livestemc_xfer_to_livestemc_patch(p)   + &
-            this%deadstemc_xfer_to_deadstemc_patch(p)   + &
-            this%livecrootc_xfer_to_livecrootc_patch(p) + &
-            this%deadcrootc_xfer_to_deadcrootc_patch(p) + &
-            this%cpool_to_livestemc_patch(p)            + &
-            this%cpool_to_deadstemc_patch(p)            + &
-            this%cpool_to_livecrootc_patch(p)           + &
-            this%cpool_to_deadcrootc_patch(p)
 
-       ! (WOODC_LOSS) - wood C loss
-       this%woodc_loss_patch(p) = &
-            this%m_livestemc_to_litter_patch(p)            + &
-            this%m_deadstemc_to_litter_patch(p)            + &
-            this%m_livecrootc_to_litter_patch(p)           + &
-            this%m_deadcrootc_to_litter_patch(p)           + &
-            this%m_livestemc_to_fire_patch(p)              + &
-            this%m_deadstemc_to_fire_patch(p)              + &
-            this%m_livecrootc_to_fire_patch(p)             + &
-            this%m_deadcrootc_to_fire_patch(p)             + &
-            this%hrv_livestemc_to_litter_patch(p)          + &
-            this%hrv_livestemc_storage_to_litter_patch(p)  + &
-            this%hrv_livestemc_xfer_to_litter_patch(p)     + &
-            this%hrv_deadstemc_to_prod10c_patch(p)         + &
-            this%hrv_deadstemc_to_prod100c_patch(p)        + &
-            this%hrv_deadstemc_storage_to_litter_patch(p)  + &
-            this%hrv_deadstemc_xfer_to_litter_patch(p)     + &
-            this%hrv_livecrootc_to_litter_patch(p)         + &
-            this%hrv_livecrootc_storage_to_litter_patch(p) + &
-            this%hrv_livecrootc_xfer_to_litter_patch(p)    + &
-            this%hrv_deadcrootc_to_litter_patch(p)         + &
-            this%hrv_deadcrootc_storage_to_litter_patch(p) + &
-            this%hrv_deadcrootc_xfer_to_litter_patch(p)   
-        ! putting the harvested crop stem and grain in the wood loss bdrewniak
-        if ( crop_prog .and. pft%itype(p) >= npcropmin )then
-             this%woodc_loss_patch(p) = &
-             this%woodc_loss_patch(p) + &
-             this%hrv_grainc_to_prod1c_patch(p) + &
-             this%hrv_livestemc_to_prod1c_patch(p)
-        end if
+           ! net primary production (NPP)
+           this%npp_patch(p) = &
+                 this%gpp_patch(p) - &
+                 this%ar_patch(p)
 
-    end do  ! end of patches loop
+           ! update the annual NPP accumulator, for use in allocation code 
+           if (trim(isotope) == 'bulk') then      
+              this%tempsum_npp_patch(p) = &
+                    this%tempsum_npp_patch(p) + &
+                    this%npp_patch(p)
+           end if
 
-    ! use p2c routine to get selected column-average patch-level fluxes and states
+           ! litterfall (LITFALL)
 
-    call p2c(bounds, num_soilc, filter_soilc, &
-         this%gpp_patch(bounds%begp:bounds%endp), &
-         this%gpp_col(bounds%begc:bounds%endc))
+           this%litfall_patch(p) = &
+                 this%leafc_to_litter_patch(p)                     + &
+                 this%frootc_to_litter_patch(p)                    + &
+                 this%m_leafc_to_litter_patch(p)                   + &
+                 this%m_leafc_storage_to_litter_patch(p)           + &
+                 this%m_leafc_xfer_to_litter_patch(p)              + &
+                 this%m_frootc_to_litter_patch(p)                  + &
+                 this%m_frootc_storage_to_litter_patch(p)          + &
+                 this%m_frootc_xfer_to_litter_patch(p)             + &
+                 this%m_livestemc_to_litter_patch(p)               + &
+                 this%m_livestemc_storage_to_litter_patch(p)       + &
+                 this%m_livestemc_xfer_to_litter_patch(p)          + &
+                 this%m_deadstemc_to_litter_patch(p)               + &
+                 this%m_deadstemc_storage_to_litter_patch(p)       + &
+                 this%m_deadstemc_xfer_to_litter_patch(p)          + &
+                 this%m_livecrootc_to_litter_patch(p)              + &
+                 this%m_livecrootc_storage_to_litter_patch(p)      + &
+                 this%m_livecrootc_xfer_to_litter_patch(p)         + &
+                 this%m_deadcrootc_to_litter_patch(p)              + &
+                 this%m_deadcrootc_storage_to_litter_patch(p)      + &
+                 this%m_deadcrootc_xfer_to_litter_patch(p)         + &
+                 this%m_gresp_storage_to_litter_patch(p)           + &
+                 this%m_gresp_xfer_to_litter_patch(p)              + &
+                 
+                 this%m_leafc_to_litter_fire_patch(p)              + &
+                 this%m_leafc_storage_to_litter_fire_patch(p)      + &
+                 this%m_leafc_xfer_to_litter_fire_patch(p)         + &
+                 this%m_livestemc_to_litter_fire_patch(p)          + &
+                 this%m_livestemc_storage_to_litter_fire_patch(p)  + &
+                 this%m_livestemc_xfer_to_litter_fire_patch(p)     + &
+                 this%m_deadstemc_to_litter_fire_patch(p)          + &
+                 this%m_deadstemc_storage_to_litter_fire_patch(p)  + &
+                 this%m_deadstemc_xfer_to_litter_fire_patch(p)     + &
+                 this%m_frootc_to_litter_fire_patch(p)             + &
+                 this%m_frootc_storage_to_litter_fire_patch(p)     + &
+                 this%m_frootc_xfer_to_litter_fire_patch(p)        + &
+                 this%m_livecrootc_to_litter_fire_patch(p)         + &
+                 this%m_livecrootc_storage_to_litter_fire_patch(p) + &
+                 this%m_livecrootc_xfer_to_litter_fire_patch(p)    + &
+                 this%m_deadcrootc_to_litter_fire_patch(p)         + &
+                 this%m_deadcrootc_storage_to_litter_fire_patch(p) + &
+                 this%m_deadcrootc_xfer_to_litter_fire_patch(p)    + &
+                 this%m_gresp_storage_to_litter_fire_patch(p)      + &
+                 this%m_gresp_xfer_to_litter_fire_patch(p)         + &
+                 
+                 this%hrv_leafc_to_litter_patch(p)                 + &
+                 this%hrv_leafc_storage_to_litter_patch(p)         + &
+                 this%hrv_leafc_xfer_to_litter_patch(p)            + &
+                 this%hrv_frootc_to_litter_patch(p)                + &
+                 this%hrv_frootc_storage_to_litter_patch(p)        + &
+                 this%hrv_frootc_xfer_to_litter_patch(p)           + &
+                 this%hrv_livestemc_to_litter_patch(p)             + &
+                 this%hrv_livestemc_storage_to_litter_patch(p)     + &
+                 this%hrv_livestemc_xfer_to_litter_patch(p)        + &
+                 this%hrv_deadstemc_storage_to_litter_patch(p)     + &
+                 this%hrv_deadstemc_xfer_to_litter_patch(p)        + &
+                 this%hrv_livecrootc_to_litter_patch(p)            + &
+                 this%hrv_livecrootc_storage_to_litter_patch(p)    + &
+                 this%hrv_livecrootc_xfer_to_litter_patch(p)       + &
+                 this%hrv_deadcrootc_to_litter_patch(p)            + &
+                 this%hrv_deadcrootc_storage_to_litter_patch(p)    + &
+                 this%hrv_deadcrootc_xfer_to_litter_patch(p)       + &
+                 this%hrv_gresp_storage_to_litter_patch(p)         + &
+                 this%hrv_gresp_xfer_to_litter_patch(p)
 
-    call p2c(bounds, num_soilc, filter_soilc, &
-         this%ar_patch(bounds%begp:bounds%endp), &
-         this%ar_col(bounds%begc:bounds%endc))
+           ! update the annual litfall accumulator, for use in mortality code
+           if (use_cndv) then
+              this%tempsum_litfall_patch(p) = &
+                    this%tempsum_litfall_patch(p) + &
+                    this%leafc_to_litter_patch(p) + &
+                    this%frootc_to_litter_patch(p)
+           end if
 
-    call p2c(bounds, num_soilc, filter_soilc, &
-         this%npp_patch(bounds%begp:bounds%endp), &
-         this%npp_col(bounds%begc:bounds%endc))
+           ! patch-level fire losses (VEGFIRE)
+           this%vegfire_patch(p) = 0._r8
 
-    call p2c(bounds, num_soilc, filter_soilc, &
-         this%vegfire_patch(bounds%begp:bounds%endp), &
-         this%vegfire_col(bounds%begc:bounds%endc))
+           ! patch-level wood harvest
+           this%wood_harvestc_patch(p) = &
+                 this%hrv_deadstemc_to_prod10c_patch(p) + &
+                 this%hrv_deadstemc_to_prod100c_patch(p)
+           if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+              this%wood_harvestc_patch(p) = &
+                    this%wood_harvestc_patch(p) + &
+                    this%hrv_cropc_to_prod1c_patch(p)
+           end if
 
-    call p2c(bounds, num_soilc, filter_soilc, &
-         this%wood_harvestc_patch(bounds%begp:bounds%endp), &
-         this%wood_harvestc_col(bounds%begc:bounds%endc))
+           ! patch-level carbon losses to fire changed by F. Li and S. Levis
+           this%fire_closs_patch(p) = &
+                 this%m_leafc_to_fire_patch(p)                + &
+                 this%m_leafc_storage_to_fire_patch(p)        + &
+                 this%m_leafc_xfer_to_fire_patch(p)           + &
+                 this%m_frootc_to_fire_patch(p)               + &
+                 this%m_frootc_storage_to_fire_patch(p)       + &
+                 this%m_frootc_xfer_to_fire_patch(p)          + &
+                 this%m_livestemc_to_fire_patch(p)            + &
+                 this%m_livestemc_storage_to_fire_patch(p)    + &
+                 this%m_livestemc_xfer_to_fire_patch(p)       + &
+                 this%m_deadstemc_to_fire_patch(p)            + &
+                 this%m_deadstemc_storage_to_fire_patch(p)    + &
+                 this%m_deadstemc_xfer_to_fire_patch(p)       + &
+                 this%m_livecrootc_to_fire_patch(p)           + &
+                 this%m_livecrootc_storage_to_fire_patch(p)   + &
+                 this%m_livecrootc_xfer_to_fire_patch(p)      + &
+                 this%m_deadcrootc_to_fire_patch(p)           + &
+                 this%m_deadcrootc_storage_to_fire_patch(p)   + &
+                 this%m_deadcrootc_xfer_to_fire_patch(p)      + &
+                 this%m_gresp_storage_to_fire_patch(p)        + &
+                 this%m_gresp_xfer_to_fire_patch(p)
 
-    call p2c(bounds, num_soilc, filter_soilc, &
-         this%fire_closs_patch(bounds%begp:bounds%endp), &
-         this%fire_closs_p2c_col(bounds%begc:bounds%endc))
+           if ( crop_prog .and. pft%itype(p) >= npcropmin )then
 
-    call p2c(bounds, num_soilc, filter_soilc, &
-         this%litfall_patch(bounds%begp:bounds%endp), &
-         this%litfall_col(bounds%begc:bounds%endc))
+              this%litfall_patch(p) =                  &
+                    this%litfall_patch(p)             + &
+                    this%livestemc_to_litter_patch(p) + &
+                    this%grainc_to_food_patch(p)
+           end if
 
-    call p2c(bounds, num_soilc, filter_soilc, &
-         this%hrv_xsmrpool_to_atm_patch(bounds%begp:bounds%endp), &
-         this%hrv_xsmrpool_to_atm_col(bounds%begc:bounds%endc))
+           ! new summary variables for CLAMP
 
-    if ( trim(isotope) == 'bulk') then
-       if (nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
+           ! (FROOTC_ALLOC) - fine root C allocation
+           this%frootc_alloc_patch(p) = &
+                 this%frootc_xfer_to_frootc_patch(p)    + &
+                 this%cpool_to_frootc_patch(p)     
 
-          ! this code is to calculate an exponentially-relaxed npp value for use in NDynamics code
-          dtime = get_step_size()
-          nfixlags = nfix_timeconst * secspday
+           ! (FROOTC_LOSS) - fine root C loss changed by F. Li and S. Levis
+           this%frootc_loss_patch(p) = &
+                 this%m_frootc_to_litter_patch(p)       + &
+                 this%m_frootc_to_fire_patch(p)         + &
+                 this%m_frootc_to_litter_fire_patch(p)  + &
+                 this%hrv_frootc_to_litter_patch(p)     + &
+                 this%frootc_to_litter_patch(p)
 
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             if ( this%lag_npp_col(c) /= spval ) then
-                this%lag_npp_col(c) = &
-                     this%lag_npp_col(c) * exp(-dtime/nfixlags) + &
-                     this%npp_col(c) * (1._r8 - exp(-dtime/nfixlags))
-             else
-                ! first timestep
-                this%lag_npp_col(c) = this%npp_col(c)
-             endif
-          end do
-       endif
-    endif
-    end if ! if(.not.use_ed)then
+           ! (LEAFC_ALLOC) - leaf C allocation
+           this%leafc_alloc_patch(p) = &
+                 this%leafc_xfer_to_leafc_patch(p)    + &
+                 this%cpool_to_leafc_patch(p)     
+
+           ! (LEAFC_LOSS) - leaf C loss changed by F. Li and S. Levis
+           this%leafc_loss_patch(p) = &
+                 this%m_leafc_to_litter_patch(p)      + &
+                 this%m_leafc_to_fire_patch(p)        + &
+                 this%m_leafc_to_litter_fire_patch(p) + &
+                 this%hrv_leafc_to_litter_patch(p)    + &
+                 this%leafc_to_litter_patch(p)
+
+           if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+              this%leafc_loss_patch(p) = &
+                    this%leafc_loss_patch(p) + &
+                    this%hrv_leafc_to_prod1c_patch(p)
+           end if
+
+
+           ! (WOODC_ALLOC) - wood C allocation
+           this%woodc_alloc_patch(p) = &
+                 this%livestemc_xfer_to_livestemc_patch(p)   + &
+                 this%deadstemc_xfer_to_deadstemc_patch(p)   + &
+                 this%livecrootc_xfer_to_livecrootc_patch(p) + &
+                 this%deadcrootc_xfer_to_deadcrootc_patch(p) + &
+                 this%cpool_to_livestemc_patch(p)            + &
+                 this%cpool_to_deadstemc_patch(p)            + &
+                 this%cpool_to_livecrootc_patch(p)           + &
+                 this%cpool_to_deadcrootc_patch(p)
+
+           ! (WOODC_LOSS) - wood C loss
+           this%woodc_loss_patch(p) = &
+                 this%m_livestemc_to_litter_patch(p)            + &
+                 this%m_deadstemc_to_litter_patch(p)            + &
+                 this%m_livecrootc_to_litter_patch(p)           + &
+                 this%m_deadcrootc_to_litter_patch(p)           + &
+                 this%m_livestemc_to_fire_patch(p)              + &
+                 this%m_deadstemc_to_fire_patch(p)              + &
+                 this%m_livecrootc_to_fire_patch(p)             + &
+                 this%m_deadcrootc_to_fire_patch(p)             + &
+                 this%hrv_livestemc_to_litter_patch(p)          + &
+                 this%hrv_livestemc_storage_to_litter_patch(p)  + &
+                 this%hrv_livestemc_xfer_to_litter_patch(p)     + &
+                 this%hrv_deadstemc_to_prod10c_patch(p)         + &
+                 this%hrv_deadstemc_to_prod100c_patch(p)        + &
+                 this%hrv_deadstemc_storage_to_litter_patch(p)  + &
+                 this%hrv_deadstemc_xfer_to_litter_patch(p)     + &
+                 this%hrv_livecrootc_to_litter_patch(p)         + &
+                 this%hrv_livecrootc_storage_to_litter_patch(p) + &
+                 this%hrv_livecrootc_xfer_to_litter_patch(p)    + &
+                 this%hrv_deadcrootc_to_litter_patch(p)         + &
+                 this%hrv_deadcrootc_storage_to_litter_patch(p) + &
+                 this%hrv_deadcrootc_xfer_to_litter_patch(p)   
+           ! putting the harvested crop stem and grain in the wood loss bdrewniak
+           if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+              this%woodc_loss_patch(p) = &
+                    this%woodc_loss_patch(p) + &
+                    this%hrv_grainc_to_prod1c_patch(p) + &
+                    this%hrv_livestemc_to_prod1c_patch(p)
+           end if
+
+        end do  ! end of patches loop
+
+        ! use p2c routine to get selected column-average patch-level fluxes and states
+
+        call p2c(bounds, num_soilc, filter_soilc, &
+              this%gpp_patch(bounds%begp:bounds%endp), &
+              this%gpp_col(bounds%begc:bounds%endc))
+
+        call p2c(bounds, num_soilc, filter_soilc, &
+              this%ar_patch(bounds%begp:bounds%endp), &
+              this%ar_col(bounds%begc:bounds%endc))
+
+        call p2c(bounds, num_soilc, filter_soilc, &
+              this%npp_patch(bounds%begp:bounds%endp), &
+              this%npp_col(bounds%begc:bounds%endc))
+
+        call p2c(bounds, num_soilc, filter_soilc, &
+              this%vegfire_patch(bounds%begp:bounds%endp), &
+              this%vegfire_col(bounds%begc:bounds%endc))
+
+        call p2c(bounds, num_soilc, filter_soilc, &
+              this%wood_harvestc_patch(bounds%begp:bounds%endp), &
+              this%wood_harvestc_col(bounds%begc:bounds%endc))
+
+        call p2c(bounds, num_soilc, filter_soilc, &
+              this%fire_closs_patch(bounds%begp:bounds%endp), &
+              this%fire_closs_p2c_col(bounds%begc:bounds%endc))
+
+        call p2c(bounds, num_soilc, filter_soilc, &
+              this%litfall_patch(bounds%begp:bounds%endp), &
+              this%litfall_col(bounds%begc:bounds%endc))
+
+        call p2c(bounds, num_soilc, filter_soilc, &
+              this%hrv_xsmrpool_to_atm_patch(bounds%begp:bounds%endp), &
+              this%hrv_xsmrpool_to_atm_col(bounds%begc:bounds%endc))
+
+        if ( trim(isotope) == 'bulk') then
+           if (nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
+
+              ! this code is to calculate an exponentially-relaxed npp value for use in NDynamics code
+              dtime = get_step_size()
+              nfixlags = nfix_timeconst * secspday
+
+              do fc = 1,num_soilc
+                 c = filter_soilc(fc)
+                 if ( this%lag_npp_col(c) /= spval ) then
+                    this%lag_npp_col(c) = &
+                          this%lag_npp_col(c) * exp(-dtime/nfixlags) + &
+                          this%npp_col(c) * (1._r8 - exp(-dtime/nfixlags))
+                 else
+                    ! first timestep
+                    this%lag_npp_col(c) = this%npp_col(c)
+                 endif
+              end do
+           endif
+        endif
+     end if ! if(.not.use_ed)then
 
     ! column soil variables
 
