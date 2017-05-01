@@ -437,7 +437,8 @@ for parameter in parameters:
                         diff = mv1_reg - mv2_reg
                         metrics_dict = create_metrics(
                             mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
-    
+
+                        parameter.var_region = region
                         if hasattr(parameter, 'plot'):
                             parameter.plot(mv2_domain, mv1_domain,
                                            diff, metrics_dict, parameter)
