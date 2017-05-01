@@ -3,13 +3,14 @@ reference_data_path = '/Users/zhang40/Documents/AIMS/amwg/amwg20140804/obs_data_
 test_data_path = '/Users/zhang40/Documents/ACME_simulations/'
 
 test_name = '20160520.A_WCYCL1850.ne30'
-
+results_dir = 'testresults'
 regrid_tool = 'esmf'
 regrid_method = 'linear'
 
 #backend = 'cartopy'
 backend = 'vcs'
 
+results_dir='./polar/'
 diff_title = 'test - reference'
 diff_colormap = 'bl_to_darkred'
 

@@ -8,7 +8,7 @@
       "reference_name": "IPCC/CRU climatology1961-90",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": [],
+      "plevs": [],
       "contour_levels":[210, 220, 230, 240, 250, 260, 270, 275, 280, 285, 290, 295, 300, 305, 310],
       "diff_levels":[-5, -4, -3, -2, -1, -0.5, -0.2, 0, 0.2, 0.5, 1, 2, 3, 4, 5]
                 },
@@ -19,7 +19,7 @@
       "reference_name": "HadISST/OI.v2 (Climatology) 1982-2001",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": [],
+      "plevs": [],
       "contour_levels":[-1, 0, 1, 3, 6, 9, 12, 15, 18, 20, 22, 24, 26, 28, 29],
       "diff_levels":[-5, -4, -3, -2, -1, -0.5, -0.2, 0, 0.2, 0.5, 1, 2, 3, 4, 5]
                 },
@@ -29,7 +29,7 @@
       "ref_name": "HadISST_PI",
       "reference_name": "HadISST/OI.v2 (Pre-Indust) 1870-1900",
       "season": ["ANN"],
-      "levels": [],
+      "plevs": [],
       "region":["polar_S","polar_N"],
       "contour_levels":[-1, 0, 1, 3, 6, 9, 12, 15, 18, 20, 22, 24, 26, 28, 29],
       "diff_levels":[-5, -4, -3, -2, -1, -0.5, -0.2, 0, 0.2, 0.5, 1, 2, 3, 4, 5]
@@ -40,7 +40,7 @@
       "ref_name": "HadISST_PD",
       "reference_name": "HadISST/OI.v2 (Present Day) 1999-2008",
       "season": ["ANN"],
-      "levels": [],
+      "plevs": [],
       "region":["polar_S","polar_N"],
       "contour_levels":[-1, 0, 1, 3, 6, 9, 12, 15, 18, 20, 22, 24, 26, 28, 29],
       "diff_levels":[-5, -4, -3, -2, -1, -0.5, -0.2, 0, 0.2, 0.5, 1, 2, 3, 4, 5]
@@ -74,7 +74,7 @@
       "region":["polar_S","polar_N"],
       "contour_levels":[0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17],
       "diff_levels":[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_SSMI",
@@ -85,7 +85,7 @@
       "region":["polar_S","polar_N"],
       "contour_levels":[0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17],
       "diff_levels":[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_SSMI",
@@ -96,7 +96,7 @@
       "region":["polar_S","polar_N"],
       "contour_levels":[4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60],
       "diff_levels":[-12, -9, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 9, 12],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_SSMI",
@@ -107,7 +107,7 @@
       "contour_levels":[10, 25, 50, 75, 100, 150, 175, 200, 250, 300, 350, 400, 450, 500, 550],
       "diff_levels":[-120, -100, -80, -60, -40, -20, -10, 0, 10, 20, 40, 60, 80, 100, 120],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_LARYEA",
@@ -118,7 +118,7 @@
       "contour_levels":[-100, -75, -50, -25, -10, 0, 10, 25, 50, 75, 100, 125, 150, 175, 200],
       "diff_levels":[-100, -80, -60, -40, -20, -10, -5, 0, 5, 10, 20, 40, 60, 80, 100],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_LARYEA",
@@ -129,7 +129,7 @@
       "contour_levels":[0, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
       "diff_levels":[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_LARYEA",
@@ -140,7 +140,7 @@
       "contour_levels":[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150],
       "diff_levels":[-70, -50, -40, -30, -20, -10, -5, 0, 5, 10, 20, 30, 40, 50, 70],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_LARYEA",
@@ -151,7 +151,7 @@
       "contour_levels":[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150],
       "diff_levels":[-100, -75, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 75, 100] ,
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_CERES-EBAF",
@@ -162,7 +162,7 @@
       "contour_levels":[0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95],
       "diff_levels":[-0.25, -0.2, -0.15, -0.1, -0.07, -0.05, -0.03, 0.0, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.25],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_CERES-EBAF",
@@ -173,7 +173,7 @@
       "contour_levels":[0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95],
       "diff_levels":[-0.25, -0.2, -0.15, -0.1, -0.07, -0.05, -0.03, 0.0, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.25],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_CERES-EBAF",
@@ -184,7 +184,7 @@
       "contour_levels":[100, 115, 130, 145, 160, 175, 190, 205, 220, 235, 250, 265, 280, 295, 310],
       "diff_levels":[-60, -50, -40, -30, -20, -10, -5, 0, 5, 10, 20, 30, 40, 50, 60],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_CERES-EBAF",
@@ -195,7 +195,7 @@
       "contour_levels":[120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 280, 290, 300, 310],
       "diff_levels":[-80, -60, -40, -30, -20, -10, -5, 0, 5, 10, 20, 30, 40, 60, 80],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_CERES-EBAF",
@@ -206,7 +206,7 @@
       "diff_levels":[120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 280, 290, 300, 310],
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_CERES-EBAF",
@@ -217,7 +217,7 @@
       "contour_levels":[0, 25, 50, 75, 100, 125, 150, 175, 200, 240, 280, 320, 360, 400, 440],
       "diff_levels":[-80, -60, -40, -30, -20, -10, -5, 0, 5, 10, 20, 30, 40, 60, 80],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_CERES-EBAF",
@@ -228,7 +228,7 @@
       "region":["polar_S","polar_N"],
       "contour_levels":[-170, -150, -135, -120, -105, -90, -75, -60, -45, -30, -15, 0, 15, 30, 45],
       "diff_levels":[-80, -60, -40, -30, -20, -10, -5, 0, 5, 10, 20, 30, 40, 60, 80],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_CERES-EBAF",
@@ -239,7 +239,7 @@
       "contour_levels":[-170, -150, -135, -120, -105, -90, -75, -60, -45, -30, -15, 0, 15, 30, 45],
       "diff_levels":[-35, -30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_CERES-EBAF",
@@ -248,7 +248,7 @@
       "reference_name": "CERES-EBAF March 2000-Feb 2013",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ERBE",
@@ -259,7 +259,7 @@
       "contour_levels":[100, 115, 130, 145, 160, 175, 190, 205, 220, 235, 250, 265, 280, 295, 310],
       "diff_levels":[-60, -50, -40, -30, -20, -10, -5, 0, 5, 10, 20, 30, 40, 50, 60],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ERBE",
@@ -270,7 +270,7 @@
       "diff_levels":[-80, -60, -40, -30, -20, -10, -5, 0, 5, 10, 20, 30, 40, 60, 80],
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ERBE",
@@ -281,7 +281,7 @@
       "diff_levels":[120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 280, 290, 300, 310],
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ERBE",
@@ -292,7 +292,7 @@
       "contour_levels":[0, 25, 50, 75, 100, 125, 150, 175, 200, 240, 280, 320, 360, 400, 440],
       "diff_levels":[-80, -60, -40, -30, -20, -10, -5, 0, 5, 10, 20, 30, 40, 60, 80],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ERBE",
@@ -303,7 +303,7 @@
       "region":["polar_S","polar_N"],
       "contour_levels":[-170, -150, -135, -120, -105, -90, -75, -60, -45, -30, -15, 0, 15, 30, 45],
       "diff_levels":[-80, -60, -40, -30, -20, -10, -5, 0, 5, 10, 20, 30, 40, 60, 80],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ERBE",
@@ -314,7 +314,7 @@
       "contour_levels":[-170, -150, -135, -120, -105, -90, -75, -60, -45, -30, -15, 0, 15, 30, 45],
       "diff_levels":[-35, -30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ERBE",
@@ -323,7 +323,7 @@
       "reference_name": "ERBE Feb1985-Apr1989",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ISCCPFD",
@@ -332,7 +332,7 @@
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ISCCPFD",
@@ -341,7 +341,7 @@
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ISCCPFD",
@@ -350,7 +350,7 @@
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ISCCPFD",
@@ -359,7 +359,7 @@
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ISCCPFD",
@@ -368,7 +368,7 @@
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ISCCPFD",
@@ -379,7 +379,7 @@
       "contour_levels":[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150],
       "diff_levels":[-70, -50, -40, -30, -20, -10, -5, 0, 5, 10, 20, 30, 40, 50, 70],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ISCCPFD",
@@ -388,7 +388,7 @@
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ISCCPFD",
@@ -399,7 +399,7 @@
       "contour_levels":[0, 25, 50, 75, 100, 125, 150, 175, 200, 220, 240, 260, 280, 300, 320],
       "diff_levels":[-100, -75, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 75, 100] ,
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ISCCPFD",
@@ -408,7 +408,7 @@
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ISCCPFD",
@@ -419,7 +419,7 @@
       "region":["polar_S","polar_N"],
       "contour_levels":[-195, -180, -165, -150, -135, -120, -105, -90, -75, -60, -45, -30, -15, -5, 0],
       "diff_levels":[-80, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 80],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_ISCCPFD",
@@ -430,7 +430,7 @@
       "reference_name": "ISCCP FD Jul1983-Dec2000",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_WARREN",
@@ -439,7 +439,7 @@
       "reference_name": "Warren Cloud Surface OBS",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_WARREN",
@@ -448,7 +448,7 @@
       "reference_name": "Warren Cloud Surface OBS",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_CLOUDSAT",
@@ -457,7 +457,7 @@
       "reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_CLOUDSAT",
@@ -466,7 +466,7 @@
       "reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_CLOUDSAT",
@@ -475,7 +475,7 @@
       "reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
           {
       "case_id": "set5_CLOUDSAT",
@@ -484,7 +484,7 @@
       "reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": []
+      "plevs": []
                 },
            {
       "case_id": "set5_MERRA",
@@ -492,7 +492,7 @@
       "ref_name": "MERRA",
       "reference_name": "MERRA Analysis 1979-2013 NASA",
       "season": ["ANN"],
-      "levels": [200.0,850.0],
+      "plevs": [200.0,850.0],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -501,7 +501,7 @@
       "ref_name": "MERRA",
       "reference_name": "MERRA Analysis 1979-2013 NASA",
       "season": ["ANN"],
-      "levels": [200.0],
+      "plevs": [200.0],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -510,7 +510,7 @@
       "ref_name": "MERRA",
       "reference_name": "MERRA Analysis 1979-2013 NASA",
       "season": ["ANN"],
-      "levels": [300.0,500.0],
+      "plevs": [300.0,500.0],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -521,7 +521,7 @@
       "season": ["ANN"],
       "contour_levels":[4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60],
       "diff_levels":[-12, -9, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 9, 12],
-      "levels": [],
+      "plevs": [],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -530,7 +530,7 @@
       "ref_name": "MERRA",
       "reference_name": "MERRA Analysis 1979-2013 NASA",
       "season": ["ANN"],
-      "levels": [],
+      "plevs": [],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -541,7 +541,7 @@
       "season": ["ANN"],
       "contour_levels":[0, 15, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390],
       "diff_levels":[-150, -120, -90, -60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 120, 150],
-      "levels": [],
+      "plevs": [],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -552,7 +552,7 @@
       "season": ["ANN"],
       "contour_levels":[4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60],
       "diff_levels":[-12, -9, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 9, 12],
-      "levels": [],
+      "plevs": [],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -561,7 +561,7 @@
       "ref_name": "ERA40",
       "reference_name": "ERA40 Reanalysis 1980-2001",
       "season": ["ANN"],
-      "levels": [200.0],
+      "plevs": [200.0],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -570,7 +570,7 @@
       "ref_name": "ERA40",
       "reference_name": "ERA40 Reanalysis 1980-2001",
       "season": ["ANN"],
-      "levels": [300.0,500.0],
+      "plevs": [300.0,500.0],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -579,7 +579,7 @@
       "ref_name": "ERA40",
       "reference_name": "ERA40 Reanalysis 1980-2001",
       "season": ["ANN"],
-      "levels": [850.0,200.0],
+      "plevs": [850.0,200.0],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -590,7 +590,7 @@
       "season": ["ANN"],
       "contour_levels":[0, 15, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390],
       "diff_levels":[-150, -120, -90, -60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 120, 150],
-      "levels": [],
+      "plevs": [],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -599,7 +599,7 @@
       "ref_name": "ERAI",
       "reference_name": "ERA-Interim Reanalysis 1989-2005",
       "season": ["ANN"],
-      "levels": [],
+      "plevs": [],
       "contour_levels":[0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17],
       "diff_levels":[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6],
       "region":["polar_S","polar_N"]
@@ -612,7 +612,7 @@
       "season": ["ANN"],
       "contour_levels":[4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60],
       "diff_levels":[-12, -9, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 9, 12],
-      "levels": [],
+      "plevs": [],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -621,7 +621,7 @@
       "ref_name": "ERAI",
       "reference_name": "ERA-Interim Reanalysis 1989-2005",
       "season": ["ANN"],
-      "levels": [200.0],
+      "plevs": [200.0],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -630,7 +630,7 @@
       "ref_name": "ERAI",
       "reference_name": "ERA-Interim Reanalysis 1989-2005",
       "season": ["ANN"],
-      "levels": [300.0,500.0],
+      "plevs": [300.0,500.0],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -639,7 +639,7 @@
       "ref_name": "ERAI",
       "reference_name": "ERA-Interim Reanalysis 1989-2005",
       "season": ["ANN"],
-      "levels": [850.0,200.0],
+      "plevs": [850.0,200.0],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -650,7 +650,7 @@
       "season": ["ANN"],
       "contour_levels":[0, 15, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390],
       "diff_levels":[-150, -120, -90, -60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 120, 150],
-      "levels": [],
+      "plevs": [],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -659,7 +659,7 @@
       "ref_name": "JRA25",
       "reference_name": "JRA25 Reanalysis 1979-2004",
       "season": ["ANN"],
-      "levels": [],
+      "plevs": [],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -668,7 +668,7 @@
       "ref_name": "JRA25",
       "reference_name": "JRA25 Reanalysis 1979-2004",
       "season": ["ANN"],
-      "levels": [],
+      "plevs": [],
       "contour_levels":[210, 220, 230, 240, 250, 260, 270, 275, 280, 285, 290, 295, 300, 305, 310],
       "diff_levels":[-5, -4, -3, -2, -1, -0.5, -0.2, 0, 0.2, 0.5, 1, 2, 3, 4, 5],
       "region":["polar_S","polar_N"]
@@ -681,7 +681,7 @@
       "season": ["ANN"],
       "contour_levels":[4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60],
       "diff_levels":[-12, -9, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 9, 12],
-      "levels": [],
+      "plevs": [],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -690,7 +690,7 @@
       "ref_name": "JRA25",
       "reference_name": "JRA25 Reanalysis 1979-2004",
       "season": ["ANN"],
-      "levels": [],
+      "plevs": [],
       "contour_levels":[210, 220, 230, 240, 250, 260, 270, 275, 280, 285, 290, 295, 300, 305, 310],
       "diff_levels":[-5, -4, -3, -2, -1, -0.5, -0.2, 0, 0.2, 0.5, 1, 2, 3, 4, 5],
       "region":["polar_S","polar_N"]
@@ -701,7 +701,7 @@
       "ref_name": "JRA25",
       "reference_name": "JRA25 Reanalysis 1979-2004",
       "season": ["ANN"],
-      "levels": [200.0],
+      "plevs": [200.0],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -710,7 +710,7 @@
       "ref_name": "JRA25",
       "reference_name": "JRA25 Reanalysis 1979-2004",
       "season": ["ANN"],
-      "levels": [300.0,500.0],
+      "plevs": [300.0,500.0],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -719,7 +719,7 @@
       "ref_name": "JRA25",
       "reference_name": "JRA25 Reanalysis 1979-2004",
       "season": ["ANN"],
-      "levels": [850.0,200.0],
+      "plevs": [850.0,200.0],
       "region":["polar_S","polar_N"]
                 },
           {
@@ -729,7 +729,7 @@
       "reference_name": "AIRS IR Sounder 2002-06",
       "season": ["ANN"],
       "region":["polar_S","polar_N"],
-      "levels": [200.0,850.0]
+      "plevs": [200.0,850.0]
                } 
            ] 
 }
