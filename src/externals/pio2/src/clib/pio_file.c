@@ -106,8 +106,10 @@ int PIOc_createfile(int iosysid, int *ncidp, int *iotype, const char *filename,
         return pio_err(ios, NULL, ret, __FILE__, __LINE__);
 
     /* Run this on all tasks if async is not in use, but only on
-     * non-IO tasks if async is in use. */
-    if (!ios->async_interface || !ios->ioproc)
+     * non-IO tasks if async is in use. (Because otherwise, in async
+     * mode, set_fill would be called twice by each IO task, since
+     * PIOc_createfile() will already be called on each IO task.) */
+    if (!ios->async || !ios->ioproc)
     {
         /* Set the fill mode to NOFILL. */
         if ((ret = PIOc_set_fill(*ncidp, NC_NOFILL, NULL)))
@@ -174,7 +176,7 @@ int PIOc_closefile(int ncid)
 
     /* Sync changes before closing on all tasks if async is not in
      * use, but only on non-IO tasks if async is in use. */
-    if (!ios->async_interface || !ios->ioproc)
+    if (!ios->async || !ios->ioproc)
         if (file->mode & PIO_WRITE)
             PIOc_sync(ncid);
 
@@ -182,7 +184,7 @@ int PIOc_closefile(int ncid)
      * sends a msg to the pio_msg_handler running on the IO master and
      * waiting for a message. Then broadcast the ncid over the intercomm
      * to the IO tasks. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {
@@ -264,7 +266,7 @@ int PIOc_deletefile(int iosysid, const char *filename)
         return pio_err(NULL, NULL, PIO_EBADID, __FILE__, __LINE__);
 
     /* If async is in use, send message to IO master task. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {
@@ -338,7 +340,7 @@ int PIOc_sync(int ncid)
     ios = file->iosystem;
 
     /* If async is in use, send message to IO master tasks. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {
@@ -366,7 +368,9 @@ int PIOc_sync(int ncid)
         wmb = &file->buffer;
         while (wmb)
         {
-            if (wmb->validvars > 0)
+            /* If there are any data arrays waiting in the
+             * multibuffer, flush it. */
+            if (wmb->num_arrays > 0)
                 flush_buffer(ncid, wmb, true);
             twmb = wmb;
             wmb = wmb->next;
