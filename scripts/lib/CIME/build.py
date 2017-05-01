@@ -301,6 +301,7 @@ def _build_model_thread(config_dir, compclass, caseroot, libroot, bldroot, incro
                         thread_bad_results, smp, compiler):
 ###############################################################################
     logger.info("Building %s with output to %s"%(compclass, file_build))
+    t1 = time.time()
     with open(file_build, "w") as fd:
         stat = run_cmd("MODEL=%s SMP=%s %s/buildlib %s %s %s " %
                        (compclass, stringify_bool(smp), config_dir, caseroot, libroot, bldroot),
@@ -313,6 +314,8 @@ def _build_model_thread(config_dir, compclass, caseroot, libroot, bldroot, incro
     for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
         shutil.copy(mod_file, incroot)
 
+    t2 = time.time()
+    logger.info("%s built in %f seconds" % (compclass, (t2 - t1)))
 
 ###############################################################################
 def _clean_impl(case, cleanlist, clean_all):

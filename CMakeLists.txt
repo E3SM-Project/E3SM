@@ -2,13 +2,15 @@ cmake_minimum_required(VERSION 2.8)
 include(ExternalProject)
 set(CIME_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
+list(APPEND CMAKE_MODULE_PATH ${CIME_CMAKE_MODULE_DIRECTORY})
+include(CIME_initial_setup)
+
 project(cime_tests Fortran C)
 
 # We rely on pio for cmake utilities like findnetcdf.cmake, so that we don't
 # need to duplicate this cmake code
 list(APPEND CMAKE_MODULE_PATH "${CIME_ROOT}/src/externals/pio2/cmake")
 
-list(APPEND CMAKE_MODULE_PATH ${CIME_CMAKE_MODULE_DIRECTORY})
 include(CIME_utils)
 find_package(NetCDF COMPONENTS C Fortran)
 include_directories(${NetCDF_C_INCLUDE_DIRS} ${NetCDF_Fortran_INCLUDE_DIRS})
@@ -21,14 +23,21 @@ include_directories(${NetCDF_C_INCLUDE_DIRS} ${NetCDF_Fortran_INCLUDE_DIRS})
 # ------------------------------------------------------------------------
 set(MCT_ROOT "${CIME_ROOT}/src/externals/mct")
 
+if (USE_MPI_SERIAL)
+  set(ENABLE_MPI_SERIAL "--enable-mpiserial")
+else()
+  set(ENABLE_MPI_SERIAL "")
+endif()
+
 ExternalProject_add(mct_project
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}
   SOURCE_DIR ${MCT_ROOT}
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/mct
-  CONFIGURE_COMMAND ${MCT_ROOT}/configure --enable-debugging --prefix=${CMAKE_CURRENT_BINARY_DIR} CFLAGS=${CFLAGS} FCFLAGS=${FFLAGS} SRCDIR=${MCT_ROOT} DEBUG="-g"
-  BUILD_COMMAND $(MAKE)
+  CONFIGURE_COMMAND ${MCT_ROOT}/configure ${ENABLE_MPI_SERIAL} --enable-debugging --prefix=${CMAKE_CURRENT_BINARY_DIR} CC=${CMAKE_C_COMPILER} FC=${CMAKE_Fortran_COMPILER} CFLAGS=${CFLAGS} FCFLAGS=${FFLAGS} SRCDIR=${MCT_ROOT} DEBUG="-g"
+  BUILD_COMMAND $(MAKE) SRCDIR=${MCT_ROOT}
   # Leave things in <BINARY_DIR> rather than "installing", because we have
-  # no need to move things around inside of the CMake binary directory.
+  # no need to move things around inside of the CMake binary directory. Also,
+  # mpi-serial doesn't install properly in the out-of-source build
   INSTALL_COMMAND :
   )
 # This copy_makefiles step is needed because mct currently doesn't support an
@@ -43,12 +52,27 @@ ExternalProject_add_step(mct_project copy_makefiles
   COMMAND mkdir -p mpeu
   COMMAND cp -p <SOURCE_DIR>/mpeu/Makefile mpeu/
   )
+if (USE_MPI_SERIAL)
+  ExternalProject_add_step(mct_project copy_mpi_serial_files
+    DEPENDEES configure
+    DEPENDERS build
+    WORKING_DIRECTORY <BINARY_DIR>
+    COMMAND mkdir -p mpi-serial
+    COMMAND cp -p <SOURCE_DIR>/mpi-serial/Makefile mpi-serial/
+    COMMAND cp <SOURCE_DIR>/mpi-serial/mpif.h mpi-serial/
+    COMMAND cp <SOURCE_DIR>/mpi-serial/mpi.h mpi-serial/
+    )
+endif()
 
 # Tell cmake to look for libraries & mod files here, because this is where we built libraries
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mct)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpeu)
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mct)
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpeu)
+if (USE_MPI_SERIAL)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpi-serial)
+  link_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpi-serial)
+endif()
 
 # ------------------------------------------------------------------------
 # Done MCT build

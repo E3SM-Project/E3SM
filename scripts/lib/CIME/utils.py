@@ -45,7 +45,7 @@ def check_name(fullname, additional_chars=None, fullpath=False):
     True
     """
 
-    chars = '<>/{}[\]~`@' # pylint: disable=anomalous-backslash-in-string
+    chars = '<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
     if additional_chars is not None:
         chars += additional_chars
     if fullpath:
@@ -259,7 +259,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
     if stat != 0:
         # If command produced no errput, put output in the exception since we
         # have nothing else to go on.
-        errput = output if errput == "" else errput
+        errput = output if not errput else errput
         expect(False, "Command: '%s' failed with error '%s'%s" %
                (cmd, errput, "" if from_dir is None else " from dir '%s'" % from_dir))
 
@@ -714,9 +714,9 @@ def convert_to_type(value, type_str, vid=""):
                 expect(False, "Entry %s was listed as type int but value '%s' is not valid int" % (vid, value))
 
         elif type_str == "logical":
-            expect(value in ["TRUE", "FALSE","true","false"],
+            expect(value.upper() in ["TRUE", "FALSE"],
                    "Entry %s was listed as type logical but had val '%s' instead of TRUE or FALSE" % (vid, value))
-            value = value == "TRUE" or value == "true"
+            value = value.upper() == "TRUE"
 
         elif type_str == "real":
             try:
@@ -726,6 +726,36 @@ def convert_to_type(value, type_str, vid=""):
 
         else:
             expect(False, "Unknown type '%s'" % type_str)
+
+    return value
+
+def convert_to_unknown_type(value):
+    """
+    Convert value to it's real type by probing conversions.
+    """
+    if value is not None:
+
+        # Attempt to convert to logical
+        if value.upper() in ["TRUE", "FALSE"]:
+            return value.upper() == "TRUE"
+
+        # Attempt to convert to integer
+        try:
+            value = int(eval(value))
+        except:
+            pass
+        else:
+            return value
+
+        # Attempt to convert to float
+        try:
+            value = float(value)
+        except:
+            pass
+        else:
+            return value
+
+        # Just treat as string
 
     return value
 
@@ -786,6 +816,25 @@ def convert_to_babylonian_time(seconds):
     seconds %= 60
 
     return "%02d:%02d:%02d" % (hours, minutes, seconds)
+
+def get_time_in_seconds(timeval, unit):
+    """
+    Convert a time from 'unit' to seconds
+    """
+    if 'nyear' in unit:
+        dmult = 365 * 24 * 3600
+    elif 'nmonth' in unit:
+        dmult = 30 * 24 * 3600
+    elif 'nday' in unit:
+        dmult = 24 * 3600
+    elif 'nhour' in unit:
+        dmult = 3600
+    elif 'nminute' in unit:
+        dmult = 60
+    else:
+        dmult = 1
+
+    return dmult * timeval
 
 def compute_total_time(job_cost_map, proc_pool):
     """
@@ -1172,7 +1221,7 @@ def run_and_log_case_status(func, phase, caseroot='.'):
     try:
         rv = func()
     except:
-        e = sys.exc_info()[0]
+        e = sys.exc_info()[1]
         append_case_status(phase, "error", msg=("\n%s" % e), caseroot=caseroot)
         raise
     else:
