@@ -539,7 +539,6 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
    integer(IN)   :: nl                ! ocn frac index
    integer(IN)   :: lsize           ! size of attr vect
    integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
-   logical       :: glcrun_alarm      ! is glc going to run now
    logical       :: newdata           ! has newdata been read
    logical       :: mssrmlf           ! remove old data
    integer(IN)   :: idt               ! integer timestep

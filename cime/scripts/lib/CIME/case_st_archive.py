@@ -43,11 +43,11 @@ def _get_ninst_info(case, compclass):
     ninst_strings = []
     if ninst is None:
         ninst = 1
-        for i in range(ninst):
-            if ninst > 1:
-                ninst_strings.append('_' + '%04d' % i)
-            else:
-                ninst_strings.append('')
+    for i in range(1,ninst+1):
+        if ninst > 1:
+            ninst_strings.append('_' + '%04d' % i)
+        else:
+            ninst_strings.append('')
 
     logger.debug("ninst and ninst_strings are: %s and %s for %s" %(ninst, ninst_strings, compclass))
     return ninst, ninst_strings
@@ -120,7 +120,7 @@ def _archive_log_files(case):
         srcfile = join(rundir, os.path.basename(logfile))
         destfile = join(archive_logdir, os.path.basename(logfile))
         shutil.move(srcfile, destfile)
-        logger.info("moving \b%s to \b%s" %(srcfile, destfile))
+        logger.info("moving \n%s to \n%s" %(srcfile, destfile))
 
 
 ###############################################################################
@@ -231,7 +231,7 @@ def _archive_restarts(case, archive, archive_entry,
         for i in range(ninst):
             restfiles = ""
             pattern = r"%s\.%s\d*.*" % (casename, compname)
-            if pattern != "dart":
+            if "dart" not in pattern:
                 pfile = re.compile(pattern)
                 files = [f for f in os.listdir(rundir) if pfile.search(f)]
                 if ninst_strings:

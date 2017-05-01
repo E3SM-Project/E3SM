@@ -48,8 +48,9 @@ _TEST_SUITES = {
                              "ERP.f45_g37_rx1.A",
                              "SMS_D_Ln9.f19_g16_rx1.A",
                              "DAE.f19_f19.A",
-                             "SMS.T42_T42.S")
-#                             "PRE.f19_f19.ADESP")
+                             "PET_P32.f19_f19.A",
+                             "SMS.T42_T42.S",
+                             "PRE.f45_g37_rx1.ADESP")
                             ),
 
     #

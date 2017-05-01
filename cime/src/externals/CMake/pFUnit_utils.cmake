@@ -215,7 +215,8 @@ function(create_pFUnit_test test_name executable_name pf_file_list fortran_sourc
   endif()
 
   # Prefix command with an mpirun command
-  set (MY_COMMAND ${PFUNIT_MPIRUN} ${MY_COMMAND})
+  separate_arguments(PFUNIT_MPIRUN_LIST UNIX_COMMAND ${PFUNIT_MPIRUN})
+  set (MY_COMMAND ${PFUNIT_MPIRUN_LIST} ${MY_COMMAND})
 
   # Do the work
   add_pFUnit_executable(${executable_name} "${pf_file_list}"

@@ -28,6 +28,12 @@ Sourcelist_utils - Use source file lists defined over multiple directories.
 
 Modules that are CESM-specific and/or incomplete:
 
-CIME_utils - Handles a few options, and includes several other modules.
+CIME\_initial\_setup - Handles setup that must be done before the 'project'
+line. This must be included before the 'project' line in the main CMakeLists.txt
+file.
+
+CIME_utils - Handles a few options, and includes several other modules. This
+must be included after the 'project' line in the main CMakeLists.txt file, and
+after the inclusion of CIME\_initial\_setup.
 
 Compilers - Specify compiler-specific behavior, add build types for CESM.
