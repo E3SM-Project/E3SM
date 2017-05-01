@@ -18,6 +18,7 @@ module cice_column
   use mpas_timer
   use mpas_log, only: mpas_log_write
 
+  use cice_error, only: cice_critical_error
   use cice_debug
 
   use ice_kinds_mod, only: &
@@ -834,11 +835,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_predynamics_time_integration(domain, clock)
+  subroutine cice_column_predynamics_time_integration(domain, clock, ierr)
 
     type(domain_type), intent(inout) :: domain
 
     type(MPAS_clock_type), intent(in) :: clock
+
+    integer, intent(inout) :: ierr
 
     logical, pointer :: &
          config_use_column_package, &
@@ -881,7 +884,8 @@ contains
 
        call mpas_timer_start("Column vertical thermodynamics")
        if (config_use_column_vertical_thermodynamics) &
-            call column_vertical_thermodynamics(domain, clock)
+            call column_vertical_thermodynamics(domain, clock, ierr)
+       if (ierr > 0) return
        call mpas_timer_stop("Column vertical thermodynamics")
 
        !-----------------------------------------------------------------
@@ -1053,7 +1057,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine column_vertical_thermodynamics(domain, clock)
+  subroutine column_vertical_thermodynamics(domain, clock, ierr)
 
     use ice_colpkg, only: &
          colpkg_step_therm1, &
@@ -1066,6 +1070,8 @@ contains
     type(domain_type), intent(inout) :: domain
 
     type(MPAS_clock_type), intent(in) :: clock
+
+    integer, intent(inout) :: ierr
 
     type(block_type), pointer :: block
 
@@ -1613,7 +1619,9 @@ contains
           ! code abort
           if (abortFlag) then
              call mpas_log_write("column_vertical_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
+             call cice_critical_error(domain, block, ierr)
+             return
           endif
 
           ! aerosol

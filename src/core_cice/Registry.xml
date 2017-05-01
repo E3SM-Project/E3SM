@@ -195,6 +195,7 @@
 		<nml_option name="config_write_output_on_startup"	type="logical"		default_value="false"/>
 		<nml_option name="config_test_case_diag"		type="logical"		default_value="false"/>
 		<nml_option name="config_test_case_diag_type"		type="character"	default_value="none"/>
+		<nml_option name="config_full_abort_write"		type="logical"		default_value="true"/>
 	</nml_record>
 	<nml_record name="decomposition" in_defaults="true">
 		<nml_option name="config_block_decomp_file_prefix"	type="character"	default_value="graphs/graph.info.part."/>
@@ -768,6 +769,43 @@
 			<var name="pointCellGlobalID"/>
 			<var name="pointVertexGlobalID"/>
 		</stream>
+
+		<stream name="abort_contents"
+				type="none"
+				filename_template="abort_variables.nc"
+				immutable="true">
+
+			<var name="iceAreaCell"/>
+		</stream>
+
+		<stream name="abort_block"
+				type="output"
+				filename_template="abort_seaice_block_$B.nc"
+				filename_interval="none"
+				clobber_mode="truncate"
+				output_interval="none"
+				runtime_format="single_file">
+
+			<stream name="mesh"/>
+			<var name="daysSinceStartOfSim"/>
+			<var name="xtime"/>
+			<stream name="abort_contents"/>
+		</stream>
+
+		<stream name="abort"
+				type="output"
+				filename_template="abort_seaice_$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="none"
+				clobber_mode="truncate"
+				output_interval="none"
+				runtime_format="single_file">
+
+			<stream name="mesh"/>
+			<var name="daysSinceStartOfSim"/>
+			<var name="xtime"/>
+			<stream name="abort_contents"/>
+		</stream>
+
 	</streams>
 
 	<var_struct name="mesh" time_levs="1">

@@ -24,13 +24,16 @@ OBJS = 	mpas_cice_time_integration.o \
 	mpas_cice_constants.o \
 	mpas_cice_column.o \
 	mpas_cice_history.o \
-	mpas_cice_diagnostics.o
+	mpas_cice_diagnostics.o \
+	mpas_cice_error.o
 
 all: $(OBJS)
 
 mpas_cice_constants.o: 
 
-mpas_cice_column.o:
+mpas_cice_error.o:
+
+mpas_cice_column.o: mpas_cice_error.o
 
 mpas_cice_history.o:
 
