@@ -17,7 +17,7 @@ requirements:
     - setuptools
 
   run:
-    - cdp
+    - cdp 2017.04.26
     - vcs
     - cdms2
     - cdutil
@@ -26,6 +26,8 @@ requirements:
     - output_viewer
     - matplotlib 1.5.1
     - cartopy
+    - mesalib <8
+    - ffmpeg <3
 
 about:
     home: https://github.com/zshaheen/acme-diags

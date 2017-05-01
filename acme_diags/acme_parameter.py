@@ -3,18 +3,19 @@ import cdp.cdp_parameter
 
 class ACMEParameter(cdp.cdp_parameter.CDPParameter):
     def __init__(self):
+        self.results_dir = '.'
         self.case_id = ''
         self.reference_data_path = ''
         self.test_data_path = ''
-        self.reference_name = ''  # TODO: keep either this or ref_name
+        self.reference_name = ''
         self.test_name = ''
 
-        self.variables = ''  # TODO: make this a list
+        self.variables = []
         self.season = []
-        self.region = ''
+        self.region = []
         self.regrid_tool = 'esmf'
         self.regrid_method = 'linear'
-        self.levels = []  # TODO: change to plev
+        self.plevs = []
 
         # Plotting related
         self.main_title = 'Main Title'
