@@ -10,7 +10,7 @@ import cdutil
 import genutil
 import cdms2
 import MV2
-from acme_diags import acme_viewer
+from acme_diags.acme_viewer import create_viewer
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_parameter import ACMEParameter
 #from acme_diags.plotting.set5.plot import plot
@@ -428,7 +428,7 @@ for parameter in parameters:
                                            diff, metrics_dict, parameter)
                         else:
                             plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                        save_ncfiles(mv1_domain, mv2_domain, diff, parameter)\
+                        save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
 
                 f_in.close()
             
@@ -438,4 +438,4 @@ for parameter in parameters:
         f_obs.close()
         f_mod.close()
 
-acme_viewer.create_viewer(original_parameter.results_dir, parameters, 'png')
+create_viewer(original_parameter.results_dir, parameters, 'png')
