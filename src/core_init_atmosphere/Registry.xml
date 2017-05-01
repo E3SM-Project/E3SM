@@ -379,6 +379,7 @@
                         packages="initial_conds"
                         immutable="true">
 
+                        <var name="initial_time" packages="met_stage_out"/>
                         <var name="xtime"/>
                         <var name="latCell"/>
                         <var name="lonCell"/>
@@ -653,6 +654,8 @@
         </var_struct>
 
         <var_struct name="state" time_levs="1">
+                <var name="initial_time" type="text" dimensions="" units="YYYY-MM-DD_hh:mm:ss"
+                     description="Model initialization time"/>
                 <var name="xtime"                      type="text"     dimensions="Time"/>
                 <var name="u"                          type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="w"                          type="real"     dimensions="nVertLevelsP1 nCells Time"/>
