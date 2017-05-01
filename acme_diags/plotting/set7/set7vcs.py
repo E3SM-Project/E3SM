@@ -139,7 +139,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     test_isofill.missing = 'grey'
     diff_isofill = vcs.getisofill('diff_isofill')
     diff_isofill.missing = 'grey'
-    if parameter.var_region.lower().find('ploar') !=-1:
+    if parameter.var_region.lower().find('polar') !=-1:
     
         reference_isofill.projection = 'polar'
         test_isofill.projection = 'polar'
