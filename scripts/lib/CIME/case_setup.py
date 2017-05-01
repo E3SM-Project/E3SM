@@ -59,7 +59,7 @@ def _build_usernl_files(case, model, comp):
                     shutil.copy(model_nl, nlfile)
 
 ###############################################################################
-def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, adjust_pio=True):
+def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 ###############################################################################
     os.chdir(caseroot)
 
@@ -163,8 +163,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
 
             # Make sure pio settings are consistent
             tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
-            if adjust_pio:
-                adjust_pio_layout(case, tasks_per_node)
 
             case.initialize_derived_attributes()
 
@@ -221,29 +219,12 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
         env_module.make_env_mach_specific_file(compiler, debug, mpilib, "csh")
         env_module.save_all_env_info("software_environment.txt")
 
-def adjust_pio_layout(case, new_pio_stride):
-
-    models = case.get_values("COMP_CLASSES")
-    for comp in models:
-        pio_stride = case.get_value("PIO_STRIDE_%s"%comp)
-        pio_numtasks = case.get_value("PIO_NUMTASKS_%s"%comp)
-        ntasks = case.get_value("NTASKS_%s"%comp)
-        new_stride = min(ntasks, new_pio_stride)
-        new_numtasks = max(1, ntasks//new_stride)
-        if pio_stride != new_stride:
-            logger.info("Resetting  PIO_STRIDE_%s to %s"%(comp, new_stride))
-            case.set_value("PIO_STRIDE_%s"%comp, new_stride)
-        if pio_numtasks != new_numtasks:
-            logger.info("Resetting  PIO_NUMTASKS_%s to %s"%(comp, new_numtasks))
-            case.set_value("PIO_NUMTASKS_%s"%comp, new_numtasks)
-
-
 ###############################################################################
-def case_setup(case, clean=False, test_mode=False, reset=False, adjust_pio=True):
+def case_setup(case, clean=False, test_mode=False, reset=False):
 ###############################################################################
     caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
     phase = "setup.clean" if clean else "case.setup"
-    functor = lambda: _case_setup_impl(case, caseroot, clean, test_mode, reset, adjust_pio)
+    functor = lambda: _case_setup_impl(case, caseroot, clean, test_mode, reset)
 
     if case.get_value("TEST") and not test_mode:
         test_name = casebaseid if casebaseid is not None else case.get_value("CASE")

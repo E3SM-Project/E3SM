@@ -17,7 +17,6 @@ import argparse, doctest
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
-    cime_model = CIME.utils.get_model()
     parser = argparse.ArgumentParser(description=description)
     CIME.utils.setup_standard_logging_options(parser)
 

@@ -296,12 +296,9 @@ class EnvBatch(EnvBase):
                 continue
             try:
                 prereq = self.get_value('prereq', subgroup=job, resolved=False)
-                if prereq is None or job == firstjob:
+                if prereq is None or job == firstjob or (dry_run and prereq == "$BUILD_COMPLETE"):
                     prereq = True
                 else:
-                    if dry_run:
-                        # Assume build is complete
-                        prereq = prereq.replace("$BUILD_COMPLETE", "True")
                     prereq = case.get_resolved_value(prereq)
                     prereq = eval(prereq)
             except:
