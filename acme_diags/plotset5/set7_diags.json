@@ -7,7 +7,7 @@
       "ref_name": "GPCP",
       "reference_name": "GPCP",
       "season": ["ANN"],
-      "region": ["polar_S"],
+      "region": ["polar_N"],
       "levels": []
                }, 
           {

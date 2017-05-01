@@ -335,8 +335,13 @@ for parameter in parameters:
                         #x=vcs.init()
                         #polar = vcs.createisofill()
                         #polar.projection = 'polar'
-                        #datawc_y1 = -90  #this should extracted from selected domain
-                        #datawc_y2 = -55
+                        #print mv1_domain.getLatitude()[0],mv1_domain.getLatitude()[-1]
+                        #if region == 'polar_S': 
+                        #    polar.datawc_y1 = -90  #this should extracted from selected domain
+                        #    polar.datawc_y2 = -55
+                        #elif region == 'polar_N':
+                        #    polar.datawc_y1 = 90  #this should extracted from selected domain
+                        #    polar.datawc_y2 = 50
                         #x.plot(mv1_domain,polar)
                         
                     if season is seasons[0]:
