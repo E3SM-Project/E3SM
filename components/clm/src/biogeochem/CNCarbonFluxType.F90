@@ -307,15 +307,6 @@ module CNCarbonFluxType
      real(r8), pointer :: lf_conv_cflux_col                         (:)     ! (gC/m2/s) conversion C flux due to BET and BDT area decreasing (immediate loss to atm)
      real(r8), pointer :: somc_fire_col                             (:)     ! (gC/m2/s) carbon emissions due to peat burning
 
-     ! decomposition fluxes
-     ! (FATES-INTERF) FATES passes in BCs to update a portion of the following terms:
-     ! CDK put these in the restart, but the base variable decomp_cpools_sourcesink_col
-     ! is not in the restart. Checking with CDK as to why the fates side variable required restart.
-     !! cf_soil%decomp_cpools_sourcesink_col(c,j,i_met_lit)
-     !! cf_soil%decomp_cpools_sourcesink_col(c,j,i_cel_lit)
-     !! cf_soil%decomp_cpools_sourcesink_col(c,j,i_lig_lit)
-
-
      real(r8), pointer :: decomp_cpools_sourcesink_col              (:,:,:) ! change in decomposing c pools. Used to update concentrations concurrently with vertical transport (gC/m3/timestep)  
      real(r8), pointer :: decomp_cascade_hr_vr_col                  (:,:,:) ! vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
      real(r8), pointer :: decomp_cascade_hr_col                     (:,:)   ! vertically-integrated (diagnostic) het. resp. from decomposing C pools (gC/m2/s)
