@@ -13,7 +13,8 @@ import MV2
 from acme_diags import acme_viewer
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_parameter import ACMEParameter
-from acme_diags.plotting.set5.plot import plot
+#from acme_diags.plotting.set5.plot import plot
+from acme_diags.plotting.set7.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
@@ -302,6 +303,7 @@ for parameter in parameters:
                     diff = mv1_reg - mv2_reg
                     metrics_dict = create_metrics(
                         mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
+                    parameter.var_region = region
                     if hasattr(parameter, 'plot'):
                         parameter.plot(mv2_domain, mv1_domain, diff,
                                        metrics_dict, parameter)
@@ -419,7 +421,8 @@ for parameter in parameters:
                         diff = mv1_reg - mv2_reg
                         metrics_dict = create_metrics(
                             mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
-    
+
+                        parameter.var_region = region
                         if hasattr(parameter, 'plot'):
                             parameter.plot(mv2_domain, mv1_domain,
                                            diff, metrics_dict, parameter)
