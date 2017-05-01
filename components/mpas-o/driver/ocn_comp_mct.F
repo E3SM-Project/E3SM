@@ -1012,7 +1012,7 @@ contains
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
 
-      call mpas_log_write('=== Completed ocn_run_mct. ===', flushNow=.true.)
+      call mpas_log_write('=== Completed coupling interval in ocn_run_mct. ===', flushNow=.true.)
 
 
 !-----------------------------------------------------------------------
