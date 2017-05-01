@@ -9,3 +9,7 @@
 	path = components/mpas-cice/model
 	url = git@github.com:ACME-Climate/MPAS.git
 	branch = cice/develop
+[submodule "components/clm/src/fates"]
+	path = components/clm/src/fates
+	url = git@github.com:ACME-Climate/fates.git
+	branch = release_head

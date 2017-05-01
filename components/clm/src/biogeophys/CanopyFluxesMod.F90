@@ -42,6 +42,7 @@ module CanopyFluxesMod
   use PatchType             , only : pft                
   use PhosphorusStateType   , only : phosphorusstate_type
   use CNNitrogenStateType   , only : nitrogenstate_type
+  use CLMFatesInterfaceMod  , only : hlm_fates_interface_type
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -66,7 +67,8 @@ contains
        atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars, &
        frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars, &
        temperature_vars, waterflux_vars, waterstate_vars, ch4_vars, photosyns_vars, &
-       soil_water_retention_curve, nitrogenstate_vars, phosphorusstate_vars) 
+       soil_water_retention_curve, nitrogenstate_vars, phosphorusstate_vars, &
+       clm_fates) 
     !
     ! !DESCRIPTION:
     ! 1. Calculates the leaf temperature:
@@ -129,7 +131,7 @@ contains
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
     type(nitrogenstate_type)  , intent(inout) :: nitrogenstate_vars
     type(phosphorusstate_type), intent(inout) :: phosphorusstate_vars
-    
+    type(hlm_fates_interface_type) , intent(inout) :: clm_fates
     !
     ! !LOCAL VARIABLES:
     real(r8), parameter :: btran0 = 0.0_r8  ! initial value
@@ -483,9 +485,7 @@ contains
 
 
       if (use_ed) then
-         ! (FATES-INTERF) put error call, flag for development
-         call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
-!!         call clm_fates%prep_canopyfluxes(nc, fn, filterp, photosyns_inst)
+         call clm_fates%prep_canopyfluxes( bounds )
       end if
 
 
@@ -561,10 +561,8 @@ contains
       ! --------------------------------------------------------------------------
       
       if(use_ed)then
-         ! (FATES-INTERF) put error call, flag for development
-         call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
-!!         call clm_fates%wrap_btran(nc, fn, filterc_tmp(1:fn), soilstate_inst, waterstate_inst, &
-!!              temperature_inst, energyflux_inst, soil_water_retention_curve)
+         call clm_fates%wrap_btran(bounds, fn, filterc_tmp(1:fn), soilstate_vars, waterstate_vars, &
+               temperature_vars, energyflux_vars, soil_water_retention_curve)
          
       else
    
@@ -774,7 +772,7 @@ contains
             ! Use pft parameter for leaf characteristic width
             ! dleaf_patch if this is not an ed patch.
             ! Otherwise, the value has already been loaded
-            ! during the FATES dynamics call
+            ! during the FATES dynamics and/or initialization call
             if(.not.pft%is_fates(p)) then  
                dleaf_patch(p) = dleaf(pft%itype(p))
             end if
@@ -851,12 +849,10 @@ contains
 
          if ( use_ed ) then      
 
-            ! (FATES-INTERF) put error call, flag for development
-            call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
-!!             call clm_fates%wrap_photosynthesis(nc, bounds, fn, filterp(1:fn), &
-!!                 svpts(begp:endp), eah(begp:endp), o2(begp:endp), &
-!!                 co2(begp:endp), rb(begp:endp), dayl_factor(begp:endp), &
-!!                 atm2lnd_inst, temperature_inst, canopystate_inst, photosyns_inst)
+            call clm_fates%wrap_photosynthesis(bounds, fn, filterp(1:fn), &
+                  svpts(begp:endp), eah(begp:endp), o2(begp:endp), &
+                  co2(begp:endp), rb(begp:endp), dayl_factor(begp:endp), &
+                  atm2lnd_vars, temperature_vars, canopystate_vars, photosyns_vars)
 
          else ! not use_ed
 
@@ -1201,11 +1197,9 @@ contains
       end do
 
       if ( use_ed ) then
-         ! (FATES-INTERF) put error call, flag for development
-         call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
-!!         call clm_fates%wrap_accumulatefluxes(nc,fn,filterp(1:fn))
-!!         call clm_fates%wrap_hydraulics_drive(bounds,nc,soilstate_inst, &
-!!               waterstate_inst,waterflux_inst,solarabs_inst,energyflux_inst)
+         call clm_fates%wrap_accumulatefluxes(bounds,fn,filterp(1:fn))
+         call clm_fates%wrap_hydraulics_drive(bounds,soilstate_vars, &
+               waterstate_vars,waterflux_vars,solarabs_vars,energyflux_vars)
 
       else
 
