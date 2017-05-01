@@ -27,7 +27,7 @@ def parse_command_line(args, description):
     parser.add_argument('--test', action='store_true',
                         help="Run preview_namelist in test mode.")
 
-    args = CIME.utils.handle_standard_logging_options(args, parser)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     return args
 

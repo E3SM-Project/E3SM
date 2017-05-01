@@ -637,7 +637,7 @@ class _LessThanFilter(logging.Filter):
         #non-zero return means we log this message
         return 1 if record.levelno < self.max_level else 0
 
-def handle_standard_logging_options(args, parser=None):
+def parse_args_and_handle_standard_logging_options(args, parser=None):
     """
     Guide to logging in CIME.
 

@@ -128,7 +128,7 @@ override the command provided by Machines."""
         help="""Path to an XML file listing directories to run tests from."""
         )
 
-    args = CIME.utils.handle_standard_logging_options(args, parser)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
     output = Printer(color=args.color)
 
     if args.xml_test_list is None and args.test_spec_dir is None:

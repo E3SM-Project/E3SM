@@ -78,7 +78,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-f","--force", action="store_true",
                         help="ignore typing checks and store value")
 
-    args = CIME.utils.handle_standard_logging_options(args, parser)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     listofsettings = []
     if( len(args.listofsettings )):
