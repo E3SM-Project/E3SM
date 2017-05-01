@@ -761,16 +761,16 @@ contains
        i_litr1 = 1
        i_litr2 = 2
        i_litr3 = 3
-       if (use_ed) then
-          i_soil1 = 4
-          i_soil2 = 5
-          i_soil3 = 6
-          i_soil4 = 7
-       else
+       if (.not.use_ed) then
           i_soil1 = 5
           i_soil2 = 6
           i_soil3 = 7
           i_soil4 = 8
+       else
+          i_soil1 = 4
+          i_soil2 = 5
+          i_soil3 = 6
+          i_soil4 = 7
        end if
 
        !--- time dependent coefficients-----!

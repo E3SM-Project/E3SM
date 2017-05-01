@@ -428,7 +428,7 @@ contains
       is_lignin                      (i_litr3) = .true.
 
       ! CWD
-      if (.not. use_ed) then
+      if (.not.use_ed) then
          floating_cn_ratio_decomp_pools (i_cwd)   = .true.
          floating_cp_ratio_decomp_pools (i_cwd)   = .true.
          decomp_pool_name_restart       (i_cwd)   = 'cwd'
@@ -749,14 +749,14 @@ contains
        i_litr1 = 1
        i_litr2 = 2
        i_litr3 = 3
-       if (use_ed) then
-          i_soil1 = 4
-          i_soil2 = 5
-          i_soil3 = 6
-       else
+       if (.not.use_ed) then
           i_soil1 = 5
           i_soil2 = 6
           i_soil3 = 7
+       else
+          i_soil1 = 4
+          i_soil2 = 5
+          i_soil3 = 6
        end if
 
       !--- time dependent coefficients-----!
@@ -1005,6 +1005,14 @@ contains
                decomp_k(c,j,i_soil3) = k_s3    * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j)
             end do
          end do
+         if (.not. use_ed) then
+            do j = 1,nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  decomp_k(c,j,i_cwd)   = k_frag  * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j)
+               end do
+            end do
+         end if
       else
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
@@ -1017,19 +1025,7 @@ contains
                decomp_k(c,j,i_soil3) = k_s3    * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j)
             end do
          end do
-      end if
-
-      ! do the same for cwd, but only if ed is not enabled, because ED handles CWD on its own structure
-      if (.not. use_ed) then
-         if (use_vertsoilc) then
-            do j = 1,nlevdecomp
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  decomp_k(c,j,i_cwd)   = k_frag  * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j)
-
-               end do
-            end do
-         else
+         if (.not. use_ed) then
             do j = 1,nlevdecomp
                do fc = 1,num_soilc
                   c = filter_soilc(fc)

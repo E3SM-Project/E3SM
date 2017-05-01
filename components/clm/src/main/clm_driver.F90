@@ -952,8 +952,6 @@ contains
            
         end if  ! end of if-use_ed
 
-        call t_stopf('ecosysdyn')
-
         ! ------------------------------------------------------------------------------
         ! Perform reduced capacity soil-bgc only calculations when FATES/ED is on
         ! ------------------------------------------------------------------------------
@@ -974,7 +972,7 @@ contains
 
          end if
 
-
+         call t_stopf('ecosysdyn')
 
          ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
          call t_startf('depvel')
