@@ -52,7 +52,11 @@ module shr_pio_mod
   integer, allocatable :: io_compid(:)
   integer :: pio_debug_level=0, pio_blocksize=0
   integer(kind=pio_offset_kind) :: pio_buffer_size_limit=-1
-  type(pio_rearr_opt_t)  :: pio_rearr_opts
+  integer :: pio_rearr_opt_comm_type, pio_rearr_opt_fcd
+  logical :: pio_rearr_opt_c2i_enable_hs, pio_rearr_opt_c2i_enable_isend
+  integer :: pio_rearr_opt_c2i_max_pend_req
+  logical :: pio_rearr_opt_i2c_enable_hs, pio_rearr_opt_i2c_enable_isend
+  integer :: pio_rearr_opt_i2c_max_pend_req
   integer :: total_comps=0
 
 #define DEBUGI 1
@@ -144,6 +148,7 @@ contains
     integer :: ncomps
     character(len=shr_kind_cl) :: nlfilename, cname
     type(iosystem_desc_t) :: iosys
+    integer :: ret
     character(*), parameter :: subName = '(shr_pio_init2) '
 
     if(pio_debug_level>0) then
@@ -176,12 +181,18 @@ contains
     allocate(iosystems(total_comps))
 
     if(pio_async_interface) then
-#ifdef PIO1
-       call pio_init(total_comps,mpi_comm_world, comp_comm, io_comm, iosystems, rearr_opts=pio_rearr_opts)
-
-#else
        call pio_init(total_comps,mpi_comm_world, comp_comm, io_comm, iosystems)
-#endif
+       do i=1,total_comps
+         ret =  pio_set_rearr_opts(iosystems(i), pio_rearr_opt_comm_type,&
+                  pio_rearr_opt_fcd,&
+                  pio_rearr_opt_c2i_enable_hs, pio_rearr_opt_c2i_enable_isend,&
+                  pio_rearr_opt_c2i_max_pend_req,&
+                  pio_rearr_opt_i2c_enable_hs, pio_rearr_opt_i2c_enable_isend,&
+                  pio_rearr_opt_i2c_max_pend_req)
+         if(ret /= PIO_NOERR) then
+            write(shr_log_unit,*) "ERROR: Setting rearranger options failed"
+         end if
+       end do
        i=1
     else
        do i=1,total_comps
@@ -199,7 +210,16 @@ contains
              call pio_init(comp_comm_iam(i), comp_comm(i), pio_comp_settings(i)%pio_numiotasks, 0, &
                   pio_comp_settings(i)%pio_stride, &
                   pio_comp_settings(i)%pio_rearranger, iosystems(i), &
-                  base=pio_comp_settings(i)%pio_root, rearr_opts=pio_rearr_opts)
+                  base=pio_comp_settings(i)%pio_root)
+             ret = pio_set_rearr_opts(iosystems(i), pio_rearr_opt_comm_type,&
+                    pio_rearr_opt_fcd,&
+                    pio_rearr_opt_c2i_enable_hs, pio_rearr_opt_c2i_enable_isend,&
+                    pio_rearr_opt_c2i_max_pend_req,&
+                    pio_rearr_opt_i2c_enable_hs, pio_rearr_opt_i2c_enable_isend,&
+                    pio_rearr_opt_i2c_max_pend_req)
+             if(ret /= PIO_NOERR) then
+                write(shr_log_unit,*) "ERROR: Setting rearranger options failed"
+             end if
              if(comp_comm_iam(i)==0) then
                 write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
                 write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
@@ -374,9 +394,9 @@ contains
 
     integer :: iam, ierr, npes, unitn
     logical :: iamroot
-    namelist /pio_default_inparm/ pio_stride, pio_root, pio_numiotasks, &
-          pio_typename, pio_async_interface, pio_debug_level, pio_blocksize, &
-          pio_buffer_size_limit, pio_rearranger, &
+    namelist /pio_default_inparm/  &
+          pio_async_interface, pio_debug_level, pio_blocksize, &
+          pio_buffer_size_limit, &
           pio_rearr_comm_type, pio_rearr_comm_fcd, &
           pio_rearr_comm_max_pend_req_comp2io, pio_rearr_comm_enable_hs_comp2io, &
           pio_rearr_comm_enable_isend_comp2io, &
@@ -407,6 +427,15 @@ contains
     pio_debug_level = 0 ! no debug info by default
     pio_async_interface = .false.   ! pio tasks are a subset of component tasks
     pio_rearranger = PIO_REARR_SUBSET
+
+    pio_rearr_comm_type = 'p2p'
+    pio_rearr_comm_fcd = '2denable'
+    pio_rearr_comm_max_pend_req_comp2io = 0
+    pio_rearr_comm_enable_hs_comp2io = .true.
+    pio_rearr_comm_enable_isend_comp2io = .false.
+    pio_rearr_comm_max_pend_req_io2comp = 0
+    pio_rearr_comm_enable_hs_io2comp = .true.
+    pio_rearr_comm_enable_isend_io2comp = .false.
 
     if(iamroot) then
        unitn=shr_file_getunit()
@@ -782,29 +811,29 @@ contains
     ! buf(6) = max_pend_req_io2comp
     ! buf(7) = enable_hs_io2comp
     ! buf(8) = enable_isend_io2comp
-    pio_rearr_opts%comm_type = buf(1)
-    pio_rearr_opts%fcd = buf(2)
-    pio_rearr_opts%comm_fc_opts_comp2io%max_pend_req = buf(3)
+    pio_rearr_opt_comm_type = buf(1)
+    pio_rearr_opt_fcd = buf(2)
+    pio_rearr_opt_c2i_max_pend_req = buf(3)
     if(buf(4) == 0) then
-      pio_rearr_opts%comm_fc_opts_comp2io%enable_hs = .false.
+      pio_rearr_opt_c2i_enable_hs = .false.
     else
-      pio_rearr_opts%comm_fc_opts_comp2io%enable_hs = .true.
+      pio_rearr_opt_c2i_enable_hs = .true.
     end if
     if(buf(5) == 0) then
-      pio_rearr_opts%comm_fc_opts_comp2io%enable_isend = .false.
+      pio_rearr_opt_c2i_enable_isend = .false.
     else
-      pio_rearr_opts%comm_fc_opts_comp2io%enable_isend = .true.
+      pio_rearr_opt_c2i_enable_isend = .true.
     end if
-    pio_rearr_opts%comm_fc_opts_io2comp%max_pend_req = buf(6)
+    pio_rearr_opt_i2c_max_pend_req = buf(6)
     if(buf(7) == 0) then
-      pio_rearr_opts%comm_fc_opts_io2comp%enable_hs = .false.
+      pio_rearr_opt_i2c_enable_hs = .false.
     else
-      pio_rearr_opts%comm_fc_opts_io2comp%enable_hs = .true.
+      pio_rearr_opt_i2c_enable_hs = .true.
     end if
     if(buf(8) == 0) then
-      pio_rearr_opts%comm_fc_opts_io2comp%enable_isend = .false.
+      pio_rearr_opt_i2c_enable_isend = .false.
     else
-      pio_rearr_opts%comm_fc_opts_io2comp%enable_isend = .true.
+      pio_rearr_opt_i2c_enable_isend = .true.
     end if
   end subroutine
 !===============================================================================
