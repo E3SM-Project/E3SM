@@ -156,9 +156,10 @@ def save_ncfiles(test, ref, diff, parameter):
 
 parser = ACMEParser()
 original_parameter = parser.get_parameter(default_vars=False)
-if original_parameter.results_dir == '.':
+if not hasattr(original_parameter, 'results_dir'):
     import datetime
-    original_parameter.results_dir = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    dt = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    original_parameter.results_dir = '{}-{}'.format('acme_diags_results', dt)
 
 parameters = make_parameters(original_parameter)
 
@@ -186,7 +187,7 @@ for parameter in parameters:
                 filename1 = findfile(test_data_path, test_name, season)
                 print filename1
             except IOError:
-                print('No file found for %s and %s' % (test_name, season))
+                print('No file found for {} and {}'.format(test_name, season))
                 continue
 
         if hasattr(parameter, 'reference_path'):
@@ -197,7 +198,7 @@ for parameter in parameters:
                 filename2 = findfile(reference_data_path, ref_name, season)
                 print filename2
             except IOError:
-                print('No file found for %s and %s' % (ref_name, season))
+                print('No file found for {} and {}'.format(test_name, season))
                 continue
 
         f_mod = cdms2.open(filename1)
@@ -304,8 +305,9 @@ for parameter in parameters:
                     if hasattr(parameter, 'plot'):
                         parameter.plot(mv2_domain, mv1_domain, diff,
                                        metrics_dict, parameter)
-                    else:
-                        plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)    
+                    else:    
+                        plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+
                     save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
     
             elif mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
