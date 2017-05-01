@@ -429,6 +429,7 @@
 			<var name="defc_b"/>
 			<var name="coeffs_reconstruct"/>
 			<var_array name="scalars"/>
+			<var name="initial_time"/>
 			<var name="xtime"/>
 			<var name="u"/>
 			<var name="w"/>
@@ -563,6 +564,7 @@
 			<var name="re_snow" packages="mp_thompson_in;mp_wsm6_in"/>
 			<var name="nt_c" packages="mp_thompson_in"/>
 			<var name="mu_c" packages="mp_thompson_in"/>
+			<var name="initial_time"/>
 			<var name="xtime"/>
 			<var name="u"/>
 			<var name="w"/>
@@ -845,6 +847,7 @@
 			<var name="fzm"/>
 			<var name="fzp"/>
 			<var name="zz"/>
+			<var name="initial_time"/>
 			<var name="xtime"/>
 			<var name="u"/>
 			<var name="w"/>
@@ -924,6 +927,7 @@
                         output_interval="3:00:00"
                         runtime_format="separate_file">
 
+			<var name="initial_time"/>
 			<var name="xtime"/>
 			<var name="olrtoa"/>
 			<var name="rainc"/>
@@ -1302,6 +1306,9 @@
         </var_struct>
 
         <var_struct name="state" time_levs="2">
+
+                <var name="initial_time" type="text" dimensions="" units="YYYY-MM-DD_hh:mm:ss"
+                     description="Model initialization time"/>
 
                 <var name="xtime" type="text" dimensions="Time" units="YYYY-MM-DD_hh:mm:ss"
                      description="Model valid time"/>
