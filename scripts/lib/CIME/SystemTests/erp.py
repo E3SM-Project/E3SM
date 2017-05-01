@@ -56,9 +56,9 @@ class ERP(SystemTestsCommon):
         # The reason we currently need two executables that CESM-CICE has a compile time decomposition
         # For cases where ERP works, changing this decomposition will not affect answers, but it will
         # affect the executable that is used
-        self._case.set_value("SMP_BUILD","0")
         for bld in range(1,3):
             logging.warn("Starting bld %s"%bld)
+            self._case.set_value("BUILD_THREADED",True)
 
             if (bld == 2):
                 # halve the number of tasks and threads
