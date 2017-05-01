@@ -1006,7 +1006,6 @@ class Namelist(object):
         group_name = group_name.lower()
 
         minindex, maxindex, step = get_fortran_variable_indices(variable_name, var_size)
-        original_var = variable_name
         variable_name = get_fortran_name_only(variable_name.lower())
 
         expect(minindex > 0, "Indices < 1 not supported in CIME interface to fortran namelists... lower bound=%s"%minindex)
