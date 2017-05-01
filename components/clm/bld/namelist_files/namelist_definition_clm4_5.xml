@@ -227,19 +227,24 @@ Toggle to turn on the BeTR
 
 <entry id="use_ed" type="logical" category="physics"
         group="clm_inparm" valid_values="" value=".false.">
-Toggle to turn on the ED
+Toggle to turn on the ED (fates)
 (ED = 'on' is EXPERIMENTAL NOT SUPPORTED!)
 </entry>
 
-<entry id="use_ed_spit_fire" type="logical" category="physics"
+<entry id="use_ed_spitfire" type="logical" category="physics"
         group="clm_inparm" valid_values="" value=".false.">
-Toggle to turn on spit fire (only relevant if ED is being used).
+Toggle to turn on spitfire (only relevant if ED is being used).
 </entry>
 
 <entry id="paramfile" type="char*256" category="datasets"
        input_pathname="abs" group="clm_inparm" valid_values="" >
 Full pathname datafile with plant function type (PFT) constants combined with
 constants for biogeochem modules
+</entry>
+
+<entry id="fates_paramfile" type="char*256" category="datasets"
+       input_pathname="abs" group="clm_inparm" valid_values="" >
+Full pathname datafile with fates parameters
 </entry>
 
 <entry id="fsoilordercon" type="char*256" category="datasets"
@@ -1166,7 +1171,7 @@ Command line arguement for turning on CN spinup mode.
 </entry>
 
 <entry id="bgc_mode" type="char*4" category="default_settings"
-       group="default_settings" valid_values="sp,cn,bgc" >
+       group="default_settings" valid_values="sp,cn,bgc,ed" >
 Command line arguement for biogeochemistry mode for CLM4.5
    sp  = Satellitte Phenology
    cn  = Carbon Nitrogen model
@@ -1175,6 +1180,7 @@ Command line arguement for biogeochemistry mode for CLM4.5
         Nitrification/De-nitrification
         Methane model
         Vertically resolved Carbon
+   fates = functionally assembled terrestrial ecosystem simulator
 </entry>
 
 <!-- ========================================================================================  -->
