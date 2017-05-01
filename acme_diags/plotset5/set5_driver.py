@@ -13,7 +13,8 @@ import MV2
 from acme_diags import acme_viewer
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_parameter import ACMEParameter
-from acme_diags.plotting.set5.plot import plot
+#from acme_diags.plotting.set5.plot import plot
+from acme_diags.plotting.set7.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
@@ -301,11 +302,30 @@ for parameter in parameters:
                     diff = mv1_reg - mv2_reg
                     metrics_dict = create_metrics(
                         mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
+                    parameter.var_region = region
                     if hasattr(parameter, 'plot'):
                         parameter.plot(mv2_domain, mv1_domain, diff,
                                        metrics_dict, parameter)
-                    else:
-                        plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)    
+                    else:    
+                        #start plot7 template
+                        #import vcs
+                        #x=vcs.init()
+                        #polar = vcs.createisofill()
+                        #polar.projection = 'polar'
+                        #print mv1_domain.getLatitude()[0],mv1_domain.getLatitude()[-1]
+                        #print mv2_domain.getLatitude()[0],mv2_domain.getLatitude()[-1]
+                        #print diff.getLatitude()[0],diff.getLatitude()[-1]
+                        #
+                        #if region == 'polar_S': 
+                        #    polar.datawc_y1 = -90  #this should extracted from selected domain
+                        #    polar.datawc_y2 = -55
+                        #elif region == 'polar_N':
+                        #    polar.datawc_y1 = 90  #this should extracted from selected domain
+                        #    polar.datawc_y2 = 50
+                        #x.plot(mv1_domain,polar)
+
+                        plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+
                     save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
     
             elif mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
@@ -417,7 +437,8 @@ for parameter in parameters:
                         diff = mv1_reg - mv2_reg
                         metrics_dict = create_metrics(
                             mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
-    
+
+                        parameter.var_region = region
                         if hasattr(parameter, 'plot'):
                             parameter.plot(mv2_domain, mv1_domain,
                                            diff, metrics_dict, parameter)
