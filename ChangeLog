@@ -1,3 +1,47 @@
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 4-30-2017
+Tag: cime5.3.0-alpha.09
+Answer Changes: None
+Tests: ERP_Ln9.f09_f09.F1850_DONOTUSE.yellowstone_intel.cam-outfrq9s_clm5
+       scripts_regression_tests.py --fast, hand test xmlchange and xmlquery
+Dependencies:
+
+Brief Summary:
+    - Fix erp test build.
+    - Add Support for '+=' in Namelists.
+    - Add --component Option to preview_namelist.
+    - Add --file option to xmlquery and enable option in xmlchange.
+
+User interface changes: 
+    - Added support for '+=' to namelist parser.
+    - Added --component option to preview_namelist.
+    - New --file option in xmlquery.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+6d8b24b Merge pull request #1444 from jedwards4b/erp_test_fix
+84b7bde Merge pull request #1389 from ESMCI/erichlf/namelist/plusEqual
+45af658 Merge pull request #1436 from ESMCI/erichlf/preview_namelists/component
+c4d4437 Merge pull request #1419 from jedwards4b/xmlcq_fileoption
+
+
+Modified files: git diff --name-status [previous_tag]
+
+M       scripts/Tools/preview_namelists
+M       scripts/Tools/xmlchange
+M       scripts/Tools/xmlquery
+M       scripts/lib/CIME/SystemTests/erp.py
+M       scripts/lib/CIME/XML/env_mach_specific.py
+M       scripts/lib/CIME/XML/env_test.py
+M       scripts/lib/CIME/XML/generic_xml.py
+M       scripts/lib/CIME/case.py
+M       scripts/lib/CIME/namelist.py
+M       scripts/lib/CIME/preview_namelists.py
+
+======================================================================
+
 ======================================================================
 
 Originator: Chris Fischer	 
