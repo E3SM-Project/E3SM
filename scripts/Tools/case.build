@@ -56,9 +56,7 @@ OR
     parser.add_argument("--clean-all", action="store_true",
                         help="clean all objects including sharedlibobjects that may be used by other builds")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     cleanlist = args.clean if args.clean is None or len(args.clean) else comps
 
