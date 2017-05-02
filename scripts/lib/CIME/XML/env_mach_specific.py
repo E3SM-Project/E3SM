@@ -4,7 +4,7 @@ Interface to the env_mach_specific.xml file.  This class inherits from EnvBase
 from CIME.XML.standard_module_setup import *
 
 from CIME.XML.env_base import EnvBase
-from CIME.utils import transform_vars
+from CIME.utils import transform_vars, get_cime_root
 import string
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,9 @@ class EnvMachSpecific(EnvBase):
         initialize an object interface to file env_mach_specific.xml in the case directory
         """
         fullpath = infile if os.path.isabs(infile) else os.path.join(caseroot, infile)
-        EnvBase.__init__(self, caseroot, fullpath)
+        schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_specific.xsd")
+        EnvBase.__init__(self, caseroot, fullpath,schema=schema)
+
         self._unit_testing = unit_testing
 
     def populate(self, machobj):

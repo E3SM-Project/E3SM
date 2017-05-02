@@ -24,7 +24,8 @@ class EnvBatch(EnvBase):
         self.batchtype = None
         # This arbitrary setting should always be overwritten
         self._default_walltime = "00:20:00"
-        EnvBase.__init__(self, case_root, infile)
+        schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_batch.xsd")
+        EnvBase.__init__(self, case_root, infile, schema=schema)
 
     def set_value(self, item, value, subgroup=None, ignore_type=False):
         """
