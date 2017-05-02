@@ -67,7 +67,7 @@ _TEST_SUITES = {
                               "SMS.hcru_hcru.I1850CRUCLM45CN",
                              ("ERS.f19_g16.I1850CNECACNTBC" ,"clm-eca"),
                              ("ERS.f19_g16.I1850CNECACTCBC" ,"clm-eca"),
-                             ("SMS_Ly3_P1x1.1x1_smallvilleIA.ICLM45CNCROP", "force_netcdf_pio"),
+                             ("SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP", "force_netcdf_pio"),
                              ("ERS.f19_g16.I1850CLM45","clm-betr"),
                               "ERS.ne11_oQU240.I20TRCLM45",
                               "ERS.f09_g16.IMCLM45BC")
