@@ -3491,10 +3491,6 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'relvar_fix');
 }
 
-add_default($nl, 'do_aerocom_ind3');
-my $aerocom_ind3 = $nl->get_value('do_aerocom_ind3');
-
-
 #in-cloud scav tuning for cloud-borne aerosol
 if ($chem =~ /_mam/) {
     add_default($nl, 'sol_facti_cloud_borne');
