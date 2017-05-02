@@ -741,7 +741,7 @@ class Case(object):
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
-        env_batch.set_job_defaults(bjobs, pesize=maxval, walltime=walltime, force_queue=queue)
+        env_batch.set_job_defaults(bjobs, pesize=maxval, walltime=walltime, force_queue=queue, allow_walltime_override=test)
         self.schedule_rewrite(env_batch)
 
         #--------------------------------------------
@@ -810,6 +810,7 @@ class Case(object):
         if model == "cesm" and not test:
             self.set_value("DOUT_S",True)
             self.set_value("TIMER_LEVEL", 4)
+
         if test:
             self.set_value("TEST",True)
 
@@ -1129,21 +1130,21 @@ class Case(object):
             "unit_testing" : False
             }
 
-        executable, args = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
+        executable, mpi_arg_list = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
 
         # special case for aprun
-        if  executable is not None and "aprun" in executable:
+        if executable is not None and "aprun" in executable:
             aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)
             expect( (num_nodes + self.spare_nodes) == self.num_nodes, "Not using optimized num nodes")
             return executable + aprun_args + " " + run_misc_suffix
 
         else:
-            mpi_arg_string = " ".join(args.values())
+            mpi_arg_string = " ".join(mpi_arg_list)
 
-            if self.get_value("BATCH_SYSTEM") == "cobalt":
-                mpi_arg_string += " : "
+        if self.get_value("BATCH_SYSTEM") == "cobalt":
+            mpi_arg_string += " : "
 
-            return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
+        return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
 
     def set_model_version(self, model):
         version = "unknown"

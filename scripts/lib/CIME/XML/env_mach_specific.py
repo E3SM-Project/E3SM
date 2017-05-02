@@ -336,7 +336,7 @@ class EnvMachSpecific(EnvBase):
         best_num_matched = -1
         default_match = None
         best_num_matched_default = -1
-        args = {}
+        args = []
         for mpirun_node in mpirun_nodes:
             xml_attribs = mpirun_node.attrib
             all_match = True
@@ -388,7 +388,7 @@ class EnvMachSpecific(EnvBase):
                                                subgroup=job,
                                                check_members=check_members,
                                                default=arg_node.get("default"))
-                    args[arg_node.get("name")] = arg_value
+                    args.append(arg_value)
 
         exec_node = self.get_node("executable", root=the_match)
         expect(exec_node is not None,"No executable found")
