@@ -32,19 +32,13 @@ def plot_min_max_mean(canvas, metrics_dict, ref_test_or_diff):
  
     # can be either 'reference', 'test' or 'diff'
     plot = ref_test_or_diff
-    min_label = canvas.createtextcombined(Tt_source = plot + '_min_label',
-                                          To_source = plot + '_min_label')
-    max_label = canvas.createtextcombined(Tt_source = plot + '_max_label',
-                                          To_source = plot + '_max_label')
-    mean_label = canvas.createtextcombined(Tt_source = plot + '_mean_label',
-                                           To_source = plot + '_mean_label')
+    min_label = managetextcombined(plot + '_min_label', plot + '_min_label')
+    max_label = managetextcombined(plot + '_max_label', plot + '_max_label')
+    mean_label = managetextcombined(plot + '_mean_label', plot + '_mean_label')
 
-    min_value = canvas.createtextcombined(Tt_source = plot + '_min_value',
-                                          To_source = plot + '_min_value')
-    max_value = canvas.createtextcombined(Tt_source = plot + '_max_value',
-                                          To_source = plot + '_max_value')
-    mean_value = canvas.createtextcombined(Tt_source = plot + '_mean_value',
-                                           To_source = plot + '_mean_value')
+    min_value = managetextcombined(plot + '_min_value', plot + '_min_value')
+    max_value = managetextcombined(plot + '_max_value', plot + '_max_value')
+    mean_value = managetextcombined(plot + '_mean_value', plot + '_mean_value')
 
     min_value.string = var_min
     max_value.string = var_max
@@ -62,17 +56,13 @@ def plot_rmse_and_corr(canvas, metrics_dict):
     rmse_str = '%.2f' % metrics_dict['misc']['rmse']
     corr_str = '%.2f' % metrics_dict['misc']['corr']
 
-    rmse_label = canvas.createtextcombined(Tt_source = 'diff_plot_comment1_title',
-                                           To_source = 'diff_plot_comment1_title')
-    corr_label = canvas.createtextcombined(Tt_source = 'diff_plot_comment2_title',
-                                           To_source = 'diff_plot_comment2_title')
+    rmse_label = managetextcombined('diff_plot_comment1_title', 'diff_plot_comment1_title')
+    corr_label = managetextcombined('diff_plot_comment2_title', 'diff_plot_comment2_title')
     rmse_label.string = 'RMSE'
     corr_label.string = 'CORR'
 
-    rmse_value = canvas.createtextcombined(Tt_source = 'diff_plot_comment1_value',
-                                           To_source = 'diff_plot_comment1_value')
-    corr_value = canvas.createtextcombined(Tt_source = 'diff_plot_comment2_value',
-                                           To_source = 'diff_plot_comment2_value')
+    rmse_value = managetextcombined('diff_plot_comment1_value', 'diff_plot_comment1_value')
+    corr_value = managetextcombined('diff_plot_comment2_value', 'diff_plot_comment2_value')
 
     rmse_value.string = rmse_str
     corr_value.string = corr_str
@@ -88,12 +78,15 @@ def set_colormap_of_graphics_method(canvas, parameter_colormap, method):
         colors = vcs.getcolors(method.levels, colors=range(6, 240))
         method.fillareacolors = colors
 
-def set_levels_of_graphics_method(method, levels, data):
+def set_levels_of_graphics_method(method, levels, data, data2=None):
     if levels != []:
         method.levels = levels
 
     if method.levels == [[1.0000000200408773e+20, 1.0000000200408773e+20]]:
-        method.levels = vcs.mkscale(data.min(), data.max())
+        if data2 is None:
+            method.levels = vcs.mkscale(data.min(), data.max())
+        else:
+            method.levels = vcs.mkscale(min(data.min(), data2.min()), max(data.max(), data2.max()))
 
 def set_units(ref_or_test, units):
     if units != '':
@@ -104,10 +97,7 @@ def add_cyclic(var):
     return var(longitude=(lon[0],lon[0]+360.0,'coe'))
 
 def plot(reference, test, diff, metrics_dict, parameter):
-
     case_id = parameter.case_id
-    if not os.path.exists(case_id):
-        os.makedirs(case_id)
 
     # Plotting
     vcs_canvas.bgX = parameter.canvas_size_w
@@ -118,7 +108,6 @@ def plot(reference, test, diff, metrics_dict, parameter):
 
     file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'set5')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_7.json'))
-    print file_path
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_7_new.json'))
     
     template_test = vcs_canvas.gettemplate('plotset7_0_x_0')
@@ -149,7 +138,6 @@ def plot(reference, test, diff, metrics_dict, parameter):
     diff_isofill = vcs.getisofill('diff_isofill')
     diff_isofill.missing = 'grey'
     if parameter.var_region.lower().find('polar') !=-1:
-    
         reference_isofill.projection = 'polar'
         test_isofill.projection = 'polar'
         diff_isofill.projection = 'polar'
@@ -168,8 +156,8 @@ def plot(reference, test, diff, metrics_dict, parameter):
         diff_isofill.datawc_y2 = lat_y2
 
 
-    set_levels_of_graphics_method(reference_isofill, parameter.contour_levels, reference)
-    set_levels_of_graphics_method(test_isofill, parameter.contour_levels, test)
+    set_levels_of_graphics_method(reference_isofill, parameter.contour_levels, reference, test)
+    set_levels_of_graphics_method(test_isofill, parameter.contour_levels, test, reference)
     set_levels_of_graphics_method(diff_isofill, parameter.diff_levels, diff)
 
     if parameter.arrows:
@@ -191,8 +179,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     plot_rmse_and_corr(vcs_canvas, metrics_dict)
 
     # Plotting the main title
-    main_title = vcs_canvas.createtextcombined(Tt_source = 'main_title',
-                                               To_source = 'main_title')
+    main_title = managetextcombined('main_title', 'main_title')
     main_title.string = parameter.main_title
     vcs_canvas.plot(main_title)
 
