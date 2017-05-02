@@ -4353,6 +4353,7 @@ Use relaxation.
 Default: FALSE
 </entry>
 
+<<<<<<< HEAD
 <entry id="scm_relaxation_low" type="real" category="scam"
        group="cam_inparm" valid_values="">
 Lowest layer to apply relaxation.  Keep to default value to apply relaxation 
@@ -4367,6 +4368,8 @@ at the model top.
 Default: 0.e3 (hPa)
 </entry>
 
+=======
+>>>>>>> modified configuration files for SCM enhancement
 <entry id="scm_observed_aero" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Initialize with observed aerosols from IOP file. 
@@ -4384,6 +4387,7 @@ Default: FALSE
 Turn off LW radiation computation.
 Default: FALSE
 </entry>
+<<<<<<< HEAD
 
 <entry id="precip_off" type="logical" category="scm"
        group="cam_inparm" valid_values="">
@@ -4391,6 +4395,8 @@ Turn off microphysics computation.
 Default: FALSE
 </entry>
 
+=======
+>>>>>>> modified configuration files for SCM enhancement
 <!-- Solar Parameters -->
 
 <entry id="solar_const" type="real" category="solar"
