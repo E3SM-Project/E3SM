@@ -302,9 +302,9 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     if (ocn_mode(1:9) == 'SST_AQUAP') then
        ! First determine the prescribed aquaplanet option
        if (len_trim(ocn_mode) == 10) then
-          read(ocn_mode(10:10),'(i)') aquap_option
+          read(ocn_mode(10:10),'(i1)') aquap_option
        else if (len_trim(ocn_mode) == 11) then
-          read(ocn_mode(10:11),'(i)') aquap_option
+          read(ocn_mode(10:11),'(i2)') aquap_option
        end if
        ! Now remove the index from the ocn_mode value, to have a generic setting
        ! for use below
