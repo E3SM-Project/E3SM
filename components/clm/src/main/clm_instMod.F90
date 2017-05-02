@@ -55,7 +55,7 @@ module clm_instMod
   use ColumnType                 , only : col_pp
   use VegetationType             , only : veg_pp
 
-  use clm_bgc_interface_data     , only : clm_bgc_interface_data_type
+  use clm_interface_dataType     , only : clm_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
 
   use CLMFatesInterfaceMod       , only : hlm_fates_interface_type
@@ -109,7 +109,7 @@ module clm_instMod
   class(soil_water_retention_curve_type), allocatable :: soil_water_retention_curve
   type(phosphorusstate_type)                          :: phosphorusstate_vars
   type(phosphorusflux_type)                           :: phosphorusflux_vars
-  type(clm_bgc_interface_data_type)                   :: clm_bgc_data
+  type(clm_interface_data_type)                       :: clm_interface_data
   type(chemstate_type)                                :: chemstate_vars
   type(hlm_fates_interface_type)                      :: alm_fates
 

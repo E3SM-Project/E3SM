@@ -1,4 +1,4 @@
-module clm_bgc_interface_data
+module clm_interface_bgcType
 !!=================================================================================================
 ! CLM BioGeoChemistry (BGC) Interface: Data Type (Variables)
 !
@@ -13,10 +13,10 @@ module clm_bgc_interface_data
   use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
 
   implicit none
-!  save
+!
   private
 
-  type, public :: clm_bgc_interface_data_type
+  type, public :: clm_interface_bgc_datatype
 
      ! clm_varpar
      integer                    :: nlevdecomp_full                          ! num of CLM soil layers that are mapped to/from PFLOTRAN
@@ -28,40 +28,6 @@ module clm_bgc_interface_data
      character(len=8), pointer  :: decomp_pool_name                 (:)     ! name of pool
      real(r8), pointer          :: initial_cn_ratio                 (:)     ! c:n ratio for initialization of pools
      real(r8), pointer          :: initial_cp_ratio                 (:)     ! c:p ratio for initialization of pools
-
-     ! col:
-     real(r8), pointer :: z                                         (:,:)   ! layer depth (m) (-nlevsno+1:nlevgrnd)
-     real(r8), pointer :: zi                                        (:,:)   ! layer depth (m) (-nlevsno+1:nlevgrnd)
-     real(r8), pointer :: dz                                        (:,:)   ! layer thickness (m)  (-nlevsno+1:nlevgrnd)
-
-     ! soilstate_vars:
-     real(r8), pointer :: bd_col                                    (:,:)   ! col bulk density of dry soil material [kg/m^3] (CN)
-     real(r8), pointer :: hksat_col                                 (:,:)   ! col hydraulic conductivity at saturation (mm H2O /s)
-     real(r8), pointer :: bsw_col                                   (:,:)   ! col Clapp and Hornberger "b" (nlevgrnd)
-     real(r8), pointer :: watsat_col                                (:,:)   ! col volumetric soil water at saturation (porosity)
-     real(r8), pointer :: watmin_col                                (:,:)   ! col minimum volumetric soil water (nlevsoi)
-     real(r8), pointer :: sucsat_col                                (:,:)   ! col minimum soil suction (mm) (nlevgrnd)
-     real(r8), pointer :: sucmin_col                                (:,:)   ! col minimum allowable soil liquid suction pressure (mm) [Note: sucmin_col is a negative value, while sucsat_col is a positive quantity]
-     real(r8), pointer :: watfc_col                                 (:,:)   ! col volumetric soil water at field capacity (nlevsoi)
-     real(r8), pointer :: porosity_col                              (:,:)   ! col soil porisity (1-bulk_density/soil_density) (VIC)
-     real(r8), pointer :: eff_porosity_col                          (:,:)   ! col effective porosity = porosity - vol_ice (nlevgrnd)
-     real(r8), pointer :: cellorg_col                               (:,:)   ! col organic matter for gridcell containing column (1:nlevsoi)
-     real(r8), pointer :: soilpsi_col                               (:,:)   ! col soil water potential in each soil layer (MPa) (CN)
-     real(r8), pointer :: rootfr_col                                (:,:)   ! col fraction of roots in each soil layer (nlevgrnd)
-
-     ! waterstate_vars:
-     real(r8), pointer :: h2osoi_liq_col                            (:,:)   ! col liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
-     real(r8), pointer :: h2osoi_ice_col                            (:,:)   ! col ice lens (kg/m2) (new) (-nlevsno+1:nlevgrnd)
-     real(r8), pointer :: frac_sno_eff_col                          (:)     ! col fraction of ground covered by snow (0 to 1)
-     real(r8), pointer :: frac_h2osfc_col                           (:)     ! col fractional area with surface water greater than zero
-     real(r8), pointer :: h2osoi_vol_col                            (:,:)   ! col volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
-
-     ! temperature_vars:
-     real(r8), pointer :: t_soisno_col                              (:,:)   ! col soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
-     real(r8), pointer :: t_grnd_col                                (:)     ! col ground temperature (Kelvin)
-
-     ! canopystate_vars
-     integer  , pointer :: alt_indx_col                             (:)     ! col current depth of thaw
 
      ! ch4
      real(r8), pointer  :: finundated_col                           (:)     ! col fractional inundated area (excluding dedicated wetland cols)
@@ -219,21 +185,7 @@ module clm_bgc_interface_data
      real(r8), pointer :: no3_net_transport_vr_col                  (:,:)   ! col net NO3 transport associated with runoff/leaching (gN/m3/s) - also store PF's N transport inc. diffusion at current time-step
      real(r8), pointer :: nh4_net_transport_vr_col                  (:,:)   ! col net NH4 transport associated with runoff/leaching (gN/m3/s) - also store PF's N transport inc. diffusion at current time-step
 
-     ! waterflux_vars:
-     real(r8), pointer :: qflx_top_soil_col                         (:)     ! col net water input into soil from top (mm/s)
-     real(r8), pointer :: qflx_sub_snow_col                         (:)     ! col sublimation rate from snow pack (mm H2O /s) [+]
-     real(r8), pointer :: qflx_evap_soi_col                         (:)     ! col soil evaporation (mm H2O/s) (+ = to atm)
-     real(r8), pointer :: qflx_ev_h2osfc_col                        (:)     ! col evaporation heat flux from soil         (W/m**2) [+ to atm]
-     real(r8), pointer :: qflx_tran_veg_col                         (:)     ! col vegetation transpiration (mm H2O/s) (+ = to atm)
-
-     ! energyflux_vars:
-     real(r8), pointer :: htvp_col                                  (:)     ! latent heat of vapor of water (or sublimation) [j/kg]
-     real(r8), pointer :: eflx_bot_col                              (:)     ! col heat flux from beneath the soil or ice column (W/m**2)
-     real(r8), pointer :: eflx_gnet_col                             (:)     ! col net heat flux into ground  (W/m**2)
-     real(r8), pointer :: eflx_soil_grnd_col                        (:)     ! col soil heat flux (W/m**2) [+ = into soil]
-
      ! atm2lnd:
-     real(r8), pointer :: forc_pbot_not_downscaled_grc              (:)     ! not downscaled atm pressure (Pa)
      real(r8), pointer :: forc_pco2_grc                             (:)     ! CO2 partial pressure (Pa)
      real(r8), pointer :: forc_pch4_grc                             (:)     ! CH4 partial pressure (Pa)
 
@@ -246,10 +198,10 @@ module clm_bgc_interface_data
   contains
      procedure , public  :: Init
      procedure , private :: InitAllocate
-  end type clm_bgc_interface_data_type
+  end type clm_interface_bgc_datatype
 !!-------------------------------------------------------------------------------------------------
 
-!!  type(clm_bgc_interface_data_type) , public, target , save :: clm_bgc_data
+!!  type(clm_interface_bgc_datatype) , public, target , save :: clm_bgc_data
   
 contains
 
@@ -257,7 +209,7 @@ contains
 !!-------------------------------------------------------------------------------------------------
   subroutine Init(this, bounds)
      use decompMod               , only : bounds_type
-     class(clm_bgc_interface_data_type) :: this
+     class(clm_interface_bgc_datatype) :: this
      type(bounds_type), intent(in)      :: bounds
 
      call this%InitAllocate (bounds)
@@ -275,7 +227,7 @@ contains
 
     !! ARGUMENTS:
     real(r8) :: ival  = 0.0_r8  ! initial value
-    class(clm_bgc_interface_data_type)  :: this
+    class(clm_interface_bgc_datatype)   :: this
     type(bounds_type), intent(in)       :: bounds
 
     !! LOCAL VARIABLES:
@@ -293,39 +245,6 @@ contains
     allocate(this%floating_cp_ratio     (1:ndecomp_pools))                  ; this%floating_cp_ratio        (:)   = .false.
     allocate(this%initial_cn_ratio      (0:ndecomp_pools))                  ; this%initial_cn_ratio         (:)   = nan
     allocate(this%initial_cp_ratio      (0:ndecomp_pools))                  ; this%initial_cp_ratio         (:)   = nan
-
-    ! col:
-    allocate(this%z                     (begc:endc,-nlevsno+1:nlevgrnd))    ; this%z                    (:,:) = nan
-    allocate(this%zi                    (begc:endc,-nlevsno+0:nlevgrnd))    ; this%zi                   (:,:) = nan
-    allocate(this%dz                    (begc:endc,-nlevsno+1:nlevgrnd))    ; this%dz                   (:,:) = nan
-    ! soilstate_vars:
-    allocate(this%bd_col                (begc:endc,nlevgrnd))               ; this%bd_col               (:,:) = nan
-    allocate(this%hksat_col             (begc:endc,nlevgrnd))               ; this%hksat_col            (:,:) = spval
-    allocate(this%bsw_col               (begc:endc,nlevgrnd))               ; this%bsw_col              (:,:) = nan
-    allocate(this%watsat_col            (begc:endc,nlevgrnd))               ; this%watsat_col           (:,:) = nan
-    allocate(this%watmin_col            (begc:endc,nlevgrnd))               ; this%watmin_col           (:,:) = nan
-    allocate(this%sucsat_col            (begc:endc,nlevgrnd))               ; this%sucsat_col           (:,:) = spval
-    allocate(this%sucmin_col            (begc:endc,nlevgrnd))               ; this%sucmin_col           (:,:) = spval
-    allocate(this%watfc_col             (begc:endc,nlevgrnd))               ; this%watfc_col            (:,:) = nan
-    allocate(this%porosity_col          (begc:endc,nlevgrnd))               ; this%porosity_col         (:,:) = spval
-    allocate(this%eff_porosity_col      (begc:endc,nlevgrnd))               ; this%eff_porosity_col     (:,:) = spval
-    allocate(this%cellorg_col           (begc:endc,nlevgrnd))               ; this%cellorg_col          (:,:) = nan
-    allocate(this%soilpsi_col           (begc:endc,nlevgrnd))               ; this%soilpsi_col          (:,:) = nan
-    allocate(this%rootfr_col            (begc:endc,1:nlevgrnd))             ; this%rootfr_col           (:,:) = nan
-
-    ! waterstate_vars:
-    allocate(this%h2osoi_liq_col        (begc:endc,-nlevsno+1:nlevgrnd))    ; this%h2osoi_liq_col       (:,:) = nan
-    allocate(this%h2osoi_ice_col        (begc:endc,-nlevsno+1:nlevgrnd))    ; this%h2osoi_ice_col       (:,:) = nan
-    allocate(this%frac_sno_eff_col      (begc:endc))                        ; this%frac_sno_eff_col     (:)   = nan
-    allocate(this%frac_h2osfc_col       (begc:endc))                        ; this%frac_h2osfc_col      (:)   = nan
-    allocate(this%h2osoi_vol_col        (begc:endc, 1:nlevgrnd))            ; this%h2osoi_vol_col       (:,:) = nan
-
-    ! temperature_vars:
-    allocate(this%t_soisno_col          (begc:endc,-nlevsno+1:nlevgrnd))    ; this%t_soisno_col         (:,:) = nan
-    allocate(this%t_grnd_col            (begc:endc))                        ; this%t_grnd_col           (:)   = nan
-
-    ! canopystate_vars
-    allocate(this%alt_indx_col                  (begc:endc))                ; this%alt_indx_col                 (:)   = huge(1)
 
     ! ch4
     allocate(this%finundated_col                (begc:endc))                ; this%finundated_col               (:)   = nan
@@ -486,21 +405,7 @@ contains
     allocate(this%f_ngas_nitri_vr_col       (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_nitri_vr_col          (:,:) = ival
     allocate(this%f_ngas_denit_vr_col       (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_denit_vr_col          (:,:) = ival
 
-    ! waterflux_vars:
-    allocate(this%qflx_top_soil_col     (begc:endc))                        ; this%qflx_top_soil_col    (:)   = ival
-    allocate(this%qflx_ev_h2osfc_col    (begc:endc))                        ; this%qflx_ev_h2osfc_col   (:)   = ival
-    allocate(this%qflx_evap_soi_col     (begc:endc))                        ; this%qflx_evap_soi_col    (:)   = ival
-    allocate(this%qflx_sub_snow_col     (begc:endc))                        ; this%qflx_sub_snow_col    (:)   = ival
-    allocate(this%qflx_tran_veg_col     (begc:endc))                        ; this%qflx_tran_veg_col    (:)   = ival
-
-    ! energyflux_vars:
-    allocate( this%htvp_col             (begc:endc))                        ; this%htvp_col             (:)   = ival
-    allocate( this%eflx_bot_col         (begc:endc))                        ; this%eflx_bot_col         (:)   = ival
-    allocate( this%eflx_gnet_col        (begc:endc))                        ; this%eflx_bot_col         (:)   = ival
-    allocate( this%eflx_soil_grnd_col   (begc:endc))                        ; this%eflx_soil_grnd_col   (:)   = ival
-
     ! atm2lnd:
-    allocate(this%forc_pbot_not_downscaled_grc  (begg:endg))                ; this%forc_pbot_not_downscaled_grc  (:)   = ival
     allocate(this%forc_pco2_grc                 (begg:endg))                ; this%forc_pco2_grc                 (:)   = ival
     allocate(this%forc_pch4_grc                 (begg:endg))                ; this%forc_pch4_grc                 (:)   = ival
     !!------------------------------------------------------------------------------------------
@@ -510,4 +415,4 @@ contains
   end subroutine InitAllocate
 !!-------------------------------------------------------------------------------------------------
 
-end module clm_bgc_interface_data
+end module clm_interface_bgcType
