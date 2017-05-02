@@ -865,9 +865,9 @@ contains
 
        ! too many layers
        call mpas_log_write("Warning: too many halo layers for incremental remapping")
-       call mpas_log_write("-- vertexDegree:     ", vertexDegree)
-       call mpas_log_write("-- config_num_halos: ", config_num_halos)
-       call mpas_log_write("-- numHalosOptimal:  ", numHalosOptimal)
+       call mpas_log_write("-- vertexDegree:     $i", MPAS_LOG_WARN, intArgs=(/vertexDegree/))
+       call mpas_log_write("-- config_num_halos: $i", MPAS_LOG_WARN, intArgs=(/config_num_halos/))
+       call mpas_log_write("-- numHalosOptimal:  $i", MPAS_LOG_WARN, intArgs=(/numHalosOptimal/))
 
     endif
 
@@ -2023,7 +2023,8 @@ contains
                 call mpas_log_write('$i $r $r', MPAS_LOG_ERR, &
                      intArgs=(/iVertexCell/), realArgs=(/xVertexOnCell(iVertexCell,iCell), yVertexOnCell(iVertexCell,iCell)/))
              enddo
-             call mpas_log_write('MPAS-seaice: IR requires convex cells with vertices arranged CCW around the cell: check')
+             call mpas_log_write('MPAS-seaice: IR requires convex cells with vertices arranged CCW around the cell: check', &
+                  MPAS_LOG_CRIT)
           endif
 
        enddo   ! iVertexOnCell
@@ -6910,18 +6911,26 @@ contains
                          do iCat = 1, nCategories
                             do iLayer = 1, nLayers
                                if (thisTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge) < 0.0_RKIND) then
-                                  call mpas_log_write('Negative reconstructed ice area')
-                                  call mpas_log_write('nCells = $i', intArgs=(/nCells/))
+                                  call mpas_log_write('Negative reconstructed ice area', messageType=MPAS_LOG_ERR)
+                                  call mpas_log_write('nCells = $i', messageType=MPAS_LOG_ERR, intArgs=(/nCells/))
                                   call mpas_log_write('iLayer, iCat, iCell, global iCell: $i $i $i $i', &
+                                       messageType=MPAS_LOG_ERR, &
                                        intArgs=(/iLayer, iCat, iCell, indexToCellID(iCell)/))
                                   call mpas_log_write('iEdge, global iEdge, iTri, iqp: $i $i $i $i', &
+                                       messageType=MPAS_LOG_ERR, &
                                        intArgs=(/iEdge, indexToEdgeID(iEdge), iTri, iqp/))
-                                  call mpas_log_write('triangle area: $r', realArgs=(/triangleArea(iTri,iEdge)/))
-                                  call mpas_log_write('tracer val: $r', realArgs=(/thisTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge)/))
-                                  call mpas_log_write('center val: $r', realArgs=(/thisTracer % center3D(iLayer,iCat,iCell)/))
-                                  call mpas_log_write('x gradient: $r', realArgs=(/thisTracer % xGrad3D(iLayer,iCat,iCell)/))
-                                  call mpas_log_write('y gradient: $r', realArgs=(/thisTracer % yGrad3D(iLayer,iCat,iCell)/))
-                                  call mpas_log_write('MPAS-seaice: IR negative reconstructed ice area (nDims == 3)')
+                                  call mpas_log_write('triangle area: $r', messageType=MPAS_LOG_ERR, &
+                                       realArgs=(/triangleArea(iTri,iEdge)/))
+                                  call mpas_log_write('tracer val: $r', messageType=MPAS_LOG_ERR, &
+                                       realArgs=(/thisTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge)/))
+                                  call mpas_log_write('center val: $r', messageType=MPAS_LOG_ERR, &
+                                       realArgs=(/thisTracer % center3D(iLayer,iCat,iCell)/))
+                                  call mpas_log_write('x gradient: $r', messageType=MPAS_LOG_ERR, &
+                                       realArgs=(/thisTracer % xGrad3D(iLayer,iCat,iCell)/))
+                                  call mpas_log_write('y gradient: $r', messageType=MPAS_LOG_ERR, &
+                                       realArgs=(/thisTracer % yGrad3D(iLayer,iCat,iCell)/))
+                                  call mpas_log_write('MPAS-seaice: IR negative reconstructed ice area (nDims == 3)', &
+                                       messageType=MPAS_LOG_CRIT)
                                endif  ! negative area
                             enddo   ! iLayer
                          enddo   ! iCat
@@ -7447,6 +7456,7 @@ contains
                 do iCat = 1, nCategories
                    if (thisTracer % array2D(iCat,iCell) < 0.0_RKIND) then
                       call mpas_log_write('IR: Negative mass in IR: iCat, iCell, value: $i $i $r', &
+                           messageType=MPAS_LOG_CRIT, &
                            intArgs=(/iCat, iCell/), realArgs=(/thisTracer % array2D(iCat,iCell)/))
                    endif
                 enddo
@@ -7458,7 +7468,8 @@ contains
                 do iCat = 1, nCategories
                    do iLayer = 1, nLayers
                       if (thisTracer % array3D(iLayer,iCat,iCell) < 0.0_RKIND) then
-                         call mpas_log_write('IR: Negative mass in IR: iLayer, iCat, iCell, value: $i $i $i $r',  &
+                         call mpas_log_write('IR: Negative mass in IR: iLayer, iCat, iCell, value: $i $i $i $r', &
+                              messageType=MPAS_LOG_CRIT, &
                               intArgs=(/iLayer, iCat, iCell/), realArgs=(/thisTracer % array3D(iLayer,iCat,iCell)/))
                       endif
                    enddo
