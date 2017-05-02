@@ -9,7 +9,16 @@ from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
 # Expensive to init inside plot()
 vcs_canvas = vcs.init(bg=True)
+textcombined_objs = {}
 
+def managetextcombined(tt_name, to_name):
+    """ Caches textcombined objects. """
+    new_name = "%s:::%s" % (tt_name, to_name)
+    mytc = textcombined_objs.get(new_name, None)
+    if mytc is None:
+        mytc = vcs_canvas.createtextcombined(Tt_source=tt_name, To_source=to_name)
+        textcombined_objs[new_name] = mytc
+    return mytc
 
 def plot_min_max_mean(canvas, metrics_dict, ref_test_or_diff):
     """ canvas is a vcs.Canvas, metrics_dict is a dict and 
