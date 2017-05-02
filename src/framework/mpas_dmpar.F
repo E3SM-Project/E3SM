@@ -243,10 +243,6 @@ include 'mpif.h'
 #ifdef MPAS_OPENMP
          desiredThreadLevel = MPI_THREAD_MULTIPLE
          call MPI_Init_thread(desiredThreadLevel, threadLevel, mpi_ierr)
-         if ( threadLevel /= desiredThreadLevel ) then
-            write(0, *) 'WARNING: In mpas_dmpar_init, MPI implementation gave thread level of ', &
-               threadLevel, ' when ', desiredThreadLevel, ' was requested.'
-         end if
 #else
          call MPI_Init(mpi_ierr)
 #endif
@@ -261,7 +257,25 @@ include 'mpif.h'
       dminfo % my_proc_id = mpi_rank
 
       dminfo % info = MPI_INFO_NULL
+
+#ifdef MPAS_OPENMP
+      if ( mpi_rank==0 ) then
+         write(0, *) 'In mpas_dmpar_init: OpenMP threads per MPI task, thread level setting: '
+         write(0, '(a,i2,a)') '  requested thread level: MPI_THREAD_MULTIPLE (',desiredThreadLevel, ')'
+         if ( threadLevel == MPI_THREAD_SINGLE ) then
+            write(0, '(a,i2,a)') '  actual thread level:    MPI_THREAD_SINGLE (',threadLevel, ')'
+         elseif ( threadLevel == MPI_THREAD_FUNNELED ) then
+            write(0, '(a,i2,a)') '  actual thread level:    MPI_THREAD_FUNNELED (',threadLevel, ')'
+         elseif ( threadLevel == MPI_THREAD_SERIALIZED ) then
+            write(0, '(a,i2,a)') '  actual thread level:    MPI_THREAD_SERIALIZED (',threadLevel, ')'
+         elseif ( threadLevel == MPI_THREAD_MULTIPLE ) then
+            write(0, '(a,i2,a)') '  actual thread level:    MPI_THREAD_MULTIPLE (',threadLevel, ')'
+         end if
+      end if
+#endif
+
 #else
+      ! Set up single processor run, no MPI.
       dminfo % comm = 0
       dminfo % my_proc_id = IO_NODE
       dminfo % nprocs = 1
