@@ -48,7 +48,7 @@ int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
         return pio_err(ios, file, PIO_ENOTNC4, __FILE__, __LINE__);
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {
@@ -137,7 +137,7 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep, int *deflatep,
         return pio_err(ios, file, PIO_ENOTNC4, __FILE__, __LINE__);
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {
@@ -251,13 +251,13 @@ int PIOc_def_var_chunking(int ncid, int varid, int storage, const PIO_Offset *ch
     /* Run this on all tasks if async is not in use, but only on
      * non-IO tasks if async is in use. Get the number of
      * dimensions. */
-    if (!ios->async_interface || !ios->ioproc)
+    if (!ios->async || !ios->ioproc)
         if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
             return check_netcdf(file, ierr, __FILE__, __LINE__);
     LOG((2, "PIOc_def_var_chunking first ndims = %d", ndims));
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {
@@ -370,7 +370,7 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, PIO_Offset *chunks
 
     /* Run these on all tasks if async is not in use, but only on
      * non-IO tasks if async is in use. */
-    if (!ios->async_interface || !ios->ioproc)
+    if (!ios->async || !ios->ioproc)
     {
         /* Find the number of dimensions of this variable. */
         if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
@@ -379,7 +379,7 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, PIO_Offset *chunks
     }
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {
@@ -495,7 +495,7 @@ int PIOc_def_var_endian(int ncid, int varid, int endian)
         return pio_err(ios, file, PIO_ENOTNC4, __FILE__, __LINE__);
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {
@@ -572,7 +572,7 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
         return pio_err(ios, file, PIO_ENOTNC4, __FILE__, __LINE__);
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {
@@ -663,7 +663,7 @@ int PIOc_set_chunk_cache(int iosysid, int iotype, PIO_Offset size, PIO_Offset ne
         return pio_err(ios, NULL, PIO_ENOTNC4, __FILE__, __LINE__);
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {
@@ -761,7 +761,7 @@ int PIOc_get_chunk_cache(int iosysid, int iotype, PIO_Offset *sizep, PIO_Offset 
         return pio_err(ios, NULL, PIO_ENOTNC4, __FILE__, __LINE__);
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {
@@ -879,7 +879,7 @@ int PIOc_set_var_chunk_cache(int ncid, int varid, PIO_Offset size, PIO_Offset ne
         return pio_err(ios, file, PIO_ENOTNC4, __FILE__, __LINE__);
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {
@@ -966,7 +966,7 @@ int PIOc_get_var_chunk_cache(int ncid, int varid, PIO_Offset *sizep, PIO_Offset 
         return pio_err(ios, file, PIO_ENOTNC4, __FILE__, __LINE__);
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {

@@ -20,6 +20,7 @@ class Files(EntryID):
         """
         cimeroot = get_cime_root()
         infile = os.path.join(cimeroot, "config", get_model(), "config_files.xml")
+        expect(os.path.isfile(infile), "Could not find or open file %s"%infile)
         schema = os.path.join(cimeroot, "config", "xml_schemas", "entry_id.xsd")
         EntryID.__init__(self, infile, schema=schema)
 
