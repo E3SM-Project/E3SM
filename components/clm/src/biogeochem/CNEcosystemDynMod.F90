@@ -34,7 +34,7 @@ module CNEcosystemDynMod
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   ! bgc interface & pflotran
-  use clm_varctl          , only : use_bgc_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
+  use clm_varctl          , only : use_clm_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
   use CNVerticalProfileMod   , only : decomp_vertprofiles
   use CNAllocationMod     , only : nu_com_nfix, nu_com_phosphatase
   use clm_varctl          , only : nu_com
@@ -430,7 +430,7 @@ contains
        call t_stopf('PDeposition')
 
 !!-------------------------------------------------------------------------------------------------
-!! plfotran: 'decomp_rate_constants' must be calculated before entering "clm_bgc_interface"
+!! plfotran: 'decomp_rate_constants' must be calculated before entering "clm_interface"
        if (use_century_decomp) then
           call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
                canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
@@ -446,7 +446,7 @@ contains
            num_soilc, filter_soilc, num_soilp, filter_soilp, &
            soilstate_vars, canopystate_vars, cnstate_vars)
 !!-------------------------------------------------------------------------------------------------
-        !! CNAllocation1 is always called (w/ or w/o use_bgc_interface)
+        !! CNAllocation1 is always called (w/ or w/o use_clm_interface)
         !! pflotran: call 'CNAllocation1' to obtain potential N demand for support initial GPP
        call t_startf('CNAllocation - phase-1')
        call CNAllocation1_PlantNPDemand (bounds                             , &
@@ -559,9 +559,9 @@ contains
 
        call t_startf('CNDecompAlloc')
        !----------------------------------------------------------------
-       if(.not.use_bgc_interface) then
+       if(.not.use_clm_interface) then
             !! directly run clm-bgc
-            !! if (use_bgc_interface & use_clm_bgc), then CNDecomAlloc is called in clm_driver
+            !! if (use_clm_interface & use_clm_bgc), then CNDecomAlloc is called in clm_driver
             call CNDecompAlloc (bounds, num_soilc, filter_soilc,    &
                        num_soilp, filter_soilp,                     &
                        canopystate_vars, soilstate_vars,            &
@@ -570,7 +570,7 @@ contains
                        carbonstate_vars, carbonflux_vars,           &
                        nitrogenstate_vars, nitrogenflux_vars,       &
                        phosphorusstate_vars,phosphorusflux_vars)
-       end if !!if(.not.use_bgc_interface)
+       end if !!if(.not.use_clm_interface)
        !----------------------------------------------------------------
        !! CNDecompAlloc2 is called by both clm-bgc & pflotran
        !! pflotran: call 'CNDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake

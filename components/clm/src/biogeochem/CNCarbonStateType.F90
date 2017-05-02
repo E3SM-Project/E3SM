@@ -22,8 +22,7 @@ module CNCarbonStateType
   use VegetationType         , only : veg_pp
 
   ! bgc interface & pflotran
-  use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode
-
+  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
   
   ! 
   ! !PUBLIC TYPES:

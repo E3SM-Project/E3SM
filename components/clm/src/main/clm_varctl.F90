@@ -337,7 +337,7 @@ module clm_varctl
   !-----------------------------------------------------------------------
   ! bgc & pflotran interface
   !
-  logical, public :: use_bgc_interface  = .false.
+  logical, public :: use_clm_interface  = .false.
   logical, public :: use_clm_bgc        = .false.
   logical, public :: use_pflotran       = .false.
   logical, public :: pf_surfaceflow     = .false.

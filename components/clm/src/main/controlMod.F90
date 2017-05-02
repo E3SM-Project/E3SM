@@ -108,7 +108,7 @@ contains
     use clm_time_manager          , only : set_timemgr_init, get_timemgr_defaults
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
-    use clm_pflotran_interfaceMod , only : clm_pf_readnl
+    use clm_interface_pflotranMod , only : clm_pf_readnl
     use betr_initializeMod        , only : betr_readNL
     !
     implicit none
@@ -238,7 +238,7 @@ contains
          co2_file, aero_file
 
     ! bgc & pflotran interface
-    namelist /clm_inparm/ use_bgc_interface, use_clm_bgc, use_pflotran
+    namelist /clm_inparm/ use_clm_interface, use_clm_bgc, use_pflotran
 
     namelist /clm_inparm/ use_dynroot
 
@@ -403,7 +403,7 @@ contains
 
        ! ----------------------------------------------------------------------
        !! bgc & pflotran interface
-       if(.not.use_bgc_interface) then
+       if(.not.use_clm_interface) then
             use_clm_bgc     = .true.
             use_pflotran    = .false.
        end if
@@ -736,7 +736,7 @@ contains
     call mpi_bcast (domain_decomp_type, len(domain_decomp_type), MPI_CHARACTER, 0, mpicom, ier)
 
     ! bgc & pflotran interface
-    call mpi_bcast (use_bgc_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_clm_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_clm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_pflotran, 1, MPI_LOGICAL, 0, mpicom, ier)
     

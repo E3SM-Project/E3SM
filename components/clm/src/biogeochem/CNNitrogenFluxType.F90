@@ -14,7 +14,7 @@ module CNNitrogenFluxType
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
   !! bgc interface & pflotran:
-  use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
+  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -3081,7 +3081,7 @@ contains
 
     ! bgc interface & pflotran
     !----------------------------------------------------------------
-    if (use_bgc_interface .and. pf_cmode) then
+    if (use_clm_interface .and. pf_cmode) then
         call NSummary_interface(this, bounds, num_soilc, filter_soilc)
     end if
     !----------------------------------------------------------------

@@ -17,7 +17,7 @@ module CNCarbonFluxType
   use LandunitType           , only : lun_pp
   use clm_varctl             , only : nu_com
   ! bgc interface & pflotran
-  use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, use_vertsoilc
+  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -393,7 +393,7 @@ module CNCarbonFluxType
      real(r8), pointer :: allocation_stem 		  (:) ! check allocation to stem for dynamic allocation scheme
      real(r8), pointer :: allocation_froot 		  (:) ! check allocation to fine root for dynamic allocation scheme
 
-     ! new variables for clm_bgc_interface & pflotran
+     ! new variables for clm_interface_funcsMod & pflotran
      !------------------------------------------------------------------------
      real(r8), pointer :: externalc_to_decomp_cpools_col            (:,:,:) ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
                                                                             ! (sum of all external C additions and removals, excluding decomposition/hr).
@@ -785,7 +785,7 @@ contains
      allocate(this%allocation_stem       (begp:endp)) ; this%allocation_stem       (:) = nan
      allocate(this%allocation_froot      (begp:endp)) ; this%allocation_froot      (:) = nan
 
-     ! clm_bgc_interface & pflotran
+     ! clm_interface & pflotran
      !------------------------------------------------------------------------
      allocate(this%externalc_to_decomp_cpools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%externalc_to_decomp_cpools_col(:,:,:) = spval
      allocate(this%externalc_to_decomp_delta_col (begc:endc));                                   this%externalc_to_decomp_delta_col (:)     = spval
@@ -3912,7 +3912,7 @@ contains
             interpinic_flag='interp', readvar=readvar, data=this%annsum_litfall_patch)
     end if
 
-    ! clm_bgc_interface & pflotran
+    ! clm_interface & pflotran
     !------------------------------------------------------------------------
     if (use_pflotran .and. pf_cmode) then
        ! externalc_to_decomp_npools_col
@@ -4816,8 +4816,8 @@ contains
 
     ! bgc interface & pflotran:
     !----------------------------------------------------------------
-    if (use_bgc_interface) then
-       call CSummary_interface(this, bounds, num_soilc, filter_soilc)
+    if (use_clm_interface) then
+        call CSummary_interface(this, bounds, num_soilc, filter_soilc)
     end if
     !! CSummary_interface: hr_col(c) will be used below
     !----------------------------------------------------------------

@@ -14,7 +14,7 @@ module PhosphorusFluxType
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
   !! bgc interface & pflotran:
-  use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
+  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -281,7 +281,7 @@ module PhosphorusFluxType
      real(r8), pointer :: avail_retransp_patch                      (:)     ! P flux available from retranslocation pool (gP/m2/s)
      real(r8), pointer :: plant_palloc_patch                        (:)     ! total allocated P flux (gP/m2/s)
 
-     ! clm_bgc_interface & pflotran
+     ! clm_interface & pflotran
      !------------------------------------------------------------------------
      real(r8), pointer :: plant_pdemand_col                         (:)     ! col P flux required to support initial GPP (gN/m2/s)
      real(r8), pointer :: plant_pdemand_vr_col                      (:,:)   ! col vertically-resolved P flux required to support initial GPP (gP/m3/s)
@@ -643,7 +643,7 @@ contains
     allocate(this%plant_to_litter_pflux       (begc:endc                   )) ; this%plant_to_litter_pflux       (:)   = nan
     allocate(this%plant_to_cwd_pflux          (begc:endc                   )) ; this%plant_to_cwd_pflux          (:)   = nan
 
-    ! clm_bgc_interface & pflotran
+    ! clm_interface & pflotran
     !------------------------------------------------------------------------
     allocate(this%plant_pdemand_col                 (begc:endc))                                    ; this%plant_pdemand_col                 (:)     = nan
     allocate(this%plant_pdemand_vr_col              (begc:endc,1:nlevdecomp_full))                  ; this%plant_pdemand_vr_col (:,:) = nan
@@ -1685,7 +1685,7 @@ contains
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%plant_palloc_patch) 
 
-    ! clm_bgc_interface & pflotran
+    ! clm_interface & pflotran
     !------------------------------------------------------------------------
     if (use_pflotran .and. pf_cmode) then
        ! externalp_to_decomp_ppools_col
@@ -2399,7 +2399,7 @@ contains
 
     !! bgc interface & pflotran:
     !----------------------------------------------------------------
-    if (use_bgc_interface) then
+    if (use_clm_interface) then
         call PSummary_interface(this, bounds, num_soilc, filter_soilc)
     end if
     !----------------------------------------------------------------
