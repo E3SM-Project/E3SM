@@ -91,7 +91,7 @@ class EnvBatch(EnvBase):
                 type_info = new_type_info
             else:
                 expect( type_info == new_type_info,
-                        "Inconsistent type_info for entry id={} {} {}".format((vid, new_type_info, type_info)))
+                        "Inconsistent type_info for entry id={} {} {}".format(vid, new_type_info, type_info))
         return type_info
 
     def get_jobs(self):
@@ -235,7 +235,7 @@ class EnvBatch(EnvBase):
 
             self.set_value("JOB_QUEUE", queue, subgroup=job)
             self.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
-            logger.debug("Job {} queue {} walltime {}".format((job, queue, walltime)))
+            logger.debug("Job {} queue {} walltime {}".format(job, queue, walltime))
 
     def get_batch_directives(self, case, job, raw=False):
         """
@@ -255,7 +255,7 @@ class EnvBatch(EnvBase):
                         directive = transform_vars(directive, case=case, subgroup=job, default=default, check_members=self)
                     elif default is not None:
                         directive = transform_vars(directive, default=default)
-                    result.append("{} {}".format((directive_prefix, directive)))
+                    result.append("{} {}".format(directive_prefix, directive))
 
         return "\n".join(result)
 
@@ -302,9 +302,9 @@ class EnvBatch(EnvBase):
 
                     if flag.rfind("=", len(flag)-1, len(flag)) >= 0 or\
                        flag.rfind(":", len(flag)-1, len(flag)) >= 0:
-                        submitargs+=" {}{}".format((flag,str(rval).strip()))
+                        submitargs+=" {}{}".format(flag,str(rval).strip())
                     else:
-                        submitargs+=" {} {}".format((flag,str(rval).strip()))
+                        submitargs+=" {} {}".format(flag,str(rval).strip())
 
         return submitargs
 
@@ -318,7 +318,7 @@ class EnvBatch(EnvBase):
             startindex = alljobs.index(job)
 
         for index, job in enumerate(alljobs):
-            logger.debug( "Index {:d} job {} startindex {:d}".format((index, job, startindex)))
+            logger.debug( "Index {:d} job {} startindex {:d}".format(index, job, startindex))
             if index < startindex:
                 continue
             try:
@@ -441,7 +441,7 @@ class EnvBatch(EnvBase):
         expect(jobid_pattern is not None, "Could not find jobid_pattern in env_batch.xml")
         search_match = re.search(jobid_pattern, output)
         expect(search_match is not None,
-               "Couldn't match jobid_pattern '{}' within submit output:\n '{}'".format((jobid_pattern, output)))
+               "Couldn't match jobid_pattern '{}' within submit output:\n '{}'".format(jobid_pattern, output))
         jobid = search_match.group(1)
         return jobid
 
