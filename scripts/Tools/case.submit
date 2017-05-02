@@ -31,6 +31,9 @@ OR
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
                         help="Case directory to setup")
 
+    parser.add_argument("--test", action="store_true",
+                        help="Run case as a test.")
+
     parser.add_argument("--job", "-j",
                         help="Name of the job to be submitted, default is case.run"
                         " can be any of the jobs listed in env_batch.xml")
@@ -57,18 +60,20 @@ OR
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.caseroot, args.job, args.no_batch, args.resubmit, args.skip_preview_namelist, args.batch_args
+    return args
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if "--test" in sys.argv:
+    args = parse_command_line(sys.argv, description)
+    if args.test:
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot, job, no_batch, resubmit, skip_pnl, batch_args = parse_command_line(sys.argv, description)
-    with Case(caseroot, read_only=False) as case:
-        submit(case, job=job, no_batch=no_batch, resubmit=resubmit, skip_pnl=skip_pnl, batch_args=batch_args)
+    with Case(args.caseroot, read_only=False) as case:
+        submit(case, job=args.job, no_batch=args.no_batch,
+               resubmit=args.resubmit, skip_pnl=args.skip_pnl,
+               batch_args=args.batch_args)
 
 if __name__ == "__main__":
     _main_func(__doc__)
