@@ -11,8 +11,6 @@ import genutil
 import cdms2
 import MV2
 from acme_diags.acme_viewer import create_viewer
-from acme_diags.acme_parser import ACMEParser
-from acme_diags.acme_parameter import ACMEParameter
 #from acme_diags.plotting.set5.plot import plot
 from acme_diags.plotting.set7.plot import plot
 from acme_diags.derivations import acme
@@ -27,31 +25,6 @@ def findfile(path_name, data_name, season):
             return path_name+filename
     raise IOError(
         "No file found based on given path_name and data_name")
-       
-
-def make_parameters(orginal_parameter):
-    """ Create multiple parameters given a list of
-    parameters in a json and an original parameter """
-
-    if hasattr(original_parameter, 'custom_diags'):
-        f_data = open(original_parameter.custom_diags).read()
-    else:
-        pth = os.path.join(sys.prefix, 'share', 'acme_diags', 'set5', 'set5_diags_AMWG_default.json')
-        f_data = open(pth).read()
-    json_file = json.loads(f_data)
-
-    parameters = []
-    for key in json_file:
-        for single_run in json_file[key]:
-            p = ACMEParameter()
-            for attr_name in single_run:
-                setattr(p, attr_name, single_run[attr_name])
-
-            # Add attributes of original_parameter to p
-            p.__dict__.update(orginal_parameter.__dict__)
-            parameters.append(p)
-    return parameters
-
 
 def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
     """regrid transient variable toward lower resolution of two variables"""
@@ -155,16 +128,9 @@ def save_ncfiles(test, ref, diff, parameter):
     file_diff.close()
 
 
-parser = ACMEParser()
-original_parameter = parser.get_parameter(default_vars=False)
-if not hasattr(original_parameter, 'results_dir'):
-    import datetime
-    dt = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    original_parameter.results_dir = '{}-{}'.format('acme_diags_results', dt)
 
-parameters = make_parameters(original_parameter)
 
-for parameter in parameters:
+def compute(parameter):
     if not os.path.exists(parameter.results_dir):
         os.makedirs(parameter.results_dir)
     if not os.path.exists(os.path.join(parameter.results_dir, parameter.case_id)):
