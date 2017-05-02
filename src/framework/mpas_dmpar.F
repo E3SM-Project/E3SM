@@ -259,18 +259,21 @@ include 'mpif.h'
       dminfo % info = MPI_INFO_NULL
 
 #ifdef MPAS_OPENMP
-      if ( mpi_rank==0 .and. threadLevel /= desiredThreadLevel ) then
-         write(0, *) 'In mpas_dmpar_init: OpenMP threads per MPI task, thread level setting: '
-         write(0, '(a,i2,a)') '  requested thread level: MPI_THREAD_MULTIPLE (',desiredThreadLevel, ')'
-         if ( threadLevel == MPI_THREAD_SINGLE ) then
-            write(0, '(a,i2,a)') '  actual thread level:    MPI_THREAD_SINGLE (',threadLevel, ')'
-         elseif ( threadLevel == MPI_THREAD_FUNNELED ) then
-            write(0, '(a,i2,a)') '  actual thread level:    MPI_THREAD_FUNNELED (',threadLevel, ')'
-         elseif ( threadLevel == MPI_THREAD_SERIALIZED ) then
-            write(0, '(a,i2,a)') '  actual thread level:    MPI_THREAD_SERIALIZED (',threadLevel, ')'
-         elseif ( threadLevel == MPI_THREAD_MULTIPLE ) then
-            write(0, '(a,i2,a)') '  actual thread level:    MPI_THREAD_MULTIPLE (',threadLevel, ')'
-         end if
+      if ( mpi_rank == 0 .and. threadLevel /= desiredThreadLevel ) then
+         write(0,*) 'Note: MPAS has requested an MPI threading level of MPI_THREAD_MULTIPLE, but'
+         write(0,*) '      this is not supported by the MPI implementation; a threading level of'
+         select case (threadLevel)
+            case (MPI_THREAD_SINGLE)
+               write(0,*) '      MPI_THREAD_SINGLE will be used instead.'
+            case (MPI_THREAD_FUNNELED)
+               write(0,*) '      MPI_THREAD_FUNNELED will be used instead.'
+            case (MPI_THREAD_SERIALIZED)
+               write(0,*) '      MPI_THREAD_SERIALIZED will be used instead.'
+            case (MPI_THREAD_MULTIPLE)
+               write(0,*) '      MPI_THREAD_MULTIPLE will be used instead.'
+            case default
+               write(0,*) '      ', threadLevel ,' will be used instead.'
+         end select
       end if
 #endif
 
