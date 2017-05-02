@@ -1163,6 +1163,9 @@
 	<arg name="thread_count"> --envs OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
       </arguments>
     </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable>unsupported</executable>
+    </mpirun>
     <module_system type="soft">
       <init_path lang="csh">/etc/profile.d/00softenv.csh</init_path>
       <init_path lang="sh">/etc/profile.d/00softenv.sh</init_path>
