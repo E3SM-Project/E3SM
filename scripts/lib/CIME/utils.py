@@ -1238,7 +1238,8 @@ def run_and_log_case_status(func, phase, caseroot='.'):
 
 def _check_for_invalid_args(args):
     for arg in args:
-        if arg.startswith("--"):
+        # if arg contains a space then it was originally quoted and we can ignore it here.
+        if " " in arg or arg.startswith("--"):
             continue
         if arg.startswith("-") and len(arg) > 2:
             if arg == "-value" or arg == "-noecho":
