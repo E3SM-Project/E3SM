@@ -1215,7 +1215,7 @@
                                  meltb,                  congel)
 
             elseif (tr_bgc_N .and. mm .eq. nlt_bgc_N(1)) then  
-               if (meltb > algal_vel*dt) then             
+               if (meltb > algal_vel*dt .or. aicen < 0.001_dbl_kind) then             
 
                   call regrid_stationary &
                                 (initcons_stationary,    hbri_old,    &
