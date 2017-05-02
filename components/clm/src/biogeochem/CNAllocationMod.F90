@@ -30,7 +30,7 @@ module CNAllocationMod
   use ColumnType          , only : col_pp                
   use VegetationType           , only : veg_pp
   ! bgc interface & pflotran module switches
-  use clm_varctl          , only: use_bgc_interface,use_clm_bgc, use_pflotran, pf_cmode
+  use clm_varctl          , only: use_clm_interface,use_clm_bgc, use_pflotran, pf_cmode
   use clm_varctl          , only : nu_com
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
@@ -1034,7 +1034,7 @@ contains
       end do
 
       ! pflotran will need an input from CN: modified 'sum_ndemand_vr' ('potential_immob' excluded).
-      if (use_bgc_interface.and.use_pflotran .and. pf_cmode) then
+      if (use_clm_interface.and.use_pflotran .and. pf_cmode) then
             do j = 1, nlevdecomp
                do fc=1, num_soilc
                   c = filter_soilc(fc)
