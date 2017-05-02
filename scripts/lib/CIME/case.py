@@ -824,9 +824,6 @@ class Case(object):
                 if pio_typename in ("pnetcdf", "netcdf4p"):
                     self.set_value(key, "netcdf")
 
-        # Set TOTAL_CORES
-        self.set_value("TOTAL_CORES", self.total_tasks * self.cores_per_task )
-
         if input_dir is not None:
             self.set_value("DIN_LOC_ROOT", os.path.abspath(input_dir))
 

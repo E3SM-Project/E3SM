@@ -593,8 +593,18 @@ class TestScheduler(object):
     ###########################################################################
         if phase == RUN_PHASE and (self._no_batch or no_batch):
             test_dir = self._get_test_dir(test)
-            out = run_cmd_no_fail("./xmlquery TOTAL_CORES -value", from_dir=test_dir)
-            return int(out)
+            total_pes = int(run_cmd_no_fail("./xmlquery TOTALPES --value", from_dir=test_dir))
+            threads = eval(run_cmd_no_fail("./xmlquery NTHRDS --value", from_dir=test_dir))
+            max_threads = 0
+            for item in threads:
+                _, comp_threads = item.split(":")
+                comp_threads = int(comp_threads)
+                if comp_threads > max_threads:
+                    max_threads = comp_threads
+
+            max_cores = total_pes * max_threads
+            return max_cores
+
         elif (phase == SHAREDLIB_BUILD_PHASE):
             # Will force serialization of sharedlib builds
             # TODO - instead of serializing, compute all library configs needed and build
