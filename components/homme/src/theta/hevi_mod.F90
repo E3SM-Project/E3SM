@@ -12,6 +12,8 @@ module hevi_mod
 
 contains
 
+! state_save is a subroutine that saves the value of the state variables at a 
+! give time-step to a storage vector
   subroutine state_save(elem,state,n,nets,nete)
 
     type (element_t),                   intent(inout), target :: elem(:)!
@@ -30,7 +32,8 @@ contains
 
   end subroutine state_save
 
-
+! state_read is a subroutine that reads from a storage vector to 
+! overwrite the value of the state variables at a given time-step
   subroutine state_read(elem,state,n,nets,nete)
 
     type (element_t),                   intent(inout), target :: elem(:)!
@@ -49,6 +52,9 @@ contains
 
   end subroutine state_read
 
+! Subroutine mgs implements the modified (stable) Gram-Schmidt algorithm
+! and forms a QR factorization of a matrix A = Q*R where the QR factorization
+! is over the vertical components 
   subroutine mgs(A,Q,R)
 
     real (kind=real_kind), intent(inout) :: A(np,np,2*nlev,2*nlev)
@@ -81,6 +87,9 @@ contains
     end do
   end subroutine mgs
 
+! Backsubsitution computes the solution of R x = b where R is 
+! assumed upper triangular and the solution is done over the 
+! vertical hevi part of the arrays
   subroutine backsubstitution(R,b,x)
 
     real (kind=real_kind), intent(in) :: R(np,np,2*nlev,2*nlev)
@@ -111,6 +120,13 @@ contains
 
   end subroutine backsubstitution
 
+! elemstate_add is an assortment of linear combinations of state varables
+! and storage vectors at specified time-levels
+!
+! alpha==1, elem(n1) = a1*elem(n2) + a2*elem(n3)
+! alpha==2, elem(n1) = a1*elem(n2) + a3*state
+! alpha==3, elem(n1) = a1*elem(n2) + a2*elem(n3) + a3*state
+! alpha==4, elem(n1) = elem(n1) + a1*elem(n2)+a2*elem(n3)
  subroutine elemstate_add(elem,state,nets,nete,alpha,n1,n2,n3,a1,a2,a3)
 
     type (element_t)     , intent(inout), target :: elem(:)
