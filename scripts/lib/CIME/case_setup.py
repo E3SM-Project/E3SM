@@ -140,9 +140,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
 
             case.initialize_derived_attributes()
-
-            # Set TOTAL_CORES
-            case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
         else:
             check_pelayouts_require_rebuild(case, models)
 
@@ -175,9 +172,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 elif job != "case.test":
                     logger.info("Writing %s script from input template %s" % (job, input_batch_script))
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
-
-            # Set TOTAL_CORES
-            case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
