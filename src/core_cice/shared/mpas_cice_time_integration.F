@@ -155,7 +155,8 @@ contains
 
        ! ridging
        call mpas_timer_start("Column")
-       call cice_column_dynamics_time_integration(domain, clock)
+       call cice_column_dynamics_time_integration(domain, clock, ierr)
+       if (ierr > 0) return
        call mpas_timer_stop("Column")
 
     enddo ! iDynamicsSubcycle

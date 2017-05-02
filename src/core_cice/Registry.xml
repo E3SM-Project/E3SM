@@ -780,7 +780,7 @@
 
 		<stream name="abort_block"
 				type="output"
-				filename_template="abort_seaice_block_$B.nc"
+				filename_template="abort_seaice_$Y-$M-$D_$h.$m.$s_block_$B.nc"
 				filename_interval="none"
 				clobber_mode="truncate"
 				output_interval="none"

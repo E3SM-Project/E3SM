@@ -883,9 +883,10 @@ contains
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column vertical thermodynamics")
-       if (config_use_column_vertical_thermodynamics) &
-            call column_vertical_thermodynamics(domain, clock, ierr)
-       if (ierr > 0) return
+       if (config_use_column_vertical_thermodynamics) then
+          call column_vertical_thermodynamics(domain, clock, ierr)
+          if (ierr > 0) return
+       endif
        call mpas_timer_stop("Column vertical thermodynamics")
 
        !-----------------------------------------------------------------
@@ -893,8 +894,10 @@ contains
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column biogeochemistry")
-       if (config_use_column_biogeochemistry) &
-           call column_biogeochemistry(domain)
+       if (config_use_column_biogeochemistry) then
+          call column_biogeochemistry(domain, ierr)
+          if (ierr > 0) return
+       endif
        call mpas_timer_stop("Column biogeochemistry")
 
        !-----------------------------------------------------------------
@@ -902,8 +905,10 @@ contains
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column ITD thermodynamics")
-       if (config_use_column_itd_thermodynamics) &
-            call column_itd_thermodynamics(domain, clock)
+       if (config_use_column_itd_thermodynamics) then
+          call column_itd_thermodynamics(domain, clock, ierr)
+          if (ierr > 0) return
+       endif
        call mpas_timer_stop("Column ITD thermodynamics")
 
        !-----------------------------------------------------------------
@@ -939,11 +944,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_dynamics_time_integration(domain, clock)
+  subroutine cice_column_dynamics_time_integration(domain, clock, ierr)
 
     type(domain_type), intent(inout) :: domain
 
     type(MPAS_clock_type), intent(in) :: clock
+
+    integer, intent(inout) :: ierr
 
     logical, pointer :: &
          config_use_column_package, &
@@ -980,8 +987,10 @@ contains
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column ridging")
-       if (config_use_column_ridging) &
-            call column_ridging(domain)
+       if (config_use_column_ridging) then
+          call column_ridging(domain, ierr)
+          if (ierr > 0) return
+       endif
        call mpas_timer_stop("Column ridging")
 
        !-----------------------------------------------------------------
@@ -1672,7 +1681,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine column_itd_thermodynamics(domain, clock)
+  subroutine column_itd_thermodynamics(domain, clock, ierr)
 
     use ice_colpkg, only: &
          colpkg_step_therm2, &
@@ -1682,6 +1691,8 @@ contains
     type(domain_type), intent(inout) :: domain
 
     type(MPAS_clock_type), intent(in) :: clock
+
+    integer, intent(inout) :: ierr
 
     type(block_type), pointer :: block
 
@@ -1951,7 +1962,9 @@ contains
           ! code abort
           if (abortFlag) then
              call mpas_log_write("column_itd_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
+             call cice_critical_error(domain, block, ierr)
+             return
           endif
 
        enddo ! iCell
@@ -2484,7 +2497,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine column_ridging(domain)
+  subroutine column_ridging(domain, ierr)
 
     use ice_colpkg, only: &
          colpkg_step_ridge, &
@@ -2492,6 +2505,8 @@ contains
          colpkg_clear_warnings
 
     type(domain_type), intent(inout) :: domain
+
+    integer, intent(inout) :: ierr
 
     type(block_type), pointer :: block
 
@@ -2737,7 +2752,9 @@ contains
           ! code abort
           if (abortFlag) then
              call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
+             call cice_critical_error(domain, block, ierr)
+             return
           endif
 
        enddo ! iCell
@@ -2762,7 +2779,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine column_biogeochemistry(domain)
+  subroutine column_biogeochemistry(domain, ierr)
 
     use ice_colpkg, only: &
          colpkg_biogeochemistry, &
@@ -2774,6 +2791,8 @@ contains
          cicePuny
 
     type(domain_type), intent(inout) :: domain
+
+    integer, intent(inout) :: ierr
 
     type(block_type), pointer :: block
 
@@ -3198,6 +3217,8 @@ contains
           if (abortFlag) then
              call mpas_log_write("column_biogeochemistry: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
+             call cice_critical_error(domain, block, ierr)
+             return
           endif
 
           call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
