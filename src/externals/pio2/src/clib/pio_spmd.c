@@ -67,19 +67,12 @@ int pair(int np, int p, int k)
  * @param recvtypes array of datatypes (of length ntasks). Entry i
  * specifies the type of data received from process i.
  * @param comm MPI communicator for the MPI_Alltoallw call.
- * @param handshake if true, use handshaking.
- * @param isend the isend bool indicates whether sends should be
- * posted using mpi_irsend which can be faster than blocking
- * sends. When flow control is used max_requests > 0 and the number of
- * irecvs posted from a given task will not exceed this value. On some
- * networks too many outstanding irecvs will cause a communications
- * bottleneck.
- * @param max_requests If 0, no flow control is used.
+ * @param fc pointer to the struct that provided flow control options.
  * @returns 0 for success, error code otherwise.
  */
 int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendtypes,
               void *recvbuf, int *recvcounts, int *rdispls, MPI_Datatype *recvtypes,
-              MPI_Comm comm, bool handshake, bool isend, int max_requests)
+              MPI_Comm comm, rearr_comm_fc_opt_t *fc)
 {
     int ntasks;  /* Number of tasks in communicator comm. */
     int my_rank; /* Rank of this task in comm. */
@@ -96,8 +89,8 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
     MPI_Status status; /* Not actually used - replace with MPI_STATUSES_IGNORE. */
     int mpierr;  /* Return code from MPI functions. */
 
-    LOG((2, "pio_swapm handshake = %d isend = %d max_requests = %d", handshake,
-         isend, max_requests));
+    LOG((2, "pio_swapm fc->hs = %d fc->isend = %d fc->max_pend_req = %d", fc->hs,
+         fc->isend, fc->max_pend_req));
 
     /* Get my rank and size of communicator. */
     if ((mpierr = MPI_Comm_size(comm, &ntasks)))
@@ -117,23 +110,15 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
 #if PIO_ENABLE_LOGGING
     {
         for (int p = 0; p < ntasks; p++)
-            LOG((3, "sendcounts[%d] = %d", p, sendcounts[p]));
-        for (int p = 0; p < ntasks; p++)
-            LOG((3, "sdispls[%d] = %d", p, sdispls[p]));
-        for (int p = 0; p < ntasks; p++)
-            LOG((3, "sendtypes[%d] = %d", p, sendtypes[p]));
-        for (int p = 0; p < ntasks; p++)
-            LOG((3, "recvcounts[%d] = %d", p, recvcounts[p]));
-        for (int p = 0; p < ntasks; p++)
-            LOG((3, "rdispls[%d] = %d", p, rdispls[p]));
-        for (int p = 0; p < ntasks; p++)
-            LOG((3, "recvtypes[%d] = %d", p, recvtypes[p]));
+            LOG((3, "sendcounts[%d] = %d sdispls[%d] = %d sendtypes[%d] = %d recvcounts[%d] = %d "
+                 "rdispls[%d] = %d recvtypes[%d] = %d", p, sendcounts[p], p, sdispls[p], p,
+                 sendtypes[p], p, recvcounts[p], p, rdispls[p], p, recvtypes[p]));
     }
 #endif /* PIO_ENABLE_LOGGING */
 
-    /* If max_requests == 0 no throttling is requested and the default
+    /* If fc->max_pend_req == 0 no throttling is requested and the default
      * mpi_alltoallw function is used. */
-    if (max_requests == 0)
+    if (fc->max_pend_req == 0)
     {
         /* Call the MPI alltoall without flow control. */
         LOG((3, "Calling MPI_Alltoallw without flow control."));
@@ -194,11 +179,11 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
         swapids[i] = 0;
     }
 
-    if (isend)
+    if (fc->isend)
         for (int i = 0; i < ntasks; i++)
             sndids[i] = MPI_REQUEST_NULL;
 
-    if (handshake)
+    if (fc->hs)
         for (int i = 0; i < ntasks; i++)
             hs_rcvids[i] = MPI_REQUEST_NULL;
 
@@ -222,17 +207,17 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
     }
     else
     {
-        if (max_requests == PIO_REARR_COMM_UNLIMITED_PEND_REQ)
+        if (fc->max_pend_req == PIO_REARR_COMM_UNLIMITED_PEND_REQ)
         {
             maxreq = steps;
             maxreqh = steps;
         }
-        else if (max_requests > 1 && max_requests < steps)
+        else if (fc->max_pend_req > 1 && fc->max_pend_req < steps)
         {
-            maxreq = max_requests;
+            maxreq = fc->max_pend_req;
             maxreqh = maxreq / 2;
         }
-        else if (max_requests == 1)
+        else if (fc->max_pend_req == 1)
         {
             /* Note that steps >= 2 here */
             maxreq = 2;
@@ -245,11 +230,11 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
         }
     }
 
-    LOG((2, "max_requests=%d, maxreq=%d, maxreqh=%d", max_requests, maxreq, maxreqh));
+    LOG((2, "fc->max_pend_req=%d, maxreq=%d, maxreqh=%d", fc->max_pend_req, maxreq, maxreqh));
 
     /* If handshaking is in use, do a nonblocking recieve to listen
      * for it. */
-    if (handshake)
+    if (fc->hs)
     {
         for (istep = 0; istep < maxreq; istep++)
         {
@@ -276,7 +261,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
                                     rcvids + istep)))
                 return check_mpi(NULL, mpierr, __FILE__, __LINE__);
 
-            if (handshake)
+            if (fc->hs)
                 if ((mpierr = MPI_Send(&hs, 1, MPI_INT, p, tag, comm)))
                     return check_mpi(NULL, mpierr, __FILE__, __LINE__);
         }
@@ -292,7 +277,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
             tag = my_rank + offset_t;
             /* If handshake is enabled don't post sends until the
              * receiving task has posted recvs. */
-            if (handshake)
+            if (fc->hs)
             {
                 if ((mpierr = MPI_Wait(hs_rcvids + istep, &status)))
                     return check_mpi(NULL, mpierr, __FILE__, __LINE__);
@@ -308,7 +293,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
              * used to choose between mpi_irsends and mpi_isends - the default
              * is still mpi_irsend
              */
-            if (handshake && isend)
+            if (fc->hs && fc->isend)
             {
 #ifdef USE_MPI_ISEND_FOR_FC
                 if ((mpierr = MPI_Isend(ptr, sendcounts[p], sendtypes[p], p, tag, comm,
@@ -320,7 +305,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
                     return check_mpi(NULL, mpierr, __FILE__, __LINE__);
 #endif
             }
-            else if (isend)
+            else if (fc->isend)
             {
                 if ((mpierr = MPI_Isend(ptr, sendcounts[p], sendtypes[p], p, tag, comm,
                                          sndids + istep)))
@@ -347,7 +332,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
             if (rstep < steps)
             {
                 p = swapids[rstep];
-                if (handshake && sendcounts[p] > 0)
+                if (fc->hs && sendcounts[p] > 0)
                 {
                     tag = my_rank + offset_t;
                     if ((mpierr = MPI_Irecv(&hs, 1, MPI_INT, p, tag, comm, hs_rcvids+rstep)))
@@ -360,7 +345,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
                     ptr = (char *)recvbuf + rdispls[p];
                     if ((mpierr = MPI_Irecv(ptr, recvcounts[p], recvtypes[p], p, tag, comm, rcvids + rstep)))
                         return check_mpi(NULL, mpierr, __FILE__, __LINE__);
-                    if (handshake)
+                    if (fc->hs)
                         if ((mpierr = MPI_Send(&hs, 1, MPI_INT, p, tag, comm)))
                             return check_mpi(NULL, mpierr, __FILE__, __LINE__);
                 }
@@ -376,7 +361,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
         LOG((2, "Waiting for outstanding msgs"));
         if ((mpierr = MPI_Waitall(steps, rcvids, MPI_STATUSES_IGNORE)))
             return check_mpi(NULL, mpierr, __FILE__, __LINE__);
-        if (isend)
+        if (fc->isend)
             if ((mpierr = MPI_Waitall(steps, sndids, MPI_STATUSES_IGNORE)))
                 return check_mpi(NULL, mpierr, __FILE__, __LINE__);
     }

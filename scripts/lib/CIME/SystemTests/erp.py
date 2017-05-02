@@ -31,6 +31,7 @@ class ERP(SystemTestsCommon):
         and tasks. This test will fail for components (e.g. pop) that do not reproduce exactly
         with different numbers of mpi tasks.
         """
+        self._case.set_value("BUILD_THREADED",True)
         if sharedlib_only:
             return self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
@@ -58,7 +59,6 @@ class ERP(SystemTestsCommon):
         # affect the executable that is used
         for bld in range(1,3):
             logging.warn("Starting bld %s"%bld)
-            self._case.set_value("BUILD_THREADED",True)
 
             if (bld == 2):
                 # halve the number of tasks and threads
@@ -79,7 +79,6 @@ class ERP(SystemTestsCommon):
                 case_setup(self._case, test_mode=True, reset=True)
 
             # Now rebuild the system, given updated information in env_build.xml
-
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),
                         "%s/%s.ERP%s.exe"%(exeroot,cime_model,bld))

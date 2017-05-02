@@ -1,3 +1,208 @@
+======================================================================
+
+Originator: Chris Fischer	 
+Date: 5-2-207
+Tag: cime5.3.0-alpha.10
+Answer Changes: [None, Round Off, Climate Changing]
+Tests: scripts_regression_tests.py with PIO_VERSION set to 2 in driver config_components.xml
+       scripts_regression test
+       ERP_Ln9.f09_f09.F1850_DONOTUSE.yellowstone_intel.cam-outfrq9s_clm5
+       summarize_cprnc_diffs by hand
+       code-checker
+Dependencies:
+
+Brief Summary:
+    - Update to version 2.2.1 of the pio external.
+    - Update the top-level READMEs.
+    - New optional ndep stream from atm.
+    - Creation of new aquaplanet capability in DOCN.
+    - Fix typo in parse_args.
+    - All command line arguments should conform. Allowed for one exception, the -value option to xmlquery.
+    - ERP fix again.
+    - Pick up multi-instance cprnc.out files in summarize_cprnc_diffs.
+    - Fix an issue with pio1 determining if netcdf4 is available and removes a debug print statement.
+    - Improve error message when config_files.xml is not found.
+    - Fix pylint error.
+    - Put explicit dot in paths in some instructions.
+    - Remove scripts adjustment of pio settings.
+    
+
+User interface changes: 
+    - Now accepting only conforming command line arguments.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+0dcd36c Merge pull request #1447 from jedwards4b/pio2_external_update
+357ad45 Merge pull request #1432 from ESMCI/rljacob/README-cleanup
+c76d946 Merge pull request #1448 from ESMCI/mvertens/ndep
+e5f144d Merge pull request #1451 from ESMCI/mvertens/aquap
+d4dfbf1 Merge pull request #1452 from jedwards4b/acme_run_template_fix
+505ce67 Merge pull request #1393 from jedwards4b/test_cli
+c1e5a38 Merge pull request #1445 from jedwards4b/erp_fix_again
+f6c05d1 Merge pull request #1442 from billsacks/summarize_cprnc_multiinst
+71cc74e Merge pull request #1425 from jedwards4b/pio1_fixes
+aa9018a Merge pull request #1440 from jedwards4b/better_msg_for_config_files_not_found
+1089e53 Merge pull request #1446 from ESMCI/jgfouca/fix_pylint_err_nml
+3a498d2 Merge pull request #1371 from billsacks/source_file_from_path
+ae2a5ca Add Sandia Corporation to CIME LICENSE.TXT
+7692745 Merge pull request #1441 from jedwards4b/pio_default_settings
+
+
+Modified files: git diff --name-status [previous_tag]
+
+M	LICENSE.TXT
+D	README
+M	README.md
+M	config/acme/machines/template.case.run
+M	config/acme/machines/template.case.test
+M	config/acme/machines/template.lt_archive
+M	config/acme/machines/template.st_archive
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/template.case.run
+M	config/cesm/machines/template.case.test
+M	config/cesm/machines/template.lt_archive
+M	config/cesm/machines/template.st_archive
+M	scripts/Tools/acme_check_env
+M	scripts/Tools/bless_test_results
+M	scripts/Tools/case.build
+M	scripts/Tools/case.cmpgen_namelists
+M	scripts/Tools/case.setup
+M	scripts/Tools/case.submit
+M	scripts/Tools/case_diff
+M	scripts/Tools/check_case
+M	scripts/Tools/check_input_data
+M	scripts/Tools/check_lockedfiles
+M	scripts/Tools/cime_bisect
+M	scripts/Tools/code_checker
+M	scripts/Tools/compare_namelists
+M	scripts/Tools/compare_test_results
+M	scripts/Tools/component_compare_baseline
+M	scripts/Tools/component_compare_copy
+M	scripts/Tools/component_compare_test
+M	scripts/Tools/component_generate_baseline
+M	scripts/Tools/getTiming
+M	scripts/Tools/jenkins_generic_job
+M	scripts/Tools/list_acme_tests
+M	scripts/Tools/normalize_cases
+M	scripts/Tools/pelayout
+M	scripts/Tools/preview_namelists
+M	scripts/Tools/save_provenance
+M	scripts/Tools/simple_compare
+M	scripts/Tools/testreporter.py
+M	scripts/Tools/update_acme_tests
+M	scripts/Tools/wait_for_tests
+M	scripts/Tools/xmlchange
+M	scripts/Tools/xmlconvertors/config_pes_converter.py
+M	scripts/Tools/xmlconvertors/grid_xml_converter.py
+M	scripts/Tools/xmlquery
+M	scripts/create_clone
+M	scripts/create_newcase
+M	scripts/create_test
+M	scripts/fortran_unit_testing/run_tests.py
+M	scripts/lib/CIME/SystemTests/erp.py
+M	scripts/lib/CIME/SystemTests/seq.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/files.py
+M	scripts/lib/CIME/buildlib.py
+M	scripts/lib/CIME/buildnml.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/namelist.py
+M	scripts/lib/CIME/utils.py
+M	scripts/manage_case
+M	scripts/manage_pes
+M	scripts/query_testlists
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.gptl
+M	src/build_scripts/buildlib.pio
+M	src/components/data_comps/docn/cime_config/buildnml
+M	src/components/data_comps/docn/cime_config/config_component.xml
+M	src/components/data_comps/docn/cime_config/namelist_definition_docn.xml
+M	src/components/data_comps/docn/docn_comp_mod.F90
+M	src/drivers/mct/cime_config/namelist_definition_drv_flds.xml
+M	src/drivers/mct/shr/seq_flds_mod.F90
+A	src/drivers/mct/shr/shr_ndep_mod.F90
+M	src/externals/pio1/pio/CMakeLists.txt
+M	src/externals/pio1/pio/pionfput_mod.F90.in
+M	src/externals/pio2/CMakeLists.txt
+M	src/externals/pio2/CTestScript.cmake
+M	src/externals/pio2/ctest/CTestEnvironment-anlworkstation.cmake
+M	src/externals/pio2/ctest/CTestEnvironment-nwsc.cmake
+A	src/externals/pio2/ctest/runcdash-cgd-gnu-openmpi.sh
+M	src/externals/pio2/ctest/runcdash-cgd-nag.sh
+M	src/externals/pio2/ctest/runcdash-nwsc-intel-mpiserial.sh
+M	src/externals/pio2/ctest/runcdash-nwscla-intel.sh
+M	src/externals/pio2/ctest/runctest-cgd.sh
+M	src/externals/pio2/ctest/runctest-nwscla.sh
+M	src/externals/pio2/doc/source/contributing_code.txt
+M	src/externals/pio2/examples/c/CMakeLists.txt
+A	src/externals/pio2/examples/c/darray_async.c
+A	src/externals/pio2/examples/c/darray_no_async.c
+M	src/externals/pio2/examples/c/example1.c
+M	src/externals/pio2/src/clib/CMakeLists.txt
+M	src/externals/pio2/src/clib/bget.c
+M	src/externals/pio2/src/clib/config.h.in
+M	src/externals/pio2/src/clib/pio.h
+M	src/externals/pio2/src/clib/pio_darray.c
+M	src/externals/pio2/src/clib/pio_darray_int.c
+M	src/externals/pio2/src/clib/pio_file.c
+M	src/externals/pio2/src/clib/pio_get_nc.c
+M	src/externals/pio2/src/clib/pio_getput_int.c
+M	src/externals/pio2/src/clib/pio_internal.h
+M	src/externals/pio2/src/clib/pio_lists.c
+M	src/externals/pio2/src/clib/pio_msg.c
+M	src/externals/pio2/src/clib/pio_nc.c
+M	src/externals/pio2/src/clib/pio_nc4.c
+M	src/externals/pio2/src/clib/pio_put_nc.c
+M	src/externals/pio2/src/clib/pio_rearrange.c
+M	src/externals/pio2/src/clib/pio_spmd.c
+M	src/externals/pio2/src/clib/pio_varm.c
+M	src/externals/pio2/src/clib/pioc.c
+M	src/externals/pio2/src/clib/pioc_sc.c
+M	src/externals/pio2/src/clib/pioc_support.c
+M	src/externals/pio2/tests/cunit/CMakeLists.txt
+M	src/externals/pio2/tests/cunit/pio_tests.h
+D	src/externals/pio2/tests/cunit/test_async_2comp.c
+M	src/externals/pio2/tests/cunit/test_async_3proc.c
+M	src/externals/pio2/tests/cunit/test_async_4proc.c
+M	src/externals/pio2/tests/cunit/test_async_simple.c
+M	src/externals/pio2/tests/cunit/test_darray_1d.c
+M	src/externals/pio2/tests/cunit/test_darray_3d.c
+A	src/externals/pio2/tests/cunit/test_darray_multi.c
+M	src/externals/pio2/tests/cunit/test_darray_multivar.c
+A	src/externals/pio2/tests/cunit/test_darray_multivar2.c
+A	src/externals/pio2/tests/cunit/test_decomp_uneven.c
+M	src/externals/pio2/tests/cunit/test_decomps.c
+M	src/externals/pio2/tests/cunit/test_intercomm2.c
+M	src/externals/pio2/tests/cunit/test_iosystem2_simple.c
+M	src/externals/pio2/tests/cunit/test_pioc.c
+M	src/externals/pio2/tests/cunit/test_pioc_fill.c
+A	src/externals/pio2/tests/cunit/test_rearr.c
+M	src/externals/pio2/tests/cunit/test_shared.c
+M	src/externals/pio2/tests/cunit/test_spmd.c
+M	src/externals/pio2/tests/general/ncdf_get_put.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_frame_tests.F90.in
+M	src/externals/pio2/tests/general/util/pio_tutil.F90
+M	src/share/util/shr_pio_mod.F90
+M	src/share/util/shr_strdata_mod.F90
+M	tools/configure
+M	tools/cprnc/README
+M	tools/cprnc/summarize_cprnc_diffs
+M	tools/mapping/check_maps/.gitignore
+M	tools/mapping/check_maps/README
+M	tools/mapping/check_maps/src/ESMF_RegridWeightGenCheck.F90
+M	tools/mapping/check_maps/src/Makefile
+M	tools/mapping/gen_domain_files/INSTALL
+M	tools/mapping/gen_domain_files/src/Makefile
+M	tools/mapping/gen_mapping_files/README
+A	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/.gitignore
+M	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/README
+M	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/INSTALL
+M	tools/mapping/map_field/INSTALL
+M	tools/mapping/map_field/src/Makefile
+
+======================================================================
 
 ======================================================================
 

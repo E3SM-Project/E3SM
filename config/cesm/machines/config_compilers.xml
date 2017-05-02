@@ -283,7 +283,6 @@ using a fortran linker.
     <!-- Runtime checks with OpenMP (in fact, all OpenMP cases) are WIP.       -->
     <append DEBUG="TRUE"> -C=all -g -time -f2003 -ieee=stop </append>
     <append DEBUG="TRUE" compile_threaded="false"> -gline </append>
-    <append compile_threaded="true"> -openmp </append>
     <!-- The SLAP library (which is part of the CISM build) has many instances of
        arguments being passed to different types. So disable argument type
        checking when building CISM. This can be removed once we remove SLAP from
@@ -298,7 +297,6 @@ using a fortran linker.
     <!-- having them use FFLAGS_NOOPT in Depends.nag                           -->
     <append DEBUG="TRUE"> -g -time -f2003 -ieee=stop </append>
     <append DEBUG="TRUE" compile_threaded="false"> -gline        </append>
-    <append compile_threaded="true"> -openmp </append>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed </base>
@@ -307,9 +305,6 @@ using a fortran linker.
     <base> -free </base>
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
-  <LDFLAGS>
-    <append compile_threaded="true"> -openmp </append>
-  </LDFLAGS>
   <MPICC> mpicc </MPICC>
   <MPIFC> mpif90 </MPIFC>
   <SCC> gcc </SCC>

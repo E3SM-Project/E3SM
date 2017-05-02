@@ -1165,7 +1165,7 @@ subroutine shr_strdata_readnml(SDAT,file,rc,mpicom)
       call MPI_COMM_SIZE(mpicom,ntasks,rCode)
    endif
 
-!--master--task--
+   !--master--task--
    if (my_task == master_task) then
 
    !----------------------------------------------------------------------------
@@ -1241,15 +1241,21 @@ subroutine shr_strdata_readnml(SDAT,file,rc,mpicom)
    end do
 
    do n = 1,SDAT%nstreams
-      call shr_stream_parseInput(SDAT%streams(n),fileName,yearAlign,yearFirst,yearLast)
-      call shr_stream_init(SDAT%stream(n),fileName,yearFirst,yearLast,yearAlign, &
-                   trim(SDAT%taxMode(n)))
+      if (trim(SDAT%streams(n)) /= shr_strdata_nullstr) then
+
+         ! extract fileName (stream description text file), yearAlign, yearFirst, yearLast from SDAT%streams(n)
+         call shr_stream_parseInput(SDAT%streams(n), fileName, yearAlign, yearFirst, yearLast)
+
+         ! initialize stream datatype, read description text file
+         call shr_stream_init(SDAT%stream(n), fileName, yearFirst, yearLast, yearAlign, trim(SDAT%taxMode(n)))
+
+      end if
    enddo
 
-!   call shr_strdata_print(SDAT,trim(file)//' NML_ONLY')
+   !   call shr_strdata_print(SDAT,trim(file)//' NML_ONLY')
 
    endif   ! master_task
-!--master--task--
+   !--master--task--
 
    if (present(mpicom)) then
       call shr_strdata_bcastnml(SDAT,mpicom)
