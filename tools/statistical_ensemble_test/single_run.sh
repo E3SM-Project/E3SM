@@ -4,7 +4,7 @@
 # $Id$
 # $URL$
 #
-# Sets up a 12-month ne30_ne30 run
+# Sets up a 12-month or ninth time step ne30_ne30 run
 #
 #==============================================================================
 
@@ -15,8 +15,9 @@
 usage() {
   echo "USAGE: $ThisScript -case CASE -mach MACH [-p PERTLIM] [-mach_pes ENV_MACH_PES_FILE] [-np NP] [-npocn NPOCN] [-npice NPICE] [-nt NTHRDS] [-w WALLTIME] [-account ACCOUNT_NUM] [-compiler COMPILER] [-compset COMPSET -r RES] [-nb] [-ns] [-usr_nl_cam \"VARIABLE1=VALUE1 VARIABLE2=VALUE2\"] [-cam_src_mod \"FILE1 FILE2 ... FILEN\"]"
   echo ''
-  echo 'Sets up a 1-year run to compare to an ensemble generated on a trusted'\
-       'machine. Need to automate generation of NCL script to run comparison'
+  echo 'Sets up CESM cases for either an ensemble of runs of a small test set.'\
+       'Use pyCECT to create the ensemble summary file or to evaluate a small' \
+       'set of runs against the ensemble.'
   echo ''
   echo 'Required flags:'
   echo '  -case           Case name passed on to create_newcase'
@@ -37,11 +38,13 @@ usage() {
   echo '  -compiler, --compiler    Compiler to use (passed on to create_newcase)'
   echo '  -compset,  --compset     Compset to use (default = BC5)'
   echo '  -res,      --res         Resolution to run (default = ne30_g16)'
+  echo '  -uf        --uf          Enable ninth time step runs (ultra-fast mode)'
   if [ $ThisScript = "ensemble.sh" ]; then
     echo '  -nb,       --nobuild     Disables building the root case of the ensemble.'
     echo '  -ns,       --nosubmit    Disables submitting any members of the ensemble.'
-    echo '  -ensemble                Instead of building 3 cases with random pertlim values, build the 101 member ensemble'
-    echo ' -test_suite               Flag to indicate this is run from the CESM test script (makes assumption about case directory)'
+    echo '  -ensemble                Instead of building 3 cases with random pertlim values, build the ensemble'
+    echo '                           Specify the number of ensemble members to generate (e.g.: 151 or 350 for ultra-fast mode)'
+    echo '  -test_suite               Flag to indicate this is run from the CESM test script (makes assumption about case directory)'
   else
     echo '  -nb,       --nobuild     Disables building the single case.'
     echo '  -ns,       --nosubmit    Disables submitting the single case.'
@@ -126,6 +129,7 @@ CICE_OUT_ON=0
 RTM_OUT_ON=0
 # Large ensemble?
 LENS=0
+UF=0
 
 # SCRIPTS_ROOT is only used for generating ensemble!
 SCRIPTS_ROOT=$(cd `dirname $0`; cd ../../scripts; pwd )
@@ -222,11 +226,22 @@ while [ $# -gt 0 ]; do
       done
       shift
     ;;
+    -uf|--uf )
+      UF=1
+      WallTime="0:10"
+    ;;
     -h )
       usage
       exit 0
     ;;
     -test_suite|-ensemble )
+      # Ignore these flags, they will be passed from ensemble.sh
+      shift
+    ;;
+    -ultrafast )
+      # Ignore these flags, they will be passed from ensemble.sh
+    ;;
+    -ultrafast_ensemble )
       # Ignore these flags, they will be passed from ensemble.sh
     ;;
     * )
@@ -293,7 +308,7 @@ case $MACH in
   ;;
 esac
 
-NewCaseFlags="$NewCaseFlags -res $RES -compset $COMPSET"
+NewCaseFlags="$NewCaseFlags -res $RES -compset $COMPSET --run-unsupported --project $ACCOUNT"
 cd $SCRIPTS_ROOT
 echo "Currently in $SCRIPTS_ROOT"
 echo "Flags for create_newcase are $NewCaseFlags"
@@ -362,9 +377,15 @@ fi
 
 ./xmlchange -file env_run.xml -id BFBFLAG -val TRUE
 ./xmlchange -file env_run.xml -id DOUT_S -val FALSE
-./xmlchange -file env_run.xml -id STOP_OPTION -val nmonths
-./xmlchange -file env_run.xml -id STOP_N -val 12
 ./xmlchange -file env_run.xml -id REST_OPTION -val never
+# Set to time steps if uf selected
+if [ $UF -eq 1 ]; then
+  ./xmlchange -file env_run.xml -id STOP_OPTION -val nsteps
+  ./xmlchange -file env_run.xml -id STOP_N -val 9
+else
+  ./xmlchange -file env_run.xml -id STOP_OPTION -val nmonths
+  ./xmlchange -file env_run.xml -id STOP_N -val 12
+fi
 
 # Unset LS_COLORS before configure runs
 LS_COLORS=
@@ -378,8 +399,14 @@ fi
 if [ -e user_nl_cam ]; then
   # Have CAM output everything (single precision)
   # But not initial data...
-  echo "avgflag_pertape = 'A'" >> user_nl_cam
-  echo "nhtfrq  = -8760" >> user_nl_cam
+  # Check if uf runs
+  if [ $UF -eq 1 ]; then
+    echo "avgflag_pertape = 'I'" >> user_nl_cam
+    echo "nhtfrq  = 9" >> user_nl_cam
+  else
+    echo "avgflag_pertape = 'A'" >> user_nl_cam
+    echo "nhtfrq  = -8760" >> user_nl_cam
+  fi
   echo "inithist = 'NONE'" >> user_nl_cam
   #echo "ndens  = 1" >> user_nl_cam # Double precision
   if [ ! "$PERTLIM" == "0" ]; then
@@ -394,12 +421,16 @@ if [ -e user_nl_cam ]; then
   done
 fi
 
-# Only edit user_nl_cam if the file exists (otherwise not using CAM!)
+# Only edit user_nl_clm if the file exists (otherwise not using CLM!)
 if [ -e user_nl_clm ]; then
   # Have CLM output everything (single precision)
-  echo "hist_avgflag_pertape = 'A'" >> user_nl_clm
-  echo "hist_nhtfrq  = -8760" >> user_nl_clm
-
+  if [ $UF -eq 1 ]; then
+    echo "hist_avgflag_pertape = 'I'" >> user_nl_clm
+    echo "hist_nhtfrq  = 9" >> user_nl_clm
+  else
+    echo "hist_avgflag_pertape = 'A'" >> user_nl_clm
+    echo "hist_nhtfrq  = -8760" >> user_nl_clm
+  fi
   # Disable output?
   #echo "hist_empty_htapes = .true." >> user_nl_clm
 fi
