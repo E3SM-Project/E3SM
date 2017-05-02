@@ -253,7 +253,7 @@ int check_file(int iosysid, int format, char *filename, int my_rank)
         ERR(ERR_WRONG);
     if (PIOc_inq_att(ncid + TEST_VAL_42, NC_GLOBAL, too_long_name, &atttype, &attlen) != PIO_EBADID)
         ERR(ERR_WRONG);
-    if (PIOc_get_att(ncid + TEST_VAL_42, NC_GLOBAL, ATT_NAME, &att_data) != PIO_EBADID)
+    if (PIOc_get_att(ncid, NC_GLOBAL, TEST_NAME, &att_data) != PIO_ENOTATT)
         ERR(ERR_WRONG);
     if (PIOc_get_att(ncid, NC_GLOBAL, NULL, &att_data) != PIO_EINVAL)
         ERR(ERR_WRONG);
@@ -317,7 +317,7 @@ int main(int argc, char **argv)
             ERR(ret);
 
         /* How many processors will be used for our IO and 2 computation components. */
-        int num_procs[COMPONENT_COUNT + 1] = {2, 2};
+        int num_procs[COMPONENT_COUNT] = {2};
 
         /* Is the current process a computation task? */
         int comp_task = my_rank < 2 ? 0 : 1;
@@ -327,8 +327,8 @@ int main(int argc, char **argv)
         int my_comp_idx = comp_task ? 0 : -1;
 
         /* Initialize the IO system. */
-        if ((ret = PIOc_Init_Async(test_comm, NUM_IO_PROCS, NULL, COMPONENT_COUNT,
-                                   num_procs, NULL, NULL, NULL, iosysid)))
+        if ((ret = PIOc_init_async(test_comm, NUM_IO_PROCS, NULL, COMPONENT_COUNT,
+                                   num_procs, NULL, NULL, NULL, PIO_REARR_BOX, iosysid)))
             ERR(ERR_AWFUL);
 
 	printf("%d: test_intercomm2 ParallelIO Library test_intercomm2 comp task returned.\n",
@@ -516,7 +516,6 @@ int main(int argc, char **argv)
                  * ignored. */
                 for (int i = 0; i < DIM_LEN; i++)
                     data[i] = i;
-		printf("%d test_intercomm2 writing data\n", my_rank);
 		printf("%d test_intercomm2 writing data\n", my_rank);
                 start[0] = 0;
                 count[0] = DIM_LEN;
