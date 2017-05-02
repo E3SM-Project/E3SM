@@ -259,7 +259,7 @@ include 'mpif.h'
       dminfo % info = MPI_INFO_NULL
 
 #ifdef MPAS_OPENMP
-      if ( mpi_rank==0 ) then
+      if ( mpi_rank==0 .and. threadLevel /= desiredThreadLevel ) then
          write(0, *) 'In mpas_dmpar_init: OpenMP threads per MPI task, thread level setting: '
          write(0, '(a,i2,a)') '  requested thread level: MPI_THREAD_MULTIPLE (',desiredThreadLevel, ')'
          if ( threadLevel == MPI_THREAD_SINGLE ) then
