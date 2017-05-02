@@ -224,7 +224,13 @@
         <queue walltimemax="01:00:00" jobmin="1" jobmax="65536" default="true">default</queue>
       </queues>
     </batch_system>
-    
+
+    <batch_system MACH="theta" type="cobalt_theta">
+      <queues>
+        <queue walltimemax="00:60:00" jobmin="1" jobmax="3200" default="true">default</queue>
+      </queues>
+    </batch_system>
+
     <batch_system MACH="cascade" type="slurm">
       <directives>
 	<directive>--mail-type=END</directive>
