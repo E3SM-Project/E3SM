@@ -405,7 +405,6 @@ class TestScheduler(object):
             create_newcase_cmd += " --mpilib %s" % self._mpilib
             logger.debug (" MPILIB set to %s" % self._mpilib)
 
-
         if self._queue is not None:
             create_newcase_cmd += " --queue=%s" % self._queue
 

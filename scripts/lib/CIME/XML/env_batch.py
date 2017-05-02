@@ -181,7 +181,7 @@ class EnvBatch(EnvBase):
             fd.write(output_text)
         os.chmod(job, os.stat(job).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-    def set_job_defaults(self, batch_jobs, pesize=None, walltime=None, force_queue=None):
+    def set_job_defaults(self, batch_jobs, pesize=None, walltime=None, force_queue=None, allow_walltime_override=False):
         if self.batchtype is None:
             self.batchtype = self.get_batch_system_type()
 
@@ -197,21 +197,25 @@ class EnvBatch(EnvBase):
 
             if force_queue:
                 if not self.queue_meets_spec(force_queue, task_count, walltime=walltime, job=job):
-                    logger.warning("User-request queue '%s' does not meet requirements for job '%s'" % (force_queue, job))
+                    logger.warning("WARNING: User-requested queue '%s' does not meet requirements for job '%s'" % (force_queue, job))
             else:
                 queue = self.select_best_queue(task_count, walltime=walltime, job=job)
                 if queue is None and walltime is not None:
                     # Try to see if walltime was the holdup
                     queue = self.select_best_queue(task_count, walltime=None, job=job)
                     if queue is not None:
-                        # It was, override the walltime to avoid failure
+                        # It was, override the walltime if a test, otherwise just warn the user
                         new_walltime = self.get_queue_specs(queue)[3]
                         expect(new_walltime is not None, "Should never make it here")
-                        logger.warning("Requested walltime '%s' could not be matched by any queue, using '%s' instead" % (walltime, new_walltime))
-                        walltime = new_walltime
+                        logger.warning("WARNING: Requested walltime '%s' could not be matched by any queue" % walltime)
+                        if allow_walltime_override:
+                            logger.warning("  Using walltime '%s' instead" % new_walltime)
+                            walltime = new_walltime
+                        else:
+                            logger.warning("  Continuing with suspect walltime, batch submission may fail")
 
                 if queue is None:
-                    logger.warning("No queue on this system met the requirements for this job. Falling back to defaults")
+                    logger.warning("WARNING: No queue on this system met the requirements for this job. Falling back to defaults")
                     default_queue_node = self.get_default_queue()
                     queue = default_queue_node.text
                     walltime = self.get_queue_specs(queue)[3]

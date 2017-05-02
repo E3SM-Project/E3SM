@@ -741,7 +741,7 @@ class Case(object):
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
-        env_batch.set_job_defaults(bjobs, pesize=maxval, walltime=walltime, force_queue=queue)
+        env_batch.set_job_defaults(bjobs, pesize=maxval, walltime=walltime, force_queue=queue, allow_walltime_override=test)
         self.schedule_rewrite(env_batch)
 
         #--------------------------------------------
@@ -810,6 +810,7 @@ class Case(object):
         if model == "cesm" and not test:
             self.set_value("DOUT_S",True)
             self.set_value("TIMER_LEVEL", 4)
+
         if test:
             self.set_value("TEST",True)
 
