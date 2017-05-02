@@ -625,20 +625,6 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
    call t_stopf('docn_run1')
 
    !--------------------
-   ! UNPACK
-   !--------------------
-
-   call t_startf('docn_unpack')
-   !  lsize = mct_avect_lsize(x2o)
-   !  nflds_x2o = mct_avect_nRattr(x2o)
-   !   do nf=1,nflds_x2o
-   !   do n=1,lsize
-   !     ?? = x2o%rAttr(nf,n)
-   !   enddo
-   !   enddo
-   call t_stopf('docn_unpack')
-
-   !--------------------
    ! ADVANCE OCN
    !--------------------
 
