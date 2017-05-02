@@ -54,7 +54,7 @@ module RtmMod
   use MOSARTinund_PreProcs_MOD, only: calc_chnlMannCoe, preprocess_elevProf
   use MOSARTinund_Core_MOD, only: MOSARTinund_simulate
   
- #endif 
+#endif 
   
 !
 ! !PUBLIC TYPES:
@@ -1379,6 +1379,26 @@ contains
        call WRM_computeRelease()
     endif
 
+! --Inund. ---------------------------------------------------------------
+#ifdef INCLUDE_INUND
+    
+    do nr = rtmCTL%begr, rtmCTL%endr
+      if ( TUnit%mask( nr ) .gt. 0 ) then
+        
+        ! Calculate water depth in subnetwork (tributary channels) : 
+        TRunoff%yt( nr, 1 ) = TRunoff%wt( nr, 1 ) / TUnit%tlen( nr ) / TUnit%twidth( nr )
+
+        ! Calculate water depth in main channel :
+        TRunoff%yr( nr, 1 ) = TRunoff%wr( nr, 1 ) / TUnit%rlen( nr ) / TUnit%rwidth( nr )
+
+        ! Total water volume within a computation unit :
+        rtmCTL%volr(nr,1) = TRunoff%wt(nr,1) + TRunoff%wr(nr,1) + TRunoff%wf_ini( nr ) + TRunoff%wh(nr,1)*rtmCTL%area(nr)     ! times "TUnit%frac( nr )" or not ?
+
+      end if
+    end do
+
+#else
+
     do nt = 1,nt_rtm
     do nr = rtmCTL%begr,rtmCTL%endr
        call UpdateState_hillslope(nr,nt)
@@ -1388,6 +1408,8 @@ contains
                              TRunoff%wh(nr,nt)*rtmCTL%area(nr))
     enddo
     enddo
+
+#endif
 
     call t_stopf('mosarti_restart')
 
@@ -1557,14 +1579,14 @@ contains
     erowm_regf = 0._r8
     eroutup_avg = 0._r8
     erlat_avg = 0._r8
-    rtmCTL%runoff = 0._r8
-    rtmCTL%direct = 0._r8
-    rtmCTL%flood = 0._r8
-    rtmCTL%runofflnd = spval
-    rtmCTL%runoffocn = spval
-    rtmCTL%dvolrdt = 0._r8
-    rtmCTL%dvolrdtlnd = spval
-    rtmCTL%dvolrdtocn = spval
+    rtmCTL%runoff = 0._r8              ! coupler return mosart basin derived flow [m3/s]
+    rtmCTL%direct = 0._r8              ! coupler return direct flow [m3/s]
+    rtmCTL%flood = 0._r8               ! coupler return flood water sent back to clm [m3/s]
+    rtmCTL%runofflnd = spval        ! runoff masked for land (m3 H2O/s) ( spval = 1.e36_r8 )
+    rtmCTL%runoffocn = spval       ! runoff masked for ocn  (m3 H2O/s)
+    rtmCTL%dvolrdt = 0._r8            ! RTM change in storage (mm/s)
+    rtmCTL%dvolrdtlnd = spval      ! dvolrdt masked for land (mm/s)
+    rtmCTL%dvolrdtocn = spval     ! dvolrdt masked for ocn  (mm/s)
 
     if (budget_check) then
        call t_startf('mosartr_budget')
@@ -1604,8 +1626,10 @@ contains
        TRunoff%qgwl(nr,nt) = rtmCTL%qgwl(nr,nt)
     enddo
     enddo
-	
-#ifnotdef INCLUDE_INUND	
+  
+#ifdef INCLUDE_INUND 
+
+#else
 
     !-----------------------------------
     ! Compute flood
@@ -1762,22 +1786,22 @@ contains
           write(iulog,'(2a,i6,l4)') trim(subname),' euler_calc for nt = ',nt,TUnit%euler_calc(nt)
        enddo
     endif
-	
-#ifdef INCLUDE_INUND		! Use the inundation scheme.
+  
+#ifdef INCLUDE_INUND    ! Use the inundation scheme.
 
-	nsub = coupling_period / Tctl%inund_dt
-	delt = Tctl%inund_dt
-	
-#else	
+    nsub = NINT( coupling_period / Tctl%inund_dt )         ! NINT(...) : Rounds its argument to the nearest whole number.
+    delt = Tctl%inund_dt
+  
+#else 
 
     nsub = coupling_period/delt_mosart
     if (nsub*delt_mosart < coupling_period) then
        nsub = nsub + 1
     end if
     delt = delt_coupling/float(nsub)
-	
-#endif	
-	
+  
+#endif  
+  
     if (delt /= delt_save) then
        if (masterproc) then
           write(iulog,'(2a,2g20.12,2i12)') trim(subname),' MOSART delt update from/to',delt_save,delt,nsub_save,nsub
@@ -1787,7 +1811,7 @@ contains
     nsub_save = nsub
     delt_save = delt
     Tctl%DeltaT = delt
-	
+  
     !-----------------------------------
     ! mosart euler solver
     ! --- convert TRunoff fields from m3/s to m/s before calling Euler
@@ -1816,19 +1840,19 @@ contains
           write(iulog,*) ' '
           write(iulog,'(2a,i4,a,i10,i6)') trim(subname),' subcycling=',ns,': model date=',ymd,tod
        endif
-	   
+     
 ! --Inund. ---------------------------------------------------------------  
-#ifdef INCLUDE_INUND	   
-		
-		call MOSARTinund_simulate ( )
-		
+#ifdef INCLUDE_INUND     
+    
+      call MOSARTinund_simulate ( )
+    
 #else
 
        call t_startf('mosartr_euler')
        call Euler()
        call t_stopf('mosartr_euler')
-	   
-#endif	   
+     
+#endif     
 
 ! tcraig - NOT using this now, but leave it here in case it's useful in the future
 !   for some runoff terms.
@@ -1871,6 +1895,24 @@ contains
        ! accumulate local flow field
        !-----------------------------------
 
+! --Inund. ---------------------------------------------------------------  
+#ifdef INCLUDE_INUND
+
+        do nt = 1, 1
+          do nr = rtmCTL%begr, rtmCTL%endr
+            ! Flows of previous time step :
+            eroutup_avg(nr,nt) = eroutup_avg(nr,nt) + TRunoff%eroutup_avg(nr,nt)
+            eroup_lagi(nr,nt) = eroup_lagi(nr,nt) + TRunoff%eroup_lagi(nr,nt)
+
+            ! Flows of current time step :
+            erlat_avg(nr,nt) = erlat_avg(nr,nt) + TRunoff%erlat_avg(nr,nt)
+            flow(nr,nt) = flow(nr,nt) + TRunoff%flow(nr,nt)
+            eroup_lagf(nr,nt) = eroup_lagf(nr,nt) + TRunoff%eroup_lagf(nr,nt)
+          enddo
+        enddo
+
+#else
+
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
           flow(nr,nt) = flow(nr,nt) + TRunoff%flow(nr,nt)
@@ -1882,6 +1924,8 @@ contains
           erlat_avg(nr,nt) = erlat_avg(nr,nt) + TRunoff%erlat_avg(nr,nt)
        enddo
        enddo
+
+#endif
 
     enddo ! nsub
 
@@ -1906,22 +1950,36 @@ contains
     rtmCTL%wr      = TRunoff%wr
     rtmCTL%erout   = TRunoff%erout
 
+! --Inund. ---------------------------------------------------------------  
+#ifdef INCLUDE_INUND
+
+    ! --------------------------------- 
+    ! Update water volume over floodplains ?
+    ! --------------------------------- 
+
+#endif
+
     do nt = 1,nt_rtm
     do nr = rtmCTL%begr,rtmCTL%endr
        volr_init = rtmCTL%volr(nr,nt)
+
+#ifdef INCLUDE_INUND
+       rtmCTL%volr(nr,nt) = TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + TRunoff%wf_ini( nr ) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)
+#else
        rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
                              TRunoff%wh(nr,nt)*rtmCTL%area(nr))
+#endif
        rtmCTL%dvolrdt(nr,nt) = (rtmCTL%volr(nr,nt) - volr_init) / delt_coupling
        rtmCTL%runoff(nr,nt) = flow(nr,nt)
 
-       rtmCTL%runofftot(nr,nt) = rtmCTL%direct(nr,nt)
-       if (rtmCTL%mask(nr) == 1) then
+       rtmCTL%runofftot(nr,nt) = rtmCTL%direct(nr,nt)              ! coupler return direct flow [m3/s]
+       if (rtmCTL%mask(nr) == 1) then        ! 1=Land
           rtmCTL%runofflnd(nr,nt) = rtmCTL%runoff(nr,nt)
-          rtmCTL%dvolrdtlnd(nr,nt)= rtmCTL%dvolrdt(nr,nt)
-       elseif (rtmCTL%mask(nr) >= 2) then
+          rtmCTL%dvolrdtlnd(nr,nt)= rtmCTL%dvolrdt(nr,nt)       ! RTM change in storage
+       elseif (rtmCTL%mask(nr) >= 2) then        ! 2=ocean, 3=outlet
           rtmCTL%runoffocn(nr,nt) = rtmCTL%runoff(nr,nt)
-          rtmCTL%runofftot(nr,nt) = rtmCTL%runofftot(nr,nt) + rtmCTL%runoff(nr,nt)
-          rtmCTL%dvolrdtocn(nr,nt)= rtmCTL%dvolrdt(nr,nt)
+          rtmCTL%runofftot(nr,nt) = rtmCTL%runofftot(nr,nt) + rtmCTL%runoff(nr,nt)       ! total runoff masked for ocn
+          rtmCTL%dvolrdtocn(nr,nt)= rtmCTL%dvolrdt(nr,nt)       ! RTM change in storage
        endif
     enddo
     enddo
@@ -1931,6 +1989,11 @@ contains
     !-----------------------------------
     ! BUDGET
     !-----------------------------------
+
+! --Inund. ---------------------------------------------------------------
+    ! --------------------------------- 
+    ! Need code changes to account for floodplain inundation computation in budget analysis.
+    ! --------------------------------- 
 
     budget_write = .false.
     if (day == 1 .and. mon == 1) budget_write = .true.
@@ -2286,23 +2349,31 @@ contains
 #ifdef INCLUDE_INUND
 
   ! Control parameters :  
-  Tctl%OPT_calcNr = 1						! Options to calculate channel Manning roughness coefficients : 1 -- use channel depth; 2 -- use channel depth and exponent of 1/3 (Getirana 2012 JHM); 3 -- use channel width (Decharme 2010 JHM); 4 -- use one uniform value.
-  Tctl%nr_max = 0.05						! Max Manning coefficient for channels (when OPT_calcNr = 1, 2, 3) ( s*m^(-1/3) ).
-  Tctl%nr_min = 0.03							! Min Manning coefficient for channels (when OPT_calcNr = 1, 2, 3) ( s*m^(-1/3) ).
-  Tctl%nr_uniform = 0.04					! The uniform Manning coefficient for all channels (when OPT_calcNr = 4) ( s*m^(-1/3) ).
-  Tctl%rdepth_max = 50.0				! Max channel depth (used when OPT_calcNr = 1, 2) (m).
-  Tctl%rdepth_min = 1.0					! Min channel depth (used when OPT_calcNr = 1, 2) (m).
-  Tctl%rwidth_max = 5000.0				! Max channel width (used when OPT_calcNr = 3) (m).
-  Tctl%rwidth_min = 20.0					! Min channel width (used when OPT_calcNr = 3) (m).
-  Tctl%rslp_assume = 0.00001		! Use this assumed riverbed slope when the input riverbed slope <= zero (dimensionless).
-  Tctl%inund_dt = 60.0						! Length of one time step (second).
-  Tctl%minL_tribRouting = 10.0		! Min tributary channel length for using tributary routing (m).  
-  
+
+  Tctl%OPT_calcNr = 1                ! Options to calculate channel Manning roughness coefficients : 
+                                                       ! 1 -- use channel depth (Luo et al. 2017 GMD); 
+                                                       ! 2 -- use channel depth and exponent of 1/3 (Getirana et al. 2012 JHM); 
+                                                       ! 3 -- use channel width (Decharme et al. 2010 JHM); 
+                                                       ! 4 -- use one uniform value. 
+                                                       ! (Please see MOSARTinund_preProcs.F90 for references.)
+  Tctl%nr_max = 0.05_r8             ! Max Manning coefficient for channels (when OPT_calcNr = 1, 2, 3) ( s*m^(-1/3) ).
+  Tctl%nr_min = 0.03_r8               ! Min Manning coefficient for channels (when OPT_calcNr = 1, 2, 3) ( s*m^(-1/3) ).
+  Tctl%nr_uniform = 0.04_r8        ! The uniform Manning coefficient for all channels (when OPT_calcNr = 4) ( s*m^(-1/3) ).
+  Tctl%rdepth_max = 50.0_r8      ! Max channel depth (used when OPT_calcNr = 1, 2) (m).
+  Tctl%rdepth_min = 1.0_r8         ! Min channel depth (used when OPT_calcNr = 1, 2) (m).
+  Tctl%rwidth_max = 5000.0_r8  ! Max channel width (used when OPT_calcNr = 3) (m).
+  Tctl%rwidth_min = 20.0_r8        ! Min channel width (used when OPT_calcNr = 3) (m).
+  Tctl%rslp_assume = 0.00001_r8   ! Use this assumed riverbed slope when the input riverbed slope <= zero (dimensionless).
+  Tctl%inund_dt = 60.0_r8            ! Length of one time step (second).
+  Tctl%minL_tribRouting = 10.0_r8   ! Min tributary channel length for using tributary routing (m).  
+  ! --------------------------------- 
   ! The following parameters are for the inundation scheme :
-  Tctl%OPT_inund = 1						! Switch of inundation scheme: 1 -- Turn on inundation scheme; 2 -- Turn off inundation scheme.
-  Tctl%OPT_elevProf = 2					! Options of elevation profile data: 1 -- Use real data; 2 -- Use hypothetical values.
-  Tctl%npt_elevProf = 12					! Number of dividing points in the elevation profile.  
-  Tctl%threshold_slpRatio = 10.0		! Threshold of the ratio of the lowest section's slope to the second lowest section's slope in the elevation profile (used to alleviate the effect of DEM pits on elevation profiles).
+  ! --------------------------------- 
+  Tctl%OPT_inund = 2                 ! Switch of inundation scheme: 1 -- Turn on inundation scheme; 2 -- Turn off inundation scheme.
+  Tctl%OPT_elevProf = 2            ! Options of elevation profile data: 1 -- Use real data; 2 -- Use hypothetical values.
+  Tctl%npt_elevProf = 12             ! Number of dividing points in the elevation profile.  
+  Tctl%threshold_slpRatio = 10.0_r8    ! Threshold of the ratio of the lowest section's slope to the second lowest section's slope in
+                                                                ! the elevation profile (used to alleviate the effect of DEM pits on elevation profiles).
 #endif
   
   begr = rtmCTL%begr
@@ -2503,20 +2574,20 @@ contains
 ! --Inund. ---------------------------------------------------------------  
 #ifdef INCLUDE_INUND
 
-	allocate(TUnit%nr(begr:endr))
-	
-	! Calculate channel Manning roughness coefficients :
-	call calc_chnlMannCoe ( )
+    allocate(TUnit%nr(begr:endr))
+  
+    ! Calculate channel Manning roughness coefficients :
+    call calc_chnlMannCoe ( )
 
 #else
-	 
-	 allocate(TUnit%nr(begr:endr))  
+   
+     allocate(TUnit%nr(begr:endr))  
      ier = pio_inq_varid(ncid, name='nr', vardesc=vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%nr, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read nr ',minval(Tunit%nr),maxval(Tunit%nr)
      call shr_sys_flush(iulog)
-	 
-#endif	 
+   
+#endif   
 
      allocate(TUnit%nUp(begr:endr))
      TUnit%nUp = 0
@@ -2526,75 +2597,75 @@ contains
 
      allocate(TUnit%indexDown(begr:endr))
      TUnit%indexDown = 0
-	 
+   
 ! --Inund. ---------------------------------------------------------------  
 #ifdef INCLUDE_INUND
 
-	if ( Tctl%RoutingMethod .eq. 4 ) then				! Use diffusion wave method in channel routing computation.
-		allocate (TUnit%rlen_dstrm(begr:endr))
-		TUnit%rlen_dstrm = 0.0
-		
-		allocate (TUnit%rslp_dstrm(begr:endr))
-		TUnit%rslp_dstrm = 0.0	
-		
-		! --------------------------------- 
-		! Need code to retrieve values of TUnit%rlen_dstrm(:) and TUnit%rslp_dstrm(:) .
-		! --------------------------------- 
-		
-	end if
+    if ( Tctl%RoutingMethod .eq. 4 ) then       ! Use diffusion wave method in channel routing computation.
+      allocate (TUnit%rlen_dstrm(begr:endr))
+      TUnit%rlen_dstrm = 0.0_r8
     
-	if ( Tctl%OPT_inund .eq. 1 ) then			! If inundation scheme is on.
-		allocate (TUnit%wr_bf(begr:endr))
-		TUnit%wr_bf = 0.0		
-		
-		allocate( TUnit%e_eprof_in2( 11, begr:endr ) )		
-		! --------------------------------- 
-		! Need code to read in real elevation profiles (assign elevation values to TUnit%e_eprof_in2( :, : ) ).
-		! --------------------------------- 
-	
-		allocate (TUnit%a_eprof(begr:endr,12))
-		TUnit%a_eprof = 0.0
-		
-		allocate (TUnit%e_eprof(begr:endr,12))
-		TUnit%e_eprof = 0.0
-		
-		allocate (TUnit%a_chnl(begr:endr))
-		TUnit%a_chnl = 0.0
-		
-		allocate (TUnit%e_chnl(begr:endr))
-		TUnit%e_chnl = 0.0
-		
-		allocate (TUnit%ipt_bl_bktp(begr:endr))
-		TUnit%ipt_bl_bktp = 0
-		
-		allocate (TUnit%a_eprof3(begr:endr, 13))
-		TUnit%a_eprof3 = 0.0
-		
-		allocate (TUnit%e_eprof3(begr:endr, 13))
-		TUnit%e_eprof3 = 0.0
-		
-		allocate (TUnit%npt_eprof3(begr:endr))
-		TUnit%npt_eprof3 = 0
-		
-		allocate (TUnit%s_eprof3(begr:endr, 13))
-		TUnit%s_eprof3 = 0.0
-		
-		allocate (TUnit%alfa3(begr:endr, 13))
-		TUnit%alfa3 = 0.0
-		
-		allocate (TUnit%p3(begr:endr, 13))
-		TUnit%p3 = 0.0
-		
-		allocate (TUnit%q3(begr:endr, 13))
-		TUnit%q3 = 0.0			
-		
-		! Pre-process elevation-profile parameters :
-		call preprocess_elevProf ( )
-		
-	end if
-	
+      allocate (TUnit%rslp_dstrm(begr:endr))
+      TUnit%rslp_dstrm = 0.0_r8  
+    
+      ! --------------------------------- 
+      ! Need code to retrieve values of TUnit%rlen_dstrm(:) and TUnit%rslp_dstrm(:) .
+      ! --------------------------------- 
+    
+    end if
+    
+    if ( Tctl%OPT_inund .eq. 1 ) then     ! If inundation scheme is on.
+      allocate (TUnit%wr_bf(begr:endr))
+      TUnit%wr_bf = 0.0_r8   
+    
+      allocate( TUnit%e_eprof_in2( 11, begr:endr ) )    
+      ! --------------------------------- 
+      ! Need code to read in real elevation profiles (assign elevation values to TUnit%e_eprof_in2( :, : ) ).
+      ! --------------------------------- 
+  
+      allocate (TUnit%a_eprof(begr:endr,12))
+      TUnit%a_eprof = 0.0_r8
+    
+      allocate (TUnit%e_eprof(begr:endr,12))
+      TUnit%e_eprof = 0.0_r8
+    
+      allocate (TUnit%a_chnl(begr:endr))
+      TUnit%a_chnl = 0.0_r8
+    
+      allocate (TUnit%e_chnl(begr:endr))
+      TUnit%e_chnl = 0.0_r8
+    
+      allocate (TUnit%ipt_bl_bktp(begr:endr))
+      TUnit%ipt_bl_bktp = 0
+    
+      allocate (TUnit%a_eprof3(begr:endr, 13))
+      TUnit%a_eprof3 = 0.0_r8
+      
+      allocate (TUnit%e_eprof3(begr:endr, 13))
+      TUnit%e_eprof3 = 0.0_r8
+    
+      allocate (TUnit%npt_eprof3(begr:endr))
+      TUnit%npt_eprof3 = 0
+    
+      allocate (TUnit%s_eprof3(begr:endr, 13))
+      TUnit%s_eprof3 = 0.0_r8
+    
+      allocate (TUnit%alfa3(begr:endr, 13))
+      TUnit%alfa3 = 0.0_r8
+    
+      allocate (TUnit%p3(begr:endr, 13))
+      TUnit%p3 = 0.0_r8
+    
+      allocate (TUnit%q3(begr:endr, 13))
+      TUnit%q3 = 0.0_r8      
+    
+      ! Pre-process elevation-profile parameters :
+      call preprocess_elevProf ( )
+    
+    end if
+  
 #endif
-	
+  
      ! initialize water states and fluxes
      allocate (TRunoff%wh(begr:endr,nt_rtm))
      TRunoff%wh = 0._r8
@@ -2718,61 +2789,61 @@ contains
     
      allocate (TPara%c_twid(begr:endr))
      TPara%c_twid = 1.0_r8
-	 
+   
 ! --Inund. ---------------------------------------------------------------
 #ifdef INCLUDE_INUND
 
-	!allocate (TRunoff%wr_ini(begr:endr))
-	!TRunoff%wr_ini = 0.0
-	
-	!allocate (TRunoff%yr_ini(begr:endr))
-	!TRunoff%yr_ini = 0.0
-	
-	allocate (TRunoff%wr_exchg(begr:endr))
-	TRunoff%wr_exchg = 0.0
-	
-	allocate (TRunoff%yr_exchg(begr:endr))
-	TRunoff%yr_exchg = 0.0
-	
-	if ( Tctl%RoutingMethod .eq. 4 ) then				! Use diffusion wave method in channel routing computation.
-		allocate (TRunoff%wr_exchg_dstrm(begr:endr))
-		TRunoff%wr_exchg_dstrm = 0.0
-	
-		allocate (TRunoff%yr_exchg_dstrm(begr:endr))
-		TRunoff%yr_exchg_dstrm = 0.0		
-	end if
-	
-	!allocate (TRunoff%delta_wr(begr:endr))
-	!TRunoff%delta_wr = 0.0
-	
-	allocate (TRunoff%wr_rtg(begr:endr))
-	TRunoff%wr_rtg = 0.0		
-	
-	allocate (TRunoff%yr_rtg(begr:endr))
-	TRunoff%yr_rtg = 0.0
-		
-	if ( Tctl%OPT_inund .eq. 1 ) then			! If inundation scheme is on.
-		allocate (TRunoff%wf_ini(begr:endr))
-		TRunoff%wf_ini = 0.0
-		
-		allocate (TRunoff%hf_ini(begr:endr))
-		TRunoff%hf_ini = 0.0
-		
-		allocate (TRunoff%se_rf(begr:endr))
-		TRunoff%se_rf = 0.0
-		
-		allocate (TRunoff%ff_fp(begr:endr))
-		TRunoff%ff_fp = 0.0
-		
-		allocate (TRunoff%fa_fp(begr:endr))
-		TRunoff%fa_fp = 0.0
-		
-		allocate (TRunoff%wf_exchg(begr:endr))
-		TRunoff%wf_exchg = 0.0		
-		
-		allocate (TRunoff%hf_exchg(begr:endr))
-		TRunoff%hf_exchg = 0.0
-	end if
+    !allocate (TRunoff%wr_ini(begr:endr))
+    !TRunoff%wr_ini = 0.0
+  
+    !allocate (TRunoff%yr_ini(begr:endr))
+    !TRunoff%yr_ini = 0.0
+  
+    allocate (TRunoff%wr_exchg(begr:endr))
+    TRunoff%wr_exchg = 0.0_r8
+  
+    allocate (TRunoff%yr_exchg(begr:endr))
+    TRunoff%yr_exchg = 0.0_r8
+  
+    if ( Tctl%RoutingMethod .eq. 4 ) then       ! Use diffusion wave method in channel routing computation.
+      allocate (TRunoff%wr_exchg_dstrm(begr:endr))
+      TRunoff%wr_exchg_dstrm = 0.0_r8
+  
+      allocate (TRunoff%yr_exchg_dstrm(begr:endr))
+      TRunoff%yr_exchg_dstrm = 0.0_r8    
+    end if
+  
+    !allocate (TRunoff%delta_wr(begr:endr))
+    !TRunoff%delta_wr = 0.0
+  
+    allocate (TRunoff%wr_rtg(begr:endr))
+    TRunoff%wr_rtg = 0.0_r8    
+  
+    allocate (TRunoff%yr_rtg(begr:endr))
+    TRunoff%yr_rtg = 0.0_r8
+    
+    if ( Tctl%OPT_inund .eq. 1 ) then     ! If inundation scheme is on.
+      allocate (TRunoff%wf_ini(begr:endr))
+      TRunoff%wf_ini = 0.0_r8
+    
+      allocate (TRunoff%hf_ini(begr:endr))
+      TRunoff%hf_ini = 0.0_r8
+    
+      allocate (TRunoff%se_rf(begr:endr))
+      TRunoff%se_rf = 0.0_r8
+    
+      allocate (TRunoff%ff_fp(begr:endr))
+      TRunoff%ff_fp = 0.0_r8
+    
+      allocate (TRunoff%fa_fp(begr:endr))
+      TRunoff%fa_fp = 0.0_r8
+    
+      allocate (TRunoff%wf_exchg(begr:endr))
+      TRunoff%wf_exchg = 0.0_r8    
+    
+      allocate (TRunoff%hf_exchg(begr:endr))
+      TRunoff%hf_exchg = 0.0_r8
+    end if
 
 #endif
 
@@ -2786,12 +2857,12 @@ contains
 ! --Inund. ---------------------------------------------------------------  
 #ifdef INCLUDE_INUND
 
-	if ( Tctl%OPT_inund .eq. 1 ) then			! If inundation scheme is on.
-		do iunit = rtmCTL%begr, rtmCTL%endr
-			! Main channel storage capacity :
-			TUnit%wr_bf( iunit ) = TUnit%rwidth( iunit ) * TUnit%rlen( iunit ) * TUnit%rdepth( iunit )
-		end do
-	end if
+    if ( Tctl%OPT_inund .eq. 1 ) then     ! If inundation scheme is on.
+      do iunit = rtmCTL%begr, rtmCTL%endr
+        ! Main channel storage capacity :
+        TUnit%wr_bf( iunit ) = TUnit%rwidth( iunit ) * TUnit%rlen( iunit ) * TUnit%rdepth( iunit )
+      end do
+    end if
 
 #endif
 
@@ -2832,13 +2903,13 @@ contains
         end if
         
         if(TUnit%rslp(iunit) <= 0._r8) then
-		
+    
 ! --Inund. ---------------------------------------------------------------
 #ifdef INCLUDE_INUND
-			TUnit%rslp(iunit) = Tctl%rslp_assume
-#else			
+           TUnit%rslp(iunit) = Tctl%rslp_assume
+#else     
            TUnit%rslp(iunit) = 0.0001_r8
-#endif		   
+#endif       
 
         end if
         if(TUnit%tslp(iunit) <= 0._r8) then
@@ -3011,7 +3082,11 @@ contains
 !     endif
 !  enddo
 
-#ifnotdef INCLUDE_INUND
+#ifdef INCLUDE_INUND
+
+  Tctl%RoutingMethod = 1        ! 1 -- Kinematic wave method ; 4 -- Diffusion wave method.
+
+#else
 
   ! control parameters
   Tctl%RoutingMethod = 1
@@ -3084,4 +3159,3 @@ contains
 !-----------------------------------------------------------------------
 
 end module RtmMod
-
