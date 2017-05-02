@@ -39,7 +39,7 @@ int main(int argc, char **argv)
     MPI_Comm test_comm; /* comm for test */
 
     /* Num procs for IO and computation. */
-    int num_procs[NUM_COMBOS][COMPONENT_COUNT + 1] = {{2, 1}, {1, 2}};
+    int num_procs[NUM_COMBOS][COMPONENT_COUNT] = {{1}, {2}};
 
     /* Number of processors that will do IO. */
     int num_io_procs[NUM_COMBOS] = {2, 1};
@@ -63,8 +63,8 @@ int main(int argc, char **argv)
             int comp_task = my_rank < num_io_procs[combo] ? 0 : 1;
 
             /* Initialize the IO system. */
-            if ((ret = PIOc_Init_Async(test_comm, num_io_procs[combo], NULL, COMPONENT_COUNT,
-                                       num_procs[combo], NULL, NULL, NULL, iosysid)))
+            if ((ret = PIOc_init_async(test_comm, num_io_procs[combo], NULL, COMPONENT_COUNT,
+                                       num_procs[combo], NULL, NULL, NULL, PIO_REARR_BOX, iosysid)))
                 ERR(ERR_INIT);
 
             for (int c = 0; c < COMPONENT_COUNT; c++)

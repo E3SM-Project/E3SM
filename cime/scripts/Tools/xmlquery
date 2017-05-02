@@ -105,9 +105,7 @@ epilog=textwrap.dedent(__doc__))
     group.add_argument("--valid-values", default=False, action="store_true",
                         help="Print the valid values associated with this variable if defined")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if (len(sys.argv) == 1) :
         parser.print_help()

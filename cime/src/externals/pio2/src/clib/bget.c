@@ -400,7 +400,7 @@
 #include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
-#ifdef PIO_USE_MALLOC
+#if PIO_USE_MALLOC
 #include <stdlib.h>
 #endif
 
@@ -614,7 +614,7 @@ bufsize requested_size;
     int compactseq = 0;
 #endif
 
-#ifdef PIO_USE_MALLOC
+#if PIO_USE_MALLOC
     //    if(requested_size>maxsize){
     //   maxsize=requested_size;
     //   printf("%s %d %d\n",__FILE__,__LINE__,maxsize);
@@ -847,7 +847,7 @@ bufsize size;
     bufsize osize;                    /* Old size of buffer */
     struct bhead *b;
 
-#ifdef PIO_USE_MALLOC
+#if PIO_USE_MALLOC
     return(realloc(buf, size));
 #endif
     if ((nbuf = bget(size)) == NULL) { /* Acquire new buffer */
@@ -882,7 +882,7 @@ void *buf;
 {
     struct bfhead *b, *bn;
 
-#ifdef PIO_USE_MALLOC
+#if PIO_USE_MALLOC
     //    printf("bget free %d %x\n",__LINE__,buf);
     free(buf);
     return;

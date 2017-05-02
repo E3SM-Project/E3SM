@@ -43,7 +43,7 @@ def parse_command_line(args):
     parser.add_argument("--dumpxml",action="store_true", 
                         help="Dump XML test results to sceen.")
     args = parser.parse_args()
-    CIME.utils.handle_standard_logging_options(args)
+    CIME.utils.parse_args_and_handle_standard_logging_options(args)
 
 
     return args.testroot, args.testid, args.tagname, args.testtype, args.dryrun, args.dumpxml

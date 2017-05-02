@@ -54,23 +54,18 @@ install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/pio.h DESTINATION include)
 #==============================================================================
 #  DEFINE THE DEPENDENCIES
 #==============================================================================
-
-#===== MPI =====
-if (PIO_USE_MPISERIAL)
-  find_package (MPISERIAL COMPONENTS C REQUIRED)
-  if (MPISERIAL_C_FOUND)
+# MPI test done at top level
+if (MPISERIAL_C_FOUND)
     target_compile_definitions (pioc
       PRIVATE MPI_SERIAL)
     target_include_directories (pioc
       PUBLIC ${MPISERIAL_C_INCLUDE_DIRS})
     target_link_libraries (pioc
       PUBLIC ${MPISERIAL_C_LIBRARIES})
-
     set (WITH_PNETCDF FALSE)
-  endif ()
-else ()
-  find_package (MPI REQUIRED)
 endif ()
+
+
 
 #===== GPTL =====
 if (PIO_ENABLE_TIMING)

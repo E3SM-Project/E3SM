@@ -48,11 +48,9 @@ OR
     parser.add_argument("-a", "--batch-args",
                         help="Used to pass additional arguments to batch system. ")
 
-    args = parser.parse_args(args[1:])
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     CIME.utils.expect(args.prereq is None, "--prereq not currently supported")
-
-    CIME.utils.handle_standard_logging_options(args)
 
     return args.caseroot, args.job, args.no_batch, args.resubmit, args.batch_args
 
