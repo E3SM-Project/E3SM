@@ -28,7 +28,7 @@ def query_grids(long_output):
         grids.print_values()
 
 ###############################################################################
-def query_machines(current=False):
+def query_machines(machine_name=None):
 ###############################################################################
 
     files = Files()
@@ -36,8 +36,8 @@ def query_machines(current=False):
     expect(os.path.isfile(config_file),
            "Cannot find config_file {} on disk".format(config_file))
     # Provide a special machine name indicating no need for a machine name
-    machines = Machines(config_file,machine="Query")
-    machines.print_values(current_only=current)
+    machines = Machines(config_file, machine="Query")
+    machines.print_values(machine_name=machine_name)
 
 ###############################################################################
 def query_compsets(name):
@@ -144,11 +144,26 @@ def parse_command_line(args):
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("--compset",
-                        help="Query compsets that are set by the target component for {} model".format(cime_model))
+    files, components = get_compsets()
+    valid_components = ['all']
+    for item in components:
+        valid_components.append(item)
 
-    parser.add_argument("--component",
-                        help="Query component settings that are set by the target component for {} model".format(cime_model))
+    parser.add_argument("--compsets", nargs='?', const='all', choices=valid_components,
+                        help="Query compsets corresponding to the target component for the {} model".format(cime_model))
+
+    files, components = get_components()
+    # Loop through the elements for each component class (in config_files.xml)
+    valid_components = []
+    for comp in components:
+        string = "CONFIG_{}_FILE".format(comp)
+
+        # determine all components in string
+        components = files.get_components(string)
+        for item in components:
+            valid_components.append(item)
+    parser.add_argument("--component", choices=valid_components,
+                        help="Query component settings corresponding to the target component for {} model".format(cime_model))
 
     parser.add_argument("--grids", action="store_true",
                         help="Query supported model grids for {} model".format(cime_model))
@@ -157,8 +172,18 @@ def parse_command_line(args):
 #    parser.add_argument("--grids-alias",
 #                        help="Query model grids for input grid alias for {} model - not implemented yet".format(cime_model))
 
-    parser.add_argument("--machines", nargs='?', action='store', const=True, choices=['current', 'empty'],
-                        help="Query supported machines for {} model".format(cime_model))
+    config_file = files.get_value("MACHINES_SPEC_FILE")
+    expect(os.path.isfile(config_file),
+           "Cannot find config_file {} on disk".format(config_file))
+    machines = Machines(config_file, machine="Query")
+    machines = machines.get_nodes(nodename="machine")
+    machine_names = ['current']
+    for machine in machines:
+        machine_names.append(machine.get("MACH"))
+    parser.add_argument("--machines", nargs='?', action='store', const=True, choices=machine_names,
+                        help="Query supported machines for {} model."
+                        " If option is left empty then all machines are listed,"
+                        " if current is giving the current machine details are listed.".format(cime_model))
 
     parser.add_argument("--long", action="store_true",
                         help="Provide long output for queries")
@@ -166,7 +191,7 @@ def parse_command_line(args):
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     # make sure at least one argument has been passed
-    if not (args.grids or args.compset or args.component or args.machines):
+    if not (args.grids or args.compsets or args.component or args.machines):
         parser.print_help(sys.stderr)
 
     CIME.utils.handle_standard_logging_options(args)
@@ -204,21 +229,40 @@ class ArgumentParser(argparse.ArgumentParser):
                           .format(self.prog, message, components))
             elif "component" in message:
                 files, components = get_components()
+                # Loop through the elements for each component class (in config_files.xml)
+                valid_components = []
+                for comp in components:
+                    string = "CONFIG_{}_FILE".format(comp)
+
+                    # determine all components in string
+                    components = files.get_components(string)
+                    for item in components:
+                        valid_components.append(item)
                 self.exit(2, '{}: error: {}\nValid input arguments are {}\n'
-                          .format(self.prog, message, components))
+                             .format(self.prog, message, valid_components))
         # for all other errors
         self.exit(2, '{}: error: {}\n'.format(self.prog, message))
 
 # we overide print_values from Machines to add current in machine description
 class Machines(CIME.XML.machines.Machines):
 
-    def print_values(self, current_only=False):
-        # write out machines
-        if current_only and not self.probe_machine_name(warn=False):
-            print "Current machine is not listed in config file: {}".format(config_file)
+    def print_values(self, machine_name=None):
+        # set flag to look for single machine
+        if machine_name is not None:
+            single_machine = True
+            if machine_name == 'current':
+                machine_name = self.probe_machine_name(warn=False)
         else:
+            single_machine = False
+
+        # if we can't find the specified machine
+        if single_machine and machine_name is None:
+            files = Files()
+            config_file = files.get_value("MACHINES_SPEC_FILE")
+            print "Machine is not listed in config file: {}".format(config_file)
+        else:  # write out machines
             machines = self.get_nodes(nodename="machine")
-            print  "Machines"
+            print  "Machine(s)"
             for machine in machines:
                 name = machine.get("MACH")
                 desc = machine.find("DESC")
@@ -228,15 +272,16 @@ class Machines(CIME.XML.machines.Machines):
                 pes_per_node = machine.find("PES_PER_NODE")
 
                 current_machine = self.probe_machine_name(warn=False)
-                if current_machine and current_machine in name:
-                    print  "  {} : {} ".format(name + " (current)", desc.text)
+                if not single_machine:
+                    name += " (current)" if current_machine and current_machine in name else ""
+                    print  "  {} : {} ".format(name, desc.text)
                     print  "      os             ", os_.text
                     print  "      compilers      ",compilers.text
                     if pes_per_node is not None:
                         print  "      pes/node       ",pes_per_node.text
                     if max_tasks_per_node is not None:
                         print  "      max_tasks/node ",max_tasks_per_node.text
-                elif not current_only:
+                elif single_machine and machine_name in name:
                     print  "  {} : {} ".format(name, desc.text)
                     print  "      os             ", os_.text
                     print  "      compilers      ",compilers.text
@@ -254,17 +299,16 @@ def _main_func():
     if args.grids:
         query_grids(long_output=args.long)
 
-    if args.compset:
-        query_compsets(name=args.compset)
+    if args.compsets:
+        query_compsets(name=args.compsets)
 
     if args.component:
         query_component(args.component)
 
-    # this order is required since booleans are not iterable
-    if args.machines is not None and args.machines is True:
+    if args.machines is not None and args.machines is True:  # print all machines
         query_machines()
-    elif args.machines is not None and 'current' in args.machines:
-        query_machines(current=True)
+    elif args.machines is not None:  # print the selected machine
+        query_machines(machine_name=args.machines)
 
 
 ###############################################################################

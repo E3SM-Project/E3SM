@@ -29,7 +29,7 @@ class Machines(GenericXML):
         if infile is None:
             infile = files.get_value("MACHINES_SPEC_FILE")
         schema = files.get_schema("MACHINES_SPEC_FILE")
-        logger.debug("Verifying using schema %s"%schema)
+        logger.debug("Verifying using schema {}".format(schema))
 
         self.machines_dir = os.path.dirname(infile)
 
@@ -38,7 +38,7 @@ class Machines(GenericXML):
         # Append the contents of $HOME/.cime/config_machines.xml if it exists
         # This could cause problems if node matchs are repeated when only one is expected
         local_infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
-        logger.debug("Infile: %s" , local_infile)
+        logger.debug("Infile: {}" , local_infile)
         if os.path.exists(local_infile):
             GenericXML.read(self, local_infile, schema)
 
@@ -48,7 +48,7 @@ class Machines(GenericXML):
             else:
                 machine = self.probe_machine_name()
 
-        expect(machine is not None, "Could not initialize machine object from %s or %s" % (infile, local_infile))
+        expect(machine is not None, "Could not initialize machine object from {} or {}".format(infile, local_infile))
         self.set_machine(machine)
 
     def get_machines_dir(self):
@@ -113,7 +113,8 @@ class Machines(GenericXML):
 
                 names_not_found_quoted = ["'" + name + "'" for name in names_not_found]
                 names_not_found_str = ' or '.join(names_not_found_quoted)
-                logger.warning("Could not find machine match for %s" % names_not_found_str)
+                if warn:
+                    logger.warning("Could not find machine match for {}".format(names_not_found_str))
 
         return machine
 
@@ -136,7 +137,7 @@ class Machines(GenericXML):
                 logger.debug("machine regex string is " + regex_str)
                 regex = re.compile(regex_str)
                 if regex.match(nametomatch):
-                    logger.debug("Found machine: %s matches %s" % (machtocheck, nametomatch))
+                    logger.debug("Found machine: {} matches {}".format(machtocheck, nametomatch))
                     machine = machtocheck
                     break
 
@@ -158,7 +159,7 @@ class Machines(GenericXML):
             self.machine = machine
         elif self.machine != machine or self.machine_node is None:
             self.machine_node = self.get_optional_node("machine", {"MACH" : machine})
-            expect(self.machine_node is not None, "No machine %s found" % machine)
+            expect(self.machine_node is not None, "No machine {} found".format(machine))
             self.machine = machine
 
         return machine
@@ -275,7 +276,7 @@ class Machines(GenericXML):
         batch_system = self.get_optional_node("BATCH_SYSTEM", root=self.machine_node)
         if batch_system is not None:
             result = (batch_system.text is not None and batch_system.text != "none")
-        logger.debug("Machine %s has batch: %s" % (self.machine, result))
+        logger.debug("Machine {} has batch: {}".format(self.machine, result))
         return result
 
     def get_suffix(self, suffix_type):
@@ -299,7 +300,7 @@ class Machines(GenericXML):
             max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
             pes_per_node = machine.find("PES_PER_NODE")
 
-            print  "  %s : %s "% (name , desc.text)
+            print  "  {} : {} ".format(name , desc.text)
             print  "      os             ", os_.text
             print  "      compilers      ",compilers.text
             if pes_per_node is not None:
