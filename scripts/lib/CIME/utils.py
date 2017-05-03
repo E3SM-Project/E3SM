@@ -662,7 +662,7 @@ def parse_args_and_handle_standard_logging_options(args, parser=None):
 
     # scripts_regression_tests is the only thing that should pass a None argument in parser
     if parser is not None:
-        #_check_for_invalid_args(args[1:])
+        _check_for_invalid_args(args[1:])
         args = parser.parse_args(args[1:])
 
     # --verbose adds to the message format but does not impact the log level
@@ -1241,10 +1241,11 @@ def _check_for_invalid_args(args):
         if arg.startswith("--"):
             continue
         if arg.startswith("-") and len(arg) > 2:
-            if arg == "-value" or arg == "-noecho":
+#       Uncomment these lines when we want to enforce --mulitchararg syntax
+#            if arg == "-value" or arg == "-noecho":
                 logger.warn("This argument is depricated, please use -%s"%arg)
-            else:
-                expect(False, "Invalid argument %s\n  Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options"%arg)
+#            else:
+#                expect(False, "Invalid argument %s\n  Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options"%arg)
 
 class SharedArea(object):
     """
