@@ -86,10 +86,10 @@ MODULE MOSARTinund_Core_MOD
 
     ! Store channel outflow of current time step (for budget analysis) ( actually %flow is same as %eroup_lagf ) :   
     TRunoff%flow = 0._r8
-    TRunoff%flow = TRunoff%flow - Trunoff%erout            ! Note: outflow is negative for TRunoff%erout .
+    TRunoff%flow = TRunoff%flow - Trunoff%erout               ! Note: outflow is negative for TRunoff%erout .
 
     TRunoff%eroup_lagf = 0._r8
-    Trunoff%eroup_lagf = Trunoff%eroup_lagf - Trunoff%erout            ! Note: outflow is negative for TRunoff%erout .
+    Trunoff%eroup_lagf = Trunoff%eroup_lagf - Trunoff%erout   ! Note: outflow is negative for TRunoff%erout .
     
     ! Transition to the next step :
     call transition2nextStep ( )
@@ -106,8 +106,8 @@ MODULE MOSARTinund_Core_MOD
     ! ... ... ...
     
     implicit none   
-    integer :: iu               ! Computation unit index.
-    real( r8 ) :: hsV         ! Hillslope flow velocity (m/s).
+    integer :: iu           ! Computation unit index.
+    real( r8 ) :: hsV       ! Hillslope flow velocity (m/s).
       
     !$OMP PARALLEL FIRSTPRIVATE( iu, hsV )
     !$OMP DO SCHEDULE( GUIDED )
@@ -153,9 +153,9 @@ MODULE MOSARTinund_Core_MOD
     
     implicit none
     real( r8 ), intent(in) :: slp_    ! Slope (dimensionless).
-    real( r8 ), intent(in) :: n_       ! Manning roughness coefficient ( s * m^(-1/3) ).
-    real( r8 ), intent(in) :: rr_      ! Hydraulic radius (m).
-    !real( r8 ), intent(out) :: v_      ! Flow velocity (m/s).
+    real( r8 ), intent(in) :: n_      ! Manning roughness coefficient ( s * m^(-1/3) ).
+    real( r8 ), intent(in) :: rr_     ! Hydraulic radius (m).
+    !real( r8 ), intent(out) :: v_    ! Flow velocity (m/s).
     real( r8 ) :: ftemp
     character( len = * ), parameter :: subname = '(ManningEq)'
     
@@ -163,10 +163,10 @@ MODULE MOSARTinund_Core_MOD
     
       if ( slp_ .gt. 0._r8 ) then
         ftemp = 2._r8 / 3._r8
-        ManningEq = ( rr_ ** ftemp ) * sqrt( slp_ ) / n_      ! Manning equation.
+        ManningEq = ( rr_ ** ftemp ) * sqrt( slp_ ) / n_     ! Manning equation.
       elseif ( slp_ .lt. 0._r8 ) then
         ftemp = 2._r8 / 3._r8
-        ManningEq = - ( rr_ ** ftemp ) * sqrt( - slp_ ) / n_    ! Manning equation.
+        ManningEq = - ( rr_ ** ftemp ) * sqrt( - slp_ ) / n_ ! Manning equation.
       else      ! slp_ = 0
         ManningEq = 0._r8
       end if
@@ -191,8 +191,8 @@ MODULE MOSARTinund_Core_MOD
     ! ... ... ...   
     
     implicit none
-    integer :: iu                 ! Computation unit index.
-    real( r8 ) :: hydrR       ! Hydraulic radius (m).
+    integer :: iu           ! Computation unit index.
+    real( r8 ) :: hydrR     ! Hydraulic radius (m).
     
     !$OMP PARALLEL FIRSTPRIVATE ( iu, hydrR )
     !$OMP DO SCHEDULE ( GUIDED )
@@ -202,7 +202,7 @@ MODULE MOSARTinund_Core_MOD
 
         ! If the tributary channel is very short, then no subnetwork routing :
         if ( TUnit%tlen(iu) .lt. Tctl%minL_tribRouting )  then    
-          TRunoff%etout(iu, 1) = - TRunoff%etin(iu, 1)      ! Note: outflow is negative.
+          TRunoff%etout(iu, 1) = - TRunoff%etin(iu, 1)    ! Note: outflow is negative.
           TRunoff%dwt(iu) = 0._r8
         else
           ! Calculate hydraulic radius ( hydraulic radius = A / P ) :
@@ -259,14 +259,14 @@ MODULE MOSARTinund_Core_MOD
     
     implicit none
     integer :: iu
-    real( r8 ) :: wr_rcd     ! For recording channel storage before exchange (m^3).    
+    real( r8 ) :: wr_rcd    ! For recording channel storage before exchange (m^3).    
     real( r8 ) :: w_over    ! = channel storage + floodplain storage - channel storage capacity (m^3).
-    integer :: j                  ! Index.
-    real( r8 ) :: d_s          ! The storage between the current water level and the below water level through the point " j " in the elevation profile (m^3).
-    real( r8 ) :: d_e          ! Elevation difference between the current water level and the point " j " in the elevation profile (m).
-    real( r8 ) :: hf             ! Floodplain max water depth, namely the elevation difference between the final water level and the banktop (i.e., channel bankfull water level) (m).
-    real( r8 ) :: ff_unit      ! Flooded fraction in the computation unit (including channel area) (dimensionless).
-    real( r8 ) :: wr_over  ! Channel water storage between the final water level and the banktop ( = channel storage - channel storage capacity ) (m^3).
+    integer :: j            ! Index.
+    real( r8 ) :: d_s       ! The storage between the current water level and the below water level through the point " j " in the elevation profile (m^3).
+    real( r8 ) :: d_e       ! Elevation difference between the current water level and the point " j " in the elevation profile (m).
+    real( r8 ) :: hf        ! Floodplain max water depth, namely the elevation difference between the final water level and the banktop (i.e., channel bankfull water level) (m).
+    real( r8 ) :: ff_unit   ! Flooded fraction in the computation unit (including channel area) (dimensionless).
+    real( r8 ) :: wr_over   ! Channel water storage between the final water level and the banktop ( = channel storage - channel storage capacity ) (m^3).
     character( len = * ), parameter :: subname = '(ChnlFPexchg)'
     
     !$OMP PARALLEL FIRSTPRIVATE( iu, wr_rcd, w_over, j, d_s, d_e, hf, ff_unit, wr_over )
@@ -381,7 +381,7 @@ MODULE MOSARTinund_Core_MOD
           TRunoff%hf_exchg( iu ) = TRunoff%hf_ini( iu )          
           TRunoff%se_rf( iu ) = 0._r8
         end if    ! if ( the channel water level is higher than the floodplain water level, or on the contrary )
-      end if    ! if ( TUnit%mask( iu ) .gt. 0 )
+      end if      ! if ( TUnit%mask( iu ) .gt. 0 )
     end do
     !$OMP END DO
     !$OMP END PARALLEL
@@ -393,7 +393,7 @@ MODULE MOSARTinund_Core_MOD
     
     implicit none
     integer :: iu, k, cnt
-    integer :: unitUp     ! ID of upstream channel.
+    integer :: unitUp       ! ID of upstream channel.
     
     TRunoff%eroutUp = 0._r8
     
@@ -403,7 +403,7 @@ MODULE MOSARTinund_Core_MOD
       
         do k=1, TUnit%nUp(iu)
           unitUp = TUnit%iUp(iu, k)
-          TRunoff%eroutUp(iu, 1) = TRunoff%eroutUp(iu, 1) + TRunoff%erout(unitUp, 1)            ! Note: outflow is negative for TRunoff%erout .
+          TRunoff%eroutUp(iu, 1) = TRunoff%eroutUp(iu, 1) + TRunoff%erout(unitUp, 1)    ! Note: outflow is negative for TRunoff%erout .
         end do
         
       end if  
@@ -443,11 +443,11 @@ MODULE MOSARTinund_Core_MOD
     implicit none
     integer :: iu
     integer :: k
-    real( r8 ) :: surfaceSlope                              ! Water surface slope ( from the current channel to the downstream channel ) (dimensionless).
-    real( r8 ) :: y_c, len_c, slp_c                         ! Water depth (m), length (m) and bed slope (dimensionless) of the current channel.
-    real( r8 ) :: y_down, len_down, slp_down   ! Water depth (m), length (m) and bed slope (dimensionless) of the downstream channel.
-    real( r8 ) :: hydrR                                          ! Hydraulic radius (m).   
-    real( r8 ) :: wv_gwl                                        ! Water volume from glacier, wetlands or lakes (m^3). 
+    real( r8 ) :: surfaceSlope                  ! Water surface slope ( from the current channel to the downstream channel ) (dimensionless).
+    real( r8 ) :: y_c, len_c, slp_c             ! Water depth (m), length (m) and bed slope (dimensionless) of the current channel.
+    real( r8 ) :: y_down, len_down, slp_down    ! Water depth (m), length (m) and bed slope (dimensionless) of the downstream channel.
+    real( r8 ) :: hydrR                         ! Hydraulic radius (m).   
+    real( r8 ) :: wv_gwl                        ! Water volume from glacier, wetlands or lakes (m^3). 
     character( len = * ), parameter :: subname = '(inund_Routing_DW)'
     
     !$OMP PARALLEL FIRSTPRIVATE( iu, k, surfaceSlope, y_c, len_c, slp_c, y_down, len_down, slp_down, hydrR, wv_gwl )
@@ -603,8 +603,8 @@ MODULE MOSARTinund_Core_MOD
     implicit none
     integer :: iu
     integer :: k
-    real( r8 ) :: hydrR           ! Hydraulic radius (m).
-    real( r8 ) :: wv_gwl         ! Water volume from glacier, wetlands or lakes (m^3).
+    real( r8 ) :: hydrR     ! Hydraulic radius (m).
+    real( r8 ) :: wv_gwl    ! Water volume from glacier, wetlands or lakes (m^3).
     character( len = * ), parameter :: subname = '(inund_Routing_KW)'
     
     !$OMP PARALLEL FIRSTPRIVATE( iu, k, hydrR, wv_gwl )

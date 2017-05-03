@@ -102,12 +102,11 @@ MODULE MOSARTinund_PreProcs_MOD
     !     Global Evaluation of the ISBA-TRIP 15 Continental Hydrological System. Part II: Uncertainties in River Routing Simulation 
     !     Related to Flow Velocity and Groundwater Storage, J. Hydrometeorol., 11(3), 601–617, doi:10.1175/2010JHM1212.1, 2010.
     ! Luo, X., Li, H.-Y., Leung, L. R., Tesfa, T. K., Getirana, A., Papa, F., and Hess, L. L.: 
-    !     Modeling surface water dynamics in the Amazon Basin using MOSART-Inundation v1.0: 
-    !     impacts of geomorphological parameters and river flow representation, Geosci. Model Dev., 10(3), 1233-1259,
-    !     doi:10.5194/gmd-10-1233-2017, 2017.
+    !     Modeling surface water dynamics in the Amazon Basin using MOSART-Inundation v1.0: impacts of geomorphological parameters 
+    !     and river flow representation, Geosci. Model Dev., 10(3), 1233-1259, doi:10.5194/gmd-10-1233-2017, 2017.
     ! Getirana, A. C. V., Boone, A., Yamazaki, D., Decharme, B., Papa, F. and Mognard, N.: 
-    !     The Hydrological Modeling and Analysis Platform (HyMAP): Evaluation in the Amazon Basin, 
-    !     J. Hydrometeorol., 13(6), 1641–1665, doi:10.1175/JHM-D-12-021.1, 2012.
+    !     The Hydrological Modeling and Analysis Platform (HyMAP): Evaluation in the Amazon Basin, J. Hydrometeorol., 13(6), 1641–1665,
+    !     doi:10.1175/JHM-D-12-021.1, 2012.
     ! ---------------------------------  
   
   end subroutine calc_chnlMannCoe
@@ -257,7 +256,7 @@ MODULE MOSARTinund_PreProcs_MOD
       
         ! The upmost point (which is a virtual point) :
         TUnit%a_eprof3(iu, k+1) = TUnit%a_eprof3(iu, k)   ! Actually this area fraction equals 1.0 .      
-        TUnit%e_eprof3(iu, k+1) = 10000.0_r8                    ! Arbitrary high elevation (assume that water cannot overflow the watershed) (m).
+        TUnit%e_eprof3(iu, k+1) = 10000.0_r8              ! Arbitrary high elevation (assume that water cannot overflow the watershed) (m).
       
         ! Number of points in the adjusted elevation profile :
         TUnit%npt_eprof3(iu) = k + 1
@@ -270,7 +269,7 @@ MODULE MOSARTinund_PreProcs_MOD
         do j = 2, TUnit%npt_eprof3(iu) - 1    ! NOTE: j start from 2 .
           TUnit%alfa3(iu, j) = (TUnit%a_eprof3(iu, j+1) - TUnit%a_eprof3(iu, j)) / (TUnit%e_eprof3(iu, j+1) - TUnit%e_eprof3(iu, j))    ! (1/m)
           TUnit%p3(iu, j) = TUnit%alfa3(iu, j) * TUnit%area(iu) / 2.0_r8       ! (m)
-          TUnit%q3(iu, j) = TUnit%a_eprof3(iu, j) * TUnit%area(iu)        ! (m^2)
+          TUnit%q3(iu, j) = TUnit%a_eprof3(iu, j) * TUnit%area(iu)             ! (m^2)
         enddo
             
         ! ---------------------------------  
@@ -300,17 +299,22 @@ MODULE MOSARTinund_PreProcs_MOD
   !function interpolation_linear (x,x1,x2,y1,y2) result (y)
   real( r8 ) function interpolation_linear (x, x1, x2, y1, y2)
     ! DESCRIPTION: For linear interpolation.
+
     implicit none
     real( r8 ), intent(in) :: x, x1, x2, y1, y2
     !real( r8 ), intent(out) :: y
     character( len = * ), parameter :: subname = '(interpolation_linear)'
 
     if (abs(x1-x2) > 1.0e-10_r8) then              ! Precision is 15-16 decimal digits.
+
       !y = (y2-y1)*(x-x1)/(x2-x1) + y1
       interpolation_linear = (y2 - y1) * (x - x1) / (x2 - x1) + y1
+
     else
+
       write( iulog, * ) trim( subname ) // ' ERROR: Divided by zero !'
       call shr_sys_abort( trim( subname ) // ' ERROR: Divided by zero !' )
+
     endif
 
     return

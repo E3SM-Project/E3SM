@@ -1787,7 +1787,7 @@ contains
        enddo
     endif
   
-#ifdef INCLUDE_INUND    ! Use the inundation scheme.
+#ifdef INCLUDE_INUND        ! Use the inundation scheme.
 
     nsub = NINT( coupling_period / Tctl%inund_dt )         ! NINT(...) : Rounds its argument to the nearest whole number.
     delt = Tctl%inund_dt
@@ -2350,30 +2350,30 @@ contains
 
   ! Control parameters :  
 
-  Tctl%OPT_calcNr = 1                ! Options to calculate channel Manning roughness coefficients : 
-                                                       ! 1 -- use channel depth (Luo et al. 2017 GMD); 
-                                                       ! 2 -- use channel depth and exponent of 1/3 (Getirana et al. 2012 JHM); 
-                                                       ! 3 -- use channel width (Decharme et al. 2010 JHM); 
-                                                       ! 4 -- use one uniform value. 
-                                                       ! (Please see MOSARTinund_preProcs.F90 for references.)
-  Tctl%nr_max = 0.05_r8             ! Max Manning coefficient for channels (when OPT_calcNr = 1, 2, 3) ( s*m^(-1/3) ).
+  Tctl%OPT_calcNr = 1                 ! Options to calculate channel Manning roughness coefficients : 
+                                      !   1 -- use channel depth (Luo et al. 2017 GMD); 
+                                      !   2 -- use channel depth and exponent of 1/3 (Getirana et al. 2012 JHM); 
+                                      !   3 -- use channel width (Decharme et al. 2010 JHM); 
+                                      !   4 -- use one uniform value. 
+                                      !   (Please see MOSARTinund_preProcs.F90 for references.)
+  Tctl%nr_max = 0.05_r8               ! Max Manning coefficient for channels (when OPT_calcNr = 1, 2, 3) ( s*m^(-1/3) ).
   Tctl%nr_min = 0.03_r8               ! Min Manning coefficient for channels (when OPT_calcNr = 1, 2, 3) ( s*m^(-1/3) ).
-  Tctl%nr_uniform = 0.04_r8        ! The uniform Manning coefficient for all channels (when OPT_calcNr = 4) ( s*m^(-1/3) ).
-  Tctl%rdepth_max = 50.0_r8      ! Max channel depth (used when OPT_calcNr = 1, 2) (m).
-  Tctl%rdepth_min = 1.0_r8         ! Min channel depth (used when OPT_calcNr = 1, 2) (m).
-  Tctl%rwidth_max = 5000.0_r8  ! Max channel width (used when OPT_calcNr = 3) (m).
-  Tctl%rwidth_min = 20.0_r8        ! Min channel width (used when OPT_calcNr = 3) (m).
-  Tctl%rslp_assume = 0.00001_r8   ! Use this assumed riverbed slope when the input riverbed slope <= zero (dimensionless).
-  Tctl%inund_dt = 60.0_r8            ! Length of one time step (second).
-  Tctl%minL_tribRouting = 10.0_r8   ! Min tributary channel length for using tributary routing (m).  
+  Tctl%nr_uniform = 0.04_r8           ! The uniform Manning coefficient for all channels (when OPT_calcNr = 4) ( s*m^(-1/3) ).
+  Tctl%rdepth_max = 50.0_r8           ! Max channel depth (used when OPT_calcNr = 1, 2) (m).
+  Tctl%rdepth_min = 1.0_r8            ! Min channel depth (used when OPT_calcNr = 1, 2) (m).
+  Tctl%rwidth_max = 5000.0_r8         ! Max channel width (used when OPT_calcNr = 3) (m).
+  Tctl%rwidth_min = 20.0_r8           ! Min channel width (used when OPT_calcNr = 3) (m).
+  Tctl%rslp_assume = 0.00001_r8       ! Use this assumed riverbed slope when the input riverbed slope <= zero (dimensionless).
+  Tctl%inund_dt = 60.0_r8             ! Length of one time step (second).
+  Tctl%minL_tribRouting = 10.0_r8     ! Min tributary channel length for using tributary routing (m).  
   ! --------------------------------- 
   ! The following parameters are for the inundation scheme :
   ! --------------------------------- 
-  Tctl%OPT_inund = 2                 ! Switch of inundation scheme: 1 -- Turn on inundation scheme; 2 -- Turn off inundation scheme.
-  Tctl%OPT_elevProf = 2            ! Options of elevation profile data: 1 -- Use real data; 2 -- Use hypothetical values.
-  Tctl%npt_elevProf = 12             ! Number of dividing points in the elevation profile.  
-  Tctl%threshold_slpRatio = 10.0_r8    ! Threshold of the ratio of the lowest section's slope to the second lowest section's slope in
-                                                                ! the elevation profile (used to alleviate the effect of DEM pits on elevation profiles).
+  Tctl%OPT_inund = 2                  ! Switch of inundation scheme: 1 -- Turn on inundation scheme; 2 -- Turn off inundation scheme.
+  Tctl%OPT_elevProf = 2               ! Options of elevation profile data: 1 -- Use real data; 2 -- Use hypothetical values.
+  Tctl%npt_elevProf = 12              ! Number of dividing points in the elevation profile.  
+  Tctl%threshold_slpRatio = 10.0_r8   ! Threshold of the ratio of the lowest section's slope to the second lowest section's slope in
+                                      ! the elevation profile (used to alleviate the effect of DEM pits on elevation profiles).
 #endif
   
   begr = rtmCTL%begr
