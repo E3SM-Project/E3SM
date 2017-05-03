@@ -25,6 +25,7 @@ module li_velocity_external
    use li_setup
    use, intrinsic :: iso_c_binding
    use mpas_constants, only: gravity
+   use li_constants
 
    implicit none
    private
@@ -364,7 +365,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_velocity_external_solve(meshPool, geometryPool, thermalPool, velocityPool, err)
+   subroutine li_velocity_external_solve(meshPool, geometryPool, thermalPool, scratchPool, velocityPool, err)
 
        use li_mask
 
@@ -382,6 +383,9 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
           thermalPool !< Input: thermal information
+
+      type (mpas_pool_type), intent(in) :: &
+          scratchPool !< Input: scratch information
 
       !-----------------------------------------------------------------
       !
@@ -417,9 +421,12 @@ contains
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_always_compute_fem_grid
       logical, pointer :: config_output_external_velocity_solver_data
+      real (kind=RKIND), pointer :: config_ice_density
       integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
       integer, pointer :: nEdges
+      type (field2dReal), pointer :: dissipationVertexField
+      real (kind=RKIND), dimension(:,:), pointer :: heatDissipation  ! on cells
       integer :: iEdge
       real(kind=RKIND), parameter :: secondsInYear = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND
          !< The value of seconds in a year assumed by external dycores
@@ -431,6 +438,7 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_always_compute_fem_grid', config_always_compute_fem_grid)
       call mpas_pool_get_config(liConfigs, 'config_output_external_velocity_solver_data', &
          config_output_external_velocity_solver_data)
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
 
       ! Mesh variables
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
@@ -449,6 +457,7 @@ contains
 
       ! Thermal variables
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+      call mpas_pool_get_array(thermalPool, 'heatDissipation', heatDissipation)
 
       ! Velocity variables
       call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
@@ -511,15 +520,24 @@ contains
 
       case ('FO') ! ===============================================
 #ifdef USE_EXTERNAL_FIRSTORDER
+
+          ! Allocate scratch var for dissipation on vertices
+          ! (Since it is a 3d field, making it scratch)
+          call mpas_pool_get_field(scratchPool, 'workLevelVertex', dissipationVertexField)
+          call mpas_allocate_scratch_field(dissipationVertexField, .true.)
+
+
           call mpas_timer_start("velocity_solver_solve_FO")
           call velocity_solver_solve_FO(bedTopography, lowerSurface, thickness, &
                 betaSolve, sfcMassBal, temperature, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
-                normalVelocity, uReconstructX, uReconstructY, deltat)  ! return values
-!	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)
-          ! this was used only for some ice2sea experiments, and is not a general routine to use
-
+                normalVelocity, dissipationVertexField % array, uReconstructX, uReconstructY, deltat)  ! return values
+!	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)  ! this was used only for some ice2sea experiments, and is not a general routine to use
           call mpas_timer_stop("velocity_solver_solve_FO")
+          ! Now interpolate from vertices to cell centers
+          call li_interpolate_vertex_to_cell_2d(meshPool, dissipationVertexField % array, heatDissipation)
+          heatDissipation = heatDissipation / (config_ice_density * cp_ice)
+          call mpas_deallocate_scratch_field(dissipationVertexField, .true.)
 
           if (config_output_external_velocity_solver_data) then
              call mpas_timer_start("velocity_solver export")

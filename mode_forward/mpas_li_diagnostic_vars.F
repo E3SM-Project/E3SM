@@ -78,7 +78,7 @@ contains
 
    subroutine li_calculate_diagnostic_vars(domain, solveVelo, err)
 
-      use li_thermal, only: li_heat_dissipation_sia, li_basal_friction_sia
+      use li_thermal, only: li_heat_dissipation_sia, li_basal_friction
 
       !-----------------------------------------------------------------
       !
@@ -175,11 +175,13 @@ contains
             call li_heat_dissipation_sia(domain, err_tmp)
             err = ior(err, err_tmp)
 
-            ! Compute heat flux due to basal friction
-            call li_basal_friction_sia(domain, err_tmp)
-            err = ior(err, err_tmp)
-
          endif   ! sia
+         ! (FO dissipation is calculated within dycore)
+
+         ! Compute heat flux due to basal friction
+         !   appropriate for SIA or FO dycore, assuming Taub=beta*ub
+         call li_basal_friction(domain, err_tmp)
+         err = ior(err, err_tmp)
 
       endif   ! temperature or enthalpy
 
@@ -715,7 +717,9 @@ contains
             call mpas_pool_get_array(velocityPool, 'beta', beta)
             call mpas_pool_get_array(velocityPool, 'betaSolve', betaSolve)
             where (li_mask_is_floating_ice(cellMask))
-               betaSolve = 0.0_RKIND
+               !WHL - changing this code per Matt Hoffman's instructions
+!!               betaSolve = 0.0_RKIND
+               betaSolve = beta
             elsewhere
                betaSolve = beta
             end where
@@ -732,6 +736,7 @@ contains
          call mpas_pool_get_array(velocityPool, 'dirichletMaskChanged', dirichletMaskChanged)
          call mpas_dmpar_max_int(domain % dminfo, procDirichletMaskChanged, dirichletMaskChanged)
          !print *,'dirichletMaskChanged', dirichletMaskChanged
+
       end if   ! higher-order
 
       ! === error check

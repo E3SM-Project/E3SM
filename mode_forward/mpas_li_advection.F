@@ -376,6 +376,12 @@ module li_advection
             enddo
          endif
 
+         ! Update the thickness and cellMask before applying the mass balance.
+         ! The update is needed because the SMB and BMB depend on whether ice is present.
+
+         thickness = sum(LayerThickness, 1)
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+
          !-----------------------------------------------------------------
          ! Add the surface and basal mass balance to the layer thickness
          !-----------------------------------------------------------------
@@ -420,11 +426,27 @@ module li_advection
               layerThickness,      &
               advectedTracers)
 
-         ! Update the thickness and cellMask before the vertical remap calculation
-         ! Note: The thickness field (rather than layerThickness) is the primary prognostic,
-         !       which should be returned from each subroutine that alters the thickness.
+         ! Update the thickness and cellMask before the vertical remap calculation.
+         ! Note: The thickness field (rather than layerThickness) is the primary prognostic.
+         !       It should be returned from each subroutine that alters the thickness, or
+         !       updated immediately afterward.
 
          thickness = sum(LayerThickness, 1)
+
+         !WHL - debug - Get mass balance for test cell
+         if (config_print_thickness_advection_info) then
+            do iCell = 1, nCells
+               if (indexToCellID(iCell) == config_stats_cell_ID) then
+                  call mpas_log_write(' ')
+                  call mpas_log_write('After apply_mass_balance, iCell=$i, thickness=$r', intArgs=(/iCell/), realArgs=(/thickness(iCell)/) )
+                  call mpas_log_write('cellMask=$i, is ice=$l, is grounded=$l, is floating=$l', &
+                       intArgs=(/cellMask(iCell)/), logicArgs=(/li_mask_is_ice(cellMask(iCell)), li_mask_is_grounded_ice(cellMask(iCell)), &
+                         li_mask_is_floating_ice(cellMask(iCell)) /) ) 
+                  call mpas_log_write('basalMassBal=$r, grounded=$r, floating=$r', realArgs=(/ basalMassBal(iCell)*31536000./917., &
+                          groundedBasalMassBal(iCell)*31536000./917., floatingBasalMassBal(iCell)*31536000./917. /) )
+               endif
+            enddo
+         endif
 
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
 
