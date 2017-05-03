@@ -5614,53 +5614,16 @@
       </pes>
     </mach>
   </grid>
-  <grid name="any">
-    <mach name="edison">
-      <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
-        <comment>none</comment>
-        <ntasks>
-          <ntasks_atm>960</ntasks_atm>
-          <ntasks_lnd>960</ntasks_lnd>
-          <ntasks_rof>960</ntasks_rof>
-          <ntasks_ice>960</ntasks_ice>
-          <ntasks_ocn>960</ntasks_ocn>
-          <ntasks_glc>960</ntasks_glc>
-          <ntasks_wav>960</ntasks_wav>
-          <ntasks_cpl>960</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>1</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
-  </grid>
   <grid name="a%ne30np4">
     <mach name="edison">
       <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
-        <comment>"PMC - 173 node version gets 6 SYPD. This will be the default and M size"</comment>
+        <comment>"143 node version gets 6 SYPD. This will be the default and M size"</comment>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
           <ntasks_lnd>312</ntasks_lnd>
           <ntasks_rof>312</ntasks_rof>
           <ntasks_ice>2400</ntasks_ice>
-          <ntasks_ocn>1440</ntasks_ocn>
+          <ntasks_ocn>720</ntasks_ocn>
           <ntasks_glc>312</ntasks_glc>
           <ntasks_wav>2400</ntasks_wav>
           <ntasks_cpl>2400</ntasks_cpl>
@@ -5690,14 +5653,51 @@
   </grid>
   <grid name="a%ne30np4">
     <mach name="edison">
+      <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
+        <comment>"39 node version gets 2.1 SYPD."</comment>
+        <ntasks>
+          <ntasks_atm>675</ntasks_atm>
+          <ntasks_lnd>56</ntasks_lnd>
+          <ntasks_rof>56</ntasks_rof>
+          <ntasks_ice>640</ntasks_ice>
+          <ntasks_ocn>240</ntasks_ocn>
+          <ntasks_glc>56</ntasks_glc>
+          <ntasks_wav>56</ntasks_wav>
+          <ntasks_cpl>640</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_lnd>1</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+          <nthrds_cpl>1</nthrds_cpl>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>640</rootpe_lnd>
+          <rootpe_rof>640</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>696</rootpe_ocn>
+          <rootpe_glc>640</rootpe_glc>
+          <rootpe_wav>0</rootpe_wav>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%ne30np4">
+    <mach name="edison">
       <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="L">
-        <comment>"PMC - 375 node version gets 10.7 SYPD"</comment>
+        <comment>"265 node version gets 10.4 SYPD"</comment>
         <ntasks>
           <ntasks_atm>5400</ntasks_atm>
           <ntasks_lnd>600</ntasks_lnd>
           <ntasks_rof>600</ntasks_rof>
-          <ntasks_ice>4800</ntasks_ice>
-          <ntasks_ocn>3600</ntasks_ocn>
+          <ntasks_ice>3200</ntasks_ice>
+          <ntasks_ocn>960</ntasks_ocn>
           <ntasks_glc>600</ntasks_glc>
           <ntasks_wav>4800</ntasks_wav>
           <ntasks_cpl>4800</ntasks_cpl>
