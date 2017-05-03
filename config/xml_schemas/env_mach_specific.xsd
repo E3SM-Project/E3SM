@@ -86,11 +86,23 @@
       <xs:attribute name="name" use="required" type="xs:NCName"/>
     </xs:complexType>
   </xs:element>
+  <xs:element name="arguments">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="arg"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="arg">
+    <xs:complexType mixed="true">
+      <xs:attribute name="name" use="required" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
   <xs:element name="mpirun">
     <xs:complexType>
       <xs:sequence>
         <xs:element ref="executable"/>
-	<xs:element ref="arguments" minOccurs="0"/>
+        <xs:element minOccurs="0" maxOccurs="1" ref="arguments"/>
       </xs:sequence>
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="mpilib"/>
