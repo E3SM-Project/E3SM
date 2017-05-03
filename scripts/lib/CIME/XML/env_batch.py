@@ -308,7 +308,7 @@ class EnvBatch(EnvBase):
 
         return submitargs
 
-    def submit_jobs(self, case, no_batch=False, job=None, batch_args=None, dry_run=False):
+    def submit_jobs(self, case, no_batch=False, job=None, skip_pnl=False, batch_args=None, dry_run=False):
         alljobs = self.get_jobs()
         startindex = 0
         jobs = []
@@ -362,7 +362,7 @@ class EnvBatch(EnvBase):
                 jobid = None
 
             logger.warn("job is {}".format(job))
-            result = self._submit_single_job(case, job, jobid, no_batch=no_batch, batch_args=batch_args, dry_run=dry_run)
+            result = self._submit_single_job(case, job, jobid, no_batch=no_batch, skip_pn=skip_pnl, batch_args=batch_args, dry_run=dry_run)
             batch_job_id = str(alljobs.index(job)) if dry_run else result
             depid[job] = batch_job_id
             jobcmds.append( (job, result) )

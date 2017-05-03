@@ -11,20 +11,7 @@ from CIME.case        import Case
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
-    parser = argparse.ArgumentParser(
-        usage="""\n{} [<casedir>] [--verbose]
-OR
-{} --help
-OR
-{} --test
-
-\033[1mEXAMPLES:\033[0m
-    \033[1;32m# Setup case \033[0m
-    > {}
-""".format(((os.path.basename(args[0]), ) * 4),
-        description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    ))
+    parser = argparse.ArgumentParser(description=description)
 
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -72,7 +59,7 @@ def _main_func(description):
 
     with Case(args.caseroot, read_only=False) as case:
         submit(case, job=args.job, no_batch=args.no_batch,
-               resubmit=args.resubmit, skip_pnl=args.skip_pnl,
+               resubmit=args.resubmit, skip_pnl=args.skip_preview_namelist,
                batch_args=args.batch_args)
 
 if __name__ == "__main__":
