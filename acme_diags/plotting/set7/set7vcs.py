@@ -189,12 +189,13 @@ def plot(reference, test, diff, metrics_dict, parameter):
 
     for f in parameter.output_format:
         f = f.lower().split('.')[-1]
+        fnm = os.path.join(parameter.results_dir, case_id, parameter.output_file)
         if f == 'png':
-            vcs_canvas.png(case_id + '/' + parameter.output_file)
+            vcs_canvas.png(fnm)
         elif f == 'pdf':
-            vcs_canvas.pdf(case_id + '/' + parameter.output_file)
+            vcs_canvas.pdf(fnm)
         elif f == 'svg':
-            vcs_canvas.svg(case_id + '/' + parameter.output_file)
+            vcs_canvas.svg(fnm)
 
-        print('Plot saved in: ' + case_id + '/' + parameter.output_file + '.' + f)
+        print('Plot saved in: ' + fnm + '.' + f)
     vcs_canvas.clear()

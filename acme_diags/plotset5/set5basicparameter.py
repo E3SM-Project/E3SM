@@ -10,7 +10,7 @@ regrid_method = 'linear'
 #backend = 'cartopy'
 backend = 'vcs'
 
-results_dir='./polar/'
+results_dir='./3d/'
 diff_title = 'test - reference'
 diff_colormap = 'bl_to_darkred'
 
