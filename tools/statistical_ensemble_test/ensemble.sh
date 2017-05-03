@@ -110,7 +110,7 @@ create_cases ()
   # the first case
   if [ $runtype = 'validation' ]; then
     firstpertlim=$( get_pertlim_uf ${rand_ints[0]} )
-    . $SingleRun "$@" -p $firstpertlim
+    . $SingleRun "$@" --pertlim $firstpertlim
     Status=$?
   else
     . $SingleRun "$@"
@@ -144,8 +144,8 @@ create_cases ()
     cd $SCRIPTS_ROOT
     echo "=== SCRIPTS_ROOT ==="
     echo $SCRIPTS_ROOT
-    #./create_clone -keepexe -case $CASE1 -clone $CASE # Copy $CASE to $CASE1
-    $SCRIPTS_ROOT/create_clone -keepexe -case $CASE1 -clone $CASE # Copy $CASE to $CASE1
+    #./create_clone --keepexe --case $CASE1 --clone $CASE # Copy $CASE to $CASE1
+    $SCRIPTS_ROOT/create_clone --keepexe --case $CASE1 --clone $CASE # Copy $CASE to $CASE1
 
     # Get value for EXEROOT from $CASE
     # Note return string is "EXEROOT = $EXEROOT"
@@ -226,7 +226,7 @@ Args=("$@")
 i=0
 while [ $i -le ${#Args[@]} ]; do
   case ${Args[$i]} in
-    -case )
+    --case )
       i=$((i+1))
       CASENAME=$(basename ${Args[$i]})
       if [ ! ${CASENAME##*.} == "000" ]; then
@@ -234,11 +234,11 @@ while [ $i -le ${#Args[@]} ]; do
         exit 2
       fi
     ;;
-    -test_suite )
+    --test_suite )
       # Set test_suite to TRUE
       test_suite="TRUE"
     ;;
-    -ensemble )
+    --ensemble )
       i=$((i+1))
       # Set CLONECOUNT and runtype
       CLONECOUNT=${Args[$i]}-1
@@ -248,14 +248,14 @@ while [ $i -le ${#Args[@]} ]; do
       fi
       runtype="ensemble"
     ;;
-    -nb|-nobuild )
+    --nb )
       nobuild="on"
       nosubmit="on"
     ;;
-    -ns|-nosubmit )
+    --ns )
       nosubmit="on"
     ;;
-    -uf )
+    --uf )
       UF=1
     ;;
   esac

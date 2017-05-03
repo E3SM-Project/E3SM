@@ -4,7 +4,7 @@
 # $Id$
 # $URL$
 #
-# Sets up a 12-month or ninth time step ne30_ne30 run
+# Sets up a 12-month or nine time step ne30_ne30 run
 #
 #==============================================================================
 
@@ -13,45 +13,45 @@
 #==============================================================================
 
 usage() {
-  echo "USAGE: $ThisScript -case CASE -mach MACH [-p PERTLIM] [-mach_pes ENV_MACH_PES_FILE] [-np NP] [-npocn NPOCN] [-npice NPICE] [-nt NTHRDS] [-w WALLTIME] [-account ACCOUNT_NUM] [-compiler COMPILER] [-compset COMPSET -r RES] [-nb] [-ns] [-usr_nl_cam \"VARIABLE1=VALUE1 VARIABLE2=VALUE2\"] [-cam_src_mod \"FILE1 FILE2 ... FILEN\"]"
+  echo "USAGE: $ThisScript --case CASE ---mach MACH [--pertlim PERTLIM] [--mach_pes ENV_MACH_PES_FILE] [--np NP] [--npocn NPOCN] [--npice NPICE] [--nt NTHRDS] [--walltime WALLTIME] [--account ACCOUNT_NUM] [--compiler COMPILER] [--compset COMPSET --res RES] [--nb] [--ns] [--uf] [--ensemble ENS_SIZE] [--usr_nl_cam \"VARIABLE1=VALUE1 VARIABLE2=VALUE2\"] [--cam_src_mod \"FILE1 FILE2 ... FILEN\"]"
   echo ''
-  echo 'Sets up CESM cases for either an ensemble of runs of a small test set.'\
-       'Use pyCECT to create the ensemble summary file or to evaluate a small' \
-       'set of runs against the ensemble.'
+  echo 'Sets up CESM cases for either an ensemble of runs or a size 3 test set (default).'\
+       'Use pyCECT utilities to create the ensemble summary file or to evaluate the small' \
+       'test set of runs against the ensemble.'
   echo ''
   echo 'Required flags:'
-  echo '  -case           Case name passed on to create_newcase'
-  echo '  -mach           Machine name passed on to create_newcase'
+  echo '  --case           Case name passed on to create_newcase'
+  echo '  --mach           Machine name passed on to create_newcase'
   echo ''
   echo 'Optional flags:'
   if [ $ThisScript = "single_run.sh" ]; then
-    echo '  -p,        --pertlim     Run CAM with non-zero pertlim'
+    echo '  --pertlim     Run CAM with non-zero pertlim'
   fi
-  echo '  -mach_pes  --mach_pes    Use specified env_mach_pes file'
-  echo '  -np,       --numproc     Number of processors requested (default = Machines default)'
-  echo '  -npocn,    --npocn       Number of processors requested for ocean (default = Machines default)'
-  echo '  -npice,    --npice       Number of processors requested for ice (default = Machines default)'
+  echo '  --mach_pes    Use specified env_mach_pes file'
+  echo '  --np,         Number of processors requested (default = Machines default)'
+  echo '  --npocn       Number of processors requested for ocean (default = Machines default)'
+  echo '  --npice       Number of processors requested for ice (default = Machines default)'
   echo '                           Note: npice and npocn will = np if np is specified and other two are not'
-  echo '  -nt,       --nthrds      Number of threads for each component (default = Machines default)'
-  echo '  -w,        --walltime    Amount of walltime requested (default = 4:30)'
-  echo '  -account,  --account     Account number to use in job scripts (default = machine default)'
-  echo '  -compiler, --compiler    Compiler to use (passed on to create_newcase)'
-  echo '  -compset,  --compset     Compset to use (default = BC5)'
-  echo '  -res,      --res         Resolution to run (default = ne30_g16)'
-  echo '  -uf        --uf          Enable ninth time step runs (ultra-fast mode)'
+  echo '  --nt          Number of threads for each component (default = Machines default)'
+  echo '  --walltime    Amount of walltime requested (default = 4:30)'
+  echo '  --account     Account number to use in job scripts (default = machine default)'
+  echo '  --compiler    Compiler to use '
+  echo '  --compset     Compset to use (default = FC5)'
+  echo '  --res         Resolution to run (default = ne30_ne30'
+  echo '  --uf          Enable ninth time step runs (ultra-fast mode)'
   if [ $ThisScript = "ensemble.sh" ]; then
-    echo '  -nb,       --nobuild     Disables building the root case of the ensemble.'
-    echo '  -ns,       --nosubmit    Disables submitting any members of the ensemble.'
-    echo '  -ensemble                Instead of building 3 cases with random pertlim values, build the ensemble'
-    echo '                           Specify the number of ensemble members to generate (e.g.: 151 or 350 for ultra-fast mode)'
-    echo '  -test_suite               Flag to indicate this is run from the CESM test script (makes assumption about case directory)'
+    echo '  --nb          Disables building the root case of the ensemble.'
+    echo '  --ns          Disables submitting any members of the ensemble.'
+    echo '  --ensemble    Build the ensemble (instead of building 3 cases with random pertlim values),'
+    echo '                and specify the number of ensemble members to generate (e.g.: 151 or 350 for ultra-fast mode)'
+    echo '  --test_suite  Flag to indicate this is run from the CESM test script (makes assumption about case directory)'
   else
-    echo '  -nb,       --nobuild     Disables building the single case.'
-    echo '  -ns,       --nosubmit    Disables submitting the single case.'
+    echo '  --nb       Disables building (and submitting) the single case.'
+    echo '  --ns       Disables submitting the single case.'
   fi
-  echo '  -usr_nl_cam              Include specified variables setting in user_nl_cam'
-  echo '  -cam_src_mod             Include specified files in CAM SourceMod dir'
-  echo '  -h,        --help        Output this usage information'
+  echo '  --usr_nl_cam    Include specified variables setting in user_nl_cam'
+  echo '  --cam_src_mod   Include specified files in CAM SourceMod dir'
+  echo '  -h, --help      Output this usage information'
 }
 
 #==============================================================================
@@ -109,8 +109,8 @@ ThisScript=$(basename $0)
 ThisDir=$(cd `dirname $0`; pwd -P )
 
 # Default Values
-RES="ne30_g16"
-COMPSET="BC5"
+RES="ne30_ne30"
+COMPSET="FC5"
 CHANGE_NP=0
 CHANGE_NPICE=0
 CHANGE_NPOCN=0
@@ -138,111 +138,105 @@ echo "(Running from: $SCRIPTS_ROOT)"
 # Process input arguments
 while [ $# -gt 0 ]; do
   case $1 in
-    -scripts_root )
+    --scripts_root )
       SCRIPTS_ROOT=$2
       shift
     ;;
-    -LENS )
+    --LENS )
       LENS=1
       POP_OUT_ON=1
       CICE_OUT_ON=1
       RTM_OUT_ON=1
     ;;
-    -case )
+    --case )
       NewCaseFlags="$NewCaseFlags $1 $2"
       CASE=$2
       CASENAME=$(basename $CASE)
       shift
     ;;
-    -mach )
+    --mach )
       NewCaseFlags="$NewCaseFlags $1 $2"
       MACH=$2
       shift
     ;;
-    -p|--pertlim )
+    --pertlim )
       PERTLIM="$2"
       shift
     ;;
-    -np|--numproc )
+    --np )
       CHANGE_NP=1
       NP=$2
       shift
     ;;
-    -npocn|--npocn )
+    --npocn )
       CHANGE_NPOCN=1
       NPOCN=$2
       shift
     ;;
-    -npice|--npice )
+    --npice )
       CHANGE_NPICE=1
       NPICE=$2
       shift
     ;;
-    -nt|--nthrds )
+    --nt )
       CHANGE_NTHRDS=1
       NTHRDS=$2
       shift
     ;;
-    -w|--walltime )
+    --walltime )
       WallTime=$2
       shift
     ;;
-    -account|--account )
+    --account )
       ACCOUNT="$2"
       shift
     ;;
-    -compiler|--compiler )
+    --compiler )
       NewCaseFlags="$NewCaseFlags $1 $2"
       shift
     ;;
-    -compset|--compset )
+    --compset )
       COMPSET=$2
       shift
     ;;
-    -res|--res )
+    --res )
       RES=$2
       shift
     ;;
-    -nb|--nobuild )
+    --nb )
        nobuild="on"
        nosubmit="on"
     ;;
-    -ns|--nosubmit )
+    --ns )
        nosubmit="on"
     ;;
-    -mach_pes|--mach_pes)
+    --mach_pes)
       arg_in=$2
       env_mach_pes_file=$(cd `dirname $arg_in`; pwd -P )/`basename $arg_in`
       shift
     ;;
-    -usr_nl_cam )
+    --usr_nl_cam )
       usr_nl_cam_val=("$2")
       shift
     ;;
-    -cam_src_mod|--cam_src_mod )
+    --cam_src_mod )
       cam_src_files=()
       for arg_in in $2; do
         cam_src_files+=($(cd `dirname $arg_in`; pwd -P )/`basename $arg_in`)
       done
       shift
     ;;
-    -uf|--uf )
+    --uf )
       UF=1
       WallTime="0:10"
     ;;
-    -h )
+    -h|--help )
       usage
       exit 0
     ;;
-    -test_suite|-ensemble )
+    --test_suite|--ensemble )
       # Ignore these flags, they will be passed from ensemble.sh
       shift
-    ;;
-    -ultrafast )
-      # Ignore these flags, they will be passed from ensemble.sh
-    ;;
-    -ultrafast_ensemble )
-      # Ignore these flags, they will be passed from ensemble.sh
     ;;
     * )
       echo "ERROR: invalid argument $1"
@@ -255,13 +249,13 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$CASE" ]; then
-  echo "Must specify -case argument"
+  echo "Must specify --case argument"
   echo "Invoke $ThisScript -h for usage"
   exit 1
 fi
 
 if [ -z "$MACH" ]; then
-  echo "Must specify -mach argument"
+  echo "Must specify --mach argument"
   echo "Invoke $ThisScript -h for usage"
   exit 1
 fi
@@ -308,7 +302,7 @@ case $MACH in
   ;;
 esac
 
-NewCaseFlags="$NewCaseFlags -res $RES -compset $COMPSET --run-unsupported --project $ACCOUNT"
+NewCaseFlags="$NewCaseFlags --res $RES --compset $COMPSET --run-unsupported --project $ACCOUNT"
 cd $SCRIPTS_ROOT
 echo "Currently in $SCRIPTS_ROOT"
 echo "Flags for create_newcase are $NewCaseFlags"
@@ -330,42 +324,42 @@ else
   if [ $CHANGE_NP -eq 1 ]; then
     echo "Changing to run ATM, LND, ROF, CPL, WAV, and GLC on $NP tasks"
     # Change env_mach_pes to run on NP processes
-    ./xmlchange -file env_mach_pes.xml -id NTASKS_ATM -val $NP
-    ./xmlchange -file env_mach_pes.xml -id NTASKS_LND -val $NP
-    ./xmlchange -file env_mach_pes.xml -id NTASKS_CPL -val $NP
-    ./xmlchange -file env_mach_pes.xml -id NTASKS_GLC -val $NP
-    ./xmlchange -file env_mach_pes.xml -id NTASKS_ROF -val $NP
-    ./xmlchange -file env_mach_pes.xml -id NTASKS_WAV -val $NP
+    ./xmlchange --file env_mach_pes.xml --id NTASKS_ATM --val $NP
+    ./xmlchange --file env_mach_pes.xml --id NTASKS_LND --val $NP
+    ./xmlchange --file env_mach_pes.xml --id NTASKS_CPL --val $NP
+    ./xmlchange --file env_mach_pes.xml --id NTASKS_GLC --val $NP
+    ./xmlchange --file env_mach_pes.xml --id NTASKS_ROF --val $NP
+    ./xmlchange --file env_mach_pes.xml --id NTASKS_WAV --val $NP
   fi
   if [ $CHANGE_NPOCN -eq 1 ]; then
     echo "Changing to run OCN on $NPOCN tasks"
-    ./xmlchange -file env_mach_pes.xml -id NTASKS_OCN -val $NPOCN
+    ./xmlchange --file env_mach_pes.xml --id NTASKS_OCN --val $NPOCN
   fi
   if [ $CHANGE_NPICE -eq 1 ]; then
     echo "Changing to run ICE on $NPICE tasks"
-    ./xmlchange -file env_mach_pes.xml -id NTASKS_ICE -val $NPICE
+    ./xmlchange --file env_mach_pes.xml --id NTASKS_ICE --val $NPICE
   fi
 
   if [ $CHANGE_ROOTPE -eq 1 ]; then
     # Set rootpe = 0 for all components
-    ./xmlchange -file env_mach_pes.xml -id ROOTPE_ATM -val 0
-    ./xmlchange -file env_mach_pes.xml -id ROOTPE_LND -val 0
-    ./xmlchange -file env_mach_pes.xml -id ROOTPE_ROF -val 0
-    ./xmlchange -file env_mach_pes.xml -id ROOTPE_ICE -val 0
-    ./xmlchange -file env_mach_pes.xml -id ROOTPE_OCN -val 0
-    ./xmlchange -file env_mach_pes.xml -id ROOTPE_CPL -val 0
+    ./xmlchange --file env_mach_pes.xml --id ROOTPE_ATM --val 0
+    ./xmlchange --file env_mach_pes.xml --id ROOTPE_LND --val 0
+    ./xmlchange --file env_mach_pes.xml --id ROOTPE_ROF --val 0
+    ./xmlchange --file env_mach_pes.xml --id ROOTPE_ICE --val 0
+    ./xmlchange --file env_mach_pes.xml --id ROOTPE_OCN --val 0
+    ./xmlchange --file env_mach_pes.xml --id ROOTPE_CPL --val 0
   fi
 
   # Set nthrds = $NTHRDS for all components
   if [ $CHANGE_NTHRDS -eq 1 ]; then
-    ./xmlchange -file env_mach_pes.xml -id NTHRDS_ATM -val $NTHRDS
-    ./xmlchange -file env_mach_pes.xml -id NTHRDS_LND -val $NTHRDS
-    ./xmlchange -file env_mach_pes.xml -id NTHRDS_ROF -val $NTHRDS
-    ./xmlchange -file env_mach_pes.xml -id NTHRDS_ICE -val $NTHRDS
-    ./xmlchange -file env_mach_pes.xml -id NTHRDS_OCN -val $NTHRDS
-    ./xmlchange -file env_mach_pes.xml -id NTHRDS_CPL -val $NTHRDS
-    ./xmlchange -file env_mach_pes.xml -id NTHRDS_GLC -val $NTHRDS
-    ./xmlchange -file env_mach_pes.xml -id NTHRDS_WAV -val $NTHRDS
+    ./xmlchange --file env_mach_pes.xml --id NTHRDS_ATM --val $NTHRDS
+    ./xmlchange --file env_mach_pes.xml --id NTHRDS_LND --val $NTHRDS
+    ./xmlchange --file env_mach_pes.xml --id NTHRDS_ROF --val $NTHRDS
+    ./xmlchange --file env_mach_pes.xml --id NTHRDS_ICE --val $NTHRDS
+    ./xmlchange --file env_mach_pes.xml --id NTHRDS_OCN --val $NTHRDS
+    ./xmlchange --file env_mach_pes.xml --id NTHRDS_CPL --val $NTHRDS
+    ./xmlchange --file env_mach_pes.xml --id NTHRDS_GLC --val $NTHRDS
+    ./xmlchange --file env_mach_pes.xml --id NTHRDS_WAV --val $NTHRDS
   fi
 fi
 
@@ -375,16 +369,16 @@ if [ ! -e env_run.xml.orig ]; then
   cp env_run.xml env_run.xml.orig
 fi
 
-./xmlchange -file env_run.xml -id BFBFLAG -val TRUE
-./xmlchange -file env_run.xml -id DOUT_S -val FALSE
-./xmlchange -file env_run.xml -id REST_OPTION -val never
+./xmlchange --file env_run.xml --id BFBFLAG --val TRUE
+./xmlchange --file env_run.xml --id DOUT_S --val FALSE
+./xmlchange --file env_run.xml --id REST_OPTION --val never
 # Set to time steps if uf selected
 if [ $UF -eq 1 ]; then
-  ./xmlchange -file env_run.xml -id STOP_OPTION -val nsteps
-  ./xmlchange -file env_run.xml -id STOP_N -val 9
+  ./xmlchange --file env_run.xml --id STOP_OPTION --val nsteps
+  ./xmlchange --file env_run.xml --id STOP_N --val 9
 else
-  ./xmlchange -file env_run.xml -id STOP_OPTION -val nmonths
-  ./xmlchange -file env_run.xml -id STOP_N -val 12
+  ./xmlchange --file env_run.xml --id STOP_OPTION --val nmonths
+  ./xmlchange --file env_run.xml --id STOP_N --val 12
 fi
 
 # Unset LS_COLORS before configure runs
