@@ -472,6 +472,7 @@
                         <var name="simulationStartTime"/>
 			<var name="thickness"/>
 			<var name="temperature"/>
+                        <var name="surfaceAirTemperature"/>
 			<var name="cellMask"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
@@ -711,6 +712,10 @@ is the value of that variable from the *previous* time level!
 		<var name="baryWeightsOnVertex" type="real" dimensions="R3 nVertices" units="unitless"
 			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity"
 		/>
+		<!-- Variables only needed by HO solver -->
+		<var name="wachspressWeightVertex" type="real" dimensions="maxEdges nCells" units="unitless"
+			 description="Wachspress weights used to interpolate from vertices to cell centers." packages="higherOrderVelocity"
+		/>
 		<!-- time-related fields have to go somewhere.  "mesh" is a more general place than the other pools -->
 		<var name="xtime" type="text" time_levs="1" dimensions="Time" units="unitless"
 		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
@@ -842,11 +847,11 @@ is the value of that variable from the *previous* time level!
 		<var name="basalSpeed"                     type="real"     dimensions="nCells Time"
 		     units="m s^{-1}"  description="ice basal speed reconstructed at cell centers"
 		/>
-		<var name="beta" type="real" dimensions="nCells Time" units="Pa s m^{−1}"
-		     description="higher-order basal traction parameter"
+		<var name="beta" type="real" dimensions="nCells Time" units="Pa yr m^{−1}" default_value="1.0e8"
+		     description="higher-order basal traction parameter; NOTE: not SI units!"
 		/>
-		<var name="betaSolve" type="real" dimensions="nCells Time" units="Pa s m^{−1}"
-		     description="higher-order basal traction parameter"
+		<var name="betaSolve" type="real" dimensions="nCells Time" units="Pa yr m^{−1}"
+		     description="higher-order basal traction parameter; NOTE: not SI units!"
 		/>
 
 		<!-- Variables only needed by HO solver -->
@@ -875,7 +880,7 @@ is the value of that variable from the *previous* time level!
 
 	<!-- Variables related to thermal state -->
 	<var_struct name="thermal" time_levs="1">
-		<var name="temperature" type="real" dimensions="nVertLevels nCells Time" units="K"
+		<var name="temperature" type="real" dimensions="nVertLevels nCells Time" units="K" default_value="273.15"
 		     description="interior ice temperature"
 		/>
 		<var name="waterfrac" type="real" dimensions="nVertLevels nCells Time" units="unitless"
@@ -884,13 +889,13 @@ is the value of that variable from the *previous* time level!
 		<var name="enthalpy" type="real" dimensions="nVertLevels nCells Time" units="J m^{-3}"
 		     description="interior ice enthalpy"
 		/>
-		<var name="surfaceAirTemperature" type="real" dimensions="nCells Time" units="K"
+		<var name="surfaceAirTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
 		     description="surface air temperature"
 		/>
-		<var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K"
+		<var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
 		     description="upper surface ice temperature"
 		/>
-		<var name="basalTemperature" type="real" dimensions="nCells Time" units="K"
+		<var name="basalTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
 		     description="lower surface ice temperature"
 		/>
 		<var name="pmpTemperature" type="real" dimensions="nVertLevels nCells Time" units="K"
@@ -905,13 +910,13 @@ is the value of that variable from the *previous* time level!
 		<var name="basalConductiveFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
 		     description="conductive heat flux at the lower surface (positive downward)"
 		/>
-		<var name="basalHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+		<var name="basalHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}" default_value="0.06"
 		     description="basal heat flux into the ice (positive upward)"
 		/>
 		<var name="basalFrictionFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
 		     description="basal frictional flux into the ice (positive upward)"
 		/>
-		<var name="heatDissipation" type="real" dimensions="nVertLevels nCells Time" units="deg s"
+		<var name="heatDissipation" type="real" dimensions="nVertLevels nCells Time" units="deg s^{-1}"
 		     description="interior heat dissipation rate, divided by rhoi*cp_ice"
 		/>
 	</var_struct>
@@ -944,6 +949,10 @@ is the value of that variable from the *previous* time level!
 	       description="generic work array with dimensions of (nVertLevels nEdges)"
 	       persistence="scratch"
 	       />
+          <var name="workLevelVertex" type="real" dimensions="nVertLevels nVertices" units="none"
+	       description="generic work array with dimensions of (nVertLevels nVertices)"
+	       persistence="persistent"
+	       />
 	  <var name="workCell" type="real" dimensions="nCells" units="none"
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
@@ -971,7 +980,7 @@ is the value of that variable from the *previous* time level!
 	  <var name="workTracerLevelCell2" type="real" dimensions="maxTracersAdvect nVertLevels nCells" units="none"
 	       description="generic work array with dimensions of (maxTracersAdvect nVertLevels nCells)"
 	       persistence="scratch"
-	       />
+               />
 	  <var name="slopeCellX" type="real" dimensions="nCells" units="none"
 	       descriptiom="x-component of slope on cell centers"
 	       persistence="scratch"
@@ -983,7 +992,7 @@ is the value of that variable from the *previous* time level!
 	  <var name="vertexIndices" type="integer" dimensions="nVertices" units="none"
 	       description="local indices of each vertex"
 	       persistence="scratch"
-	       />
+               />
 	</var_struct>
 
 <!-- ================ -->

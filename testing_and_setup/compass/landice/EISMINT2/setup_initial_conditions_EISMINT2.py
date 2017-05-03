@@ -18,30 +18,38 @@ options, args = parser.parse_args()
 if not options.exp:
     sys.exit('Error: No experiment specified.  Please specify an experiment to setup with the -e option')
 experiment = options.exp.lower()  # allow lower or upper case to be input, but use lower case in the script logic
-if experiment in ('a','b','c','d','f'):
+if experiment in ('a','b','c','d','f','g'):
     print 'Setting up EISMINT2 Experiment ' + experiment
 else:
-    sys.exit("Error: Invalid experiment specified.  Please specify an experiment between 'a' and 'f', excluding 'd'")
+    sys.exit("Error: Invalid experiment specified.  Please specify an experiment between 'a' and 'g', excluding 'e'")
 
 
 # Setup dictionaries of parameter values for each experiment
-a_params = {'Mmax':0.5,  'Sb':10.0**-2, 'Rel':450.0, 'Tmin':238.15, 'ST':1.67e-2}
-b_params = {'Mmax':0.5,  'Sb':10.0**-2, 'Rel':450.0, 'Tmin':243.15, 'ST':1.67e-2}
-c_params = {'Mmax':0.25, 'Sb':10.0**-2, 'Rel':425.0, 'Tmin':238.15, 'ST':1.67e-2}
-d_params = {'Mmax':0.5,  'Sb':10.0**-2, 'Rel':425.0, 'Tmin':238.15, 'ST':1.67e-2}
-f_params = {'Mmax':0.5,  'Sb':10.0**-2, 'Rel':450.0, 'Tmin':223.15, 'ST':1.67e-2}
+# Mmax: Maximum SMB at center of domain (m a-1)
+# Sb: gradient of SMB with horizontal distance (m a-1 km-1)
+# Rel: radial distance from summit where SMB = 0 (km)
+# Tmin: surface temperature at summit (K)
+# ST: gradient of air temperature with horizontal distance (K km-1)
+# beta: basal traction coefficient (Pa m-1 a)
+#       Note: beta is the inverse of parameter B in Payne et al. (2000)
+a_params = {'Mmax':0.5,  'Sb':10.0**-2, 'Rel':450.0, 'Tmin':238.15, 'ST':1.67e-2, 'beta':1.0e8}
+b_params = {'Mmax':0.5,  'Sb':10.0**-2, 'Rel':450.0, 'Tmin':243.15, 'ST':1.67e-2, 'beta':1.0e8}
+c_params = {'Mmax':0.25, 'Sb':10.0**-2, 'Rel':425.0, 'Tmin':238.15, 'ST':1.67e-2, 'beta':1.0e8}
+d_params = {'Mmax':0.5,  'Sb':10.0**-2, 'Rel':425.0, 'Tmin':238.15, 'ST':1.67e-2, 'beta':1.0e8}
+f_params = {'Mmax':0.5,  'Sb':10.0**-2, 'Rel':450.0, 'Tmin':223.15, 'ST':1.67e-2, 'beta':1.0e8}
+g_params = {'Mmax':0.5,  'Sb':10.0**-2, 'Rel':450.0, 'Tmin':238.15, 'ST':1.67e-2, 'beta':1.0e3}
 xsummit = 750000.0; ysummit = 750000.0
 rhoi = 910.0
 scyr = 3600.0*24.0*365.0
 
 # Setup dictionary of dictionaries for each experiment
-exp_params = {'a':a_params, 'b':b_params, 'c':c_params, 'd':d_params, 'f':f_params}
+exp_params = {'a':a_params, 'b':b_params, 'c':c_params, 'd':d_params, 'f':f_params, 'g':g_params}
 
 # Some experiments start from scratch, others start from the SS of a previous experiment
 #filename = 'eismint2' + experiment + '.input.nc'
 filename = 'landice_grid.nc'
 # experiments that start from scratch
-if experiment in ('a', 'f'):
+if experiment in ('a', 'f', 'g'):
     # we will build the mesh from scratch
     shutil.copyfile('../setup_mesh/landice_grid.nc', filename)
 else:
@@ -68,7 +76,7 @@ yVertex = gridfile.variables['yVertex'][:]
 # initial conditions
 # ===================
 # If starting from scratch, setup dimension variables and initial condition variables
-if experiment in ('a', 'f'):
+if experiment in ('a', 'f', 'g'):
     # Find center of domain
     x0 = xCell[:].min() + 0.5 * (xCell[:].max() - xCell[:].min() )
     y0 = yCell[:].min() + 0.5 * (yCell[:].max() - yCell[:].min() )
@@ -144,6 +152,15 @@ else:
    datatype = gridfile.variables['xCell'].dtype  # Get the datatype for double precision float
    surfaceAirTemperatureVar = gridfile.createVariable('surfaceAirTemperature', datatype, ('Time', 'nCells'))
 surfaceAirTemperatureVar[0,:] = Tmin + ST * r
+
+# beta
+beta = params['beta']
+if 'beta' in gridfile.variables:
+   betaVar = gridfile.variables['beta']
+else:
+   datatype = gridfile.variables['xCell'].dtype  # Get the datatype for double precision float
+   betaVar = gridfile.createVariable('beta', datatype, ('Time', 'nCells'))
+betaVar[0,:] = beta
 
 gridfile.close()
 print 'Successfully added initial conditions for EISMINT2, experiment '+experiment+' to the file: ', filename

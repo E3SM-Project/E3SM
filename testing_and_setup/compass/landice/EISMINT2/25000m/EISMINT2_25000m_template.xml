@@ -12,7 +12,7 @@
                 <option name="config_flowParamA_calculation">"PB1982"</option>
                 <option name="config_tracer_advection">'fo'</option>
                 <option name="config_thermal_solver">'temperature'</option>
-                <option name="onfig_surface_air_temperature_source">'file'</option>
+                <option name="config_surface_air_temperature_source">'file'</option>
                 <option name="config_basal_heat_flux_source">'constant'</option>
                 <option name="config_basal_heat_flux_value">4.2e-2</option>
                 <option name="config_ice_density">910.0</option>
@@ -45,6 +45,7 @@
                                 <member name="heatDissipation" type="var"/>
                                 <member name="uReconstructX" type="var"/>
                                 <member name="uReconstructY" type="var"/>
+                                <member name="beta" type="var"/>
                                 <member name="daysSinceStart" type="var"/>
                                 <member name="allowableDtACFL" type="var"/>
                                 <member name="allowableDtDCFL" type="var"/>
@@ -59,7 +60,7 @@
                         <attribute name="output_interval">50000-00-00_00:00:00</attribute>
                         <attribute name="clobber_mode">truncate</attribute>
                         <attribute name="precision">double</attribute>
-                        <attribute name="input_interal">initial_only</attribute>
+                        <attribute name="input_interval">initial_only</attribute>
                 </stream>
 
         </streams>

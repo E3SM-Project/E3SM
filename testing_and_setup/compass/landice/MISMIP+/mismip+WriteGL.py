@@ -130,12 +130,14 @@ for expt in experiments:
     try:
         os.chdir(expt)
     except:
-        sys.exit('Could not find a directory for this experiment')
+        print 'Could not find a directory for this experiment. Skipping.'
+        continue
 
     try:
         ncfile = netCDF4.Dataset(outputFile, 'r')
     except:
-        sys.exit('Could not find the output file in this directory')
+        print 'Could not find the output file in this directory. Skipping.'
+        continue
 
     # Get dimensions
     nTime = len(ncfile.dimensions['Time'])
@@ -292,9 +294,17 @@ for expt in experiments:
         timeList = [100, 120, 140, 160, 180, 200]
     elif expt == 'Ice1rax' or expt == 'Ice1rrx' or expt == 'Ice2rax' or expt == 'Ice2rrx':
         timeList = [200, 300, 400, 600, 800, 1000]  # hardwired to 6 points for now
+    elif expt == 'Spinup':
+        #timeList = [900, 925, 950, 975, 1000]  # hardwired to 5 points for now
+        timeList = [13000, 14000, 15000]  # hardwired to some points for now
 
-    xmin, xmax = glplot(GLfile, timeList,
-                        ['black', 'red', 'orange', 'green', 'blue', 'purple'], 'Test')
+    if expt == 'Spinup':
+        xmin, xmax = glplot(GLfile, timeList,
+                            #['black', 'red', 'orange', 'green', 'blue'], 'Test')
+                            ['black', 'red', 'orange'], 'Test')
+    else:
+        xmin, xmax = glplot(GLfile, timeList,
+                            ['black', 'red', 'orange', 'green', 'blue', 'purple'], 'Test')
 
     plt.legend(loc='center right', ncol=1, frameon=True, borderaxespad=0)
 

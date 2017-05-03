@@ -33,7 +33,11 @@ def garplot(ncfile, label, color, marker):
     """
     add a plot of grounded area against time to current axes
     """
-    ncid = Dataset(ncfile, 'r')
+    try:
+       ncid = Dataset(ncfile, 'r')
+    except:
+       print "Failed to open file: {}. Skipping.".format(ncfile)
+       return 0
     gar = ncid.variables["groundedArea"][:]*1e-6*1e-3
     time = ncid.variables["time"][:]
     if label == 'nolabel':
@@ -50,7 +54,12 @@ def glplot(ncfile, times, colora, label):
     add a plot of grounding line points to current axes.
     makes use of the numpy.ma.MaskedArray when reading xGL,yGL
     """
-    ncid = Dataset(ncfile, 'r')
+    try:
+       ncid = Dataset(ncfile, 'r')
+    except:
+       print "Failed to open file: {}. Skipping.".format(ncfile)
+       return 350.0, 500.0
+
     time = ncid.variables["time"][:]
     lxmax = 0.0
     lxmin = 800.0

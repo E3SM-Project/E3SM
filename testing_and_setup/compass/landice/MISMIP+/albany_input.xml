@@ -17,9 +17,11 @@
     <Parameter name="NBC on SS basalside for DOF all set basal" type="Array(double)" value="{0.0, 0.0, 0.0, 0.0, 0.0}"/>
     <Parameter name="NBC on SS floatinglateralside for DOF all set lateral" type="Array(double)" value="{0.88521}"/>
     <!-- power law basal friction law: -->
-    <Parameter name="BetaXY" type="string" value="Power Law Scalar Field"/>
+    <!-- <Parameter name="BetaXY" type="string" value="Power Law Scalar Field"/> -->
+    <Parameter name="BetaXY" type="string" value="GLP Scalar Field"/>
     <!-- increase accuracy of quadrature rule to help convergence: -->
-    <Parameter name="Cubature Degree" type="int" value="9"/>
+    <!-- <Parameter name="Cubature Degree" type="int" value="9"/> -->
+    <Parameter name="Cubature Degree" type="int" value="5"/>
   </ParameterList>
 
 <ParameterList name="FELIX Viscosity">
