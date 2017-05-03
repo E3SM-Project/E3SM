@@ -205,9 +205,9 @@ class Grids(GenericXML):
             if model_grid[component_gridname] is not None:
                 lname += model_grid[component_gridname]
                 if component_gridname == 'atm' and atmnlev is not None:
-                        lname += "z" + atmnlev
+                    lname += "z" + atmnlev
                 elif component_gridname == 'lnd' and lndnlev is not None:
-                        lname += "z" + lndnlev
+                    lname += "z" + lndnlev
             else:
                 lname += 'null'
         component_grids = self._get_component_grids_from_longname(lname)
