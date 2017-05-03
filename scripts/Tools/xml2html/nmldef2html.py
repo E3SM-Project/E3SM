@@ -32,6 +32,7 @@ except:
 _now = datetime.datetime.now().strftime('%Y-%m-%d')
 _comps = ['CAM', 'CLM', 'CISM', 'POP2', 'CICE', 'RTM', 'MOSART', 'WW3', 
           'Driver', 'DATM', 'DESP', 'DICE', 'DLND', 'DOCN', 'DROF', 'DWAV']
+_cime_comps = ['Driver', 'DATM', 'DESP', 'DICE', 'DLND', 'DOCN', 'DROF', 'DWAV']
 logger = logging.getLogger(__name__)
 
 
@@ -55,11 +56,38 @@ def commandline_options():
     parser.add_argument('--htmlfile', nargs=1, required=True,
                         help='Fully quailfied path to output HTML file.')
 
+    parser.add_argument('--svnfile', nargs=1, required=False,
+                        help='Fully quailfied path to SVN_EXTERNAL_DIRECTORIES file (OPTIONAL).')
+
     options = parser.parse_args()
 
     CIME.utils.handle_standard_logging_options(options)
 
     return options
+
+###############################################################################
+def getSvnTag(svnfile, comp):
+###############################################################################
+
+    """ Parse the svnfile looking for a line matching the comp name
+
+    """
+    tagDict = dict()
+    with open(svnfile, 'r') as f:
+        for line in f:
+            splitLine = line.split()
+            tagDict[int(splitLine[0])] = splitLine[1:]
+    f.close()
+    
+    cc = comp
+    if comp in _cime_comps:
+        cc = cime
+
+    for key, value in tagDict.iteritems():
+        if cc in key:
+            tag = value
+
+    return tag
 
 ###############################################################################
 def _main_func(options, work_dir):
@@ -92,6 +120,13 @@ def _main_func(options, work_dir):
     comp = ''
     if options.comp:
         comp = options.comp[0]
+
+    # get the tag from the svnfile
+    svntag = ''
+    if options.svnfile:
+        svnfile = options.svnfile[0]
+        expect(os.path.isfile(svnfile), "File %s does not exist"%svnfile)
+        svntag = getSvnTag(svnfile, comp)
 
     # Create a dictionary with a category key and a list of all entry nodes for each key
     category_dict = dict()
@@ -220,7 +255,9 @@ def _main_func(options, work_dir):
     templateVars = { 'html_dict'    : html_dict,
                      'today'        : _now,
                      'cesm_version' : cesm_version,
-                     'comp'         : comp }
+                     'comp'         : comp,
+                     'svntag'       : svntag,
+                 }
         
     # render the template
     nml_tmpl = template.render( templateVars )
