@@ -46,7 +46,7 @@ module interp_movie_mod
 #undef V_IS_LATLON
 #if defined(_PRIM)
 #define V_IS_LATLON
-  integer, parameter :: varcnt = 40 !45
+  integer, parameter :: varcnt = 41 !45
   integer, parameter :: maxdims =  5
   character*(*), parameter :: varnames(varcnt)=(/'ps       ', &
                                                  'geos     ', &
@@ -54,6 +54,7 @@ module interp_movie_mod
                                                  'dp3d     ', &
                                                  'p        ', &
                                                  'pnh      ', &
+                                                 'rho      ', &
                                                  'div      ', &
                                                  'T        ', &
                                                  'Th       ', &
@@ -89,7 +90,7 @@ module interp_movie_mod
                                                  'hybi     ', &
                                                  'time     '/)
   integer, parameter :: vartype(varcnt)=(/PIO_double,PIO_double,PIO_double,PIO_double,&
-                                          PIO_double,PIO_double,PIO_double, &
+                                          PIO_double,PIO_double,PIO_double,PIO_double, &
                                           PIO_double,PIO_double,PIO_double,PIO_double, PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
@@ -103,7 +104,7 @@ module interp_movie_mod
                                           PIO_double,PIO_double,&
                                           PIO_double/)
   logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,&
-                                              .false.,.false., .false., .false., &
+                                              .false.,.false.,.false., .false., .false., &
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
@@ -120,6 +121,7 @@ module interp_movie_mod
        1,2,3,5,0,  &   ! dp3d
        1,2,3,5,0,  &   ! p
        1,2,3,5,0,  &   ! pnh
+       1,2,3,5,0,  &   ! rho
        1,2,3,5,0,  &   ! div
        1,2,3,5,0,  &   ! T
        1,2,3,5,0,  &   ! Th
@@ -320,7 +322,8 @@ contains
     call nf_variable_attributes(ncdf, 'T',    'Temperature','degrees kelvin')
     call nf_variable_attributes(ncdf, 'dp3d', 'delta p','Pa')
     call nf_variable_attributes(ncdf, 'p',    'hydrostatic pressure','Pa')
-    call nf_variable_attributes(ncdf, 'pnh',  'total (nonhydrostatic) pressure','Pa')
+    call nf_variable_attributes(ncdf, 'pnh',  'total pressure','Pa')
+    call nf_variable_attributes(ncdf, 'rho',  'dry air density','kg/m^3')
     call nf_variable_attributes(ncdf, 'Q',    'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'Q2',   'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'Q3',   'concentration','kg/kg')
@@ -805,6 +808,21 @@ contains
                    st=st+interpdata(ie)%n_interp
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='pnh')
+                deallocate(datall)
+             end if
+
+             if(nf_selectedvar('rho', output_varnames)) then
+                if (par%masterproc) print *,'writing rho...'
+                allocate(datall(ncnt,nlev))
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call get_field(elem(ie),'rho',temp3d,hvcoord,n0,n0_Q)
+                   call interpolate_scalar(interpdata(ie),temp3d, &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='rho')
                 deallocate(datall)
              end if
 

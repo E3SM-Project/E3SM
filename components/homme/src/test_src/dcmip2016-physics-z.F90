@@ -54,6 +54,8 @@
 SUBROUTINE DCMIP2016_PHYSICS(test, u, v, p, qv, qc, qr, rho, &
                              dt, z, zi, lat, nz, precl, pbl_type, prec_type)
 
+  use physical_constants,   only:  g, Rgas, Cp,Rwater_vapor, rearth0, omega0,dd_pi
+
   IMPLICIT NONE
 
   !------------------------------------------------
@@ -67,6 +69,8 @@ SUBROUTINE DCMIP2016_PHYSICS(test, u, v, p, qv, qc, qr, rho, &
             u       ,  & ! Zonal velocity on model levels (m/s)
             v       ,  & ! Meridional velocity on model levels (m/s)
             p       ,  & ! Pressure on model levels (Pa)
+!theta   ,  &
+!T,&
             qv      ,  & ! Water vapor mixing ratio (kg/kg)
             qc      ,  & ! Cloud water mixing ratio (kg/kg)
             qr           ! Rain water mixing ratio (kg/kg)
@@ -97,18 +101,31 @@ SUBROUTINE DCMIP2016_PHYSICS(test, u, v, p, qv, qc, qr, rho, &
   !------------------------------------------------
   ! Physical Constants - MAY BE MODEL DEPENDENT
   !------------------------------------------------
-  REAL(8), PARAMETER ::      &
-    one      = 1.d0,         & ! One
-    gravit  = 9.80616d0,     & ! Gravity (m/s^2)
-    rair    = 287.d0,        & ! Gas constant for dry air (J/kg/K)
-    cpair   = 1004.5d0,      & ! Specific heat of dry air (J/kg/K)
-    latvap  = 2.5d6,         & ! Latent heat of vaporization (J/kg)
-    rh2o    = 461.5d0,       & ! Gas constant for water vapor (J/kg/K)
-    epsilo  = rair/rh2o,     & ! Ratio of gas constants for dry air to vapor
+  !REAL(8), PARAMETER ::      &
+  !  one      = 1.d0,         & ! One
+  !  gravit  = 9.80616d0,     & ! Gravity (m/s^2)
+  !  rair    = 287.d0,        & ! Gas constant for dry air (J/kg/K)
+  !  cpair   = 1004.5d0,      & ! Specific heat of dry air (J/kg/K)
+  !  latvap  = 2.5d6,         & ! Latent heat of vaporization (J/kg)
+  !  rh2o    = 461.5d0,       & ! Gas constant for water vapor (J/kg/K)
+  !  epsilo  = rair/rh2o,     & ! Ratio of gas constants for dry air to vapor
+  !  zvir    = (rh2o/rair) - 1.d0, & ! Constant for virtual temp. calc. (~0.608)
+  !  a       = 6371220.0,     & ! Reference Earth's Radius (m)
+  !  omega   = 7.29212d-5,    & ! Reference rotation rate of the Earth (s^-1)
+  !  pi      = 4.d0*atan(1.d0)  ! Pi
+
+REAL(8), PARAMETER ::         &
+    one     = 1.d0,           & ! One
+    gravit  = g,              & ! Gravity (m/s^2)
+    rair    = Rgas,           & ! Gas constant for dry air (J/kg/K)
+    cpair   = cp,             & ! Specific heat of dry air (J/kg/K)
+    latvap  = 2.5d6,          & ! Latent heat of vaporization (J/kg)
+    rh2o    = Rwater_vapor,   & ! Gas constant for water vapor (J/kg/K)
+    epsilo  = rair/rh2o,      & ! Ratio of gas constants for dry air to vapor
     zvir    = (rh2o/rair) - 1.d0, & ! Constant for virtual temp. calc. (~0.608)
-    a       = 6371220.0,     & ! Reference Earth's Radius (m)
-    omega   = 7.29212d-5,    & ! Reference rotation rate of the Earth (s^-1)
-    pi      = 4.d0*atan(1.d0)  ! Pi
+    a       = rearth0,        & ! Reference Earth's Radius (m)
+    omega   = omega0,         & ! Reference rotation rate of the Earth (s^-1)
+    pi      = DD_PI             !4.d0*atan(1.d0)  ! Pi
 
   !------------------------------------------------
   ! Local Constants for Simple Physics

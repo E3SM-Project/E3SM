@@ -355,7 +355,7 @@ contains
 !$omp parallel do private(k)
 #endif
      do k=1,nlev
-        temperature(:,:,k) = temperature(:,:,k) + elem(ie)%derived%FT(:,:,k)
+        temperature(:,:,k) = temperature(:,:,k) + dt*elem(ie)%derived%FT(:,:,k)
      enddo
 
      
@@ -501,8 +501,6 @@ contains
   real (kind=real_kind) :: phi_ref(np,np,nlev,nets:nete)
   real (kind=real_kind) :: dp_ref(np,np,nlev,nets:nete)
 
-
-
   if (nu == 0 .and. nu_p==0 ) return;
   call t_startf('advance_hypervis')
 
@@ -543,11 +541,11 @@ contains
      enddo
 
      call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
-#if 0
+!#if 0
      theta_ref(:,:,:,ie)=0
      phi_ref(:,:,:,ie)=0
      dp_ref(:,:,:,ie)=0
-#endif              
+!#endif              
   enddo
 
 

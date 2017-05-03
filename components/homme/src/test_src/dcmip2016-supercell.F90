@@ -38,25 +38,37 @@ MODULE supercell
 !
 !=======================================================================
 
+  use physical_constants, only: g,p0,kappa,Rgas,Cp,Rwater_vapor,rearth0,omega0, dd_pi
+
   IMPLICIT NONE
 
 !=======================================================================
 !    Physical constants
 !=======================================================================
 
-  REAL(8), PARAMETER ::               &
-       a     = 6371220.0d0,           & ! Reference Earth's Radius (m)
-       Rd    = 287.0d0,               & ! Ideal gas const dry air (J kg^-1 K^1)
-       g     = 9.80616d0,             & ! Gravity (m s^2)
-       cp    = 1004.5d0,              & ! Specific heat capacity (J kg^-1 K^1)
+!  REAL(8), PARAMETER ::               &
+!       a     = 6371220.0d0,           & ! Reference Earth's Radius (m)
+!       Rd    = 287.0d0,               & ! Ideal gas const dry air (J kg^-1 K^1)
+!       g     = 9.80616d0,             & ! Gravity (m s^2)
+!       cp    = 1004.5d0,              & ! Specific heat capacity (J kg^-1 K^1)
+!       Lvap  = 2.5d6,                 & ! Latent heat of vaporization of water
+!       Rvap  = 461.5d0,               & ! Ideal gas constnat for water vapor
+!       Mvap  = 0.608d0,               & ! Ratio of molar mass of dry air/water
+!       pi    = 3.14159265358979d0,    & ! pi
+!       p0    = 100000.0d0,            & ! surface pressure (Pa)
+!       kappa = 2.d0/7.d0,             & ! Ratio of Rd to cp
+!       omega = 7.29212d-5,            & ! Reference rotation rate of the Earth (s^-1)
+!       deg2rad  = pi/180.d0             ! Conversion factor of degrees to radians
+
+REAL(8), PARAMETER ::                 &
+       a     = rearth0,               & ! Reference Earth's Radius (m)
+       Rd    = Rgas,                  & ! Ideal gas const dry air (J kg^-1 K^1)
        Lvap  = 2.5d6,                 & ! Latent heat of vaporization of water
-       Rvap  = 461.5d0,               & ! Ideal gas constnat for water vapor
+       Rvap  = Rwater_vapor,          & ! Ideal gas constnat for water vapor
        Mvap  = 0.608d0,               & ! Ratio of molar mass of dry air/water
-       pi    = 3.14159265358979d0,    & ! pi
-       p0    = 100000.0d0,            & ! surface pressure (Pa)
-       kappa = 2.d0/7.d0,             & ! Ratio of Rd to cp
-       omega = 7.29212d-5,            & ! Reference rotation rate of the Earth (s^-1)
-       deg2rad  = pi/180.d0             ! Conversion factor of degrees to radians
+       pi    = dd_pi,                 & ! pi
+       omega = omega0,                & ! Reference rotation rate of the Earth (s^-1)
+       deg2rad= pi/180.d0             ! Conversion factor of degrees to radians
 
 !=======================================================================
 !    Test case parameters

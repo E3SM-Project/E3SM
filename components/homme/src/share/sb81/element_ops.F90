@@ -32,12 +32,11 @@ module element_ops
   use kinds,          only: real_kind, iulog
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp
-  use physical_constants, only : kappa, p0
+  use physical_constants, only : kappa, p0, Rgas, cp
 
   implicit none
 
 contains
-
 
   subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   implicit none
@@ -75,8 +74,7 @@ contains
 
   end subroutine
 
-
-
+  !_____________________________________________________________________
   subroutine get_pottemp(elem,pottemp,hvcoord,nt,ntQ)
   implicit none
     
@@ -104,7 +102,7 @@ contains
   end subroutine get_pottemp
   
 
-
+  !_____________________________________________________________________
   subroutine get_temperature(elem,temperature,hvcoord,nt,ntQ)
   implicit none
   
@@ -125,15 +123,14 @@ contains
   
   end subroutine get_temperature
 
-
-
+  !_____________________________________________________________________
   subroutine copy_state(elem,nin,nout)
   implicit none
   
   type (element_t), intent(inout)   :: elem
   integer :: nin,nout
 
-  elem%state%v(:,:,:,:,nout)=elem%state%v(:,:,:,:,nin)
+  elem%state%v(:,:,:,:,nout) =elem%state%v(:,:,:,:,nin)
   elem%state%T(:,:,:,nout)   =elem%state%T(:,:,:,nin)
   elem%state%dp3d(:,:,:,nout)=elem%state%dp3d(:,:,:,nin)
   elem%state%ps_v(:,:,nout)  =elem%state%ps_v(:,:,nin)
@@ -162,7 +159,6 @@ contains
     integer,          intent(in)    :: i,j,k,n0,n1
     type(element_t),  intent(inout) :: elem
 
-
     ! set prognostic state variables at level midpoints
     elem%state%v   (i,j,1,k,n0:n1) = u
     elem%state%v   (i,j,2,k,n0:n1) = v
@@ -173,12 +169,12 @@ contains
   end subroutine
 
   !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,zm,g,i,j,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,cp_star,zm,rho,g,i,j,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
-    ! used by idealized tests to compute idealized physics forcing terms
+    ! used by tests to compute idealized physics forcing terms
 
-    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,zm
+    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,cp_star,zm,rho
     real(real_kind), intent(in)    :: g
     integer,         intent(in)    :: i,j,nt,ntQ
     type(element_t), intent(inout) :: elem
@@ -199,10 +195,11 @@ contains
        p (:,:,k)= hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*elem%state%ps_v(:,:,nt)
        dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
     enddo
-
+    pnh   = p
     exner = (p/p0)**(kappa)
     theta = T/exner
-    T     = theta*exner
+    rho   = p/(Rgas*T)
+    cp_star = cp
 
   end subroutine get_state
 

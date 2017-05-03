@@ -22,7 +22,7 @@ use baroclinic_inst_mod,  only: binst_init_state, jw_baroclinic
 use dcmip12_wrapper,      only: dcmip2012_test1_1, dcmip2012_test1_2, dcmip2012_test1_3,&
                                 dcmip2012_test2_0, dcmip2012_test2_x, dcmip2012_test3,  &
                                 dcmip2012_test4_init, mtest_init
-use dcmip16_wrapper,      only: dcmip2016_test1, dcmip2016_test2, dcmip2016_test3, dcmip2016_test3_forcing
+use dcmip16_wrapper,      only: dcmip2016_test1, dcmip2016_test2, dcmip2016_test3, dcmip2016_forcing
 use held_suarez_mod,      only: hs0_init_state
 
 implicit none
@@ -109,7 +109,7 @@ subroutine set_test_prescribed_wind(elem, deriv, hybrid, hvcoord, dt, tl, nets, 
 end subroutine
 
 !_______________________________________________________________________
-subroutine compute_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
+subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete)
 
   ! apply forcing terms produced by HOMME stand-alone tests
 
@@ -120,30 +120,35 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
   type(hybrid_t),   intent(in)    :: hybrid                             ! hybrid parallel structure
   type(hvcoord_t),  intent(in)    :: hvcoord
   real(kind=rl),    intent(in)    :: dt
-  integer,          intent(in)    :: n,nets,nete,n_tracer
+  integer,          intent(in)    :: nets,nete,nt,ntQ
 
   integer :: ie,q
 
+  ! zero out forcing terms
   do ie=nets,nete
     elem(ie)%derived%FT = 0
     elem(ie)%derived%FM = 0
     elem(ie)%derived%FQ = 0
   enddo
 
-  ! get forcing from test case
+  ! get forcing terms from test case
   select case(test_case)
-    case('dcmip2012_test2_1');  call dcmip2012_test2_x_forcing(elem, hybrid,hvcoord,nets,nete,n,dt)
-    case('dcmip2012_test2_2');  call dcmip2012_test2_x_forcing(elem, hybrid,hvcoord,nets,nete,n,dt)
-    !case('dcmip2016_test1');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,n,n_tracer,dt,1, 0,-1)
-    !case('dcmip2016_test2');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,n,n_tracer,dt,2, 0, 0)
-    case('dcmip2016_test3');    call dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,n,n_tracer,dt)
-    case('mtest1');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
-    case('mtest2');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
-    case('mtest3');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
-    case('held_suarez0');       
+
+    case('dcmip2012_test2_1');  call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,nt,dt)
+    case('dcmip2012_test2_2');  call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,nt,dt)
+    case('mtest1');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,nt,dt)
+    case('mtest2');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,nt,dt)
+    case('mtest3');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,nt,dt)
+
+    case('dcmip2016_test1');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,1)
+    case('dcmip2016_test2');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,2)
+    case('dcmip2016_test3');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,3)
+
+    case('held_suarez0');
        do ie=nets,nete
-          call hs_forcing(elem(ie),hvcoord,n,n_tracer,dt)
+          call hs_forcing(elem(ie),hvcoord,nt,ntQ,dt)
        enddo
+
   endselect
 
 end subroutine

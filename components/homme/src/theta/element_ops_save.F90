@@ -63,25 +63,33 @@ contains
   integer,                intent(in) :: ntQ
 
   integer :: k
-  real(kind=real_kind) :: tmp(np,np,nlev)
+  real(kind=real_kind), dimension(np,np,nlev) :: p,pnh, exner, Th, dp
 
   select case(name)
-  case ('temperature'); call get_temperature(elem,field,hvcoord,nt,ntQ)
-  case ('pottemp');     call get_pottemp(elem,field,hvcoord,nt,ntQ)
-  case ('phi');         field = elem%state%phi(:,:,:,nt)
   case ('dpnh_dp');     call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
-  case ('pnh');         call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt,ntQ)
-  case ('exner');       call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt,ntQ)
+  case ('exner');       call get_total_pressure(elem,pnh,field,hvcoord,nt,ntQ);
+  case ('temperature'); call get_temperature(elem,field,hvcoord,nt,ntQ);
+  case ('phi');         field = elem%state%phi(:,:,:,nt)
+  case ('pnh');         call get_total_pressure(elem,field,exner,hvcoord,nt,ntQ);
+  case ('pottemp');     call get_pottemp(elem,Th,hvcoord,nt,ntQ); field=Th
+  case ('w');           field(:,:,:)=elem%state%w(:,:,:,nt)
+
+  case ('rho'); ! dry air density
+    call get_pottemp(elem,Th,hvcoord,nt,ntQ)
+    call get_total_pressure(elem,pnh,exner,hvcoord,nt,ntQ)
+    field = pnh/(Rgas*Th*exner)
+
   case ('omega')
       do k=1,nlev
-        field(:,:,k)=elem%derived%omega_p(:,:,k) * &
-        (hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt))
+        p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
+        field(:,:,k)=elem%derived%omega_p(:,:,k) * p(:,:,k)
      end do
+
   case ('p');
     do k=1,nlev
       field(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
     enddo
-  case ('w');           field(:,:,:)=elem%state%w(:,:,:,nt)
+
   case default
      print *,'name = ',trim(name)
      call abortmp('ERROR: get_field name not supported in this model')
@@ -201,7 +209,7 @@ contains
   end subroutine 
 
   !_____________________________________________________________________
-  subroutine get_nonhydro_pressure(elem,pnh,exner,hvcoord,nt,ntQ)
+  subroutine get_total_pressure(elem,pnh,exner,hvcoord,nt,ntQ)
     implicit none
     
     type (element_t),       intent(in)  :: elem
@@ -458,7 +466,7 @@ contains
   real (kind=real_kind) :: pnh(np,np,nlev)
   real (kind=real_kind) :: dpnh(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)
-  real (kind=real_kind) :: kappa_star(np,np,nlev)
+
   integer :: k,nt,ntQ
 
   do k=1,nlev
@@ -472,8 +480,7 @@ contains
       (Cp*dp(:,:,k))
   enddo
 
-  call set_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,nt),dp,&
-       elem%state%phi(:,:,:,nt))
+  call set_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,nt),dp, elem%state%phi(:,:,:,nt))
 
 
   ! debug
@@ -491,9 +498,8 @@ contains
 
   end subroutine set_thermostate
 
-
-  !_____________________________________________________________________
-  subroutine set_hydrostatic_phi(hvcoord,phis,theta_dp_cp,dp,phi)
+ !_____________________________________________________________________
+  subroutine set_moist_hydrostatic_phi(hvcoord,phis,theta_dp_cp,dp,phi)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! inverse of get_pnh_and_exner() for dry hydrostatic case
@@ -503,7 +509,7 @@ contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   implicit none
   
-  type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
+  type (hvcoord_t),      intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
   real (kind=real_kind), intent(in) :: theta_dp_cp(np,np,nlev)
   real (kind=real_kind), intent(in) :: dp(np,np,nlev)
   real (kind=real_kind), intent(in) :: phis(np,np)
@@ -515,7 +521,11 @@ contains
   real (kind=real_kind) :: dp_theta_R(np,np,nlev)
   integer :: k
 
-  p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0   
+  !call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
+  !call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
+  !call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,phi,phis,kappa_star,pnh,dpnh,exner)
+
+  p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0
   do k=1,nlev
      p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
   enddo
@@ -540,6 +550,58 @@ contains
   enddo
 
   end subroutine
+
+  !_____________________________________________________________________
+  subroutine set_hydrostatic_phi(hvcoord,phis,theta_dp_cp,dp,phi)
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! inverse of get_pnh_and_exner() for dry hydrostatic case
+  ! used to initialize phi for dry test cases
+  ! used to compute background phi for reference state
+  ! in both the above uses, we can assume dry and we dont need to compute kappa_star
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  implicit none
+  
+  type (hvcoord_t),      intent(in) :: hvcoord                      ! hybrid vertical coordinate struct
+  real (kind=real_kind), intent(in) :: theta_dp_cp(np,np,nlev)
+  real (kind=real_kind), intent(in) :: dp(np,np,nlev)
+  real (kind=real_kind), intent(in) :: phis(np,np)
+  real (kind=real_kind), intent(in) :: kappa_star(np,np,nlev)
+  real (kind=real_kind), intent(out):: phi(np,np,nlev)
+
+
+  !   local
+  real (kind=real_kind) :: p(np,np,nlev)
+  real (kind=real_kind) :: p_i(np,np,nlev+1)
+  real (kind=real_kind) :: dp_theta_R(np,np,nlev)
+  integer :: k
+
+  p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0   
+  do k=1,nlev
+     p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
+  enddo
+  do k=1,nlev
+     p(:,:,k) = (p_i(:,:,k) + p_i(:,:,k+1))/2
+  enddo
+
+!  integrand(:,:) = dp(:,:,nlev)*Rgas*temperature(:,:,nlev)/p(:,:,nlev)
+  phi(:,:,nlev) = phis(:,:) + (&
+kappa*theta_dp_cp(:,:,nlev)*p(:,:,nlev)**(kappa(:,:,nlev)-1)*p0**(-kappa_star(:,:,nlev)) )/2
+
+  do k=nlev,2,-1
+     !  invert this equation at interfaces:
+     !  p/exner = dp_theta_R / d(phi)    
+     ! d(phi) = dp_theta_R*exer/p
+     dp_theta_R(:,:,k) = &
+        (theta_dp_cp(:,:,k  )*kappa_star(:,:,k) +&
+theta_dp_cp (:,:,k-1)*kappa_star(:,:,k))/2
+     ! (phi(:,:,k-1)-phi(:,:,k)) = dp_theta_R * exner/p
+     phi(:,:,k-1) = phi(:,:,k) +&
+      dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa_star(:,:,k) / p_i(:,:,k)
+  enddo
+
+  end subroutine
+
 
   !_____________________________________________________________________
   subroutine set_theta_ref(hvcoord,dp,theta_ref)
@@ -584,7 +646,6 @@ contains
 
   end subroutine
 
-
   !_____________________________________________________________________
   subroutine set_state(u,v,w,T,ps,phis,p,dp,zm,g,i,j,k,elem,n0,n1)
   !
@@ -603,6 +664,7 @@ contains
   elem%state%ps_v(i,j,    n0:n1) = ps
   elem%state%phi (i,j,k,  n0:n1) = g*zm
   elem%state%phis(i,j)           = phis
+
   elem%state%theta_dp_cp(i,j,k,n0:n1)=T*Cp*dp*((p/p0)**(-kappa))
 
   end subroutine set_state
@@ -637,7 +699,8 @@ contains
   end do
 
   end subroutine set_elem_state
- !_____________________________________________________________________
+
+  !_____________________________________________________________________
   subroutine get_state(u,v,w,T,theta,exner,pnh,dp,Cp_star,zm,rho,g,i,j,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
@@ -647,11 +710,10 @@ contains
     real(real_kind), intent(in)    :: g
     integer,         intent(in)    :: i,j,nt,ntQ
     type(element_t), intent(inout) :: elem
-    type (hvcoord_t),intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+    type (hvcoord_t),intent(in)    :: hvcoord
 
     real(real_kind) , dimension(np,np,nlev) :: phi,dpnh,kappa_star
     real(real_kind) , dimension(np,np) :: phis
-
     integer :: k
 
     ! set prognostic state variables at level midpoints
@@ -678,10 +740,10 @@ contains
 
   !_____________________________________________________________________
   subroutine set_forcing_rayleigh_friction(elem, f_d, u0,v0, n)
-!
-! test cases which use rayleigh friciton will call this with the relaxation coefficient
-! f_d, and the reference state u0,v0.  Currently assume w0 = 0
-!
+
+  ! test cases which use rayleigh friciton will call this with the relaxation coefficient
+  ! f_d, and the reference state u0,v0.  Currently assume w0 = 0
+
   implicit none
 
   type(element_t),  intent(inout)  :: elem
@@ -698,26 +760,25 @@ contains
   end subroutine 
 
 
-
   !_____________________________________________________________________
   subroutine tests_finalize(elem, hvcoord,ns,ne)
-!
-! Now that all variables have been initialized, set phi to be in hydrostatic balance
-!
+
+  ! Now that all variables have been initialized, set phi to be in hydrostatic balance
+  
   implicit none
 
-  type(hvcoord_t),     intent(in)  :: hvcoord
-  type(element_t),  intent(inout)  :: elem
-  integer,             intent(in)  :: ns,ne
+  type(hvcoord_t),  intent(in)    :: hvcoord
+  type(element_t),  intent(inout) :: elem
+  integer,          intent(in)    :: ns,ne
 
   integer :: k,ie,tl
-  real(real_kind):: dp(np,np,nlev)
+  real(real_kind):: dp(np,np,nlev), kappa_star(np,np,nlev)
 
-!  set dp
   do k=1,nlev
     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,ns)
   enddo
+
   call set_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,elem%state%phi(:,:,:,ns))
 
   do tl = ns+1,ne

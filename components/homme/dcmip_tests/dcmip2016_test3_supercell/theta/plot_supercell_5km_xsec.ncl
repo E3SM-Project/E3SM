@@ -105,10 +105,10 @@ print("levels="+geo(0,:,1,1)/9.81)
   resw = res
   resw@gsnSpreadColorStart = 8
   resw@gsnSpreadColorEnd = 19
-;resw@cnLevelSelectionMode = "ManualLevels"
-;  resw@cnLevelSpacingF = 2.0
-;  resw@cnMinLevelValF = -8.0
-;  resw@cnMaxLevelValF = 24.0
+  resw@cnLevelSelectionMode = "ManualLevels"
+  resw@cnLevelSpacingF = 2.0
+  resw@cnMinLevelValF = -8.0
+  resw@cnMaxLevelValF = 24.0
 
   resqr = res
   resqr@gsnSpreadColorStart = 21
