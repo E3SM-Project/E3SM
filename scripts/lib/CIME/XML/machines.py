@@ -4,7 +4,7 @@ Interface to the config_machines.xml file.  This class inherits from GenericXML.
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
-from CIME.utils import convert_to_unknown_type
+from CIME.utils import convert_to_unknown_type, get_model
 
 import socket
 
@@ -256,7 +256,7 @@ class Machines(GenericXML):
         >>> machobj.is_valid_MPIlib("fake-mpi")
         False
         """
-        model = CIME.utils.get_model()
+        model = get_model()
         return (model == "cesm" and mpilib == "mpi-serial") or \
             self.get_field_from_list("MPILIBS", reqval=mpilib, attributes=attributes) is not None
 
