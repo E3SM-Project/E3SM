@@ -1242,10 +1242,7 @@ def _check_for_invalid_args(args):
         if " " in arg or arg.startswith("--"):
             continue
         if arg.startswith("-") and len(arg) > 2:
-            if arg == "-value" or arg == "-noecho":
-                logger.warn("This argument is depricated, please use -%s"%arg)
-            else:
-                expect(False, "Invalid argument %s\n  Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options"%arg)
+            logger.warn("The %s argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options"%arg)
 
 class SharedArea(object):
     """
