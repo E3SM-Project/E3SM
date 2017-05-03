@@ -35,6 +35,7 @@ def hybrid_to_plevs(var, hyam, hybm, ps, plev):
     levels_orig = cdutil.vertical.reconstructPressureFromHybrid(
         ps, hyam, hybm, p0)
     levels_orig.units = 'mb'
+    # Make sure z is positive down
     if var.getLevel()[0] > var.getLevel()[-1]:
         var = var(lev=slice(-1,None,-1)) 
         levels_orig = levels_orig(lev=slice(-1,None,-1)) 
@@ -62,6 +63,42 @@ def pressure_to_plevs(var, plev):
     var_p = cdutil.vertical.logLinearInterpolation(
         var(squeeze=1), levels_orig(squeeze=1), plev)
     return var_p
+
+
+def select_region(region, var1, var2, land_frac,ocean_frac,parameter):
+    """select desired regions from transient variables"""
+    domain = None
+    # if region != 'global':
+    if region.find('land') != -1 or region.find('ocean') != -1:
+        if region.find('land') != -1:
+            land_ocean_frac = land_frac
+        elif region.find('ocean') != -1:
+            land_ocean_frac = ocean_frac
+        region_value = regions_specs[region]['value']
+        print 'region_value', region_value
+    
+        var1_domain = mask_by(
+            var1, land_ocean_frac, low_limit=region_value)
+        var2_domain = var2.regrid(
+            var1.getGrid(), parameter.regrid_tool, parameter.regrid_method)
+        var2_domain = mask_by(
+            var2_domain, land_ocean_frac, low_limit=region_value)
+    else:
+        var1_domain = var1
+        var2_domain = var2
+    
+    try:
+        # if region.find('global') == -1:
+        domain = regions_specs[region]['domain']
+        print domain
+    except:
+        print ("no domain selector")
+    var1_domain = var1_domain(domain)
+    var2_domain = var2_domain(domain)
+    var1_domain.units = var1.units
+    var2_domain.units = var1.units
+    
+    return var1_domain, var2_domain
 
 def make_parameters(orginal_parameter):
     """ Create multiple parameters given a list of
@@ -237,6 +274,9 @@ for parameter in parameters:
 
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
+        #save land/ocean fraction for masking
+        land_frac = f_mod('LANDFRAC')
+        ocean_frac = f_mod('OCNFRAC')
 
         for var in variables: 
             print '***********', variables
@@ -306,42 +346,14 @@ for parameter in parameters:
                     mv1 = mv1_p[ilev, ]
                     mv2 = mv2_p[ilev, ]
 
+                    #select region
                     if len(regions) == 0:
                         regions = ['global']
     
                     for region in regions:
-                        print region
-                        domain = None
-                        # if region != 'global':
-                        if region.find('land') != -1 or region.find('ocean') != -1:
-                            if region.find('land') != -1:
-                                land_ocean_frac = f_mod('LANDFRAC')
-                            elif region.find('ocean') != -1:
-                                land_ocean_frac = f_mod('OCNFRAC')
-                            region_value = regions_specs[region]['value']
-                            print 'region_value', region_value, mv1
-    
-                            mv1_domain = mask_by(
-                                mv1, land_ocean_frac, low_limit=region_value)
-                            mv2_domain = mv2.regrid(
-                                mv1.getGrid(), parameter.regrid_tool, parameter.regrid_method)
-                            mv2_domain = mask_by(
-                                mv2_domain, land_ocean_frac, low_limit=region_value)
-                        else:
-                            mv1_domain = mv1
-                            mv2_domain = mv2
-    
-                        print region
-                        try:
-                            # if region.find('global') == -1:
-                            domain = regions_specs[region]['domain']
-                            print domain
-                        except:
-                            print ("no domain selector")
-                        mv1_domain = mv1_domain(domain)
-                        mv2_domain = mv2_domain(domain)
-                        mv1_domain.units = mv1.units
-                        mv2_domain.units = mv1.units
+                        print "selected region", region
+
+                        mv1_domain, mv2_domain = select_region(region, mv1, mv2, land_frac,ocean_frac,parameter)
     
                         parameter.output_file = '-'.join(
                             [ref_name, var, str(int(plev[ilev])), season, region])
@@ -370,41 +382,15 @@ for parameter in parameters:
 
             # for variables without z axis:
             elif mv1.getLevel() == None and mv2.getLevel() == None:
+
+                #select region
                 if len(regions) == 0:
                     regions = ['global']
-    
+
                 for region in regions:
-                    print region
-                    domain = None
-                    # if region != 'global':
-                    if region.find('land') != -1 or region.find('ocean') != -1:
-                        if region.find('land') != -1:
-                            land_ocean_frac = f_mod('LANDFRAC')
-                        elif region.find('ocean') != -1:
-                            land_ocean_frac = f_mod('OCNFRAC')
-                        region_value = regions_specs[region]['value']
-                        print 'region_value', region_value, mv1
-    
-                        mv1_domain = mask_by(
-                            mv1, land_ocean_frac, low_limit=region_value)
-                        mv2_domain = mv2.regrid(
-                            mv1.getGrid(), parameter.regrid_tool, parameter.regrid_method)
-                        mv2_domain = mask_by(
-                            mv2_domain, land_ocean_frac, low_limit=region_value)
-                    else:
-                        mv1_domain = mv1
-                        mv2_domain = mv2
-    
-                    print region
-                    try:
-                        domain = regions_specs[region]['domain']
-                        print domain
-                    except:
-                        print("no domain selector")
-                    mv1_domain = mv1_domain(domain)
-                    mv2_domain = mv2_domain(domain)
-                    mv1_domain.units = mv1.units
-                    mv2_domain.units = mv1.units
+                    print "selected region", region
+
+                    mv1_domain, mv2_domain = select_region(region, mv1, mv2, land_frac,ocean_frac,parameter)
     
                     parameter.output_file = '-'.join(
                         [ref_name, var, season, region])
