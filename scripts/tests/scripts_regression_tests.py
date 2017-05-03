@@ -1384,9 +1384,6 @@ class K_TestCimeCase(TestCreateTestCommon):
 
             self.assertEqual(case.get_value("NTHRDS_CPL"), 8)
 
-            expected_cores = 16 * case.cores_per_task
-            self.assertEqual(case.get_value("COST_PES"), expected_cores)
-
     ###########################################################################
     def test_cime_case_xmlchange_append(self):
     ###########################################################################
