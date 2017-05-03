@@ -302,7 +302,7 @@ for parameter in parameters:
                 # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
                 print mv.fill_value
                 # this is cdms2 for bad mask, denise's fix should fix
-                mv = MV2.masked_where(mv == mv.fill_value, mv)
+                mv2 = MV2.masked_where(mv2 == mv.fill_value, mv2)
     
                 # following should move to derived variable
                 if var == 'PRECT_LAND':
@@ -427,6 +427,7 @@ for parameter in parameters:
                         #start plot7 template
                         #import vcs
                         #x=vcs.init()
+                        #x1=vcs.init()
                         #polar = vcs.createisofill()
                         #polar.projection = 'polar'
                         #print mv1_domain.getLatitude()[0],mv1_domain.getLatitude()[-1]
@@ -439,7 +440,8 @@ for parameter in parameters:
                         #elif region == 'polar_N':
                         #    polar.datawc_y1 = 90  #this should extracted from selected domain
                         #    polar.datawc_y2 = 50
-                        #x.plot(mv1_domain,polar)
+                        #x.plot(mv1(latitude=(-90,-55)),polar)
+                        #x1.plot(mv2(latitude=(-90,-55)),polar)
 
                         plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 
