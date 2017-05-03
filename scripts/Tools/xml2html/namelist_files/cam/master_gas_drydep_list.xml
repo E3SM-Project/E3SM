@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+
+<drydep_list_definition>
+
+<!-- gas-phase species -->
+<list id="gas_phase">
+ ALKOOH
+ BENZOOH
+ BZOOH
+ C2H5OH
+ C2H5OOH
+ C3H7OOH
+ C6H5OOH
+ CH2O
+ CH3CHO
+ CH3CN
+ CH3COCH3
+ CH3COCHO
+ CH3COOH
+ CH3COOOH
+ CH3OH
+ CH3OOH
+ CO
+ GLYALD
+ H2O2
+ HCN
+ HCOOH
+ HNO3
+ HO2NO2
+ HPALD
+ HYAC
+ HYDRALD
+ IEPOX
+ ISOPNO3
+ ISOPOOH
+ MACROOH
+ MEKOOH
+ MPAN
+ NH3
+ NO
+ NO2
+ O3
+ ONIT
+ ONITR
+ PAN
+ PHENOOH
+ POOH
+ ROOH
+ SO2
+ H2SO4
+ TERPOOH
+ TERP2OOH
+ TERPROD1
+ TERPROD2
+ TOLOOH
+ XOOH
+ XYLENOOH
+ XYLOLOOH
+ Pb
+ EOOH
+ HI, HOI, IONO2, INO2, I2O2, I2O3, I2O4, BR2
+ NOA, ALKNIT, ISOPNITA, ISOPNITB, HONITR
+ ISOPNOOH, NC4CHO, NC4CH2OH, TERPNIT, NTERPOOH
+ SOAGff0, SOAGff1, SOAGff2, SOAGff3, SOAGff4, SOAGbb0
+ SOAGbb1, SOAGbb2, SOAGbb3, SOAGbb4, SOAGbg0, SOAGbg1, SOAGbg2, SOAGbg3, SOAGbg4,
+ SOAG0, SOAG1, SOAG2, SOAG3, SOAG4
+ IVOC, SVOC, IVOCbb, IVOCff, SVOCbb, SVOCff
+</list>
+
+<!-- BAM species -->
+<!-- these aerosols are removed via the gas-phase dry dep method -->
+<list id="BAM">
+ CB1
+ CB2
+ NH4
+ NH4NO3
+ OC1
+ OC2
+ SO4
+ SOA
+</list>
+
+<list id="SOA">
+  SOAM,SOAI,SOAT,SOAB,SOAX  
+  SOGM,SOGI,SOGT,SOGB,SOGX  
+</list>
+
+<!-- XNOx species -->
+<list id="XNOx">
+ XNO
+ XNO2
+ XHNO3
+ XONIT
+ XONITR 
+ XPAN 
+ XMPAN
+ XHO2NO2 
+ XNH4NO3
+ O3A
+</list>
+
+</drydep_list_definition>

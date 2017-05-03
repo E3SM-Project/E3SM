@@ -30,7 +30,7 @@ except:
 
 # global variables
 _now = datetime.datetime.now().strftime('%Y-%m-%d')
-_comps = ['CAM', 'CLM', 'CISM', 'POP2', 'CICE', 'RTM', 'MOSART', 'WW3', 
+_comps = ['AQUAP', 'CAM', 'CLM', 'CISM', 'POP2', 'CICE', 'RTM', 'MOSART', 'WW3', 
           'Driver', 'DATM', 'DESP', 'DICE', 'DLND', 'DOCN', 'DROF', 'DWAV']
 _cime_comps = ['Driver', 'DATM', 'DESP', 'DICE', 'DLND', 'DOCN', 'DROF', 'DWAV']
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ def commandline_options():
 
     options = parser.parse_args()
 
-    CIME.utils.handle_standard_logging_options(options)
+    CIME.utils.parse_args_and_handle_standard_logging_options(options)
 
     return options
 
@@ -79,9 +79,12 @@ def getSvnTag(svnfile, comp):
             tagDict[int(splitLine[0])] = splitLine[1:]
     f.close()
     
-    cc = comp
+    cc = comp.lower()
     if comp in _cime_comps:
-        cc = cime
+        cc = 'cime'
+
+    if cc == 'pop2':
+        cc = 'pop'
 
     for key, value in tagDict.iteritems():
         if cc in key:

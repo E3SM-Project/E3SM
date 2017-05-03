@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="http://www.cgd.ucar.edu/~cam/namelist/namelist_definition_CICE.xsl"?>
+
+<entry_id version="2.0">
+
+  <!-- Each namelist variable is defined in an <entry> element.  The
+     content of the element is the documentation of how the variable is
+     used.  Other elements  are:
+     id
+          The variable's name.  *** N.B. *** The name must be lower case.
+          The module convert all namelist variable names to lower case
+          since Fortran is case insensitive.
+     type
+          An abbreviation of the fortran declaration for the variable.
+	  Valid declarations are:
+             char, integer, logical, real
+	  Any of these types may be followed by a comma separated list of
+	  integers enclosed in parenthesis to indicate an array.
+	  The current namelist validation code only distinquishes between
+	  string and non-string types.
+     category
+          A category assigned for organizing the documentation.
+     group
+          The namelist group that the variable is declared in.
+     valid_values
+          This is an optional attribute that is mainly useful for variables
+          that have only a small number of allowed values.
+  -->
+
+  <entry id="initfile">
+    <type>char</type>
+    <group>ww3_inparm</group>
+    <category>setup</category>
+    <values>
+      <value>unset</value>
+      <value runtype="startup">$DIN_LOC_ROOT/wav/ww3/restart.ww3.init.seed</value>
+      <value runtype="hybrid">$DIN_LOC_ROOT/wav/ww3/restart.ww3.init.seed</value>
+      <value runtype="branch">$RUN_REFCASE.ww3.r.$RUN_REFDATE-00000</value>
+    </values>
+    <desc>
+      Initial condition file. 
+      This is set in ww buildnml from refacase and refdate for branch and hybrid runs
+    </desc>
+  </entry>
+
+</entry_id>

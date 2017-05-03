@@ -1,0 +1,232 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<entry_id version="2.0">
+
+  <!-- ========================================================================================  -->
+  <!-- RTM Namelist -->
+  <!-- ========================================================================================  -->
+
+  <entry id="rtm_mode">
+    <type>char</type> 
+    <category>rtm</category>
+    <group>rtm_inparm</group> 
+    <valid_values>ACTIVE,NULL</valid_values>
+    <desc>
+      If ACTIVE, turn on rtm river routing. If the value rtm_mode is
+      NULL, then rof_present will be set to false at runtime.
+    </desc>
+    <values>
+      <value>ACTIVE</value>
+      <value rtm_mode="ACTIVE" clm_accelerated_spinup="off">ACTIVE</value>
+      <value clm_accelerated_spinup="on">NULL</value>
+      <value rtm_mode="NULL">NULL</value>
+      <value rof_grid="null">NULL</value>
+    </values>
+  </entry>
+
+  <entry id="flood_mode" modify_via_xml="RTM_FLOOD_MODE">
+    <type>char</type> 
+    <category>rtm</category>
+    <group>rtm_inparm</group> 
+    <valid_values>ACTIVE,NULL</valid_values>
+    <desc>
+      If ACTIVE, turn on rtm flooding back to clm. Note that rtm flood
+      is not supported in CESM1.1
+    </desc>
+    <values>
+      <value>$RTM_FLOOD_MODE</value>
+    </values>
+  </entry>
+
+  <entry id="ice_runoff">
+    <type>logical</type>
+    <category>rtm</category>
+    <group>rtm_inparm</group>
+    <desc>
+      If .true., river runoff will be split up into liquid and ice streams,
+      otherwise ice runoff will be zero and all runoff directed to liquid stream.
+    </desc>
+    <values>
+      <value>.true.</value>
+      <value lnd_grid="48x96">.false.</value>
+      <value lnd_grid="T31">.false.</value>
+    </values>
+  </entry>
+
+  <entry id="rtm_tstep" modify_via_xml="ROF_NCPL">
+    <type>integer</type> 
+    <category>rtm</category>
+    <group>rtm_inparm</group> 
+    <desc>RTM time step (sec). - set automatically via the value of ROF_NCPL</desc>
+    <values>
+      <value>-999</value>
+    </values>
+  </entry>
+
+  <entry id="rtm_effvel">
+    <type>char</type> 
+    <category>rtm</category>
+    <group>rtm_inparm</group> 
+    <valid_values>ACTIVE,NULL</valid_values>
+    <desc>
+      If ACTIVE, calculate the effective velocity using slope. 
+    </desc>
+    <values>
+      <value>ACTIVE</value>
+      <value compset="CLM40">NULL</value>
+    </values>
+  </entry>
+
+  <entry id="finidat_rtm" skip_default_entry="true">
+    <type>char</type> 
+    <category>rtm</category>
+    <group>rtm_inparm</group> 
+    <input_pathname>abs</input_pathname>
+    <desc>
+      Full pathname of initial rtm file 
+    </desc>
+    <values>
+      <value>UNSET</value> 
+      <value simyr="1850" rof_grid="r05">$DIN_LOC_ROOT/rof/rtm/initdata/rtmi.I1850CRUCLM45BGC.0241-01-01.R05_simyr1850_c130515.nc</value>
+      <value simyr="2000" rof_grid="r05">$DIN_LOC_ROOT/rof/rtm/initdata/rtmi.ICRUCLM45BGC.2000-01-01.R05_simyr2000_c130518.nc</value>
+    </values>
+  </entry>
+
+  <entry id="nrevsn_rtm" skip_default_entry="true">
+    <type>char</type> 
+    <category>rtm</category>
+    <group>rtm_inparm</group> 
+    <desc>
+      Full pathname of master restart file for a branch run. (only used if RUN_TYPE is branch)
+    </desc>
+  </entry>
+
+  <entry id="frivinp_rtm">
+    <type>char</type> 
+    <category>rtm</category>
+    <group>rtm_inparm</group> 
+    <input_pathname>abs</input_pathname>
+    <desc>
+      Full pathname of input datafile for RTM.
+    </desc>
+    <values>
+      <value rof_grid="r05">$DIN_LOC_ROOT/lnd/clm2/rtmdata/rdirc_0.5x0.5_simyr2000_slpmxvl_c120717.nc</value>
+      <value rof_grid="r01">$DIN_LOC_ROOT/lnd/clm2/rtmdata/rdirc_0.1x0.1_qian_c130115.nc</value>
+    </values>
+  </entry>
+
+  <entry id="rtmhist_fexcl1">
+    <type>char(1000)</type> 
+    <category>history</category>
+    <group>rtm_inparm</group> 
+    <desc>
+      Fields to exclude from history tape series 1.
+    </desc>
+    <values>
+      <value>''</value>
+    </values>
+  </entry>
+
+  <entry id="rtmhist_fexcl2">
+    <type>char(1000)</type> 
+    <category>history</category>
+    <group>rtm_inparm</group> 
+    <desc>
+      Fields to exclude from history tape series  2.
+    </desc>
+    <values>
+      <value>''</value>
+    </values>
+  </entry>
+  
+  <entry id="rtmhist_fexcl3">
+    <type>char(1000)</type> 
+    <category>history</category>
+    <group>rtm_inparm</group> 
+    <desc>
+      Fields to exclude from history tape series  3.
+    </desc>
+    <values>
+      <value>''</value>
+    </values>
+  </entry>
+
+  <entry id="rtmhist_fincl1">
+    <type>char(1000)</type>
+    <category>history</category>
+    <group>rtm_inparm</group> 
+    <desc>
+      Fields to add to history tape series  1.
+    </desc>
+    <values>
+      <value>''</value>
+    </values>
+  </entry>
+
+  <entry id="rtmhist_fincl2">
+    <type>char(1000)</type>
+    <category>history</category>
+    <group>rtm_inparm</group>
+    <desc>
+      Fields to add to history tape series  2.
+    </desc>
+    <values>
+      <value>''</value>
+    </values>
+  </entry>
+
+  <entry id="rtmhist_fincl3">
+    <type>char(1000)</type>
+    <category>history</category>
+    <group>rtm_inparm</group>
+    <desc>
+      Fields to add to history tape series  3.
+    </desc>
+    <values>
+      <value>''</value>
+    </values>
+  </entry>
+
+  <entry id="rtmhist_mfilt">
+    <type>integer(6)</type>
+    <category>history</category>
+    <group>rtm_inparm</group>
+    <desc>
+      Per tape series  maximum number of time samples.
+    </desc>
+    <values>
+      <value>1</value>
+    </values>
+  </entry>
+
+  <entry id="rtmhist_ndens">
+    <type>integer(6)</type>
+    <category>history</category>
+    <group>rtm_inparm</group>
+    <valid_values>1,2</valid_values>
+    <desc>
+      Per tape series  history file density (i.e. output precision) 
+      1=double precision, 2=single precision
+    </desc>
+    <values>
+      <value>2</value>
+    </values>
+  </entry>
+
+  <entry id="rtmhist_nhtfrq">
+    <type>integer(6)</type>
+    <category>history</category>
+    <group>rtm_inparm</group>
+    <desc>
+      Per tape series history write frequency. 
+      positive means in time steps,  0=monthly, negative means hours
+      (i.e. 24 means every 24 time-steps and -24 means every day
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
+</entry_id>

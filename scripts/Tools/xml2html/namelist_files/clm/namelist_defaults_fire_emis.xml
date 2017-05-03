@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<namelist_defaults>
+
+<!--
+Values to use by default for creation of CLM model driver namelists.
+The element names are the same as the corresponding namelist
+variables.  Values that depend on the model configuration use
+attributes to express the dependency.  The recognized attributes
+are: RESOLUTION, defaults, mask, ic_ymd, ic_tod, sim_year and all configuration
+attributes from the config_cache.xml file (with keys converted to upper-case).
+-->
+
+<!-- Defaults for fire_emis_nl namelist  -->
+
+<fire_emis_specifier>'bc_a1 = BC','pom_a1 = 1.4*OC','SO2 = SO2'</fire_emis_specifier>
+
+<fire_emis_factors_file>lnd/clm2/firedata/fire_emis_factors_c140116.nc</fire_emis_factors_file>
+
+</namelist_defaults>

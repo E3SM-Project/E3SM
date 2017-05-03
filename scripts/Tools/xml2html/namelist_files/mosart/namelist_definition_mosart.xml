@@ -1,0 +1,287 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<entry_id version="2.0">
+
+  <!-- ========================================================================================  -->
+  <!-- MOSART Namelist -->
+  <!-- ========================================================================================  -->
+
+  <entry id="do_rtm" >
+    <type>logical</type> 
+    <category>mosart</category>
+    <group>mosart_inparm</group> 
+    <desc>
+      If .true., turn on mosart river routing
+      If the value of the xml variable ROF GRID in env_build.xml is set to 'null', then
+      the MOSART build-namelist will set do_mosart to .false.
+      If do_mosart is set to .false., then MOSART will send a flag of rof_prognostic = .false.
+      back to the coupler on initialization. 
+    </desc>
+    <values>
+      <value>.true.</value>
+      <value mosart_mode="ACTIVE" clm_accelerated_spinup="off">.true.</value>
+      <value clm_accelerated_spinup="on">.false.</value>
+      <value mosart_mode="NULL">.false.</value>
+      <value rof_grid="null">.false.</value>
+    </values>
+  </entry>
+
+  <entry id="do_rtmflood" modify_via_xml="MOSART_FLOOD_MODE">
+    <type>logical</type> 
+    <category>mosart</category>
+    <group>mosart_inparm</group> 
+    <values>
+      <value mosart_flood_mode="ACTIVE">.true.</value>
+      <value mosart_flood_mode="NULL">.false.</value>
+    </values>
+    <desc>
+      If .true., turn on mosart flooding back to clm
+      Note that mosart flood is not supported in CESM1.1
+    </desc>
+  </entry>
+
+  <entry id="ice_runoff">
+    <type>logical</type> 
+    <category>mosart</category>
+    <group>mosart_inparm</group>
+    <values>
+      <value>.true.</value>
+    </values>
+    <desc>
+      Default: .true.
+      If .true., river runoff will be split up into liquid and ice streams,
+      otherwise ice runoff will be zero and all runoff directed to liquid
+      stream.
+    </desc>
+  </entry>
+
+  <entry id="coupling_period" modify_via_xml="ROF_NCPL" skip_default_entry="true">
+    <type>integer</type> 
+    <category>mosart</category>
+    <group>mosart_inparm</group> 
+    <desc>
+      MOSART coupling period to driver (sec).
+      Can ONLY be set by modifying the value of the xml variable ROF_NCPL in env_run.xml.
+    </desc>
+  </entry>
+
+  <entry id="delt_mosart">
+    <type>integer</type> 
+    <category>mosart</category>
+    <group>mosart_inparm</group> 
+    <values>
+      <value>3600</value>
+    </values>
+    <desc>
+      MOSART time step (sec). Default: 3600 Internal mosart timestep,
+      will be adjusted down to be integer multiple of coupling_period if
+      necessary
+    </desc>
+  </entry>
+
+  <entry id="smat_option">
+    <type>char</type> 
+    <category>mosart</category>
+    <group>mosart_inparm</group> 
+    <valid_values>opt,Xonly,Yonly</valid_values>
+    <values>
+      <value>Xonly</value>
+    </values>
+    <desc>
+      sparse matrix mct setting.  Xonly is bfb on different pe counts,
+      opt and Yonly might involve partial sums
+    </desc>
+  </entry>
+
+  <entry id="decomp_option">
+    <type>char</type> 
+    <category>mosart</category>
+    <group>mosart_inparm</group> 
+    <valid_values>basin,1d,roundrobin</valid_values>
+    <values>
+      <value>roundrobin</value>
+    </values>
+    <desc>
+      Decomposition Option for mosart
+    </desc>
+  </entry>
+
+  <entry id="bypass_routing_option">
+    <type>char</type> 
+    <category>mosart</category>
+    <group>mosart_inparm</group> 
+    <valid_values>direct_in_place,direct_to_outlet,none</valid_values>
+    <values>
+      <value>direct_in_place</value> 
+    </values>
+    <desc>
+      Method for bypassing routing model.
+    </desc>
+  </entry>
+
+  <entry id="qgwl_runoff_option">
+    <type>char</type> 
+    <category>mosart</category>
+    <group>mosart_inparm</group> 
+    <valid_values>all,negative,threshold</valid_values>
+    <values>
+      <value>threshold</value> 
+    </values>
+    <desc>
+      Method for handling of qgwl runoff inputs.
+    </desc>
+  </entry>
+
+  <entry id="finidat_rtm" skip_default_entry="true">
+    <type>char</type> 
+    <category>mosart</category>
+    <group>mosart_inparm</group> 
+    <input_pathname>abs</input_pathname>
+    <values>
+      <value>UNSET</value>
+    </values>
+    <desc>
+      Full pathname of initial rtm file 
+    </desc>
+  </entry>
+
+  <entry id="nrevsn_rtm" skip_default_entry="true">
+    <type>char</type> 
+    <category>mosart</category>
+    <group>mosart_inparm</group> 
+    <values>
+      <value>''</value>
+    </values>
+    <desc>
+      Name of master restart file for a branch run. (only used if RUN_TYPE is branch)
+    </desc>
+  </entry>
+
+  <entry id="frivinp_rtm">
+    <type>char</type> 
+    <category>mosart</category>
+    <input_pathname>abs</input_pathname>
+    <group>mosart_inparm</group> 
+    <values>
+      <value rof_grid="r05">$DIN_LOC_ROOT/rof/mosart/MOSART_Global_half_20151205a.nc</value>
+    </values>
+    <desc>
+      Full pathname of input datafile for RTM.
+    </desc>
+  </entry>
+
+  <entry id="rtmhist_fexcl1">
+    <type>char(1000)</type> 
+    <category>history</category>
+    <group>mosart_inparm</group> 
+    <values>
+      <value>''</value>
+    </values>
+    <desc>
+      Fields to exclude from history tape series 1.
+    </desc>
+  </entry>
+
+  <entry id="rtmhist_fexcl2">
+    <type>char(1000)</type> 
+    <category>history</category>
+    <group>mosart_inparm</group> 
+    <values>
+      <value>''</value>
+    </values>
+    <desc>
+      Fields to exclude from history tape series  2.
+    </desc>
+  </entry>
+
+  <entry id="rtmhist_fexcl3">
+    <type>char(1000)</type> 
+    <category>history</category>
+    <group>mosart_inparm</group> 
+    <values>
+      <value>''</value>
+    </values>
+    <desc>
+      Fields to exclude from history tape series  3.
+    </desc>
+  </entry>
+
+  <entry id="rtmhist_fincl1">
+    <type>char(1000)</type> 
+    <category>history</category>
+    <group>mosart_inparm</group> 
+    <values>
+      <value>''</value>
+    </values>
+    <desc>
+      Fields to add to history tape series  1.
+    </desc>
+  </entry>
+
+  <entry id="rtmhist_fincl2">
+    <type>char(1000)</type> 
+    <category>history</category>
+    <group>mosart_inparm</group> 
+    <values>
+      <value>''</value>
+    </values>
+    <desc>
+      Fields to add to history tape series  2.
+    </desc>
+  </entry>
+
+  <entry id="rtmhist_fincl3">
+    <type>char(1000)</type> 
+    <category>history</category>
+    <group>mosart_inparm</group> 
+    <values>
+      <value>''</value>
+    </values>
+    <desc>
+      Fields to add to history tape series  3.
+    </desc>
+  </entry>
+
+  <entry id="rtmhist_mfilt">
+    <type>integer(6)</type> 
+    <category>history</category>
+    <group>mosart_inparm</group> 
+    <values>
+      <value>1</value>
+    </values>
+    <desc>
+      Per tape series  maximum number of time samples.
+    </desc>
+  </entry>
+
+  <entry id="rtmhist_ndens">
+    <type>integer(6)</type> 
+    <category>history</category>
+    <group>mosart_inparm</group> 
+    <valid_values>1,2</valid_values>
+    <values>
+      <value>2</value>
+    </values>
+    <desc>
+      Per tape series  history file density (i.e. output precision) 
+      1=double precision, 2=single precision
+    </desc>
+  </entry>
+
+  <entry id="rtmhist_nhtfrq">
+    <type>integer(6)</type>
+    <category>history</category>
+    <group>mosart_inparm</group> 
+    <values>
+      <value>0</value>
+    </values>
+    <desc>
+      Per tape series history write frequency. 
+      positive means in time steps,  0=monthly, negative means hours
+      (i.e. 24 means every 24 time-steps and -24 means every day
+    </desc>
+  </entry>
+
+</entry_id>

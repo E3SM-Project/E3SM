@@ -1,0 +1,83 @@
+<gas_wetdep_list_definition>
+
+<!-- list of gas phase species that under go wet deposition -->
+
+<list id="MAM">
+  NH4, NH4NO3
+</list>
+<list id="XNOx">
+ XNH4NO3
+</list>
+
+<list id="gas">
+  HCN
+  CH3CN
+  ALKOOH
+  BRONO2
+  C2H5OH
+  C2H5OOH
+  C3H7OOH
+  CH2O
+  CH3CHO
+  CH3COCHO
+  CH3COOH
+  CH3COOOH
+  CH3OH
+  CH3OOH
+  CLONO2
+  GLYALD
+  H2O2
+  HBR
+  HCL
+  HCOOH
+  HNO3
+  HO2NO2
+  HOBR
+  HOCL
+  HYAC
+  HYDRALD
+  ISOPNO3
+  ISOPOOH
+  MACR
+  MACROOH
+  MEKOOH
+  MVK
+  NH3
+  ONIT
+  ONITR
+  Pb
+  POOH
+  ROOH
+  SO2
+  H2SO4
+  TERPOOH
+  TOLOOH
+  XOOH
+  COF2
+  COFCL 
+  HF
+  EOOH
+  IBR, ICL, BRNO2, CLNO2, HI, HOI, IONO2, BR2, IO, OIO, I2O2, I2O3, I2O4
+  NH_50W, SO2t
+  BENZOOH, BZOOH, C6H5OOH, HMPROP, HPALD, IEPOX, MBOOOH, PHENOOH, TERP2OOH
+  TERPROD1, TERPROD2, XYLENOOH, XYLOLOOH, NOA, ALKNIT, ISOPNITA, ISOPNITB, HONITR, ISOPNOOH
+  NC4CHO, NC4CH2OH, TERPNIT, NTERPOOH,
+  SOAGff0, SOAGff1, SOAGff2, SOAGff3, SOAGff4, SOAGbb0
+  SOAGbb1, SOAGbb2, SOAGbb3, SOAGbb4, SOAGbg0, SOAGbg1, SOAGbg2, SOAGbg3, SOAGbg4,
+  SOAG0, SOAG1, SOAG2, SOAG3, SOAG4 
+  IVOC, SVOC, IVOCbb, IVOCff, SVOCbb, SVOCff
+  NDEP, NHDEP
+</list>
+<list id="SOA">
+  SOGM,SOGI,SOGT,SOGB,SOGX  
+</list>
+
+<list id="XNOx">
+  XHNO3
+  XHO2NO2
+  XONIT
+  XONITR
+  XISOPNO3
+</list>
+
+</gas_wetdep_list_definition>
