@@ -8,6 +8,8 @@
 <xs:attribute name="debug" type="xs:boolean"/>
 <xs:attribute name="mpilib" type="xs:string"/>
 <xs:attribute name="value" type="xs:string"/>
+<xs:attribute name="unit_testing" type="xs:boolean"/>
+
 <!-- simple elements -->
 <xs:element name="header" type="xs:string"/>
 <xs:element name="executable" type="xs:string"/>
@@ -75,6 +77,7 @@
         <xs:element maxOccurs="unbounded" ref="env"/>
       </xs:sequence>
       <xs:attribute name="debug" type="xs:boolean"/>
+      <xs:attribute ref="unit_testing"/>
       <xs:attribute name="mpilib"/>
     </xs:complexType>
   </xs:element>
@@ -87,13 +90,23 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element ref="executable"/>
+	<xs:element ref="arguments" minOccurs="0"/>
       </xs:sequence>
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute name="threaded" type="xs:boolean"/>
-      <xs:attribute name="unit_testing" type="xs:boolean"/>
+      <xs:attribute ref="unit_testing"/>
     </xs:complexType>
   </xs:element>
+
+  <xs:element name="arguments">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element name="arg" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
   <xs:element name="entry">
     <xs:complexType>
       <xs:sequence>
