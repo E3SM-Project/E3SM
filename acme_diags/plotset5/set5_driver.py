@@ -425,24 +425,6 @@ for parameter in parameters:
                         parameter.plot(mv2_domain, mv1_domain, diff,
                                        metrics_dict, parameter)
                     else:    
-                        #start plot7 template
-                        #import vcs
-                        #x=vcs.init()
-                        #x1=vcs.init()
-                        #polar = vcs.createisofill()
-                        #polar.projection = 'polar'
-                        #print mv1_domain.getLatitude()[0],mv1_domain.getLatitude()[-1]
-                        #print mv2_domain.getLatitude()[0],mv2_domain.getLatitude()[-1]
-                        #print diff.getLatitude()[0],diff.getLatitude()[-1]
-                        #
-                        #if region == 'polar_S': 
-                        #    polar.datawc_y1 = -90  #this should extracted from selected domain
-                        #    polar.datawc_y2 = -55
-                        #elif region == 'polar_N':
-                        #    polar.datawc_y1 = 90  #this should extracted from selected domain
-                        #    polar.datawc_y2 = 50
-                        #x.plot(mv1(latitude=(-90,-55)),polar)
-                        #x1.plot(mv2(latitude=(-90,-55)),polar)
 
                         plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 
