@@ -243,10 +243,6 @@ include 'mpif.h'
 #ifdef MPAS_OPENMP
          desiredThreadLevel = MPI_THREAD_MULTIPLE
          call MPI_Init_thread(desiredThreadLevel, threadLevel, mpi_ierr)
-         if ( threadLevel /= desiredThreadLevel ) then
-            call mpas_log_write('MPI implementation gave thread level of $i when $i was requested.', &
-               MPAS_LOG_WARN, intArgs=(/threadLevel, desiredThreadLevel/) )
-         end if
 #else
          call MPI_Init(mpi_ierr)
 #endif
@@ -261,7 +257,28 @@ include 'mpif.h'
       dminfo % my_proc_id = mpi_rank
 
       dminfo % info = MPI_INFO_NULL
+
+#ifdef MPAS_OPENMP
+      if ( mpi_rank == 0 .and. threadLevel /= desiredThreadLevel ) then
+         write(0,*) 'Note: MPAS has requested an MPI threading level of MPI_THREAD_MULTIPLE, but'
+         write(0,*) '      this is not supported by the MPI implementation; a threading level of'
+         select case (threadLevel)
+            case (MPI_THREAD_SINGLE)
+               write(0,*) '      MPI_THREAD_SINGLE will be used instead.'
+            case (MPI_THREAD_FUNNELED)
+               write(0,*) '      MPI_THREAD_FUNNELED will be used instead.'
+            case (MPI_THREAD_SERIALIZED)
+               write(0,*) '      MPI_THREAD_SERIALIZED will be used instead.'
+            case (MPI_THREAD_MULTIPLE)
+               write(0,*) '      MPI_THREAD_MULTIPLE will be used instead.'
+            case default
+               write(0,*) '      ', threadLevel ,' will be used instead.'
+         end select
+      end if
+#endif
+
 #else
+      ! Set up single processor run, no MPI.
       dminfo % comm = 0
       dminfo % my_proc_id = IO_NODE
       dminfo % nprocs = 1
