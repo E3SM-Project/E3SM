@@ -60,7 +60,6 @@
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/scratch/sciteam/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/ccsm_cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J> 8</GMAKE_J>
@@ -140,7 +139,6 @@
     <DIN_LOC_ROOT>/cluster/work/uwis/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/cluster/work/uwis/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/cluster/work/uwis/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>$SHELL{echo $USER | tr '[a-z]' '[A-Z]'}/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/cluster/work/uwis/ccsm/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/cluster/work/uwis/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>1</GMAKE_J>
@@ -206,7 +204,6 @@
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -300,7 +297,6 @@
     <DIN_LOC_ROOT>/pic/scratch/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/pic/scratch/$USER/cases/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <BASELINE_ROOT>/pic/scratch/tcraig/IRESM/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/people/tcraig/bin/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -401,7 +397,6 @@
     <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/project/projectdirs/ccsm1/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.corip1/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -505,7 +500,6 @@
     <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/project/projectdirs/ccsm1/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.corip1/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -610,7 +604,6 @@
     <DIN_LOC_ROOT>/projects/EarlyPerf_theta/cesm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/EarlyPerf_theta/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/projects/EarlyPerf_theta/cesm/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/projects/EarlyPerf_theta/cesm/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/projects/EarlyPerf_theta/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -697,7 +690,6 @@
     <DIN_LOC_ROOT>/lustre/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <BASELINE_ROOT>/lustre/tcraig/IRESM/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/lustre/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -755,7 +747,6 @@
     <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/project/projectdirs/ccsm1/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.edison/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -862,7 +853,6 @@
     <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/scratch/cluster/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>$SHELL{echo $USER | tr '[a-z]' '[A-Z]'}/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/fs/cgd/csm/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/fs/cgd/csm/tools/cprnc_hobart/cprnc</CCSM_CPRNC>
     <GMAKE>gmake --output-sync</GMAKE>
@@ -923,7 +913,6 @@
     <DIN_LOC_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/fs/scratch/Julio.T.Bacmeister/inputdata</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <BASELINE_ROOT>UNSET</BASELINE_ROOT>
     <CCSM_CPRNC>UNSET</CCSM_CPRNC>
     <GMAKE_J> 8</GMAKE_J>
@@ -992,7 +981,6 @@
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -1062,7 +1050,6 @@
     <DIN_LOC_ROOT>/sems-data-store/ACME/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/sems-data-store/ACME/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
@@ -1118,7 +1105,6 @@
     <DIN_LOC_ROOT>/sems-data-store/ACME/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/sems-data-store/ACME/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
@@ -1170,7 +1156,6 @@
     <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/projects/$PROJECT/usr/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/home/$USER/csm/$CASE/</DOUT_L_MSROOT>
     <BASELINE_ROOT>/projects/ccsm/ccsm_baselines/</BASELINE_ROOT>
     <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
@@ -1222,7 +1207,6 @@
     <DIN_LOC_ROOT>/pic/scratch/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/pic/scratch/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <BASELINE_ROOT>/pic/scratch/tcraig/IRESM/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/pic/scratch/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -1271,7 +1255,6 @@
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -1324,7 +1307,6 @@
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -1377,7 +1359,6 @@
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -1430,7 +1411,6 @@
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -1483,7 +1463,6 @@
     <DIN_LOC_ROOT>/project/s433/cesm_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/s433/cesm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/project/s433/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/project/s433/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/project/s433/cesm_tools/ccsm_cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>12</GMAKE_J>
@@ -1518,7 +1497,6 @@
     <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
-    <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
     <BASELINE_ROOT>/projects/ccsm/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/projects/ccsm/cprnc/build/cprnc_wrap</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
     <GMAKE_J>8</GMAKE_J>
@@ -1585,7 +1563,6 @@
     <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/scratch/projects/xsede/CESM/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/scratch/projects/xsede/CESM/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
@@ -1654,7 +1631,6 @@
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <PERL5LIB>/glade/apps/opt/perlmods/lib64/perl5:/glade/apps/opt/perlmods/share/perl5</PERL5LIB>

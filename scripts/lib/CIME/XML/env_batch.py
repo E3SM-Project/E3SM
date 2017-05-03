@@ -374,7 +374,6 @@ class EnvBatch(EnvBase):
             from CIME.case_test       import case_test # pylint: disable=unused-variable
             from CIME.case_run        import case_run # pylint: disable=unused-variable
             from CIME.case_st_archive import case_st_archive # pylint: disable=unused-variable
-            from CIME.case_lt_archive import case_lt_archive # pylint: disable=unused-variable
 
             logger.info("Starting job script %s" % job)
 

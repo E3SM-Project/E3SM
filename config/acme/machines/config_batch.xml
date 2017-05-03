@@ -373,12 +373,6 @@
       <dependency>case.run or case.test</dependency>
       <prereq>$DOUT_S</prereq>
     </job>
-    <job name="case.lt_archive">
-      <template>template.lt_archive</template>
-      <task_count>1</task_count>
-      <dependency>case.st_archive</dependency>
-      <prereq>$DOUT_L_MS</prereq>
-    </job>
   </batch_jobs>
 
 </config_batch>

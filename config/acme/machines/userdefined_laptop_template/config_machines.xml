@@ -12,7 +12,6 @@
       <DIN_LOC_ROOT>$ENV{HOME}/projects/cesm-inputdata</DIN_LOC_ROOT>
       <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/ptclm-data</DIN_LOC_ROOT_CLMFORC>
       <DOUT_S_ROOT>$ENV{HOME}/projects/scratch/archive/$CASE</DOUT_S_ROOT>
-      <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
       <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/scratch</CIME_OUTPUT_ROOT>
       <BASELINE_ROOT>$ENV{HOME}/projects/baselines</BASELINE_ROOT>
       <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>

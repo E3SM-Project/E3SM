@@ -429,15 +429,6 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
-  <test NAME="LAR">
-    <DESC>long term archive test</DESC>
-    <INFO_DBUG>1</INFO_DBUG>
-    <STOP_OPTION>nmonths</STOP_OPTION>
-    <STOP_N></STOP_N>
-    <DOUT_L_MS>TRUE</DOUT_L_MS>
-    <DOUT_S>TRUE</DOUT_S>
-  </test>
-
   <test NAME="LII">
     <DESC>CLM initial condition interpolation test (requires configuration with non-blank finidat)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
