@@ -72,7 +72,7 @@ def create_viewer(root_dir, parameters, ext):
             row_info[row_name][season] = os.path.join(parameter.case_id, fnm)
     
     # add all of the files in from the case_id/ folder in ANN, DJF, MAM, JJA, SON order
-    for row_name in row_info.keys():
+    for row_name in row_info:
         for col_season in viewer.page.columns[1:]:  # [1:] is to ignore 'Description' col 
             viewer.set_row(row_name)
             if col_season in row_info[row_name]:

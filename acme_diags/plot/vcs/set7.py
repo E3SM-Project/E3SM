@@ -92,7 +92,7 @@ def set_units(ref_or_test, units):
 
 def add_cyclic(var):
     lon = var.getLongitude()
-    return var(longitude=(lon[0],lon[0]+360.0,'coe'))
+    return var(longitude=(lon[0], lon[0]+360.0, 'coe'))
 
 def plot(reference, test, diff, metrics_dict, parameter):
 
@@ -107,7 +107,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     if not parameter.logo:
         vcs_canvas.drawlogooff()
 
-    file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'set5')
+    file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'set7')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_7.json'))
     print file_path
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_7_new.json'))
