@@ -555,7 +555,7 @@ module mpas_log
             ! --- Actually write the message here! ---
             !    We have to treat MPAS_LOG_OUT messages separately from others because that type
             !    does not have a prefix and we want to add a space after the trimmed prefix for other types.
-!$OMP CRITICAL (mpas_log_write)
+!$OMP CRITICAL (mpas_log_write_section)
             write(mpas_log_info % outputLog % unitNum, '(a,a,a)') trim(messageExtendedPrefix), ' ', trim(messageExpanded)
 
             ! Optionally flush the buffer (only attempt if the file is active)
@@ -583,7 +583,7 @@ module mpas_log
             case default
                ! TODO handle this error? (would have encountered it above...)
             end select
-!$OMP END CRITICAL (mpas_log_write)
+!$OMP END CRITICAL (mpas_log_write_section)
 
          endif
       endif
@@ -849,8 +849,8 @@ module mpas_log
    !>   by one of these indicators:
    !>   $i -> integer, formatted to be length of integer
    !>   $l -> logical, fomatted as 'T' or 'F'
-   !>   $f -> float, formatted as 9 digits of precision for SP mode, 17 for DP mode
-   !>                Floats are formatted using 'G' format which is smart about using
+   !>   $r -> real,  formatted as 9 digits of precision for SP mode, 17 for DP mode
+   !>                Floats are formatted using 'G' format which is smart about
    !>                displaying as a decimal or scientific notation based on the value.
    !>   The variable values to expand are supplied as optional arguments to this
    !>   routine.  The substitution indicators are expanded as they are encountered.
@@ -965,7 +965,9 @@ module mpas_log
                    case ('r')
                       if (iReal <= nReals) then
                          realPrecision = precision(realArgs(iReal))
-                         write(realFormat, '(a, i2.2, a)') '(G0.', realPrecision, ')'
+                         ! Note 7 additional characters may be needed beyond the precision
+                         ! e.g.: -1234567.89012345   G13.6   ->   -0.123457E+07
+                         write(realFormat, '(a, i2.2, a, i2.2, a)') '(G', realPrecision+7,'.', realPrecision, ')'
                          write(varPart, trim(realFormat)) realArgs(iReal)
                          iReal = iReal + 1
                       else
