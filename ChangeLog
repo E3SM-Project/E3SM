@@ -1,5 +1,91 @@
 ======================================================================
 
+Originator: Chris Fischer
+Date: 5-3-2017
+Tag: cime5.3.0-alpha.11
+Answer Changes: None
+Tests: 
+       - scrtips_regression_tests.py
+       - ./xmlchange --id CLM_BLDNML_OPTS --val "-bgc bgc -crop -irrig=.true."
+       - ERP_D.f45_g37_rx1.A.hobart_nag
+       - one off tests to make sure the new datasets are being run for the gx1v7
+         but not for other resolutions.
+Dependencies:
+
+Brief Summary:
+    - Update to env_mach_specific.xsd schema for unit_testing attribute and
+      arguments and arg elements.
+    - Remove all references to lt_archive which will not be supported in
+      CESM2.0.
+    - env_mach_specific.xsd schema was incomplete
+    - Remove TOTAL_CORES as it was inaccurate in many cases.
+    - in _check_for_invalid_args ignore quoted strings.
+    - Add schemas for the 3 remaining case xml files. 
+    - NAG compiler needs an integer width on this read statement
+    - Update queue selection to take walltime into account.
+    - Add new CESM gx1v7 runoff maps for use with estuary parameterization.
+    - Add a --script-root option to create_newcase.
+
+User interface changes: 
+    - Removes TOTAL_CORES
+    - Changes in how walltime is handled.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+b255a7c resolve merge conflict
+26dcbc4 update to env_mach_specific.xsd schema for unit_testing attribute and arguments and arg elements
+3d09285 remove all references to lt_archive which will not be supported in CESM2.0
+9900f32 Merge pull request #1467 from jedwards4b/schema_fix
+7043e29 Merge branch 'jgfouca/remove_total_cores'
+965f63e Merge pull request #1464 from ESMCI/jgfouca/remove_total_cores
+6b15377 Merge pull request #1462 from jedwards4b/fix_for_quoted_args
+cc323c2 Merge pull request #1461 from jedwards4b/more_schema_definitions
+15297cd Merge pull request #1453 from jedwards4b/nag_aquap_fix
+ce52822 Merge pull request #1450 from ESMCI/jgfouca/upgrade_queue_selection
+5619a82 Merge pull request #1455 from jtruesdal/newmaps
+a5da759 Merge pull request #1438 from ESMCI/mfdeakin-sandia/script_root_option
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/acme/config_files.xml
+M       config/acme/machines/config_batch.xml
+D       config/acme/machines/config_lt_archive.xml
+M       config/acme/machines/config_machines.xml
+D       config/acme/machines/template.lt_archive
+M       config/acme/machines/userdefined_laptop_template/config_machines.xml
+M       config/cesm/config_files.xml
+M       config/cesm/config_grids.xml
+M       config/cesm/machines/config_batch.xml
+D       config/cesm/machines/config_lt_archive.xml
+M       config/cesm/machines/config_machines.xml
+D       config/cesm/machines/template.lt_archive
+M       config/cesm/machines/userdefined_laptop_template/config_machines.xml
+M       config/config_tests.xml
+M       config/xml_schemas/config_batch.xsd
+M       config/xml_schemas/config_machines.xsd
+M       config/xml_schemas/config_machines_template.xml
+A       config/xml_schemas/env_batch.xsd
+A       config/xml_schemas/env_mach_pes.xsd
+A       config/xml_schemas/env_mach_specific.xsd
+D       scripts/Tools/README.post_process
+D       scripts/Tools/lt_archive.sh
+M       scripts/create_newcase
+M       scripts/create_test
+M       scripts/lib/CIME/XML/env_batch.py
+M       scripts/lib/CIME/XML/env_mach_pes.py
+M       scripts/lib/CIME/XML/env_mach_specific.py
+D       scripts/lib/CIME/XML/lt_archive.py
+M       scripts/lib/CIME/case.py
+D       scripts/lib/CIME/case_lt_archive.py
+M       scripts/lib/CIME/case_setup.py
+M       scripts/lib/CIME/test_scheduler.py
+M       scripts/lib/CIME/utils.py
+M       scripts/tests/scripts_regression_tests.py
+M       src/components/data_comps/docn/docn_comp_mod.F90
+M       src/drivers/mct/cime_config/config_component.xml
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer	 
 Date: 5-2-207
 Tag: cime5.3.0-alpha.10
