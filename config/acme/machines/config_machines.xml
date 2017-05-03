@@ -61,7 +61,7 @@
   <NODENAME_REGEX>edison</NODENAME_REGEX>
   <TESTS>acme_developer</TESTS>
   <COMPILERS>intel,gnu,cray</COMPILERS>
-  <MPILIBS>mpt,mpi-serial</MPILIBS>
+  <MPILIBS>mpt</MPILIBS>
   <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/edison</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
   <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -185,7 +185,7 @@
     <NODENAME_REGEX>cori</NODENAME_REGEX>
     <TESTS>acme_developer</TESTS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
-    <MPILIBS>mpt,mpi-serial</MPILIBS>
+    <MPILIBS>mpt</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch</CIME_OUTPUT_ROOT>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -318,7 +318,7 @@
     <NODENAME_REGEX>cori-knl-haswell-is-default</NODENAME_REGEX>
     <TESTS>acme_developer</TESTS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
-    <MPILIBS>mpt,mpi-serial</MPILIBS>
+    <MPILIBS>mpt</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch</CIME_OUTPUT_ROOT>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -453,7 +453,7 @@
     <TESTS>acme_developer</TESTS>
     <OS>Darwin</OS>
     <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
+    <MPILIBS>openmpi,mpich</MPILIBS>
     <RUNDIR>$ENV{HOME}/projects/acme/scratch/$CASE/run</RUNDIR>
     <EXEROOT>$ENV{HOME}/projects/acme/scratch/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>$ENV{HOME}/projects/acme/cesm-inputdata</DIN_LOC_ROOT>    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/acme/ptclm-data</DIN_LOC_ROOT_CLMFORC>
@@ -476,7 +476,7 @@
     <OS>LINUX</OS>
     <TESTS>acme_developer</TESTS>
     <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
+    <MPILIBS>openmpi,mpich</MPILIBS>
     <RUNDIR>$ENV{HOME}/projects/acme/scratch/$CASE/run</RUNDIR>
     <EXEROOT>$ENV{HOME}/projects/acme/scratch/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>$ENV{HOME}/projects/acme/cesm-inputdata</DIN_LOC_ROOT>
@@ -506,7 +506,7 @@
     <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
     <COMPILERS>gnu,intel</COMPILERS>
-    <MPILIBS>openmpi,mpi-serial</MPILIBS>
+    <MPILIBS>openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -562,7 +562,7 @@
     <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
     <COMPILERS>gnu,intel</COMPILERS>
-    <MPILIBS>openmpi,mpi-serial</MPILIBS>
+    <MPILIBS>openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -624,7 +624,7 @@
     <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>mpich,mpi-serial</MPILIBS>
+    <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -675,7 +675,7 @@
   <PROXY>wwwproxy.sandia.gov:80</PROXY>
   <TESTS>acme_integration</TESTS>
   <COMPILERS>intel</COMPILERS>
-  <MPILIBS>openmpi,mpi-serial</MPILIBS>
+  <MPILIBS>openmpi</MPILIBS>
   <OS>LINUX</OS>
   <CIME_OUTPUT_ROOT>/gscratch/$USER/acme_scratch/skybridge</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -751,7 +751,7 @@
   <PROXY>wwwproxy.sandia.gov:80</PROXY>
   <TESTS>acme_integration</TESTS>
   <COMPILERS>intel</COMPILERS>
-  <MPILIBS>openmpi,mpi-serial</MPILIBS>
+  <MPILIBS>openmpi</MPILIBS>
   <OS>LINUX</OS>
   <CIME_OUTPUT_ROOT>/gscratch/$USER/acme_scratch</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -826,7 +826,7 @@
          <NODENAME_REGEX>b.*.lcrc.anl.gov</NODENAME_REGEX>
          <TESTS>acme_integration</TESTS>
          <COMPILERS>gnu,pgi,intel,nag</COMPILERS>
-         <MPILIBS>mvapich,mpich,openmpi,mpi-serial</MPILIBS>
+         <MPILIBS>mvapich,mpich,openmpi</MPILIBS>
          <CIME_OUTPUT_ROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CIME_OUTPUT_ROOT>
 	 <SAVE_TIMING_DIR>/lcrc/project/$PROJECT</SAVE_TIMING_DIR>
 	 <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -898,7 +898,7 @@
          <NODENAME_REGEX>b.*.lcrc.anl.gov</NODENAME_REGEX>
          <TESTS>acme_integration</TESTS>
          <COMPILERS>intel,gnu,pgi</COMPILERS>
-         <MPILIBS>mvapich,openmpi,mpi-serial</MPILIBS>
+         <MPILIBS>mvapich,openmpi</MPILIBS>
          <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch</CIME_OUTPUT_ROOT>
 	 <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
 	 <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -1028,9 +1028,6 @@
                <arg name="thread_count"> --envs OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
              </arguments>
          </mpirun>
-	 <mpirun mpilib="mpi-serial">
-           <executable>unsupported</executable>
-	 </mpirun>
     <module_system type="soft">
       <init_path lang="csh">/etc/profile.d/00softenv.csh</init_path>
       <cmd_path lang="csh">soft</cmd_path>
@@ -1053,7 +1050,7 @@
 <machine MACH="sierra">
          <DESC>LLNL Linux Cluster, Linux (pgi), 12 pes/node, batch system is Moab</DESC>
          <COMPILERS>intel, pgi</COMPILERS>
-         <MPILIBS>mpich,mpi-serial</MPILIBS>
+         <MPILIBS>mpich</MPILIBS>
          <RUNDIR>/p/lscratche/$CCSMUSER/ACME/$CASE/run</RUNDIR>
          <EXEROOT>/p/lscratche/$CCSMUSER/$CASE/bld</EXEROOT>
          <CIME_OUTPUT_ROOT>/p/lscratche/$USER</CIME_OUTPUT_ROOT>
@@ -1124,9 +1121,6 @@
                <arg name="thread_count"> --envs OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
              </arguments>
          </mpirun>
-	 <mpirun mpilib="mpi-serial">
-           <executable>unsupported</executable>
-	 </mpirun>
     <module_system type="soft">
       <init_path lang="csh">/etc/profile.d/00softenv.csh</init_path>
       <cmd_path lang="csh">soft</cmd_path>
@@ -1192,7 +1186,7 @@
          <DESC>PNL Haswell cluster, OS is Linux, batch system is SLURM</DESC>
          <OS>LINUX</OS>
          <COMPILERS>intel,pgi</COMPILERS>
-         <MPILIBS>mpich,mpi-serial</MPILIBS>
+         <MPILIBS>mpich</MPILIBS>
 	 <NODENAME_REGEX>constance</NODENAME_REGEX>
          <RUNDIR>/pic/scratch/$CCSMUSER/csmruns/$CASE/run</RUNDIR>
          <EXEROOT>/pic/scratch/$CCSMUSER/csmruns/$CASE/bld</EXEROOT>
@@ -1224,7 +1218,7 @@
          <NODENAME_REGEX>oic2</NODENAME_REGEX>
          <TESTS>acme_developer</TESTS>
          <COMPILERS>gnu</COMPILERS>
-         <MPILIBS>mpich,mpi-serial,openmpi</MPILIBS>
+         <MPILIBS>mpich,openmpi</MPILIBS>
          <RUNDIR>/home/$USER/models/ACME/run/$CASE/run</RUNDIR>
          <EXEROOT>/home/$USER/models/ACME/run/$CASE/bld</EXEROOT>
          <CIME_OUTPUT_ROOT>/home/$USER/models/ACME</CIME_OUTPUT_ROOT>
@@ -1269,7 +1263,7 @@
          <NODENAME_REGEX>oic5</NODENAME_REGEX>
          <TESTS>acme_developer</TESTS>
          <COMPILERS>gnu</COMPILERS>
-         <MPILIBS>mpich,mpi-serial,openmpi</MPILIBS>
+         <MPILIBS>mpich,openmpi</MPILIBS>
          <RUNDIR>/home/$USER/models/ACME/run/$CASE/run</RUNDIR>
          <EXEROOT>/home/$USER/models/ACME/run/$CASE/bld</EXEROOT>
          <CIME_OUTPUT_ROOT>/home/$USER/models/ACME</CIME_OUTPUT_ROOT>
@@ -1300,7 +1294,7 @@
       <TESTS>acme_developer</TESTS>
       <OS>LINUX</OS>
       <COMPILERS>gnu,intel</COMPILERS>
-      <MPILIBS>openmpi,mpi-serial</MPILIBS>
+      <MPILIBS>openmpi</MPILIBS>
       <RUNDIR>/lustre/pfs1/cades-ccsi/scratch/$USER/$CASE/run</RUNDIR>
       <EXEROOT>/lustre/pfs1/cades-ccsi/scratch/$USER/$CASE/bld</EXEROOT>
       <DIN_LOC_ROOT>/lustre/pfs1/cades-ccsi/proj-shared/project_acme/ACME_inputdata</DIN_LOC_ROOT>
@@ -1346,7 +1340,7 @@
     <NODE_FAIL_REGEX>Received node event ec_node</NODE_FAIL_REGEX>
     <TESTS>acme_developer</TESTS>
     <COMPILERS>pgi,pgiacc,intel,cray</COMPILERS>
-    <MPILIBS>mpich,mpi-serial</MPILIBS>
+    <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/$PROJECT</CIME_OUTPUT_ROOT>
     <RUNDIR>$ENV{MEMBERWORK}/$PROJECT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -1513,7 +1507,7 @@
          <NODENAME_REGEX>eos</NODENAME_REGEX>
          <TESTS>acme_developer</TESTS>
          <COMPILERS>intel</COMPILERS>
-         <MPILIBS>mpich,mpi-serial</MPILIBS>
+         <MPILIBS>mpich</MPILIBS>
          <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/$PROJECT</CIME_OUTPUT_ROOT>
          <RUNDIR>$ENV{MEMBERWORK}/$PROJECT/$CASE/run</RUNDIR>
          <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -1678,7 +1672,7 @@
     <NODENAME_REGEX>wf-fe.*.lanl.gov</NODENAME_REGEX>
     <TESTS>acme_developer</TESTS>
 	<COMPILERS>intel,gnu</COMPILERS>
-	<MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
+	<MPILIBS>openmpi,mvapich</MPILIBS>
 	<OS>LINUX</OS>
 	<RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
 	<EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
@@ -1761,7 +1755,7 @@
   <NODENAME_REGEX>.*yellowstone</NODENAME_REGEX>
   <OS>LINUX</OS>
   <COMPILERS>intel,pgi,gnu</COMPILERS>
-  <MPILIBS>mpich2,pempi,mpi-serial</MPILIBS>
+  <MPILIBS>mpich2,pempi</MPILIBS>
   <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
   <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -1928,7 +1922,7 @@
   <DESC>Lawrencium LR3 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
   <OS>LINUX</OS>
   <COMPILERS>intel</COMPILERS>
-  <MPILIBS>openmpi,mpi-serial</MPILIBS>
+  <MPILIBS>openmpi</MPILIBS>
   <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
   <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -1990,7 +1984,7 @@
   <DESC>Lawrencium LR2 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
   <OS>LINUX</OS>
   <COMPILERS>intel</COMPILERS>
-  <MPILIBS>openmpi,mpi-serial</MPILIBS>
+  <MPILIBS>openmpi</MPILIBS>
   <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
   <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>

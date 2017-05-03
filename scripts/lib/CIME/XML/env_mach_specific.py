@@ -399,7 +399,5 @@ class EnvMachSpecific(EnvBase):
         exec_node = self.get_node("executable", root=the_match)
         expect(exec_node is not None,"No executable found")
         executable = exec_node.text
-        expect("unsupported" not in executable, "%s is not supported for this machine"%attribs["mpilib"])
-        
-        
+
         return executable, args
