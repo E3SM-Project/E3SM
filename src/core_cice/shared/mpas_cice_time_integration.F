@@ -150,14 +150,15 @@ contains
        ! advection
        call mpas_timer_start("Advection")
        if (config_use_advection) &
-            call cice_run_advection(domain, clock)
+            call cice_run_advection(domain, clock, ierr)
        call mpas_timer_stop("Advection")
+       if (ierr > 0) return
 
        ! ridging
        call mpas_timer_start("Column")
        call cice_column_dynamics_time_integration(domain, clock, ierr)
-       if (ierr > 0) return
        call mpas_timer_stop("Column")
+       if (ierr > 0) return
 
     enddo ! iDynamicsSubcycle
 

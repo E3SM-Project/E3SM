@@ -18,7 +18,7 @@ module cice_column
   use mpas_timer
   use mpas_log, only: mpas_log_write
 
-  use cice_error, only: cice_critical_error
+  use cice_error
   use cice_debug
 
   use ice_kinds_mod, only: &
@@ -883,33 +883,30 @@ contains
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column vertical thermodynamics")
-       if (config_use_column_vertical_thermodynamics) then
-          call column_vertical_thermodynamics(domain, clock, ierr)
-          if (ierr > 0) return
-       endif
+       if (config_use_column_vertical_thermodynamics) &
+            call column_vertical_thermodynamics(domain, clock, ierr)
        call mpas_timer_stop("Column vertical thermodynamics")
+       if (config_use_column_vertical_thermodynamics .and. ierr > 0) return
 
        !-----------------------------------------------------------------
        ! Biogeochemistry
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column biogeochemistry")
-       if (config_use_column_biogeochemistry) then
-          call column_biogeochemistry(domain, ierr)
-          if (ierr > 0) return
-       endif
+       if (config_use_column_biogeochemistry) &
+            call column_biogeochemistry(domain, ierr)
        call mpas_timer_stop("Column biogeochemistry")
+       if (config_use_column_biogeochemistry .and. ierr > 0) return
 
        !-----------------------------------------------------------------
        ! ITD thermodynamics
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column ITD thermodynamics")
-       if (config_use_column_itd_thermodynamics) then
-          call column_itd_thermodynamics(domain, clock, ierr)
-          if (ierr > 0) return
-       endif
+       if (config_use_column_itd_thermodynamics) &
+            call column_itd_thermodynamics(domain, clock, ierr)
        call mpas_timer_stop("Column ITD thermodynamics")
+       if (config_use_column_itd_thermodynamics .and. ierr > 0) return
 
        !-----------------------------------------------------------------
        ! Update the aggregated state variables
@@ -987,11 +984,10 @@ contains
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column ridging")
-       if (config_use_column_ridging) then
-          call column_ridging(domain, ierr)
-          if (ierr > 0) return
-       endif
+       if (config_use_column_ridging) &
+            call column_ridging(domain, ierr)
        call mpas_timer_stop("Column ridging")
+       if (config_use_column_ridging .and. ierr > 0) return
 
        !-----------------------------------------------------------------
        ! Update the aggregated state variables
@@ -1629,7 +1625,8 @@ contains
           if (abortFlag) then
              call mpas_log_write("column_vertical_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-             call cice_critical_error(domain, block, ierr)
+             ierr = SEAICE_ERROR_COL_VERT_THERM
+             call cice_critical_error_write_block(domain, block)
              return
           endif
 
@@ -1963,7 +1960,8 @@ contains
           if (abortFlag) then
              call mpas_log_write("column_itd_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-             call cice_critical_error(domain, block, ierr)
+             ierr = SEAICE_ERROR_COL_ITD_THERM
+             call cice_critical_error_write_block(domain, block)
              return
           endif
 
@@ -2753,7 +2751,8 @@ contains
           if (abortFlag) then
              call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-             call cice_critical_error(domain, block, ierr)
+             ierr = SEAICE_ERROR_COL_RIDGING
+             call cice_critical_error_write_block(domain, block)
              return
           endif
 
@@ -3217,7 +3216,8 @@ contains
           if (abortFlag) then
              call mpas_log_write("column_biogeochemistry: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
-             call cice_critical_error(domain, block, ierr)
+             ierr = SEAICE_ERROR_COL_BGC
+             call cice_critical_error_write_block(domain, block)
              return
           endif
 
