@@ -767,8 +767,7 @@ module mpas_stream_manager
            call mpas_pool_get_config(stream % field_pool, fieldName, value=test_ptr)
            call mpas_pool_set_error_level(err_level)
            if (associated(test_ptr)) then
-               STREAM_ERROR_WRITE('Requested field '//trim(fieldName)//' already in stream '//trim(streamID))
-               if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+               STREAM_WARNING_WRITE('Requested field '//trim(fieldName)//' already in stream '//trim(streamID))
                return
            end if
 
@@ -909,8 +908,8 @@ module mpas_stream_manager
                        call mpas_pool_get_config(stream % field_pool, itr % memberName, value=test_ptr)
 
                        if ( associated(test_ptr) ) then
-                           STREAM_ERROR_WRITE('Requested field '//trim(itr % memberName)//' already in stream '//trim(streamID))
-                           if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                           STREAM_WARNING_WRITE('Requested field '//trim(itr % memberName)//' already in stream '//trim(streamID))
+                           cycle  ! skip the rest of this do-loop iteration
                        end if
 
                        if ( info % isActive ) then
