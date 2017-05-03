@@ -303,7 +303,7 @@
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      Sets the run length along with STOP_N and STOP_DATE (must be nyear(s) for _GLC compsets for restarts to work properly).
+      Sets the run length along with STOP_N and STOP_DATE
     </desc>
   </entry>
 
@@ -335,8 +335,7 @@
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      sets frequency of model restart writes (same options as STOP_OPTION) (must be nyear(s) for _GLC compsets)
-      (must be nyear(s) for _GLC compsets)
+      sets frequency of model restart writes (same options as STOP_OPTION)
     </desc>
   </entry>
 
@@ -368,7 +367,7 @@
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      Sets the pause frequency along with PAUSE_N (must be nyear(s) for _GLC compsets for restarts to resume properly).
+      Sets the pause frequency along with PAUSE_N
     </desc>
   </entry>
 
@@ -415,6 +414,23 @@
     <desc>
       Alternative date in yyyymmdd format
       sets periodic model barriers with BARRIER_OPTION and BARRIER_N for synchronization
+    </desc>
+  </entry>
+
+  <entry id="ESP_RUN_ON_PAUSE">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      ESP component runs after driver 'pause cycle'
+      If any component 'pauses' (see PAUSE_OPTION, PAUSE_N and
+      PAUSE_COMPONENT_LIST XML variables), the ESP component (if
+      present) will be run to process the component 'pause' (restart)
+      files and set any required 'resume' signals.
+      If true, esp_cpl_dt and esp_cpl_offset settings are ignored.
+      default: false
     </desc>
   </entry>
 
@@ -501,24 +517,6 @@
     Interim restart files are created using the REST_N and REST_OPTION variables.
     This is for expert users ONLY and requires expert knowledge.
     We will not document this further in this guide.</desc>
-  </entry>
-
-  <entry id="DOUT_L_MS">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>If TRUE, perform long-term archiving on the output data.
-      logical to turn on long term archiving (if DOUT_S is also TRUE)</desc>
-  </entry>
-
-  <entry id="DOUT_L_HPSS_ACCNT">
-    <type>char</type>
-    <default_value>00000000</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc></desc>
   </entry>
 
   <entry id="SYSLOG_N">
@@ -1886,20 +1884,12 @@
     <desc>Root directory for short term archiving. This directory must be visible to compute nodes.</desc>
   </entry>
 
-  <entry id="DOUT_L_MSROOT">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>run_dout</group>
-    <file>env_run.xml</file>
-    <desc>Root directory on long term archiving store system for long-term data archives.</desc>
-  </entry>
-
   <entry id="MPI_RUN_COMMAND">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_mpi</group>
     <file>env_run.xml</file>
-    <desc>mpi run command</desc>
+    <desc>override the mpi run command, do not include model executable</desc>
   </entry>
 
   <!-- ===================================================================== -->
@@ -2021,21 +2011,12 @@
     <desc>Number of instances for each component</desc>
   </entry>
 
-
   <entry id="TOTALPES">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_last</group>
     <file>env_mach_pes.xml</file>
     <desc>total number of tasks and threads (setup automatically - DO NOT EDIT)</desc>
-  </entry>
-
-  <entry id="TOTAL_CORES">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_last</group>
-    <file>env_mach_pes.xml</file>
-    <desc>total number of cores used (setup automatically - DO NOT EDIT)</desc>
   </entry>
 
   <entry id="MAX_TASKS_PER_NODE">
@@ -2601,6 +2582,15 @@
    <file>env_batch.xml</file>
    <desc>The machine wallclock setting.  Default determined in config_machines.xml can be overwritten by testing</desc>
  </entry>
+
+  <entry id="BATCH_COMMAND_FLAGS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>job_submission</group>
+    <file>env_batch.xml</file>
+    <desc>Override the batch submit command this job. Do not include executable or dependencies</desc>
+  </entry>
 
  <entry id="PROJECT">
    <type>char</type>

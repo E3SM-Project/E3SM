@@ -4,6 +4,7 @@ Interface to the config_machines.xml file.  This class inherits from GenericXML.
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
+from CIME.utils import convert_to_unknown_type
 
 import socket
 
@@ -95,8 +96,34 @@ class Machines(GenericXML):
         Find a matching regular expression for hostname
         in the NODENAME_REGEX field in the file.   First match wins.
         """
-        machine = None
+
+        names_not_found = []
+
         nametomatch = socket.getfqdn()
+        machine = self._probe_machine_name_one_guess(nametomatch)
+
+        if machine is None:
+            names_not_found.append(nametomatch)
+
+            nametomatch = socket.gethostname()
+            machine = self._probe_machine_name_one_guess(nametomatch)
+
+            if machine is None:
+                names_not_found.append(nametomatch)
+
+                names_not_found_quoted = ["'" + name + "'" for name in names_not_found]
+                names_not_found_str = ' or '.join(names_not_found_quoted)
+                logger.warning("Could not find machine match for %s" % names_not_found_str)
+
+        return machine
+
+    def _probe_machine_name_one_guess(self, nametomatch):
+        """
+        Find a matching regular expression for nametomatch in the NODENAME_REGEX
+        field in the file. First match wins. Returns None if no match is found.
+        """
+
+        machine = None
         nodes = self.get_nodes("machine")
 
         for node in nodes:
@@ -112,10 +139,6 @@ class Machines(GenericXML):
                     logger.debug("Found machine: %s matches %s" % (machtocheck, nametomatch))
                     machine = machtocheck
                     break
-
-        if machine is None:
-            # Check for a local definition
-            logger.warning("Could not probe machine for hostname '%s'" % nametomatch)
 
         return machine
 
@@ -168,6 +191,8 @@ class Machines(GenericXML):
                 value = self.get_resolved_value(value)
             elif name in os.environ:
                 value = os.environ[name]
+
+            value = convert_to_unknown_type(value)
 
         return value
 

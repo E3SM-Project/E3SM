@@ -103,3 +103,22 @@ class EnvTest(EnvBase):
         if dnode is not None:
             node.remove(dnode)
         return node
+
+    def set_value(self, vid, value, subgroup=None, ignore_type=False):
+        """
+        check if vid is in test section of file
+        """
+        newval = EnvBase.set_value(self, vid, value, subgroup, ignore_type)
+        if newval is None:
+            tnode = self.get_optional_node("test")
+            if tnode is not None:
+                newval = self.set_element_text(vid, value, root=tnode)
+        return newval
+
+    def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
+        value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
+        if value is None:
+            tnode = self.get_optional_node("test")
+            if tnode is not None:
+                value = self.get_element_text(vid, root=tnode)
+        return value

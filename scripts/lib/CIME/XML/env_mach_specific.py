@@ -4,7 +4,7 @@ Interface to the env_mach_specific.xml file.  This class inherits from EnvBase
 from CIME.XML.standard_module_setup import *
 
 from CIME.XML.env_base import EnvBase
-from CIME.utils import transform_vars
+from CIME.utils import transform_vars, get_cime_root
 import string
 
 logger = logging.getLogger(__name__)
@@ -13,12 +13,16 @@ logger = logging.getLogger(__name__)
 # get_type) otherwise need to implement own functions and make GenericXML parent class
 class EnvMachSpecific(EnvBase):
     # pylint: disable=unused-argument
-    def __init__(self, caseroot, infile="env_mach_specific.xml",components=None):
+    def __init__(self, caseroot=None, infile="env_mach_specific.xml",
+                 components=None, unit_testing=False):
         """
         initialize an object interface to file env_mach_specific.xml in the case directory
         """
         fullpath = infile if os.path.isabs(infile) else os.path.join(caseroot, infile)
-        EnvBase.__init__(self, caseroot, fullpath)
+        schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_specific.xsd")
+        EnvBase.__init__(self, caseroot, fullpath,schema=schema)
+
+        self._unit_testing = unit_testing
 
     def populate(self, machobj):
         """Add entries to the file using information from a Machines object."""
@@ -191,6 +195,10 @@ class EnvMachSpecific(EnvBase):
         elif ("debug" in attribs and
             not self._match("TRUE" if debug else "FALSE", attribs["debug"].upper())):
             return False
+        elif ("unit_testing" in attribs and
+              not self._match("TRUE" if self._unit_testing else "FALSE",
+                              attribs["unit_testing"].upper())):
+            return False
 
         return True
 
@@ -330,7 +338,7 @@ class EnvMachSpecific(EnvBase):
         best_num_matched = -1
         default_match = None
         best_num_matched_default = -1
-        args = {}
+        args = []
         for mpirun_node in mpirun_nodes:
             xml_attribs = mpirun_node.attrib
             all_match = True
@@ -382,7 +390,7 @@ class EnvMachSpecific(EnvBase):
                                                subgroup=job,
                                                check_members=check_members,
                                                default=arg_node.get("default"))
-                    args[arg_node.get("name")] = arg_value
+                    args.append(arg_value)
 
         exec_node = self.get_node("executable", root=the_match)
         expect(exec_node is not None,"No executable found")

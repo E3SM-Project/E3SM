@@ -7,6 +7,7 @@
   <xs:attribute name="mpilib" type="xs:string"/>
   <xs:attribute name="debug" type="xs:boolean"/>
   <xs:attribute name="threaded" type="xs:boolean"/>
+  <xs:attribute name="unit_testing" type="xs:boolean"/>
   <xs:attribute name="type" type="xs:NCName"/>
   <xs:attribute name="lang" type="xs:NCName"/>
   <xs:attribute name="name" type="xs:NCName"/>
@@ -24,7 +25,6 @@
   <xs:element name="DIN_LOC_ROOT" type="xs:string"/>
   <xs:element name="DIN_LOC_ROOT_CLMFORC" type="xs:string"/>
   <xs:element name="DOUT_S_ROOT" type="xs:string"/>
-  <xs:element name="DOUT_L_MSROOT" type="xs:string"/>
   <xs:element name="BASELINE_ROOT" type="xs:string"/>
   <xs:element name="CCSM_CPRNC" type="xs:string"/>
   <xs:element name="PERL5LIB" type="xs:string"/>
@@ -82,9 +82,6 @@
         <xs:element ref="DIN_LOC_ROOT_CLMFORC" minOccurs="0" maxOccurs="1"/>
 	<!-- DOUT_S_ROOT: root directory of short term archive files -->
         <xs:element ref="DOUT_S_ROOT" minOccurs="1" maxOccurs="1"/>
-	<!-- DOUT_L_MSROOT: root directory on mass store system of
-	     long term archive files-->
-        <xs:element ref="DOUT_L_MSROOT" minOccurs="0" maxOccurs="1"/>
 	<!-- BASELINE_ROOT:  Root directory for system test baseline files -->
         <xs:element ref="BASELINE_ROOT" minOccurs="0" maxOccurs="1"/>
 	<!-- CCSM_CPRNC: location of the cprnc tool, compares model output in testing-->
@@ -133,6 +130,7 @@
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute ref="threaded"/>
+      <xs:attribute ref="unit_testing"/>
     </xs:complexType>
   </xs:element>
   <xs:element name="arguments">
@@ -186,6 +184,7 @@
       <xs:attribute ref="debug"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute ref="compiler"/>
+      <xs:attribute ref="unit_testing"/>
     </xs:complexType>
   </xs:element>
   <xs:element name="env">

@@ -158,7 +158,7 @@
         <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
       </directives>
       <queues>
-	<queue walltimemax="01:00:00" jobmin="1" jobmax="64">shared</queue>
+	<queue walltimemax="01:00:00" jobmin="1" jobmax="64" strict="true">shared</queue>
 	<queue walltimemax="03:00:00" jobmin="64" jobmax="4096" default="true">batch</queue>
       </queues>
     </batch_system>
@@ -177,8 +177,8 @@
     <!-- edison is SLURM as of Jan-4-2016 -->
     <batch_system MACH="edison" type="slurm" >
       <queues>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="12288" strict="true">debug</queue>
         <queue walltimemax="01:30:00" jobmin="1" jobmax="150000" default="true">regular</queue>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="12288">debug</queue>
       </queues>
     </batch_system>
 
@@ -198,8 +198,8 @@
         <directive> --constraint=haswell</directive>
       </directives>
       <queues>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="4096" strict="true">debug</queue>
         <queue walltimemax="01:00:00" jobmin="1" jobmax="10000" default="true">regular</queue>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="4096">debug</queue>
       </queues>
     </batch_system>
 
@@ -208,8 +208,8 @@
         <directive> --constraint=knl,quad,cache</directive>
       </directives>
       <queues>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="100000" strict="true">debug</queue>
         <queue walltimemax="01:00:00" jobmin="1" jobmax="3000000" default="true">regular</queue>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="100000">debug</queue>
       </queues>
     </batch_system>
 
@@ -329,8 +329,8 @@
        <directive>-l nodes={{ num_nodes }}</directive>
      </directives>
      <queues>
+       <queue walltimemax="01:00:00" jobmin="0" jobmax="64" strict="true">debug</queue>
        <queue walltimemax="24:00:00" default="true">batch</queue>
-       <queue walltimemax="01:00:00" jobmin="0" jobmax="64">debug</queue>
      </queues>
    </batch_system>
 
@@ -372,12 +372,6 @@
       <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
       <dependency>case.run or case.test</dependency>
       <prereq>$DOUT_S</prereq>
-    </job>
-    <job name="case.lt_archive">
-      <template>template.lt_archive</template>
-      <task_count>1</task_count>
-      <dependency>case.st_archive</dependency>
-      <prereq>$DOUT_L_MS</prereq>
     </job>
   </batch_jobs>
 

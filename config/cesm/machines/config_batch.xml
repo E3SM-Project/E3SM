@@ -383,7 +383,7 @@
    <batch_system MACH="cori-knl" type="slurm" >
      <batch_submit>sbatch</batch_submit>
      <directives>
-       <directive>-C knl </directive>
+       <directive>-C knl,quad,cache </directive>
      </directives>
      <queues>
        <queue walltimemax="02:00:00" jobmin="1" jobmax="45440">regular</queue>
@@ -427,8 +427,6 @@
 
   <batch_system MACH="yellowstone" type="lsf" version="9.1">
     <queues>
-      <!-- the hpss queue that should be used for lt_archive jobs on yellowstone does not have modules installed and so rejects our python job -->
-      <queue walltimemax="24:00" jobmin="1" jobmax="1" jobname="case.lt_archive">caldera</queue>
       <queue walltimemax="24:00" jobmin="1" jobmax="8" >caldera</queue>
       <queue walltimemax="12:00" jobmin="9" jobmax="16384" default="true">regular</queue>
       <queue walltimemax="12:00" jobmin="16385" jobmax="65536">capability</queue>
@@ -454,12 +452,6 @@
       <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
       <dependency>case.run or case.test</dependency>
       <prereq>$DOUT_S</prereq>
-    </job>
-    <job name="case.lt_archive">
-      <template>template.lt_archive</template>
-      <task_count>1</task_count>
-      <dependency>case.st_archive</dependency>
-      <prereq>$DOUT_L_MS</prereq>
     </job>
   </batch_jobs>
 

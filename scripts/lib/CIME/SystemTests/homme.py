@@ -56,19 +56,25 @@ class HOMME(SystemTestsCommon):
 
         if generate:
             full_baseline_dir = os.path.join(baseline, basegen, "tests", "baseline")
-            run_cmd_no_fail("%s -j 4 baseline" % gmake, arg_stdout=log, combine_output=True, from_dir=exeroot)
-            if os.path.isdir(full_baseline_dir):
-                shutil.rmtree(full_baseline_dir)
-            shutil.copytree(os.path.join(exeroot, "tests", "baseline"), full_baseline_dir)
+            stat = run_cmd("%s -j 4 baseline" % gmake, arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
+            if stat == 0:
+                if os.path.isdir(full_baseline_dir):
+                    shutil.rmtree(full_baseline_dir)
+
+                shutil.copytree(os.path.join(exeroot, "tests", "baseline"), full_baseline_dir)
+
         elif compare:
-            run_cmd_no_fail("%s -j 4 check" % gmake, arg_stdout=log, combine_output=True, from_dir=exeroot)
+            stat = run_cmd("%s -j 4 check" % gmake, arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
+
         else:
-            run_cmd_no_fail("%s -j 4 baseline" % gmake, arg_stdout=log, combine_output=True, from_dir=exeroot)
+            stat = run_cmd("%s -j 4 baseline" % gmake, arg_stdout=log, combine_output=True, from_dir=exeroot)
 
         # Add homme.log output to TestStatus.log so that it can
         # appear on the dashboard. Otherwise, the TestStatus.log
         # is pretty useless for this test.
         append_testlog(open(log, "r").read())
+
+        expect(stat == 0, "RUN FAIL for HOMME")
 
     # Homme is a bit of an oddball test since it's not really running the ACME model
     # We need to override some methods to make the core infrastructure work.

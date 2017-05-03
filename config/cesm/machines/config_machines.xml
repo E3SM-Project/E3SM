@@ -43,6 +43,8 @@
 
    the 'executable' tag must have arguments required for the chosen mpirun, as well as the executable name.
 
+ unit_testing: can be 'true' or 'false'.
+   This allows using a different mpirun command to launch unit tests
 
 -->
 
@@ -58,7 +60,6 @@
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/scratch/sciteam/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/ccsm_cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J> 8</GMAKE_J>
@@ -138,7 +139,6 @@
     <DIN_LOC_ROOT>/cluster/work/uwis/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/cluster/work/uwis/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/cluster/work/uwis/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>$SHELL{echo $USER | tr '[a-z]' '[A-Z]'}/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/cluster/work/uwis/ccsm/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/cluster/work/uwis/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>1</GMAKE_J>
@@ -204,7 +204,6 @@
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -217,9 +216,17 @@
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
+	<arg name="anum_tasks"> -np $TOTALPES</arg>
 	<arg name="labelstdout">-p "%g:"</arg>
-	<arg name="threadplacement"> omplace </arg>
+	<!-- the omplace argument needs to be last -->
+	<arg name="zthreadplacement"> omplace </arg>
       </arguments>
+    </mpirun>
+    <mpirun mpilib="default" unit_testing="true">
+      <!-- The only place we can build and run the unit tests is on cheyenne's
+           shared nodes. However, running mpi jobs on the shared nodes currently
+           requires some workarounds; these workarounds are implemented here -->
+      <executable>/opt/sgi/mpt/mpt-2.15/bin/mpirun $ENV{UNIT_TEST_HOST} -np 1 </executable>
     </mpirun>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
@@ -240,6 +247,19 @@
       <modules compiler="intel">
 	<command name="load">intel/17.0.1</command>
 	<command name="load">mkl</command>
+	<command name="load">esmf_libs</command>
+      </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" debug="true">
+	<command name="load">esmf-7.0.0-defio-mpi-g</command>
+      </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" debug="false">
+	<command name="load">esmf-7.0.0-defio-mpi-O</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" debug="true">
+	<command name="load">esmf-7.0.0-ncdfio-uni-g</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" debug="false">
+	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">gnu/6.3.0</command>
@@ -260,6 +280,12 @@
       <env name="OMP_STACKSIZE">256M</env>
       <env name="MPI_TYPE_DEPTH">16</env>
     </environment_variables>
+    <environment_variables unit_testing="true">
+      <!-- It's possible that we also need to set:
+           LD_LIBRARY_PATH=/opt/sgi/mpt/mpt-2.15/lib:$LD_LIBRARY_PATH
+      -->
+      <env name="MPI_USE_ARRAY">false</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="constance">
@@ -271,7 +297,6 @@
     <DIN_LOC_ROOT>/pic/scratch/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/pic/scratch/$USER/cases/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <BASELINE_ROOT>/pic/scratch/tcraig/IRESM/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/people/tcraig/bin/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -372,7 +397,6 @@
     <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/project/projectdirs/ccsm1/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.corip1/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -430,7 +454,7 @@
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.5.4</command>
+	<command name="switch">cce cce/8.5.7</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -476,7 +500,6 @@
     <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/project/projectdirs/ccsm1/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.corip1/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -489,6 +512,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
+	<arg name="binding"> -c 4 --cpu_bind=cores</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -533,7 +557,7 @@
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.5.4</command>
+	<command name="switch">cce cce/8.5.7</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -542,7 +566,7 @@
       <modules>
 	<command name="load">cray-memkind</command>
 	<command name="load">craype-mic-knl</command>
-	<command name="load">papi/5.4.3.2</command>
+<!--	<command name="load">papi/5.4.3.2</command> -->
 	<command name="swap">craype craype/2.5.7</command>
       </modules>
       <modules compiler="!intel">
@@ -580,7 +604,6 @@
     <DIN_LOC_ROOT>/projects/EarlyPerf_theta/cesm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/EarlyPerf_theta/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/projects/EarlyPerf_theta/cesm/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/projects/EarlyPerf_theta/cesm/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/projects/EarlyPerf_theta/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -667,7 +690,6 @@
     <DIN_LOC_ROOT>/lustre/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <BASELINE_ROOT>/lustre/tcraig/IRESM/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/lustre/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -725,7 +747,6 @@
     <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/project/projectdirs/ccsm1/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.edison/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -832,7 +853,6 @@
     <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/scratch/cluster/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>$SHELL{echo $USER | tr '[a-z]' '[A-Z]'}/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/fs/cgd/csm/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/fs/cgd/csm/tools/cprnc_hobart/cprnc</CCSM_CPRNC>
     <GMAKE>gmake --output-sync</GMAKE>
@@ -893,7 +913,6 @@
     <DIN_LOC_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/fs/scratch/Julio.T.Bacmeister/inputdata</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <BASELINE_ROOT>UNSET</BASELINE_ROOT>
     <CCSM_CPRNC>UNSET</CCSM_CPRNC>
     <GMAKE_J> 8</GMAKE_J>
@@ -962,7 +981,6 @@
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -1032,7 +1050,6 @@
     <DIN_LOC_ROOT>/sems-data-store/ACME/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/sems-data-store/ACME/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
@@ -1088,7 +1105,6 @@
     <DIN_LOC_ROOT>/sems-data-store/ACME/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/sems-data-store/ACME/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
@@ -1140,7 +1156,6 @@
     <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/projects/$PROJECT/usr/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/home/$USER/csm/$CASE/</DOUT_L_MSROOT>
     <BASELINE_ROOT>/projects/ccsm/ccsm_baselines/</BASELINE_ROOT>
     <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
@@ -1192,7 +1207,6 @@
     <DIN_LOC_ROOT>/pic/scratch/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/pic/scratch/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <BASELINE_ROOT>/pic/scratch/tcraig/IRESM/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/pic/scratch/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -1241,7 +1255,6 @@
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -1294,7 +1307,6 @@
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -1347,7 +1359,6 @@
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -1400,7 +1411,6 @@
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
@@ -1453,7 +1463,6 @@
     <DIN_LOC_ROOT>/project/s433/cesm_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/s433/cesm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/project/s433/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/project/s433/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/project/s433/cesm_tools/ccsm_cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>12</GMAKE_J>
@@ -1488,7 +1497,6 @@
     <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
-    <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
     <BASELINE_ROOT>/projects/ccsm/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/projects/ccsm/cprnc/build/cprnc_wrap</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
     <GMAKE_J>8</GMAKE_J>
@@ -1555,7 +1563,6 @@
     <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/scratch/projects/xsede/CESM/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/scratch/projects/xsede/CESM/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
@@ -1624,7 +1631,6 @@
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <PERL5LIB>/glade/apps/opt/perlmods/lib64/perl5:/glade/apps/opt/perlmods/share/perl5</PERL5LIB>
@@ -1636,6 +1642,11 @@
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
+    </mpirun>
+    <mpirun mpilib="default" unit_testing="true">
+      <!-- For unit testing, avoid all of the extra stuff that we use before and
+           after the mpirun command when launching cesm on yellowstone -->
+      <executable>mpirun.lsf </executable>
     </mpirun>
     <mpirun mpilib="default" threaded="false">
       <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT mpirun.lsf $ENV{CESMDATAROOT}/tools/bin/launch </executable>
@@ -1672,16 +1683,16 @@
 	<command name="load">esmf</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" debug="true">
-	<command name="load">esmf-6.3.0rp1-defio-mpi-g</command>
+	<command name="load">esmf-7.0.0-ncdfio-mpi-g</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" debug="false">
-	<command name="load">esmf-6.3.0rp1-defio-mpi-O</command>
+	<command name="load">esmf-7.0.0-defio-mpi-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" debug="true">
-	<command name="load">esmf-6.3.0rp1-ncdfio-uni-g</command>
+	<command name="load">esmf-7.0.0-ncdfio-uni-g</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" debug="false">
-	<command name="load"> esmf-6.3.0rp1-ncdfio-uni-O</command>
+	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">pgi/15.10</command>

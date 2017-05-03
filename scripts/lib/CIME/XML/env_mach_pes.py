@@ -16,7 +16,8 @@ class EnvMachPes(EnvBase):
         self._components = components
         self._component_value_list = ["NTASKS", "NTHRDS", "NINST",
                                       "ROOTPE", "PSTRID", "NINST_LAYOUT"]
-        EnvBase.__init__(self, case_root, infile)
+        schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_pes.xsd")
+        EnvBase.__init__(self, case_root, infile, schema=schema)
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None, pes_per_node=None): # pylint: disable=arguments-differ
         value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
@@ -44,7 +45,8 @@ class EnvMachPes(EnvBase):
         figure out the value of COST_PES which is the pe value used to estimate model cost
         """
         pespn = self.get_value("PES_PER_NODE")
-        num_nodes = self.get_total_nodes(totaltasks, max_thread_count)[0]
+        num_nodes, spare_nodes = self.get_total_nodes(totaltasks, max_thread_count)
+        num_nodes += spare_nodes
         # This is hardcoded because on yellowstone by default we
         # run with 15 pes per node
         # but pay for 16 pes per node.  See github issue #518

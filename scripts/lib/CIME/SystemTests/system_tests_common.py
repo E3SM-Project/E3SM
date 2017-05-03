@@ -197,6 +197,10 @@ class SystemTestsCommon(object):
         run_type    = self._case.get_value("RUN_TYPE")
         rest_option = self._case.get_value("REST_OPTION")
         rest_n      = self._case.get_value("REST_N")
+        rundir = self._case.get_value("RUNDIR")
+        # remove any cprnc output leftover from previous runs
+        for compout in glob.iglob(os.path.join(rundir,"*.cprnc.out")):
+            os.remove(compout)
         infostr     = "doing an %d %s %s test" % (stop_n, stop_option,run_type)
 
         if rest_option == "none" or rest_option == "never":
