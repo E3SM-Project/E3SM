@@ -1015,7 +1015,11 @@ module ocn_time_integration_split
                    block => block % next
                 end do  ! block
 
-                if ( edgeHaloComputeCounter == 1 .and. BtrCorIter /= config_n_btr_cor_iter ) then
+                ! mrp 170503 This is the original line.  Go back to this once I
+                ! verify that halo regions are truly three cells wide.
+                ! if ( edgeHaloComputeCounter == 1 .and. BtrCorIter /= config_n_btr_cor_iter ) then
+                ! replaced with this, to force a halo update on the first iteration:
+                if ( edgeHaloComputeCounter == 1 .or. BtrCorIter == 1 ) then
                    edgeHaloComputeCounter = config_num_halos + 1
                    call mpas_timer_start("se halo btr vel corr")
                    call mpas_dmpar_field_halo_exch(domain, 'normalBarotropicVelocitySubcycle', timeLevel=newBtrSubcycleTime)
