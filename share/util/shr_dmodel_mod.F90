@@ -1064,7 +1064,7 @@ subroutine shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
         call mct_avect_clean(avFile)
         call mct_aVect_init(avFile,rlist=fldList,lsize=nx*ny*nz)
 
-        call mct_gsmap_OP(gsMap,my_task,gsmOP)
+        call mct_gsmap_orderedPoints(gsMap,my_task,gsmOP)
 
         allocate(count(3))
         allocate(compDOF(lsize*nz),stat=rcode)
