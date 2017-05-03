@@ -1336,7 +1336,7 @@ contains
   real (kind=real_kind) :: res(np,np,2*nlev),resnorm,resnormmax
 
   real (kind=real_kind) ::  itererr, itererrmax
-  integer :: i,j,k,l,kptr,ie,itercount,itercountmax
+  integer :: i,j,k,l,ie,itercount,itercountmax
 
   itercountmax=1
   itererrmax=0.d0
@@ -1346,29 +1346,30 @@ contains
   call t_startf('compute_stage_value_dirk')
 
   do ie=nets,nete 
-     elem(ie)%state%v(:,:,1,:,np1)         = elem(ie)%state%v(:,:,1,:,n0)  
-     elem(ie)%state%v(:,:,2,:,np1)         = elem(ie)%state%v(:,:,2,:,n0)
-     elem(ie)%state%w(:,:,:,np1)           = elem(ie)%state%w(:,:,:,n0)
-     elem(ie)%state%phi(:,:,:,np1)         = elem(ie)%state%phi(:,:,:,n0)
-     elem(ie)%state%theta_dp_cp(:,:,:,np1) = elem(ie)%state%theta_dp_cp(:,:,:,n0)
-     elem(ie)%state%dp3d(:,:,:,np1)        = elem(ie)%state%dp3d(:,:,:,n0)
-
+    elem(ie)%state%v(:,:,1,:,np1)         = elem(ie)%state%v(:,:,1,:,n0)  
+    elem(ie)%state%v(:,:,2,:,np1)         = elem(ie)%state%v(:,:,2,:,n0)
+    elem(ie)%state%w(:,:,:,np1)           = elem(ie)%state%w(:,:,:,n0)
+    elem(ie)%state%phi(:,:,:,np1)         = elem(ie)%state%phi(:,:,:,n0) 
+    elem(ie)%state%theta_dp_cp(:,:,:,np1) = elem(ie)%state%theta_dp_cp(:,:,:,n0)
+    elem(ie)%state%dp3d(:,:,:,np1)        = elem(ie)%state%dp3d(:,:,:,n0)
 
     itercount=1
     itererr = 2.0*itertol      
     
     do while ((itercount < maxiter).and.((itererr > itertol).or.(resnorm > itertol*1.d2)) )
-  
+      
       dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
       theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,np1)
       phi => elem(ie)%state%phi(:,:,:,np1)
-           
-      call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
-          
-      call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
-      kappa_star,pnh,dpnh,exner) ! ,exner_i)
-           
-      dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
+        
+      if (theta_hydrostatic_mode) then
+        dpnh_dp(:,:,:)=1.d0
+      else   
+        call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)   
+        call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
+        kappa_star,pnh,dpnh,exner)   
+        dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
+      end if
                 
       Fn(:,:,1:nlev,1) = elem(ie)%state%w(:,:,:,np1)-elem(ie)%state%w(:,:,:,n0) &
         +dt2*g*(1.0-dpnh_dp(:,:,:))
@@ -1384,19 +1385,18 @@ contains
         e(:,:,:)=0.0   
         e(:,:,k)=1.0  
            
-       ! compute the new dpnh_dp at the perturbed values
-       ! use the pointers only  
-              
-        phi(:,:,:)=phi(:,:,:)+epsie*e(:,:,nlev+1:2*nlev)
-                 
-   !     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
-                  
-        call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&     
-          kappa_star,pnh,dpnh,exner) ! ,exner_i)
-            
-        dpnh_dp2(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
-        phi(:,:,:)=phi(:,:,:)-epsie*e(:,:,nlev+1:2*nlev)
-              
+        if (theta_hydrostatic_mode) then
+          dpnh_dp2(:,:,:)=1.d0
+        else            
+         ! compute the new dpnh_dp at the perturbed values
+         ! use the pointers onl
+          phi(:,:,:)=phi(:,:,:)+epsie*e(:,:,nlev+1:2*nlev)                  
+          call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&     
+            kappa_star,pnh,dpnh,exner) 
+          dpnh_dp2(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
+          phi(:,:,:)=phi(:,:,:)-epsie*e(:,:,nlev+1:2*nlev)
+        end if    
+
        ! Form the approximate Jacobian
         Jac(:,:,1:nlev,k)=e(:,:,1:nlev)+dt2*g*(dpnh_dp(:,:,:)-dpnh_dp2(:,:,:))/epsie 
         Jac(:,:,nlev+1:2*nlev,k)=e(:,:,nlev+1:2*nlev)-dt2*g*e(:,:,1:nlev)
@@ -1415,7 +1415,8 @@ contains
       end do               
                         
       call backsubstitution(R,-QtFn,x)
-      elem(ie)%state%w(:,:,:,np1)   = elem(ie)%state%w(:,:,:,np1) + x(:,:,1:nlev,1)                          
+
+      elem(ie)%state%w(:,:,:,np1)  = elem(ie)%state%w(:,:,:,np1) + x(:,:,1:nlev,1)                          
       elem(ie)%state%phi(:,:,:,np1) = elem(ie)%state%phi(:,:,:,np1) + x(:,:,nlev+1:2*nlev,1)                          
       itererr=norm2(x)
       resnorm=norm2(Fn)
