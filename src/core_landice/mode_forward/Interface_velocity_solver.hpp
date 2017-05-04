@@ -58,6 +58,7 @@
 #define interface_init_log interface_init_log_
 #define interface_redirect_stdout interface_redirect_stdout_
 #define interface_reset_stdout interface_reset_stdout_
+#define write_ascii_mesh write_ascii_mesh_
 #endif
 
 //#include <lifev/core/algorithm/PreconditionerIfpack.hpp>
@@ -147,7 +148,13 @@ void interface_init_log();
 void interface_redirect_stdout(int const* iTimestep);
 
 void interface_reset_stdout();
-}
+
+void write_ascii_mesh(double const* bedTopography_F, double const* lowerSurface_F,
+    double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F,
+    double const* observedSurfaceVelocityX_F, double const* observedSurfaceVelocityY_F,
+    double const* observedVelocityUncertainty_F, double const* observedThicknessTendency_F);
+
+} // extern "C"
 
 extern void velocity_solver_finalize__();
 
@@ -232,7 +239,6 @@ extern void velocity_solver_extrude_3d_grid__(int nLayers, int nGlobalTriangles,
 //extern void velocity_solver_export_l1l2_velocity__();
 
 extern void velocity_solver_export_fo_velocity__(MPI_Comm reducedComm);
-
 
 
 #ifdef LIFEV

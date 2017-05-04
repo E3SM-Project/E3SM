@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <set>
+#include <fstream>
 #include "Interface_velocity_solver.hpp"
 //#include <lifev/ice_sheet/interface_with_mpas/Interface.hpp>
 //#include <lifev/ice_sheet/solver/BuildMeshFromBareData.hpp>
@@ -2008,5 +2009,59 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
           procIds.push_back(reduced_ranks[proc]);
       }
     }
+  }
+
+  void write_ascii_mesh(double const* bedTopography_F, double const* lowerSurface_F,
+    double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F,
+    double const* observedSurfaceVelocityX_F, double const* observedSurfaceVelocityY_F,
+    double const* observedVelocityUncertainty_F, double const* observedThicknessTendency_F) {
+
+    // TODO: add BMB?
+
+    // Call needed functions to process MPAS format
+//    import2DFields(bedTopography_F, lowerSurface_F, thickness_F, beta_F, smb_F,  minThickness);
+//    std::vector<double> regulThk(thicknessData);
+//    for (int index = 0; index < nVertices; index++)
+//      regulThk[index] = std::max(1e-4, thicknessData[index]);  //TODO Make limit a parameter
+//
+//    importP0Temperature(temperature_F);
+//
+//    std::cout << "\n\nTimeStep: "<< *deltat << "\n\n"<< std::endl;
+//
+//    std::vector<int> mpasIndexToVertexID(nVertices);
+//    for (int i = 0; i < nVertices; i++) {
+//      mpasIndexToVertexID[i] = indexToCellID_F[vertexToFCell[i]];
+//    }
+//
+//    mapVerticesToCells(velocityOnVertices, &velocityOnCells[0], 2, nLayers,
+//        Ordering);
+
+
+    // Write out ASCII format
+
+    // msh file
+    std::ofstream outfile;
+    outfile.open ("albany.msh", std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+       // outfile << "PRINT STUFF";
+       outfile.close();
+       }
+    else {
+       std::cout << "Failed to open mshfile!"<< std::endl;
+    }
+
+    // individual fields
+    outfile.open ("thickness.ascii", std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+       // outfile << "PRINT STUFF";
+       outfile.close();
+       }
+    else {
+       std::cout << "Failed to open thickness ascii file!"<< std::endl;
+    }
+
+    // ... other fields ...
+
+
   }
 
