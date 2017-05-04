@@ -303,7 +303,12 @@
 		<nml_option name="config_output_external_velocity_solver_data" type="logical" default_value=".false." units="unitless"
 		            description="If .true., external velocity solvers (if enabled) will write their own output data in addition to any MPAS output that is configured."
 		            possible_values=".true. or .false."
-		/>
+                />
+                <nml_option name="config_write_albany_ascii_mesh" type="logical" default_value=".false." units="unitless"
+		            description="Logical flag determining if Albany ascii mesh files will be written.  If .true., model initializes, writes the mesh files, and then terminates."
+		            possible_values=".true. or .false."
+                />
+
 	</nml_record>
 
 
@@ -362,6 +367,8 @@
 		<package name="SIAvelocity" description="Variables only needed by the SIA velocity solver"/>
 
 		<package name="higherOrderVelocity" description="This package includes variables required for higher order velocity solvers."/>
+
+                <package name="observations" description="This package includes variables required for observations in Albany."/>
 
 	</packages>
 
@@ -442,6 +449,10 @@
 			<var name="waterPressure" packages="hydro"/>
 			<var name="channelArea" packages="hydro"/>
 			<var name="waterFluxMask" packages="hydro"/>
+                        <var name="observedSurfaceVelocityX" packages="observations"/>
+                        <var name="observedSurfaceVelocityY" packages="observations"/>
+                        <var name="observedSurfaceVelocityUncertainty" packages="observations"/>
+                        <var name="observedThicknessTendency" packages="observations"/>
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -886,6 +897,20 @@ is the value of that variable from the *previous* time level!
 			description="edges which are floating have a value of 1.  non floating edges have a value of 0."
 			packages="higherOrderVelocity"
 		/>
+	</var_struct>
+
+<!-- ================ -->
+
+	<!-- Variables related to observations -->
+	<var_struct name="observations" time_levs="1" package="observations">
+		<var name="observedSurfaceVelocityX" type="real" dimensions="nCells Time" units="m s^-1"
+		     description="X-component of observed surface velocity" />
+		<var name="observedSurfaceVelocityY" type="real" dimensions="nCells Time" units="m s^-1"
+		     description="Y-component of observed surface velocity" />
+		<var name="observedSurfaceVelocityUncertainty" type="real" dimensions="nCells Time" units="m s^-1"
+		     description="uncertainty in observed surface velocity" />
+		<var name="observedThicknessTendency" type="real" dimensions="nCells Time" units="m s^-1"
+                        description="observed tendency in thickness (dH/dt)" />
 	</var_struct>
 
 <!-- ================ -->
