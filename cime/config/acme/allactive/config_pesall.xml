@@ -5617,13 +5617,13 @@
   <grid name="a%ne30np4">
     <mach name="edison">
       <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
-        <comment>"143 node version gets 6 SYPD. This will be the default and M size"</comment>
+        <comment>"133 node version gets 6 SYPD. This will be the default and M size"</comment>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
           <ntasks_lnd>312</ntasks_lnd>
           <ntasks_rof>312</ntasks_rof>
           <ntasks_ice>2400</ntasks_ice>
-          <ntasks_ocn>720</ntasks_ocn>
+          <ntasks_ocn>480</ntasks_ocn>
           <ntasks_glc>312</ntasks_glc>
           <ntasks_wav>2400</ntasks_wav>
           <ntasks_cpl>2400</ntasks_cpl>
