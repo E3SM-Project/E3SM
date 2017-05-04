@@ -486,6 +486,7 @@ contains
          call EMI_Driver(EM_ID_PTM,                                      &
               EM_PTM_TBASED_SOLVE_STAGE,                                 &
               dt = get_step_size()*1.0_r8,                               &
+              clump_rank  = bounds%clump_index,                          &
               num_nolakec_and_nourbanc = num_nolakec_and_nourbanc,       &
               filter_nolakec_and_nourbanc = filter_nolakec_and_nourbanc, &
               num_filter_lun = num_filter_lun,                           &

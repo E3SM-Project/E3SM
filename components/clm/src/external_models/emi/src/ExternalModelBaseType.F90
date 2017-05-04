@@ -3,6 +3,7 @@ module ExternalModelBaseType
   use abortutils                   , only : endrun
   use shr_kind_mod                 , only : r8 => shr_kind_r8
   use shr_log_mod                  , only : errMsg => shr_log_errMsg
+  use decompMod                    , only : bounds_type
   use ExternalModelInterfaceDataMod, only : emi_data_list, emi_data
   use clm_varctl                   , only : iulog
 
@@ -92,7 +93,7 @@ contains
   end subroutine EMBase_Populate_E2L_List
 
   !------------------------------------------------------------------------
-  subroutine EMBase_Init(this, l2e_init_list, e2l_init_list, iam)
+  subroutine EMBase_Init(this, l2e_init_list, e2l_init_list, iam, bounds_clump)
     !
     ! !DESCRIPTION:
     ! Initialze an emi_list for exchanging data from land model to external
@@ -105,6 +106,7 @@ contains
     class(emi_data_list) , intent(in)    :: l2e_init_list
     class(emi_data_list) , intent(inout) :: e2l_init_list
     integer              , intent(in)    :: iam
+    type(bounds_type)    , intent (in)   :: bounds_clump
 
     write(iulog,*)'EMBase_Init must be extended by a child class.'
     call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -112,7 +114,8 @@ contains
   end subroutine EMBase_Init
 
   !------------------------------------------------------------------------
-  subroutine EMBase_Solve(this, em_stage, dt, nstep, clump_rank, l2e_list, e2l_list)
+  subroutine EMBase_Solve(this, em_stage, dt, nstep, clump_rank, l2e_list, e2l_list, &
+       bounds_clump)
     !
     ! !DESCRIPTION:
     ! Initialze an emi_list for exchanging data from land model to external
@@ -128,6 +131,7 @@ contains
     integer              , intent(in)    :: clump_rank
     class(emi_data_list) , intent(in)    :: l2e_list
     class(emi_data_list) , intent(inout) :: e2l_list
+    type(bounds_type)    , intent (in)   :: bounds_clump
 
     write(iulog,*)'EMBase_Solve must be extended by a child class.'
     call endrun(msg=errMsg(__FILE__, __LINE__))

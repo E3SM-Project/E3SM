@@ -10,9 +10,10 @@ module ExternalModelPTMMod
   use shr_kind_mod                 , only : r8 => shr_kind_r8
   use shr_log_mod                  , only : errMsg => shr_log_errMsg
   use ExternalModelInterfaceDataMod, only : emi_data_list, emi_data
+  use decompMod                    , only : bounds_type
   use mpp_varctl                   , only : iulog
-  use MultiPhysicsProbThermal      , only : thermal_mpp
   use ExternalModelBaseType        , only : em_base_type
+  use MultiPhysicsProbThermal      , only : mpp_thermal_type
   !
   implicit none
   !
@@ -74,6 +75,9 @@ module ExternalModelPTMMod
      integer :: index_e2l_state_temperature_soil_nlevgrnd
      integer :: index_e2l_state_temperature_snow
      integer :: index_e2l_state_temperature_h2osfc
+
+     type(mpp_thermal_type) :: thermal_mpp
+
    contains
      procedure, public :: Populate_L2E_Init_List  => EM_PTM_Populate_L2E_Init_List
      procedure, public :: Populate_L2E_List       => EM_PTM_Populate_L2E_List
@@ -379,14 +383,13 @@ contains
   end subroutine EM_PTM_Populate_E2L_List
 
   !------------------------------------------------------------------------
-  subroutine EM_PTM_Init(this, l2e_init_list, e2l_init_list, iam)
+  subroutine EM_PTM_Init(this, l2e_init_list, e2l_init_list, iam, bounds_clump)
     !
     ! !DESCRIPTION:
     ! Initialization PETSc-based thermal model
     !
     ! !USES:
     use mpp_varctl                , only : use_petsc_thermal_model
-    use MultiPhysicsProbThermal   , only : thermal_mpp
     !
     implicit none
     ! !ARGUMENTS
@@ -394,58 +397,59 @@ contains
     class(emi_data_list) , intent(in)    :: l2e_init_list
     class(emi_data_list) , intent(inout) :: e2l_init_list
     integer              , intent(in)    :: iam
+    type(bounds_type)    , intent (in)   :: bounds_clump
 
     if (.not.use_petsc_thermal_model) return
 
     ! 1. Initialize the multi-physics-problem (MPP)
-    call initialize_mpp(iam)
+    call initialize_mpp(this, iam)
 
     ! 2. Add all meshes needed for the MPP
-    call add_meshes(this, l2e_init_list)
+    call add_meshes(this, l2e_init_list, bounds_clump)
 
     ! 3. Add all governing equations
-    call add_goveqns()
+    call add_goveqns(this)
 
     ! 4. Add boundary and source-sink conditions to all governing equations
-    call add_conditions_to_goveqns(this, l2e_init_list)
+    call add_conditions_to_goveqns(this, l2e_init_list, bounds_clump)
 
     ! 5. Allocate memory to hold auxvars
-    call allocate_auxvars()
+    call allocate_auxvars(this)
 
     ! 6. Setup the MPP
-    call thermal_mpp%SetupProblem()
+    call this%thermal_mpp%SetupProblem()
 
     ! 7. Add material properities associated with all governing equations
-    call add_material_properties(this, l2e_init_list)
+    call add_material_properties(this, l2e_init_list, bounds_clump)
 
   end subroutine EM_PTM_Init
 
   !------------------------------------------------------------------------
-  subroutine initialize_mpp(iam)
+  subroutine initialize_mpp(this, iam)
     !
     ! !DESCRIPTION:
     ! Initialization PETSc-based thermal model
     !
     ! !USES:
-    use MultiPhysicsProbThermal   , only : thermal_mpp
     use MultiPhysicsProbConstants , only : MPP_THERMAL_TBASED_KSP_CLM
     !
     implicit none
     ! !ARGUMENTS
-    integer, intent(in) :: iam
+    class(em_ptm_type)              :: this
+    integer            , intent(in) :: iam
 
     !
     ! Set up the multi-physics problem
     !
-    call thermal_mpp%Init       ()
-    call thermal_mpp%SetName    ('Snow + Standing water + Soil thermal model using temperature')
-    call thermal_mpp%SetID      (MPP_THERMAL_TBASED_KSP_CLM)
-    call thermal_mpp%SetMPIRank (iam)
+    call this%thermal_mpp%Init       ()
+    call this%thermal_mpp%SetName    ('Snow + Standing water + Soil thermal model using temperature')
+    call this%thermal_mpp%SetID      (MPP_THERMAL_TBASED_KSP_CLM)
+    call this%thermal_mpp%SetMPIRank (iam)
 
   end subroutine initialize_mpp
 
   !------------------------------------------------------------------------
-  subroutine add_meshes(this, l2e_init_list)
+  subroutine add_meshes(this, l2e_init_list, bounds_clump)
     !
     ! !DESCRIPTION:
     ! Add meshes to the thermal MPP problem
@@ -454,15 +458,12 @@ contains
     !
     ! !USES:
     use filterMod                 , only : filter
-    use mpp_bounds                , only : bounds_proc_begc_all, bounds_proc_endc_all
-    use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
-    use mpp_bounds                , only : nclumps
     use mpp_varpar                , only : nlevgrnd, nlevsno
     use shr_infnan_mod            , only : shr_infnan_isnan
     use abortutils                , only : endrun
     use shr_infnan_mod            , only : isnan => shr_infnan_isnan
     use clm_varcon                , only : spval
-    use MultiPhysicsProbThermal   , only : thermal_mpp, MPPThermalSetSoils
+    use MultiPhysicsProbThermal   , only : MPPThermalSetSoils
     use MultiPhysicsProbConstants , only : MPP_THERMAL_TBASED_KSP_CLM
     use MultiPhysicsProbConstants , only : MESH_ALONG_GRAVITY
     use MultiPhysicsProbConstants , only : MESH_CLM_SNOW_COL
@@ -502,9 +503,9 @@ contains
     ! !ARGUMENTS
     class(em_ptm_type)                   :: this
     class(emi_data_list) , intent(in)    :: l2e_init_list
+    type(bounds_type)    , intent(in)    :: bounds_clump
     !
     ! !LOCAL VARIABLES:
-    integer           :: nc                       ! clump index
     integer           :: c,g,fc,j,l               ! do loop indices
     real(r8), pointer :: z(:,:)                   ! centroid at "z" level [m]
     real(r8), pointer :: zi(:,:)                  ! interface level below a "z" level (m)
@@ -572,7 +573,12 @@ contains
     integer  , pointer :: lun_lakpoi(:)
     integer  , pointer :: lun_urbpoi(:)
 
+    integer :: bounds_proc_begc, bounds_proc_endc
+
     !----------------------------------------------------------------------
+
+    bounds_proc_begc     = bounds_clump%begc
+    bounds_proc_endc     = bounds_clump%endc
 
     call l2e_init_list%GetPointerToReal2D(this%index_l2e_init_col_zi             , zi           )
     call l2e_init_list%GetPointerToReal2D(this%index_l2e_init_col_dz             , dz           )
@@ -583,53 +589,46 @@ contains
     call l2e_init_list%GetPointerToInt1D(this%index_l2e_init_landunit_lakepoint  , lun_lakpoi   )
     call l2e_init_list%GetPointerToInt1D(this%index_l2e_init_landunit_urbanpoint , lun_urbpoi   )
 
-    if (nclumps /= 1) then
-       call endrun(msg='ERROR clm_initializeMod: '//&
-           'PETSc-based thermal model only supported for clumps = 1')
-    endif
-
-    nc = 1
-
     ! Allocate memory and setup data structure for VSFM-MPP
 
-    allocate (snow_xc           ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevsno      ))
-    allocate (snow_yc           ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevsno      ))
-    allocate (snow_zc           ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevsno      ))
-    allocate (snow_dx           ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevsno      ))
-    allocate (snow_dy           ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevsno      ))
-    allocate (snow_dz           ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevsno      ))
-    allocate (snow_area         ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevsno      ))
-    allocate (snow_filter       ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevsno      ))
-    allocate (snow_conn_id_up   ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*(nlevsno-1)  ))
-    allocate (snow_conn_id_dn   ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*(nlevsno-1)  ))
-    allocate (snow_conn_dist_up ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*(nlevsno-1)  ))
-    allocate (snow_conn_dist_dn ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*(nlevsno-1)  ))
-    allocate (snow_conn_area    ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*(nlevsno-1)  ))
-    allocate (snow_conn_type    ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*(nlevsno-1)  ))
+    allocate (snow_xc           ((bounds_proc_endc-bounds_proc_begc+1 )*nlevsno      ))
+    allocate (snow_yc           ((bounds_proc_endc-bounds_proc_begc+1 )*nlevsno      ))
+    allocate (snow_zc           ((bounds_proc_endc-bounds_proc_begc+1 )*nlevsno      ))
+    allocate (snow_dx           ((bounds_proc_endc-bounds_proc_begc+1 )*nlevsno      ))
+    allocate (snow_dy           ((bounds_proc_endc-bounds_proc_begc+1 )*nlevsno      ))
+    allocate (snow_dz           ((bounds_proc_endc-bounds_proc_begc+1 )*nlevsno      ))
+    allocate (snow_area         ((bounds_proc_endc-bounds_proc_begc+1 )*nlevsno      ))
+    allocate (snow_filter       ((bounds_proc_endc-bounds_proc_begc+1 )*nlevsno      ))
+    allocate (snow_conn_id_up   ((bounds_proc_endc-bounds_proc_begc+1 )*(nlevsno-1)  ))
+    allocate (snow_conn_id_dn   ((bounds_proc_endc-bounds_proc_begc+1 )*(nlevsno-1)  ))
+    allocate (snow_conn_dist_up ((bounds_proc_endc-bounds_proc_begc+1 )*(nlevsno-1)  ))
+    allocate (snow_conn_dist_dn ((bounds_proc_endc-bounds_proc_begc+1 )*(nlevsno-1)  ))
+    allocate (snow_conn_area    ((bounds_proc_endc-bounds_proc_begc+1 )*(nlevsno-1)  ))
+    allocate (snow_conn_type    ((bounds_proc_endc-bounds_proc_begc+1 )*(nlevsno-1)  ))
 
-    allocate (ssw_xc            ((bounds_proc_endc_all-bounds_proc_begc_all+1                )))
-    allocate (ssw_yc            ((bounds_proc_endc_all-bounds_proc_begc_all+1                )))
-    allocate (ssw_zc            ((bounds_proc_endc_all-bounds_proc_begc_all+1                )))
-    allocate (ssw_dx            ((bounds_proc_endc_all-bounds_proc_begc_all+1                )))
-    allocate (ssw_dy            ((bounds_proc_endc_all-bounds_proc_begc_all+1                )))
-    allocate (ssw_dz            ((bounds_proc_endc_all-bounds_proc_begc_all+1                )))
-    allocate (ssw_area          ((bounds_proc_endc_all-bounds_proc_begc_all+1                )))
-    allocate (ssw_filter        ((bounds_proc_endc_all-bounds_proc_begc_all+1                )))
+    allocate (ssw_xc            ((bounds_proc_endc-bounds_proc_begc+1                )))
+    allocate (ssw_yc            ((bounds_proc_endc-bounds_proc_begc+1                )))
+    allocate (ssw_zc            ((bounds_proc_endc-bounds_proc_begc+1                )))
+    allocate (ssw_dx            ((bounds_proc_endc-bounds_proc_begc+1                )))
+    allocate (ssw_dy            ((bounds_proc_endc-bounds_proc_begc+1                )))
+    allocate (ssw_dz            ((bounds_proc_endc-bounds_proc_begc+1                )))
+    allocate (ssw_area          ((bounds_proc_endc-bounds_proc_begc+1                )))
+    allocate (ssw_filter        ((bounds_proc_endc-bounds_proc_begc+1                )))
 
-    allocate (soil_xc           ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevgrnd     ))
-    allocate (soil_yc           ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevgrnd     ))
-    allocate (soil_zc           ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevgrnd     ))
-    allocate (soil_dx           ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevgrnd     ))
-    allocate (soil_dy           ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevgrnd     ))
-    allocate (soil_dz           ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevgrnd     ))
-    allocate (soil_area         ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevgrnd     ))
-    allocate (soil_filter       ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*nlevgrnd     ))
-    allocate (soil_conn_id_up   ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*(nlevgrnd-1) ))
-    allocate (soil_conn_id_dn   ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*(nlevgrnd-1) ))
-    allocate (soil_conn_dist_up ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*(nlevgrnd-1) ))
-    allocate (soil_conn_dist_dn ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*(nlevgrnd-1) ))
-    allocate (soil_conn_area    ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*(nlevgrnd-1) ))
-    allocate (soil_conn_type    ((bounds_proc_endc_all-bounds_proc_begc_all+1 )*(nlevgrnd-1) ))
+    allocate (soil_xc           ((bounds_proc_endc-bounds_proc_begc+1 )*nlevgrnd     ))
+    allocate (soil_yc           ((bounds_proc_endc-bounds_proc_begc+1 )*nlevgrnd     ))
+    allocate (soil_zc           ((bounds_proc_endc-bounds_proc_begc+1 )*nlevgrnd     ))
+    allocate (soil_dx           ((bounds_proc_endc-bounds_proc_begc+1 )*nlevgrnd     ))
+    allocate (soil_dy           ((bounds_proc_endc-bounds_proc_begc+1 )*nlevgrnd     ))
+    allocate (soil_dz           ((bounds_proc_endc-bounds_proc_begc+1 )*nlevgrnd     ))
+    allocate (soil_area         ((bounds_proc_endc-bounds_proc_begc+1 )*nlevgrnd     ))
+    allocate (soil_filter       ((bounds_proc_endc-bounds_proc_begc+1 )*nlevgrnd     ))
+    allocate (soil_conn_id_up   ((bounds_proc_endc-bounds_proc_begc+1 )*(nlevgrnd-1) ))
+    allocate (soil_conn_id_dn   ((bounds_proc_endc-bounds_proc_begc+1 )*(nlevgrnd-1) ))
+    allocate (soil_conn_dist_up ((bounds_proc_endc-bounds_proc_begc+1 )*(nlevgrnd-1) ))
+    allocate (soil_conn_dist_dn ((bounds_proc_endc-bounds_proc_begc+1 )*(nlevgrnd-1) ))
+    allocate (soil_conn_area    ((bounds_proc_endc-bounds_proc_begc+1 )*(nlevgrnd-1) ))
+    allocate (soil_conn_type    ((bounds_proc_endc-bounds_proc_begc+1 )*(nlevgrnd-1) ))
 
     first_active_soil_col_id = -1
     do c = bounds_proc_begc, bounds_proc_endc
@@ -760,7 +759,7 @@ contains
     ! Set up the meshes
     !
 
-    call thermal_mpp%SetNumMeshes (3)
+    call this%thermal_mpp%SetNumMeshes (3)
 
     !
     ! Set mesh for snow
@@ -770,22 +769,22 @@ contains
     ncells_local = (bounds_proc_endc - bounds_proc_begc + 1)*nlev
     ncells_ghost = 0
 
-    call thermal_mpp%MeshSetName        (imesh, 'CLM snow thermal mesh')
-    call thermal_mpp%MeshSetOrientation (imesh, MESH_ALONG_GRAVITY)
-    call thermal_mpp%MeshSetID          (imesh, MESH_CLM_SNOW_COL)
-    call thermal_mpp%MeshSetDimensions  (imesh, ncells_local, ncells_ghost, nlev)
+    call this%thermal_mpp%MeshSetName        (imesh, 'CLM snow thermal mesh')
+    call this%thermal_mpp%MeshSetOrientation (imesh, MESH_ALONG_GRAVITY)
+    call this%thermal_mpp%MeshSetID          (imesh, MESH_CLM_SNOW_COL)
+    call this%thermal_mpp%MeshSetDimensions  (imesh, ncells_local, ncells_ghost, nlev)
 
-    call thermal_mpp%MeshSetGridCellFilter      (imesh, snow_filter)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_XC   , snow_xc)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_YC   , snow_yc)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_ZC   , snow_zc)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DX   , snow_dx)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DY   , snow_dy)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DZ   , snow_dz)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_AREA , snow_area)
-    call thermal_mpp%MeshComputeVolume          (imesh)
+    call this%thermal_mpp%MeshSetGridCellFilter      (imesh, snow_filter)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_XC   , snow_xc)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_YC   , snow_yc)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_ZC   , snow_zc)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DX   , snow_dx)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DY   , snow_dy)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DZ   , snow_dz)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_AREA , snow_area)
+    call this%thermal_mpp%MeshComputeVolume          (imesh)
 
-    call thermal_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, snow_nconn,  &
+    call this%thermal_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, snow_nconn,  &
          snow_conn_id_up, snow_conn_id_dn, snow_conn_dist_up, snow_conn_dist_dn, &
          snow_conn_area, snow_conn_type)
 
@@ -796,20 +795,20 @@ contains
     nlev         = 1
     ncells_local = (bounds_proc_endc - bounds_proc_begc + 1)*nlev
     ncells_ghost = 0
-    call thermal_mpp%MeshSetName(imesh, 'CLM standing water thermal snow mesh')
-    call thermal_mpp%MeshSetOrientation (imesh, MESH_ALONG_GRAVITY)
-    call thermal_mpp%MeshSetID          (imesh, MESH_CLM_SSW_COL)
-    call thermal_mpp%MeshSetDimensions  (imesh, ncells_local, ncells_ghost, nlev)
+    call this%thermal_mpp%MeshSetName(imesh, 'CLM standing water thermal snow mesh')
+    call this%thermal_mpp%MeshSetOrientation (imesh, MESH_ALONG_GRAVITY)
+    call this%thermal_mpp%MeshSetID          (imesh, MESH_CLM_SSW_COL)
+    call this%thermal_mpp%MeshSetDimensions  (imesh, ncells_local, ncells_ghost, nlev)
 
-    call thermal_mpp%MeshSetGridCellFilter      (imesh, ssw_filter)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_XC   , ssw_xc)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_YC   , ssw_yc)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_ZC   , ssw_zc)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DX   , ssw_dx)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DY   , ssw_dy)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DZ   , ssw_dz)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_AREA , ssw_area)
-    call thermal_mpp%MeshComputeVolume          (imesh)
+    call this%thermal_mpp%MeshSetGridCellFilter      (imesh, ssw_filter)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_XC   , ssw_xc)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_YC   , ssw_yc)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_ZC   , ssw_zc)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DX   , ssw_dx)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DY   , ssw_dy)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DZ   , ssw_dz)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_AREA , ssw_area)
+    call this%thermal_mpp%MeshComputeVolume          (imesh)
 
     !
     ! Set mesh for standing water
@@ -819,22 +818,22 @@ contains
     ncells_local = (bounds_proc_endc - bounds_proc_begc + 1)*nlev
     ncells_ghost = 0
 
-    call thermal_mpp%MeshSetName        (imesh, 'CLM soil thermal mesh')
-    call thermal_mpp%MeshSetOrientation (imesh, MESH_ALONG_GRAVITY)
-    call thermal_mpp%MeshSetID          (imesh, MESH_CLM_THERMAL_SOIL_COL)
-    call thermal_mpp%MeshSetDimensions  (imesh, ncells_local, ncells_ghost, nlev)
+    call this%thermal_mpp%MeshSetName        (imesh, 'CLM soil thermal mesh')
+    call this%thermal_mpp%MeshSetOrientation (imesh, MESH_ALONG_GRAVITY)
+    call this%thermal_mpp%MeshSetID          (imesh, MESH_CLM_THERMAL_SOIL_COL)
+    call this%thermal_mpp%MeshSetDimensions  (imesh, ncells_local, ncells_ghost, nlev)
 
-    call thermal_mpp%MeshSetGridCellFilter      (imesh, soil_filter)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_XC   , soil_xc)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_YC   , soil_yc)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_ZC   , soil_zc)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DX   , soil_dx)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DY   , soil_dy)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DZ   , soil_dz)
-    call thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_AREA , soil_area)
-    call thermal_mpp%MeshComputeVolume          (imesh)
+    call this%thermal_mpp%MeshSetGridCellFilter      (imesh, soil_filter)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_XC   , soil_xc)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_YC   , soil_yc)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_ZC   , soil_zc)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DX   , soil_dx)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DY   , soil_dy)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_DZ   , soil_dz)
+    call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_AREA , soil_area)
+    call this%thermal_mpp%MeshComputeVolume          (imesh)
 
-    call thermal_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, soil_nconn,  &
+    call this%thermal_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, soil_nconn,  &
          soil_conn_id_up, soil_conn_id_dn, soil_conn_dist_up, soil_conn_dist_dn, &
          soil_conn_area, soil_conn_type)
 
@@ -875,13 +874,13 @@ contains
   end subroutine add_meshes
 
   !------------------------------------------------------------------------
-  subroutine add_goveqns()
+  subroutine add_goveqns(this)
     !
     ! !DESCRIPTION:
     !
     !
     ! !USES:
-    use MultiPhysicsProbThermal   , only : thermal_mpp, MPPThermalSetSoils
+    use MultiPhysicsProbThermal   , only : MPPThermalSetSoils
     use MultiPhysicsProbConstants , only : GE_THERM_SNOW_TBASED
     use MultiPhysicsProbConstants , only : GE_THERM_SSW_TBASED
     use MultiPhysicsProbConstants , only : GE_THERM_SOIL_TBASED
@@ -890,33 +889,33 @@ contains
     use MultiPhysicsProbConstants , only : MESH_CLM_THERMAL_SOIL_COL
     !
     implicit none
+    !
+    class(em_ptm_type)                   :: this
 
-    call thermal_mpp%AddGovEqn(GE_THERM_SNOW_TBASED,                                                  &
+    call this%thermal_mpp%AddGovEqn(GE_THERM_SNOW_TBASED,                                                  &
          'Thermal equation using temprature formulation in snow (KSP formulation)',                   &
          MESH_CLM_SNOW_COL)
 
-    call thermal_mpp%AddGovEqn(GE_THERM_SSW_TBASED,                                                   &
+    call this%thermal_mpp%AddGovEqn(GE_THERM_SSW_TBASED,                                                   &
          'Thermal equation using temprature formulation in standing surface water (KSP formulation)', &
          MESH_CLM_SSW_COL)
 
-    call thermal_mpp%AddGovEqn(GE_THERM_SOIL_TBASED,                                                  &
+    call this%thermal_mpp%AddGovEqn(GE_THERM_SOIL_TBASED,                                                  &
          'Thermal equation using temprature formulation in soil (KSP formulation)',                   &
          MESH_CLM_THERMAL_SOIL_COL)
 
-    call thermal_mpp%SetMeshesOfGoveqns()
+    call this%thermal_mpp%SetMeshesOfGoveqns()
 
   end subroutine add_goveqns
 
   !------------------------------------------------------------------------
-  subroutine add_conditions_to_goveqns(this, l2e_init_list)
+  subroutine add_conditions_to_goveqns(this, l2e_init_list, bounds_clump)
     !
     ! !DESCRIPTION:
     !
     !
     ! !USES:
-    use mpp_bounds                , only : bounds_proc_begc_all, bounds_proc_endc_all
-    use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
-    use MultiPhysicsProbThermal   , only : thermal_mpp, MPPThermalSetSoils
+    use MultiPhysicsProbThermal   , only : MPPThermalSetSoils
     use MultiPhysicsProbConstants , only : COND_BC
     use MultiPhysicsProbConstants , only : COND_SS
     use MultiPhysicsProbConstants , only : COND_HEAT_FLUX
@@ -933,6 +932,7 @@ contains
     ! !ARGUMENTS
     class(em_ptm_type)                   :: this
     class(emi_data_list) , intent(in)    :: l2e_init_list
+    type(bounds_type)    , intent(in)    :: bounds_clump
     !
     integer           :: c                        ! do loop indices
     integer           :: ieqn, ieqn_1, ieqn_2
@@ -945,11 +945,15 @@ contains
     integer  , pointer :: col_landunit(:)
     integer  , pointer :: lun_lakpoi(:)
     integer  , pointer :: lun_urbpoi(:)
+    integer            :: bounds_proc_begc, bounds_proc_endc
+
+    bounds_proc_begc     = bounds_clump%begc
+    bounds_proc_endc     = bounds_clump%endc
 
     call l2e_init_list%GetPointerToReal2D(this%index_l2e_init_col_zi, zi)
     call l2e_init_list%GetPointerToReal2D(this%index_l2e_init_col_z , z )
 
-    allocate (soil_top_conn_dist_dn(bounds_proc_endc_all-bounds_proc_begc_all+1))
+    allocate (soil_top_conn_dist_dn(bounds_proc_endc-bounds_proc_begc+1))
 
     do c = bounds_proc_begc, bounds_proc_endc
        soil_top_conn_dist_dn(c - bounds_proc_begc + 1) = z(c,1) - zi(c,0)
@@ -959,23 +963,23 @@ contains
     ! Add BC/SS
     !
     ieqn = 1
-    call thermal_mpp%GovEqnAddCondition(ieqn, COND_BC,           &
+    call this%thermal_mpp%GovEqnAddCondition(ieqn, COND_BC,           &
          'Heat_flux_BC_at_top_of_snow', 'W/m^2', COND_HEAT_FLUX, &
          SNOW_TOP_CELLS)
-    call thermal_mpp%GovEqnAddCondition(ieqn, COND_SS,           &
+    call this%thermal_mpp%GovEqnAddCondition(ieqn, COND_SS,           &
          'Absorbed_solar_radiation', 'W/m^2', COND_HEAT_RATE, &
          ALL_CELLS)
 
     ieqn = 2
-    call thermal_mpp%GovEqnAddCondition(ieqn, COND_BC,           &
+    call this%thermal_mpp%GovEqnAddCondition(ieqn, COND_BC,           &
          'Heat_flux_BC_at_top_of_standing_surface_water', 'W/m^2', COND_HEAT_FLUX, &
          SSW_TOP_CELLS)
 
     ieqn = 3
-    call thermal_mpp%GovEqnAddCondition(ieqn, COND_BC,           &
+    call this%thermal_mpp%GovEqnAddCondition(ieqn, COND_BC,           &
          'Heat_flux_BC_at_top_of_soil', 'W/m^2', COND_HEAT_FLUX, &
          SOIL_TOP_CELLS)
-    call thermal_mpp%GovEqnAddCondition(ieqn, COND_SS,           &
+    call this%thermal_mpp%GovEqnAddCondition(ieqn, COND_SS,           &
          'Absorbed_solar_radiation', 'W/m^2', COND_HEAT_RATE, &
          ALL_CELLS)
 
@@ -984,12 +988,12 @@ contains
     !
     ieqn_1 = 1
     ieqn_2 = 3
-    call thermal_mpp%GovEqnAddCouplingCondition(ieqn_1, ieqn_2, &
+    call this%thermal_mpp%GovEqnAddCouplingCondition(ieqn_1, ieqn_2, &
          SNOW_BOTTOM_CELLS, SOIL_TOP_CELLS)
 
     ieqn_1 = 2
     ieqn_2 = 3
-    call thermal_mpp%GovEqnAddCouplingCondition(ieqn_1, ieqn_2, &
+    call this%thermal_mpp%GovEqnAddCouplingCondition(ieqn_1, ieqn_2, &
          SSW_TOP_CELLS, SOIL_TOP_CELLS)
 
     !
@@ -1009,24 +1013,23 @@ contains
     !
     ieqn_2 = 3
     icond  = 2
-    call thermal_mpp%GovEqnUpdateBCConnectionSet(ieqn_2, icond, VAR_DIST_DN, &
+    call this%thermal_mpp%GovEqnUpdateBCConnectionSet(ieqn_2, icond, VAR_DIST_DN, &
          bounds_proc_endc - bounds_proc_begc + 1, &
          soil_top_conn_dist_dn)
     icond  = 3
-    call thermal_mpp%GovEqnUpdateBCConnectionSet(ieqn_2, icond, VAR_DIST_DN, &
+    call this%thermal_mpp%GovEqnUpdateBCConnectionSet(ieqn_2, icond, VAR_DIST_DN, &
          bounds_proc_endc - bounds_proc_begc + 1, &
          soil_top_conn_dist_dn)
 
   end subroutine add_conditions_to_goveqns
 
   !------------------------------------------------------------------------
-  subroutine allocate_auxvars()
+  subroutine allocate_auxvars(this)
     !
     ! !DESCRIPTION:
     !
     !
     ! !USES:
-    use MultiPhysicsProbThermal   , only : thermal_mpp
     use MultiPhysicsProbConstants , only : VAR_TEMPERATURE
     use MultiPhysicsProbConstants , only : VAR_THERMAL_COND
     use MultiPhysicsProbConstants , only : VAR_FRAC
@@ -1037,6 +1040,8 @@ contains
     !
     implicit none
     !
+    class(em_ptm_type)                   :: this
+    !
     integer           :: ieqn
     integer           :: nvars_for_coupling
     integer, pointer  :: var_ids_for_coupling(:)
@@ -1045,7 +1050,7 @@ contains
     !
     ! Allocate auxvars
     !
-    call thermal_mpp%AllocateAuxVars()
+    call this%thermal_mpp%AllocateAuxVars()
 
     !
     ! Set variables to be exchanged among the coupled equations
@@ -1061,11 +1066,11 @@ contains
     goveqn_ids_for_coupling (1) = 3
     goveqn_ids_for_coupling (2) = 3
 
-    call thermal_mpp%GovEqnSetCouplingVars(ieqn, nvars_for_coupling, &
+    call this%thermal_mpp%GovEqnSetCouplingVars(ieqn, nvars_for_coupling, &
          var_ids_for_coupling, goveqn_ids_for_coupling)
 
     ieqn = 2
-    call thermal_mpp%GovEqnSetCouplingVars(ieqn, nvars_for_coupling, &
+    call this%thermal_mpp%GovEqnSetCouplingVars(ieqn, nvars_for_coupling, &
          var_ids_for_coupling, goveqn_ids_for_coupling)
 
     deallocate(var_ids_for_coupling   )
@@ -1098,7 +1103,7 @@ contains
     goveqn_ids_for_coupling ( 9) = 2
     goveqn_ids_for_coupling (10) = 2
 
-    call thermal_mpp%GovEqnSetCouplingVars(ieqn, nvars_for_coupling, &
+    call this%thermal_mpp%GovEqnSetCouplingVars(ieqn, nvars_for_coupling, &
          var_ids_for_coupling, goveqn_ids_for_coupling)
 
     deallocate(var_ids_for_coupling   )
@@ -1107,24 +1112,22 @@ contains
   end subroutine allocate_auxvars
 
   !------------------------------------------------------------------------
-  subroutine add_material_properties(this, l2e_init_list)
+  subroutine add_material_properties(this, l2e_init_list, bounds_clump)
     !
     ! !DESCRIPTION:
     ! Initialization PETSc-based thermal model
     !
     ! !USES:
-    use MultiPhysicsProbThermal   , only : thermal_mpp
     use MultiPhysicsProbThermal   , only : MPPThermalSetSoils
     use clm_varcon                , only : spval
     use mpp_varpar                , only : nlevgrnd, nlevsno
-    use mpp_bounds                , only : bounds_proc_begc_all, bounds_proc_endc_all
-    use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
     !
     implicit none
     !
     ! !ARGUMENTS
     class(em_ptm_type)                   :: this
     class(emi_data_list) , intent(in)    :: l2e_init_list
+    type(bounds_type)    , intent(in)    :: bounds_clump
     !
     integer           :: c,g,fc,j,l               ! do loop indices
     integer, pointer  :: thermal_filter(:)
@@ -1145,6 +1148,11 @@ contains
     integer  , pointer :: lun_lakpoi(:)
     integer  , pointer :: lun_urbpoi(:)
 
+    integer            :: bounds_proc_begc, bounds_proc_endc
+
+    bounds_proc_begc     = bounds_clump%begc
+    bounds_proc_endc     = bounds_clump%endc
+
     call l2e_init_list%GetPointerToInt1D(this%index_l2e_init_col_active          , col_active   )
     call l2e_init_list%GetPointerToInt1D(this%index_l2e_init_col_landunit_index  , col_landunit )
     call l2e_init_list%GetPointerToInt1D(this%index_l2e_init_landunit_type       , lun_type     )
@@ -1158,8 +1166,8 @@ contains
 
     ! Allocate memory and setup data structure for VSFM-MPP
 
-    allocate (thermal_filter   (bounds_proc_begc:bounds_proc_endc_all      ))
-    allocate (thermal_lun_type (bounds_proc_begc:bounds_proc_endc_all      ))
+    allocate (thermal_filter   (bounds_proc_begc:bounds_proc_endc      ))
+    allocate (thermal_lun_type (bounds_proc_begc:bounds_proc_endc      ))
     allocate (thermal_watsat   (bounds_proc_begc:bounds_proc_endc,nlevgrnd ))
     allocate (thermal_csol     (bounds_proc_begc:bounds_proc_endc,nlevgrnd ))
     allocate (thermal_tkmg     (bounds_proc_begc:bounds_proc_endc,nlevgrnd ))
@@ -1185,11 +1193,12 @@ contains
              if (clm_tkmg(  c,j) /= spval) thermal_tkmg  (c,j) = clm_tkmg  (c,j)
              if (clm_tkdry( c,j) /= spval) thermal_tkdry (c,j) = clm_tkdry (c,j)
           enddo
+          j = 1;
 
        endif
     enddo
 
-    call MPPThermalSetSoils(thermal_mpp, bounds_proc_begc, &
+    call MPPThermalSetSoils(this%thermal_mpp, bounds_proc_begc, &
                            bounds_proc_endc,               &
                            thermal_filter,                 &
                            thermal_lun_type,               &
@@ -1202,7 +1211,8 @@ contains
   end subroutine add_material_properties
 
     !------------------------------------------------------------------------
-  subroutine EM_PTM_Solve(this, em_stage, dt, nstep, clump_rank, l2e_list, e2l_list)
+  subroutine EM_PTM_Solve(this, em_stage, dt, nstep, clump_rank, l2e_list, &
+       e2l_list, bounds_clump)
     !
     ! !DESCRIPTION:
     ! The PTM dirver subroutine
@@ -1220,11 +1230,12 @@ contains
     integer              , intent(in)    :: clump_rank
     class(emi_data_list) , intent(in)    :: l2e_list
     class(emi_data_list) , intent(inout) :: e2l_list
+    type(bounds_type)    , intent (in)   :: bounds_clump
     !
 
     select case (em_stage)
     case (EM_PTM_TBASED_SOLVE_STAGE)
-       call EM_PTM_TBased_Solve(this, dt, nstep, l2e_list, e2l_list)
+       call EM_PTM_TBased_Solve(this, dt, nstep, l2e_list, e2l_list, bounds_clump)
     case default
        write(iulog,*)'EM_PTM_Solve: Unknown em_stage.'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -1233,7 +1244,7 @@ contains
   end subroutine EM_PTM_Solve
 
     !------------------------------------------------------------------------
-  subroutine EM_PTM_TBased_Solve(this, dt, nstep, l2e_list, e2l_list)
+  subroutine EM_PTM_TBased_Solve(this, dt, nstep, l2e_list, e2l_list, bounds_clump)
     !
     ! !DESCRIPTION:
     ! The PETSc-based Thermal Model dirver
@@ -1242,7 +1253,6 @@ contains
     !
     ! !USES:
     use ExternalModelConstants    , only : EM_PTM_TBASED_SOLVE_STAGE
-    use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
     use mpp_varpar                , only : nlevgrnd, nlevsno
     use mpp_varcon                , only : capr
     use MultiPhysicsProbConstants , only : VAR_BC_SS_CONDITION
@@ -1272,6 +1282,7 @@ contains
     integer              , intent(in)    :: nstep
     class(emi_data_list) , intent(in)    :: l2e_list
     class(emi_data_list) , intent(inout) :: e2l_list
+    type(bounds_type)    , intent(in)    :: bounds_clump
     !
     ! !LOCAL VARIABLES:
     integer                              :: j,c,l,idx
@@ -1347,8 +1358,8 @@ contains
     PetscBool                            :: converged
     PetscInt                             :: converged_reason
 
-    begc = bounds_proc_begc
-    endc = bounds_proc_endc
+    begc = bounds_clump%begc
+    endc = bounds_clump%endc
 
     allocate(temperature_1d         ((endc-begc+1)*(nlevgrnd+nlevsno+1 )))
     allocate(liq_areal_den_1d       ((endc-begc+1)*(nlevgrnd+nlevsno+1 )))
@@ -1577,53 +1588,53 @@ contains
     enddo
 
     ! Set temperature
-    call thermal_mpp%sysofeqns%SetSolnPrevCLM(temperature_1d)
+    call this%thermal_mpp%sysofeqns%SetSolnPrevCLM(temperature_1d)
 
     ! Set h2soi_liq
     soe_auxvar_id = 1;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
          VAR_LIQ_AREAL_DEN, soe_auxvar_id, liq_areal_den_1d)
 
     ! Set h2osi_ice
     soe_auxvar_id = 1;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
          VAR_ICE_AREAL_DEN, soe_auxvar_id, ice_areal_den_1d)
 
     ! Set snow water
     soe_auxvar_id = 1;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
          VAR_SNOW_WATER, soe_auxvar_id, snow_water_1d)
 
     ! Set dz
     soe_auxvar_id = 1;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
          VAR_DZ, soe_auxvar_id, dz_1d)
 
     ! Set dist_up
     soe_auxvar_id = 1;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
          VAR_DIST_UP, soe_auxvar_id, dist_up_1d)
 
     ! Set dist_dn
     soe_auxvar_id = 1;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
          VAR_DIST_DN, soe_auxvar_id, dist_dn_1d)
 
     ! Set number of snow layers
     soe_auxvar_id = 1;
-    call thermal_mpp%sysofeqns%SetIDataFromCLM(AUXVAR_INTERNAL, &
+    call this%thermal_mpp%sysofeqns%SetIDataFromCLM(AUXVAR_INTERNAL, &
          VAR_NUM_SNOW_LYR, soe_auxvar_id, num_snow_layer_1d)
 
     ! Set if cell is active
-    call thermal_mpp%sysofeqns%SetBDataFromCLM(AUXVAR_INTERNAL, &
+    call this%thermal_mpp%sysofeqns%SetBDataFromCLM(AUXVAR_INTERNAL, &
          VAR_ACTIVE, is_active_1d)
 
     ! Set tuning factor
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
          VAR_TUNING_FACTOR, soe_auxvar_id, tsurf_tuning_factor_1d)
 
     soe_auxvar_id = 1;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
          VAR_FRAC, soe_auxvar_id, frac_1d)
 
     !
@@ -1632,17 +1643,17 @@ contains
 
     ! 1) top snow layer
     soe_auxvar_id = 1;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
          VAR_BC_SS_CONDITION, soe_auxvar_id, hs_snow_1d)
 
     ! 2) top standing water layer
     soe_auxvar_id = 2;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
          VAR_BC_SS_CONDITION, soe_auxvar_id, hs_sh2o_1d)
 
     ! 3) soil
     soe_auxvar_id = 3;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
          VAR_BC_SS_CONDITION, soe_auxvar_id, hs_soil_1d)
 
     !
@@ -1651,43 +1662,43 @@ contains
 
     ! 1) top snow layer
     soe_auxvar_id = 1;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
          VAR_DHS_DT, soe_auxvar_id, dhsdT_snow_1d)
 
     ! 2) top standing water layer
     soe_auxvar_id = 2;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
          VAR_DHS_DT, soe_auxvar_id, dhsdT_sh2o_1d)
 
     ! 3) soil
     soe_auxvar_id = 3;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
          VAR_DHS_DT, soe_auxvar_id, dhsdT_soil_1d)
 
     !
     ! Set fraction of soil not covered by snow and standing water
     !
     soe_auxvar_id = 3;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
          VAR_FRAC, soe_auxvar_id, frac_soil_1d)
 
 
     ! Set absorbed solar radiation
     soe_auxvar_id = 1;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_SS, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_SS, &
          VAR_BC_SS_CONDITION, soe_auxvar_id, sabg_snow_1d)
 
     ! Set absorbed solar radiation
     soe_auxvar_id = 2;
-    call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_SS, &
+    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_SS, &
          VAR_BC_SS_CONDITION, soe_auxvar_id, sabg_soil_1d)
 
 
     ! Preform Pre-StepDT operations
-    call thermal_mpp%sysofeqns%PreStepDT()
+    call this%thermal_mpp%sysofeqns%PreStepDT()
 
     ! Solve
-    call thermal_mpp%sysofeqns%StepDT(dt, nstep, &
+    call this%thermal_mpp%sysofeqns%StepDT(dt, nstep, &
          converged, converged_reason, ierr); CHKERRQ(ierr)
 
     ! Did the model converge
@@ -1697,7 +1708,7 @@ contains
     endif
 
     ! Get the updated soil tempreature
-    call thermal_mpp%sysofeqns%GetSoln(temperature_1d)
+    call this%thermal_mpp%sysofeqns%GetSoln(temperature_1d)
 
     ! Put temperature back in ALM structure for snow
     offset = 0

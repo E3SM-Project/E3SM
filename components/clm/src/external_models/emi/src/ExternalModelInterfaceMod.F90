@@ -36,8 +36,8 @@ module ExternalModelInterfaceMod
   class(emi_data_list)               , pointer :: e2l_driver_list(:)
   class(emi_data_dimension_list_type), pointer :: emid_dim_list
 #ifdef USE_PETSC_LIB
-  class(em_vsfm_type)                , pointer :: em_vsfm
-  class(em_ptm_type)                 , pointer :: em_ptm
+  class(em_vsfm_type)                , pointer :: em_vsfm(:)
+  class(em_ptm_type)                 , pointer :: em_ptm(:)
 #endif
   class(em_fates_type)               , pointer :: em_fates
 
@@ -74,6 +74,8 @@ contains
     index_em_pflotran    = 0
     index_em_vsfm        = 0
 
+    nclumps = get_proc_clumps()
+
     ! Is FATES active?
     if (use_ed) then
        num_em            = num_em + 1
@@ -99,7 +101,7 @@ contains
        num_em            = num_em + 1
        index_em_vsfm     = num_em
 #ifdef USE_PETSC_LIB
-       allocate(em_vsfm)
+       allocate(em_vsfm(nclumps))
 #endif
     endif
 
@@ -108,7 +110,7 @@ contains
        num_em            = num_em + 1
        index_em_ptm      = num_em
 #ifdef USE_PETSC_LIB
-       allocate(em_ptm)
+       allocate(em_ptm(nclumps))
 #endif
     endif
 
@@ -125,8 +127,6 @@ contains
     if (num_em > 1) then
        call endrun(msg='More than 1 external model is not supported.')
     endif
-
-    nclumps = get_proc_clumps()
 
     allocate(l2e_driver_list(num_em*nclumps))
     allocate(e2l_driver_list(num_em*nclumps))
@@ -261,26 +261,26 @@ contains
        allocate(e2l_init_list(nclumps))
 
        do clump_rank = 1, nclumps
-          iem = (index_em_vsfm-1)*nclumps + 1
+          iem = (index_em_vsfm-1)*nclumps + clump_rank
 
           call l2e_init_list(clump_rank)%Init()
           call e2l_init_list(clump_rank)%Init()
 
           ! Fill the data list:
           !  - Data need during the initialization
-          call em_vsfm%Populate_L2E_Init_List(l2e_init_list(clump_rank))
-          call em_vsfm%Populate_E2L_Init_List(e2l_init_list(clump_rank))
+          call em_vsfm(clump_rank)%Populate_L2E_Init_List(l2e_init_list(clump_rank))
+          call em_vsfm(clump_rank)%Populate_E2L_Init_List(e2l_init_list(clump_rank))
 
           !  - Data need during timestepping
-          call em_vsfm%Populate_L2E_List(l2e_driver_list(iem))
-          call em_vsfm%Populate_E2L_List(e2l_driver_list(iem))
+          call em_vsfm(clump_rank)%Populate_L2E_List(l2e_driver_list(iem))
+          call em_vsfm(clump_rank)%Populate_E2L_List(e2l_driver_list(iem))
        enddo
 
        !$OMP PARALLEL DO PRIVATE (clump_rank, iem, bounds_clump)
        do clump_rank = 1, nclumps
 
           call get_clump_bounds(clump_rank, bounds_clump)
-          iem = (index_em_vsfm-1)*nclumps + 1
+          iem = (index_em_vsfm-1)*nclumps + clump_rank
 
           ! Allocate memory for data
           call EMI_Setup_Data_List(l2e_init_list(clump_rank), bounds_clump)
@@ -325,7 +325,8 @@ contains
           call EMID_Verify_All_Data_Is_Set(l2e_init_list(clump_rank), em_stage)
 
           ! Initialize the external model
-          call em_vsfm%Init(l2e_init_list(clump_rank), e2l_init_list(clump_rank), iam)
+          call em_vsfm(clump_rank)%Init(l2e_init_list(clump_rank), e2l_init_list(clump_rank), &
+               iam, bounds_clump)
 
           ! Build a column level filter on which VSFM is active.
           ! This new filter would be used during the initialization to
@@ -392,24 +393,24 @@ contains
        allocate(l2e_init_list(nclumps))
 
        do clump_rank = 1, nclumps
-          iem = (index_em_ptm - 1)*nclumps + 1
+          iem = (index_em_ptm - 1)*nclumps + clump_rank
 
           call l2e_init_list(clump_rank)%Init()
 
           ! Fill the data list:
           !  - Data need during the initialization
-          call em_ptm%Populate_L2E_Init_List(l2e_init_list(clump_rank))
+          call em_ptm(clump_rank)%Populate_L2E_Init_List(l2e_init_list(clump_rank))
 
           !  - Data need during timestepping
-          call em_ptm%Populate_L2E_List(l2e_driver_list(iem))
-          call em_ptm%Populate_E2L_List(e2l_driver_list(iem))
+          call em_ptm(clump_rank)%Populate_L2E_List(l2e_driver_list(iem))
+          call em_ptm(clump_rank)%Populate_E2L_List(e2l_driver_list(iem))
        enddo
 
        !$OMP PARALLEL DO PRIVATE (clump_rank, iem, bounds_clump)
        do clump_rank = 1, nclumps
 
           call get_clump_bounds(clump_rank, bounds_clump)
-          iem = (index_em_ptm - 1)*nclumps + 1
+          iem = (index_em_ptm - 1)*nclumps + clump_rank
 
           ! Allocate memory for data
           call EMI_Setup_Data_List(l2e_init_list(iem), bounds_clump)
@@ -449,7 +450,8 @@ contains
           call EMID_Verify_All_Data_Is_Set(l2e_init_list(clump_rank), em_stage)
 
           ! Initialize the external model
-          call em_ptm%Init(l2e_init_list(clump_rank), e2l_init_list(clump_rank), iam)
+          call em_ptm(clump_rank)%Init(l2e_init_list(clump_rank), e2l_init_list(clump_rank), &
+               iam, bounds_clump)
 
           ! Clean up memory
           call l2e_init_list(clump_rank)%Destroy()
@@ -800,23 +802,27 @@ contains
 
     select case (em_id)
     case (EM_ID_BETR)
-       call EM_BETR_Solve(em_stage, dtime, nstep, bounds_clump, l2e_driver_list(iem), e2l_driver_list(iem))
+       call EM_BETR_Solve(em_stage, dtime, nstep, bounds_clump, l2e_driver_list(iem), &
+            e2l_driver_list(iem), bounds_clump)
 
     case (EM_ID_FATES)
-       call em_fates%Solve(em_stage, dtime, nstep, clump_rank, l2e_driver_list(iem), e2l_driver_list(iem))
+       call em_fates%Solve(em_stage, dtime, nstep, clump_rank, l2e_driver_list(iem), &
+            e2l_driver_list(iem), bounds_clump)
 
     case (EM_ID_PFLOTRAN)
 
     case (EM_ID_VSFM)
 #ifdef USE_PETSC_LIB
-       call em_vsfm%Solve(em_stage, dtime, nstep, clump_rank, l2e_driver_list(iem), e2l_driver_list(iem))
+       call em_vsfm(clump_rank)%Solve(em_stage, dtime, nstep, clump_rank, &
+            l2e_driver_list(iem), e2l_driver_list(iem), bounds_clump)
 #else
        call endrun('VSFM is on but code was not compiled with -DUSE_PETSC_LIB')
 #endif
 
     case (EM_ID_PTM)
 #ifdef USE_PETSC_LIB
-       call em_ptm%Solve(em_stage, dtime, nstep, clump_rank, l2e_driver_list(iem), e2l_driver_list(iem))
+       call em_ptm(clump_rank)%Solve(em_stage, dtime, nstep, clump_rank, &
+            l2e_driver_list(iem), e2l_driver_list(iem), bounds_clump)
 #else
        call endrun('PTM is on but code was not compiled with -DUSE_PETSC_LIB')
 #endif

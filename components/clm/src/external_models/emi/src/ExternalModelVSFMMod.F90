@@ -11,8 +11,9 @@ module ExternalModelVSFMMod
   use shr_log_mod                  , only : errMsg => shr_log_errMsg
   use ExternalModelInterfaceDataMod, only : emi_data_list, emi_data
   use mpp_varctl                   , only : iulog
-  use MultiPhysicsProbVSFM         , only : vsfm_mpp
   use ExternalModelBaseType        , only : em_base_type
+  use MultiPhysicsProbVSFM         , only : mpp_vsfm_type
+  use decompMod                    , only : bounds_type
   !
   implicit none
   !
@@ -86,7 +87,11 @@ module ExternalModelVSFMMod
      integer :: vsfm_cond_id_for_snow
      integer :: vsfm_cond_id_for_sublimation
      integer :: vsfm_cond_id_for_lateral_flux
+
+     type(mpp_vsfm_type) :: vsfm_mpp
+
    contains
+
      procedure, public :: Populate_L2E_Init_List  => EM_VSFM_Populate_L2E_Init_List
      procedure, public :: Populate_E2L_Init_List  => EM_VSFM_Populate_E2L_Init_List
      procedure, public :: Populate_L2E_List       => EM_VSFM_Populate_L2E_List
@@ -422,7 +427,7 @@ contains
 end subroutine EM_VSFM_Populate_E2L_List
 
   !------------------------------------------------------------------------
-  subroutine EM_VSFM_Init(this, l2e_init_list, e2l_init_list, iam)
+  subroutine EM_VSFM_Init(this, l2e_init_list, e2l_init_list, iam, bounds_clump)
 
     !
     ! !DESCRIPTION:
@@ -441,42 +446,43 @@ end subroutine EM_VSFM_Populate_E2L_List
     class(emi_data_list) , intent(in)    :: l2e_init_list
     class(emi_data_list) , intent(inout) :: e2l_init_list
     integer              , intent(in)    :: iam
+    type(bounds_type)    , intent(in)    :: bounds_clump
 
     !
     ! 1. Initialize the multi-physics-problem (MPP)
-    call initialize_mpp(iam)
+    call initialize_mpp(this, iam)
 
     ! 2. Add all meshes needed for the MPP
-    call add_meshes(this, l2e_init_list)
+    call add_meshes(this, l2e_init_list, bounds_clump)
 
     ! 3. Add all governing equations
-    call add_goveqns()
+    call add_goveqns(this)
 
     ! 4. Add boundary and source-sink conditions to all governing equations
-    call add_conditions_to_goveqns()
+    call add_conditions_to_goveqns(this)
 
     ! 5. Allocate memory to hold auxvars
-    call allocate_auxvars()
+    call allocate_auxvars(this)
 
     ! 6. Setup the MPP
-    call vsfm_mpp%SetupProblem(vsfm_use_dynamic_linesearch)
+    call this%vsfm_mpp%SetupProblem(vsfm_use_dynamic_linesearch)
 
     ! 7. Add material properities associated with all governing equations
-    call set_material_properties(this, l2e_init_list)
+    call set_material_properties(this, l2e_init_list, bounds_clump)
 
     ! 8. Set initial conditions
-    call set_initial_conditions(this, l2e_init_list)
+    call set_initial_conditions(this, l2e_init_list, bounds_clump)
 
     ! 9. Determine IDs for various source-sink condition
     call determine_condition_ids(this)
 
     !10.
-    call extract_data_for_alm(this, l2e_init_list, e2l_init_list)
+    call extract_data_for_alm(this, l2e_init_list, e2l_init_list, bounds_clump)
 
   end subroutine EM_VSFM_Init
 
   !------------------------------------------------------------------------
-  subroutine initialize_mpp(iam)
+  subroutine initialize_mpp(em_vsfm, iam)
     !
     ! !DESCRIPTION:
     ! Initialization VSFM
@@ -487,20 +493,21 @@ end subroutine EM_VSFM_Populate_E2L_List
     implicit none
     !
     ! !ARGUMENTS
+    class(em_vsfm_type) :: em_vsfm
     integer, intent(in) :: iam
 
     !
     ! Set up the multi-physics problem
     !
-    call vsfm_mpp%Init       ()
-    call vsfm_mpp%SetName    ('Variably-Saturated-Flow-Model')
-    call vsfm_mpp%SetID      (MPP_VSFM_SNES_CLM)
-    call vsfm_mpp%SetMPIRank (iam)
+    call em_vsfm%vsfm_mpp%Init       ()
+    call em_vsfm%vsfm_mpp%SetName    ('Variably-Saturated-Flow-Model')
+    call em_vsfm%vsfm_mpp%SetID      (MPP_VSFM_SNES_CLM)
+    call em_vsfm%vsfm_mpp%SetMPIRank (iam)
 
   end subroutine initialize_mpp
 
   !------------------------------------------------------------------------
-  subroutine add_meshes(this, l2e_init_list)
+  subroutine add_meshes(this, l2e_init_list, bounds_clump)
     !
     ! !DESCRIPTION:
     ! Add meshes used in the VSFM MPP
@@ -512,10 +519,10 @@ end subroutine EM_VSFM_Populate_E2L_List
     use mpp_varctl                , only : lateral_connectivity
     use mpp_varcon                , only : max_lunit
     use mpp_varctl                , only : vsfm_lateral_model_type
-    use mpp_bounds                , only : bounds_proc_begg_all, bounds_proc_endg_all
-    use mpp_bounds                , only : bounds_proc_begc_all, bounds_proc_endc_all
-    use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
-    use mpp_bounds                , only : nclumps
+    !use mpp_bounds                , only : bounds_proc_begg_all, bounds_proc_endg_all
+    !use mpp_bounds                , only : bounds_proc_begc_all, bounds_proc_endc_all
+    !use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
+    !use mpp_bounds                , only : nclumps
     use MultiPhysicsProbConstants , only : MESH_ALONG_GRAVITY
     use MultiPhysicsProbConstants , only : MESH_CLM_SOIL_COL
     use MultiPhysicsProbConstants , only : VAR_XC
@@ -550,6 +557,7 @@ end subroutine EM_VSFM_Populate_E2L_List
     !
     class(em_vsfm_type)                  :: this
     class(emi_data_list) , intent(in)    :: l2e_init_list
+    type(bounds_type)    , intent(in)    :: bounds_clump
     !
     ! !LOCAL VARIABLES:
     integer            :: c,g,fc,j,l           ! do loop indices
@@ -625,6 +633,10 @@ end subroutine EM_VSFM_Populate_E2L_List
     integer  , pointer                   :: lun_lakpoi(:)
     integer  , pointer                   :: lun_urbpoi(:)
 
+    integer :: bounds_proc_begg_all, bounds_proc_endg_all
+    integer :: bounds_proc_begc_all, bounds_proc_endc_all
+    integer :: bounds_proc_begc, bounds_proc_endc
+
     !----------------------------------------------------------------------
 
     call l2e_init_list%GetPointerToReal2D(this%index_l2e_init_col_zi             , zi           )
@@ -638,9 +650,16 @@ end subroutine EM_VSFM_Populate_E2L_List
     call l2e_init_list%GetPointerToInt1D(this%index_l2e_init_landunit_lakepoint  , lun_lakpoi   )
     call l2e_init_list%GetPointerToInt1D(this%index_l2e_init_landunit_urbanpoint , lun_urbpoi   )
 
-    if (nclumps /= 1) then
-       call endrun(msg='ERROR VSFM only supported for clumps = 1')
-    endif    
+    !if (nclumps /= 1) then
+    !   call endrun(msg='ERROR VSFM only supported for clumps = 1')
+    !endif
+
+    bounds_proc_begg_all = bounds_clump%begg_all
+    bounds_proc_endg_all = bounds_clump%endg_all
+    bounds_proc_begc_all = bounds_clump%begc_all
+    bounds_proc_endc_all = bounds_clump%endc_all
+    bounds_proc_begc     = bounds_clump%begc
+    bounds_proc_endc     = bounds_clump%endc
 
     allocate(xc_col            (bounds_proc_begc_all:bounds_proc_endc_all                    ))
     allocate(yc_col            (bounds_proc_begc_all:bounds_proc_endc_all                    ))
@@ -696,7 +715,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 #if 0
     if (lateral_connectivity) then
 
-       call vsfm_mpp%GetMPIRank(mpi_rank)
+       call this%vsfm_mpp%GetMPIRank(mpi_rank)
 
        call update_mesh_information (ncells_ghost, &
             ncols_ghost, xc_col, yc_col, zc_col,   &
@@ -763,7 +782,7 @@ end subroutine EM_VSFM_Populate_E2L_List
     !
     ! Set up the meshes
     !
-    call vsfm_mpp%SetNumMeshes(1)
+    call this%vsfm_mpp%SetNumMeshes(1)
 
     !
     ! Set mesh value
@@ -773,20 +792,20 @@ end subroutine EM_VSFM_Populate_E2L_List
     ncells_local = (bounds_proc_endc - bounds_proc_begc + 1)*nlev
     ncells_ghost = ncols_ghost*nlev
 
-    call vsfm_mpp%MeshSetName        (imesh, 'Soil mesh')
-    call vsfm_mpp%MeshSetOrientation (imesh, MESH_ALONG_GRAVITY)
-    call vsfm_mpp%MeshSetID          (imesh, MESH_CLM_SOIL_COL)
-    call vsfm_mpp%MeshSetDimensions  (imesh, ncells_local, ncells_ghost, nlev)
+    call this%vsfm_mpp%MeshSetName        (imesh, 'Soil mesh')
+    call this%vsfm_mpp%MeshSetOrientation (imesh, MESH_ALONG_GRAVITY)
+    call this%vsfm_mpp%MeshSetID          (imesh, MESH_CLM_SOIL_COL)
+    call this%vsfm_mpp%MeshSetDimensions  (imesh, ncells_local, ncells_ghost, nlev)
 
-    call vsfm_mpp%MeshSetGridCellFilter      (imesh, soil_filter)
-    call vsfm_mpp%MeshSetGeometricAttributes (imesh, VAR_XC   , soil_xc)
-    call vsfm_mpp%MeshSetGeometricAttributes (imesh, VAR_YC   , soil_yc)
-    call vsfm_mpp%MeshSetGeometricAttributes (imesh, VAR_ZC   , soil_zc)
-    call vsfm_mpp%MeshSetGeometricAttributes (imesh, VAR_DX   , soil_dx)
-    call vsfm_mpp%MeshSetGeometricAttributes (imesh, VAR_DY   , soil_dy)
-    call vsfm_mpp%MeshSetGeometricAttributes (imesh, VAR_DZ   , soil_dz)
-    call vsfm_mpp%MeshSetGeometricAttributes (imesh, VAR_AREA , soil_area)
-    call vsfm_mpp%MeshComputeVolume          (imesh)
+    call this%vsfm_mpp%MeshSetGridCellFilter      (imesh, soil_filter)
+    call this%vsfm_mpp%MeshSetGeometricAttributes (imesh, VAR_XC   , soil_xc)
+    call this%vsfm_mpp%MeshSetGeometricAttributes (imesh, VAR_YC   , soil_yc)
+    call this%vsfm_mpp%MeshSetGeometricAttributes (imesh, VAR_ZC   , soil_zc)
+    call this%vsfm_mpp%MeshSetGeometricAttributes (imesh, VAR_DX   , soil_dx)
+    call this%vsfm_mpp%MeshSetGeometricAttributes (imesh, VAR_DY   , soil_dy)
+    call this%vsfm_mpp%MeshSetGeometricAttributes (imesh, VAR_DZ   , soil_dz)
+    call this%vsfm_mpp%MeshSetGeometricAttributes (imesh, VAR_AREA , soil_area)
+    call this%vsfm_mpp%MeshComputeVolume          (imesh)
 
     !
     ! Set connection
@@ -794,18 +813,18 @@ end subroutine EM_VSFM_Populate_E2L_List
     if (vsfm_lateral_model_type == 'none') then
        discretization_type = DISCRETIZATION_VERTICAL_ONLY
 
-       call vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, &
+       call this%vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, &
             vert_nconn,  vert_conn_id_up, vert_conn_id_dn, &
             vert_conn_dist_up, vert_conn_dist_dn,  vert_conn_area, vert_conn_type)
 
     else if (vsfm_lateral_model_type == 'source_sink') then
        discretization_type = DISCRETIZATION_VERTICAL_WITH_SS
 
-       call vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, &
+       call this%vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, &
             vert_nconn,  vert_conn_id_up, vert_conn_id_dn, &
             vert_conn_dist_up, vert_conn_dist_dn, vert_conn_area, vert_conn_type)
 
-       call vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_LATERAL, &
+       call this%vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_LATERAL, &
             horz_nconn,  horz_conn_id_up, horz_conn_id_dn, &
             horz_conn_dist_up, horz_conn_dist_dn, horz_conn_area, horz_conn_type)
 
@@ -835,7 +854,7 @@ end subroutine EM_VSFM_Populate_E2L_List
        comb_conn_area    (vert_nconn+1:comb_nconn) = horz_conn_area    (1:horz_nconn)
        comb_conn_type    (vert_nconn+1:comb_nconn) = horz_conn_type    (1:horz_nconn)
 
-       call vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, &
+       call this%vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, &
             comb_nconn,  comb_conn_id_up, comb_conn_id_dn, &
             comb_conn_dist_up, comb_conn_dist_dn, comb_conn_area, comb_conn_type)
 
@@ -1213,7 +1232,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 
   !------------------------------------------------------------------------
 
-  subroutine add_goveqns()
+  subroutine add_goveqns(this)
     !
     ! !DESCRIPTION:
     !
@@ -1224,15 +1243,17 @@ end subroutine EM_VSFM_Populate_E2L_List
     !
     ! !ARGUMENTS
     implicit none
+    !
+    class(em_vsfm_type)                  :: this
 
-    call vsfm_mpp%AddGovEqn(GE_RE, 'Richards Equation ODE', MESH_CLM_SOIL_COL)
+    call this%vsfm_mpp%AddGovEqn(GE_RE, 'Richards Equation ODE', MESH_CLM_SOIL_COL)
 
-    call vsfm_mpp%SetMeshesOfGoveqns()    
+    call this%vsfm_mpp%SetMeshesOfGoveqns()
 
   end subroutine add_goveqns
 
   !------------------------------------------------------------------------
-  subroutine add_conditions_to_goveqns()
+  subroutine add_conditions_to_goveqns(this)
     !
     ! !DESCRIPTION:
     !
@@ -1250,42 +1271,43 @@ end subroutine EM_VSFM_Populate_E2L_List
     ! !ARGUMENTS
     implicit none
     !
+    class(em_vsfm_type)                  :: this
     PetscInt :: ieqn
 
     ieqn = 1
 
-    call vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
+    call this%vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
          'Infiltration_Flux', 'kg/s', COND_MASS_RATE, &
          SOIL_TOP_CELLS)
 
-    call vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
+    call this%vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
          'Evapotranspiration_Flux', 'kg/s', COND_MASS_RATE, &
          SOIL_CELLS)
 
-    call vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
+    call this%vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
          'Dew_Flux', 'kg/s', COND_MASS_RATE, &
          SOIL_TOP_CELLS)
 
-    call vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
+    call this%vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
          'Drainage_Flux', 'kg/s', COND_MASS_RATE, &
          SOIL_CELLS)
 
-    call vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
+    call this%vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
          'Snow_Disappearance_Flux', 'kg/s', COND_MASS_RATE, &
          SOIL_TOP_CELLS)
 
-    call vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
+    call this%vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
          'Sublimation_Flux', 'kg/s', COND_MASS_RATE, &
          SOIL_TOP_CELLS)
 
     if (vsfm_lateral_model_type == 'source_sink' ) then
 
-       call vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
+       call this%vsfm_mpp%GovEqnAddCondition(ieqn, COND_SS,   &
             'Lateral_flux', 'kg/s', COND_MASS_RATE, &
             SOIL_CELLS)
 
        if (vsfm_include_seepage_bc) then
-          call vsfm_mpp%GovEqnAddCondition(ieqn, COND_BC,   &
+          call this%vsfm_mpp%GovEqnAddCondition(ieqn, COND_BC,   &
                'Seepage_Flux', 'kg/s', COND_SEEPAGE_BC, &
                SOIL_TOP_CELLS)
        endif
@@ -1293,7 +1315,7 @@ end subroutine EM_VSFM_Populate_E2L_List
     else if (vsfm_lateral_model_type == 'three_dimensional') then
 
        if (vsfm_include_seepage_bc) then
-          call vsfm_mpp%GovEqnAddCondition(ieqn, COND_BC,   &
+          call this%vsfm_mpp%GovEqnAddCondition(ieqn, COND_BC,   &
                'Seepage_Flux', 'kg/s', COND_SEEPAGE_BC, &
                SOIL_TOP_CELLS)
        endif
@@ -1303,22 +1325,24 @@ end subroutine EM_VSFM_Populate_E2L_List
   end subroutine add_conditions_to_goveqns
 
   !------------------------------------------------------------------------
-  subroutine allocate_auxvars()
+  subroutine allocate_auxvars(this)
     !
     ! !DESCRIPTION:
     !
     !
     implicit none
+    !
+    class(em_vsfm_type)              :: this
 
     !
     ! Allocate auxvars
     !
-    call vsfm_mpp%AllocateAuxVars()
+    call this%vsfm_mpp%AllocateAuxVars()
 
   end subroutine allocate_auxvars
 
   !------------------------------------------------------------------------
-  subroutine set_material_properties(this, l2e_init_list)
+  subroutine set_material_properties(this, l2e_init_list, bounds_clump)
     !
     ! !DESCRIPTION:
     !
@@ -1331,14 +1355,15 @@ end subroutine EM_VSFM_Populate_E2L_List
     use mpp_varctl                , only : vsfm_satfunc_type
     use MultiPhysicsProbVSFM      , only : VSFMMPPSetSoils
     use EOSWaterMod               , only : DENSITY_TGDPB01
-    use mpp_bounds                , only : bounds_proc_begc_all, bounds_proc_endc_all
-    use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
+    !use mpp_bounds                , only : bounds_proc_begc_all, bounds_proc_endc_all
+    !use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
     !
     implicit none
     !
     ! !ARGUMENTS
     class(em_vsfm_type)              :: this
     class(emi_data_list), intent(in) :: l2e_init_list
+    type(bounds_type)   , intent(in) :: bounds_clump
     !
     ! !LOCAL VARIABLES:
     real(r8), pointer    :: clm_watsat(:,:)
@@ -1365,7 +1390,16 @@ end subroutine EM_VSFM_Populate_E2L_List
     integer  , pointer                   :: col_type(:)
     integer  , pointer                   :: col_landunit(:)
     integer  , pointer                   :: lun_type(:)
+
+    integer :: bounds_proc_begc_all, bounds_proc_endc_all
+    integer :: bounds_proc_begc, bounds_proc_endc
+
     !-----------------------------------------------------------------------
+
+    bounds_proc_begc_all = bounds_clump%begc_all
+    bounds_proc_endc_all = bounds_clump%endc_all
+    bounds_proc_begc     = bounds_clump%begc
+    bounds_proc_endc     = bounds_clump%endc
 
     call l2e_init_list%GetPointerToReal2D(this%index_l2e_init_parameter_watsatc      , clm_watsat       )
     call l2e_init_list%GetPointerToReal2D(this%index_l2e_init_parameter_hksatc       , clm_hksat        )
@@ -1419,7 +1453,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 
     ncols_ghost = 0
 
-    call VSFMMPPSetSoils(vsfm_mpp, bounds_proc_begc, bounds_proc_endc, &
+    call VSFMMPPSetSoils(this%vsfm_mpp, bounds_proc_begc, bounds_proc_endc, &
          ncols_ghost, vsfm_filter, &
          vsfm_watsat, vsfm_hksat, vsfm_bsw, vsfm_sucsat, &
          vsfm_residual_sat, vsfm_satfunc_type, DENSITY_TGDPB01)
@@ -1436,7 +1470,7 @@ end subroutine EM_VSFM_Populate_E2L_List
   end subroutine set_material_properties
 
   !------------------------------------------------------------------------
-  subroutine set_initial_conditions(this, l2e_init_list)
+  subroutine set_initial_conditions(this, l2e_init_list, bounds_clump)
     !
     ! !DESCRIPTION:
     !
@@ -1450,14 +1484,15 @@ end subroutine EM_VSFM_Populate_E2L_List
     use MultiPhysicsProbVSFM      , only : VSFMMPPSetSoils
     use MultiPhysicsProbConstants , only : GRAVITY_CONSTANT
     use MultiPhysicsProbConstants , only : PRESSURE_REF
-    use mpp_bounds                , only : bounds_proc_begc_all, bounds_proc_endc_all
-    use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
+    !use mpp_bounds                , only : bounds_proc_begc_all, bounds_proc_endc_all
+    !use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
     !
     implicit none
     !
     ! !ARGUMENTS
     class(em_vsfm_type)              :: this
     class(emi_data_list), intent(in) :: l2e_init_list
+    type(bounds_type)   , intent(in) :: bounds_clump
     !
     ! !LOCAL VARIABLES:
     real(r8), pointer    :: clm_zi(:,:)           ! interface level below a "z" level (m)
@@ -1474,7 +1509,14 @@ end subroutine EM_VSFM_Populate_E2L_List
     integer  , pointer                   :: col_type(:)
     integer  , pointer                   :: col_landunit(:)
     integer  , pointer                   :: lun_type(:)
+    integer :: bounds_proc_begc_all, bounds_proc_endc_all
+    integer :: bounds_proc_begc, bounds_proc_endc
     !-----------------------------------------------------------------------
+
+    bounds_proc_begc_all = bounds_clump%begc_all
+    bounds_proc_endc_all = bounds_clump%endc_all
+    bounds_proc_begc     = bounds_clump%begc
+    bounds_proc_endc     = bounds_clump%endc
 
     call l2e_init_list%GetPointerToReal1D(this%index_l2e_init_state_wtd    , clm_zwt      )
     call l2e_init_list%GetPointerToReal2D(this%index_l2e_init_col_zi            , clm_zi       )
@@ -1509,7 +1551,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 
     !call VSFMMPPSetICs(vsfm_mpp, bounds_proc_begc, bounds_proc_endc, &
     !zc_col, vsfm_filter, vsfm_zwt)
-    call vsfm_mpp%Restart(press_ic_1d)
+    call this%vsfm_mpp%Restart(press_ic_1d)
 
     ! Free up memory
     deallocate(press_ic_1d)
@@ -1523,7 +1565,6 @@ end subroutine EM_VSFM_Populate_E2L_List
     !  Determines the IDs of various source-sink conditions in VSFM
     !
     use mpp_varctl                       , only : vsfm_lateral_model_type
-    use MultiPhysicsProbVSFM             , only : vsfm_mpp
     use MultiPhysicsProbConstants        , only : COND_SS
     use MultiPhysicsProbConstants        , only : COND_NULL
     use mpp_varctl                       , only : iulog
@@ -1560,7 +1601,7 @@ end subroutine EM_VSFM_Populate_E2L_List
     end if
 
     ! Get the number of conditions
-    call vsfm_mpp%sysofeqns%GetConditionNames(COND_SS, COND_NULL, num_conds, cond_names)
+    call this%vsfm_mpp%sysofeqns%GetConditionNames(COND_SS, COND_NULL, num_conds, cond_names)
 
     if (num_conds /= num_conds_expected) then
       write(iulog,*)'In init_vsfm_condition_ids: Source-sink conditions /= ', num_conds_expected
@@ -1641,13 +1682,13 @@ end subroutine EM_VSFM_Populate_E2L_List
   end subroutine determine_condition_ids
 
   !-----------------------------------------------------------------------
-  subroutine extract_data_for_alm(this, l2e_init_list, e2l_init_list)
+  subroutine extract_data_for_alm(this, l2e_init_list, e2l_init_list, bounds_clump)
     !
     !DESCRIPTION
     !  Saves
     !
     use mpp_varctl                , only : restart_vsfm
-    use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
+    !use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
     use mpp_varpar                , only : nlevgrnd
     use MultiPhysicsProbConstants , only : AUXVAR_INTERNAL
     use MultiPhysicsProbConstants , only : VAR_MASS
@@ -1659,6 +1700,7 @@ end subroutine EM_VSFM_Populate_E2L_List
     class(em_vsfm_type)                  :: this
     class(emi_data_list) , intent(in)    :: l2e_init_list
     class(emi_data_list) , intent(inout) :: e2l_init_list
+    type(bounds_type)    , intent(in)    :: bounds_clump
 
     ! !LOCAL VARIABLES:
     integer                              :: p,c,fc,j,g  ! do loop indices
@@ -1680,13 +1722,16 @@ end subroutine EM_VSFM_Populate_E2L_List
     integer                              :: idx
     integer                              :: soe_auxvar_id
     real(r8)                             :: z_up, z_dn
-
+    integer :: bounds_proc_begc, bounds_proc_endc
     !-----------------------------------------------------------------------
+
+    bounds_proc_begc     = bounds_clump%begc
+    bounds_proc_endc     = bounds_clump%endc
 
     call l2e_init_list%GetPointerToReal1D(this%index_l2e_init_flux_mflx_snowlyr_col , l2e_mflx_snowlyr_col )
 
     call l2e_init_list%GetPointerToReal2D(this%index_l2e_init_state_soilp           , l2e_soilp            )
-    call l2e_init_list%GetPointerToReal2D(this%index_l2e_init_col_zi                     , l2e_col_zi           )
+    call l2e_init_list%GetPointerToReal2D(this%index_l2e_init_col_zi                , l2e_col_zi           )
 
     call e2l_init_list%GetPointerToReal1D(this%index_e2l_init_state_wtd             , e2l_zwt              )
     call e2l_init_list%GetPointerToReal1D(this%index_e2l_init_flux_mflx_snowlyr_col , e2l_mflx_snowlyr_col )
@@ -1697,12 +1742,12 @@ end subroutine EM_VSFM_Populate_E2L_List
 
     ! PreSolve: Allows saturation value to be computed based on ICs and stored
     !           in GE auxvar
-    call vsfm_mpp%sysofeqns%SetDtime(1.d0)
-    call vsfm_mpp%sysofeqns%PreSolve()
+    call this%vsfm_mpp%sysofeqns%SetDtime(1.d0)
+    call this%vsfm_mpp%sysofeqns%PreSolve()
 
     ! PostSolve: Allows saturation value stored in GE auxvar to be copied into
     !            SoE auxvar
-    call vsfm_mpp%sysofeqns%PostSolve()
+    call this%vsfm_mpp%sysofeqns%PostSolve()
 
     allocate(vsfm_soilp_col_1d((bounds_proc_endc-bounds_proc_begc+1)*nlevgrnd))
     allocate(vsfm_mass_col_1d ((bounds_proc_endc-bounds_proc_begc+1)*nlevgrnd))
@@ -1722,16 +1767,16 @@ end subroutine EM_VSFM_Populate_E2L_List
        end do
 
        ! Set the initial conditions
-       call vsfm_mpp%Restart(vsfm_soilp_col_1d)
+       call this%vsfm_mpp%Restart(vsfm_soilp_col_1d)
 
        ! PreSolve: Allows saturation value to be computed based on ICs and stored
        !           in GE auxvar
-       call vsfm_mpp%sysofeqns%SetDtime(1.d0)
-       call vsfm_mpp%sysofeqns%PreSolve()
+       call this%vsfm_mpp%sysofeqns%SetDtime(1.d0)
+       call this%vsfm_mpp%sysofeqns%PreSolve()
 
        ! PostSolve: Allows saturation value stored in GE auxvar to be copied into
        !            SoE auxvar
-       call vsfm_mpp%sysofeqns%PostSolve()
+       call this%vsfm_mpp%sysofeqns%PostSolve()
 
     else
        ! Set initial value of mflx_snowlyr_col for ALM
@@ -1740,14 +1785,14 @@ end subroutine EM_VSFM_Populate_E2L_List
 
     ! Get total mass
     soe_auxvar_id = 1;
-    call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL,   &
+    call this%vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL,   &
                                           VAR_MASS,          &
                                           soe_auxvar_id,     &
                                           vsfm_mass_col_1d)
 
     ! Get liquid soil matrix potential
     soe_auxvar_id = 1;
-    call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL,       &
+    call this%vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL,       &
                                           VAR_SOIL_MATRIX_POT,   &
                                           soe_auxvar_id,         &
                                           vsfm_smpl_col_1d)
@@ -1784,7 +1829,8 @@ end subroutine EM_VSFM_Populate_E2L_List
    end subroutine extract_data_for_alm
 
     !------------------------------------------------------------------------
-  subroutine EM_VSFM_Solve(this, em_stage, dt, nstep, clump_rank, l2e_list, e2l_list)
+   subroutine EM_VSFM_Solve(this, em_stage, dt, nstep, clump_rank, l2e_list, e2l_list, &
+        bounds_clump)
     !
     ! !DESCRIPTION:
     ! The VSFM dirver subroutine
@@ -1802,10 +1848,13 @@ end subroutine EM_VSFM_Populate_E2L_List
     integer              , intent(in)    :: clump_rank
     class(emi_data_list) , intent(in)    :: l2e_list
     class(emi_data_list) , intent(inout) :: e2l_list
+    type(bounds_type)    , intent(in)    :: bounds_clump
 
     select case (em_stage)
     case (EM_VSFM_SOIL_HYDRO_STAGE)
-       call EM_VSFM_Solve_Soil_Hydro(this, em_stage, dt, nstep, l2e_list, e2l_list)
+       call EM_VSFM_Solve_Soil_Hydro(this, em_stage, dt, nstep, l2e_list, e2l_list, &
+            bounds_clump)
+
     case default
        write(iulog,*)'EM_FATES_Solve: Unknown em_stage.'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -1814,7 +1863,8 @@ end subroutine EM_VSFM_Populate_E2L_List
   end subroutine EM_VSFM_Solve
 
     !------------------------------------------------------------------------
-  subroutine EM_VSFM_Solve_Soil_Hydro(this, em_stage, dt, nstep, l2e_list, e2l_list)
+  subroutine EM_VSFM_Solve_Soil_Hydro(this, em_stage, dt, nstep, l2e_list, e2l_list, &
+       bounds_clump)
     !
     ! !DESCRIPTION:
     ! Solve the Variably Saturated Flow Model (VSFM) in soil columns.
@@ -1825,7 +1875,6 @@ end subroutine EM_VSFM_Populate_E2L_List
     use shr_kind_mod              , only : r8 => shr_kind_r8
     use abortutils                , only : endrun
     use shr_log_mod               , only : errMsg => shr_log_errMsg
-    use MultiPhysicsProbVSFM      , only : vsfm_mpp
     use MultiPhysicsProbConstants , only : VAR_BC_SS_CONDITION
     use MultiPhysicsProbConstants , only : VAR_TEMPERATURE
     use MultiPhysicsProbConstants , only : VAR_PRESSURE
@@ -1839,7 +1888,7 @@ end subroutine EM_VSFM_Populate_E2L_List
     use MultiPhysicsProbConstants , only : AUXVAR_BC
     use MultiPhysicsProbConstants , only : AUXVAR_SS
     use mpp_varpar                , only : nlevgrnd
-    use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
+    !use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
     use petscsnes
     !
     implicit none
@@ -1851,6 +1900,7 @@ end subroutine EM_VSFM_Populate_E2L_List
     integer              , intent(in)    :: nstep
     class(emi_data_list) , intent(in)    :: l2e_list
     class(emi_data_list) , intent(inout) :: e2l_list
+    type(bounds_type)    , intent(in)    :: bounds_clump
     !
     ! !LOCAL VARIABLES:
     integer                              :: p,c,fc,j,g                                                       ! do loop indices
@@ -1954,7 +2004,11 @@ end subroutine EM_VSFM_Populate_E2L_List
     real(r8)  , pointer                  :: e2l_soilp(:,:)
     real(r8)  , pointer                  :: e2l_qrecharge(:)
 
+    integer :: bounds_proc_begc, bounds_proc_endc
     !-----------------------------------------------------------------------
+
+    bounds_proc_begc     = bounds_clump%begc
+    bounds_proc_endc     = bounds_clump%endc
 
       ! Get time step
 
@@ -2052,7 +2106,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 
       ! Get total mass
       soe_auxvar_id = 1;
-      call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL ,       &
+      call this%vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL ,       &
                                             VAR_MASS        ,       &
                                             soe_auxvar_id   ,       &
                                             vsfm_mass_col_1d        &
@@ -2115,35 +2169,35 @@ end subroutine EM_VSFM_Populate_E2L_List
 
       ! Set temperature
       soe_auxvar_id = 1;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL ,      &
+      call this%vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL ,      &
                                              VAR_TEMPERATURE ,      &
                                              soe_auxvar_id   ,      &
                                              t_soil_col_1d          &
                                             )
       ! Set Infiltration
       soe_auxvar_id = this%vsfm_cond_id_for_infil;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           ,  &
+      call this%vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           ,  &
                                              VAR_BC_SS_CONDITION ,  &
                                              soe_auxvar_id       ,  &
                                              mflx_infl_col_1d       &
                                             )
       ! Set ET
       soe_auxvar_id = this%vsfm_cond_id_for_et;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           ,  &
+      call this%vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           ,  &
                                              VAR_BC_SS_CONDITION ,  &
                                              soe_auxvar_id       ,  &
                                              mflx_et_col_1d         &
                                             )
       ! Set Dew
       soe_auxvar_id = this%vsfm_cond_id_for_dew;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           ,  &
+      call this%vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           ,  &
                                              VAR_BC_SS_CONDITION ,  &
                                              soe_auxvar_id       ,  &
                                              mflx_dew_col_1d        &
                                             )
       ! Set Drainage sink
       soe_auxvar_id = this%vsfm_cond_id_for_drainage;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           ,  &
+      call this%vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           ,  &
                                              VAR_BC_SS_CONDITION ,  &
                                              soe_auxvar_id       ,  &
                                              mflx_drain_col_1d      &
@@ -2151,14 +2205,14 @@ end subroutine EM_VSFM_Populate_E2L_List
       ! Set mass flux associated with disappearance of snow layer
       ! from last time step
       soe_auxvar_id = this%vsfm_cond_id_for_snow;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           ,  &
+      call this%vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           ,  &
                                              VAR_BC_SS_CONDITION ,  &
                                              soe_auxvar_id       ,  &
                                              mflx_snowlyr_col_1d    &
                                             )
       ! Set mass flux associated with sublimation of snow
       soe_auxvar_id = this%vsfm_cond_id_for_sublimation;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS            , &
+      call this%vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS            , &
                                              VAR_BC_SS_CONDITION  , &
                                              soe_auxvar_id        , &
                                              mflx_sub_snow_col_1d   &
@@ -2179,7 +2233,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 
       ! Set frac_liq
       soe_auxvar_id = 1;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL  , &
+      call this%vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL  , &
                                              VAR_FRAC_LIQ_SAT , &
                                              soe_auxvar_id    , &
                                              vsfm_fliq_col_1d   &
@@ -2196,7 +2250,7 @@ end subroutine EM_VSFM_Populate_E2L_List
          allocate(mflx_lateral_col_1d( (bounds_proc%endc - bounds_proc%begc+1)*nlevgrnd))
 
          soe_auxvar_id = 1;
-         call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL   , &
+         call this%vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL   , &
                                                VAR_PRESSURE      , &
                                                soe_auxvar_id     , &
                                                vsfm_soilp_col_1d   &
@@ -2206,23 +2260,23 @@ end subroutine EM_VSFM_Populate_E2L_List
          call ExchangeColumnLevelGhostData(bounds, nlevgrnd, vsfm_fliq_col_1d,  vsfm_fliq_col_ghosted_1d )
 
          soe_auxvar_id = 1;
-         call vsfm_mpp%sysofeqns%SetDataFromCLMForGhost(AUXVAR_INTERNAL           , &
+         call this%vsfm_mpp%sysofeqns%SetDataFromCLMForGhost(AUXVAR_INTERNAL           , &
                                                         VAR_PRESSURE              , &
                                                         soe_auxvar_id             , &
                                                         vsfm_soilp_col_ghosted_1d   &
                                                        )
 
          soe_auxvar_id = 1;
-         call vsfm_mpp%sysofeqns%SetDataFromCLMForGhost(AUXVAR_INTERNAL          , &
+         call this%vsfm_mpp%sysofeqns%SetDataFromCLMForGhost(AUXVAR_INTERNAL          , &
                                                         VAR_FRAC_LIQ_SAT         , &
                                                         soe_auxvar_id            , &
                                                         vsfm_fliq_col_ghosted_1d   &
                                                        )
 
-         call vsfm_mpp%sysofeqns%ComputeLateralFlux(dtime)
+         call this%vsfm_mpp%sysofeqns%ComputeLateralFlux(dtime)
 
          soe_auxvar_id = this%vsfm_cond_id_for_lateral_flux;
-         call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_SS   , &
+         call this%vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_SS   , &
                                                VAR_BC_SS_CONDITION      , &
                                                soe_auxvar_id     , &
                                                mflx_lateral_col_1d   &
@@ -2261,7 +2315,7 @@ end subroutine EM_VSFM_Populate_E2L_List
             allocate(seepage_press_1d( (bounds_proc%endc - bounds_proc%begc+1)))
             seepage_press_1d(:) = 101325.d0
             soe_auxvar_id = 1
-            call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_BC,  &
+            call this%vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_BC,  &
                  VAR_BC_SS_CONDITION, soe_auxvar_id, seepage_press_1d)
             deallocate(seepage_press_1d)
          endif
@@ -2274,7 +2328,7 @@ end subroutine EM_VSFM_Populate_E2L_List
             allocate(seepage_press_1d( (bounds_proc%endc - bounds_proc%begc+1)))
             seepage_press_1d(:) = 101325.d0
             soe_auxvar_id = 1
-            call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_BC,  &
+            call this%vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_BC,  &
                  VAR_BC_SS_CONDITION, soe_auxvar_id, seepage_press_1d)
             deallocate(seepage_press_1d)
          endif
@@ -2283,10 +2337,10 @@ end subroutine EM_VSFM_Populate_E2L_List
 #endif
 
       ! Preform Pre-StepDT operations
-      call vsfm_mpp%sysofeqns%PreStepDT()
+      call this%vsfm_mpp%sysofeqns%PreStepDT()
 
       ! Get default SNES settings
-      call SNESGetTolerances(vsfm_mpp%sysofeqns%snes , &
+      call SNESGetTolerances(this%vsfm_mpp%sysofeqns%snes , &
                              atol_default            , &
                              rtol_default            , &
                              stol_default            , &
@@ -2312,7 +2366,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 
          iter_count = iter_count + 1
 
-         call SNESSetTolerances(vsfm_mpp%sysofeqns%snes , &
+         call SNESSetTolerances(this%vsfm_mpp%sysofeqns%snes , &
                                 atol_default            , &
                                 rtol                    , &
                                 stol                    , &
@@ -2322,7 +2376,7 @@ end subroutine EM_VSFM_Populate_E2L_List
                                );
          CHKERRQ(ierr)
 
-         call vsfm_mpp%sysofeqns%StepDT(dtime, nstep, &
+         call this%vsfm_mpp%sysofeqns%StepDT(dtime, nstep, &
               converged, converged_reason, ierr); CHKERRQ(ierr)
 
          if (.not. converged) then
@@ -2336,14 +2390,14 @@ end subroutine EM_VSFM_Populate_E2L_List
 
             ! Reduce total run length time by the amount VSFM ran successfully
             ! with previous solver settings
-            dtime = dtime - vsfm_mpp%sysofeqns%time
+            dtime = dtime - this%vsfm_mpp%sysofeqns%time
 
             if (diverged_count > 1) then
                ! Set frac_liq
                vsfm_fliq_col_1d(:) = 1.d0
                soe_auxvar_id = 1;
 
-               call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL  , &
+               call this%vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL  , &
                                                       VAR_FRAC_LIQ_SAT , &
                                                       soe_auxvar_id    , &
                                                       vsfm_fliq_col_1d   &
@@ -2356,7 +2410,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 
             ! Get Liquid saturation
             soe_auxvar_id = 1;
-            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL , &
+            call this%vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL , &
                                                   VAR_LIQ_SAT     , &
                                                   soe_auxvar_id   , &
                                                   vsfm_sat_col_1d   &
@@ -2364,7 +2418,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 
             ! Get total mass
             soe_auxvar_id = 1;
-            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL  , &
+            call this%vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL  , &
                                                   VAR_MASS         , &
                                                   soe_auxvar_id    , &
                                                   vsfm_mass_col_1d   &
@@ -2372,7 +2426,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 
             ! Get liquid soil matrix potential
             soe_auxvar_id = 1;
-            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL     , &
+            call this%vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL     , &
                                                   VAR_SOIL_MATRIX_POT , &
                                                   soe_auxvar_id       , &
                                                   vsfm_smpl_col_1d      &
@@ -2381,7 +2435,7 @@ end subroutine EM_VSFM_Populate_E2L_List
             ! Get soil liquid pressure. This is the prognostic state of VSFM
             ! and needs to be saved in the restart file.
             soe_auxvar_id = 1;
-            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL   , &
+            call this%vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL   , &
                                                   VAR_PRESSURE      , &
                                                   soe_auxvar_id     , &
                                                   vsfm_soilp_col_1d   &
@@ -2402,7 +2456,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 
                if (vsfm_include_seepage_bc) then
                   soe_auxvar_id = 1;
-                  call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_BC              ,  &
+                  call this%vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_BC              ,  &
                                                         VAR_BC_MASS_EXCHANGED  ,  &
                                                         soe_auxvar_id          ,  &
                                                         seepage_mass_exc_col_1d   &
@@ -2448,7 +2502,7 @@ end subroutine EM_VSFM_Populate_E2L_List
                seepage_mass_exc_col_1d(:) = 0.d0
 
                soe_auxvar_id = 1
-               call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL            , &
+               call this%vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL            , &
                                                      VAR_LATERAL_MASS_EXCHANGED , &
                                                      soe_auxvar_id              , &
                                                      lat_mass_exc_col_1d          &
@@ -2456,7 +2510,7 @@ end subroutine EM_VSFM_Populate_E2L_List
 
                if (vsfm_include_seepage_bc) then
                   soe_auxvar_id = 1;
-                  call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_BC              ,  &
+                  call this%vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_BC              ,  &
                                                         VAR_BC_MASS_EXCHANGED  ,  &
                                                         soe_auxvar_id          ,  &
                                                         seepage_mass_exc_col_1d   &
@@ -2592,7 +2646,7 @@ end subroutine EM_VSFM_Populate_E2L_List
                mass_end_col(:)     = 0._r8
 
                ! Perform Pre-StepDT operations
-               call vsfm_mpp%sysofeqns%PreStepDT()
+               call this%vsfm_mpp%sysofeqns%PreStepDT()
 
             else
 
@@ -2620,10 +2674,10 @@ end subroutine EM_VSFM_Populate_E2L_List
       enddo
 #endif
 
-      call SNESSetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol_default, &
+      call SNESSetTolerances(this%vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol_default, &
                              max_it_default, max_f_default, ierr); CHKERRQ(ierr)
 
-      call vsfm_mpp%sysofeqns%PostStepDT()
+      call this%vsfm_mpp%sysofeqns%PostStepDT()
 
 #if VSFM_DEBUG
       write(iulog,*)'VSFM-DEBUG: nstep                      = ',get_nstep()

@@ -153,7 +153,8 @@ contains
   end subroutine EM_BETR_Populate_E2L_List
 
     !------------------------------------------------------------------------
-  subroutine EM_BETR_Solve(em_stage, dt, nstep, bounds, l2e_list, e2l_list)
+  subroutine EM_BETR_Solve(em_stage, dt, nstep, bounds, l2e_list, e2l_list, &
+       bounds_clump)
     !
     ! !DESCRIPTION:
     ! 
@@ -175,6 +176,7 @@ contains
     type(bounds_type)    , intent(in)    :: bounds
     class(emi_data_list) , intent(in)    :: l2e_list
     class(emi_data_list) , intent(inout) :: e2l_list
+    type(bounds_type)    , intent (in)   :: bounds_clump
 
     select case(em_stage)
 

@@ -119,6 +119,7 @@ contains
 
        call EMI_Driver(EM_ID_VSFM, EM_VSFM_SOIL_HYDRO_STAGE, dt = get_step_size()*1.0_r8, &
             number_step = get_nstep(), &
+            clump_rank  = bounds%clump_index, &
             num_hydrologyc=num_hydrologyc, filter_hydrologyc=filter_hydrologyc, &
             soilhydrology_vars=soilhydrology_vars, soilstate_vars=soilstate_vars, &
             waterflux_vars=waterflux_vars, waterstate_vars=waterstate_vars, &

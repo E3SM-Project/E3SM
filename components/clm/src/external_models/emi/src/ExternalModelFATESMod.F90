@@ -7,6 +7,7 @@ module ExternalModelFATESMod
   use abortutils                   , only : endrun
   use shr_kind_mod                 , only : r8 => shr_kind_r8
   use shr_log_mod                  , only : errMsg => shr_log_errMsg
+  use decompMod                    , only : bounds_type
   use ExternalModelInterfaceDataMod, only : emi_data_list, emi_data
   use ExternalModelBaseType        , only : em_base_type
   !
@@ -175,7 +176,8 @@ contains
   end subroutine EM_FATES_Populate_E2L_List_For_Surfac_Stage
 
     !------------------------------------------------------------------------
-  subroutine EM_FATES_Solve(this, em_stage, dt, nstep, clump_rank, l2e_list, e2l_list)
+  subroutine EM_FATES_Solve(this, em_stage, dt, nstep, clump_rank, l2e_list, e2l_list, &
+       bounds_clump)
     !
     ! !DESCRIPTION:
     !
@@ -196,6 +198,7 @@ contains
     integer              , intent(in)    :: clump_rank
     class(emi_data_list) , intent(in)    :: l2e_list
     class(emi_data_list) , intent(inout) :: e2l_list
+    type(bounds_type)    , intent (in)   :: bounds_clump
 
     select case(em_stage)
     case (EM_FATES_SUNFRAC_STAGE)
