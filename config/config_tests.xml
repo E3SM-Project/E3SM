@@ -49,6 +49,13 @@ ERS    exact restart from startup (default 6 days + 5 days)
        if $IOP_ON is set then suffix is rest_iop
        compare component history files ".base" and ".rest" at day 11
 
+ERS2    exact restart from startup (default 6 days + 5 days)
+       do an 11 day initial test without making restarts     (suffix: base)
+       if $IOP_ON is set then suffix is base_iop
+       do an 11 day restart test stopping at day 6 with a restart, then resuming from restart at day 6 (suffix: rest)
+       if $IOP_ON is set then suffix is rest_iop
+       compare component history files ".base" and ".rest" at day 11
+
 ERP    pes counts hybrid (open-MP/MPI) restart bfb test from startup, default 6 days + 5 days (previousy PER)
        initial pes set up out of the box
        do an 11 day initial test - write a restart at day 6     (suffix base)
@@ -248,6 +255,19 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
   </test>
 
   <test NAME="ERS">
+    <DESC>exact restart from startup, default 6 days + 5 days</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <REST_N>$STOP_N / 2 + 1</REST_N>
+    <REST_OPTION>$STOP_OPTION</REST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+  </test>
+
+  <test NAME="ERS2">
     <DESC>exact restart from startup, default 6 days + 5 days</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
