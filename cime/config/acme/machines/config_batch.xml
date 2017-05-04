@@ -365,7 +365,7 @@
        <directive>--exclusive</directive>
      </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr2</queue>
+      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
     </queues>
    </batch_system>
 
@@ -375,7 +375,7 @@
        <directive>--exclusive</directive>
      </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr3</queue>
+      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
     </queues>
    </batch_system>
 
