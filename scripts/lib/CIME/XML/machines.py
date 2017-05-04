@@ -256,7 +256,8 @@ class Machines(GenericXML):
         >>> machobj.is_valid_MPIlib("fake-mpi")
         False
         """
-        return mpilib == "mpi-serial" or self.get_field_from_list("MPILIBS", reqval=mpilib, attributes=attributes) is not None
+        return mpilib == "mpi-serial" or \
+            self.get_field_from_list("MPILIBS", reqval=mpilib, attributes=attributes) is not None
 
     def has_batch_system(self):
         """

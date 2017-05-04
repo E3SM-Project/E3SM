@@ -355,7 +355,7 @@ class EnvMachSpecific(EnvBase):
 
                     if xml_attrib == value:
                         matches += 1
-                    elif key == "mpilib" and xml_attrib == "default":
+                    elif key == "mpilib" and value != "mpi-serial" and xml_attrib == "default":
                         is_default = True
                     else:
                         all_match = False
@@ -373,6 +373,10 @@ class EnvMachSpecific(EnvBase):
                     if matches > best_num_matched:
                         best_match = mpirun_node
                         best_num_matched = matches
+
+        # if there are no special arguments required for mpi-serial it need not have an entry in config_machines.xml
+        if "mpilib" in attribs and attribs["mpilib"] == "mpi-serial" and best_match is None:
+            return "",[]
 
         expect(best_match is not None or default_match is not None,
                "Could not find a matching MPI for attributes: %s" % attribs)
