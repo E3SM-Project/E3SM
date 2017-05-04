@@ -5237,9 +5237,6 @@ contains
        departurePoint,                      &
        on_a_sphere)
 
-    use cice_diagnostics, only: &
-         cice_warning_message
-
     type(domain_type), intent(in) :: &
          domain             !< Input: domain
 
@@ -5315,14 +5312,11 @@ contains
 
        if (trajectoryLength > minLengthEdgesOnVertex(iVertex)) then
           write(errorMessage,*) 'Potential CFL violation in IR advection, global vertex ID =', indexToVertexID(iVertex)
-          call mpas_log_write(trim(errorMessage), MPAS_LOG_WARN)
-          call cice_warning_message(domain, errorMessage)
+          call mpas_log_write(trim(errorMessage), MPAS_LOG_ERR) ! We will not trigger a critical error later
           write(errorMessage,*) 'Speed at vertex =', trajectoryLength/dt
-          call mpas_log_write(trim(errorMessage), MPAS_LOG_WARN)
-          call cice_warning_message(domain, errorMessage)
+          call mpas_log_write(trim(errorMessage), MPAS_LOG_ERR) ! We will not trigger a critical error later
           write(errorMessage,*) 'Maximum safe speed =', minLengthEdgesOnVertex(iVertex)/dt
-          call mpas_log_write(trim(errorMessage), MPAS_LOG_WARN)
-          call cice_warning_message(domain, errorMessage)
+          call mpas_log_write(trim(errorMessage), MPAS_LOG_ERR) ! We will not trigger a critical error later
        endif
 
     enddo
@@ -7492,9 +7486,10 @@ contains
              do iCell = 1, nCellsSolve
                 do iCat = 1, nCategories
                    if (thisTracer % array2D(iCat,iCell) < 0.0_RKIND) then
-                      call mpas_log_write('IR: Negative mass in IR: iCat, iCell, value: $i $i $r', &
+                      call mpas_log_write('IR: Negative mass in IR: iCat, iCell, global iCell, value: $i $i $i $r', &
                            messageType=MPAS_LOG_ERR, &
-                           intArgs=(/iCat, iCell/), realArgs=(/thisTracer % array2D(iCat,iCell)/))
+                           intArgs=(/iCat, iCell, indexToCellID(iCell)/), &
+                           realArgs=(/thisTracer % array2D(iCat,iCell)/))
                       ierr = SEAICE_ERROR_IR_NEG_MASS
                       return
                    endif
@@ -7507,9 +7502,10 @@ contains
                 do iCat = 1, nCategories
                    do iLayer = 1, nLayers
                       if (thisTracer % array3D(iLayer,iCat,iCell) < 0.0_RKIND) then
-                         call mpas_log_write('IR: Negative mass in IR: iLayer, iCat, iCell, value: $i $i $i $r', &
+                         call mpas_log_write('IR: Negative mass in IR: iLayer, iCat, iCell, global iCell, value: $i $i $i $i $r', &
                               messageType=MPAS_LOG_ERR, &
-                              intArgs=(/iLayer, iCat, iCell/), realArgs=(/thisTracer % array3D(iLayer,iCat,iCell)/))
+                              intArgs=(/iLayer, iCat, iCell, indexToCellID(iCell)/), &
+                              realArgs=(/thisTracer % array3D(iLayer,iCat,iCell)/))
                          ierr = SEAICE_ERROR_IR_NEG_MASS
                          return
                       endif
@@ -8450,7 +8446,8 @@ contains
          nCellsSolve        ! number of locally owned cells on block
 
     integer, dimension(:), pointer :: &
-         nEdgesOnCell       ! number of edges for each cell
+         nEdgesOnCell, &    ! number of edges for each cell
+         indexToCellID      ! index to the global cell ID
 
     integer, dimension(:,:), pointer ::  &
          cellsOnCell        ! cell index for each edge neighbor of a given cell
@@ -8486,6 +8483,7 @@ contains
     call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
     call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
     call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+    call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
 
     ! loop over tracers
 
@@ -8574,8 +8572,9 @@ contains
 
                             call mpas_log_write(' ', MPAS_LOG_ERR)
                             call mpas_log_write('IR advection, monotonicity violation!', MPAS_LOG_ERR)
-                            call mpas_log_write('Tracer, iCat, iCell ='//trim(thisTracer % tracerName)//" $i $i", &
-                                 MPAS_LOG_ERR, intArgs=(/iCat, iCell/))
+                            call mpas_log_write(&
+                                 'Tracer, iCat, iCell, global iCell ='//trim(thisTracer % tracerName)//" $i $i $i", &
+                                 MPAS_LOG_ERR, intArgs=(/iCat, iCell, indexToCellID(iCell)/))
                             call mpas_log_write('Old min value in neighborhood = $f', &
                                  MPAS_LOG_ERR, realArgs=(/thisTracer % localMin2D(iCat,iCell)/))
                             call mpas_log_write('New value in cell = $r', &
@@ -8591,8 +8590,9 @@ contains
 
                             call mpas_log_write(' ', MPAS_LOG_ERR)
                             call mpas_log_write('IR advection, monotonicity violation!', MPAS_LOG_ERR)
-                            call mpas_log_write('Tracer, iCat, iCell = '//trim(thisTracer % tracerName)//' $i $i', &
-                                 MPAS_LOG_ERR, intArgs=(/iCat, iCell/))
+                            call mpas_log_write(&
+                                 'Tracer, iCat, iCell, global iCell = '//trim(thisTracer % tracerName)//' $i $i $i', &
+                                 MPAS_LOG_ERR, intArgs=(/iCat, iCell, indexToCellID(iCell)/))
                             call mpas_log_write('Old max value in neighborhood = $r', &
                                  MPAS_LOG_ERR, realArgs=(/thisTracer % localMax2D(iCat,iCell)/))
                             call mpas_log_write('New value in cell = $r', &
@@ -8705,9 +8705,9 @@ contains
 
                                call mpas_log_write(' ', MPAS_LOG_ERR)
                                call mpas_log_write('IR advection, monotonicity violation!', MPAS_LOG_ERR)
-                               call mpas_log_write('Tracer, iLayer,iCat, iCell = '//&
-                                    trim(thisTracer % tracerName)//' $i $i $i', &
-                                    MPAS_LOG_ERR, intArgs=(/iLayer, iCat, iCell/))
+                               call mpas_log_write('Tracer, iLayer, iCat, iCell, global iCell = '//&
+                                    trim(thisTracer % tracerName)//' $i $i $i $i', &
+                                    MPAS_LOG_ERR, intArgs=(/iLayer, iCat, iCell, indexToCellID(iCell)/))
                                call mpas_log_write('Old min value in neighborhood = $r', MPAS_LOG_ERR, &
                                     realArgs=(/thisTracer % localMin3D(iLayer,iCat,iCell)/))
                                call mpas_log_write('New value in cell = $r', MPAS_LOG_ERR, &
@@ -8724,9 +8724,9 @@ contains
 
                                call mpas_log_write(' ', MPAS_LOG_ERR)
                                call mpas_log_write('IR advection, monotonicity violation!', MPAS_LOG_ERR)
-                               call mpas_log_write('Tracer, iLayer,iCat, iCell = '//&
-                                    trim(thisTracer % tracerName)//' $i $i $i', &
-                                    MPAS_LOG_ERR, intArgs=(/iLayer, iCat, iCell/))
+                               call mpas_log_write('Tracer, iLayer, iCat, iCell, global iCell = '//&
+                                    trim(thisTracer % tracerName)//' $i $i $i $i', &
+                                    MPAS_LOG_ERR, intArgs=(/iLayer, iCat, iCell, indexToCellID(iCell)/))
                                call mpas_log_write('Old max value in neighborhood = $r', MPAS_LOG_ERR, &
                                     realArgs=(/thisTracer % localMax3D(iLayer,iCat,iCell)/))
                                call mpas_log_write('New value in cell = $r', MPAS_LOG_ERR, &

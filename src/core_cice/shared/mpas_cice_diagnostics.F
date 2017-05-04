@@ -26,8 +26,7 @@ module cice_diagnostics
   public :: &
        cice_initialize_time_diagnostics, &
        cice_set_time_diagnostics, &
-       cice_check_state, &
-       cice_warning_message
+       cice_check_state
 
 contains
 
@@ -393,56 +392,6 @@ contains
 20  format(a,a,a,i9,a,e12.4,a,e12.4,a,e12.4,a,e12.4)
 
   end subroutine cice_check_state
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  cice_warning_message
-!
-!> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 13th May 2016
-!> \details
-!>
-!
-!-----------------------------------------------------------------------
-
-  subroutine cice_warning_message(domain, message)
-
-    type(domain_type), intent(in) :: &
-         domain
-
-    character(len=*), intent(in) :: &
-         message
-
-    integer :: &
-         errorUnit, &
-         iostat
-
-    character(len=strKIND) :: &
-         filename
-
-    type(MPAS_pool_type), pointer :: &
-         diagnosticsPool
-
-    character(len=strKIND), pointer :: &
-         xtime
-
-    call mpas_new_unit(errorUnit)
-    write(filename,fmt='(a,i6.6,a)') "mpas_seaice_state_test_", domain % dminfo % my_proc_id, ".log"
-    open(errorUnit, file=trim(filename), position="append", iostat=iostat)
-    if (iostat /= 0) then
-       call mpas_log_write("cice_warning_message: Problem opening state check file $i", messageType=MPAS_LOG_CRIT, intArgs=(/iostat/))
-    endif
-
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "diagnostics", diagnosticsPool)
-    call MPAS_pool_get_array(diagnosticsPool, "xtime", xtime)
-
-    write(errorUnit,fmt='(a,a,a,a)') "Time=", trim(xtime), ", ", trim(message)
-
-    close(errorUnit)
-    call mpas_release_unit(errorUnit)
-
-  end subroutine cice_warning_message
 
 !-----------------------------------------------------------------------
 
