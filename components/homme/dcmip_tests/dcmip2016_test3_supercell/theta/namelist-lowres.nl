@@ -6,7 +6,7 @@
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2016_test3"         ! test identifier
-  ne                = 7 !15                     ! number of elements per cube face
+  ne                = 15 !7                         ! number of elements per cube face
   qsize             = 4                         ! num tracer fields: qv,qc,qr
   nmax              = 36000                     ! 7200s(120min)/tstep
   statefreq         = 10                        ! number of steps between screen dumps

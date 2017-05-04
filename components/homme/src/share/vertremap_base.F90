@@ -140,10 +140,10 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
       endif
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! quadratic splies with UK met office monotonicity constraints  !!
+      !! quadratic splines with UK met office monotonicity constraints !!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      zkr  = 99
+      zkr  = 0 !99
       ilev = 2
       zkr(1) = 1
       zkr(nlev+1) = nlev
@@ -156,6 +156,11 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
           endif
         enddo
       enddo kloop
+
+      if(any(zkr==0)) then
+        write(6,*) "Invalid zkr values in remap1."
+        abort=.true.
+      endif
 
       zgam  = (z2c(1:nlev+1)-z1c(zkr)) / (z1c(zkr+1)-z1c(zkr))
       zgam(1)      = 0.0

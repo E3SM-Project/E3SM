@@ -9,7 +9,7 @@
   ne                = 7                         ! number of elements per cube face
   qsize             = 4                         ! num tracer fields: qv,qc,qr
   nmax              = 36000                     ! 7200s(120min)/tstep
-  statefreq         = 1 !10                        ! number of steps between screen dumps
+  statefreq         = 10                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
   tstep             = 0.2                       ! largest timestep in seconds

@@ -14,7 +14,7 @@ begin
 
   ;_________________________________________________
   ; read in fields and invert vertical order (so k=1 is bottom level)
-  ; output_varnames1  ='T','p','ps','pnh','geo','u','v','w','Th','Q','Q2','Q3','Q4'   ! variables to write to file
+  ; output_varnames1  ='T','p','ps','pnh','geo','u','v','omega','Th','Q','Q2','Q3','Q4'   ! variables to write to file
 
 
   time  = f->time
@@ -55,8 +55,8 @@ begin
   v     = f->v  (:,::-1,:,:)
   f->v     = linint1_n_Wrap(z_eta,v    ,False,z,0,1)
 
-  print("converting w")
-  w     = f->w  (:,::-1,:,:)
+  print("converting omega")
+  omega    = f->w  (:,::-1,:,:)
   f->w     = linint1_n_Wrap(z_eta,w    ,False,z,0,1)
 
   print("converting Th")

@@ -149,6 +149,20 @@ contains
   end subroutine derivinit
 
 
+  ! initialize and store a deriv structure for easy access
+  subroutine get_deriv(deriv)
+    type (derivative_t), intent(inout) :: deriv
+    type (derivative_t), save :: the_deriv
+    logical :: initialized = .false.
+
+    if(.not. initialized) then
+      call derivinit(the_deriv)
+      initialized = .true.
+    endif
+
+    deriv = the_deriv
+  end subroutine
+
 ! =======================================
 ! dvvinit:
 !

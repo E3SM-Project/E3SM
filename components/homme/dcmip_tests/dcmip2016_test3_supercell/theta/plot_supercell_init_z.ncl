@@ -68,15 +68,15 @@ begin
   geo   = datafile->geo(0,::-1,:,:)
   lat   = datafile->lat
 
-    theta = datafile->Th (0,::-1,:,:)
-  t     = datafile->T  (0,::-1,:,:)
-    u     = datafile->u  (0,::-1,:,:)
-    p     = datafile->pnh(0,::-1,:,:)
+;theta = datafile->Th (0,::-1,:,:)
+;  t     = datafile->T  (0,::-1,:,:)
+;  u     = datafile->u  (0,::-1,:,:)
+;  p     = datafile->pnh(0,::-1,:,:)
 
-;theta = datafile->Q2  (0,::-1,:,:)
-;  t     = datafile->Q3  (0,::-1,:,:)
-;  p     = datafile->Q4  (0,::-1,:,:)
-;  u     = datafile->Q5  (0,::-1,:,:)
+  theta = datafile->Th (0,:,:,:)
+  t     = datafile->T  (0,:,:,:)
+  u     = datafile->u  (0,:,:,:)
+  p     = datafile->pnh(0,:,:,:)
 
 
   p  = p/100.0  ; convert to hectopascals

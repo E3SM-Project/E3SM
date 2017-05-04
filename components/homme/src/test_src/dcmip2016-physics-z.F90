@@ -69,8 +69,6 @@ SUBROUTINE DCMIP2016_PHYSICS(test, u, v, p, qv, qc, qr, rho, &
             u       ,  & ! Zonal velocity on model levels (m/s)
             v       ,  & ! Meridional velocity on model levels (m/s)
             p       ,  & ! Pressure on model levels (Pa)
-!theta   ,  &
-!T,&
             qv      ,  & ! Water vapor mixing ratio (kg/kg)
             qc      ,  & ! Cloud water mixing ratio (kg/kg)
             qr           ! Rain water mixing ratio (kg/kg)
@@ -82,8 +80,10 @@ SUBROUTINE DCMIP2016_PHYSICS(test, u, v, p, qv, qc, qr, rho, &
             dt           ! Time step (s)
 
   REAL(8), DIMENSION(nz), INTENT(IN) :: &
-            z       ,  & ! Heights of model levels (m)
-            zi           ! Heights of model interfaces (m)
+            z             ! Heights of model levels (m)
+
+  REAL(8), DIMENSION(nz+1), INTENT(IN) :: &
+           zi             ! Heights of model interfaces (m)
 
   REAL(8), INTENT(IN) :: &
             lat          ! Latitude of column (radians)

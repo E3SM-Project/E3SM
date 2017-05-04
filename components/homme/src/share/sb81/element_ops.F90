@@ -32,41 +32,50 @@ module element_ops
   use kinds,          only: real_kind, iulog
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp
-  use physical_constants, only : kappa, p0, Rgas, cp
+  use physical_constants, only : kappa, p0, Rgas, cp, g
 
   implicit none
 
 contains
 
-  subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
+  recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   implicit none
-  type (element_t), intent(in) :: elem
-  character(len=*), intent(in) :: name
-  real (kind=real_kind), intent(out)  :: field(np,np,nlev)
-  type (hvcoord_t),     intent(in)    :: hvcoord          
-  integer, intent(in) :: nt
-  integer, intent(in) :: ntQ
 
+  type (element_t),       intent(in) :: elem
+  character(len=*),       intent(in) :: name
+  real (kind=real_kind),  intent(out):: field(np,np,nlev)
+  type (hvcoord_t),       intent(in) :: hvcoord
+  integer,                intent(in) :: nt
+  integer,                intent(in) :: ntQ
+
+  real(real_kind), dimension(np,np,nlev) :: p, T, omega, rho
   integer :: k
 
   select case(name)
-  case ('temperature')
-     call get_temperature(elem,field,hvcoord,nt,ntQ)
-  case ('pottemp')
-     call get_pottemp(elem,field,hvcoord,nt,ntQ)
-  case ('phi')
-     field = elem%derived%phi(:,:,:)
-  case ('omega')
-     do k=1,nlev
-        field(:,:,k)=elem%derived%omega_p(:,:,k)*&
-             (hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt))
-     end do
-  case ('p','pnh');
-    do k=1,nlev
-      field(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
-    enddo
-  case ('w');
-    field = 0 ! todo
+
+    case ('T','temperature'); call get_temperature(elem,field,hvcoord,nt,ntQ)
+    case ('Th','pottemp');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
+    case ('geo','phi');       field = elem%derived%phi(:,:,:)
+
+    case ('omega')
+        call get_field(elem,'p',p,hvcoord,nt,ntQ)
+        field =elem%derived%omega_p*p
+
+    case ('p','pnh');
+      forall(k=1:nlev) field(:,:,k)=hvcoord%hyam(k)*hvcoord%ps0+hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
+
+    case('rho'); ! get rho from dry air equation of state
+      call get_field(elem,'p',p,hvcoord,nt,ntQ)
+      call get_field(elem,'T',T,hvcoord,nt,ntQ)
+      field = p/(Rgas*T)
+
+    case ('w'); ! get w from omega using hydrostatic balance condition
+      call get_field(elem,'rho',rho,hvcoord,nt,ntQ)
+      call get_field(elem,'omega',omega,hvcoord,nt,ntQ)
+      field = -omega/(rho*g)
+
+    case('zeta'); ! todo
+
   case default
      print *,'name = ',trim(name)
      call abortmp('ERROR: get_field name not supported in this model')
@@ -165,6 +174,7 @@ contains
     elem%state%T   (i,j,k,n0:n1)   = T
     elem%state%ps_v(i,j,n0:n1)     = ps
     elem%state%phis(i,j)           = phis
+    elem%derived%phi(i,j,k)        = zm*g
 
   end subroutine
 
@@ -204,10 +214,10 @@ contains
   end subroutine get_state
 
   subroutine set_forcing_rayleigh_friction(elem, f_d, u0,v0, n)
-!
-! test cases which use rayleigh friciton will call this with the relaxation coefficient
-! f_d, and the reference state u0,v0.  Currently assume w0 = 0
-!
+  !
+  ! test cases which use rayleigh friciton will call this with the relaxation coefficient
+  ! f_d, and the reference state u0,v0.  Currently assume w0 = 0
+  !
   implicit none
 
   type(element_t),  intent(inout)  :: elem
