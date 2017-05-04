@@ -5,15 +5,13 @@ data_files = [
     (sys.prefix + '/share/acme_diags/set5',
      ['acme_diags/driver/set5_diags_AMWG_default.json',
       'acme_diags/plot/vcs/plot_set_5_new.json',
-      'acme_diags/plot/vcs/plot_set_5.json',
+      'acme_diags/plot/vcs/plot_set_5.json'
      ]),
     (sys.prefix + '/share/acme_diags/set7',
-    [
-      'acme_diags/driver/set7_diags_AMWG_default.json',
+     ['acme_diags/driver/set7_diags_AMWG_default.json',
       'acme_diags/plot/vcs/plot_set_7_new.json',
       'acme_diags/plot/vcs/plot_set_7.json'
-
-    ])
+     ])
 ]
 
 setup(
