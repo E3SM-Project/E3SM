@@ -685,7 +685,7 @@
       <env name="NETCDFROOT">$SHELL{dirname $(dirname $(which ncdump))}</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
-      <env name="PNETCDFROOT" mpilib="!mpi-serial">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
+      <env name="PNETCDFROOT">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
 </machine>
 
