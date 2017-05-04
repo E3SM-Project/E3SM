@@ -270,7 +270,7 @@ for parameter in parameters:
                 filename2 = findfile(reference_data_path, ref_name, season)
                 print filename2
             except IOError:
-                print('No file found for {} and {}'.format(test_name, season))
+                print('No file found for {} and {}'.format(ref_name, season))
                 continue
 
         f_mod = cdms2.open(filename1)
