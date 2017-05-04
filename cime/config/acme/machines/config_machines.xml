@@ -175,8 +175,8 @@
     <env name="MPICH_ENV_DISPLAY">1</env>
     <env name="MPICH_VERSION_DISPLAY">1</env>
     <env name="MPICH_CPUMASK_DISPLAY">1</env>
-
     <env name="OMP_STACKSIZE">64M</env>
+    <env name="FORT_BUFFERED" compiler="intel">yes</env>
   </environment_variables>
 
 </machine>
