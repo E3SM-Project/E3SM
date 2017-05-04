@@ -11,7 +11,19 @@ from CIME.case        import Case
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} [<casedir>] [--verbose]
+OR
+{0} --help
+OR
+{0} --test
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Setup case \033[0m
+    > {0}
+""".format(os.path.basename(args[0], )),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -45,22 +57,20 @@ def parse_command_line(args, description):
 
     CIME.utils.expect(args.prereq is None, "--prereq not currently supported")
 
-    CIME.utils.handle_standard_logging_options(args)
-
-    return args
+    return args.test, args.caseroot, args.job, args.no_batch, args.resubmit, args.skip_preview_namelist, args.batch_args
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    args = parse_command_line(sys.argv, description)
-    if args.test:
+    test, caseroot, job, no_batch, resubmit, skip_pnl, batch_args = parse_command_line(sys.argv, description)
+    if test:
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    with Case(args.caseroot, read_only=False) as case:
-        submit(case, job=args.job, no_batch=args.no_batch,
-               resubmit=args.resubmit, skip_pnl=args.skip_preview_namelist,
-               batch_args=args.batch_args)
+    with Case(caseroot, read_only=False) as case:
+        submit(case, job=job, no_batch=no_batch,
+               resubmit=resubmit, skip_pnl=skip_pnl,
+               batch_args=batch_args)
 
 if __name__ == "__main__":
     _main_func(__doc__)
