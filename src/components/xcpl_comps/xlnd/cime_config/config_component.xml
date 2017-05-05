@@ -17,4 +17,10 @@
     <desc compset="_XLND">Dead land component</desc>
   </description>
 
+  <help>
+    =========================================
+    XLND naming conventions in compset name
+    =========================================
+  </help>
+
 </entry_id>

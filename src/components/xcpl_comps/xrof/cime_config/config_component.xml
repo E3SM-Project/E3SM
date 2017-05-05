@@ -30,4 +30,10 @@
     <desc compset="_XROF">Dead river component</desc>
   </description>
 
+  <help>
+    =========================================
+    XROF naming conventions in compset name
+    =========================================
+  </help>
+
 </entry_id>

@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+"""
+Displays information about available compsets, component settings, grids and/or
+machines. Typically run with one of the arguments --compsets, --settings,
+--grids or --machines; if you specify more than one of these arguments,
+information will be listed for each.
+"""
 
 from Tools.standard_script_setup import *
 
@@ -28,7 +34,7 @@ def query_grids(long_output):
         grids.print_values()
 
 ###############################################################################
-def query_machines(machine_name=None):
+def query_machines(machine_name='all'):
 ###############################################################################
 
     files = Files()
@@ -64,11 +70,11 @@ def query_compsets(name):
     if all:  # print all compsets
         for component in components:
             # the all flag will only print available components
-            print_config(component, files, all=all)
+            print_compset(component, files, all=all)
     else:
-        print_config(name, files)
+        print_compset(name, files)
 
-def print_config(name, files, all=False):
+def print_compset(name, files, all=False):
     '''
     print compsets associated with the component name, but if all is true only
     print the details if the associated component is available
@@ -94,8 +100,19 @@ def print_config(name, files, all=False):
     # print compsets associated with component without help text
     compsets.print_values(help=False)
 
+def query_all_components():
+    files, components = get_components()
+    # Loop through the elements for each component class (in config_files.xml)
+    for comp in components:
+        string = "CONFIG_{}_FILE".format(comp)
+
+        # determine all components in string
+        components = files.get_components(string)
+        for item in components:
+            query_component(item, all=True)
+
 ###############################################################################
-def query_component(name):
+def query_component(name, all=False):
 ###############################################################################
 
     # Determine the valid component classes (e.g. atm) for the driver/cpl
@@ -118,10 +135,15 @@ def query_component(name):
         config_file = files.get_value(string, attribute={"component":name})
         if config_file is not None:
             match_found = True
-            expect(os.path.isfile(config_file),
-                   "Cannot find config_file {} on disk".format(config_file))
+            config_exists = os.path.isfile(config_file)
             break
 
+    if not all and not config_exists:
+        expect(config_exists,
+               "Cannot find config_file {} on disk".format(config_file))
+    elif all and not config_exists:
+        print "WARNING: Couldn't find config_file {} on disk".format(config_file)
+        return
     # If name is not a valid argument - exit with error
     expect(match_found,
            "Invalid input argument {}, valid input arguments are {}".format(name, valid_components))
@@ -135,12 +157,12 @@ def query_component(name):
     component.print_values()
 
 ###############################################################################
-def parse_command_line(args):
+def parse_command_line(args, description):
 ###############################################################################
 
     cime_model = CIME.utils.get_model()
 
-    parser = ArgumentParser()
+    parser = ArgumentParser(description=description)
 
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -150,11 +172,12 @@ def parse_command_line(args):
         valid_components.append(item)
 
     parser.add_argument("--compsets", nargs='?', const='all', choices=valid_components,
-                        help="Query compsets corresponding to the target component for the {} model".format(cime_model))
+                        help="Query compsets corresponding to the target component for the {} model."
+                        " If no component is given, lists compsets defined by all components".format(cime_model))
 
     files, components = get_components()
     # Loop through the elements for each component class (in config_files.xml)
-    valid_components = []
+    valid_components = ['all']
     for comp in components:
         string = "CONFIG_{}_FILE".format(comp)
 
@@ -162,11 +185,12 @@ def parse_command_line(args):
         components = files.get_components(string)
         for item in components:
             valid_components.append(item)
-    parser.add_argument("--component", choices=valid_components,
-                        help="Query component settings corresponding to the target component for {} model".format(cime_model))
+    parser.add_argument("--components", nargs='?', const='all', choices=valid_components,
+                        help="Query component settings corresponding to the target component for {} model."
+                        " If no component is given, lists settings defined by all components".format(cime_model))
 
     parser.add_argument("--grids", action="store_true",
-                        help="Query supported model grids for {} model".format(cime_model))
+                        help="Query supported model grids for {} model.".format(cime_model))
 
 # what was the intent of this argument?
 #    parser.add_argument("--grids-alias",
@@ -177,13 +201,13 @@ def parse_command_line(args):
            "Cannot find config_file {} on disk".format(config_file))
     machines = Machines(config_file, machine="Query")
     machines = machines.get_nodes(nodename="machine")
-    machine_names = ['current']
+    machine_names = ['all', 'current']
     for machine in machines:
         machine_names.append(machine.get("MACH"))
-    parser.add_argument("--machines", nargs='?', action='store', const=True, choices=machine_names,
+    parser.add_argument("--machines", nargs='?', const='all', choices=machine_names,
                         help="Query supported machines for {} model."
                         " If option is left empty then all machines are listed,"
-                        " if current is giving the current machine details are listed.".format(cime_model))
+                        " if current is given the current machine details are listed.".format(cime_model))
 
     parser.add_argument("--long", action="store_true",
                         help="Provide long output for queries")
@@ -191,10 +215,8 @@ def parse_command_line(args):
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     # make sure at least one argument has been passed
-    if not (args.grids or args.compsets or args.component or args.machines):
+    if not (args.grids or args.compsets or args.components or args.machines):
         parser.print_help(sys.stderr)
-
-    CIME.utils.handle_standard_logging_options(args)
 
     return args
 
@@ -246,9 +268,9 @@ class ArgumentParser(argparse.ArgumentParser):
 # we overide print_values from Machines to add current in machine description
 class Machines(CIME.XML.machines.Machines):
 
-    def print_values(self, machine_name=None):
+    def print_values(self, machine_name='all'):
         # set flag to look for single machine
-        if machine_name is not None:
+        if 'all' not in machine_name:
             single_machine = True
             if machine_name == 'current':
                 machine_name = self.probe_machine_name(warn=False)
@@ -291,27 +313,28 @@ class Machines(CIME.XML.machines.Machines):
                         print  "      max_tasks/node ",max_tasks_per_node.text
 
 ###############################################################################
-def _main_func():
+def _main_func(description):
 ###############################################################################
 
-    args = parse_command_line(sys.argv)
+    args = parse_command_line(sys.argv, description)
 
     if args.grids:
         query_grids(long_output=args.long)
 
-    if args.compsets:
+    if args.compsets is not None:
         query_compsets(name=args.compsets)
 
-    if args.component:
-        query_component(args.component)
+    if args.components is not None:
+        if re.search("^all$", args.components):  # print all compsets
+            query_all_components()
+        else:
+            query_component(args.components)
 
-    if args.machines is not None and args.machines is True:  # print all machines
-        query_machines()
-    elif args.machines is not None:  # print the selected machine
+    if args.machines is not None:
         query_machines(machine_name=args.machines)
 
 
 ###############################################################################
 
 if __name__ == "__main__":
-    _main_func()
+    _main_func(__doc__)

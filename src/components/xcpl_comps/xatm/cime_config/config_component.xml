@@ -17,5 +17,11 @@
     <desc compset="_XATM">Dead atm component</desc>
   </description>
 
+  <help>
+    =========================================
+    XATM naming conventions in compset name
+    =========================================
+  </help>
+
 </entry_id>
 
