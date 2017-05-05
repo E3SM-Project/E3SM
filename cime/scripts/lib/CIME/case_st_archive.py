@@ -9,17 +9,22 @@ from CIME.case_submit               import submit
 from CIME.XML.env_archive           import EnvArchive
 from CIME.utils                     import run_and_log_case_status
 from os.path                        import isdir, join
+import datetime
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def _get_datenames(case):
+def _get_datenames(case, last_date=None):
 ###############################################################################
-
+    if last_date is not None:
+        try:
+            last = datetime.datetime.strptime(last_date, '%Y-%m-%d')
+        except ValueError:
+            expect(False, 'Could not parse the last date to archive')
     logger.debug('In get_datename...')
     rundir = case.get_value('RUNDIR')
     expect(isdir(rundir), 'Cannot open directory %s ' % rundir)
-    casename = case.get_value("CASE")
+    casename = case.get_value('CASE')
     files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl.r*.nc')))
     if not files:
         expect(False, 'Cannot find a %s.cpl.r.*.nc file in directory %s ' % (casename, rundir))
@@ -27,8 +32,13 @@ def _get_datenames(case):
     for filename in files:
         names = filename.split('.')
         datename = names[-2]
-        datenames.append(datename)
-        logger.debug('cpl dateName: %s ' % datename)
+        year, month, day, second = [int(x) for x in datename.split('-')]
+        if last_date is None or (year <= last.year and month <= last.month
+                                 and day <= last.day):
+            datenames.append(datename)
+            logger.debug('cpl dateName: %s' % datename)
+        else:
+            logger.debug('Ignoring %s' % datename)
     return datenames
 
 
@@ -105,7 +115,7 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
 
 
 ###############################################################################
-def _archive_log_files(case):
+def _archive_log_files(case, archive_incomplete):
 ###############################################################################
 
     dout_s_root = case.get_value("DOUT_S_ROOT")
@@ -115,7 +125,12 @@ def _archive_log_files(case):
         os.makedirs(archive_logdir)
         logger.debug("created directory %s " %archive_logdir)
 
-    logfiles = glob.glob(os.path.join(rundir, '*.log.*'))
+    if archive_incomplete == False:
+        log_search = '*.log.*.gz'
+    else:
+        log_search = '*.log.*'
+
+    logfiles = glob.glob(os.path.join(rundir, log_search))
     for logfile in logfiles:
         srcfile = join(rundir, os.path.basename(logfile))
         destfile = join(archive_logdir, os.path.basename(logfile))
@@ -315,7 +330,7 @@ def _archive_restarts(case, archive, archive_entry,
     return histfiles_savein_rundir
 
 ###############################################################################
-def _archive_process(case, archive):
+def _archive_process(case, archive, last_date, archive_incomplete_logs):
 ###############################################################################
     """
     Parse config_archive.xml and perform short term archiving
@@ -327,7 +342,7 @@ def _archive_process(case, archive):
     compset_comps.append('dart')
 
     # archive log files
-    _archive_log_files(case)
+    _archive_log_files(case, archive_incomplete_logs)
 
     for archive_entry in archive.get_entries():
         # determine compname and compclass
@@ -341,8 +356,9 @@ def _archive_process(case, archive):
         logger.info('-------------------------------------------')
         logger.info('doing short term archiving for %s (%s)' % (compname, compclass))
         logger.info('-------------------------------------------')
-        datenames = _get_datenames(case)
+        datenames = _get_datenames(case, last_date)
         for datename in datenames:
+            logger.info('Archiving for date %s' % datename)
             datename_is_last = False
             if datename == datenames[-1]:
                 datename_is_last = True
@@ -378,7 +394,7 @@ def restore_from_archive(case):
         shutil.copy(item, rundir)
 
 ###############################################################################
-def case_st_archive(case, no_resubmit=False):
+def case_st_archive(case, last_date=None, archive_incomplete_logs=True, no_resubmit=False):
 ###############################################################################
     """
     Create archive object and perform short term archiving
@@ -403,7 +419,7 @@ def case_st_archive(case, no_resubmit=False):
     logger.info("st_archive starting")
 
     archive = EnvArchive(infile=os.path.join(caseroot, 'env_archive.xml'))
-    functor = lambda: _archive_process(case, archive)
+    functor = lambda: _archive_process(case, archive, last_date, archive_incomplete_logs)
     run_and_log_case_status(functor, "st_archive", caseroot=caseroot)
 
     logger.info("st_archive completed")
