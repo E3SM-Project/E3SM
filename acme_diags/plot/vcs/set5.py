@@ -78,12 +78,15 @@ def set_colormap_of_graphics_method(canvas, parameter_colormap, method):
         colors = vcs.getcolors(method.levels, colors=range(6, 240))
         method.fillareacolors = colors
 
-def set_levels_of_graphics_method(method, levels, data):
+def set_levels_of_graphics_method(method, levels, data, data2=None):
     if levels != []:
         method.levels = levels
 
     if method.levels == [[1.0000000200408773e+20, 1.0000000200408773e+20]]:
-        method.levels = vcs.mkscale(data.min(), data.max())
+        if data2 is None:
+            method.levels = vcs.mkscale(data.min(), data.max())
+        else:
+            method.levels = vcs.mkscale(min(data.min(), data2.min()), max(data.max(), data2.max()))
 
 def set_units(ref_or_test, units):
     if units != '':
@@ -136,8 +139,8 @@ def plot(reference, test, diff, metrics_dict, parameter):
     diff_isofill.missing = 'grey'
 
 
-    set_levels_of_graphics_method(reference_isofill, parameter.contour_levels, reference)
-    set_levels_of_graphics_method(test_isofill, parameter.contour_levels, test)
+    set_levels_of_graphics_method(reference_isofill, parameter.contour_levels, reference, test)
+    set_levels_of_graphics_method(test_isofill, parameter.contour_levels, test, reference)
     set_levels_of_graphics_method(diff_isofill, parameter.diff_levels, diff)
 
     if parameter.arrows:
@@ -175,3 +178,4 @@ def plot(reference, test, diff, metrics_dict, parameter):
 
         print('Plot saved in: ' + fnm + '.' + f)
     vcs_canvas.clear()
+    
