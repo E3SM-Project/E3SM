@@ -94,7 +94,7 @@ def set_units(ref_or_test, units):
 
 def add_cyclic(var):
     lon = var.getLongitude()
-    return var(longitude=(lon[0],lon[0]+360.0,'coe'))
+    return var(longitude=(lon[0], lon[0]+360.0, 'coe'))
 
 def plot(reference, test, diff, metrics_dict, parameter):
     case_id = parameter.case_id
@@ -106,7 +106,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     if not parameter.logo:
         vcs_canvas.drawlogooff()
 
-    file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'set5')
+    file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'set7')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_7.json'))
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_7_new.json'))
     
@@ -148,11 +148,11 @@ def plot(reference, test, diff, metrics_dict, parameter):
             lat_y1 = 90 
             lat_y2 = 50 
  
-        reference_isofill.datawc_y1 = lat_y1  #this should extracted from selected domain
+        reference_isofill.datawc_y1 = lat_y1  # this should extracted from selected domain
         reference_isofill.datawc_y2 = lat_y2
-        test_isofill.datawc_y1 = lat_y1  #this should extracted from selected domain
+        test_isofill.datawc_y1 = lat_y1  # this should extracted from selected domain
         test_isofill.datawc_y2 = lat_y2
-        diff_isofill.datawc_y1 = lat_y1  #this should extracted from selected domain
+        diff_isofill.datawc_y1 = lat_y1  # this should extracted from selected domain
         diff_isofill.datawc_y2 = lat_y2
 
 

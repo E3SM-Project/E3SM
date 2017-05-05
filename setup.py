@@ -3,14 +3,15 @@ from setuptools import find_packages, setup
 
 data_files = [
     (sys.prefix + '/share/acme_diags/set5',
-     ['acme_diags/plotset5/set5_diags_AMWG_default.json',
-      'acme_diags/plotting/set5/plot_set_5_new.json',
-      'acme_diags/plotting/set5/plot_set_5.json',
-      'acme_diags/plotset5/set7_diags_AMWG_default.json',
-      'acme_diags/plotting/set7/plot_set_7_new.json',
-      'acme_diags/plotting/set7/plot_set_7.json'
-     ]
-    ),
+     ['acme_diags/driver/set5_diags_AMWG_default.json',
+      'acme_diags/plot/vcs/plot_set_5_new.json',
+      'acme_diags/plot/vcs/plot_set_5.json'
+     ]),
+    (sys.prefix + '/share/acme_diags/set7',
+     ['acme_diags/driver/set7_diags_AMWG_default.json',
+      'acme_diags/plot/vcs/plot_set_7_new.json',
+      'acme_diags/plot/vcs/plot_set_7.json'
+     ])
 ]
 
 setup(
@@ -19,7 +20,7 @@ setup(
     author="Zeshawn Shaheen, Chengzhu (Jill) Zhang",
     author_email="aims@llnl.gov",
     description="ACME Diagnostics.",
-    scripts=["acme_diags/plotset5/set5_driver.py"],
+    scripts=["acme_diags/acme_driver.py"],
     packages=find_packages(exclude=["*.test", "*.test.*", "test.*", "test"]),
     data_files=data_files
 )

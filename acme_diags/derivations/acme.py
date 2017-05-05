@@ -45,16 +45,16 @@ def _compute_derived_var(var_key, derived_vars_dict, nc_file):
         derived_var_inputs.append(inputs)
         # tuples with a single string [ex: ('pr')] become just a string ['pr']
         # are all of the variables (inputs) in the nc_file?
-        if isinstance(inputs, str) and inputs in nc_file.variables.keys():
+        if isinstance(inputs, str) and inputs in nc_file.variables:
             args = [nc_file(inputs)(squeeze=1)]
             return func(*args)
 
-        elif isinstance(inputs, tuple) and set(inputs).issubset(nc_file.variables.keys()):
+        elif isinstance(inputs, tuple) and set(inputs).issubset(nc_file.variables):
             args = [nc_file(var)(squeeze=1) for var in inputs]
             return func(*args)
 
     # When nc_file is obs, there is var_key in nc_file, i.e. nc_file(var_key)
-    if var_key in nc_file.variables.keys():
+    if var_key in nc_file.variables:
         return nc_file(var_key)(squeeze=1)
 
     raise RuntimeError('None of the variables (%s) are in the file: %s' % (
