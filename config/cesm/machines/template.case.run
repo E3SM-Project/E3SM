@@ -29,23 +29,19 @@ import argparse, doctest
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s [--verbose]
+        usage="""\n{0} [--verbose]
 OR
-%s --help
+{0} --help
 OR
-%s --test
+{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# case.run SMS\033[0m
-    > %s
-""" % ((os.path.basename(args[0]), ) * 4),
-
-description=description,
-
-formatter_class=argparse.ArgumentDefaultsHelpFormatter
-)
-
-    parser = argparse.ArgumentParser()
+    > {0}
+""".format(os.path.basename(args[0])),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -61,7 +57,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
         os.chdir(args.caseroot)
 
     if args.skip_preview_namelist is None:
-      args.skip_preview_namelist = False
+        args.skip_preview_namelist = False
 
     return args.caseroot, args.skip_preview_namelist
 

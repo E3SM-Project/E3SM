@@ -121,8 +121,9 @@ def _run_model_impl(case, lid, skip_pnl=False):
                         restore_from_archive(case)
 
                         orig_cont = case.get_value("CONTINUE_RUN")
-                        if not (orig_cont or skip_pnl):
+                        if not orig_cont:
                             case.set_value("CONTINUE_RUN", True)
+                        if not skip_pnl:
                             create_namelists(case)
 
                         lid = new_lid()
