@@ -360,22 +360,26 @@
    </batch_system>
 
    <batch_system MACH="lawrencium-lr2" type="slurm" >
+     <submit_args>
+       <arg flag="--qos" name="condo_esd2"/>
+     </submit_args>
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--exclusive</directive>
      </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr3</queue>
     </queues>
    </batch_system>
 
    <batch_system MACH="lawrencium-lr3" type="slurm" >
+     <submit_args>
+       <arg flag="--qos" name="condo_esd2"/>
+     </submit_args>
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--exclusive</directive>
      </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr3</queue>
     </queues>
    </batch_system>
 
