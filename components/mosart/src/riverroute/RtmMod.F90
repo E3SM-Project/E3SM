@@ -1376,7 +1376,13 @@ contains
 !          TRunoff%wr(nr,nt) = rtmCTL%area(nr) * river_depth_minimum * 10._r8
 !       enddo
 !       enddo
+
+#ifdef INCLUDE_WRM
+
        call WRM_computeRelease()
+
+#endif
+
     endif
 
 ! --Inund. ---------------------------------------------------------------
@@ -1391,11 +1397,30 @@ contains
         ! Calculate water depth in main channel :
         TRunoff%yr( nr, 1 ) = TRunoff%wr( nr, 1 ) / TUnit%rlen( nr ) / TUnit%rwidth( nr )
 
-        ! Total water volume within a computation unit :
-        rtmCTL%volr(nr,1) = TRunoff%wt(nr,1) + TRunoff%wr(nr,1) + TRunoff%wf_ini( nr ) + TRunoff%wh(nr,1)*rtmCTL%area(nr)     ! times "TUnit%frac( nr )" or not ?
-
       end if
     end do
+
+    ! If inundation scheme is turned on :
+    if ( Tctl%OPT_inund .eq. 1 ) then
+
+      do nr = rtmCTL%begr, rtmCTL%endr
+        if ( TUnit%mask( nr ) .gt. 0 ) then
+          ! Total water volume within a computation unit :
+          rtmCTL%volr(nr,1) = TRunoff%wt(nr,1) + TRunoff%wr(nr,1) + TRunoff%wf_ini( nr ) + TRunoff%wh(nr,1)*rtmCTL%area(nr)     ! times "TUnit%frac( nr )" or not ?
+        end if
+      end do
+
+    ! If inundation scheme is turned off :
+    elseif ( Tctl%OPT_inund .eq. 2 ) then
+
+      do nr = rtmCTL%begr, rtmCTL%endr
+        if ( TUnit%mask( nr ) .gt. 0 ) then
+          ! Total water volume within a computation unit :
+          rtmCTL%volr(nr,1) = TRunoff%wt(nr,1) + TRunoff%wr(nr,1) + TRunoff%wh(nr,1)*rtmCTL%area(nr)     ! times "TUnit%frac( nr )" or not ?
+        end if
+      end do
+
+    end if
 
 #else
 
@@ -1964,7 +1989,16 @@ contains
        volr_init = rtmCTL%volr(nr,nt)
 
 #ifdef INCLUDE_INUND
+    ! If inundation scheme is turned on :
+    if ( Tctl%OPT_inund .eq. 1 ) then
        rtmCTL%volr(nr,nt) = TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + TRunoff%wf_ini( nr ) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)
+
+    ! If inundation scheme is turned off :
+    elseif ( Tctl%OPT_inund .eq. 2 ) then
+       rtmCTL%volr(nr,nt) = TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)
+
+    end if
+
 #else
        rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
                              TRunoff%wh(nr,nt)*rtmCTL%area(nr))
@@ -2369,7 +2403,7 @@ contains
   ! --------------------------------- 
   ! The following parameters are for the inundation scheme :
   ! --------------------------------- 
-  Tctl%OPT_inund = 2                  ! Switch of inundation scheme: 1 -- Turn on inundation scheme; 2 -- Turn off inundation scheme.
+  Tctl%OPT_inund = 1                  ! Switch of inundation scheme: 1 -- Turn on inundation scheme; 2 -- Turn off inundation scheme.
   Tctl%OPT_elevProf = 2               ! Options of elevation profile data: 1 -- Use real data; 2 -- Use hypothetical values.
   Tctl%npt_elevProf = 12              ! Number of dividing points in the elevation profile.  
   Tctl%threshold_slpRatio = 10.0_r8   ! Threshold of the ratio of the lowest section's slope to the second lowest section's slope in
@@ -3085,6 +3119,10 @@ contains
 #ifdef INCLUDE_INUND
 
   Tctl%RoutingMethod = 1        ! 1 -- Kinematic wave method ; 4 -- Diffusion wave method.
+
+  if (masterproc) then
+    write(iulog,*) subname,' Tctl%OPT_inund = ', Tctl%OPT_inund
+  end if
 
 #else
 

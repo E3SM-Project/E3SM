@@ -12,12 +12,13 @@ MODULE MOSARTinund_Core_MOD
 !
 !--------------------------------------------------------------------------------------------------------------------------------
 
-  use shr_kind_mod_inund, only: r8 => shr_kind_r8
+  use shr_kind_mod, only: r8 => shr_kind_r8
   use shr_sys_mod, only: shr_sys_abort
   use RunoffMod, only: rtmCTL, Tctl, TUnit, TRunoff, SMatP_eroutUp, avsrc_eroutUp, avdst_eroutUp
   use MOSARTinund_PreProcs_MOD, only: con1Em3
   use RtmVar, only: barrier_timers, iulog
   use RtmSpmd, only: mpicom_rof
+  use mct_mod
   
   implicit none
   private
@@ -203,7 +204,7 @@ MODULE MOSARTinund_Core_MOD
         ! If the tributary channel is very short, then no subnetwork routing :
         if ( TUnit%tlen(iu) .lt. Tctl%minL_tribRouting )  then    
           TRunoff%etout(iu, 1) = - TRunoff%etin(iu, 1)    ! Note: outflow is negative.
-          TRunoff%dwt(iu) = 0._r8
+          TRunoff%dwt(iu, 1) = 0._r8
         else
           ! Calculate hydraulic radius ( hydraulic radius = A / P ) :
           hydrR = ( TUnit%twidth( iu ) * TRunoff%yt( iu, 1 ) ) / ( TUnit%twidth( iu ) + 2._r8 * TRunoff%yt( iu, 1 ) )
