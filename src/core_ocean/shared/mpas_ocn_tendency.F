@@ -360,8 +360,8 @@ contains
 !>  This routine computes tracer tendencies for the ocean
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, scratchPool, dt, & !{{{
-                              timeLevelIn)
+   subroutine ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, scratchPool, & !{{{
+                              dt, activeTracersOnlyIn, timeLevelIn )
       implicit none
 
       !
@@ -375,6 +375,7 @@ contains
       type (mpas_pool_type), intent(in)    :: swForcingPool   !< Input: sw data input info
       type (mpas_pool_type), intent(in)    :: scratchPool     !< Input: Scratch information
       real (kind=RKIND), intent(in) :: dt                     !< Input: Time step
+      logical, intent(in), optional :: activeTracersOnlyIn    !< Input: if true, only compute for active tracers
       integer, intent(in), optional :: timeLevelIn            !< Input/Optional: Time Level Indes
 
       !
@@ -451,6 +452,7 @@ contains
       ! local integers/reals/logicals
       !
       integer :: err, iCell, iEdge, k, timeLevel, nTracersEcosys
+      logical :: activeTracersOnly    ! if true, only compute for active tracers
 
       !
       ! set time level of optional argument is present
@@ -459,6 +461,12 @@ contains
          timeLevel = timeLevelIn
       else
          timeLevel = 1
+      end if
+
+      if (present(activeTracersOnlyIn)) then
+         activeTracersOnly = activeTracersOnlyIn
+      else
+         activeTracersOnly = .false.
       end if
 
       !
@@ -545,7 +553,8 @@ contains
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
          if ( groupItr % memberType == MPAS_POOL_FIELD ) then
-
+           ! Only compute tendencies for active tracers if activeTracersOnly flag is true.
+           if ( .not.activeTracersOnly .or. trim(groupItr % memberName)=='activeTracers') then
             ! load configure setting for this category
             !
             modifiedConfigName = 'config_use_' // trim(groupItr % memberName)
@@ -863,6 +872,7 @@ contains
                !
                call ocn_frazil_forcing_tracers(meshPool, tracersPool, groupItr%memberName, forcingPool, tracerGroupTend, err)
             end if
+           end if ! active only
          end if
       end do
 
