@@ -58,7 +58,7 @@ class Grids(GenericXML):
 
         #mechanism to specify lnd levels
         levmatch = re.match(r"(.*_)([^_]+)z(\d+)(_[^m].*)$", name)
-o        if  levmatch:
+        if  levmatch:
             lndnlev = levmatch.group(3)
             name = levmatch.group(1)+levmatch.group(2)+levmatch.group(4)
 
@@ -238,7 +238,7 @@ o        if  levmatch:
             levmatch = re.match(r"([^_]+)z(\d+)(.*)$", grid_name)
             if  levmatch:
                 grid_name_nonlev = levmatch.group(1)+levmatch.group(3)
-            levmatch = re.match(r"(.*_)([^_]+)z(\d+)(_[^m].*)$", name)
+            levmatch = re.match(r"(.*_)([^_]+)z(\d+)(_[^m].*)$", grid_name)
             if  levmatch:
                 grid_name_nonlev = levmatch.group(1)+levmatch.group(2)+levmatch.group(4)
 
