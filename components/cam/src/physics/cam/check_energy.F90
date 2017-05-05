@@ -703,6 +703,8 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
        !! ieflx_opt = 1 : air temperature in the lowest model layer will be used 
        !! ieflx_opt = 2 : skin temperature (from lnd/ocn/ice components) will be used  
        !! 
+       !! ieflx_opt = 2 is recommended for now. 
+       !! 
        !! (rhow*) converts the unit of precipitation from m/s to kg/m2/s 
        !!..................................................................................... 
 
