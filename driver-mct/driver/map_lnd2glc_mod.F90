@@ -11,7 +11,8 @@ module map_lnd2glc_mod
   ! https://docs.google.com/document/d/1sjsaiPYsPJ9A7dVGJIHGg4rVIY2qF5aRXbNzSXVAafU/edit?usp=sharing
 
 #include "shr_assert.h"
-  use seq_comm_mct, only : logunit
+  use seq_comm_mct, only: CPLID, GLCID, logunit
+  use seq_comm_mct, only: seq_comm_getData=>seq_comm_setptrs
   use shr_kind_mod, only : r8 => shr_kind_r8
   use glc_elevclass_mod, only : glc_get_num_elevation_classes, glc_get_elevation_class, &
        glc_elevclass_as_string, GLC_ELEVCLASS_ERR_NONE, GLC_ELEVCLASS_ERR_TOO_LOW, &
@@ -40,6 +41,16 @@ module map_lnd2glc_mod
   private :: get_glc_elevation_classes ! get the elevation class of each point on the glc grid
   private :: map_bare_land             ! remap the field of interest for the bare land "elevation class"
   private :: map_one_elevation_class   ! remap the field of interest for one ice elevation class
+  private :: map_ice_covered           ! remap the field of interest for all elevation classes (excluding bare land)
+
+  !WHL - new logical for conservative SMB downscaling
+  !      Pass in as an argument?
+!!  logical, parameter :: smb_linear_interpolate = .false.
+  logical, parameter, public :: smb_linear_interpolate = .true.
+
+  !WHL - debug
+!!  integer :: iamtest = 54, ntest = 10
+  integer :: iamtest = 171, ntest = 15
 
 contains
 
@@ -52,6 +63,7 @@ contains
     !
     ! Mapping is done with a multiplication by landfrac on the source grid, with
     ! normalization.
+    !WHL - Is this multiplication done for flux fields only?
     !
     ! Sets the given field within l2x_g, leaving the rest of l2x_g untouched.
     !
@@ -98,9 +110,17 @@ contains
     ! number of points on the GLC grid
     integer :: lsize_g
 
-    ! data for one elevation class on the GLC grid
+    ! data for one elevation class on the GLC grid (old method; smb_linear_interpolate = .false.)
     ! needs to be a pointer to satisfy the MCT interface
     real(r8), pointer :: data_g_oneEC(:)
+
+    ! data for bare land on the GLC grid (new method; smb_linear_interpolate = .true.)
+    ! needs to be a pointer to satisfy the MCT interface
+    real(r8), pointer :: data_g_bareland(:)
+
+    ! data for ice-covered regions on the GLC grid (new method; smb_linear_interpolate = .true.)
+    ! needs to be a pointer to satisfy the MCT interface
+    real(r8), pointer :: data_g_ice_covered(:)
 
     ! final data on the GLC grid
     ! needs to be a pointer to satisfy the MCT interface
@@ -121,12 +141,29 @@ contains
     character(len=*), parameter :: subname = 'map_lnd2glc'
     !-----------------------------------------------------------------------
 
+    !WHL - debug
+    integer :: iam, mpicom
+    call seq_comm_getData(CPLID, iam=iam)
+
+    if (iam==0 .or. iam==iamtest) then
+       write(logunit,*) ' '
+       write(logunit,*) 'In map_lnd2glc, fieldname =', trim(fieldname)
+       write(logunit,*) 'smb_linear_interpolate =', smb_linear_interpolate
+    endif
+
     ! ------------------------------------------------------------------------
     ! Initialize temporary arrays and other local variables
     ! ------------------------------------------------------------------------
 
     lsize_g = mct_aVect_lsize(l2x_g)
-    allocate(data_g_oneEC(lsize_g))
+
+    if (smb_linear_interpolate) then
+       allocate(data_g_ice_covered(lsize_g))
+       allocate(data_g_bareland(lsize_g))
+    else
+       allocate(data_g_oneEC(lsize_g))
+    endif
+
     allocate(data_g(lsize_g))
 
     fieldname_trimmed = trim(fieldname)
@@ -148,34 +185,93 @@ contains
     call get_glc_elevation_classes(glc_ice_covered, glc_topo, glc_elevclass)
 
     ! ------------------------------------------------------------------------
-    ! Map elevation class 0 (bare land)
-    ! ------------------------------------------------------------------------
-
-    call map_bare_land(l2x_l, landfrac_l, fieldname_trimmed, mapper, data_g_oneEC)
-
-    ! Start by setting the output data equal to the bare land value everywhere; this will
-    ! later get overwritten in places where we have ice
-    !
-    ! TODO(wjs, 2015-01-20) This implies that we pass data to CISM even in places that
-    ! CISM says is ocean (so CISM will ignore the incoming value). This differs from the
-    ! current glint implementation, which sets acab and artm to 0 over ocean (although
-    ! notes that this could lead to a loss of conservation). Figure out how to handle
-    ! this case.
-    data_g(:) = data_g_oneEC(:)
-
-    ! ------------------------------------------------------------------------
     ! Map ice elevation classes
     ! ------------------------------------------------------------------------
 
-    call gradient_calculator%calc_gradients()
-    do elevclass = 1, glc_get_num_elevation_classes()
-       call map_one_elevation_class(l2x_l, landfrac_l, fieldname_trimmed, elevclass, &
-            gradient_calculator, glc_topo, mapper, data_g_oneEC)
+    !WHL - Glint-style linear interpolation, with later correction for conservation
+    if (smb_linear_interpolate) then
 
-       where (glc_elevclass == elevclass)
-          data_g = data_g_oneEC
+    ! ------------------------------------------------------------------------
+    ! Map elevation class 0 (bare land)
+    ! ------------------------------------------------------------------------
+
+       !WHL - debug
+       if (iam==0 .or. iam==iamtest) then
+          write(logunit,*) 'Map bare land'
+       endif
+       
+       call map_bare_land(l2x_l, landfrac_l, fieldname_trimmed, mapper, data_g_bareland)
+
+       if (iam==0 .or. iam==iamtest) then
+          write(logunit,*) 'Map ice-covered ECs'
+       endif
+
+       ! Start by setting the output data equal to the bare land value everywhere; this will
+       ! later get overwritten in places where we have ice
+       !
+       ! TODO(wjs, 2015-01-20) This implies that we pass data to CISM even in places that
+       ! CISM says is ocean (so CISM will ignore the incoming value). This differs from the
+       ! current glint implementation, which sets acab and artm to 0 over ocean (although
+       ! notes that this could lead to a loss of conservation). Figure out how to handle
+       ! this case.
+       data_g(:) = data_g_bareland(:)
+
+       ! Map the SMB to ice-covered cells
+       call map_ice_covered(l2x_l, landfrac_l, fieldname_trimmed, &
+            glc_topo, mapper, data_g_ice_covered)
+
+       where (glc_elevclass /= 0)
+          data_g = data_g_ice_covered
        end where
-    end do
+
+    else   ! older SMB mapping; conservative but not smooth
+ 
+    ! ------------------------------------------------------------------------
+    ! Map elevation class 0 (bare land)
+    ! ------------------------------------------------------------------------
+
+       !WHL - debug
+       if (iam==0 .or. iam==iamtest) then
+          write(logunit,*) 'Map bare land'
+       endif
+       
+       call map_bare_land(l2x_l, landfrac_l, fieldname_trimmed, mapper, data_g_oneEC)
+
+       ! Start by setting the output data equal to the bare land value everywhere; this will
+       ! later get overwritten in places where we have ice
+       !
+       ! TODO(wjs, 2015-01-20) This implies that we pass data to CISM even in places that
+       ! CISM says is ocean (so CISM will ignore the incoming value). This differs from the
+       ! current glint implementation, which sets acab and artm to 0 over ocean (although
+       ! notes that this could lead to a loss of conservation). Figure out how to handle
+       ! this case.
+       data_g(:) = data_g_oneEC(:)
+
+       if (iam==0 .or. iam==iamtest) then
+          write(logunit,*) 'Map ice-covered ECs'
+       endif
+
+       !WHL - Here is where each elevation class gets horizontally mapped, given the mapper.
+       !      Make sure to use a bilinear mapper for SMB.
+       call gradient_calculator%calc_gradients()
+       do elevclass = 1, glc_get_num_elevation_classes()
+
+          if (iam==0 .or. iam==iamtest) then
+             write(logunit,*) 'ec =', elevclass
+          endif
+
+          call map_one_elevation_class(l2x_l, landfrac_l, fieldname_trimmed, elevclass, &
+               gradient_calculator, glc_topo, mapper, data_g_oneEC)
+
+          !WHL - We have an interpolated value for each elevation class?
+          !      At least for the one corresponding to glc_topo.  Others are zero?
+          !      Assign the appropriate value for each cell on the glc grid.
+          where (glc_elevclass == elevclass)
+             data_g = data_g_oneEC
+          end where
+       end do
+
+    endif   ! smb_linear_interpolate
 
     ! ------------------------------------------------------------------------
     ! Set field in output attribute vector
@@ -187,11 +283,21 @@ contains
     ! Clean up
     ! ------------------------------------------------------------------------
 
-    deallocate(data_g_oneEC)
+    if (smb_linear_interpolate) then
+       deallocate(data_g_ice_covered)
+       deallocate(data_g_bareland)
+    else
+       deallocate(data_g_oneEC)
+    endif
+
     deallocate(data_g)
     deallocate(glc_ice_covered)
     deallocate(glc_topo)
     deallocate(glc_elevclass)
+
+    if (iam==0 .or. iam==iamtest) then
+       write(logunit,*) 'Done in map_lnd2glc'
+    endif
 
   end subroutine map_lnd2glc
 
@@ -260,6 +366,7 @@ contains
 
   end subroutine get_glc_elevation_classes
 
+  !WHL - Think about whether bare land cells need a special treatment for conservative SMB.
   !-----------------------------------------------------------------------
   subroutine map_bare_land(l2x_l, landfrac_l, fieldname, mapper, data_g_bare_land)
     !
@@ -305,7 +412,9 @@ contains
 
   end subroutine map_bare_land
 
-
+  !WHL - Here is where we get the SMB for a given EC through vertical interpolation.
+  !      To be modified following Jeremy's glint-style algorithm.
+  !      Probably make a new subroutine.
   !-----------------------------------------------------------------------
   subroutine map_one_elevation_class(l2x_l, landfrac_l, fieldname, elevclass, &
        gradient_calculator, topo_g, mapper, data_g_thisEC)
@@ -414,7 +523,9 @@ contains
     ! Remap to destination (glc) grid
     ! ------------------------------------------------------------------------
 
-    call seq_map_map(mapper = mapper, av_s = l2x_l_temp, av_d = l2x_g_temp, &
+    call seq_map_map(mapper = mapper, &
+         av_s = l2x_l_temp, &
+         av_d = l2x_g_temp, &
          norm = .true., &
          avwts_s = landfrac_l, &
          avwtsfld_s = 'lfrac')
@@ -446,6 +557,223 @@ contains
 
   end subroutine map_one_elevation_class
 
+  !WHL - The following is based on Jeremy's mapping subroutine
+  !-----------------------------------------------------------------------
 
+  subroutine map_ice_covered(l2x_l, landfrac_l, fieldname, &
+       topo_g, mapper, data_g_ice_covered)
+
+    !
+    ! !DESCRIPTION:
+    ! Remaps the field of interest from the land grid (in multiple elevation classes)
+    !  to the glc grid
+    !
+    ! Puts the output in data_g_ice_covered, which should already be allocated to have size
+    ! equal to the number of GLC points that this processor is responsible for.
+    ! 
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(mct_aVect)  , intent(in)    :: l2x_l      ! lnd -> cpl fields on the land grid
+    type(mct_aVect)  , intent(in)    :: landfrac_l ! lfrac field on the land grid
+    character(len=*) , intent(in)    :: fieldname  ! name of the field to map (should have NO trailing blanks)
+    real(r8)         , intent(in)    :: topo_g(:)  ! topographic height for each point on the glc grid
+    type(seq_map)    , intent(inout) :: mapper
+    real(r8)         , intent(out)   :: data_g_ice_covered(:)  ! field remapped to glc grid
+    
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: toponame = 'Sl_topo'  ! base name for topo fields in l2x_l;
+                                                         ! actual names will have elevation class suffice
+
+    character(len=:), allocatable :: elevclass_as_string
+    character(len=:), allocatable :: fieldname_ec
+    character(len=:), allocatable :: toponame_ec
+    character(len=:), allocatable :: fieldnamelist
+    character(len=:), allocatable :: toponamelist
+    character(len=:), allocatable :: totalfieldlist
+    character(len=:), allocatable :: delimiter
+    
+    integer :: nEC           ! number of elevation classes
+    integer :: lsize_g       ! number of cells on glc grid
+    integer :: n, ec
+
+    real(r8) :: elev_l, elev_u  ! lower and upper elevations in interpolation range
+    real(r8) :: d_elev          ! elev_u - elev_l
+
+!    integer :: elevclass, n, BoundingECsFound, el, eu 
+!    real(r8) :: elev_EC_l, elev_EC_u  ! upper and lower EC bounds (m)
+    
+    type(mct_aVect) :: l2x_g_temp  ! temporary attribute vector holding the remapped fields for this elevation class
+
+    real(r8), pointer :: tmp_field_g(:)  ! must be a pointer to satisfy the MCT interface
+    real, pointer :: data_g_EC(:,:)    ! remapped field in each glc cell, in each EC
+    real, pointer :: topo_g_EC(:,:)    ! remapped topo in each glc cell, in each EC
+    
+    !WHL - debug
+    integer :: iam, mpicom
+    call seq_comm_getData(CPLID, iam=iam)
+
+    lsize_g = size(topo_g)
+    nEC = glc_get_num_elevation_classes()
+    SHR_ASSERT((size(topo_g) == lsize_g), errMsg(__FILE__, __LINE__))
+    
+    if (iam==0 .or. iam==iamtest) then
+       write(logunit,*) ' '
+       write(logunit,*) 'In subroutine map_ice_covered'
+       write(logunit,*) 'iam, ntest =', iam, ntest
+       write(logunit,*) 'lsize_g, nEC =', lsize_g, nEC
+    endif
+
+    ! ------------------------------------------------------------------------
+    ! Create temporary vectors
+    ! ------------------------------------------------------------------------
+    
+    allocate(tmp_field_g(lsize_g))
+    allocate(data_g_EC  (lsize_g,nEC))
+    allocate(topo_g_EC  (lsize_g,nEC))
+    
+    ! ------------------------------------------------------------------------
+    ! Make a string that concatenates all EC levels of field, as well as the topo
+    ! The resulting list will look something like this:
+    !    'Flgl_qice01:Flgl_qice02: ... :Flgl_qice10:Sl_topo01:Sl_topo02: ... :Sltopo10'
+    ! ------------------------------------------------------------------------
+
+    fieldnamelist = ''
+    toponamelist = ''
+    delimiter = ''
+    do ec = 1, nEC
+       if (ec > 1) delimiter = ':'
+       elevclass_as_string = glc_elevclass_as_string(ec)
+       fieldname_ec = fieldname // elevclass_as_string
+       fieldnamelist = fieldnamelist // delimiter // fieldname_ec
+       toponame_ec = toponame // elevclass_as_string
+       toponamelist = toponamelist // delimiter // toponame_ec
+    end do
+    totalfieldlist = fieldnamelist // delimiter // toponamelist
+    
+    !WHL - Look at log file to make sure this is correct
+    if (iam==0 .or. iam==iamtest) then
+       write(logunit,*) 'totalfieldlist:', trim(totalfieldlist)
+    endif
+
+    ! ------------------------------------------------------------------------
+    ! Make a temporary attribute vector.
+    ! For each grid cell on the land grid, this attribute vector contains the field and topo values for all ECs.
+    ! ------------------------------------------------------------------------
+    call mct_aVect_init(l2x_g_temp, rList = totalfieldlist, lsize = lsize_g)
+      
+    ! ------------------------------------------------------------------------
+    ! Remap all these fields from the land (source) grid to the glc (destination) grid.
+    !WHL - Make sure the mapper is bilinear for SMB.
+    !      Think about how the topo is mapped.
+    !      Try not passing in landfrac_l.  Maybe fluxes are multiplied by lfrac even with a bilinear state mapper. 
+    ! ------------------------------------------------------------------------
+
+    call seq_map_map(mapper = mapper, &
+           av_s = l2x_l, &
+	   av_d = l2x_g_temp, &
+           fldlist = totalfieldlist, &
+           norm = .true., &            !WHL: Not sure about norm
+           avwts_s = landfrac_l, &     !WHL: Not sure landfrac_l needs to be passed in.
+           avwtsfld_s = 'lfrac')       !     Is it used when the mapper is bilinear?
+           
+    ! ------------------------------------------------------------------------
+    ! Export all elevation classes out of attribute vector and into local 2D arrays (xy,z)
+    ! ------------------------------------------------------------------------
+    !WHL: Remapping fields for all ECs are in l2x_g_temp.  Export (copy) into data_g_EC(:,ec).
+
+    do ec = 1, nEC
+       elevclass_as_string = glc_elevclass_as_string(ec)
+       fieldname_ec = fieldname // elevclass_as_string
+       toponame_ec = toponame // elevclass_as_string
+       call mct_aVect_exportRattr(l2x_g_temp, fieldname_ec, tmp_field_g)
+       data_g_EC(:,ec) = tmp_field_g
+       call mct_aVect_exportRattr(l2x_g_temp, toponame_ec, tmp_field_g)
+       topo_g_EC(:,ec) = tmp_field_g
+    enddo
+    
+    ! ------------------------------------------------------------------------
+    ! Perform vertical interpolation of data onto ice sheet topography
+    ! ------------------------------------------------------------------------
+    
+!!    if (iam==0 .or. iam==iamtest) then
+!!       write(logunit,*) 'n, topo_g(n), topo_g_EC(n), data_g_ice_covered(n)'
+!!    endif
+
+    data_g_ice_covered(:) = 0._r8
+    
+    do n = 1, lsize_g
+
+!!       if ((iam==0 .or. iam==iamtest) .and. topo_g(n) > 0.0_r8) then
+!!          write(logunit,*) n, topo_g(n), topo_g_EC(n,:), data_g_EC(n,:)
+!!       endif
+
+       ! For each ice sheet point, find bounding EC values...
+       if (topo_g(n) < topo_g_EC(n,1)) then           ! lower than lowest mean EC elevation value
+          data_g_ice_covered(n) = data_g_EC(n,1)
+
+          if ((iam==0 .or. iam==iamtest) .and. topo_g(n) > 0._r8) then
+!!             write(logunit,*) 'n, topo_g, data_g:', n, topo_g(n), data_g_ice_covered(n)
+          endif
+
+       elseif (topo_g(n) >= topo_g_EC(n,nEC)) then    ! higher than highest mean EC elevation value
+          data_g_ice_covered(n) = data_g_EC(n,nEC)
+
+          if ((iam==0 .or. iam==iamtest) .and. topo_g(n) > 0._r8) then
+!!             write(logunit,*) 'n, topo_g, data_g:', n, topo_g(n), data_g_ice_covered(n)
+          endif
+
+       else
+          ! do linear interpolation of data in the vertical
+!          BoundingECsFound = 0   !WHL - Could replace this logical variables with an exit statement
+!          do elevclass = 2, nEC
+!            if (topo_g(n) < topo_g_EC(n, elevclass) .and. BoundingECsFound .eq. 0) then
+!               el = elevclass - 1
+!               eu = elevclass
+!               elev_EC_l = topo_g_EC(n, el)
+!               elev_EC_u = topo_g_EC(n, eu)
+!               d_elev = elev_EC_u - elev_EC_l
+!               BoundingECsFound = 1
+!            endif 
+!          enddo   
+          do ec = 2, nEC
+             if (topo_g(n) < topo_g_EC(n, ec)) then
+                elev_l = topo_g_EC(n, ec-1)
+                elev_u = topo_g_EC(n, ec)
+                d_elev = elev_u - elev_l
+                data_g_ice_covered(n) = data_g_EC(n,ec-1) * (elev_u - topo_g(n)) / d_elev  &
+                                      + data_g_EC(n,ec)   * (topo_g(n) - elev_l) / d_elev
+
+                if ((iam==0 .or. iam==iamtest) .and. topo_g(n) > 0._r8) then
+!!                   write(logunit,*) 'n, topo_g, data_g:', n, topo_g(n), data_g_ice_covered(n)
+                endif
+                
+                exit
+
+             endif
+
+          enddo
+
+       endif  ! topo_g(n)
+
+    enddo  ! lsize_g
+      
+    ! ------------------------------------------------------------------------
+    ! Clean up
+    ! ------------------------------------------------------------------------
+
+    deallocate(tmp_field_g)
+    deallocate(data_g_EC)
+    deallocate(topo_g_EC)
+    
+    call mct_aVect_clean(l2x_g_temp)
+    
+    if (iam==0 .or. iam==iamtest) then
+       write(logunit,*) ' '
+       write(logunit,*) 'Done in subroutine map_ice_covered'
+    endif
+
+  end subroutine map_ice_covered
 
 end module map_lnd2glc_mod
