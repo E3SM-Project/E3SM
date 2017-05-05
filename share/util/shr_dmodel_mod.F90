@@ -1033,7 +1033,8 @@ subroutine shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
      if (fileopen .and. currfile==filename) then
         ! don't reopen file, all good
      else
-        ! otherwise close the old file if open and open new file
+        ! otherwise close the old file if open, open the new file,
+        ! and read all time slices of a temporal dataset within the new file.
         if (fileopen) then
            if (my_task == master_task) then
               write(logunit,F00) 'close  : ',trim(currfile)
@@ -1064,7 +1065,7 @@ subroutine shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
         if (ndims >= 3) rcode = pio_inq_dimlen(pioid, dimid(3), nz)
         deallocate(dimid)
 
-        if (gsize /= nx*ny .and. gsize /= nx*ny*nz) then
+        if (gsize /= nx*ny) then
            write(logunit,F01) "ERROR in data sizes ",nx,ny,nz,gsize
            call shr_sys_abort(subname//"ERROR in data sizes")
         endif
@@ -1092,6 +1093,7 @@ subroutine shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
            call shr_sys_flush(logunit)
         endif
 
+        ! Create a 3D MCT component DOF corresponding to "2D(=gsmOP) x nz"
         cnt = 0
         do n = 1,nz
            do m = 1,lsize
@@ -1100,8 +1102,10 @@ subroutine shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
            enddo
         enddo
 
+        ! Initialize the decomposition
         call pio_initdecomp(pio_subsystem, pio_double, count, compDOF, pio_iodesc_local)
 
+        ! For each attribute, read all frames in one go
         frame = 1
         do k = 1, mct_aVect_nRAttr(avFile)
            if (my_task == master_task) then
@@ -1122,7 +1126,7 @@ subroutine shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
 
      endif
 
-     ! Cope the `nt` time slice data from avFile into av
+     ! Copy the `nt` time slice data from avFile into av
      avFile_beg = lsize*(nt-1) + 1
      avFile_end = lsize*nt
      do k = 1, mct_aVect_nRAttr(avFile)
