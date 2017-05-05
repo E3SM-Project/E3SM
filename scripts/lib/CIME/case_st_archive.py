@@ -32,7 +32,7 @@ def _get_datenames(case, last_date=None):
     for filename in files:
         names = filename.split('.')
         datename = names[-2]
-        year, month, day, second = [int(x) for x in datename.split('-')]
+        year, month, day, _ = [int(x) for x in datename.split('-')]
         if last_date is None or (year <= last.year and month <= last.month
                                  and day <= last.day):
             datenames.append(datename)
