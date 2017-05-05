@@ -1,0 +1,46 @@
+
+cart.c  - new file, cleaned
+collective.c - done
+comm.c - done
+copy.c - new file, cleaned
+getcount.c - new file, cleaned
+group.c - copied over git updates
+handles.c - nothing to merge, svn updates OK
+list.c - svn OK
+mpi.c - merged git in
+mpi.h - merged git but need to fix some types
+fort.F90 - merged git in
+mpif.master.h -> mpif.h  NOTE: need to add types in type.h,c
+Makefile - had to uncomment some things to get mpif.h to build
+op.c   - new file
+pack.c - format more like git, has new code
+probe.c - new file
+recv.c - done
+req.c - merged in git
+send.c - merged in git
+
+time.c - no changes
+type.c - new file
+type_const.c - new file
+
+
+
+*** NOTES
+
+*** need to look at Request struct, add a type
+    so that send.c and recv.c can use distinct send and recv types
+
+*** need to add types in mpi.h and mpif.master.h to type.{c,h}
+
+
+*** need to look at config and how it sets _RSIZE_ and _DSIZE_
+
+    previously: MCT's configure set env FORT_SIZE
+                choose mpif.h from mpif.$FORT_SIZE.h
+
+    now: FORT_SIZE ignored
+         configures sets FSIZE_REAL and FSIZE_DPRECISION based on mpi-serial's configure (default 4/8)
+         does not need mpif.master.h template -> mpif.$FORT_SIZE.h
+
+    so... did i clobber good value of mpif.h ?
+

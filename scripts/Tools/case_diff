@@ -1,0 +1,138 @@
+#! /usr/bin/env python
+
+"""
+Try to calculate and succinctly present the differences between two large
+directory trees.
+"""
+
+from standard_script_setup import *
+from CIME.utils import run_cmd
+
+import argparse, sys, os, doctest
+
+IGNORE = [".git", "bin", "bakefiles", "SNTools.project"]
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s case1 case2 [skip-files]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    > %s case1 case2
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("case1", help="First case.")
+
+    parser.add_argument("case2", help="Second case.")
+
+    parser.add_argument("skip_list", nargs="*", help="skip these files")
+
+    parser.add_argument("-b", "--show-binary", action="store_true",
+                        help="Show binary diffs")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.case1, args.case2, args.show_binary, args.skip_list
+
+###############################################################################
+def recursive_diff(dir1, dir2, show_binary=False, skip_list=()):
+###############################################################################
+    """
+    Starting at dir1, dir2 respectively, compare their contents
+    """
+    # The assertions below hurt performance
+    #assert os.path.isdir(dir1), dir1 + " not a directory"
+    #assert os.path.isdir(dir2), dir2 + " not a directory"
+
+    # Get contents of both directories
+    dir1_contents = set(os.listdir(dir1))
+    dir2_contents = set(os.listdir(dir2))
+
+    # Use set operations to figure out what they have in common
+    dir1_only = dir1_contents - dir2_contents
+    dir2_only = dir2_contents - dir1_contents
+    both      = dir1_contents & dir2_contents
+
+    num_differing_files = 0
+
+    # Print the unique items
+    for dirname, set_obj in [(dir1, dir1_only), (dir2, dir2_only)]:
+        for item in sorted(set_obj):
+            if (item not in IGNORE and item not in skip_list):
+                print "==============================================================================="
+                print os.path.join(dirname, item), "is unique"
+                num_differing_files += 1
+
+    # Handling of the common items is trickier
+    for item in sorted(both):
+        if (item in IGNORE or item in skip_list):
+            continue
+        path1 = os.path.join(dir1, item)
+        path2 = os.path.join(dir2, item)
+        path1isdir = os.path.isdir(path1)
+
+        # If the directory status of the files differs, report diff
+        if (path1isdir != os.path.isdir(path2)):
+            print "==============================================================================="
+            print path1 + " DIFFERS (directory status)"
+            num_differing_files += 1
+            continue
+
+        # If we've made it this far, the files' status is the same. If the
+        # files are directories, recursively check them, otherwise check
+        # that the file contents match
+        if (path1isdir):
+            num_differing_files += recursive_diff(path1, path2, show_binary)
+        else:
+            # # As a (huge) performance enhancement, if the files have the same
+            # # size, we assume the contents match
+            # if (os.path.getsize(path1) != os.path.getsize(path2)):
+            #     print path1 + " DIFFERS (contents)"
+
+            stat, out, err = run_cmd("file %s" % path1)
+            if (stat != 0):
+                logging.warn("Failed to probe file '%s', out: '%s', err: '%s'" % (path1, out, err))
+                continue
+
+            is_text_file = "text" in out
+            if (not (not show_binary and not is_text_file)):
+                stat, out, _ = run_cmd("diff -w %s %s" % (path1, path2))
+                if (stat != 0):
+                    print "==============================================================================="
+                    print path1 + " DIFFERS (contents)"
+                    num_differing_files += 1
+                    print "  ", out
+
+    return num_differing_files
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    case1, case2, show_binary, skip_list = parse_command_line(sys.argv, description)
+
+    num_differing_files = recursive_diff(case1, case2, show_binary, skip_list)
+    print num_differing_files, "files are different"
+    sys.exit(0 if num_differing_files == 0 else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
