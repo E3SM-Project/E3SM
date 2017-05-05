@@ -380,12 +380,7 @@ def compute(parameter):
                     metrics_dict = create_metrics(
                         mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                     parameter.var_region = region
-                    if hasattr(parameter, 'plot'):
-                        parameter.plot(mv2_domain, mv1_domain, diff,
-                                       metrics_dict, parameter)
-                    else:    
-
-                        plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+                    plot('5', mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 
                     save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
     
