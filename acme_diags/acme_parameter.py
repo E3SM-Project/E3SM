@@ -10,6 +10,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.reference_name = ''
         self.test_name = ''
 
+        self.set = []
         self.variables = []
         self.season = []
         self.region = []
@@ -59,6 +60,9 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
             quit()
         if self.test_data_path == '':
             print 'test_data_path is needed! Define it in the parameter file or in the command line using --test_data_path'
+            quit()
+        if not hasattr(self, 'set'):
+            print 'You must have a least one set. Ex: set = [5]'
             quit()
         '''
         if self.reference_data_set == '':
