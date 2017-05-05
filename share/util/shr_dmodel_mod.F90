@@ -563,7 +563,6 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
   character(*), parameter :: subname = '(shr_dmodel_readLBUB) '
   character(*), parameter :: F00   = "('(shr_dmodel_readLBUB) ',8a)"
   character(*), parameter :: F01   = "('(shr_dmodel_readLBUB) ',a,5i8)"
-  character(*), parameter :: F02   = "('(shr_dmodel_readLBUB) ',3a,i8)"
 
 !-------------------------------------------------------------------------------
 ! PURPOSE:  Read LB and UB stream data
@@ -633,19 +632,15 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
         avLB%rAttr(:,:) = avUB%rAttr(:,:)
         call t_stopf(trim(lstr)//'_LB_copy')
      else
-        if (my_task == master_task) then
-           write(logunit,F02) 'file lb: ',trim(path),trim(fn_lb),n_lb
-           call shr_sys_flush(logunit)
-        endif
 
         select case(readMode)
         case ('single')
            call shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, avLB, mpicom, &
-                path, fn_lb, n_lb,istr=trim(lstr)//'_LB')
+                path, fn_lb, n_lb,istr=trim(lstr)//'_LB', boundstr = 'lb')
         case ('full_file')
            call shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
                   pio_iodesc, gsMap, avLB, avFile, mpicom, &
-                  path, fn_lb, n_lb,istr=trim(lstr)//'_LB')
+                  path, fn_lb, n_lb,istr=trim(lstr)//'_LB', boundstr = 'lb')
         case default
            write(logunit,F00) "ERROR: Unsupported readmode : ", trim(readMode)
            call shr_sys_abort(subName//"ERROR: Unsupported readmode: "//trim(readMode))
@@ -655,19 +650,15 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
 
   if (mDateUB /= oDateUB .or. mSecUB /= oSecUB) then
      newdata = .true.
-     if (my_task == master_task) then
-        write(logunit,F02) 'file ub: ',trim(path),trim(fn_ub),n_ub
-        call shr_sys_flush(logunit)
-     endif
 
      select case(readMode)
      case ('single')
         call shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, avUB, mpicom, &
-             path, fn_ub, n_ub,istr=trim(lstr)//'_UB')
+             path, fn_ub, n_ub,istr=trim(lstr)//'_UB', boundstr = 'ub')
      case ('full_file')
         call shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
              pio_iodesc, gsMap, avUB, avFile, mpicom, &
-             path, fn_ub, n_ub,istr=trim(lstr)//'_UB')
+             path, fn_ub, n_ub,istr=trim(lstr)//'_UB', boundstr = 'ub')
      case default
         write(logunit,F00) "ERROR: Unsupported readmode : ", trim(readMode)
         call shr_sys_abort(subName//"ERROR: Unsupported readmode: "//trim(readMode))
@@ -711,7 +702,7 @@ end subroutine shr_dmodel_readLBUB
 
 !===============================================================================
 subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, av, mpicom, &
-           path, fn, nt, istr)
+           path, fn, nt, istr, boundstr)
 
   use shr_file_mod, only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
   use shr_stream_mod
@@ -731,6 +722,7 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
   character(len=*),intent(in)    :: fn
   integer(IN)     ,intent(in)    :: nt
   character(len=*),optional  ,intent(in)    :: istr
+  character(len=*),optional  ,intent(in)    :: boundstr
 
   !----- local -----
   integer(IN) :: my_task
@@ -749,6 +741,7 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
   character(CL) :: sfldName
   type(mct_avect) :: avtmp
   character(len=32) :: lstr
+  character(len=32) :: bstr
   logical :: fileopen
   character(CL) :: currfile
 
@@ -767,12 +760,18 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
   character(*), parameter :: subname = '(shr_dmodel_readstrm) '
   character(*), parameter :: F00   = "('(shr_dmodel_readstrm) ',8a)"
   character(*), parameter :: F01   = "('(shr_dmodel_readstrm) ',a,5i8)"
+  character(*), parameter :: F02   = "('(shr_dmodel_readstrm) ',2a,i8)"
 
 !-------------------------------------------------------------------------------
 
   lstr = 'shr_dmodel_readstrm'
   if (present(istr)) then
     lstr = trim(istr)
+  endif
+
+  bstr = ''
+  if (present(boundstr)) then
+     bstr = trim(boundstr)
   endif
 
   call t_barrierf(trim(lstr)//'_BARRIER',mpicom)
@@ -869,8 +868,14 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
            write(logunit,F00) 'open   : ',trim(filename)
            call shr_sys_flush(logunit)
         endif
+
         rcode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(filename), pio_nowrite)
         call shr_stream_setCurrFile(stream,fileopen=.true.,currfile=trim(filename),currpioid=pioid)
+     endif
+
+     if (my_task == master_task) then
+        write(logunit,F02) 'file ' // trim(bstr) //': ',trim(filename),nt
+        call shr_sys_flush(logunit)
      endif
 
      call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
@@ -909,7 +914,7 @@ end subroutine shr_dmodel_readstrm
 
 subroutine shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
      pio_iodesc, gsMap, av, avFile, mpicom, &
-     path, fn, nt, istr)
+     path, fn, nt, istr, boundstr)
 
   use shr_file_mod, only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
   use shr_stream_mod
@@ -930,6 +935,7 @@ subroutine shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
   character (len=*)                 ,intent(in)            :: fn
   integer   (IN)                    ,intent(in)            :: nt
   character (len=*)                 ,intent(in) ,optional  :: istr
+  character(len=*)                  ,intent(in) ,optional  :: boundstr
 
   !----- local -----
   integer(IN)                   :: my_task
@@ -948,6 +954,7 @@ subroutine shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
   character(CL)                 :: sfldName
   type(mct_avect)               :: avtmp
   character(len=32)             :: lstr
+  character(len=32)             :: bstr
   logical                       :: fileopen
   character(CL)                 :: currfile
   character(CXX)                :: fldList ! list of fields
@@ -967,12 +974,18 @@ subroutine shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
   character(*), parameter :: subname = ' (shr_dmodel_readstrm_fullfile) '
   character(*), parameter :: F00   = "(' (shr_dmodel_readstrm_fullfile) ',8a)"
   character(*), parameter :: F01   = "(' (shr_dmodel_readstrm_fullfile) ',a,5i8)"
+  character(*), parameter :: F02   = "(' (shr_dmodel_readstrm_fullfile) ',2a,2i8)"
 
   !-------------------------------------------------------------------------------
 
   lstr = 'shr_dmodel_readstrm_fullfile'
   if (present(istr)) then
      lstr = trim(istr)
+  endif
+
+  bstr = ''
+  if (present(boundstr)) then
+     bstr = trim(boundstr)
   endif
 
   call t_barrierf(trim(lstr)//'_BARRIER',mpicom)
@@ -1073,6 +1086,11 @@ subroutine shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
         count(1) = nx
         count(2) = ny
         count(3) = nz
+
+        if (my_task == master_task) then
+           write(logunit,F02) 'file ' // trim(bstr) //': ',trim(filename),1,nz
+           call shr_sys_flush(logunit)
+        endif
 
         cnt = 0
         do n = 1,nz
