@@ -57,8 +57,8 @@ class Grids(GenericXML):
             name = levmatch.group(1)+levmatch.group(3)
 
         #mechanism to specify lnd levels
-        levmatch = re.match(r"(.*_)([^_]+)z(\d+)(.*)$", name)
-        if  levmatch:
+        levmatch = re.match(r"(.*_)([^_]+)z(\d+)(_[^m].*)$", name)
+o        if  levmatch:
             lndnlev = levmatch.group(3)
             name = levmatch.group(1)+levmatch.group(2)+levmatch.group(4)
 
@@ -205,9 +205,13 @@ class Grids(GenericXML):
             if model_grid[component_gridname] is not None:
                 lname += model_grid[component_gridname]
                 if component_gridname == 'atm' and atmnlev is not None:
-                    lname += "z" + atmnlev
+                    if re.search(r"a%null", lname) is None:
+                        lname += "z" + atmnlev
+
                 elif component_gridname == 'lnd' and lndnlev is not None:
-                    lname += "z" + lndnlev
+                    if re.search(r"l%null", lname) is None:
+                        lname += "z" + lndnlev
+
             else:
                 lname += 'null'
         component_grids = self._get_component_grids_from_longname(lname)
@@ -234,7 +238,7 @@ class Grids(GenericXML):
             levmatch = re.match(r"([^_]+)z(\d+)(.*)$", grid_name)
             if  levmatch:
                 grid_name_nonlev = levmatch.group(1)+levmatch.group(3)
-            levmatch = re.match(r"(.*_)([^_]+)z(\d+)(.*)$", grid_name)
+            levmatch = re.match(r"(.*_)([^_]+)z(\d+)(_[^m].*)$", name)
             if  levmatch:
                 grid_name_nonlev = levmatch.group(1)+levmatch.group(2)+levmatch.group(4)
 
