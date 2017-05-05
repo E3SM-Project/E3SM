@@ -122,7 +122,7 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:), pointer :: btrvel_temp
       type (field1DReal), pointer :: btrvel_tempField
       real (kind=RKIND), dimension(:,:), allocatable:: tracersTemp
-
+      logical :: activeTracersOnly ! if true only compute tendencies for active tracers  
       integer :: tsIter
       integer :: edgeHaloComputeCounter, cellHaloComputeCounter
 
@@ -1388,6 +1388,13 @@ module ocn_time_integration_split
          !
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+         ! only compute tendencies for active tracers on last large iteration
+         if (split_explicit_step < config_n_ts_iter) then
+            activeTracersOnly = .true.
+         else
+            activeTracersOnly = .false.
+         endif
+
          ! Thickness tendency computations and thickness halo updates are completed before tracer
          ! tendency computations to allow monotonic advection.
          call mpas_timer_start('se thick tend')
@@ -1455,7 +1462,8 @@ module ocn_time_integration_split
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
             call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
             call mpas_pool_get_subpool(block % structs, 'shortwave', swForcingPool)
-            call ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, scratchPool, dt, 2)
+            call ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, scratchPool, &
+                    dt, activeTracersOnly, 2)
 
             block => block % next
          end do
@@ -1471,7 +1479,10 @@ module ocn_time_integration_split
          call mpas_pool_begin_iteration(tracersTendPool)
          do while ( mpas_pool_get_next_member(tracersTendPool, groupItr) )
             if ( groupItr % memberType == MPAS_POOL_FIELD ) then
-               call mpas_dmpar_field_halo_exch(domain, groupItr % memberName)
+               ! Only compute tendencies for active tracers if activeTracersOnly flag is true.
+               if ( .not.activeTracersOnly .or. trim(groupItr % memberName)=='activeTracersTend') then
+                  call mpas_dmpar_field_halo_exch(domain, groupItr % memberName)
+               end if
             end if
          end do
          call mpas_timer_stop("se halo tracers")
