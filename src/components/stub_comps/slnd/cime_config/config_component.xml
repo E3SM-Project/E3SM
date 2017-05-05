@@ -17,4 +17,10 @@
     <desc compset="_SLND">Stub lnd component</desc>
   </description>
 
+  <help>
+    =========================================
+    SLND naming conventions in compset name
+    =========================================
+  </help>
+
 </entry_id>

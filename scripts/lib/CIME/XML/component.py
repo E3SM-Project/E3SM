@@ -108,6 +108,6 @@ class Component(EntryID):
             compsets[attrib] = text
 
         logger.info(" %s" %helptext)
-        for v in compsets.iteritems():
+        for v in sorted(compsets.iteritems()):
             label, definition = v
             logger.info("   %20s : %s" %(label, definition))

@@ -18,4 +18,10 @@
     <desc compset="_SESP">Stub esp component</desc>
   </description>
 
+  <help>
+    =========================================
+    SESP naming conventions in compset name
+    =========================================
+  </help>
+
 </entry_id>
