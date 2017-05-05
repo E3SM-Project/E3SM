@@ -63,7 +63,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     if args.caseroot is not None:
         os.chdir(args.caseroot)
 
-    return args.caseroot, args.last_date, !args.no_incomplete_logs
+    return args.caseroot, args.last_date, not args.no_incomplete_logs
 
 ###############################################################################
 def _main_func(description):
