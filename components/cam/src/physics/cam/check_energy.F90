@@ -34,7 +34,7 @@ module check_energy
   use time_manager,    only: is_first_step
   use cam_logfile,     only: iulog
   use cam_abortutils,  only: endrun 
-  use phys_control,    only: ieflx_opt !!l_ieflx_fix
+  use phys_control,    only: ieflx_opt
 
   implicit none
   private
@@ -146,7 +146,6 @@ end subroutine check_energy_setopts
 
     if(is_subcol_on()) then
       call pbuf_register_subcol('TEOUT', 'phys_register', teout_idx)
-      call pbuf_register_subcol('IEFLX', 'phys_register', ieflx_idx)
       call pbuf_register_subcol('DTCORE', 'phys_register', dtcore_idx)
     end if
 
@@ -650,6 +649,8 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
 !!...................................................................
 !! Calculate global mean of the implied internal energy flux 
 !! 
+!! This subroutien is called only when ieflx_opt > 0 
+!! 
 !! Author: Kai Zhang 
 !!...................................................................
 
@@ -657,8 +658,6 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
     use physics_buffer,   only: physics_buffer_desc, pbuf_get_field, pbuf_get_chunk, pbuf_set_field 
     use cam_history,      only: outfld
     use phys_control,     only: ieflx_opt
-
-    ! Compute global mean qflx
 
     integer , intent(in) :: nstep        ! current timestep number
     type(physics_state), intent(in   ), dimension(begchunk:endchunk) :: state
@@ -696,9 +695,16 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
        snow(:ncol,lchnk) = cam_out(lchnk)%precsc(:ncol) + cam_out(lchnk)%precsl(:ncol)
        rain(:ncol,lchnk) = cam_out(lchnk)%precc(:ncol)  + cam_out(lchnk)%precl(:ncol) - snow(:ncol,lchnk) 
 
-       !! the calculation below (rhow*) converts the unit of precipitation from m/s to kg/m2/s 
-
        select case (ieflx_opt) 
+
+       !!..................................................................................... 
+       !! Calculate the internal energy flux at surface (imitate what is considered in the ocean model)   
+       !! 
+       !! ieflx_opt = 1 : air temperature in the lowest model layer will be used 
+       !! ieflx_opt = 2 : skin temperature (from lnd/ocn/ice components) will be used  
+       !! 
+       !! (rhow*) converts the unit of precipitation from m/s to kg/m2/s 
+       !!..................................................................................... 
 
        case(1) 
           ienet(:ncol,lchnk) = cpsw * qflx(:ncol,lchnk) * cam_in(lchnk)%ts(:ncol) - & 
@@ -735,8 +741,10 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
   subroutine check_ieflx_fix(lchnk, ncol, nstep, shflx)
 
 !!
-!! Add implied internal energy flux to the sensible heat flux 
+!! Add the global mean internal energy flux to the sensible heat flux 
 !!
+!! This subroutien is called only when ieflx_opt > 0 
+!! 
 !! Called by typhsac 
 !! 
 

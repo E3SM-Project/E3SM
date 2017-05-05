@@ -1130,9 +1130,8 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     use metdata,        only: get_met_srf2
 #endif
     use time_manager,   only: get_nstep
-    use check_energy,   only: ieflx_gmean 
-    use check_energy,   only: check_ieflx_fix 
-    use phys_control,   only: ieflx_opt !!l_ieflx_fix
+    use check_energy,   only: ieflx_gmean, check_ieflx_fix 
+    use phys_control,   only: ieflx_opt
     !
     ! Input arguments
     !

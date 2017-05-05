@@ -106,7 +106,6 @@ logical, public, protected :: use_qqflx_fixer      = .false.     ! switch on wat
 logical, public, protected :: print_fixer_message  = .false.     ! switch on error message printout in log file
 
 integer, public, protected :: ieflx_opt = 0
-logical, public, protected :: l_ieflx_fix = .false.
 
 ! Macro/micro-physics co-substeps
 integer           :: cld_macmic_num_steps = 1
@@ -174,7 +173,6 @@ subroutine phys_ctl_readnl(nlfile)
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, &
       conv_water_in_rad, history_clubb, do_clubb_sgs, do_tms, state_debug_checks, &
       use_mass_borrower, & 
-      l_ieflx_fix, &
       ieflx_opt, & 
       use_qqflx_fixer, & 
       print_fixer_message, & 
@@ -229,7 +227,6 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(conv_water_in_rad,               1 , mpiint,  0, mpicom)
    call mpibcast(do_tms,                          1 , mpilog,  0, mpicom)
    call mpibcast(use_mass_borrower,               1 , mpilog,  0, mpicom)
-   call mpibcast(l_ieflx_fix,             1 , mpilog,  0, mpicom)
    call mpibcast(ieflx_opt,               1 , mpiint,  0, mpicom)
    call mpibcast(use_qqflx_fixer,                 1 , mpilog,  0, mpicom)
    call mpibcast(print_fixer_message,             1 , mpilog,  0, mpicom)
@@ -400,7 +397,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
                         history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, prog_modal_aero_out, macrop_scheme_out, &
                         do_clubb_sgs_out, do_tms_out, state_debug_checks_out, &
                         use_mass_borrower_out, & 
-                        l_ieflx_fix_out, & 
                         use_qqflx_fixer_out, & 
                         print_fixer_message_out, & 
                         cld_macmic_num_steps_out, micro_do_icesupersat_out, &
@@ -445,7 +441,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    logical,           intent(out), optional :: prog_modal_aero_out
    logical,           intent(out), optional :: do_tms_out
    logical,           intent(out), optional :: use_mass_borrower_out
-   logical,           intent(out), optional :: l_ieflx_fix_out
    logical,           intent(out), optional :: use_qqflx_fixer_out
    logical,           intent(out), optional :: print_fixer_message_out
    logical,           intent(out), optional :: state_debug_checks_out
@@ -507,7 +502,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    if ( present(prog_modal_aero_out     ) ) prog_modal_aero_out      = prog_modal_aero
    if ( present(do_tms_out              ) ) do_tms_out               = do_tms
    if ( present(use_mass_borrower_out   ) ) use_mass_borrower_out    = use_mass_borrower
-   if ( present(l_ieflx_fix_out   ) ) l_ieflx_fix_out    = l_ieflx_fix
    if ( present(use_qqflx_fixer_out     ) ) use_qqflx_fixer_out      = use_qqflx_fixer
    if ( present(print_fixer_message_out ) ) print_fixer_message_out  = print_fixer_message
    if ( present(state_debug_checks_out  ) ) state_debug_checks_out   = state_debug_checks
