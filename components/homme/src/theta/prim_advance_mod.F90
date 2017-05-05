@@ -454,7 +454,6 @@ contains
   integer :: k,kptr,i,j,ie,ic,nt
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,4,nets:nete)      :: stens  ! dp3d,theta,w,phi
-!  real (kind=real_kind), dimension(np,np,nlev) :: p
 
 
 ! NOTE: PGI compiler bug: when using spheremp, rspheremp and ps as pointers to elem(ie)% members,
@@ -465,7 +464,10 @@ contains
 
   real (kind=real_kind), dimension(np,np,4) :: lap_s  ! dp3d,theta,w,phi
   real (kind=real_kind), dimension(np,np,2) :: lap_v
-  real (kind=real_kind) :: v1(np,np),v2(np,np),heating(np,np)
+  real (kind=real_kind) :: exner0(nlev),dpdn0(nlev)
+  real (kind=real_kind) :: heating(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: p_i(np,np,nlevp)    ! pressure on interfaces
   real (kind=real_kind) :: dt
   real (kind=real_kind) :: ps_ref(np,np)
 
@@ -636,31 +638,16 @@ contains
 
 
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,v1,v2,heating)
+!$omp parallel do private(k)
 #endif
            do k=1,nlev
-              ! update v first (gives better results than updating v after heating)
               elem(ie)%state%v(:,:,:,k,nt)=elem(ie)%state%v(:,:,:,k,nt) + &
                    vtens(:,:,:,k,ie)
               elem(ie)%state%w(:,:,k,nt)=elem(ie)%state%w(:,:,k,nt) &
                    +stens(:,:,k,3,ie)
-              !v1=elem(ie)%state%v(:,:,1,k,nt)
-              !v2=elem(ie)%state%v(:,:,2,k,nt)
-              !                   For the 3D non-hydrostatic with hypervisosity in the horizontal components, 
-              !                   the heating term to be added to theta is (dpi/ds)*HVterm/ p^kappa as opposed to 
-              !                   HVterm/c_p^*
-              !                    
-              ! commenting out for now, have to figure out how to get exner in this routine
-              !                   Form u*nu div^H(u)
-              !                    heating = ( (vtens(:,:,1,k,ie)*v1  + vtens(:,:,2,k,ie)*v2 )
-              !                    heating = dpnh(:,:,k)*heating/exner(:,:,k)
-              heating(:,:) = 0
               
               elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt) &
                    +stens(:,:,k,1,ie)
-              
-              elem(ie)%state%theta_dp_cp(:,:,k,nt)=elem(ie)%state%theta_dp_cp(:,:,k,nt) &
-                   +stens(:,:,k,2,ie)-heating(:,:)
               
               elem(ie)%state%w(:,:,k,nt)=elem(ie)%state%w(:,:,k,nt) &
                    +stens(:,:,k,3,ie)
@@ -668,6 +655,43 @@ contains
               elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt) &
                    +stens(:,:,k,4,ie)
            enddo
+
+           ! apply heating after updating sate.  using updated v gives better results in PREQX model
+           !
+           ! d(IE)/dt =  exner * d(Theta)/dt + phi d(dp3d)/dt   (Theta = dp3d*cp*theta)
+           !   Our eqation:  d(theta)/dt = diss(theta) + heating
+           !   Assuming no diffusion on dp3d, we can approximate by:
+           !   d(IE)/dt = exner*cp*dp3d * diss(theta)  -   exner*cp*dp3d*heating               
+           !
+           ! KE dissipaiton will be given by:
+           !   d(KE)/dt = dp3d*U dot diss(U)
+           ! we want exner*cp*dp3d*heating = dp3d*U dot diss(U)
+           ! and thus heating =  U dot diss(U) / exner*cp
+           !                    
+           ! use hydrostatic pressure for simplicity
+           p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+           do k=1,nlev
+              p_i(:,:,k+1)=p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)
+           enddo
+#if (defined COLUMN_OPENMP)
+           !$omp parallel do default(shared), private(k)
+#endif
+           do k=1,nlev
+              dpdn0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                   ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
+              exner0(k) = (( hvcoord%hyam(k) + hvcoord%hybm(k) )*hvcoord%ps0/p0 )**kappa
+
+              ! p(:,:,k) = (p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)/2)
+              exner(:,:,k)  = ( (p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)/2) /p0)**kappa
+              heating(:,:,k)= (elem(ie)%state%v(:,:,1,k,nt)*vtens(:,:,1,k,ie) + &
+                               elem(ie)%state%v(:,:,2,k,nt)*vtens(:,:,2,k,ie) ) / &
+                               (exner(:,:,k)*Cp)
+
+              elem(ie)%state%theta_dp_cp(:,:,k,nt)=elem(ie)%state%theta_dp_cp(:,:,k,nt) &
+                   +stens(:,:,k,2,ie)*dpdn0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt))&
+                   -heating(:,:,k)
+           enddo
+
         enddo
      enddo
   endif
@@ -675,7 +699,7 @@ contains
   ! convert theta_dp_cp -> theta
   do ie=nets,nete            
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,heating)
+!$omp parallel do private(k)
 #endif
      do k=1,nlev
         elem(ie)%state%theta_dp_cp(:,:,k,nt)=&
@@ -739,6 +763,7 @@ contains
    
   real (kind=real_kind) :: kappa_star(np,np,nlev)
   real (kind=real_kind) :: theta_cp(np,np,nlev)
+  real (kind=real_kind) :: theta_bar(np,np,nlevp)
   real (kind=real_kind) :: omega_p(np,np,nlev)
   real (kind=real_kind) :: vort(np,np,nlev)      ! vorticity
   real (kind=real_kind) :: divdp(np,np,nlev)     
@@ -783,11 +808,13 @@ contains
      call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
 
      call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
-             kappa_star,pnh,dpnh,exner) ! ,exner_i)
-     
+             kappa_star,pnh,dpnh,exner)
+
+
      if (theta_hydrostatic_mode) then
-        ! Compute Hydrostatic equation
+        ! traditional Hydrostatic integral
         do k=1,nlev
+           !temp(:,:,k) = theta_dp_cp(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))/dp3d(:,:,k)           
            temp(:,:,k) = kappa_star(:,:,k)*theta_dp_cp(:,:,k)*exner(:,:,k)/pnh(:,:,k)
         enddo
         !call preq_hydrostatic(phi,elem(ie)%state%phis,T_v,p,dp)
@@ -868,6 +895,8 @@ contains
 
         eta_dot_dpdn(:,:,1     ) = 0.0D0
         eta_dot_dpdn(:,:,nlev+1) = 0.0D0
+        theta_bar(:,:,1     ) = 0.0D0
+        theta_bar(:,:,nlev+1) = 0.0D0
 
         ! ===========================================================
         ! Compute vertical advection of T and v from eq. CCM2 (3.b.1)
@@ -882,18 +911,21 @@ contains
         !    this loop constructs d( eta-dot * theta_dp_cp)/deta
         !   d( eta_dot_dpdn * theta*cp)
         !  so we need to compute theta_cp form theta_dp_cp and average to interfaces
-        k=1
-        s_theta_dp_cpadv(:,:,k)= &
-             eta_dot_dpdn(:,:,k+1)* (theta_cp(:,:,k+1)+theta_cp(:,:,k))/2  
+        if (theta_hydrostatic_mode) then
+           do k=2,nlev   ! energy conserving formula in hydrostatic case:
+              theta_bar(:,:,k) = - (phi(:,:,k)-phi(:,:,k-1))/(exner(:,:,k)-exner(:,:,k-1)) 
+           enddo
+        else
+           do k=2,nlev  ! simple averaging
+              theta_bar(:,:,k) = (theta_cp(:,:,k)+theta_cp(:,:,k-1))/2
+           enddo
+        endif
 
-        k=nlev
-        s_theta_dp_cpadv(:,:,k)= - &
-             eta_dot_dpdn(:,:,k)  * (theta_cp(:,:,k)+theta_cp(:,:,k-1))/2  
 
-        do k=2,nlev-1
+        do k=1,nlev
            s_theta_dp_cpadv(:,:,k)= &
-              eta_dot_dpdn(:,:,k+1)* (theta_cp(:,:,k+1)+theta_cp(:,:,k))/2  - &
-              eta_dot_dpdn(:,:,k)  * (theta_cp(:,:,k)+theta_cp(:,:,k-1))/2  
+              eta_dot_dpdn(:,:,k+1)* theta_bar(:,:,k+1)  - &
+              eta_dot_dpdn(:,:,k)  * theta_bar(:,:,k)
         end do
      endif
 
@@ -919,7 +951,7 @@ contains
      ! Compute phi + kinetic energy term: 10*nv*nv Flops
      ! ==============================================
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,KE,vtemp)
+!$omp parallel do private(k,i,j,v1,v2,vtemp)
 #endif
      vertloop: do k=1,nlev
 
@@ -944,13 +976,7 @@ contains
         ! use of s_vadv(:,:,k,2) here is correct since this corresponds to etadot d(phi)/deta
         stens(:,:,k,3) =  -s_vadv(:,:,k,2) - v_gradphi(:,:,k) + g*elem(ie)%state%w(:,:,k,n0)
 
-        do j=1,np
-           do i=1,np
-              v1     = elem(ie)%state%v(i,j,1,k,n0)
-              v2     = elem(ie)%state%v(i,j,2,k,n0)
-              KE(i,j,k)=0.5D0*( v1*v1 + v2*v2 )
-           end do
-        end do
+        KE(:,:,k) = ( elem(ie)%state%v(:,:,1,k,n0)**2 + elem(ie)%state%v(:,:,2,k,n0)**2)/2
         gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
         gradexner(:,:,:,k) = gradient_sphere(exner(:,:,k),deriv,elem(ie)%Dinv)        
 
@@ -1057,7 +1083,7 @@ contains
                   -phi(i,j,k)*d_eta_dot_dpdn_dn                                 
                !  Form PEvert2
                   elem(ie)%accum%PEvert2(i,j) = elem(ie)%accum%PEvert2(i,j)     &
-                  -dp3d(i,j,k)*s_theta_dp_cpadv(i,j,k)
+                  -dp3d(i,j,k)*s_vadv(i,j,k,2)
                !  Form T01
                   elem(ie)%accum%T01(i,j)=elem(ie)%accum%T01(i,j)               &
                   -(elem(ie)%state%theta_dp_cp(i,j,k,n0))                       &
@@ -1066,7 +1092,7 @@ contains
                !  Form S1 
                   elem(ie)%accum%S1(i,j)=elem(ie)%accum%S1(i,j)                 &
                   -exner(i,j,k)*div_v_theta(i,j,k)
-               !  Form T2 
+               !  Form T2  = -S2 (no reason to compute S2?)
                   elem(ie)%accum%T2(i,j)=elem(ie)%accum%T2(i,j)+                & 
                   (g*elem(ie)%state%w(i,j,k,n0)-v_gradphi(i,j,k))               &
                   *dpnh(i,j,k)                                 
@@ -1074,7 +1100,7 @@ contains
                   elem(ie)%accum%S2(i,j)=elem(ie)%accum%S2(i,j)                 &
                   +(v_gradphi(i,j,k)-g*elem(ie)%state%w(i,j,k,n0))              &
                   *dpnh(i,j,k)
-               !  Form P1
+               !  Form P1  = -P2  (no reason to compute P2?)
                   elem(ie)%accum%P1(i,j)=elem(ie)%accum%P1(i,j)                 &
                   -g*(elem(ie)%state%w(i,j,k,n0)) * dp3d(i,j,k)
                !  Form P2

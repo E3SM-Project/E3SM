@@ -21,12 +21,6 @@ module control_mod
   logical, public :: theta_hydrostatic_mode = .false.  
 
 
-!shallow water advection tests:
-!kmass points to a level with density.  other levels contain test tracers
-  integer, public  :: kmass  = -1
-  integer, public  :: toy_chemistry = 0            !  1 = toy chemestry is turned on in 2D advection code
-  real (kind=real_kind), public :: g_sw_output            	   = 9.80616D0          ! m s^-2
-
   integer, public  :: tstep_type= 5                           ! preqx timestepping options
   integer, public  :: rk_stage_user  = 0                      ! number of RK stages (shallow water model) 
   integer, public  :: ftype = 0                                ! Forcing Type
@@ -65,7 +59,6 @@ module control_mod
   integer              , public :: partmethod     ! partition methods
   character(len=MAX_STRING_LEN)    , public :: topology       ! options: "cube" is supported
   character(len=MAX_STRING_LEN)    , public :: test_case      ! options: if cube: "swtc1","swtc2",or "swtc6"  
-  integer              , public :: sub_case                   ! generic test case param 
   integer              , public :: tasknum
   integer              , public :: remapfreq      ! remap frequency of synopsis of system state (steps)
   character(len=MAX_STRING_LEN) :: remap_type     ! selected remapping option
@@ -141,11 +134,6 @@ module control_mod
 
   integer, public :: prescribed_wind=0    ! fix the velocities?
 
-  real (kind=real_kind), public :: initial_total_mass = 0    ! initial perturbation in JW test case
-  real (kind=real_kind), public :: u_perturb   = 0         ! initial perturbation in JW test case
-#ifndef CAM
-  real (kind=real_kind), public :: pertlim = 0          !pertibation to temperature [like CESM]
-#endif
 
   integer, public, parameter :: west  = 1
   integer, public, parameter :: east  = 2
@@ -157,6 +145,28 @@ module control_mod
   integer, public, parameter :: neast = 8
   
   logical, public :: disable_diagnostics  = .FALSE.
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! test case global parameters
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! generic test case parameter - can be used by any test case to define options
+  integer, public :: sub_case = 1                  
+
+  real (kind=real_kind), public :: initial_total_mass = 0    ! initial perturbation in JW test case
+  real (kind=real_kind), public :: u_perturb   = 0         ! initial perturbation in JW test case
+#ifndef CAM
+  real (kind=real_kind), public :: pertlim = 0          !pertibation to temperature [like CESM]
+#endif
+
+  ! shallow water advection test paramters
+  ! kmass = level index with density.  other levels contain test tracers
+  integer, public  :: kmass  = -1
+  integer, public  :: toy_chemistry = 0            !  1 = toy chemestry is turned on in 2D advection code
+  real (kind=real_kind), public :: g_sw_output            	   = 9.80616D0          ! m s^-2
 
   ! parameters for dcmip12 test 2-0: steady state atmosphere with orography
   real(real_kind), public :: dcmip2_0_h0      = 2000.d0        ! height of mountain range        (meters)

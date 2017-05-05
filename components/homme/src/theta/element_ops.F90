@@ -263,7 +263,7 @@ contains
 
 
 
-  subroutine get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,phis,kappa_star,pnh,dpnh,exner,exner_i_out)
+  subroutine get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,phis,kappa_star,pnh,dpnh,exner,exner_i_out,pnh_i_out)
   implicit none
 !
 ! compute exner pressure, nh presure
@@ -284,6 +284,7 @@ contains
   real (kind=real_kind), intent(out) :: dpnh(np,np,nlev) ! nh nonhyrdo pressure interfaces
   real (kind=real_kind), intent(out) :: exner(np,np,nlev)  ! exner nh pressure
   real (kind=real_kind), intent(out), optional :: exner_i_out(np,np,nlevp)  ! exner nh pressure interfaces
+  real (kind=real_kind), intent(out), optional :: pnh_i_out(np,np,nlevp)  ! pnh on interfaces
 
   !   local
   real (kind=real_kind) :: kappa_star_i(np,np,nlev)
@@ -318,7 +319,7 @@ contains
         exner_i_out(:,:,1) = (pnh_i(:,:,1)/p0)**kappa_star(:,:,1)
         exner_i_out(:,:,nlev+1) = (pnh_i(:,:,nlev+1)/p0)**kappa_star(:,:,nlev)
      endif
-     
+     if (present(pnh_i_out)) pnh_i_out=pnh_i
   else
 !==============================================================
 !  non-hydrostatic formulas
@@ -396,7 +397,7 @@ contains
      exner_i_out(:,:,1) = (pnh_i(:,:,1)/p0)**kappa_star(:,:,1)
      exner_i_out(:,:,nlev+1) = (pnh_i(:,:,nlev+1)/p0)**kappa_star(:,:,nlev)
   endif
-
+  if (present(pnh_i_out)) pnh_i_out=pnh_i
 
   endif ! hydrostatic/nonhydrostatic version
   end subroutine get_pnh_and_exner

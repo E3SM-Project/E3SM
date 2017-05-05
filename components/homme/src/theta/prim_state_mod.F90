@@ -632,10 +632,11 @@ contains
 #ifdef ENERGY_DIAGNOSTICS
        ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
        if (theta_hydrostatic_mode) then
-          write(iulog,'(a,2e22.14)')'KE-u horiz adv,sum to 0: ',KEH1,KEH2
-          write(iulog,'(a,2e22.14)')'KE-u vert adv, sum to 0: ',KEV1,KEV2
-          write(iulog,'(a,2e22.14)')'IE vert adv, sum to ~0 : ',IEvert1,PEvert1
-          write(iulog,'(a,2e22.14)')'KE->IE, IE->KE         : ',(T1+PEhorz2),(S1+PEhorz1)
+          write(iulog,'(a,2e22.14)')'KEu h-adv,sum=0:',KEH1,KEH2
+          write(iulog,'(a,2e22.14)')'KEu v-adv,sum=0:',KEV1,KEV2
+          !write(iulog,'(a,3e22.14)')'IE  v-adv,sum~0:',IEvert1,PEvert1,IEvert1+PEvert1
+          write(iulog,'(a,3e22.14)')'IE  v-adv,sum=0:',IEvert1,PEvert1
+          write(iulog,'(a,2e22.14)')'KE->IE, IE->KE :',(T1+PEhorz2),(S1+PEhorz1)
           
           ddt_tot  =  (KEner(2)-KEner(1))/dt
           ddt_diss = ddt_tot -(T1+PEhorz2)
@@ -643,43 +644,48 @@ contains
           
           ddt_tot =  (IEner(2)-IEner(1))/dt
           ddt_diss = ddt_tot - (S1+PEhorz1)
-          ddt_diss_adj = ddt_tot - (S1+PEhorz1 + IEvert1+PEvert1)
+          !ddt_diss_adj = ddt_tot - (S1+PEhorz1 + IEvert1+PEvert1)
           write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
-          write(iulog,'(a,3E22.14)') "diss(adjusted):",ddt_diss_adj
+          ddt_tot = (TOTE(2)-TOTE(1))/dt
+          !write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot,ddt_tot - ( IEvert1+PEvert1)
+          write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot
        else
-          write(iulog,'(a,2e22.14)')'KE-u horiz adv, sum to 0        :',KEH1,KEH2
-          write(iulog,'(a,2e22.14)')'KE-w horiz adv, sum to ~0       :',KEwH1,KEwH2
-          write(iulog,'(a,2e22.14)')'KE-u vert adv, sum to 0         :',KEV1,KEV2
-          write(iulog,'(a,2e22.14)')'KE-w vert adv, sum to 0         :',KEwV1,KEwV2
-          write(iulog,'(a,2e22.14)')'PE horiz adv, sum to 0          :',PEhorz1,PEhorz2
-          write(iulog,'(a,2e22.14)')'PE vert adv, sum to 0           :',PEvert1,PEvert2
-          write(iulog,'(a,2e22.14)')'IE vert adv, sum to ~0          :',IEvert1,IEvert2
-          write(iulog,'(a,2e22.14)')'KE->PE, PE->KE                  :',P1,P2
-          write(iulog,'(a,2e22.14)')'KE->IE, IE->KE                  :',T1+T2,S1+S2
+          write(iulog,'(a,2e22.14)')'KEu h-adv,sum=0:',KEH1,KEH2
+          write(iulog,'(a,3e22.14)')'KEw h-adv,sum~0:',KEwH1,KEwH2,KEwH1+KEwH2
+          write(iulog,'(a,2e22.14)')'KEu v-adv,sum=0:',KEV1,KEV2
+          write(iulog,'(a,2e22.14)')'KEw v-adv,sum=0:',KEwV1,KEwV2
+          write(iulog,'(a,2e22.14)')'PE h-adv, sum=0:',PEhorz1,PEhorz2
+          write(iulog,'(a,2e22.14)')'PE v-adv, sum=0:',PEvert1,PEvert2
+          write(iulog,'(a,3e22.14)')'IE v-adv, sum~0:',IEvert1,IEvert2,IEvert1+IEvert2
+          write(iulog,'(a,2e22.14)')'KE->PE, PE->KE :',P1,P2
+          write(iulog,'(a,2e22.14)')'KE->IE, IE->KE :',T1+T2,S1+S2
           
           ddt_tot  =  (KEner(2)-KEner(1))/dt
           ddt_diss = ddt_tot -(T1+T2+P1) 
           ddt_diss_adj = ddt_tot -(T1+T2+P1+KEwH1+KEwH2)
-          write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
-          write(iulog,'(a,3E22.14)') "KE diss(adj):",ddt_diss_adj
+          write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss_adj
+          !write(iulog,'(a,3E22.14)') "KE diss(adj):",ddt_diss_adj
           
           ddt_tot =  (IEner(2)-IEner(1))/dt
           ddt_diss = ddt_tot - (S1+S2)
           ddt_diss_adj = ddt_tot - (S1+S2+IEvert1+IEvert2)
-          write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
-          write(iulog,'(a,3E22.14)') "IE diss(adj):",ddt_diss_adj
+          write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss_adj
+          !write(iulog,'(a,3E22.14)') "IE diss(adj):",ddt_diss_adj
           
           ddt_tot = (PEner(2)-PEner(1))/dt
           ddt_diss = ddt_tot - P2
           write(iulog,'(a,3E22.14)') "PE,d/dt,diss:",PEner(2),ddt_tot,ddt_diss
+          ddt_tot = (TOTE(2)-TOTE(1))/dt
+          ddt_diss = ddt_tot - (KEwH1+KEwH2+IEvert1+IEvert2)
+          write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot,ddt_diss
        endif
 #else
        write(iulog,'(a,3E22.14)') "KE,d/dt      ",KEner(2),(KEner(2)-KEner(1))/dt
        write(iulog,'(a,3E22.14)') "IE,d/dt      ",IEner(2),(IEner(2)-IEner(1))/dt
        write(iulog,'(a,3E22.14)') "PE,d/dt      ",PEner(2),(PEner(2)-PEner(1))/dt
-#endif
        ddt_tot = (TOTE(2)-TOTE(1))/dt
        write(iulog,'(a,3E22.14)') " E,dE/dt     ",TOTE(2),ddt_tot
+#endif
        
        do q=1,qsize
           write(iulog,'(a,i3,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
@@ -762,7 +768,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 !  
 
     use kinds, only : real_kind
-    use dimensions_mod, only : np, np, nlev
+    use dimensions_mod, only : np, np, nlev,nlevp
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
     use physical_constants, only : Cp, cpwater_vapor
@@ -781,8 +787,10 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
     real (kind=real_kind) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
-    real (kind=real_kind) :: dpnh(np,np,nlev) ! nh nonhyrdo pressure interfaces
+    real (kind=real_kind) :: dpnh(np,np,nlev) 
     real (kind=real_kind) :: exner(np,np,nlev)  ! exner nh pressure
+    real (kind=real_kind) :: exner_i(np,np,nlevp)  ! exner nh pressure on interfaces
+    real (kind=real_kind) :: pnh_i(np,np,nlevp)  ! exner nh pressure on intefaces
     real (kind=real_kind) :: kappa_star(np,np,nlev)  ! exner nh pressure
 
 
@@ -803,7 +811,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,t1_qdp),dpt1)
        call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,t1),dpt1,&
             elem(ie)%state%phi(:,:,:,t1), &
-            elem(ie)%state%phis(:,:),kappa_star,pnh,dpnh,exner)
+            elem(ie)%state%phis(:,:),kappa_star,pnh,dpnh,exner,exner_i,pnh_i)
    
  !   KE   .5 dp/dn U^2
        do k=1,nlev
@@ -837,7 +845,8 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           suml2(:,:) = suml2(:,:) -dpnh(:,:,k)*elem(ie)%state%phi(:,:,k,t1)
        enddo
        elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
-            elem(ie)%state%ps_v(:,:,t1) * elem(ie)%state%phis(:,:)
+            pnh_i(:,:,nlevp)* elem(ie)%state%phis(:,:)
+!            elem(ie)%state%ps_v(:,:,t1) * elem(ie)%state%phis(:,:)
 
        if (theta_hydrostatic_mode) then
           ! hydrostatic case: combine IE and PE
