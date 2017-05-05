@@ -9,6 +9,7 @@
  module mpas_atmphys_driver_sfclayer
  use mpas_kind_types
  use mpas_pool_routines
+ use mpas_timer, only : mpas_timer_start, mpas_timer_stop
 
  use mpas_atmphys_constants
  use mpas_atmphys_vars
@@ -853,6 +854,7 @@
  sfclayer_select: select case (trim(sfclayer_scheme))
 
     case("sf_monin_obukhov")
+       call mpas_timer_start('Monin-Obukhov')
        call sfclay( &
                    p3d      = pres_hyd_p , psfc     = psfc_p     , t3d      = t_p        , &
                    u3d      = u_p        , v3d      = v_p        , qv3d     = qv_p       , &
@@ -912,8 +914,10 @@
                       its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                      )
        endif
+       call mpas_timer_stop('Monin-Obukhov')
 
     case("sf_mynn")
+       call mpas_timer_start('MYNN_sfclay')
        call sfclay_mynn( &
                    p3d      = pres_hyd_p , pi3d     = pi_p       , psfcpa    = psfc_p     , &
                    th3d     = th_p       , t3d      = t_p        , u3d       = u_p        , &
@@ -977,6 +981,7 @@
                       its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte    &
                           )
        endif
+       call mpas_timer_stop('MYNN_sfclay')
 
     case default
 
