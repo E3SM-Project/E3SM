@@ -179,7 +179,7 @@ contains
   end subroutine
 
   !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,cp_star,zm,rho,g,i,j,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,cp_star,zm,g,i,j,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
     ! used by tests to compute idealized physics forcing terms
@@ -208,7 +208,6 @@ contains
     pnh   = p
     exner = (p/p0)**(kappa)
     theta = T/exner
-    rho   = p/(Rgas*T)
     cp_star = cp
 
   end subroutine get_state

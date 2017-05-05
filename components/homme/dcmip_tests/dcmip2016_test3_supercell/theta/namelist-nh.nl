@@ -6,7 +6,7 @@
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2016_test3"         ! test identifier
-  ne                = 30                        ! number of elements per cube face
+  ne                = 31                        ! number of elements per cube face
   qsize             = 4                         ! num tracer fields
   nmax              = 36000                     ! 7200s(120min)/tstep
   statefreq         = 100 !360                  ! number of steps between screen dumps
@@ -37,7 +37,7 @@
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 3                         ! 0=timesteps, 1=days, 2=hours, 3=seconds
   output_frequency  = 300 !900,                 ! 300 (5min) !900 seconds (15 minutes)
-  output_varnames1  ='T','p','ps','pnh','geo','rho','u','v','w','Th','Q','Q2','Q3','Q4'   ! variables to write to file
+  output_varnames1  ='T','p','ps','pnh','geo','u','v','w','Th','Q','Q2','Q3','Q4'   ! variables to write to file
   interp_nlon       = 360
   interp_nlat       = 181
   interp_type       = 0                         ! 0=native grid, 1=bilinear

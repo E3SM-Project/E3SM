@@ -503,7 +503,7 @@ contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   implicit none
   
-  type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
+  type (hvcoord_t),      intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
   real (kind=real_kind), intent(in) :: theta_dp_cp(np,np,nlev)
   real (kind=real_kind), intent(in) :: dp(np,np,nlev)
   real (kind=real_kind), intent(in) :: phis(np,np)
@@ -638,12 +638,12 @@ contains
 
   end subroutine set_elem_state
  !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,Cp_star,zm,rho,g,i,j,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,Cp_star,zm,g,i,j,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
     ! used by idealized tests to compute idealized physics forcing terms
 
-    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,cp_star,zm,rho
+    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,cp_star,zm
     real(real_kind), intent(in)    :: g
     integer,         intent(in)    :: i,j,nt,ntQ
     type(element_t), intent(inout) :: elem
@@ -672,7 +672,6 @@ contains
 
     theta = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star*dp)
     T     = theta*exner
-    rho   = pnh/(Rgas*T)
 
   end subroutine get_state
 

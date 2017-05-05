@@ -65,7 +65,7 @@ REAL(8), PARAMETER ::                 &
        Rd    = Rgas,                  & ! Ideal gas const dry air (J kg^-1 K^1)
        Lvap  = 2.5d6,                 & ! Latent heat of vaporization of water
        Rvap  = Rwater_vapor,          & ! Ideal gas constnat for water vapor
-       Mvap  = 0.608d0,               & ! Ratio of molar mass of dry air/water
+       Mvap  = Rvap/Rd - 1.0d0,       & ! Ratio of molar mass of dry air/water (~0.608)
        pi    = dd_pi,                 & ! pi
        omega = omega0,                & ! Reference rotation rate of the Earth (s^-1)
        deg2rad= pi/180.d0             ! Conversion factor of degrees to radians
@@ -88,7 +88,6 @@ REAL(8), PARAMETER ::                 &
        z_tr       = 12000.d0   ,      & ! altitude at the tropopause
        T_tr       = 213.d0     ,      & ! temperature at the tropopause
        pseq       = 100000.0d0          ! surface pressure at equator (Pa)
-       !pseq       = 95690.0d0           ! surface pressure at equator (Pa)
 
   REAL(8), PARAMETER ::               &
        us         = 30.d0      ,      & ! maximum zonal wind velocity
@@ -293,7 +292,9 @@ CONTAINS
         qvs = saturation_mixing_ratio(p, T)
         qveq(k) = qvs * H(k)
 
-        thetavyz(1,k) = thetaeq(k) * (1.d0 + 0.61d0 * qveq(k))
+        !thetavyz(1,k) = thetaeq(k) * (1.d0 + 0.61d0 * qveq(k))
+        thetavyz(1,k) = thetaeq(k) * (1.d0 + Mvap * qveq(k))
+
       end do
     end do
 
@@ -430,7 +431,8 @@ CONTAINS
     v = 0.d0
 
     ! Temperature
-    t = thetav / (1.d0 + 0.61d0 * q) * (p / p0)**(Rd/cp)
+    !t = thetav / (1.d0 + 0.61d0 * q) * (p / p0)**(Rd/cp)
+    t = thetav / (1.d0 + Mvap * q) * (p / p0)**(Rd/cp)
 
   END SUBROUTINE supercell_test
 
@@ -498,8 +500,7 @@ CONTAINS
 
     ! Modified virtual potential temperature
     if (pert .ne. 0) then
-        thetav = thetav &
-           + thermal_perturbation(lon, lat, z) * (1.d0 + 0.61d0 * q)
+        thetav = thetav + thermal_perturbation(lon, lat, z) * (1.d0 + Mvap * q)
     end if
 
     ! Updated pressure

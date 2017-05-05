@@ -34,23 +34,29 @@ begin
   data      = addfile(data_file,"r")
 
   time = data->time
+  nt = dimsizes(time)
+  print("nt="+nt)
+
   min_per_day = 60*24
 
-  t1  = closest_val(30.0/min_per_day , time) -1
-  t2  = closest_val(60.0/min_per_day , time) -1
-  t3  = closest_val(90.0/min_per_day , time) -1
-  t4  = closest_val(120.0/min_per_day, time) -1
-print(t1)
-print(t2)
-print(t3)
-print(t4)
-  times  = (/t1,t2,t3,t4/)
-  w_5km  = data->w (times,29,:,:)
-  qr_5km = data->Q2(times,29,:,:)
-qr_5km=qr_5km*1000
+  t1  = closest_val(30.0/min_per_day , time)
+  t2  = closest_val(60.0/min_per_day , time)
+  t3  = closest_val(90.0/min_per_day , time)
+  t4  = closest_val(90.0/min_per_day , time)
 
-geo    = data->geo(times,:,:,:)
-print("levels="+geo(0,:,1,1)/9.81)
+  times  = (/t1,t2,t3,t4/)
+  times = where(times .gt. (nt-1), 0*times+(nt-1), times)
+  print(times)
+  print(time(times)*min_per_day)
+
+  i_5km = 29
+  w_5km  = data->w (times,i_5km,:,:)
+  qr_5km = data->Q3(times,i_5km,:,:)
+  qr_5km = qr_5km*1000
+
+  geo    = data->geo(times,:,:,:)
+  g=9.80616 ; m/s
+  print("levels="+geo(0,:,1,1)/g)
 
   w_5km  = lonFlip(w_5km )
   qr_5km = lonFlip(qr_5km)

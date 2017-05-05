@@ -23,7 +23,7 @@ use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
 use kinds,                only: rl=>real_kind, iulog
 use parallel_mod,         only: abortmp
 use element_ops,          only: set_state, get_state, tests_finalize, set_forcing_rayleigh_friction, set_thermostate
-use physical_constants,   only: p0, g, Rgas, kappa, Cp
+use physical_constants,   only: p0, g, Rgas, kappa, Cp, Rwater_vapor
 
 implicit none
 
@@ -34,7 +34,7 @@ real(rl):: tau
 real(rl):: ztop
 
 real(rl), parameter ::rh2o    = 461.5d0,            & ! Gas constant for water vapor (J/kg/K)
-                      zvir    = (rh2o/Rgas) - 1.d0    ! Constant for virtual temp. calc. (~0.608)
+                      Mvap    = (Rwater_vapor/Rgas) - 1.d0    ! Constant for virtual temp. calc. (~0.608)
 contains
 
 !_____________________________________________________________________
@@ -147,7 +147,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat                                                    ! pointwise coordiantes
-  real(rl):: p,dp, z,phis,u,v,w,T,thetav,phis_ps,ps,rho,q(qsize_d)            ! pointwise field values
+  real(rl):: p,dp, z,phis,u,v,w,T,thetav,phis_ps,ps,rho,rhom,q(qsize_d)            ! pointwise field values
   real(rl):: p_i1,p_i2
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 3: supercell storm'
@@ -185,7 +185,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
         p  =  p0*hvcoord%hyam(k) + ps*hvcoord%hybm(k)
         dp = pressure_thickness(ps,k,hvcoord)
 
-        call supercell_test(lon,lat,p,z,zcoords,u,v,T,thetav,ps,rho,q(1),pert)
+        call supercell_test(lon,lat,p,z,zcoords,u,v,T,thetav,ps,rhom,q(1),pert)
 
         w    = 0 ! no vertical motion
         phis = 0 ! no topography
@@ -194,7 +194,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
         q(4) = 0 ! precip
 
         ! convert virtual temp to dry temp (?)
-        T = T * (1.0d0+q(1)) * (1.0d0+zvir*q(1))
+        !T = T * (1.0d0+q(1)) ! * (1.0d0+Mvap*q(1))
 
         call set_state(u,v,w,T,ps,phis,p,dp,z,g,i,j,k,elem(ie),1,nt)
         call set_tracers(q,qsize_d, dp,i,j,k,lat,lon,elem(ie))
@@ -226,7 +226,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
   real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,thetav,exner,p,dp,cp_star,qv,qc,qr,rho,z
   real(rl), dimension(np,np,nlevp) :: zi
 
-  real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0
+  real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0,  pm
   real(rl), dimension(np,np)      :: precl
 
   real(rl), dimension(nlev ) :: u1,v1,p1,qv1,qc1,qr1,rho1,z1
@@ -236,18 +236,22 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
   select case(test)
     case(1);      pbl_type= 0; prec_type=0;
     case(2);      pbl_type= 0; prec_type=0;
-    case default; pbl_type=-1; prec_type=0;
+    case(3);      pbl_type=-1; prec_type=0;
+    default; stop
   end select
 
   do ie = nets,nete
 
     ! get current element state
-    call get_state(u,v,w,T,theta,exner,p,dp,cp_star,z,rho,g,i,j,elem(ie),hvcoord,nt,ntQ)
+    call get_state(u,v,w,T,theta,exner,p,dp,cp_star,z,g,i,j,elem(ie),hvcoord,nt,ntQ)
 
     ! get mixing ratios
     qv  = elem(ie)%state%Qdp(:,:,:,1,ntQ)/dp
     qc  = elem(ie)%state%Qdp(:,:,:,2,ntQ)/dp
     qr  = elem(ie)%state%Qdp(:,:,:,3,ntQ)/dp
+
+    ! get rho from p and T
+    rho = p/(T*Rgas)
 
     ! save un-forced fields
     u0=u; v0=v; T0=T; qv0=qv; qc0=qc; qr0=qr
@@ -257,13 +261,19 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
     zi(:,:,2:nlev)= ( z(:,:,1:nlev-1)+z(:,:,2:nlev) )/2
     zi(:,:,1)     = zi(:,:,2) + (z(:,:,1)-z(:,:,2))
 
+!pm = p*(1.0d0+qv)*(1.0d0+Mvap*qv)
+
     ! apply dcmip forcing to columns
     do j=1,np; do i=1,np
+
+      lat = elem(ie)%spherep(i,j)%lat
 
       ! invert columns (increasing z)
       u1    = u   (i,j,nlev:1:-1)
       v1    = v   (i,j,nlev:1:-1)
       p1    = p   (i,j,nlev:1:-1)
+!p1    = pm   (i,j,nlev:1:-1)
+
       qv1   = qv  (i,j,nlev:1:-1)
       qc1   = qc  (i,j,nlev:1:-1)
       qr1   = qr  (i,j,nlev:1:-1)
@@ -271,29 +281,24 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
       z1    = z   (i,j,nlev:1:-1)
       zi1   = zi  (i,j,nlevp:1:-1)
 
-      lat = elem(ie)%spherep(i,j)%lat
-
       ! apply physics to (u,v,p, qv,qc,qr). (rho held constant)
       call DCMIP2016_PHYSICS(test, u1,v1,p1, qv1,qc1,qr1, rho1,dt,z1,zi1,lat,nlev,precl,pbl_type,prec_type)
 
-      ! return to normal column order (increasing eta)
+      ! revert columns (increasing eta)
       u   (i,j,:) = u1 (nlev:1:-1)
       v   (i,j,:) = v1 (nlev:1:-1)
       p   (i,j,:) = p1 (nlev:1:-1)
+!pm   (i,j,:) = p1 (nlev:1:-1)
       qv  (i,j,:) = qv1(nlev:1:-1)
       qc  (i,j,:) = qc1(nlev:1:-1)
       qr  (i,j,:) = qr1(nlev:1:-1)
 
     enddo; enddo;
 
-    ! get T from dry-air equation of state
+!p = pm/((1.0d0+qv)*(1.0d0+Mvap*qv))
+
+    ! get T from p and rho
     T = p/(rho*Rgas)
-
-    ! debug: set forced theta directly
-    ! theta= T*(p/p0)**(-kappa)
-    ! elem(ie)%state%theta_dp_cp(:,:,:,nt) = theta*(Cp_star*dp)
-
-    !elem(ie)%state%T(:,:,:,nt) = T
 
     ! get dynamics forcing
     elem(ie)%derived%FM(:,:,1,:) = (u - u0)/dt

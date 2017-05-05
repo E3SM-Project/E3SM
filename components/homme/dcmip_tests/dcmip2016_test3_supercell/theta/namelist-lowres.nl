@@ -6,7 +6,7 @@
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2016_test3"         ! test identifier
-  ne                = 15 !7                         ! number of elements per cube face
+  ne                = 8                         ! number of elements per cube face
   qsize             = 4                         ! num tracer fields: qv,qc,qr
   nmax              = 36000                     ! 7200s(120min)/tstep
   statefreq         = 10                        ! number of steps between screen dumps
@@ -25,7 +25,7 @@
   rearth            = 53133                     ! 6.376E6  / 120
   omega             = 0
   se_ftype          = 0
-  moisture          = 'dry'
+  moisture          = 'dry' !'notdry'
   theta_hydrostatic_mode = .false.
 /
 &vert_nl
