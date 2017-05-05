@@ -15,6 +15,8 @@ class TestACMEDriver(unittest.TestCase):
 
     def test_make_parameters_with_multiple_sets(self):
         self.parameter.set = ['5', '7']
+        self.parameter.reference_data_path = '/'
+        self.parameter.test_data_path = '/'
         params = make_parameters(self.parameter)
         self.assertTrue(len(params) > 100)  # since no single run is greater than than 100
 
