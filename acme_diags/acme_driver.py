@@ -58,7 +58,9 @@ if __name__ == '__main__':
             raise RuntimeError('Parameter needs to have an attribute set')
         for pset in parameter.set:
             pset = str(pset)
-            if pset == '5':
+            if pset == '4':
+                from acme_diags.driver.set4_driver import compute
+            elif pset == '5':
                 from acme_diags.driver.set5_driver import compute
             elif pset == '7':
                 from acme_diags.driver.set7_driver import compute
