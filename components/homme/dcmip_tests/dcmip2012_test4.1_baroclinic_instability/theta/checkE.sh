@@ -23,24 +23,29 @@ endif
 set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
 
 #set case  = h-x1
-#set case  = h-x100
-set case  = nh-x100
+#set case  = nh-x100
+set case  = nh-x1000
 
 \rm -f input.nl
 mkdir restart
 
 
-# run 9 days, write a restart file
+# run 30 days, write a restart file
 set namelist = ${case}-erun1.nl            
 \cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
 
+# run 30 days, eulerian,  (no restart)
+set namelist = ${case}-erun3.nl            
+\cp -f $namelist input.nl
+#mpirun -np $NCPU $EXEC < input.nl
 
 
-# restart, run 4 timesteps with no viscosity:
+# restart, run 2 timesteps with no viscosity:
 set namelist = ${case}-erun2.nl            
 \cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
+
 
 
 

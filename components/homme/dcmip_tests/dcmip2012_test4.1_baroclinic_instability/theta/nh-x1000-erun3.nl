@@ -1,7 +1,7 @@
 &ctl_nl
-theta_hydrostatic_mode = .true.
+theta_hydrostatic_mode = .false.
 dcmip4_moist  = 0
-dcmip4_X      = 100.0
+dcmip4_X      = 1000.0
 vert_num_threads = 1
 NThreads=1
 partmethod    = 4
@@ -11,25 +11,25 @@ u_perturb = 1
 rotate_grid = 0
 ne=11
 qsize = 0
-nmax = 2
-statefreq=1
-restartfreq =   -1
-restartfile   = "./restart/R000000864"
-runtype       = 2
+nmax = 12960
+statefreq=270
+restartfreq =   129600
+restartfile   = "./restart/R000012960"
+runtype       = 0
 mesh_file='/dev/null'
-tstep=1.0
+tstep=.2
 rsplit=0
 qsplit = 1
 tstep_type = 5
 integration   = "explicit"
-nu=0
-nu_p=0
-nu_q=0
-nu_s=0
+nu=2e7
+nu_p=2e7
+nu_q=2e7
+nu_s=2e7
 nu_top = 0
 se_ftype     = 0
 limiter_option = 8
-vert_remap_q_alg = 1
+vert_remap_q_alg = 0
 hypervis_scaling=0
 hypervis_order = 2
 /
@@ -49,14 +49,14 @@ profile_single_file             = .true.
 ! interp_nlat = 512
 ! interp_nlon = 1024
 
- output_timeunits=1              ! 1- days, 2 hours, 0 - tsteps
- output_frequency=-1
- output_start_time=9
- output_end_time=3000
+ output_timeunits=0              ! 1- days, 2 hours, 0 - tsteps
+ output_frequency=4320
+ output_start_time=10
+ output_end_time=12960
  output_varnames1='ps','zeta','u','v','T'
  num_io_procs      = 16
  output_type = 'netcdf'
- output_prefix = 'hydro-X100-erun2-'
+ output_prefix = 'hydro-X1000-erun1-'
 /
 
 

@@ -29,7 +29,7 @@ nu_s=2e16
 nu_top = 0
 se_ftype     = 0
 limiter_option = 8
-vert_remap_q_alg = 1
+vert_remap_q_alg = 0
 hypervis_scaling=0
 hypervis_order = 2
 /
