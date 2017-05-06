@@ -667,7 +667,12 @@ contains
            !   d(KE)/dt = dp3d*U dot diss(U)
            ! we want exner*cp*dp3d*heating = dp3d*U dot diss(U)
            ! and thus heating =  U dot diss(U) / exner*cp
-           !                    
+           ! 
+           ! PE dissipation
+           ! d(PE)/dt = dp3d diss(phi) 
+           !     we want dp3d diss(phi) = exner*cp*dp3d*heating
+           !     heating = diss(phi) / exner*cp
+           !
            ! use hydrostatic pressure for simplicity
            p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
            do k=1,nlev
@@ -683,9 +688,17 @@ contains
 
               ! p(:,:,k) = (p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)/2)
               exner(:,:,k)  = ( (p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)/2) /p0)**kappa
-              heating(:,:,k)= (elem(ie)%state%v(:,:,1,k,nt)*vtens(:,:,1,k,ie) + &
+              if (theta_hydrostatic_mode) then
+                 heating(:,:,k)= (elem(ie)%state%v(:,:,1,k,nt)*vtens(:,:,1,k,ie) + &
                                elem(ie)%state%v(:,:,2,k,nt)*vtens(:,:,2,k,ie) ) / &
-                               (exner(:,:,k)*Cp)
+                               (exner(:,:,k)*Cp)  
+              else
+                 heating(:,:,k)= (elem(ie)%state%v(:,:,1,k,nt)*vtens(:,:,1,k,ie) + &
+                               elem(ie)%state%v(:,:,2,k,nt)*vtens(:,:,2,k,ie)  +&
+                               elem(ie)%state%w(:,:,k,nt)*stens(:,:,k,3,ie)  +&
+                               stens(:,:,k,4,ie) ) / &
+                               (exner(:,:,k)*Cp)  
+              endif
 
               elem(ie)%state%theta_dp_cp(:,:,k,nt)=elem(ie)%state%theta_dp_cp(:,:,k,nt) &
                    +stens(:,:,k,2,ie)*dpdn0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt))&

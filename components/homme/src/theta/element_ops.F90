@@ -266,12 +266,15 @@ contains
   subroutine get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,phis,kappa_star,pnh,dpnh,exner,exner_i_out,pnh_i_out)
   implicit none
 !
-! compute exner pressure, nh presure
+! Use Equation of State to compute exner pressure, nh presure
+! EOS:   
+!
+!       theta_dp_cp * ep = -dphi/ds    OR    rho_R_theta * dphi/ds = -theta_dp_cp*kappa
+!
+! with  ep = d(exner)/dp = kappa*exner/p            
 !
 ! input:  dp3d, Qdp (if use_moisture), phi, phis, theta
-! output:  pnh, dphn, exner, exner_i
-!       for k=2..nlev, use the equation of state:  pnh/e = rho*Rstar*theta
-!                                                    rho   = -dp3d/dphi 
+! output:  pnh, dphn, exner, exner_i, pnh_i
 !
 !  
   type (hvcoord_t),     intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
@@ -288,12 +291,17 @@ contains
 
   !   local
   real (kind=real_kind) :: kappa_star_i(np,np,nlev)
-  real (kind=real_kind) :: Qt(np,np,nlev)
   real (kind=real_kind) :: pnh_i(np,np,nlevp) 
-  real (kind=real_kind) :: rho_R_theta(np,np,nlevp) 
-  real (kind=real_kind) :: rho_i(np,np,nlevp) 
-  real (kind=real_kind) :: theta_i(np,np,nlevp) 
   real (kind=real_kind) :: exner_i(np,np,nlevp) 
+
+! new EOS
+  real (kind=real_kind) :: exner_over_p(np,np,nlev)
+  real (kind=real_kind) :: exner_over_p_i(np,np,nlevp)
+  real (kind=real_kind) :: dphi(np,np,nlev)
+  real (kind=real_kind) :: dphi_i(np,np,nlevp) 
+
+! old OES
+  real (kind=real_kind) :: rho_R_theta(np,np,nlevp) 
   integer :: k
 
 
@@ -322,31 +330,21 @@ contains
      if (present(pnh_i_out)) pnh_i_out=pnh_i
   else
 !==============================================================
-!  non-hydrostatic formulas
+!  non-hydrostatic EOS
 !==============================================================
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
 #endif
   do k=2,nlev
-
      kappa_star_i(:,:,k) = (kappa_star(:,:,k)+kappa_star(:,:,k-1))/2
 
-!     rho_i(:,:,k) = - ((dp3d(:,:,k)+dp3d(:,:,k-1))/2) / &
-!          (phi(:,:,k)-phi(:,:,k-1))
-!     rho_R_theta(:,:,k) = rho_i(:,:,k)*(theta_dp_cp(:,:,k)/(dp3d(:,:,k)*Cp)     &
-!       +theta_dp_cp(:,:,k-1)/(dp3d(:,:,k)*Cp)*                                  &
-!          (R_star(:,:,k)+R_star(:,:,k-1)) / 4
-!     rho_R_theta(:,:,k) = rho_i(:,:,k)*&
-!          (theta(:,:,k)*kappa_star(:,:,k) +theta(:,:,k-1)*kappa_star(:,:,k-1))/2
      rho_R_theta(:,:,k) =0.5* (theta_dp_cp(:,:,k)*kappa_star(:,:,k)+ &
                           theta_dp_cp(:,:,k-1)*kappa_star(:,:,k-1))/&
                           (phi(:,:,k-1)-phi(:,:,k))
 
-
      if (minval(rho_R_theta(:,:,k))<0) then
         print *,k,minval( (dp3d(:,:,k)+dp3d(:,:,k-1))/2)
-        print *,'phi(k-1)-phik',minval(phi(:,:,k-1)-phi(:,:,k))
-        print *, 'theta_dp_cp',minval(theta_dp_cp(:,:,k))
+        print *,'phi(k-1)-phi(k)',minval(phi(:,:,k-1)-phi(:,:,k))
         call abortmp('error: rho<0')
      endif
     
@@ -363,23 +361,21 @@ contains
 ! boundary terms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  compute pnh at midpoint, then extrapolate to surface:
-!   rho_R_theta(:,:,nlev) = theta_dp_cp(:,:,nlev)*kappa_star(:,:,nlev) / &
-!        (  (phi(:,:,nlev)+phi(:,:,nlev-1))/2 - phis(:,:)  )
    rho_R_theta(:,:,nlev) = theta_dp_cp(:,:,nlev)*kappa_star(:,:,nlev) / &
         (  (phi(:,:,nlev) - phis(:,:))*2  )
-
    exner(:,:,nlev) = (rho_R_theta(:,:,nlev)/p0)**&
         ( kappa_star(:,:,nlev)/ ( 1-kappa_star(:,:,nlev)))
    pnh(:,:,nlev) = rho_R_theta(:,:,nlev)*exner(:,:,nlev)
-!  invert  pnh(:,:,k)=(pnh_i(:,:,k)+pnh_i(:,:,k+1))/2
+
+
+!  Bounday conditions.  invert  pnh(:,:,k)=(pnh_i(:,:,k)+pnh_i(:,:,k+1))/2  (extrapolate)
+!   exner_i(:,:,nlev+1) = 2*exner(:,:,nlev) - exner_i(:,:,nlev)
+!   pnh_i(:,:,nlev+1) = p0*exner_i(:,:,nlev+1)**(1/kappa_star(:,:,nlev))
    pnh_i(:,:,nlev+1) = 2*pnh(:,:,nlev) - pnh_i(:,:,nlev)
+   exner_i(:,:,nlev+1) = (pnh_i(:,:,nlev+1)/p0)**kappa_star(:,:,nlev) 
 
    pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0   ! hydrostatic ptop
-!   pnh_i(:,:,1)      = pnh_i(:,:,2)    - dp3d(:,:,1) 
-
-
-
-
+   exner_i(:,:,1) = (hvcoord%hyai(1)*hvcoord%ps0/p0)**kappa_star(:,:,1) 
 
 
 #if (defined COLUMN_OPENMP)
@@ -387,17 +383,15 @@ contains
 #endif
   do k=1,nlev
      dpnh(:,:,k)=pnh_i(:,:,k+1)-pnh_i(:,:,k)
-     pnh(:,:,k)=(pnh_i(:,:,k)+pnh_i(:,:,k+1))/2
-     exner(:,:,k) = (pnh(:,:,k)/p0)**kappa_star(:,:,k)
+     !pnh(:,:,k)=(pnh_i(:,:,k)+pnh_i(:,:,k+1))/2
+     !exner(:,:,k) = (pnh(:,:,k)/p0)**kappa_star(:,:,k)
+     exner(:,:,k) = (exner_i(:,:,k)+exner_i(:,:,k+1))/2
+     pnh(:,:,k) = p0*exner(:,:,k)**(1/kappa_star(:,:,k))
   enddo
 
-  if (present(exner_i_out)) then
-     exner_i_out = exner_i  ! computed above for k=2,nlev
-     ! how to approximate kappa_star at top and bottom of model?  
-     exner_i_out(:,:,1) = (pnh_i(:,:,1)/p0)**kappa_star(:,:,1)
-     exner_i_out(:,:,nlev+1) = (pnh_i(:,:,nlev+1)/p0)**kappa_star(:,:,nlev)
-  endif
+  if (present(exner_i_out))  exner_i_out = exner_i 
   if (present(pnh_i_out)) pnh_i_out=pnh_i
+
 
   endif ! hydrostatic/nonhydrostatic version
   end subroutine get_pnh_and_exner
@@ -499,7 +493,6 @@ contains
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: p_i(np,np,nlev+1)
-
   real (kind=real_kind) :: dp_theta_R(np,np,nlev)
   integer :: k
 
@@ -526,7 +519,6 @@ contains
      phi(:,:,k-1) = phi(:,:,k) +&
           dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa / p_i(:,:,k)
   enddo
-
 
   end subroutine
 
