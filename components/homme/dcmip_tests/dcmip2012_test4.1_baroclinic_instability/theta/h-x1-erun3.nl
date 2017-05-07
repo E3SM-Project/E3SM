@@ -11,21 +11,21 @@ u_perturb = 1
 rotate_grid = 0
 ne=11
 qsize = 0
-nmax = 2
-statefreq=1
-restartfreq =   -1
+ndays = 15
+statefreq=96
+restartfreq =   1500
 restartfile   = "./restart/R000001440"
-runtype       = 2
+runtype       = 0
 mesh_file='/dev/null'
-tstep=100
+tstep=900
 rsplit=0
 qsplit = 1
 tstep_type = 5
 integration   = "explicit"
-nu=0
-nu_p=0
-nu_q=0
-nu_s=0
+nu=2e16
+nu_p=2e16
+nu_q=2e16
+nu_s=2e16
 nu_top = 0
 se_ftype     = 0
 limiter_option = 8
@@ -50,13 +50,13 @@ profile_single_file             = .true.
 ! interp_nlon = 1024
 
  output_timeunits=1              ! 1- days, 2 hours, 0 - tsteps
- output_frequency=1
+ output_frequency=3
  output_start_time=9
  output_end_time=3000
  output_varnames1='ps','zeta','u','v','T'
  num_io_procs      = 16
  output_type = 'netcdf'
- output_prefix = 'hydro-X1-erun2-'
+ output_prefix = 'hydro-X1-erun1-'
 /
 
 
