@@ -1072,6 +1072,10 @@ contains
                                     + lnd2atm_vars%qflx_rofliq_qsubp_grc(g)   !  perched drainiage
        l2x(index_l2x_Flrl_rofgwl,i) = lnd2atm_vars%qflx_rofliq_qgwl_grc(g)
 
+       l2x(index_l2x_Flrl_rofsur_doc,i) = lnd2atm_vars%qflx_rofliq_qsur_doc_grc(g)
+       l2x(index_l2x_Flrl_rofsur_dic,i) = lnd2atm_vars%qflx_rofliq_qsur_dic_grc(g)
+       l2x(index_l2x_Flrl_rofsub_doc,i) = lnd2atm_vars%qflx_rofliq_qsub_doc_grc(g)
+       l2x(index_l2x_Flrl_rofsub_dic,i) = lnd2atm_vars%qflx_rofliq_qsub_dic_grc(g)
        ! glc coupling
 
        if (create_glacier_mec_landunit) then

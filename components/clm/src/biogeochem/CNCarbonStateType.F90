@@ -113,7 +113,7 @@ module CNCarbonStateType
      real(r8), pointer :: cwdc_end_col(:)
      real(r8), pointer :: totlitc_end_col(:)
      real(r8), pointer :: totsomc_end_col(:)
-
+     real(r8), pointer :: decomp_som2c_vr_col(:,:)
    contains
 
      procedure , public  :: Init
@@ -227,7 +227,7 @@ contains
     allocate(this%totabgc_col              (begc :endc))                   ;     this%totabgc_col              (:)   = nan
     allocate(this%decomp_cpools_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
     this%decomp_cpools_vr_col(:,:,:)= nan
-
+    allocate(this%decomp_som2c_vr_col(begc:endc,1:nlevdecomp_full))
     allocate(this%begcb_patch (begp:endp));     this%begcb_patch (:) = nan
     allocate(this%begcb_col   (begc:endc));     this%begcb_col   (:) = nan
     allocate(this%endcb_patch (begp:endp));     this%endcb_patch (:) = nan
@@ -3182,43 +3182,43 @@ contains
   integer, intent(in) :: p
 
   write(iulog, *)'--------------------------------'
-  write(iulog, *)'p,nstep=',p,get_nstep()  
+  write(iulog, *)'p,nstep=',p,get_nstep()
   write(iulog, *)'totpftc=', this%totpftc_patch(p)
   write(iulog, *)'totvegc=', this%totvegc_patch(p)
   write(iulog, *)'xsmrpool=',this%xsmrpool_patch(p)
-  write(iulog, *)'ctrunc=',  this%ctrunc_patch(p)  
+  write(iulog, *)'ctrunc=',  this%ctrunc_patch(p)
 
 
 
   write(iulog, *)'dispvegc=',  this%dispvegc_patch(p)
-  write(iulog, *)'leafc=',     this%leafc_patch(p)     
+  write(iulog, *)'leafc=',     this%leafc_patch(p)
   write(iulog, *)'frootc=',    this%frootc_patch(p)
-  write(iulog, *)'livestemc=', this%livestemc_patch(p) 
-  write(iulog, *)'deadstemc=', this%deadstemc_patch(p) 
+  write(iulog, *)'livestemc=', this%livestemc_patch(p)
+  write(iulog, *)'deadstemc=', this%deadstemc_patch(p)
   write(iulog, *)'livecrootc=',this%livecrootc_patch(p)
   write(iulog, *)'deadcrootc=',this%deadcrootc_patch(p)
   write(iulog, *)'--------------------------------'
 
        ! stored vegetation carbon, excluding cpool (STORVEGC)
   write(iulog, *)'storvegc=',          this%storvegc_patch(p)
-  write(iulog, *)'cpool=',             this%cpool_patch(p)             
-  write(iulog, *)'leafc_stroage=',     this%leafc_storage_patch(p)      
-  write(iulog, *)'frootc_storage=',    this%frootc_storage_patch(p)    
-  write(iulog, *)'livestemc_storage=', this%livestemc_storage_patch(p)  
-  write(iulog, *)'deadstemc_storage=', this%deadstemc_storage_patch(p) 
+  write(iulog, *)'cpool=',             this%cpool_patch(p)
+  write(iulog, *)'leafc_stroage=',     this%leafc_storage_patch(p)
+  write(iulog, *)'frootc_storage=',    this%frootc_storage_patch(p)
+  write(iulog, *)'livestemc_storage=', this%livestemc_storage_patch(p)
+  write(iulog, *)'deadstemc_storage=', this%deadstemc_storage_patch(p)
   write(iulog, *)'livecrootc_storage=',this%livecrootc_storage_patch(p)
   write(iulog, *)'deadcrootc_storage=',this%deadcrootc_storage_patch(p)
-  write(iulog, *)'leafc_xfer=',        this%leafc_xfer_patch(p)        
-  write(iulog, *)'frootc_xfer=',       this%frootc_xfer_patch(p)      
-  write(iulog, *)'livestemc_xfer=',    this%livestemc_xfer_patch(p)    
-  write(iulog, *)'deadstemc_xfer=',    this%deadstemc_xfer_patch(p)    
-  write(iulog, *)'livecrootc_xfer=',   this%livecrootc_xfer_patch(p)    
-  write(iulog, *)'deadcrootc_xfer=',   this%deadcrootc_xfer_patch(p)   
-  write(iulog, *)'gresp_storage=',     this%gresp_storage_patch(p)     
+  write(iulog, *)'leafc_xfer=',        this%leafc_xfer_patch(p)
+  write(iulog, *)'frootc_xfer=',       this%frootc_xfer_patch(p)
+  write(iulog, *)'livestemc_xfer=',    this%livestemc_xfer_patch(p)
+  write(iulog, *)'deadstemc_xfer=',    this%deadstemc_xfer_patch(p)
+  write(iulog, *)'livecrootc_xfer=',   this%livecrootc_xfer_patch(p)
+  write(iulog, *)'deadcrootc_xfer=',   this%deadcrootc_xfer_patch(p)
+  write(iulog, *)'gresp_storage=',     this%gresp_storage_patch(p)
   write(iulog, *)'gresp_xfer=',        this%gresp_xfer_patch(p)
   write(iulog, *)'--------------------------------'
   end subroutine display_totpft
-  
+
 
   subroutine display_col(this, c)
   use clm_varctl          , only : iulog
@@ -3231,6 +3231,6 @@ contains
   write(iulog, *)'totcolc=',this%totcolc_col(c)
   write(iulog, *)'totabgc=',this%totabgc_col(c)
   write(iulog, *)'--------------------------------'
-  
-  end subroutine display_col 
+
+  end subroutine display_col
 end module CNCarbonStateType

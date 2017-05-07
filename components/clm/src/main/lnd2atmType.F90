@@ -58,11 +58,15 @@ module lnd2atmType
      real(r8), pointer :: qflx_rofliq_qgwl_grc (:) => null() ! rof liq -- glacier, wetland and lakes water balance residual component
      real(r8), pointer :: qflx_rofice_grc      (:) => null() ! rof ice forcing
 
+     real(r8), pointer :: qflx_rofliq_qsur_doc_grc(:) => null()
+     real(r8), pointer :: qflx_rofliq_qsur_dic_grc(:) => null()
+     real(r8), pointer :: qflx_rofliq_qsub_doc_grc(:) => null()
+     real(r8), pointer :: qflx_rofliq_qsub_dic_grc(:) => null()
    contains
 
      procedure, public  :: Init
-     procedure, private :: InitAllocate 
-     procedure, private :: InitHistory  
+     procedure, private :: InitAllocate
+     procedure, private :: InitHistory
 
   end type lnd2atm_type
   !------------------------------------------------------------------------
@@ -73,11 +77,11 @@ contains
   subroutine Init(this, bounds)
 
     class(lnd2atm_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
 
     call this%InitAllocate(bounds)
     call this%InitHistory(bounds)
-    
+
   end subroutine Init
 
   !------------------------------------------------------------------------
@@ -88,7 +92,7 @@ contains
     !
     ! !ARGUMENTS:
     class (lnd2atm_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     real(r8) :: ival  = 0.0_r8  ! initial value
@@ -126,6 +130,10 @@ contains
     allocate(this%qflx_rofliq_qgwl_grc (begg:endg))            ; this%qflx_rofliq_qgwl_grc (:) =ival
     allocate(this%qflx_rofice_grc      (begg:endg))            ; this%qflx_rofice_grc      (:) =ival
 
+    allocate(this%qflx_rofliq_qsur_doc_grc(begg:endg))          ; this%qflx_rofliq_qsur_doc_grc(:) = ival
+    allocate(this%qflx_rofliq_qsur_dic_grc(begg:endg))          ; this%qflx_rofliq_qsur_dic_grc(:) = ival
+    allocate(this%qflx_rofliq_qsub_doc_grc(begg:endg))          ; this%qflx_rofliq_qsub_doc_grc(:) = ival
+    allocate(this%qflx_rofliq_qsub_dic_grc(begg:endg))          ; this%qflx_rofliq_qsub_dic_grc(:) = ival 
     if (shr_megan_mechcomps_n>0) then
        allocate(this%flxvoc_grc(begg:endg,1:shr_megan_mechcomps_n));  this%flxvoc_grc(:,:)=ival
     endif
@@ -143,7 +151,7 @@ contains
     !
     ! !ARGUMENTS:
     class(lnd2atm_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer  :: begg, endg
@@ -155,7 +163,7 @@ contains
     call hist_addfld1d (fname='FSH', units='W/m^2',  &
          avgflag='A', long_name='sensible heat', &
          ptr_lnd=this%eflx_sh_tot_grc)
-       
+
     this%qflx_rofliq_grc(begg:endg) = 0._r8
     call hist_addfld1d (fname='QRUNOFF',  units='mm/s',  &
          avgflag='A', long_name='total liquid runoff (does not include QSNWCPICE)', &

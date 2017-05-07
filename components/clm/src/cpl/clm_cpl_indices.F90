@@ -6,7 +6,7 @@ module clm_cpl_indices
   !    fields needed by the land-ice component (sno).
   !
   ! !USES:
-  
+
   use shr_sys_mod,    only : shr_sys_abort
   implicit none
 
@@ -18,7 +18,7 @@ module clm_cpl_indices
   !
   ! !PUBLIC DATA MEMBERS:
   !
-  integer , public :: glc_nec     ! number of elevation classes for glacier_mec landunits 
+  integer , public :: glc_nec     ! number of elevation classes for glacier_mec landunits
                                   ! (from coupler) - must equal maxpatch_glcmec from namelist
   integer , parameter, private:: glc_nec_max = 100
 
@@ -28,6 +28,11 @@ module clm_cpl_indices
   integer, public ::index_l2x_Flrl_rofgwl     ! lnd->rtm input liquid gwl fluxes
   integer, public ::index_l2x_Flrl_rofsub     ! lnd->rtm input liquid subsurface fluxes
   integer, public ::index_l2x_Flrl_rofi       ! lnd->rtm input frozen fluxes
+
+  integer, public ::index_l2x_Flrl_rofsur_DOC ! lnd->rof DOC water flux in liquid surface runoff
+  integer, public ::index_l2x_Flrl_rofsub_DOC ! lnd->rof DOC water flux in liquid subsurface runoff
+  integer, public ::index_l2x_Flrl_rofsur_DIC ! lnd->rof DIC water flux in liquid surface runoff
+  integer, public ::index_l2x_Flrl_rofsub_DIC ! lnd->rof DIC water flux in liquid subsurface runoff
 
   integer, public ::index_l2x_Sl_t            ! temperature
   integer, public ::index_l2x_Sl_tref         ! 2m reference temperature
@@ -39,7 +44,7 @@ module clm_cpl_indices
   integer, public ::index_l2x_Sl_snowh        ! snow height
   integer, public ::index_l2x_Sl_u10          ! 10m wind
   integer, public ::index_l2x_Sl_ddvel        ! dry deposition velocities (optional)
-  integer, public ::index_l2x_Sl_fv           ! friction velocity  
+  integer, public ::index_l2x_Sl_fv           ! friction velocity
   integer, public ::index_l2x_Sl_ram1         ! aerodynamical resistance
   integer, public ::index_l2x_Sl_soilw        ! volumetric soil water
   integer, public ::index_l2x_Fall_taux       ! wind stress, zonal
@@ -48,11 +53,11 @@ module clm_cpl_indices
   integer, public ::index_l2x_Fall_sen        ! sensible        heat flux
   integer, public ::index_l2x_Fall_lwup       ! upward longwave heat flux
   integer, public ::index_l2x_Fall_evap       ! evaporation     water flux
-  integer, public ::index_l2x_Fall_swnet      ! heat flux       shortwave net       
+  integer, public ::index_l2x_Fall_swnet      ! heat flux       shortwave net
   integer, public ::index_l2x_Fall_fco2_lnd   ! co2 flux **For testing set to 0
-  integer, public ::index_l2x_Fall_flxdst1    ! dust flux size bin 1    
-  integer, public ::index_l2x_Fall_flxdst2    ! dust flux size bin 2    
-  integer, public ::index_l2x_Fall_flxdst3    ! dust flux size bin 3    
+  integer, public ::index_l2x_Fall_flxdst1    ! dust flux size bin 1
+  integer, public ::index_l2x_Fall_flxdst2    ! dust flux size bin 2
+  integer, public ::index_l2x_Fall_flxdst3    ! dust flux size bin 3
   integer, public ::index_l2x_Fall_flxdst4    ! dust flux size bin 4
   integer, public ::index_l2x_Fall_flxvoc     ! MEGAN fluxes
 
@@ -100,19 +105,19 @@ module clm_cpl_indices
   integer, public ::index_x2l_Faxa_dstdry2    ! flux: Size 2 dust -- dry deposition
   integer, public ::index_x2l_Faxa_dstdry3    ! flux: Size 3 dust -- dry deposition
   integer, public ::index_x2l_Faxa_dstdry4    ! flux: Size 4 dust -- dry deposition
- 
+
   integer, public ::index_x2l_Flrr_flood      ! rtm->lnd rof (flood) flux
   integer, public ::index_x2l_Flrr_volr       ! rtm->lnd rof volr total volume
   integer, public ::index_x2l_Flrr_volrmch    ! rtm->lnd rof volr main channel volume
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, public ::index_x2l_Sg_frac(0:glc_nec_max)   = 0   ! Fraction of glacier from glc model
-  integer, public ::index_x2l_Sg_topo(0:glc_nec_max)   = 0   ! Topo height from glc model 
+  integer, public ::index_x2l_Sg_topo(0:glc_nec_max)   = 0   ! Topo height from glc model
   integer, public ::index_x2l_Flgg_hflx(0:glc_nec_max) = 0   ! Heat flux from glc model
-  
+
   integer, public ::index_x2l_Sg_icemask
   integer, public ::index_x2l_Sg_icemask_coupled_fluxes
-  
+
   integer, public :: nflds_x2l = 0
 
   !-----------------------------------------------------------------------
@@ -122,7 +127,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine clm_cpl_indices_set( )
     !
-    ! !DESCRIPTION: 
+    ! !DESCRIPTION:
     ! Set the coupler indices needed by the land model coupler
     ! interface.
     !
@@ -144,7 +149,7 @@ contains
     ! !LOCAL VARIABLES:
     type(mct_aVect)   :: l2x      ! temporary, land to coupler
     type(mct_aVect)   :: x2l      ! temporary, coupler to land
-    integer           :: num 
+    integer           :: num
     character(len= 2) :: cnum
     character(len=64) :: name
     character(len=32) :: subname = 'clm_cpl_indices_set'  ! subroutine name
@@ -160,13 +165,19 @@ contains
     nflds_l2x = mct_avect_nRattr(l2x)
 
     !-------------------------------------------------------------
-    ! clm -> drv 
+    ! clm -> drv
     !-------------------------------------------------------------
 
     index_l2x_Flrl_rofsur   = mct_avect_indexra(l2x,'Flrl_rofsur')
     index_l2x_Flrl_rofgwl   = mct_avect_indexra(l2x,'Flrl_rofgwl')
     index_l2x_Flrl_rofsub   = mct_avect_indexra(l2x,'Flrl_rofsub')
     index_l2x_Flrl_rofi     = mct_avect_indexra(l2x,'Flrl_rofi')
+
+    index_l2x_Flrl_rofsur_DOC=mct_avect_indexra(l2x,'Flrl_rofsur_DOC') ! lnd->rof DOC water flux in liquid surface runoff
+    index_l2x_Flrl_rofsub_DOC=mct_avect_indexra(l2x,'Flrl_rofsub_DOC') ! lnd->rof DOC water flux in liquid subsurface runoff
+    index_l2x_Flrl_rofsur_DIC=mct_avect_indexra(l2x,'Flrl_rofsur_DIC') ! lnd->rof DIC water flux in liquid surface runoff
+    index_l2x_Flrl_rofsub_DIC=mct_avect_indexra(l2x,'Flrl_rofsub_DIC') ! lnd->rof DIC water flux in liquid subsurface runoff
+
 
     index_l2x_Sl_t          = mct_avect_indexra(l2x,'Sl_t')
     index_l2x_Sl_snowh      = mct_avect_indexra(l2x,'Sl_snowh')
@@ -262,11 +273,11 @@ contains
 
     glc_nec = 0
 
-    do num = 0,glc_nec_max 
-    
+    do num = 0,glc_nec_max
+
        write(cnum,'(i2.2)') num
        name = 'Sg_frac' // cnum
-       index_x2l_Sg_frac(num)   = mct_avect_indexra(x2l,trim(name),perrwith='quiet') 
+       index_x2l_Sg_frac(num)   = mct_avect_indexra(x2l,trim(name),perrwith='quiet')
        name = 'Sg_topo' // cnum
        index_x2l_Sg_topo(num)   = mct_avect_indexra(x2l,trim(name),perrwith='quiet')
        name = 'Flgg_hflx' // cnum
@@ -278,10 +289,10 @@ contains
        end if
        glc_nec = num
     end do
-    
+
     index_x2l_Sg_icemask = mct_avect_indexra(x2l,'Sg_icemask',perrwith='quiet')
     index_x2l_Sg_icemask_coupled_fluxes = mct_avect_indexra(x2l,'Sg_icemask_coupled_fluxes',perrwith='quiet')
-    
+
     if (glc_nec == glc_nec_max) then
        call shr_sys_abort (subname // 'error: glc_nec_cpl cannot equal glc_nec_max')
     end if

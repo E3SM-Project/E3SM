@@ -910,7 +910,8 @@ contains
          if (use_betr)then
 
            call ep_betr%CalcSmpL(bounds_clump, 1, nlevsoi, filter(nc)%num_soilc, filter(nc)%soilc, &
-              temperature_vars%t_soisno_col, soilstate_vars, waterstate_vars, soil_water_retention_curve)
+              temperature_vars%t_soisno_col(bounds_clump%begc:bounds_clump%endc,1:nlevsoi), &
+              soilstate_vars, waterstate_vars, soil_water_retention_curve)
 
            call ep_betr%SetBiophysForcing(bounds_clump, col, pft,                               &
              carbonflux_vars=carbonflux_vars,                                                &
@@ -918,7 +919,7 @@ contains
              temperature_vars=temperature_vars,       soilhydrology_vars=soilhydrology_vars, &
              atm2lnd_vars=atm2lnd_vars,               canopystate_vars=canopystate_vars,     &
              chemstate_vars=chemstate_vars,           soilstate_vars=soilstate_vars, &
-             cnstate_vars = cnstate_vars)
+             cnstate_vars = cnstate_vars, carbonstate_vars=carbonstate_vars)
 
            if(is_active_betr_bgc)then
              call ep_betr%PlantSoilBGCSend(bounds_clump, col, pft, &
@@ -1109,7 +1110,9 @@ contains
     ! ============================================================================
     ! Determine gridcell averaged properties to send to atm
     ! ============================================================================
-
+    if(use_betr)then
+      call ep_betr%DiagnoseLnd2atm(bounds_clump, col, lnd2atm_vars)
+    endif
     call t_startf('lnd2atm')
     call lnd2atm(bounds_proc,                                            &
          atm2lnd_vars, surfalb_vars, temperature_vars, frictionvel_vars, &

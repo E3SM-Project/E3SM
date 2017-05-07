@@ -1014,7 +1014,10 @@ contains
      plant_eff_pcompet_b          => PlantMicKinetics_vars%plant_eff_pcompet_b_vr_patch  , &
      decomp_eff_ncompet_b         => PlantMicKinetics_vars%decomp_eff_ncompet_b_vr_col, &
      decomp_eff_pcompet_b         => PlantMicKinetics_vars%decomp_eff_pcompet_b_vr_col, &
+     den_eff_ncompet_b            => PlantMicKinetics_vars%den_eff_ncompet_b_vr_col, &
+     nit_eff_ncompet_b            => PlantMicKinetics_vars%nit_eff_ncompet_b_vr_col, &
      minsurf_p_compet             => PlantMicKinetics_vars%minsurf_p_compet_vr_col, &
+     minsurf_nh4_compet             => PlantMicKinetics_vars%minsurf_nh4_compet_vr_col, &
      isoilorder                   => cnstate_vars%isoilorder                          , &
      cn_scalar                    => cnstate_vars%cn_scalar                           , &
      cp_scalar                    => cnstate_vars%cp_scalar                           , &
@@ -1069,19 +1072,24 @@ contains
           plant_no3_km_vr_patch(p,j) = km_plant_no3(ivt(p))
           plant_p_km_vr_patch(p,j) = km_plant_p(ivt(p))
 
-          plant_eff_ncompet_b(p,j) = e_plant_scalar*frootc(p)*froot_prof(p,j)
-          plant_eff_pcompet_b(p,j) = e_plant_scalar*frootc(p)*froot_prof(p,j)
+          plant_eff_ncompet_b(p,j) = e_plant_scalar*frootc(p)*froot_prof(p,j) * pft%wtcol(p)
+          plant_eff_pcompet_b(p,j) = e_plant_scalar*frootc(p)*froot_prof(p,j) * pft%wtcol(p)
+
+          !effective n competing decomposers
+          decomp_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j) + &
+                e_decomp_scalar*decompmicc_patch_vr(ivt(p),j)*pft%wtcol(p)
+          !effective p competing decomposers
+          decomp_eff_pcompet_b(c,j) = decomp_eff_pcompet_b(c,j) + &
+                e_decomp_scalar*decompmicc_patch_vr(ivt(p),j)*pft%wtcol(p)
         else
           cn_scalar(p) = 1.0_r8
         end if
-        !effective n competing decomposers
-        decomp_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j) + &
-              e_decomp_scalar*decompmicc_patch_vr(ivt(p),j)*pft%wtcol(p)
-        !effective p competing decomposers
-        decomp_eff_pcompet_b(c,j) = decomp_eff_pcompet_b(c,j) + &
-              e_decomp_scalar*decompmicc_patch_vr(ivt(p),j)*pft%wtcol(p)
-        !effective p competing mineral surfaces
+        !effective p competing mineral surfaces, this needs update as a function of soil texutre, anion exchange capacity, pH?. 
         minsurf_p_compet(c,j) = 0._r8
+        minsurf_nh4_compet(c,j) = minsurf_p_compet(c,j)
+        !lines below are a crude approximation
+        den_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j)
+        nit_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j)
       end do
     enddo
   end do
