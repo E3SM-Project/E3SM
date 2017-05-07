@@ -51,23 +51,25 @@ class Grids(GenericXML):
         lndnlev = None
 
         #mechanism to specify atm levels
-        levmatch = re.match(r"([^_]+)z(\d+)(.*)$", name)
+        atmlevregex = re.compile(r"([^_]+)z(\d+)(.*)$")
+        levmatch = re.match(atmlevregex, name)
         if  levmatch:
             atmnlev = levmatch.group(2)
             name = levmatch.group(1)+levmatch.group(3)
+
         #mechanism to specify lnd levels
-        levmatch = re.match(r"(.*_)([^_]+)z(\d+)(.*)$", name)
+        lndlevregex = re.compile(r"(.*_)([^_]+)z(\d+)(_[^m].*)$")
+        levmatch = re.match(lndlevregex, name)
         if  levmatch:
             lndnlev = levmatch.group(3)
             name = levmatch.group(1)+levmatch.group(2)+levmatch.group(4)
 
         # determine component_grids dictionary and grid longname
-        lname, component_grids = self._read_config_grids(name, compset)
-
+        lname, component_grids = self._read_config_grids(name, compset, atmnlev, lndnlev)
         gridinfo["GRID"] = lname
 
         # determine domains given component_grids
-        domains  = self._get_domains(component_grids)
+        domains  = self._get_domains(component_grids, atmlevregex, lndlevregex)
         gridinfo.update(domains)
 
         # determine gridmaps given component_grids
@@ -76,11 +78,11 @@ class Grids(GenericXML):
 
         return gridinfo
 
-    def _read_config_grids(self, name, compset):
+    def _read_config_grids(self, name, compset, atmnlev, lndnlev):
         if self._version == 1.0:
             return self._read_config_grids_v1(name, compset)
         elif self._version >= 2.0:
-            return self._read_config_grids_v2(name, compset)
+            return self._read_config_grids_v2(name, compset, atmnlev, lndnlev)
 
     def _read_config_grids_v1(self, name, compset):
         """
@@ -115,7 +117,7 @@ class Grids(GenericXML):
         expect (False,
                 "grid '%s'  is not supported, use query_config to determine supported grids " %name)
 
-    def _read_config_grids_v2(self, name, compset):
+    def _read_config_grids_v2(self, name, compset, atmnlev, lndnlev):
         """
         read config_grids.xml with version 2.0 schema
         """
@@ -204,12 +206,20 @@ class Grids(GenericXML):
                 lname = prefix[component_gridname]
             if model_grid[component_gridname] is not None:
                 lname += model_grid[component_gridname]
+                if component_gridname == 'atm' and atmnlev is not None:
+                    if not ("a%null" in lname):
+                        lname += "z" + atmnlev
+
+                elif component_gridname == 'lnd' and lndnlev is not None:
+                    if not ("l%null" in lname):
+                        lname += "z" + lndnlev
+
             else:
                 lname += 'null'
         component_grids = self._get_component_grids_from_longname(lname)
         return lname, component_grids
 
-    def _get_domains_v2(self, component_grids):
+    def _get_domains_v2(self, component_grids, atmlevregex, lndlevregex):
         """ determine domains dictionary for config_grids.xml v2 schema"""
         # use component_grids to create grids dictionary
         # TODO: this should be in XML, not here
@@ -224,7 +234,18 @@ class Grids(GenericXML):
 
         for grid in grids:
             grid_name = component_grids[grid[1]]
-            domain_node = self.get_optional_node(nodename="domain", attributes={"name":grid_name})
+
+            # Determine grid name with no nlev suffix if there is one
+            grid_name_nonlev = grid_name
+            levmatch = re.match(atmlevregex, grid_name)
+            if  levmatch:
+                grid_name_nonlev = levmatch.group(1)+levmatch.group(3)
+            levmatch = re.match(lndlevregex, grid_name)
+            if  levmatch:
+                grid_name_nonlev = levmatch.group(1)+levmatch.group(2)+levmatch.group(4)
+
+            # Determine all domain information search for the grid name with no level suffix in config_grids.xml
+            domain_node = self.get_optional_node(nodename="domain", attributes={"name":grid_name_nonlev})
             if domain_node is not None:
                 comp_name = grid[0].upper()
                 domains[comp_name + "_NX"] = int(self.get_element_text("nx", root=domain_node))
@@ -279,11 +300,11 @@ class Grids(GenericXML):
         component_grids = gridRE.split(name)[1:]
         return component_grids
 
-    def _get_domains(self, component_grids):
+    def _get_domains(self, component_grids, atmlevregex, lndlevregex):
         if self._version == 1.0:
             return self._get_domains_v1(component_grids)
         elif self._version >= 2.0:
-            return self._get_domains_v2(component_grids)
+            return self._get_domains_v2(component_grids, atmlevregex, lndlevregex)
 
     def _get_domains_v1(self, component_grids):
         # use component_grids to create grids dictionary
@@ -322,7 +343,7 @@ class Grids(GenericXML):
                         domains[path_name] = path
         return domains
 
-    def _get_gridmaps(self, component_grids, atmnlev=None, lndnlev=None):
+    def _get_gridmaps(self, component_grids, atmnlev, lndnlev):
         if self._version == 1.0:
             return self._get_gridmaps_v1(component_grids, atmnlev, lndnlev)
         elif self._version >= 2.0:
