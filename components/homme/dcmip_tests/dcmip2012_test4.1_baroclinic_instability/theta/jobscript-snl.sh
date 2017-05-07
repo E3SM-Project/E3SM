@@ -27,8 +27,8 @@ set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
 set namelist = h-x1.nl            #  4320 timesteps, 12 nodes, 3.3min
 cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
-ncl ps.ncl  'fname="movies/hydro-X1-dcmip2012_test41.nc"'
-ncl zeta.ncl 'fname="movies/hydro-X1-dcmip2012_test41.nc"'
+ncl plot_ps.ncl  'fname="movies/hydro-X1-dcmip2012_test41.nc"'
+ncl plot_zeta.ncl 'fname="movies/hydro-X1-dcmip2012_test41.nc"'
 \mv -f zeta.pdf hydro-X1-zeta.pdf
 \mv -f ps.pdf hydro-X1-ps.pdf
 
@@ -37,8 +37,8 @@ set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
 set namelist = nh-x1000.nl        #  6480 timesteps, 12 nodes - 5.9min
 cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
-ncl ps.ncl  'fname="movies/nonhydro-X1000-dcmip2012_test41.nc"'
-ncl zeta.ncl 'fname="movies/nonhydro-X1000-dcmip2012_test41.nc"'
+ncl plot_ps.ncl  'fname="movies/nonhydro-X1000-dcmip2012_test41.nc"'
+ncl plot_zeta.ncl 'fname="movies/nonhydro-X1000-dcmip2012_test41.nc"'
 \mv -f zeta.pdf nonhydro-X1000-zeta.pdf
 \mv -f ps.pdf nonhydro-X1000-ps.pdf
 
@@ -47,8 +47,8 @@ set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
 set namelist = nh-x100.nl        #  64800  timesteps, 12 nodes - 51min 
 cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
-ncl ps.ncl  'fname="movies/nonhydro-X100-dcmip2012_test41.nc"'
-ncl zeta.ncl 'fname="movies/nonhydro-X100-dcmip2012_test41.nc"'
+ncl plot_ps.ncl  'fname="movies/nonhydro-X100-dcmip2012_test41.nc"'
+ncl plot_zeta.ncl 'fname="movies/nonhydro-X100-dcmip2012_test41.nc"'
 \mv -f zeta.pdf nonhydro-X100-zeta.pdf
 \mv -f ps.pdf nonhydro-X100-ps.pdf
 
@@ -60,8 +60,8 @@ set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
 set namelist = nh-x10.nl          #  648000 timsteps,  54 nodes - 115min
 cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
-ncl ps.ncl  'fname="movies/nonhydro-X10-dcmip2012_test41.nc"'
-ncl zeta.ncl 'fname="movies/nonhydro-X10-dcmip2012_test41.nc"'
+ncl plot_ps.ncl  'fname="movies/nonhydro-X10-dcmip2012_test41.nc"'
+ncl plot_zeta.ncl 'fname="movies/nonhydro-X10-dcmip2012_test41.nc"'
 \mv -f zeta.pdf nonhydro-X10-zeta.pdf
 \mv -f ps.pdf nonhydro-X10-ps.pdf
 
@@ -70,8 +70,8 @@ set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
 set namelist = nh-x1.nl           # 2592000 timesteps, 54 nodes - 7.4h
 cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
-ncl ps.ncl  'fname="movies/nonhydro-X1-dcmip2012_test41.nc"'
-ncl zeta.ncl 'fname="movies/nonhydro-X1-dcmip2012_test41.nc"'
+ncl plot_ps.ncl  'fname="movies/nonhydro-X1-dcmip2012_test41.nc"'
+ncl plot_zeta.ncl 'fname="movies/nonhydro-X1-dcmip2012_test41.nc"'
 \mv -f zeta.pdf nonhydro-X1-zeta.pdf
 \mv -f ps.pdf nonhydro-X1-ps.pdf
 

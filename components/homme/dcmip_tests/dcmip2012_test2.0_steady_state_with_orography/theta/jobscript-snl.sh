@@ -21,7 +21,7 @@ endif
 
 # hydrostatic theta
 set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30    
-set namelist = namelist-default.nl
+set namelist = namelist-h.nl
 \cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
 ncl plot_z_lon.ncl
@@ -32,7 +32,7 @@ ncl test200-range.ncl
 
 # nonhydrostatic theta
 set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
-set namelist = namelist-nh-default.nl
+set namelist = namelist-nh.nl
 \cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
 ncl plot_z_lon.ncl
