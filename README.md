@@ -33,11 +33,15 @@ Mariana Vertenstein | NCAR  |  1 - D   |   NSF, DOE
 Jim Edwards |         NCAR  |  1 - D   |   NSF (1-D), DOE(1-2)
 Jim Foucar  |         SNL   |  5 - D   |   DOE
 Rob Jacob |      ANL  |  5 - D   |   DOE
-Bill Sacks |    NCAR |  1 - D  | NSF
+Bill Sacks |    NCAR |  1 - D  | NSF, DOE
 Andreas Wilke |  ANL  | 5 - D | DOE
 Jason Sarich | ANL | 5 - D | DOE
 Michael Deakin | SNL | 5 - D | DOE
 Erich Foster   | SNL | 5 - D | DOE
+Alice Bertini | NCAR | 1 - D | NSF
+Chris Fischer | NCAR | 5 - D | NSF
+Steve Goldhaber | NCAR | 1 - D | NSF, DOE
+Mike Levy | NCAR | 1 - D | NSF, DOE
 Sean Santos |         NCAR  |  1 - 4   |   NSF
 
 _Key: D = Current development version (i.e. still active on project)_

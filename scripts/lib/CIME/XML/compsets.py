@@ -42,7 +42,7 @@ class Compsets(GenericXML):
                     user_mods = user_mods_node.text
                 else:
                     user_mods = None
-                logger.debug("Found node match with alias: %s and lname: %s" % (alias, lname))
+                logger.debug("Found node match with alias: {} and lname: {}".format(alias, lname))
                 return (lname, alias, science_support, user_mods)
         return (None, None, [False], None)
 
@@ -72,7 +72,7 @@ class Compsets(GenericXML):
             nodes = self.get_nodes(nodename="compset")
             for node in nodes:
                 for child in node:
-                    logger.debug ("Here child is %s with value %s"%(child.tag,child.text))
+                    logger.debug ("Here child is {} with value {}".format(child.tag,child.text))
                     if child.tag == "alias":
                         alias = child.text
                     if child.tag == "lname":
@@ -80,18 +80,18 @@ class Compsets(GenericXML):
                 compsets[alias] = lname
             return compsets
 
-    def print_values(self):
+    def print_values(self, help=True):
         help_text = self.get_value(name="help")
         compsets_text = self.get_value("names")
-        logger.info(" %s " %help_text)
+        if help:
+            logger.info(" {} ".format(help_text))
 
         logger.info("       --------------------------------------")
-        logger.info("       Compset Short Name: Compset Long Name ")
+        logger.info("       Compset Alias: Compset Long Name ")
         logger.info("       --------------------------------------")
         for v in compsets_text.iteritems():
             label, definition = v
             logger.info("   %20s : %s" %(label, definition))
-<<<<<<< HEAD
 
     def return_all_values(self):
         all_compsets = dict()
@@ -102,6 +102,4 @@ class Compsets(GenericXML):
             all_compsets[label] = definition
 
         return help_text, all_compsets
-
-=======
->>>>>>> master
+            logger.info("   {:20} : {}".format(label, definition))

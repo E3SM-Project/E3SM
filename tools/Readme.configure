@@ -39,11 +39,11 @@ optional arguments:
                         defaults to the current working directory.
   --compiler COMPILER, -compiler COMPILER
                         Specify a compiler. To see list of supported compilers
-                        for each machine, use the utility manage_case in this
+                        for each machine, use the utility query_config in this
                         directory
   --mpilib MPILIB, -mpilib MPILIB
                         Specify the mpilib. To see list of supported mpilibs
-                        for each machine, use the utility manage_case in this
+                        for each machine, use the utility query_config in this
                         directory. The default is the first listing in MPILIBS
                         in config_machines.xml
   --clean               Remove old Macros and env files before attempting to

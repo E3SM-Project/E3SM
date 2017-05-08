@@ -1632,8 +1632,8 @@
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx3v7_nnsm_e1000r500_170413.nc</map>
     </gridmap>
     <gridmap rof_grid="rx1" ocn_grid="gx1v6" >
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx1v6_nn_ac_161213.nc</map>
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx1v6_e1000r300_161212.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx1v6_nn_open_ocean_nnsm_e1000r300_marginal_sea_170503.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx1v6_nnsm_e1000r300_170503.nc</map>
     </gridmap>
     <gridmap rof_grid="rx1" ocn_grid="gx1v7" >
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx1v7_nn_open_ocean_nnsm_e1000r300_marginal_sea_170413.nc</map>
@@ -1657,8 +1657,8 @@
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx3v7_nnsm_e1000r500_170413.nc</map>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="gx1v6" >
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx1v6_nn_ac_161214.nc</map>
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx1v6_e1000r300_161212.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx1v6_nn_open_ocean_nnsm_e1000r300_marginal_sea_170503.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx1v6_nnsm_e1000r300_170503.nc</map>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="gx1v7" >
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx1v7_nn_open_ocean_nnsm_e1000r300_marginal_sea_170413.nc</map>

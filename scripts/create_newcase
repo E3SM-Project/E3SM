@@ -32,20 +32,20 @@ OR
 
     parser.add_argument("--compset", "-compset", required=True,
                         help="(required) Specify a compset. "
-                        "To see list of current compsets, use the utility manage_case in this directory")
+                        "To see list of current compsets, use the utility query_config in this directory")
 
     parser.add_argument("--res", "-res", required=True,
                         help="(required) Specify a model grid resolution. "
-                        "To see list of current compsets, use the utility manage_case in this directory")
+                        "To see list of current compsets, use the utility query_config in this directory")
 
     parser.add_argument("--machine", "-mach",
                         help="Specify a machine. default: match NODENAME_REGEX in config_machines.xml "
-                        "To see list of current  machines, use the utility manage_case in this directory"
+                        "To see list of current  machines, use the utility query_config in this directory"
                         )
 
     parser.add_argument("--compiler", "-compiler",
                         help="Specify a compiler. "
-                        "To see list of supported compilers for each machine, use the utility manage_case in this directory")
+                        "To see list of supported compilers for each machine, use the utility query_config in this directory")
 
     parser.add_argument("--ninst",default=1,
                         help="Specify number of component instances"
@@ -53,7 +53,7 @@ OR
 
     parser.add_argument("--mpilib", "-mpilib",
                         help="Specify the mpilib. "
-                        "To see list of supported mpilibs for each machine, use the utility manage_case in this directory. "
+                        "To see list of supported mpilibs for each machine, use the utility query_config in this directory. "
                         "The default is the first listing in MPILIBS in config_machines.xml")
 
     parser.add_argument("--project", "-project",
