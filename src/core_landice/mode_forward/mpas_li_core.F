@@ -312,8 +312,9 @@ module li_core
       ! Variables needed for printing timestamps
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
+      logical :: isRinging
 
-      integer :: err, err_tmp, globalErr
+      integer :: err, err_tmp, err_tmp2, globalErr
 
 
       err = 0
@@ -392,29 +393,97 @@ module li_core
          ! ===
          ! === Write Output and/or Restart, if needed
          ! ===
-         call mpas_timer_start("write output")
+
+         ! Process restart stream first - most critical
+         call mpas_timer_start("write restart stream")
+         call mpas_stream_mgr_write(domain % streamManager, streamID='restart', ierr=err_tmp)
+         if (err_tmp > 0) then
+            call mpas_log_write('Error writing restart stream.', MPAS_LOG_ERR)
+         endif
+         err = ior(err, err_tmp)
          ! Update the restart_timestamp file with the new time, if needed.
-         if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', &
-                direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
-            ! Need updated timestamp for writing restart timestamp
-            currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
-            err = ior(err, err_tmp)
-            call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
-            err = ior(err, err_tmp)
-            ! write the timestamp to file
-            open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
-            write(22, *) timeStamp
-            close(22)
-         end if
+         if ( domain % dminfo % my_proc_id == 0 ) then  ! Only have 1 task write this file.
+            ! Do this only after writing to restart file has completed successfully.
+            ! (Otherwise we would be setting the restart_timestamp to an invalid time level.)
+            if (err_tmp == 0) then
+               isRinging = mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', &
+                              direction=MPAS_STREAM_OUTPUT, ierr=err_tmp2)
+               if (err_tmp2 > 0) then
+                  call mpas_log_write('Error checking restart stream alarm.', MPAS_LOG_ERR)
+               endif
+               err = ior(err, err_tmp2)
+
+               if (isRinging) then
+                  ! Need updated timestamp for writing restart timestamp
+                  currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp2)
+                  if (err_tmp2 > 0) then
+                     call mpas_log_write('Error in mpas_get_clock_time when writing restart timestamp.', MPAS_LOG_ERR)
+                  endif
+                  err = ior(err, err_tmp2)
+                  call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp2)
+                  if (err_tmp2 > 0) then
+                     call mpas_log_write('Error in mpas_get_time when writing restart timestamp.', MPAS_LOG_ERR)
+                  endif
+                  err = ior(err, err_tmp2)
+
+                  ! write the timestamp to file
+                  ! TODO: replace 22 with a unit number that will be safe in MPAS and ACME.
+                  open(22, file=config_restart_timestamp_name, form='formatted', status='replace', iostat=err_tmp2)
+                  if (err_tmp2 > 0) then
+                     call mpas_log_write('Error opening file to write restart timestamp:' // &
+                              trim(config_restart_timestamp_name), MPAS_LOG_ERR)
+                  endif
+                  err = ior(err, err_tmp2)
+                  write(22, *, iostat=err_tmp2) timeStamp
+                  if (err_tmp2 > 0) then
+                     call mpas_log_write('Error writing restart timestamp to file ' // &
+                              trim(config_restart_timestamp_name), MPAS_LOG_ERR)
+                  endif
+                  err = ior(err, err_tmp2)
+                  close(22)
+               end if ! isRinging
+            end if ! err_tmp==0
+         end if ! master task
+         ! Now that we are done here, reset restart alarm (can be called whether or not it was ringing)
+         call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+         if (err_tmp > 0) then
+            call mpas_log_write('Error resetting restart stream alarm.', MPAS_LOG_ERR)
+         endif
          err = ior(err, err_tmp)
-         ! These calls will handle ALL output streams that need writing.
-         ! [Could add them individually, as the ocean does, if some other actions are needed when a
-         ! specific alarm is ringing (e.g., global stats calculated only when output stream gets written)]
+         call mpas_timer_stop("write restart stream")
+
+         ! Process 'output' stream separately from other MPAS_STREAM_OUTPUT streams
+         call mpas_timer_start("write output stream")
+         call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=err_tmp)
+         if (err_tmp > 0) then
+            call mpas_log_write('Error writing output stream.', MPAS_LOG_ERR)
+         endif
+         err = ior(err, err_tmp)
+         call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='output', ierr=err_tmp)
+         if (err_tmp > 0) then
+            call mpas_log_write('Error resetting output stream alarm.', MPAS_LOG_ERR)
+         endif
+         err = ior(err, err_tmp)
+         call mpas_timer_stop("write output stream")
+
+         ! Process all other streams that need to be written
+         call mpas_timer_start("write other output streams")
          call mpas_stream_mgr_write(domain % streamManager, ierr=err_tmp)
+         ! (Without streamID, all output streams processed by previous line.
+         !  'output' and 'restart' ignored because their timers have been reset.)
+         if (err_tmp > 0) then
+            call mpas_log_write('Error writing other output streams.', MPAS_LOG_ERR)
+         endif
          err = ior(err, err_tmp)
-         call mpas_stream_mgr_reset_alarms(domain % streamManager,   direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+         call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+         if (err_tmp > 0) then
+            call mpas_log_write('Error resetting other output stream alarms.', MPAS_LOG_ERR)
+         endif
          err = ior(err, err_tmp)
-         call mpas_timer_stop("write output")
+         call mpas_timer_stop("write other output streams")
+
+         ! === (end of output section) ===
+
 
          ! Move time level 1 fields (current values) into time level 2 (old values) for next time step
          ! (for those fields with multiple time levels)
