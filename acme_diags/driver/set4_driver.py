@@ -313,27 +313,37 @@ def compute(parameter):
                     #x=vcs.init()
                     #iso=x.createisofill()
                     #x.plot(mv_p,iso)
-
                 parameter.output_file = '-'.join(
                     [ref_name, var, season])
                 parameter.main_title = str(
                     ' '.join([var, season]))
 
                 # Regrid towards lower resolution of two variables for
-                # calculating difference
-                print mv1_p.shape,mv2_p.shape
-                mv1_reg, mv2_reg = regrid_to_lower_res(
-                    mv1_p, mv2_p, parameter.regrid_tool, parameter.regrid_method)
+                # calculafor_hsiyen/ting difference
+                if len(mv1_p.getLatitude()) <= len(mv2_p.getLatitude()):
+                    mv1_reg = mv1_p
+                    lev_out = mv1_p.getLevel()
+                    lat_out = mv1_p.getLatitude()
+                    mv2_reg = mv2_p.crossSectionRegrid(lev_out, lat_out)
+                else:
+                    mv2_reg = mv2_p
+                    lev_out = mv2_p.getLevel()
+                    lat_out = mv2_p.getLatitude()
+                    mv1_reg = mv1_p.crossSectionRegrid(lev_out, lat_out)
+
+                #print mv1_p.shape,mv2_p.shape
+                #mv1_reg, mv2_reg = regrid_to_lower_res(
+                #    mv1_p, mv2_p, parameter.regrid_tool, parameter.regrid_method)
                 print mv1_reg.shape
                 print mv2_reg.shape
 
                 # Plotting
-                #diff = mv1_reg - mv2_reg
+                diff = mv1_reg - mv2_reg
                 #metrics_dict = create_metrics(
                 #    mv2_p, mv1_p, mv2_reg, mv1_reg, diff)
 
                 #parameter.var_region = region
-                
+                #
                 #plot('5', mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                 #save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
 
