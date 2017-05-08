@@ -1218,6 +1218,8 @@ contains
 
       iErr = 0
 
+      err_tmp = 0 ! needed since time series stats is commented out
+
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
