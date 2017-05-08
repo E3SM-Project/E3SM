@@ -1,0 +1,21 @@
+To set up different resolutions:
+
+Copy the desired resolution over the top of 'periodic_hex.namelist.input.sqrt'.
+
+Note that some resolutions get closest to the 20km width with an odd or even number of rows.
+Thus, depending on resolution, you also need to modify:
+  experiment_A/setup_sqrt_mesh_step.xml 
+to either include or remove this line:
+  <argument flag="--remove_extra_y"></argument>
+
+2km: do NOT remove extra y; effective width=20207.2m
+1km: remove extra y; effective width=19629.9m
+500m: remove extra y ; effective width=20207.2 m
+250m: remove extra y; effective width=20062.9 m
+
+Note that the best way to measure model domain width is between the second to final yVertex coordinates 
+on both north and south ends of the domain.  In other words, we want to exlude the hexagon's 'tents' on
+the north and south from the effective width of the domain.  This is because there is no flux north or
+south of those positions and those 'tents' are effectively dead space.  Note that the setup script
+adjusts the externalWaterInput magnitude for cells in the north and south so that these 'tents' 
+effectively receive no input.

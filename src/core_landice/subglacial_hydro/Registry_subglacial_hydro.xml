@@ -73,6 +73,40 @@
 		            description="maximum water thickness in till"
 		            possible_values="positive real number"
 		/>
+                <!-- channel options -->
+                <nml_option name="config_SGH_chnl_active" type="logical" default_value=".false." units="unitless"
+		            description="activate channels in subglacial hydrology model"
+		            possible_values=".true. or .false."
+		/>
+                <nml_option name="config_SGH_chnl_alpha" type="real" default_value="1.25" units="unitless"
+		            description="power in flux formula"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_chnl_beta" type="real" default_value="1.5" units="unitless"
+		            description="power in flux formula"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_chnl_conduc_coeff" type="real" default_value="0.1" units="COMPLICATED"
+		            description="conductivity coefficient"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_chnl_creep_coefficient" type="real" default_value="0.04" units="none"
+		            description="creep closure coefficient"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_incipient_channel_width" type="real" default_value="2.0" units="m"
+                            description="width of sheet beneath/around channel that contributes to melt within the channel"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_include_pressure_melt" type="logical" default_value=".true." units="none"
+                            description="whether to include the pressure melt term in the channel opening"
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_SGH_shmip_forcing" type="character" default_value="none" units="none"
+                            description="calculate time-varying forcing specified by SHMIP experiments C or D"
+		            possible_values="'none', 'C1'-'C4', 'D1'-'D5'"
+		/>
+
 	</nml_record>
 
 <!-- ======================================================================= -->
@@ -124,6 +158,8 @@
 		     description="subglacial hydropotential" />
                 <var name="waterFlux" type="real" dimensions="nEdges Time" units="m^2/s"
 		     description="total subglacial water flux" />
+                <var name="waterFluxMask" type="integer" dimensions="nEdges Time" units="none"
+		     description="mask indicating how to handle fluxes on each edge: 0=calculate based on hydropotential gradient; 1=allow outflow based on hydropotential gradient, but no inflow (NOT YET IMPLEMENTED); 2=zero flux" />
                 <var name="waterFluxAdvec" type="real" dimensions="nEdges Time" units="m^2/s"
 		     description="advective subglacial water flux" />
                 <var name="waterFluxDiffu" type="real" dimensions="nEdges Time" units="m^2/s"
@@ -141,15 +177,19 @@
                 <var name="waterThicknessEdgeUpwind" type="real" dimensions="nEdges Time" units="m"
 		     description="water layer thickness of cell upwind of edge" />
                 <var name="diffusivity" type="real" dimensions="nEdges Time" units="m^2 s^-1"
-		     description="effective Darcy hydraulic conductivity" />
+		     description="diffusivity of sheet" />
                 <var name="hydropotentialBase" type="real" dimensions="nCells Time" units="Pa"
 		     description="hydropotential without water thickness contribution" />
-                <var name="hydropotentialBaseSlopeNormal" type="real" dimensions="nEdges Time" units="Pa"
+                <var name="hydropotentialBaseVertex" type="real" dimensions="nVertices Time" units="Pa"
+		     description="hydropotential without water thickness contribution on vertices.  Only used for some choices of config_SGH_tangent_slope_calculation." />
+                <var name="hydropotentialBaseSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^-1"
 		     description="normal component of gradient of hydropotentialBase" />
-                <var name="hydropotentialBaseSlopeTangent" type="real" dimensions="nEdges Time" units="Pa"
+                <var name="hydropotentialBaseSlopeTangent" type="real" dimensions="nEdges Time" units="Pa m^-1"
 		     description="tangent component of gradient of hydropotentialBase" />
                 <var name="gradMagPhiEdge" type="real" dimensions="nEdges Time" units="?"
 		     description="magnitude of the gradient of hydropotentialBase, on Edges" />
+                <var name="waterPressureSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^-1"
+		     description="normal component of gradient of waterPressure" />
                 <var name="divergence" type="real" dimensions="nCells Time" units="m s^-1"
 		     description="flux divergence of water" />
                 <var name="openingRate" type="real" dimensions="nCells Time" units="m s^-1"
@@ -166,6 +206,38 @@
 		     description="time step length limited by pressure equation scheme" />
                 <var name="deltatSGH" type="real" dimensions="Time" units="s"
                      description="time step used for subglacial hydro" />
+                <!-- channel variables -->
+                <var name="channelArea" type="real" dimensions="nEdges Time" units="m^2"
+		     description="area of subglacial channel" />
+                <var name="channelDischarge" type="real" dimensions="nEdges Time" units="m^3 s^-1"
+		     description="discharge through subglacial channel" />
+                <var name="channelVelocity" type="real" dimensions="nEdges Time" units="m s^-1"
+		     description="velocity in subglacial channel" />
+                <var name="channelMelt" type="real" dimensions="nEdges Time" units="kg m^-1 s^-1"
+		     description="melt rate in subglacial channel" />
+                <var name="channelPressureFreeze" type="real" dimensions="nEdges Time" units="kg m^-1 s^-1"
+		     description="freezing rate in subglacial channel due to water pressure gradient.  positive=freezing, negative=melting" />
+                <var name="flowParamAChannel" type="real" dimensions="nEdges Time" units="Pa^-3 s^-1"
+		     description="flow parameter A on edges used for channel" />
+                <var name="channelEffectivePressure" type="real" dimensions="nEdges Time" units="Pa"
+		     description="effective pressure in the channel" />
+                <var name="channelClosingRate" type="real" dimensions="nEdges Time" units="m^2 s^-1"
+		     description="closing rate from creep of the channel" />
+                <var name="channelOpeningRate" type="real" dimensions="nEdges Time" units="m^2 s^-1"
+		     description="opening rate from melt of the channel" />
+                <var name="channelChangeRate" type="real" dimensions="nEdges Time" units="m^2 s^-1"
+		     description="rate of change of channel area" />
+                <var name="deltatSGHadvecChannel" type="real" dimensions="Time" units="s"
+		     description="time step length limited by channel advection" />
+                <var name="deltatSGHdiffuChannel" type="real" dimensions="Time" units="s"
+		     description="time step length limited by channel diffusion" />
+                <var name="divergenceChannel" type="real" dimensions="nCells Time" units="m s^-1"
+		     description="divergence due to channel flow" />
+                <var name="channelAreaChangeCell" type="real" dimensions="nCells Time" units="m s^-1"
+                     description="change in channel area within each cell, averaged over cell area" />
+                <var name="channelDiffusivity" type="real" dimensions="nEdges Time" units="m^2 s^-1"
+		     description="diffusivity in channel" />
+
 	</var_struct>
 
 <!-- ======================================================================= -->

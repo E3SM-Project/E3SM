@@ -1,0 +1,10 @@
+&periodic_grid
+   ! 6000m = 60 cells + 2 extra for culling and 2 on either side for gutter
+   nx = 66,
+   !  want ~12 + 2 for culling + 2 on either side for gutter;
+   ny = 20,
+   dc = 100.0,
+   nVertLevels = 1,
+   nTracers = 1,
+   nproc = 1
+/
