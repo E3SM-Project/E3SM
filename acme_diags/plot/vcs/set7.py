@@ -6,6 +6,7 @@ import vcs
 import cdms2
 import genutil.statistics
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
+from acme_diags.driver.utils import get_output_dir
 
 # Expensive to init inside plot()
 vcs_canvas = vcs.init(bg=True)
@@ -51,7 +52,7 @@ def plot_min_max_mean(canvas, metrics_dict, ref_test_or_diff):
     canvas.plot(mean_label)
 
 def plot_rmse_and_corr(canvas, metrics_dict):
-    """ canvas is a vcs.Canvas, metrics_dict is a dict """
+    """canvas is a vcs.Canvas, metrics_dict is a dict"""
 
     rmse_str = '%.2f' % metrics_dict['misc']['rmse']
     corr_str = '%.2f' % metrics_dict['misc']['corr']
@@ -113,6 +114,24 @@ def plot(reference, test, diff, metrics_dict, parameter):
     template_test = vcs_canvas.gettemplate('plotset7_0_x_0')
     template_ref = vcs_canvas.gettemplate('plotset7_0_x_1')
     template_diff = vcs_canvas.gettemplate('plotset7_0_x_2')
+
+    template_test.title.x = 0.01
+    template_test.dataname.x = 0.01
+    template_test.dataname.y = template_test.title.y - 0.02
+    template_test.data.y1 -= 0.025
+    template_test.data.y2 -= 0.02
+
+    template_ref.title.x = 0.01
+    template_ref.dataname.x = 0.01
+    template_ref.dataname.y = template_ref.title.y - 0.02
+    template_ref.data.y1 -= 0.025
+    template_ref.data.y2 -= 0.025
+
+    template_diff.title.x = 0.01
+    template_diff.dataname.x = 0.01
+    template_diff.dataname.y = template_diff.title.y - 0.02
+    template_diff.data.y1 -= 0.025
+    template_diff.data.y2 -= 0.025
 
     set_units(test, parameter.test_units)
     set_units(reference, parameter.reference_units)
@@ -181,17 +200,17 @@ def plot(reference, test, diff, metrics_dict, parameter):
     # Plotting the main title
     main_title = managetextcombined('main_title', 'main_title')
     main_title.string = parameter.main_title
+    main_title.y = [0.985]
     vcs_canvas.plot(main_title)
 
+    fnm = os.path.join(get_output_dir('7', parameter), parameter.output_file)
     for f in parameter.output_format:
         f = f.lower().split('.')[-1]
-        fnm = os.path.join(parameter.results_dir, case_id, parameter.output_file)
         if f == 'png':
             vcs_canvas.png(fnm)
         elif f == 'pdf':
             vcs_canvas.pdf(fnm)
         elif f == 'svg':
             vcs_canvas.svg(fnm)
-
         print('Plot saved in: ' + fnm + '.' + f)
     vcs_canvas.clear()

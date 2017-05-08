@@ -25,7 +25,7 @@ setup(
     author="Zeshawn Shaheen, Chengzhu (Jill) Zhang",
     author_email="aims@llnl.gov",
     description="ACME Diagnostics.",
-    scripts=["acme_diags/acme_driver.py"],
+    scripts=["acme_diags/acme_diags_driver.py"],
     packages=find_packages(exclude=["*.test", "*.test.*", "test.*", "test"]),
     data_files=data_files
 )

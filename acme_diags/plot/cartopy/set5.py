@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import cartopy.crs as ccrs
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
-
 from acme_diags.metrics import rmse, corr
+from acme_diags.driver.utils import get_output_dir
 
 plotTitle = {'fontsize':11.5}
 plotSideTitle = {'fontsize':9.5}
@@ -116,7 +116,6 @@ def plot(reference, test, diff, metrics_dict, parameter):
     # Save figure
     for f in parameter.output_format:
         f = f.lower().split('.')[-1]
-        fnm = os.path.join(parameter.results_dir, parameter.case_id, parameter.output_file)
-
+        fnm = os.path.join(get_output_dir('5', parameter), parameter.output_file)
         plt.savefig(fnm + '.' + f)
         print('Plot saved in: ' + fnm + '.' + f)
