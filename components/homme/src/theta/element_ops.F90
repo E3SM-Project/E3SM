@@ -360,22 +360,15 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! boundary terms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  compute pnh at midpoint, then extrapolate to surface:
-   rho_R_theta(:,:,nlev) = theta_dp_cp(:,:,nlev)*kappa_star(:,:,nlev) / &
-        (  (phi(:,:,nlev) - phis(:,:))*2  )
-   exner(:,:,nlev) = (rho_R_theta(:,:,nlev)/p0)**&
-        ( kappa_star(:,:,nlev)/ ( 1-kappa_star(:,:,nlev)))
-   pnh(:,:,nlev) = rho_R_theta(:,:,nlev)*exner(:,:,nlev)
-
-
-!  Bounday conditions.  invert  pnh(:,:,k)=(pnh_i(:,:,k)+pnh_i(:,:,k+1))/2  (extrapolate)
-!   exner_i(:,:,nlev+1) = 2*exner(:,:,nlev) - exner_i(:,:,nlev)
-!   pnh_i(:,:,nlev+1) = p0*exner_i(:,:,nlev+1)**(1/kappa_star(:,:,nlev))
-   pnh_i(:,:,nlev+1) = 2*pnh(:,:,nlev) - pnh_i(:,:,nlev)
-   exner_i(:,:,nlev+1) = (pnh_i(:,:,nlev+1)/p0)**kappa_star(:,:,nlev) 
-
    pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0   ! hydrostatic ptop
    exner_i(:,:,1) = (hvcoord%hyai(1)*hvcoord%ps0/p0)**kappa_star(:,:,1) 
+
+
+   rho_R_theta(:,:,nlev) = theta_dp_cp(:,:,nlev)*kappa_star(:,:,nlev) / &
+        (  (phi(:,:,nlev) - phis(:,:))*2  )
+   exner_i(:,:,nlev+1) = (rho_R_theta(:,:,nlev)/p0)**&
+        ( kappa_star(:,:,nlev)/ ( 1-kappa_star(:,:,nlev)))
+   pnh_i(:,:,nlev+1) = rho_R_theta(:,:,nlev)*exner_i(:,:,nlev+1)
 
 
 #if (defined COLUMN_OPENMP)
@@ -506,7 +499,7 @@ contains
 
 !  integrand(:,:) = dp(:,:,nlev)*Rgas*temperature(:,:,nlev)/p(:,:,nlev)
   phi(:,:,nlev) = phis(:,:) + (&
-    kappa*theta_dp_cp(:,:,nlev)*p(:,:,nlev)**(kappa-1)*p0**(-kappa) )/2
+    kappa*theta_dp_cp(:,:,nlev)*p_i(:,:,nlev+1)**(kappa-1)*p0**(-kappa) )/2
 
   do k=nlev,2,-1
      !  invert this equation at interfaces:

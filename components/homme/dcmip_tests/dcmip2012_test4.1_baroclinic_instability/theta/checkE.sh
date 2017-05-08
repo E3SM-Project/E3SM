@@ -30,16 +30,15 @@ set case  = nh-x1000
 mkdir restart
 
 
+# run 30 days, eulerian,  (no restart)
+set namelist = ${case}-erun3.nl            
+\cp -f $namelist input.nl
+mpirun -np $NCPU $EXEC < input.nl
+
 # run 30 days, write a restart file
 set namelist = ${case}-erun1.nl            
 \cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
-
-# run 30 days, eulerian,  (no restart)
-set namelist = ${case}-erun3.nl            
-\cp -f $namelist input.nl
-#mpirun -np $NCPU $EXEC < input.nl
-
 
 # restart, run 2 timesteps with no viscosity:
 set namelist = ${case}-erun2.nl            
