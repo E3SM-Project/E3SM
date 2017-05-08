@@ -199,6 +199,7 @@ class EnvBatch(EnvBase):
             if force_queue:
                 if not self.queue_meets_spec(force_queue, task_count, walltime=walltime, job=job):
                     logger.warning("WARNING: User-requested queue '%s' does not meet requirements for job '%s'" % (force_queue, job))
+                queue = force_queue
             else:
                 queue = self.select_best_queue(task_count, walltime=walltime, job=job)
                 if queue is None and walltime is not None:
@@ -221,8 +222,16 @@ class EnvBatch(EnvBase):
                     queue = default_queue_node.text
                     walltime = self.get_queue_specs(queue)[3]
 
-            walltime = self.get_queue_specs(queue)[3] if walltime is None else walltime
-            walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
+            if walltime is None:
+                # Figure out walltime
+                specs = self.get_queue_specs(queue)
+                if specs is None:
+                    # Queue is unknown, use specs from default queue
+                    walltime = self.get_default_queue().get("walltimemax")
+                else:
+                    walltime = specs[3]
+
+                walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
 
             self.set_value("JOB_QUEUE", queue, subgroup=job)
             self.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
@@ -435,7 +444,12 @@ class EnvBatch(EnvBase):
         return jobid
 
     def queue_meets_spec(self, queue, num_pes, walltime=None, job=None):
-        jobmin, jobmax, jobname, walltimemax, strict = self.get_queue_specs(queue)
+        specs = self.get_queue_specs(queue)
+        if specs is None:
+            logger.warning("WARNING: queue '%s' is unknown to this system" % queue)
+            return True
+
+        jobmin, jobmax, jobname, walltimemax, strict = specs
 
         # A job name match automatically meets spec
         if job is not None and jobname is not None:
@@ -484,7 +498,7 @@ class EnvBatch(EnvBase):
 
                 return jobmin, jobmax, jobname, walltimemax, strict
 
-        expect(False, "Queue '%s' is unknown to this system" % queue)
+        return None
 
     def get_default_queue(self):
         node = self.get_optional_node("queue", attributes={"default" : "true"})
