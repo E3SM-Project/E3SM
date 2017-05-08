@@ -123,22 +123,22 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     metrics_dict['ref'] = {
         'min': min_cdms(ref),
         'max': max_cdms(ref),
-        'mean': mean(ref)
+        'mean': numpy.nan#mean(ref)
     }
     metrics_dict['test'] = {
         'min': min_cdms(test),
         'max': max_cdms(test),
-        'mean': mean(test)
+        'mean': numpy.nan#mean(test)
     }
 
     metrics_dict['diff'] = {
         'min': min_cdms(diff),
         'max': max_cdms(diff),
-        'mean': mean(diff)
+        'mean': numpy.nan#mean(diff)
     }
     metrics_dict['misc'] = {
-        'rmse': rmse(test_regrid, ref_regrid),
-        'corr': corr(test_regrid, ref_regrid)
+        'rmse': numpy.nan,#rmse(test_regrid, ref_regrid),
+        'corr': numpy.nan#corr(test_regrid, ref_regrid)
     }
 
     return metrics_dict
@@ -339,13 +339,13 @@ def compute(parameter):
 
                 # Plotting
                 diff = mv1_reg - mv2_reg
-                #metrics_dict = create_metrics(
-                #    mv2_p, mv1_p, mv2_reg, mv1_reg, diff)
+                metrics_dict = create_metrics(
+                    mv2_p, mv1_p, mv2_reg, mv1_reg, diff)
 
-                #parameter.var_region = region
-                #
-                #plot('5', mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                #save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
+                parameter.var_region = 'global'
+                
+                plot('4', mv2_p, mv1_p, diff, metrics_dict, parameter)
+                save_ncfiles(mv1_p, mv2_p, diff, parameter)
 
                 f_in.close()
 
