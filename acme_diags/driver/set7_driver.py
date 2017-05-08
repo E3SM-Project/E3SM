@@ -1,49 +1,14 @@
 #!/usr/bin/env python
-import json
-import copy
-import glob
 import os
-import sys
-import fnmatch
-import numpy
 import cdutil
 import genutil
 import cdms2
 import MV2
-from acme_diags.acme_viewer import create_viewer
 from acme_diags.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
-
-def findfile(path_name, data_name, season):
-    """locate file name based on data_name and season"""
-    dir_files = os.listdir(path_name)
-    for filename in dir_files:
-        if filename.startswith(data_name) and season in filename:
-            return path_name+filename
-    raise IOError(
-        "No file found based on given path_name and data_name")
-
-def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
-    """regrid transient variable toward lower resolution of two variables"""
-
-    axes1 = mv1.getAxisList()
-    axes2 = mv2.getAxisList()
-
-    # use nlat to decide data resolution, higher number means higher data
-    # resolution. For the difference plot, regrid toward lower resolution
-    if len(axes1[1]) <= len(axes2[1]):
-        mv_grid = mv1.getGrid()
-        mv1_reg = mv1
-        mv2_reg = mv2.regrid(mv_grid, regridTool=regrid_tool,
-                             regridMethod=regrid_method)
-    else:
-        mv_grid = mv2.getGrid()
-        mv2_reg = mv2
-        mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool,
-                             regridMethod=regrid_method)
-    return mv1_reg, mv2_reg
+from acme_diags.driver import utils
 
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
@@ -72,64 +37,7 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
 
     return metrics_dict
 
-
-def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
-    """masks a variable var to be missing except where maskvar>=low_limit and maskvar<=high_limit. 
-    None means to omit the constrint, i.e. low_limit = -infinity or high_limit = infinity. var is changed and returned; we don't make a new variable.
-    var and maskvar: dimensioned the same variables.
-    low_limit and high_limit: scalars.
-    """
-    var = copy.deepcopy(input_var)
-    if low_limit is None and high_limit is None:
-        return var
-    if low_limit is None and high_limit is not None:
-        maskvarmask = maskvar > high_limit
-    elif low_limit is not None and high_limit is None:
-        maskvarmask = maskvar < low_limit
-    else:
-        maskvarmask = (maskvar < low_limit) | (maskvar > high_limit)
-    if var.mask is False:
-        newmask = maskvarmask
-    else:
-        newmask = var.mask | maskvarmask
-    var.mask = newmask
-    return var
-
-
-def save_ncfiles(test, ref, diff, parameter):
-    ''' Saves the test, reference, and difference nc files. '''
-    # Save files being plotted
-    # Set cdms preferences - no compression, no shuffling, no complaining
-    cdms2.setNetcdfDeflateFlag(1)
-    # 1-9, min to max - Comes at heavy IO (read/write time cost)
-    cdms2.setNetcdfDeflateLevelFlag(0)
-    cdms2.setNetcdfShuffleFlag(0)
-    cdms2.setCompressionWarnings(0)  # Turn off warning messages
-    # Save test file
-    file_test = cdms2.open(parameter.results_dir + '/' + parameter.case_id + 
-                           '/' + parameter.output_file + '_test.nc', 'w+')
-    test.id = parameter.var_id
-    file_test.write(test)
-    file_test.close()
-
-    # Save reference file
-    file_ref = cdms2.open(parameter.results_dir + '/' + parameter.case_id + 
-                           '/' + parameter.output_file + '_ref.nc', 'w+')
-    ref.id = parameter.var_id
-    file_ref.write(ref)
-    file_ref.close()
-
-    # Save difference file
-    file_diff = cdms2.open(parameter.results_dir + '/' + parameter.case_id + 
-                           '/' + parameter.output_file + '_diff.nc', 'w+')
-    diff.id = parameter.var_id + '(test - reference)'
-    file_diff.write(diff)
-    file_diff.close()
-
 def run_diag(parameter):
-    if not os.path.exists(os.path.join(parameter.results_dir, parameter.case_id)):
-        os.makedirs(os.path.join(parameter.results_dir, parameter.case_id))
-
     reference_data_path = parameter.reference_data_path
     test_data_path = parameter.test_data_path
 
@@ -145,7 +53,7 @@ def run_diag(parameter):
             print filename1
         else:
             try:
-                filename1 = findfile(test_data_path, test_name, season)
+                filename1 = utils.findfile(test_data_path, test_name, season)
                 print filename1
             except IOError:
                 print('No file found for {} and {}'.format(test_name, season))
@@ -156,7 +64,7 @@ def run_diag(parameter):
             print filename2
         else:
             try:
-                filename2 = findfile(reference_data_path, ref_name, season)
+                filename2 = utils.findfile(reference_data_path, ref_name, season)
                 print filename2
             except IOError:
                 print('No file found for {} and {}'.format(test_name, season))
@@ -215,11 +123,11 @@ def run_diag(parameter):
                         region_value = regions_specs[region]['value']
                         print 'region_value', region_value, mv1
     
-                        mv1_domain = mask_by(
+                        mv1_domain = utils.mask_by(
                             mv1, land_ocean_frac, low_limit=region_value)
                         mv2_domain = mv2.regrid(
                             mv1.getGrid(), parameter.regrid_tool, parameter.regrid_method)
-                        mv2_domain = mask_by(
+                        mv2_domain = utils.mask_by(
                             mv2_domain, land_ocean_frac, low_limit=region_value)
                     else:
                         mv1_domain = mv1
@@ -242,7 +150,7 @@ def run_diag(parameter):
     
                     # regrid towards lower resolution of two variables for
                     # calculating difference
-                    mv1_reg, mv2_reg = regrid_to_lower_res(
+                    mv1_reg, mv2_reg = utils.regrid_to_lower_res(
                         mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
     
                     # if var is 'SST' or var is 'TREFHT_LAND': #special case
@@ -265,8 +173,7 @@ def run_diag(parameter):
                         mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                     parameter.var_region = region
                     plot('7', mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-
-                    save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
+                    utils.save_ncfiles('7', mv1_domain, mv2_domain, diff, parameter)
     
             elif mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
                 plev = parameter.plevs
@@ -341,11 +248,11 @@ def run_diag(parameter):
                             region_value = regions_specs[region]['value']
                             print 'region_value', region_value, mv1
     
-                            mv1_domain = mask_by(
+                            mv1_domain = utils.mask_by(
                                 mv1, land_ocean_frac, low_limit=region_value)
                             mv2_domain = mv2.regrid(
                                 mv1.getGrid(), parameter.regrid_tool, parameter.regrid_method)
-                            mv2_domain = mask_by(
+                            mv2_domain = utils.mask_by(
                                 mv2_domain, land_ocean_frac, low_limit=region_value)
                         else:
                             mv1_domain = mv1
@@ -370,7 +277,7 @@ def run_diag(parameter):
     
                         # Regrid towards lower resolution of two variables for
                         # calculating difference
-                        mv1_reg, mv2_reg = regrid_to_lower_res(
+                        mv1_reg, mv2_reg = utils.regrid_to_lower_res(
                             mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
     
                         # Plotting
@@ -380,7 +287,7 @@ def run_diag(parameter):
 
                         parameter.var_region = region
                         plot('7', mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                        save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
+                        utils.save_ncfiles('7', mv1_domain, mv2_domain, diff, parameter)
 
                 f_in.close()
             
