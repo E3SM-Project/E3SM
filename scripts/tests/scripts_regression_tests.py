@@ -1486,6 +1486,27 @@ class K_TestCimeCase(TestCreateTestCommon):
         result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
         self.assertEqual(result, "shared")
 
+    ###########################################################################
+    def test_cime_case_test_walltime_mgmt_5(self):
+    ###########################################################################
+        if CIME.utils.get_model() != "acme":
+            self.skipTest("Skipping walltime test. Depends on ACME batch settings")
+
+        test_name = "ERS_P1.f19_g16_rx1.A"
+        machine, compiler = "blues", "gnu"
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --queue slartibartfast" %
+                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
+        self.assertEqual(result, "03:00:00")
+
+        result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
+        self.assertEqual(result, "slartibartfast")
+
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
 ###############################################################################
