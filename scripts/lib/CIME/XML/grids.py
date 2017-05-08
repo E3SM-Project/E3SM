@@ -56,8 +56,6 @@ class Grids(GenericXML):
         if  levmatch:
             atmnlev = levmatch.group(2)
             name = levmatch.group(1)+levmatch.group(3)
-        else:
-            atmnlev = None
 
         #mechanism to specify lnd levels
         lndlevregex = re.compile(r"(.*_)([^_]+)z(\d+)(_[^m].*)$")
@@ -65,8 +63,6 @@ class Grids(GenericXML):
         if  levmatch:
             lndnlev = levmatch.group(3)
             name = levmatch.group(1)+levmatch.group(2)+levmatch.group(4)
-        else:
-            lndnlev = None
 
         # determine component_grids dictionary and grid longname
         lname, component_grids = self._read_config_grids(name, compset, atmnlev, lndnlev)
@@ -209,14 +205,15 @@ class Grids(GenericXML):
             else:
                 lname = prefix[component_gridname]
             if model_grid[component_gridname] is not None:
-                if component_gridname == 'atm':
-                    if atmnlev is not None:
-                        lname += model_grid[component_gridname] + "z" + atmnlev
-                elif component_gridname == 'lnd':
-                    if lndnlev is not None:
-                        lname += model_grid[component_gridname] + "z" + lndnlev
-                else:
-                    lname += model_grid[component_gridname]
+                lname += model_grid[component_gridname]
+                if component_gridname == 'atm' and atmnlev is not None:
+                    if not ("a%null" in lname):
+                        lname += "z" + atmnlev
+
+                elif component_gridname == 'lnd' and lndnlev is not None:
+                    if not ("l%null" in lname):
+                        lname += "z" + lndnlev
+
             else:
                 lname += 'null'
         component_grids = self._get_component_grids_from_longname(lname)
@@ -240,10 +237,10 @@ class Grids(GenericXML):
 
             # Determine grid name with no nlev suffix if there is one
             grid_name_nonlev = grid_name
-            levmatch = re.match(r"([^_]+)z(\d+)(.*)$", grid_name)
+            levmatch = re.match(atmlevregex, grid_name)
             if  levmatch:
                 grid_name_nonlev = levmatch.group(1)+levmatch.group(3)
-            levmatch = re.match(r"(.*_)([^_]+)z(\d+)(.*)$", grid_name)
+            levmatch = re.match(lndlevregex, grid_name)
             if  levmatch:
                 grid_name_nonlev = levmatch.group(1)+levmatch.group(2)+levmatch.group(4)
 
