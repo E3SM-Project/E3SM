@@ -1,7 +1,7 @@
 import unittest
 import os
 from acme_diags.acme_parameter import ACMEParameter
-from acme_diags.acme_driver import _get_default_diags, make_parameters
+from acme_diags.acme_diags_driver import _get_default_diags, make_parameters
 
 
 class TestACMEDriver(unittest.TestCase):
