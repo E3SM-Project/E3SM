@@ -295,4 +295,7 @@ class GenericXML(object):
         return xmlstr
 
     def get_id(self):
-        return self.root.get("id")
+        xmlid = self.root.get("id")
+        if xmlid is not None:
+            return xmlid
+        return self.root.tag

@@ -34,7 +34,7 @@ class EnvMachPes(EnvBase):
         ''' Find the maximum number of openmp threads for any component in the case '''
         max_threads = 1
         for comp in comp_classes:
-            threads = self.get_value("NTHRDS_%s"%comp)
+            threads = self.get_value("NTHRDS",attribute={"component":comp})
             expect(threads is not None, "Error no thread count found for component class %s"%comp)
             if threads > max_threads:
                 max_threads = threads
@@ -44,6 +44,7 @@ class EnvMachPes(EnvBase):
         """
         figure out the value of COST_PES which is the pe value used to estimate model cost
         """
+        expect(totaltasks > 0,"totaltasks > 0 expected totaltasks = %s"%totaltasks)
         pespn = self.get_value("PES_PER_NODE")
         num_nodes, spare_nodes = self.get_total_nodes(totaltasks, max_thread_count)
         num_nodes += spare_nodes
@@ -57,14 +58,15 @@ class EnvMachPes(EnvBase):
     def get_total_tasks(self, comp_classes):
         total_tasks = 0
         for comp in comp_classes:
-            ntasks = self.get_value("NTASKS_%s"%comp)
-            rootpe = self.get_value("ROOTPE_%s"%comp)
-            pstrid = self.get_value("PSTRID_%s"%comp)
+            ntasks = self.get_value("NTASKS", attribute={"component":comp})
+            rootpe = self.get_value("ROOTPE", attribute={"component":comp})
+            pstrid = self.get_value("PSTRID", attribute={"component":comp})
             tt = rootpe + (ntasks - 1) * pstrid + 1
             total_tasks = max(tt, total_tasks)
         return total_tasks
 
     def get_tasks_per_node(self, total_tasks, max_thread_count):
+        expect(total_tasks > 0,"totaltasks > 0 expected totaltasks = %s"%total_tasks)
         tasks_per_node = min(self.get_value("MAX_TASKS_PER_NODE")/ max_thread_count,
                              self.get_value("PES_PER_NODE"), total_tasks)
         return tasks_per_node

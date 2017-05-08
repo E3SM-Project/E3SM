@@ -126,8 +126,6 @@ class Case(object):
         for variable substitution using the {{ var }} syntax
         """
         env_mach_pes  = self.get_env("mach_pes")
-        print "HERE %s"%env_mach_pes.get_value("TOTALPES")
-
         env_mach_spec = self.get_env('mach_specific')
         comp_classes  = self.get_values("COMP_CLASSES")
         pes_per_node  = self.get_value("PES_PER_NODE")
@@ -241,6 +239,7 @@ class Case(object):
         for env_file in self._env_files_that_need_rewrite:
             env_file.write()
         self._env_files_that_need_rewrite = set()
+        mach_pes = self.get_env("mach_pes")
 
     def get_values(self, item, attribute=None, resolved=True, subgroup=None):
         results = []
@@ -564,15 +563,14 @@ class Case(object):
         #--------------------------------------------
         mach_pes_obj = None
         # self._pesfile may already be env_mach_pes.xml if so we can just return
-        try:
-            mach_pes_obj = EnvMachPes(infile=self._pesfile, components=self._components)
-            for n, _file in enumerate(self._env_entryid_files):
-                if isinstance(_file, EnvMachPes):
-                    mach_pes_obj.filename = _file.filename
-                    self._env_entryid_files[n] = deepcopy(mach_pes_obj)
-            return mach_pes_obj.get_value('TOTALPES')
-        except SystemExit:
-            pesobj = Pes(self._pesfile)
+        gfile = GenericXML(infile=self._pesfile)
+        ftype = gfile.get_id()
+        expect(ftype == "env_mach_pes.xml" or ftype == "config_pes", " Do not recognize %s as a valid CIME pes file %s"%(self._pesfile, ftype))
+        if ftype == "env_mach_pes.xml":
+            new_mach_pes_obj = EnvMachPes(infile=self._pesfile, components=self._components)
+            self.update_env(new_mach_pes_obj, "mach_pes")
+            return new_mach_pes_obj.get_value("TOTALPES")
+        pesobj = Pes(self._pesfile)
 
         match1 = re.match('(.+)x([0-9]+)', "" if pecount is None else pecount)
         match2 = re.match('([0-9]+)', "" if pecount is None else pecount)
@@ -1268,3 +1266,21 @@ class Case(object):
                     break
 
         self._files = self._env_entryid_files + self._env_generic_files
+
+    def update_env(self, new_object, env_file):
+        """
+        Replace a case env object file
+        """
+        old_object = self.get_env(env_file)
+        new_object.filename = old_object.filename
+        if old_object in self._env_entryid_files:
+            self._env_entryid_files.remove(old_object)
+            self._env_entryid_files.append(new_object)
+        elif old_object in self._env_generic_files:
+            self._env_generic_files.remove(old_object)
+            self._env_generic_files.append(new_object)
+        if old_object in self._env_files_that_need_rewrite:
+            self._env_files_that_need_rewrite.remove(old_object)
+        self._files.remove(old_object)
+        self._files.append(new_object)
+        self.schedule_rewrite(new_object)
