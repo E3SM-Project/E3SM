@@ -238,7 +238,6 @@ class Case(object):
         for env_file in self._env_files_that_need_rewrite:
             env_file.write()
         self._env_files_that_need_rewrite = set()
-        mach_pes = self.get_env("mach_pes")
 
     def get_values(self, item, attribute=None, resolved=True, subgroup=None):
         results = []
