@@ -12,8 +12,8 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
         self.sets = []
         self.variables = []
-        self.season = []
-        self.region = []
+        self.seasons = []
+        self.regions = []
         self.regrid_tool = 'esmf'
         self.regrid_method = 'linear'
         self.plevs = []

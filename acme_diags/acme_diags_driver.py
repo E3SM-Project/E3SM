@@ -14,7 +14,7 @@ def _get_default_diags(set_num):
         json_data = json.loads(json_file.read())
     return json_data
 
-def make_parameters(original_parameter):
+def make_parameters(original_parameter, vars_to_ignore=[]):
     """Create multiple parameters given a list of
     parameters in a json and an original parameter"""
 
@@ -36,7 +36,9 @@ def make_parameters(original_parameter):
                 setattr(p, attr_name, single_run[attr_name])
 
             # Add attributes of original_parameter to p
-            p.__dict__.update(original_parameter.__dict__)
+            for var in original_parameter.__dict__:
+                if var not in vars_to_ignore:
+                    p.__dict__[var] = original_parameter.__dict__[var]
             p.check_values()
             parameters.append(p)
     return parameters
@@ -49,13 +51,12 @@ if __name__ == '__main__':
         dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         original_parameter.results_dir = '{}-{}'.format('acme_diags_results', dt)
 
-    if not os.path.exists(original_parameter.results_dir):
-        os.makedirs(original_parameter.results_dir)
-    parameters = make_parameters(original_parameter)
+    # if user wants all of the default diags for the sets (ex: sets=[5, 7]), then
+    # don't overwrite the sets keyword in the default json files.
+    ignore_vars = [] if hasattr(original_parameter, 'custom_diags') else ['sets']
+    parameters = make_parameters(original_parameter, vars_to_ignore=ignore_vars)
 
     for parameter in parameters:
-        if not hasattr(parameter, 'sets'):
-            raise RuntimeError('Parameter needs to have an attribute sets')
         for pset in parameter.sets:
             pset = str(pset)
             if pset == '5':
