@@ -208,6 +208,109 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
 end subroutine
 
+
+!_______________________________________________________________________
+subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
+
+  type(element_t),    intent(inout), target :: elem(:)                  ! element array
+  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
+  type(hvcoord_t),    intent(in)            :: hvcoord                  ! hybrid vertical coordinates
+  integer,            intent(in)            :: nets,nete                ! start, end element index
+  integer,            intent(in)            :: nt, ntQ                  ! time level index
+  integer,            intent(in)            :: test                     ! dcmip2016 test number
+  real(rl),           intent(in)            :: dt                       ! time-step size
+
+  integer   :: pbl_type=-1, prec_type=0
+
+  integer :: i,j,k,ie                                                     ! loop indices
+  real(rl):: lat
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,exner,p,dp,cp_star,rho,z,qv,qc,qr
+  real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
+  real(rl), dimension(np,np)      :: precl
+  real(rl), dimension(np,np,nlev) :: p_kess, theta_kess, exner_kess
+  real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
+
+  do ie = nets,nete
+
+    ! get current element state
+    call get_state(u,v,w,T,theta,exner,p,dp,cp_star,rho,z,g,i,j,elem(ie),hvcoord,nt,ntQ)
+
+    ! get mixing ratios
+    qv  = elem(ie)%state%Qdp(:,:,:,1,ntQ)/dp
+    qc  = elem(ie)%state%Qdp(:,:,:,2,ntQ)/dp
+    qr  = elem(ie)%state%Qdp(:,:,:,3,ntQ)/dp
+
+    ! save un-forced prognostics
+    T0=T; qv0=qv; qc0=qc; qr0=qr
+
+    ! given rho,T,qv: get quantities consistent with Kessler's equation of state
+    !p_kess      = rho * Rgas * T*(1.0_rl + Mvap * qv)
+    !exner_kess  = (p_kess/p0)**(Rgas/Cp)
+    !theta_kess = T/exner_kess
+
+    ! invert columns (increasing z)
+    !theta_inv= theta_kess(:,:,nlev:1:-1)
+theta_inv= theta(:,:,nlev:1:-1)
+
+    qv_inv   = qv        (:,:,nlev:1:-1)
+    qc_inv   = qc        (:,:,nlev:1:-1)
+    qr_inv   = qr        (:,:,nlev:1:-1)
+    rho_inv  = rho       (:,:,nlev:1:-1)
+!    exner_inv= exner_kess(:,:,nlev:1:-1)
+exner_inv= exner(:,:,nlev:1:-1)
+
+    z_inv    = z         (:,:,nlev:1:-1)
+
+    ! apply forcing to columns
+    do j=1,np; do i=1,np
+
+      ! apply physics to (u,v,p, qv,qc,qr). (rho held constant)
+      CALL KESSLER(       &
+        theta_inv(i,j,:), &
+        qv_inv(i,j,:),    &
+        qc_inv(i,j,:),    &
+        qr_inv(i,j,:),    &
+        rho_inv(i,j,:),   &
+        exner_inv(i,j,:), &
+        dt,               &
+        z_inv(i,j,:),     &
+        nlev,             &
+        precl(i,j))
+
+    enddo; enddo;
+
+    ! revert columns (increasing eta)
+!    theta_kess= theta_inv(:,:,nlev:1:-1)
+theta= theta_inv(:,:,nlev:1:-1)
+
+    qv        = qv_inv   (:,:,nlev:1:-1)
+    qc        = qc_inv   (:,:,nlev:1:-1)
+    qr        = qr_inv   (:,:,nlev:1:-1)
+
+    ! convert theta back to T using Kessler's EOS
+    !exner_kess = (rho*Rgas*theta_kess*(1.0_rl + Mvap * qv)/p0)**(Rgas/(cp-Rgas))
+    !T = theta_kess*exner_kess
+
+
+elem(ie)%state%theta_dp_cp(:,:,:,nt) = theta*(Cp_star*dp)
+
+    ! set dynamics forcing
+    elem(ie)%derived%FM(:,:,1,:) = 0
+    elem(ie)%derived%FM(:,:,2,:) = 0
+    !elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
+
+    ! set tracer-mass forcing
+    elem(ie)%derived%FQ(:,:,:,1) = dp*(qv-qv0)/dt
+    elem(ie)%derived%FQ(:,:,:,2) = dp*(qc-qc0)/dt
+    elem(ie)%derived%FQ(:,:,:,3) = dp*(qr-qr0)/dt
+
+    !elem(ie)%state%Qdp(:,:,1,4,ntQ) = precl*dp(:,:,1) ! store precl in level 1 of tracer #4
+
+  enddo
+
+end subroutine
+
+#if 0
 !_______________________________________________________________________
 subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
 
@@ -237,7 +340,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
     case(1);      pbl_type= 0; prec_type=0;
     case(2);      pbl_type= 0; prec_type=0;
     case(3);      pbl_type=-1; prec_type=0;
-    default; stop
+    case default; stop
   end select
 
   do ie = nets,nete
@@ -315,6 +418,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
   enddo
 
 end subroutine
+#endif
 
 end module dcmip16_wrapper
 #endif

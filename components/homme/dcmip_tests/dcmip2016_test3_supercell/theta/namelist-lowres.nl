@@ -25,7 +25,7 @@
   rearth            = 53133                     ! 6.376E6  / 120
   omega             = 0
   se_ftype          = 0
-  moisture          = 'dry' !'notdry'
+  moisture          = 'wet'
   theta_hydrostatic_mode = .false.
 /
 &vert_nl

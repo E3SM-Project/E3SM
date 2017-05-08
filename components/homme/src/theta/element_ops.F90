@@ -515,7 +515,7 @@ contains
   real (kind=real_kind) :: dp_theta_R(np,np,nlev)
   integer :: k
 
-  p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0   
+  p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0
   do k=1,nlev
      p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
   enddo
@@ -537,6 +537,47 @@ contains
      ! (phi(:,:,k-1)-phi(:,:,k)) = dp_theta_R * exner/p
      phi(:,:,k-1) = phi(:,:,k) +&
           dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa / p_i(:,:,k)
+  enddo
+
+  end subroutine
+
+  !_____________________________________________________________________
+  subroutine set_moist_hydrostatic_phi(hvcoord,phis,theta_dp_cp,dp,kappa_star,phi)
+
+  implicit none
+  
+  type (hvcoord_t),      intent(in)   :: hvcoord                      ! hybrid vertical coordinate struct
+  real (kind=real_kind), intent(in)   :: theta_dp_cp(np,np,nlev)
+  real (kind=real_kind), intent(in)   :: dp(np,np,nlev)
+  real (kind=real_kind), intent(in)   :: phis(np,np)
+  real (kind=real_kind), intent(in)   :: kappa_star(np,np,nlev)
+  real (kind=real_kind), intent(out)  :: phi(np,np,nlev)
+  
+  real (kind=real_kind) :: p(np,np,nlev)
+  real (kind=real_kind) :: p_i(np,np,nlev+1)
+  real (kind=real_kind) :: dp_theta_R(np,np,nlev)
+
+  integer :: k
+
+  p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0
+  do k=1,nlev
+     p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
+  enddo
+  do k=1,nlev
+     p(:,:,k) = (p_i(:,:,k) + p_i(:,:,k+1))/2
+  enddo
+
+  ! integrand(:,:) = dp(:,:,nlev)*Rgas*temperature(:,:,nlev)/p(:,:,nlev)
+  phi(:,:,nlev) = phis(:,:) + ( kappa_star(:,:,nlev)*theta_dp_cp(:,:,nlev)*p(:,:,nlev)**(kappa_star(:,:,nlev)-1)*p0**(-kappa_star(:,:,nlev)) )/2
+
+  do k=nlev,2,-1
+     !  invert this equation at interfaces:
+     !  p/exner = dp_theta_R / d(phi)    
+     !  d(phi)  = dp_theta_R*exer/p
+     dp_theta_R(:,:,k)=(theta_dp_cp(:,:,k)*kappa_star(:,:,k) + theta_dp_cp(:,:,k-1)*kappa_star(:,:,k-1))/2
+
+     ! (phi(:,:,k-1)-phi(:,:,k)) = dp_theta_R * exner/p
+     phi(:,:,k-1) = phi(:,:,k) + dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa_star(:,:,k)/p_i(:,:,k)
   enddo
 
   end subroutine
@@ -638,18 +679,18 @@ contains
 
   end subroutine set_elem_state
  !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,Cp_star,zm,g,i,j,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,Cp_star,rho,zm,g,i,j,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
     ! used by idealized tests to compute idealized physics forcing terms
 
-    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,cp_star,zm
+    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,cp_star,zm,rho
     real(real_kind), intent(in)    :: g
     integer,         intent(in)    :: i,j,nt,ntQ
     type(element_t), intent(inout) :: elem
     type (hvcoord_t),intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
 
-    real(real_kind) , dimension(np,np,nlev) :: phi,dpnh,kappa_star
+    real(real_kind) , dimension(np,np,nlev) :: phi,dpnh,kappa_star,Rstar
     real(real_kind) , dimension(np,np) :: phis
 
     integer :: k
@@ -669,9 +710,11 @@ contains
     call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
     call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
     call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,phi,phis,kappa_star,pnh,dpnh,exner)
+    Rstar = kappa_star*cp_star
 
     theta = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star*dp)
     T     = theta*exner
+    rho   = (pnh/T)*Rstar
 
   end subroutine get_state
 
@@ -696,28 +739,29 @@ contains
   enddo
   end subroutine 
 
-
-
   !_____________________________________________________________________
   subroutine tests_finalize(elem, hvcoord,ns,ne)
-!
-! Now that all variables have been initialized, set phi to be in hydrostatic balance
-!
+
+  ! Now that all variables have been initialized, set phi to be in hydrostatic balance
+
   implicit none
 
   type(hvcoord_t),     intent(in)  :: hvcoord
   type(element_t),  intent(inout)  :: elem
   integer,             intent(in)  :: ns,ne
 
-  integer :: k,ie,tl
-  real(real_kind):: dp(np,np,nlev)
+  integer :: k,ie,tl, ntQ
+  real(real_kind), dimension(np,np,nlev) :: dp, kappa_star
 
-!  set dp
   do k=1,nlev
     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,ns)
   enddo
-  call set_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,elem%state%phi(:,:,:,ns))
+
+  ntQ=1
+  call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
+  !call set_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,elem%state%phi(:,:,:,ns))
+  call set_moist_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,kappa_star,elem%state%phi(:,:,:,ns))
 
   do tl = ns+1,ne
     call copy_state(elem,ns,tl)
