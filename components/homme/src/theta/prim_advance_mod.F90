@@ -342,7 +342,7 @@ contains
       call elemstate_add(elem,statesave,nets,nete,1,nm1,nm1,n0,1.d0/gamma,-1.d0/gamma,0.d0)
 
       ! Form dt*gamma*n(g1) and store at n0
-      call elemstate_add(elem,statesave,nets,nete,2,n0,n0,n0,-1.d0,1.d0,1.d0)                  
+      call elemstate_add(elem,statesave,nets,nete,2,n0,n0,n0,1.d0,1.d0,-1.d0)                  
 
       ! Form un0+dt*delta*n(g1) and store at n0
       call elemstate_add(elem,statesave,nets,nete,2,n0,n0,n0,delta/gamma,1.d0,1.d0)                  
@@ -361,7 +361,7 @@ contains
       call compute_stage_value_dirk(np1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,maxiter,itertol)
 !=== End of Phase 2 ===
-! at this point, un0+dt*(n(g2)+s(g2)) is at nm1, g3 is at np1, and n0 is free
+! at this point, un0+dt*(1-gamma)*(n(g2)+s(g2)) is at nm1, g3 is at np1, and n0 is free
        
      ! form unp1 = un0+dt*(1-gamma)*(n(g2)+s(g2))+dt*gamma*(n(g3)+s(g3))
       call compute_andor_apply_rhs(np1,nm1,np1,qn0,gamma*dt,elem,hvcoord,hybrid,&
