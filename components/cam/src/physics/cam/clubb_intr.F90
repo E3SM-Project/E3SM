@@ -2463,7 +2463,7 @@ end subroutine clubb_init_cnst
    tmp_array = rcm_in_layer(:ncol,:)*1000._r8
    call outfld( 'RCMINLAYER_CLUBB', tmp_array,               ncol,  lchnk )
    call outfld( 'CLOUDCOVER_CLUBB', cloud_frac,              pcols, lchnk )
-   tmp_array = wprcp(:ncol,:)*cpair
+   tmp_array = wpthvp(:ncol,:)*cpair
    call outfld( 'WPTHVP_CLUBB',     tmp_array,               ncol,  lchnk )
    tmp_array = 1._r8*zt_out(:ncol,:)
    call outfld( 'ZT_CLUBB',         tmp_array,               ncol,  lchnk )
