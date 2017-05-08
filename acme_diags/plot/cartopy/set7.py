@@ -117,8 +117,6 @@ def plot(reference, test, reference_regrid, test_regrid, parameter, pole):
     fig.suptitle(parameter.main_title, x=0.5, y=0.97, fontsize=18)
 
     # Save figure
-    case_id = parameter.case_id
-    if not os.path.exists(case_id):
-        os.makedirs(case_id)
     for f in parameter.format:
-        plt.savefig(case_id + '/' + parameter.output_file + '_' + pole + '.' + f)
+        fnm = os.path.join(get_output_dir('7', parameter), parameter.output_file + '_' + pole)
+        plt.savefig(fnm + '.' + f)
