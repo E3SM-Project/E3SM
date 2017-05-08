@@ -155,7 +155,6 @@ class Case(object):
             self.spare_nodes = env_mach_pes.get_spare_nodes(self.num_nodes)
             self.num_nodes += self.spare_nodes
         else:
-            import pdb
             self.num_nodes, self.spare_nodes = env_mach_pes.get_total_nodes(self.total_tasks, self.thread_count)
             self.num_nodes += self.spare_nodes
 
