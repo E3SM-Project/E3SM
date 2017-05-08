@@ -387,6 +387,7 @@
     <default_value>284.7</default_value>
     <values>
       <value compset="^2000">367.0</value>
+      <value compset="DATM.*POP2%ECO">284.7</value>
     </values>
     <group>run_co2</group>
     <file>env_run.xml</file>
