@@ -179,15 +179,14 @@ def save_ncfiles(test, ref, diff, parameter):
     cdms2.setNetcdfShuffleFlag(0)
     cdms2.setCompressionWarnings(0)  # Turn off warning messages
     # Save test file
-    file_test = cdms2.open(parameter.results_dir + '/' + parameter.case_id + 
-                           '/' + parameter.output_file + '_test.nc', 'w+')
+    pth = get_output_dir('5', parameter)
+    file_test = cdms2.open(pth + '/' + parameter.output_file + '_test.nc', 'w+')
     test.id = parameter.var_id
     file_test.write(test)
     file_test.close()
 
     # Save reference file
-    file_ref = cdms2.open(parameter.results_dir + '/' + parameter.case_id + 
-                           '/' + parameter.output_file + '_ref.nc', 'w+')
+    file_ref = cdms2.open(pth + '/' + parameter.output_file + '_ref.nc', 'w+')
     ref.id = parameter.var_id
     file_ref.write(ref)
     file_ref.close()
@@ -199,10 +198,14 @@ def save_ncfiles(test, ref, diff, parameter):
     file_diff.write(diff)
     file_diff.close()
 
-def compute(parameter):
-    if not os.path.exists(os.path.join(parameter.results_dir, parameter.case_id)):
-        os.makedirs(os.path.join(parameter.results_dir, parameter.case_id))
+def get_output_dir(set_num, parameter):
+    """Get the directory of where to save the outputs for a run."""
+    pth = os.path.join(parameter.results_dir, 'set{}'.format(set_num), parameter.case_id)
+    if not os.path.exists(pth):
+        os.makedirs(pth)
+    return pth
 
+def run_diag(parameter):
     reference_data_path = parameter.reference_data_path
     test_data_path = parameter.test_data_path
 

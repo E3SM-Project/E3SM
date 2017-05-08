@@ -126,7 +126,7 @@ def save_ncfiles(test, ref, diff, parameter):
     file_diff.write(diff)
     file_diff.close()
 
-def compute(parameter):
+def run_diag(parameter):
     if not os.path.exists(os.path.join(parameter.results_dir, parameter.case_id)):
         os.makedirs(os.path.join(parameter.results_dir, parameter.case_id))
 

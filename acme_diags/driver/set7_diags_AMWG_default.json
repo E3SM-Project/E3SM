@@ -1,7 +1,7 @@
 {
 	"set7": [
         {
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_CRU",
 			"variables": ["TREFHT_LAND"],
 			"ref_name": "CRU",
@@ -12,7 +12,7 @@
 			"diff_levels": [-5, -4, -3, -2, -1, -0.5, -0.2, 0, 0.2, 0.5, 1, 2, 3, 4, 5]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_SST_HadISST",
 			"variables": ["SST"],
 			"ref_name": "HadISST_CL",
@@ -23,7 +23,7 @@
 			"diff_levels": [-5, -4, -3, -2, -1, -0.5, -0.2, 0, 0.2, 0.5, 1, 2, 3, 4, 5]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_SST_HadISST",
 			"variables": ["SST"],
 			"ref_name": "HadISST_PI",
@@ -34,7 +34,7 @@
 			"diff_levels": [-5, -4, -3, -2, -1, -0.5, -0.2, 0, 0.2, 0.5, 1, 2, 3, 4, 5]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_SST_HadISST",
 			"variables": ["SST"],
 			"ref_name": "HadISST_PD",
@@ -45,7 +45,7 @@
 			"diff_levels": [-5, -4, -3, -2, -1, -0.5, -0.2, 0, 0.2, 0.5, 1, 2, 3, 4, 5]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_WILLMOTT",
 			"variables": ["TREFHT_LAND"],
 			"ref_name": "WILLMOTT",
@@ -56,7 +56,7 @@
 			"diff_levels": [-5, -4, -3, -2, -1, -0.5, -0.2, 0, 0.2, 0.5, 1, 2, 3, 4, 5]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_WILLMOTT",
 			"variables": ["PRECT_LAND"],
 			"ref_name": "WILLMOTT",
@@ -67,7 +67,7 @@
 			"diff_levels": [-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_GPCP",
 			"variables": ["PRECT"],
 			"ref_name": "GPCP",
@@ -78,7 +78,7 @@
 			"diff_levels": [-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_SSMI",
 			"variables": ["PRECT_OCN"],
 			"ref_name": "SSMI",
@@ -89,7 +89,7 @@
 			"diff_levels": [-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_SSMI",
 			"variables": ["PREH2O_OCN"],
 			"ref_name": "SSMI",
@@ -100,7 +100,7 @@
 			"diff_levels": [-12, -9, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 9, 12]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_SSMI",
 			"variables": ["TGCLDLWP_OCN"],
 			"ref_name": "SSMI",
@@ -111,7 +111,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_LARYEA",
 			"variables": ["SHFLX"],
 			"ref_name": "LARYEA",
@@ -122,7 +122,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_LARYEA",
 			"variables": ["QFLX"],
 			"ref_name": "LARYEA",
@@ -133,7 +133,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_LARYEA",
 			"variables": ["FLNS"],
 			"ref_name": "LARYEA",
@@ -144,7 +144,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_LARYEA",
 			"variables": ["FSNS"],
 			"ref_name": "LARYEA",
@@ -155,7 +155,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_CERES-EBAF",
 			"variables": ["ALBEDO"],
 			"ref_name": "CERES-EBAF",
@@ -166,7 +166,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_CERES-EBAF",
 			"variables": ["ALBEDOC"],
 			"ref_name": "CERES-EBAF",
@@ -177,7 +177,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_CERES-EBAF",
 			"variables": ["FLUT"],
 			"ref_name": "CERES-EBAF",
@@ -188,7 +188,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_CERES-EBAF",
 			"variables": ["FLUTC"],
 			"ref_name": "CERES-EBAF",
@@ -199,7 +199,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_CERES-EBAF",
 			"variables": ["FSNTOA"],
 			"ref_name": "CERES-EBAF",
@@ -210,7 +210,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_CERES-EBAF",
 			"variables": ["FSNTOAC"],
 			"ref_name": "CERES-EBAF",
@@ -221,7 +221,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_CERES-EBAF",
 			"variables": ["SWCF"],
 			"ref_name": "CERES-EBAF",
@@ -232,7 +232,7 @@
 			"diff_levels": [-80, -60, -40, -30, -20, -10, -5, 0, 5, 10, 20, 30, 40, 60, 80]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_CERES-EBAF",
 			"variables": ["LWCF"],
 			"ref_name": "CERES-EBAF",
@@ -243,7 +243,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_CERES-EBAF",
 			"variables": ["RESTOM"],
 			"ref_name": "CERES-EBAF",
@@ -252,7 +252,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERBE",
 			"variables": ["FLUT"],
 			"ref_name": "ERBE",
@@ -263,7 +263,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERBE",
 			"variables": ["FLUTC"],
 			"ref_name": "ERBE",
@@ -274,7 +274,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERBE",
 			"variables": ["FSNTOA"],
 			"ref_name": "ERBE",
@@ -285,7 +285,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERBE",
 			"variables": ["FSNTOAC"],
 			"ref_name": "ERBE",
@@ -296,7 +296,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERBE",
 			"variables": ["SWCF"],
 			"ref_name": "ERBE",
@@ -307,7 +307,7 @@
 			"diff_levels": [-80, -60, -40, -30, -20, -10, -5, 0, 5, 10, 20, 30, 40, 60, 80]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERBE",
 			"variables": ["LWCF"],
 			"ref_name": "ERBE",
@@ -318,7 +318,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERBE",
 			"variables": ["RESTOM"],
 			"ref_name": "ERBE",
@@ -327,7 +327,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ISCCPFD",
 			"variables": ["FLDS"],
 			"ref_name": "ISCCPFD",
@@ -336,7 +336,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ISCCPFD",
 			"variables": ["FLDS"],
 			"ref_name": "ISCCPFD",
@@ -345,7 +345,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ISCCPFD",
 			"variables": ["FLDSC"],
 			"ref_name": "ISCCPFD",
@@ -354,7 +354,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ISCCPFD",
 			"variables": ["FSDS"],
 			"ref_name": "ISCCPFD",
@@ -363,7 +363,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ISCCPFD",
 			"variables": ["FSDSC"],
 			"ref_name": "ISCCPFD",
@@ -372,7 +372,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ISCCPFD",
 			"variables": ["FLNS"],
 			"ref_name": "ISCCPFD",
@@ -383,7 +383,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ISCCPFD",
 			"variables": ["FLNSC"],
 			"ref_name": "ISCCPFD",
@@ -392,7 +392,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ISCCPFD",
 			"variables": ["FSNS"],
 			"ref_name": "ISCCPFD",
@@ -403,7 +403,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ISCCPFD",
 			"variables": ["FSNSC"],
 			"ref_name": "ISCCPFD",
@@ -412,7 +412,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ISCCPFD",
 			"variables": ["SWCFSRF"],
 			"ref_name": "ISCCPFD",
@@ -423,7 +423,7 @@
 			"diff_levels": [-80, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 80]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ISCCPFD",
 			"variables": ["LWCFSRF"],
 			"contour_levels": [5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 95, 100, 105],
@@ -434,7 +434,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_WARREN",
 			"variables": ["CLDTOT"],
 			"ref_name": "WARREN",
@@ -443,7 +443,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_WARREN",
 			"variables": ["CLDLOW"],
 			"ref_name": "WARREN",
@@ -452,7 +452,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_CLOUDSAT",
 			"variables": ["CLDHGH"],
 			"ref_name": "CLOUDSAT",
@@ -461,7 +461,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_CLOUDSAT",
 			"variables": ["CLDLOW"],
 			"ref_name": "CLOUDSAT",
@@ -470,7 +470,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_CLOUDSAT",
 			"variables": ["CLDMED"],
 			"ref_name": "CLOUDSAT",
@@ -479,7 +479,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_CLOUDSAT",
 			"variables": ["CLDTOT"],
 			"ref_name": "CLOUDSAT",
@@ -488,7 +488,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_MERRA",
 			"variables": ["T"],
 			"ref_name": "MERRA",
@@ -498,7 +498,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_MERRA",
 			"variables": ["U"],
 			"ref_name": "MERRA",
@@ -508,7 +508,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_MERRA",
 			"variables": ["Z3"],
 			"ref_name": "MERRA",
@@ -518,7 +518,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_MERRA",
 			"variables": ["PREH2O"],
 			"ref_name": "MERRA",
@@ -529,7 +529,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_MERRA",
 			"variables": ["PSL"],
 			"ref_name": "MERRA",
@@ -538,7 +538,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERA40",
 			"variables": ["LHFLX"],
 			"ref_name": "ERA40",
@@ -549,7 +549,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERA40",
 			"variables": ["PREH2O"],
 			"ref_name": "ERA40",
@@ -560,7 +560,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERA40",
 			"variables": ["U"],
 			"ref_name": "ERA40",
@@ -570,7 +570,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERA40",
 			"variables": ["Z3"],
 			"ref_name": "ERA40",
@@ -580,7 +580,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERA40",
 			"variables": ["T"],
 			"ref_name": "ERA40",
@@ -590,7 +590,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERAI",
 			"variables": ["LHFLX"],
 			"ref_name": "ERAI",
@@ -601,7 +601,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERAI",
 			"variables": ["PRECT"],
 			"ref_name": "ERAI",
@@ -612,7 +612,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERAI",
 			"variables": ["PREH2O"],
 			"ref_name": "ERAI",
@@ -623,7 +623,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERAI",
 			"variables": ["U"],
 			"ref_name": "ERAI",
@@ -633,7 +633,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERAI",
 			"variables": ["Z3"],
 			"ref_name": "ERAI",
@@ -643,7 +643,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_ERAI",
 			"variables": ["T"],
 			"ref_name": "ERAI",
@@ -653,7 +653,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_JRA25",
 			"variables": ["LHFLX"],
 			"ref_name": "JRA25",
@@ -664,7 +664,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_JRA25",
 			"variables": ["SHFLX"],
 			"ref_name": "JRA25",
@@ -673,7 +673,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_JRA25",
 			"variables": ["TREFHT"],
 			"ref_name": "JRA25",
@@ -684,7 +684,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_JRA25",
 			"variables": ["PREH2O"],
 			"ref_name": "JRA25",
@@ -695,7 +695,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_JRA25",
 			"variables": ["TREFHT"],
 			"ref_name": "JRA25",
@@ -706,7 +706,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_JRA25",
 			"variables": ["U"],
 			"ref_name": "JRA25",
@@ -716,7 +716,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_JRA25",
 			"variables": ["Z3"],
 			"ref_name": "JRA25",
@@ -726,7 +726,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_JRA25",
 			"variables": ["T"],
 			"ref_name": "JRA25",
@@ -736,7 +736,7 @@
 			"region": ["polar_S", "polar_N"]
 		},
 		{
-			"set": [7],
+			"sets": [7],
 			"case_id": "set7_AIRS",
 			"variables": ["T"],
 			"ref_name": "AIRS",

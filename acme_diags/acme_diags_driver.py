@@ -23,7 +23,7 @@ def make_parameters(original_parameter):
             json_data = json.loads(json_file.read())
     else:
         json_data = {'': []}  # the first key doesn't hold any value, so it's ''
-        for set_num in original_parameter.set:
+        for set_num in original_parameter.sets:
             default_set_runs = _get_default_diags(set_num)
             for _, set_runs in default_set_runs.iteritems():
                 for single_run in set_runs:
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     original_parameter = parser.get_parameter(default_vars=False)
     if not hasattr(original_parameter, 'results_dir'):
         import datetime
-        dt = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         original_parameter.results_dir = '{}-{}'.format('acme_diags_results', dt)
 
     if not os.path.exists(original_parameter.results_dir):
@@ -54,17 +54,17 @@ if __name__ == '__main__':
     parameters = make_parameters(original_parameter)
 
     for parameter in parameters:
-        if not hasattr(parameter, 'set'):
-            raise RuntimeError('Parameter needs to have an attribute set')
-        for pset in parameter.set:
+        if not hasattr(parameter, 'sets'):
+            raise RuntimeError('Parameter needs to have an attribute sets')
+        for pset in parameter.sets:
             pset = str(pset)
             if pset == '5':
-                from acme_diags.driver.set5_driver import compute
+                from acme_diags.driver.set5_driver import run_diag
             elif pset == '7':
-                from acme_diags.driver.set7_driver import compute
+                from acme_diags.driver.set7_driver import run_diag
             else:
                 print('Plot set {} is not supported yet. Please give us time.'.format(pset))
                 quit()
-            compute(parameter)
+            run_diag(parameter)
 
     create_viewer(original_parameter.results_dir, parameters, 'png')
