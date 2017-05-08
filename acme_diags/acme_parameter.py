@@ -10,10 +10,10 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.reference_name = ''
         self.test_name = ''
 
-        self.set = []
+        self.sets = []
         self.variables = []
-        self.season = []
-        self.region = []
+        self.seasons = []
+        self.regions = []
         self.regrid_tool = 'esmf'
         self.regrid_method = 'linear'
         self.plevs = []
@@ -61,8 +61,8 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         if self.test_data_path == '':
             print 'test_data_path is needed! Define it in the parameter file or in the command line using --test_data_path'
             quit()
-        if not hasattr(self, 'set'):
-            print 'You must have a least one set. Ex: set = [5]'
+        if not hasattr(self, 'sets'):
+            print 'You must have a least one set. Ex: sets = [5]'
             quit()
         '''
         if self.reference_data_set == '':

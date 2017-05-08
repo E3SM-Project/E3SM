@@ -6,6 +6,7 @@ import vcs
 import cdms2
 import genutil.statistics
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
+from acme_diags.driver.utils import get_output_dir
 
 # Expensive to init inside plot()
 vcs_canvas = vcs.init(bg=True)
@@ -202,9 +203,9 @@ def plot(reference, test, diff, metrics_dict, parameter):
     main_title.y = [0.985]
     vcs_canvas.plot(main_title)
 
+    fnm = os.path.join(get_output_dir('7', parameter), parameter.output_file)
     for f in parameter.output_format:
         f = f.lower().split('.')[-1]
-        fnm = os.path.join(parameter.results_dir, case_id, parameter.output_file)
         if f == 'png':
             vcs_canvas.png(fnm)
         elif f == 'pdf':

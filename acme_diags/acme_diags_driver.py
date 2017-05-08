@@ -14,7 +14,7 @@ def _get_default_diags(set_num):
         json_data = json.loads(json_file.read())
     return json_data
 
-def make_parameters(original_parameter):
+def make_parameters(original_parameter, vars_to_ignore=[]):
     """Create multiple parameters given a list of
     parameters in a json and an original parameter"""
 
@@ -23,7 +23,7 @@ def make_parameters(original_parameter):
             json_data = json.loads(json_file.read())
     else:
         json_data = {'': []}  # the first key doesn't hold any value, so it's ''
-        for set_num in original_parameter.set:
+        for set_num in original_parameter.sets:
             default_set_runs = _get_default_diags(set_num)
             for _, set_runs in default_set_runs.iteritems():
                 for single_run in set_runs:
@@ -36,7 +36,9 @@ def make_parameters(original_parameter):
                 setattr(p, attr_name, single_run[attr_name])
 
             # Add attributes of original_parameter to p
-            p.__dict__.update(original_parameter.__dict__)
+            for var in original_parameter.__dict__:
+                if var not in vars_to_ignore:
+                    p.__dict__[var] = original_parameter.__dict__[var]
             p.check_values()
             parameters.append(p)
     return parameters
@@ -46,25 +48,24 @@ if __name__ == '__main__':
     original_parameter = parser.get_parameter(default_vars=False)
     if not hasattr(original_parameter, 'results_dir'):
         import datetime
-        dt = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         original_parameter.results_dir = '{}-{}'.format('acme_diags_results', dt)
 
-    if not os.path.exists(original_parameter.results_dir):
-        os.makedirs(original_parameter.results_dir)
-    parameters = make_parameters(original_parameter)
+    # if user wants all of the default diags for the sets (ex: sets=[5, 7]), then
+    # don't overwrite the sets keyword in the default json files.
+    ignore_vars = [] if hasattr(original_parameter, 'custom_diags') else ['sets']
+    parameters = make_parameters(original_parameter, vars_to_ignore=ignore_vars)
 
     for parameter in parameters:
-        if not hasattr(parameter, 'set'):
-            raise RuntimeError('Parameter needs to have an attribute set')
-        for pset in parameter.set:
+        for pset in parameter.sets:
             pset = str(pset)
             if pset == '5':
-                from acme_diags.driver.set5_driver import compute
+                from acme_diags.driver.set5_driver import run_diag
             elif pset == '7':
-                from acme_diags.driver.set7_driver import compute
+                from acme_diags.driver.set7_driver import run_diag
             else:
                 print('Plot set {} is not supported yet. Please give us time.'.format(pset))
                 quit()
-            compute(parameter)
+            run_diag(parameter)
 
     create_viewer(original_parameter.results_dir, parameters, 'png')
