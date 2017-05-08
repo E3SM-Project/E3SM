@@ -51,7 +51,7 @@ def plot_min_max_mean(canvas, metrics_dict, ref_test_or_diff):
     canvas.plot(mean_label)
 
 def plot_rmse_and_corr(canvas, metrics_dict):
-    """ canvas is a vcs.Canvas, metrics_dict is a dict """
+    """canvas is a vcs.Canvas, metrics_dict is a dict"""
 
     rmse_str = '%.2f' % metrics_dict['misc']['rmse']
     corr_str = '%.2f' % metrics_dict['misc']['corr']
@@ -113,6 +113,24 @@ def plot(reference, test, diff, metrics_dict, parameter):
     template_test = vcs_canvas.gettemplate('plotset7_0_x_0')
     template_ref = vcs_canvas.gettemplate('plotset7_0_x_1')
     template_diff = vcs_canvas.gettemplate('plotset7_0_x_2')
+
+    template_test.title.x = 0.01
+    template_test.dataname.x = 0.01
+    template_test.dataname.y = template_test.title.y - 0.02
+    template_test.data.y1 -= 0.025
+    template_test.data.y2 -= 0.02
+
+    template_ref.title.x = 0.01
+    template_ref.dataname.x = 0.01
+    template_ref.dataname.y = template_ref.title.y - 0.02
+    template_ref.data.y1 -= 0.025
+    template_ref.data.y2 -= 0.025
+
+    template_diff.title.x = 0.01
+    template_diff.dataname.x = 0.01
+    template_diff.dataname.y = template_diff.title.y - 0.02
+    template_diff.data.y1 -= 0.025
+    template_diff.data.y2 -= 0.025
 
     set_units(test, parameter.test_units)
     set_units(reference, parameter.reference_units)
@@ -181,6 +199,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     # Plotting the main title
     main_title = managetextcombined('main_title', 'main_title')
     main_title.string = parameter.main_title
+    main_title.y = [0.985]
     vcs_canvas.plot(main_title)
 
     for f in parameter.output_format:
@@ -192,6 +211,5 @@ def plot(reference, test, diff, metrics_dict, parameter):
             vcs_canvas.pdf(fnm)
         elif f == 'svg':
             vcs_canvas.svg(fnm)
-
         print('Plot saved in: ' + fnm + '.' + f)
     vcs_canvas.clear()

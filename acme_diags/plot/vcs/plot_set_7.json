@@ -1339,7 +1339,7 @@
   },
   "__textorientation_428791170453960": {
    "angle": 0,
-   "halign": 1,
+   "halign": "left",
    "height": 11.5,
    "path": 0,
    "valign": 2
@@ -1535,7 +1535,7 @@
   },
   "__textorientation_675849204359008": {
    "angle": 0,
-   "halign": 1,
+   "halign": "left",
    "height": 11.5,
    "path": 0,
    "valign": 2
@@ -1682,7 +1682,7 @@
   },
   "__textorientation_916780501350462": {
    "angle": 0,
-   "halign": 1,
+   "halign": "left",
    "height": 11.5,
    "path": 0,
    "valign": 2
