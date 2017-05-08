@@ -8,7 +8,7 @@ information will be listed for each.
 
 from Tools.standard_script_setup import *
 
-from CIME.utils         import expect, get_model
+from CIME.utils         import expect
 from CIME.XML.files     import Files
 from CIME.XML.component import Component
 from CIME.XML.compsets  import Compsets
@@ -16,7 +16,7 @@ from CIME.XML.grids     import Grids
 #from CIME.XML.machines  import Machines
 import CIME.XML.machines
 
-import re, socket, argparse, doctest
+import re, argparse, doctest
 
 ###############################################################################
 def query_grids(long_output):
@@ -52,11 +52,10 @@ def query_compsets(name):
     # Determine valid component values by checking the value attributes for COMPSETS_SPEC_FILE
     files, components = get_compsets()
     match_found = None
-    all = False
+    all_components = False
     if re.search("^all$", name):  # print all compsets
-        model = get_model()
         match_found = name
-        all = True
+        all_components = True
     else:
         for component in components:
             if component == name:
@@ -67,23 +66,23 @@ def query_compsets(name):
     expect(match_found is not None,
            "Invalid input argument {}, valid input arguments are {}".format(name, components))
 
-    if all:  # print all compsets
+    if all_components:  # print all compsets
         for component in components:
-            # the all flag will only print available components
-            print_compset(component, files, all=all)
+            # the all_components flag will only print available components
+            print_compset(component, files, all_components=all_components)
     else:
         print_compset(name, files)
 
-def print_compset(name, files, all=False):
+def print_compset(name, files, all_components=False):
     '''
-    print compsets associated with the component name, but if all is true only
+    print compsets associated with the component name, but if all_components is true only
     print the details if the associated component is available
     '''
 
     # Determine the config_file for the target component
     config_file = files.get_value("COMPSETS_SPEC_FILE", attribute={"component":name})
     # only error out if we aren't printing all otherwise exit quitely
-    if not all:
+    if not all_components:
         expect((config_file),
             "Cannot find any config_component.xml file for {}".format(name))
 
@@ -98,7 +97,7 @@ def print_compset(name, files, all=False):
     # determine component xml content
     compsets = Compsets(config_file)
     # print compsets associated with component without help text
-    compsets.print_values(help=False)
+    compsets.print_values(arg_help=False)
 
 def query_all_components():
     files, components = get_components()
@@ -109,10 +108,10 @@ def query_all_components():
         # determine all components in string
         components = files.get_components(string)
         for item in components:
-            query_component(item, all=True)
+            query_component(item, all_components=True)
 
 ###############################################################################
-def query_component(name, all=False):
+def query_component(name, all_components=False):
 ###############################################################################
 
     # Determine the valid component classes (e.g. atm) for the driver/cpl
@@ -138,10 +137,10 @@ def query_component(name, all=False):
             config_exists = os.path.isfile(config_file)
             break
 
-    if not all and not config_exists:
+    if not all_components and not config_exists:
         expect(config_exists,
                "Cannot find config_file {} on disk".format(config_file))
-    elif all and not config_exists:
+    elif all_components and not config_exists:
         print "WARNING: Couldn't find config_file {} on disk".format(config_file)
         return
     # If name is not a valid argument - exit with error
@@ -268,7 +267,7 @@ class ArgumentParser(argparse.ArgumentParser):
 # we overide print_values from Machines to add current in machine description
 class Machines(CIME.XML.machines.Machines):
 
-    def print_values(self, machine_name='all'):
+    def print_values(self, machine_name='all'): # pylint: disable=arguments-differ
         # set flag to look for single machine
         if 'all' not in machine_name:
             single_machine = True
