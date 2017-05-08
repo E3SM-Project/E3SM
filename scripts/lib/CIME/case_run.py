@@ -80,7 +80,7 @@ def pre_run_check(case, lid, skip_pnl=False):
 def _run_model_impl(case, lid, skip_pnl=False):
 ###############################################################################
 
-    pre_run_check(case, lid)
+    pre_run_check(case, lid, skip_pnl=skip_pnl)
 
     model = case.get_value("MODEL")
 
@@ -123,7 +123,6 @@ def _run_model_impl(case, lid, skip_pnl=False):
                         orig_cont = case.get_value("CONTINUE_RUN")
                         if not orig_cont:
                             case.set_value("CONTINUE_RUN", True)
-                        if not skip_pnl:
                             create_namelists(case)
 
                         lid = new_lid()
@@ -144,7 +143,7 @@ def _run_model_impl(case, lid, skip_pnl=False):
 ###############################################################################
 def run_model(case, lid, skip_pnl=False):
 ###############################################################################
-    functor = lambda: _run_model_impl(case, lid, skip_pnl)
+    functor = lambda: _run_model_impl(case, lid, skip_pnl=skip_pnl)
     return run_and_log_case_status(functor, "case.run", caseroot=case.get_value("CASEROOT"))
 
 ###############################################################################
