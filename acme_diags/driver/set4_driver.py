@@ -197,7 +197,7 @@ def save_ncfiles(test, ref, diff, parameter):
     file_diff.write(diff)
     file_diff.close()
 
-def compute(parameter):
+def run_diag(parameter):
     if not os.path.exists(os.path.join(parameter.results_dir, parameter.case_id)):
         os.makedirs(os.path.join(parameter.results_dir, parameter.case_id))
 
@@ -205,10 +205,10 @@ def compute(parameter):
     test_data_path = parameter.test_data_path
 
     variables = parameter.variables
-    seasons = parameter.season
+    seasons = parameter.seasons
     ref_name = parameter.ref_name
     test_name = parameter.test_name
-    regions = parameter.region
+    regions = parameter.regions
 
     for season in seasons:
         if hasattr(parameter, 'test_path'):
