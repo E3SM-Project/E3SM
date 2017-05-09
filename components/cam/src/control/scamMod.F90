@@ -239,7 +239,6 @@ end subroutine scam_default_opts
 
 subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          scm_iop_srf_prop_in, scm_relaxation_in, &
-			 scm_relaxation_low_in, scm_relaxation_high_in, &
                          scm_diurnal_avg_in, scm_crm_mode_in, scm_observed_aero_in, &
 			 swrad_off_in, lwrad_off_in, precip_off_in, scm_clubb_iop_name_in)
 !-----------------------------------------------------------------------
