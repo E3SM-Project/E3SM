@@ -53,7 +53,7 @@ module element_ops
 
 contains
 
-  subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
+  recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   implicit none
   type (element_t),       intent(in) :: elem
   character(len=*),       intent(in) :: name
@@ -63,28 +63,30 @@ contains
   integer,                intent(in) :: ntQ
 
   integer :: k
-  real(kind=real_kind) :: tmp(np,np,nlev)
+  real(kind=real_kind), dimension(np,np,nlev) :: tmp,p
 
   select case(name)
-  case ('temperature'); call get_temperature(elem,field,hvcoord,nt,ntQ)
-  case ('pottemp');     call get_pottemp(elem,field,hvcoord,nt,ntQ)
-  case ('phi');         field = elem%state%phi(:,:,:,nt)
-  case ('dpnh_dp');     call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
-  case ('pnh');         call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt,ntQ)
-  case ('exner');       call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt,ntQ)
-  case ('omega')
+    case ('temperature'); call get_temperature(elem,field,hvcoord,nt,ntQ)
+    case ('pottemp');     call get_pottemp(elem,field,hvcoord,nt,ntQ)
+    case ('phi');         field = elem%state%phi(:,:,:,nt)
+    case ('dpnh_dp');     call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
+    case ('pnh');         call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt,ntQ)
+    case ('exner');       call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt,ntQ)
+    case ('omega');
+        call get_field(elem,'p',p,hvcoord,nt,ntQ)
+        field = elem%derived%omega_p * p
+
+    case ('p');
       do k=1,nlev
-        field(:,:,k)=elem%derived%omega_p(:,:,k) * &
-        (hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt))
-     end do
-  case ('p');
-    do k=1,nlev
-      field(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
-    enddo
-  case ('w');           field(:,:,:)=elem%state%w(:,:,:,nt)
-  case default
-     print *,'name = ',trim(name)
-     call abortmp('ERROR: get_field name not supported in this model')
+        field(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
+      enddo
+
+    case ('w'); field(:,:,:)=elem%state%w(:,:,:,nt)
+
+    case default
+       print *,'name = ',trim(name)
+       call abortmp('ERROR: get_field name not supported in this model')
+
   end select
 
   end subroutine
@@ -268,10 +270,10 @@ contains
   ! where dp is computed from reverence levels, or inside timelevel loop where dp = prognostic dp3d
   !
   implicit none
-  real (kind=real_kind), intent(out)  :: cp_star(np,np,nlev)
-  real (kind=real_kind),     intent(in)    :: Qdp(np,np,nlev)
-  real (kind=real_kind),     intent(in)    :: dp(np,np,nlev)
-  !   local
+  real (kind=real_kind), intent(out):: cp_star(np,np,nlev)
+  real (kind=real_kind), intent(in) :: Qdp(np,np,nlev)
+  real (kind=real_kind), intent(in) :: dp(np,np,nlev)
+
   integer :: k
   if (use_moisture .and. use_cpstar==1) then
 #if (defined COLUMN_OPENMP)
@@ -283,27 +285,25 @@ contains
   else
      cp_star(:,:,:)=Cp
   endif
-  end subroutine 
-
+  end subroutine
 
   !_____________________________________________________________________
   subroutine get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,phis,kappa_star,pnh,dpnh,exner,exner_i_out)
   implicit none
-  !
+
   ! compute exner pressure, nh presure
   !
   ! input:  dp3d, Qdp (if use_moisture), phi, phis, theta
   ! output:  pnh, dphn, exner, exner_i
   !       for k=2..nlev, use the equation of state:  pnh/e = rho*Rstar*theta
-  !                                                    rho   = -dp3d/dphi 
-  !
-  !  
-  type (hvcoord_t),     intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
-  real (kind=real_kind), intent(in) :: theta_dp_cp(np,np,nlev)   
-  real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)   
-  real (kind=real_kind), intent(in) :: phi(np,np,nlev)
-  real (kind=real_kind), intent(in) :: phis(np,np)
-  real (kind=real_kind), intent(in) :: kappa_star(np,np,nlev)   
+  !                                                  rho   = -dp3d/dphi
+
+  type (hvcoord_t),      intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
+  real (kind=real_kind), intent(in)  :: theta_dp_cp(np,np,nlev)
+  real (kind=real_kind), intent(in)  :: dp3d(np,np,nlev)
+  real (kind=real_kind), intent(in)  :: phi(np,np,nlev)
+  real (kind=real_kind), intent(in)  :: phis(np,np)
+  real (kind=real_kind), intent(in)  :: kappa_star(np,np,nlev)
   real (kind=real_kind), intent(out) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
   real (kind=real_kind), intent(out) :: dpnh(np,np,nlev) ! nh nonhyrdo pressure interfaces
   real (kind=real_kind), intent(out) :: exner(np,np,nlev)  ! exner nh pressure
@@ -491,7 +491,6 @@ contains
 
   end subroutine set_thermostate
 
-
   !_____________________________________________________________________
   subroutine set_hydrostatic_phi(hvcoord,phis,theta_dp_cp,dp,phi)
 
@@ -641,6 +640,7 @@ contains
   elem%state%v   (i,j,1,k,n0:n1) = u
   elem%state%v   (i,j,2,k,n0:n1) = v
   elem%state%w   (i,j,k,  n0:n1) = w
+  elem%state%dp3d(i,j,k,  n0:n1) = dp
   elem%state%ps_v(i,j,    n0:n1) = ps
   elem%state%phi (i,j,k,  n0:n1) = g*zm
   elem%state%phis(i,j)           = phis
@@ -671,6 +671,7 @@ contains
     elem%state%v   (:,:,1,:,n) = u
     elem%state%v   (:,:,2,:,n) = v
     elem%state%w   (:,:,:,  n) = w
+    elem%state%dp3d(:,:,:,  n) = dp
     elem%state%ps_v(:,:,    n) = ps
     elem%state%phi (:,:,:,  n) = g*zm
     elem%state%phis(:,:)       = phis
@@ -703,6 +704,8 @@ contains
     phis= elem%state%phis(:,:)
     zm  = phi/g
 
+   ! dp  = elem%state%dp3d(:,:,  :,nt)
+
     do k=1,nlev
        dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
     enddo
@@ -710,11 +713,11 @@ contains
     call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
     call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
     call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,phi,phis,kappa_star,pnh,dpnh,exner)
-    Rstar = kappa_star*cp_star
 
+    Rstar = kappa_star*cp_star
     theta = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star*dp)
     T     = theta*exner
-    rho   = (pnh/T)*Rstar
+    rho   = pnh/(Rstar*T)
 
   end subroutine get_state
 

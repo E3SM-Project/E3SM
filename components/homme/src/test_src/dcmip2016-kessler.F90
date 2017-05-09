@@ -105,8 +105,8 @@ use physical_constants,   only:  kappa
   !------------------------------------------------
   f2x = 17.27d0
   f5 = 237.3d0 * f2x * 2500000.d0 / 1003.d0
-  !xk = .2875d0      !  kappa (r/cp)
-  xk = kappa      !  kappa (r/cp)
+  xk = .2875d0      !  kappa (r/cp)
+  !xk = kappa      !  kappa (r/cp)
 
   psl    = 1000.d0  !  pressure at sea level (mb)
   rhoqr  = 1000.d0  !  density of liquid water (kg/m^3)

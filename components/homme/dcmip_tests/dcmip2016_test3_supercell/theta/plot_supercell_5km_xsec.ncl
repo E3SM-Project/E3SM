@@ -42,14 +42,14 @@ begin
   t1  = closest_val(30.0/min_per_day , time)
   t2  = closest_val(60.0/min_per_day , time)
   t3  = closest_val(90.0/min_per_day , time)
-  t4  = closest_val(90.0/min_per_day , time)
+  t4  = closest_val(120.0/min_per_day , time)
 
   times  = (/t1,t2,t3,t4/)
   times = where(times .gt. (nt-1), 0*times+(nt-1), times)
   print(times)
   print(time(times)*min_per_day)
 
-  i_5km = 29
+  i_5km =  30
   w_5km  = data->w (times,i_5km,:,:)
   qr_5km = data->Q3(times,i_5km,:,:)
   qr_5km = qr_5km*1000
