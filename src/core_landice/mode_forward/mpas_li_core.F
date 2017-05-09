@@ -303,9 +303,9 @@ module li_core
       ! local variables
       !
       !-----------------------------------------------------------------
-      integer :: itimestep
+      integer, pointer :: timestepNumber
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: geometryPool, meshPool
       integer, pointer :: config_stats_interval   !< interval (number of timesteps) for writing stats
       character(len=StrKIND), pointer :: config_restart_timestamp_name
       character(len=StrKIND), pointer :: config_velocity_solver
@@ -328,24 +328,38 @@ module li_core
 
       call mpas_timer_start("land ice core run")
 
+      ! initialize time step number.  initial time is 0
+      block => domain % blocklist
+      do while(associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_array(meshPool, 'timestepNumber', timestepNumber)
+         timestepNumber = 0
+         block => block % next
+      end do
+
       ! ===
       ! Solve initial state before beginning time stepping
       ! ===
       err_tmp = li_core_initial_solve(domain)
       err = ior(err,err_tmp)  ! li_core_finalize would abort if there was an error, but being safe.
 
-
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
-      itimestep = 0
       ! ===
       ! === Time step loop
       ! ===
       do while (.not. mpas_is_clock_stop_time(domain % clock))
 
-         itimestep = itimestep + 1
-         call mpas_log_write('Starting timestep number $i', intArgs=(/iTimeStep/), flushNow=.true.)
+         ! Update time step number
+         block => domain % blocklist
+         do while(associated(block))
+            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+            call mpas_pool_get_array(meshPool, 'timestepNumber', timestepNumber)
+            timestepNumber = timestepNumber + 1
+            block => block % next
+         end do
 
+         call mpas_log_write('Starting timestep number $i', intArgs=(/timestepNumber/), flushNow=.true.)
 
          ! ===
          ! === Perform Timestep
@@ -357,9 +371,9 @@ module li_core
 
          ! Write statistics at designated interval
          if (config_stats_interval > 0) then
-            if (mod(itimestep, config_stats_interval) == 0) then
+            if (mod(timestepNumber, config_stats_interval) == 0) then
                call mpas_timer_start("compute_statistics")
-               call li_compute_statistics(domain, itimestep)
+               call li_compute_statistics(domain, timestepNumber)
                call mpas_timer_stop("compute_statistics")
             end if
          end if
@@ -652,7 +666,6 @@ module li_core
       ! local variables
       !
       !-----------------------------------------------------------------
-      integer :: itimestep
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool
       logical, pointer :: config_do_restart, config_write_output_on_startup, config_write_stats_on_startup
@@ -710,7 +723,6 @@ module li_core
       if (config_write_stats_on_startup) then
          call mpas_timer_start("compute_statistics")
          call li_compute_statistics(domain, 0)     ! itimestep = 0
-                                                   ! (itimestep is initialized below)
          call mpas_timer_stop("compute_statistics")
       endif
 

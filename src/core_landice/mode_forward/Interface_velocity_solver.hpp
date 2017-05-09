@@ -31,6 +31,9 @@
 #include <mpi.h>
 #include <list>
 #include <iostream>
+#include <fstream>
+#include <unistd.h>
+#include <fcntl.h>
 #include <limits>
 #include <cmath>
 #include <map>
@@ -51,6 +54,9 @@
 #define velocity_solver_export_2d_data velocity_solver_export_2d_data_
 #define velocity_solver_export_fo_velocity velocity_solver_export_fo_velocity_
 #define velocity_solver_estimate_SS_SMB velocity_solver_estimate_ss_smb_
+#define interface_init_log interface_init_log_
+#define interface_redirect_stdout interface_redirect_stdout_
+#define interface_reset_stdout interface_reset_stdout_
 #endif
 
 //#include <lifev/core/algorithm/PreconditionerIfpack.hpp>
@@ -130,6 +136,11 @@ void velocity_solver_export_fo_velocity();
 
 //void velocity_solver_estimate_SS_SMB (const double* u_normal_F, double* sfcMassBal);
 
+void interface_init_log();
+
+void interface_redirect_stdout(int const* iTimestep);
+
+void interface_reset_stdout();
 }
 
 extern void velocity_solver_finalize__();
