@@ -359,7 +359,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
        ocnrof_prognostic = .true.
     endif
 
-    if (trim(ocn_mode) == 'SOM') then
+    if (trim(ocn_mode) == 'SOM' .or. trim(ocn_mode) == 'SOM_AQUAP') then
        ocn_prognostic = .true.
     endif
 
@@ -507,7 +507,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
           endif
        endif
        call shr_mpi_bcast(exists,mpicom,'exists')
-       if (trim(ocn_mode) == 'SOM') then
+       if (trim(ocn_mode) == 'SOM' .or. trim(ocn_mode) == 'SOM_AQUAP') then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
           call shr_pcdf_readwrite('read',iosystem,SDOCN%io_type,trim(rest_file),mpicom,gsmap,rf1=somtp,rf1n='somtp')
        endif
@@ -758,7 +758,6 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
       else   ! firstcall
          tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
          do n = 1,lsize
-         if (imask(n) /= 0) then
             !--- pull out h from av for resuse below ---
             hn = avstrm%rAttr(kh,n)
             !--- compute new temp ---
@@ -775,7 +774,6 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
              !--- compute ice formed or melt potential ---
             o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
             somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
-         endif
          enddo
       endif   ! firstcall
 
@@ -800,7 +798,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
          close(nu)
          call shr_file_freeUnit(nu)
       endif
-      if (trim(ocn_mode) == 'SOM') then
+      if (trim(ocn_mode) == 'SOM' .or. trim(ocn_mode) == 'SOM_AQUAP') then
          if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
          call shr_pcdf_readwrite('write',iosystem,SDOCN%io_type,trim(rest_file),mpicom,gsmap,clobber=.true., &
             rf1=somtp,rf1n='somtp')
@@ -914,8 +912,6 @@ subroutine prescribed_sst(xc, yc, lsize, sst_option, sst)
 
   rlon(:) = xc(:) * pio180
   rlat(:) = yc(:) * pio180
-
-  write(6,*)"DEBUG: sst_option is ",sst_option
 
   ! Control
 
