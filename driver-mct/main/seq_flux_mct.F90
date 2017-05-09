@@ -74,6 +74,7 @@ module seq_flux_mct
   real(r8), allocatable :: swdn   (:) ! short wave, downward
   real(r8), allocatable :: swup   (:) ! short wave, upward
   real(r8), allocatable :: prec   (:) ! precip
+  real(r8), allocatable :: prec_gust (:) ! atm precip for convective gustiness (kg/m^3)
 
   ! Diurnal cycle variables wrt flux
  
@@ -330,6 +331,9 @@ contains
     allocate(prec(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate prec',ier)
     prec = 0.0_r8
+    allocate(prec_gust(nloc),stat=ier)
+    if(ier/=0) call mct_die(subName,'allocate prec_gust',ier)
+    prec_gust = 0.0_r8
     allocate(fswpen(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate fswpen',ier)
     fswpen = 0.0_r8
@@ -903,6 +907,7 @@ contains
     integer(in) :: index_sumwt
     integer(in) :: atm_nx,atm_ny,ocn_nx,ocn_ny
     real(r8)    :: wt
+    real(r8)    :: gust_fac = huge(1.0_r8) !wind gust factor
     integer(in) :: tod, dt
     logical,save:: first_call = .true. 
     logical     :: read_restart    ! .true. => model starting from restart
@@ -932,8 +937,9 @@ contains
          dead_comps=dead_comps,         &
          atm_nx=atm_nx, atm_ny=atm_ny,  &
          ocn_nx=ocn_nx, ocn_ny=ocn_ny,  &
-         ocn_prognostic=ocn_prognostic,  &
-         flux_diurnal=flux_diurnal)
+         ocn_prognostic=ocn_prognostic, &
+         flux_diurnal=flux_diurnal,     &
+         gust_fac = gust_fac            )
 
     cold_start = .false.   ! use restart data or data from last timestep
 
@@ -1019,7 +1025,7 @@ contains
                           duu10n,ustar, re  , ssq , missval = 0.0_r8, &
                           cold_start=cold_start)
     else
-       call shr_flux_atmocn (nloc_a2o , zbot , ubot, vbot, thbot, &
+       call shr_flux_atmocn (nloc_a2o , zbot , ubot, vbot, thbot, prec_gust, gust_fac, &
                           shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
                           tocn , emask, sen , lat , lwup , &
                           roce_16O, roce_HDO, roce_18O,    & 
@@ -1198,6 +1204,7 @@ contains
     real(r8)    :: avsdr        ! albedo: visible      , direct
     real(r8)    :: anidf        ! albedo: near infrared, diffuse
     real(r8)    :: avsdf        ! albedo: visible      , diffuse
+    real(r8)    :: gust_fac = huge(1.0_r8) !wind gust factor
     integer(in) :: nloc, nloca, nloco    ! number of gridcells
     integer(in) :: ID           ! comm ID
     logical,save:: first_call = .true.
@@ -1217,7 +1224,8 @@ contains
          flux_albav=flux_albav, &
          dead_comps=dead_comps, & 
          ocn_prognostic=ocn_prognostic, &
-         flux_diurnal=flux_diurnal)
+         flux_diurnal=flux_diurnal,     &
+         gust_fac = gust_fac            )
 
     cold_start = .false.   ! use restart data or data from last timestep
 
@@ -1328,6 +1336,7 @@ contains
           uGust(n)=   0.0_r8
           lwdn(n) =   0.0_r8
           prec(n) =   0.0_r8
+          prec_gust(n) =  0.0_r8
           fswpen(n)=  0.0_r8
           ocnsal(n)=  0.0_r8
 
@@ -1385,6 +1394,7 @@ contains
                     & + a2x%rAttr(index_a2x_Faxa_rainl,n) &
                     & + a2x%rAttr(index_a2x_Faxa_snowc,n) &
                     & + a2x%rAttr(index_a2x_Faxa_snowl,n)
+             prec_gust (n) = a2x%rAttr(index_a2x_Faxa_rainc,n)
              fswpen(n)= o2x%rAttr(index_o2x_So_fswpen ,n)
              ocnsal(n)= o2x%rAttr(index_o2x_So_s      ,n)
 
@@ -1433,7 +1443,7 @@ contains
                           !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
                           cold_start=cold_start)
     else
-       call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
+       call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, prec_gust, gust_fac, &
                           shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
                           tocn , emask, sen , lat , lwup , &
                           roce_16O, roce_HDO, roce_18O,    &

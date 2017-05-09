@@ -226,7 +226,7 @@
       </machine>
     </machines>
   </test>
-  <test name="ERS_Ld3" grid="ne30_f19_g16_rx1" compset="A">
+  <test name="ERS_Ld3" grid="f19_g16_rx1" compset="A">
     <machines>
       <machine name="bluewaters" compiler="pgi" category="prealpha">
         <options>
@@ -568,7 +568,7 @@
       </machine>
     </machines>
   </test>
-  <test name="SMS_Ld3" grid="ne30_f19_g16_rx1" compset="A">
+  <test name="SMS_Ld3" grid="f19_g16_rx1" compset="A">
     <machines>
       <machine name="hobart" compiler="pgi" category="prebeta">
         <options>

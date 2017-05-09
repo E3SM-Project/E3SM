@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<?xml-stylesheet type="text/xsl" href="http://www.cgd.ucar.edu/~cam/namelist/namelist_definition.xsl"?>
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
 
 <entry_id version="2.0">
 
@@ -223,30 +223,6 @@
     </values>
   </entry>
 
-  <entry id="atm_adiabatic">
-    <type>logical</type>
-    <category>expdef</category>
-    <group>seq_infodata_inparm</group>
-    <desc>
-      true => turn on adiabatic mode in cam
-    </desc>
-    <values>
-      <value>.false.</value>
-    </values>
-  </entry>
-
-  <entry id="atm_ideal_phys">
-    <type>logical</type>
-    <category>expdef</category>
-    <group>seq_infodata_inparm</group>
-    <desc>
-      true => turn on ideal physics mode in cam
-    </desc>
-    <values>
-      <value>.false.</value>
-    </values>
-  </entry>
-
   <entry id="aqua_planet">
     <type>logical</type>
     <category>expdef</category>
@@ -376,7 +352,7 @@
     </values>
   </entry>
 
-  <entry id="brnch_retain_casename" modify_via_xml="REFCASE">
+  <entry id="brnch_retain_casename" modify_via_xml="RUN_REFCASE">
     <type>logical</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
@@ -561,17 +537,13 @@
     </values>
   </entry>
 
-  <entry id="tfreeze_option">
+  <entry id="tfreeze_option" modify_via_xml="TFREEZE_SALTWATER_OPTION">
     <type>char</type>
     <category>control</category>
     <group>seq_infodata_inparm</group>
-    <valid_values>minus1p8,linear_salt,mushy</valid_values>
-    <desc>
-      Freezing point calculation for salt water.
-      Default: minus1p8
-    </desc>
+    <desc>Freezing point calculation for salt water.</desc>
     <values>
-      <value>minus1p8</value>
+      <value>$TFREEZE_SALTWATER_OPTION</value>
     </values>
   </entry>
 
@@ -637,6 +609,18 @@
     </desc>
     <values>
       <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="gust_fac">
+    <type>real</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      wind gustiness factor
+    </desc>
+    <values>
+      <value>0.0D0</value>
     </values>
   </entry>
 
@@ -988,6 +972,32 @@
     <group>seq_infodata_inparm</group>
     <desc>
       turns on coupler history stream for instantaneous atm to coupler fields.
+      default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="histaux_a2x1hr">
+    <type>logical</type>
+    <category>history</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      turns on coupler history stream for 1-hour average atm to coupler fields.
+      default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="histaux_a2x1hri">
+    <type>logical</type>
+    <category>history</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      turns on coupler history stream for 1-hour instantaneous atm to coupler fields.
       default: false
     </desc>
     <values>
@@ -1377,7 +1387,7 @@
   <!-- group seq_timemgr_inparm    -->
   <!-- =========================== -->
 
-  <entry id="atm_cpl_dt" modify_via_xml="ATM_NCPL">
+  <entry id="atm_cpl_dt" modify_via_xml="ATM_NCPL" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -1388,12 +1398,9 @@
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, and has valid values: hour,day,year,decade
     </desc>
-    <values>
-      <value>-999</value>
-    </values>
   </entry>
 
-  <entry id="lnd_cpl_dt" modify_via_xml="LND_NCPL">
+  <entry id="lnd_cpl_dt" modify_via_xml="LND_NCPL" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -1404,12 +1411,9 @@
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
     </desc>
-    <values>
-      <value>-999</value>
-    </values>
   </entry>
 
-  <entry id="rof_cpl_dt" modify_via_xml="ROF_NCPL">
+  <entry id="rof_cpl_dt" modify_via_xml="ROF_NCPL" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -1418,12 +1422,9 @@
       currently set by default to 10800 seconds.
       default: 10800
     </desc>
-    <values>
-      <value>10800</value>
-    </values>
   </entry>
 
-  <entry id="ice_cpl_dt" modify_via_xml="ICE_NCPL">
+  <entry id="ice_cpl_dt" modify_via_xml="ICE_NCPL" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -1434,12 +1435,9 @@
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
     </desc>
-    <values>
-      <value>-999</value>
-    </values>
   </entry>
 
-  <entry id="ocn_cpl_dt" modify_via_xml="OCN_NCPL">
+  <entry id="ocn_cpl_dt" modify_via_xml="OCN_NCPL" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -1450,12 +1448,9 @@
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
     </desc>
-    <values>
-      <value>-999</value>
-    </values>
   </entry>
 
-  <entry id="glc_cpl_dt" modify_via_xml="GLC_NCPL">
+  <entry id="glc_cpl_dt" modify_via_xml="GLC_NCPL" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -1466,12 +1461,30 @@
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
     </desc>
-    <values>
-      <value>-999</value>
-    </values>
   </entry>
 
-  <entry id="wav_cpl_dt" modify_via_xml="WAV_NCPL">
+  <entry id="glc_avg_period" modify_via_xml="GLC_AVG_PERIOD">
+    <type>char</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <valid_values>glc_coupling_period,yearly</valid_values>
+    <values>
+      <value>$GLC_AVG_PERIOD</value>
+    </values>
+    <desc>
+      Period at which coupler averages fields sent to GLC.
+      This supports doing the averaging to GLC less frequently than GLC is called
+      (i.e., separating the averaging frequency from the calling frequency).
+      This is useful because there are benefits to only averaging the GLC inputs
+      as frequently as they are really needed (yearly for CISM), but GLC needs to
+      still be called more frequently than that in order to support mid-year restarts.
+
+      Setting glc_avg_period to 'glc_coupling_period' means that the averaging is
+      done exactly when the GLC is called (governed by GLC_NCPL).
+    </desc>
+  </entry>
+
+  <entry id="wav_cpl_dt" modify_via_xml="WAV_NCPL" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
@@ -1481,6 +1494,20 @@
       WAV_NCPL is the number of times the wav is coupled per NCPL_BASE_PERIOD
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
+    </desc>
+  </entry>
+
+  <entry id="esp_cpl_dt" skip_default_entry="true">
+    <type>integer</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      esp run interval in seconds
+      esp_cpl_dt is the number of times the esp is run per NCPL_BASE_PERIOD
+      NCPL_BASE_PERIOD is set in env_run.xml and is the base period
+      associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
+      default value set by buildnml to be the pause interval if pause is active
+      otherwise, it is set to the shortest component coupling time
     </desc>
     <values>
       <value>-999</value>
@@ -1556,6 +1583,36 @@
     </desc>
     <values>
       <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="esp_cpl_offset">
+    <type>integer</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      esp coupling interval offset in seconds default: 0
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="esp_run_on_pause" modify_via_xml="ESP_RUN_ON_PAUSE">
+    <type>logical</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      true => ESP component runs after driver 'pause cycle'
+      If any component 'pauses' (see PAUSE_OPTION, PAUSE_N and
+      PAUSE_COMPONENT_LIST XML variables), the ESP component (if
+      present) will be run to process the component 'pause' (restart)
+      files and set any required 'resume' signals.
+      If true, esp_cpl_dt and esp_cpl_offset settings are ignored.
+      default: true
+    </desc>
+    <values>
+      <value>.true.</value>
     </values>
   </entry>
 
@@ -1924,6 +1981,55 @@
     </desc>
     <values>
       <value>-999</value>
+    </values>
+  </entry>
+
+  <entry id="pause_option" modify_via_xml="PAUSE_OPTION">
+    <type>char</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear</valid_values>
+    <desc>
+      sets the pause frequency with pause_n
+      pause_option alarms are:
+      [none/never], turns option off
+      [nstep/s]   , pauses every pause_n nsteps  , relative to start or last pause time
+      [nsecond/s] , pauses every pause_n nseconds, relative to start or last pause time
+      [nminute/s] , pauses every pause_n nminutes, relative to start or last pause time
+      [nhour/s]   , pauses every pause_n nhours  , relative to start or last pause time
+      [nday/s]    , pauses every pause_n ndays   , relative to start or last pause time
+      [nmonth/s]  , pauses every pause_n nmonths , relative to start or last pause time
+      [monthly/s] , pauses every        month    , relative to start or last pause time
+      [nyear/s]   , pauses every pause_n nyears  , relative to start or last pause time
+    </desc>
+    <values>
+      <value>$PAUSE_OPTION</value>
+    </values>
+  </entry>
+
+  <entry id="pause_n" modify_via_xml="PAUSE_N">
+    <type>integer</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Sets the pause frequency with pause_option
+    </desc>
+    <values>
+      <value>$PAUSE_N</value>
+    </values>
+  </entry>
+
+  <entry id="pause_component_list" modify_via_xml="PAUSE_COMPONENT_LIST" skip_default_entry="true">
+    <type>char</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      A colon-separated list of component types (e.g., ocn,atm) to receive a
+      resume signal after a pause has happened. Special values "all" or "none"
+      may be used in place of a list
+    </desc>
+    <values>
+      <value>$PAUSE_COMPONENT_LIST</value>
     </values>
   </entry>
 
@@ -2380,7 +2486,7 @@
     <group>ccsm_pes</group>
     <desc>
       the number of threads per mpi task for the lnd component.
-      set by NTHRDS_LND in env_configure.xml.
+      set by NTHRDS_ROF in env_configure.xml.
     </desc>
     <values>
       <value>$NTHRDS_ROF</value>
@@ -2543,6 +2649,24 @@
     </values>
   </entry>
 
+  <entry id="esmf_logging" modify_via_xml="ESMF_LOGFILE_KIND">
+    <type>char</type>
+    <category>ccsm_pes</category>
+    <group>ccsm_pes</group>
+    <desc>
+      Determines what ESMF log files (if any) are generated when
+          USE_ESMF_LIB is TRUE. 
+      ESMF_LOGKIND_SINGLE: Use a single log file, combining messages from
+          all of the PETs. Not supported on some platforms.
+      ESMF_LOGKIND_MULTI: Use multiple log files — one per PET.
+      ESMF_LOGKIND_NONE: Do not issue messages to a log file.
+      By default, no ESMF log files are generated.
+    </desc>
+    <values>
+      <value>$ESMF_LOGFILE_KIND</value>
+    </values>
+  </entry>
+
   <!-- =========================== -->
   <!-- group prof_inparm           -->
   <!--  in perf_mod.F90            -->
@@ -2593,15 +2717,14 @@
     </values>
   </entry>
 
-  <entry id="profile_depth_limit">
+  <entry id="profile_depth_limit" modify_via_xml="TIMER_LEVEL">
     <type>integer</type>
     <category>performance</category>
     <group>prof_inparm</group>
     <desc>
     </desc>
     <values>
-      <value timer_level='pos'>$TIMER_LEVEL</value>
-      <value timer_level='neg'>20</value>
+      <value>$TIMER_LEVEL</value>
     </values>
   </entry>
 
@@ -2616,15 +2739,14 @@
     </values>
   </entry>
 
-  <entry id="profile_detail_limit">
+  <entry id="profile_detail_limit"   modify_via_xml="TIMER_DETAIL">
     <type>integer</type>
     <category>performance</category>
     <group>prof_inparm</group>
     <desc>
     </desc>
     <values>
-      <value timer_level='neg'>$TIMER_LEVEL</value>
-      <value timer_level='pos'>0</value>
+      <value>$TIMER_DETAIL</value>
     </values>
   </entry>
 
@@ -2759,68 +2881,6 @@
     </desc>
     <values>
       <value>$PIO_ASYNC_INTERFACE</value>
-    </values>
-  </entry>
-
-  <entry id="pio_stride" modify_via_xml="PIO_STRIDE">
-    <type>integer</type>
-    <category>pio</category>
-    <group>pio_default_inparm</group>
-    <desc>
-      stride of tasks in pio used generically, component based value takes precedent.
-    </desc>
-    <values>
-      <value>$PIO_STRIDE</value>
-    </values>
-  </entry>
-
-  <entry id="pio_root" modify_via_xml="PIO_ROOT">
-    <type>integer</type>
-    <category>pio</category>
-    <group>pio_default_inparm</group>
-    <desc>
-      io task root in pio used generically, component based value takes precedent.
-    </desc>
-    <values>
-      <value>$PIO_ROOT</value>
-    </values>
-  </entry>
-
-  <entry id="pio_rearranger" modify_via_xml="PIO_REARRANGER">
-    <type>integer</type>
-    <category>pio</category>
-    <group>pio_default_inparm</group>
-    <desc>
-      Rearranger method for pio 1=box, 2=subset.
-    </desc>
-    <values>
-      <value>$PIO_REARRANGER</value>
-    </values>
-  </entry>
-
-  <entry id="pio_numiotasks" modify_via_xml="PIO_NUMTASKS">
-    <type>integer</type>
-    <category>pio</category>
-    <group>pio_default_inparm</group>
-    <desc>
-      number of io tasks in pio used generically, component based value takes precedent.
-    </desc>
-    <values>
-      <value>$PIO_NUMTASKS</value>
-    </values>
-  </entry>
-
-  <entry id="pio_typename" modify_via_xml="PIO_TYPENAME">
-    <type>char</type>
-    <category>pio</category>
-    <group>pio_default_inparm</group>
-    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
-    <desc>
-      io type in pio used generically, component based value takes precedent.
-      valid values: netcdf, pnetcdf, netcdf4p, netcdf4c, default
-    </desc>
-    <values>
-      <value>$PIO_TYPENAME</value>
     </values>
   </entry>
 

@@ -10,36 +10,10 @@
 ! For example to change the default value of ocn2atm_fmapname to 'foo' use
 !   ocn2atm_fmapname =  'foo'
 !
-! The following namelist variables MAY NOT be changed in user_nl_cpl - but must
-! be changed in the appropriate $CASEROOT xml file
+! Note that some namelist variables MAY NOT be changed in user_nl_cpl - 
+! they are defined in a $CASEROOT xml file and must be changed with
+! xmlchange.
 !
-! driver namelist variable =>  xml variable
-!
-! case_name      => CASE
-! username       => CCSMUSER
-! hostname       => MACH
-! start_type     => RUN_TYPE
-! start_ymd      => RUN_STARTDATE
-! start_tod      => START_TOD
-! atm_cpl_dt     => ATM_NCPL
-! ice_cpl_dt	 => ICE_NCPL
-! glc_cpl_dt	 => GLC_NCPL
-! lnd_cpl_dt     => LND_NCPL
-! ocn_cpl_dt     => OCN_NCPL
-! rof_cpl_dt     => ROF_NCPL
-! atm_ntasks     => NTASKS_ATM        lnd_ntasks   => NTASKS_LND
-! atm_nthreads   => NTHRDS_ATM	      lnd_nthreads => NTHRDS_LND
-! atm_rootpe     => ROOTPE_ATM	      lnd_rootpe   => ROOTPE_LND
-! atm_pestride   => PSTRID_ATM	      lnd_pestride => PSTRID_LND
-! atm_layout     => NINST_ATM_LAYOUT  lnd_layout   => NINST_LND_LAYOUT
-! ice_ntasks     => NTASKS_ICE        ocn_ntasks   => NTASKS_OCN
-! ice_nthreads   => NTHRDS_ICE	      ocn_nthreads => NTHRDS_OCN
-! ice_rootpe     => ROOTPE_ICE	      ocn_rootpe   => ROOTPE_OCN
-! ice_pestride   => PSTRID_ICE	      ocn_pestride => PSTRID_OCN
-! ice_layout     => NINST_ICE_LAYOUT  ocn_layout   => NINST_OCN_LAYOUT
-! glc_ntasks     => NTASKS_GLC        rof_ntasks   => NTASKS_ROF
-! glc_nthreads   => NTHRDS_GLC	      rof_nthreads => NTHRDS_ROF
-! glc_rootpe     => ROOTPE_GLC	      rof_rootpe   => ROOTPE_ROF
-! glc_pestride   => PSTRID_GLC	      rof_pestride => PSTRID_ROF
-! glc_layout     => NINST_GLC_LAYOUT  rof_layout   => NINST_ROF_LAYOUT
+! For example, rather than set username to 'foo' in user_nl_cpl, call
+! ./xmlchange USER=foo
 !------------------------------------------------------------------------

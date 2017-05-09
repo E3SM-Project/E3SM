@@ -64,7 +64,7 @@
     </values>
   </entry>
 
-  <entry id="pio_root" modify_via_xml="PIO_STRIDE">
+  <entry id="pio_root" modify_via_xml="PIO_ROOT">
     <type>integer</type>
     <category>pio</category>
     <group>pio_inparm</group>
