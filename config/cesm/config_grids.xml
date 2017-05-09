@@ -176,7 +176,21 @@
       <mask>usgs</mask>
     </model_grid>
 
+    <model_grid alias="T42_T42_musgs" not_compset="_POP">
+      <grid name="atm">T42</grid>
+      <grid name="lnd">T42</grid>
+      <grid name="ocnice">T42</grid>
+      <mask>usgs</mask>
+    </model_grid>
+
     <model_grid alias="T85_T85" not_compset="_POP">
+      <grid name="atm">T85</grid>
+      <grid name="lnd">T85</grid>
+      <grid name="ocnice">T85</grid>
+      <mask>usgs</mask>
+    </model_grid>
+
+    <model_grid alias="T85_T85_musgs" not_compset="_POP">
       <grid name="atm">T85</grid>
       <grid name="lnd">T85</grid>
       <grid name="ocnice">T85</grid>
@@ -607,7 +621,21 @@
       <mask>gx3v7</mask>
     </model_grid>
 
+    <model_grid alias="f45_f45_mg37" not_compset="_POP">
+      <grid name="atm">4x5</grid>
+      <grid name="lnd">4x5</grid>
+      <grid name="ocnice">4x5</grid>
+      <mask>gx3v7</mask>
+    </model_grid>
+
     <model_grid alias="f10_f10" not_compset="_POP">
+      <grid name="atm">10x15</grid>
+      <grid name="lnd">10x15</grid>
+      <grid name="ocnice">10x15</grid>
+      <mask>usgs</mask>
+    </model_grid>
+    
+    <model_grid alias="f10_f10_musgs" not_compset="_POP">
       <grid name="atm">10x15</grid>
       <grid name="lnd">10x15</grid>
       <grid name="ocnice">10x15</grid>
@@ -620,7 +648,7 @@
       <grid name="atm">ne16np4</grid>
       <grid name="lnd">ne16np4</grid>
       <grid name="ocnice">gx3v7</grid>
-      <mask>gx3v6</mask>
+      <mask>gx3v7</mask>
     </model_grid>
 
     <model_grid alias="ne30_g16">
@@ -728,6 +756,13 @@
     </model_grid>
 
     <model_grid alias="ne16_ne16" not_compset="_POP">
+      <grid name="atm">ne16np4</grid>
+      <grid name="lnd">ne16np4</grid>
+      <grid name="ocnice">ne16np4</grid>
+      <mask>gx3v7</mask>
+    </model_grid>
+
+    <model_grid alias="ne16_ne16_mg37" not_compset="_POP">
       <grid name="atm">ne16np4</grid>
       <grid name="lnd">ne16np4</grid>
       <grid name="ocnice">ne16np4</grid>
