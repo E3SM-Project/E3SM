@@ -79,6 +79,7 @@ module docn_comp_mod
   integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp  ! field indices
   integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
   integer(IN)   :: kh,kqbot
+  integer(IN)   :: index_lat, index_lon
 
   type(shr_strdata_type) :: SDOCN
   type(mct_rearr)        :: rearr
@@ -148,8 +149,6 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     integer(IN)   :: nunit       ! unit number
     integer(IN)   :: kmask       ! field reference
     integer(IN)   :: kfrac       ! field reference
-    integer(IN)   :: klat        ! field reference
-    integer(IN)   :: klon        ! field reference
     logical       :: ocn_present    ! flag
     logical       :: ocn_prognostic ! flag
     logical       :: ocnrof_prognostic  ! flag
@@ -466,11 +465,11 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     kmask = mct_aVect_indexRA(ggrid%data,'mask')
     imask(:) = nint(ggrid%data%rAttr(kmask,:))
 
-    klon = mct_aVect_indexRA(ggrid%data,'lon')
-    xc(:) = ggrid%data%rAttr(klon,:)
+    index_lon = mct_aVect_indexRA(ggrid%data,'lon')
+    xc(:) = ggrid%data%rAttr(index_lon,:)
 
-    klat = mct_aVect_indexRA(ggrid%data,'lat')
-    yc(:) = ggrid%data%rAttr(klat,:)
+    index_lat = mct_aVect_indexRA(ggrid%data,'lat')
+    yc(:) = ggrid%data%rAttr(index_lat,:)
 
     call t_stopf('docn_initmctavs')
 
