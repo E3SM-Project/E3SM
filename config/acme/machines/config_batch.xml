@@ -159,7 +159,7 @@
       </directives>
       <queues>
 	<queue walltimemax="01:00:00" jobmin="1" jobmax="64">shared</queue>
-	<queue walltimemax="03:00:00" jobmin="64" jobmax="4096" default="true">batch</queue>
+	<queue walltimemax="03:00:00" jobmin="1" jobmax="4096" default="true">batch</queue>
       </queues>
     </batch_system>
 
