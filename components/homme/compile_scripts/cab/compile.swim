@@ -3,8 +3,6 @@
 # Change next four lines to your paths
 export ACME_ROOT=$HOME/Climate/Implicit/ACME
 NP=4
-NLEVELS=26
-NTRACERS=0
 
 # Start Build #
 export HOMME_ROOT=$ACME_ROOT/components/homme
@@ -33,12 +31,10 @@ cmake \
     -D HDF5_DIR=$HDF5                           \
     -D HOMME_FIND_BLASLAPACK=TRUE               \
     \
-    -D PRIM_NP=$NP                              \
-    -D PRIM_PLEV=$NLEVELS                       \
-    -D QSIZE_D=$NTRACERS                        \
+    -D SWIM_NP=$NP                              \
     \
-    -D BUILD_HOMME_PRIM=TRUE                    \
-    -D BUILD_HOMME_SWIM=FALSE                   \
+    -D BUILD_HOMME_PRIM=FALSE                   \
+    -D BUILD_HOMME_SWIM=TRUE                    \
     -D BUILD_HOMME_SWEQX=FALSE                  \
     -D BUILD_HOMME_PREQX=FALSE                  \
     -D BUILD_HOMME_PREQX_ACC=FALSE              \
@@ -49,7 +45,7 @@ cmake \
     \
     $HOMME_ROOT                                               
 
-make -j $1 prim || exit -1
+make -j $1 swim || exit -1
 
 
     # -D OPT_FLAGS="-O2"                           \
