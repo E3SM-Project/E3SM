@@ -570,9 +570,9 @@ class TestScheduler(object):
     ###########################################################################
         test_dir = self._get_test_dir(test)
         if self._no_batch:
-            cmd = "./case.submit --no-batch"
+            cmd = "./case.submit --no-batch --skip-preview-namelist"
         else:
-            cmd = "./case.submit "
+            cmd = "./case.submit --skip-preview-namelist"
 
         return self._shell_cmd_for_phase(test, cmd, RUN_PHASE, from_dir=test_dir)
 

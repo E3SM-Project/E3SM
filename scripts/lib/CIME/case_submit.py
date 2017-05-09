@@ -15,7 +15,7 @@ from CIME.test_status               import *
 
 logger = logging.getLogger(__name__)
 
-def _submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
+def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False, batch_args=None):
     caseroot = case.get_value("CASEROOT")
 
     if job is None:
@@ -26,7 +26,7 @@ def _submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
 
     if resubmit:
         resub = case.get_value("RESUBMIT")
-        logger.info("Submitting job '%s', resubmit=%d" % (job, resub))
+        logger.info("Submitting job '{}', resubmit={:d}".format(job, resub))
         case.set_value("RESUBMIT",resub-1)
         if case.get_value("RESUBMIT_SETS_CONTINUE_RUN"):
             case.set_value("CONTINUE_RUN", True)
@@ -61,11 +61,11 @@ def _submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
     case.set_value("RUN_WITH_SUBMIT",True)
     case.flush()
 
-    logger.warn("submit_jobs %s" % job)
-    job_ids = case.submit_jobs(no_batch=no_batch, job=job, batch_args=batch_args)
-    logger.info("Submitted job ids %s" % job_ids)
+    logger.warn("submit_jobs {}".format(job))
+    job_ids = case.submit_jobs(no_batch=no_batch, job=job, skip_pnl=skip_pnl, batch_args=batch_args)
+    logger.info("Submitted job ids {}".format(job_ids))
 
-def submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
+def submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False, batch_args=None):
     if case.get_value("TEST"):
         caseroot = case.get_value("CASEROOT")
         casebaseid = case.get_value("CASEBASEID")
@@ -80,7 +80,7 @@ def submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
                 ts.set_status(SUBMIT_PHASE, TEST_PASS_STATUS)
 
     try:
-        functor = lambda: _submit(case, job, resubmit, no_batch, batch_args)
+        functor = lambda: _submit(case, job, resubmit, no_batch, skip_pnl, batch_args)
         run_and_log_case_status(functor, "case.submit", caseroot=case.get_value("CASEROOT"))
     except:
         # If something failed in the batch system, make sure to mark
@@ -105,5 +105,5 @@ def check_DA_settings(case):
     if case.get_value("DATA_ASSIMILATION"):
         script = case.get_value("DATA_ASSIMILATION_SCRIPT")
         cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
-        logger.info("Data Assimilation enabled using script %s with %d cycles"%(script,cycles))
+        logger.info("Data Assimilation enabled using script {} with {:d} cycles".format(script,cycles))
 
