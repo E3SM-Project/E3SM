@@ -1226,23 +1226,23 @@ class Case(object):
 
         gfile = GenericXML(infile=xmlfile)
         ftype = gfile.get_id()
-
+        components = self.get_value("COMP_CLASSES")
         logger.warn("setting case file to %s"%xmlfile)
         new_env_file = None
         for env_file in self._env_entryid_files:
             if os.path.basename(env_file.filename) == ftype:
                 if ftype == "env_run.xml":
-                    new_env_file = EnvRun(infile=xmlfile)
+                    new_env_file = EnvRun(infile=xmlfile, components=components)
                 elif ftype == "env_build.xml":
-                    new_env_file = EnvBuild(infile=xmlfile)
+                    new_env_file = EnvBuild(infile=xmlfile, components=components)
                 elif ftype == "env_case.xml":
-                    new_env_file = EnvCase(infile=xmlfile)
+                    new_env_file = EnvCase(infile=xmlfile, components=components)
                 elif ftype == "env_mach_pes.xml":
-                    new_env_file = EnvMachPes(infile=xmlfile)
+                    new_env_file = EnvMachPes(infile=xmlfile, components=components)
                 elif ftype == "env_batch.xml":
-                    new_env_file = EnvBatch(infile=xmlfile)
+                    new_env_file = EnvBatch(infile=xmlfile, components=components)
                 elif ftype == "env_test.xml":
-                    new_env_file = EnvTest(infile=xmlfile)
+                    new_env_file = EnvTest(infile=xmlfile, components=components)
             if new_env_file is not None:
                 self._env_entryid_files = []
                 self._env_generic_files = []
