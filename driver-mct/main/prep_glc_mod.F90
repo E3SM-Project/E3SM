@@ -69,17 +69,15 @@ module prep_glc_mod
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
 
-  !WHL - logic to turn on smooth, conservative SMB downscaling
-  !      Should this be the default treatment of SMB?
-  logical, parameter :: smb_smooth_downscale = .true.
-!!  logical, parameter :: smb_smooth_downscale = .false.
-
   !WHL - logic to renormalize the SMB for conservation
   !      Applies only when smb_smooth_downscale = .true.
   !      Should be set to true for 2-way coupled runs with evolving ice sheets.
   !      Probably does not need to be true for 1-way coupling.
   logical, parameter :: smb_renormalize = .true.
 !!  logical, parameter :: smb_renormalize = .false.
+
+  ! Name of flux field giving surface mass balance
+  character(len=*), parameter :: qice_fieldname = 'Flgl_qice'
 
   !WHL - debug
   integer :: iamtest = 59, ntest = 15, ntest_g = 300
@@ -360,34 +358,27 @@ contains
        index_l2x = mct_aVect_indexRA(l2x_g, trim(field))
        index_x2g = mct_aVect_indexRA(x2g_g, trim(field))
 
-       !WHL - Revised treatment for Flgl_qice
-       if (trim(field) == 'Flgl_qice' .and. smb_smooth_downscale) then
+       if (trim(field) == qice_fieldname) then
 
           if (first_time) then
              mrgstr(mrgstr_index) = subname//'x2g%'//trim(field)//' =' // &
                   ' = l2x%'//trim(field)
           end if
 
-          ! treat Flgl_qice as if it were a state variable, with a simple copy.
+          ! treat qice as if it were a state variable, with a simple copy.
           do n = 1, lsize
              x2g_g%rAttr(index_x2g,n) = l2x_g%rAttr(index_l2x,n)
           end do
 
        else
-
-          ! standard treatment of fluxes, with multiplication by lfrac for conservation
-
-          if (first_time) then
-             mrgstr(mrgstr_index) = subname//'x2g%'//trim(field)//' =' // &
-                  ' = lfrac*l2x%'//trim(field)
-          end if
-
-          do n = 1, lsize
-             lfrac = fractions_g%rAttr(index_lfrac,n)
-             x2g_g%rAttr(index_x2g,n) = l2x_g%rAttr(index_l2x,n) * lfrac
-          end do
-
-       endif  ! Flgl_qice and smb_smooth_downscale
+          write(logunit,*) subname,' ERROR: Flux fields other than ', &
+               qice_fieldname, ' currently are not handled in lnd2glc remapping.'
+          write(logunit,*) '(Attempt to handle flux field <', trim(field), '>.)'
+          write(logunit,*) 'Substantial thought is needed to determine how to remap other fluxes'
+          write(logunit,*) 'in a smooth, conservative manner.'
+          call shr_sys_abort(subname//&
+               ' ERROR: Flux fields other than qice currently are not handled in lnd2glc remapping.')
+       endif  ! qice_fieldname
 
        mrgstr_index = mrgstr_index + 1
 
@@ -450,9 +441,7 @@ contains
        do field_num = 1, num_flux_fields
           call seq_flds_getField(fieldname, field_num, seq_flds_x2g_fluxes)
 
-          !WHL - Added logic for smooth downscaling of SMB
-
-          if (trim(fieldname) == 'Flgl_qice' .and. smb_smooth_downscale) then
+          if (trim(fieldname) == qice_fieldname) then
 
              ! Use a bilinear (Sl2g) mapper, as for states.
              ! The Fg2l mapper is needed to map some glc fields to the land grid
@@ -464,13 +453,14 @@ contains
                   mapper_Fg2l = mapper_Fg2l)
 
           else
-
-             call prep_glc_map_one_field_lnd2glc(egi=egi, eli=eli, &
-                  fieldname = fieldname, &
-                  fractions_lx = fractions_lx(efi), &
-                  mapper = mapper_Fl2g)
-
-          endif   ! Flgl_qice and smb_smooth_downscale
+             write(logunit,*) subname,' ERROR: Flux fields other than ', &
+                  qice_fieldname, ' currently are not handled in lnd2glc remapping.'
+             write(logunit,*) '(Attempt to handle flux field <', trim(field), '>.)'
+             write(logunit,*) 'Substantial thought is needed to determine how to remap other fluxes'
+             write(logunit,*) 'in a smooth, conservative manner.'
+             call shr_sys_abort(subname//&
+                  ' ERROR: Flux fields other than qice currently are not handled in lnd2glc remapping.')
+          endif   ! qice_fieldname
 
        end do
 
@@ -563,7 +553,7 @@ contains
 
   subroutine prep_glc_map_qice_conservative_lnd2glc(egi, eli, fieldname, fractions_lx, mapper_Sl2g, mapper_Fg2l)
 
-    ! Maps the surface mass balance field (Flgl_qice) from the land grid to the glc grid.
+    ! Maps the surface mass balance field (qice) from the land grid to the glc grid.
     ! Use a smooth, non-conservative (bilinear) mapping, followed by a correction for conservation.
 
     !WHL - Remove these vertical_gradient use statements after testing
@@ -639,7 +629,6 @@ contains
     character(len=*), parameter :: Sg_frac_field = 'Sg_ice_covered'
     character(len=*), parameter :: Sg_topo_field = 'Sg_topo'
     character(len=*), parameter :: Sg_icemask_field = 'Sg_icemask'
-    character(len=*), parameter :: Flgl_qice_field = 'Flgl_qice'
 
     ! local and global sums of accumulation and ablation; used to compute renormalization factors 
 
@@ -877,7 +866,7 @@ contains
          mapper = mapper_Fg2l, &
          g2x_l = g2x_lx)
     
-    ! Export Flgl_qice and Sg_ice_covered in each elevation class to local arrays.
+    ! Export qice and Sg_ice_covered in each elevation class to local arrays.
     ! Note: qice comes from l2gacc_lx; frac comes from g2x_lx.
 
     !WHL - It would be possible to export qice_l and frac_l in the same EC loop.
@@ -891,11 +880,6 @@ contains
 
     do ec = 0, nEC
        elevclass_as_string = glc_elevclass_as_string(ec)
-
-       !WHL - For now, fill qice_l below (after ideal SMB)
-!       qice_field = Flgl_qice_field // elevclass_as_string    ! Flgl_qice01, etc.
-!       call mct_aVect_exportRattr(l2gacc_lx(eli), trim(qice_field), tmp_field_l)
-!       qice_l(:,ec) = tmp_field_l(:)
 
        frac_field = Sg_frac_field // elevclass_as_string    ! Sg_ice_covered01, etc.
        call mct_aVect_exportRattr(g2x_lx, trim(frac_field), tmp_field_l)
@@ -950,7 +934,7 @@ contains
           qice_l(:,ec) = qice_l(:,ec) * 917._r8 / 31536000._r8 
 
           ! Import back into aVect
-          qice_field = Flgl_qice_field // elevclass_as_string    ! Flgl_qice01, etc.
+          qice_field = qice_fieldname // elevclass_as_string    ! Flgl_qice01, etc.
           tmp_field_l(:) = qice_l(:,ec)
           call mct_aVect_importRattr(l2gacc_lx(eli), trim(qice_field), tmp_field_l)
           
@@ -971,12 +955,12 @@ contains
        endif
     endif
 
-    ! Export Flgl_qice in each elevation class to local arrays.
+    ! Export qice in each elevation class to local arrays.
 
     do ec = 0, nEC
        elevclass_as_string = glc_elevclass_as_string(ec)
 
-       qice_field = Flgl_qice_field // elevclass_as_string    ! Flgl_qice01, etc.
+       qice_field = qice_fieldname // elevclass_as_string    ! Flgl_qice01, etc.
        call mct_aVect_exportRattr(l2gacc_lx(eli), trim(qice_field), tmp_field_l)
        qice_l(:,ec) = tmp_field_l(:)
     enddo
@@ -1406,7 +1390,7 @@ contains
        enddo
 
        ! Put the renormalized SMB back into l2x_gx.
-       call mct_aVect_importRattr(l2x_gx(eli), "Flgl_qice", qice_g)
+       call mct_aVect_importRattr(l2x_gx(eli), qice_fieldname, qice_g)
 
        !WHL - debug
        ! Verify that the renormalized SMB sum is consistent with the SMB sum on the land side.
