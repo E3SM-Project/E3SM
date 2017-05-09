@@ -739,6 +739,9 @@ is the value of that variable from the *previous* time level!
                 <var name="daysSinceStart" type="real" dimensions="Time" units="days"
                      description="Time since simulationStartTime in days, for plotting"
                 />
+                <var name="timestepNumber" type="integer" dimensions="Time" units="none"
+                     description="time step number.  initial time is 0."
+                />
 	</var_struct>
 
 <!-- ================ -->

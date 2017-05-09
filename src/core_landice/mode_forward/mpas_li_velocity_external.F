@@ -160,6 +160,9 @@ contains
       call mpas_log_write("Initializing external velocity solver.", flushNow=.true.)
 
       call velocity_solver_init_mpi(domain % dminfo % comm)
+
+      call interface_init_log()!domain % logInfo % outputLog % isActive, trim(domain % logInfo % outputLog % fileName) // CHAR(0))
+
 #else
       err = 1
       call mpas_log_write("To run with an external velocity solver you must compile MPAS with one.", MPAS_LOG_ERR)
@@ -305,6 +308,8 @@ contains
       call mpas_timer_start("velocity_solver_set_grid_data")
       call mpas_log_write("Initializing external velocity solver grid data.", flushNow=.true.)
 
+      call interface_redirect_stdout(-1) ! time level of -1 prevents message of what time level this is
+
       call velocity_solver_set_grid_data(nCells, nEdges, nVertices, nVertInterfaces, &
               nCellsSolve, nEdgesSolve, nVerticesSolve, maxNEdgesOnCell, radius, &
               cellsOnEdge, cellsOnVertex, verticesOnCell, verticesOnEdge, edgesOnCell, &
@@ -339,6 +344,8 @@ contains
       call velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, &
          config_default_flowParamA, config_enhancementFactor, &
          config_flowLawExponent, config_dynamic_thickness, li_mask_ValueAlbanyActive, li_mask_ValueIce)
+
+      call interface_reset_stdout()
 #endif
 
 
@@ -425,6 +432,7 @@ contains
       integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
       integer, pointer :: nEdges
+      integer, pointer :: timestepNumber
       type (field2dReal), pointer :: dissipationVertexField
       real (kind=RKIND), dimension(:,:), pointer :: heatDissipation  ! on cells
       integer :: iEdge
@@ -443,6 +451,7 @@ contains
       ! Mesh variables
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
+      call mpas_pool_get_array(meshPool, 'timestepNumber', timestepNumber)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
       ! Geometry variables
@@ -470,6 +479,10 @@ contains
       call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
       call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
 
+#if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
+      ! Capture Albany output
+      call interface_redirect_stdout(timestepNumber)
+#endif
 
       ! ==================================================================
       ! External dycore calls to be made only when vertex mask changes
@@ -582,6 +595,9 @@ contains
          if (.not. li_mask_is_dynamic_ice(edgeMask(iEdge)) ) normalVelocity(:,iEdge) = 0.0e0_RKIND
       end do
 
+#if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
+      call interface_reset_stdout()
+#endif
 
    !--------------------------------------------------------------------
    end subroutine li_velocity_external_solve

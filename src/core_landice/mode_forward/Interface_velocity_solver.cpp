@@ -45,6 +45,12 @@ double rho_ice;
 int dynamic_ice_bit_value;
 int ice_present_bit_value;
 
+// global variables used for handling logging
+char albany_log_filename[128];
+int original_stdout; // the location of stdout before we captured it
+int original_stderr; // the location of stderr before we captured it
+int Interface_stdout; // the location of stdout as we use it here
+
 //void *phgGrid = 0;
 std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
     verticesOnTria, trianglesOnEdge, trianglesPositionsOnEdge, verticesOnEdge,
@@ -928,6 +934,93 @@ void velocity_solver_extrude_3d_grid(double const* levelsRatio_F,
       trianglesOnEdge, trianglesPositionsOnEdge, verticesOnEdge, indexToEdgeID,
       indexToTriangleID, dirichletNodesIDs, floatingEdgesIds);
   }
+
+
+// Function to set up how the MPAS log file will be used by Albany
+void interface_init_log(){
+  int me, tasks;
+  MPI_Comm_rank(comm, &me);
+  MPI_Comm_size(comm, &tasks);
+
+  char fname[128];
+  char oformat[128];
+
+  strcpy(oformat, "log.albany.");
+
+  if(tasks < 1E4) {
+     strcat(oformat, "%4.4i");
+  }
+  else if (tasks < 1E5) {
+     strcat(oformat, "%5.5i");
+  }
+  else if (tasks < 1E6) {
+     strcat(oformat, "%6.6i");
+  }
+  else if (tasks < 1E7) {
+     strcat(oformat, "%7.7i");;
+  }
+  else if (tasks < 1E8) {
+     strcat(oformat, "%8.8i");
+  }
+  else if (tasks < 1E9) {
+     strcat(oformat, "%9.9i");
+  }
+  else {
+     if(me == 0){
+       fprintf(stderr, "Error opening Albany stdout for 1E9 tasks or more\n");
+     }
+     return;
+  }
+  strcat(oformat, ".out");
+
+  if (me == 0) {
+    sprintf(albany_log_filename, oformat, me);
+  } else {
+    strcpy(albany_log_filename, "/dev/null");
+  }
+
+  Interface_stdout = open(albany_log_filename, O_CREAT|O_WRONLY|O_TRUNC,0644);
+  if(Interface_stdout >=  0) {
+     write(Interface_stdout, "-- Beginning log file for output from Albany velocity solver --", 63);
+     fsync(Interface_stdout);
+  } else {
+    std::cerr << "Error opening Albany stdout file." << std::endl;
+  }
+
+}
+
+// Function to redirect Albany stdout to the MPAS log file
+void interface_redirect_stdout(int const* iTimestep) {
+  /* Save current stdout for use later */
+  //fsync(Interface_stdout);
+  fflush(stdout);
+  fflush(stderr);
+  original_stdout = dup(1);
+  original_stderr = dup(2);
+  dup2(Interface_stdout, 1);
+  dup2(Interface_stdout, 2);
+  if (*iTimestep >= 0) {
+    std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << "--- Beginning Albany velocity solve for timestep " << *iTimestep << " ---" << std::endl;
+    std::cout << std::endl;
+  }
+}
+
+
+// Function to return to stdout to its previous location
+void interface_reset_stdout() {
+  /* Restore stdout */
+     //fsync(Interface_stdout);
+  fflush(stdout);
+  fflush(stderr);
+  dup2(original_stdout, 1);
+  dup2(original_stderr, 2);
+  close(original_stdout);
+  close(original_stderr);
+}
+
+
 }
 
 //This function computes the normal velocity on the edges midpoints of MPAS 2d cells.
