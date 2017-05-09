@@ -42,7 +42,7 @@ def _set_up_signal_handlers():
         signum = getattr(signal, signame)
         signal.signal(signum, _signal_handler)
 
-def case_test(case, testname=None):
+def case_test(case, testname=None, reset=False):
     if testname is None:
         testname = case.get_value('TESTCASE')
 
@@ -60,6 +60,10 @@ def case_test(case, testname=None):
     except:
         caseroot = case.get_value("CASEROOT")
         with TestStatus(test_dir=caseroot) as ts:
+            if reset:
+                logger.info("Reset test to initial conditions and exit")
+                ts._resetup_case(RUN_PHASE)
+                return True
             ts.set_status(RUN_PHASE, TEST_FAIL_STATUS, comments="failed to initialize")
         append_testlog(str(sys.exc_info()[1]))
         return False
