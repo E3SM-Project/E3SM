@@ -650,6 +650,7 @@ module ocn_time_integration_rk4
          ! End: Accumulating various parameterizations of the transport velocity
          ! ------------------------------------------------------------------
 
+         !$omp master
          call mpas_reconstruct(meshPool,  normalVelocityNew, &
                           velocityX, velocityY, velocityZ,   &
                           velocityZonal, velocityMeridional, &
@@ -659,6 +660,7 @@ module ocn_time_integration_rk4
                           gradSSHX, gradSSHY, gradSSHZ,    &
                           gradSSHZonal, gradSSHMeridional, &
                           includeHalos = .true.)
+         !$omp end master
          call mpas_threading_barrier()
 
          !$omp do schedule(runtime)
