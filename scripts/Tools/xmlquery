@@ -139,12 +139,12 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
     if xmlfile:
         case.set_file(xmlfile)
     for var in variables:
-        if xmlfile:
-            groups = ['none']
-        elif subgroup is not None:
+        if subgroup is not None:
             groups = [subgroup]
         else:
             groups = case.get_record_fields(var, "group")
+            if groups is None and xmlfile:
+                groups = ['none']
 
         if xmlfile:
             value =  case.get_value(var, resolved=resolved)
@@ -166,7 +166,11 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
                 if iscompvar:
                     value = []
                     for comp in comp_classes:
-                        nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=resolved, subgroup=group)
+                        try:
+                            nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=resolved, subgroup=group)
+                        except:
+                            nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=False, subgroup=group)
+
                         if nextval is not None:
                             value.append(comp + ":" + "%s"%nextval)
                 else:
