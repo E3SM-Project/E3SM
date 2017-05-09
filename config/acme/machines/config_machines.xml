@@ -683,6 +683,10 @@
     <environment_variables>
       <env name="NETCDF_PATH">$SHELL{dirname $(dirname $(which ncdump))}</env>
     </environment_variables>
+    <environment_variables mpilib="mpi-serial">
+      <!-- We currently don't have a soft env for serial hdf5 -->
+      <env name="LD_LIBRARY_PATH">/soft/apps/packages/climate/hdf5/1.8.16-serial/gcc-6.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+    </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
