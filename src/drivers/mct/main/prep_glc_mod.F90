@@ -79,11 +79,6 @@ module prep_glc_mod
   ! Name of flux field giving surface mass balance
   character(len=*), parameter :: qice_fieldname = 'Flgl_qice'
 
-  !WHL - debug
-  integer :: iamtest = 59, ntest = 15, ntest_g = 300
-!!  integer :: iamtest = 171, ntest = 15, ntest_g = 50
-  integer :: iam
-
   !================================================================================================
 
 contains
@@ -131,7 +126,7 @@ contains
     if (glc_present .and. lnd_c2_glc) then
 
        call seq_comm_getData(CPLID, &
-            mpicom=mpicom_CPLID, iamroot=iamroot_CPLID, iam=iam)
+            mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
        l2x_lx => component_get_c2x_cx(lnd(1))
        lsize_l = mct_aVect_lsize(l2x_lx)
@@ -420,14 +415,6 @@ contains
     character(*), parameter :: subname = '(prep_glc_calc_l2x_gx)'
     !---------------------------------------------------------------
 
-    !WHL - debug
-    logical :: iamroot
-    call seq_comm_getdata(CPLID, iamroot=iamroot)
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'In prep_glc_calc_l2x_gx'
-    endif
-
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
 
     num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes))
@@ -565,9 +552,6 @@ contains
     use map_lnd2glc_mod, only : map_lnd2glc
     use map_glc2lnd_mod, only : map_glc2lnd_ec
 
-    !WHL - This is diagnostic only
-    use shr_const_mod, only : SHR_CONST_REARTH
-
     ! Arguments
     integer, intent(in) :: egi  ! glc instance index
     integer, intent(in) :: eli  ! lnd instance index
@@ -583,7 +567,6 @@ contains
 
     !WHL - Remove?
     type(vertical_gradient_calculator_2nd_order_type) :: gradient_calculator
-    !---------------------------------------------------------------
 
     integer :: mpicom    ! mpi comm
 
@@ -601,6 +584,7 @@ contains
 
     real(r8), dimension(:), allocatable :: aream_l   ! cell areas on land grid, for mapping
     real(r8), dimension(:), allocatable :: aream_g   ! cell areas on glc grid, for mapping
+    real(r8), dimension(:), allocatable :: area_g    ! cell areas on glc grid, according to glc model
 
     type(mct_ggrid), pointer :: dom_l   ! land grid info
     type(mct_ggrid), pointer :: dom_g   ! glc grid info
@@ -642,11 +626,6 @@ contains
     real(r8) :: local_ablat_on_glc_grid
     real(r8) :: global_ablat_on_glc_grid
 
-    real(r8) :: local_qice_on_land_grid   !WHL - remove qice variables after testing
-    real(r8) :: global_qice_on_land_grid
-    real(r8) :: local_qice_on_glc_grid
-    real(r8) :: global_qice_on_glc_grid
-
     ! renormalization factors (should be close to 1, e.g. in range 0.95 to 1.05)
     real(r8) :: accum_renorm_factor   ! ratio between global accumulation on the two grids
     real(r8) :: ablat_renorm_factor   ! ratio between global ablation on the two grids
@@ -667,17 +646,6 @@ contains
 
     !WHL - The remaining variables can be removed after testing
 
-    !WHL - Native areas are diagnostic only
-    real(r8), dimension(:), allocatable :: area_l   ! cell areas on land grid, according to land model
-    real(r8), dimension(:), allocatable :: area_g   ! cell areas on glc grid, according to glc model
-
-    ! Variables for summing the total area on the land grid where SMB can be applied to CISM.
-    ! Compute a similar sum on the glc grid and compare.
-    real(r8) :: local_area_on_land_grid
-    real(r8) :: global_area_on_land_grid
-    real(r8) :: local_area_on_glc_grid
-    real(r8) :: global_area_on_glc_grid
-
     ! parameters for idealized SMB - just for testing
     real(r8), parameter :: q0 = 0.30_r8   ! positive SMB at high elevation
 !!    real(r8), parameter :: q0 = 1.0_r8   ! positive SMB at high elevation
@@ -687,15 +655,14 @@ contains
 
 !!    logical :: ideal_smb = .true.
     logical :: ideal_smb = .false.
+    !---------------------------------------------------------------
 
     call seq_comm_setptrs(CPLID, mpicom=mpicom)
-    call seq_comm_getdata(CPLID, iamroot=iamroot, iam=iam)
+    call seq_comm_getdata(CPLID, iamroot=iamroot)
 
-    if (iamroot .or. iam==iamtest) then
+    if (iamroot) then
        write(logunit,*) ' '
        write(logunit,*) 'In prep_glc_map_qice_conservative_lnd2glc, fieldname =', trim(fieldname)
-       write(logunit,*) 'Mapper_counter, strategy, mapfile:', &
-                         mapper_Sl2g%counter, trim(mapper_Sl2g%strategy), trim(mapper_Sl2g%mapfile)
     endif
 
     ! Get some attribute vectors needed for mapping and conservation
@@ -724,11 +691,6 @@ contains
     km = mct_aVect_indexRa(dom_l%data, "aream" )
     aream_l(:) = dom_l%data%rAttr(km,:)
 
-    !WHL - remove area_l after resting
-    allocate(area_l(lsize_l))
-    ka = mct_aVect_indexRa(dom_l%data, "area" )
-    area_l(:) = dom_l%data%rAttr(ka,:)
-
     ! allocate and fill area arrays on the glc grid
     dom_g => component_get_dom_cx(glc(egi))   !WHL - Is egi correct? 
 
@@ -736,33 +698,10 @@ contains
     km = mct_aVect_indexRa(dom_g%data, "aream" )
     aream_g(:) = dom_g%data%rAttr(km,:)
 
-    !WHL - remove area_g after testing
     allocate(area_g(lsize_g))
     ka = mct_aVect_indexRa(dom_g%data, "area" )
     area_g(:) = dom_g%data%rAttr(ka,:)
 
-    !WHL - debug - write out areas
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'lsize_l, lsize_g:', lsize_l, lsize_g
-       write(logunit,*) ' '
-       write(logunit,*) 'land grid: area (km^2), aream/area:'
-!!       do n = 1, lsize_l
-       do n = 1, ntest
-          write(logunit,*) n, area_l(n)*(SHR_CONST_REARTH**2/1.d6), aream_l(n)/area_l(n)
-       enddo
-    endif
-
-    !WHL - Typical Greenland ratios are 0.90 to 1.05.
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'glc grid: area (km^2), aream/area:'
-!!       do n = 1, lsize_g
-       do n = 1, ntest
-          write(logunit,*) n, area_g(n)*(SHR_CONST_REARTH**2/1.0d6), aream_g(n)/area_g(n)
-       enddo
-    endif
-       
     ! Export land fractions from fractions_lx to a local array
     allocate(lfrac(lsize_l))
     call mct_aVect_exportRattr(fractions_lx, "lfrac", lfrac)
@@ -804,17 +743,6 @@ contains
     call mct_aVect_clean(Sg_icemask_g_av)
     call mct_aVect_clean(Sg_icemask_l_av)
 
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'Got Sg_icemask_l'
-!!       do n = 1, lsize_l
-       do n = 1, ntest
-          if (Sg_icemask_l(n) > 0.0_r8) then
-             write(logunit,*) n, Sg_icemask_l(n)
-          endif
-       enddo
-    endif
-    
     !WHL - Map Sg_ice_covered from the glc grid to the land grid.
     !      This gives the fields Sg_ice_covered00, Sg_ice_covered01, etc. on the land grid.
     !      These fields are needed to integrate the total SMB on the land grid, for conservation purposes.
@@ -843,11 +771,6 @@ contains
        topo_field = Sg_topo_field // elevclass_as_string  ! Sg_topo01, etc.
        g2x_fields_from_glc = g2x_fields_from_glc // delimiter // topo_field
     enddo
-
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) 
-       write(logunit,*) 'g2x_fields_from_glc:', g2x_fields_from_glc
-    endif
 
     ! Create an attribute vector g2x_lx to hold the mapped fields
 
@@ -942,19 +865,6 @@ contains
 
     endif  ! ideal_smb
 
-    if (iamroot .or. iam==iamtest) then
-       if (ideal_smb) then
-!!          write(logunit,*) ' '
-!!          write(logunit,*) 'Ideal SMB: n, ec, frac_l, qice_l (m/yr):'
-          do n = 1, ntest
-!!             write(logunit,*) ' '
-             do ec = 0, nEC
-!!                write(logunit,*) n, ec, frac_l(n,ec), qice_l(n,ec) * 31536000./917.
-             enddo
-          enddo
-       endif
-    endif
-
     ! Export qice in each elevation class to local arrays.
 
     do ec = 0, nEC
@@ -965,170 +875,17 @@ contains
        qice_l(:,ec) = tmp_field_l(:)
     enddo
 
-    !WHL debug - Compute mean SMB in each grid cell.
-
-    tmp_field_l(:) = 0._r8
-
-    do n = 1, lsize_l
-       do ec = 0, nEC
-          tmp_field_l(n) = tmp_field_l(n) + frac_l(n,ec)*qice_l(n,ec)
-
-          !WHL - debug - Check for qice > 10 m/yr
-          if (qice_l(n,ec)*31536000./917. > 10.) then
-             write(logunit,*) 'Big qice: n, ec, value(m/yr):', n, ec, qice_l(n,ec)*31536000./917.
-          endif
-
-       enddo
-    enddo
-
-    if (iamroot .or. iam==iamtest) then
-
-       write(logunit,*) ' '
-       write(logunit,*) 'n, ec, frac_l, qice_l (m/yr):'
-!!       do n = 1, lsize_l
-       do n = 1, ntest
-          if (abs(tmp_field_l(n)) /= 0.0_r8) then
-             write(logunit,*) ' '
-             do ec = 0, nEC
-                write(logunit,*) n, ec, frac_l(n,ec), qice_l(n,ec) * 31536000./917.
-             enddo
-          endif
-       enddo
-
-       write(logunit,*) ' '
-       write(logunit,*) 'n, computed qice_avg (m/yr):'
-!!       do n = 1, lsize_l
-       do n = 1, ntest
-          if (tmp_field_l(n) /= 0.0_r8) then
-             write(logunit,*) n, tmp_field_l(n) * 31536000./917.
-          endif
-       enddo
-
-    endif
-
-    !WHL - The following diagnostic area calculations can be removed after testing.
-    !      The idea is that if the area on the CLM side closely agrees with the area on the CISM side,
-    !       then the integrated SMB on each side should also agree closely.
-
-    ! (1) Without the ice mask, to get the total land area
-
-    local_area_on_land_grid = 0.0_r8
-    do n = 1, lsize_l
-       local_area_on_land_grid = local_area_on_land_grid &
-                               + lfrac(n) * aream_l(n)
-    enddo   ! n
-
-    call shr_mpi_sum(local_area_on_land_grid, &
-                     global_area_on_land_grid, &
-                     mpicom, 'area_land')
-
-    call shr_mpi_bcast(global_area_on_land_grid, mpicom)
-
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'Method 1: lfrac * aream_l: '
-       write(logunit,*) 'local area_l =', local_area_on_land_grid
-       write(logunit,*) 'global area_l =', global_area_on_land_grid
-       write(logunit,*) 'global area_l (km^2) =', global_area_on_land_grid * (SHR_CONST_REARTH**2 / 1.0d6)
-    endif
-
-    ! (2) With the ice mask, but not lfrac
-    ! This should get close to the right answer, but will give errors
-    !  where CLM thinks there is ocean and CISM thinks there is land, or vice versa.
-    !  Also, it does not agree with CLM's own notion of how much mass is lost.
-    !  The mass CLM is allowed to lose to CISM is proportional to lfrac,
-    !   because the rest of the snow has already fallen on the ocean.
-
-    local_area_on_land_grid = 0.0_r8
-    do n = 1, lsize_l
-       local_area_on_land_grid = local_area_on_land_grid &
-                               + Sg_icemask_l(n) * aream_l(n)
-    enddo   ! n
-
-    call shr_mpi_sum(local_area_on_land_grid, &
-                     global_area_on_land_grid, &
-                     mpicom, 'area_land')
-
-    call shr_mpi_bcast(global_area_on_land_grid, mpicom)
-
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'Method 2: Sg_icemask_l * aream_l:'
-       write(logunit,*) 'local area_l =', local_area_on_land_grid
-       write(logunit,*) 'global area_l =', global_area_on_land_grid
-    endif
-
-    ! (3) With Sg_icemask_l*lfrac in the product
-    !  It is definitely wrong to include both Sg_icemask_l and lfrac in the product,
-    !   because Sg_icemask (which is mapped from the glc grid to the land grid)
-    !   already excludes area that is ocean-covered in CISM.
-
-    local_area_on_land_grid = 0.0_r8
-    do n = 1, lsize_l
-       local_area_on_land_grid = local_area_on_land_grid &
-                               + Sg_icemask_l(n) * lfrac(n) * aream_l(n)
-    enddo   ! n
-
-    call shr_mpi_sum(local_area_on_land_grid, &
-                     global_area_on_land_grid, &
-                     mpicom, 'area_land')
-
-    call shr_mpi_bcast(global_area_on_land_grid, mpicom)
-
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'Method 3: Sg_icemask_l * lfrac * aream_l:'
-       write(logunit,*) 'local area_l =', local_area_on_land_grid
-       write(logunit,*) 'global area_l =', global_area_on_land_grid
-    endif
-
-    ! (4) With min(Sg_icemask, lfrac)
-    ! This is the preferred quantity to use for SMB sums.
-    ! We don't want the fraction to exceed Sg_icemask, because then we could
-    !  count contributions from glaciers that do not overlap the CISM domain.
-    ! We don't want the fraction to exceed lfrac, because then CLM would be 
-    !  contributing SMB to CISM in regions where that precip has already
-    !  landed in the ocean.
-
-    local_area_on_land_grid = 0.0_r8
-    do n = 1, lsize_l
-       local_area_on_land_grid = local_area_on_land_grid &
-                               + min(Sg_icemask_l(n),lfrac(n)) * aream_l(n)
-    enddo   ! n
-
-    call shr_mpi_sum(local_area_on_land_grid, &
-                     global_area_on_land_grid, &
-                     mpicom, 'area_land')
-
-    call shr_mpi_bcast(global_area_on_land_grid, mpicom)
-
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'Method 4: min(Sg_icemask_l,lfrac) * aream_l'
-       write(logunit,*) 'local area_l =', local_area_on_land_grid
-       write(logunit,*) 'global area_l =', global_area_on_land_grid
-    endif
-
     ! Sum qice over local land grid cells
 
     ! initialize qice sum
-    local_qice_on_land_grid = 0.0_r8
     local_accum_on_land_grid = 0.0_r8
     local_ablat_on_land_grid = 0.0_r8
        
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'n, aream_l, effective_area'
-    endif
-
     do n = 1, lsize_l
 
        effective_area = min(lfrac(n),Sg_icemask_l(n)) * aream_l(n)
 
        do ec = 0, nEC
-
-          local_qice_on_land_grid = local_qice_on_land_grid &
-                                  + effective_area * frac_l(n,ec) * qice_l(n,ec)
 
           if (qice_l(n,ec) >= 0.0_r8) then
              local_accum_on_land_grid = local_accum_on_land_grid &
@@ -1140,26 +897,7 @@ contains
 
        enddo  ! ec
 
-       if ((iamroot .or. iam==iamtest) .and. n <= 12) then
-          write(logunit,*) n, area_l(n), effective_area
-       endif
-       
     enddo   ! n
-
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'local qice_l =', local_qice_on_land_grid * (31536000./917.)
-       write(logunit,*) 'local accum_l =', local_accum_on_land_grid * (31536000./917.)
-       write(logunit,*) 'local ablat_l =', local_ablat_on_land_grid * (31536000./917.)
-       if (local_area_on_land_grid > 0.0_r8) then
-          write(logunit,*) 'local qice_l/area_l (m/yr) =', &
-               (31536000./917.) * local_qice_on_land_grid / local_area_on_land_grid
-       endif
-    endif
-
-    call shr_mpi_sum(local_qice_on_land_grid, &
-                     global_qice_on_land_grid, &
-                     mpicom, 'qice_l')
 
     call shr_mpi_sum(local_accum_on_land_grid, &
                      global_accum_on_land_grid, &
@@ -1169,19 +907,8 @@ contains
                      global_ablat_on_land_grid, &
                      mpicom, 'ablat_l')
 
-    call shr_mpi_bcast(global_qice_on_land_grid, mpicom)
     call shr_mpi_bcast(global_accum_on_land_grid, mpicom)
     call shr_mpi_bcast(global_ablat_on_land_grid, mpicom)
-
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'global accum_l =', global_accum_on_land_grid
-       write(logunit,*) 'global ablat_l =', global_ablat_on_land_grid
-       write(logunit,*) 'global qice_l =', global_qice_on_land_grid
-       write(logunit,*) 'global qice_l (kg/s) =', global_qice_on_land_grid * SHR_CONST_REARTH**2
-       write(logunit,*) 'global qice_l (Gt/yr) =', &
-            global_qice_on_land_grid * SHR_CONST_REARTH**2 * 31536000.d0 / 1.0d12
-    endif
 
     ! Map the SMB from the land grid to the glc grid, using a non-conservative state mapper.
     call map_lnd2glc(l2x_l = l2gacc_lx(eli), &
@@ -1196,70 +923,6 @@ contains
     allocate(qice_g(lsize_g))
     call mct_aVect_exportRattr(l2x_gx(eli), trim(fieldname), qice_g)
     
-    !WHL - Diagnostic area sums on glc grid
-
-    ! 1) Without icemask exclusion
-
-    local_area_on_glc_grid = 0.0_r8
-    do n = 1, lsize_g
-       local_area_on_glc_grid = local_area_on_glc_grid &
-                              + area_g(n)
-    enddo   ! n
-
-    call shr_mpi_sum(local_area_on_glc_grid, &
-                     global_area_on_glc_grid, &
-                     mpicom, 'area_g')
-
-    call shr_mpi_bcast(global_area_on_glc_grid, mpicom)
-
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'sum (area_g) without icemask exclusion:'
-       write(logunit,*) 'local area_g =', local_area_on_glc_grid
-       write(logunit,*) 'global area_g =', global_area_on_glc_grid
-    endif
-
-    ! (2) With icemask exclusion, using native area_g
-    local_area_on_glc_grid = 0.0_r8
-    do n = 1, lsize_g
-       local_area_on_glc_grid = local_area_on_glc_grid &
-                              + Sg_icemask_g(n) * area_g(n)
-    enddo   ! n
-
-    call shr_mpi_sum(local_area_on_glc_grid, &
-                     global_area_on_glc_grid, &
-                     mpicom, 'area_g')
-
-    call shr_mpi_bcast(global_area_on_glc_grid, mpicom)
-
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'sum(area_g) with icemask exclusion, using area_g:'
-       write(logunit,*) 'local area_g =', local_area_on_glc_grid
-       write(logunit,*) 'global area_g =', global_area_on_glc_grid
-    endif
-
-    ! (3) With icemask exclusion, using aream_g
-    !     This is the preferred combination for SMB sums
-    local_area_on_glc_grid = 0.0_r8
-    do n = 1, lsize_g
-       local_area_on_glc_grid = local_area_on_glc_grid &
-                              + Sg_icemask_g(n) * aream_g(n)
-    enddo   ! n
-
-    call shr_mpi_sum(local_area_on_glc_grid, &
-                     global_area_on_glc_grid, &
-                     mpicom, 'area_g')
-
-    call shr_mpi_bcast(global_area_on_glc_grid, mpicom)
-
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'sum(aream_g) with icemask exclusion, using aream_g:'
-       write(logunit,*) 'local area_g =', local_area_on_glc_grid
-       write(logunit,*) 'global area_g =', global_area_on_glc_grid
-    endif
-
     ! Make a preemptive adjustment to qice_g to account for area differences between CISM and the coupler.
     !    In component_mod.F90, there is a call to mct_avect_vecmult, which multiplies the fluxes
     !     by aream_g/area_g for conservation purposes. Where CISM areas are larger (area_g > aream_g), 
@@ -1290,15 +953,11 @@ contains
     !       If Flgl_qice were changed to a state (and not included in seq_flds_x2g_fluxes),
     !        then it would be appropriate to use the native CISM areas in this sum.
 
-    local_qice_on_glc_grid = 0.0_r8
     local_accum_on_glc_grid = 0.0_r8
     local_ablat_on_glc_grid = 0.0_r8
 
     do n = 1, lsize_g
        
-       local_qice_on_glc_grid = local_qice_on_glc_grid &
-                              + Sg_icemask_g(n) * aream_g(n) * qice_g(n)
-
        if (qice_g(n) >= 0.0_r8) then
           local_accum_on_glc_grid = local_accum_on_glc_grid &
                                   + Sg_icemask_g(n) * aream_g(n) * qice_g(n)
@@ -1307,36 +966,7 @@ contains
                                   + Sg_icemask_g(n) * aream_g(n) * qice_g(n)
        endif
 
-       if ((iamroot .or. iam==iamtest) .and. Sg_icemask_g(n) > 0._r8 .and. n <= ntest) then
-          write(logunit,*) n, area_g(n), qice_g(n) * (31536000./917.)
-       endif
-       
     enddo   ! n
-
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'n, Sg_icemask_g, qice_g(m/yr):'
-       do n = 1, ntest_g
-          if (qice_g(n) /= 0.0d0) then
-             write(logunit,*) n, Sg_icemask_g(n), qice_g(n)*(31536000./917.)
-          endif
-       enddo
-    endif
-
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'local qice_g =', local_qice_on_glc_grid * (31536000./917.)
-       write(logunit,*) 'local accum_g =', local_accum_on_glc_grid * (31536000./917.)
-       write(logunit,*) 'local ablat_g =', local_ablat_on_glc_grid * (31536000./917.)
-       if (local_area_on_glc_grid > 0.0_r8) then
-          write(logunit,*) 'qice_g/area_g (m/yr) =', &
-               (31536000./917.) * local_qice_on_glc_grid / local_area_on_glc_grid
-       endif
-    endif
-
-    call shr_mpi_sum(local_qice_on_glc_grid, &
-                     global_qice_on_glc_grid, &
-                     mpicom, 'qice_g')
 
     call shr_mpi_sum(local_accum_on_glc_grid, &
                      global_accum_on_glc_grid, &
@@ -1346,18 +976,8 @@ contains
                      global_ablat_on_glc_grid, &
                      mpicom, 'ablat_g')
 
-    call shr_mpi_bcast(global_qice_on_glc_grid, mpicom)
     call shr_mpi_bcast(global_accum_on_glc_grid, mpicom)
     call shr_mpi_bcast(global_ablat_on_glc_grid, mpicom)
-
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) 'global accum_g =', global_accum_on_glc_grid
-       write(logunit,*) 'global ablat_g =', global_ablat_on_glc_grid
-       write(logunit,*) 'global qice_g =', global_qice_on_glc_grid
-       write(logunit,*) 'global qice_g (kg/s) =', global_qice_on_glc_grid * SHR_CONST_REARTH**2
-       write(logunit,*) 'global qice_g (Gt/yr) =', &
-            global_qice_on_glc_grid * SHR_CONST_REARTH**2 * 31536000.d0 / 1.0d12
-    endif
 
     ! Renormalize for conservation
 
@@ -1373,10 +993,9 @@ contains
        ablat_renorm_factor = 0.0_r8
     endif
 
-    if (iamroot .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'accum_renorm_factor =', accum_renorm_factor
-       write(logunit,*) 'ablat_renorm_factor =', ablat_renorm_factor
+    if (iamroot) then
+       write(logunit,*) 'accum_renorm_factor = ', accum_renorm_factor
+       write(logunit,*) 'ablat_renorm_factor = ', ablat_renorm_factor
     endif
 
     if (smb_renormalize) then
@@ -1392,31 +1011,6 @@ contains
        ! Put the renormalized SMB back into l2x_gx.
        call mct_aVect_importRattr(l2x_gx(eli), qice_fieldname, qice_g)
 
-       !WHL - debug
-       ! Verify that the renormalized SMB sum is consistent with the SMB sum on the land side.
-
-       local_qice_on_glc_grid = 0.0_r8
-       do n = 1, lsize_g
-          local_qice_on_glc_grid = local_qice_on_glc_grid &
-                                 + Sg_icemask_g(n) * aream_g(n) * qice_g(n)
-       enddo
-
-       call shr_mpi_sum(local_qice_on_glc_grid, &
-                        global_qice_on_glc_grid, &
-                        mpicom, 'qice_g')
-
-       call shr_mpi_bcast(global_qice_on_glc_grid, mpicom)
-
-       !WHL - debug
-       if (iamroot .or. iam==iamtest) then
-          write(logunit,*) ' '
-          write(logunit,*) 'Renormalized global qice_g =', global_qice_on_glc_grid
-          write(logunit,*) 'Renormalized qice_g (kg/s) =', global_qice_on_glc_grid * SHR_CONST_REARTH**2
-          write(logunit,*) 'Renormalized qice_g (Gt/yr) =', &
-            global_qice_on_glc_grid * SHR_CONST_REARTH**2 * 31536000.d0 / 1.0d12
-          write(logunit,*) 'Done in prep_glc_map_qice_conservative_lnd2glc'
-       endif
-       
     endif  ! smb_renormalize
 
     ! clean up
@@ -1433,7 +1027,6 @@ contains
 
     ! The rest are diagnostic only
     deallocate(topo_l)
-    deallocate(area_l)
     deallocate(area_g)
 
   end subroutine prep_glc_map_qice_conservative_lnd2glc
