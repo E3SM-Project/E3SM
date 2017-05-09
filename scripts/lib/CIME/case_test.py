@@ -60,14 +60,14 @@ def case_test(case, testname=None, reset=False):
     except:
         caseroot = case.get_value("CASEROOT")
         with TestStatus(test_dir=caseroot) as ts:
-            if reset:
-                logger.info("Reset test to initial conditions and exit")
-                ts._resetup_case(RUN_PHASE)
-                return True
             ts.set_status(RUN_PHASE, TEST_FAIL_STATUS, comments="failed to initialize")
         append_testlog(str(sys.exc_info()[1]))
         return False
 
+    if reset:
+        logger.info("Reset test to initial conditions and exit")
+        test._resetup_case(RUN_PHASE)
+        return True
     success = test.run()
 
     case.set_value("RUN_WITH_SUBMIT", False)
