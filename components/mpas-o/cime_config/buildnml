@@ -63,7 +63,7 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
         $ic_date .= '161222';
         $ic_prefix .= 'oEC60to30v3';
         $decomp_prefix .= 'mpas-o.graph.info.';
-        $restoring_file .= 'sss.monthlyClimatology.PHC2_salx.2004_08_03.nc';
+        $restoring_file .= 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc';
 } elsif ( $OCN_GRID eq 'oEC60to30v3_ICG' ) {
         $grid_date .= '161222';
         $grid_prefix .= 'oEC60to30v3';
@@ -130,7 +130,7 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 	$ic_date .= '170111';
 	$ic_prefix .= 'oRRS18to6v3';
 	$decomp_prefix .= 'mpas-o.graph.info.';
-	$restoring_file .= 'sss.monthlyClimatology.PHC2_salx.2004_08_03.nc';
+	$restoring_file .= 'sss.monthlyClimatology.PHC2_salx_040803.oRRS18to6v3.nc';
 } elsif ( $OCN_GRID eq 'oRRS15to5' ) {
 	$grid_date .= '151209';
 	$grid_prefix .= 'ocean.RRS.15-5km';
