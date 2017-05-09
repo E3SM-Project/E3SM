@@ -277,7 +277,10 @@ contains
 
       real (kind=RKIND), dimension(:,:), allocatable :: enstrophy, normalizedAbsoluteVorticity, workArray
 
+      ! package flags
+      logical, pointer :: frazilIcePkgActive, landIceFluxesPkgActive
       logical, pointer :: thicknessFilterActive
+
       logical, pointer :: config_AM_globalStats_text_file
       character (len=StrKIND), pointer :: config_AM_globalStats_directory
 
@@ -287,6 +290,8 @@ contains
 
       dminfo = domain % dminfo
 
+      call mpas_pool_get_package(ocnPackages, 'landIceFluxesPKGActive', landIceFluxesPkgActive)
+      call mpas_pool_get_package(ocnPackages, 'frazilIceActive', frazilIcePkgActive)
       call mpas_pool_get_package(ocnPackages, 'thicknessFilterActive', thicknessFilterActive)
 
       ! write out data to Analysis Member output
@@ -1008,7 +1013,7 @@ contains
 
          ! accumulatedLandIceFrazilMass
          variableIndex = variableIndex + 1
-         if ( associated(accumulatedLandIceFrazilMass) ) then
+         if (landIceFluxesPkgActive .and. frazilIcePkgActive) then
             call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
                          landIceFloatingArea, &
                          accumulatedLandIceFrazilMass(1:nCellsSolve), sums_tmp(variableIndex), &
@@ -1312,7 +1317,7 @@ contains
 
       ! accumulatedLandIceFrazilMass
       variableIndex = variableIndex + 1
-      if (associated(accumulatedLandIceFrazilMass)) then
+      if (landIceFluxesPkgActive .and. frazilIcePkgActive) then
          averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
          rms(variableIndex) = sqrt(sumSquares(variableIndex)/(landIceFloatingAreaSum))
       else
