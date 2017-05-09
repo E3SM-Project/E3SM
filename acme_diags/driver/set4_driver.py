@@ -42,9 +42,6 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     return metrics_dict
 
 def run_diag(parameter):
-    if not os.path.exists(os.path.join(parameter.results_dir, parameter.case_id)):
-        os.makedirs(os.path.join(parameter.results_dir, parameter.case_id))
-
     reference_data_path = parameter.reference_data_path
     test_data_path = parameter.test_data_path
 
@@ -153,12 +150,8 @@ def run_diag(parameter):
                         mv1_p = mv_p
                     elif f_ind == 1:
                         mv2_p = mv_p
-                    #import vcs
-                    #x=vcs.init()
-                    #iso=x.createisofill()
-                    #x.plot(mv_p,iso)
                 parameter.output_file = '-'.join(
-                    [ref_name, var, season])
+                    [ref_name, var, season, parameter.regions[0]])
                 parameter.main_title = str(
                     ' '.join([var, season]))
 
