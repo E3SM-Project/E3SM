@@ -120,6 +120,7 @@ def add_cyclic(var):
 
 def plot(reference, test, diff, metrics_dict, parameter):
     case_id = parameter.case_id
+
     reference = rotate_180(reference)
     test = rotate_180(test)
     diff = rotate_180(diff)
@@ -188,7 +189,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     vcs_canvas.plot(reference, template_ref, reference_isofill)
     vcs_canvas.plot(diff, template_diff, diff_isofill)
 
-    # plot_rmse_and_corr(vcs_canvas, metrics_dict)
+    plot_rmse_and_corr(vcs_canvas, metrics_dict)
 
     # Plotting the main title
     main_title = managetextcombined('main_title', 'main_title')
