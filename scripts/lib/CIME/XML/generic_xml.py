@@ -5,7 +5,7 @@ be used by other XML interface modules and not directly.
 from CIME.XML.standard_module_setup import *
 from distutils.spawn import find_executable
 from xml.dom import minidom
-
+import CIME.utils
 import getpass
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,6 @@ class GenericXML(object):
         """
         logger.debug("Initializing %s" , infile)
         self.tree = None
-
         if infile == None:
             # if file is not defined just return
             self.filename = None
@@ -262,6 +261,9 @@ class GenericXML(object):
         """
         validate an XML file against a provided schema file using pylint
         """
+        if CIME.utils.SKIP_XML_VALIDATION:
+            logger.warn("Skipping xml validation for file %s"%filename)
+            return
         expect(os.path.isfile(filename),"xml file not found %s"%filename)
         expect(os.path.isfile(schema),"schema file not found %s"%schema)
         xmllint = find_executable("xmllint")
