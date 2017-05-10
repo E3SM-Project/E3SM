@@ -673,14 +673,14 @@ contains
     lsize_g = mct_aVect_lsize(l2x_gx(eli))
 
     ! allocate and fill area arrays on the land grid
-    dom_l => component_get_dom_cx(lnd(eli))   !WHL - Is eli correct? 
+    dom_l => component_get_dom_cx(lnd(1))
 
     allocate(aream_l(lsize_l))
     km = mct_aVect_indexRa(dom_l%data, "aream" )
     aream_l(:) = dom_l%data%rAttr(km,:)
 
     ! allocate and fill area arrays on the glc grid
-    dom_g => component_get_dom_cx(glc(egi))   !WHL - Is egi correct? 
+    dom_g => component_get_dom_cx(glc(1))
 
     allocate(aream_g(lsize_g))
     km = mct_aVect_indexRa(dom_g%data, "aream" )
