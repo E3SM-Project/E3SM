@@ -442,13 +442,22 @@ contains
                 elev_l = topo_g_EC(n, ec-1)
                 elev_u = topo_g_EC(n, ec)
                 d_elev = elev_u - elev_l
-                data_g_ice_covered(n) = data_g_EC(n,ec-1) * (elev_u - topo_g(n)) / d_elev  &
-                                      + data_g_EC(n,ec)   * (topo_g(n) - elev_l) / d_elev
+                if (d_elev <= 0) then
+                   ! This shouldn't happen, but handle it in case it does. In this case,
+                   ! let's arbitrarily use the mean of the two elevation classes, rather
+                   ! than the weighted mean.
+                   data_g_ice_covered(n) = data_g_EC(n,ec-1) * 0.5_r8 &
+                                         + data_g_EC(n,ec)   * 0.5_r8
+                else
+                   data_g_ice_covered(n) = data_g_EC(n,ec-1) * (elev_u - topo_g(n)) / d_elev  &
+                                         + data_g_EC(n,ec)   * (topo_g(n) - elev_l) / d_elev
+                end if
+
                 exit
-             endif
-          enddo
-       endif  ! topo_g(n)
-    enddo  ! lsize_g
+             end if
+          end do
+       end if  ! topo_g(n)
+    end do  ! lsize_g
       
     ! ------------------------------------------------------------------------
     ! Clean up
