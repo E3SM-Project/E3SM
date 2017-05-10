@@ -77,12 +77,12 @@ Setup
 
   - copy the template directory:
 
-        cp ${CESMROOT}/machines/userdefined_laptop_template ${HOME}/.cesm
+        cp ${CESMROOT}/machines/userdefined_laptop_template/* ${HOME}/.cime
 
-    NOTE: it is highly reccommend that you place ~/.cesm under version
+    NOTE: it is highly reccommend that you place ~/.cime under version
     control with your favorite tool.
 
-  - make sure ~/.cesm has mkbatch.YOUR\_MACHINE\_NAME and your machine
+  - make your machine
     is listed in config\_machines.xml, config\_compilers.xml,
     config\_pes.xml.
 
@@ -91,11 +91,6 @@ Setup
     data, scratch, and archive into ${HOME}/projects
 
     - config\_compilers.xml - set the correct path's for your system.
-
-    - mkbatch.NAME
-
-    NOTE: the path to mpiexec is hard coded is this file. You MUST
-    update the example file with the correct path!
 
     - config\_pes.xml
 
@@ -114,13 +109,13 @@ First Use
 
         cd ~/projects/my-cesm-sandbox/scripts
         ./create_newcase \
-            -mach durango \
-            -compiler gnu \
-            -case ../junk-1x1_brazil \
-            -compset ICLM45CN \
-            -res 1x1_brazil
+            --machine durango \
+            --compiler gnu \
+            --case ../junk-1x1_brazil \
+            --compset ICLM45CN \
+            --res 1x1_brazil
 
-  - run `case_setup`, `$CASE_NAME.build`, `$CASE_NAME.run` as normal.
+  - run `case_setup`, `case.build`, `case.run` as normal.
 
   - Test a global simulation, use:
         -res f45_f45
@@ -128,8 +123,8 @@ First Use
  - Running a test suite or individual test should work like on any supported platform:
 
         ./create_test \
-            -mach durango -compiler gnu \
-            -xml_mach durango -xml_compiler gnu \
-            -testroot ../junk-root \
-            -xml_category aux_pop_obgc_se \
-            -nobatch on
+            --machine durango --compiler gnu \
+            --xml-mach durango --xml-compiler gnu \
+            --testroot ../junk-root \
+            --xml-category aux_pop_obgc_se \
+            --nobatch
