@@ -1,6 +1,7 @@
 module implicit_mod
   
-  use ,intrinsic :: iso_c_binding 
+  use, intrinsic :: iso_c_binding 
+  use parallel_mod, only : haltmp, abortmp, iam
   
 contains
   
@@ -2248,5 +2249,34 @@ contains
     cnlev=nlev
     
   end subroutine get_discrete_params
+
+  ! =============================================================================
+  ! subroutines to stop run
+  ! =============================================================================
+
+  subroutine haltrun() bind(C,name='haltrun')
+    ! ---------------------------------------------------------------------------
+    ! wrapper to MPI finalize
+    ! ---------------------------------------------------------------------------
+    use, intrinsic :: iso_c_binding
+
+    implicit none
+
+    call haltmp("halt called from c++")
+
+  end subroutine haltrun
+
+
+  subroutine abortrun() bind(C,name='abortrun')
+    ! ---------------------------------------------------------------------------
+    ! wrapper to MPI about
+    ! ---------------------------------------------------------------------------
+    use, intrinsic :: iso_c_binding
+
+    implicit none
+
+    call abortmp("abort called from c++")
+
+  end subroutine abortrun
   
 end module implicit_mod

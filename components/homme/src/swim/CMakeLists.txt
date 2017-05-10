@@ -32,6 +32,7 @@ SET(SWIM_SRCS
   ${SRC_BASE}/pio_io_mod.F90
   ${SRC_BASE}/repro_sum_mod.F90
   ${SRC_BASE}/restart_io_mod.F90
+
   ${SRC_SHARE}/bndry_mod_base.F90
   ${SRC_SHARE}/cg_mod.F90
   ${SRC_SHARE}/control_mod.F90
@@ -79,6 +80,7 @@ SET(SWIM_SRCS
   ${SRC_SHARE}/time_mod.F90
   ${SRC_SHARE}/unit_tests_mod.F90
   ${SRC_SHARE}/viscosity_mod_base.F90
+
   ${SRC_SHARE_SWEQX}/advance_mod.F90
   ${SRC_SHARE_SWEQX}/bndry_mod.F90
   ${SRC_SHARE_SWEQX}/derivative_mod.F90
@@ -93,6 +95,7 @@ SET(SWIM_SRCS
   ${SRC_SHARE_SWEQX}/state_mod.F90
   ${SRC_SHARE_SWEQX}/types_mod.F90
   ${SRC_SHARE_SWEQX}/viscosity_mod.F90
+
   ${SRC_UTILS}/shr_const_mod.F90
   ${SRC_UTILS}/shr_file_mod.F90
   ${SRC_UTILS}/shr_kind_mod.F90
@@ -100,11 +103,14 @@ SET(SWIM_SRCS
   ${SRC_UTILS}/shr_spfn_mod.F90
   ${SRC_UTILS}/shr_sys_mod.F90
   ${SRC_UTILS}/shr_vmath_mod.F90
+
+  ${UTILS_TRILINOS_DIR}/trilinosUtils.cpp 
+  ${UTILS_TRILINOS_DIR}/trilinosNoxSolver.cpp 
+  ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp 
+  ${UTILS_TRILINOS_DIR}/Precon_Operator.cpp 
+  ${UTILS_TRILINOS_DIR}/IdentityPreconditioner.cpp 
+  ${UTILS_TRILINOS_DIR}/BlockPreconditioner_Op.cpp 
   ${UTILS_TRILINOS_DIR}/belos_helm.cpp
-  ${UTILS_TRILINOS_DIR}/block_precon_interface.cpp
-  ${UTILS_TRILINOS_DIR}/precon_interface.cpp
-  ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp
-  ${UTILS_TRILINOS_DIR}/trilinosNoxSolver.cpp
 )
 
 SET(EXEC_SOURCES ${SWIM_SRCS} )

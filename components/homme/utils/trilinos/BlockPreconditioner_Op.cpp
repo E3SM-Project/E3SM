@@ -330,7 +330,7 @@ int BlockPreconditioner_Op::ApplyInverse(const Epetra_MultiVector& X,
 #ifdef _PRIM
     prim_Dblock_op((*Ax).Values(), nVel, (*w1).Values(), nPs, StateData);
 #else //_SWIM
-    sw_picard_block21((*Ax).Values(), nVel, (*w1).Values(), nPs, StateData);
+    sw_picard_block_21((*Ax).Values(), nVel, (*w1).Values(), nPs, StateData);
 #endif
     
 #ifdef DEBUG_PRINT_ON
