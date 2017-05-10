@@ -142,17 +142,19 @@ class Grids(GenericXML):
 
         model_gridnodes = self.get_nodes("model_grid")
         model_gridnode = None
+        foundalias = False
         for node in model_gridnodes:
-            found = False
             alias = node.get("alias")
             if alias == name:
+                foundalias = True
+                foundcompset = False
                 compset_attrib = node.get("compset")
                 not_compset_attrib = node.get("not_compset")
                 if compset_attrib and not_compset_attrib:
                     compset_match = re.search(compset_attrib, compset)
                     not_compset_match = re.search(not_compset_attrib, compset)
                     if compset_match is not None and not_compset_match is not None:
-                        found = True
+                        foundcompset = True
                         model_gridnode = node
                         logger.debug("Found match for %s with compset_match %s and not_compset_match %s"
                                      % (alias, compset_attrib, not_compset_attrib))
@@ -160,7 +162,7 @@ class Grids(GenericXML):
                 elif compset_attrib:
                     compset_match = re.search(compset_attrib, compset)
                     if compset_match is not None:
-                        found = True
+                        foundcompset = True
                         model_gridnode = node
                         logger.debug("Found match for %s with compset_match %s"
                                      % (alias, compset_attrib))
@@ -168,19 +170,19 @@ class Grids(GenericXML):
                 elif not_compset_attrib:
                     not_compset_match = re.search(not_compset_attrib, compset)
                     if not_compset_match is None:
-                        found = True
+                        foundcompset = True
                         model_gridnode = node
                         logger.debug("Found match for %s with not_compset_match %s"
                                      % (alias, not_compset_attrib))
                         break
                 else:
-                    found = True
+                    foundcompset = True
                     model_gridnode = node
                     logger.debug("Found match for %s" %(alias))
                     break
-
+        expect(foundalias, "no alias %s defined" %name)
         # if no match is found in config_grids.xml - exit
-        expect(found, "ERROR: no alias was found for %s " %name)
+        expect(foundcompset, "grid alias %s not valid for compset %s" %(name, compset))
 
         # for the match - find all of the component grid settings
         grid_nodes = self.get_nodes("grid", root=model_gridnode)
