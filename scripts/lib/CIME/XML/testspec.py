@@ -44,7 +44,7 @@ class TestSpec(GenericXML):
         self._testlist_node = tlelem
 
     def add_test(self, compiler, mpilib, testname):
-        expect(testname not in self._testnodes, "Test %s already in testlist" % testname)
+        expect(testname not in self._testnodes, "Test {} already in testlist".format(testname))
         telem = ET.Element("test")
         telem.set("name", testname)
         elem = ET.Element("compiler")
@@ -57,7 +57,7 @@ class TestSpec(GenericXML):
         self._testnodes[testname] = telem
 
     def update_test_status(self, testname, phase, status):
-        expect(testname in self._testnodes, "Test %s not defined in testlist" % testname)
+        expect(testname in self._testnodes, "Test {} not defined in testlist".format(testname))
         root = self._testnodes[testname]
         pnode = self.get_optional_node("section", {"name":phase}, root=root)
         if pnode is not None:

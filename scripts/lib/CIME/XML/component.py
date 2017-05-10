@@ -53,7 +53,7 @@ class Component(EntryID):
         # use the default_value if present
         val_node = self.get_optional_node("default_value", root=node)
         if val_node is None:
-            logger.debug("No default_value for %s"%node.get("id"))
+            logger.debug("No default_value for {}".format(node.get("id")))
             return val_node
         value = val_node.text
         if value is not None and len(value) > 0 and value != "UNSET":
@@ -65,7 +65,7 @@ class Component(EntryID):
                 match_count = 0
                 if attributes is not None and key in attributes:
                     if re.search(value, attributes[key]):
-                        logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
+                        logger.debug("Value {} and key {} match with value {}".format(value, key, attributes[key]))
                         match_count += 1
                     else:
                         match_count = 0
@@ -120,7 +120,7 @@ class Component(EntryID):
             text = desc.text
             compsets[attrib] = text
 
-        logger.info(" %s" %helptext)
+        logger.info(" {}".format(helptext))
         for v in sorted(compsets.iteritems()):
             label, definition = v
-            logger.info("   %20s : %s" %(label, definition))
+            logger.info("   {:20s} : {}".format(label, definition))

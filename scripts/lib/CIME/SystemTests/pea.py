@@ -24,9 +24,9 @@ class PEA(SystemTestsCompareTwo):
 
     def _common_setup(self):
         for comp in self._case.get_values("COMP_CLASSES"):
-            self._case.set_value("NTASKS_%s"%comp, 1)
-            self._case.set_value("NTHRDS_%s"%comp, 1)
-            self._case.set_value("ROOTPE_%s"%comp, 0)
+            self._case.set_value("NTASKS_{}".format(comp), 1)
+            self._case.set_value("NTHRDS_{}".format(comp), 1)
+            self._case.set_value("ROOTPE_{}".format(comp), 0)
 
     def _case_one_setup(self):
         case_setup(self._case, reset=True, test_mode=True)
@@ -37,7 +37,9 @@ class PEA(SystemTestsCompareTwo):
         if mach_obj.is_valid_MPIlib("mpi-serial"):
             self._case.set_value("MPILIB","mpi-serial")
         else:
-            logger.warning("mpi-serial is not supported on machine '%s', so we have to fall back to default MPI and therefore very little is being tested" % mach_name)
+            logger.warning("mpi-serial is not supported on machine '{}', "
+                           "so we have to fall back to default MPI and "
+                           "therefore very little is being tested", mach_name)
 
         if os.path.isfile("Macros"):
             os.remove("Macros")

@@ -63,16 +63,16 @@ class Testlist(GenericXML):
             machatts["compiler"] = compiler
 
         compsetnodes = self.get_nodes("compset")
-        logger.debug("compsetnodes %d" % len(compsetnodes))
+        logger.debug("compsetnodes {:d}", len(compsetnodes))
         for cnode in compsetnodes:
             gridnodes = self.get_nodes("grid", root=cnode)
-            logger.debug("  gridnodes %d"%len(gridnodes))
+            logger.debug("  gridnodes {:d}", len(gridnodes))
             for gnode in gridnodes:
                 testnamenodes = self.get_nodes("test",root=gnode)
-                logger.debug("    testnamenodes %d"%len(testnamenodes))
+                logger.debug("    testnamenodes {:d}", len(testnamenodes))
                 for tnode in testnamenodes:
                     machnodes = self.get_nodes("machine",machatts,root=tnode)
-                    logger.debug("      machnodes %d"%len(machnodes))
+                    logger.debug("      machnodes {:d}", len(machnodes))
                     for mach in machnodes:
                         thistest = {}
                         save_this = True
@@ -155,6 +155,6 @@ class Testlist(GenericXML):
         elif self.get_version() >= 2.0:
             return self._get_testsv2(machine, category, compiler, compset, grid)
         else:
-            logger.critical("Did not recognize testlist file version %s for file %s"
-                             % (self.get_version(), self.filename))
+            logger.critical("Did not recognize testlist file version {} for file {}"
+                             .format(self.get_version(), self.filename))
 

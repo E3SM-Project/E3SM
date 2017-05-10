@@ -23,22 +23,21 @@ def _run_pylint(on_file, interactive):
         cmd_options +=",relative-import"
 
     # add init-hook option
-    cmd_options += " --init-hook='sys.path.extend((\"%s\",\"%s\",\"%s\"))'"%\
-        (os.path.join(cimeroot,"scripts","lib"),
+    cmd_options += " --init-hook='sys.path.extend((\"{}\",\"{}\",\"{}\"))'".format(os.path.join(cimeroot,"scripts","lib"),
          os.path.join(cimeroot,"scripts","Tools"),
          os.path.join(cimeroot,"scripts","fortran_unit_testing","python"))
 
-    cmd = "%s %s %s" % (pylint, cmd_options, on_file)
-    logger.debug("pylint command is %s"%cmd)
+    cmd = "{} {} {}".format(pylint, cmd_options, on_file)
+    logger.debug("pylint command is {}", cmd)
     stat, out, err = run_cmd(cmd, verbose=False, from_dir=cimeroot)
     if stat != 0:
         if interactive:
-            logger.info("File %s has pylint problems, please fix\n    Use command: %s" % (on_file, cmd))
+            logger.info("File {} has pylint problems, please fix\n    Use command: {}", on_file, cmd)
             logger.info(out + "\n" + err)
         return (on_file, out + "\n" + err)
     else:
         if interactive:
-            logger.info("File %s has no pylint problems" % on_file)
+            logger.info("File {} has no pylint problems", on_file)
         return (on_file, "")
 
 ###############################################################################
@@ -81,7 +80,7 @@ def check_code(files, num_procs=10, interactive=False):
     """
     # Get list of files to check, we look to see if user-provided file argument
     # is a valid file, if not, we search the repo for a file with similar name.
-    repo_files = run_cmd_no_fail('git ls-files --full-name %s' % get_cime_root(), verbose=False).splitlines()
+    repo_files = run_cmd_no_fail('git ls-files --full-name {}'.format(get_cime_root(), verbose=False).splitlines())
     files_to_check = []
     if files:
         for filearg in files:
@@ -95,7 +94,7 @@ def check_code(files, num_procs=10, interactive=False):
                         files_to_check.append(repo_file) # could have multiple matches
 
                 if not found:
-                    logger.warning("Could not find file matching argument '%s'" % filearg)
+                    logger.warning("Could not find file matching argument '{}'", filearg)
     else:
         # Check every python file
         files_to_check = get_all_checkable_files()

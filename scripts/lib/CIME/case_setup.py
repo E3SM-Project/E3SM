@@ -26,24 +26,24 @@ def _build_usernl_files(case, model, comp):
     if model == "DRV":
         model_file = case.get_value("CONFIG_CPL_FILE")
     else:
-        model_file = case.get_value("CONFIG_%s_FILE" % model)
+        model_file = case.get_value("CONFIG_{}_FILE".format(model))
     expect(model_file is not None,
-           "Could not locate CONFIG_%s_FILE in config_files.xml"%model)
+           "Could not locate CONFIG_{}_FILE in config_files.xml".format(model))
     model_dir = os.path.dirname(model_file)
 
     expect(os.path.isdir(model_dir),
-           "cannot find cime_config directory %s for component %s" % (model_dir, comp))
+           "cannot find cime_config directory {} for component {}".format(model_dir, comp))
 
     if comp == "cpl":
         if not os.path.exists("user_nl_cpl"):
             shutil.copy(os.path.join(model_dir, "user_nl_cpl"), ".")
     else:
-        ninst = case.get_value("NINST_%s" % model)
-        nlfile = "user_nl_%s" % comp
+        ninst = case.get_value("NINST_{}".format(model))
+        nlfile = "user_nl_{}".format(comp)
         model_nl = os.path.join(model_dir, nlfile)
         if ninst > 1:
             for inst_counter in xrange(1, ninst+1):
-                inst_nlfile = "%s_%04d" % (nlfile, inst_counter)
+                inst_nlfile = "{}_{:04d}".format(nlfile, inst_counter)
                 if not os.path.exists(inst_nlfile):
                     # If there is a user_nl_foo in the case directory, copy it
                     # to user_nl_foo_INST; otherwise, copy the original
@@ -69,12 +69,12 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
     din_loc_root = case.get_value("DIN_LOC_ROOT")
     testcase     = case.get_value("TESTCASE")
     expect(not (not os.path.isdir(din_loc_root) and testcase != "SBN"),
-           "inputdata root is not a directory: %s" % din_loc_root)
+           "inputdata root is not a directory: {}".format(din_loc_root))
 
     # Check that userdefine settings are specified before expanding variable
     for vid, value in case:
         expect(not (type(value) is str and "USERDEFINED_required_build" in value),
-               "Parameter '%s' must be defined" % vid)
+               "Parameter '{}' must be defined".format(vid))
 
     # Create batch script
     if reset or clean:
@@ -125,16 +125,16 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         for comp in models:
             if comp == "CPL":
                 continue
-            ninst  = case.get_value("NINST_%s" % comp)
-            ntasks = case.get_value("NTASKS_%s" % comp)
+            ninst  = case.get_value("NINST_{}".format(comp))
+            ntasks = case.get_value("NTASKS_{}".format(comp))
             # ESP models are currently limited to 1 instance
             expect((comp != "ESP") or (ninst == 1),
                    "ESP components may only have one instance")
             if ninst > ntasks:
                 if ntasks == 1:
-                    case.set_value("NTASKS_%s" % comp, ninst)
+                    case.set_value("NTASKS_{}".format(comp, ninst))
                 else:
-                    expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst, comp, ntasks))
+                    expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
 
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
@@ -149,7 +149,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             check_lockedfiles()
             env_mach_pes = case.get_env("mach_pes")
             pestot = env_mach_pes.get_total_tasks(models)
-            logger.debug("at update TOTALPES = %s"%pestot)
+            logger.debug("at update TOTALPES = {}", pestot)
             case.set_value("TOTALPES", pestot)
             thread_count = env_mach_pes.get_max_thread_count(models)
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
@@ -167,17 +167,17 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             for job in env_batch.get_jobs():
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
                 if job == "case.test" and testcase is not None and not test_mode:
-                    logger.info("Writing %s script" % job)
+                    logger.info("Writing {} script", job)
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
                 elif job != "case.test":
-                    logger.info("Writing %s script from input template %s" % (job, input_batch_script))
+                    logger.info("Writing {} script from input template {}", job, input_batch_script)
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
             logger.info("Locking file env_mach_pes.xml")
             case.flush()
-            logger.debug("at copy TOTALPES = %s"%case.get_value("TOTALPES"))
+            logger.debug("at copy TOTALPES = {}", case.get_value("TOTALPES"))
             lock_file("env_mach_pes.xml")
 
         # Create user_nl files for the required number of instances
@@ -186,11 +186,11 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
         # loop over models
         for model in models:
-            comp = case.get_value("COMP_%s" % model)
-            logger.debug("Building %s usernl files"%model)
+            comp = case.get_value("COMP_{}".format(model))
+            logger.debug("Building {} usernl files", model)
             _build_usernl_files(case, model, comp)
             if comp == "cism":
-                run_cmd_no_fail("%s/../components/cism/cime_config/cism.template %s" % (cimeroot, caseroot))
+                run_cmd_no_fail("{}/../components/cism/cime_config/cism.template {}".format(cimeroot, caseroot))
 
         _build_usernl_files(case, "drv", "cpl")
 

@@ -16,7 +16,7 @@ class GenericXML(object):
         """
         Initialize an object
         """
-        logger.debug("Initializing %s" , infile)
+        logger.debug("Initializing {}" , infile)
         self.tree = None
 
         if infile == None:
@@ -32,8 +32,8 @@ class GenericXML(object):
             # if file does not exist create a root xml element
             # and set it's id to file
 
-            logger.debug("File %s does not exists." , infile)
-            expect("$" not in infile,"File path not fully resolved %s"%infile)
+            logger.debug("File {} does not exists." , infile)
+            expect("$" not in infile,"File path not fully resolved {}".format(infile))
 
             self.filename = infile
             root = ET.Element("xml")
@@ -56,7 +56,7 @@ class GenericXML(object):
         if schema is not None and self.get_version() > 1.0:
             self.validate_xml_file(infile, schema)
 
-        logger.debug("File version is %s"%str(self.get_version()))
+        logger.debug("File version is {}".format(str(self.get_version())))
 
     def get_version(self):
         version = self.root.get("version")
@@ -77,7 +77,7 @@ class GenericXML(object):
         # xmllint provides a better format option for the output file
         xmllint = find_executable("xmllint")
         if xmllint is not None:
-            run_cmd_no_fail("%s --format --output %s -"%(xmllint,outfile), input_str=xmlstr)
+            run_cmd_no_fail("{} --format --output {} -".format(xmllint, outfile), input_str=xmlstr)
         else:
             doc = minidom.parseString(xmlstr)
             with open(outfile,'w') as xmlout:
@@ -92,8 +92,7 @@ class GenericXML(object):
 
         nodes = self.get_nodes(nodename, attributes=attributes, root=root, xpath=xpath)
 
-        expect(len(nodes) == 1, "Incorrect number of matches, %d, for nodename '%s' and attrs '%s' in file '%s'" %
-               (len(nodes), nodename, attributes, self.filename))
+        expect(len(nodes) == 1, "Incorrect number of matches, {:d}, for nodename '{}' and attrs '{}' in file '{}'".format(len(nodes), nodename, attributes, self.filename))
         return nodes[0]
 
     def get_optional_node(self, nodename, attributes=None, root=None, xpath=None):
@@ -104,13 +103,12 @@ class GenericXML(object):
         """
         nodes = self.get_nodes(nodename, attributes=attributes, root=root, xpath=xpath)
 
-        expect(len(nodes) <= 1, "Multiple matches for nodename '%s' and attrs '%s' in file '%s'" %
-               (nodename, attributes, self.filename))
+        expect(len(nodes) <= 1, "Multiple matches for nodename '{}' and attrs '{}' in file '{}'".format(nodename, attributes, self.filename))
         return nodes[0] if nodes else None
 
     def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
 
-        logger.debug("(get_nodes) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , nodename , attributes , root , xpath)
+        logger.debug("(get_nodes) Input values: {} , {} , {} , {} , {}" , self.__class__.__name__ , nodename , attributes , root , xpath)
 
         if root is None:
             root = self.root
@@ -129,14 +127,14 @@ class GenericXML(object):
             for key, value in attributes.iteritems():
                 if value is not None:
                     expect(isinstance(value, basestring),
-                           " Bad value passed for key %s"%key)
-                    xpath = ".//%s[@%s=\'%s\']" % (nodename, key, value)
-                    logger.debug("xpath is %s"%xpath)
+                           " Bad value passed for key {}".format(key))
+                    xpath = ".//{}[@{}=\'{}\']".format(nodename, key, value)
+                    logger.debug("xpath is {}".format(xpath))
 
                     try:
                         newnodes = root.findall(xpath)
                     except Exception as e:
-                        expect(False, "Bad xpath search term '%s', error: %s" % (xpath, e))
+                        expect(False, "Bad xpath search term '{}', error: {}".format(xpath, e))
 
                     if not nodes:
                         nodes = newnodes
@@ -148,10 +146,10 @@ class GenericXML(object):
                         return []
 
         else:
-            logger.debug("xpath: %s" , xpath)
+            logger.debug("xpath: {}" , xpath)
             nodes = root.findall(xpath)
 
-        logger.debug("Returning %s nodes (%s)" , len(nodes), nodes)
+        logger.debug("Returning {} nodes ({})" , len(nodes), nodes)
 
         return nodes
 
@@ -202,7 +200,7 @@ class GenericXML(object):
         >>> obj.get_resolved_value("$SHELL{echo hi}")
         'hi'
         """
-        logger.debug("raw_value %s" % raw_value)
+        logger.debug("raw_value {}".format(raw_value))
         reference_re = re.compile(r'\${?(\w+)}?')
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
         shell_ref_re = re.compile(r'\$SHELL\{([^}]+)\}')
@@ -216,19 +214,19 @@ class GenericXML(object):
             return item_data
 
         for m in env_ref_re.finditer(item_data):
-            logger.debug("look for %s in env" % item_data)
+            logger.debug("look for {} in env".format(item_data))
             env_var = m.groups()[0]
-            expect(env_var in os.environ, "Undefined env var '%s'" % env_var)
+            expect(env_var in os.environ, "Undefined env var '{}'".format(env_var))
             item_data = item_data.replace(m.group(), os.environ[env_var])
 
         for s in shell_ref_re.finditer(item_data):
-            logger.debug("execute %s in shell" % item_data)
+            logger.debug("execute {} in shell".format(item_data))
             shell_cmd = s.groups()[0]
             item_data = item_data.replace(s.group(), run_cmd_no_fail(shell_cmd))
 
         for m in reference_re.finditer(item_data):
             var = m.groups()[0]
-            logger.debug("find: %s" % var)
+            logger.debug("find: {}".format(var))
             ref = self.get_value(var)
             if ref is not None:
                 logger.debug("resolve: " + str(ref))
@@ -262,14 +260,14 @@ class GenericXML(object):
         """
         validate an XML file against a provided schema file using pylint
         """
-        expect(os.path.isfile(filename),"xml file not found %s"%filename)
-        expect(os.path.isfile(schema),"schema file not found %s"%schema)
+        expect(os.path.isfile(filename),"xml file not found {}".format(filename))
+        expect(os.path.isfile(schema),"schema file not found {}".format(schema))
         xmllint = find_executable("xmllint")
         if xmllint is not None:
-            logger.debug("Checking file %s against schema %s"%(filename, schema))
-            run_cmd_no_fail("%s --noout --schema %s %s"%(xmllint, schema, filename))
+            logger.debug("Checking file {} against schema {}".format(filename, schema))
+            run_cmd_no_fail("{} --noout --schema {} {}".format(xmllint, schema, filename))
         else:
-            logger.warn("xmllint not found, could not validate file %s"%filename)
+            logger.warn("xmllint not found, could not validate file {}".format(filename))
 
     def get_element_text(self, element_name, attributes=None, root=None, xpath=None):
         element_node = self.get_optional_node(element_name, attributes, root, xpath)
@@ -291,7 +289,7 @@ class GenericXML(object):
             xmlstr = ET.tostring(root)
         except ET.ParseError as e:
             ET.dump(root)
-            expect(False, "Could not write file %s, xml formatting error '%s'" % (self.filename, e))
+            expect(False, "Could not write file {}, xml formatting error '{}'".format(self.filename, e))
         return xmlstr
 
     def get_id(self):

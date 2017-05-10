@@ -31,7 +31,7 @@ parser.add_option('--nav', dest='nav', default = 1, \
 def getvar(fname, varname):
     usescipy = False
     try:
-    	import Scientific.IO.NetCDF as netcdf
+        import Scientific.IO.NetCDF as netcdf
     except ImportError:
         import scipy
         from scipy.io import netcdf
@@ -42,10 +42,10 @@ def getvar(fname, varname):
         varvals = var[:].copy()    #works for vector only?
         nffile.close()
     else:
-    	nffile = netcdf.NetCDFFile(fname,"r")
-    	var = nffile.variables[varname]
-    	varvals = var.getValue()
-    	nffile.close()
+        nffile = netcdf.NetCDFFile(fname,"r")
+        var = nffile.variables[varname]
+        varvals = var.getValue()
+        nffile.close()
     return varvals
 
 def putvar(fname, varname, varvals):

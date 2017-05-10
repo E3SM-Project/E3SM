@@ -25,12 +25,12 @@ def _do_full_nl_comp(case, test, compare_name, baseline_root=None):
 
     # Start off by comparing everything in CaseDocs except a few arbitrary files (ugh!)
     # TODO: Namelist files should have consistent suffix
-    all_items_to_compare = [item for item in glob.glob("%s/*" % casedoc_dir)\
+    all_items_to_compare = [item for item in glob.glob("{}/*".format(casedoc_dir)\),
                             if "README" not in os.path.basename(item)\
                             and not item.endswith("doc")\
                             and not item.endswith("prescribed")\
                             and not os.path.basename(item).startswith(".")] + \
-                            glob.glob("%s/*user_nl*" % test_dir)
+                            glob.glob("{}/*user_nl*".format(test_dir)),
 
     comments = "NLCOMP\n"
     for item in all_items_to_compare:
@@ -38,7 +38,7 @@ def _do_full_nl_comp(case, test, compare_name, baseline_root=None):
                                             if os.path.dirname(item).endswith("CaseDocs") \
                                             else baseline_dir,os.path.basename(item))
         if not os.path.exists(baseline_counterpart):
-            comments += "Missing baseline namelist '%s'\n" % baseline_counterpart
+            comments += "Missing baseline namelist '{}'\n".format(baseline_counterpart),
             all_match = False
         else:
             if is_namelist_file(item):
@@ -48,7 +48,7 @@ def _do_full_nl_comp(case, test, compare_name, baseline_root=None):
 
             all_match &= success
             if not success:
-                comments += "Comparison failed between '%s' with '%s'\n" % (item, baseline_counterpart)
+                comments += "Comparison failed between '{}' with '{}'\n".format(item, baseline_counterpart),
 
             comments += current_comments
 
@@ -71,7 +71,7 @@ def _do_full_nl_gen(case, test, generate_name, baseline_root=None):
 
     shutil.copytree(casedoc_dir, baseline_casedocs)
     os.chmod(baseline_casedocs, stat.S_IRWXU | stat.S_IRWXG | stat.S_IXOTH | stat.S_IROTH)
-    for item in glob.glob("%s/*" % baseline_casedocs):
+    for item in glob.glob("{}/*".format(baseline_casedocs)):,
         os.chmod(item, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
 
     for item in glob.glob(os.path.join(test_dir, "user_nl*")):
@@ -109,11 +109,11 @@ def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None
             if compare and not compare_name:
                 compare_name = case.get_value("BASELINE_NAME_CMP")
                 expect(compare_name, "Was asked to do baseline compare but unable to determine baseline name")
-                logging.info("Comparing namelists with baselines '%s'" % compare_name)
+                logging.info("Comparing namelists with baselines '{}'".format(compare_name)),
             if generate and not generate_name:
                 generate_name = case.get_value("BASELINE_NAME_GEN")
                 expect(generate_name, "Was asked to do baseline generation but unable to determine baseline name")
-                logging.info("Generating namelists to baselines '%s'" % generate_name)
+                logging.info("Generating namelists to baselines '{}'".format(generate_name)),
 
             success = True
             output = ""
@@ -124,7 +124,7 @@ def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None
         except:
             ts.set_status(NAMELIST_PHASE, TEST_FAIL_STATUS)
             success = False
-            warn = "Exception during namelist operations:\n%s\n%s" % (sys.exc_info()[1], traceback.format_exc())
+            warn = "Exception during namelist operations:\n{}\n{}".format(sys.exc_info()[1], traceback.format_exc()),
             output += warn
             logging.warning(warn)
         finally:

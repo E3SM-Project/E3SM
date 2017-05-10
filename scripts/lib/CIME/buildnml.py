@@ -36,14 +36,14 @@ def build_xcpl_nml(case, caseroot, compname):
     compclasses = case.get_values("COMP_CLASSES")
     compclass = None
     for compclass in compclasses:
-        if case.get_value("COMP_%s"%compclass) == compname:
+        if case.get_value("COMP_{}".format(compclass) == compname):
             break
     expect(compclass is not None,
-           "Could not identify compclass for compname %s"%compname)
+           "Could not identify compclass for compname {}".format(compname))
     rundir = case.get_value("RUNDIR")
-    ninst  = case.get_value("NINST_%s" % compclass.upper())
-    nx     = case.get_value("%s_NX" % compclass.upper())
-    ny     = case.get_value("%s_NY" % compclass.upper())
+    ninst  = case.get_value("NINST_{}".format(compclass.upper()))
+    nx     = case.get_value("{}_NX".format(compclass.upper()))
+    ny     = case.get_value("{}_NY".format(compclass.upper()))
     if compname == "xrof":
         flood_mode = case.get_value('XROF_FLOOD_MODE')
 
@@ -76,20 +76,20 @@ def build_xcpl_nml(case, caseroot, compname):
         # If only 1 file, name is 'compclass_in'
         # otherwise files are 'compclass_in0001', 'compclass_in0002', etc
         if ninst == 1:
-            filename = os.path.join(rundir, "%s_in" % compname)
+            filename = os.path.join(rundir, "{}_in".format(compname))
         else:
-            filename = os.path.join(rundir, "%s_in_%4.4d" % (compname, i))
+            filename = os.path.join(rundir, "{}_in_%4.4d".format(compname, i))
 
         with open(filename, 'w') as infile:
-            infile.write("%-20d ! i-direction global dimension\n" % nx)
-            infile.write("%-20d ! j-direction global dimension\n" % ny)
-            infile.write("%-20d ! decomp_type  1=1d-by-lat, 2=1d-by-lon,"
-                         " 3=2d, 4=2d evensquare, 11=segmented\n" % dtype)
-            infile.write("%-20d ! num of pes for i (type 3 only)\n" % npes)
-            infile.write("%-20d ! length of segments (type 4 only)\n"
+            infile.write("{:-20d} ! i-direction global dimension\n".format(nx))
+            infile.write("{:-20d} ! j-direction global dimension\n".format(ny))
+            infile.write("{:-20d} ! decomp_type  1=1d-by-lat, 2=1d-by-lon,"
+                         " 3=2d, 4=2d evensquare, 11=segmented\n".format(dtype))
+            infile.write("{:-20d} ! num of pes for i (type 3 only)\n".format(npes))
+            infile.write("{:-20d} ! length of segments (type 4 only)\n"
                          % length)
             for extra in extras:
-                infile.write("%-20s ! %s\n" % (extra[0], extra[1]))
+                infile.write("{:-20s} ! {}\n".format(extra[0], extra[1]))
 
 ###############################################################################
 def create_namelist_infile(case, user_nl_file, namelist_infile, infile_text=""):
@@ -99,13 +99,13 @@ def create_namelist_infile(case, user_nl_file, namelist_infile, infile_text=""):
         with open(user_nl_file, "r") as file_usernl:
             lines_input = file_usernl.readlines()
     else:
-        logger.warn("WARNING: No file %s found in case directory"%user_nl_file)
+        logger.warn("WARNING: No file {} found in case directory".format(user_nl_file))
 
     lines_output = []
     lines_output.append("&comp_inparm \n")
     if infile_text:
         lines_output.append(infile_text)
-        logger.debug("file_infile %s " %infile_text)
+        logger.debug("file_infile {} ".format(infile_text))
 
     for line in lines_input:
         match1 = re.search(r"^[\&\/\!]", line)

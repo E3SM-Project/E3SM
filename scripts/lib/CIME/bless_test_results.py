@@ -15,13 +15,13 @@ def bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
     # re-run create_test.
 
     # Update namelist files
-    print "Test '%s' had namelist diff" % test_name
+    print "Test '{}' had namelist diff".format(test_name)
     if (not report_only and
         (force or raw_input("Update namelists (y/n)? ").upper() in ["Y", "YES"])):
-        create_test_gen_args = " -g %s " % baseline_name if get_model() == "cesm" else " -g -b %s " % baseline_name
-        stat, _, err = run_cmd("%s/create_test %s -n %s --baseline-root %s -o" % (get_scripts_root(), test_name, create_test_gen_args, baseline_root))
+        create_test_gen_args = " -g {} ".format(baseline_name if get_model() == "cesm" else " -g -b {} ".format(baseline_name))
+        stat, _, err = run_cmd("{}/create_test {} -n {} --baseline-root {} -o".format(get_scripts_root(), test_name, create_test_gen_args, baseline_root))
         if stat != 0:
-            return False, "Namelist regen failed: '%s'" % err
+            return False, "Namelist regen failed: '{}'".format(err)
         else:
             return True, None
     else:
@@ -45,8 +45,8 @@ def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root
                 (force or raw_input("Update this diff (y/n)? ").upper() in ["Y", "YES"])):
                 result, comments = generate_baseline(case, baseline_dir=baseline_full_dir)
                 if not result:
-                    logging.warning("Hist file bless FAILED for test %s" % test_name)
-                    return False, "Generate baseline failed: %s" % comments
+                    logging.warning("Hist file bless FAILED for test {}".format(test_name))
+                    return False, "Generate baseline failed: {}".format(comments)
                 else:
                     print comments
                     return True, None
@@ -56,9 +56,9 @@ def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root
 ###############################################################################
 def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_id=None, namelists_only=False, hist_only=False, report_only=False, force=False, bless_tests=None, no_skip_pass=False):
 ###############################################################################
-    test_id_glob = "*%s*%s*" % (compiler, baseline_name) if test_id is None else "*%s" % test_id
-    test_status_files = glob.glob("%s/%s/%s" % (test_root, test_id_glob, TEST_STATUS_FILENAME))
-    expect(test_status_files, "No matching test cases found in for %s/%s/%s" % (test_root, test_id_glob, TEST_STATUS_FILENAME))
+    test_id_glob = "*{}*{}*".format(compiler, baseline_name) if test_id is None else "*{}".format(test_id)
+    test_status_files = glob.glob("{}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
+    expect(test_status_files, "No matching test cases found in for {}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
 
     broken_blesses = []
     for test_status_file in test_status_files:
@@ -82,11 +82,11 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
                 run_result = ts.get_status(RUN_PHASE)
                 if (run_result is None):
                     broken_blesses.append((test_name, "no run phase"))
-                    logging.warning("Test '%s' did not make it to run phase" % test_name)
+                    logging.warning("Test '{}' did not make it to run phase".format(test_name))
                     hist_bless = False
                 elif (run_result != TEST_PASS_STATUS):
                     broken_blesses.append((test_name, "test did not pass"))
-                    logging.warning("Test '%s' did not pass, not safe to bless" % test_name)
+                    logging.warning("Test '{}' did not pass, not safe to bless".format(test_name))
                     hist_bless = False
                 elif no_skip_pass:
                     hist_bless = True
@@ -97,7 +97,7 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
 
             # Now, do the bless
             if not nl_bless and not hist_bless:
-                print "Nothing to bless for test:", test_name, " overall status:", overall_result
+                print("Nothing to bless for test:", test_name, " overall status:", overall_result)
             else:
 
                 print "###############################################################################"
@@ -126,7 +126,7 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
     # Make sure user knows that some tests were not blessed
     success = True
     for broken_bless, reason in broken_blesses:
-        logging.warning("FAILED TO BLESS TEST: %s, reason %s" % (broken_bless, reason))
+        logging.warning("FAILED TO BLESS TEST: {}, reason {}".format(broken_bless, reason))
         success = False
 
     return success

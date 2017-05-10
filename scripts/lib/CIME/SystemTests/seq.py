@@ -29,8 +29,8 @@ class SEQ(SystemTestsCommon):
         # Build the model with all components with different rootpes
         exeroot = self._case.get_value("EXEROOT")
         cime_model = self._case.get_value("MODEL")
-        shutil.move("%s/%s.exe"%(exeroot,cime_model),
-                    "%s/%s.exe.SEQ1"%(exeroot,cime_model))
+        shutil.move("{}/{}.exe".format(exeroot,cime_model),
+                    "{}/{}.exe.SEQ1".format(exeroot,cime_model))
         any_changes = False
         machpes1 = "env_mach_pes.SEQ1.xml"
         if is_locked(machpes1):
@@ -40,10 +40,10 @@ class SEQ(SystemTestsCommon):
 
         comp_classes = self._case.get_values("COMP_CLASSES")
         for comp in comp_classes:
-            any_changes |= self._case.get_value("ROOTPE_%s" % comp) != 0
+            any_changes |= self._case.get_value("ROOTPE_{}".format(comp) != 0)
         if any_changes:
             for comp in comp_classes:
-                self._case.set_value("ROOTPE_%s"%comp, 0)
+                self._case.set_value("ROOTPE_{}".format(comp), 0)
         else:
             totalpes = self._case.get_value("TOTALPES")
             newntasks = max(1, totalpes/len(comp_classes))
@@ -55,15 +55,15 @@ class SEQ(SystemTestsCommon):
                 if comp == "CPL":
                     self._case.set_value("NTASKS_CPL", newntasks)
                 else:
-                    self._case.set_value("NTASKS_%s"%comp, newntasks)
-                    self._case.set_value("ROOTPE_%s"%comp, rootpe)
+                    self._case.set_value("NTASKS_{}".format(comp), newntasks)
+                    self._case.set_value("ROOTPE_{}".format(comp), rootpe)
                     rootpe += newntasks
         self._case.flush()
         case_setup(self._case, test_mode=True, reset=True)
         self.clean_build()
         self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
-        shutil.move("%s/%s.exe"%(exeroot,cime_model),
-                    "%s/%s.exe.SEQ2"%(exeroot,cime_model))
+        shutil.move("{}/{}.exe".format(exeroot,cime_model),
+                    "{}/{}.exe.SEQ2".format(exeroot,cime_model))
         lock_file("env_mach_pes.xml", newname="env_mach_pes.SEQ2.xml")
 
     def run_phase(self):
@@ -82,10 +82,11 @@ class SEQ(SystemTestsCommon):
         #
         # do an initial run test with default layout
         #
-        logger.info("doing a %d %s initial test with default layout" % (stop_n, stop_option))
+        logger.info("doing a {:d} {} initial test with default layout",
+                    stop_n, stop_option)
 
-        shutil.copy("%s/%s.exe.SEQ1"%(exeroot,cime_model),
-                    "%s/%s.exe"%(exeroot,cime_model))
+        shutil.copy("{}/{}.exe.SEQ1".format(exeroot,cime_model),
+                    "{}/{}.exe".format(exeroot,cime_model))
         restore("env_mach_pes.SEQ1.xml", newname="env_mach_pes.xml")
 
         # update the pelayout settings for this run
@@ -95,11 +96,12 @@ class SEQ(SystemTestsCommon):
 
         restore("env_mach_pes.SEQ2.xml", newname="env_mach_pes.xml")
 
-        os.remove("%s/%s.exe"%(exeroot,cime_model))
-        shutil.copy("%s/%s.exe.SEQ1"%(exeroot,cime_model),
-                    "%s/%s.exe"%(exeroot,cime_model))
+        os.remove("{}/{}.exe".format(exeroot,cime_model))
+        shutil.copy("{}/{}.exe.SEQ1".format(exeroot,cime_model),
+                    "{}/{}.exe".format(exeroot,cime_model))
 
-        logger.info("doing a second %d %s test with rootpes set to zero" % (stop_n, stop_option))
+        logger.info("doing a second {:d} {} test with rootpes set to zero",
+                    stop_n, stop_option)
         # update the pelayout settings for this run
         self._case.read_xml()
 

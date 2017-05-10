@@ -44,9 +44,9 @@ class DAE(SystemTestsCompareTwo):
         # We need to find the scripts/data_assimilation directory
         # LIB_DIR should be our parent dir
         da_dir = os.path.join(os.path.dirname(sms.LIB_DIR), "data_assimilation")
-        expect(os.path.isdir(da_dir), "ERROR: da_dir, '%s', does not exist"%da_dir)
+        expect(os.path.isdir(da_dir), "ERROR: da_dir, '{}', does not exist".format(da_dir))
         da_file = os.path.join(da_dir, "da_no_data_mod.sh")
-        expect(os.path.isfile(da_file), "ERROR: da_file, '%s', does not exist"%da_file)
+        expect(os.path.isfile(da_file), "ERROR: da_file, '{}', does not exist".format(da_file))
 
         # Set up two data assimilation cycles each half of the full run
         self._case.set_value("DATA_ASSIMILATION", "TRUE")
@@ -82,12 +82,12 @@ class DAE(SystemTestsCompareTwo):
         da_files = glob.glob(os.path.join(rundir2, 'da.log.*'))
         if da_files is None:
             logger = logging.getLogger(__name__)
-            logger.warning("No DA files in %s", os.path.join(case_root, 'da.log.*'))
+            path = os.path.join(case_root, 'da.log.*')
+            logger.warning("No DA files in {}", path)
 
         da_cycles = self._case.get_value("DATA_ASSIMILATION_CYCLES")
         expect((da_files is not None) and (len(da_files) == da_cycles),
-               "ERROR: There were %d DA cycles in run but %d DA files were found"%
-               (da_cycles, len(da_files) if da_files is not None else 0))
+               "ERROR: There were {:d} DA cycles in run but {:d} DA files were found".format(da_cycles, len(da_files) if da_files is not None else 0))
         da_files.sort()
         cycle_num = 0
         for fname in da_files:
@@ -95,19 +95,18 @@ class DAE(SystemTestsCompareTwo):
             found_cycle = False
             with open(fname) as dfile:
                 for line in dfile:
-                    expect(line[0:5] != 'ERROR', "ERROR, error line found in %s"%fname)
+                    expect(line[0:5] != 'ERROR', "ERROR, error line found in {}".format(fname))
                     if line[0:8] == 'caseroot':
                         found_caseroot = True
                     elif line[0:5] == 'cycle':
                         found_cycle = True
                         expect(int(line[7:]) == cycle_num,
-                               "ERROR: Wrong cycle (%d) found in %s (expected %d)"%
-                               (int(line[7:]), fname, cycle_num))
+                               "ERROR: Wrong cycle ({:d}) found in {} (expected {:d})".format(int(line[7:]), fname, cycle_num))
                     else:
-                        expect(False, "ERROR: Unrecognized line ('%s') found in %s"%(line, fname))
+                        expect(False, "ERROR: Unrecognized line ('{}') found in {}".format(line, fname))
 
                 # End of for loop
-                expect(found_caseroot, "ERROR: No caseroot found in %s"%fname)
-                expect(found_cycle, "ERROR: No cycle found in %s"%fname)
+                expect(found_caseroot, "ERROR: No caseroot found in {}".format(fname))
+                expect(found_cycle, "ERROR: No cycle found in {}".format(fname))
             # End of with
             cycle_num = cycle_num + 1

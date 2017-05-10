@@ -206,16 +206,16 @@ def write_macros_file_v1(macros, compiler, os_, machine, macros_file="Macros", o
     # A few things can be used from environ if not in XML
     for item in ["MPI_PATH", "NETCDF_PATH"]:
         if not item in macros and item in os.environ:
-            logger.warn("Setting %s from Environment" % item)
+            logger.warn("Setting {} from Environment", item)
             macros[item] = os.environ[item]
 
     with open(macros_file, "w") as fd:
         fd.write(
 """#
-# COMPILER=%s
-# OS=%s
-# MACH=%s
-""" % (compiler, os_, machine)
+# COMPILER={}
+# OS={}
+# MACH={}
+""".format(compiler, os_, machine)
 )
         if output_format == "make":
             fd.write("#\n# Makefile Macros \n")
@@ -225,9 +225,9 @@ def write_macros_file_v1(macros, compiler, os_, machine, macros_file="Macros", o
                 if key == "_COND_":
                     pass
                 elif key.startswith("ADD_"):
-                    fd.write("%s+=%s\n\n" % (key[4:], value))
+                    fd.write("{}+={}\n\n".format(key[4:], value))
                 else:
-                    fd.write("%s:=%s\n\n" % (key, value))
+                    fd.write("{}:={}\n\n".format(key, value))
 
         elif output_format == "cmake":
             fd.write(
@@ -253,9 +253,9 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
                     value = value.replace("(", "{").replace(")", "}")
                     if key.endswith("_PATH"):
                         if value.startswith("$"):
-                            value = "$ENV%s" % value[1:]
-                        fd.write("set(%s %s)\n" % (key, value))
-                        fd.write("list(APPEND CMAKE_PREFIX_PATH %s)\n\n" % value)
+                            value = "$ENV{}".format(value[1:])
+                        fd.write("set({} {})\n".format(key, value))
+                        fd.write("list(APPEND CMAKE_PREFIX_PATH {})\n\n".format(value))
 
             for key, value in sorted(macros.iteritems()):
                 if key == "_COND_":
@@ -269,16 +269,16 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
                             idx = 0
                             for is_shell, component in components:
                                 if is_shell:
-                                    fd.write('execute_process(COMMAND %s OUTPUT_VARIABLE TEMP%d)\n' % (component, idx))
-                                    fd.write('string(REGEX REPLACE "\\n$" "" TEMP%d "${TEMP%d}")\n' % (idx, idx))
+                                    fd.write('execute_process(COMMAND {} OUTPUT_VARIABLE TEMP{:d})\n'.format(component, idx))
+                                    fd.write('string(REGEX REPLACE "\\n$" "" TEMP{:d} "$\{TEMP{:d}\}")\n'.format(idx, idx))
                                 else:
-                                    fd.write('set(TEMP%d "%s")\n' % (idx, component))
+                                    fd.write('set(TEMP{:d} "{}")\n'.format(idx, component))
 
                                 idx += 1
 
-                            fd.write('set(TEMP "%s")\n' % " ".join(["${TEMP%d}" % i for i in range(idx)]))
+                            fd.write('set(TEMP "{}")\n'.format(" ".join(["$\{TEMP{:d}\}".format(i) for i in range(idx)])))
                         else:
-                            fd.write('set(TEMP "%s")\n' % value)
+                            fd.write('set(TEMP "{}")\n'.format(value))
 
                         if "CFLAGS" in key:
                             fd.write("add_flags(CMAKE_C_FLAGS ${TEMP})\n\n")
@@ -300,28 +300,28 @@ def _parse_hash(macros, fd, depth, output_format, cmakedebug=""):
             if output_format == "make" or "DEBUG" in key:
                 for key2, value2 in value.iteritems():
                     if output_format == "make":
-                        fd.write("%sifeq ($(%s), %s) \n" % (" " * width, key, key2))
+                        fd.write("{}ifeq ($({}), {}) \n".format(" " * width, key, key2))
 
                     _parse_hash(value2, fd, depth + 1, output_format, key2)
         else:
             if output_format == "make":
                 if key.startswith("ADD_"):
-                    fd.write("%s %s += %s\n" % (" " * width, key[4:], value))
+                    fd.write("{} {} += {}\n".format(" " * width, key[4:], value))
                 else:
-                    fd.write("%s %s += %s\n" % (" " * width, key, value))
+                    fd.write("{} {} += {}\n".format(" " * width, key, value))
 
             else:
                 value = value.replace("(", "{").replace(")", "}")
                 release = "DEBUG" if "TRUE" in cmakedebug else "RELEASE"
                 if "CFLAGS" in key:
-                    fd.write("add_flags(CMAKE_C_FLAGS_%s %s)\n\n" % (release, value))
+                    fd.write("add_flags(CMAKE_C_FLAGS_{} {})\n\n".format(release, value))
                 elif "FFLAGS" in key:
-                    fd.write("add_flags(CMAKE_Fortran_FLAGS_%s %s)\n\n" % (release, value))
+                    fd.write("add_flags(CMAKE_Fortran_FLAGS_{} {})\n\n".format(release, value))
                 elif "CPPDEF" in key:
-                    fd.write("add_config_definitions(%s %s)\n\n" % (release, value))
+                    fd.write("add_config_definitions({} {})\n\n".format(release, value))
                 elif "SLIBS" in key or "LDFLAGS" in key:
-                    fd.write("add_flags(CMAKE_EXE_LINKER_FLAGS_%s %s)\n\n" % (release, value))
+                    fd.write("add_flags(CMAKE_EXE_LINKER_FLAGS_{} {})\n\n".format(release, value))
 
     width -= 2
     if output_format == "make" and depth > 0:
-        fd.write("%sendif\n\n" % (" " * width))
+        fd.write("{}endif\n\n".format(" " * width))

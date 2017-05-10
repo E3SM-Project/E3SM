@@ -30,7 +30,7 @@ class SSP(SystemTestsCommon):
         orig_casevar = self._case.get_value("CASE")
 
         # clone the main case to create ref1
-        clone_path = "%s.ref1" % caseroot
+        clone_path = "{}.ref1".format(caseroot)
         if os.path.exists(clone_path):
             shutil.rmtree(clone_path)
         clone = self._case.create_clone(clone_path, keepexe=True)
@@ -47,7 +47,7 @@ class SSP(SystemTestsCommon):
         os.chdir(clone_path)
         self._set_active_case(clone)
 
-        logger.info("startup: doing a %s %s 00000 seconds startup run" % (stop_n1, stop_nf))
+        logger.info("startup: doing a {} {} 00000 seconds startup run".format(stop_n1, stop_nf))
         logger.info("  writing restarts at end of run")
         logger.info("  short term archiving is on ")
 
@@ -66,24 +66,24 @@ class SSP(SystemTestsCommon):
         os.chdir(caseroot)
         self._set_active_case(orig_case)
 
-        refdate = run_cmd_no_fail(r'ls -1dt %s/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"' % dout_sr)
+        refdate = run_cmd_no_fail(r'ls -1dt {}/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"'.format(dout_sr))
         refsec = "00000"
 
         # obtain rpointer files and necessary restart files from short term archiving directory
         rundir = self._case.get_value("RUNDIR")
 
-        rest_path = os.path.join(dout_sr, "rest", "%s-%s" % (refdate, refsec))
+        rest_path = os.path.join(dout_sr, "rest", "{}-{}".format(refdate, refsec))
 
-        for item in glob.glob("%s/*%s*" % (rest_path, refdate)):
+        for item in glob.glob("{}/*{}*".format(rest_path, refdate)):
             os.symlink(item, os.path.join(rundir, os.path.basename(item)))
 
-        for item in glob.glob("%s/*rpointer*" % rest_path):
+        for item in glob.glob("{}/*rpointer*".format(rest_path)):
             shutil.copy(item, rundir)
 
         self._case.set_value("CLM_ACCELERATED_SPINUP", "off")
         self._case.set_value("RUN_TYPE", "hybrid")
         self._case.set_value("GET_REFCASE", False)
-        self._case.set_value("RUN_REFCASE", "%s.ref1" % orig_casevar)
+        self._case.set_value("RUN_REFCASE", "{}.ref1".format(orig_casevar))
         self._case.set_value("RTM_MODE", "NULL")
 
         self._case.set_value("RUN_REFDATE", refdate)

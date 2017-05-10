@@ -332,6 +332,7 @@ class EnvBatch(EnvBase):
                     prereq = eval(prereq)
             except:
                 expect(False,"Unable to evaluate prereq expression '{}' for job '{}'".format(self.get_value('prereq',subgroup=job), job))
+
             if prereq:
                 jobs.append((job, self.get_value('dependency', subgroup=job)))
 

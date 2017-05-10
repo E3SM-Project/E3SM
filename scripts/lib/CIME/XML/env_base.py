@@ -63,13 +63,13 @@ class EnvBase(EntryID):
         """
         value = None
         vid, comp, iscompvar = self.check_if_comp_var(vid, attribute)
-        logger.debug( "vid %s comp %s iscompvar %s"%(vid, comp, iscompvar))
+        logger.debug( "vid {} comp {} iscompvar {}", vid, comp, iscompvar)
         if iscompvar:
             if comp is None:
                 if subgroup is not None:
                     comp = subgroup
                 else:
-                    logger.debug("Not enough info to get value for %s"%vid)
+                    logger.debug("Not enough info to get value for {}", vid)
                     return value
             if attribute is None:
                 attribute = {"component" : comp}

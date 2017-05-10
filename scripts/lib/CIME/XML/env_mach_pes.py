@@ -35,7 +35,7 @@ class EnvMachPes(EnvBase):
         max_threads = 1
         for comp in comp_classes:
             threads = self.get_value("NTHRDS",attribute={"component":comp})
-            expect(threads is not None, "Error no thread count found for component class %s"%comp)
+            expect(threads is not None, "Error no thread count found for component class {}".format(comp))
             if threads > max_threads:
                 max_threads = threads
         return max_threads
