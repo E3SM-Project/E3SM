@@ -12,7 +12,6 @@ module map_lnd2glc_mod
 
 #include "shr_assert.h"
   use seq_comm_mct, only: CPLID, GLCID, logunit
-  use seq_comm_mct, only: seq_comm_getData=>seq_comm_setptrs
   use shr_kind_mod, only : r8 => shr_kind_r8
   use glc_elevclass_mod, only : glc_get_num_elevation_classes, glc_get_elevation_class, &
        glc_elevclass_as_string, GLC_ELEVCLASS_ERR_NONE, GLC_ELEVCLASS_ERR_TOO_LOW, &
@@ -40,10 +39,6 @@ module map_lnd2glc_mod
   private :: get_glc_elevation_classes ! get the elevation class of each point on the glc grid
   private :: map_bare_land             ! remap the field of interest for the bare land "elevation class"
   private :: map_ice_covered           ! remap the field of interest for all elevation classes (excluding bare land)
-
-  !WHL - debug
-!!  integer :: iamtest = 54, ntest = 10
-  integer :: iamtest = 171, ntest = 15
 
 contains
 
@@ -126,15 +121,6 @@ contains
     character(len=*), parameter :: subname = 'map_lnd2glc'
     !-----------------------------------------------------------------------
 
-    !WHL - debug
-    integer :: iam, mpicom
-    call seq_comm_getData(CPLID, iam=iam)
-
-    if (iam==0 .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'In map_lnd2glc, fieldname =', trim(fieldname)
-    endif
-
     ! ------------------------------------------------------------------------
     ! Initialize temporary arrays and other local variables
     ! ------------------------------------------------------------------------
@@ -167,16 +153,7 @@ contains
     ! Map elevation class 0 (bare land) and ice elevation classes
     ! ------------------------------------------------------------------------
 
-    !WHL - debug
-    if (iam==0 .or. iam==iamtest) then
-       write(logunit,*) 'Map bare land'
-    endif
-
     call map_bare_land(l2x_l, landfrac_l, fieldname_trimmed, mapper, data_g_bareland)
-
-    if (iam==0 .or. iam==iamtest) then
-       write(logunit,*) 'Map ice-covered ECs'
-    endif
 
     ! Start by setting the output data equal to the bare land value everywhere; this will
     ! later get overwritten in places where we have ice
@@ -212,10 +189,6 @@ contains
     deallocate(glc_ice_covered)
     deallocate(glc_topo)
     deallocate(glc_elevclass)
-
-    if (iam==0 .or. iam==iamtest) then
-       write(logunit,*) 'Done in map_lnd2glc'
-    endif
 
   end subroutine map_lnd2glc
 
@@ -380,21 +353,10 @@ contains
     real, pointer :: data_g_EC(:,:)    ! remapped field in each glc cell, in each EC
     real, pointer :: topo_g_EC(:,:)    ! remapped topo in each glc cell, in each EC
     
-    !WHL - debug
-    integer :: iam, mpicom
-    call seq_comm_getData(CPLID, iam=iam)
-
     lsize_g = size(topo_g)
     nEC = glc_get_num_elevation_classes()
     SHR_ASSERT((size(topo_g) == lsize_g), errMsg(__FILE__, __LINE__))
     
-    if (iam==0 .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'In subroutine map_ice_covered'
-       write(logunit,*) 'iam, ntest =', iam, ntest
-       write(logunit,*) 'lsize_g, nEC =', lsize_g, nEC
-    endif
-
     ! ------------------------------------------------------------------------
     ! Create temporary vectors
     ! ------------------------------------------------------------------------
@@ -422,11 +384,6 @@ contains
     end do
     totalfieldlist = fieldnamelist // delimiter // toponamelist
     
-    !WHL - Look at log file to make sure this is correct
-    if (iam==0 .or. iam==iamtest) then
-       write(logunit,*) 'totalfieldlist:', trim(totalfieldlist)
-    endif
-
     ! ------------------------------------------------------------------------
     ! Make a temporary attribute vector.
     ! For each grid cell on the land grid, this attribute vector contains the field and topo values for all ECs.
@@ -467,46 +424,19 @@ contains
     ! Perform vertical interpolation of data onto ice sheet topography
     ! ------------------------------------------------------------------------
     
-!!    if (iam==0 .or. iam==iamtest) then
-!!       write(logunit,*) 'n, topo_g(n), topo_g_EC(n), data_g_ice_covered(n)'
-!!    endif
-
     data_g_ice_covered(:) = 0._r8
     
     do n = 1, lsize_g
-
-!!       if ((iam==0 .or. iam==iamtest) .and. topo_g(n) > 0.0_r8) then
-!!          write(logunit,*) n, topo_g(n), topo_g_EC(n,:), data_g_EC(n,:)
-!!       endif
 
        ! For each ice sheet point, find bounding EC values...
        if (topo_g(n) < topo_g_EC(n,1)) then           ! lower than lowest mean EC elevation value
           data_g_ice_covered(n) = data_g_EC(n,1)
 
-          if ((iam==0 .or. iam==iamtest) .and. topo_g(n) > 0._r8) then
-!!             write(logunit,*) 'n, topo_g, data_g:', n, topo_g(n), data_g_ice_covered(n)
-          endif
-
        elseif (topo_g(n) >= topo_g_EC(n,nEC)) then    ! higher than highest mean EC elevation value
           data_g_ice_covered(n) = data_g_EC(n,nEC)
 
-          if ((iam==0 .or. iam==iamtest) .and. topo_g(n) > 0._r8) then
-!!             write(logunit,*) 'n, topo_g, data_g:', n, topo_g(n), data_g_ice_covered(n)
-          endif
-
        else
           ! do linear interpolation of data in the vertical
-!          BoundingECsFound = 0   !WHL - Could replace this logical variables with an exit statement
-!          do elevclass = 2, nEC
-!            if (topo_g(n) < topo_g_EC(n, elevclass) .and. BoundingECsFound .eq. 0) then
-!               el = elevclass - 1
-!               eu = elevclass
-!               elev_EC_l = topo_g_EC(n, el)
-!               elev_EC_u = topo_g_EC(n, eu)
-!               d_elev = elev_EC_u - elev_EC_l
-!               BoundingECsFound = 1
-!            endif 
-!          enddo   
           do ec = 2, nEC
              if (topo_g(n) < topo_g_EC(n, ec)) then
                 elev_l = topo_g_EC(n, ec-1)
@@ -514,19 +444,10 @@ contains
                 d_elev = elev_u - elev_l
                 data_g_ice_covered(n) = data_g_EC(n,ec-1) * (elev_u - topo_g(n)) / d_elev  &
                                       + data_g_EC(n,ec)   * (topo_g(n) - elev_l) / d_elev
-
-                if ((iam==0 .or. iam==iamtest) .and. topo_g(n) > 0._r8) then
-!!                   write(logunit,*) 'n, topo_g, data_g:', n, topo_g(n), data_g_ice_covered(n)
-                endif
-                
                 exit
-
              endif
-
           enddo
-
        endif  ! topo_g(n)
-
     enddo  ! lsize_g
       
     ! ------------------------------------------------------------------------
@@ -539,11 +460,6 @@ contains
     
     call mct_aVect_clean(l2x_g_temp)
     
-    if (iam==0 .or. iam==iamtest) then
-       write(logunit,*) ' '
-       write(logunit,*) 'Done in subroutine map_ice_covered'
-    endif
-
   end subroutine map_ice_covered
 
 end module map_lnd2glc_mod
