@@ -144,6 +144,10 @@ module RunoffMod
 ! --Inund. ---------------------------------------------------------------  
 #ifdef INCLUDE_INUND     
   
+    integer :: OPT_trueDW             ! Options for diffusion wave channel routing method:
+                                      !     1 -- True diffusion wave method for channel routing;
+                                      !     2 -- False diffusion wave method: use riverbed slope as the surrogate for water surface slope. ( This is 
+                                      !          a temporary treatment before the downstream-channel information can be retrieved. )
     integer :: OPT_calcNr             ! Options to calculate channel Manning roughness coefficients : 
                                       !     1 -- use channel depth (Luo et al. 2017 GMD); 
                                       !     2 -- use channel depth and exponent of 1/3 (Getirana et al. 2012 JHM); 

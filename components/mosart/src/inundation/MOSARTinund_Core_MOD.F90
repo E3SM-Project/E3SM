@@ -460,34 +460,44 @@ MODULE MOSARTinund_Core_MOD
         ! Calculate water surface slope ( from the current channel to the downstream channel ) :
         ! ---------------------------------  
 
-        ! If this channel is NOT at basin outlet :
-        if ( TUnit%mask( iu ) .eq. 1 ) then     
-          y_c = TRunoff%yr_exchg( iu )
-          len_c = TUnit%rlen( iu )
-          slp_c = TUnit%rslp( iu )
-          y_down = TRunoff%yr_exchg_dstrm( iu )
-          len_down = TUnit%rlen_dstrm( iu )
-          slp_down = TUnit%rslp_dstrm( iu )
+        ! The water surface slope is used to estimate flow velocity :
+        if ( Tctl%OPT_trueDW .eq. 1 ) then
 
-        ! If this channel is at basin outlet (downstream is ocean) :
-        elseif ( TUnit%mask( iu ) .eq. 2 ) then
-          y_c = TRunoff%yr_exchg( iu )
-          len_c = TUnit%rlen( iu )
-          slp_c = TUnit%rslp( iu )
+          ! If this channel is NOT at basin outlet :
+          if ( TUnit%mask( iu ) .eq. 1 ) then     
+            y_c = TRunoff%yr_exchg( iu )
+            len_c = TUnit%rlen( iu )
+            slp_c = TUnit%rslp( iu )
+            y_down = TRunoff%yr_exchg_dstrm( iu )
+            len_down = TUnit%rlen_dstrm( iu )
+            slp_down = TUnit%rslp_dstrm( iu )
 
-          ! ---------------------------------  
-          ! Water depth equals channel depth at the basin outlet while assuming :
-          ! (1) The sea level equals the channel banktop, and is fixed;
-          ! (2) The river stage equals the sea level. 
-          ! ---------------------------------  
-          y_down = TUnit%rdepth( iu )
+          ! If this channel is at basin outlet (downstream is ocean) :
+          elseif ( TUnit%mask( iu ) .eq. 2 ) then
+            y_c = TRunoff%yr_exchg( iu )
+            len_c = TUnit%rlen( iu )
+            slp_c = TUnit%rslp( iu )
 
-          len_down = 0._r8
-          slp_down = 0._r8    
-        end if
+            ! ---------------------------------  
+            ! Water depth equals channel depth at the basin outlet while assuming :
+            ! (1) The sea level equals the channel banktop, and is fixed;
+            ! (2) The river stage equals the sea level. 
+            ! ---------------------------------  
+            y_down = TUnit%rdepth( iu )
+
+            len_down = 0._r8
+            slp_down = 0._r8    
+          end if
       
-        ! Calculate water surface slope ( from current-channel surface mid-point to downstream-channel surface mid-point ) :
-        surfaceSlope = (len_down * slp_down + len_c * slp_c + 2._r8 * y_c - 2._r8 * y_down) / (len_c + len_down)
+          ! Calculate water surface slope ( from current-channel surface mid-point to downstream-channel surface mid-point ) :
+          surfaceSlope = (len_down * slp_down + len_c * slp_c + 2._r8 * y_c - 2._r8 * y_down) / (len_c + len_down)
+
+        ! Riverbed slope is used as the surrogate for water surface slope ( this is a temporary treatment before the downstream-channel information can be retrieved ) :
+        elseif ( Tctl%OPT_trueDW .eq. 2 ) then
+        
+          surfaceSlope = TUnit%rslp( iu )
+
+        endif
       
         ! ----------------------------------   
         ! Calculate flow velocity, streamflow and water volume change :

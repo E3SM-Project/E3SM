@@ -2384,6 +2384,10 @@ contains
 
   ! Control parameters :  
 
+  Tctl%OPT_trueDW = 2                 ! Options for diffusion wave channel routing method:
+                                      !     1 -- True diffusion wave method for channel routing;
+                                      !     2 -- False diffusion wave method: use riverbed slope as the surrogate for water surface slope. ( This is 
+                                      !          a temporary treatment before the downstream-channel information can be retrieved. )
   Tctl%OPT_calcNr = 1                 ! Options to calculate channel Manning roughness coefficients : 
                                       !   1 -- use channel depth (Luo et al. 2017 GMD); 
                                       !   2 -- use channel depth and exponent of 1/3 (Getirana et al. 2012 JHM); 
@@ -3118,9 +3122,10 @@ contains
 
 #ifdef INCLUDE_INUND
 
-  Tctl%RoutingMethod = 1        ! 1 -- Kinematic wave method ; 4 -- Diffusion wave method.
+  Tctl%RoutingMethod = 4        ! 1 -- Kinematic wave method ; 4 -- Diffusion wave method.
 
   if (masterproc) then
+    write(iulog,*) subname,' Tctl%RoutingMethod = ', Tctl%RoutingMethod
     write(iulog,*) subname,' Tctl%OPT_inund = ', Tctl%OPT_inund
   end if
 
