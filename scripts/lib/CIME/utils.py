@@ -6,7 +6,6 @@ import logging, gzip, sys, os, time, re, shutil, glob, string, random
 import stat as statlib
 import warnings
 # Return this error code if the scripts worked but tests failed
-SKIP_XML_VALIDATION = None
 TESTS_FAILED_ERR_CODE = 100
 logger = logging.getLogger(__name__)
 
@@ -622,8 +621,6 @@ def get_project(machobj=None):
 def setup_standard_logging_options(parser):
     helpfile = "%s.log"%sys.argv[0]
     helpfile = os.path.join(os.getcwd(),os.path.basename(helpfile))
-    parser.add_argument("--skip-xml-validation", action="store_true",
-                        help="Do not validate xml files")
     parser.add_argument("-d", "--debug", action="store_true",
                         help="Print debug information (very verbose) to file %s" % helpfile)
     parser.add_argument("-v", "--verbose", action="store_true",
@@ -649,7 +646,6 @@ def parse_args_and_handle_standard_logging_options(args, parser=None):
     logger.warning -> Goes to stderr (and log if --debug). Use for minor problems
     logger.error -> Goes to stderr (and log if --debug)
     """
-    global SKIP_XML_VALIDATION
     root_logger = logging.getLogger()
 
     verbose_formatter   = logging.Formatter(fmt='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
@@ -691,11 +687,6 @@ def parse_args_and_handle_standard_logging_options(args, parser=None):
         root_logger.setLevel(logging.WARN)
     else:
         root_logger.setLevel(logging.INFO)
-
-    SKIP_XML_VALIDATION = False
-    if args.skip_xml_validation:
-        SKIP_XML_VALIDATION = True
-
     return args
 
 
