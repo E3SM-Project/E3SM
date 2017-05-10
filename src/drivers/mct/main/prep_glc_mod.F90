@@ -532,7 +532,12 @@ contains
   subroutine prep_glc_map_qice_conservative_lnd2glc(egi, eli, fieldname, fractions_lx, mapper_Sl2g, mapper_Fg2l)
 
     ! Maps the surface mass balance field (qice) from the land grid to the glc grid.
-    ! Use a smooth, non-conservative (bilinear) mapping, followed by a correction for conservation.
+    !
+    ! Use a smooth, non-conservative (bilinear) mapping, followed by a correction for
+    ! conservation.
+    !
+    ! For high-level design, see:
+    ! https://docs.google.com/document/d/1H_SuK6SfCv1x6dK91q80dFInPbLYcOkUj_iAa6WRnqQ/edit
 
     use glc_elevclass_mod, only : glc_get_num_elevation_classes, glc_elevclass_as_string
 
