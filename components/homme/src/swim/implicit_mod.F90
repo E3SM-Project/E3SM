@@ -92,16 +92,14 @@ contains
     
     !    type(c_funptr)                     :: precon
     
-    interface 
-       subroutine noxsolve(vectorSize, vector, v_container, p_container, j_container, ierr) &
+    interface
+       subroutine noxsolve(VectorSize, StateVector, StateData, ierr) &
             bind(C,name='noxsolve')
-         use ,intrinsic :: iso_c_binding ,only : c_double ,c_int ,c_ptr
-         integer(c_int)                :: vectorSize
-         real(c_double)  ,dimension(*) :: vector
-         type(c_ptr)                   :: v_container 
-         type(c_ptr)                   :: p_container  ! precon ptr
-         type(c_ptr)                   :: j_container  ! jac ptr
-         integer(c_int)                :: ierr         ! error flag
+         use, intrinsic :: iso_c_binding
+         integer(c_int)               :: VectorSize  ! length of state vector
+         real(c_double), dimension(*) :: StateVector ! 1d state vector
+         type(c_ptr)                  :: StateData   ! derived type
+         integer(c_int)               :: ierr        ! error flag
        end subroutine noxsolve
     end interface
     
@@ -130,38 +128,23 @@ contains
           end do  !np
        end do  !nlev
     end do !ie
-    
+
     call t_stopf('implicit_pre_noxsolve')
     
     call t_startf('implicit_init')
 
-    pc_elem=elem
-    jac_elem=elem
-     
-    call initialize(state_object, lenx, elem, pmean, edge1,edge2,edge3, &
-         hybrid, deriv, dt, tl, nets, nete)
-    
-    call initialize(pre_object, lenx, pc_elem, pmean, edge1,edge2,edge3, &
-         hybrid, deriv, dt, tl, nets, nete)
-    
-    call initialize(ajac_object, lenx, jac_elem, pmean, edge1,edge2,edge3, &
+    call initialize(state_object, lenx, elem, pmean, edge1, edge2, edge3, &
          hybrid, deriv, dt, tl, nets, nete)
 
-    
     fptr => state_object
-    c_ptr_to_object =  c_loc(fptr)
+    c_ptr_to_object = c_loc(fptr)
 
-    pptr => pre_object
-    c_ptr_to_pre =  c_loc(pptr)
-
-    jptr => ajac_object
-    c_ptr_to_jac =  c_loc(jptr)
     call t_stopf('implicit_init')
 
-! ForTrilinos interface to use nox and loca, and returns xstate(n+1)
+    ! ForTrilinos interface to use nox and loca, and returns xstate(n+1)
 
     call t_startf('noxsolve')
-    call noxsolve(size(xstate), xstate, c_ptr_to_object, c_ptr_to_pre, c_ptr_to_jac, ierr)   
+    call noxsolve(size(xstate), xstate, c_ptr_to_object, ierr)   
     if (ierr /= 0) call abortmp('Error in noxsolve: Newton failed to converge')
     call t_stopf('noxsolve') 
     call t_startf('implicit_post_noxsolve')
@@ -211,7 +194,7 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : edgevpack,  edgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only: EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
@@ -309,7 +292,7 @@ contains
 
 					E(i,j)   = 0.5D0*(up(i,j,1)**2 + up(i,j,2)**2)  + &
 					px(i,j) + ps(i,j)
-					if (tstep_type==12) then  !compute extra terms needed for CN
+					if (tstep_type==13) then  !compute extra terms needed for CN
 						E_n(i,j) = 0.5D0*(ulatlon(i,j,1)**2 + ulatlon(i,j,2)**2)  + &
 						fptr%base(ie)%state%p(i,j,k,n0) + ps(i,j)
 						pv_n(i,j,1) = ulatlon(i,j,1)*( fptr%pmean + fptr%base(ie)%state%p(i,j,k,n0) )
@@ -328,7 +311,7 @@ contains
 			zeta = vorticity_sphere(up,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
 			div = divergence_sphere(pv,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
 			! residual time level n
-			if (tstep_type==12) then  
+			if (tstep_type==13) then  
 				!compute extra terms needed for CN
 				grade_n = gradient_sphere(E_n,fptr%deriv,fptr%base(ie)%Dinv)  ! scalar -> latlon vector
 				zeta_n = vorticity_sphere(ulatlon,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
@@ -361,7 +344,7 @@ contains
 						   
 					end do
 				end do
-			else if (tstep_type==13) then !BDF2 2nd order
+			else if (tstep_type==12) then !BDF2 2nd order
 				do j=1,np
 					do i=1,np
  					   vtens(i,j,1,k,ie)=spheremp(i,j)* &
@@ -534,7 +517,7 @@ contains
     use physical_constants, only : g
     use element_mod, only : element_t
 !    use parallel_mod, only : parallel_t
-    use edge_mod, only : edgevpack,  edgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
 !    use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
@@ -634,7 +617,7 @@ contains
     use physical_constants, only : rearth, g
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : edgevpack,  edgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use derivative_mod, only : derivative_t,  gradient_wk, divergence, &
@@ -911,7 +894,7 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : edgevpack,  edgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
@@ -968,11 +951,11 @@ contains
     pmean  = fptr%pmean
     gam    = 0.5
 
-    if (tstep_type==12) then ! CN
+    if (tstep_type==13) then ! CN
        dti=2.0d0*dti ! CN has a factor of 3/2 in the time step coefficient
     endif
     
-    if (tstep_type==13) then ! BDF2 
+    if (tstep_type==12) then ! BDF2 
        dti=(3.0d0/2.0d0)*dti ! BDF2 has a factor of 3/2 in the time step coefficient
     endif
 
@@ -1218,7 +1201,7 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : edgevpack,  edgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
@@ -1396,7 +1379,7 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : edgevpack,  edgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
@@ -1448,11 +1431,11 @@ contains
     pmean = fptr%pmean
     gam   = 0.5
 
-    if (tstep_type==12) then ! CN
+    if (tstep_type==13) then ! CN
        dti=2.0d0*dti ! CN has a factor of 3/2 in the time step coefficient
     endif
     
-    if (tstep_type==13) then ! BDF2 
+    if (tstep_type==12) then ! BDF2 
        dti=(3.0d0/2.0d0)*dti ! BDF2 has a factor of 3/2 in the time step coefficient
     endif
 
@@ -1606,7 +1589,7 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : edgevpack,  edgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
@@ -1779,7 +1762,7 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : edgevpack,  edgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
@@ -1835,19 +1818,19 @@ contains
     call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
     
     n0    = fptr%tl%n0
-    np1	  = fptr%tl%np1
-    nm1	  = fptr%tl%nm1
-    dti	  = 1.0d0/fptr%dt
-    ns	  = fptr%nets 
-    ne	  = fptr%nete 
+    np1   = fptr%tl%np1
+    nm1   = fptr%tl%nm1
+    dti   = 1.0d0/fptr%dt
+    ns    = fptr%nets 
+    ne    = fptr%nete 
     pmean = fptr%pmean
-    gam	  = 0.5
+    gam   = 0.5d0
     
-    if (tstep_type==12) then ! CN
+    if (tstep_type==13) then ! CN
        dti=2.0d0*dti ! CN has a factor of 3/2 in the time step coefficient
     endif
     
-    if (tstep_type==13) then ! BDF2 
+    if (tstep_type==12) then ! BDF2 
        dti=(3.0d0/2.0d0)*dti ! BDF2 has a factor of 3/2 in the time step coefficient
     endif
 
@@ -2080,8 +2063,8 @@ contains
     n0  = fptr%tl%n0
     np1 = fptr%tl%np1
     nm1 = fptr%tl%nm1
-    ns	= fptr%nets 
-    ne	= fptr%nete 
+    ns  = fptr%nets 
+    ne  = fptr%nete 
 
     lx = 0
     shiftv = np*np*nlev*(ne-ns+1)
