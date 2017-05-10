@@ -412,7 +412,6 @@ contains
     ! ------------------------------------------------------------------------
     ! Export all elevation classes out of attribute vector and into local 2D arrays (xy,z)
     ! ------------------------------------------------------------------------
-    !WHL: Remapping fields for all ECs are in l2x_g_temp.  Export (copy) into data_g_EC(:,ec).
 
     do ec = 1, nEC
        elevclass_as_string = glc_elevclass_as_string(ec)
