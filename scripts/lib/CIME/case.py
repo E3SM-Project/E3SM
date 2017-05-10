@@ -1240,9 +1240,9 @@ class Case(object):
                 elif ftype == "env_mach_pes.xml":
                     new_env_file = EnvMachPes(infile=xmlfile, components=components)
                 elif ftype == "env_batch.xml":
-                    new_env_file = EnvBatch(infile=xmlfile, components=components)
+                    new_env_file = EnvBatch(infile=xmlfile)
                 elif ftype == "env_test.xml":
-                    new_env_file = EnvTest(infile=xmlfile, components=components)
+                    new_env_file = EnvTest(infile=xmlfile)
             if new_env_file is not None:
                 self._env_entryid_files = []
                 self._env_generic_files = []
