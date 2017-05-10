@@ -115,7 +115,7 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
 
 
 ###############################################################################
-def _archive_log_files(case, archive_incomplete):
+def _archive_log_files(case, archive_incomplete, archive_file_fn):
 ###############################################################################
 
     dout_s_root = case.get_value("DOUT_S_ROOT")
@@ -134,13 +134,14 @@ def _archive_log_files(case, archive_incomplete):
     for logfile in logfiles:
         srcfile = join(rundir, os.path.basename(logfile))
         destfile = join(archive_logdir, os.path.basename(logfile))
-        shutil.move(srcfile, destfile)
-        logger.info("moving \b%s to \b%s" %(srcfile, destfile))
+        archive_file_fn(srcfile, destfile)
+        logger.info("moving %s to %s" %(srcfile, destfile))
 
 
 ###############################################################################
 def _archive_history_files(case, archive, archive_entry,
-                           compclass, compname, histfiles_savein_rundir):
+                           compclass, compname, histfiles_savein_rundir,
+                           archive_file_fn):
 ###############################################################################
     """
     perform short term archiving on history files in rundir
@@ -186,7 +187,7 @@ def _archive_history_files(case, archive, archive_entry,
                         shutil.copy(srcfile, destfile)
                     else:
                         logger.info("moving \n%s to \n%s " %(srcfile, destfile))
-                        shutil.move(srcfile, destfile)
+                        archive_file_fn(srcfile, destfile)
 
 
 ###############################################################################
@@ -221,7 +222,8 @@ def get_histfiles_for_restarts(case, archive, archive_entry, restfile):
 
 ###############################################################################
 def _archive_restarts(case, archive, archive_entry,
-                      compclass, compname, datename, datename_is_last):
+                      compclass, compname, datename, datename_is_last,
+                      archive_file_fn):
 ###############################################################################
 
     # determine directory for archiving restarts based on datename
@@ -304,7 +306,7 @@ def _archive_restarts(case, archive, archive_entry,
                         logger.info("moving \n%s to \n%s" %(srcfile, destfile))
                         expect(os.path.isfile(srcfile),
                                "restart file %s does not exist " %srcfile)
-                        shutil.move(srcfile, destfile)
+                        archive_file_fn(srcfile, destfile)
                         logger.info("moving \n%s to \n%s" %(srcfile, destfile))
 
                         # need to copy the history files needed for interim restarts - since
@@ -330,7 +332,7 @@ def _archive_restarts(case, archive, archive_entry,
     return histfiles_savein_rundir
 
 ###############################################################################
-def _archive_process(case, archive, last_date, archive_incomplete_logs):
+def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_only):
 ###############################################################################
     """
     Parse config_archive.xml and perform short term archiving
@@ -341,8 +343,13 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs):
     compset_comps.append('cpl')
     compset_comps.append('dart')
 
+    if copy_only is True:
+        archive_file_fn = shutil.copyfile
+    else:
+        archive_file_fn = shutil.move
+
     # archive log files
-    _archive_log_files(case, archive_incomplete_logs)
+    _archive_log_files(case, archive_incomplete_logs, archive_file_fn)
 
     for archive_entry in archive.get_entries():
         # determine compname and compclass
@@ -366,14 +373,16 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs):
             # archive restarts
             histfiles_savein_rundir = _archive_restarts(case, archive, archive_entry,
                                                         compclass, compname,
-                                                        datename, datename_is_last)
+                                                        datename, datename_is_last,
+                                                        archive_file_fn)
 
             # if the last datename for restart files, then archive history files
             # for this compname
             if datename_is_last:
                 logger.info("histfiles_savein_rundir %s " %histfiles_savein_rundir)
                 _archive_history_files(case, archive, archive_entry,
-                                       compclass, compname, histfiles_savein_rundir)
+                                       compclass, compname, histfiles_savein_rundir,
+                                       archive_file_fn)
 
 ###############################################################################
 def restore_from_archive(case):
@@ -394,7 +403,7 @@ def restore_from_archive(case):
         shutil.copy(item, rundir)
 
 ###############################################################################
-def case_st_archive(case, last_date=None, archive_incomplete_logs=True, no_resubmit=False):
+def case_st_archive(case, last_date=None, archive_incomplete_logs=True, copy_only=False, no_resubmit=False):
 ###############################################################################
     """
     Create archive object and perform short term archiving
@@ -419,7 +428,7 @@ def case_st_archive(case, last_date=None, archive_incomplete_logs=True, no_resub
     logger.info("st_archive starting")
 
     archive = EnvArchive(infile=os.path.join(caseroot, 'env_archive.xml'))
-    functor = lambda: _archive_process(case, archive, last_date, archive_incomplete_logs)
+    functor = lambda: _archive_process(case, archive, last_date, archive_incomplete_logs, copy_only)
     run_and_log_case_status(functor, "st_archive", caseroot=caseroot)
 
     logger.info("st_archive completed")
