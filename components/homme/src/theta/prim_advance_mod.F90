@@ -590,17 +590,16 @@ contains
               ! note: weak operators alreayd have mass matrix "included"
 
               ! add regular diffusion in top 3 layers:
-              if (nu_top>0 .and. k<=3) then
-                 lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+!if (nu_top>0 .and. k<=3) then
+                 lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d       (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,2)=laplace_sphere_wk(elem(ie)%state%theta_dp_cp(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-                 lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-                 lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phi(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+                 lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w          (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+                 lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phi        (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-              endif
+!endif
               nu_scale_top = 1
               if (k==1) nu_scale_top=4
               if (k==2) nu_scale_top=2
-
 
               ! biharmonic terms need a negative sign:
               if (nu_top>0 .and. k<=3) then
@@ -616,8 +615,15 @@ contains
                  stens(:,:,k,3,ie)=  -nu*stens(:,:,k,3,ie)
                  stens(:,:,k,4,ie)=-nu_s*stens(:,:,k,4,ie)
               endif
-           enddo
 
+  ! add uniform viscosity to satisfy dcmip2016 supercell test case
+  vtens(:,:,:,k,ie)=vtens(:,:,:,k,ie) +  500.0d0*lap_v(:,:,:)
+  stens(:,:,k,1,ie)=stens(:,:,k,1,ie) + 1500.0d0*lap_s(:,:,1) ! dp3d
+  stens(:,:,k,2,ie)=stens(:,:,k,2,ie) + 1500.0d0*lap_s(:,:,2) ! therta
+  stens(:,:,k,3,ie)=stens(:,:,k,3,ie) + 1500.0d0*lap_s(:,:,3) ! w
+  stens(:,:,k,4,ie)=stens(:,:,k,4,ie) + 1500.0d0*lap_s(:,:,4) ! phi
+
+           enddo
 
            kptr=0
            call edgeVpack(edgebuf,vtens(:,:,:,:,ie),2*nlev,kptr,ie)

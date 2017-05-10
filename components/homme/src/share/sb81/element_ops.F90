@@ -19,8 +19,7 @@
 !     
 !  set_state()
 !     initial condition interface used by DCMIP 2012 tests
-!     
-!  
+!
 !
 module element_ops
 
@@ -32,7 +31,7 @@ module element_ops
   use kinds,          only: real_kind, iulog
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp
-  use physical_constants, only : kappa, p0, Rgas, cp, g
+  use physical_constants, only : kappa, p0, Rgas, cp, g, dd_pi
 
   implicit none
 
@@ -109,7 +108,6 @@ contains
   enddo
   
   end subroutine get_pottemp
-  
 
   !_____________________________________________________________________
   subroutine get_temperature(elem,temperature,hvcoord,nt,ntQ)
@@ -179,6 +177,31 @@ contains
   end subroutine
 
   !_____________________________________________________________________
+  subroutine set_elem_state(u,v,w,T,ps,phis,p,dp,zm,g,elem,n0,n1,ntQ)
+
+    ! set state variables for entire element
+
+    real(real_kind), dimension(np,np,nlev), intent(in):: u,v,w,T,p,dp,zm
+    real(real_kind), dimension(np,np),      intent(in):: ps,phis
+    real(real_kind),  intent(in)    :: g
+    integer,          intent(in)    :: n0,n1,ntQ
+    type(element_t),  intent(inout) :: elem
+    integer :: n
+    real(real_kind), dimension(np,np,nlev) :: cp_star,kappa_star
+
+    do n=n0,n1
+      ! set prognostic state variables at level midpoints
+      elem%state%v    (:,:,1,:,n) = u
+      elem%state%v    (:,:,2,:,n) = v
+      elem%state%T    (:,:,:,  n) = T
+      elem%state%ps_v (:,:,    n) = ps
+      elem%state%phis (:,:)       = phis
+      elem%derived%phi(:,:,:)     = zm*g
+    end do
+
+  end subroutine set_elem_state
+
+  !_____________________________________________________________________
   subroutine get_state(u,v,w,T,theta,exner,pnh,dp,cp_star,rho,zm,g,i,j,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
@@ -190,14 +213,14 @@ contains
     type(element_t), intent(inout) :: elem
     type (hvcoord_t),intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
 
-    real(real_kind) , dimension(np,np,nlev) :: phi,p
+    real(real_kind) , dimension(np,np,nlev) :: phi,p,kappa_star, Rstar
 
     integer :: k
 
     ! set prognostic state variables at level midpoints
     u   = elem%state%v   (:,:,1,:,nt)
     v   = elem%state%v   (:,:,2,:,nt)
-    w   = 0                             ! todo: how do I compute w?
+    w   = 0                             ! todo: w = -omega/(rho g)
     T   = elem%state%T   (:,:,:,nt)
     zm  = elem%derived%phi(:,:,:)/g
 
@@ -206,26 +229,43 @@ contains
        dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
     enddo
 
-    pnh     = p
-    exner   = (p/p0)**(kappa)
-    theta   = T/exner
-    cp_star = cp
-    rho     = p/(Rsar*T)
+    ! todo: get moist kappa_star, cp_star, etc
+    cp_star   = cp
+    kappa_star= kappa
+    rstar     = kappa_star*cp_star
+
+    pnh       = p
+    exner     = (p/p0)**(kappa_star)
+    theta     = T/exner
+    rho       = p/(Rstar*T)
 
   end subroutine get_state
 
-  subroutine set_forcing_rayleigh_friction(elem, f_d, u0,v0, n)
+  !_____________________________________________________________________
+  subroutine set_forcing_rayleigh_friction(elem, zm, ztop, zc, tau, u0,v0, n)
   !
   ! test cases which use rayleigh friciton will call this with the relaxation coefficient
   ! f_d, and the reference state u0,v0.  Currently assume w0 = 0
   !
   implicit none
 
-  type(element_t),  intent(inout)  :: elem
-  real(real_kind):: u0(np,np,nlev)
-  real(real_kind):: v0(np,np,nlev)
+  type(element_t), intent(inout):: elem
+  real(real_kind), intent(in)   :: zm(nlev)       ! height at layer midpoints
+  real(real_kind), intent(in)   :: ztop           ! top of atm height
+  real(real_kind), intent(in)   :: zc             ! cutoff height
+  real(real_kind), intent(in)   :: tau            ! damping timescale
+  real(real_kind), intent(in)   :: u0(np,np,nlev) ! reference u
+  real(real_kind), intent(in)   :: v0(np,np,nlev) ! reference v
+  integer,         intent(in)   :: n              ! timestep
+
   real(real_kind):: f_d(nlev)
-  integer :: n,k
+  integer :: k
+
+  ! Compute damping as a function of layer-midpoint height
+  f_d=0.0d0
+  where(zm .ge. zc);   f_d = sin(dd_pi/2 *(zm - zc)/(ztop - zc))**2; end where
+  where(zm .ge. ztop); f_d = 1.0d0; end where
+  f_d = -f_d/tau
 
   do k=1,nlev
      elem%derived%FM(:,:,1,k) = f_d(k) * ( elem%state%v(:,:,1,k,n) - u0(:,:,k) )
@@ -233,9 +273,7 @@ contains
   enddo
   end subroutine 
 
-
-
-
+  !____________________________________________________________________
   subroutine tests_finalize(elem,hvcoord,ns,ne)
   implicit none
 

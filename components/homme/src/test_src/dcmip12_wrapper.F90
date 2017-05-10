@@ -433,43 +433,33 @@ subroutine dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
   integer,            intent(in)            :: n                        ! time level index
   real(rl),           intent(in)            :: dt                       ! time-step size
 
-  integer :: ie, k
-
-  real(rl) :: ztop, zh
-
+  integer  :: ie, k
+  real(rl) :: ztop, zc, z(np,np,nlev)
   real(rl) :: f_d(nlev) 
 
   if (test_case == "mtest1") then
     ztop    = 20000.d0        ! model top
-    zh      = 10000.d0        ! sponge-layer cutoff height
+    zc      = 10000.d0        ! sponge-layer cutoff height
   else 
     ztop    = 30000.d0        ! model top
-    zh      = 20000.d0        ! sponge-layer cutoff height
+    zc      = 20000.d0        ! sponge-layer cutoff height
   endif
 
+  forall(k=1:nlev) z(:,:,k)=zm(k)
+
   ! Compute damping as a function of layer-midpoint height
-  where(zm .ge. zh)
-    f_d = sin(pi/2 *(zm - zh)/(ztop - zh))**2
-  elsewhere
-    f_d = 0.0d0
-  end where
+  !where(zm .ge. zh)
+  !  f_d = sin(pi/2 *(zm - zh)/(ztop - zh))**2
+  !elsewhere
+  !  f_d = 0.0d0
+  !end where
 
-#if 0
   ! apply sponge layer forcing to momentum terms
-  do ie=nets,nete
-    do k=1,nlev
-      elem(ie)%derived%FM(:,:,1,k) = -f_d(k)/tau * ( elem(ie)%state%v(:,:,1,k,n) - u0(:,:,k,ie) )
-      elem(ie)%derived%FM(:,:,2,k) = -f_d(k)/tau * ( elem(ie)%state%v(:,:,2,k,n) - v0(:,:,k,ie) )
-      elem(ie)%derived%FM(:,:,3,k) = -f_d(k)/tau * ( elem(ie)%state%w(:,:,k,n)  )
-    enddo
-  enddo
-#endif
+  !f_d = -f_d/tau
 
-  f_d = -f_d/tau
   do ie=nets,nete
-     call set_forcing_rayleigh_friction(elem(ie),f_d,u0(:,:,:,ie),v0(:,:,:,ie),n)
+     call set_forcing_rayleigh_friction(elem(ie),z,ztop,zc,tau,u0(:,:,:,ie),v0(:,:,:,ie),n)
   enddo
-
 
 
 end subroutine

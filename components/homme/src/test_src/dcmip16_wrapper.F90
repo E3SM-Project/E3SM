@@ -131,6 +131,7 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
 
 end subroutine
 
+#if 0
 !_____________________________________________________________________
 subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
@@ -203,9 +204,18 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   enddo
 
-end subroutine
+  ! store initial velocity fields for use in sponge layer
+  allocate( u0(np,np,nlev,nelemd) )
+  allocate( v0(np,np,nlev,nelemd) )
 
-#if 0
+  do ie = nets,nete
+    u0(:,:,:,ie) = elem(ie)%state%v(:,:,1,:,1)
+    v0(:,:,:,ie) = elem(ie)%state%v(:,:,2,:,1)
+  enddo
+
+end subroutine
+#endif
+
 !_____________________________________________________________________
 subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
@@ -284,8 +294,16 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   enddo
 
+  ! store initial velocity fields for use in sponge layer
+  allocate( u0(np,np,nlev,nelemd) )
+  allocate( v0(np,np,nlev,nelemd) )
+
+  do ie = nets,nete
+    u0(:,:,:,ie) = elem(ie)%state%v(:,:,1,:,1)
+    v0(:,:,:,ie) = elem(ie)%state%v(:,:,2,:,1)
+  enddo
+
 end subroutine
-#endif
 
 !_______________________________________________________________________
 subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
@@ -297,6 +315,10 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
   integer,            intent(in)            :: nt, ntQ                  ! time level index
   integer,            intent(in)            :: test                     ! dcmip2016 test number
   real(rl),           intent(in)            :: dt                       ! time-step size
+
+  real(rl), parameter :: ztop = 20000_rl                                ! top of model at 20km
+  real(rl), parameter :: zc   = 18000_rl                                ! sponge layer cutoff at 13km
+  real(rl), parameter :: tau  = 20_rl                                   ! rayleigh damping time 20 sec
 
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl):: lat
@@ -319,10 +341,10 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
     T0=T; qv0=qv; qc0=qc; qr0=qr
 
     ! given rho,T,qv: get quantities consistent with Kessler's equation of state
-    ! rho = p/(Rstar T)
-    ! p     = rho * Rgas * T * (1.0_rl + Mvap * qv)
-exner = (p/p0)**(Rgas/Cp) 
-    ! T     = theta*exner
+    rho   = p/(Rgas*T)
+    p     = rho * Rgas * T * (1.0_rl + Mvap * qv)
+    exner = (p/p0)**(Rgas/Cp)
+    T     = theta*exner
 
     ! invert columns (increasing z)
     theta_inv= theta(:,:,nlev:1:-1)
@@ -362,6 +384,9 @@ exner = (p/p0)**(Rgas/Cp)
     ! T     = theta*exner
 
     elem(ie)%state%theta_dp_cp(:,:,:,nt) = theta*(Cp_star*dp)
+
+    ! add sponge layer forcing at top of model
+    !call set_forcing_rayleigh_friction(elem(ie),z,ztop,zc,tau,u0(:,:,:,ie),v0(:,:,:,ie),nt)
 
     ! set dynamics forcing
     !elem(ie)%derived%FM(:,:,1,:) = 0

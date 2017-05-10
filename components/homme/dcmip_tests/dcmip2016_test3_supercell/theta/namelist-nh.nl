@@ -17,9 +17,9 @@
   tstep_type        = 5
   rsplit            = 1
   qsplit            = 1
-  nu                = 5e9 !5.8e8                 ! 1e15/(120)^(3)
-  nu_s              = 5e9 !5.8e8
-  nu_p              = 5e9 !5.8e8
+  nu                = 5.8e8                 ! 1e15/(120)^(3)
+  nu_s              = 5.8e8
+  nu_p              = 5.8e8
   nu_top            = 2.0e3                     ! 2.5e5/(120)^(1)
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling

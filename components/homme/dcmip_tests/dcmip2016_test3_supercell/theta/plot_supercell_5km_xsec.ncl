@@ -49,7 +49,7 @@ begin
   print(times)
   print(time(times)*min_per_day)
 
-  i_5km =  30
+  i_5km =  29
   w_5km  = data->w (times,i_5km,:,:)
   qr_5km = data->Q3(times,i_5km,:,:)
   qr_5km = qr_5km*1000
