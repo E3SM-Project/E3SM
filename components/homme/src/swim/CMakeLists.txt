@@ -93,6 +93,7 @@ SET(SWIM_SRCS
   ${SRC_SHARE_SWEQX}/shal_movie_mod.F90
   ${SRC_SHARE_SWEQX}/solver_init_mod.F90
   ${SRC_SHARE_SWEQX}/state_mod.F90
+  ${SRC_SHARE_SWEQX}/sweq_mod.F90
   ${SRC_SHARE_SWEQX}/types_mod.F90
   ${SRC_SHARE_SWEQX}/viscosity_mod.F90
 
