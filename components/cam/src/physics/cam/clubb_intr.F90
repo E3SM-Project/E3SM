@@ -1147,7 +1147,7 @@ end subroutine clubb_init_cnst
    real(r8) :: es(pcols,pver)
    real(r8) :: qs(pcols,pver)
    real(r8) :: gam(pcols,pver)
-   real(r8) :: tmp_array(pcols,pverp)
+   real(r8) :: tmp_array(state%ncol,pverp)
    real(r8) :: bfact, orgparam, delpavg
    character(len=6) :: choice_radf
    
