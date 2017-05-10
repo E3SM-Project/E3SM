@@ -470,13 +470,14 @@ contains
   subroutine prep_glc_map_one_field_lnd2glc(egi, eli, fieldname, fractions_lx, mapper)
     ! Maps a single field from the land grid to the glc grid.
     !
-    ! Note that we remap each field separately because each field needs its own
-    ! vertical gradient calculator.
+    ! This mapping is not conservative, so should only be used for state fields.
+    !
+    ! NOTE(wjs, 2017-05-10) We used to map each field separately because each field needed
+    ! its own vertical gradient calculator. Now that we don't need vertical gradient
+    ! calculators, we may be able to change this to map multiple fields at once, at least
+    ! for part of the mapping routine (map_lnd2glc).
 
-    use vertical_gradient_calculator_2nd_order, only : vertical_gradient_calculator_2nd_order_type
-    use vertical_gradient_calculator_factory
-    use glc_elevclass_mod, only : glc_get_num_elevation_classes, &
-         glc_get_elevclass_bounds, glc_all_elevclass_strings
+    use glc_elevclass_mod, only : glc_get_num_elevation_classes
     use map_lnd2glc_mod, only : map_lnd2glc
 
     ! Arguments
@@ -488,24 +489,14 @@ contains
     !
     ! Local Variables
     type(mct_avect), pointer :: g2x_gx    ! glc export, glc grid, cpl pes - allocated in driver
-
-    type(vertical_gradient_calculator_2nd_order_type) :: gradient_calculator
     !---------------------------------------------------------------
 
     g2x_gx => component_get_c2x_cx(glc(egi))
-
-    gradient_calculator = create_vertical_gradient_calculator_2nd_order( &
-         attr_vect = l2gacc_lx(eli), &
-         fieldname = fieldname, &
-         toponame = 'Sl_topo', &
-         elevclass_names = glc_all_elevclass_strings(), &
-         elevclass_bounds = glc_get_elevclass_bounds())
 
     call map_lnd2glc(l2x_l = l2gacc_lx(eli), &
          landfrac_l = fractions_lx, &
          g2x_g = g2x_gx, &
          fieldname = fieldname, &
-         gradient_calculator = gradient_calculator, &
          mapper = mapper, &
          l2x_g = l2x_gx(eli))
 
@@ -543,11 +534,7 @@ contains
     ! Maps the surface mass balance field (qice) from the land grid to the glc grid.
     ! Use a smooth, non-conservative (bilinear) mapping, followed by a correction for conservation.
 
-    !WHL - Remove these vertical_gradient use statements after testing
-    use vertical_gradient_calculator_2nd_order, only : vertical_gradient_calculator_2nd_order_type
-    use vertical_gradient_calculator_factory
-    use glc_elevclass_mod, only : glc_get_num_elevation_classes, &
-         glc_get_elevclass_bounds, glc_all_elevclass_strings, glc_elevclass_as_string
+    use glc_elevclass_mod, only : glc_get_num_elevation_classes, glc_elevclass_as_string
 
     use map_lnd2glc_mod, only : map_lnd2glc
     use map_glc2lnd_mod, only : map_glc2lnd_ec
@@ -564,9 +551,6 @@ contains
     type(mct_aVect), pointer :: g2x_gx   ! glc export, glc grid
     type(mct_aVect), pointer :: x2l_lx   ! lnd import, lnd grid
     type(mct_aVect), pointer :: g2x_lx   ! glc export, lnd grid
-
-    !WHL - Remove?
-    type(vertical_gradient_calculator_2nd_order_type) :: gradient_calculator
 
     integer :: mpicom    ! mpi comm
 
@@ -657,16 +641,6 @@ contains
 
     g2x_gx => component_get_c2x_cx(glc(egi))
     x2l_lx => component_get_x2c_cx(lnd(eli))
-
-    !WHL - Here is the call to create the vertical gradient calculator.
-    !      By default, this is now replaced with linear glint-style interpolation.
-    !      Remove after testing.
-    gradient_calculator = create_vertical_gradient_calculator_2nd_order( &
-         attr_vect = l2gacc_lx(eli), &
-         fieldname = fieldname, &
-         toponame = 'Sl_topo', &
-         elevclass_names = glc_all_elevclass_strings(), &
-         elevclass_bounds = glc_get_elevclass_bounds())
 
     ! get grid sizes
     lsize_l = mct_aVect_lsize(l2gacc_lx(eli))
@@ -840,7 +814,6 @@ contains
          landfrac_l = fractions_lx, &
          g2x_g = g2x_gx, &
          fieldname = fieldname, &
-         gradient_calculator = gradient_calculator, &   !WHL - gradient calculator can be removed after testing
          mapper = mapper_Sl2g, &
          l2x_g = l2x_gx(eli))
 
