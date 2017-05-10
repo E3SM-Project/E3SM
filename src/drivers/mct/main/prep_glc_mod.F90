@@ -14,7 +14,7 @@ module prep_glc_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-  use component_type_mod, only: component_get_dom_cx   !WHL added to get glc domain info
+  use component_type_mod, only: component_get_dom_cx
   use component_type_mod, only: glc, lnd
 
   implicit none
@@ -55,8 +55,6 @@ module prep_glc_mod
   ! mappers
   type(seq_map), pointer :: mapper_Sl2g
   type(seq_map), pointer :: mapper_Fl2g
-
-  !WHL - added a mapper
   type(seq_map), pointer :: mapper_Fg2l
 
   ! attribute vectors
@@ -69,12 +67,12 @@ module prep_glc_mod
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
 
-  !WHL - logic to renormalize the SMB for conservation
-  !      Applies only when smb_smooth_downscale = .true.
-  !      Should be set to true for 2-way coupled runs with evolving ice sheets.
-  !      Probably does not need to be true for 1-way coupling.
-  logical, parameter :: smb_renormalize = .true.
-!!  logical, parameter :: smb_renormalize = .false.
+  ! Whether to renormalize the SMB for conservation.
+  ! Should be set to true for 2-way coupled runs with evolving ice sheets.
+  ! Probably does not need to be true for 1-way coupling.
+  !
+  ! TODO(wjs, 2017-05-10) Make this a namelist variable
+  logical :: smb_renormalize = .true.
 
   ! Name of flux field giving surface mass balance
   character(len=*), parameter :: qice_fieldname = 'Flgl_qice'
@@ -119,8 +117,6 @@ contains
 
     allocate(mapper_Sl2g)
     allocate(mapper_Fl2g)
-
-    !WHL - added a mapper
     allocate(mapper_Fg2l)
 
     if (glc_present .and. lnd_c2_glc) then
@@ -166,7 +162,9 @@ contains
                'seq_maps.rc', 'lnd2glc_fmapname:', 'lnd2glc_fmaptype:', samegrid_lg, &
                'mapper_Fl2g initialization', esmf_map_flag)
 
-          !WHL - added mapper_Fg2l
+          ! We need to initialize our own Fg2l mapper because in some cases (particularly
+          ! TG compsets - dlnd forcing CISM) the system doesn't otherwise create a Fg2l
+          ! mapper.
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fg2l'
@@ -673,7 +671,7 @@ contains
     allocate(lfrac(lsize_l))
     call mct_aVect_exportRattr(fractions_lx, "lfrac", lfrac)
     
-    !WHL -  Map Sg_icemask from the glc grid to the land grid.
+    ! Map Sg_icemask from the glc grid to the land grid.
     ! This may not be necessary, if Sg_icemask_l has already been mapped from Sg_icemask_g.
     ! It is done here for two reasons:
     ! (1) The mapping will *not* have been done if we are running with dlnd (e.g., a TG case).
@@ -710,12 +708,15 @@ contains
     call mct_aVect_clean(Sg_icemask_g_av)
     call mct_aVect_clean(Sg_icemask_l_av)
 
-    !WHL - Map Sg_ice_covered from the glc grid to the land grid.
-    !      This gives the fields Sg_ice_covered00, Sg_ice_covered01, etc. on the land grid.
-    !      These fields are needed to integrate the total SMB on the land grid, for conservation purposes.
-    !      As above, the mapping may not be necessary, because Sg_ice_covered might already have been mapped.
-    !      However, the mapping will not have been done in a TG case with dlnd, and it might not
-    !       be up to date because of coupler lags.
+    ! Map Sg_ice_covered from the glc grid to the land grid.
+    ! This gives the fields Sg_ice_covered00, Sg_ice_covered01, etc. on the land grid.
+    ! These fields are needed to integrate the total SMB on the land grid, for conservation purposes.
+    ! As above, the mapping may not be necessary, because Sg_ice_covered might already have been mapped.
+    ! However, the mapping will not have been done in a TG case with dlnd, and it might not
+    ! be up to date because of coupler lags.
+    ! Note that, for a case with full two-way coupling, we will only conserve if the
+    ! actual land cover used over the course of the year matches these currently-remapped
+    ! values. This should generally be the case with the current coupling setup.
     !WHL - Should the g2x_fields_from_glc be created just once, at initialization?
 
     ! Make a list of the frac and topo fields for each EC in g2x_lx
@@ -741,7 +742,7 @@ contains
 
     ! Create an attribute vector g2x_lx to hold the mapped fields
 
-    allocate(g2x_lx)   ! WHL - allocating here, since this is a temporary local AV
+    allocate(g2x_lx)
     call mct_aVect_init(g2x_lx, rList=g2x_fields_from_glc, lsize=lsize_l)
 
     ! Map Sg_ice_covered and Sg_topo from glc to land
@@ -957,11 +958,5 @@ contains
     type(seq_map), pointer :: prep_glc_get_mapper_Fl2g
     prep_glc_get_mapper_Fl2g => mapper_Fl2g
   end function prep_glc_get_mapper_Fl2g
-
-  !WHL - added an Fo2g mapper
-!!  function prep_glc_get_mapper_Fo2g()
-!!    type(seq_map), pointer :: prep_glc_get_mapper_Fo2g
-!!    prep_glc_get_mapper_Fo2g => mapper_Fo2g
-!!  end function prep_glc_get_mapper_Fo2g
 
 end module prep_glc_mod
