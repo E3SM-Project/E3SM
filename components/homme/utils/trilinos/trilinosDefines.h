@@ -1,13 +1,22 @@
-// Select which preconditioner 
+// Select which preconditioner option to use
+//
 // NOTE: When adding a new preconditioner, both trilinosNoxSolver and 
 //       trilinosModelEvaluator need to be updated with the new #define
 // ==============================================================================
+
+// ------------------------------------------------------------------------------
+// Options for PRIM or SWIM
+// ------------------------------------------------------------------------------
 
 // Identity preconditioner 
 #define IDENT_PC
 
 // Block preconditioner using spectral element operators
 //#define BLOCK_PC_OP
+
+// ------------------------------------------------------------------------------
+// Options for PRIM only
+// ------------------------------------------------------------------------------
 
 // Block preconditioner using local dense Jacobian block
 //#define BLOCK_PC_DENSE
