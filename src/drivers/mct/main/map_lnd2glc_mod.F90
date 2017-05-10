@@ -303,6 +303,7 @@ contains
 
   end subroutine map_bare_land
 
+  !-----------------------------------------------------------------------
   subroutine map_ice_covered(l2x_l, landfrac_l, fieldname, &
        topo_g, mapper, data_g_ice_covered)
 
@@ -352,7 +353,10 @@ contains
     real(r8), pointer :: tmp_field_g(:)  ! must be a pointer to satisfy the MCT interface
     real, pointer :: data_g_EC(:,:)    ! remapped field in each glc cell, in each EC
     real, pointer :: topo_g_EC(:,:)    ! remapped topo in each glc cell, in each EC
-    
+
+    character(len=*), parameter :: subname = 'map_ice_covered'
+    !-----------------------------------------------------------------------
+
     lsize_g = size(topo_g)
     nEC = glc_get_num_elevation_classes()
     SHR_ASSERT((size(topo_g) == lsize_g), errMsg(__FILE__, __LINE__))
@@ -446,6 +450,10 @@ contains
                    ! This shouldn't happen, but handle it in case it does. In this case,
                    ! let's arbitrarily use the mean of the two elevation classes, rather
                    ! than the weighted mean.
+                   write(logunit,*) subname//' WARNING: topo diff between elevation classes <= 0'
+                   write(logunit,*) 'n, ec, elev_l, elev_u = ', n, ec, elev_l, elev_u
+                   write(logunit,*) 'Simply using mean of the two elevation classes,'
+                   write(logunit,*) 'rather than the weighted mean.'
                    data_g_ice_covered(n) = data_g_EC(n,ec-1) * 0.5_r8 &
                                          + data_g_EC(n,ec)   * 0.5_r8
                 else
