@@ -12,8 +12,29 @@ from acme_diags.driver.utils import get_output_dir
 vcs_canvas = vcs.init(bg=True)
 textcombined_objs = {}
 
+def rotate_180(data):
+    """Rotate the data 180 degrees."""
+    return data[::-1]
+
+def log_yaxis(data, method):
+    """Make the y axis logrithmic."""
+
+    axis = data.getAxis(-2)
+    new_axis = axis.clone()
+    new_axis[:] = numpy.ma.log10(new_axis[:])
+    data.setAxis(-2, new_axis)
+
+    normal_labels = vcs.mkscale(axis[0], axis[-1])
+    new_labels = {}
+    for l in normal_labels:
+        new_labels[numpy.log10(l)] = int(l)
+    method.yticlabels1 = new_labels
+
+    # needed until cdms2 supports in-place operations
+    return data
+    
 def managetextcombined(tt_name, to_name):
-    """ Caches textcombined objects. """
+    """Caches textcombined objects."""
     new_name = "%s:::%s" % (tt_name, to_name)
     mytc = textcombined_objs.get(new_name, None)
     if mytc is None:
@@ -99,6 +120,9 @@ def add_cyclic(var):
 
 def plot(reference, test, diff, metrics_dict, parameter):
     case_id = parameter.case_id
+    reference = rotate_180(reference)
+    test = rotate_180(test)
+    diff = rotate_180(diff)
 
     # Plotting
     vcs_canvas.bgX = parameter.canvas_size_w
@@ -134,25 +158,15 @@ def plot(reference, test, diff, metrics_dict, parameter):
 
     reference_isofill = vcs.getisofill('reference_isofill')
     reference_isofill.missing = 'grey'
+    reference = log_yaxis(reference, reference_isofill)
+
     test_isofill = vcs.getisofill('test_isofill')
     test_isofill.missing = 'grey'
+    test = log_yaxis(test, test_isofill)
+
     diff_isofill = vcs.getisofill('diff_isofill')
     diff_isofill.missing = 'grey'
-  
-#    fill_va = 1e+20
-#    reference_isofill.datawc_y1 = fill_va  # this should extracted from selected domain
-#    reference_isofill.datawc_y2 = fill_va
-#    reference_isofill.datawc_x1 = fill_va  # this should extracted from selected domain
-#    reference_isofill.datawc_x2 = fill_va
-#    test_isofill.datawc_y1 = fill_va  # this should extracted from selected domain
-#    test_isofill.datawc_y2 = fill_va
-#    test_isofill.datawc_x1 = fill_va  # this should extracted from selected domain
-#    test_isofill.datawc_x2 = fill_va
-#    diff_isofill.datawc_y1 = fill_va  # this should extracted from selected domain
-#    diff_isofill.datawc_y2 = fill_va
-#    diff_isofill.datawc_x1 = fill_va  # this should extracted from selected domain
-#    diff_isofill.datawc_x2 = fill_va
-
+    diff = log_yaxis(diff, diff_isofill)
 
     set_levels_of_graphics_method(reference_isofill, parameter.contour_levels, reference, test)
     set_levels_of_graphics_method(test_isofill, parameter.contour_levels, test, reference)
@@ -173,12 +187,8 @@ def plot(reference, test, diff, metrics_dict, parameter):
     vcs_canvas.plot(test, template_test, test_isofill)
     vcs_canvas.plot(reference, template_ref, reference_isofill)
     vcs_canvas.plot(diff, template_diff, diff_isofill)
-    #iso = vcs.createisofill()	
-    #vcs_canvas.plot(test, iso)
-    #vcs_canvas.plot(reference,  iso)
-    #vcs_canvas.plot(diff,  iso)
 
- #   plot_rmse_and_corr(vcs_canvas, metrics_dict)
+    # plot_rmse_and_corr(vcs_canvas, metrics_dict)
 
     # Plotting the main title
     main_title = managetextcombined('main_title', 'main_title')
