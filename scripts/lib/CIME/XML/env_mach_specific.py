@@ -225,7 +225,10 @@ class EnvMachSpecific(EnvBase):
         sh_init_cmd = self.get_module_system_init_path("sh")
         sh_mod_cmd = self.get_module_system_cmd_path("sh")
 
-        # Load dotkit modules, similar to soft module load
+        # Purpose is for environment management system that does not have
+	# a python interface and therefore can only determine what they
+	# do by running shell command and looking at the changes
+	# in the environment.  
 
         cmd = "source %s" % sh_init_cmd
 
