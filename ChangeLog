@@ -1,6 +1,32 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 5-10-2017
+Tag: cime5.3.0-alpha.13
+Answer Changes:  Round Off
+Tests: aux_glc test suite
+Dependencies:
+
+Brief Summary:
+    - New CISM mapping files.
+    - Fix pylint issues.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+67c14ca Merge pull request #1478 from billsacks/cism_new_mapping_files
+affab50 fix pylint issue
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       scripts/lib/CIME/case.py
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 5-9-2017
 Tag: cime5.3.0-alpha.12
 Answer Changes: None
