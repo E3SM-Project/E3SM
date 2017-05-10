@@ -598,7 +598,6 @@ contains
     integer :: km, ka
 
     real(r8), pointer :: qice_l(:,:)      ! SMB (Flgl_qice) on land grid
-    real(r8), pointer :: topo_l(:,:)
     real(r8), pointer :: frac_l(:,:)      ! EC fractions (Sg_ice_covered) on land grid
     real(r8), pointer :: tmp_field_l(:)   ! temporary field on land grid
 
@@ -644,17 +643,6 @@ contains
     real(r8) :: effective_area  ! grid cell area multiplied by min(lfrac,Sg_icemask_l).
                                 ! This is the area that can contribute SMB to the ice sheet model.
 
-    !WHL - The remaining variables can be removed after testing
-
-    ! parameters for idealized SMB - just for testing
-    real(r8), parameter :: q0 = 0.30_r8   ! positive SMB at high elevation
-!!    real(r8), parameter :: q0 = 1.0_r8   ! positive SMB at high elevation
-    real(r8), parameter :: q1 = 5.e-4     ! SMB gradient with elevation (yr^-1)
-!!    real(r8), parameter :: q1 = 0.0_r8     ! SMB gradient with elevation (yr^-1)
-    real(r8), parameter :: h0 = 2000._r8  ! elevation above which SMB is constant
-
-!!    logical :: ideal_smb = .true.
-    logical :: ideal_smb = .false.
     !---------------------------------------------------------------
 
     call seq_comm_setptrs(CPLID, mpicom=mpicom)
@@ -792,13 +780,8 @@ contains
     ! Export qice and Sg_ice_covered in each elevation class to local arrays.
     ! Note: qice comes from l2gacc_lx; frac comes from g2x_lx.
 
-    !WHL - It would be possible to export qice_l and frac_l in the same EC loop.
-    !      But to support an ideal SMB for testing, we need to first get topo, then set the SMB,
-    !      and finally import the SMB to qice_l.
-
     allocate(qice_l(lsize_l,0:nEC))
     allocate(frac_l(lsize_l,0:nEC))
-    allocate(topo_l(lsize_l,0:nEC))   !WHL - not needed in general, but used for ideal SMB
     allocate(tmp_field_l(lsize_l))
 
     do ec = 0, nEC
@@ -808,72 +791,14 @@ contains
        call mct_aVect_exportRattr(g2x_lx, trim(frac_field), tmp_field_l)
        frac_l(:,ec) = tmp_field_l(:)
 
-       !WHL - topo_l is currently used only for ideal SMB
-       topo_field = Sg_topo_field // elevclass_as_string    ! Sg_topo01, etc.
-       call mct_aVect_exportRattr(g2x_lx, trim(topo_field), tmp_field_l)
-       topo_l(:,ec) = tmp_field_l(:)
+       qice_field = qice_fieldname // elevclass_as_string    ! Flgl_qice01, etc.
+       call mct_aVect_exportRattr(l2gacc_lx(eli), trim(qice_field), tmp_field_l)
+       qice_l(:,ec) = tmp_field_l(:)
 
     enddo
 
     ! clean the temporary attribute vector g2x_lx
     call mct_aVect_clean(g2x_lx)
-
-    !WHL debug - option to use an ideal SMB
-    if (ideal_smb) then
-
-       do ec = 0, nEC
-          elevclass_as_string = glc_elevclass_as_string(ec)
-
-          !WHL - debug - Prescribe inception for class 0 if above topo threshold
-          if (ec == 0) then
-
-             ! initialize to zero
-             qice_l(:,ec) = 0._r8
-
-             ! set to nonzero value above inception topo threshold
-             do n = 1, lsize_l
-!                if (topo_l(n,ec) > 500.0_r8) then
-                   qice_l(n,ec) = 1.0_r8
-                   write(logunit,*) 'Bare ice SMB: n, ec, topo, frac', n, ec, topo_l(n,ec), frac_l(n,ec)
-!                else
-!                   qice_l(n,ec) = 0.0_r8
-!                endif
-             enddo
-
-          endif
-
-          if (ec > 0) then
-             ! assign qice (m/yr) to each topo value
-             do n = 1, lsize_l
-                if (topo_l(n,ec) > h0) then
-                   qice_l(n,ec) = q0
-                else
-                   qice_l(n,ec) = q0 - q1*(h0 - topo_l(n,ec)) 
-                endif
-             enddo  ! n
-          endif
-
-          ! convert from m/yr to km/m2/s
-          qice_l(:,ec) = qice_l(:,ec) * 917._r8 / 31536000._r8 
-
-          ! Import back into aVect
-          qice_field = qice_fieldname // elevclass_as_string    ! Flgl_qice01, etc.
-          tmp_field_l(:) = qice_l(:,ec)
-          call mct_aVect_importRattr(l2gacc_lx(eli), trim(qice_field), tmp_field_l)
-          
-       enddo  ! ec
-
-    endif  ! ideal_smb
-
-    ! Export qice in each elevation class to local arrays.
-
-    do ec = 0, nEC
-       elevclass_as_string = glc_elevclass_as_string(ec)
-
-       qice_field = qice_fieldname // elevclass_as_string    ! Flgl_qice01, etc.
-       call mct_aVect_exportRattr(l2gacc_lx(eli), trim(qice_field), tmp_field_l)
-       qice_l(:,ec) = tmp_field_l(:)
-    enddo
 
     ! Sum qice over local land grid cells
 
@@ -1024,9 +949,6 @@ contains
     deallocate(qice_l)
     deallocate(frac_l)
     deallocate(qice_g)
-
-    ! The rest are diagnostic only
-    deallocate(topo_l)
     deallocate(area_g)
 
   end subroutine prep_glc_map_qice_conservative_lnd2glc
