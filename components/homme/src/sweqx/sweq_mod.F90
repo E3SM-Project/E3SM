@@ -119,6 +119,8 @@ contains
     type (quadrature_t)   :: gp           ! quadratures on velocity and pressure grids
 
 #ifdef TRILINOS
+    type (cg_t) :: cg ! conjugate gradient struct
+
     integer :: lenx
 
     real(c_double), allocatable, dimension(:) :: xstate
