@@ -87,7 +87,7 @@ contains
     use edge_mod,       only: edgevpack, edgevunpack, initEdgeBuffer
     use edgetype_mod,   only: EdgeBuffer_t
     use reduction_mod,  only: reductionbuffer_ordered_1d_t, parallelmax
-    use time_mod,       only: timelevel_qdp, tevolve
+    use time_mod,       only: timelevel_qdp
 
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
@@ -1245,8 +1245,6 @@ contains
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa, Rwater_vapor,p0, g
   use physics_mod, only : virtual_specific_heat, virtual_temperature
   use prim_si_mod, only : preq_vertadv_v, preq_vertadv_upwind, preq_omega_ps, preq_hydrostatic_v2
-
-  use time_mod, only : tevolve
 
   implicit none
   integer, intent(in) :: np1,n0,qn0,nets,nete
