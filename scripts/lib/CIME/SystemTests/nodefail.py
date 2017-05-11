@@ -25,25 +25,25 @@ class NODEFAIL(ERS):
         fake_exe = \
 """#!/bin/bash
 
-fail_sentinel={}
-cpl_log={}/cpl.log.$LID
-model_log={}/{}.log.$LID
+fail_sentinel={0}
+cpl_log={1}/cpl.log.$LID
+model_log={1}/{2}.log.$LID
 touch $cpl_log
 touch $fail_sentinel
 declare -i num_fails=$(cat $fail_sentinel | wc -l)
-declare -i times_to_fail=${NODEFAIL_NUM_FAILS:-3}
+declare -i times_to_fail=${{NODEFAIL_NUM_FAILS:-3}}
 
 if ((num_fails < times_to_fail)); then
   echo FAKE FAIL >> $cpl_log
   echo FAIL >> $fail_sentinel
-  echo '{}' >> $model_log
+  echo '{3}' >> $model_log
   sleep 1
   exit -1
 else
   echo Insta pass
   echo SUCCESSFUL TERMINATION > $cpl_log
 fi
-""".format(self._fail_sentinel, rundir, rundir, get_model(), self._fail_str)
+""".format(self._fail_sentinel, rundir, get_model(), self._fail_str)
 
         fake_exe_file = os.path.join(exeroot, "fake.sh")
         with open(fake_exe_file, "w") as fd:

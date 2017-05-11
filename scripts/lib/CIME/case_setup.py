@@ -132,7 +132,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                    "ESP components may only have one instance")
             if ninst > ntasks:
                 if ntasks == 1:
-                    case.set_value("NTASKS_{}".format(comp, ninst))
+                    case.set_value("NTASKS_{}".format(comp), ninst
                 else:
                     expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
 
@@ -149,7 +149,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             check_lockedfiles()
             env_mach_pes = case.get_env("mach_pes")
             pestot = env_mach_pes.get_total_tasks(models)
-            logger.debug("at update TOTALPES = {}", pestot)
+            logger.debug("at update TOTALPES = {}".format(pestot))
             case.set_value("TOTALPES", pestot)
             thread_count = env_mach_pes.get_max_thread_count(models)
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
@@ -167,17 +167,17 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             for job in env_batch.get_jobs():
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
                 if job == "case.test" and testcase is not None and not test_mode:
-                    logger.info("Writing {} script", job)
+                    logger.info("Writing {} script".format(job))
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
                 elif job != "case.test":
-                    logger.info("Writing {} script from input template {}", job, input_batch_script)
+                    logger.info("Writing {} script from input template {}".format(job, input_batch_script))
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
             logger.info("Locking file env_mach_pes.xml")
             case.flush()
-            logger.debug("at copy TOTALPES = {}", case.get_value("TOTALPES"))
+            logger.debug("at copy TOTALPES = {}".format(case.get_value("TOTALPES")))
             lock_file("env_mach_pes.xml")
 
         # Create user_nl files for the required number of instances
@@ -187,7 +187,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # loop over models
         for model in models:
             comp = case.get_value("COMP_{}".format(model))
-            logger.debug("Building {} usernl files", model)
+            logger.debug("Building {} usernl files".format(model))
             _build_usernl_files(case, model, comp)
             if comp == "cism":
                 run_cmd_no_fail("{}/../components/cism/cime_config/cism.template {}".format(cimeroot, caseroot))

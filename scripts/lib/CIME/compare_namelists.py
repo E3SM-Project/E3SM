@@ -495,7 +495,7 @@ def _compare_namelists(gold_namelists, comp_namelists, case):
     different_namelists = OrderedDict()
     for namelist, gold_names in gold_namelists.iteritems():
         if (namelist not in comp_namelists):
-            different_namelists[namelist] = ["Missing namelist: {}\n".format(namelist])
+            different_namelists[namelist] = ["Missing namelist: {}\n".format(namelist)]
         else:
             comp_names = comp_namelists[namelist]
             for name, gold_value in gold_names.iteritems():
@@ -513,7 +513,7 @@ def _compare_namelists(gold_namelists, comp_namelists, case):
 
     for namelist in comp_namelists:
         if (namelist not in gold_namelists):
-            different_namelists[namelist] = ["Found extra namelist: {}\n".format(namelist])
+            different_namelists[namelist] = ["Found extra namelist: {}\n".format(namelist)]
 
     comments = ""
     for namelist, nlcomment in different_namelists.iteritems():

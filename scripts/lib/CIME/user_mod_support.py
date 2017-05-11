@@ -32,7 +32,7 @@ def apply_user_mods(caseroot, user_mods_path):
     # general: we want a given user_mods directory to take precedence over any
     # mods that it includes). So we reverse include_dirs to accomplish this.
     include_dirs.reverse()
-    logger.debug("include_dirs are {}".format(nclude_dirs))
+    logger.debug("include_dirs are {}".format(include_dirs))
     for include_dir in include_dirs:
         # write user_nl_xxx file in caseroot
         for user_nl in glob.iglob(os.path.join(include_dir,"user_nl_*")):
@@ -56,9 +56,9 @@ def apply_user_mods(caseroot, user_mods_path):
                     # We overwrite any existing SourceMods file so that later
                     # include_dirs take precedence over earlier ones
                     if os.path.isfile(case_source_mods):
-                        logger.warn("WARNING: Overwriting existing SourceMods in {}".format(ase_source_mods))
+                        logger.warn("WARNING: Overwriting existing SourceMods in {}".format(case_source_mods))
                     else:
-                        logger.info("Adding SourceMod to case {}".format(ase_source_mods))
+                        logger.info("Adding SourceMod to case {}".format(case_source_mods))
                     try:
                         shutil.copyfile(source_mods, case_source_mods)
                     except:
@@ -102,9 +102,9 @@ def build_include_dirs_list(user_mods_path, include_dirs=None):
     if user_mods_path is None or user_mods_path == 'UNSET':
         return include_dirs
     expect(os.path.isabs(user_mods_path),
-           "Expected full directory path, got '{}'".format(ser_mods_path))
+           "Expected full directory path, got '{}'".format(user_mods_path))
     expect(os.path.isdir(user_mods_path),
-           "Directory not found {}".format(ser_mods_path))
+           "Directory not found {}".format(user_mods_path))
     norm_path = os.path.normpath(user_mods_path)
 
     for dir_ in include_dirs:
@@ -112,7 +112,7 @@ def build_include_dirs_list(user_mods_path, include_dirs=None):
             include_dirs.remove(norm_path)
             break
 
-    logger.info("Adding user mods directory {}".format(orm_path))
+    logger.info("Adding user mods directory {}".format(norm_path))
     include_dirs.append(norm_path)
     include_file = os.path.join(norm_path,"include_user_mods")
     if os.path.isfile(include_file):
@@ -125,6 +125,6 @@ def build_include_dirs_list(user_mods_path, include_dirs=None):
                     if os.path.isabs(newpath):
                         build_include_dirs_list(newpath, include_dirs)
                     else:
-                        logger.warn("Could not resolve path '{}' in file '{}'".format(ewpath),include_file)
+                        logger.warn("Could not resolve path '{}' in file '{}'".format(newpath, include_file))
 
     return include_dirs

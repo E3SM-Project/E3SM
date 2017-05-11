@@ -263,8 +263,7 @@ class NamelistGenerator(object):
             while match:
                 env_val = self._case.get_value(match.group('name'))
                 expect(env_val is not None,
-                       "Namelist default for variable {} refers to unknown XML "
-                       "variable {}.".format((name, match.group('name'))))
+                       "Namelist default for variable {} refers to unknown XML variable {}.".format((name, match.group('name'))))
                 scalar = scalar.replace(match.group(0), str(env_val), 1)
                 match = _var_ref_re.search(scalar)
             default[i] = scalar
@@ -474,12 +473,12 @@ class NamelistGenerator(object):
                 if filename.strip() == '':
                     continue
                 filepath = os.path.join(domain_filepath, filename.strip())
-                input_data_list.write("domain{:d} = {}\n".format((i+1, filepath)))
+                input_data_list.write("domain{:d} = {}\n".format(i+1, filepath))
             for i, filename in enumerate(data_filenames.split("\n")):
                 if filename.strip() == '':
                     continue
                 filepath = os.path.join(data_filepath, filename.strip())
-                input_data_list.write("file{:d} = {}\n".format((i+1, filepath)))
+                input_data_list.write("file{:d} = {}\n".format(i+1, filepath))
         self.update_shr_strdata_nml(config, stream, stream_path)
 
     def update_shr_strdata_nml(self, config, stream, stream_path):
@@ -489,14 +488,13 @@ class NamelistGenerator(object):
         directly, since `create_stream_file` calls this method itself.
         """
         assert config['stream'] == stream, \
-            "config stream is {}, but input stream is {}".foramt(config['stream'], stream)
+            "config stream is {}, but input stream is {}".format(config['stream'], stream)
         # Double-check the years for sanity.
         year_start = int(self.get_default("strm_year_start", config))
         year_end = int(self.get_default("strm_year_end", config))
         year_align = int(self.get_default("strm_year_align", config))
         expect(year_end >= year_start,
-               "Stream {} starts at year {:d}, but ends at earlier year {:d}." %
-               (stream, year_start, year_end))
+               "Stream {} starts at year {:d}, but ends at earlier year {:d}.".format(stream, year_start, year_end))
         # Add to streams file.
         stream_string = "{} {:d} {:d} {:d}".format(os.path.basename(stream_path),
                                                    year_align, year_start,
@@ -505,8 +503,7 @@ class NamelistGenerator(object):
         for variable in self._streams_variables:
             default = self.get_default(variable, config)
             expect(len(default) == 1,
-                   "Stream {} had multiple settings for variable {}." %
-                   (stream, variable))
+                   "Stream {} had multiple settings for variable {}.".format(stream, variable))
             self._streams_namelists[variable].append(default[0])
 
     def set_abs_file_path(self, file_path):
@@ -573,7 +570,7 @@ class NamelistGenerator(object):
                         continue
                     file_path = self.set_abs_file_path(file_path)
                     if not os.path.exists(file_path):
-                        logger.warn ("File not found: {} = {}, will attempt to download in check_input_data phase".format((name, literal)))
+                        logger.warn("File not found: {} = {}, will attempt to download in check_input_data phase".format(name, literal))
                     current_literals[i] = string_to_character_literal(file_path)
                 current_literals = compress_literal_list(current_literals)
 
@@ -622,7 +619,7 @@ class NamelistGenerator(object):
                                    "Bad input_pathname value: {}." %
                                    input_pathname)
                         # Write to the input data list.
-                        input_data_list.write("{} = {}\n".format((variable_name, file_path)))
+                        input_data_list.write("{} = {}\n".format(variable_name, file_path))
 
     def write_output_file(self, namelist_file, data_list_path=None, groups=None, sorted_groups=True):
         """Write out the namelists and input data files.

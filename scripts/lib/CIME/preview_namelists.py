@@ -30,7 +30,7 @@ def create_dirs(case):
     for dir_to_make in dirs_to_make:
         if (not os.path.isdir(dir_to_make)):
             try:
-                logger.debug("Making dir '{}'", dir_to_make)
+                logger.debug("Making dir '{}'".format(dir_to_make))
                 os.makedirs(dir_to_make)
             except OSError as e:
                 expect(False, "Could not make directory '{}', error: {}".format(dir_to_make, e))
@@ -83,7 +83,7 @@ def create_namelists(case, component=None):
                     first_line = f.readline()
                 if "python" in first_line:
                     mod = imp.load_source("buildnml", cmd)
-                    logger.info("   Calling {} buildnml", compname)
+                    logger.info("   Calling {} buildnml".format(compname))
                     mod.buildnml(case, caseroot, compname)
                 else:
                     raise SyntaxError
@@ -98,7 +98,7 @@ def create_namelists(case, component=None):
                 raise
 
             if do_run_cmd:
-                logger.info("   Running {} buildnml", compname)
+                logger.info("   Running {} buildnml".format(compname))
                 case.flush()
                 output = run_cmd_no_fail("{} {}".format(cmd, caseroot), verbose=False)
                 logger.info(output)
@@ -119,7 +119,7 @@ def create_namelists(case, component=None):
     for cpglob in ["*_in_[0-9]*", "*modelio*", "*_in",
                    "*streams*txt*", "*stxt", "*maps.rc", "*cism.config*"]:
         for file_to_copy in glob.glob(os.path.join(rundir, cpglob)):
-            logger.debug("Copy file from '{}' to '{}'", file_to_copy, docdir)
+            logger.debug("Copy file from '{}' to '{}'".format(file_to_copy, docdir))
             shutil.copy2(file_to_copy, docdir)
 
     # Copy over chemistry mechanism docs if they exist

@@ -25,7 +25,7 @@ def _do_full_nl_comp(case, test, compare_name, baseline_root=None):
 
     # Start off by comparing everything in CaseDocs except a few arbitrary files (ugh!)
     # TODO: Namelist files should have consistent suffix
-    all_items_to_compare = [item for item in glob.glob("{}/*".format(casedoc_dir)\),
+    all_items_to_compare = [item for item in glob.glob("{}/*".format(casedoc_dir)), \
                             if "README" not in os.path.basename(item)\
                             and not item.endswith("doc")\
                             and not item.endswith("prescribed")\

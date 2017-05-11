@@ -27,7 +27,7 @@ class PET(SystemTestsCompareTwo):
     def _case_one_setup(self):
         # first make sure that all components have threaded settings
         for comp in self._case.get_values("COMP_CLASSES"):
-            if self._case.get_value("NTHRDS_{}".format(comp) <= 1:)
+            if self._case.get_value("NTHRDS_{}".format(comp)) <= 1:
                 self._case.set_value("NTHRDS_{}".format(comp), 2)
 
         # Need to redo case_setup because we may have changed the number of threads

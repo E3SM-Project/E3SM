@@ -292,7 +292,7 @@ def _archive_restarts(case, archive, archive_entry,
                             srcfile = os.path.join(rundir, histfile)
                             destfile = os.path.join(archive_restdir, histfile)
                             expect(os.path.isfile(srcfile),
-                                   "hist file {} does not exist ".format(srcfile)
+                                   "hist file {} does not exist ".format(srcfile))
                             shutil.copy(srcfile, destfile)
                             logger.info("copying \n{} to \n{}", srcfile, destfile)
                     else:

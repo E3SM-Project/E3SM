@@ -44,7 +44,7 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
 
         bldroot = os.path.join(exeroot, model, "obj")
         libroot = os.path.join(exeroot, "lib")
-        file_build = os.path.join(exeroot, "{}.bldlog.{}".format(model), lid)
+        file_build = os.path.join(exeroot, "{}.bldlog.{}".format(model, lid))
         logger.debug("bldroot is {}".format(bldroot))
         logger.debug("libroot is {}".format(libroot))
 
@@ -88,14 +88,14 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
     #
 
     cime_model = get_model()
-    file_build = os.path.join(exeroot, "{}.bldlog.{}".format(cime_model), lid)
+    file_build = os.path.join(exeroot, "{}.bldlog.{}".format(cime_model, lid))
 
     config_dir = os.path.join(cimeroot, "src", "drivers", "mct", "cime_config")
     f = open(file_build, "w")
     bldroot = os.path.join(exeroot, "cpl", "obj")
     if not os.path.isdir(bldroot):
         os.makedirs(bldroot)
-    logger.info("Building {} with output to {} ".format(cime_model), file_build)
+    logger.info("Building {} with output to {} ".format(cime_model, file_build))
     stat = run_cmd("{}/buildexe {} {} {}"
                    .format(config_dir, caseroot, libroot, bldroot),
                    from_dir=bldroot, verbose=False, arg_stdout=f,
@@ -105,7 +105,7 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
     expect(stat == 0, "BUILD FAIL: buildexe failed, cat {}".format(file_build)
 
     # Copy the just-built ${MODEL}.exe to ${MODEL}.exe.$LID
-    shutil.copy("{}/{}.exe".format(exeroot, cime_model), "{}/{}.exe.{}".format((exeroot, cime_model), lid))
+    shutil.copy("{}/{}.exe".format(exeroot, cime_model), "{}/{}.exe.{}".format(exeroot, cime_model, lid))
 
     logs.append(file_build)
 
@@ -152,7 +152,7 @@ def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
     logger.debug("compiler={} mpilib={} debugdir={} threaddir={}"
                  .format(compiler,mpilib,debugdir,threaddir))
 
-    expect( ninst_build == ninst_value or ninst_build == "0",
+    expect(ninst_build == ninst_value or ninst_build == "0",
             """
 ERROR, NINST VALUES HAVE CHANGED
   NINST_BUILD = {}
@@ -165,9 +165,9 @@ ERROR, NINST VALUES HAVE CHANGED
   You can override this error message at your own risk by executing:
     ./xmlchange -file env_build.xml -id NINST_BUILD -val 0
   Then rerun the build script interactively
-""".format(ninst_build), ninst_value)
+""".format(ninst_build, ninst_value)
 
-    expect( smp_build == smpstr or smp_build == "0",
+    expect(smp_build == smpstr or smp_build == "0",
             """
 ERROR, SMP VALUES HAVE CHANGED
   SMP_BUILD = {}
@@ -181,7 +181,7 @@ ERROR, SMP VALUES HAVE CHANGED
   You can override this error message at your own risk by executing:
     ./xmlchange -file env_build.xml -id SMP_BUILD -val 0
   Then rerun the build script interactively
-""".format(smp_build, smp_value), smpstr)
+""".format(smp_build, smp_value, smpstr)
 
     expect(build_status == 0,
            """
@@ -248,12 +248,12 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
         if (lib != "pio" and not os.path.exists(full_lib_path)):
             os.makedirs(full_lib_path)
 
-        file_build = os.path.join(exeroot, "{}.bldlog.{}".format(lib), lid)
+        file_build = os.path.join(exeroot, "{}.bldlog.{}".format(lib, lid))
         my_file = os.path.join(cimeroot, "src", "build_scripts", "buildlib.{}".format(lib))
         if lib == "pio":
             my_file = "PYTHONPATH={}:{}:$PYTHONPATH {}".format(os.path.join(cimeroot,"scripts","Tools"),
                                                           os.path.join(cimeroot,"scripts","lib"), my_file)
-        logger.info("Building {} with output to file {}".format(lib),file_build)
+        logger.info("Building {} with output to file {}".format(lib,file_build))
         stat = run_cmd("{} {} {} {}"
                        .format(my_file, full_lib_path, os.path.join(exeroot,sharedpath), caseroot),
                        from_dir=exeroot, combine_output=True, arg_stdout=file_build)[0]
@@ -300,7 +300,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
 def _build_model_thread(config_dir, compclass, caseroot, libroot, bldroot, incroot, file_build,
                         thread_bad_results, smp, compiler):
 ###############################################################################
-    logger.info("Building {} with output to {}".format(compclass), file_build)
+    logger.info("Building {} with output to {}".format(compclass, file_build))
     t1 = time.time()
     with open(file_build, "w") as fd:
         stat = run_cmd("MODEL={} SMP={} {}/buildlib {} {} {} "
@@ -315,7 +315,7 @@ def _build_model_thread(config_dir, compclass, caseroot, libroot, bldroot, incro
         shutil.copy(mod_file, incroot)
 
     t2 = time.time()
-    logger.info("{} built in {:f} seconds".format(compclass), (t2 - t1))
+    logger.info("{} built in {:f} seconds".format(compclass, (t2 - t1)))
 
 ###############################################################################
 def _clean_impl(case, cleanlist, clean_all):
@@ -544,7 +544,7 @@ def post_build(case, logs):
             os.makedirs(bldlogdir)
 
     for log in logs:
-        logger.debug("Copying build log {} to {}".format(log),bldlogdir)
+        logger.debug("Copying build log {} to {}".format(log, bldlogdir))
         with open(log, 'rb') as f_in:
             with gzip.open("{}.gz".format(log), 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)

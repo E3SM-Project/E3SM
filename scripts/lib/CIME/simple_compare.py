@@ -13,7 +13,7 @@ def _normalize_string_value(value, case):
     # Any occurance of case must be normalized because test-ids might not match
     if (case is not None):
         case_re = re.compile(r'{}[.]([GC])[.]([^./\s]+)'.format(case))
-        value = case_re.sub("{}.ACTION.TESTID".format(case, value))
+        value = case_re.sub("{}.ACTION.TESTID".format(case), value)
 
     if ("/" in value):
         # File path, just return the basename

@@ -63,12 +63,12 @@ def save_build_provenance_acme(case, lid=None):
     # For all the just-created post-build provenance files, symlink a generic name
     # to them to indicate that these are the most recent or active.
     for item in ["GIT_DESCRIBE", "GIT_LOGS_HEAD", "SourceMods", "build_environment"]:
-        globstr = "{}/{}.{}*".format((exeroot, item, lid))
+        globstr = "{}/{}.{}*".format(exeroot, item, lid)
         matches = glob.glob(globstr)
         expect(len(matches) < 2, "Multiple matches for glob {} should not have happened".format(globstr))
         if matches:
             the_match = matches[0]
-            generic_name = the_match.replace(".{}".format(lid, ""))
+            generic_name = the_match.replace(".{}".format(lid), "")
             if os.path.exists(generic_name):
                 os.remove(generic_name)
             os.symlink(the_match, generic_name)
@@ -118,12 +118,12 @@ def save_prerun_provenance_acme(case, lid=None):
     job_id = _get_batch_job_id_for_syslog(case)
     if mach == "mira":
         for cmd, filename in [("qstat -lf", "qstatf"), ("qstat -lf {}".format(job_id), "qstatf_jobid")]:
-            filename = "{}.{}".format((filename, lid))
+            filename = "{}.{}".format(filename, lid)
             run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
     elif mach in ["edison", "cori-haswell", "cori-knl"]:
         for cmd, filename in [("sqs -f", "sqsf"), ("sqs -w -a", "sqsw"), ("sqs -f {}".format(job_id), "sqsf_jobid"), ("squeue", "squeuef")]:
-            filename = "{}.{}".format((filename, lid))
+            filename = "{}.{}".format(filename, lid)
             run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
     elif mach == "titan":
@@ -181,9 +181,8 @@ def save_prerun_provenance_acme(case, lid=None):
         if sample_interval > 0:
             archive_checkpoints = os.path.join(full_timing_dir, "checkpoints.{}".format(lid))
             os.mkdir(archive_checkpoints)
-            touch("{}/acme.log.{}".format((rundir, lid)))
-            syslog_jobid = run_cmd_no_fail("./mach_syslog {:d} {} {} {} {}/timing/checkpoints {} >& /dev/null & echo $!" %
-                                           (sample_interval, job_id, lid, rundir, rundir, archive_checkpoints),
+            touch("{}/acme.log.{}".format(rundir, lid))
+            syslog_jobid = run_cmd_no_fail("./mach_syslog {:d} {} {} {} {}/timing/checkpoints {} >& /dev/null & echo $!".format(sample_interval, job_id, lid, rundir, rundir, archive_checkpoints),
                                            from_dir=os.path.join(caseroot, "Tools"))
             with open(os.path.join(rundir, "syslog_jobid.{}".format(job_id)), "w") as fd:
                 fd.write("{}\n".format(syslog_jobid))
@@ -258,7 +257,7 @@ def save_postrun_provenance_acme(case, lid):
         tfd.add(rundir_timing_dir, arcname=os.path.basename(rundir_timing_dir))
 
     shutil.rmtree(rundir_timing_dir)
-    copy_umask("{}.tar.gz".format(rundir_timing_dir, full_timing_dir))
+    copy_umask("{}.tar.gz".format(rundir_timing_dir), full_timing_dir)
 
     gzip_existing_file(os.path.join(caseroot, "timing", "acme_timing_stats.{}".format(lid)))
 
@@ -289,7 +288,7 @@ def save_postrun_provenance_acme(case, lid):
             basename = os.path.basename(item)
             if basename != timing_saved_file:
                 if lid not in basename and not basename.endswith(".gz"):
-                    copy_umask(item, os.path.join(full_timing_dir, "{}.{}".format((basename, lid))))
+                    copy_umask(item, os.path.join(full_timing_dir, "{}.{}".format(basename, lid)))
                 else:
                     copy_umask(item, full_timing_dir)
 

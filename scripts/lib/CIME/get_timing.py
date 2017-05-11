@@ -175,8 +175,7 @@ class _TimingParser:
             if not os.path.isfile(binfilename):
                 logger.critical("File {} not found".format(binfilename))
             else:
-                logger.critical("Unable to cp {} to {}" %
-                                (binfilename, finfilename))
+                logger.critical("Unable to cp {} to {}".format(binfilename, finfilename))
             raise e
 
         os.chdir(self.caseroot)
@@ -239,12 +238,9 @@ class _TimingParser:
         self.write("  grid        : {}\n".format(grid))
         self.write("  compset     : {}\n".format(compset))
         self.write("  run_type    : {}, continue_run = {} "
-                   "(inittype = {})\n" %
-                   (run_type, str(continue_run).upper(), inittype))
-        self.write("  stop_option : {}, stop_n = {}\n" %
-                   (stop_option, stop_n))
-        self.write("  run_length  : {} days ({} for ocean)\n\n" %
-                   (adays, odays))
+                   "(inittype = {})\n".format(run_type, str(continue_run).upper(), inittype))
+        self.write("  stop_option : {}, stop_n = {}\n".format(stop_option, stop_n))
+        self.write("  run_length  : {} days ({} for ocean)\n\n".format(adays, odays))
 
         self.write("  component       comp_pes    root_pe   tasks  "
                    "x threads"
@@ -321,12 +317,9 @@ class _TimingParser:
 
         self.write("\n")
 
-        self.write("    Actual Ocn Init Wait Time     :  {:10.3f} seconds \n"
-                   .format(ocnwaittime))
-        self.write("    Estimated Ocn Init Run Time   :  {:10.3f} seconds \n"
-                   .format(ocnrunitime))
-        self.write("    Estimated Run Time Correction :  {:10.3f} seconds \n"
-                   .format(correction))
+        self.write("    Actual Ocn Init Wait Time     :  {:10.3f} seconds \n".format(ocnwaittime))
+        self.write("    Estimated Ocn Init Run Time   :  {:10.3f} seconds \n".format(ocnrunitime))
+        self.write("    Estimated Run Time Correction :  {:10.3f} seconds \n".format(correction))
         self.write("      (This correction has been applied to the ocean and"
                    " total run times) \n")
 

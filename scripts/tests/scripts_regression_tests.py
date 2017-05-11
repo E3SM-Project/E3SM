@@ -305,7 +305,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         run_cmd_assert_result(self, "./xmlchange USER=this_is_not_a_user",
                               from_dir=prevtestdir)
         fakeoutputroot = string.replace(cls._testroot, os.environ.get("USER"), "this_is_not_a_user")
-        run_cmd_assert_result(self, "./xmlchange CIME_OUTPUT_ROOT={}".format(akeoutputroot,)
+        run_cmd_assert_result(self, "./xmlchange CIME_OUTPUT_ROOT={}".format(akeoutputroot),
                               from_dir=prevtestdir)
         # this test should fail
         run_cmd_assert_result(self, "{}/create_clone --clone {} --case {} ".format(SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR, expected_stat=1)

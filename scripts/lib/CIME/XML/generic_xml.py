@@ -16,7 +16,7 @@ class GenericXML(object):
         """
         Initialize an object
         """
-        logger.debug("Initializing {}" , infile)
+        logger.debug("Initializing {}".format(infile))
         self.tree = None
 
         if infile == None:
@@ -32,7 +32,7 @@ class GenericXML(object):
             # if file does not exist create a root xml element
             # and set it's id to file
 
-            logger.debug("File {} does not exists." , infile)
+            logger.debug("File {} does not exists.".format(infile))
             expect("$" not in infile,"File path not fully resolved {}".format(infile))
 
             self.filename = infile
@@ -108,7 +108,7 @@ class GenericXML(object):
 
     def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
 
-        logger.debug("(get_nodes) Input values: {} , {} , {} , {} , {}" , self.__class__.__name__ , nodename , attributes , root , xpath)
+        logger.debug("(get_nodes) Input values: {}, {}, {}, {}, {}".format(self.__class__.__name__, nodename, attributes, root, xpath))
 
         if root is None:
             root = self.root
@@ -146,10 +146,10 @@ class GenericXML(object):
                         return []
 
         else:
-            logger.debug("xpath: {}" , xpath)
+            logger.debug("xpath: {}".format(xpath))
             nodes = root.findall(xpath)
 
-        logger.debug("Returning {} nodes ({})" , len(nodes), nodes)
+        logger.debug("Returning {} nodes ({})".format(len(nodes), nodes))
 
         return nodes
 

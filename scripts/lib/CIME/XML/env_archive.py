@@ -14,7 +14,7 @@ class EnvArchive(GenericXML):
         """
         initialize an object interface to file env_archive.xml in the case directory
         """
-        logger.debug("Case_root = {}", case_root)
+        logger.debug("Case_root = {}".format(case_root))
 
 
         # Check/Build path to env_archive.xml

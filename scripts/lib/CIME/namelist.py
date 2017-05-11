@@ -1164,7 +1164,7 @@ class Namelist(object):
                 # line-by-line.
                 if values[0] == "True" or values[0] == "False":
                     values[0] = values[0].replace("True",".true.").replace("False",".false.")
-                lines = ["  {}{} {}".format((name, equals, values[0])])
+                lines = ["  {}{} {}".format(name, equals, values[0])]
                 for value in values[1:]:
                     if value == "True" or value == "False":
                         value = value.replace("True",".true.").replace("False",".false.")

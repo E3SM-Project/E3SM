@@ -35,14 +35,14 @@ def download_if_in_repo(svn_loc, input_data_root, rel_path):
     full_url = os.path.join(svn_loc, rel_path)
 
     full_path = os.path.join(input_data_root, rel_path)
-    logging.info("Trying to download file: '{}' to path '{}'", full_url, full_path)
+    logging.info("Trying to download file: '{}' to path '{}'".format(full_url, full_path))
     # Make sure local path exists, create if it does not
     if(not os.path.exists(os.path.dirname(full_path))):
         os.makedirs(os.path.dirname(full_path))
 
     stat, out, err = run_cmd("svn --non-interactive --trust-server-cert ls {}".format(full_url))
     if (stat != 0):
-        logging.warning("FAIL: SVN repo '{}' does not have file '{}'\nReason:{}\n{}\n", svn_loc, full_url, out, err)
+        logging.warning("FAIL: SVN repo '{}' does not have file '{}'\nReason:{}\n{}\n".format(svn_loc, full_url, out, err))
         return False
     else:
         # Use umask to make sure files are group read/writable. As long as parent directories
@@ -51,7 +51,7 @@ def download_if_in_repo(svn_loc, input_data_root, rel_path):
             stat, output, errput = \
                 run_cmd("svn --non-interactive --trust-server-cert export {} {}".format(full_url, full_path))
             if (stat != 0):
-                logging.warning("svn export failed with output: {} and errput {}\n", output, errput)
+                logging.warning("svn export failed with output: {} and errput {}\n".format(output, errput))
                 return False
             else:
                 logging.info("SUCCESS\n")
@@ -96,23 +96,23 @@ and prestage the restart data to $RUNDIR manually
 *****************************************************************
 """.format(refdir, refdir, refdir))
 
-        logger.info(" - Prestaging REFCASE ({}) to {}", refdir, rundir)
+        logger.info(" - Prestaging REFCASE ({}) to {}".format(refdir, rundir))
 
         # prestage the reference case's files.
 
         if (not os.path.exists(rundir)):
-            logger.debug("Creating run directory: {}", rundir)
+            logger.debug("Creating run directory: {}".format(rundir))
             os.makedirs(rundir)
 
         for rcfile in glob.iglob(os.path.join(refdir,"*{}*".format(run_refcase))):
-            logger.debug("Staging file {}", rcfile)
+            logger.debug("Staging file {}".format(rcfile))
             rcbaseline = os.path.basename(rcfile)
             if not os.path.exists("{}/{}".format(rundir, rcbaseline)):
                 os.symlink(rcfile, "{}/{}".format(rundir, rcbaseline))
 
         # copy the refcases' rpointer files to the run directory
         for rpointerfile in  glob.iglob(os.path.join("{}","*rpointer*") % (refdir)):
-            logger.debug("Copy rpointer {}", rpointerfile)
+            logger.debug("Copy rpointer {}".format(rpointerfile))
             shutil.copy(rpointerfile, rundir)
 
 
@@ -136,7 +136,7 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
 
     no_files_missing = True
     for data_list_file in data_list_files:
-        logging.info("Loading input file list: '{}'", data_list_file)
+        logging.info("Loading input file list: '{}'".format(data_list_file))
         with open(data_list_file, "r") as fd:
             lines = fd.readlines()
 
@@ -156,12 +156,12 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
                         # rel_path, and so cannot download the file. If it already exists, we can
                         # proceed
                         if not os.path.exists(full_path):
-                            logging.warning("  Model {} missing file {} = '{}'", model, description, full_path)
+                            logging.warning("  Model {} missing file {} = '{}'".format(model, description, full_path))
                             if download:
-                                logging.warning("    Cannot download file since it lives outside of the input_data_root '{}'", input_data_root)
+                                logging.warning("    Cannot download file since it lives outside of the input_data_root '{}'".format(input_data_root))
                             no_files_missing = False
                         else:
-                            logging.debug("  Found input file: '{}'", full_path)
+                            logging.debug("  Found input file: '{}'".format(full_path))
 
                     else:
                         # There are some special values of rel_path that
@@ -171,7 +171,7 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
                         # directory tree) you can assume it's a special
                         # value and ignore it (perhaps with a warning)
                         if ("/" in rel_path and not os.path.exists(full_path)):
-                            logging.warning("  Model {} missing file {} = '{}'", model, description, full_path)
+                            logging.warning("  Model {} missing file {} = '{}'".format(model, description, full_path))
 
                             if (download):
                                 success = download_if_in_repo(svn_loc, input_data_root, rel_path)
@@ -187,10 +187,10 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
                             else:
                                 no_files_missing = False
                         else:
-                            logging.debug("  Already had input file: '{}'", full_path)
+                            logging.debug("  Already had input file: '{}'".format(full_path))
 
                 else:
                     model = os.path.basename(data_list_file).split('.')[0]
-                    logging.warning("Model {} no file specified for {}", model, description)
+                    logging.warning("Model {} no file specified for {}".format(model, description))
 
     return no_files_missing

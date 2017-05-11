@@ -252,7 +252,7 @@ def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False, outfil
     """
     cprnc_exe = case.get_value("CCSM_CPRNC")
     basename = os.path.basename(file1)
-    multiinst_regex = re.compile(r'.*{}[^_]*(_[0-9]{4})[.]h.?[.][^.]+?[.]nc'.format(model))
+    multiinst_regex = re.compile(r'.*%s[^_]*(_[0-9]{4})[.]h.?[.][^.]+?[.]nc' % model)
     mstr = ''
     mstr1 = ''
     mstr2 = ''
@@ -270,7 +270,7 @@ def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False, outfil
     if outfile_suffix:
         output_filename += ".{}".format(outfile_suffix)
 
-    cpr_stat = run_cmd("{} -m {} {}".format((cprnc_exe, file1, file2), combine_output=True, arg_stdout=output_filename)[0])
+    cpr_stat = run_cmd("{} -m {} {}".format(cprnc_exe, file1, file2), combine_output=True, arg_stdout=output_filename)[0]
     with open(output_filename, "r") as fd:
         out = fd.read()
 
@@ -333,7 +333,7 @@ def get_extension(model, filepath):
     'h'
     """
     basename = os.path.basename(filepath)
-    ext_regex = re.compile(r'.*{}[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc'.format(model))
+    ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
 
     m = ext_regex.match(basename)
     expect(m is not None, "Failed to get extension for file '{}'".format(filepath))
@@ -386,7 +386,7 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             #special care for multi-instance cases,
             #only keep first instance and
             #remove instance string from filename
-            m = re.search("(.*{}.*)_([0-9]{4})(.h.*)".format(model), baseline)
+            m = re.search("(.*%s.*)_([0-9]{4})(.h.*)" % model, baseline)
             if m is not None:
                 if m.group(2) != '0001':
                     continue

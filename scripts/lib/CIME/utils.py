@@ -1116,7 +1116,7 @@ def find_system_test(testname, case):
 
             if tdir is not None:
                 tdir = os.path.abspath(tdir)
-                system_test_file = os.path.join(tdir  ,"{}.py".format(estname.lower()))
+                system_test_file = os.path.join(tdir  ,"{}.py".format(testname.lower()))
                 if os.path.isfile(system_test_file):
                     logger.debug( "found "+system_test_file)
                     if component == "any":
@@ -1128,7 +1128,7 @@ def find_system_test(testname, case):
                         system_test_path = "{}.{}".format(testname.lower(), testname)
                     break
 
-    expect(system_test_path is not None, "No test {} found".format(estname))
+    expect(system_test_path is not None, "No test {} found".format(testname))
 
     path, m = system_test_path.rsplit('.',1)
     mod = import_module(path)
@@ -1238,7 +1238,7 @@ def _check_for_invalid_args(args):
         if " " in arg or arg.startswith("--"):
             continue
         if arg.startswith("-") and len(arg) > 2:
-            sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(rg))
+            sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
 
 class SharedArea(object):
     """

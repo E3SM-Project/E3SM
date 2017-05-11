@@ -134,7 +134,7 @@ class Case(object):
         self.total_tasks = env_mach_pes.get_total_tasks(comp_classes)
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
         self.tasks_per_node = env_mach_pes.get_tasks_per_node(self.total_tasks, self.thread_count)
-        logger.debug("total_tasks {} thread_count {}", self.total_tasks, self.thread_count)
+        logger.debug("total_tasks {} thread_count {}".format(self.total_tasks, self.thread_count))
 
         self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
         smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / pes_per_node))
@@ -377,7 +377,7 @@ class Case(object):
         for env_file in self._env_entryid_files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
-                logger.debug("Will rewrite file {} {}",env_file.filename, item)
+                logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
                 self._env_files_that_need_rewrite.add(env_file)
                 return result
 
@@ -392,15 +392,15 @@ class Case(object):
         for env_file in self._env_entryid_files:
             result = env_file.set_valid_values(item, valid_values)
             if (result is not None):
-                logger.debug("Will rewrite file {} {}",env_file.filename, item)
+                logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
                 self._env_files_that_need_rewrite.add(env_file)
                 return result
 
     def set_lookup_value(self, item, value):
         if item in self.lookups.keys() and self.lookups[item] is not None:
-            logger.warn("Item {} already in lookups with value {}", item,self.lookups[item])
+            logger.warn("Item {} already in lookups with value {}".format(item,self.lookups[item]))
         else:
-            logger.debug("Setting in lookups: item {}, value {}", item,value)
+            logger.debug("Setting in lookups: item {}, value {}".format(item,value))
             self.lookups[item] = value
 
     def clean_up_lookups(self, allow_undefined=False):
@@ -422,7 +422,7 @@ class Case(object):
         science_support = []
         compset_alias = None
         components = files.get_components("COMPSETS_SPEC_FILE")
-        logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}", components)
+        logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}".format(components))
 
         if pesfile is not None:
             self._pesfile = pesfile
@@ -830,7 +830,7 @@ class Case(object):
         infile_node = files.get_node("entry", {"id":"ARCHIVE_SPEC_FILE"})
         infile = files.get_default_value(infile_node)
         infile = self.get_resolved_value(infile)
-        logger.debug("archive defaults located in {}", infile)
+        logger.debug("archive defaults located in {}".format(infile))
         archive = Archive(infile=infile, files=files)
         archive.setup(env_archive, self._components)
         self.schedule_rewrite(env_archive)
@@ -838,9 +838,9 @@ class Case(object):
         self.set_value("COMPSET",self._compsetname)
 
         self._set_pio_xml()
-        logger.info(" Compset is: {} ", self._compsetname)
-        logger.info(" Grid is: {} ", self._gridname )
-        logger.info(" Components in compset are: {} ", self._components)
+        logger.info(" Compset is: {} ".format(self._compsetname))
+        logger.info(" Grid is: {} ".format(self._gridname ))
+        logger.info(" Components in compset are: {} ".format(self._components))
 
         if not test and not run_unsupported and self._cime_model == "cesm":
             if grid_name in science_support:
@@ -914,7 +914,6 @@ class Case(object):
                 logger.debug("Compset specific settings: name is {} and value is {}".format(name, value))
                 self.set_lookup_value(name, value)
 
-
     def set_initial_test_values(self):
         testobj = self.get_env("test")
         testobj.set_initial_values(self)
@@ -958,7 +957,7 @@ class Case(object):
                 destfile = os.path.join(self._caseroot,os.path.basename(exefile))
                 os.symlink(exefile, destfile)
         except Exception as e:
-            logger.warning("FAILED to set up exefiles: {}", str(e))
+            logger.warning("FAILED to set up exefiles: {}".format(str(e)))
 
         # set up utility files in caseroot/Tools/
         toolfiles = [os.path.join(toolsdir, "check_lockedfiles"),
@@ -979,11 +978,11 @@ class Case(object):
             try:
                 os.symlink(toolfile, destfile)
             except Exception as e:
-                logger.warning("FAILED to set up toolfiles: {} {} {}", str(e), toolfile, destfile)
+                logger.warning("FAILED to set up toolfiles: {} {} {}".format(str(e), toolfile, destfile))
 
         if get_model() == "acme":
             if os.path.exists(os.path.join(machines_dir, "syslog.{}".format(machine))):
-                shutil.copy(os.path.join(machines_dir, "syslog.{}".format(machine), os.path.join(casetools, "mach_syslog")))
+                shutil.copy(os.path.join(machines_dir, "syslog.{}".format(machine)), os.path.join(casetools, "mach_syslog"))
             else:
                 shutil.copy(os.path.join(machines_dir, "syslog.noop"), os.path.join(casetools, "mach_syslog"))
 
@@ -1021,7 +1020,7 @@ class Case(object):
     def create_caseroot(self, clone=False):
         if not os.path.exists(self._caseroot):
             # Make the case directory
-            logger.info(" Creating Case directory {}", self._caseroot)
+            logger.info(" Creating Case directory {}".format(self._caseroot))
             os.makedirs(self._caseroot)
         os.chdir(self._caseroot)
 
@@ -1106,8 +1105,8 @@ class Case(object):
         # create clone from self to case
         clone_cimeroot = self.get_value("CIMEROOT")
         if newcase_cimeroot != clone_cimeroot:
-            logger.warning(" case  CIMEROOT is {} ", newcase_cimeroot)
-            logger.warning(" clone CIMEROOT is {} ", clone_cimeroot)
+            logger.warning(" case  CIMEROOT is {} ".format(newcase_cimeroot))
+            logger.warning(" clone CIMEROOT is {} ".format(clone_cimeroot))
             logger.warning(" It is NOT recommended to clone cases from different versions of CIME.")
 
 
@@ -1172,8 +1171,9 @@ class Case(object):
         # copy SourceMod and Buildconf files
         # if symlinks exist, copy rather than follow links
         for casesub in ("SourceMods", "Buildconf"):
-            shutil.copytree(os.path.join(cloneroot, casesub), os.path.join(newcaseroot, casesub)
-                            , symlinks=True)
+            shutil.copytree(os.path.join(cloneroot, casesub),
+                            os.path.join(newcaseroot, casesub),
+                            symlinks=True)
 
         # lock env_case.xml in new case
         lock_file("env_case.xml", newcaseroot)
@@ -1185,7 +1185,7 @@ class Case(object):
         fnewcase.write("\n " +  fclone.read())
 
         clonename = self.get_value("CASE")
-        logger.info(" Successfully created new case {} from clone case {} ", newcasename, clonename)
+        logger.info(" Successfully created new case {} from clone case {} ".format(newcasename, clonename))
 
         case_setup(newcase)
 
@@ -1246,9 +1246,9 @@ class Case(object):
         self.set_value("MODEL_VERSION", version)
 
         if version != "unknown":
-            logger.info("{} model version found: {}", model, version)
+            logger.info("{} model version found: {}".format(model, version))
         else:
-            logger.warn("WARNING: No {} Model version found.", model)
+            logger.warn("WARNING: No {} Model version found.".format(model))
 
     def load_env(self):
         if not self._is_env_loaded:
@@ -1282,7 +1282,7 @@ class Case(object):
             if test["category"] == "prealpha" or test["category"] == "prebeta" or "aux_" in test["category"]:
                 testcnt += 1
         if testcnt > 0:
-            logger.info("\nThis compset and grid combination is not scientifically supported, however it is used in {:d} tests.\n", testcnt)
+            logger.info("\nThis compset and grid combination is not scientifically supported, however it is used in {:d} tests.\n".format(testcnt))
         else:
             expect(False, "\nThis compset and grid combination is untested in CESM.  "
                    "Override this warning with the --run-unsupported option to create_newcase.",
