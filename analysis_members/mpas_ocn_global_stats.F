@@ -1327,7 +1327,7 @@ contains
 
       ! calculate fresh water conservation check quantities
       absoluteFreshWaterConservation = totalVolumeChange - netFreshwaterInput
-      if (totalVolumeChange == 0.0_RKIND) then
+      if (abs(totalVolumeChange) < 1e-12_RKIND) then
          relativeFreshWaterConservation = 0.0_RKIND
       else
          relativeFreshWaterConservation = (totalVolumeChange - netFreshwaterInput)/totalVolumeChange
