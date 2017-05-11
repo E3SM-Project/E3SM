@@ -2423,7 +2423,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       ! Cloud fraction for purposes of precipitation is maximum cloud
       ! fraction out of all the layers that the precipitation may be
       ! falling down from.
-      cldmax = max(mincld, ast)
+      cldmax(:ncol,top_lev:pver) = max(mincld, ast(:ncol,top_lev:pver))
       do k = top_lev+1, pver
          where (state_loc%q(:ncol,k-1,ixrain) >= qsmall .or. &
               state_loc%q(:ncol,k-1,ixsnow) >= qsmall)
