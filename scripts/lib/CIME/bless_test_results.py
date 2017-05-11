@@ -15,7 +15,7 @@ def bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
     # re-run create_test.
 
     # Update namelist files
-    print "Test '{}' had namelist diff".format(test_name)
+    print("Test '{}' had namelist diff".format(test_name))
     if (not report_only and
         (force or raw_input("Update namelists (y/n)? ").upper() in ["Y", "YES"])):
         create_test_gen_args = " -g {} ".format(baseline_name if get_model() == "cesm" else " -g -b {} ".format(baseline_name))
@@ -40,7 +40,7 @@ def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root
         if result:
             return True, None
         else:
-            print comments
+            print(comments)
             if (not report_only and
                 (force or raw_input("Update this diff (y/n)? ").upper() in ["Y", "YES"])):
                 result, comments = generate_baseline(case, baseline_dir=baseline_full_dir)
@@ -48,7 +48,7 @@ def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root
                     logging.warning("Hist file bless FAILED for test {}".format(test_name))
                     return False, "Generate baseline failed: {}".format(comments)
                 else:
-                    print comments
+                    print(comments)
                     return True, None
             else:
                 return True, None
@@ -100,9 +100,9 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
                 print("Nothing to bless for test:", test_name, " overall status:", overall_result)
             else:
 
-                print "###############################################################################"
-                print "Blessing results for test:", test_name, "most recent result:", overall_result
-                print "###############################################################################"
+                print("###############################################################################")
+                print("Blessing results for test:", test_name, "most recent result:", overall_result)
+                print("###############################################################################")
                 if not force:
                     time.sleep(2)
 

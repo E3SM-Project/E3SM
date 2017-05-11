@@ -6,7 +6,7 @@ import numpy
 def getvar(fname, varname):
     usescipy = False
     try:
-    	import Scientific.IO.NetCDF as netcdf
+        import Scientific.IO.NetCDF as netcdf
     except ImportError:
         import scipy
         from scipy.io import netcdf
@@ -17,10 +17,10 @@ def getvar(fname, varname):
         varvals = var[:].copy()    #works for vector only?
         nffile.close()
     else:
-    	nffile = netcdf.NetCDFFile(fname,"r")
-    	var = nffile.variables[varname]
-    	varvals = var.getValue()
-    	nffile.close()
+        nffile = netcdf.NetCDFFile(fname,"r")
+        var = nffile.variables[varname]
+        varvals = var.getValue()
+        nffile.close()
     return varvals
 
 def putvar(fname, varname, varvals):
@@ -70,7 +70,7 @@ parser.add_option("--ccsm_input", dest="ccsm_input", \
 parser.add_option("--metdir", dest="metdir", default="none", \
                   help = 'subdirectory for met data forcing')
 parser.add_option("--makemetdata", dest="makemet", default=False, \
-		  help = 'Generate meteorology', action="store_true")
+          help = 'Generate meteorology', action="store_true")
 parser.add_option("--surfdata_grid", dest="surfdata_grid", default=False, \
                   help = 'Use gridded soil data', action="store_true")
 #parser.add_option("--include_nonveg", dest="include_nonveg", default=False, \
@@ -262,7 +262,7 @@ if (options.surfdata_grid == False):
     mypct_clay = 0.0
     AFdatareader = csv.reader(open(options.sitegroup+'_soildata.txt','rb'))
     for row in AFdatareader:
-    	if row[0] == options.site:
+        if row[0] == options.site:
             mypct_sand = row[4]
             mypct_clay = row[5]
     if (mypct_sand == 0.0 and mypct_clay == 0.0):
@@ -375,7 +375,7 @@ if ('20TR' in options.compset):
     pftdyn_orig = options.ccsm_input+'/lnd/clm2/surfdata_map/' \
        +'landuse.timeseries_360x720cru_rcp4.5_simyr1850-2100_c141219.nc'
 
-    print 'using '+surffile_new+' for 1850 information'
+    print('using '+surffile_new+' for 1850 information')
     if (options.clm40):
         pftdyn_new = options.csmdir+'/cime/scripts-acme/pointclm/temp/' \
           +'surfdata.pftdyn_'+str(numxpts)+'x'+str(numypts)+'pt_'+options.mycase+'.nc'
@@ -383,7 +383,7 @@ if ('20TR' in options.compset):
         pftdyn_new = options.csmdir+'/cime/scripts-acme/pointclm/temp/' \
           +'surfdata.pftdyn_'+str(numxpts)+'x'+str(numypts)+'pt_'+options.mycase+'.nc'
 
-    print pftdyn_new
+    print(pftdyn_new)
     if (os.path.isfile(pftdyn_new)):
         print('Warning:  Removing existing pftdyn file')
         os.system('rm -rf '+pftdyn_new)
@@ -492,7 +492,7 @@ if ('20TR' in options.compset):
                     else:
                         for p in range(0,npft):
                             if (sum(mypft_frac[0:16]) == 0.0):
-                                print p, pct_pft[0][p][0][0]
+                                print(p, pct_pft[0][p][0][0])
                                 #No dyn file - use 1850 values from gridded file
                                 pct_pft[t][p][j][i] = pct_pft_1850[p][0][0]
 

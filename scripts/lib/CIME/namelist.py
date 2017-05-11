@@ -661,8 +661,7 @@ def literal_to_python_value(literal, type_=None):
     else:
         # Check that type is valid.
         expect(is_valid_fortran_namelist_literal(type_, literal),
-               "{:r} is not a valid literal of type {:r}."
-               % (str(literal), str(type_)))
+               "{:r} is not a valid literal of type {:r}.".format(str(literal), str(type_)))
     # Conversion for each type.
     if type_ == 'character':
         return character_literal_to_string(literal)
@@ -1636,8 +1635,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
             self._advance()
         text = self._text[old_pos:self._pos+1]
         if not is_valid_fortran_namelist_literal("complex", text):
-            raise _NamelistParseError("{:r} is not a valid complex literal"
-                                      % (str(text)))
+            raise _NamelistParseError("{:r} is not a valid complex literal".format(str(text)))
         return text
 
     def _look_ahead_for_equals(self, pos):
@@ -1844,8 +1842,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         text = self._text[old_pos:self._pos]
         if not any(is_valid_fortran_namelist_literal(type_, text)
                    for type_ in ("integer", "logical", "real")):
-            raise _NamelistParseError("expected literal value, but got {:r}"
-                                      % (str(text)))
+            raise _NamelistParseError("expected literal value, but got {:r}".format(str(text)))
         return text
 
     def _expect_separator(self, allow_eof=False):
@@ -2109,8 +2106,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         if not self._groupless:
             # Make sure that this is the first time we've seen this group.
             if group_name in self._settings:
-                raise _NamelistParseError("Namelist group {:r} encountered twice."
-                                          % str(group_name))
+                raise _NamelistParseError("Namelist group {:r} encountered twice.".format(str(group_name)))
             self._settings[group_name] = {}
         self._eat_whitespace()
         while self._curr() != '/':

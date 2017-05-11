@@ -44,7 +44,7 @@ class EnvMachPes(EnvBase):
         """
         figure out the value of COST_PES which is the pe value used to estimate model cost
         """
-        expect(totaltasks > 0,"totaltasks > 0 expected totaltasks = %s"%totaltasks)
+        expect(totaltasks > 0,"totaltasks > 0 expected totaltasks = {}".format(totaltasks))
         pespn = self.get_value("PES_PER_NODE")
         num_nodes, spare_nodes = self.get_total_nodes(totaltasks, max_thread_count)
         num_nodes += spare_nodes
@@ -66,7 +66,7 @@ class EnvMachPes(EnvBase):
         return total_tasks
 
     def get_tasks_per_node(self, total_tasks, max_thread_count):
-        expect(total_tasks > 0,"totaltasks > 0 expected totaltasks = %s"%total_tasks)
+        expect(total_tasks > 0,"totaltasks > 0 expected totaltasks = {}".format(total_tasks))
         tasks_per_node = min(self.get_value("MAX_TASKS_PER_NODE")/ max_thread_count,
                              self.get_value("PES_PER_NODE"), total_tasks)
         return tasks_per_node

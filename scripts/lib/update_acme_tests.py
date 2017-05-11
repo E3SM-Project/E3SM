@@ -162,14 +162,13 @@ def get_test_suite(suite, machine=None, compiler=None):
     """
     Return a list of FULL test names for a suite.
     """
-    expect(suite in _TEST_SUITES, "Unknown test suite: '%s'" % suite)
+    expect(suite in _TEST_SUITES, "Unknown test suite: '{}'".format(suite))
     machobj = Machines(machine=machine)
     machine = machobj.get_machine_name()
 
     if(compiler is None):
         compiler = machobj.get_default_compiler()
-    expect(machobj.is_valid_compiler(compiler),"Compiler %s not valid for machine %s" %
-           (compiler,machine))
+    expect(machobj.is_valid_compiler(compiler),"Compiler {} not valid for machine {}".format(compiler,machine))
 
     inherits_from, _, tests_raw = _TEST_SUITES[suite]
     tests = []
@@ -178,16 +177,16 @@ def get_test_suite(suite, machine=None, compiler=None):
         if (isinstance(item, str)):
             test_name = item
         else:
-            expect(isinstance(item, tuple), "Bad item type for item '%s'" % str(item))
-            expect(len(item) in [2, 3], "Expected two or three items in item '%s'" % str(item))
-            expect(isinstance(item[0], str), "Expected string in first field of item '%s'" % str(item))
-            expect(isinstance(item[1], str), "Expected string in second field of item '%s'" % str(item))
+            expect(isinstance(item, tuple), "Bad item type for item '{}'".format(str(item)))
+            expect(len(item) in [2, 3], "Expected two or three items in item '{}'".format(str(item)))
+            expect(isinstance(item[0], str), "Expected string in first field of item '{}'".format(str(item)))
+            expect(isinstance(item[1], str), "Expected string in second field of item '{}'".format(str(item)))
 
             test_name = item[0]
             if (len(item) == 2):
                 test_mod = item[1]
             else:
-                expect(type(item[2]) in [str, tuple], "Expected string or tuple for third field of item '%s'" % str(item))
+                expect(type(item[2]) in [str, tuple], "Expected string or tuple for third field of item '{}'".format(str(item)))
                 test_mod_machines = [item[2]] if isinstance(item[2], str) else item[2]
                 if (machine in test_mod_machines):
                     test_mod = item[1]
@@ -200,7 +199,7 @@ def get_test_suite(suite, machine=None, compiler=None):
             inherited_tests = get_test_suite(inherits, machine, compiler)
 
             expect(len(set(tests) & set(inherited_tests)) == 0,
-                   "Tests %s defined in multiple suites" % ", ".join(set(tests) & set(inherited_tests)))
+                   "Tests {} defined in multiple suites".format(", ".join(set(tests) & set(inherited_tests))))
             tests.extend(inherited_tests)
 
     return tests
@@ -306,7 +305,7 @@ def get_recommended_test_time(test_full_name):
     >>>
     """
     _, _, _, _, machine, compiler, _ = CIME.utils.parse_test_name(test_full_name)
-    expect(machine is not None, "%s is not a full test name" % test_full_name)
+    expect(machine is not None, "{} is not a full test name".format(test_full_name))
 
     best_time = None
     suites = get_test_suites()

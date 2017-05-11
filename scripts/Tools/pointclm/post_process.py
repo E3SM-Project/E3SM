@@ -90,7 +90,7 @@ if (os.path.isfile(input_fname)):
 n_years = int(options.end_year)-int(options.start_year)+1
 
 if (h0_nhtfrq != 0 and (h0_nhtfrq*h0_mfilt % 8760) != 0):
-    print ('Must have either monthly or annual history files.')
+    print('Must have either monthly or annual history files.')
     sys.exit()
 
 if (int(h0_nhtfrq) == 0):

@@ -335,7 +335,7 @@ class SystemTestsCommon(object):
                 logging.warn("  Resetting {} for test".format(key))
                 f1obj.set_value(key, f2obj.get_value(key, resolved=False))
             else:
-                print "WARNING: Found difference in test {}: case: {} original value {}".format(key, diffs[key][0], diffs[key][1])
+                print("WARNING: Found difference in test {}: case: {} original value {}".format(key, diffs[key][0], diffs[key][1]))
                 return False
         return True
 

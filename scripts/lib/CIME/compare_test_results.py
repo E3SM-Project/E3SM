@@ -140,7 +140,7 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
                     brief_result += " {}".format(compare_comment)
                 brief_result += "\n"
 
-            print brief_result,
+            print(brief_result,)
 
             append_status(brief_result, logfile_name, caseroot=test_dir)
 

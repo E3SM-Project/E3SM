@@ -86,8 +86,7 @@ def build_xcpl_nml(case, caseroot, compname):
             infile.write("{:-20d} ! decomp_type  1=1d-by-lat, 2=1d-by-lon,"
                          " 3=2d, 4=2d evensquare, 11=segmented\n".format(dtype))
             infile.write("{:-20d} ! num of pes for i (type 3 only)\n".format(npes))
-            infile.write("{:-20d} ! length of segments (type 4 only)\n"
-                         % length)
+            infile.write("{:-20d} ! length of segments (type 4 only)\n".format(length))
             for extra in extras:
                 infile.write("{:-20s} ! {}\n".format(extra[0], extra[1]))
 

@@ -358,13 +358,11 @@ def _compare_values(name, gold_value, comp_value, case):
                 comments += _compare_values("{} dict item {}".format(name, key),
                                             gold_value_dict_item, comp_value[key], case)
             else:
-                comments += "  dict variable '{}' missing key {} with value {}\n" \
-                    % (name, key, gold_value_dict_item)
+                comments += "  dict variable '{}' missing key {} with value {}\n".format(name, key, gold_value_dict_item)
 
         for key in comp_value:
             if (key not in gold_value):
-                comments += "  dict variable '{}' has extra key {} with value {}\n" \
-                    % (name, key, comp_value[key])
+                comments += "  dict variable '{}' has extra key {} with value {}\n".format(name, key, comp_value[key])
 
     else:
         expect(type(gold_value) is str, "Unexpected type found: '{}'".format(type(gold_value)))

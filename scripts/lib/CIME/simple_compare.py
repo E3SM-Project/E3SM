@@ -12,8 +12,8 @@ def _normalize_string_value(value, case):
     """
     # Any occurance of case must be normalized because test-ids might not match
     if (case is not None):
-        case_re = re.compile(r'%s[.]([GC])[.]([^./\s]+)' % case)
-        value = case_re.sub("%s.ACTION.TESTID" % case, value)
+        case_re = re.compile(r'{}[.]([GC])[.]([^./\s]+)'.format(case))
+        value = case_re.sub("{}.ACTION.TESTID".format(case, value))
 
     if ("/" in value):
         # File path, just return the basename
@@ -100,8 +100,8 @@ def _compare_data(gold_lines, comp_lines, case):
         norm_comp_value = _normalize_string_value(comp_value, case)
 
         if (norm_gold_value != norm_comp_value):
-            comments += "Inequivalent lines %s != %s\n" % (gold_value, comp_value)
-            comments += "  NORMALIZED: %s != %s\n" % (norm_gold_value, norm_comp_value)
+            comments += "Inequivalent lines {} != {}\n".format(gold_value, comp_value)
+            comments += "  NORMALIZED: {} != {}\n".format(norm_gold_value, norm_comp_value)
 
         gidx += 1
         cidx += 1
@@ -115,8 +115,8 @@ def compare_files(gold_file, compare_file, case=None):
     Returns true if files are the same, comments are returned too:
     (success, comments)
     """
-    expect(os.path.exists(gold_file), "File not found: %s" % gold_file)
-    expect(os.path.exists(compare_file), "File not found: %s" % compare_file)
+    expect(os.path.exists(gold_file), "File not found: {}".format(gold_file))
+    expect(os.path.exists(compare_file), "File not found: {}".format(compare_file))
 
     comments = _compare_data(open(gold_file, "r").readlines(),
                              open(compare_file, "r").readlines(),

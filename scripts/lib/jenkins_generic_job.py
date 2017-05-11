@@ -16,7 +16,7 @@ def cleanup_queue(set_of_jobs_we_created):
     jobs_to_delete = set_of_jobs_we_created & current_jobs
 
     if (jobs_to_delete):
-        logging.warning("Found leftover batch jobs that need to be deleted: %s" % ", ".join(jobs_to_delete))
+        logging.warning("Found leftover batch jobs that need to be deleted: {}".format(", ".join(jobs_to_delete)))
         success = CIME.utils.delete_jobs(jobs_to_delete)
         if not success:
             logging.warning("FAILED to clean up leftover jobs!")
@@ -75,12 +75,12 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
         shutil.rmtree("Testing")
 
     # Remove the old build/run dirs
-    test_id_root = "jenkins_%s" % baseline_name
-    for old_dir in glob.glob("%s/*%s*" % (scratch_root, test_id_root)):
+    test_id_root = "jenkins_{}".format(baseline_name)
+    for old_dir in glob.glob("{}/*{}*".format(scratch_root, test_id_root):)
         shutil.rmtree(old_dir)
 
     # Remove the old cases
-    for old_file in glob.glob("%s/*%s*" % (test_root, test_id_root)):
+    for old_file in glob.glob("{}/*{}*".format(test_root, test_id_root):)
         if (os.path.isdir(old_file)):
             shutil.rmtree(old_file)
         else:
@@ -100,15 +100,15 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
 
     baseline_args = ""
     if (generate_baselines):
-        baseline_args = "-g -b %s" % baseline_name
+        baseline_args = "-g -b {}".format(baseline_name)
     elif (baseline_compare == "yes"):
-        baseline_args = "-c -b %s" % baseline_name
+        baseline_args = "-c -b {}".format(baseline_name)
 
     batch_args = "--no-batch" if no_batch else ""
-    pjob_arg = "" if parallel_jobs is None else "-j %d" % parallel_jobs
+    pjob_arg = "" if parallel_jobs is None else "-j {:d}".format(parallel_jobs)
 
-    test_id = "%s_%s" % (test_id_root, CIME.utils.get_timestamp())
-    create_test_cmd = "./create_test %s --test-root %s -t %s %s %s %s" % \
+    test_id = "{}_{}".format(test_id_root, CIME.utils.get_timestamp())
+    create_test_cmd = "./create_test {} --test-root {} -t {} {} {} {}".format(\)
                       (test_suite, test_root, test_id, baseline_args, batch_args, pjob_arg)
 
     if (not CIME.wait_for_tests.SIGNAL_RECEIVED):
@@ -116,7 +116,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                                              verbose=True, arg_stdout=None, arg_stderr=None)[0]
         # Create_test should have either passed, detected failing tests, or timed out
         expect(create_test_stat in [0, CIME.utils.TESTS_FAILED_ERR_CODE, -signal.SIGTERM],
-               "Create_test script FAILED with error code '%d'!" % create_test_stat)
+               "Create_test script FAILED with error code '{:d}'!".format(create_test_stat))
 
     if (use_batch):
         # This is not fullproof. Any jobs that happened to be
@@ -137,7 +137,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     else:
         cdash_build_name = None
 
-    tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("%s/*%s/TestStatus" % (test_root, test_id)),
+    tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("{}/*{}/TestStatus".format(test_root, test_id),)
                                                  no_wait=not use_batch, # wait if using queue
                                                  check_throughput=False, # don't check throughput
                                                  check_memory=False, # don't check memory
