@@ -86,6 +86,9 @@ module CNCarbonStateType
      real(r8), pointer :: totpftc_col              (:)     ! (gC/m2) total patch-level carbon, including cpool averaged to column (p2c)
      real(r8), pointer :: decomp_cpools_1m_col     (:,:)   ! col (gC/m2)  Diagnostic: decomposing (litter, cwd, soil) c pools to 1 meter
      real(r8), pointer :: decomp_cpools_col        (:,:)   ! col (gC/m2)  decomposing (litter, cwd, soil) c pools
+
+     ! (FATES-INTERF)  cwdc_col is prevented from allocation in fates-clm
+     !                 waiting for discussion with cdk to determin its ... fate ... here
      real(r8), pointer :: cwdc_col                 (:)     ! col (gC/m2) Diagnostic: coarse woody debris C
      real(r8), pointer :: ctrunc_col               (:)     ! col (gC/m2) column-level sink for C truncation
      real(r8), pointer :: totlitc_col              (:)     ! col (gC/m2) total litter carbon

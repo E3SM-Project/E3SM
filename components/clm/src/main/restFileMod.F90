@@ -231,6 +231,28 @@ contains
 
     end if
 
+    if (use_ed) then
+       call cnstate_vars%Restart(bounds, ncid, flag='define')
+       call carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c12', &
+               cnstate_vars=cnstate_vars)
+       if (use_c13) then
+          call c13_carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c13', &
+               c12_carbonstate_vars=carbonstate_vars, cnstate_vars=cnstate_vars)
+       end if
+       if (use_c14) then
+          call c14_carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c14', &
+               c12_carbonstate_vars=carbonstate_vars, cnstate_vars=cnstate_vars)
+       end if
+       call carbonflux_vars%restart(bounds, ncid, flag='define')
+
+! (FATES-INTERF)
+!       call clm_fates%restart(bounds, ncid, flag='define',  &
+!             waterstate_vars=waterstate_vars, &
+!             canopystate_vars=canopystate_vars, &
+!             frictionvel_vars=frictionvel_vars)
+    end if
+
+
     if (use_cndv) then
        call dgvs_vars%Restart(bounds, ncid, flag='define')
     end if
@@ -316,6 +338,29 @@ contains
 
        call phosphorusflux_vars%Restart(bounds, ncid, flag='write')
        call phosphorusstate_vars%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
+
+    end if
+
+    if (use_ed) then
+       call cnstate_vars%Restart(bounds, ncid, flag='write')
+       call carbonstate_vars%restart(bounds, ncid, flag='write', &
+            carbon_type='c12', cnstate_vars=cnstate_vars)
+       if (use_c13) then
+          call c13_carbonstate_vars%restart(bounds, ncid, flag='write', &
+               c12_carbonstate_vars=carbonstate_vars, carbon_type='c13', &
+	       cnstate_vars=cnstate_vars)
+       end if
+       if (use_c14) then
+          call c14_carbonstate_vars%restart(bounds, ncid, flag='write', &
+               c12_carbonstate_vars=carbonstate_vars, carbon_type='c14', &
+	       cnstate_vars=cnstate_vars )
+       end if
+       call carbonflux_vars%restart(bounds, ncid, flag='write')
+! (FATES-INTERF)
+!       call clm_fates%restart(bounds, ncid, flag='write',  &
+!             waterstate_vars=waterstate_vars, &
+!             canopystate_vars=canopystate_vars, &
+!             frictionvel_vars=frictionvel_vars)
 
     end if
 
@@ -481,6 +526,29 @@ contains
        call phosphorusstate_vars%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
 
     end if
+
+    if (use_ed) then
+       call cnstate_vars%Restart(bounds, ncid, flag='read')
+       call carbonstate_vars%restart(bounds, ncid, flag='read', &
+             carbon_type='c12', cnstate_vars=cnstate_vars)
+       if (use_c13) then
+          call c13_carbonstate_vars%restart(bounds, ncid, flag='read', &
+                c12_carbonstate_vars=carbonstate_vars, carbon_type='c13', &
+                cnstate_vars=cnstate_vars)
+       end if
+       if (use_c14) then
+          call c14_carbonstate_vars%restart(bounds, ncid, flag='read', &
+                c12_carbonstate_vars=carbonstate_vars, carbon_type='c14', &
+	       cnstate_vars=cnstate_vars)
+       end if
+       call carbonflux_vars%restart(bounds, ncid, flag='read')
+! (FATES-INTERF)
+!       call clm_fates%restart(bounds, ncid, flag='read',  &
+!             waterstate_vars=waterstate_vars, &
+!             canopystate_vars=canopystate_vars, &
+!             frictionvel_vars=frictionvel_vars)
+    end if
+
 
     if (use_cndv) then
        call dgvs_vars%Restart(bounds, ncid, flag='read')
@@ -953,7 +1021,6 @@ contains
        call check_dim(ncid, namel, numl)
        call check_dim(ncid, namec, numc)
        call check_dim(ncid, namep, nump)
-       ! (FATES-INTERF) CHECK THIS
        if ( use_ed ) call check_dim(ncid, nameCohort  , numCohort)
     end if
     call check_dim(ncid, 'levsno'  , nlevsno)

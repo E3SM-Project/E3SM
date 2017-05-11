@@ -343,6 +343,7 @@ contains
     use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars
     use betr_initializeMod    , only : bgc_reaction
     use tracer_varcon         , only : is_active_betr_bgc    
+    use clm_time_manager      , only : is_restart
     !
     ! !ARGUMENTS    
     implicit none
@@ -502,8 +503,10 @@ contains
           end if
        endif
     endif
-     
+
+    ! FATES is instantiated in the following call.  The global is in clm_inst
     call clm_inst_biogeochem(bounds_proc)
+
     ! ------------------------------------------------------------------------
     ! Initialize accumulated fields
     ! ------------------------------------------------------------------------
@@ -801,6 +804,22 @@ contains
     ! initialize2 for some consistency checking; now it can be deallocated
 
     deallocate(wt_nat_patch)
+
+    ! --------------------------------------------------------------
+    ! Initialise the FATES model state structure
+    ! --------------------------------------------------------------
+   
+    if ( use_ed .and. .not.is_restart() .and. finidat == ' ') then
+!! (FATES-INTERF)
+       
+!!       call clm_fates%init_coldstart(waterstate_vars,canopystate_vars,soilstate_vars, frictionvel_vars)
+    end if
+
+    ! topo_glc_mec was allocated in initialize1, but needed to be kept around through
+    ! initialize2 because it is used to initialize other variables; now it can be
+    ! deallocated
+    
+
 
     ! topo_glc_mec was allocated in initialize1, but needed to be kept around through
     ! initialize2 because it is used to initialize other variables; now it can be
