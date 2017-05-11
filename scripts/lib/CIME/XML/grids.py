@@ -254,9 +254,10 @@ class Grids(GenericXML):
                 if not comp_name == "MASK":
                     domains[comp_name + "_NX"] = int(self.get_element_text("nx", root=domain_node))
                     domains[comp_name + "_NY"] = int(self.get_element_text("ny", root=domain_node))
+
+                    file_name = comp_name + "_DOMAIN_FILE"
+                    path_name = comp_name + "_DOMAIN_PATH"
                 domains[comp_name + "_GRID"] = grid_name
-                file_name = comp_name + "_DOMAIN_FILE"
-                path_name = comp_name + "_DOMAIN_PATH"
                 file_nodes = self.get_nodes(nodename="file", root=domain_node)
                 for file_node in file_nodes:
                     grid_attrib = file_node.get("grid")
@@ -341,7 +342,7 @@ class Grids(GenericXML):
                 if mask_name is not None:
                     file_ = self.get_element_text("file", attributes={mask_name:mask}, root=root)
                     path  = self.get_element_text("path", attributes={mask_name:mask}, root=root)
-                    if file_ is not None:
+                    if file_ is not None and grid[0] != "MASK":
                         domains[file_name] = file_
                     if path is not None:
                         domains[path_name] = path
