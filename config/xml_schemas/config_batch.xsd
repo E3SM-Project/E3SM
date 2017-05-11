@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+   xmlns:xs="http://www.w3.org/2001/XMLSchema"
+   elementFormDefault="qualified"
+   version="2.0">
+  <!-- attributes -->
+  <xs:attribute name="version" type="xs:decimal"/>
+  <xs:attribute name="MACH" type="xs:NCName"/>
+  <xs:attribute name="type"  type="xs:NCName"/>
+
+  <!-- simple elements -->
+  <xs:element name="batch_submit" type="xs:string"/>
+  <xs:element name="batch_redirect" type="xs:string"/>
+  <xs:element name="batch_directive" type="xs:string"/>
+  <xs:element name="jobid_pattern" type="xs:string"/>
+  <xs:element name="depend_string" type="xs:string"/>
+  <xs:element name="walltime_format" type="xs:string"/>
+  <xs:element name="template" type="xs:NCName"/>
+  <xs:element name="task_count" type="xs:NMTOKEN"/>
+  <xs:element name="dependency" type="xs:string"/>
+  <xs:element name="prereq" type="xs:string"/>
+
+  <!-- complex elements -->
+
+  <xs:element name="config_batch">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="batch_system" maxOccurs="unbounded" />
+        <xs:element ref="batch_jobs"/>
+      </xs:sequence>
+      <xs:attribute ref="version" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="batch_system">
+    <xs:complexType>
+      <xs:sequence>
+	<!-- batch_query: The query command used in this batch system
+	  this field is not currently in use-->
+        <xs:element minOccurs="0" ref="batch_query"/>
+
+	<!-- batch_submit: The command used to submit jobs in this batch_system. -->
+        <xs:element minOccurs="0" ref="batch_submit"/>
+
+	<!-- batch_redirect: some batch systems (lsf) require the script to be read from stdin,
+	     this is the shell redirect to handle that -->
+        <xs:element minOccurs="0" ref="batch_redirect"/>
+
+	<!-- batch_directive: The prefix used for batch directives in script comments -->
+        <xs:element minOccurs="0" ref="batch_directive"/>
+
+	<!-- jobid_pattern: How to identify jobid in output from submit command, used in
+	     submitting dependent jobs -->
+        <xs:element minOccurs="0" ref="jobid_pattern"/>
+
+	<!-- depend_string: How to indicate to batch system that this job should not run until
+	     a previous job has completed successfully -->
+        <xs:element minOccurs="0" ref="depend_string"/>
+
+	<!-- walltime_format: time format expected by batch system for the wall clock time field -->
+        <xs:element minOccurs="0" ref="walltime_format"/>
+
+	<!-- submit_args: A list of arguments to pass when submitting a job, queue, wallclock time
+	     and project are typical sub fields -->
+        <xs:element minOccurs="0" ref="submit_args"/>
+
+	<!-- directives: A list of fields to provide in the script directives section,
+	     be careful that these do not conflict with submit_args above -->
+        <xs:element minOccurs="0" ref="directives"/>
+
+	<!-- queues: The list of queue options for this machine, not all system queues need be listed
+	     attributes of this field include walltimemin, walltimemax, jobmin and jobmax
+	  default wallclock time for a job is the walltimemax in this field -->
+        <xs:element minOccurs="0" ref="queues"/>
+      </xs:sequence>
+
+      <xs:attribute ref="MACH"/>
+      <xs:attribute ref="type" use="required"/>
+      <xs:attribute ref="version"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="batch_query">
+    <xs:complexType mixed="true">
+      <xs:attribute name="args"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="submit_args">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="arg"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+
+  <xs:element name="arg">
+    <xs:complexType>
+      <xs:attribute name="flag" use="required"/>
+      <xs:attribute name="name"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="directives">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="directive"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="directive">
+    <xs:complexType mixed="true">
+      <xs:attribute name="default"/>
+      <xs:attribute name="name"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="queues">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="queue"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="queue">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:NCName">
+          <xs:attribute name="default" type="xs:boolean"/>
+          <xs:attribute name="jobmax" type="xs:integer"/>
+          <xs:attribute name="jobmin" type="xs:integer"/>
+          <xs:attribute name="jobname" type="xs:NCName"/>
+          <xs:attribute name="walltimemax"/>
+          <xs:attribute name="walltimemin"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="batch_jobs">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="job"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="job">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="template"/>
+        <xs:element ref="task_count"/>
+        <xs:element minOccurs="0" ref="dependency"/>
+        <xs:element ref="prereq"/>
+      </xs:sequence>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
+

@@ -1,0 +1,10 @@
+The script plot_gradient and the example input file gradient_example.txt are not
+directly related to the unit tests here. Rather, this script can be used to plot
+the output from a gradient calculator, in a sort of "functional unit testing"
+sense.
+
+If you look back at the history of this directory, you'll find some "functional
+unit tests" that resulted in output files that could be plotted with this
+script. However, these have been deleted because they were testing a vertical
+gradient calculator implementation that no longer exists.
+
