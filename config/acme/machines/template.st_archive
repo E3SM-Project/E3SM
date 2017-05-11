@@ -49,9 +49,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Case directory to build")
 
     parser.add_argument("--last-date", default=None,
-                        help="Last simulation date to archive, specified as '%Year-%Month-%Day'"
-                        "Year must be specified with 4 digits, while month and day can be specified without zero padding"
-                        "'0003-11-4' would archive at most files for the simulated year 3, month 11, day 4")
+                        help="WARNING: This option may corrupt your run directory! Use at your own risk! "
+                        "Last simulation date to archive, specified as 'Year-Month-Day'. "
+                        "Year must be specified with 4 digits, while month and day can be specified without zero padding. "
+                        "'0003-11-4' would archive at most files for the simulated year 3, month 11, day 4.")
 
     parser.add_argument("--no-incomplete-logs", default=False, action="store_true",
                         help="Whether to archive logs which have been completed or not")
@@ -76,6 +77,10 @@ def _main_func(description):
         sys.exit(1 if test_results.failed > 0 else 0)
 
     caseroot, last_date, no_incomplete_logs, copy_only = parse_command_line(sys.argv, description)
+
+    if last_date is not None:
+        logger.warn("WARNING: Use of the --last-date option may corrupt your run directory! Use at your own risk!")
+
     with Case(caseroot, read_only=False) as case:
         success = case_st_archive(case, last_date, archive_incomplete_logs=not no_incomplete_logs, copy_only=copy_only)
 
