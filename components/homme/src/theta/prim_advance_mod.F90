@@ -108,14 +108,10 @@ contains
 
     real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
     real (kind=real_kind) ::  itertol,statesave(nets:nete,np,np,nlev,6)
-    real (kind=real_kind) ::  statesave2(nets:nete,np,np,nlev,6)
-    real (kind=real_kind) ::  statesave3(nets:nete,np,np,nlev,6)
-    real (kind=real_kind) ::  statesave4(nets:nete,np,np,nlev,6)
-    real (kind=real_kind) ::  itererrmax,gamma,delta
-    real (kind=real_kind) ::  a31, a32, a41, a42, a43, b1, b2
- 
+    real (kind=real_kind) ::  gamma,delta
+
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
-    integer :: n,i,j,lx,lenx,maxiter,itercount
+    integer :: n,i,j,maxiter
 
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
@@ -128,20 +124,18 @@ contains
  
 ! integration = "explicit"
 !
-!   tstep_type=2  RK2-SSP 3 stage (as used by tracers)           CFL=.58
-!                    optimal in terms of SSP CFL, but not        CFLSSP=2
-!                    optimal in terms of CFL
-!                    typically requires qsplit=3
-!                    but if windspeed > 340m/s, could use this
-!                    with qsplit=1
+!   tstep_type=1  RK2 followed by qsplit-1 leapfrog steps        CFL=close to qsplit
+!                    typically requires qsplit=4 or 5
+!
 !   tstep_type=5  Kinnmark&Gray RK3 5 stage 3rd order            CFL=3.87  (sqrt(15))
 !                 From Paul Ullrich.  3rd order for nonlinear terms also
 !                 K&G method is only 3rd order for linear
 !                 optimal: for windspeeds ~120m/s,gravity: 340m/2
 !                 run with qsplit=1
 !                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
-!   tstep_type=6  KG with BW Euler implicit step
-!   tstep_type=7  ARS232
+!   tstep_type=6  KG with BW Euler implicit step, usful as a debug
+!   tstep_type=7  ARS232 ARK-IMEX method with 3 explicit stages and 2 implicit stages, 2nd order 
+!                 accurate with stage order 1
 !   
 
 ! default weights for computing mean dynamics fluxes
@@ -160,7 +154,17 @@ contains
     ! Take timestep
     ! ==================================
     dt_vis = dt
-    if (tstep_type==5) then
+    if (tstep_type==1) then 
+       ! RK2                                                                                                              
+       ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))                                               
+       call t_startf("RK2_timestep")                                                                                      
+       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&                                              
+            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)                                                      
+       ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))                                                     
+       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&                                               
+            deriv,nets,nete,.false.,eta_ave_w,1.d0,1.d0,1.d0)                                                             
+       call t_stopf("RK2_timestep")   
+    else if (tstep_type==5) then
        ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
        call t_startf("U3-5stage_timestep")
@@ -244,80 +248,6 @@ contains
       ! save un0 as statesave
       call state_save(elem,statesave,n0,nets,nete)
                                
-      ! compute g2=un0+dt*gamma*n(un0) and save in unp1
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,0.d0,1.d0)      
-               
-      ! save unp1 at un0
-      call state_save(elem,statesave2,np1,nets,nete)
-      call state_read(elem,statesave2,n0,nets,nete)
-              
-      maxiter=1000
-      itertol=1e-8
-      ! solve g2 = un0 + dt*gamma*n(g1)+dt*gamma*s(g2) for g2 and save at un0
-      call compute_stage_value_dirk(n0,np1,qn0,gamma*dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,maxiter,itertol)
-                                   
-      ! save g2 in statesave2
-      call state_save(elem,statesave2,n0,nets,nete)
-
-      ! put un0 back at un0
-      call state_read(elem,statesave,n0,nets,nete)
-                                        
-      ! form un0 + dt*delta*n(un0) at save at unp1     
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,delta*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w/2,1.d0,0.d0,1.d0)
-
-      ! put g2 back at un0
-      call state_read(elem,statesave2,n0,nets,nete)
-                                      
-      ! form un0+dt*delta*n(g1)+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2) and save at unp1
-      call compute_andor_apply_rhs(np1,np1,n0,qn0,dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w/2,(1-delta),(1-gamma),1.d0)
-                             
-      ! save unp1 to n0
-      call state_save(elem,statesave3,np1,nets,nete)
-      call state_read(elem,statesave3,n0,nets,nete)      
-                        
-      maxiter=1000
-      itertol=1e-8
-      !	solve g3 = (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2)+dt*gamma*s(g3)
-      ! for g3 using (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2) as initial guess
-      ! and save at np1
-      call compute_stage_value_dirk(n0,np1,qn0,gamma*dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,maxiter,itertol)
-      
-
-      ! put un0 at np1
-      call state_read(elem,statesave,np1,nets,nete)
-
-      ! at this point g3 is at n0 and un0 is at np1
-       
-      ! form unp1 = un0 + dt * gamma* (n(g3)+s(g3))
-      call compute_andor_apply_rhs(np1,np1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w,1.d0,1.d0,1.d0)
-         
-      ! copy g2 to n0
-      call state_read(elem,statesave2,n0,nets,nete)
-       
-     ! form unp1 = un0 + dt * gamma* (n(g3)+s(g3))+dt*(1-gamma)*(n(g2)+s(g2))   
-      call compute_andor_apply_rhs(np1,np1,n0,qn0,(1.d0-gamma)*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w,1.d0,1.d0,1.d0)     
-            
-      call state_read(elem,statesave,n0,nets,nete)
-             
-      call t_stopf("ARS232_timestep")
-!===================================================================================================
-    elseif (tstep_type==8) then ! explicit ARS232 scheme / hydrostatic debug
-      ! ARS232 is 2nd order, stage order 1, DIRK scheme is A-stable and L-stable
-      ! 2 implicit solves and 3 stages total
-      call t_startf("ARS232_timestep")
-      delta = -2.d0*sqrt(2.d0)/3.d0
-      gamma = 1.d0 - 1.d0/sqrt(2.d0)
-
-      ! save un0 as statesave
-      call state_save(elem,statesave,n0,nets,nete)
-                               
       ! compute dt*n(un0)=dt*n(g1) and save at np1
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.true.,0.d0,1.d0,0.d0,0.d0)      
@@ -326,7 +256,7 @@ contains
       call elemstate_add(elem,statesave,nets,nete,1,n0,np1,n0,gamma,1.d0,0.d0)
                              
       maxiter=1000
-      itertol=1e-8
+      itertol=1e-9
       ! solve g2 = un0 + dt*gamma*n(g1)+dt*gamma*s(g2) for g2 and save at nm1
       call compute_stage_value_dirk(nm1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,maxiter,itertol)
@@ -354,7 +284,7 @@ contains
       call elemstate_add(elem,statesave,nets,nete,3,nm1,np1,nm1,1.d0-gamma,1.d0-gamma,1.d0)
                        
       maxiter=1000
-      itertol=1e-8
+      itertol=1e-9
       !	solve g3 = (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2)+dt*gamma*s(g3)
       ! for g3 using (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2) as initial guess
       ! and save at np1
@@ -368,11 +298,10 @@ contains
         deriv,nets,nete,.false.,1.d0,1.d0,1.d0,1.d0)     
             
       call state_read(elem,statesave,n0,nets,nete)
-      
+
       call t_stopf("ARS232_timestep")
 !=========================================================================================
     else
- 
        call abortmp('ERROR: bad choice of tstep_type')
     endif
 
@@ -1438,7 +1367,7 @@ contains
   else
     itertol= resnormmax
   end if 
-
+  
   call t_stopf('compute_stage_value_dirk')
 
   end subroutine compute_stage_value_dirk
