@@ -654,7 +654,6 @@ sub write_filepath_cesmbld
 		     "biogeochem", 
 		     "dyn_subgrid",
 		     "ED/main",
-		     "external_models/mpp/src/driver/alm",
 		     "external_models/mpp/src/mpp/dtypes",
 		     "external_models/mpp/src/mpp/thermal",
 		     "external_models/mpp/src/mpp/util",
