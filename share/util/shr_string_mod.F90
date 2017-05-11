@@ -64,6 +64,8 @@ module shr_string_mod
    public :: shr_string_listPrepend     ! prepend list in front of another
    public :: shr_string_listSetDel      ! Set field delimiter in lists
    public :: shr_string_listGetDel      ! Get field delimiter in lists
+   public :: shr_string_listFromSuffixes! return colon delimited field list
+                                        ! given array of suffixes and a base string
    public :: shr_string_listCreateField ! return colon delimited field list
                                         ! given number of fields N and a base string
    public :: shr_string_listAddSuffix   ! add a suffix to every field in a field list
@@ -1686,6 +1688,43 @@ subroutine shr_string_listGetDel(del)
    if (debug>1) call shr_timer_stop (t01)
 
 end subroutine shr_string_listGetDel
+
+!===============================================================================
+!
+! shr_string_listFromSuffixes
+!
+!   Returns a string of colon delimited fields given an array of suffixes and a base string
+!
+!        given suffixes = ['_s1', '_s2', '_s3'] and strBase = 'foo', returns:
+!            'foo_s1:foo_s2:foo_s3'
+!
+!===============================================================================
+function shr_string_listFromSuffixes( suffixes, strBase ) result ( retString )
+
+  character(len=*), intent(in)  :: suffixes(:)
+  character(len=*), intent(in)  :: strBase
+  character(len=:), allocatable :: retString
+
+  integer :: nfields
+  integer :: i
+  integer(SHR_KIND_IN) :: t01 = 0     ! timer
+
+  character(len=*), parameter :: subName = "(shr_string_listFromSuffixes) "
+
+!-------------------------------------------------------------------------------
+
+  if ( debug > 1 .and. t01 < 1 ) call shr_timer_get( t01,subName )
+  if ( debug > 1 ) call shr_timer_start( t01 )
+
+  nfields = size(suffixes)
+  retString = trim(strBase) // suffixes(1)
+  do i = 2, nfields
+     retString = trim(retString) // ':' // trim(strBase) // suffixes(i)
+  end do
+
+  if ( debug > 1 ) call shr_timer_stop ( t01 )
+
+end function shr_string_listFromSuffixes
 
 !===============================================================================
 !
