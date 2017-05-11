@@ -489,7 +489,7 @@ contains
           else
              write(logunit,*) subname,' ERROR: Flux fields other than ', &
                   qice_fieldname, ' currently are not handled in lnd2glc remapping.'
-             write(logunit,*) '(Attempt to handle flux field <', trim(field), '>.)'
+             write(logunit,*) '(Attempt to handle flux field <', trim(fieldname), '>.)'
              write(logunit,*) 'Substantial thought is needed to determine how to remap other fluxes'
              write(logunit,*) 'in a smooth, conservative manner.'
              call shr_sys_abort(subname//&
