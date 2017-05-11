@@ -729,7 +729,7 @@ subroutine hetfrz_classnuc_cam_calc( &
    real(r8) :: numice10s(pcols,pver)
    real(r8) :: numice10s_imm_dst(pcols,pver)
    real(r8) :: numice10s_imm_bc(pcols,pver)
-   real(r8) :: tmp_array(pcols,pver)
+   real(r8) :: tmp_array(state%ncol,pver)
 
    real(r8) :: na500(pcols,pver)
    real(r8) :: tot_na500(pcols,pver)
