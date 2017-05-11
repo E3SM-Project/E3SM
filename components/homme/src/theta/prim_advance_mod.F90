@@ -250,7 +250,7 @@ contains
                                
       ! compute dt*n(un0)=dt*n(g1) and save at np1
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.true.,0.d0,1.d0,0.d0,0.d0)      
+        deriv,nets,nete,compute_diagnostics,0.d0,1.d0,0.d0,0.d0)      
 
       ! form un0+dt*gamma*n(g1) and store at n0
       call elemstate_add(elem,statesave,nets,nete,1,n0,np1,n0,gamma,1.d0,0.d0)
@@ -982,7 +982,7 @@ contains
      ! Compute phi + kinetic energy term: 10*nv*nv Flops
      ! ==============================================
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,KE,vtemp)
+!$omp parallel do private(k,i,j,v1,v2,vtemp)
 #endif
 
      vertloop: do k=1,nlev
