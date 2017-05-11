@@ -27,7 +27,8 @@ module cice_diagnostics
        cice_initialize_time_diagnostics, &
        cice_set_time_diagnostics, &
        cice_check_state, &
-       cice_warning_message
+       cice_warning_message, &
+       cice_set_testing_system_test_arrays
 
 contains
 
@@ -443,6 +444,100 @@ contains
     call mpas_release_unit(errorUnit)
 
   end subroutine cice_warning_message
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_set_testing_system_test_arrays
+!
+!> \brief Set up arrays for testing the testing system
+!> \author Adrian K. Turner, LANL
+!> \date 11th May 2017
+!> \details
+!> This routine sets up the testing system test arrays that will cause
+!> failures in each test.
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_set_testing_system_test_arrays(domain)
+
+    type(domain_type), intent(in) :: &
+         domain
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         testingSystemTestPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         testArrayReproducibility, &
+         testArrayParallelism, &
+         testArrayRestartability
+
+    logical, pointer :: &
+         config_testing_system_test, &
+         config_do_restart
+
+    integer, pointer :: &
+         nCellsSolve
+
+    integer :: &
+         iCell
+
+    ! random number variables
+    integer :: &
+         seedSize, &
+         clock, &
+         i
+
+    integer, dimension(:), allocatable :: &
+         seed
+
+    call MPAS_pool_get_config(domain % configs, "config_testing_system_test", config_testing_system_test)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+
+    if (config_testing_system_test) then
+
+       block => domain % blocklist
+       do while (associated(block))
+
+          call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
+
+          call MPAS_pool_get_subpool(block % structs, "testing_system_test", testingSystemTestPool)
+
+          ! reproducibility
+          call random_seed(size=seedSize)
+          allocate(seed(seedSize))
+
+          call system_clock(count=clock)
+
+          seed = clock + 37 * (/ (i - 1, i = 1, seedSize) /)
+          call random_seed(PUT=seed)
+
+          deallocate(seed)
+
+          call MPAS_pool_get_array(testingSystemTestPool, "testArrayReproducibility", testArrayReproducibility)
+
+          do iCell = 1, nCellsSolve
+             call random_number(testArrayReproducibility(iCell))
+          enddo ! iCell
+
+          ! parallelism
+          call MPAS_pool_get_array(testingSystemTestPool, "testArrayParallelism", testArrayParallelism)
+          testArrayParallelism = real(domain % dminfo % my_proc_id, RKIND)
+
+          ! restartability
+          call MPAS_pool_get_array(testingSystemTestPool, "testArrayRestartability", testArrayRestartability)
+          if (config_do_restart) then
+             testArrayRestartability = 1.0_RKIND
+          endif
+
+          block => block % next
+       enddo
+
+    endif
+
+  end subroutine cice_set_testing_system_test_arrays
 
 !-----------------------------------------------------------------------
 
