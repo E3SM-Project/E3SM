@@ -6,5 +6,5 @@ class Mean(cdp.cdp_metric.CDPMetric):
         metric_path = __file__
         super(Mean, self).__init__(metric_path)
 
-    def compute(self, variable):
-        return cdutil.averager(variable, axis='xy', weights='generate')
+    def compute(self, variable, axis='xy'):
+        return cdutil.averager(variable, axis=axis, weights='generate')

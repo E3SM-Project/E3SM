@@ -7,10 +7,10 @@ class CORR(cdp.cdp_metric.CDPMetric):
         metric_path = __file__
         super(CORR, self).__init__(metric_path)
 
-    def compute(self, model, obs):
+    def compute(self, model, obs, axis='xy'):
         corr = -numpy.infty
         try:
-            corr = float(genutil.statistics.correlation(model, obs, axis='xy', weights='generate'))
+            corr = float(genutil.statistics.correlation(model, obs, axis=axis, weights='generate'))
         except Exception, err:
             print err
         return corr

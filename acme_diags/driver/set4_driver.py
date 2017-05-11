@@ -17,26 +17,54 @@ from acme_diags.driver import utils
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     """ Creates the mean, max, min, rmse, corr in a dictionary """
+    #print ref.getAxisList()
+    #print test.getAxisList()
+    #print diff.getAxisList()
+
+    lev = ref.getLevel()
+    '''
+    print lev
+    print '-'*20
+    print dir(lev)
+    print '-'*20
+    print type(lev)
+    lev.setBounds(None)
+    print '-'*20
+    print lev
+    quit()
+    '''
+    lev = test.getLevel()
+    lev.setBounds(None)
+    lev = ref_regrid.getLevel()
+    lev.setBounds(None)
+    lev = test_regrid.getLevel()
+    lev.setBounds(None)
+    lev = diff.getLevel()
+    lev.setBounds(None)
+
     metrics_dict = {}
     metrics_dict['ref'] = {
         'min': min_cdms(ref),
         'max': max_cdms(ref),
-        'mean': numpy.nan#mean(ref)
+        #'mean': numpy.nan #mean(ref, axis='yz')
+        'mean': mean(ref, axis='yz')
     }
     metrics_dict['test'] = {
         'min': min_cdms(test),
         'max': max_cdms(test),
-        'mean': numpy.nan#mean(test)
+        #'mean': numpy.nan #mean(test, axis='yz')
+        'mean': mean(test, axis='yz')
     }
 
     metrics_dict['diff'] = {
         'min': min_cdms(diff),
         'max': max_cdms(diff),
-        'mean': numpy.nan#mean(diff)
+        #'mean': numpy.nan #mean(diff, axis='yz')
+        'mean': mean(diff, axis='yz')
     }
     metrics_dict['misc'] = {
-        'rmse': numpy.nan,#rmse(test_regrid, ref_regrid),
-        'corr': numpy.nan#corr(test_regrid, ref_regrid)
+        'rmse': rmse(test_regrid, ref_regrid, axis='yz'),
+        'corr': corr(test_regrid, ref_regrid, axis='yz')
     }
 
     return metrics_dict
