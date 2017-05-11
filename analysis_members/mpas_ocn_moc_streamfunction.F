@@ -10,7 +10,7 @@
 !  ocn_moc_streamfunction
 !
 !> \brief MPAS ocean analysis mode member: moc_streamfunction
-!> \author  Nils H. Feige
+!> \author  Nils H. Feige, Mark R. Petersen
 !> \date    2016-04-08
 !> \brief   Computes Meridional Overturning Circulation streamfunction.
 !>
@@ -65,7 +65,7 @@ contains
 !  routine ocn_init_moc_streamfunction
 !
 !> \brief   Initialize MPAS-Ocean analysis member
-!> \author  Nils H. Feige
+!> \author  Nils H. Feige, Mark R. Petersen
 !> \date    2016-04-08
 !> \details
 !>  This routine conducts all initializations required for the
@@ -280,7 +280,7 @@ contains
 !  routine ocn_compute_moc_streamfunction
 !
 !> \brief   Compute MPAS-Ocean analysis member
-!> \author  Nils H. Feige
+!> \author  Nils H. Feige, Mark R. Petersen
 !> \date    2016-04-08
 !> \details
 !>  This routine conducts all computation required for this
@@ -441,9 +441,12 @@ contains
       !!!! END TRANSECT INITIALIZATION
 
       if (transectsInAddGroup .ne. regionsInAddGroup) then
-         !!!FAIL HORRIBLY!!!
-         call mpas_log_write ('transectsInGroup count does not match regionsInGroup count!' )
-         !print *, transectsInAddGroup, regionsInAddGroup
+         call mpas_log_write ('ocn_moc_streamfunction AM: transectsInGroup count does not ' &
+            // 'match regionsInGroup count: $i, $i', intArgs = (/ transectsInAddGroup, regionsInAddGroup /) )
+         i = min(transectsInAddGroup, regionsInAddGroup)
+         transectsInAddGroup = i
+         regionsInAddGroup = i
+         call mpas_log_write ('Setting both to min: $i, $i', intArgs = (/ transectsInAddGroup, regionsInAddGroup /) )
       end if
 
       err = 0
@@ -489,10 +492,10 @@ contains
          call mpas_pool_get_array(transectPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
          call mpas_pool_get_array(transectPool,'transectEdgeMasks',transectEdgeMasks)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
-         call mpas_pool_get_array(statePool, normalVelocityArrayName, normalVelocity)
+         call mpas_pool_get_array(statePool, normalVelocityArrayName, normalVelocity, timeLevel)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness)
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
 
          !!!! TRANSECT CALCULATION
@@ -573,7 +576,7 @@ contains
 !  routine ocn_restart_moc_streamfunction
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
-!> \author  Nils H. Feige
+!> \author  Nils H. Feige, Mark R. Petersen
 !> \date    2016-04-08
 !> \details
 !>  This routine conducts computation required to save a restart state
@@ -620,7 +623,7 @@ contains
 !  routine ocn_finalize_moc_streamfunction
 !
 !> \brief   Finalize MPAS-Ocean analysis member
-!> \author  Nils H. Feige
+!> \author  Nils H. Feige, Mark R. Petersen
 !> \date    2016-04-08
 !> \details
 !>  This routine conducts all finalizations required for this
