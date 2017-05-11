@@ -54,7 +54,8 @@ def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False, batc
             no_batch = True
 
         # This is a resubmission, do not reinitialize test values
-        case.set_value("IS_FIRST_RUN", False)
+        if case.get_value("TEST"):
+            case.set_value("IS_FIRST_RUN", False)
 
     #Load Modules
     case.load_env()
