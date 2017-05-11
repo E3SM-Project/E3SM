@@ -53,7 +53,6 @@ contains
     !
     ! Mapping is done with a multiplication by landfrac on the source grid, with
     ! normalization.
-    !WHL - Is this multiplication done for flux fields only?
     !
     ! Sets the given field within l2x_g, leaving the rest of l2x_g untouched.
     !
@@ -393,9 +392,6 @@ contains
       
     ! ------------------------------------------------------------------------
     ! Remap all these fields from the land (source) grid to the glc (destination) grid.
-    !WHL - Make sure the mapper is bilinear for SMB.
-    !      Think about how the topo is mapped.
-    !      Try not passing in landfrac_l.  Maybe fluxes are multiplied by lfrac even with a bilinear state mapper. 
     ! ------------------------------------------------------------------------
 
     call seq_map_map(mapper = mapper, &
