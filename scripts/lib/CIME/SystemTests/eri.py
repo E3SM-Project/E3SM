@@ -81,8 +81,8 @@ class ERI(SystemTestsCommon):
         os.chdir(clone1_path)
         self._set_active_case(clone1)
 
-        logger.info("ref1 startup: doing a {} {} startup run from {} and 00000 seconds", stop_n1, stop_option, start_1)
-        logger.info("  writing restarts at {} {}", rest_n1, stop_option)
+        logger.info("ref1 startup: doing a {} {} startup run from {} and 00000 seconds".format(stop_n1, stop_option, start_1))
+        logger.info("  writing restarts at {} {}".format(rest_n1, stop_option))
         logger.info("  short term archiving is on ")
 
         clone1.set_value("CONTINUE_RUN", False)
@@ -120,9 +120,9 @@ class ERI(SystemTestsCommon):
         refdate_2 = run_cmd_no_fail(r'ls -1dt {}/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"'.format(dout_sr1))
         refsec_2 = "00000"
 
-        logger.info("ref2 hybrid: doing a {} {} startup hybrid run", stop_n2, stop_option)
-        logger.info("  starting from {} and using ref1 {} and {} seconds", start_2, refdate_2, refsec_2)
-        logger.info("  writing restarts at {} {}", rest_n2, stop_option)
+        logger.info("ref2 hybrid: doing a {} {} startup hybrid run".format(stop_n2, stop_option))
+        logger.info("  starting from {} and using ref1 {} and {} seconds".format(start_2, refdate_2, refsec_2))
+        logger.info("  writing restarts at {} {}".format(rest_n2, stop_option))
         logger.info("  short term archiving is on ")
 
         # setup ref2 case
@@ -163,9 +163,9 @@ class ERI(SystemTestsCommon):
         refdate_3 = run_cmd_no_fail(r'ls -1dt {}/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"'.format(dout_sr2))
         refsec_3 = "00000"
 
-        logger.info("branch: doing a {} {} branch", stop_n3, stop_option)
-        logger.info("  starting from ref2 {} and {} seconds restarts", refdate_3, refsec_3)
-        logger.info("  writing restarts at {} {}", rest_n3, stop_option)
+        logger.info("branch: doing a {} {} branch".format(stop_n3, stop_option))
+        logger.info("  starting from ref2 {} and {} seconds restarts".format(refdate_3, refsec_3))
+        logger.info("  writing restarts at {} {}".format(rest_n3, stop_option))
         logger.info("  short term archiving is off")
 
         self._case.set_value("RUN_TYPE"      , "branch")
@@ -205,7 +205,7 @@ class ERI(SystemTestsCommon):
         # do a restart continue from (3a) (short term archiving off)
         #
 
-        logger.info("branch restart: doing a {} {} continue restart test", stop_n4, stop_option)
+        logger.info("branch restart: doing a {} {} continue restart test".format(stop_n4, stop_option))
 
         self._case.set_value("CONTINUE_RUN",  True)
         self._case.set_value("STOP_N",        stop_n4)

@@ -371,7 +371,7 @@ def _compare_values(name, gold_value, comp_value, case):
 
         if (norm_gold_value != norm_comp_value):
             comments += "  BASE: {} = {}\n".format(name, norm_gold_value)
-            comments += "  COMP: {} = {}\n".format(name, norm_comp_value,
+            comments += "  COMP: {} = {}\n".format(name, norm_comp_value)
 
     return comments
 

@@ -83,7 +83,7 @@ class DAE(SystemTestsCompareTwo):
         if da_files is None:
             logger = logging.getLogger(__name__)
             path = os.path.join(case_root, 'da.log.*')
-            logger.warning("No DA files in {}", path)
+            logger.warning("No DA files in {}".format(path))
 
         da_cycles = self._case.get_value("DATA_ASSIMILATION_CYCLES")
         expect((da_files is not None) and (len(da_files) == da_cycles),

@@ -28,16 +28,16 @@ def _run_pylint(on_file, interactive):
          os.path.join(cimeroot,"scripts","fortran_unit_testing","python"))
 
     cmd = "{} {} {}".format(pylint, cmd_options, on_file)
-    logger.debug("pylint command is {}", cmd)
+    logger.debug("pylint command is {}".format(cmd))
     stat, out, err = run_cmd(cmd, verbose=False, from_dir=cimeroot)
     if stat != 0:
         if interactive:
-            logger.info("File {} has pylint problems, please fix\n    Use command: {}", on_file, cmd)
+            logger.info("File {} has pylint problems, please fix\n    Use command: {}".format(on_file, cmd))
             logger.info(out + "\n" + err)
         return (on_file, out + "\n" + err)
     else:
         if interactive:
-            logger.info("File {} has no pylint problems", on_file)
+            logger.info("File {} has no pylint problems".format(on_file))
         return (on_file, "")
 
 ###############################################################################
@@ -94,7 +94,7 @@ def check_code(files, num_procs=10, interactive=False):
                         files_to_check.append(repo_file) # could have multiple matches
 
                 if not found:
-                    logger.warning("Could not find file matching argument '{}'", filearg)
+                    logger.warning("Could not find file matching argument '{}'".format(filearg))
     else:
         # Check every python file
         files_to_check = get_all_checkable_files()

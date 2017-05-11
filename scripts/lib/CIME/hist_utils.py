@@ -181,8 +181,7 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
     casedir = case.get_value("CASEROOT")
     all_success = True
     num_compared = 0
-    comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n"
-        .format(testcase, from_dir1, suffix1, from_dir2, suffix2)
+    comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(testcase, from_dir1, suffix1, from_dir2, suffix2)
     multiinst_cpl_compare = False
     for model in _iter_model_file_substrs(case):
         if model == 'cpl' and suffix2 == 'multiinst':

@@ -74,7 +74,7 @@ def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug,
     """
     ems_path = os.path.join(output_dir, "env_mach_specific.xml")
     if os.path.exists(ems_path):
-        logger.warn("{} already exists, delete to replace", ems_path)
+        logger.warn("{} already exists, delete to replace".format(ems_path))
         return
     ems_file = EnvMachSpecific(output_dir, unit_testing=unit_testing)
     ems_file.populate(machobj)

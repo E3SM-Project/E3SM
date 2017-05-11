@@ -241,8 +241,9 @@ ScpCommand: {}
 
 # Dashboard start time
 NightlyStartTime: {} UTC
-""".format((os.getcwd(), os.getcwd(), hostname,)
-       cdash_build_name, cdash_project, distutils.spawn.find_executable("scp"), cdash_timestamp)
+""".format(os.getcwd(), os.getcwd(), hostname,
+           cdash_build_name, cdash_project,
+           distutils.spawn.find_executable("scp"), cdash_timestamp)
 
     with open("DartConfiguration.tcl", "w") as dart_fd:
         dart_fd.write(dart_config)

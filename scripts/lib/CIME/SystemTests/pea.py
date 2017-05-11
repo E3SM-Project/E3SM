@@ -39,7 +39,7 @@ class PEA(SystemTestsCompareTwo):
         else:
             logger.warning("mpi-serial is not supported on machine '{}', "
                            "so we have to fall back to default MPI and "
-                           "therefore very little is being tested", mach_name)
+                           "therefore very little is being tested".format(mach_name))
 
         if os.path.isfile("Macros"):
             os.remove("Macros")

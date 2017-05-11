@@ -25,8 +25,7 @@ class ERS2(SystemTestsCommon):
         expect(stop_n > 0, "Bad STOP_N: {:d}".format(stop_n))
         expect(stop_n > 2, "ERROR: stop_n value {:d} too short".format(stop_n))
 
-        logger.info("doing an {} {} initial test with restart file at {} {}",
-                    str(stop_n), stop_option, str(rest_n), stop_option)
+        logger.info("doing an {} {} initial test with restart file at {} {}".format(str(stop_n), stop_option, str(rest_n), stop_option))
         self.run_indv()
 
     def _ers2_second_phase(self):
@@ -39,8 +38,7 @@ class ERS2(SystemTestsCommon):
         self._case.set_value("REST_OPTION",stop_option)
         self._case.set_value("STOP_N", stop_new)
         self._case.flush()
-        logger.info("doing first part {} {} restart test",
-                    str(stop_new), stop_option)
+        logger.info("doing first part {} {} restart test".format(str(stop_new), stop_option))
         self.run_indv(suffix="intermediate")
 
         stop_new = stop_n - rest_n
@@ -48,8 +46,7 @@ class ERS2(SystemTestsCommon):
         self._case.set_value("CONTINUE_RUN", True)
         self._case.set_value("REST_OPTION","never")
 
-        logger.info("doing second part {} {} restart test",
-                    str(stop_new), stop_option)
+        logger.info("doing second part {} {} restart test".format(str(stop_new), stop_option))
         self.run_indv(suffix="rest")
 
         # Compare restart file

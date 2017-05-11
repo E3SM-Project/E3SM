@@ -206,7 +206,7 @@ def write_macros_file_v1(macros, compiler, os_, machine, macros_file="Macros", o
     # A few things can be used from environ if not in XML
     for item in ["MPI_PATH", "NETCDF_PATH"]:
         if not item in macros and item in os.environ:
-            logger.warn("Setting {} from Environment", item)
+            logger.warn("Setting {} from Environment".format(item))
             macros[item] = os.environ[item]
 
     with open(macros_file, "w") as fd:
@@ -270,13 +270,13 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
                             for is_shell, component in components:
                                 if is_shell:
                                     fd.write('execute_process(COMMAND {} OUTPUT_VARIABLE TEMP{:d})\n'.format(component, idx))
-                                    fd.write('string(REGEX REPLACE "\\n$" "" TEMP{:d} "$\{TEMP{:d}\}")\n'.format(idx, idx))
+                                    fd.write('string(REGEX REPLACE "\\n$" "" TEMP{:d} "${{TEMP{:d}}}")\n'.format(idx, idx))
                                 else:
                                     fd.write('set(TEMP{:d} "{}")\n'.format(idx, component))
 
                                 idx += 1
 
-                            fd.write('set(TEMP "{}")\n'.format(" ".join(["$\{TEMP{:d}\}".format(i) for i in range(idx)])))
+                            fd.write('set(TEMP "{}")\n'.format(" ".join(["${{TEMP{:d}}}".format(i) for i in range(idx)])))
                         else:
                             fd.write('set(TEMP "{}")\n'.format(value))
 

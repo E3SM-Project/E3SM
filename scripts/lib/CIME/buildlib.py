@@ -105,12 +105,12 @@ def run_gmake(case, compclass, libroot, libname="", user_cppdefs=""):
 
     complib = ""
     if libname:
-        complib  = os.path.join(libroot, "lib{}.a".format(libname)),
+        complib  = os.path.join(libroot, "lib{}.a".format(libname))
     else:
-        complib  = os.path.join(libroot, "lib{}.a".format(compclass)),
+        complib  = os.path.join(libroot, "lib{}.a".format(compclass))
 
     makefile = os.path.join(casetools, "Makefile")
-    macfile  = os.path.join(caseroot, "Macros.{}".format(mach)),
+    macfile  = os.path.join(caseroot, "Macros.{}".format(mach))
 
     if user_cppdefs:
         cmd = "{} complib -j {:d} MODEL={} COMPLIB={} -f {} MACFILE={} USER_CPPDEFS='{}'" \

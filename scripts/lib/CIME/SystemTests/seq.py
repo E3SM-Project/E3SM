@@ -82,8 +82,7 @@ class SEQ(SystemTestsCommon):
         #
         # do an initial run test with default layout
         #
-        logger.info("doing a {:d} {} initial test with default layout",
-                    stop_n, stop_option)
+        logger.info("doing a {:d} {} initial test with default layout".format(stop_n, stop_option))
 
         shutil.copy("{}/{}.exe.SEQ1".format(exeroot,cime_model),
                     "{}/{}.exe".format(exeroot,cime_model))
@@ -100,8 +99,7 @@ class SEQ(SystemTestsCommon):
         shutil.copy("{}/{}.exe.SEQ1".format(exeroot,cime_model),
                     "{}/{}.exe".format(exeroot,cime_model))
 
-        logger.info("doing a second {:d} {} test with rootpes set to zero",
-                    stop_n, stop_option)
+        logger.info("doing a second {:d} {} test with rootpes set to zero".format(stop_n, stop_option))
         # update the pelayout settings for this run
         self._case.read_xml()
 

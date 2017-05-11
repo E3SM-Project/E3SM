@@ -1105,7 +1105,7 @@ def find_system_test(testname, case):
 
     system_test_path = None
     if testname.startswith("TEST"):
-        system_test_path =  "CIME.SystemTests.system_tests_common.{}".format(testname))
+        system_test_path =  "CIME.SystemTests.system_tests_common.{}".format(testname)
     else:
         components = ["any"]
         components.extend( case.get_compset_components())
@@ -1120,12 +1120,12 @@ def find_system_test(testname, case):
                 if os.path.isfile(system_test_file):
                     logger.debug( "found "+system_test_file)
                     if component == "any":
-                        system_test_path = "CIME.SystemTests.{}.{}".format(testname.lower()),testname)
+                        system_test_path = "CIME.SystemTests.{}.{}".format(testname.lower(), testname)
                     else:
                         system_test_dir = os.path.dirname(system_test_file)
                         if system_test_dir not in sys.path:
                             sys.path.append(system_test_dir)
-                        system_test_path = "{}.{}".format(testname.lower()),testname)
+                        system_test_path = "{}.{}".format(testname.lower(), testname)
                     break
 
     expect(system_test_path is not None, "No test {} found".format(estname))
