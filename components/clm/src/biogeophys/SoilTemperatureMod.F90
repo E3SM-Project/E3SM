@@ -545,16 +545,16 @@ contains
          else
 
             if (update_temperature) then
-            do j = snl(c)+1, 0
-               t_soisno(c,j)       = tvector_nourbanc(c,j-1)        !snow layers
-            end do
-            t_soisno(c,1:nlevgrnd) = tvector_nourbanc(c,1:nlevgrnd) !soil layers
-            
-            if (frac_h2osfc(c) == 0._r8) then
-               t_h2osfc(c)         = t_soisno(c,1)
-            else
-               t_h2osfc(c)         = tvector_nourbanc(c,0)          !surface water
-            endif
+               do j = snl(c)+1, 0
+                  t_soisno(c,j)       = tvector_nourbanc(c,j-1)        !snow layers
+               end do
+               t_soisno(c,1:nlevgrnd) = tvector_nourbanc(c,1:nlevgrnd) !soil layers
+
+               if (frac_h2osfc(c) == 0._r8) then
+                  t_h2osfc(c)         = t_soisno(c,1)
+               else
+                  t_h2osfc(c)         = tvector_nourbanc(c,0)          !surface water
+               endif
             endif
 
          endif
