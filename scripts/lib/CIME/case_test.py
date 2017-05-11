@@ -66,6 +66,7 @@ def case_test(case, testname=None, reset=False):
 
     if reset:
         logger.info("Reset test to initial conditions and exit")
+        # pylint: disable=protected-access
         test._resetup_case(RUN_PHASE)
         return True
     success = test.run()
