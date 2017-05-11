@@ -42,7 +42,8 @@ def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False, batc
     # flag will stay in effect for the duration of the RESUBMITs
     env_batch = case.get_env("batch")
     if not resubmit:
-        case.set_value("IS_FIRST_RUN", True)
+        if case.get_value("TEST"):
+            case.set_value("IS_FIRST_RUN", True)
         if no_batch:
             batch_system = "none"
         else:
@@ -53,7 +54,8 @@ def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False, batc
             no_batch = True
 
         # This is a resubmission, do not reinitialize test values
-        case.set_value("IS_FIRST_RUN", False)
+        if case.get_value("TEST"):
+            case.set_value("IS_FIRST_RUN", False)
 
     #Load Modules
     case.load_env()
@@ -106,4 +108,3 @@ def check_DA_settings(case):
         script = case.get_value("DATA_ASSIMILATION_SCRIPT")
         cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
         logger.info("Data Assimilation enabled using script {} with {:d} cycles".format(script,cycles))
-

@@ -212,7 +212,8 @@ def _archive_restarts(case, archive, archive_entry,
     rundir = case.get_value("RUNDIR")
     casename = case.get_value("CASE")
     archive_restdir = join(dout_s_root, 'rest', datename)
-    if not datename_is_last or case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'):
+    if not datename_is_last or case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES') \
+       or case.get_value("TEST"):
         if not os.path.exists(archive_restdir):
             os.makedirs(archive_restdir)
 

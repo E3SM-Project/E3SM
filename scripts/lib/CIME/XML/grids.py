@@ -70,6 +70,7 @@ class Grids(GenericXML):
 
         # determine domains given component_grids
         domains  = self._get_domains(component_grids, atmlevregex, lndlevregex)
+
         gridinfo.update(domains)
 
         # determine gridmaps given component_grids
@@ -250,8 +251,9 @@ class Grids(GenericXML):
             domain_node = self.get_optional_node(nodename="domain", attributes={"name":grid_name_nonlev})
             if domain_node is not None:
                 comp_name = grid[0].upper()
-                domains[comp_name + "_NX"] = int(self.get_element_text("nx", root=domain_node))
-                domains[comp_name + "_NY"] = int(self.get_element_text("ny", root=domain_node))
+                if not comp_name == "MASK":
+                    domains[comp_name + "_NX"] = int(self.get_element_text("nx", root=domain_node))
+                    domains[comp_name + "_NY"] = int(self.get_element_text("ny", root=domain_node))
                 domains[comp_name + "_GRID"] = grid_name
                 file_name = comp_name + "_DOMAIN_FILE"
                 path_name = comp_name + "_DOMAIN_PATH"

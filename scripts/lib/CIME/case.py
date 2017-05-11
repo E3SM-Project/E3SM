@@ -364,7 +364,7 @@ class Case(object):
 
         return item
 
-    def set_value(self, item, value, subgroup=None, ignore_type=False):
+    def set_value(self, item, value, subgroup=None, ignore_type=False, allow_undefined=False):
         """
         If a file has been defined, and the variable is in the file,
         then that value will be set in the file object and the file
@@ -381,6 +381,8 @@ class Case(object):
                 self._env_files_that_need_rewrite.add(env_file)
                 return result
 
+        expect(allow_undefined or result is not None,
+               "No variable %s found in case"%item)
 
     def set_valid_values(self, item, valid_values):
         """
@@ -529,9 +531,9 @@ class Case(object):
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
 
-        # put anything in the lookups table into env objects
+        # put anything in the lookups table into existing env objects
         for key,value in self.lookups.items():
-            result = self.set_value(key,value)
+            result = self.set_value(key,value, allow_undefined=True)
             if result is not None:
                 del self.lookups[key]
 
