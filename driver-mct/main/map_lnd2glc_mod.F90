@@ -13,8 +13,10 @@ module map_lnd2glc_mod
 #include "shr_assert.h"
   use seq_comm_mct, only: CPLID, GLCID, logunit
   use shr_kind_mod, only : r8 => shr_kind_r8
+  use shr_kind_mod, only : cxx => SHR_KIND_CXX
   use glc_elevclass_mod, only : glc_get_num_elevation_classes, glc_get_elevation_class, &
-       glc_elevclass_as_string, GLC_ELEVCLASS_ERR_NONE, GLC_ELEVCLASS_ERR_TOO_LOW, &
+       glc_elevclass_as_string, glc_all_elevclass_strings, GLC_ELEVCLASS_STRLEN, &
+       GLC_ELEVCLASS_ERR_NONE, GLC_ELEVCLASS_ERR_TOO_LOW, &
        GLC_ELEVCLASS_ERR_TOO_HIGH, glc_errcode_to_string
   use mct_mod
   use seq_map_type_mod, only : seq_map
@@ -330,13 +332,13 @@ contains
     character(len=*), parameter :: toponame = 'Sl_topo'  ! base name for topo fields in l2x_l;
                                                          ! actual names will have elevation class suffice
 
+    character(len=GLC_ELEVCLASS_STRLEN), allocatable :: all_elevclass_strings(:)
     character(len=:), allocatable :: elevclass_as_string
     character(len=:), allocatable :: fieldname_ec
     character(len=:), allocatable :: toponame_ec
     character(len=:), allocatable :: fieldnamelist
     character(len=:), allocatable :: toponamelist
     character(len=:), allocatable :: totalfieldlist
-    character(len=:), allocatable :: delimiter
     
     integer :: nEC           ! number of elevation classes
     integer :: lsize_g       ! number of cells on glc grid
@@ -375,18 +377,14 @@ contains
     !    'Flgl_qice01:Flgl_qice02: ... :Flgl_qice10:Sl_topo01:Sl_topo02: ... :Sltopo10'
     ! ------------------------------------------------------------------------
 
-    fieldnamelist = ''
-    toponamelist = ''
-    delimiter = ''
-    do ec = 1, nEC
-       if (ec > 1) delimiter = ':'
-       elevclass_as_string = glc_elevclass_as_string(ec)
-       fieldname_ec = fieldname // elevclass_as_string
-       fieldnamelist = fieldnamelist // delimiter // fieldname_ec
-       toponame_ec = toponame // elevclass_as_string
-       toponamelist = toponamelist // delimiter // toponame_ec
-    end do
-    totalfieldlist = fieldnamelist // delimiter // toponamelist
+    all_elevclass_strings = glc_all_elevclass_strings(include_zero = .false.)
+    fieldnamelist = shr_string_listFromSuffixes( &
+         suffixes = all_elevclass_strings, &
+         strBase  = fieldname)
+    toponamelist = shr_string_listFromSuffixes( &
+         suffixes = all_elevclass_strings, &
+         strBase  = toponame)
+    call shr_string_listMerge(fieldnamelist, toponamelist, totalfieldlist )
     
     ! ------------------------------------------------------------------------
     ! Make a temporary attribute vector.

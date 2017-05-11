@@ -2,6 +2,7 @@ module prep_glc_mod
 
   use shr_kind_mod    , only: r8 => SHR_KIND_R8
   use shr_kind_mod    , only: cl => SHR_KIND_CL
+  use shr_kind_mod    , only: cxx => SHR_KIND_CXX
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct    , only: num_inst_glc, num_inst_lnd, num_inst_frc
   use seq_comm_mct    , only: CPLID, GLCID, logunit
@@ -16,6 +17,8 @@ module prep_glc_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: component_get_dom_cx
   use component_type_mod, only: glc, lnd
+  use glc_elevclass_mod, only : glc_get_num_elevation_classes, glc_elevclass_as_string
+  use glc_elevclass_mod, only : glc_all_elevclass_strings, GLC_ELEVCLASS_STRLEN
 
   implicit none
   save
@@ -45,8 +48,10 @@ module prep_glc_mod
   ! Private interfaces
   !--------------------------------------------------------------------------
 
+  private :: prep_glc_set_g2x_lx_fields
   private :: prep_glc_merge
-  private :: prep_glc_map_one_field_lnd2glc
+  private :: prep_glc_map_qice_conservative_lnd2glc
+  private :: prep_glc_map_one_state_field_lnd2glc
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -76,6 +81,15 @@ module prep_glc_mod
 
   ! Name of flux field giving surface mass balance
   character(len=*), parameter :: qice_fieldname = 'Flgl_qice'
+
+  ! Names of some other fields
+  character(len=*), parameter :: Sg_frac_field = 'Sg_ice_covered'
+  character(len=*), parameter :: Sg_topo_field = 'Sg_topo'
+  character(len=*), parameter :: Sg_icemask_field = 'Sg_icemask'
+
+  ! Fields needed in the g2x_lx attribute vector used as part of mapping qice from lnd to glc
+  character(CXX) :: g2x_lx_fields
+  
 
   !================================================================================================
 
@@ -173,12 +187,47 @@ contains
                'seq_maps.rc', 'glc2lnd_fmapname:', 'glc2lnd_fmaptype:', samegrid_lg, &
                'mapper_Fg2l initialization', esmf_map_flag)
 
+          call prep_glc_set_g2x_lx_fields()
        end if
        call shr_sys_flush(logunit)
 
     end if
 
   end subroutine prep_glc_init
+
+  !================================================================================================
+
+  subroutine prep_glc_set_g2x_lx_fields()
+
+    !---------------------------------------------------------------
+    ! Description
+    ! Sets the module-level g2x_lx_fields variable.
+    !
+    ! This gives the fields needed in the g2x_lx attribute vector used as part of mapping
+    ! qice from lnd to glc.
+    !
+    ! Local Variables
+    character(len=GLC_ELEVCLASS_STRLEN), allocatable :: all_elevclass_strings(:)
+    character(len=:), allocatable :: frac_fields
+    character(len=:), allocatable :: topo_fields
+
+    character(len=*), parameter :: subname = '(prep_glc_set_g2x_lx_fields')
+    !---------------------------------------------------------------
+
+    all_elevclass_strings = glc_all_elevclass_strings(include_zero = .true.)
+    frac_fields = shr_string_listFromSuffixes( &
+         suffixes = all_elevclass_strings, &
+         strBase  = Sg_frac_field)
+    ! Sg_topo is not actually needed on the land grid in
+    ! prep_glc_map_qice_conservative_lnd2glc, but it is required by the current interface
+    ! for map_glc2lnd_ec.
+    topo_fields = shr_string_listFromSuffixes( &
+         suffixes = all_elevclass_strings, &
+         strBase  = Sg_topo_field)
+    call shr_string_listMerge(frac_fields, topo_fields, g2x_lx_fields)
+
+  end subroutine prep_glc_set_g2x_lx_fields
+
 
   !================================================================================================
 
@@ -451,7 +500,7 @@ contains
 
        do field_num = 1, num_state_fields
           call seq_flds_getField(fieldname, field_num, seq_flds_x2g_states)
-          call prep_glc_map_one_field_lnd2glc(egi=egi, eli=eli, &
+          call prep_glc_map_one_state_field_lnd2glc(egi=egi, eli=eli, &
                fieldname = fieldname, &
                fractions_lx = fractions_lx(efi), &
                mapper = mapper_Sl2g)
@@ -465,7 +514,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_map_one_field_lnd2glc(egi, eli, fieldname, fractions_lx, mapper)
+  subroutine prep_glc_map_one_state_field_lnd2glc(egi, eli, fieldname, fractions_lx, mapper)
     ! Maps a single field from the land grid to the glc grid.
     !
     ! This mapping is not conservative, so should only be used for state fields.
@@ -473,9 +522,8 @@ contains
     ! NOTE(wjs, 2017-05-10) We used to map each field separately because each field needed
     ! its own vertical gradient calculator. Now that we don't need vertical gradient
     ! calculators, we may be able to change this to map multiple fields at once, at least
-    ! for part of the mapping routine (map_lnd2glc).
+    ! for part of map_lnd2glc.
 
-    use glc_elevclass_mod, only : glc_get_num_elevation_classes
     use map_lnd2glc_mod, only : map_lnd2glc
 
     ! Arguments
@@ -498,7 +546,7 @@ contains
          mapper = mapper, &
          l2x_g = l2x_gx(eli))
 
-  end subroutine prep_glc_map_one_field_lnd2glc
+  end subroutine prep_glc_map_one_state_field_lnd2glc
 
   !================================================================================================
 
@@ -536,8 +584,6 @@ contains
     !
     ! For high-level design, see:
     ! https://docs.google.com/document/d/1H_SuK6SfCv1x6dK91q80dFInPbLYcOkUj_iAa6WRnqQ/edit
-
-    use glc_elevclass_mod, only : glc_get_num_elevation_classes, glc_elevclass_as_string
 
     use map_lnd2glc_mod, only : map_lnd2glc
     use map_glc2lnd_mod, only : map_glc2lnd_ec
@@ -589,16 +635,10 @@ contains
     real(r8), pointer :: tmp_field_l(:)   ! temporary field on land grid
 
     ! various strings for building field names
-    character(len=:), allocatable :: g2x_fields_from_glc
     character(len=:), allocatable :: elevclass_as_string
-    character(len=:), allocatable :: delimiter
     character(len=:), allocatable :: qice_field
     character(len=:), allocatable :: frac_field
     character(len=:), allocatable :: topo_field
-
-    character(len=*), parameter :: Sg_frac_field = 'Sg_ice_covered'
-    character(len=*), parameter :: Sg_topo_field = 'Sg_topo'
-    character(len=*), parameter :: Sg_icemask_field = 'Sg_icemask'
 
     ! local and global sums of accumulation and ablation; used to compute renormalization factors 
 
@@ -721,37 +761,13 @@ contains
     ! Note that, for a case with full two-way coupling, we will only conserve if the
     ! actual land cover used over the course of the year matches these currently-remapped
     ! values. This should generally be the case with the current coupling setup.
-    !WHL - Should the g2x_fields_from_glc be created just once, at initialization?
-
-    ! Make a list of the frac and topo fields for each EC in g2x_lx
-
-    nEC = glc_get_num_elevation_classes()
-    g2x_fields_from_glc = ''
-    delimiter = ''
-
-    ! frac fields for each EC
-    do ec = 0, nEC
-       if (ec > 0) delimiter = ':'
-       elevclass_as_string = glc_elevclass_as_string(ec)
-       frac_field = Sg_frac_field // elevclass_as_string  ! Sg_ice_covered01, etc.
-       g2x_fields_from_glc = g2x_fields_from_glc // delimiter // frac_field
-    enddo
-
-    ! topo fields for each EC
-    do ec = 0, nEC
-       elevclass_as_string = glc_elevclass_as_string(ec)
-       topo_field = Sg_topo_field // elevclass_as_string  ! Sg_topo01, etc.
-       g2x_fields_from_glc = g2x_fields_from_glc // delimiter // topo_field
-    enddo
 
     ! Create an attribute vector g2x_lx to hold the mapped fields
 
     allocate(g2x_lx)
-    call mct_aVect_init(g2x_lx, rList=g2x_fields_from_glc, lsize=lsize_l)
+    call mct_aVect_init(g2x_lx, rList=g2x_lx_fields, lsize=lsize_l)
 
     ! Map Sg_ice_covered and Sg_topo from glc to land
-    ! Sg_topo is not needed in this subroutine (except for diagnostics and testing), 
-    !  but is required by the current interface.
     call map_glc2lnd_ec( &
          g2x_g = g2x_gx, &
          frac_field = Sg_frac_field, &
@@ -763,6 +779,8 @@ contains
     
     ! Export qice and Sg_ice_covered in each elevation class to local arrays.
     ! Note: qice comes from l2gacc_lx; frac comes from g2x_lx.
+
+    nEC = glc_get_num_elevation_classes()
 
     allocate(qice_l(lsize_l,0:nEC))
     allocate(frac_l(lsize_l,0:nEC))
