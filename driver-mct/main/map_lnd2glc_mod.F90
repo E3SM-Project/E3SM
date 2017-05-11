@@ -259,7 +259,6 @@ contains
 
   end subroutine get_glc_elevation_classes
 
-  !WHL - Think about whether bare land cells need a special treatment for conservative SMB.
   !-----------------------------------------------------------------------
   subroutine map_bare_land(l2x_l, landfrac_l, fieldname, mapper, data_g_bare_land)
     !
