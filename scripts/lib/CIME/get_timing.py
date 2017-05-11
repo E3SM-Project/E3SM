@@ -305,14 +305,13 @@ class _TimingParser:
 
         self.write("  Overall Metrics: \n")
         self.write("    Model Cost:         {:10.2f}   pe-hrs/simulated_year \n"
-                   .format(((tmax*365.0*pecost)/(3600.0*adays))))
+                   .format((tmax*365.0*pecost)/(3600.0*adays)))
         self.write("    Model Throughput:   {:10.2f}   simulated_years/day \n"
-                   .format(((86400.0*adays)/(tmax*365.0))))
+                   .format((86400.0*adays)/(tmax*365.0)))
         self.write("\n")
 
         self.write("    Init Time   :  {:10.3f} seconds \n".format(nmax))
-        self.write("    Run Time    :  {:10.3f} seconds   {:10.3f} seconds/day \n"
-                   .format((tmax, tmax/adays)))
+        self.write("    Run Time    :  {:10.3f} seconds   {:10.3f} seconds/day \n".format(tmax, tmax/adays))
         self.write("    Final Time  :  {:10.3f} seconds \n".format(fmax))
 
         self.write("\n")
@@ -335,11 +334,8 @@ class _TimingParser:
                    "{:10.2f} myears/wday \n".format(tmax, tmax/adays, tmaxr))
         for k in self.case.get_values("COMP_CLASSES"):
             m = self.models[k]
-            self.write("    {} Run Time:  {:10.3f} seconds   "
-                       "{:10.3f} seconds/mday   {:10.2f} myears/wday \n"
-                       .format((k, m.tmax, m.tmax/adays, m.tmaxr)))
-        self.write("    CPL COMM Time: {:10.3f} seconds   {:10.3f} seconds/mday   "
-                   "{:10.2f} myears/wday \n".format(xmax, xmax/adays, xmaxr))
+            self.write("    {} Run Time:  {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(k, m.tmax, m.tmax/adays, m.tmaxr))
+        self.write("    CPL COMM Time: {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(xmax, xmax/adays, xmaxr))
 
         self.write("\n\n---------------- DRIVER TIMING FLOWCHART "
                    "--------------------- \n\n")
@@ -351,8 +347,7 @@ class _TimingParser:
         for k in ["CPL", "OCN", "LND", "ROF", "ICE", "ATM", "GLC", "WAV"]:
             m = self.models[k]
             xspace = (pstrlen+hoffset+m.offset) * ' '
-            self.write(" {} {} (pes {:u} to {:u}) \n"
-                       .format((xspace, k, m.rootpe, m.pemax)))
+            self.write(" {} {} (pes {:u} to {:u}) \n".format(xspace, k, m.rootpe, m.pemax))
         self.write("\n")
 
         self.prttime(' CPL:CLOCK_ADVANCE ')

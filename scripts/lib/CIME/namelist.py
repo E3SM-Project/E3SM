@@ -834,7 +834,7 @@ def parse(in_file=None, text=None, groupless=False, convert_tab_to_space=True):
     expect(in_file is None or text is None,
            "Cannot specify both input file and text to the namelist parser.")
     if isinstance(in_file, str) or isinstance(in_file, unicode):
-        logger.debug("Reading namelist at: {}", in_file)
+        logger.debug("Reading namelist at: {}".format(in_file))
         with open(in_file) as in_file_obj:
             text = in_file_obj.read()
     elif in_file is not None:
@@ -1127,7 +1127,7 @@ class Namelist(object):
         expect(format_ in ('nml', 'rc', 'nmlcontents'),
                "Namelist.write: unexpected output format {:r}".format(str(format_)))
         if isinstance(out_file, str) or isinstance(out_file, unicode):
-            logger.debug("Writing namelist to: {}", out_file)
+            logger.debug("Writing namelist to: {}".format(out_file))
             flag = 'a' if append else 'w'
             with open(out_file, flag) as file_obj:
                 self._write(file_obj, groups, format_, sorted_groups=sorted_groups)
@@ -1260,7 +1260,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> x._line_col_string()
         'line 2, column 1'
         """
-        return "line {}, column {}".format((self._line, self._col))
+        return "line {}, column {}".format(self._line, self._col)
 
     def _curr(self):
         """Return the character at the current position."""
@@ -1461,8 +1461,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
                 char_description = repr(str(chars))
             else:
                 char_description = "one of the characters in {:r}".format(str(chars))
-            raise _NamelistParseError("expected {} but found {:r}" %
-                                      (char_description, str(self._curr())))
+            raise _NamelistParseError("expected {} but found {:r}".format(char_description, str(self._curr())))
 
     def _parse_namelist_group_name(self):
         r"""Parses and returns a namelist group name at the current position.
@@ -2040,7 +2039,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         (minindex, maxindex, step) = get_fortran_variable_indices(name,allow_any_len=True)
         if (minindex > 1 or maxindex > minindex or step > 1) and maxindex > 0:
             arraylen =max(0,1 + ((maxindex - minindex)/step))
-            expect(len(values) <= arraylen, "Too many values for array {}".format((name)))
+            expect(len(values) <= arraylen, "Too many values for array {}".format(name))
 
         return name, values, addto
 

@@ -305,8 +305,7 @@ class Case(object):
 
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
-            logger.debug("(get_record_field) Searching in {}",
-                         env_file.__class__.__name__)
+            logger.debug("(get_record_field) Searching in {}".format(env_file.__class__.__name__))
             if field == "varid":
                 roots = env_file.get_nodes("entry")
             else:

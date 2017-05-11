@@ -49,7 +49,7 @@ def _get_ninst_info(case, compclass):
         else:
             ninst_strings.append('')
 
-    logger.debug("ninst and ninst_strings are: {} and {} for {}", ninst, ninst_strings, compclass)
+    logger.debug("ninst and ninst_strings are: {} and {} for {}".format(ninst, ninst_strings, compclass))
     return ninst, ninst_strings
 
 
@@ -97,7 +97,7 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
 
                     # write out the respect files with the correct contents
                     rpointer_file = os.path.join(archive_restdir, rpointer_file)
-                    logger.info("writing rpointer_file {}", rpointer_file)
+                    logger.info("writing rpointer_file {}".format(rpointer_file))
                     f = open(rpointer_file, 'w')
                     for output in rpointer_content.split(','):
                         f.write("{} \n".format(output))
@@ -113,14 +113,14 @@ def _archive_log_files(case):
     archive_logdir = os.path.join(dout_s_root, 'logs')
     if not os.path.exists(archive_logdir):
         os.makedirs(archive_logdir)
-        logger.debug("created directory {} ", archive_logdir)
+        logger.debug("created directory {} ".format(archive_logdir))
 
     logfiles = glob.glob(os.path.join(rundir, '*.log.*'))
     for logfile in logfiles:
         srcfile = join(rundir, os.path.basename(logfile))
         destfile = join(archive_logdir, os.path.basename(logfile))
         shutil.move(srcfile, destfile)
-        logger.info("moving \n{} to \n{}", srcfile, destfile)
+        logger.info("moving \n{} to \n{}".format(srcfile, destfile))
 
 
 ###############################################################################
@@ -137,7 +137,7 @@ def _archive_history_files(case, archive, archive_entry,
     archive_histdir = os.path.join(dout_s_root, compclass, 'hist')
     if not os.path.exists(archive_histdir):
         os.makedirs(archive_histdir)
-        logger.debug("created directory {}", archive_histdir)
+        logger.debug("created directory {}".format(archive_histdir))
 
     # determine ninst and ninst_string
     ninst, ninst_string = _get_ninst_info(case, compclass)
@@ -154,21 +154,21 @@ def _archive_history_files(case, archive, archive_entry,
                     newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
                 else:
                     newsuffix = casename + '.' + compname + ".*" + suffix
-            logger.debug("short term archiving suffix is {} ", newsuffix)
+            logger.debug("short term archiving suffix is {} ".format(newsuffix))
             pfile = re.compile(newsuffix)
             histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
             if histfiles:
-                logger.debug("hist files are {} ", histfiles)
+                logger.debug("hist files are {} ".format(histfiles))
                 for histfile in histfiles:
                     srcfile = join(rundir, histfile)
                     expect(os.path.isfile(srcfile),
                            "history file {} does not exist ".format(srcfile))
                     destfile = join(archive_histdir, histfile)
                     if histfile in histfiles_savein_rundir:
-                        logger.info("copying \n{} to \n{} ", srcfile, destfile)
+                        logger.info("copying \n{} to \n{} ".format(srcfile, destfile))
                         shutil.copy(srcfile, destfile)
                     else:
-                        logger.info("moving \n{} to \n{} ", srcfile, destfile)
+                        logger.info("moving \n{} to \n{} ".format(srcfile, destfile))
                         shutil.move(srcfile, destfile)
 
 
@@ -184,7 +184,7 @@ def get_histfiles_for_restarts(case, archive, archive_entry, restfile):
         cmd = "ncdump -v {} {} ".format(rest_hist_varname, os.path.join(rundir, restfile))
         rc, out, error = run_cmd(cmd)
         if rc != 0:
-            logger.debug(" WARNING: {} failed rc={:d}\nout={}\nerr={}", cmd, rc, out, error)
+            logger.debug(" WARNING: {} failed rc={:d}\nout={}\nerr={}".format(cmd, rc, out, error))
 
         searchname = "{} =".format(rest_hist_varname)
         if searchname in out:
@@ -267,24 +267,24 @@ def _archive_restarts(case, archive, archive_entry,
                     srcfile = os.path.join(rundir, restfile)
                     destfile = os.path.join(archive_restdir, restfile)
                     shutil.copy(srcfile, destfile)
-                    logger.info("copying \n{} to \n{}", srcfile, destfile)
+                    logger.info("copying \n{} to \n{}".format(srcfile, destfile))
                     for histfile in histfiles_for_restart:
                         srcfile = os.path.join(rundir, histfile)
                         destfile = os.path.join(archive_restdir, histfile)
                         expect(os.path.isfile(srcfile),
                                "restart file {} does not exist ".format(srcfile))
                         shutil.copy(srcfile, destfile)
-                        logger.info("copying \n{} to \n{}", srcfile, destfile)
+                        logger.info("copying \n{} to \n{}".format(srcfile, destfile))
                 else:
                     # Only archive intermediate restarts if requested - otherwise remove them
                     if case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'):
                         srcfile = os.path.join(rundir, restfile)
                         destfile = os.path.join(archive_restdir, restfile)
-                        logger.info("moving \n{} to \n{}", srcfile, destfile)
+                        logger.info("moving \n{} to \n{}".format(srcfile, destfile))
                         expect(os.path.isfile(srcfile),
                                "restart file {} does not exist ".format(srcfile))
                         shutil.move(srcfile, destfile)
-                        logger.info("moving \n{} to \n{}", srcfile, destfile)
+                        logger.info("moving \n{} to \n{}".format(srcfile, destfile))
 
                         # need to copy the history files needed for interim restarts - since
                         # have not archived all of the history files yet
@@ -294,17 +294,17 @@ def _archive_restarts(case, archive, archive_entry,
                             expect(os.path.isfile(srcfile),
                                    "hist file {} does not exist ".format(srcfile))
                             shutil.copy(srcfile, destfile)
-                            logger.info("copying \n{} to \n{}", srcfile, destfile)
+                            logger.info("copying \n{} to \n{}".format(srcfile, destfile))
                     else:
                         srcfile = os.path.join(rundir, restfile)
-                        logger.info("removing interim restart file {}", srcfile)
+                        logger.info("removing interim restart file {}".format(srcfile))
                         if (os.path.isfile(srcfile)):
                             try:
                                 os.remove(srcfile)
                             except OSError:
-                                logger.warn("unable to remove interim restart file {}", srcfile)
+                                logger.warn("unable to remove interim restart file {}".format(srcfile))
                         else:
-                            logger.warn("interim restart file {} does not exist", srcfile)
+                            logger.warn("interim restart file {} does not exist".format(srcfile))
 
     return histfiles_savein_rundir
 
@@ -333,7 +333,7 @@ def _archive_process(case, archive):
 
         # archive restarts and all necessary associated fields (e.g. rpointer files)
         logger.info('-------------------------------------------')
-        logger.info('doing short term archiving for {} ({})', compname, compclass)
+        logger.info('doing short term archiving for {} ({})'.format(compname, compclass))
         logger.info('-------------------------------------------')
         datenames = _get_datenames(case)
         for datename in datenames:
@@ -349,7 +349,7 @@ def _archive_process(case, archive):
             # if the last datename for restart files, then archive history files
             # for this compname
             if datename_is_last:
-                logger.info("histfiles_savein_rundir {} ", histfiles_savein_rundir)
+                logger.info("histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
                 _archive_history_files(case, archive, archive_entry,
                                        compclass, compname, histfiles_savein_rundir)
 
@@ -405,7 +405,7 @@ def case_st_archive(case, no_resubmit=False):
     # resubmit case if appropriate
     resubmit = case.get_value("RESUBMIT")
     if resubmit > 0 and not no_resubmit:
-        logger.info("resubmitting from st_archive, resubmit={:d}", resubmit)
+        logger.info("resubmitting from st_archive, resubmit={:d}".format(resubmit))
         if case.get_value("MACH") == "mira":
             expect(os.path.isfile(".original_host"), "ERROR alcf host file not found")
             with open(".original_host", "r") as fd:

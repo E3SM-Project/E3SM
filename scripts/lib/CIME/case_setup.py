@@ -132,7 +132,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                    "ESP components may only have one instance")
             if ninst > ntasks:
                 if ntasks == 1:
-                    case.set_value("NTASKS_{}".format(comp), ninst
+                    case.set_value("NTASKS_{}".format(comp), ninst)
                 else:
                     expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
 

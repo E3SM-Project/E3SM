@@ -305,7 +305,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         run_cmd_assert_result(self, "./xmlchange USER=this_is_not_a_user",
                               from_dir=prevtestdir)
         fakeoutputroot = string.replace(cls._testroot, os.environ.get("USER"), "this_is_not_a_user")
-        run_cmd_assert_result(self, "./xmlchange CIME_OUTPUT_ROOT={}".format(akeoutputroot),
+        run_cmd_assert_result(self, "./xmlchange CIME_OUTPUT_ROOT={}".format(fakeoutputroot),
                               from_dir=prevtestdir)
         # this test should fail
         run_cmd_assert_result(self, "{}/create_clone --clone {} --case {} ".format(SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR, expected_stat=1)
@@ -332,23 +332,23 @@ class J_TestCreateNewcase(unittest.TestCase):
             BUILD_COMPLETE = case.get_value("BUILD_COMPLETE")
             cmd = xmlquery + " STOP_N --value"
             output = run_cmd_no_fail(cmd, from_dir=casedir)
-            self.assertTrue(output == str(STOP_N), msg="{} != {}".format(output, STOP_N)))
+            self.assertTrue(output == str(STOP_N), msg="{} != {}".format(output, STOP_N))
             cmd = xmlquery + " BUILD_COMPLETE --value"
             output = run_cmd_no_fail(cmd, from_dir=casedir)
-            self.assertTrue(output == "TRUE", msg="{} != {}".format(output, BUILD_COMPLETE)))
+            self.assertTrue(output == "TRUE", msg="{} != {}".format(output, BUILD_COMPLETE))
             for comp in COMP_CLASSES:
-                caseresult = case.get_value("NTASKS_{}".format(omp))
-                cmd = xmlquery + " NTASKS_{} --value".format(omp)
+                caseresult = case.get_value("NTASKS_{}".format(comp))
+                cmd = xmlquery + " NTASKS_{} --value".format(comp)
                 output = run_cmd_no_fail(cmd, from_dir=casedir)
-                self.assertTrue(output == str(caseresult), msg="{} != {}".format(output, caseresult)))
-                cmd = xmlquery + " NTASKS --subgroup {} --value".format(omp)
+                self.assertTrue(output == str(caseresult), msg="{} != {}".format(output, caseresult))
+                cmd = xmlquery + " NTASKS --subgroup {} --value".format(comp)
                 output = run_cmd_no_fail(cmd, from_dir=casedir)
-                self.assertTrue(output == str(caseresult), msg="{} != {}".format(output, caseresult)))
+                self.assertTrue(output == str(caseresult), msg="{} != {}".format(output, caseresult))
             if MACHINE.has_batch_system():
                 JOB_QUEUE = case.get_value("JOB_QUEUE", subgroup="case.run")
                 cmd = xmlquery + " JOB_QUEUE --subgroup case.run --value"
                 output = run_cmd_no_fail(cmd, from_dir=casedir)
-                self.assertTrue(output == JOB_QUEUE, msg="{} != {}".format(output, JOB_QUEUE)))
+                self.assertTrue(output == JOB_QUEUE, msg="{} != {}".format(output, JOB_QUEUE))
 
             cmd = xmlquery + " --listall"
             run_cmd_no_fail(cmd, from_dir=casedir)
@@ -369,7 +369,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         if CIME.utils.get_model() == "cesm":
             args += " --run-unsupported"
 
-        run_cmd_assert_result(self, "{}/create_newcase {}".format(SCRIPT_DIR, args), from_dir=SCRIPT_DIR))
+        run_cmd_assert_result(self, "{}/create_newcase {}".format(SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
         run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
         run_cmd_assert_result(self, "./case.build", from_dir=testdir)
 
@@ -389,11 +389,11 @@ class J_TestCreateNewcase(unittest.TestCase):
         if CIME.utils.get_model() == "cesm":
             args += " --run-unsupported"
 
-        run_cmd_assert_result(self, "{}/create_newcase {}".format(SCRIPT_DIR, args), from_dir=SCRIPT_DIR))
-        run_cmd_assert_result(self, "diff env_mach_pes.xml {}".format(previous_testdir), from_dir=testdir))
+        run_cmd_assert_result(self, "{}/create_newcase {}".format(SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
+        run_cmd_assert_result(self, "diff env_mach_pes.xml {}".format(previous_testdir), from_dir=testdir)
         # this line should cause the diff to fail (I assume no machine is going to default to 17 tasks)
         run_cmd_assert_result(self, "./xmlchange NTASKS=17", from_dir=testdir)
-        run_cmd_assert_result(self, "diff env_mach_pes.xml {}".format(previous_testdir), from_dir=testdir,)
+        run_cmd_assert_result(self, "diff env_mach_pes.xml {}".format(previous_testdir), from_dir=testdir,
                               expected_stat=1)
 
         cls._do_teardown.append(testdir)
@@ -488,7 +488,7 @@ class M_TestWaitForTests(unittest.TestCase):
         for r in range(10):
             for testdir in testdirs:
                 os.makedirs(os.path.join(testdir, str(r)))
-                make_fake_teststatus(os.path.join(testdir, str(r)), "Test_{:d}".format(r, TEST_PASS_STATUS, RUN_PHASE))
+                make_fake_teststatus(os.path.join(testdir, str(r)), "Test_{:d}".format(r), TEST_PASS_STATUS, RUN_PHASE)
 
         make_fake_teststatus(os.path.join(self._testdir_with_fail,   "5"), "Test_5", TEST_FAIL_STATUS, RUN_PHASE)
         make_fake_teststatus(os.path.join(self._testdir_unfinished,  "5"), "Test_5", TEST_PEND_STATUS, RUN_PHASE)
@@ -702,7 +702,7 @@ class TestCreateTestCommon(unittest.TestCase):
             files_to_clean.append(baselines)
 
         for test_id in ["master", self._baseline_name]:
-            for leftover in glob.glob(os.path.join(self._testroot, "*{}*".format(test_id)):)
+            for leftover in glob.glob(os.path.join(self._testroot, "*{}*".format(test_id))):
                 files_to_clean.append(leftover)
 
         do_teardown = self._do_teardown and sys.exc_info() == (None, None, None)
@@ -973,13 +973,11 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
         # scratch_dirs = glob.glob("{}/*{}*/".format(self._testroot, test_id)) # blr/run dirs
 
         self.assertEqual(num_tests_in_tiny, len(jenkins_dirs),
-                         msg="Wrong number of leftover directories in {}, expected {:d}, see {}".format(\)
-                             (self._jenkins_root, num_tests_in_tiny, jenkins_dirs))
+                         msg="Wrong number of leftover directories in {}, expected {:d}, see {}".format(self._jenkins_root, num_tests_in_tiny, jenkins_dirs))
 
         # JGF: Can't test this at the moment due to root change flag given to jenkins_generic_job
         # self.assertEqual(num_tests_in_tiny + 1, len(scratch_dirs),
-        #                  msg="Wrong number of leftover directories in {}, expected {:d}, see {}".format(\)
-        #                      (self._testroot, num_tests_in_tiny, scratch_dirs))
+        #                  msg="Wrong number of leftover directories in {}, expected {:d}, see {}".format(self._testroot, num_tests_in_tiny, scratch_dirs))
 
     ###########################################################################
     def test_jenkins_generic_job(self):

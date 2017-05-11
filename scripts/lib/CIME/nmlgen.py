@@ -263,7 +263,7 @@ class NamelistGenerator(object):
             while match:
                 env_val = self._case.get_value(match.group('name'))
                 expect(env_val is not None,
-                       "Namelist default for variable {} refers to unknown XML variable {}.".format((name, match.group('name'))))
+                       "Namelist default for variable {} refers to unknown XML variable {}.".format(name, match.group('name')))
                 scalar = scalar.replace(match.group(0), str(env_val), 1)
                 match = _var_ref_re.search(scalar)
             default[i] = scalar

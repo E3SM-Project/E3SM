@@ -281,7 +281,7 @@ class EntryID(GenericXML):
             logger.debug("No node")
             return val
 
-        logger.debug("Found node {} with attributes {}" , node.tag , node.attrib)
+        logger.debug("Found node {} with attributes {}".format(node.tag , node.attrib))
         if attribute:
             val = self.get_element_text("value", attributes=attribute, root=node)
         elif node.get("value") is not None:

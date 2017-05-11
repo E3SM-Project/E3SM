@@ -165,7 +165,7 @@ ERROR, NINST VALUES HAVE CHANGED
   You can override this error message at your own risk by executing:
     ./xmlchange -file env_build.xml -id NINST_BUILD -val 0
   Then rerun the build script interactively
-""".format(ninst_build, ninst_value)
+""".format(ninst_build, ninst_value))
 
     expect(smp_build == smpstr or smp_build == "0",
             """
@@ -181,7 +181,7 @@ ERROR, SMP VALUES HAVE CHANGED
   You can override this error message at your own risk by executing:
     ./xmlchange -file env_build.xml -id SMP_BUILD -val 0
   Then rerun the build script interactively
-""".format(smp_build, smp_value, smpstr)
+""".format(smp_build, smp_value, smpstr))
 
     expect(build_status == 0,
            """

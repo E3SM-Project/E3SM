@@ -80,7 +80,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
         shutil.rmtree(old_dir)
 
     # Remove the old cases
-    for old_file in glob.glob("{}/*{}*".format(test_root, test_id_root):)
+    for old_file in glob.glob("{}/*{}*".format(test_root, test_id_root)):
         if (os.path.isdir(old_file)):
             shutil.rmtree(old_file)
         else:
@@ -108,8 +108,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     pjob_arg = "" if parallel_jobs is None else "-j {:d}".format(parallel_jobs)
 
     test_id = "{}_{}".format(test_id_root, CIME.utils.get_timestamp())
-    create_test_cmd = "./create_test {} --test-root {} -t {} {} {} {}".format(\)
-                      (test_suite, test_root, test_id, baseline_args, batch_args, pjob_arg)
+    create_test_cmd = "./create_test {} --test-root {} -t {} {} {} {}".format(test_suite, test_root, test_id, baseline_args, batch_args, pjob_arg)
 
     if (not CIME.wait_for_tests.SIGNAL_RECEIVED):
         create_test_stat = CIME.utils.run_cmd(create_test_cmd, from_dir=CIME.utils.get_scripts_root(),
@@ -137,7 +136,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     else:
         cdash_build_name = None
 
-    tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("{}/*{}/TestStatus".format(test_root, test_id),)
+    tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("{}/*{}/TestStatus".format(test_root, test_id)),
                                                  no_wait=not use_batch, # wait if using queue
                                                  check_throughput=False, # don't check throughput
                                                  check_memory=False, # don't check memory
