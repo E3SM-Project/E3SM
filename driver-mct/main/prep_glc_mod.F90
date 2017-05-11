@@ -692,14 +692,18 @@ contains
     call mct_aVect_init(Sg_icemask_l_av, rList = Sg_icemask_field, lsize = lsize_l)
 
     ! Map Sg_icemask from the glc grid to the land grid
+    !
     ! This mapping uses the same options as the standard glc -> lnd mapping done in
-    ! prep_lnd_calc_g2x_lx. If that mapping ever changed (e.g., introducing an avwts_s
-    ! argument), then it's *possible* that we'd want this mapping to change, too.
+    ! prep_lnd_calc_g2x_lx. If that mapping ever changed (e.g., changing norm to
+    ! .false.), then we should change this mapping, too.
+    !
+    ! BUG(wjs, 2017-05-11, #1516) I think we actually want norm = .false. here, but this
+    ! requires some more thought
     call seq_map_map(mapper = mapper_Fg2l, &
          av_s = Sg_icemask_g_av, &
          av_d = Sg_icemask_l_av, &
          fldlist = Sg_icemask_field, &
-         norm = .true.)   !WHL - Verify that we want norm = .true.
+         norm = .true.)
 
     ! Export Sg_icemask_l from the temporary attribute vector to a local array
     call mct_aVect_exportRattr(Sg_icemask_l_av, Sg_icemask_field, Sg_icemask_l)
