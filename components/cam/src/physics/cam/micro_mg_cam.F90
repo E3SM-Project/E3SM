@@ -131,6 +131,8 @@ real(r8)          :: ice_sed_ai                  = 700.0_r8      ! Fall speed pa
 
 logical, public :: do_cldliq ! Prognose cldliq flag
 logical, public :: do_cldice ! Prognose cldice flag
+logical, public :: do_nccons ! Set NC to a constant
+logical, public :: do_nicons ! Set NI to a constant
 
 integer :: num_steps ! Number of MG substeps
 
@@ -243,6 +245,8 @@ integer :: &
    real(r8) :: prc_exp_in               = huge(1.0_r8)
    real(r8) :: prc_exp1_in              = huge(1.0_r8)
    real(r8) :: cld_sed_in               = huge(1.0_r8) !scale fac for cloud sedimentation velocity
+   real(r8) :: nccons                   = huge(1.0_r8)
+   real(r8) :: nicons                   = huge(1.0_r8)
    logical  :: mg_prc_coeff_fix_in      = .false. !temporary variable to maintain BFB, MUST be removed
    logical  :: rrtmg_temp_fix           = .false. !temporary variable to maintain BFB, MUST be removed
 
@@ -267,8 +271,10 @@ subroutine micro_mg_cam_readnl(nlfile)
   ! Namelist variables
   logical :: micro_mg_do_cldice = .true. ! do_cldice = .true., MG microphysics is prognosing cldice
   logical :: micro_mg_do_cldliq = .true. ! do_cldliq = .true., MG microphysics is prognosing cldliq
+  logical :: micro_do_nccons    = .false.! micro_do_nccons = .true, MG does NOT predict numliq 
+  logical :: micro_do_nicons    = .false.! micro_do_nicons = .true.,MG does NOT predict numice
   integer :: micro_mg_num_steps = 1      ! Number of substepping iterations done by MG (1.5 only for now).
-
+  real(r8) :: micro_nccons, micro_nicons
 
   ! Local variables
   integer :: unitn, ierr
@@ -279,7 +285,8 @@ subroutine micro_mg_cam_readnl(nlfile)
 !!== KZ_DCS
        micro_mg_dcs_tdep, & 
 !!== KZ_DCS
-       microp_uniform, micro_mg_dcs, micro_mg_precip_frac_method, micro_mg_berg_eff_factor
+       microp_uniform, micro_mg_dcs, micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
+       micro_do_nccons, micro_do_nicons, micro_nccons, micro_nicons
 
   !-----------------------------------------------------------------------------
 
@@ -299,7 +306,13 @@ subroutine micro_mg_cam_readnl(nlfile)
      ! set local variables
      do_cldice = micro_mg_do_cldice
      do_cldliq = micro_mg_do_cldliq
+     do_nccons = micro_do_nccons
+     do_nicons = micro_do_nicons
+     nccons = micro_nccons
+     nicons = micro_nicons
+     
      num_steps = micro_mg_num_steps
+     
 
      ! Verify that version numbers are valid.
      select case (micro_mg_version)
@@ -333,12 +346,16 @@ subroutine micro_mg_cam_readnl(nlfile)
   call mpibcast(micro_mg_sub_version,        1, mpiint, 0, mpicom)
   call mpibcast(do_cldice,                   1, mpilog, 0, mpicom)
   call mpibcast(do_cldliq,                   1, mpilog, 0, mpicom)
+  call mpibcast(do_nccons,                   1, mpilog, 0, mpicom)
+  call mpibcast(do_nicons,                   1, mpilog, 0, mpicom)
   call mpibcast(micro_mg_dcs_tdep,           1, mpilog, 0, mpicom)
   call mpibcast(num_steps,                   1, mpiint, 0, mpicom)
   call mpibcast(microp_uniform,              1, mpilog, 0, mpicom)
   call mpibcast(micro_mg_dcs,                1, mpir8,  0, mpicom)
   call mpibcast(micro_mg_berg_eff_factor,    1, mpir8,  0, mpicom)
   call mpibcast(ice_sed_ai,                  1, mpir8,  0, mpicom)
+  call mpibcast(nccons,                      1, mpir8,  0, mpicom)
+  call mpibcast(nicons,                      1, mpir8,  0, mpicom)
   call mpibcast(micro_mg_precip_frac_method, 16, mpichar,0, mpicom)
 
 #endif
@@ -684,6 +701,7 @@ subroutine micro_mg_cam_init(pbuf2d)
               micro_mg_dcs,                  &
               micro_mg_dcs_tdep,             &
               microp_uniform, do_cldice, use_hetfrz_classnuc, &
+	      do_nccons, do_nicons, nccons, nicons, &
               micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
               allow_sed_supersat, ice_sed_ai, prc_coef1_in,prc_exp_in, &
               prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, errstring)
