@@ -21,7 +21,7 @@ class EnvMachSpecific(EnvBase):
         fullpath = infile if os.path.isabs(infile) else os.path.join(caseroot, infile)
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_specific.xsd")
         EnvBase.__init__(self, caseroot, fullpath,schema=schema)
-
+        self._allowed_mpi_attributes = ("compiler", "mpilib", "threaded", "unit_testing")
         self._unit_testing = unit_testing
 
     def populate(self, machobj):
@@ -344,7 +344,9 @@ class EnvMachSpecific(EnvBase):
             all_match = True
             matches = 0
             is_default = False
+
             for key, value in attribs.iteritems():
+                expect(key in self._allowed_mpi_attributes, "Unexpected key %s in mpirun attributes"%key)
                 if key in xml_attribs:
                     if xml_attribs[key].lower() == "false":
                         xml_attrib = False
@@ -361,8 +363,7 @@ class EnvMachSpecific(EnvBase):
                         all_match = False
                         break
 
-            for key in xml_attribs:
-                expect(key in attribs, "Unhandled MPI property '%s'" % key)
+
 
             if all_match:
                 if is_default:

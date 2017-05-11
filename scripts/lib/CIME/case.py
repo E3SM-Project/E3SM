@@ -146,7 +146,6 @@ class Case(object):
             "compiler" : self.get_value("COMPILER"),
             "mpilib"   : self.get_value("MPILIB"),
             "threaded" : self.get_build_threaded(),
-            "unit_testing" : False
             }
 
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
