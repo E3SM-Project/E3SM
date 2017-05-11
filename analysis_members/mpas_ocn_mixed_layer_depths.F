@@ -379,7 +379,7 @@ contains
 
            do iCell = 1,nCellsSolve
 
-            densityGradient(:,1)=0.0_RKIND
+            densityGradient(:,:)=0.0_RKIND
             densityGradient(1,2) = 1
 
                found_den_mld=.false.
