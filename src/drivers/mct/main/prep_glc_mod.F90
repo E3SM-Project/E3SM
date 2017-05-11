@@ -758,9 +758,25 @@ contains
     ! As above, the mapping may not be necessary, because Sg_ice_covered might already have been mapped.
     ! However, the mapping will not have been done in a TG case with dlnd, and it might not
     ! be up to date because of coupler lags.
+    !
     ! Note that, for a case with full two-way coupling, we will only conserve if the
     ! actual land cover used over the course of the year matches these currently-remapped
     ! values. This should generally be the case with the current coupling setup.
+    !
+    ! One could argue that it would be safer (for conservation purposes) if LND sent its
+    ! grid cell average SMB values, or if it sent its own notion of the area in each
+    ! elevation class for the purpose of creating grid cell average SMB values here. But
+    ! these options cause problems if we're not doing full two-way coupling (e.g., in a TG
+    ! case with dlnd, or in the common case where GLC is a diagnostic component that
+    ! doesn't cause updates in the glacier areas in LND). In these cases without full
+    ! two-way coupling, if we use the LND's notion of the area in each elevation class,
+    ! then the conservation corrections would end up correcting for discrepancies in
+    ! elevation class areas between LND and GLC, rather than just correcting for
+    ! discrepancies arising from the remapping of SMB. (And before you get worried: It
+    ! doesn't matter that we are not conserving in these cases without full two-way
+    ! coupling, because GLC isn't connected with the rest of the system in terms of energy
+    ! and mass in these cases. So in these cases, it's okay that the LND integral computed
+    ! here differs from the integral that LND itself would compute.)
 
     ! Create an attribute vector g2x_lx to hold the mapped fields
 
