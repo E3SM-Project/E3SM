@@ -395,14 +395,6 @@ contains
           ftid(p,ib) = 0._r8
           ftii(p,ib) = 0._r8
           
-          ! the ED_patch check has to be in a use_ed block.  Otherwise in non-ed 
-          ! compsets, some compilers correctly flag it as a non assigned pointer
-          ! at runtime.  SPM
-          if ( use_ed ) then
-             ! (FATES-INTERF) put error call, flag for development
-             call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
-          end if
- 
        end do
 
     end do  ! end of numrad loop
