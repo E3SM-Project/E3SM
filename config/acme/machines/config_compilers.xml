@@ -1241,11 +1241,13 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel" MACH="lawrencium-lr2">
+        <NETCDF_PATH>$(NETCDF_DIR)</NETCDF_PATH>
 	<ADD_SLIBS> -lnetcdff -lnetcdf -mkl</ADD_SLIBS>
 	<GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
 </compiler>
 
 <compiler COMPILER="intel" MACH="lawrencium-lr3">
+        <NETCDF_PATH>$(NETCDF_DIR)</NETCDF_PATH>
 	<ADD_SLIBS> -lnetcdff -lnetcdf -mkl</ADD_SLIBS>
 	<GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
 </compiler>
