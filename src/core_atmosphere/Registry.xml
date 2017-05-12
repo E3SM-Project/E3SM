@@ -141,7 +141,7 @@
 
                 <nml_option name="config_len_disp" type="real" default_value="120000.0"
                      units="m"
-                     description="Horizontal length scale for Smagorinsky formulation of horizontal diffusion"
+                     description="Horizontal length scale, used by the Smagorinsky formulation of horizontal diffusion and by 3-d divergence damping"
                      possible_values="Positive real values"/>
 
                 <nml_option name="config_visc4_2dsmag" type="real" default_value="0.05"
