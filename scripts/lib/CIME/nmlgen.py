@@ -397,17 +397,16 @@ class NamelistGenerator(object):
                     for month in range(1, 13):
                         days = self._days_in_month(month)
                         for day in range(1, days+1):
-                            date_string = (year_format + "-{:02d}-{:02d}") % \
-                                          (year, month, day)
+                            date_string = (year_format + "-{:02d}-{:02d}").format(year, month, day)
                             new_line = line.replace(match.group(0), date_string)
                             new_lines.append(new_line)
                 elif match.group('month'):
                     for month in range(1, 13):
-                        date_string = (year_format + "-{:02d}") % (year, month)
+                        date_string = (year_format + "-{:02d}").format(year, month)
                         new_line = line.replace(match.group(0), date_string)
                         new_lines.append(new_line)
                 else:
-                    date_string = year_format % year
+                    date_string = year_format.format(year)
                     new_line = line.replace(match.group(0), date_string)
                     new_lines.append(new_line)
         return "\n".join(new_lines)
@@ -616,8 +615,7 @@ class NamelistGenerator(object):
                             file_path = os.path.join(root_dir, file_path)
                         else:
                             expect(False,
-                                   "Bad input_pathname value: {}." %
-                                   input_pathname)
+                                   "Bad input_pathname value: {}.".format(input_pathname))
                         # Write to the input data list.
                         input_data_list.write("{} = {}\n".format(variable_name, file_path))
 

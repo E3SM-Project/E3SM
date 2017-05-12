@@ -111,12 +111,12 @@ and prestage the restart data to $RUNDIR manually
                 os.symlink(rcfile, "{}/{}".format(rundir, rcbaseline))
 
         # copy the refcases' rpointer files to the run directory
-        for rpointerfile in  glob.iglob(os.path.join("{}","*rpointer*") % (refdir)):
+        for rpointerfile in  glob.iglob(os.path.join("{}","*rpointer*").format(refdir)):
             logger.debug("Copy rpointer {}".format(rpointerfile))
             shutil.copy(rpointerfile, rundir)
 
 
-        for cam2file in  glob.iglob(os.path.join("{}","*.cam2.*") % rundir):
+        for cam2file in  glob.iglob(os.path.join("{}","*.cam2.*").format(rundir)):
             camfile = cam2file.replace("cam2", "cam")
             os.symlink(cam2file, camfile)
 

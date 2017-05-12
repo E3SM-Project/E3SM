@@ -76,8 +76,7 @@ def apply_user_mods(caseroot, user_mods_path):
             # be removed altogether, so new tests should rely on shell_commands
             if shell_commands_file.endswith("xmlchange_cmnds"):
                 logger.warn("xmlchange_cmnds is deprecated and will be removed " +\
-                            "in a future release; please rename {} shell_commands" %\
-                            shell_commands_file)
+                            "in a future release; please rename {} shell_commands".format(shell_commands_file))
             with open(shell_commands_file,"r") as fd:
                 new_shell_commands = fd.read().replace("xmlchange","xmlchange --force")
             # By appending the new commands to the end, settings from later

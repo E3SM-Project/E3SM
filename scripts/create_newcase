@@ -12,10 +12,10 @@ def parse_command_line(args, cimeroot, description):
 ###############################################################################
     help_str = \
 """
-%s --case [CASE] --compset [COMPSET] --res [GRID] [--machine ...] [--compiler ...]
+{0} --case [CASE] --compset [COMPSET] --res [GRID] [--machine ...] [--compiler ...]
 OR
-%s --help
-""" % ((os.path.basename(args[0]), ) * 2)
+{0} --help
+""".format(os.path.basename(args[0]))
     model = get_model()
 
     parser = argparse.ArgumentParser(usage=help_str,
@@ -129,16 +129,16 @@ OR
 
     if args.srcroot is not None:
         expect(os.path.isdir(args.srcroot),
-               "Input non-default directory srcroot %s does not exist " %args.srcroot)
+               "Input non-default directory srcroot {} does not exist ".format(args.srcroot))
         args.srcroot = os.path.abspath(args.srcroot)
 
     if args.gridfile is not None:
         expect(os.path.isfile(args.gridfile),
-               "Grid specification file %s does not exist " %args.gridfile)
+               "Grid specification file {} does not exist ".format(args.gridfile))
 
     if args.pesfile is not None:
         expect(os.path.isfile(args.pesfile),
-               "Pes specification file %s cannot be found " %args.pesfile)
+               "Pes specification file {} cannot be found ".format(args.pesfile))
 
     if args.user_grid:
         expect(args.gridfile is not None,
@@ -181,7 +181,7 @@ def _main_func(description):
     # create_test creates the caseroot before calling create_newcase
     # otherwise throw an error if this directory exists
     expect(not (os.path.exists(caseroot) and not test),
-           "Case directory %s already exists"%caseroot)
+           "Case directory {} already exists".format(caseroot))
 
     with Case(caseroot, read_only=False) as case:
         # Set values for env_case.xml

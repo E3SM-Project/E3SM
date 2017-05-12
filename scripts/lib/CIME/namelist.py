@@ -573,7 +573,7 @@ def is_valid_fortran_namelist_literal(type_, string):
     True
     """
     expect(type_ in FORTRAN_LITERAL_REGEXES,
-           "Invalid Fortran type for a namelist: {:r}".format(str(type_)))
+           "Invalid Fortran type for a namelist: {!r}".format(str(type_)))
     # Strip off whitespace and repetition.
     string = fortran_namelist_base_value(string)
     # Null values are always allowed.
@@ -657,11 +657,11 @@ def literal_to_python_value(literal, type_=None):
                 type_ = test_type
                 break
         expect(type_ is not None,
-               "{:r} is not a valid literal for any Fortran type.".format(str(literal)))
+               "{!r} is not a valid literal for any Fortran type.".format(str(literal)))
     else:
         # Check that type is valid.
         expect(is_valid_fortran_namelist_literal(type_, literal),
-               "{:r} is not a valid literal of type {:r}.".format(str(literal), str(type_)))
+               "{!r} is not a valid literal of type {!r}.".format(str(literal), str(type_)))
     # Conversion for each type.
     if type_ == 'character':
         return character_literal_to_string(literal)
@@ -1125,7 +1125,7 @@ class Namelist(object):
         possible output values.
         """
         expect(format_ in ('nml', 'rc', 'nmlcontents'),
-               "Namelist.write: unexpected output format {:r}".format(str(format_)))
+               "Namelist.write: unexpected output format {!r}".format(str(format_)))
         if isinstance(out_file, str) or isinstance(out_file, unicode):
             logger.debug("Writing namelist to: {}".format(out_file))
             flag = 'a' if append else 'w'
@@ -1460,8 +1460,8 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
             if len(chars) == 1:
                 char_description = repr(str(chars))
             else:
-                char_description = "one of the characters in {:r}".format(str(chars))
-            raise _NamelistParseError("expected {} but found {:r}".format(char_description, str(self._curr())))
+                char_description = "one of the characters in {!r}".format(str(chars))
+            raise _NamelistParseError("expected {} but found {!r}".format(char_description, str(self._curr())))
 
     def _parse_namelist_group_name(self):
         r"""Parses and returns a namelist group name at the current position.
@@ -1559,9 +1559,9 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
 
         if not is_valid_fortran_name(text_check):
             if re.search(r".*\(.*\,.*\)", text_check):
-                err_str = "Multiple dimensions not supported in CIME namelist variables {:r}".format(str(text))
+                err_str = "Multiple dimensions not supported in CIME namelist variables {!r}".format(str(text))
             else:
-                err_str = "{:r} is not a valid variable name".format(str(text))
+                err_str = "{!r} is not a valid variable name".format(str(text))
             raise _NamelistParseError(err_str)
         name = text.lower()
 
@@ -1608,8 +1608,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
                 break
         text = self._text[old_pos:self._pos+1]
         if not is_valid_fortran_namelist_literal("character", text):
-            raise _NamelistParseError("{} is not a valid character literal" %
-                                      (text))
+            raise _NamelistParseError("{} is not a valid character literal".format(text))
         return text
 
     def _parse_complex_literal(self):
@@ -1634,7 +1633,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
             self._advance()
         text = self._text[old_pos:self._pos+1]
         if not is_valid_fortran_namelist_literal("complex", text):
-            raise _NamelistParseError("{:r} is not a valid complex literal".format(str(text)))
+            raise _NamelistParseError("{!r} is not a valid complex literal".format(str(text)))
         return text
 
     def _look_ahead_for_equals(self, pos):
@@ -1841,7 +1840,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         text = self._text[old_pos:self._pos]
         if not any(is_valid_fortran_namelist_literal(type_, text)
                    for type_ in ("integer", "logical", "real")):
-            raise _NamelistParseError("expected literal value, but got {:r}".format(str(text)))
+            raise _NamelistParseError("expected literal value, but got {!r}".format(str(text)))
         return text
 
     def _expect_separator(self, allow_eof=False):
@@ -2105,7 +2104,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         if not self._groupless:
             # Make sure that this is the first time we've seen this group.
             if group_name in self._settings:
-                raise _NamelistParseError("Namelist group {:r} encountered twice.".format(str(group_name)))
+                raise _NamelistParseError("Namelist group {!r} encountered twice.".format(str(group_name)))
             self._settings[group_name] = {}
         self._eat_whitespace()
         while self._curr() != '/':

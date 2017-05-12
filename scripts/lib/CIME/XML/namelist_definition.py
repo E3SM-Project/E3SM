@@ -351,12 +351,12 @@ class NamelistDefinition(EntryID):
                 # and has the right group name...
                 var_group = self.get_group(qualified_variable_name)
                 expect(var_group == group_name,
-                       (variable_template + " is in a group named {!r}, but should be in {!r}.") % (str(variable_name), str(group_name), str(var_group)))
+                       (variable_template + " is in a group named {!r}, but should be in {!r}.").format(str(variable_name), str(group_name), str(var_group)))
 
                 # and has a valid value.
                 value = namelist.get_variable_value(group_name, variable_name)
                 expect(self.is_valid_value(qualified_variable_name, value),
-                       (variable_template + " has invalid value {!r}.") % (str(variable_name), [str(scalar) for scalar in value]))
+                       (variable_template + " has invalid value {!r}.").format(str(variable_name), [str(scalar) for scalar in value]))
 
     def dict_to_namelist(self, dict_, filename=None):
         """Converts a dictionary of name-value pairs to a `Namelist`.
