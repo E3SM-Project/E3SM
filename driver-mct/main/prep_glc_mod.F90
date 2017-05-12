@@ -2,7 +2,6 @@ module prep_glc_mod
 
   use shr_kind_mod    , only: r8 => SHR_KIND_R8
   use shr_kind_mod    , only: cl => SHR_KIND_CL
-  use shr_kind_mod    , only: cxx => SHR_KIND_CXX
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct    , only: num_inst_glc, num_inst_lnd, num_inst_frc
   use seq_comm_mct    , only: CPLID, GLCID, logunit
@@ -88,7 +87,7 @@ module prep_glc_mod
   character(len=*), parameter :: Sg_icemask_field = 'Sg_icemask'
 
   ! Fields needed in the g2x_lx attribute vector used as part of mapping qice from lnd to glc
-  character(CXX) :: g2x_lx_fields
+  character(len=:), allocatable :: g2x_lx_fields
   
 
   !================================================================================================
@@ -210,6 +209,11 @@ contains
     character(len=GLC_ELEVCLASS_STRLEN), allocatable :: all_elevclass_strings(:)
     character(len=:), allocatable :: frac_fields
     character(len=:), allocatable :: topo_fields
+    integer :: strlen
+
+    ! 1 is probably enough, but use 10 to be safe, in case the length of the delimiter
+    ! changes
+    integer, parameter :: extra_len_for_list_merge = 10
 
     character(len=*), parameter :: subname = '(prep_glc_set_g2x_lx_fields)'
     !---------------------------------------------------------------
@@ -224,6 +228,9 @@ contains
     topo_fields = shr_string_listFromSuffixes( &
          suffixes = all_elevclass_strings, &
          strBase  = Sg_topo_field)
+
+    strlen = len_trim(frac_fields) + len_trim(topo_fields) + extra_len_for_list_merge
+    allocate(g2x_lx_fields(len=strlen))
     call shr_string_listMerge(frac_fields, topo_fields, g2x_lx_fields)
 
   end subroutine prep_glc_set_g2x_lx_fields
