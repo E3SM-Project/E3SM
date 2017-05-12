@@ -77,6 +77,9 @@
 ! * in the call to rrtmg_swrad, substituted the variables qv_p, qc_p, qi_p, and qs_p with qvrad_p, qcrad_p,
 !   qirad_p, and qsrad_p initialized in subroutine cloudiness_from_MPAS.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-07-09.
+! * in subroutines radiation_sw_from_MPAS, revised the initialization of re_cloud, re_ice, re_snow, to
+!   handle the case when the cloud microphysics parameterization is turned off, i.e. config_microp_scheme='off'.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-10.
 
 
  contains
@@ -296,6 +299,7 @@
 
 !local pointers:
  logical,pointer:: config_o3climatology
+ logical,pointer:: config_microp_re
 
  real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
  real(kind=RKIND),dimension(:),pointer    :: skintemp,snow,xice,xland
@@ -308,6 +312,7 @@
 !-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
+ call mpas_pool_get_config(configs,'config_microp_re'    ,config_microp_re    )
 
  call mpas_pool_get_array(mesh,'latCell',latCell)
  call mpas_pool_get_array(mesh,'lonCell',lonCell)
@@ -384,19 +389,40 @@
  radiation_sw_select: select case (trim(radt_sw_scheme))
 
     case("rrtmg_sw")
-       call mpas_pool_get_array(diag_physics,'re_cloud',re_cloud)
-       call mpas_pool_get_array(diag_physics,'re_ice'  ,re_ice  )
-       call mpas_pool_get_array(diag_physics,'re_snow' ,re_snow )
 
-       do j = jts,jte
-       do k = kts,kte
-       do i = its,ite
-          recloud_p(i,k,j) = re_cloud(k,i)
-          reice_p(i,k,j)   = re_ice(k,i)
-          resnow_p(i,k,j)  = re_snow(k,i)
-       enddo
-       enddo
-       enddo
+       microp_select: select case(microp_scheme)
+          case("mp_thompson","mp_wsm6")
+             if(config_microp_re) then
+                call mpas_pool_get_array(diag_physics,'re_cloud',re_cloud)
+                call mpas_pool_get_array(diag_physics,'re_ice'  ,re_ice  )
+                call mpas_pool_get_array(diag_physics,'re_snow' ,re_snow )
+
+                do j = jts,jte
+                do k = kts,kte
+                do i = its,ite
+                   recloud_p(i,k,j) = re_cloud(k,i)
+                   reice_p(i,k,j)   = re_ice(k,i)
+                   resnow_p(i,k,j)  = re_snow(k,i)
+                enddo
+                enddo
+                enddo
+             else
+                has_reqc = 0
+                has_reqi = 0
+                has_reqs = 0
+                do j = jts,jte
+                do k = kts,kte
+                do i = its,ite
+                   recloud_p(i,k,j) = 0._RKIND
+                   reice_p(i,k,j)   = 0._RKIND
+                   resnow_p(i,k,j)  = 0._RKIND
+                enddo
+                enddo
+                enddo
+             endif
+
+          case default          
+       end select microp_select
 
        do j = jts,jte
        do k = kts,kte+2
@@ -409,7 +435,7 @@
        enddo
        enddo
 
-       !ozone volum mixing ratio:
+       !ozone volume mixing ratio:
        if(config_o3climatology) then
           do k = 1, num_oznLevels
              pin_p(k) = pin(k)
@@ -544,7 +570,6 @@
 !local pointers:
  real(kind=RKIND),dimension(:),pointer  :: coszr,gsw,swcf,swdnb,swdnbc,swdnt,swdntc, &
                                            swupb,swupbc,swupt,swuptc
-!real(kind=RKIND),dimension(:,:),pointer:: swdnflx,swdnflxc,swupflx,swupflxc
  real(kind=RKIND),dimension(:,:),pointer:: rthratensw
 
 !-----------------------------------------------------------------------------------------------------------------
@@ -560,10 +585,6 @@
  call mpas_pool_get_array(diag_physics,'swupbc'    , swupbc   )
  call mpas_pool_get_array(diag_physics,'swupt'     ,swupt     )
  call mpas_pool_get_array(diag_physics,'swuptc'    ,swuptc    )
-!call mpas_pool_get_array(diag_physics,'swdnflx'   ,swdnflx   )
-!call mpas_pool_get_array(diag_physics,'swdnflxc'  ,swdnflxc  )
-!call mpas_pool_get_array(diag_physics,'swupflx'   ,swupflx   )
-!call mpas_pool_get_array(diag_physics,'swupflxc'  ,swupflxc  )
  call mpas_pool_get_array(tend_physics,'rthratensw',rthratensw)
 
  do j = jts,jte
@@ -581,15 +602,6 @@
     swupt(i)  = swupt_p(i,j)
     swuptc(i) = swuptc_p(i,j)
  enddo
-!not needed:
-!do k = kts,kte+2
-!do i = its,ite
-!   swdnflx(k,i)  = swdnflx_p(i,k,j)
-!   swdnflxc(k,i) = swdnflxc_p(i,k,j)
-!   swupflx(k,i)  = swupflx_p(i,k,j)
-!   swupflxc(k,i) = swupflxc_p(i,k,j)
-!enddo
-!enddo
 
  do k = kts,kte
  do i = its,ite

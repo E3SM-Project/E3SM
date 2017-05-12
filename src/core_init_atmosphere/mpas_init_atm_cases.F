@@ -2599,6 +2599,9 @@ module init_atm_cases
       integer, pointer :: config_theta_adv_order
       real (kind=RKIND), pointer :: config_coef_3rd_order
 
+      character (len=StrKIND), pointer :: config_extrap_airtemp
+      integer :: extrap_airtemp
+      
       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
       real (kind=RKIND), dimension(:), pointer :: latEdge, lonEdge
       real (kind=RKIND), dimension(:), pointer :: angleEdge
@@ -2670,6 +2673,20 @@ module init_atm_cases
       call mpas_pool_get_config(configs, 'config_smooth_surfaces', config_smooth_surfaces)
       call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', config_coef_3rd_order)
+      
+      call mpas_pool_get_config(configs, 'config_extrap_airtemp', config_extrap_airtemp)
+      if (trim(config_extrap_airtemp) == 'constant') then
+         extrap_airtemp = 0
+      else if (trim(config_extrap_airtemp) == 'linear') then
+         extrap_airtemp = 1
+      else if (trim(config_extrap_airtemp) == 'lapse-rate') then
+         extrap_airtemp = 2
+      else
+          call mpas_dmpar_global_abort('*************************************************************', deferredAbort=.true.)
+          call mpas_dmpar_global_abort('* Invalid value for namelist variable config_extrap_airtemp *', deferredAbort=.true.)
+          call mpas_dmpar_global_abort('*************************************************************')
+      end if
+      write(0,*) "Using option '" // trim(config_extrap_airtemp) // "' for vertical extrapolation of temperature"
 
       parinfo => block % parinfo
       dminfo => block % domain % dminfo
@@ -3336,6 +3353,7 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
              trim(field % field) == 'SM007028' .or. &
              trim(field % field) == 'SM028100' .or. &
              trim(field % field) == 'SM100255' .or. &
+             trim(field % field) == 'SM100289' .or. &
              trim(field % field) == 'ST000010' .or. &
              trim(field % field) == 'ST010040' .or. &
              trim(field % field) == 'ST040100' .or. &
@@ -3345,7 +3363,9 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
              trim(field % field) == 'ST007028' .or. &
              trim(field % field) == 'ST028100' .or. &
              trim(field % field) == 'ST100255' .or. &
+             trim(field % field) == 'ST100289' .or. &
              trim(field % field) == 'PRES' .or. &
+             trim(field % field) == 'PRESSURE' .or. &
              trim(field % field) == 'SNOW' .or. &
              trim(field % field) == 'SEAICE' .or. &
              trim(field % field) == 'SKINTEMP') then
@@ -3359,6 +3379,7 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
                 trim(field % field) == 'SM007028' .or. &
                 trim(field % field) == 'SM028100' .or. &
                 trim(field % field) == 'SM100255' .or. &
+                trim(field % field) == 'SM100289' .or. &
                 trim(field % field) == 'ST000010' .or. &
                 trim(field % field) == 'ST010040' .or. &
                 trim(field % field) == 'ST040100' .or. &
@@ -3368,13 +3389,14 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
                 trim(field % field) == 'ST007028' .or. &
                 trim(field % field) == 'ST028100' .or. &
                 trim(field % field) == 'ST100255' .or. &
+                trim(field % field) == 'ST100289' .or. &
                 trim(field % field) == 'SNOW' .or. &
                 trim(field % field) == 'SEAICE' .or. &
                 trim(field % field) == 'SKINTEMP') then
                k = 1
             else if (trim(field % field) /= 'PMSL' .and. &
-                     trim(field % field) /='PSFC' .and. &
-                     trim(field % field) /= 'SOILHGT')  then
+                     trim(field % field) /= 'PSFC' .and. &
+                     trim(field % field) /= 'SOILHGT') then
 
                ! Since the hash table can only store integers, transfer the bit pattern from 
                ! the real-valued xlvl into an integer; that the result is not an integer version
@@ -3505,6 +3527,13 @@ write(0,*) 'Interpolating GHT at ', k, vert_level(k)
                ndims = 2
             else if (trim(field % field) == 'PRES') then
 write(0,*) 'Interpolating PRES at ', k, vert_level(k)
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'p', destField2d)
+               ndims = 2
+            else if (trim(field % field) == 'PRESSURE') then
+write(0,*) 'Interpolating PRESSURE at ', k, vert_level(k)
                nInterpPoints = nCells
                latPoints => latCell
                lonPoints => lonCell
@@ -3711,6 +3740,26 @@ write(0,*) 'Interpolating SM100255'
                ndims = 2
                dzs_fg(k,:) = 255.-100.
                zs_fg(k,:) = 255.
+            else if (trim(field % field) == 'SM100289') then
+write(0,*) 'Interpolating SM100289'
+
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
+
+               maskval = 0.0
+               masked = 0
+               fillval = 1.0
+
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'sm_fg', destField2d)
+               k = 4
+               ndims = 2
+               dzs_fg(k,:) = 289.-100.
+               zs_fg(k,:) = 289.
             else if (trim(field % field) == 'ST000010') then
 write(0,*) 'Interpolating ST000010'
 
@@ -3900,6 +3949,27 @@ write(0,*) 'Interpolating ST100255'
                ndims = 2
                dzs_fg(k,:) = 255.-100.
                zs_fg(k,:) = 255.
+            else if (trim(field % field) == 'ST100289') then
+write(0,*) 'Interpolating ST100289'
+
+               interp_list(1) = SIXTEEN_POINT
+               interp_list(2) = FOUR_POINT
+               interp_list(3) = W_AVERAGE4
+               interp_list(4) = SEARCH
+               interp_list(5) = 0
+
+               maskval = 0.0
+               masked = 0
+               fillval = 285.0
+
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'st_fg', destField2d)
+               k = 4
+               ndims = 2
+               dzs_fg(k,:) = 289.-100.
+               zs_fg(k,:) = 289.
             else if (trim(field % field) == 'SNOW') then
 write(0,*) 'Interpolating SNOW'
 
@@ -3991,7 +4061,7 @@ write(0,*) 'Interpolating SKINTEMP'
 
             !
             ! In addition to interpolating wind fields to cell edges, we should
-            ! also intperolate to cell centers at the surface in order to
+            ! also interpolate to cell centers at the surface in order to
             ! produce U10 and V10 fields
             !
             is_sfc_field = .false.
@@ -4407,7 +4477,14 @@ write(0,*) 'PROCESSING OMLD'
          do k = 1, nVertLevels
             target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
             t(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
-                                  sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
+                                         sorted_arr(:,1:nfglevels_actual-1), order=1, &
+                                         extrap=extrap_airtemp, ierr=istatus)
+            if (istatus /= 0) then
+               write(errstring,'(a,i4,a,i10)') 'Error in interpolation of t(k,iCell) for k=', k, ', iCell=', iCell
+               call mpas_dmpar_global_abort('*****************************************************************', deferredAbort=.true.)
+               call mpas_dmpar_global_abort(trim(errstring),                                                     deferredAbort=.true.)
+               call mpas_dmpar_global_abort('*****************************************************************')
+            end if
          end do
 
 
@@ -4819,7 +4896,7 @@ write(0,*) 'PROCESSING OMLD'
    end function nearest_edge
 
 
-   real (kind=RKIND) function vertical_interp(target_z, nz, zf, order, extrap, surface_val, sealev_val)
+   real (kind=RKIND) function vertical_interp(target_z, nz, zf, order, extrap, surface_val, sealev_val, ierr)
 
       implicit none
 
@@ -4827,10 +4904,11 @@ write(0,*) 'PROCESSING OMLD'
       integer, intent(in) :: nz 
       real (kind=RKIND), dimension(2,nz), intent(in) :: zf      ! zf(1,:) is column of vertical coordinate values, zf(2,:) is column of field values
       integer, intent(in), optional :: order
-      integer, intent(in), optional :: extrap
+      integer, intent(in), optional :: extrap                   ! can take values 0 = constant, 1 = linear (default), 2 = lapse-rate
       real (kind=RKIND), intent(in), optional :: surface_val
       real (kind=RKIND), intent(in), optional :: sealev_val
-
+      integer, intent(out), optional :: ierr
+      
       integer :: k, lm, lp
       real (kind=RKIND) :: wm, wp
       real (kind=RKIND) :: slope
@@ -4838,7 +4916,8 @@ write(0,*) 'PROCESSING OMLD'
       integer :: interp_order, extrap_type
       real (kind=RKIND) :: surface, sealevel
 
-
+      if (present(ierr)) ierr = 0
+      
       if (present(order)) then
          interp_order = order
       else
@@ -4883,6 +4962,10 @@ write(0,*) 'PROCESSING OMLD'
          else if (extrap_type == 1) then
             slope = (zf(2,nz) - zf(2,nz-1)) / (zf(1,nz) - zf(1,nz-1))
             vertical_interp = zf(2,nz) + slope * (target_z - zf(1,nz))
+         else if (extrap_type == 2) then
+             write(0,*) 'ERROR: extrap_type == 2 not implemented for target_z >= zf(1,nz)'
+             if (present(ierr)) ierr = 1
+             return
          end if
          return
       end if

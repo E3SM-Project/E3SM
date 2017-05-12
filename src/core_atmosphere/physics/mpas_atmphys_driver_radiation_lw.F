@@ -82,6 +82,10 @@
 ! * in the call to rrtmg_lwrad, substituted the variables qv_p, qc_p, qi_p, and qs_p with qvrad_p, qcrad_p,
 !   qirad_p, and qsrad_p initialized in subroutine cloudiness_from_MPAS.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-07-09.
+! * in subroutines radiation_lw_from_MPAS and radiation_lw_to_MPAS, revised the initialization of re_cloud,
+!   re_ice, re_snow, and rre_cloud, rre_ice, and rre_snow to handle the case when the cloud microphysics
+!   parameterization is turned off, i.e. config_microp_scheme='off'.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-10.
 
 
  contains
@@ -292,6 +296,7 @@
 
 !local pointers:
  logical,pointer:: config_o3climatology
+ logical,pointer:: config_microp_re
 
  real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
  real(kind=RKIND),dimension(:),pointer    :: skintemp,snow,xice,xland
@@ -309,6 +314,7 @@
 !-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
+ call mpas_pool_get_config(configs,'config_microp_re'    ,config_microp_re    )
 
  call mpas_pool_get_array(mesh,'latCell',latCell)
  call mpas_pool_get_array(mesh,'lonCell',lonCell)
@@ -383,22 +389,48 @@
  radiation_lw_select: select case (trim(radt_lw_scheme))
 
     case("rrtmg_lw")
-       call mpas_pool_get_array(diag_physics,'re_cloud',re_cloud)
-       call mpas_pool_get_array(diag_physics,'re_ice'  ,re_ice  )
-       call mpas_pool_get_array(diag_physics,'re_snow' ,re_snow )
+       microp_select: select case(microp_scheme)
+          case("mp_thompson","mp_wsm6")
+             if(config_microp_re) then
+                call mpas_pool_get_array(diag_physics,'re_cloud',re_cloud)
+                call mpas_pool_get_array(diag_physics,'re_ice'  ,re_ice  )
+                call mpas_pool_get_array(diag_physics,'re_snow' ,re_snow )
 
-       do j = jts,jte
-       do k = kts,kte
-       do i = its,ite
-          recloud_p(i,k,j)  = re_cloud(k,i)
-          reice_p(i,k,j)    = re_ice(k,i)
-          resnow_p(i,k,j)   = re_snow(k,i)
-          rrecloud_p(i,k,j) = 0._RKIND
-          rreice_p(i,k,j)   = 0._RKIND
-          rresnow_p(i,k,j)  = 0._RKIND
-       enddo
-       enddo
-       enddo
+                do j = jts,jte
+                do k = kts,kte
+                do i = its,ite
+                   recloud_p(i,k,j) = re_cloud(k,i)
+                   reice_p(i,k,j)   = re_ice(k,i)
+                   resnow_p(i,k,j)  = re_snow(k,i)
+                enddo
+                enddo
+                enddo
+             else
+                has_reqc = 0
+                has_reqi = 0
+                has_reqs = 0
+                do j = jts,jte
+                do k = kts,kte
+                do i = its,ite
+                   recloud_p(i,k,j) = 0._RKIND
+                   reice_p(i,k,j)   = 0._RKIND
+                   resnow_p(i,k,j)  = 0._RKIND
+                enddo
+                enddo
+                enddo
+             endif
+             do j = jts,jte
+             do k = kts,kte
+             do i = its,ite
+                rrecloud_p(i,k,j) = 0._RKIND
+                rreice_p(i,k,j)   = 0._RKIND
+                rresnow_p(i,k,j)  = 0._RKIND
+             enddo
+             enddo
+             enddo
+
+          case default
+       end select microp_select
 
        do j = jts,jte
        do k = kts,kte+2
@@ -559,16 +591,21 @@
  end subroutine radiation_lw_from_MPAS
 
 !=================================================================================================================
- subroutine radiation_lw_to_MPAS(diag_physics,tend_physics,its,ite)
+ subroutine radiation_lw_to_MPAS(configs,diag_physics,tend_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
+ type(mpas_pool_type),intent(in):: configs
+
+!inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: tend_physics
 
  integer,intent(in):: its,ite
 
 !local pointers:
+ logical,pointer:: config_microp_re
+
  real(kind=RKIND),dimension(:),pointer :: glw,lwcf,lwdnb,lwdnbc,lwdnt,lwdntc,lwupb,lwupbc, &
                                           lwupt,lwuptc,olrtoa
  real(kind=RKIND),dimension(:,:),pointer:: rthratenlw
@@ -580,6 +617,8 @@
  real(kind=RKIND),dimension(:,:),allocatable:: p1d
 
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_microp_re',config_microp_re)
 
  call mpas_pool_get_array(diag_physics,'glw'   ,glw   )
  call mpas_pool_get_array(diag_physics,'lwcf'  ,lwcf  )
@@ -620,21 +659,36 @@
  radiation_lw_select: select case (trim(radt_lw_scheme))
 
     case("rrtmg_lw")
-       call mpas_pool_get_array(diag_physics,'rre_cloud',rre_cloud)
-       call mpas_pool_get_array(diag_physics,'rre_ice'  ,rre_ice  )
-       call mpas_pool_get_array(diag_physics,'rre_snow' ,rre_snow )
 
-       do j = jts,jte
-       do k = kts,kte
-       do i = its,ite
-          rre_cloud(k,i) = rrecloud_p(i,k,j)
-          rre_ice(k,i)   = rreice_p(i,k,j)
-          rre_snow(k,i)  = rresnow_p(i,k,j)
-       enddo
-       enddo
-       enddo
+       microp_select: select case(microp_scheme)
+          case("mp_thompson","mp_wsm6")
+             call mpas_pool_get_array(diag_physics,'rre_cloud',rre_cloud)
+             call mpas_pool_get_array(diag_physics,'rre_ice'  ,rre_ice  )
+             call mpas_pool_get_array(diag_physics,'rre_snow' ,rre_snow )
+             if(config_microp_re) then
+                do j = jts,jte
+                do k = kts,kte
+                do i = its,ite
+                   rre_cloud(k,i) = rrecloud_p(i,k,j)
+                   rre_ice(k,i)   = rreice_p(i,k,j)
+                   rre_snow(k,i)  = rresnow_p(i,k,j)
+                enddo
+                enddo
+                enddo
+             else
+                do j = jts,jte
+                do k = kts,kte
+                do i = its,ite
+                   rre_cloud(k,i) = 0._RKIND
+                   rre_ice(k,i)   = 0._RKIND
+                   rre_snow(k,i)  = 0._RKIND
+                enddo
+                enddo
+                enddo
+             endif
 
-    case default
+          case default
+       end select microp_select
 
  end select radiation_lw_select
 
@@ -785,6 +839,7 @@
             ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,      &
             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
                        )
+
     case ("cam_lw")
        xtime_m = xtime_s/60.
 
@@ -849,7 +904,7 @@
  end select radiation_lw_select
 
 !copy local arrays to MPAS grid:
- call radiation_lw_to_MPAS(diag_physics,tend_physics,its,ite)
+ call radiation_lw_to_MPAS(configs,diag_physics,tend_physics,its,ite)
 
 !write(0,*) '--- end subroutine driver_radiation_lw.'
 
