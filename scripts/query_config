@@ -73,7 +73,9 @@ def query_compsets(name):
     else:
         print_compset(name, files)
 
+###############################################################################
 def print_compset(name, files, all_components=False):
+###############################################################################
     '''
     print compsets associated with the component name, but if all_components is true only
     print the details if the associated component is available
@@ -99,7 +101,9 @@ def print_compset(name, files, all_components=False):
     # print compsets associated with component without help text
     compsets.print_values(arg_help=False)
 
+###############################################################################
 def query_all_components():
+###############################################################################
     files, components = get_components()
     # Loop through the elements for each component class (in config_files.xml)
     for comp in components:
@@ -219,14 +223,18 @@ def parse_command_line(args, description):
 
     return args
 
+###############################################################################
 def get_compsets():
+###############################################################################
     '''
     Determine valid component values by checking the value attributes for COMPSETS_SPEC_FILE
     '''
     files = Files()
     return files, files.get_components("COMPSETS_SPEC_FILE")
 
+###############################################################################
 def get_components():
+###############################################################################
     '''
     Determine the valid component classes (e.g. atm) for the driver/cpl
     These are then stored in comps_array
@@ -236,9 +244,11 @@ def get_components():
     config_drv = Component(infile)
     return files, config_drv.get_valid_model_components()
 
+#=============================================================================
+class ArgumentParser(argparse.ArgumentParser):
+#=============================================================================
 # we override the error message from ArgumentParser to have a more helpful
 # message in the case of missing arguments
-class ArgumentParser(argparse.ArgumentParser):
 
     def error(self, message):
         self.print_usage(sys.stderr)
@@ -264,8 +274,10 @@ class ArgumentParser(argparse.ArgumentParser):
         # for all other errors
         self.exit(2, '{}: error: {}\n'.format(self.prog, message))
 
-# we overide print_values from Machines to add current in machine description
+#=============================================================================
 class Machines(CIME.XML.machines.Machines):
+#=============================================================================
+# we overide print_values from Machines to add current in machine description
 
     def print_values(self, machine_name='all'): # pylint: disable=arguments-differ
         # set flag to look for single machine

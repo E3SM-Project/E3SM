@@ -1,7 +1,9 @@
 nmldef2html.py
 
 Synopsis:
-  Parses a namelist XML file and generates a html page. 
+  Parses a namelist XML file and generates a html page. Note: some namelist
+  values are not valid in XML. The "&" character needs to be manually modified
+  to be "&amp;" in order for the schema checks to work correctly. 
 
 Requires:
   jinja2 template python module available from https://pypi.python.org/pypi/Jinja2
@@ -24,3 +26,16 @@ Example:
   
 Options:
   >./nmldef2html.py --help
+
+***************************************************
+
+Steps to generate the compsets html:
+
+./compdef2html.py --htmlfile compsets.html
+
+***************************************************
+
+Steps to generate the grids html
+
+1. run query_config --grids --long > ./Tools/xml2html/grids.txt
+2. ./griddef2html.py --txtfile grids.txt --htmlfile grids.html 

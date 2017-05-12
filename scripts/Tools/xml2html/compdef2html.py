@@ -11,6 +11,7 @@
 
 import os, sys, re, glob
 import datetime
+import collections
 
 CIMEROOT = os.environ.get("CIMEROOT")
 if CIMEROOT is None:
@@ -21,8 +22,6 @@ SRCROOT = os.environ.get("SRCROOT")
 if SRCROOT is None:
     SRCROOT = os.path.dirname(CIMEROOT)
 os.environ['SRCROOT'] = SRCROOT
-
-os.environ['MODEL'] = "cesm"
 
 from standard_script_setup import *
 from CIME.utils import expect
@@ -56,9 +55,12 @@ def commandline_options():
     parser.add_argument('--htmlfile', nargs=1, required=True,
                         help='Fully quailfied path to output HTML file.')
 
+    parser.add_argument('--version', nargs=1, required=True,
+                        help='Model version (e.g. CESM2.0)')
+
     options = parser.parse_args()
 
-    CIME.utils.handle_standard_logging_options(options)
+    CIME.utils.parse_args_and_handle_standard_logging_options(options)
 
     return options
 
@@ -70,8 +72,9 @@ def _main_func(options, work_dir):
         
     # Initialize a variables for the html template
     all_compsets = dict()
+    ordered_compsets = collections.OrderedDict()
     html_dict = dict()
-    cesm_version = 'CESM2.0'
+    model_version = options.version[0]
 
     # read in all the component config_compsets.xml files
     files = Files()
@@ -90,8 +93,11 @@ def _main_func(options, work_dir):
             compsets = Compsets(config_file)
             help_text, all_compsets = compsets.return_all_values()
 
+            # get the all_compsets sorted
+            ordered_compsets = collections.OrderedDict(sorted(all_compsets.items(), key=lambda t: t[0]))
+
             # load up the html_dict 
-            html_dict[component] = (help_text, all_compsets)
+            html_dict[component] = (help_text, ordered_compsets)
 
     # load up jinja template
     templateLoader = jinja2.FileSystemLoader( searchpath='{0}/templates'.format(work_dir) )
@@ -102,7 +108,7 @@ def _main_func(options, work_dir):
     template = templateEnv.get_template( tmplFile )
     templateVars = { 'html_dict'    : html_dict,
                      'today'        : _now,
-                     'cesm_version' : cesm_version }
+                     'model_version' : model_version }
         
     # render the template
     comp_tmpl = template.render( templateVars )
