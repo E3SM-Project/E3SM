@@ -72,6 +72,7 @@ class Case(object):
         self._env_files_that_need_rewrite = set()
         self._read_only_mode = True
         self._force_read_only = read_only
+        self._principle_component = None
 
         self._env_entryid_files = []
         self._env_generic_files = []
@@ -98,7 +99,6 @@ class Case(object):
         self._is_env_loaded = False
         # these are user_mods as defined in the compset
         # Command Line user_mods are handled seperately
-        self._user_mods = None
         self.thread_count = None
         self.total_tasks = None
         self.tasks_per_node = None
@@ -429,7 +429,7 @@ class Case(object):
             # If the file exists, read it and see if there is a match for the compset alias or longname
             if (os.path.isfile(compsets_filename)):
                 compsets = Compsets(compsets_filename)
-                match, compset_alias, science_support, self._user_mods = compsets.get_compset_match(name=compset_name)
+                match, compset_alias, science_support = compsets.get_compset_match(name=compset_name)
                 if match is not None:
                     if pesfile is None:
                         self._pesfile = files.get_value("PES_SPEC_FILE"     , {"component":component})
@@ -442,13 +442,11 @@ class Case(object):
                     user_mods_dir     = files.get_value("USER_MODS_DIR"     , {"component":component}, resolved=False)
                     self.set_lookup_value("COMPSETS_SPEC_FILE" ,
                                    files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
+                    self._principle_component = component.upper()
                     self.set_lookup_value("TESTS_SPEC_FILE"    , tests_filename)
                     self.set_lookup_value("TESTS_MODS_DIR"     , tests_mods_dir)
                     self.set_lookup_value("USER_MODS_DIR"      , user_mods_dir)
-                    compset_info = "Compset longname is %s"%(match)
-                    if self._user_mods is not None:
-                        compset_info += " with user_mods directory %s"%(self._user_mods)
-                    logger.info(compset_info)
+                    logger.info("Compset longname is %s"%(match))
                     logger.info("Compset specification file is %s" %(compsets_filename))
                     logger.info("Pes     specification file is %s" %(pesfile))
                     return compset_alias, science_support
@@ -555,6 +553,7 @@ class Case(object):
             result = self.set_value(key,value)
             if result is not None:
                 del self.lookups[key]
+
 
     def _setup_mach_pes(self, pecount, ninst, machine_name, mpilib):
         #--------------------------------------------
@@ -852,7 +851,8 @@ class Case(object):
         for name, value in matches:
             if len(value) > 0:
                 logger.debug("Compset specific settings: name is %s and value is %s"%(name,value))
-                self.set_value(name, value)
+                self.set_lookup_value(name, value)
+
 
     def set_initial_test_values(self):
         testobj = self.get_env("test")
@@ -972,11 +972,13 @@ class Case(object):
         for newdir in newdirs:
             os.makedirs(newdir)
 
+        user_mods = self.get_value("%s_USER_MODS"%(self._principle_component))
+
         # Open a new README.case file in $self._caseroot
         append_status(" ".join(sys.argv), "README.case", caseroot=self._caseroot)
         compset_info = "Compset longname is %s"%(self.get_value("COMPSET"))
-        if self._user_mods is not None:
-            compset_info += " with user_mods directory %s"%(self._user_mods)
+        if user_mods is not None:
+            compset_info += " with user_mods directory %s"%(user_mods)
         append_status(compset_info,
                       "README.case", caseroot=self._caseroot)
         append_status("Compset specification file is %s" %
@@ -991,8 +993,8 @@ class Case(object):
             comp_grid = "%s_GRID"%component_class
             append_status("%s is %s"%(comp_grid,self.get_value(comp_grid)),
                           "README.case", caseroot=self._caseroot)
-        if self._user_mods is not None:
-            note = "This compset includes user_mods %s"%self._user_mods
+        if user_mods is not None:
+            note = "This compset includes user_mods %s"%user_mods
             append_status(note, "README.case", caseroot=self._caseroot)
             logger.info(note)
         if not clone:
@@ -1005,14 +1007,11 @@ class Case(object):
         or they can be in the compset definition, or both.
         """
 
-        if self._user_mods is None:
-            compset_user_mods_resolved = None
-        else:
-            compset_user_mods_resolved = self.get_resolved_value(self._user_mods)
+        component_user_mods = self.get_value("%s_USER_MODS"%(self._principle_component))
 
         # This looping order will lead to the specified user_mods_dir taking
         # precedence over self._user_mods, if there are any conflicts.
-        for user_mods in (compset_user_mods_resolved, user_mods_dir):
+        for user_mods in (component_user_mods, user_mods_dir):
             if user_mods is not None:
                 if os.path.isabs(user_mods):
                     user_mods_path = user_mods
