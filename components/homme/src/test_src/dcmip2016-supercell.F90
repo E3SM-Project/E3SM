@@ -548,7 +548,7 @@ CONTAINS
     end if
 
     ! Iterate using fixed point method
-    do iter = 1, 200
+    do iter = 1, 400
 
       zc = (za * (pb - p) - zb * (pa - p)) / (pb - pa)
 

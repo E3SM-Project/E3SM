@@ -17,10 +17,12 @@
   tstep_type        = 5
   rsplit            = 1
   qsplit            = 1
-  nu                = 5.8e8                 ! 1e15/(120)^(3)
+  nu                = 5.8e8                     ! 1e15/(120)^(3)
   nu_s              = 5.8e8
   nu_p              = 5.8e8
-  nu_top            = 2.0e3                     ! 2.5e5/(120)^(1)
+  nu_top            = 0                         ! 2.5e5/(120)^(1)
+  mu                = 500.0d0                   ! additional uniform viscosity
+  mu_s              = 1500.0d0
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   rearth            = 53133                     ! 6.376E6  / 120
@@ -32,7 +34,6 @@
 &vert_nl
   vform             = "ccm"                     ! vertical coordinate type "ccm"=hybrid pressure/terrain
   vanalytic         = 1                         ! set vcoords in initialization routine
-  vtop              = 5e-2                      ! vertical coordinate at top of atm (z=20km)
 /
 &analysis_nl
   output_dir        = "./movies/"               ! destination dir for netcdf file

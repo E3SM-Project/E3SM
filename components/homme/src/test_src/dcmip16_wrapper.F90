@@ -31,7 +31,7 @@ real(rl), dimension(:,:,:,:), allocatable :: u0, v0                     ! storag
 real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
 real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
 real(rl):: tau
-real(rl):: ztop
+real(rl), parameter :: ztop3  = 20000_rl !20000_rl                            ! top of model at 20km
 
 real(rl), parameter ::rh2o    = 461.5d0,            & ! Gas constant for water vapor (J/kg/K)
                       Mvap    = (Rwater_vapor/Rgas) - 1.d0    ! Constant for virtual temp. calc. (~0.608)
@@ -92,7 +92,7 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
   type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
   integer,            intent(in)            :: nets,nete                ! start, end element index
 
-  real(rl), parameter :: ztop    = 30000_rl                             ! top of model at 30km
+  real(rl), parameter :: ztop2    = 30000_rl                             ! top of model at 30km
 
   integer :: i,j,k,ie , ierr                                                  ! loop indices
   real(rl):: lon,lat,ntop                                               ! pointwise coordiantes
@@ -144,7 +144,6 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   integer,  parameter :: zcoords  = 0                                   ! 0 -> use p coords
   integer,  parameter :: pert     = 1                                   ! 1 -> add thermal perturbation
-  real(rl), parameter :: ztop     = 20000_rl                            ! top of model at 20km
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat                                                    ! pointwise coordiantes
@@ -157,7 +156,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
   call supercell_init()
 
   ! get evenly spaced z levels from 0 to 20km
-  call get_evenly_spaced_z(zi,zm, 0.0_rl, ztop)                          ! get evenly spaced z levels
+  call get_evenly_spaced_z(zi,zm, 0.0_rl, ztop3)                          ! get evenly spaced z levels
 
   ! get eta levels matching z at equator
   do k=1,nlevp
@@ -228,7 +227,6 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   integer,  parameter :: zcoords  = 0                                   ! 0 -> use p coords
   integer,  parameter :: pert     = 1                                   ! 1 -> add thermal perturbation
-  real(rl), parameter :: ztop     = 20000_rl                            ! top of model at 20km
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat                                                    ! pointwise coordiantes
@@ -237,20 +235,22 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
   real(rl), dimension(np,np,nlev) :: p,dp,z,u,v,w,T,thetav,rho,rhom
   real(rl), dimension(np,np) :: phis, ps
 
+  real(rl) :: p1,thetav1,rho1,q1
+
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 3: supercell storm'
 
   ! initialize hydrostatic state
   call supercell_init()
 
   ! get evenly spaced z levels from 0 to 20km
-  call get_evenly_spaced_z(zi,zm, 0.0_rl, ztop)                          ! get evenly spaced z levels
+  call get_evenly_spaced_z(zi,zm, 0.0_rl, ztop3)                          ! get evenly spaced z levels
 
   ! get eta levels matching z at equator
   do k=1,nlevp
     lon =0; lat = 0;
-    call supercell_z(lon, lat, zi(k), p(1,1,k), thetav(1,1,k), rho(1,1,k), q(1,1,k,1), pert)
-    hvcoord%etai(k) = p(1,1,k)/p0
-    if (hybrid%masterthread) print *,"k=",k," z=",zi(k)," p=",p(1,1,k),"etai=",hvcoord%etai(k)
+    call supercell_z(lon, lat, zi(k), p1, thetav1, rho1, q1, pert)
+    hvcoord%etai(k) = p1/p0
+    if (hybrid%masterthread) print *,"k=",k," z=",zi(k)," p=",p1,"etai=",hvcoord%etai(k)
   enddo
   call set_hybrid_coefficients(hvcoord,hybrid,  hvcoord%etai(1), 1.0_rl)
   call set_layer_locations(hvcoord, .true., hybrid%masterthread)
@@ -316,13 +316,12 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
   integer,            intent(in)            :: test                     ! dcmip2016 test number
   real(rl),           intent(in)            :: dt                       ! time-step size
 
-  real(rl), parameter :: ztop = 20000_rl                                ! top of model at 20km
-  real(rl), parameter :: zc   = 18000_rl                                ! sponge layer cutoff at 13km
-  real(rl), parameter :: tau  = 20_rl                                   ! rayleigh damping time 20 sec
+  real(rl), parameter :: zc   = 15000_rl                                ! sponge layer cutoff at 13km
+  real(rl), parameter :: tau  = 120_rl                                  ! rayleigh damping time-scale (s)
 
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl):: lat
-  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,exner,p,dp,cp_star,rho,z,qv,qc,qr
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,exner,exner_kess,p,dp,cp_star,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
   real(rl), dimension(np,np)      :: precl
   real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
@@ -340,11 +339,8 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
     ! save un-forced prognostics
     T0=T; qv0=qv; qc0=qc; qr0=qr
 
-    ! given rho,T,qv: get quantities consistent with Kessler's equation of state
-    rho   = p/(Rgas*T)
-    p     = rho * Rgas * T * (1.0_rl + Mvap * qv)
-    exner = (p/p0)**(Rgas/Cp)
-    T     = theta*exner
+    ! compute form of exner pressure expected by Kessler physics
+    exner_kess = (p/p0)**(Rgas/Cp)
 
     ! invert columns (increasing z)
     theta_inv= theta(:,:,nlev:1:-1)
@@ -352,7 +348,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
     qc_inv   = qc   (:,:,nlev:1:-1)
     qr_inv   = qr   (:,:,nlev:1:-1)
     rho_inv  = rho  (:,:,nlev:1:-1)
-    exner_inv= exner(:,:,nlev:1:-1)
+    exner_inv= exner_kess(:,:,nlev:1:-1)
     z_inv    = z    (:,:,nlev:1:-1)
 
     ! apply forcing to columns
@@ -378,25 +374,23 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
     qv    = qv_inv   (:,:,nlev:1:-1)
     qc    = qc_inv   (:,:,nlev:1:-1)
     qr    = qr_inv   (:,:,nlev:1:-1)
+    T     = theta*exner
 
-    ! convert theta back to T
-    ! exner = (rho * Rgas * theta * (1.0_rl + Mvap * qv)/p0)**(Rgas/(cp-Rgas))
-    ! T     = theta*exner
-
-    elem(ie)%state%theta_dp_cp(:,:,:,nt) = theta*(Cp_star*dp)
-
-    ! add sponge layer forcing at top of model
-    !call set_forcing_rayleigh_friction(elem(ie),z,ztop,zc,tau,u0(:,:,:,ie),v0(:,:,:,ie),nt)
+    ! add sponge layer at top of model?
+    ! call set_forcing_rayleigh_friction(elem(ie),z,ztop,zc,tau,u0(:,:,:,ie),v0(:,:,:,ie),nt)
 
     ! set dynamics forcing
-    !elem(ie)%derived%FM(:,:,1,:) = 0
-    !elem(ie)%derived%FM(:,:,2,:) = 0
-    !elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
+    elem(ie)%derived%FM(:,:,1,:) = 0
+    elem(ie)%derived%FM(:,:,2,:) = 0
+    elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
 
     ! set tracer-mass forcing
     elem(ie)%derived%FQ(:,:,:,1) = dp*(qv-qv0)/dt
     elem(ie)%derived%FQ(:,:,:,2) = dp*(qc-qc0)/dt
     elem(ie)%derived%FQ(:,:,:,3) = dp*(qr-qr0)/dt
+
+    ! debug: set theta directly, instead of FT
+    ! elem(ie)%state%theta_dp_cp(:,:,:,nt) = theta*(Cp_star*dp)
 
     !elem(ie)%state%Qdp(:,:,1,4,ntQ) = precl*dp(:,:,1) ! store precl in level 1 of tracer #4
 

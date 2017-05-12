@@ -194,6 +194,7 @@ program prim_main
   call prim_movie_init( elem, par, hvcoord, tl )
 #endif
 
+print *,"after IO init"
 
   ! output initial state for NEW runs (not restarts or branch runs)
   if (runtype == 0 ) then

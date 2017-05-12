@@ -108,6 +108,9 @@ module control_mod
   real (kind=real_kind), public :: nu_p    = 0.0D5            ! default = 0    ps equ. viscosity
   real (kind=real_kind), public :: nu_top  = 0.0D5            ! top-of-the-model viscosity
 
+  real (kind=real_kind), public :: mu      = 0                ! additional uniform viscosity (momentum)
+  real (kind=real_kind), public :: mu_s    = 0                ! additional uniform viscosity (scalars)
+
   integer, public :: hypervis_subcycle=1                      ! number of subcycles for hyper viscsosity timestep
   integer, public :: hypervis_subcycle_q=1                    ! number of subcycles for hyper viscsosity timestep on TRACERS
   integer, public :: hypervis_order=0                         ! laplace**hypervis_order.  0=not used  1=regular viscosity, 2=grad**4

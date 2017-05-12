@@ -296,7 +296,6 @@ contains
        enddo
     endif
 #endif
-
     ! note:time step computes u(t+1)= u(t*) + RHS.
     ! for consistency, dt_vis = t-1 - t*, so this is timestep method dependent
     ! forward-in-time, hypervis applied to dp3d
@@ -457,7 +456,7 @@ contains
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
   !
   !
-  use control_mod, only : nu, nu_div, hypervis_order, hypervis_subcycle, nu_s, nu_p, nu_top, psurf_vis, swest
+  use control_mod, only : nu, nu_div, hypervis_order, hypervis_subcycle, nu_s, nu_p, nu_top, psurf_vis, swest, mu,mu_s
   use hybvcoord_mod, only : hvcoord_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
   use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
@@ -501,7 +500,7 @@ contains
   real (kind=real_kind) :: phi_ref(np,np,nlev,nets:nete)
   real (kind=real_kind) :: dp_ref(np,np,nlev,nets:nete)
 
-  if (nu == 0 .and. nu_p==0 ) return;
+  if (nu == 0 .and. nu_p==0 .and. mu==0 .and. mu_s==0 ) return;
   call t_startf('advance_hypervis')
 
 
@@ -549,7 +548,6 @@ contains
   enddo
 
 
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  hyper viscosity
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -590,45 +588,47 @@ contains
               ! note: weak operators alreayd have mass matrix "included"
 
               ! add regular diffusion in top 3 layers:
-!if (nu_top>0 .and. k<=3) then
+              if (mu>0 .or. mu_s>0 .or. (nu_top>0 .and. k<=3) ) then
                  lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d       (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,2)=laplace_sphere_wk(elem(ie)%state%theta_dp_cp(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w          (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phi        (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-!endif
+              endif
+
               nu_scale_top = 1
               if (k==1) nu_scale_top=4
               if (k==2) nu_scale_top=2
 
               ! biharmonic terms need a negative sign:
               if (nu_top>0 .and. k<=3) then
-                 vtens(:,:,:,k,ie)=(  -nu*vtens(:,:,:,k,ie) + nu_scale_top*nu_top*lap_v(:,:,:))
+                 vtens(:,:,:,k,ie)=(  -nu*vtens(:,:,:,k,ie) + nu_scale_top*nu_top*lap_v(:,:,:)) ! u and v
                  stens(:,:,k,1,ie)=(-nu_p*stens(:,:,k,1,ie) + nu_scale_top*nu_top*lap_s(:,:,1)) ! dp3d
                  stens(:,:,k,2,ie)=(  -nu*stens(:,:,k,2,ie) + nu_scale_top*nu_top*lap_s(:,:,2)) ! theta
                  stens(:,:,k,3,ie)=(  -nu*stens(:,:,k,3,ie) + nu_scale_top*nu_top*lap_s(:,:,3)) ! w
-                 stens(:,:,k,4,ie)=(-nu_s*stens(:,:,k,4,ie) + nu_scale_top*nu_top*lap_s(:,:,4)) ! w
+                 stens(:,:,k,4,ie)=(-nu_s*stens(:,:,k,4,ie) + nu_scale_top*nu_top*lap_s(:,:,4)) ! phi
               else
-                 vtens(:,:,:,k,ie)=  -nu*vtens(:,:,:,k,ie)
-                 stens(:,:,k,1,ie)=-nu_p*stens(:,:,k,1,ie)
-                 stens(:,:,k,2,ie)=  -nu*stens(:,:,k,2,ie)
-                 stens(:,:,k,3,ie)=  -nu*stens(:,:,k,3,ie)
-                 stens(:,:,k,4,ie)=-nu_s*stens(:,:,k,4,ie)
+                 vtens(:,:,:,k,ie)=-nu  *vtens(:,:,:,k,ie) ! u,v
+                 stens(:,:,k,1,ie)=-nu_p*stens(:,:,k,1,ie) ! dp3d
+                 stens(:,:,k,2,ie)=-nu  *stens(:,:,k,2,ie) ! theta
+                 stens(:,:,k,3,ie)=-nu  *stens(:,:,k,3,ie) ! w
+                 stens(:,:,k,4,ie)=-nu_s*stens(:,:,k,4,ie) ! phi
               endif
 
-  ! add uniform viscosity to satisfy dcmip2016 supercell test case
-  vtens(:,:,:,k,ie)=vtens(:,:,:,k,ie) +  500.0d0*lap_v(:,:,:)
-  stens(:,:,k,1,ie)=stens(:,:,k,1,ie) + 1500.0d0*lap_s(:,:,1) ! dp3d
-  stens(:,:,k,2,ie)=stens(:,:,k,2,ie) + 1500.0d0*lap_s(:,:,2) ! therta
-  stens(:,:,k,3,ie)=stens(:,:,k,3,ie) + 1500.0d0*lap_s(:,:,3) ! w
-  stens(:,:,k,4,ie)=stens(:,:,k,4,ie) + 1500.0d0*lap_s(:,:,4) ! phi
+              ! add uniform viscosity mu in addition to hyperviscosity nu
+              if(mu>0) then
+                vtens(:,:,:,k,ie)=vtens(:,:,:,k,ie) + mu  *lap_v(:,:,:) ! u and v
+                stens(:,:,k,1,ie)=stens(:,:,k,1,ie) + mu_s*lap_s(:,:,1) ! dp3d
+                stens(:,:,k,2,ie)=stens(:,:,k,2,ie) + mu_s*lap_s(:,:,2) ! therta
+                stens(:,:,k,3,ie)=stens(:,:,k,3,ie) + mu_s*lap_s(:,:,3) ! w
+                stens(:,:,k,4,ie)=stens(:,:,k,4,ie) + mu_s*lap_s(:,:,4) ! phi
+              endif
 
            enddo
 
-           kptr=0
-           call edgeVpack(edgebuf,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
-           kptr=2*nlev
-           call edgeVpack(edgebuf,stens(:,:,:,:,ie),4*nlev,kptr,ie)
+           kptr=0;      call edgeVpack(edgebuf,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
+           kptr=2*nlev; call edgeVpack(edgebuf,stens(:,:,:,:,ie),4*nlev,kptr,ie)
+
         enddo
 
         call t_startf('ahdp_bexchV2')
@@ -648,8 +648,8 @@ contains
 !$omp parallel do private(k)
 #endif
            do k=1,nlev
-              vtens(:,:,1,k,ie)=dt*vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
-              vtens(:,:,2,k,ie)=dt*vtens(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)
+              vtens(:,:,1,k,ie)=dt*vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)  ! u
+              vtens(:,:,2,k,ie)=dt*vtens(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)  ! v
               stens(:,:,k,1,ie)=dt*stens(:,:,k,1,ie)*elem(ie)%rspheremp(:,:)  ! dp3d
               stens(:,:,k,2,ie)=dt*stens(:,:,k,2,ie)*elem(ie)%rspheremp(:,:)  ! theta
               stens(:,:,k,3,ie)=dt*stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)  ! w
