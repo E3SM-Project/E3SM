@@ -300,11 +300,22 @@ ifeq ($(findstring -DLINUX,$(CPPDEFS)),-DLINUX)
   endif
 endif
 
+# Atleast on Titan+cray mpi, MPI_Irsends() are buggy, causing hangs during I/O
+# Force PIO to use MPI_Isends instead of the default, MPI_Irsends
+ifeq ($(PIO_VERSION),2)
+  EXTRA_PIO_CPPDEFS = -DUSE_MPI_ISEND_FOR_FC
+else
+  EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
+endif
+
 ifdef CPRE
   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
   FPPDEFS := $(patsubst -D%,$(CPRE)%,$(FPPDEFS))
+  EXTRA_PIO_FPPDEFS := $(subst $(comma),\\$(comma),$(EXTRA_PIO_CPPDEFS))
+  EXTRA_PIO_FPPDEFS := $(patsubst -D%,$(CPRE)%,$(EXTRA_PIO_FPPDEFS))
 else
   FPPDEFS := $(CPPDEFS)
+  EXTRA_PIO_FPPDEFS := $(EXTRA_PIO_CPPDEFS)
 endif
 
 #===============================================================================
@@ -609,9 +620,9 @@ endif
 # FIXEDFLAGS, so that both free & fixed code can be built (cmake
 # doesn't seem to be able to differentiate between free & fixed
 # fortran flags)
-CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
-              -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(INCLDIR)" \
-              -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
+CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(EXTRA_PIO_FPPDEFS) $(INCLDIR)" \
+              -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(EXTRA_PIO_CPPDEFS) $(INCLDIR)" \
+              -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(EXTRA_PIO_CPPDEFS) $(INCLDIR)" \
               -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
               -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
               -D PIO_ENABLE_TESTS:BOOL=OFF \
