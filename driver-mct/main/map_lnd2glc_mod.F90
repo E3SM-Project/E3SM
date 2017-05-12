@@ -398,9 +398,9 @@ contains
            av_s = l2x_l, &
 	   av_d = l2x_g_temp, &
            fldlist = totalfieldlist, &
-           norm = .true., &            !WHL: Not sure about norm
-           avwts_s = landfrac_l, &     !WHL: Not sure landfrac_l needs to be passed in.
-           avwtsfld_s = 'lfrac')       !     Is it used when the mapper is bilinear?
+           norm = .true., &
+           avwts_s = landfrac_l, &
+           avwtsfld_s = 'lfrac')
            
     ! ------------------------------------------------------------------------
     ! Export all elevation classes out of attribute vector and into local 2D arrays (xy,z)
