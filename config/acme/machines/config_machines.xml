@@ -211,7 +211,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
-        <!--NOTE: hard-coding -c 2 for now, which is only correct when using full node with no hyper-threading.  need updates from cime5.2 to fix.  (ndk) -->
+        <!--NOTE: hard-coding -c 2 for now, which is only optimal when using full node with no hyper-threading. (ndk) -->
 	<arg name="thread_count" > -c 2 </arg>
 	<!--arg name="binding" > dash-dash-cpu_bind=cores</arg-->
       </arguments>
@@ -256,24 +256,23 @@
 	<command name="load">craype/2.5.7</command>
 	<command name="load">craype-haswell</command>
 
-	<command name="load">cray-mpich/7.4.4</command>
+	<!--command name="load">cray-mpich/7.4.4</command-->
+	<command name="load">cray-mpich/7.5.3</command>
       </modules>
 
       <modules compiler="intel">
 	<command name="load">PrgEnv-intel</command>
 	<command name="rm">intel</command>
-	<!--command name="load">intel/16.0.3.210</command-->
-	<!--command name="load">intel/17.0.0.098</command-->
-	<command name="load">intel/17.0.1.132</command>
+	<command name="load">intel/17.0.2.174</command>
       </modules>
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.5.0</command>
+	<command name="switch">cce cce/8.5.4</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
-	<command name="switch">gcc gcc/6.2.0</command>
+	<command name="switch">gcc gcc/6.3.0</command>
       </modules>
 
       <modules compiler="!intel">
@@ -292,12 +291,11 @@
       </modules>
 
       <modules>
-        <command name="load">git</command>
+        <command name="load">git/2.9.1</command>
 	<command name="load">cmake/3.3.2</command>
-	<command name="load">pmi/5.0.10-1.0000.11050.0.0.ari</command>
+	<command name="load">pmi/5.0.10-1.0000.11069.183.8.ari</command>
 	<command name="load">papi/5.4.3.2</command>
-	<command name="load">zlib</command>
-	<!--command name="load">cray-petsc/3.7.0.0</command-->
+	<command name="load">zlib/1.2.8</command>
       </modules>
     </module_system>
 
@@ -310,7 +308,7 @@
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
-
+      <env name="FORT_BUFFERED" compiler="intel">yes</env>
     </environment_variables>
 </machine>
 
@@ -345,7 +343,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
-        <!--NOTE: hard-coding -c 4 for now, which is only correct when using full node with no hyper-threading.  need updates from cime5.2 to fix.  (ndk) -->
+        <!--NOTE: hard-coding -c 4 for now, which is only optimal when using full node with no hyper-threading.  (ndk) -->
 	<arg name="thread_count" > -c 4 </arg>
 	<arg name="binding" > --cpu_bind=cores</arg>
       </arguments>
@@ -436,7 +434,6 @@
     </module_system>
 
     <environment_variables>
-
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
@@ -445,9 +442,8 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
 
-      <env name="FORT_BUFFERED">yes</env>
-
-    </environment_variables>
+      <env name="FORT_BUFFERED" compiler="intel">yes</env>
+      </environment_variables>
 </machine>
 
 
