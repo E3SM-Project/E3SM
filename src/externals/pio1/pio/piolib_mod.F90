@@ -58,6 +58,7 @@ module piolib_mod
   public :: PIO_init,     &
        PIO_finalize,      &
        PIO_initdecomp,    &
+       PIO_set_rearr_opts,&
        PIO_openfile,      &
        PIO_syncfile,      &
        PIO_createfile,    &
@@ -1602,7 +1603,7 @@ contains
 #ifdef _NO_FLOW_CONTROL
     iosystem%rearr_opts%fcd = PIO_rearr_comm_fc_2d_disable
 #else
-    ! We ignore the following flags 
+    ! We ignore the following flags
     ! 1) _MPISERIAL : The flow control code is never used when _MPISERIAL is set
     ! 2) _USE_COMP2IO_FC/_USE_IO2COMP_FC : These flags are not currently used
     !  (These were experimental flags). The user can explicitly control
@@ -1622,6 +1623,78 @@ contains
 
   end subroutine init_iosystem_rearr_options
 
+  function PIO_set_rearr_opts(iosystem, comm_type, fcd,&
+                              enable_hs_c2i, enable_isend_c2i,&
+                              max_pend_req_c2i,&
+                              enable_hs_i2c, enable_isend_i2c,&
+                              max_pend_req_i2c) result(ierr)
+
+    use pio_types
+
+    type (iosystem_desc_t), intent(inout)  :: iosystem
+    integer, intent(in) :: comm_type, fcd
+    logical, intent(in) :: enable_hs_c2i, enable_hs_i2c
+    logical, intent(in) :: enable_isend_c2i, enable_isend_i2c
+    integer, intent(in) :: max_pend_req_c2i, max_pend_req_i2c
+
+    integer :: ierr
+
+    ierr = PIO_NOERR
+
+    if(max_pend_req_c2i < 0) then
+      if(max_pend_req_c2i /= PIO_REARR_COMM_UNLIMITED_PEND_REQ) then
+        call piodie(__PIO_FILE__,__LINE__,&
+              "Invalid max pend req (comp to io) specified")
+      end if
+    end if
+    if(max_pend_req_i2c < 0) then
+      if(max_pend_req_i2c /= PIO_REARR_COMM_UNLIMITED_PEND_REQ) then
+        call piodie(__PIO_FILE__,__LINE__,&
+              "Invalid max pend req (io to comp) specified")
+      end if
+    end if
+
+    iosystem%rearr_opts%comm_type = comm_type
+
+    ! Reset to defaults
+    iosystem%rearr_opts%comm_fc_opts_comp2io%enable_hs = .false.
+    iosystem%rearr_opts%comm_fc_opts_comp2io%enable_isend = .false.
+    iosystem%rearr_opts%comm_fc_opts_comp2io%max_pend_req = DEF_P2P_MAXREQ
+
+    iosystem%rearr_opts%comm_fc_opts_io2comp%enable_hs = .false.
+    iosystem%rearr_opts%comm_fc_opts_io2comp%enable_isend = .false.
+    iosystem%rearr_opts%comm_fc_opts_io2comp%max_pend_req = DEF_P2P_MAXREQ
+    if(iosystem%rearr_opts%comm_type == PIO_REARR_COMM_COLL) then
+      ! Init/Reset rest of the structure to valid values
+      iosystem%rearr_opts%fcd = PIO_REARR_COMM_FC_2D_DISABLE
+    else if(iosystem%rearr_opts%comm_type == PIO_REARR_COMM_P2P) then
+      iosystem%rearr_opts%fcd = fcd
+      if(iosystem%rearr_opts%fcd == PIO_REARR_COMM_FC_2D_DISABLE) then
+        ! Nothing to do here - the opts are already reset to defaults above
+      else if(iosystem%rearr_opts%fcd == PIO_REARR_COMM_FC_1D_COMP2IO) then
+        iosystem%rearr_opts%comm_fc_opts_comp2io%enable_hs = enable_hs_c2i
+        iosystem%rearr_opts%comm_fc_opts_comp2io%enable_isend = enable_isend_c2i
+        iosystem%rearr_opts%comm_fc_opts_comp2io%max_pend_req = max_pend_req_c2i
+      else if(iosystem%rearr_opts%fcd == PIO_REARR_COMM_FC_1D_IO2COMP) then
+        iosystem%rearr_opts%comm_fc_opts_io2comp%enable_hs = enable_hs_i2c
+        iosystem%rearr_opts%comm_fc_opts_io2comp%enable_isend = enable_isend_i2c
+        iosystem%rearr_opts%comm_fc_opts_io2comp%max_pend_req = max_pend_req_i2c
+      else if(iosystem%rearr_opts%fcd == PIO_REARR_COMM_FC_2D_ENABLE) then
+        iosystem%rearr_opts%comm_fc_opts_comp2io%enable_hs = enable_hs_c2i
+        iosystem%rearr_opts%comm_fc_opts_comp2io%enable_isend = enable_isend_c2i
+        iosystem%rearr_opts%comm_fc_opts_comp2io%max_pend_req = max_pend_req_c2i
+
+        iosystem%rearr_opts%comm_fc_opts_io2comp%enable_hs = enable_hs_i2c
+        iosystem%rearr_opts%comm_fc_opts_io2comp%enable_isend = enable_isend_i2c
+        iosystem%rearr_opts%comm_fc_opts_io2comp%max_pend_req = max_pend_req_i2c
+      else
+        call piodie(__PIO_FILE__,__LINE__, "Invalid flow control dir specified")
+      end if
+    else
+      call piodie(__PIO_FILE__,__LINE__, "Invalid comm type specified")
+    end if
+
+  end function PIO_set_rearr_opts
 
 !>
 !! @public
