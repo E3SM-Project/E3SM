@@ -20,7 +20,7 @@ module CNCStateUpdate1Mod
   use PatchType              , only : pft
   use clm_varctl             , only : nu_com
   ! bgc interface & pflotran:
-  use clm_varctl             , only : use_pflotran, pf_cmode
+  use clm_varctl             , only : use_pflotran, pf_cmode, use_ed
   !
   implicit none
   save
@@ -122,12 +122,14 @@ contains
 
       ! column level fluxes
 
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         ! seeding fluxes, from dynamic landcover
-         cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_leaf_col(c) * dt
-         cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_deadstem_col(c) * dt
-      end do
+      if(.not.use_ed) then
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            ! seeding fluxes, from dynamic landcover
+            cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_leaf_col(c) * dt
+            cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_deadstem_col(c) * dt
+         end do
+      end if
 
 
       if (is_active_betr_bgc) then
@@ -149,7 +151,7 @@ contains
             enddo
          enddo  
 
-      elseif (.not.(use_pflotran .and. pf_cmode)) then
+      elseif (.not.(use_pflotran .and. pf_cmode) .and. .not.use_ed ) then
 
          ! plant to litter fluxes
 
@@ -194,8 +196,43 @@ contains
                end do
             end if
          end do
-      endif   !end if is_active_betr_bgc()
+
+      elseif( use_ed ) then
+
+         ! The following pools were updated via the FATES interface
+         ! cf%decomp_cpools_sourcesink_col(c,j,i_met_lit)
+         ! cf%decomp_cpools_sourcesink_col(c,j,i_cel_lit)
+         ! cf%decomp_cpools_sourcesink_col(c,j,i_lig_lit)
+
+         ! litter and SOM HR fluxes
+         do k = 1, ndecomp_cascade_transitions
+            do j = 1,nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  cf%decomp_cpools_sourcesink_col(c,j,cascade_donor_pool(k)) = &
+                        cf%decomp_cpools_sourcesink_col(c,j,cascade_donor_pool(k)) &
+                        - ( cf%decomp_cascade_hr_vr_col(c,j,k) + cf%decomp_cascade_ctransfer_vr_col(c,j,k)) *dt
+               end do
+            end do
+         end do
+         do k = 1, ndecomp_cascade_transitions
+            if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
+               do j = 1,nlevdecomp
+                  do fc = 1,num_soilc
+                     c = filter_soilc(fc)
+                     cf%decomp_cpools_sourcesink_col(c,j,cascade_receiver_pool(k)) = &
+                           cf%decomp_cpools_sourcesink_col(c,j,cascade_receiver_pool(k)) &
+                           + cf%decomp_cascade_ctransfer_vr_col(c,j,k)*dt
+                  end do
+               end do
+            end if
+         end do
+
+         
+   endif   !end if is_active_betr_bgc()
     
+
+   if (.not.use_ed) then
     
       ! patch loop
       do fp = 1,num_soilp
@@ -384,16 +421,18 @@ contains
 
       end do ! end of patch loop
 
-      if(is_active_betr_bgc)then
+   end if
 
-         !the following is introduced to fix the spinup problem with simultaneous nitrogen competition
-
-         call p2c(bounds, num_soilc, filter_soilc, &
+   if(is_active_betr_bgc)then
+      
+      !the following is introduced to fix the spinup problem with simultaneous nitrogen competition
+      
+      call p2c(bounds, num_soilc, filter_soilc, &
             cs%frootc_patch(bounds%begp:bounds%endp), &
             cnstate_vars%frootc_nfix_scalar_col(bounds%begc:bounds%endc))
-      endif     
-    end associate 
+   endif
+ end associate
 
-  end subroutine CStateUpdate1
+end subroutine CStateUpdate1
 
 end module CNCStateUpdate1Mod

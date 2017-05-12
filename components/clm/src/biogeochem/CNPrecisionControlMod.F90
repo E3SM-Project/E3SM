@@ -33,7 +33,7 @@ contains
     ! they get too small.
     !
     ! !USES:
-    use clm_varctl , only : iulog, use_c13, use_c14, use_nitrif_denitrif
+    use clm_varctl , only : iulog, use_c13, use_c14, use_nitrif_denitrif, use_ed
     use clm_varpar , only : nlevdecomp, crop_prog
     use pftvarcon  , only : nc3crop
     use tracer_varcon          , only : is_active_betr_bgc    
@@ -189,480 +189,482 @@ contains
       pcrit = 1.e-8_r8
 
       ! patch loop
-      do fp = 1,num_soilp
-         p = filter_soilp(fp)
+      if (.not.use_ed) then
+         do fp = 1,num_soilp
+            p = filter_soilp(fp)
 
-         ! initialize the patch-level C and N truncation terms
-         pc = 0._r8
-         pn = 0._r8
-         pp = 0._r8
-         if ( use_c13 ) pc13 = 0._r8
-         if ( use_c14 ) pc14 = 0._r8
+            ! initialize the patch-level C and N truncation terms
+            pc = 0._r8
+            pn = 0._r8
+            pp = 0._r8
+            if ( use_c13 ) pc13 = 0._r8
+            if ( use_c14 ) pc14 = 0._r8
 
-         ! do tests on state variables for precision control
-         ! for linked C-N state variables, perform precision test on
-         ! the C component, but truncate C, C13, and N components
+            ! do tests on state variables for precision control
+            ! for linked C-N state variables, perform precision test on
+            ! the C component, but truncate C, C13, and N components
 
-         ! leaf C and N
-         if (abs(cs%leafc_patch(p)) < ccrit) then
-            pc = pc + cs%leafc_patch(p)
-            cs%leafc_patch(p) = 0._r8
-            pn = pn + ns%leafn_patch(p)
-            ns%leafn_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%leafc_patch(p)
-               c13cs%leafc_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%leafc_patch(p)
-               c14cs%leafc_patch(p) = 0._r8
-            endif
+            ! leaf C and N
+            if (abs(cs%leafc_patch(p)) < ccrit) then
+               pc = pc + cs%leafc_patch(p)
+               cs%leafc_patch(p) = 0._r8
+               pn = pn + ns%leafn_patch(p)
+               ns%leafn_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%leafc_patch(p)
+                  c13cs%leafc_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%leafc_patch(p)
+                  c14cs%leafc_patch(p) = 0._r8
+               endif
 
-            pp = pp + ps%leafp_patch(p)
-            ps%leafp_patch(p) = 0._r8
-         end if
-
-         ! leaf storage C and N
-         if (abs(cs%leafc_storage_patch(p)) < ccrit) then
-            pc = pc + cs%leafc_storage_patch(p)
-            cs%leafc_storage_patch(p) = 0._r8
-            pn = pn + ns%leafn_storage_patch(p)
-            ns%leafn_storage_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%leafc_storage_patch(p)
-               c13cs%leafc_storage_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%leafc_storage_patch(p)
-               c14cs%leafc_storage_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%leafp_storage_patch(p)
-            ps%leafp_storage_patch(p) = 0._r8
-         end if
-
-         ! leaf transfer C and N
-         if (abs(cs%leafc_xfer_patch(p)) < ccrit) then
-            pc = pc + cs%leafc_xfer_patch(p)
-            cs%leafc_xfer_patch(p) = 0._r8
-            pn = pn + ns%leafn_xfer_patch(p)
-            ns%leafn_xfer_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%leafc_xfer_patch(p)
-               c13cs%leafc_xfer_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%leafc_xfer_patch(p)
-               c14cs%leafc_xfer_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%leafp_xfer_patch(p)
-            ps%leafp_xfer_patch(p) = 0._r8
-         end if
-
-         ! froot C and N
-         if (abs(cs%frootc_patch(p)) < ccrit) then
-            pc = pc + cs%frootc_patch(p)
-            cs%frootc_patch(p) = 0._r8
-            pn = pn + ns%frootn_patch(p)
-            ns%frootn_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%frootc_patch(p)
-               c13cs%frootc_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%frootc_patch(p)
-               c14cs%frootc_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%frootp_patch(p)
-            ps%frootp_patch(p) = 0._r8
-         end if
-
-         ! froot storage C and N
-         if (abs(cs%frootc_storage_patch(p)) < ccrit) then
-            pc = pc + cs%frootc_storage_patch(p)
-            cs%frootc_storage_patch(p) = 0._r8
-            pn = pn + ns%frootn_storage_patch(p)
-            ns%frootn_storage_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%frootc_storage_patch(p)
-               c13cs%frootc_storage_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%frootc_storage_patch(p)
-               c14cs%frootc_storage_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%frootp_storage_patch(p)
-            ps%frootp_storage_patch(p) = 0._r8
-         end if
-
-         ! froot transfer C and N
-         if (abs(cs%frootc_xfer_patch(p)) < ccrit) then
-            pc = pc + cs%frootc_xfer_patch(p)
-            cs%frootc_xfer_patch(p) = 0._r8
-            pn = pn + ns%frootn_xfer_patch(p)
-            ns%frootn_xfer_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%frootc_xfer_patch(p)
-               c13cs%frootc_xfer_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%frootc_xfer_patch(p)
-               c14cs%frootc_xfer_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%frootp_xfer_patch(p)
-            ps%frootp_xfer_patch(p) = 0._r8
-         end if
-
-         if ( crop_prog .and. pft%itype(p) >= nc3crop )then
-            ! grain C and N
-            if (abs(cs%grainc_patch(p)) < ccrit) then
-               pc = pc + cs%grainc_patch(p)
-               cs%grainc_patch(p) = 0._r8
-               pn = pn + ns%grainn_patch(p)
-               ns%grainn_patch(p) = 0._r8
-               pp = pp + ps%grainp_patch(p)
-               ps%grainp_patch(p) = 0._r8
+               pp = pp + ps%leafp_patch(p)
+               ps%leafp_patch(p) = 0._r8
             end if
 
-            ! grain storage C and N
-            if (abs(cs%grainc_storage_patch(p)) < ccrit) then
-               pc = pc + cs%grainc_storage_patch(p)
-               cs%grainc_storage_patch(p) = 0._r8
-               pn = pn + ns%grainn_storage_patch(p)
-               ns%grainn_storage_patch(p) = 0._r8
-               pp = pp + ps%grainp_storage_patch(p)
-               ps%grainp_storage_patch(p) = 0._r8
+            ! leaf storage C and N
+            if (abs(cs%leafc_storage_patch(p)) < ccrit) then
+               pc = pc + cs%leafc_storage_patch(p)
+               cs%leafc_storage_patch(p) = 0._r8
+               pn = pn + ns%leafn_storage_patch(p)
+               ns%leafn_storage_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%leafc_storage_patch(p)
+                  c13cs%leafc_storage_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%leafc_storage_patch(p)
+                  c14cs%leafc_storage_patch(p) = 0._r8
+               endif
+
+               pp = pp + ps%leafp_storage_patch(p)
+               ps%leafp_storage_patch(p) = 0._r8
             end if
 
-            ! grain transfer C and N
-            if (abs(cs%grainc_xfer_patch(p)) < ccrit) then
-               pc = pc + cs%grainc_xfer_patch(p)
-               cs%grainc_xfer_patch(p) = 0._r8
-               pn = pn + ns%grainn_xfer_patch(p)
-               ns%grainn_xfer_patch(p) = 0._r8
-               pp = pp + ps%grainp_xfer_patch(p)
-               ps%grainp_xfer_patch(p) = 0._r8
+            ! leaf transfer C and N
+            if (abs(cs%leafc_xfer_patch(p)) < ccrit) then
+               pc = pc + cs%leafc_xfer_patch(p)
+               cs%leafc_xfer_patch(p) = 0._r8
+               pn = pn + ns%leafn_xfer_patch(p)
+               ns%leafn_xfer_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%leafc_xfer_patch(p)
+                  c13cs%leafc_xfer_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%leafc_xfer_patch(p)
+                  c14cs%leafc_xfer_patch(p) = 0._r8
+               endif
+
+               pp = pp + ps%leafp_xfer_patch(p)
+               ps%leafp_xfer_patch(p) = 0._r8
             end if
-         end if
 
-         ! livestem C and N
-         if (abs(cs%livestemc_patch(p)) < ccrit) then
-            pc = pc + cs%livestemc_patch(p)
-            cs%livestemc_patch(p) = 0._r8
-            pn = pn + ns%livestemn_patch(p)
-            ns%livestemn_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%livestemc_patch(p)
-               c13cs%livestemc_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%livestemc_patch(p)
-               c14cs%livestemc_patch(p) = 0._r8
-            endif
+            ! froot C and N
+            if (abs(cs%frootc_patch(p)) < ccrit) then
+               pc = pc + cs%frootc_patch(p)
+               cs%frootc_patch(p) = 0._r8
+               pn = pn + ns%frootn_patch(p)
+               ns%frootn_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%frootc_patch(p)
+                  c13cs%frootc_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%frootc_patch(p)
+                  c14cs%frootc_patch(p) = 0._r8
+               endif
 
-            pp = pp + ps%livestemp_patch(p)
-            ps%livestemp_patch(p) = 0._r8
-         end if
-
-         ! livestem storage C and N
-         if (abs(cs%livestemc_storage_patch(p)) < ccrit) then
-            pc = pc + cs%livestemc_storage_patch(p)
-            cs%livestemc_storage_patch(p) = 0._r8
-            pn = pn + ns%livestemn_storage_patch(p)
-            ns%livestemn_storage_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%livestemc_storage_patch(p)
-               c13cs%livestemc_storage_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%livestemc_storage_patch(p)
-               c14cs%livestemc_storage_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%livestemp_storage_patch(p)
-            ps%livestemp_storage_patch(p) = 0._r8
-         end if
-
-         ! livestem transfer C and N
-         if (abs(cs%livestemc_xfer_patch(p)) < ccrit) then
-            pc = pc + cs%livestemc_xfer_patch(p)
-            cs%livestemc_xfer_patch(p) = 0._r8
-            pn = pn + ns%livestemn_xfer_patch(p)
-            ns%livestemn_xfer_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%livestemc_xfer_patch(p)
-               c13cs%livestemc_xfer_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%livestemc_xfer_patch(p)
-               c14cs%livestemc_xfer_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%livestemp_xfer_patch(p)
-            ps%livestemp_xfer_patch(p) = 0._r8
-         end if
-
-         ! deadstem C and N
-         if (abs(cs%deadstemc_patch(p)) < ccrit) then
-            pc = pc + cs%deadstemc_patch(p)
-            cs%deadstemc_patch(p) = 0._r8
-            pn = pn + ns%deadstemn_patch(p)
-            ns%deadstemn_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%deadstemc_patch(p)
-               c13cs%deadstemc_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%deadstemc_patch(p)
-               c14cs%deadstemc_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%deadstemp_patch(p)
-            ps%deadstemp_patch(p) = 0._r8
-         end if
-
-         ! deadstem storage C and N
-         if (abs(cs%deadstemc_storage_patch(p)) < ccrit) then
-            pc = pc + cs%deadstemc_storage_patch(p)
-            cs%deadstemc_storage_patch(p) = 0._r8
-            pn = pn + ns%deadstemn_storage_patch(p)
-            ns%deadstemn_storage_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%deadstemc_storage_patch(p)
-               c13cs%deadstemc_storage_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%deadstemc_storage_patch(p)
-               c14cs%deadstemc_storage_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%deadstemp_storage_patch(p)
-            ps%deadstemp_storage_patch(p) = 0._r8
-         end if
-
-         ! deadstem transfer C and N
-         if (abs(cs%deadstemc_xfer_patch(p)) < ccrit) then
-            pc = pc + cs%deadstemc_xfer_patch(p)
-            cs%deadstemc_xfer_patch(p) = 0._r8
-            pn = pn + ns%deadstemn_xfer_patch(p)
-            ns%deadstemn_xfer_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%deadstemc_xfer_patch(p)
-               c13cs%deadstemc_xfer_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%deadstemc_xfer_patch(p)
-               c14cs%deadstemc_xfer_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%deadstemp_xfer_patch(p)
-            ps%deadstemp_xfer_patch(p) = 0._r8
-         end if
-
-         ! livecroot C and N
-         if (abs(cs%livecrootc_patch(p)) < ccrit) then
-            pc = pc + cs%livecrootc_patch(p)
-            cs%livecrootc_patch(p) = 0._r8
-            pn = pn + ns%livecrootn_patch(p)
-            ns%livecrootn_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%livecrootc_patch(p)
-               c13cs%livecrootc_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%livecrootc_patch(p)
-               c14cs%livecrootc_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%livecrootp_patch(p)
-            ps%livecrootp_patch(p) = 0._r8
-         end if
-
-         ! livecroot storage C and N
-         if (abs(cs%livecrootc_storage_patch(p)) < ccrit) then
-            pc = pc + cs%livecrootc_storage_patch(p)
-            cs%livecrootc_storage_patch(p) = 0._r8
-            pn = pn + ns%livecrootn_storage_patch(p)
-            ns%livecrootn_storage_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%livecrootc_storage_patch(p)
-               c13cs%livecrootc_storage_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%livecrootc_storage_patch(p)
-               c14cs%livecrootc_storage_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%livecrootp_storage_patch(p)
-            ps%livecrootp_storage_patch(p) = 0._r8
-         end if
-
-         ! livecroot transfer C and N
-         if (abs(cs%livecrootc_xfer_patch(p)) < ccrit) then
-            pc = pc + cs%livecrootc_xfer_patch(p)
-            cs%livecrootc_xfer_patch(p) = 0._r8
-            pn = pn + ns%livecrootn_xfer_patch(p)
-            ns%livecrootn_xfer_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%livecrootc_xfer_patch(p)
-               c13cs%livecrootc_xfer_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%livecrootc_xfer_patch(p)
-               c14cs%livecrootc_xfer_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%livecrootp_xfer_patch(p)
-            ps%livecrootp_xfer_patch(p) = 0._r8
-         end if
-
-         ! deadcroot C and N
-         if (abs(cs%deadcrootc_patch(p)) < ccrit) then
-            pc = pc + cs%deadcrootc_patch(p)
-            cs%deadcrootc_patch(p) = 0._r8
-            pn = pn + ns%deadcrootn_patch(p)
-            ns%deadcrootn_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%deadcrootc_patch(p)
-               c13cs%deadcrootc_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%deadcrootc_patch(p)
-               c14cs%deadcrootc_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%deadcrootp_patch(p)
-            ps%deadcrootp_patch(p) = 0._r8
-         end if
-
-         ! deadcroot storage C and N
-         if (abs(cs%deadcrootc_storage_patch(p)) < ccrit) then
-            pc = pc + cs%deadcrootc_storage_patch(p)
-            cs%deadcrootc_storage_patch(p) = 0._r8
-            pn = pn + ns%deadcrootn_storage_patch(p)
-            ns%deadcrootn_storage_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%deadcrootc_storage_patch(p)
-               c13cs%deadcrootc_storage_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%deadcrootc_storage_patch(p)
-               c14cs%deadcrootc_storage_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%deadcrootp_storage_patch(p)
-            ps%deadcrootp_storage_patch(p) = 0._r8
-         end if
-
-         ! deadcroot transfer C and N
-         if (abs(cs%deadcrootc_xfer_patch(p)) < ccrit) then
-            pc = pc + cs%deadcrootc_xfer_patch(p)
-            cs%deadcrootc_xfer_patch(p) = 0._r8
-            pn = pn + ns%deadcrootn_xfer_patch(p)
-            ns%deadcrootn_xfer_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%deadcrootc_xfer_patch(p)
-               c13cs%deadcrootc_xfer_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%deadcrootc_xfer_patch(p)
-               c14cs%deadcrootc_xfer_patch(p) = 0._r8
-            endif
-
-            pp = pp + ps%deadcrootp_xfer_patch(p)
-            ps%deadcrootp_xfer_patch(p) = 0._r8
-         end if
-
-         ! gresp_storage (C only)
-         if (abs(cs%gresp_storage_patch(p)) < ccrit) then
-            pc = pc + cs%gresp_storage_patch(p)
-            cs%gresp_storage_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%gresp_storage_patch(p)
-               c13cs%gresp_storage_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%gresp_storage_patch(p)
-               c14cs%gresp_storage_patch(p) = 0._r8
-            endif
-         end if
-
-         ! gresp_xfer(c only)
-         if (abs(cs%gresp_xfer_patch(p)) < ccrit) then
-            pc = pc + cs%gresp_xfer_patch(p)
-            cs%gresp_xfer_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%gresp_xfer_patch(p)
-               c13cs%gresp_xfer_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%gresp_xfer_patch(p)
-               c14cs%gresp_xfer_patch(p) = 0._r8
-            endif
-         end if
-
-         ! cpool (C only)
-         if (abs(cs%cpool_patch(p)) < ccrit) then
-            pc = pc + cs%cpool_patch(p)
-            cs%cpool_patch(p) = 0._r8
-            if ( use_c13 ) then
-               pc13 = pc13 + c13cs%cpool_patch(p)
-               c13cs%cpool_patch(p) = 0._r8
-            endif
-            if ( use_c14 ) then
-               pc14 = pc14 + c14cs%cpool_patch(p)
-               c14cs%cpool_patch(p) = 0._r8
-            endif
-         end if
-
-         if ( crop_prog .and. pft%itype(p) >= nc3crop )then
-            ! xsmrpool (C only)
-            if (abs(cs%xsmrpool_patch(p)) < ccrit) then
-               pc = pc + cs%xsmrpool_patch(p)
-               cs%xsmrpool_patch(p) = 0._r8
+               pp = pp + ps%frootp_patch(p)
+               ps%frootp_patch(p) = 0._r8
             end if
-         end if
 
-         ! retransn (N only)
-         if (abs(ns%retransn_patch(p)) < ncrit) then
-            pn = pn + ns%retransn_patch(p)
-            ns%retransn_patch(p) = 0._r8
-         end if
+            ! froot storage C and N
+            if (abs(cs%frootc_storage_patch(p)) < ccrit) then
+               pc = pc + cs%frootc_storage_patch(p)
+               cs%frootc_storage_patch(p) = 0._r8
+               pn = pn + ns%frootn_storage_patch(p)
+               ns%frootn_storage_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%frootc_storage_patch(p)
+                  c13cs%frootc_storage_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%frootc_storage_patch(p)
+                  c14cs%frootc_storage_patch(p) = 0._r8
+               endif
 
-         ! retransp (P only)
-         if (abs(ps%retransp_patch(p)) < pcrit) then
-            pp = pp + ps%retransp_patch(p)
-            ps%retransp_patch(p) = 0._r8
-         end if
+               pp = pp + ps%frootp_storage_patch(p)
+               ps%frootp_storage_patch(p) = 0._r8
+            end if
 
-         ! npool (N only)
-         if (abs(ns%npool_patch(p)) < ncrit) then
-            pn = pn + ns%npool_patch(p)
-            ns%npool_patch(p) = 0._r8
-         end if
+            ! froot transfer C and N
+            if (abs(cs%frootc_xfer_patch(p)) < ccrit) then
+               pc = pc + cs%frootc_xfer_patch(p)
+               cs%frootc_xfer_patch(p) = 0._r8
+               pn = pn + ns%frootn_xfer_patch(p)
+               ns%frootn_xfer_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%frootc_xfer_patch(p)
+                  c13cs%frootc_xfer_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%frootc_xfer_patch(p)
+                  c14cs%frootc_xfer_patch(p) = 0._r8
+               endif
 
-         ! ppool (P only)
-         if (abs(ps%ppool_patch(p)) < pcrit) then
-            pp = pp + ps%ppool_patch(p)
-            ps%ppool_patch(p) = 0._r8
-         end if
+               pp = pp + ps%frootp_xfer_patch(p)
+               ps%frootp_xfer_patch(p) = 0._r8
+            end if
 
-         cs%ctrunc_patch(p) = cs%ctrunc_patch(p) + pc
-         ns%ntrunc_patch(p) = ns%ntrunc_patch(p) + pn
-         ps%ptrunc_patch(p) = ps%ptrunc_patch(p) + pp
+            if ( crop_prog .and. pft%itype(p) >= nc3crop )then
+               ! grain C and N
+               if (abs(cs%grainc_patch(p)) < ccrit) then
+                  pc = pc + cs%grainc_patch(p)
+                  cs%grainc_patch(p) = 0._r8
+                  pn = pn + ns%grainn_patch(p)
+                  ns%grainn_patch(p) = 0._r8
+                  pp = pp + ps%grainp_patch(p)
+                  ps%grainp_patch(p) = 0._r8
+               end if
 
-         if ( use_c13 ) then
-            c13cs%ctrunc_patch(p) = c13cs%ctrunc_patch(p) + pc13
-         endif
-         if ( use_c14 ) then
-            c14cs%ctrunc_patch(p) = c14cs%ctrunc_patch(p) + pc14
-         endif
+               ! grain storage C and N
+               if (abs(cs%grainc_storage_patch(p)) < ccrit) then
+                  pc = pc + cs%grainc_storage_patch(p)
+                  cs%grainc_storage_patch(p) = 0._r8
+                  pn = pn + ns%grainn_storage_patch(p)
+                  ns%grainn_storage_patch(p) = 0._r8
+                  pp = pp + ps%grainp_storage_patch(p)
+                  ps%grainp_storage_patch(p) = 0._r8
+               end if
 
-      end do ! end of pft loop
+               ! grain transfer C and N
+               if (abs(cs%grainc_xfer_patch(p)) < ccrit) then
+                  pc = pc + cs%grainc_xfer_patch(p)
+                  cs%grainc_xfer_patch(p) = 0._r8
+                  pn = pn + ns%grainn_xfer_patch(p)
+                  ns%grainn_xfer_patch(p) = 0._r8
+                  pp = pp + ps%grainp_xfer_patch(p)
+                  ps%grainp_xfer_patch(p) = 0._r8
+               end if
+            end if
+
+            ! livestem C and N
+            if (abs(cs%livestemc_patch(p)) < ccrit) then
+               pc = pc + cs%livestemc_patch(p)
+               cs%livestemc_patch(p) = 0._r8
+               pn = pn + ns%livestemn_patch(p)
+               ns%livestemn_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%livestemc_patch(p)
+                  c13cs%livestemc_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%livestemc_patch(p)
+                  c14cs%livestemc_patch(p) = 0._r8
+               endif
+
+               pp = pp + ps%livestemp_patch(p)
+               ps%livestemp_patch(p) = 0._r8
+            end if
+
+            ! livestem storage C and N
+            if (abs(cs%livestemc_storage_patch(p)) < ccrit) then
+               pc = pc + cs%livestemc_storage_patch(p)
+               cs%livestemc_storage_patch(p) = 0._r8
+               pn = pn + ns%livestemn_storage_patch(p)
+               ns%livestemn_storage_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%livestemc_storage_patch(p)
+                  c13cs%livestemc_storage_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%livestemc_storage_patch(p)
+                  c14cs%livestemc_storage_patch(p) = 0._r8
+               endif
+
+               pp = pp + ps%livestemp_storage_patch(p)
+               ps%livestemp_storage_patch(p) = 0._r8
+            end if
+
+            ! livestem transfer C and N
+            if (abs(cs%livestemc_xfer_patch(p)) < ccrit) then
+               pc = pc + cs%livestemc_xfer_patch(p)
+               cs%livestemc_xfer_patch(p) = 0._r8
+               pn = pn + ns%livestemn_xfer_patch(p)
+               ns%livestemn_xfer_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%livestemc_xfer_patch(p)
+                  c13cs%livestemc_xfer_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%livestemc_xfer_patch(p)
+                  c14cs%livestemc_xfer_patch(p) = 0._r8
+               endif
+
+               pp = pp + ps%livestemp_xfer_patch(p)
+               ps%livestemp_xfer_patch(p) = 0._r8
+            end if
+
+            ! deadstem C and N
+            if (abs(cs%deadstemc_patch(p)) < ccrit) then
+               pc = pc + cs%deadstemc_patch(p)
+               cs%deadstemc_patch(p) = 0._r8
+               pn = pn + ns%deadstemn_patch(p)
+               ns%deadstemn_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%deadstemc_patch(p)
+                  c13cs%deadstemc_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%deadstemc_patch(p)
+                  c14cs%deadstemc_patch(p) = 0._r8
+               endif
+
+               pp = pp + ps%deadstemp_patch(p)
+               ps%deadstemp_patch(p) = 0._r8
+            end if
+
+            ! deadstem storage C and N
+            if (abs(cs%deadstemc_storage_patch(p)) < ccrit) then
+               pc = pc + cs%deadstemc_storage_patch(p)
+               cs%deadstemc_storage_patch(p) = 0._r8
+               pn = pn + ns%deadstemn_storage_patch(p)
+               ns%deadstemn_storage_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%deadstemc_storage_patch(p)
+                  c13cs%deadstemc_storage_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%deadstemc_storage_patch(p)
+                  c14cs%deadstemc_storage_patch(p) = 0._r8
+               endif
+
+               pp = pp + ps%deadstemp_storage_patch(p)
+               ps%deadstemp_storage_patch(p) = 0._r8
+            end if
+
+            ! deadstem transfer C and N
+            if (abs(cs%deadstemc_xfer_patch(p)) < ccrit) then
+               pc = pc + cs%deadstemc_xfer_patch(p)
+               cs%deadstemc_xfer_patch(p) = 0._r8
+               pn = pn + ns%deadstemn_xfer_patch(p)
+               ns%deadstemn_xfer_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%deadstemc_xfer_patch(p)
+                  c13cs%deadstemc_xfer_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%deadstemc_xfer_patch(p)
+                  c14cs%deadstemc_xfer_patch(p) = 0._r8
+               endif
+
+               pp = pp + ps%deadstemp_xfer_patch(p)
+               ps%deadstemp_xfer_patch(p) = 0._r8
+            end if
+
+            ! livecroot C and N
+            if (abs(cs%livecrootc_patch(p)) < ccrit) then
+               pc = pc + cs%livecrootc_patch(p)
+               cs%livecrootc_patch(p) = 0._r8
+               pn = pn + ns%livecrootn_patch(p)
+               ns%livecrootn_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%livecrootc_patch(p)
+                  c13cs%livecrootc_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%livecrootc_patch(p)
+                  c14cs%livecrootc_patch(p) = 0._r8
+               endif
+
+               pp = pp + ps%livecrootp_patch(p)
+               ps%livecrootp_patch(p) = 0._r8
+            end if
+
+            ! livecroot storage C and N
+            if (abs(cs%livecrootc_storage_patch(p)) < ccrit) then
+               pc = pc + cs%livecrootc_storage_patch(p)
+               cs%livecrootc_storage_patch(p) = 0._r8
+               pn = pn + ns%livecrootn_storage_patch(p)
+               ns%livecrootn_storage_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%livecrootc_storage_patch(p)
+                  c13cs%livecrootc_storage_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%livecrootc_storage_patch(p)
+                  c14cs%livecrootc_storage_patch(p) = 0._r8
+               endif
+
+               pp = pp + ps%livecrootp_storage_patch(p)
+               ps%livecrootp_storage_patch(p) = 0._r8
+            end if
+
+            ! livecroot transfer C and N
+            if (abs(cs%livecrootc_xfer_patch(p)) < ccrit) then
+               pc = pc + cs%livecrootc_xfer_patch(p)
+               cs%livecrootc_xfer_patch(p) = 0._r8
+               pn = pn + ns%livecrootn_xfer_patch(p)
+               ns%livecrootn_xfer_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%livecrootc_xfer_patch(p)
+                  c13cs%livecrootc_xfer_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%livecrootc_xfer_patch(p)
+                  c14cs%livecrootc_xfer_patch(p) = 0._r8
+               endif
+
+               pp = pp + ps%livecrootp_xfer_patch(p)
+               ps%livecrootp_xfer_patch(p) = 0._r8
+            end if
+
+            ! deadcroot C and N
+            if (abs(cs%deadcrootc_patch(p)) < ccrit) then
+               pc = pc + cs%deadcrootc_patch(p)
+               cs%deadcrootc_patch(p) = 0._r8
+               pn = pn + ns%deadcrootn_patch(p)
+               ns%deadcrootn_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%deadcrootc_patch(p)
+                  c13cs%deadcrootc_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%deadcrootc_patch(p)
+                  c14cs%deadcrootc_patch(p) = 0._r8
+               endif
+
+               pp = pp + ps%deadcrootp_patch(p)
+               ps%deadcrootp_patch(p) = 0._r8
+            end if
+
+            ! deadcroot storage C and N
+            if (abs(cs%deadcrootc_storage_patch(p)) < ccrit) then
+               pc = pc + cs%deadcrootc_storage_patch(p)
+               cs%deadcrootc_storage_patch(p) = 0._r8
+               pn = pn + ns%deadcrootn_storage_patch(p)
+               ns%deadcrootn_storage_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%deadcrootc_storage_patch(p)
+                  c13cs%deadcrootc_storage_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%deadcrootc_storage_patch(p)
+                  c14cs%deadcrootc_storage_patch(p) = 0._r8
+               endif
+
+               pp = pp + ps%deadcrootp_storage_patch(p)
+               ps%deadcrootp_storage_patch(p) = 0._r8
+            end if
+
+            ! deadcroot transfer C and N
+            if (abs(cs%deadcrootc_xfer_patch(p)) < ccrit) then
+               pc = pc + cs%deadcrootc_xfer_patch(p)
+               cs%deadcrootc_xfer_patch(p) = 0._r8
+               pn = pn + ns%deadcrootn_xfer_patch(p)
+               ns%deadcrootn_xfer_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%deadcrootc_xfer_patch(p)
+                  c13cs%deadcrootc_xfer_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%deadcrootc_xfer_patch(p)
+                  c14cs%deadcrootc_xfer_patch(p) = 0._r8
+               endif
+
+               pp = pp + ps%deadcrootp_xfer_patch(p)
+               ps%deadcrootp_xfer_patch(p) = 0._r8
+            end if
+
+            ! gresp_storage (C only)
+            if (abs(cs%gresp_storage_patch(p)) < ccrit) then
+               pc = pc + cs%gresp_storage_patch(p)
+               cs%gresp_storage_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%gresp_storage_patch(p)
+                  c13cs%gresp_storage_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%gresp_storage_patch(p)
+                  c14cs%gresp_storage_patch(p) = 0._r8
+               endif
+            end if
+
+            ! gresp_xfer(c only)
+            if (abs(cs%gresp_xfer_patch(p)) < ccrit) then
+               pc = pc + cs%gresp_xfer_patch(p)
+               cs%gresp_xfer_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%gresp_xfer_patch(p)
+                  c13cs%gresp_xfer_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%gresp_xfer_patch(p)
+                  c14cs%gresp_xfer_patch(p) = 0._r8
+               endif
+            end if
+
+            ! cpool (C only)
+            if (abs(cs%cpool_patch(p)) < ccrit) then
+               pc = pc + cs%cpool_patch(p)
+               cs%cpool_patch(p) = 0._r8
+               if ( use_c13 ) then
+                  pc13 = pc13 + c13cs%cpool_patch(p)
+                  c13cs%cpool_patch(p) = 0._r8
+               endif
+               if ( use_c14 ) then
+                  pc14 = pc14 + c14cs%cpool_patch(p)
+                  c14cs%cpool_patch(p) = 0._r8
+               endif
+            end if
+
+            if ( crop_prog .and. pft%itype(p) >= nc3crop )then
+               ! xsmrpool (C only)
+               if (abs(cs%xsmrpool_patch(p)) < ccrit) then
+                  pc = pc + cs%xsmrpool_patch(p)
+                  cs%xsmrpool_patch(p) = 0._r8
+               end if
+            end if
+
+            ! retransn (N only)
+            if (abs(ns%retransn_patch(p)) < ncrit) then
+               pn = pn + ns%retransn_patch(p)
+               ns%retransn_patch(p) = 0._r8
+            end if
+
+            ! retransp (P only)
+            if (abs(ps%retransp_patch(p)) < pcrit) then
+               pp = pp + ps%retransp_patch(p)
+               ps%retransp_patch(p) = 0._r8
+            end if
+
+            ! npool (N only)
+            if (abs(ns%npool_patch(p)) < ncrit) then
+               pn = pn + ns%npool_patch(p)
+               ns%npool_patch(p) = 0._r8
+            end if
+
+            ! ppool (P only)
+            if (abs(ps%ppool_patch(p)) < pcrit) then
+               pp = pp + ps%ppool_patch(p)
+               ps%ppool_patch(p) = 0._r8
+            end if
+
+            cs%ctrunc_patch(p) = cs%ctrunc_patch(p) + pc
+            ns%ntrunc_patch(p) = ns%ntrunc_patch(p) + pn
+            ps%ptrunc_patch(p) = ps%ptrunc_patch(p) + pp
+
+            if ( use_c13 ) then
+               c13cs%ctrunc_patch(p) = c13cs%ctrunc_patch(p) + pc13
+            endif
+            if ( use_c14 ) then
+               c14cs%ctrunc_patch(p) = c14cs%ctrunc_patch(p) + pc14
+            endif
+
+         end do ! end of pft loop
+      end if ! end of if(not.use_ed)
 
       if (.not. is_active_betr_bgc) then
 
@@ -688,8 +690,10 @@ contains
                   if (abs(cs%decomp_cpools_vr_col(c,j,k)) < ccrit) then
                      cc = cc + cs%decomp_cpools_vr_col(c,j,k)
                      cs%decomp_cpools_vr_col(c,j,k) = 0._r8
-                     cn = cn + ns%decomp_npools_vr_col(c,j,k)
-                     ns%decomp_npools_vr_col(c,j,k) = 0._r8
+                     if (.not.use_ed) then
+                        cn = cn + ns%decomp_npools_vr_col(c,j,k)
+                        ns%decomp_npools_vr_col(c,j,k) = 0._r8
+                     endif
                      if ( use_c13 ) then
                         cc13 = cc13 + c13cs%decomp_cpools_vr_col(c,j,k)
                         c13cs%decomp_cpools_vr_col(c,j,k) = 0._r8
@@ -706,7 +710,9 @@ contains
                ! be getting the N truncation flux anyway.
 
                cs%ctrunc_vr_col(c,j) = cs%ctrunc_vr_col(c,j) + cc
-               ns%ntrunc_vr_col(c,j) = ns%ntrunc_vr_col(c,j) + cn
+               if (.not.use_ed) then
+                  ns%ntrunc_vr_col(c,j) = ns%ntrunc_vr_col(c,j) + cn
+               endif
                if ( use_c13 ) then
                   c13cs%ctrunc_vr_col(c,j) = c13cs%ctrunc_vr_col(c,j) + cc13
                endif

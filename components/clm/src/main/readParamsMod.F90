@@ -5,8 +5,8 @@ module readParamsMod
   ! Read parameters
   ! module used to read parameters for individual modules
   !
-  use clm_varctl   , only: use_cn, use_century_decomp, use_nitrif_denitrif, &
-                           use_lch4
+  use clm_varctl   , only: use_cn, use_century_decomp, use_nitrif_denitrif
+  use clm_varctl   , only: use_lch4, use_ed
   implicit none
   save
   private
@@ -121,40 +121,46 @@ contains
     if(use_betr)then
       call bgc_reaction%readParams(ncid, betrtracer_vars)   
     endif
+
+    !
+    ! populate each module with private parameters
+    !       
+    if (use_cn .and. is_active_betr_bgc) then
+       call readCNAllocBetrParams(ncid) 
+    end if
+
+    if ( (use_cn .or. use_ed) .and. .not.is_active_betr_bgc ) then
+
+       call readCNAllocParams(ncid)
+       call readCNDecompParams(ncid)
+       if (use_century_decomp) then
+          call readCNDecompBgcParams(ncid)
+       else
+          call readCNDecompCnParams(ncid)
+       end if
+       
+       
+       if (use_nitrif_denitrif) then
+          call readCNNitrifDenitrifParams(ncid)
+       end if
+
+       call readCNSoilLittVertTranspParams(ncid)
+       
+       if (use_lch4) then
+          call readCH4Params (ncid)
+       end if
+    end if
+
+    if (use_ed) then
+       !! (FATES-INTERF)
+       !!       call FatesReadParameters()
+    end if
     
     if (use_cn) then
-       !
-       ! populate each module with private parameters
-       !       
-       if (is_active_betr_bgc)then
-
-          call readCNAllocBetrParams(ncid) 
-
-       else
-          call readCNAllocParams(ncid)
-
-          call readCNDecompParams(ncid)
-          if (use_century_decomp) then
-            call readCNDecompBgcParams(ncid)
-          else
-            call readCNDecompCnParams(ncid)
-          end if
-          if (use_nitrif_denitrif) then
-            call readCNNitrifDenitrifParams(ncid)
-          end if
-
-          call readCNSoilLittVertTranspParams(ncid)
-
-          if (use_lch4) then
-            call readCH4Params (ncid)
-          end if
-       endif
-       
        call readCNPhenolParams(ncid)
        call readCNMRespParams (ncid)
        call readCNNDynamicsParams (ncid)
        call readCNGapMortParams (ncid)
-
     end if
 
     !
@@ -162,5 +168,5 @@ contains
     !
     call ncd_pio_closefile(ncid)
 
-  end subroutine readPrivateParameters
+ end subroutine readPrivateParameters
 end module readParamsMod
