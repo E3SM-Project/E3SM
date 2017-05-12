@@ -654,10 +654,10 @@ sub write_filepath_cesmbld
                      "biogeophys/vsfm",
 		     "biogeochem", 
 		     "dyn_subgrid",
-		     "fates/main",
-		     "fates/biogeophys",
-		     "fates/biogeochem",
-		     "fates/fire",
+		     "external_models/fates/main",
+		     "external_models/fates/biogeophys",
+		     "external_models/fates/biogeochem",
+		     "external_models/fates/fire",
 		     "utils", 
 		     "cpl" );
 
