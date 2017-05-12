@@ -211,7 +211,7 @@ contains
     character(len=:), allocatable :: frac_fields
     character(len=:), allocatable :: topo_fields
 
-    character(len=*), parameter :: subname = '(prep_glc_set_g2x_lx_fields')
+    character(len=*), parameter :: subname = '(prep_glc_set_g2x_lx_fields)'
     !---------------------------------------------------------------
 
     all_elevclass_strings = glc_all_elevclass_strings(include_zero = .true.)
