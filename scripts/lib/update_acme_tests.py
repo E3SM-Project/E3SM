@@ -109,7 +109,7 @@ _TEST_SUITES = {
                          "ERS.f09_g16_g.MPASLISIA",
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
                          "SMS.f09_g16_a.IGCLM45_MLI",
-                        ("ERS_Ld5_P8x4.ne4_ne4.FC5AV1C-L", "cam-cosplite"),
+                        ("SMS_Ln5.ne4_ne4.FC5AV1C-L", "cam-cosplite"),
                          "SMS_D_Ln5.ne16_ne16.FC5AV1F",
                          "SMS_D_Ln5.ne16_ne16.FC5AV1C",
                          "SMS_D_Ln5.ne16_ne16.FC5AV1C-01",
