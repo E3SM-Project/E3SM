@@ -17,30 +17,47 @@ from acme_diags.driver import utils
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     """ Creates the mean, max, min, rmse, corr in a dictionary """
-    #print ref.getAxisList()
-    #print test.getAxisList()
-    #print diff.getAxisList()
 
     lev = ref.getLevel()
-    '''
-    print lev
-    print '-'*20
-    print dir(lev)
-    print '-'*20
-    print type(lev)
+    lev.getBounds()
     lev.setBounds(None)
-    print '-'*20
-    print lev
-    quit()
-    '''
+    lev.getBounds()
+    cdms2.setAutoBounds(1)
+    lev.setBounds(None)
+    lev.getBounds()
+
     lev = test.getLevel()
+    lev.getBounds()
     lev.setBounds(None)
-    lev = ref_regrid.getLevel()
+    lev.getBounds()
+    cdms2.setAutoBounds(1)
     lev.setBounds(None)
+    lev.getBounds()
+
     lev = test_regrid.getLevel()
+    lev.getBounds()
     lev.setBounds(None)
+    lev.getBounds()
+    cdms2.setAutoBounds(1)
+    lev.setBounds(None)
+    lev.getBounds()
+
+    lev = ref_regrid.getLevel()
+    lev.getBounds()
+    lev.setBounds(None)
+    lev.getBounds()
+    cdms2.setAutoBounds(1)
+    lev.setBounds(None)
+    lev.getBounds()
+
     lev = diff.getLevel()
+    lev.getBounds()
     lev.setBounds(None)
+    lev.getBounds()
+    cdms2.setAutoBounds(1)
+    lev.setBounds(None)
+    lev.getBounds()
+
 
     metrics_dict = {}
     metrics_dict['ref'] = {
