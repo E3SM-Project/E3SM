@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Change next four lines to your paths
+export ACME_ROOT=$HOME/Climate/Implicit/ACME
+NP=4
+NLEVELS=26
+NTRACERS=0
+
+# Start Build #
+export HOMME_ROOT=$ACME_ROOT/components/homme
+
+# machine specific settings
+source $HOMME_ROOT/compile_scripts/cab/env_mach_specific.cpu
+rc=$?
+if [[ $rc != 0 ]]; then 
+    exit $rc 
+fi
+
+rm -rf $HOMME_ROOT/compile_scripts/cab/build
+mkdir -p $HOMME_ROOT/compile_scripts/cab/build || exit -1
+cd $HOMME_ROOT/compile_scripts/cab/build
+
+cmake \
+    -C $HOMME_ROOT/cmake/machineFiles/cab.cmake \
+    \
+    -D CMAKE_Fortran_COMPILER=mpif90            \
+    -D CMAKE_C_COMPILER=mpicc                   \
+    -D CMAKE_CXX_COMPILER=mpicxx                \
+    \
+    -D NETCDF_DIR=$NETCDF                       \
+    -D WITH_PNETCDF=FALSE                       \
+    -D HDF5_DIR=$HDF5                           \
+    -D HOMME_FIND_BLASLAPACK=TRUE               \
+    \
+    -D PREQX_NP=$NP                             \
+    -D PREQX_PLEV=$NLEVELS                      \
+    -D QSIZE_D=$NTRACERS                        \
+    \
+    -D BUILD_HOMME_PRIM=FALSE                   \
+    -D BUILD_HOMME_SWIM=FALSE                   \
+    -D BUILD_HOMME_SWEQX=FALSE                  \
+    -D BUILD_HOMME_PREQX=TRUE                   \
+    -D BUILD_HOMME_PREQX_ACC=FALSE              \
+    -D ENABLE_OPENMP=FALSE                      \
+    -D ENABLE_OPENACC=FALSE                     \
+    \
+    -D HOMME_PROJID=climalg                     \
+    \
+    $HOMME_ROOT                                               
+
+make -j $1 preqx || exit -1
+
+
+    # -D OPT_FLAGS="-O2"                           \
+    # -D CMAKE_CXX_FLAGS="-c11"                    \
+
