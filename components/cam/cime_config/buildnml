@@ -43,6 +43,7 @@ my $UTILROOT		= `./xmlquery  UTILROOT			-value`;
 my $DOCN_MODE		= `./xmlquery  DOCN_MODE		-value`;
 my $COMPILER		= `./xmlquery  COMPILER                 -value`; # for chem preprocessor 
 my $BUILD_THREADED      = `./xmlquery  BUILD_THREADED		-value`;
+my $OS                  = lc `./xmlquery OS                     -value`;
 
 my @dirs = ("$CIMEROOT/utils/perl5lib");
 unshift @INC, @dirs;
@@ -98,7 +99,7 @@ if ($BUILD_COMPLETE eq 'FALSE') {
 	$nlev="-nlev $3";
     }
 
-    $sysmod = "$SRCROOT/components/cam/bld/configure -s -ccsm_seq -ice none -ocn $ocn -comp_intf $comp $scm -spmd $spmd -smp $smp -dyn $CAM_DYCORE -dyn_target $CAM_TARGET -res $ATM_GRID $nlev $CAM_LIB_DIRS $CAM_CONFIG_OPTS";
+    $sysmod = "$SRCROOT/components/cam/bld/configure -s -ccsm_seq -ice none -ocn $ocn -comp_intf $comp $scm -spmd $spmd -smp $smp -dyn $CAM_DYCORE -dyn_target $CAM_TARGET -res $ATM_GRID $nlev $CAM_LIB_DIRS $CAM_CONFIG_OPTS -target_os $OS";
     system($sysmod) == 0 or die "ERROR cam.buildnml: $sysmod failed: $?\n";
 
 } else {
