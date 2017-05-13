@@ -255,20 +255,14 @@ def _create_component_modelio_namelists(case, files):
             config['component'] = model
             entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=True)
 
-            if model == 'cpl':
-                inst_count = 1
-            else:
-                inst_count = case.get_value("NINST_" + model.upper())
+            inst_count = case.get_value("NINST_" + model.upper())
 
+            inst_string = ""
             inst_index = 1
             while inst_index <= inst_count:
-                inst_string = inst_index
-                if inst_index <= 999:
-                    inst_string = "0" + str(inst_string)
-                if inst_index <=  99:
-                    inst_string = "0" + str(inst_string)
-                if inst_index <=  9:
-                    inst_string = "0" + str(inst_string)
+                # determine instance string
+                if inst_count > 1:
+                    inst_string = '_%04d' % inst_index
 
                 # set default values
                 for entry in entries:
@@ -281,17 +275,11 @@ def _create_component_modelio_namelists(case, files):
                 moddiro = case.get_value('RUNDIR')
                 nmlgen.set_value('diro', moddiro)
 
-                if inst_count > 1:
-                    logfile = model + "_" + inst_string + ".log." + str(lid)
-                else:
-                    logfile = model + ".log." + str(lid)
+                logfile = model + inst_string + ".log." + str(lid)
                 nmlgen.set_value('logfile', logfile)
 
                 # Write output file
-                if inst_count > 1:
-                    modelio_file = model + "_modelio.nml_" + str(inst_string)
-                else:
-                    modelio_file = model + "_modelio.nml"
+                modelio_file = model + "_modelio.nml" + inst_string
                 nmlgen.write_modelio_file(os.path.join(confdir, modelio_file))
 
                 inst_index = inst_index + 1

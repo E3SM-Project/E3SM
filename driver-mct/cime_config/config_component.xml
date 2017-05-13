@@ -1952,6 +1952,7 @@
   <entry id="NINST">
     <type>integer</type>
     <values>
+      <value component="CPL">1</value>
       <value component="ATM">1</value>
       <value component="OCN">1</value>
       <value component="WAV">1</value>

@@ -198,7 +198,7 @@ contains
   end function seq_comm_get_ncomps
 
 
-  subroutine seq_comm_init(Comm_in, nmlfile)
+  subroutine seq_comm_init(Comm_in, nmlfile, Comm_ID)
 
     !----------------------------------------------------------
     !
@@ -206,6 +206,7 @@ contains
     implicit none
     integer, intent(in) :: Comm_in
     character(len=*), intent(IN) :: nmlfile
+    integer, optional, intent(in) :: Comm_ID
     !
     ! Local variables
     !

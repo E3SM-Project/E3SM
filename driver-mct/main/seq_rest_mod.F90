@@ -285,7 +285,7 @@ end subroutine seq_rest_read
 subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
      atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
      fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-     fractions_rx, fractions_gx, fractions_wx)
+     fractions_rx, fractions_gx, fractions_wx, tag)
 
    implicit none
 
@@ -307,6 +307,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
    type(mct_aVect)        , intent(inout) :: fractions_rx(:)   ! Fractions on rof grid/decomp
    type(mct_aVect)        , intent(inout) :: fractions_gx(:)   ! Fractions on glc grid/decomp
    type(mct_aVect)        , intent(inout) :: fractions_wx(:)   ! Fractions on wav grid/decomp
+   character(len=*), optional, intent(in) :: tag
 
    integer(IN)   :: n,n1,n2,n3,fk
    integer(IN)   :: curr_ymd         ! Current date YYYYMMDD
@@ -367,8 +368,13 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
 
    call seq_timemgr_EClockGetData( EClock_d, curr_ymd=curr_ymd, curr_tod=curr_tod)
    call shr_cal_date2ymd(curr_ymd,yy,mm,dd)
-   write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-      trim(case_name), '.cpl.r.', yy,'-',mm,'-',dd,'-',curr_tod,'.nc'
+   if (present(tag)) then   
+      write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+         trim(case_name), '.cpl'//trim(tag)//'.r.',yy,'-',mm,'-',dd,'-',curr_tod,'.nc'
+   else
+      write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+         trim(case_name), '.cpl.r.', yy,'-',mm,'-',dd,'-',curr_tod,'.nc'
+   end if
 
    ! Write driver data to restart file
 
