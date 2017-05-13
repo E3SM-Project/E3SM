@@ -635,7 +635,6 @@ class Case(object):
 
         self.clean_up_lookups()
 
-
     def _setup_mach_pes(self, pecount, ncouplers, ninst, machine_name, mpilib):
         #--------------------------------------------
         # pe layout
