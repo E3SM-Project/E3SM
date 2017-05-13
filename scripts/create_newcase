@@ -46,6 +46,10 @@ OR
                         help="Specify a compiler. "
                         "To see list of supported compilers for each machine, use the utility query_config in this directory")
 
+    parser.add_argument("--ncouplers",default=1,
+                        help="Specify number of coupler instances. "
+                        "Set the number of coupler instances in the case.")
+
     parser.add_argument("--ninst",default=1,
                         help="Specify number of component instances"
                         "Set the number of component instances in the case.")
@@ -142,6 +146,9 @@ OR
         expect(args.gridfile is not None,
                "User grid specification file must be set if the user grid is requested")
 
+    expect(not (int(args.ncouplers) > 1 and int(args.ninst) > 1),
+           "Only one component instance per coupler is allowed when using multiple couplers")
+
     run_unsupported = False
     if model == "cesm":
         run_unsupported = args.run_unsupported
@@ -155,7 +162,8 @@ OR
     return args.case, args.compset, args.res, args.machine, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.user_mods_dir, args.pesfile, \
-        args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst, \
+        args.user_grid, args.gridfile, args.srcroot, args.test, args.ncouplers, \
+        args.ninst, \
         args.walltime, args.queue, args.output_root, args.script_root, \
         run_unsupported, args.answer, args.input_dir
 
@@ -167,7 +175,7 @@ def _main_func(description):
     casename, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
         user_mods_dir, pesfile, \
-        user_grid, gridfile, srcroot, test, ninst, walltime, queue, \
+        user_grid, gridfile, srcroot, test, ncouplers, ninst, walltime, queue, \
         output_root, script_root, run_unsupported, \
         answer, input_dir = parse_command_line(sys.argv, cimeroot, description)
 
@@ -187,9 +195,11 @@ def _main_func(description):
 
     with Case(caseroot, read_only=False) as case:
         # Configure the Case
-        case.create(casename, srcroot, compset, grid, user_mods_dir=user_mods_dir, machine_name=machine, project=project,
+        case.create(casename, srcroot, compset, grid, user_mods_dir=user_mods_dir,
+                    machine_name=machine, project=project,
                     pecount=pecount, compiler=compiler, mpilib=mpilib,
-                    pesfile=pesfile,user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
+                    pesfile=pesfile,user_grid=user_grid, gridfile=gridfile,
+                    ncouplers=ncouplers, ninst=ninst, test=test,
                     walltime=walltime, queue=queue, output_root=output_root,
                     run_unsupported=run_unsupported, answer=answer,
                     input_dir=input_dir)

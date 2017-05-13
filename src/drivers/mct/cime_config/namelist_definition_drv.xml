@@ -41,6 +41,22 @@
   -->
 
   <!-- =========================== -->
+  <!-- group cesm_cpl              -->
+  <!-- =========================== -->
+
+  <entry id="cpl_ninst" modify_via_xml="NINST_CPL">
+    <type>integer</type>
+    <category>cesm_cpl</category>
+    <group>cesm_cpl</group>
+    <desc>
+      Number of CESM coupler instances.
+    </desc>
+    <values>
+      <value>$NINST_CPL</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
   <!-- group seq_cplflds_inparm    -->
   <!-- =========================== -->
 

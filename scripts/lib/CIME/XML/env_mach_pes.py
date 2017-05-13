@@ -63,6 +63,7 @@ class EnvMachPes(EnvBase):
             pstrid = self.get_value("PSTRID", attribute={"component":comp})
             tt = rootpe + (ntasks - 1) * pstrid + 1
             total_tasks = max(tt, total_tasks)
+        total_tasks *= self.get_value("NINST_CPL")
         return total_tasks
 
     def get_tasks_per_node(self, total_tasks, max_thread_count):

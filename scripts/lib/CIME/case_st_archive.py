@@ -39,8 +39,9 @@ def _get_datenames(case, last_date=None):
     rundir = case.get_value('RUNDIR')
     expect(isdir(rundir), 'Cannot open directory {} '.format(rundir))
     casename = case.get_value("CASE")
-    files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl.r*.nc')))
-
+    files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl*.r*.nc')))
+    if not files:
+        expect(False, 'Cannot find a {}.cpl*.r.*.nc file in directory {} '.format(casename, rundir))
     datenames = []
     for filename in files:
         names = filename.split('.')
@@ -59,10 +60,7 @@ def _get_datenames(case, last_date=None):
 def _get_ninst_info(case, compclass):
 ###############################################################################
 
-    if compclass != 'cpl':
-        ninst = case.get_value('NINST_' + compclass.upper())
-    else:
-        ninst = 1
+    ninst = case.get_value('NINST_' + compclass.upper())
     ninst_strings = []
     if ninst is None:
         ninst = 1

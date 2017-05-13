@@ -34,11 +34,13 @@ def _build_usernl_files(case, model, comp):
     expect(os.path.isdir(model_dir),
            "cannot find cime_config directory {} for component {}".format(model_dir, comp))
 
+    ninst = case.get_value("NINST_CPL")
     if comp == "cpl":
         if not os.path.exists("user_nl_cpl"):
             shutil.copy(os.path.join(model_dir, "user_nl_cpl"), ".")
     else:
-        ninst = case.get_value("NINST_{}".format(model))
+        if ninst == 1:
+            ninst = case.get_value("NINST_{}".format(model))
         nlfile = "user_nl_{}".format(comp)
         model_nl = os.path.join(model_dir, nlfile)
         if ninst > 1:

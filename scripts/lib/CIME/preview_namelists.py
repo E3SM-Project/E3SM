@@ -66,6 +66,8 @@ def create_namelists(case, component=None):
     # Create namelists - must have cpl last in the list below
     # Note - cpl must be last in the loop below so that in generating its namelist,
     # it can use xml vars potentially set by other component's buildnml scripts
+    xmlfac = {}
+    cpl_ninst = case.get_value("NINST_CPL")
     models = case.get_values("COMP_CLASSES")
     models += [models.pop(0)]
     for model in models:
@@ -74,8 +76,20 @@ def create_namelists(case, component=None):
         config_dir = os.path.dirname(config_file)
         if model_str == "cpl":
             compname = "drv"
+            complist = [m for m in models if m.upper() != "CPL"]
+            if cpl_ninst > 1:
+                xmlfac = {"NINST" : cpl_ninst, "NTASKS" : 1}
         else:
             compname = case.get_value("COMP_{}".format(model_str.upper()))
+            complist = [model_str.upper()]
+            if cpl_ninst > 1:
+                xmlfac = {"NINST" : cpl_ninst, "NTASKS" : cpl_ninst}
+
+        xmlsave = {}
+        for k in xmlfac.keys():
+            for m in complist:
+                key = "{}_{}" .format(k, m.upper())
+                xmlsave[key] = case.get_value(key)
 
         if component is None or component == model_str:
             # first look in the case SourceMods directory
