@@ -484,7 +484,7 @@ contains
   real (kind=real_kind), intent(out) :: phi(np,np,nlev)
   
   !   local
-  real (kind=real_kind) :: p(np,np,nlev)
+!  real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: p_i(np,np,nlev+1)
   real (kind=real_kind) :: dp_theta_R(np,np,nlev)
   integer :: k
@@ -493,9 +493,9 @@ contains
   do k=1,nlev
      p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
   enddo
-  do k=1,nlev
-     p(:,:,k) = (p_i(:,:,k) + p_i(:,:,k+1))/2
-  enddo
+!  do k=1,nlev
+!     p(:,:,k) = (p_i(:,:,k) + p_i(:,:,k+1))/2
+!  enddo
 
 !  integrand(:,:) = dp(:,:,nlev)*Rgas*temperature(:,:,nlev)/p(:,:,nlev)
   phi(:,:,nlev) = phis(:,:) + (&
