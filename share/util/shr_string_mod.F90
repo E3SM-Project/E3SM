@@ -1,8 +1,4 @@
 !===============================================================================
-! SVN $Id: shr_string_mod.F90 62094 2014-07-23 15:43:17Z muszala $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_150116/shr/shr_string_mod.F90 $
-!===============================================================================
-!===============================================================================
 !BOP ===========================================================================
 !
 ! !MODULE: shr_string_mod -- string and list methods
@@ -445,29 +441,72 @@ subroutine shr_string_leftAlign(str,rc)
    character(*),parameter :: F00     = "('(shr_string_leftAlign) ',4a)"
 
 !-------------------------------------------------------------------------------
-! note:
-! * ?? this routine isn't needed, use the intrisic adjustL instead ??
+!
 !-------------------------------------------------------------------------------
 
    if (debug>1 .and. t01<1) call shr_timer_get(t01,subName)
    if (debug>1) call shr_timer_start(t01)
 
-!  -------------------------------------------------------------------
-!  --- I used this until I discovered the intrinsic function below - BK
-!  do while (len_trim(str) > 0 )
-!     if (str(1:1) /= ' ') exit
-!     str = str(2:len_trim(str))
-!  end do
-!  rCode = 0
-!  !! (len_trim(str) == 0 ) rCode = 1  ! ?? appropriate ??
-!  -------------------------------------------------------------------
+   ! First remove tabs from the string
+   str = shr_string_remove_tabs(str, rc)
 
+   ! Now remove the leading white space
    str = adjustL(str)
+
    if (present(rc)) rc = 0
 
    if (debug>1) call shr_timer_stop (t01)
 
 end subroutine shr_string_leftAlign
+
+
+!===============================================================================
+!BOP ===========================================================================
+!
+! !IROUTINE: shr_string_remove_tabs -- remove all tabs from a string
+!
+! !DESCRIPTION:
+!    Remove all tabs from a string
+!
+! !REVISION HISTORY:
+!     2017-May- - M. Vertenstein
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+function shr_string_remove_tabs(str_input,rc) result(str_output)
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   character(len=*)    ,intent(in)             :: str_input
+   integer(SHR_KIND_IN),intent(out)  ,optional :: rc   ! return code
+   character(len=len(str_input))               :: str_output
+!EOP
+
+   !----- local ----
+   integer(SHR_KIND_IN) :: rCode              ! return code
+   integer(SHR_KIND_IN) :: index, inlength, i ! temporaries
+
+   !----- formats -----
+   character(*),parameter :: subName =   "(shr_string_remove_tabs) "
+   character(*),parameter :: F00     = "('(shr_string_remove_tabs) ',4a)"
+
+   ! note that tab is achar(9)
+   index = 0
+   inlength = len(str_input)
+   str_output = ''
+   do i = 1, inlength
+      if (str_input(i:i) /= achar(9)) then
+         index = index + 1
+         str_output(index:index) = str_input(i:i)
+      end if
+   end do
+   str_output(index+1:inlength) = ''
+   
+   if (present(rc)) rc = 0
+
+ end function shr_string_remove_tabs
 
 !===============================================================================
 !BOP ===========================================================================
