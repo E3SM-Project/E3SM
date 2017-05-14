@@ -310,16 +310,16 @@
     <values>
       <value docn_mode="null">NULL</value>
       <value docn_mode="prescribed">SSTDATA</value>
-      <value docn_mode="sst_aquap1">SST_AQUAP1</value>
-      <value docn_mode="sst_aquap2">SST_AQUAP2</value>
-      <value docn_mode="sst_aquap3">SST_AQUAP3</value>
-      <value docn_mode="sst_aquap4">SST_AQUAP4</value>
-      <value docn_mode="sst_aquap5">SST_AQUAP5</value>
-      <value docn_mode="sst_aquap6">SST_AQUAP6</value>
-      <value docn_mode="sst_aquap7">SST_AQUAP7</value>
-      <value docn_mode="sst_aquap8">SST_AQUAP8</value>
-      <value docn_mode="sst_aquap9">SST_AQUAP9</value>
-      <value docn_mode="sst_aquap10">SST_AQUAP10</value>
+      <value docn_mode="sst_aquap1$">SST_AQUAP1</value>
+      <value docn_mode="sst_aquap2$">SST_AQUAP2</value>
+      <value docn_mode="sst_aquap3$">SST_AQUAP3</value>
+      <value docn_mode="sst_aquap4$">SST_AQUAP4</value>
+      <value docn_mode="sst_aquap5$">SST_AQUAP5</value>
+      <value docn_mode="sst_aquap6$">SST_AQUAP6</value>
+      <value docn_mode="sst_aquap7$">SST_AQUAP7</value>
+      <value docn_mode="sst_aquap8$">SST_AQUAP8</value>
+      <value docn_mode="sst_aquap9$">SST_AQUAP9</value>
+      <value docn_mode="sst_aquap10$">SST_AQUAP10</value>
       <value docn_mode="som$">SOM</value>
       <value docn_mode="som_aquap">SOM_AQUAP</value>
       <value docn_mode="interannual">IAF</value>
