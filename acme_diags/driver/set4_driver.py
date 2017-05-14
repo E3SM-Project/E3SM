@@ -18,45 +18,21 @@ from acme_diags.driver import utils
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     """ Creates the mean, max, min, rmse, corr in a dictionary """
 
-    lev = ref.getLevel()
-    lev.getBounds()
-    lev.setBounds(None)
-    lev.getBounds()
     cdms2.setAutoBounds(1)
+    lev = ref.getLevel()
     lev.setBounds(None)
-    lev.getBounds()
 
     lev = test.getLevel()
-    lev.getBounds()
     lev.setBounds(None)
-    lev.getBounds()
-    cdms2.setAutoBounds(1)
-    lev.setBounds(None)
-    lev.getBounds()
 
     lev = test_regrid.getLevel()
-    lev.getBounds()
     lev.setBounds(None)
-    lev.getBounds()
-    cdms2.setAutoBounds(1)
-    lev.setBounds(None)
-    lev.getBounds()
 
     lev = ref_regrid.getLevel()
-    lev.getBounds()
     lev.setBounds(None)
-    lev.getBounds()
-    cdms2.setAutoBounds(1)
-    lev.setBounds(None)
-    lev.getBounds()
 
     lev = diff.getLevel()
-    lev.getBounds()
     lev.setBounds(None)
-    lev.getBounds()
-    cdms2.setAutoBounds(1)
-    lev.setBounds(None)
-    lev.getBounds()
 
 
     metrics_dict = {}
@@ -97,6 +73,8 @@ def run_diag(parameter):
     regions = parameter.regions
 
     for season in seasons:
+        print test_data_path
+        print reference_data_path
         if hasattr(parameter, 'test_path'):
             filename1 = parameter.test_path
             print filename1
@@ -169,6 +147,7 @@ def run_diag(parameter):
             if mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
                 #plev = parameter.plevs
                 plev = numpy.logspace(2.0, 3.0, num=17)
+                #plev = [30.,50.,70.,100.,150.,200.,250.,300.,400.,500.,600.,700.,775.,850.,925.,1000.]
                 print 'selected pressure level', plev
                 f_ins = [f_mod, f_obs]
                 for f_ind, mv in enumerate([mv1,mv2]):
@@ -181,6 +160,7 @@ def run_diag(parameter):
                         ps = f_in('PS')   #Pa 
 
                         mv_p = utils.hybrid_to_plevs(mv, hyam, hybm, ps, plev)
+                        print 'tt4'
                     
                     elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1:  # levels are presure levels 
                         mv_p = utils.pressure_to_plevs(mv, plev)
@@ -200,6 +180,7 @@ def run_diag(parameter):
                 parameter.main_title = str(
                     ' '.join([var, season]))
 
+                print 'setttttttt4'
                 # Regrid towards lower resolution of two variables for
                 # calculafor_hsiyen/ting difference
                 if len(mv1_p.getLatitude()) <= len(mv2_p.getLatitude()):

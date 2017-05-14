@@ -68,6 +68,7 @@ if __name__ == '__main__':
             else:
                 print('Plot set {} is not supported yet. Please give us time.'.format(pset))
                 quit()
+            print ('Start to run ACME diags')
             run_diag(parameter)
 
     create_viewer(original_parameter.results_dir, parameters, 'png')
