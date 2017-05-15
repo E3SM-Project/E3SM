@@ -125,10 +125,11 @@ subroutine readiopdata( )
 !------------------------------Locals-----------------------------------
 !     
    integer NCID, status
-   integer time_dimID, lev_dimID,  lev_varID
+   integer time_dimID, lev_dimID,lev_varID,mod_dimID,&
+           mod_varID,sps_varID,sps_dimID
    integer tsec_varID, bdate_varID,varid
    integer i,j
-   integer nlev
+   integer nlev, nmod, nsps
    integer total_levs
 
    integer bdate, ntime
@@ -141,6 +142,7 @@ subroutine readiopdata( )
    logical fill_ends             ! 
    logical have_cnst(pcnst)
    real(r8), allocatable :: dplevs( : )
+   integer, allocatable :: dmods( : )
    real(r8) dummy
    real(r8) lat,xlat
    real(r8) srf(1)                  ! value at surface
@@ -232,6 +234,125 @@ subroutine readiopdata( )
 
    call handle_ncerr( nf90_get_var (ncid, lev_varID, dplevs(:nlev)),&
                     'readiopdata.F90', __LINE__)
+
+! =====================================================
+!     read observed aersol data
+ 
+ if(scm_observed_aero) then
+   status = NF90_INQ_DIMID( ncid, 'mod', mod_dimID )
+   if ( status .ne. nf90_noerr ) then
+      write(iulog,* )'ERROR - readiopdata.F:Could not find variable dim ID  for lev'
+      status = NF90_CLOSE ( ncid )
+      return
+   end if
+
+   call handle_ncerr( nf90_inquire_dimension( ncid, mod_dimID, len=nmod ),&
+         'readiopdata.F90', __LINE__)
+
+   status = NF90_INQ_DIMID( ncid, 'sps', sps_dimID )
+   if ( status .ne. nf90_noerr ) then
+      write(iulog,* )'ERROR - readiopdata.F:Could not find variable dim ID  for sps'
+      status = NF90_CLOSE ( ncid )
+      return
+   end if
+
+   call handle_ncerr( nf90_inquire_dimension( ncid, sps_dimID, len=nsps ),&
+         'readiopdata.F90', __LINE__)
+
+   if (.not.allocated(dmods)) then
+      allocate(dmods(nmod))
+      dmods=-999
+   end if
+   if (.not.allocated(scm_num)) then
+      allocate(scm_num(nmod))
+      scm_num= 1.0e30_R8
+   end if
+   if (.not.allocated(scm_dgnum)) then
+      allocate(scm_dgnum(nmod))
+      scm_dgnum= 1.0e30_R8
+   end if
+   if (.not.allocated(scm_std)) then
+      allocate(scm_std(nmod))
+      scm_std= 1.0e30_R8
+   end if
+   if (.not.allocated(scm_div)) then
+      allocate(scm_div(nmod,nsps))
+      scm_div= 1.0e30_R8
+   end if
+   
+  status = NF90_INQ_VARID( ncid, 'mod', mod_varID )
+   if ( status .ne. nf90_noerr ) then
+      write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
+      status = NF90_CLOSE ( ncid )
+      return
+   end if
+
+   call handle_ncerr( nf90_get_var (ncid, mod_varID, dmods(:nmod)),&
+                    'readiopdata.F90', __LINE__)
+
+status = NF90_INQ_VARID( ncid, 'scm_num', mod_varID )
+   if ( status .ne. nf90_noerr ) then
+      write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
+      status = NF90_CLOSE ( ncid )
+      return
+   end if
+
+   call handle_ncerr( nf90_get_var (ncid, mod_varID, scm_num(:nmod)),&
+                    'readiopdata.F90', __LINE__)
+  
+status = NF90_INQ_VARID( ncid, 'scm_diam', mod_varID )
+   if ( status .ne. nf90_noerr ) then
+      write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
+      status = NF90_CLOSE ( ncid )
+      return
+   end if
+
+   call handle_ncerr( nf90_get_var (ncid, mod_varID, scm_dgnum(:nmod)),&
+                    'readiopdata.F90', __LINE__)
+
+status = NF90_INQ_VARID( ncid, 'scm_std', mod_varID )
+   if ( status .ne. nf90_noerr ) then
+      write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
+      status = NF90_CLOSE ( ncid )
+      return
+   end if
+
+   call handle_ncerr( nf90_get_var (ncid, mod_varID, scm_std(:nmod)),&
+                    'readiopdata.F90', __LINE__)
+
+status = NF90_INQ_VARID( ncid, 'scm_accum_div', sps_varID )
+   if ( status .ne. nf90_noerr ) then
+      write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
+      status = NF90_CLOSE ( ncid )
+      return
+   end if
+
+   call handle_ncerr( nf90_get_var (ncid, sps_varID, scm_div(1,:nsps)),&
+                    'readiopdata.F90', __LINE__)
+
+
+status = NF90_INQ_VARID( ncid, 'scm_aitken_div', sps_varID )
+   if ( status .ne. nf90_noerr ) then
+      write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
+      status = NF90_CLOSE ( ncid )
+      return
+   end if
+
+   call handle_ncerr( nf90_get_var (ncid, sps_varID, scm_div(2,:nsps)),&
+                    'readiopdata.F90', __LINE__)
+
+status = NF90_INQ_VARID( ncid, 'scm_coarse_div', sps_varID )
+   if ( status .ne. nf90_noerr ) then
+      write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
+      status = NF90_CLOSE ( ncid )
+      return
+   end if
+
+   call handle_ncerr( nf90_get_var (ncid, sps_varID, scm_div(3,:nsps)),&
+                    'readiopdata.F90', __LINE__)
+
+endif !scm_observed_aero 
+!======================================================================
 !
 !CAM generated forcing already has pressure on millibars
 !

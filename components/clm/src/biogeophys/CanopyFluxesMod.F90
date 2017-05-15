@@ -468,15 +468,6 @@ contains
       call photosyns_vars%TimeStepInit(bounds)
 
 
-      
-      if (use_ed) then
-         ! (FATES-INTERF) put error call, flag for development
-         call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
-!!         call clm_fates%prep_canopyfluxes(nc, fn, filterp, photosyns_inst)
-      end if
-
-
-
       ! -----------------------------------------------------------------
       ! Filter patches where frac_veg_nosno IS NON-ZERO
       ! -----------------------------------------------------------------
@@ -489,6 +480,14 @@ contains
             filterp(fn) = p
          end if
       end do
+
+
+      if (use_ed) then
+         ! (FATES-INTERF) put error call, flag for development
+         call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
+!!         call clm_fates%prep_canopyfluxes(nc, fn, filterp, photosyns_inst)
+      end if
+
 
       ! Initialize
 

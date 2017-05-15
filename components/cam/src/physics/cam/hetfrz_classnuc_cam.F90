@@ -729,6 +729,7 @@ subroutine hetfrz_classnuc_cam_calc( &
    real(r8) :: numice10s(pcols,pver)
    real(r8) :: numice10s_imm_dst(pcols,pver)
    real(r8) :: numice10s_imm_bc(pcols,pver)
+   real(r8) :: tmp_array(state%ncol,pver)
 
    real(r8) :: na500(pcols,pver)
    real(r8) :: tot_na500(pcols,pver)
@@ -962,9 +963,12 @@ subroutine hetfrz_classnuc_cam_calc( &
    call outfld('BCFREZCNT', nnucct_bc, pcols, lchnk)
    call outfld('BCFREZDEP', nnudep_bc, pcols, lchnk)
 
-   call outfld('NIMIX_IMM', niimm_bc+niimm_dst, pcols, lchnk)
-   call outfld('NIMIX_CNT', nicnt_bc+nicnt_dst, pcols, lchnk)   
-   call outfld('NIMIX_DEP', nidep_bc+nidep_dst, pcols, lchnk)
+   tmp_array = niimm_bc(:ncol,:)+niimm_dst(:ncol,:)
+   call outfld('NIMIX_IMM', tmp_array, ncol, lchnk)
+   tmp_array = nicnt_bc(:ncol,:)+nicnt_dst(:ncol,:)
+   call outfld('NIMIX_CNT', tmp_array, ncol, lchnk)
+   tmp_array = nidep_bc(:ncol,:)+nidep_dst(:ncol,:)
+   call outfld('NIMIX_DEP', tmp_array, ncol, lchnk)
 
    call outfld('DSTNICNT', nicnt_dst, pcols, lchnk)
    call outfld('DSTNIDEP', nidep_dst, pcols, lchnk)
@@ -974,9 +978,9 @@ subroutine hetfrz_classnuc_cam_calc( &
    call outfld('BCNIDEP', nidep_bc, pcols, lchnk)
    call outfld('BCNIIMM', niimm_bc, pcols, lchnk)
 
-   call outfld('NUMICE10s', numice10s, pcols, lchnk)
+   call outfld('NUMICE10s',    numice10s,         pcols, lchnk)
    call outfld('NUMIMM10sDST', numice10s_imm_dst, pcols, lchnk)
-   call outfld('NUMIMM10sBC', numice10s_imm_bc, pcols, lchnk)
+   call outfld('NUMIMM10sBC',  numice10s_imm_bc,  pcols, lchnk)
 
    end associate
 

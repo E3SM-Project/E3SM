@@ -1091,7 +1091,7 @@ end subroutine clubb_init_cnst
    real(r8) :: qmin
    real(r8) :: varmu(pcols)
    real(r8) :: varmu2
-   
+
    ! Variables below are needed to compute energy integrals for conservation
    real(r8) :: ke_a(pcols), ke_b(pcols), te_a(pcols), te_b(pcols)
    real(r8) :: wv_a(pcols), wv_b(pcols), wl_b(pcols), wl_a(pcols)
@@ -1147,6 +1147,7 @@ end subroutine clubb_init_cnst
    real(r8) :: es(pcols,pver)
    real(r8) :: qs(pcols,pver)
    real(r8) :: gam(pcols,pver)
+   real(r8) :: tmp_array(state%ncol,pverp)
    real(r8) :: bfact, orgparam, delpavg
    character(len=6) :: choice_radf
    
@@ -2449,17 +2450,25 @@ end subroutine clubb_init_cnst
    call outfld( 'VPWP_CLUBB',       vpwp,                    pcols, lchnk )
    call outfld( 'WPTHLP_CLUBB',     wpthlp_output,           pcols, lchnk )
    call outfld( 'WPRTP_CLUBB',      wprtp_output,            pcols, lchnk )
-   call outfld( 'RTP2_CLUBB',       rtp2*1000._r8,           pcols, lchnk )
+   tmp_array = rtp2(:ncol,:)*1000._r8
+   call outfld( 'RTP2_CLUBB',       tmp_array,               ncol,  lchnk )
    call outfld( 'THLP2_CLUBB',      thlp2,                   pcols, lchnk )
-   call outfld( 'RTPTHLP_CLUBB',    rtpthlp_output*1000._r8, pcols, lchnk )
-   call outfld( 'RCM_CLUBB',        rcm*1000._r8,            pcols, lchnk )
-   call outfld( 'WPRCP_CLUBB',      wprcp*latvap,            pcols, lchnk )
+   tmp_array = rtpthlp_output(:ncol,:)*1000._r8
+   call outfld( 'RTPTHLP_CLUBB',    tmp_array,               ncol,  lchnk )
+   tmp_array = rcm(:ncol,:)*1000._r8
+   call outfld( 'RCM_CLUBB',        tmp_array,               ncol,  lchnk )
+   tmp_array = wprcp(:ncol,:)*latvap
+   call outfld( 'WPRCP_CLUBB',      tmp_array,               ncol,  lchnk )
    call outfld( 'CLOUDFRAC_CLUBB',  alst,                    pcols, lchnk )
-   call outfld( 'RCMINLAYER_CLUBB', rcm_in_layer*1000._r8,   pcols, lchnk )
+   tmp_array = rcm_in_layer(:ncol,:)*1000._r8
+   call outfld( 'RCMINLAYER_CLUBB', tmp_array,               ncol,  lchnk )
    call outfld( 'CLOUDCOVER_CLUBB', cloud_frac,              pcols, lchnk )
-   call outfld( 'WPTHVP_CLUBB',     wpthvp*cpair,            pcols, lchnk )
-   call outfld( 'ZT_CLUBB',         1._r8*zt_out,            pcols, lchnk )
-   call outfld( 'ZM_CLUBB',         1._r8*zi_out,            pcols, lchnk )
+   tmp_array = wpthvp(:ncol,:)*cpair
+   call outfld( 'WPTHVP_CLUBB',     tmp_array,               ncol,  lchnk )
+   tmp_array = 1._r8*zt_out(:ncol,:)
+   call outfld( 'ZT_CLUBB',         tmp_array,               ncol,  lchnk )
+   tmp_array = 1._r8*zi_out(:ncol,:)
+   call outfld( 'ZM_CLUBB',         tmp_array,               ncol,  lchnk )
    call outfld( 'UM_CLUBB',         um,                      pcols, lchnk )
    call outfld( 'VM_CLUBB',         vm,                      pcols, lchnk )
    call outfld( 'THETAL',           thetal_output,           pcols, lchnk )

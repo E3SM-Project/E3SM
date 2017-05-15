@@ -1603,7 +1603,7 @@ contains
 #ifdef _NO_FLOW_CONTROL
     iosystem%rearr_opts%fcd = PIO_rearr_comm_fc_2d_disable
 #else
-    ! We ignore the following flags 
+    ! We ignore the following flags
     ! 1) _MPISERIAL : The flow control code is never used when _MPISERIAL is set
     ! 2) _USE_COMP2IO_FC/_USE_IO2COMP_FC : These flags are not currently used
     !  (These were experimental flags). The user can explicitly control

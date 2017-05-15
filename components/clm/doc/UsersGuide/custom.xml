@@ -1019,7 +1019,7 @@ appear in your &clm; namelist.
  fsnowaging   =
 '$DIN_LOC_ROOT/lnd/clm2/snicardata/snicar_drdt_bst_fit_60_c070416.nc'
  fsnowoptics	=
-'$DIN_LOC_ROOT/lnd/clm2/snicardata/snicar_optics_5bnd_c090915.nc'
+'$DIN_LOC_ROOT/lnd/clm2/snicardata/snicar_optics_5bnd_c160322.nc'
  fsurdat    =
 '$DIN_LOC_ROOT/lnd/clm2/surfdata/surfdata_0.9x1.25_simyr1850_c091006.nc'
  ice_runoff   = .true.
