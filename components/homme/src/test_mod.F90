@@ -109,7 +109,7 @@ subroutine set_test_prescribed_wind(elem, deriv, hybrid, hvcoord, dt, tl, nets, 
 end subroutine
 
 !_______________________________________________________________________
-subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete)
+subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
 
   ! apply forcing terms produced by HOMME stand-alone tests
 
@@ -121,6 +121,7 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete)
   type(hvcoord_t),  intent(in)    :: hvcoord
   real(kind=rl),    intent(in)    :: dt
   integer,          intent(in)    :: nets,nete,nt,ntQ
+  type(TimeLevel_t),intent(in)    :: tl
 
   integer :: ie,q
 
@@ -140,9 +141,9 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete)
     case('mtest2');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,nt,dt)
     case('mtest3');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,nt,dt)
 
-    case('dcmip2016_test1');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,1)
-    case('dcmip2016_test2');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,2)
-    case('dcmip2016_test3');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,3)
+    case('dcmip2016_test1');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl,1)
+    case('dcmip2016_test2');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl,2)
+    case('dcmip2016_test3');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl,3)
 
     case('held_suarez0');
        do ie=nets,nete

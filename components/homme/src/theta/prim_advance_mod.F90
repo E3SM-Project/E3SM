@@ -456,7 +456,7 @@ contains
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
   !
   !
-  use control_mod, only : nu, nu_div, hypervis_order, hypervis_subcycle, nu_s, nu_p, nu_top, psurf_vis, swest, mu,mu_s
+  use control_mod, only : nu, nu_div, hypervis_order, hypervis_subcycle, nu_s, nu_p, nu_top, psurf_vis, swest, dcmip16_mu,dcmip16_mu_s
   use hybvcoord_mod, only : hvcoord_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
   use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
@@ -500,7 +500,7 @@ contains
   real (kind=real_kind) :: phi_ref(np,np,nlev,nets:nete)
   real (kind=real_kind) :: dp_ref(np,np,nlev,nets:nete)
 
-  if (nu == 0 .and. nu_p==0 .and. mu==0 .and. mu_s==0 ) return;
+  if (nu == 0 .and. nu_p==0 .and. dcmip16_mu==0 .and. dcmip16_mu_s==0 ) return;
   call t_startf('advance_hypervis')
 
 
@@ -588,7 +588,7 @@ contains
               ! note: weak operators alreayd have mass matrix "included"
 
               ! add regular diffusion in top 3 layers:
-              if (mu>0 .or. mu_s>0 .or. (nu_top>0 .and. k<=3) ) then
+              if (dcmip16_mu>0 .or. dcmip16_mu_s>0 .or. (nu_top>0 .and. k<=3) ) then
                  lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d       (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,2)=laplace_sphere_wk(elem(ie)%state%theta_dp_cp(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w          (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
@@ -615,13 +615,13 @@ contains
                  stens(:,:,k,4,ie)=-nu_s*stens(:,:,k,4,ie) ! phi
               endif
 
-              ! add uniform viscosity mu in addition to hyperviscosity nu
-              if(mu>0) then
-                vtens(:,:,:,k,ie)=vtens(:,:,:,k,ie) + mu  *lap_v(:,:,:) ! u and v
-                stens(:,:,k,1,ie)=stens(:,:,k,1,ie) + mu_s*lap_s(:,:,1) ! dp3d
-                stens(:,:,k,2,ie)=stens(:,:,k,2,ie) + mu_s*lap_s(:,:,2) ! therta
-                stens(:,:,k,3,ie)=stens(:,:,k,3,ie) + mu_s*lap_s(:,:,3) ! w
-                stens(:,:,k,4,ie)=stens(:,:,k,4,ie) + mu_s*lap_s(:,:,4) ! phi
+              ! add uniform viscosity dcmip16_mu in addition to hyperviscosity nu
+              if(dcmip16_mu>0) then
+                vtens(:,:,:,k,ie)=vtens(:,:,:,k,ie) + dcmip16_mu  *lap_v(:,:,:) ! u and v
+                stens(:,:,k,1,ie)=stens(:,:,k,1,ie) + dcmip16_mu_s*lap_s(:,:,1) ! dp3d
+                stens(:,:,k,2,ie)=stens(:,:,k,2,ie) + dcmip16_mu_s*lap_s(:,:,2) ! therta
+                stens(:,:,k,3,ie)=stens(:,:,k,3,ie) + dcmip16_mu_s*lap_s(:,:,3) ! w
+                stens(:,:,k,4,ie)=stens(:,:,k,4,ie) + dcmip16_mu_s*lap_s(:,:,4) ! phi
               endif
 
            enddo

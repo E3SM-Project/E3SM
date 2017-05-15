@@ -16,12 +16,19 @@ NCPU=640
 
 date
 
-# hydrostatic theta
-#cp  -f namelist-h.nl input.nl
-#srun -n $NCPU $EXEC < input.nl
-
-# nonhydrostatic theta
-cp -f namelist-nh.nl input.nl
+# 4dg resolution
+cp -f namelist-r400.nl input.nl
 srun -n $NCPU $EXEC < input.nl
+mv -f movies/dcmip2016_test31.nc movies/dcmip2016_test3_r400.nc
+
+# 2dg resolution
+cp -f namelist-r200.nl input.nl
+srun -n $NCPU $EXEC < input.nl
+mv -f movies/dcmip2016_test31.nc movies/dcmip2016_test3_r200.nc
+
+# 1dg resolution
+cp -f namelist-r100.nl input.nl
+srun -n $NCPU $EXEC < input.nl
+mv -f movies/dcmip2016_test31.nc movies/dcmip2016_test3_r100.nc
 
 date

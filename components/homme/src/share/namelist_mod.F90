@@ -49,8 +49,8 @@ module namelist_mod
     nu_div,        &
     nu_p,          &
     nu_top,        &
-    mu,            &
-    mu_s,          &
+    dcmip16_mu,     &
+    dcmip16_mu_s,   &
     hypervis_scaling,   &  ! use tensor HV instead of scalar coefficient
     disable_diagnostics, & ! use to disable diagnostics for timing reasons
     psurf_vis,    &
@@ -231,8 +231,8 @@ module namelist_mod
       nu_div,        &
       nu_p,          &
       nu_top,        &
-      mu,            &
-      mu_s,          &
+      dcmip16_mu,     &
+      dcmip16_mu_s,   &
       psurf_vis,     &
       hypervis_order,    &
       hypervis_power,    &
@@ -654,8 +654,8 @@ module namelist_mod
     call MPI_bcast(nu_p,            1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nu_top,          1, MPIreal_t   , par%root,par%comm,ierr)
 
-    call MPI_bcast(mu,              1, MPIreal_t   , par%root,par%comm,ierr)
-    call MPI_bcast(mu_s,            1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(dcmip16_mu,      1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(dcmip16_mu_s,    1, MPIreal_t   , par%root,par%comm,ierr)
 
     call MPI_bcast(disable_diagnostics,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(psurf_vis,1,MPIinteger_t   ,par%root,par%comm,ierr)
@@ -845,7 +845,7 @@ module namelist_mod
     if(nu_s<0)    nu_s  = nu
     if(nu_q<0)    nu_q  = nu
     if(nu_div<0)  nu_div= nu
-    if(mu_s<0)    mu_s  = mu
+    if(dcmip16_mu_s<0)    dcmip16_mu_s  = dcmip16_mu
 
     if (multilevel <= 0) then
       nmpi_per_node = 1
@@ -941,8 +941,8 @@ module namelist_mod
        write(iulog,*)"PHIS smoothing:  ",smooth_phis_numcycle,smooth_phis_nudt
        write(iulog,*)"SGH  smoothing:  ",smooth_sgh_numcycle
 
-       if(mu/=0)  write(iulog,'(a,2e9.2)')"1st order viscosity:  mu (vor/div) = ",mu
-       if(mu_s/=0)write(iulog,'(a,2e9.2)')"1st order viscosity:  mu_s      = ",mu_s
+       if(dcmip16_mu/=0)  write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu   = ",dcmip16_mu
+       if(dcmip16_mu_s/=0)write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu_s = ",dcmip16_mu_s
 
        if(initial_total_mass>0) then
           write(iulog,*) "initial_total_mass = ",initial_total_mass

@@ -862,7 +862,7 @@ contains
     call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
 #ifndef CAM
     ! Apply HOMME test case forcing
-    call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+    call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
 #endif
 
     ! Apply CAM Physics forcing

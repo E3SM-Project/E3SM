@@ -27,10 +27,13 @@ begin
 ;     time:  arbitrary
 ;----------------------------------------------------------------------------
 
-  data_file = "~/Documents/tempestmodel/test/dcmip2016/outSupercellTest-Agri/outU0-maxW.txt"
+  maxw    = asciiread("./measurement_wmax.txt", -1, "double")
+  time_s  = asciiread("./measurement_time.txt", -1, "double")
 
-  maxw = asciiread(data_file, (/25/), "double")
-  time_s = fspan(0.0, 7200.0, 25)
+print("maxw="+maxw)
+print("time_s="+time_s)
+
+;time_s    = fspan(0.0, 7200.0, 25)
 
 ;****************************************************************************
 ; DO NOT EDIT BELOW THIS LINE
@@ -39,7 +42,7 @@ begin
 ;------------------------------------------------
 ; Workspace
 ;------------------------------------------------
-  wks = gsn_open_wks("eps","plot_supercell_wvel")   
+  wks = gsn_open_wks("pdf","measurement_wmax.pdf")
 
 ;------------------------------------------------
 ; Plot resources [options]
@@ -81,7 +84,7 @@ begin
   resw@tiYAxisString = "maximum vertical velocity (m/s)"
 
   resw@trXMinF = 0.0
-  resw@trXMaxF = 7200.0
+  resw@trXMaxF = 7200.0 ; max(time_s)
   
   resw@trYMinF = 0.0
   resw@trYMaxF = 50.0

@@ -24,6 +24,8 @@ use kinds,                only: rl=>real_kind, iulog
 use parallel_mod,         only: abortmp
 use element_ops,          only: set_state, set_elem_state, get_state, tests_finalize, set_forcing_rayleigh_friction, set_thermostate
 use physical_constants,   only: p0, g, Rgas, kappa, Cp, Rwater_vapor
+use reduction_mod,        only: parallelmax
+use time_mod,             only: time_at, TimeLevel_t
 
 implicit none
 
@@ -306,15 +308,71 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 end subroutine
 
 !_______________________________________________________________________
-subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
+subroutine dcmip2016_append_measurements(max_w,max_precl,tl,hybrid)
+  real(rl),           intent(in) :: max_w, max_precl
+  type(TimeLevel_t),  intent(in) :: tl
+  type(hybrid_t),     intent(in) :: hybrid                   ! hybrid parallel structure
+
+  real(rl),         parameter :: sample_period  = 60.0_rl
+  character(len=*), parameter :: w_filename     = "measurement_wmax.txt"
+  character(len=*), parameter :: precl_filename = "measurement_prect_rate.txt"
+  character(len=*), parameter :: time_filename  = "measurement_time.txt"
+
+  real(rl) :: pmax_w, pmax_precl, time
+  real(rl) :: next_sample_time = 0.0
+
+  time = time_at(tl%nstep)
+
+  ! initialize output file
+  if(next_sample_time == 0.0) then
+    open(unit=10,file=w_filename,    form="formatted",status="replace")
+    close(10)
+
+    open(unit=11,file=precl_filename,form="formatted",status="replace")
+    close(11)
+
+    open(unit=12,file=time_filename, form="formatted",status="replace")
+    close(12)
+
+  endif
+
+  ! append measurements at regular intervals
+  if(time .ge. next_sample_time) then
+
+    next_sample_time = next_sample_time + sample_period
+    pmax_w     = parallelMax(max_w,    hybrid)
+    pmax_precl = parallelMax(max_precl,hybrid)
+
+    if (hybrid%masterthread) then
+      print *,"time=",time_at(tl%nstep)," pmax_w=",pmax_w," pmax_precl=",pmax_precl
+
+      open(unit=10,file=w_filename,form="formatted",position="append")
+        write(10,'(99E24.15)') pmax_w
+      close(10)
+
+      open(unit=11,file=precl_filename,form="formatted",position="append")
+        write(11,'(99E24.15)') pmax_precl
+      close(11)
+
+      open(unit=12,file=time_filename,form="formatted",position="append")
+        write(12,'(99E24.15)') time
+      close(12)
+    endif
+  endif
+
+  end subroutine
+
+!_______________________________________________________________________
+subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
   type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
   type(hvcoord_t),    intent(in)            :: hvcoord                  ! hybrid vertical coordinates
   integer,            intent(in)            :: nets,nete                ! start, end element index
   integer,            intent(in)            :: nt, ntQ                  ! time level index
-  integer,            intent(in)            :: test                     ! dcmip2016 test number
   real(rl),           intent(in)            :: dt                       ! time-step size
+  type(TimeLevel_t),  intent(in)            :: tl                       ! time level structure
+  integer,            intent(in)            :: test                     ! dcmip2016 test number
 
   real(rl), parameter :: zc   = 15000_rl                                ! sponge layer cutoff at 13km
   real(rl), parameter :: tau  = 120_rl                                  ! rayleigh damping time-scale (s)
@@ -325,6 +383,10 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
   real(rl), dimension(np,np)      :: precl
   real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
+  real(rl) :: max_w, pmax_w, max_precl, pmax_precl
+
+  max_w     = -huge(rl)
+  max_precl = -huge(rl)
 
   do ie = nets,nete
 
@@ -394,7 +456,13 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,test)
 
     !elem(ie)%state%Qdp(:,:,1,4,ntQ) = precl*dp(:,:,1) ! store precl in level 1 of tracer #4
 
+    ! perform measurements of max w, and max prect
+    max_w     = max( max_w    , maxval(w    ) )
+    max_precl = max( max_precl, maxval(precl) )
+
   enddo
+
+  call dcmip2016_append_measurements(max_w,max_precl,tl,hybrid)
 
 end subroutine
 
