@@ -228,6 +228,9 @@ contains
     endif
 !    call extrae_user_function(0)
 
+    ! physical viscosity for supercell test case
+    ! call advance_physical_vis(edgeadv,elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt)
+
     call t_stopf('prim_advec_tracers_remap_rk2')
 
   end subroutine prim_advec_tracers_remap_rk2
@@ -616,7 +619,7 @@ OMP_SIMD
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine advance_hypervis_scalar( edgeAdv , elem , hvcoord , hybrid , deriv , nt , nt_qdp , nets , nete , dt2 )
+  subroutine advance_hypervis_scalar(edgeAdv,elem, hvcoord , hybrid , deriv , nt , nt_qdp , nets , nete , dt2 )
   !  hyperviscsoity operator for foward-in-time scheme
   !  take one timestep of:
   !          Q(:,:,:,np) = Q(:,:,:,np) +  dt2*nu*laplacian**order ( Q )
@@ -749,6 +752,93 @@ OMP_SIMD
   enddo
   call t_stopf('advance_hypervis_scalar')
   end subroutine advance_hypervis_scalar
+
+
+
+
+
+
+  subroutine advance_physical_vis(edgeAdv,elem,hvcoord,hybrid,deriv,nt,nt_qdp,nets,nete,dt,mu)
+  !
+  !  take one timestep of of physical viscosity (single laplace operator) for
+  !  all tracers in both horizontal and vertical
+  !  
+  !  as of 2017/5, used only for the supercell test case
+  !  so for now:
+  !     dont bother to optimize
+  !     apply only to perturbation from background state (supercell initial condition)
+  !     uniform spacing in z with delz = 20km/nlev
+  !
+  !
+
+  use kinds          , only : real_kind
+  use dimensions_mod , only : np, nlev
+  use hybrid_mod     , only : hybrid_t
+  use element_mod    , only : element_t
+  use derivative_mod , only : derivative_t, laplace_z, laplace_sphere_wk
+  use edge_mod       , only : edgevpack, edgevunpack
+  use edgetype_mod   , only : EdgeBuffer_t
+  use bndry_mod      , only : bndry_exchangev
+  use perf_mod       , only : t_startf, t_stopf                          ! _EXTERNAL
+  implicit none
+  type (EdgeBuffer_t)  , intent(inout)         :: edgeAdv
+  type (element_t)     , intent(inout), target :: elem(:)
+  type (hvcoord_t)     , intent(in   )         :: hvcoord
+  type (hybrid_t)      , intent(in   )         :: hybrid
+  type (derivative_t)  , intent(in   )         :: deriv
+  integer              , intent(in   )         :: nt
+  integer              , intent(in   )         :: nt_qdp
+  integer              , intent(in   )         :: nets
+  integer              , intent(in   )         :: nete
+  real (kind=real_kind), intent(in   )         :: dt
+  real (kind=real_kind), intent(in   )         :: mu
+
+  ! local
+  real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: Qtens
+  real (kind=real_kind), dimension(np,np,nlev                ) :: Q_prime
+  real (kind=real_kind) :: dp0, delz
+  integer :: k , i,j,ie,ic,q
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !  hyper viscosity
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  delz=20000/nlev
+
+  do ie=nets,nete
+     do q=1,qsize
+        do k=1,nlev
+           dp0=( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + &
+                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * hvcoord%ps0
+           Q_prime(:,:,k)=dp0*elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / elem(ie)%state%dp3d(:,:,k,nt)
+        enddo
+        ! compute vertical laplacian
+        call laplace_z(Q_prime(:,:,:),Qtens(:,:,:,q,ie),1,delz)
+        ! apply mass matrix and add in horiz laplacian (which has mass matrix built in)
+        do k=1,nlev
+           Qtens(:,:,k,q,ie) = (Qtens(:,:,k,q,ie)*elem(ie)%spheremp(:,:) + &
+                laplace_sphere_wk(Q_prime(:,:,:),deriv,elem(ie),var_coef=.false.) ) 
+        
+           ! timestep
+           elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=elem(ie)%state%Qdp(:,:,k,q,nt_qdp)*elem(ie)%spheremp(:,:) &
+                - dt*mu*Qtens(:,:,k,q,ie)
+        enddo
+
+      enddo
+      call edgeVpack  ( edgeAdv,elem(ie)%state%Qdp(:,:,:,:,nt_qdp),qsize*nlev,0,ie )
+    enddo ! ie loop
+
+    call bndry_exchangeV( hybrid,edgeAdv )
+
+    do ie=nets,nete
+      call edgeVunpack( edgeAdv,elem(ie)%state%Qdp(:,:,:,:,nt_qdp),qsize*nlev,0,ie )
+      do q=1,qsize
+        ! apply inverse mass matrix
+        do k=1,nlev
+          elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,nt_qdp)
+        enddo
+      enddo
+    enddo ! ie loop
+  end subroutine advance_physical_vis
 
 
 end module prim_advection_base
