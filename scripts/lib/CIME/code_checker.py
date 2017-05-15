@@ -81,9 +81,9 @@ def check_code(files, num_procs=10, interactive=False):
     """
     # Get list of files to check, we look to see if user-provided file argument
     # is a valid file, if not, we search the repo for a file with similar name.
-    repo_files = run_cmd_no_fail('git ls-files --full-name %s' % get_cime_root(), verbose=False).splitlines()
     files_to_check = []
     if files:
+        repo_files = run_cmd_no_fail('git ls-files', from_dir=get_cime_root(), verbose=False).splitlines()
         for filearg in files:
             if os.path.exists(filearg):
                 files_to_check.append(os.path.abspath(filearg))
