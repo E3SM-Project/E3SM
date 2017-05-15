@@ -48,11 +48,13 @@ OR
 
     parser.add_argument("--ncouplers",default=1,
                         help="Specify number of coupler instances. "
-                        "Set the number of coupler instances in the case.")
+                        "Set the number of coupler instances in the case. "
+                        "If ncouplers is > 1 then ninst should = 1.")
 
     parser.add_argument("--ninst",default=1,
-                        help="Specify number of component instances"
-                        "Set the number of component instances in the case.")
+                        help="Specify number of component instances. "
+                        "Set the number of component instances in the case. "
+                        "If ninst > 1 then ncouplers should = 1")
 
     parser.add_argument("--mpilib", "-mpilib",
                         help="Specify the mpilib. "

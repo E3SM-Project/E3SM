@@ -1,6 +1,6 @@
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
-from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status, append_status
+from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
@@ -153,14 +153,14 @@ def post_run_check(case, lid):
     rundir = case.get_value("RUNDIR")
     model = case.get_value("MODEL")
     cpl_ninst = case.get_value("NINST_CPL")
-
     cpl_logs = []
     if cpl_ninst > 1:
         for inst in range(cpl_ninst):
             cpl_logs.append(os.path.join(rundir, "cpl_%04d.log." % (inst+1) + lid))
     else:
         cpl_logs = [os.path.join(rundir, "cpl" + ".log." + lid)]
-    
+    cpl_logfile = cpl_logs[0]
+
     # find the last model.log and cpl.log
     model_logfile = os.path.join(rundir, model + ".log." + lid)
 
@@ -176,7 +176,7 @@ def post_run_check(case, lid):
             with open(cpl_logfile, 'r') as fd:
                 if 'SUCCESSFUL TERMINATION' in fd.read():
                     count_ok += 1
-        if count_ok != cpl_ninst: 
+        if count_ok != cpl_ninst:
             expect(False, "Model did not complete - see {} \n " .format(cpl_logfile))
 
 ###############################################################################
