@@ -405,6 +405,8 @@ class Grids(GenericXML):
                 gridmap_nodes = self.get_nodes(nodename="gridmap",
                                                attributes={gridname:gridvalue, other_gridname:other_gridvalue})
                 for gridmap_node in gridmap_nodes:
+                    expect(len(gridmap_node.attrib) == 2,
+                           " Bad attribute count in gridmap node %s"%gridmap_node.attrib)
                     map_nodes = self.get_nodes(nodename="map",root=gridmap_node)
                     for map_node in map_nodes:
                         name = map_node.get("name")
