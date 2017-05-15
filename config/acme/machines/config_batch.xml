@@ -158,8 +158,8 @@
         <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
       </directives>
       <queues>
-	<queue walltimemax="01:00:00" jobmin="1" jobmax="64" strict="true">shared</queue>
-	<queue walltimemax="03:00:00" jobmin="64" jobmax="4096" default="true">batch</queue>
+	<queue walltimemax="01:00:00" jobmin="1" jobmax="64" string="true">shared</queue>
+	<queue walltimemax="03:00:00" jobmin="1" jobmax="4096" default="true">batch</queue>
       </queues>
     </batch_system>
 
@@ -224,7 +224,13 @@
         <queue walltimemax="01:00:00" jobmin="1" jobmax="65536" default="true">default</queue>
       </queues>
     </batch_system>
-    
+
+    <batch_system MACH="theta" type="cobalt_theta">
+      <queues>
+        <queue walltimemax="00:60:00" jobmin="1" jobmax="3200" default="true">default</queue>
+      </queues>
+    </batch_system>
+
     <batch_system MACH="cascade" type="slurm">
       <directives>
 	<directive>--mail-type=END</directive>
@@ -360,19 +366,23 @@
    </batch_system>
 
    <batch_system MACH="lawrencium-lr2" type="slurm" >
+     <submit_args>
+       <arg flag="--qos" name="condo_esd2"/>
+     </submit_args>
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--exclusive</directive>
      </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr2</queue>
+      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr3</queue>
     </queues>
    </batch_system>
 
    <batch_system MACH="lawrencium-lr3" type="slurm" >
+     <submit_args>
+       <arg flag="--qos" name="condo_esd2"/>
+     </submit_args>
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--exclusive</directive>
      </directives>
     <queues>
       <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr3</queue>
