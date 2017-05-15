@@ -412,7 +412,7 @@ end function shr_string_endIndex
 ! !IROUTINE: shr_string_leftAlign -- remove leading white space
 !
 ! !DESCRIPTION:
-!    Remove leading white space
+!    Remove leading white space (spaces and tabs)
 !     \newline
 !     call shr\_string\_leftAlign(string)
 !
