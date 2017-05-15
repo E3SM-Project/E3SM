@@ -523,7 +523,6 @@ endsw
 # Note:  we also want to change the group id for the files.
 #        But this can only be done once the run_root_dir has been created,
 #        so it is done later.
-# TODO:  CIME does this to some extent; determine how much and
 umask 022
 
 set cime_dir = ${code_root_dir}/${tag_name}/cime
@@ -586,8 +585,8 @@ acme_newline
 acme_print '-------- Starting create_newcase --------'
 acme_newline
 
-acme_print $create_newcase_exe $configure_options
-$create_newcase_exe $configure_options
+acme_print ${create_newcase_exe} ${configure_options}
+${create_newcase_exe} ${configure_options}
 
 cd ${case_scripts_dir}
 
@@ -988,32 +987,6 @@ else
 endif
 
 #============================================
-# QUEUE OPTIONS
-#============================================
-# Edit the default queue and batch job lengths.
-
-#HINT: To change queue after run submitted, the following works on most machines:
-#      qalter -lwalltime=00:29:00 <run_descriptor>
-#      qalter -W queue=debug <run_descriptor>
-
-#NOTE: we are currently not modifying the archiving scripts to run in debug queue when $debug_queue=true
-#      under the assumption that if you're debugging you shouldn't be archiving.
-
-#NOTE: there was 1 space btwn MSUB or PBS and the commands before cime and there are 2 spaces
-#      in post-cime versions. This is fixed by " \( \)*" in the lines below. The "*" here means
-#      "match zero or more of the expression before". The expression before is a single whitespace.
-#      The "\(" and "\)" bit indicate to sed that the whitespace in between is the expression we
-#      care about. The space before "\(" makes sure there is at least one whitespace after #MSUB.
-#      Taken all together, this stuff matches lines of the form #MSUB<one or more whitespaces>-<stuff>.
-
-set machine = `lowercase $machine`
-
-### Only specially authorized people can use the special_acme qos on Cori or Edison. Don't uncomment unless you're one.
-### if ( `lowercase $debug_queue` == false && ( $machine == core || $machine == edison ) ) then
-###   sed -i /"#SBATCH \( \)*--account"/a"#SBATCH  --qos=special_acme"  ${case_run_exe}
-### endif
-
-#============================================
 # BATCH JOB OPTIONS
 #============================================
 
@@ -1057,6 +1030,35 @@ else if ( $machine == titan || $machine == eos ) then
 else
     acme_print 'WARNING: This script does not have batch directives for $machine='$machine
     acme_print '         Assuming default ACME values.'
+endif
+
+#============================================
+# QUEUE OPTIONS
+#============================================
+# Edit the default queue and batch job lengths.
+
+#HINT: To change queue after run submitted, the following works on most machines:
+#      qalter -lwalltime=00:29:00 <run_descriptor>
+#      qalter -W queue=debug <run_descriptor>
+
+#NOTE: we are currently not modifying the archiving scripts to run in debug queue when $debug_queue=true
+#      under the assumption that if you're debugging you shouldn't be archiving.
+
+#NOTE: there was 1 space btwn MSUB or PBS and the commands before cime and there are 2 spaces
+#      in post-cime versions. This is fixed by " \( \)*" in the lines below. The "*" here means
+#      "match zero or more of the expression before". The expression before is a single whitespace.
+#      The "\(" and "\)" bit indicate to sed that the whitespace in between is the expression we
+#      care about. The space before "\(" makes sure there is at least one whitespace after #MSUB.
+#      Taken all together, this stuff matches lines of the form #MSUB<one or more whitespaces>-<stuff>.
+
+set machine = `lowercase $machine`
+
+### Only specially authorized people can use the special_acme qos on Cori or Edison. Don't uncomment unless you're one.
+if ( `lowercase $debug_queue` == false && ( $machine == core || $machine == edison ) ) then
+  set update_run = ${case_run_exe}.updated
+  awk '/--account/{print; print "#SBATCH --qos=special_acme";next}1' ${case_run_exe} > ${update_run}
+  mv ${update_run} ${case_run_exe}
+  unset update_run
 endif
 
 #============================================
