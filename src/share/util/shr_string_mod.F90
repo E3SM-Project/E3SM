@@ -1,8 +1,4 @@
 !===============================================================================
-! SVN $Id: shr_string_mod.F90 62094 2014-07-23 15:43:17Z muszala $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_150116/shr/shr_string_mod.F90 $
-!===============================================================================
-!===============================================================================
 !BOP ===========================================================================
 !
 ! !MODULE: shr_string_mod -- string and list methods
@@ -416,7 +412,8 @@ end function shr_string_endIndex
 ! !IROUTINE: shr_string_leftAlign -- remove leading white space
 !
 ! !DESCRIPTION:
-!    Remove leading white space
+!    Remove leading white space (spaces and tabs); if input str is entirely spaces and tabs,
+!    then the result has all tabs converted to spaces
 !     \newline
 !     call shr\_string\_leftAlign(string)
 !
@@ -437,32 +434,30 @@ subroutine shr_string_leftAlign(str,rc)
 !EOP
 
    !----- local ----
+   integer(SHR_KIND_IN) :: index_first_non_blank
    integer(SHR_KIND_IN) :: rCode ! return code
    integer(SHR_KIND_IN) :: t01 = 0 ! timer
+   character, parameter :: tab_char = char(9)
 
    !----- formats -----
    character(*),parameter :: subName =   "(shr_string_leftAlign) "
    character(*),parameter :: F00     = "('(shr_string_leftAlign) ',4a)"
 
 !-------------------------------------------------------------------------------
-! note:
-! * ?? this routine isn't needed, use the intrisic adjustL instead ??
+!
 !-------------------------------------------------------------------------------
 
    if (debug>1 .and. t01<1) call shr_timer_get(t01,subName)
    if (debug>1) call shr_timer_start(t01)
 
-!  -------------------------------------------------------------------
-!  --- I used this until I discovered the intrinsic function below - BK
-!  do while (len_trim(str) > 0 )
-!     if (str(1:1) /= ' ') exit
-!     str = str(2:len_trim(str))
-!  end do
-!  rCode = 0
-!  !! (len_trim(str) == 0 ) rCode = 1  ! ?? appropriate ??
-!  -------------------------------------------------------------------
+   ! From https://software.intel.com/en-us/forums/archived-visual-fortran-read-only/topic/314044
+   index_first_non_blank = verify(str, ' '//tab_char)
+   if (index_first_non_blank == 0) then
+      str = ' '
+   else
+      str = str(index_first_non_blank:)
+   end if
 
-   str = adjustL(str)
    if (present(rc)) rc = 0
 
    if (debug>1) call shr_timer_stop (t01)
