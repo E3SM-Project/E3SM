@@ -195,13 +195,13 @@ class SystemTestsCommon(object):
         stop_n      = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
         run_type    = self._case.get_value("RUN_TYPE")
-        rest_option = self._case.get_value("REST_OPTION")
-        rest_n      = self._case.get_value("REST_N")
-        infostr     = "doing an %d %s %s test" % (stop_n, stop_option,run_type)
+        infostr     = "doing an %d %s %s test" % (stop_n, stop_option, run_type)
 
+        rest_option = self._case.get_value("REST_OPTION")
         if rest_option == "none" or rest_option == "never":
             infostr += ", no restarts written"
         else:
+            rest_n      = self._case.get_value("REST_N")
             infostr += ", with restarts every %d %s"%(rest_n, rest_option)
         logger.info(infostr)
 
@@ -251,7 +251,11 @@ class SystemTestsCommon(object):
         memlist = []
         meminfo = re.compile(r".*model date =\s+(\w+).*memory =\s+(\d+\.?\d+).*highwater")
         if cpllog is not None and os.path.isfile(cpllog):
-            with gzip.open(cpllog, "rb") as f:
+            if '.gz' == cpllog[-3:]:
+                fopen = gzip.open
+            else:
+                fopen = open
+            with fopen(cpllog, "rb") as f:
                 for line in f:
                     m = meminfo.match(line)
                     if m:
