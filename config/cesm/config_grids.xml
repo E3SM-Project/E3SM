@@ -8,11 +8,11 @@
     =========================================
     The notation for the grid longname is
         a%name_l%name_oi%name_r%name_m%mask_g%name_w%name
-    where     
+    where
         a% => atm, l% => lnd, oi% => ocn/ice, r% => river, m% => mask, g% => glc, w% => wav
 
     Supported out of the box grid configurations are given via alias specification in
-    the file "config_grids.xml". Each grid alias can also be associated  with the 
+    the file "config_grids.xml". Each grid alias can also be associated  with the
     following optional attributes
 
     compset       (Regular expression for compset matches that are required for this grid)
@@ -586,7 +586,7 @@
       <grid name="ocnice">10x15</grid>
       <mask>usgs</mask>
     </model_grid>
-    
+
     <model_grid alias="f10_f10_musgs" not_compset="_POP">
       <grid name="atm">10x15</grid>
       <grid name="lnd">10x15</grid>
@@ -1654,17 +1654,6 @@
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_r01_to_gx1v6_120711.nc</map>
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_r01_to_gx1v6_120711.nc</map>
     </gridmap>
-
-    <!--- river flooding variables -->
-
-    <gridmap lnd_grid="1.9x2.5" rof_grid="r05" ocn_grid="gx1v6" >
-      <map name="XROF_FLOOD_MODE">ACTIVE</map>
-    </gridmap>
-
-    <gridmap lnd_grid="1.9x2.5" rof_grid="r05" ocn_grid="gx1v7" >
-      <map name="XROF_FLOOD_MODE">ACTIVE</map>
-    </gridmap>
-
 
     <!-- ======================================================== -->
     <!-- gridS: lnd to glc and glc to lnd mapping                 -->
