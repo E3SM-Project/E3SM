@@ -12,6 +12,40 @@ module test_shr_string
 contains
 
   ! ------------------------------------------------------------------------
+  ! Tests of shr_string_leftAlign
+  ! ------------------------------------------------------------------------
+
+  @Test
+  subroutine test_shr_string_leftAlign_noInitialSpaces()
+    ! With no initial spaces, should have no effect
+    character(len=6) :: str
+
+    str = 'foo   '
+    call shr_string_leftAlign(str)
+    @assertEqual('foo   ', str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_noInitialSpaces
+
+  @Test
+  subroutine test_shr_string_leftAlign_initialSpaces()
+    ! Should remove initial spaces
+    character(len=6) :: str
+
+    str = '  foo '
+    call shr_string_leftAlign(str)
+    @assertEqual('foo   ', str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_initialSpaces
+
+  @Test
+  subroutine test_shr_string_leftAlign_interiorSpaces()
+    ! Should NOT remove interior spaces
+    character(len=6) :: str
+
+    str = 'f oo  '
+    call shr_string_leftAlign(str)
+    @assertEqual('f oo  ', str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_interiorSpaces
+
+  ! ------------------------------------------------------------------------
   ! Tests of shr_string_listDiff
   ! ------------------------------------------------------------------------
 
