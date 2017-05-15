@@ -4,12 +4,14 @@
 #SBATCH --account=FY150001
 #SBATCH -N 12
 #SBATCH --time=1:30:00
-#XXSBATCH -N 54
-#XXSBATCH --time=12:00:00
+#XXSBATCH -N 20
+#XXSBATCH --time=5:00:00
 #SBATCH -p ec
 #
-#  nonhydro x1:  54 nodes, 7.4h
-#           x10  54 nodes, 115min
+#  nonhydro x1:  54 nodes, 7.4h        KG5 dt=.5
+#           x1:  20 nodes, 2.5h        ars232  dt=120
+#           x10  54 nodes, 115min      KG5 dt=.2
+#           x10  20 nodes, 2.5h        ars232 dt=12  (IN)
 #           x100  12 nodes  51min
 #           x1000 12 nodes 5.9min
 # hydrostatic x1:   12 nodes, 3.3min
