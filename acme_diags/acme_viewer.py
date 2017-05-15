@@ -93,4 +93,4 @@ def create_viewer(root_dir, parameters, ext):
                     # insert a blank value
                     viewer.add_col('-----')
 
-    viewer.generate_viewer()
+    viewer.generate_viewer(prompt_user=False)
