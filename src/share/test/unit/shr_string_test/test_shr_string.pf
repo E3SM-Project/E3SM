@@ -47,13 +47,34 @@ contains
 
   @Test
   subroutine test_shr_string_leftAlign_initialTabs()
-    ! Should remove initial spaces
+    ! Should remove initial tabs
     character(len=6) :: str
 
     str = char(9) // char(9) // 'foo '
     call shr_string_leftAlign(str)
     @assertEqual('foo   ', str, whitespace=KEEP_ALL)
   end subroutine test_shr_string_leftAlign_initialTabs
+
+  @Test
+  subroutine test_shr_string_leftAlign_interiorTabs()
+    ! Should NOT remove interior tabs
+    character(len=6) :: str, expected
+
+    str = 'f' // char(9) // 'oo  '
+    expected = str
+    call shr_string_leftAlign(str)
+    @assertEqual(expected, str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_interiorTabs
+
+  @Test
+  subroutine test_shr_string_leftAlign_initialSpacesAndTabs()
+    ! Should remove an initial mix of spaces and tabs
+    character(len=8) :: str
+
+    str = ' ' // char(9) // ' ' // char(9) // ' ' // 'foo'
+    call shr_string_leftAlign(str)
+    @assertEqual('foo     ', str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_initialSpacesAndTabs
 
   ! ------------------------------------------------------------------------
   ! Tests of shr_string_listDiff
