@@ -2,10 +2,11 @@ module esp_comp_mct
 
   ! !USES:
 
-  use esmf,             only: ESMF_Clock
-  use mct_mod,          only: mct_aVect
-  use seq_cdata_mod,    only: seq_cdata
-  use seq_infodata_mod, only: seq_infodata_type
+  use esmf,              only: ESMF_Clock
+  use mct_mod,           only: mct_aVect
+  use seq_cdata_mod,     only: seq_cdata
+  use seq_infodata_mod,  only: seq_infodata_type
+  use desp_comp_mod,     only: desp_num_comps
 
   ! !PUBLIC TYPES:
   implicit none
@@ -18,6 +19,11 @@ module esp_comp_mct
   public :: esp_init_mct
   public :: esp_run_mct
   public :: esp_final_mct
+
+  !--------------------------------------------------------------------------
+  ! Private module data
+  !--------------------------------------------------------------------------
+  integer :: comp_index(desp_num_comps)
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -36,9 +42,11 @@ CONTAINS
   ! !INTERFACE: ---------------------------------------------------------------
 
   subroutine esp_init_mct(EClock, cdata, x2a, a2x, NLFilename)
-    use desp_comp_mod,    only: desp_comp_init
+    use desp_comp_mod,    only: desp_comp_init, comp_names
     use seq_cdata_mod,    only: seq_cdata_setptrs
     use seq_infodata_mod, only: seq_infodata_putData, seq_infodata_GetData
+    use seq_timemgr_mod,  only: seq_timemgr_pause_component_index
+
 
     ! !INPUT/OUTPUT PARAMETERS:
 
@@ -49,6 +57,7 @@ CONTAINS
 
     !EOP
 
+    integer                                          :: ind
     integer                                          :: ESPID
     integer                                          :: mpicom_esp
     integer                                          :: esp_phase
@@ -73,6 +82,11 @@ CONTAINS
     call seq_infodata_PutData(infodata,                                       &
          esp_present=esp_present, esp_prognostic=esp_prognostic)
 
+    ! Retrieve component indices from the time manager
+    do ind = 1, desp_num_comps
+      comp_index(ind) = seq_timemgr_pause_component_index(comp_names(ind))
+    end do
+
   end subroutine esp_init_mct
 
   !============================================================================
@@ -88,14 +102,14 @@ CONTAINS
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine esp_run_mct( EClock, cdata,  x2a, a2x)
+    use shr_kind_mod,     only: CL=>SHR_KIND_CL
     use seq_comm_mct,     only: num_inst_atm, num_inst_lnd, num_inst_rof
     use seq_comm_mct,     only: num_inst_ocn, num_inst_ice, num_inst_glc
     use seq_comm_mct,     only: num_inst_wav
-    use desp_comp_mod,    only: desp_comp_run, atm_ind, lnd_ind, ocn_ind
-    use desp_comp_mod,    only: ice_ind, glc_ind, rof_ind, wav_ind, cpl_ind, max_ind
+    use desp_comp_mod,    only: desp_comp_run
     use seq_cdata_mod,    only: seq_cdata_setptrs
     use seq_infodata_mod, only: seq_infodata_putData, seq_infodata_GetData
-    use shr_kind_mod,     only: CL=>SHR_KIND_CL
+    use seq_timemgr_mod,  only: seq_timemgr_pause_component_active
 
     ! !INPUT/OUTPUT PARAMETERS:
 
@@ -106,8 +120,9 @@ CONTAINS
 
     !EOP
 
+    integer                            :: ind
     type(seq_infodata_type), pointer   :: infodata
-    logical                            :: pause_sig(max_ind)
+    logical                            :: pause_sig(desp_num_comps)
     character(len=CL)                  :: atm_resume(num_inst_atm)
     character(len=CL)                  :: lnd_resume(num_inst_lnd)
     character(len=CL)                  :: rof_resume(num_inst_rof)
@@ -120,16 +135,13 @@ CONTAINS
     character(len=*),        parameter :: subName = "(esp_run_mct) "
     !--------------------------------------------------------------------------
 
-    ! Grab infodata
+    ! Grab infodata and case name
     call seq_cdata_setptrs(cdata, infodata=infodata)
+    call seq_infodata_GetData(infodata, case_name=case_name)
     ! Find out if we should be running
-    ! The data ESP component only runs during a pause alarm
-    call seq_infodata_GetData(infodata, atm_pause=pause_sig(atm_ind),         &
-         lnd_pause=pause_sig(lnd_ind), ocn_pause=pause_sig(ocn_ind),          &
-         ice_pause=pause_sig(ice_ind), glc_pause=pause_sig(glc_ind),          &
-         rof_pause=pause_sig(rof_ind), wav_pause=pause_sig(wav_ind),          &
-         cpl_pause=pause_sig(cpl_ind), case_name=case_name)
-
+    do ind = 1, desp_num_comps
+      pause_sig(ind) = seq_timemgr_pause_component_active(comp_index(ind))
+    end do
     call desp_comp_run(EClock, case_name, pause_sig, atm_resume, lnd_resume,  &
          rof_resume, ocn_resume, ice_resume, glc_resume, wav_resume,          &
          cpl_resume)

@@ -80,8 +80,8 @@ usage() {
   echo ''
   echo 'You can also set the following env variables:'
   echo '  ESMFBIN_PATH - Path to ESMF binaries '
-  echo '                 (Leave unset on yellowstone/caldera/pronghorn and the tool'
-  echo '                 will be loaded from modules)'
+  echo '                 (Leave unset on cheyenne/yellowstone/caldera/pronghorn'
+  echo '                 and the tool will be loaded from modules)'
   echo '  MPIEXEC ------ Name of mpirun executable'
   echo '                 (default is mpirun.lsf on yellowstone/caldera/pronghorn; if'
   echo '                 you run interactively on yellowstone, mpi is not used)'
@@ -225,6 +225,9 @@ if [ $MACH == "UNSET" ]; then
     ys* )
       MACH="yellowstone"
     ;;
+    cheyenne* )
+      MACH="cheyenne"
+    ;;
     geyser* )
       MACH="geyser"
     ;;
@@ -244,8 +247,11 @@ if [ $MACH == "UNSET" ]; then
 fi
 
 # Machine specific settings:
-# 1) can not run in parallel interactively on yellowstone
+# 1) can not run in parallel interactively on yellowstone or cheyenne
 if [ $MACH == "yellowstone" ] && [ $interactive == "YES" ]; then
+  serial="TRUE"
+fi
+if [ $MACH == "cheyenne" ] && [ $interactive == "YES" ]; then
   serial="TRUE"
 fi
 # 2) jaguar requires additional environment var
@@ -310,22 +316,26 @@ fi
 
 case $MACH in
   ## yellowstone, geyser, caldera, or pronghorn
-  "yellowstone" | "geyser" | "caldera" | "pronghorn" )
+  "cheyenne" | "yellowstone" | "geyser" | "caldera" | "pronghorn" )
     # From tcsh, script will not find module command
     # So check to see if module works, otherwise source an init file
     module list > /dev/null 2>&1 || source /etc/profile.d/modules.sh
     module purge
     module load intel
     module load nco
-    module load esmf
+    if [  $MACH == "cheyenne" ]; then
+      module load esmf_libs/7.0.0
+    else
+      module load esmf
+    fi
 
     if [ $serial == "TRUE" ]; then
-      module load esmf-6.3.0rp1-ncdfio-uni-O
+      module load esmf-7.0.0-ncdfio-uni-O
       if [ -z "$MPIEXEC" ]; then
         MPIEXEC=""
       fi
     else
-      module load esmf-6.3.0rp1-ncdfio-mpi-O
+      module load esmf-7.0.0-ncdfio-mpi-O
       if [ -z "$MPIEXEC" ]; then
         MPIEXEC="mpirun.lsf"
       fi
