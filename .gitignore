@@ -59,4 +59,7 @@ stream_list.*
 *.i
 *.i90
 
+# ignore python compiled files
+*.pyc
+
 src/core_*/inc
