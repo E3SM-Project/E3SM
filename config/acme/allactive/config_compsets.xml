@@ -120,6 +120,17 @@
  <lname>2000_CAM5_CLM45%SP_MPASCICE_MPASO_MOSART_SGLC_SWAVi</lname>
 </compset>
 
+<compset>
+ <alias>A_WCYCL1850S_v0atm</alias> 
+ <lname>1850_CAM5_CLM45%SP_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+ <alias>A_WCYCL2000S_v0atm</alias>
+ <lname>2000_CAM5_CLM45%SP_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAVi</lname>
+</compset>
+
+
 <!-- ACME BG compsets -->
 
 <compset>
