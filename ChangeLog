@@ -1,4 +1,79 @@
 ======================================================================
+Originator: Chris Fischer
+Date: 5-15-2017 
+Tag: cime5.3.0-alpha.14
+Answer Changes: None
+Tests: scripts_regression_tests.py
+       hand test 2000_CAM50_SLND_SICE_DOCN%AQP3_SROF_SGLC_SWAV
+       ERR.f09_g16.B1850.cheyenne_intel.allactive-defaultio
+
+Dependencies:
+
+Brief Summary:
+    - Update mct testlist from yellowstone to cheyenne.
+    - Remove xrof_flood_mode from config_grids assure exactly two grids.
+    - Add ability to remove tabs in shr_string_lalign.
+    - Timing should use largest ncpl value not atm value.
+    - Remove user_mods support from the config_compsets.xml file and adds it
+      to the config_component.xml file.
+    - Define the list of expected attributes to the mpirun command so that the
+      all do not need to be passed in.
+    - Avoid defining non-existant variable MASK_DOMAIN_FILE.
+    - Make sure that case.set_value is setting a valid variable and error out
+      if it is not.
+    - Improve error message for incorrect grid alias.
+    - Add a case.test --reset option to manually reset a test to initial
+      conditions.
+    - Improve error messages for modify_via_xml and cannot_modify_by_user_nl.
+    - Only create rest directories if they are going to be populated.
+    - Allow the user the option of skipping the xmllint validation of cime xml
+      files.
+
+User interface changes: 
+    - Add --reset option to case.test.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+71b8edb Merge pull request #1537 from ESMCI/fischer/testlist_cheyenne
+7494139 Merge pull request #1535 from jedwards4b/xrof_flood_mode_fixagain
+5894c4d Merge pull request #1531 from ESMCI/mvertens/remove_stream_tabs
+9f92bf0 Merge pull request #1524 from jedwards4b/correct_ncpl_in_timing
+62fa492 Merge pull request #1523 from jedwards4b/user_mods_in_component
+a5e9bc0 Merge pull request #1521 from jedwards4b/define_expected_attributes
+cecbbd5 Merge pull request #1518 from jedwards4b/no_mask_domain
+1bbbfc2 Merge pull request #1517 from jedwards4b/set_value_valid
+3bcfbe4 Merge pull request #1515 from jedwards4b/grid_alais_message
+94455fc Merge pull request #1502 from jedwards4b/reset_test_case
+6ebd989 Merge pull request #1514 from billsacks/modify_via_xml_error_msg
+9d865d5 Merge pull request #1511 from jedwards4b/no_interum_dirs
+144cc38 Merge pull request #1509 from jedwards4b/allowed_schema_skip
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/acme/machines/template.case.test
+M       config/cesm/config_grids.xml
+M       config/cesm/machines/template.case.test
+M       config/xml_schemas/config_compsets.xsd
+M       config/xml_schemas/env_mach_specific.xsd
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/XML/compsets.py
+M       scripts/lib/CIME/XML/env_mach_specific.py
+M       scripts/lib/CIME/XML/grids.py
+M       scripts/lib/CIME/XML/namelist_definition.py
+M       scripts/lib/CIME/XML/pes.py
+M       scripts/lib/CIME/case.py
+M       scripts/lib/CIME/case_st_archive.py
+M       scripts/lib/CIME/case_submit.py
+M       scripts/lib/CIME/case_test.py
+M       scripts/lib/CIME/get_timing.py
+M       src/build_scripts/buildlib.mct
+M       src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+M       src/share/test/unit/shr_string_test/test_shr_string.pf
+M       src/share/util/shr_string_mod.F90
+
+
+======================================================================
+
+======================================================================
 
 Originator: Chris Fischer 
 Date: 5-10-2017
