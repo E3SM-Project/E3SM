@@ -412,7 +412,8 @@ end function shr_string_endIndex
 ! !IROUTINE: shr_string_leftAlign -- remove leading white space
 !
 ! !DESCRIPTION:
-!    Remove leading white space (spaces and tabs)
+!    Remove leading white space (spaces and tabs); if input str is entirely spaces and tabs,
+!    then the result has all tabs converted to spaces
 !     \newline
 !     call shr\_string\_leftAlign(string)
 !
@@ -433,8 +434,10 @@ subroutine shr_string_leftAlign(str,rc)
 !EOP
 
    !----- local ----
+   integer(SHR_KIND_IN) :: index_first_non_blank
    integer(SHR_KIND_IN) :: rCode ! return code
    integer(SHR_KIND_IN) :: t01 = 0 ! timer
+   character, parameter :: tab_char = char(9)
 
    !----- formats -----
    character(*),parameter :: subName =   "(shr_string_leftAlign) "
@@ -447,66 +450,19 @@ subroutine shr_string_leftAlign(str,rc)
    if (debug>1 .and. t01<1) call shr_timer_get(t01,subName)
    if (debug>1) call shr_timer_start(t01)
 
-   ! First remove tabs from the string
-   str = shr_string_remove_tabs(str, rc)
-
-   ! Now remove the leading white space
-   str = adjustL(str)
+   ! From https://software.intel.com/en-us/forums/archived-visual-fortran-read-only/topic/314044
+   index_first_non_blank = verify(str, ' '//tab_char)
+   if (index_first_non_blank == 0) then
+      str = ' '
+   else
+      str = str(index_first_non_blank:)
+   end if
 
    if (present(rc)) rc = 0
 
    if (debug>1) call shr_timer_stop (t01)
 
 end subroutine shr_string_leftAlign
-
-
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: shr_string_remove_tabs -- remove all tabs from a string
-!
-! !DESCRIPTION:
-!    Remove all tabs from a string
-!
-! !REVISION HISTORY:
-!     2017-May- - M. Vertenstein
-!
-! !INTERFACE: ------------------------------------------------------------------
-
-function shr_string_remove_tabs(str_input,rc) result(str_output)
-
-   implicit none
-
-! !INPUT/OUTPUT PARAMETERS:
-
-   character(len=*)    ,intent(in)             :: str_input
-   integer(SHR_KIND_IN),intent(out)  ,optional :: rc   ! return code
-   character(len=len(str_input))               :: str_output
-!EOP
-
-   !----- local ----
-   integer(SHR_KIND_IN) :: rCode              ! return code
-   integer(SHR_KIND_IN) :: index, inlength, i ! temporaries
-
-   !----- formats -----
-   character(*),parameter :: subName =   "(shr_string_remove_tabs) "
-   character(*),parameter :: F00     = "('(shr_string_remove_tabs) ',4a)"
-
-   ! note that tab is achar(9)
-   index = 0
-   inlength = len(str_input)
-   str_output = ''
-   do i = 1, inlength
-      if (str_input(i:i) /= achar(9)) then
-         index = index + 1
-         str_output(index:index) = str_input(i:i)
-      end if
-   end do
-   str_output(index+1:inlength) = ''
-   
-   if (present(rc)) rc = 0
-
- end function shr_string_remove_tabs
 
 !===============================================================================
 !BOP ===========================================================================
