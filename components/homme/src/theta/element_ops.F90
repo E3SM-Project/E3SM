@@ -39,7 +39,7 @@ module element_ops
 
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use element_mod,    only: element_t
-  use element_state,  only: timelevels
+  use element_state,  only: timelevels, elem_state_t
   use hybrid_mod,     only: hybrid_t
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
@@ -50,6 +50,7 @@ module element_ops
   use prim_si_mod,    only: preq_hydrostatic_v2
   implicit none
 
+  type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
 
 contains
 
@@ -548,7 +549,6 @@ contains
   real (kind=real_kind), intent(in)   :: kappa_star(np,np,nlev)
   real (kind=real_kind), intent(out)  :: phi(np,np,nlev)
   
-  real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: p_i(np,np,nlev+1)
   real (kind=real_kind) :: dp_theta_R(np,np,nlev)
 
@@ -558,12 +558,13 @@ contains
   do k=1,nlev
      p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
   enddo
-  do k=1,nlev
-     p(:,:,k) = (p_i(:,:,k) + p_i(:,:,k+1))/2
-  enddo
 
   ! integrand(:,:) = dp(:,:,nlev)*Rgas*temperature(:,:,nlev)/p(:,:,nlev)
-  phi(:,:,nlev) = phis(:,:) + ( kappa_star(:,:,nlev)*theta_dp_cp(:,:,nlev)*p(:,:,nlev)**(kappa_star(:,:,nlev)-1)*p0**(-kappa_star(:,:,nlev)) )/2
+  phi(:,:,nlev) = phis(:,:) + (&
+  kappa*theta_dp_cp(:,:,nlev)*p_i(:,:,nlev+1)**(kappa-1)*p0**(-kappa) )/2
+
+  phi(:,:,nlev) = phis(:,:) + (&
+  kappa_star(:,:,nlev)*theta_dp_cp(:,:,nlev)*p_i(:,:,nlev+1)**(kappa_star(:,:,nlev)-1)*p0**(-kappa_star(:,:,nlev)) )/2
 
   do k=nlev,2,-1
      !  invert this equation at interfaces:
@@ -675,7 +676,8 @@ contains
   end do
 
   end subroutine set_elem_state
- !_____________________________________________________________________
+
+  !_____________________________________________________________________
   subroutine get_state(u,v,w,T,theta,exner,pnh,dp,Cp_star,rho,zm,g,i,j,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
@@ -718,6 +720,28 @@ contains
   end subroutine get_state
 
   !_____________________________________________________________________
+  subroutine save_initial_state(state,ie)
+
+    ! save the state at time=0 for use with some dcmip tests
+
+    type(elem_state_t), intent(inout):: state
+    integer,            intent(in)   :: ie     ! element index
+
+    if(.not. allocated(state0)) allocate( state0(nelemd) )
+    state0(ie) = state
+
+  end subroutine
+
+  !_____________________________________________________________________
+  subroutine  get_initial_state(state, ie)
+
+    type(elem_state_t), intent(inout):: state
+    integer,            intent(in)   :: ie
+    state = state0(ie)
+
+  end subroutine
+
+  !_____________________________________________________________________
   subroutine set_forcing_rayleigh_friction(elem, zm, ztop, zc, tau, u0,v0, n)
   !
   ! test cases which use rayleigh friciton will call this with the relaxation coefficient
@@ -749,25 +773,21 @@ contains
   elem%derived%FM(:,:,2,:) = f_d * ( elem%state%v(:,:,2,:,n) - v0)
   elem%derived%FM(:,:,3,:) = f_d * ( elem%state%w(:,:,:,n)  )
 
-  do k=1,nlev
-    elem%derived%FM(:,:,1,k) = f_d(:,:,k) * ( elem%state%v(:,:,1,k,n) - u0(:,:,k) )
-    elem%derived%FM(:,:,2,k) = f_d(:,:,k) * ( elem%state%v(:,:,2,k,n) - v0(:,:,k) )
-    elem%derived%FM(:,:,3,k) = f_d(:,:,k) * ( elem%state%w(:,:,k,n)  )
-  enddo
   end subroutine 
 
   !_____________________________________________________________________
-  subroutine tests_finalize(elem, hvcoord,ns,ne)
+  subroutine tests_finalize(elem, hvcoord,ns,ne,ie)
 
   ! Now that all variables have been initialized, set phi to be in hydrostatic balance
 
   implicit none
 
-  type(hvcoord_t),     intent(in)  :: hvcoord
-  type(element_t),  intent(inout)  :: elem
-  integer,             intent(in)  :: ns,ne
+  type(hvcoord_t),     intent(in)   :: hvcoord
+  type(element_t),     intent(inout):: elem
+  integer,             intent(in)   :: ns,ne
+  integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
 
-  integer :: k,ie,tl, ntQ
+  integer :: k,tl, ntQ
   real(real_kind), dimension(np,np,nlev) :: dp, kappa_star
 
   do k=1,nlev
@@ -777,12 +797,13 @@ contains
 
   ntQ=1
   call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
-  !call set_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,elem%state%phi(:,:,:,ns))
   call set_moist_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,kappa_star,elem%state%phi(:,:,:,ns))
 
   do tl = ns+1,ne
     call copy_state(elem,ns,tl)
   enddo
+
+  if(present(ie)) call save_initial_state(elem%state,ie)
 
   end subroutine tests_finalize
 

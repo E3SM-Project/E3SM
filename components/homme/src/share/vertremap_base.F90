@@ -157,10 +157,10 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
         enddo
       enddo kloop
 
-      if(any(zkr==0)) then
-        write(6,*) "Invalid zkr values in remap1."
-        abort=.true.
-      endif
+      !if(any(zkr==0)) then
+      !  write(6,*) "Invalid zkr values in remap1."
+      !  abort=.true.
+      !endif
 
       zgam  = (z2c(1:nlev+1)-z1c(zkr)) / (z1c(zkr+1)-z1c(zkr))
       zgam(1)      = 0.0
