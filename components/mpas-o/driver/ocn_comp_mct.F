@@ -290,7 +290,8 @@ contains
     io_system => shr_pio_getiosys(ocnid)
 
     pio_iotype = shr_pio_getiotype(ocnid)
-    call MPAS_io_set_iotype(domain % iocontext, pio_iotype)
+!    call MPAS_io_set_iotype(domain % iocontext, pio_iotype)
+    call MPAS_io_unset_iotype(domain % iocontext)
 
     ! ----------------
     ! Set up log file information
