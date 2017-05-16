@@ -261,6 +261,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         run_cmd_assert_result(self, "./case.build", from_dir=testdir)
 
         with Case(testdir, read_only=True) as case:
+            case._compsetname = case.get_value("COMPSET")
             case.set_comp_classes(case.get_values("COMP_CLASSES"))
             primary = case._find_primary_component()
             self.assertEqual(primary, "drv", msg="primary component test expected drv but got %s"%primary)
