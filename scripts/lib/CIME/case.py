@@ -72,7 +72,7 @@ class Case(object):
         self._env_files_that_need_rewrite = set()
         self._read_only_mode = True
         self._force_read_only = read_only
-        self._principle_component = None
+        self._primary_component = None
 
         self._env_entryid_files = []
         self._env_generic_files = []
@@ -96,6 +96,7 @@ class Case(object):
         self._gridfile = None
         self._components = []
         self._component_classes = []
+        self._component_description = {}
         self._is_env_loaded = False
         # these are user_mods as defined in the compset
         # Command Line user_mods are handled seperately
@@ -431,7 +432,7 @@ class Case(object):
                 compsets = Compsets(compsets_filename)
                 match, compset_alias, science_support = compsets.get_compset_match(name=compset_name)
                 if match is not None:
-                    if pesfile is None:
+                    if self._pesfile is None:
                         self._pesfile = files.get_value("PES_SPEC_FILE"     , {"component":component})
                         self.set_lookup_value("PES_SPEC_FILE"      ,
                                               files.get_value("PES_SPEC_FILE"     , {"component":component}, resolved=False))
@@ -442,27 +443,77 @@ class Case(object):
                     user_mods_dir     = files.get_value("USER_MODS_DIR"     , {"component":component}, resolved=False)
                     self.set_lookup_value("COMPSETS_SPEC_FILE" ,
                                    files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
-                    self._principle_component = component.upper()
+                    self._primary_component = component.upper()
                     self.set_lookup_value("TESTS_SPEC_FILE"    , tests_filename)
                     self.set_lookup_value("TESTS_MODS_DIR"     , tests_mods_dir)
                     self.set_lookup_value("USER_MODS_DIR"      , user_mods_dir)
                     logger.info("Compset longname is %s"%(match))
                     logger.info("Compset specification file is %s" %(compsets_filename))
-                    logger.info("Pes     specification file is %s" %(pesfile))
+                    logger.info("Pes     specification file is %s" %(self._pesfile))
                     return compset_alias, science_support
 
         if user_compset is True:
             #Do not error out for user_compset
             logger.warn("Could not find a compset match for either alias or longname in %s" %(compset_name))
             self._compsetname = compset_name
-            logger.info("Pes     specification file is %s" %(pesfile))
-            self.set_lookup_value("PES_SPEC_FILE", pesfile)
         else:
             expect(False,
                    "Could not find a compset match for either alias or longname in %s\n"%(compset_name)
                    + "You may need the --user-compset argument.")
 
         return None, science_support
+
+    def _find_primary_component(self):
+        """
+        try to glean the primary component based on compset name
+        """
+        progcomps = {}
+        spec = {}
+        primary_component = None
+
+        for comp in self._component_classes:
+
+            if comp == "CPL":
+                continue
+            spec[comp] = self.get_value("COMP_%s"%comp)
+            notprogcomps = ("D%s"%comp,"X%s"%comp,"S%s"%comp)
+            if spec[comp].upper() in notprogcomps:
+                progcomps[comp] = False
+            else:
+                progcomps[comp] = True
+        expect("ATM" in progcomps and "LND" in progcomps and "OCN" in progcomps and \
+               "ICE" in progcomps, " Not finding expected components in %s"%self._component_classes)
+        if progcomps["ATM"] and progcomps["LND"] and progcomps["OCN"] and \
+           progcomps["ICE"]:
+            primary_component = "allactive"
+        elif progcomps["LND"] and progcomps["OCN"] and progcomps["ICE"]:
+            # this is a "J" compset
+            primary_component = "allactive"
+        elif progcomps["ATM"]:
+            if "DOCN%SOM" in self._compsetname:
+                # This is an "E" compset
+                primary_component = "allactive"
+            else:
+                # This is an "F" or "Q" compset
+                primary_component = spec["ATM"]
+        elif progcomps["LND"]:
+            # This is an "I" compset
+            primary_component = spec["LND"]
+        elif progcomps["OCN"]:
+            # This is a "C" or "G" compset
+            primary_component = spec["OCN"]
+        elif progcomps["ICE"]:
+            # This is a "D" compset
+            primary_component = spec["ICE"]
+        elif "GLC" in progcomps and progcomps["GLC"]:
+            # This is a "TG" compset
+            primary_component = spec["GLC"]
+        else:
+            # This is "A", "X" or "S"
+            primary_component = "drv"
+
+        return primary_component
+
 
     def get_compset_components(self):
         #If are doing a create_clone then, self._compsetname is not set yet
@@ -545,8 +596,18 @@ class Case(object):
             expect(comp_config_file is not None and os.path.isfile(comp_config_file),
                    "Config file %s for component %s not found."%(comp_config_file, comp_name))
             compobj = Component(comp_config_file)
+            self._component_description[comp_class] = compobj.get_description(self._compsetname)
+            expect(self._component_description[comp_class] is not None,"No description found in file %s for component %s"%(comp_config_file, comp_name))
+            logger.info("%s component is %s"%(comp_class, self._component_description[comp_class]))
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
+
+        if self._primary_component is None:
+            self._primary_component = self._find_primary_component()
+            if self._pesfile is None:
+                self._pesfile = files.get_value("PES_SPEC_FILE"     , {"component":self._primary_component})
+            logger.info("Pes specification file is %s" %(self._pesfile))
+            self.set_lookup_value("PES_SPEC_FILE", self._pesfile)
 
         # final cleanup of lookups table
         for key,value in self.lookups.items():
@@ -674,9 +735,6 @@ class Case(object):
         compset_alias, science_support = self._set_compset_and_pesfile(compset_name, files, user_compset=user_compset, pesfile=pesfile)
 
         self._components = self.get_compset_components()
-        #FIXME - if --user-compset is True then need to determine that
-        #all of the compset settings are valid
-
         #--------------------------------------------
         # grid
         #--------------------------------------------
@@ -972,7 +1030,7 @@ class Case(object):
         for newdir in newdirs:
             os.makedirs(newdir)
 
-        user_mods = self.get_value("%s_USER_MODS"%(self._principle_component))
+        user_mods = self.get_value("%s_USER_MODS"%(self._primary_component))
 
         # Open a new README.case file in $self._caseroot
         append_status(" ".join(sys.argv), "README.case", caseroot=self._caseroot)
@@ -991,8 +1049,11 @@ class Case(object):
             if component_class == "CPL":
                 continue
             comp_grid = "%s_GRID"%component_class
+            append_status("Component %s is %s"%(component_class, self._component_description[component_class]),
+                          "README.case", caseroot=self._caseroot)
             append_status("%s is %s"%(comp_grid,self.get_value(comp_grid)),
                           "README.case", caseroot=self._caseroot)
+
         if user_mods is not None:
             note = "This compset includes user_mods %s"%user_mods
             append_status(note, "README.case", caseroot=self._caseroot)
@@ -1007,7 +1068,7 @@ class Case(object):
         or they can be in the compset definition, or both.
         """
 
-        component_user_mods = self.get_value("%s_USER_MODS"%(self._principle_component))
+        component_user_mods = self.get_value("%s_USER_MODS"%(self._primary_component))
 
         # This looping order will lead to the specified user_mods_dir taking
         # precedence over self._user_mods, if there are any conflicts.

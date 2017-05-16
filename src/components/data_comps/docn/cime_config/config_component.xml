@@ -50,13 +50,13 @@
     from the driver.
     --- A setting of prescribed assumes the only field in the input stream is SST.
     It also assumes the SST is in Celsius and must be converted to Kelvin.
-    All other fields are set to zero except for ocean salinity, which is set to a 
-    constant reference salinity value. Normally the ice fraction data is found in 
-    the same data files that provide SST data to the data ocean model. They are 
-    normally found in the same file because the SST and ice fraction data are derived 
+    All other fields are set to zero except for ocean salinity, which is set to a
+    constant reference salinity value. Normally the ice fraction data is found in
+    the same data files that provide SST data to the data ocean model. They are
+    normally found in the same file because the SST and ice fraction data are derived
     from the same observational data sets and are consistent with each other.
-    --- Settings of som (slab ocean model) or  som_aquap (aquaplanet slab ocean) are 
-    prognostic modes which compute a prognostic sea surface temperature and a 
+    --- Settings of som (slab ocean model) or  som_aquap (aquaplanet slab ocean) are
+    prognostic modes which compute a prognostic sea surface temperature and a
     freeze/melt potential (surface Q-flux) used by the sea ice model.  This
     calculation requires an external SOM forcing data file that includes
     ocean mixed layer depths and bottom-of-the-slab Q-fluxes.
@@ -67,13 +67,13 @@
     appropriate and is provided for testing and development purposes only.
     Users must create scientifically appropriate data for their particular
     application.  A tool is available to derive valid SOM forcing.
-    --- A setting of sst_aquapN (where “N” is an integer index value) is a 
-    type of prescribed SST mode used specifically for an aquaplanet setup in 
-    which global SSTs correspond to an analytic form set by the index value.  
+    --- A setting of sst_aquapN (where “N” is an integer index value) is a
+    type of prescribed SST mode used specifically for an aquaplanet setup in
+    which global SSTs correspond to an analytic form set by the index value.
     Currently, indices for 10 SST profiles are supported [e.g., index 3 corresponds
-    to the “QOBS” profile of Neale and Hoskins (2001, Atmos. Sci. Lett.)]. 
-    With source code modifications, it is possible for users to create their own 
-    analytic SST distributions and match them to indices 11 or greater.  
+    to the “QOBS” profile of Neale and Hoskins (2001, Atmos. Sci. Lett.)].
+    With source code modifications, it is possible for users to create their own
+    analytic SST distributions and match them to indices 11 or greater.
     </desc>
   </entry>
 
@@ -223,10 +223,11 @@
 
   <description>
     <desc compset="_DOCN%NULL">docn null mode</desc>
+    <desc compset="_DOCN%DOM" >docn prescribed ocean mode</desc>
     <desc compset="_DOCN%SOM" >docn slab ocean mode</desc>
     <desc compset="_DOCN%SOMAQP">docn aquaplanet slab ocean mode</desc>
     <desc compset="_DOCN%IAF" >docn interannual mode</desc>
-    <desc compset="_DOCN%SST_AQUAP">docn aquaplanet mode:</desc> 
+    <desc compset="_DOCN%SST_AQUAP">docn aquaplanet mode:</desc>
     <desc compset="_DOCN%AQP1">docn prescribed aquaplanet sst - option 1</desc>
     <desc compset="_DOCN%AQP2">docn prescribed aquaplanet sst - option 2</desc>
     <desc compset="_DOCN%AQP3">docn prescribed aquaplanet sst - option 3</desc>
