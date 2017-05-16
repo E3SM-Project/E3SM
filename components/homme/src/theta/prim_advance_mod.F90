@@ -83,7 +83,8 @@ contains
   subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
 
     use bndry_mod,      only: bndry_exchangev
-    use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, qsplit, integration, hypervis_order, nu
+    use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, &
+                              qsplit, integration, hypervis_order, nu, dcmip16_mu, dcmip16_mu_s
     use edge_mod,       only: edgevpack, edgevunpack, initEdgeBuffer
     use edgetype_mod,   only: EdgeBuffer_t
     use reduction_mod,  only: reductionbuffer_ordered_1d_t, parallelmax
@@ -316,8 +317,9 @@ contains
     if (hypervis_order == 2 .and. nu>0) &
          call advance_hypervis(edge6,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
 
-!    if (dcmip2016_mu>0) &
-!      advance_physical_vis(edge6,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt,mu,mu_v)
+
+    ! warning: advance_physical_vis currently requires levels that are equally spaced in z
+    if (dcmip16_mu>0) call advance_physical_vis(edge6,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt,dcmip16_mu,dcmip16_mu_s)
 
     call t_stopf('prim_advance_exp')
     end subroutine prim_advance_exp
@@ -456,7 +458,7 @@ contains
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
   !
   !
-  use control_mod, only : nu, nu_div, hypervis_subcycle, nu_s, nu_p, nu_top, psurf_vis, swest, dcmip16_mu,dcmip16_mu_s
+  use control_mod, only : nu, nu_div, hypervis_subcycle, nu_s, nu_p, nu_top, psurf_vis, swest
   use hybvcoord_mod, only : hvcoord_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
   use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
@@ -582,7 +584,7 @@ contains
               ! note: weak operators alreayd have mass matrix "included"
 
               ! add regular diffusion in top 3 layers:
-              if (dcmip16_mu>0 .or. dcmip16_mu_s>0 .or. (nu_top>0 .and. k<=3) ) then
+              if (nu_top>0 .and. k<=3) then
                  lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d       (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,2)=laplace_sphere_wk(elem(ie)%state%theta_dp_cp(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w          (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
@@ -607,15 +609,6 @@ contains
                  stens(:,:,k,2,ie)=-nu  *stens(:,:,k,2,ie) ! theta
                  stens(:,:,k,3,ie)=-nu  *stens(:,:,k,3,ie) ! w
                  stens(:,:,k,4,ie)=-nu_s*stens(:,:,k,4,ie) ! phi
-              endif
-
-              ! add uniform viscosity dcmip16_mu in addition to hyperviscosity nu
-              if(dcmip16_mu>0) then
-                vtens(:,:,:,k,ie)=vtens(:,:,:,k,ie) + dcmip16_mu  *lap_v(:,:,:) ! u and v
-                stens(:,:,k,1,ie)=stens(:,:,k,1,ie) + dcmip16_mu_s*lap_s(:,:,1) ! dp3d
-                stens(:,:,k,2,ie)=stens(:,:,k,2,ie) + dcmip16_mu_s*lap_s(:,:,2) ! therta
-                stens(:,:,k,3,ie)=stens(:,:,k,3,ie) + dcmip16_mu_s*lap_s(:,:,3) ! w
-                stens(:,:,k,4,ie)=stens(:,:,k,4,ie) + dcmip16_mu_s*lap_s(:,:,4) ! phi
               endif
 
            enddo
@@ -757,7 +750,7 @@ contains
 
 
 
-  subroutine advance_physical_vis(edgebuf,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt,mu,mu_v)
+  subroutine advance_physical_vis(edgebuf,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt,mu_s,mu)
   !
   !  take one timestep of of physical viscosity (single laplace operator) for
   !  all state variables in both horizontal and vertical
@@ -769,7 +762,7 @@ contains
   !     uniform spacing in z with delz = 20km/nlev
   !
   !
-!  use control_mod, only : 
+  use control_mod, only : test_case
   use hybvcoord_mod, only : hvcoord_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, laplace_z
   use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
@@ -785,7 +778,7 @@ contains
   type (derivative_t)  , intent(in) :: deriv
   type (hvcoord_t), intent(in)      :: hvcoord
 
-  real (kind=real_kind) :: dt, mu, mu_v
+  real (kind=real_kind) :: dt, mu_s, mu
   integer :: nt,nets,nete
 
   ! local
@@ -812,6 +805,7 @@ contains
 
 
   call t_startf('advance_physical_vis')
+  if(test_case .ne. 'dcmip2016_test3') call abortmp("dcmip16_mu is currently limited to dcmip16 test 3")
   delz = 20000/nlev
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -845,24 +839,21 @@ contains
      phi_prime(:,:,:)  = elem(ie)%state%phi(:,:,:,nt)        -phi_ref(:,:,:,ie)
      theta_prime(:,:,:)= elem(ie)%state%theta_dp_cp(:,:,:,nt)-theta_ref(:,:,:,ie)
 
-
      ! vertical viscosity
-     call laplace_z(u_prime(:,:,:,:),vtens(:,:,:,:,ie),2,delz)
-     call laplace_z(dp_prime,stens(:,:,:,1,ie),1,delz)     
-     call laplace_z(theta_prime,stens(:,:,:,2,ie),1,delz)  
-     call laplace_z(w_prime,stens(:,:,:,3,ie),1,delz)  
-     call laplace_z(phi_prime,stens(:,:,:,4,ie),1,delz) 
+     call laplace_z(u_prime,    vtens(:,:,:,:,ie),2,delz)
+     call laplace_z(dp_prime,   stens(:,:,:,1,ie),1,delz)
+     call laplace_z(theta_prime,stens(:,:,:,2,ie),1,delz)
+     call laplace_z(w_prime,    stens(:,:,:,3,ie),1,delz)
+     call laplace_z(phi_prime,  stens(:,:,:,4,ie),1,delz)
 
      ! add in horizontal viscosity
      ! multiply by mass matrix for DSS
      ! horiz viscosity already has mass matrix built in
      do k=1,nlev
         lap_v = vlaplace_sphere_wk(u_prime(:,:,:,k),deriv,elem(ie),var_coef=.false.)
-        vtens(:,:,1,k,ie) = (vtens(:,:,1,k,ie)*elem(ie)%spheremp(:,:) + &
-              lap_v(:,:,1)) 
 
-        vtens(:,:,2,k,ie) = (vtens(:,:,2,k,ie)*elem(ie)%spheremp(:,:) + &
-             lap_v(:,:,2))
+        vtens(:,:,1,k,ie) = (vtens(:,:,1,k,ie)*elem(ie)%spheremp(:,:) + lap_v(:,:,1))
+        vtens(:,:,2,k,ie) = (vtens(:,:,2,k,ie)*elem(ie)%spheremp(:,:) + lap_v(:,:,2))
 
         stens(:,:,k,1,ie) = (stens(:,:,k,1,ie)*elem(ie)%spheremp(:,:) + &
              laplace_sphere_wk(dp_prime,deriv,elem(ie),var_coef=.false.)  )
@@ -897,24 +888,24 @@ contains
      ! apply inverse mass matrix, accumulate tendencies
      do k=1,nlev
         elem(ie)%state%v(:,:,1,k,nt)=elem(ie)%state%v(:,:,1,k,nt) + &
-             mu_v*dt*vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
+             mu*dt*vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
         elem(ie)%state%v(:,:,2,k,nt)=elem(ie)%state%v(:,:,2,k,nt) + &
-             mu_v*dt*vtens(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)
+             mu*dt*vtens(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)
         
         elem(ie)%state%w(:,:,k,nt)=elem(ie)%state%w(:,:,k,nt) &
-             +mu*dt*stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)
+             +mu_s*dt*stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)
         
         elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt) &
-             +mu*dt*stens(:,:,k,1,ie)*elem(ie)%rspheremp(:,:)
+             +mu_s*dt*stens(:,:,k,1,ie)*elem(ie)%rspheremp(:,:)
         
         elem(ie)%state%w(:,:,k,nt)=elem(ie)%state%w(:,:,k,nt) &
-             +mu*dt*stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)
+             +mu_s*dt*stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)
         
         elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt) &
-             +mu*dt*stens(:,:,k,4,ie)*elem(ie)%rspheremp(:,:)
+             +mu_s*dt*stens(:,:,k,4,ie)*elem(ie)%rspheremp(:,:)
         
         elem(ie)%state%theta_dp_cp(:,:,k,nt)=elem(ie)%state%theta_dp_cp(:,:,k,nt) &
-             +mu*dt*stens(:,:,k,2,ie)*elem(ie)%rspheremp(:,:)
+             +mu_s*dt*stens(:,:,k,2,ie)*elem(ie)%rspheremp(:,:)
      enddo
   enddo
 
