@@ -229,7 +229,9 @@ contains
 !    call extrae_user_function(0)
 
     ! physical viscosity for supercell test case
-    ! call advance_physical_vis(edgeadv,elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt,dcmip16_mu_s)
+    if (dcmip16_mu_s>0) then
+        call advance_physical_vis(edgeadv,elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt,dcmip16_mu_s)
+     endif
 
     call t_stopf('prim_advec_tracers_remap_rk2')
 
@@ -822,7 +824,7 @@ OMP_SIMD
         
            ! timestep
            elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=elem(ie)%state%Qdp(:,:,k,q,nt_qdp)*elem(ie)%spheremp(:,:) &
-                - dt*mu*Qtens(:,:,k,q,ie)
+                + dt*mu*Qtens(:,:,k,q,ie)
         enddo
 
       enddo

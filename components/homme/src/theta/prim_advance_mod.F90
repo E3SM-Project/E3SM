@@ -319,7 +319,7 @@ contains
 
 
     ! warning: advance_physical_vis currently requires levels that are equally spaced in z
-    if (dcmip16_mu>0) call advance_physical_vis(edge6,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt,dcmip16_mu,dcmip16_mu_s)
+    if (dcmip16_mu>0) call advance_physical_vis(edge6,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt,dcmip16_mu_s,dcmip16_mu)
 
     call t_stopf('prim_advance_exp')
     end subroutine prim_advance_exp
@@ -846,6 +846,9 @@ contains
      call laplace_z(w_prime,    stens(:,:,:,3,ie),1,delz)
      call laplace_z(phi_prime,  stens(:,:,:,4,ie),1,delz)
 
+     vtens(:,:,:,:,ie)=0
+     stens(:,:,:,:,ie)=0
+
      ! add in horizontal viscosity
      ! multiply by mass matrix for DSS
      ! horiz viscosity already has mass matrix built in
@@ -892,20 +895,18 @@ contains
         elem(ie)%state%v(:,:,2,k,nt)=elem(ie)%state%v(:,:,2,k,nt) + &
              mu*dt*vtens(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)
         
-        elem(ie)%state%w(:,:,k,nt)=elem(ie)%state%w(:,:,k,nt) &
-             +mu_s*dt*stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)
-        
         elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt) &
              +mu_s*dt*stens(:,:,k,1,ie)*elem(ie)%rspheremp(:,:)
         
+        elem(ie)%state%theta_dp_cp(:,:,k,nt)=elem(ie)%state%theta_dp_cp(:,:,k,nt) &
+             +mu_s*dt*stens(:,:,k,2,ie)*elem(ie)%rspheremp(:,:)
+
         elem(ie)%state%w(:,:,k,nt)=elem(ie)%state%w(:,:,k,nt) &
              +mu_s*dt*stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)
         
         elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt) &
              +mu_s*dt*stens(:,:,k,4,ie)*elem(ie)%rspheremp(:,:)
         
-        elem(ie)%state%theta_dp_cp(:,:,k,nt)=elem(ie)%state%theta_dp_cp(:,:,k,nt) &
-             +mu_s*dt*stens(:,:,k,2,ie)*elem(ie)%rspheremp(:,:)
      enddo
   enddo
 
