@@ -24,6 +24,9 @@ class Component(EntryID):
 
         EntryID.__init__(self, infile, schema=schema)
 
+
+
+
     def get_value(self, name, attribute=None, resolved=False, subgroup=None):
         expect(subgroup is None, "This class does not support subgroups")
         return EntryID.get_value(self, name, attribute, resolved)
@@ -91,6 +94,16 @@ class Component(EntryID):
             match_value = " ".join(match_values)
 
         return match_value
+
+    def get_description(self, compsetname):
+        rootnode = self.get_node("description")
+        desc_nodes = self.get_nodes("desc", root=rootnode)
+        desc = ""
+        for node in desc_nodes:
+            compsetmatch = node.get("compset")
+            if re.search(compsetmatch, compsetname):
+                desc += node.text
+        return desc
 
     def print_values(self):
         """
