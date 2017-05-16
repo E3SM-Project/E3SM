@@ -2677,11 +2677,11 @@ module init_atm_cases
       else if (trim(config_extrap_airtemp) == 'lapse-rate') then
          extrap_airtemp = 2
       else
-          call mpas_dmpar_global_abort('*************************************************************', deferredAbort=.true.)
-          call mpas_dmpar_global_abort('* Invalid value for namelist variable config_extrap_airtemp *', deferredAbort=.true.)
-          call mpas_dmpar_global_abort('*************************************************************')
+          call mpas_log_write('*************************************************************', messageType=MPAS_LOG_ERR)
+          call mpas_log_write('* Invalid value for namelist variable config_extrap_airtemp *', messageType=MPAS_LOG_ERR)
+          call mpas_log_write('*************************************************************', messageType=MPAS_LOG_CRIT)
       end if
-      write(0,*) "Using option '" // trim(config_extrap_airtemp) // "' for vertical extrapolation of temperature"
+      call mpas_log_write("Using option '" // trim(config_extrap_airtemp) // "' for vertical extrapolation of temperature")
 
       parinfo => block % parinfo
       dminfo => block % domain % dminfo
@@ -3528,7 +3528,7 @@ module init_atm_cases
                call mpas_pool_get_array(fg, 'p', destField2d)
                ndims = 2
             else if (trim(field % field) == 'PRESSURE') then
-write(0,*) 'Interpolating PRESSURE at ', k, vert_level(k)
+               call mpas_log_write('Interpolating PRESSURE at $i $r', intArgs=(/k/), realArgs=(/vert_level(k)/))
                nInterpPoints = nCells
                latPoints => latCell
                lonPoints => lonCell
@@ -3736,7 +3736,7 @@ write(0,*) 'Interpolating PRESSURE at ', k, vert_level(k)
                dzs_fg(k,:) = 255.-100.
                zs_fg(k,:) = 255.
             else if (trim(field % field) == 'SM100289') then
-write(0,*) 'Interpolating SM100289'
+               call mpas_log_write('Interpolating SM100289')
 
                interp_list(1) = FOUR_POINT
                interp_list(2) = W_AVERAGE4
@@ -3945,7 +3945,7 @@ write(0,*) 'Interpolating SM100289'
                dzs_fg(k,:) = 255.-100.
                zs_fg(k,:) = 255.
             else if (trim(field % field) == 'ST100289') then
-write(0,*) 'Interpolating ST100289'
+               call mpas_log_write('Interpolating ST100289')
 
                interp_list(1) = SIXTEEN_POINT
                interp_list(2) = FOUR_POINT
@@ -4476,9 +4476,9 @@ call mpas_log_write('Done with soil consistency check')
                                          extrap=extrap_airtemp, ierr=istatus)
             if (istatus /= 0) then
                write(errstring,'(a,i4,a,i10)') 'Error in interpolation of t(k,iCell) for k=', k, ', iCell=', iCell
-               call mpas_dmpar_global_abort('*****************************************************************', deferredAbort=.true.)
-               call mpas_dmpar_global_abort(trim(errstring),                                                     deferredAbort=.true.)
-               call mpas_dmpar_global_abort('*****************************************************************')
+               call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+               call mpas_log_write(trim(errstring),                                                     messageType=MPAS_LOG_ERR)
+               call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_CRIT)
             end if
          end do
 
@@ -4958,7 +4958,7 @@ call mpas_log_write('Done with soil consistency check')
             slope = (zf(2,nz) - zf(2,nz-1)) / (zf(1,nz) - zf(1,nz-1))
             vertical_interp = zf(2,nz) + slope * (target_z - zf(1,nz))
          else if (extrap_type == 2) then
-             write(0,*) 'ERROR: extrap_type == 2 not implemented for target_z >= zf(1,nz)'
+             call mpas_log_write('extrap_type == 2 not implemented for target_z >= zf(1,nz)', messageType=MPAS_LOG_ERR)
              if (present(ierr)) ierr = 1
              return
          end if
