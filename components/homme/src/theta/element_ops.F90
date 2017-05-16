@@ -548,7 +548,6 @@ contains
   real (kind=real_kind), intent(in)   :: kappa_star(np,np,nlev)
   real (kind=real_kind), intent(out)  :: phi(np,np,nlev)
   
-  real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: p_i(np,np,nlev+1)
   real (kind=real_kind) :: dp_theta_R(np,np,nlev)
 
@@ -558,12 +557,9 @@ contains
   do k=1,nlev
      p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
   enddo
-  do k=1,nlev
-     p(:,:,k) = (p_i(:,:,k) + p_i(:,:,k+1))/2
-  enddo
 
   ! integrand(:,:) = dp(:,:,nlev)*Rgas*temperature(:,:,nlev)/p(:,:,nlev)
-  phi(:,:,nlev) = phis(:,:) + ( kappa_star(:,:,nlev)*theta_dp_cp(:,:,nlev)*p(:,:,nlev)**(kappa_star(:,:,nlev)-1)*p0**(-kappa_star(:,:,nlev)) )/2
+  phi(:,:,nlev) = phis(:,:) + ( kappa_star(:,:,nlev)*theta_dp_cp(:,:,nlev)*p_i(:,:,nlev+1)**(kappa_star(:,:,nlev)-1)*p0**(-kappa_star(:,:,nlev)) )/2
 
   do k=nlev,2,-1
      !  invert this equation at interfaces:
