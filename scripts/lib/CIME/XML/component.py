@@ -103,6 +103,7 @@ class Component(EntryID):
             compsetmatch = node.get("compset")
             if re.search(compsetmatch, compsetname):
                 desc += node.text
+
         return desc
 
     def print_values(self):

@@ -96,6 +96,7 @@ class Case(object):
         self._gridfile = None
         self._components = []
         self._component_classes = []
+        self._component_description = {}
         self._is_env_loaded = False
         # these are user_mods as defined in the compset
         # Command Line user_mods are handled seperately
@@ -490,6 +491,8 @@ class Case(object):
             primary_component = spec["OCN"]
         elif progcomps["ICE"]:
             primary_component = spec["ICE"]
+        elif progcomps["GLC"]:
+            primary_component = spec["GLC"]
         else:
             primary_component = "drv"
 
@@ -579,9 +582,9 @@ class Case(object):
             expect(comp_config_file is not None and os.path.isfile(comp_config_file),
                    "Config file %s for component %s not found."%(comp_config_file, comp_name))
             compobj = Component(comp_config_file)
-            desc = compobj.get_description(self._compsetname)
-            expect(desc is not None,"No description found in file %s for component %s"%(comp_config_file, comp_name))
-            logger.info("%s component is %s"%(comp_class, desc))
+            self._component_description[comp_class] = compobj.get_description(self._compsetname)
+            expect(self._component_description[comp_class] is not None,"No description found in file %s for component %s"%(comp_config_file, comp_name))
+            logger.info("%s component is %s"%(comp_class, self._component_description[comp_class]))
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
 
@@ -1032,8 +1035,11 @@ class Case(object):
             if component_class == "CPL":
                 continue
             comp_grid = "%s_GRID"%component_class
+            append_status("Component %s is %s"%(component_class, self._component_description[component_class]),
+                          "README.case", caseroot=self._caseroot)
             append_status("%s is %s"%(comp_grid,self.get_value(comp_grid)),
                           "README.case", caseroot=self._caseroot)
+
         if user_mods is not None:
             note = "This compset includes user_mods %s"%user_mods
             append_status(note, "README.case", caseroot=self._caseroot)
