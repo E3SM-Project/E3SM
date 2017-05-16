@@ -537,11 +537,11 @@ contains
      enddo
 
      call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
-!#if 0
+#if 0
      theta_ref(:,:,:,ie)=0
      phi_ref(:,:,:,ie)=0
      dp_ref(:,:,:,ie)=0
-!#endif              
+#endif              
   enddo
 
 
