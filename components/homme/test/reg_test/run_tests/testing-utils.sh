@@ -613,6 +613,7 @@ diffCprncOutput() {
   fi
 
   # for files in movies
+  exitcode=0 
   for file in $FILES 
   do
     echo "file = ${file}"
@@ -622,7 +623,7 @@ diffCprncOutput() {
     # ensure that cprncOutputFile exists
     if [ ! -f "${cprncOutputFile}" ]; then
       echo "Error: cprnc output file ${cprncOutputFile} not found. Exiting."
-      exit -12
+      ((exitcode=exitcode-1))
     fi
 
     # Parse the output file to determine if they were identical
@@ -637,10 +638,10 @@ diffCprncOutput() {
       echo "CPRNC returned the following RMS differences"
       grep RMS ${cprncOutputFile}
       echo "############################################################################"
-      exit -13
+      ((exitcode=exitcode-10))
     fi
-    
   done
+  exit ${exitcode}
 }
 
 

@@ -119,6 +119,14 @@ Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_write_output_on_startup" type="logical"
+	category="io" group="io">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_test_case_diag" type="logical"
 	category="io" group="io">
 MISSING DESCRIPTION
@@ -520,7 +528,7 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_wachspress_integration_type" type="char*1024"
-       category="velocity_solver" group="velocity_solver">
+	category="velocity_solver" group="velocity_solver">
 MISSING DESCRIPTION
 
 Valid values: 'trapezoidal', 'dunavant' or 'fekete'
@@ -528,7 +536,7 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_wachspress_integration_order" type="integer"
-       category="velocity_solver" group="velocity_solver">
+	category="velocity_solver" group="velocity_solver">
 MISSING DESCRIPTION
 
 Valid values: positive integers
@@ -588,9 +596,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_monotonic" type="logical"
 	category="advection" group="advection">
-If .true. then fluxes are limited to produce a monotonic advection scheme
+If true then fluxes are limited to produce a monotonic advection scheme
 
-Valid values: .true. and .false.
+Valid values: true and false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2266,7 +2274,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_highFrequencyOutput" group="AM_highFrequencyOutput">
 If true, ocean analysis member highFrequencyOutput is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2290,7 +2298,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_highFrequencyOutput" group="AM_highFrequencyOutput">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2298,7 +2306,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_highFrequencyOutput" group="AM_highFrequencyOutput">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2309,7 +2317,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_temperatures" group="AM_temperatures">
 If true, ocean analysis member temperatures is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2333,7 +2341,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_temperatures" group="AM_temperatures">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2341,7 +2349,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_temperatures" group="AM_temperatures">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2352,7 +2360,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_regionalStatistics" group="AM_regionalStatistics">
 If true, ocean analysis member regionalStatistics is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2376,7 +2384,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_regionalStatistics" group="AM_regionalStatistics">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2384,7 +2392,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_regionalStatistics" group="AM_regionalStatistics">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2403,7 +2411,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_ridgingDiagnostics" group="AM_ridgingDiagnostics">
 If true, ocean analysis member ridgingDiagnostics is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2427,7 +2435,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_ridgingDiagnostics" group="AM_ridgingDiagnostics">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2435,7 +2443,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_ridgingDiagnostics" group="AM_ridgingDiagnostics">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2446,7 +2454,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_conservationCheck" group="AM_conservationCheck">
 If true, ocean analysis member conservationCheck is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2470,7 +2478,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_conservationCheck" group="AM_conservationCheck">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2478,7 +2486,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_conservationCheck" group="AM_conservationCheck">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2486,7 +2494,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_conservationCheck" group="AM_conservationCheck">
 Logical flag determining if the conservation check is written to the log file.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2497,7 +2505,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_geographicalVectors" group="AM_geographicalVectors">
 If true, ocean analysis member geographicalVectors is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2521,7 +2529,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_geographicalVectors" group="AM_geographicalVectors">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2529,7 +2537,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_geographicalVectors" group="AM_geographicalVectors">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2540,7 +2548,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_loadBalance" group="AM_loadBalance">
 If true, ocean analysis member loadBalance is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2564,7 +2572,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_loadBalance" group="AM_loadBalance">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2572,7 +2580,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_loadBalance" group="AM_loadBalance">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2591,7 +2599,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_maximumIcePresence" group="AM_maximumIcePresence">
 If true, ocean analysis member maximumIcePresence is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2615,7 +2623,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_maximumIcePresence" group="AM_maximumIcePresence">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2623,7 +2631,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_maximumIcePresence" group="AM_maximumIcePresence">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2642,7 +2650,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_miscellaneous" group="AM_miscellaneous">
 If true, ocean analysis member miscellaneous is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2666,7 +2674,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_miscellaneous" group="AM_miscellaneous">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2674,7 +2682,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_miscellaneous" group="AM_miscellaneous">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2685,7 +2693,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_areaVariables" group="AM_areaVariables">
 If true, ocean analysis member areaVariables is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2709,7 +2717,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_areaVariables" group="AM_areaVariables">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2717,7 +2725,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_areaVariables" group="AM_areaVariables">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2728,7 +2736,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_pondDiagnostics" group="AM_pondDiagnostics">
 If true, ocean analysis member pondDiagnostics is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2752,7 +2760,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_pondDiagnostics" group="AM_pondDiagnostics">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2760,7 +2768,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_pondDiagnostics" group="AM_pondDiagnostics">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2771,7 +2779,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_unitConversion" group="AM_unitConversion">
 If true, ocean analysis member unitConversion is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2795,7 +2803,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_unitConversion" group="AM_unitConversion">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2803,7 +2811,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_unitConversion" group="AM_unitConversion">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2814,7 +2822,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_pointwiseStats" group="AM_pointwiseStats">
 If true, ocean analysis member pointwiseStats is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2838,7 +2846,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_pointwiseStats" group="AM_pointwiseStats">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2846,7 +2854,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_pointwiseStats" group="AM_pointwiseStats">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2857,7 +2865,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_iceShelves" group="AM_iceShelves">
 If true, ocean analysis member iceShelves is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2881,7 +2889,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_iceShelves" group="AM_iceShelves">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2889,7 +2897,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_iceShelves" group="AM_iceShelves">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2900,7 +2908,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_icePresent" group="AM_icePresent">
 If true, ocean analysis member icePresent is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2924,7 +2932,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_icePresent" group="AM_icePresent">
 Logical flag determining if an analysis member computation occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2932,7 +2940,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_icePresent" group="AM_icePresent">
 Logical flag determining if an analysis member write occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2943,15 +2951,15 @@ Default: Defined in namelist_defaults.xml
 	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
 If true, ocean analysis member time series stats is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_AM_timeSeriesStatsDaily_compute_on_startup" type="logical"
 	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
-Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this analysis member because it will accumulate any state prior to time stepping.
+Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step).
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2959,7 +2967,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
 Logical flag determining if an analysis member output occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2967,7 +2975,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
 Interval that determines frequency of computation for the time series stats analysis member.
 
-Valid values: Any valid time stamp or 'dt'. This must also be less than or requal to output_interval / 2 (at least two samples in a series).
+Valid values: Any valid time stamp or 'dt'. This must also be less than or equal to output_interval / 2 (i.e., requires at least two samples in a series).
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2975,7 +2983,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
 Name of stream the time series stats analysis member will operate on.
 
-Valid values: An existing stream that will be modified (existing fields removed and new ones added) with time series stats outputs. Cannot be 'none', like other analysis members.
+Valid values: An existing stream that will be modified (existing real fields removed and new time series stats versions added) with time series stats outputs. Cannot be 'none', like other analysis members.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2987,25 +2995,17 @@ Valid values: A restart stream with state of the time series stats.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeSeriesStatsDaily_add_mesh" type="logical"
-	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
-Add the mesh to the output stream.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_AM_timeSeriesStatsDaily_operation" type="char*1024"
 	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
-An operation describing the statistic to apply to the time series for all variables in the output stream.
+An operation describing the statistic to apply to the time series for all variables in the output stream, reducing the time dimension.
 
-Valid values: An operation, where it can be 'avg', 'min', or 'max'.
+Valid values: An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares).
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_AM_timeSeriesStatsDaily_reference_times" type="char*1024"
 	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
-A list of absolute times describing when to start accumulating statistics. Each token indicates one statistic per variable in the output stream.
+A list of absolute times describing when to start accumulating statistics. Each time indicates the start of one time window (time series statistic) per variable, in the output stream (i.e., provide four start times if you want quarterly climatologies, only one time is needed for monthly or daily averages, etc.)
 
 Valid values: A list of absolute times or 'initial_time's, separated by ;.
 Default: Defined in namelist_defaults.xml
@@ -3013,15 +3013,15 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_timeSeriesStatsDaily_duration_intervals" type="char*1024"
 	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
-A list of time durations in d_h:m:s describing how long to accumulate statistics. It has to match the number of tokens in reference_times.
+A list of time durations in d_h:m:s describing how long to accumulate statistics in a time window for each repetition (repeat_interval). It has to match the number of start time tokens in reference_times.
 
-Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or requal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
+Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or equal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_AM_timeSeriesStatsDaily_repeat_intervals" type="char*1024"
 	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
-A list of time durations in d_h:m:s describing the accumulation statistic periodicity (how often to accumulate). It has to match the number of tokens in reference_times.
+A list of time durations in d_h:m:s describing the accumulation statistic temporal periodicity (time between beginning to accumulate again after it started - duration_interval describes when to stop after starting/restarting). It has to match the number of tokens in reference_times.
 
 Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
@@ -3029,9 +3029,17 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_timeSeriesStatsDaily_reset_intervals" type="char*1024"
 	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
-A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset the accumulation). It has to match the number of tokens in reference_times.
+A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset/clear/zero the accumulation). It has to match the number of tokens in reference_times.
 
 Valid values: A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsDaily_backward_output_offset" type="char*1024"
+	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
+Backward offset for filename timestamps when writing the output stream
+
+Valid values: A time interval in YYYY-MM-DD_hh:mm:ss.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3042,15 +3050,15 @@ Default: Defined in namelist_defaults.xml
 	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
 If true, ocean analysis member time series stats is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_AM_timeSeriesStatsMonthly_compute_on_startup" type="logical"
 	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
-Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this analysis member because it will accumulate any state prior to time stepping.
+Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step).
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3058,7 +3066,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
 Logical flag determining if an analysis member output occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3066,7 +3074,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
 Interval that determines frequency of computation for the time series stats analysis member.
 
-Valid values: Any valid time stamp or 'dt'. This must also be less than or requal to output_interval / 2 (at least two samples in a series).
+Valid values: Any valid time stamp or 'dt'. This must also be less than or equal to output_interval / 2 (i.e., requires at least two samples in a series).
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3074,7 +3082,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
 Name of stream the time series stats analysis member will operate on.
 
-Valid values: An existing stream that will be modified (existing fields removed and new ones added) with time series stats outputs. Cannot be 'none', like other analysis members.
+Valid values: An existing stream that will be modified (existing real fields removed and new time series stats versions added) with time series stats outputs. Cannot be 'none', like other analysis members.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3086,25 +3094,17 @@ Valid values: A restart stream with state of the time series stats.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeSeriesStatsMonthly_add_mesh" type="logical"
-	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
-Add the mesh to the output stream.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_AM_timeSeriesStatsMonthly_operation" type="char*1024"
 	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
-An operation describing the statistic to apply to the time series for all variables in the output stream.
+An operation describing the statistic to apply to the time series for all variables in the output stream, reducing the time dimension.
 
-Valid values: An operation, where it can be 'avg', 'min', or 'max'.
+Valid values: An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares).
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_AM_timeSeriesStatsMonthly_reference_times" type="char*1024"
 	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
-A list of absolute times describing when to start accumulating statistics. Each token indicates one statistic per variable in the output stream.
+A list of absolute times describing when to start accumulating statistics. Each time indicates the start of one time window (time series statistic) per variable, in the output stream (i.e., provide four start times if you want quarterly climatologies, only one time is needed for monthly or daily averages, etc.)
 
 Valid values: A list of absolute times or 'initial_time's, separated by ;.
 Default: Defined in namelist_defaults.xml
@@ -3112,15 +3112,15 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_timeSeriesStatsMonthly_duration_intervals" type="char*1024"
 	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
-A list of time durations in d_h:m:s describing how long to accumulate statistics. It has to match the number of tokens in reference_times.
+A list of time durations in d_h:m:s describing how long to accumulate statistics in a time window for each repetition (repeat_interval). It has to match the number of start time tokens in reference_times.
 
-Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or requal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
+Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or equal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_AM_timeSeriesStatsMonthly_repeat_intervals" type="char*1024"
 	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
-A list of time durations in d_h:m:s describing the accumulation statistic periodicity (how often to accumulate). It has to match the number of tokens in reference_times.
+A list of time durations in d_h:m:s describing the accumulation statistic temporal periodicity (time between beginning to accumulate again after it started - duration_interval describes when to stop after starting/restarting). It has to match the number of tokens in reference_times.
 
 Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
@@ -3128,9 +3128,17 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_timeSeriesStatsMonthly_reset_intervals" type="char*1024"
 	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
-A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset the accumulation). It has to match the number of tokens in reference_times.
+A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset/clear/zero the accumulation). It has to match the number of tokens in reference_times.
 
 Valid values: A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthly_backward_output_offset" type="char*1024"
+	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
+Backward offset for filename timestamps when writing the output stream
+
+Valid values: A time interval in YYYY-MM-DD_hh:mm:ss.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3141,15 +3149,15 @@ Default: Defined in namelist_defaults.xml
 	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
 If true, ocean analysis member time series stats is called.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_AM_timeSeriesStatsClimatology_compute_on_startup" type="logical"
 	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
-Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this analysis member because it will accumulate any state prior to time stepping.
+Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step).
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3157,7 +3165,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
 Logical flag determining if an analysis member output occurs on start-up.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3165,7 +3173,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
 Interval that determines frequency of computation for the time series stats analysis member.
 
-Valid values: Any valid time stamp or 'dt'. This must also be less than or requal to output_interval / 2 (at least two samples in a series).
+Valid values: Any valid time stamp or 'dt'. This must also be less than or equal to output_interval / 2 (i.e., requires at least two samples in a series).
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3173,7 +3181,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
 Name of stream the time series stats analysis member will operate on.
 
-Valid values: An existing stream that will be modified (existing fields removed and new ones added) with time series stats outputs. Cannot be 'none', like other analysis members.
+Valid values: An existing stream that will be modified (existing real fields removed and new time series stats versions added) with time series stats outputs. Cannot be 'none', like other analysis members.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3185,25 +3193,17 @@ Valid values: A restart stream with state of the time series stats.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeSeriesStatsClimatology_add_mesh" type="logical"
-	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
-Add the mesh to the output stream.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_AM_timeSeriesStatsClimatology_operation" type="char*1024"
 	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
-An operation describing the statistic to apply to the time series for all variables in the output stream.
+An operation describing the statistic to apply to the time series for all variables in the output stream, reducing the time dimension.
 
-Valid values: An operation, where it can be 'avg', 'min', or 'max'.
+Valid values: An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares).
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_AM_timeSeriesStatsClimatology_reference_times" type="char*1024"
 	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
-A list of absolute times describing when to start accumulating statistics. Each token indicates one statistic per variable in the output stream.
+A list of absolute times describing when to start accumulating statistics. Each time indicates the start of one time window (time series statistic) per variable, in the output stream (i.e., provide four start times if you want quarterly climatologies, only one time is needed for monthly or daily averages, etc.)
 
 Valid values: A list of absolute times or 'initial_time's, separated by ;.
 Default: Defined in namelist_defaults.xml
@@ -3211,15 +3211,15 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_timeSeriesStatsClimatology_duration_intervals" type="char*1024"
 	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
-A list of time durations in d_h:m:s describing how long to accumulate statistics. It has to match the number of tokens in reference_times.
+A list of time durations in d_h:m:s describing how long to accumulate statistics in a time window for each repetition (repeat_interval). It has to match the number of start time tokens in reference_times.
 
-Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or requal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
+Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or equal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_AM_timeSeriesStatsClimatology_repeat_intervals" type="char*1024"
 	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
-A list of time durations in d_h:m:s describing the accumulation statistic periodicity (how often to accumulate). It has to match the number of tokens in reference_times.
+A list of time durations in d_h:m:s describing the accumulation statistic temporal periodicity (time between beginning to accumulate again after it started - duration_interval describes when to stop after starting/restarting). It has to match the number of tokens in reference_times.
 
 Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
@@ -3227,9 +3227,116 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_timeSeriesStatsClimatology_reset_intervals" type="char*1024"
 	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
-A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset the accumulation). It has to match the number of tokens in reference_times.
+A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset/clear/zero the accumulation). It has to match the number of tokens in reference_times.
 
 Valid values: A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsClimatology_backward_output_offset" type="char*1024"
+	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
+Backward offset for filename timestamps when writing the output stream
+
+Valid values: A time interval in YYYY-MM-DD_hh:mm:ss.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_timeSeriesStatsCustom -->
+
+<entry id="config_AM_timeSeriesStatsCustom_enable" type="logical"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+If true, ocean analysis member time series stats is called.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_compute_on_startup" type="logical"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step).
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_write_on_startup" type="logical"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+Logical flag determining if an analysis member output occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_compute_interval" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+Interval that determines frequency of computation for the time series stats analysis member.
+
+Valid values: Any valid time stamp or 'dt'. This must also be less than or equal to output_interval / 2 (i.e., requires at least two samples in a series).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_output_stream" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+Name of stream the time series stats analysis member will operate on.
+
+Valid values: An existing stream that will be modified (existing real fields removed and new time series stats versions added) with time series stats outputs. Cannot be 'none', like other analysis members.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_restart_stream" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+Name of the restart stream the time series stats analysis member will use to initialize itself if restart is enabled.
+
+Valid values: A restart stream with state of the time series stats.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_operation" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+An operation describing the statistic to apply to the time series for all variables in the output stream, reducing the time dimension.
+
+Valid values: An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_reference_times" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+A list of absolute times describing when to start accumulating statistics. Each time indicates the start of one time window (time series statistic) per variable, in the output stream (i.e., provide four start times if you want quarterly climatologies, only one time is needed for monthly or daily averages, etc.)
+
+Valid values: A list of absolute times or 'initial_time's, separated by ;.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_duration_intervals" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+A list of time durations in d_h:m:s describing how long to accumulate statistics in a time window for each repetition (repeat_interval). It has to match the number of start time tokens in reference_times.
+
+Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or equal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_repeat_intervals" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+A list of time durations in d_h:m:s describing the accumulation statistic temporal periodicity (time between beginning to accumulate again after it started - duration_interval describes when to stop after starting/restarting). It has to match the number of tokens in reference_times.
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_reset_intervals" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset/clear/zero the accumulation). It has to match the number of tokens in reference_times.
+
+Valid values: A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_backward_output_offset" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+Backward offset for filename timestamps when writing the output stream
+
+Valid values: A time interval in YYYY-MM-DD_hh:mm:ss.
 Default: Defined in namelist_defaults.xml
 </entry>
 

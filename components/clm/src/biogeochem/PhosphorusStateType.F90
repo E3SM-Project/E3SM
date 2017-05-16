@@ -105,12 +105,6 @@ module PhosphorusStateType
      real(r8), pointer :: endpb_col                    (:)     ! col phosphorus mass, end of time step (gP/m**2)
      real(r8), pointer :: errpb_col                    (:)     ! colphosphorus balance error for the timestep (gP/m**2)
 
-     real(r8), pointer :: actual_leafcp                (:)     ! dynamic leaf cp ratio
-     real(r8), pointer :: actual_frootcp               (:)     ! dynamic fine root cp ratio
-     real(r8), pointer :: actual_livewdcp              (:)     ! dynamic live wood cp ratio
-     real(r8), pointer :: actual_deadwdcp              (:)     ! dynamic dead wood cp ratio
-     real(r8), pointer :: actual_graincp               (:)     ! dynamic grain cp ratio
-     
      ! debug
      real(r8), pointer :: totpftp_beg_col              (:)
      real(r8), pointer :: solutionp_beg_col            (:)
@@ -257,12 +251,6 @@ contains
     allocate(this%errpb_patch (begp:endp));     this%errpb_patch (:) =nan
     allocate(this%errpb_col   (begc:endc));     this%errpb_col   (:) =nan 
 
-    allocate(this%actual_leafcp       (begp:endp)); this%actual_leafcp       (:) = nan
-    allocate(this%actual_frootcp      (begp:endp)); this%actual_frootcp      (:) = nan
-    allocate(this%actual_livewdcp     (begp:endp)); this%actual_livewdcp     (:) = nan
-    allocate(this%actual_deadwdcp     (begp:endp)); this%actual_deadwdcp     (:) = nan
-    allocate(this%actual_graincp      (begp:endp)); this%actual_graincp      (:) = nan
-    
     ! debug
     allocate(this%totpftp_beg_col    (begc:endc)); this%totpftp_beg_col      (:) = nan
     allocate(this%solutionp_beg_col  (begc:endc)); this%solutionp_beg_col    (:) = nan
@@ -451,22 +439,6 @@ contains
          avgflag='A', long_name='total PFT-level phosphorus', &
          ptr_patch=this%totpftp_patch)
 
-    call hist_addfld1d (fname='actual_leafcp', units='gC/gP', &
-         avgflag='A', long_name='flexible leafCP', &
-         ptr_patch=this%actual_leafcp)
-    call hist_addfld1d (fname='actual_frootcp', units='gC/gP', &
-         avgflag='A', long_name='flexible frootCP', &
-         ptr_patch=this%actual_frootcp)
-    call hist_addfld1d (fname='actual_livewdcp', units='gC/gP', &
-         avgflag='A', long_name='flexible livewdCP', &
-         ptr_patch=this%actual_livewdcp)
-    call hist_addfld1d (fname='actual_deadwdcp', units='gC/gP', &
-         avgflag='A', long_name='flexible deadwdCP', &
-         ptr_patch=this%actual_deadwdcp)
-    call hist_addfld1d (fname='actual_graincp', units='gC/gP', &
-         avgflag='A', long_name='flexible grainCP', &
-         ptr_patch=this%actual_graincp)
-         
     !-------------------------------
     ! P state variables - native to column
     !-------------------------------
@@ -768,12 +740,6 @@ contains
           this%totpftp_patch(p)            = 0._r8
        end if
        
-       this%actual_leafcp(p)       = ecophyscon%leafcp(pft%itype(p))
-       this%actual_frootcp(p)      = ecophyscon%frootcp(pft%itype(p))
-       this%actual_livewdcp(p)     = ecophyscon%livewdcp(pft%itype(p))
-       this%actual_deadwdcp(p)     = ecophyscon%deadwdcp(pft%itype(p))
-       this%actual_graincp(p)      = ecophyscon%graincp(pft%itype(p))
-       
     end do
 
     !-------------------------------------------
@@ -1002,22 +968,6 @@ contains
             interpinic_flag='interp', readvar=readvar, data=this%grainp_xfer_patch)
     end if
 
-    call restartvar(ncid=ncid, flag=flag,  varname='actual_leafcp', xtype=ncd_double,  &
-        dim1name='pft',    long_name='flexible leafCP', units='gC/gP', &
-        interpinic_flag='interp', readvar=readvar, data=this%actual_leafcp)
-    call restartvar(ncid=ncid, flag=flag,  varname='actual_frootcp', xtype=ncd_double,  &
-        dim1name='pft',    long_name='flexible frootCP', units='gC/gP', &
-        interpinic_flag='interp', readvar=readvar, data=this%actual_frootcp)
-    call restartvar(ncid=ncid, flag=flag,  varname='actual_livewdcp', xtype=ncd_double,  &
-        dim1name='pft',    long_name='flexible livewdCP', units='gC/gP', &
-        interpinic_flag='interp', readvar=readvar, data=this%actual_livewdcp)
-    call restartvar(ncid=ncid, flag=flag,  varname='actual_deadwdcp', xtype=ncd_double,  &
-        dim1name='pft',    long_name='flexible deadwdCP', units='gC/gP', &
-        interpinic_flag='interp', readvar=readvar, data=this%actual_deadwdcp)
-    call restartvar(ncid=ncid, flag=flag,  varname='actual_graincp', xtype=ncd_double,  &
-        dim1name='pft',    long_name='flexible grainCP', units='gC/gP', &
-        interpinic_flag='interp', readvar=readvar, data=this%actual_graincp)
-    
     !--------------------------------
     ! column phosphorus state variables
     !--------------------------------
@@ -1331,11 +1281,6 @@ contains
        this%storvegp_patch(i)           = value_patch
        this%totvegp_patch(i)            = value_patch
        this%totpftp_patch(i)            = value_patch
-       
-       this%actual_leafcp(i)            = value_patch  
-       this%actual_frootcp(i)           = value_patch  
-       this%actual_livewdcp(i)          = value_patch  
-       this%actual_deadwdcp(i)          = value_patch  
     end do
 
     if ( crop_prog )then
@@ -1344,7 +1289,6 @@ contains
           this%grainp_patch(i)          = value_patch
           this%grainp_storage_patch(i)  = value_patch
           this%grainp_xfer_patch(i)     = value_patch   
-          this%actual_graincp(i)        = value_patch   
        end do
     end if
 

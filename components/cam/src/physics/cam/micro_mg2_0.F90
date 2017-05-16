@@ -122,29 +122,9 @@ public :: &
      micro_mg_get_cols, &
      micro_mg_tend
 
-! switch for specification rather than prediction of droplet and crystal number
-! note: number will be adjusted as needed to keep mean size within bounds,
-! even when specified droplet or ice number is used
-
-! If constant cloud ice number is set (nicons = .true.),
-! then all microphysical processes except mass transfer due to ice nucleation
-! (mnuccd) are based on the fixed cloud ice number. Calculation of
-! mnuccd follows from the prognosed ice crystal number ni.
-
-! nccons = .true. to specify constant cloud droplet number
-! nicons = .true. to specify constant cloud ice number
-
-logical, parameter, public :: nccons = .false.
-logical, parameter, public :: nicons = .false.
-
 !=========================================================
 ! Private module parameters
 !=========================================================
-
-! parameters for specified ice and droplet number concentration
-! note: these are local in-cloud values, not grid-mean
-real(r8), parameter :: ncnst = 100.e6_r8    ! droplet num concentration when nccons=.true. (m-3)
-real(r8), parameter :: ninst = 0.1e6_r8     ! ice num concentration when nicons=.true. (m-3)
 
 !Range of cloudsat reflectivities (dBz) for analytic simulator
 real(r8), parameter :: csmin = -30._r8
@@ -189,7 +169,12 @@ real(r8) :: rhmini      ! Minimum rh for ice cloud fraction > 0.
 ! flags
 logical :: microp_uniform
 logical :: do_cldice
+logical :: do_nccons
+logical :: do_nicons
 logical :: use_hetfrz_classnuc
+
+real(r8) :: ncnst ! constant droplet concentration
+real(r8) :: ninst ! constant ice concentration
 
 real(r8) :: rhosu       ! typical 850mn air density
 
@@ -213,6 +198,21 @@ real(r8)           :: micro_mg_berg_eff_factor     ! berg efficiency factor
 
 logical  :: allow_sed_supersat ! Allow supersaturated conditions after sedimentation loop
 
+! switch for specification rather than prediction of droplet and crystal number
+! note: number will be adjusted as needed to keep mean size within bounds,
+! even when specified droplet or ice number is used
+
+! If constant cloud ice number is set (nicons = .true.),
+! then all microphysical processes except mass transfer due to ice nucleation
+! (mnuccd) are based on the fixed cloud ice number. Calculation of
+! mnuccd follows from the prognosed ice crystal number ni.
+
+! nccons = .true. to specify constant cloud droplet number
+! nicons = .true. to specify constant cloud ice number
+
+logical :: nccons 
+logical :: nicons
+
 !===============================================================================
 contains
 !===============================================================================
@@ -224,6 +224,7 @@ subroutine micro_mg_init( &
      rhmini_in, micro_mg_dcs, micro_mg_dcs_tdep, &
 !!== KZ_DCS 
      microp_uniform_in, do_cldice_in, use_hetfrz_classnuc_in, &
+     do_nccons_in, do_nicons_in, ncnst_in, ninst_in, &
      micro_mg_precip_frac_method_in, micro_mg_berg_eff_factor_in, &
      allow_sed_supersat_in, ice_sed_ai, prc_coef1_in,prc_exp_in,  &
      prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, errstring)
@@ -259,6 +260,8 @@ subroutine micro_mg_init( &
   logical,  intent(in)  :: do_cldice_in     ! .true. = do all processes (standard)
                                             ! .false. = skip all processes affecting
                                             !           cloud ice
+  logical,  intent(in)  :: do_nccons_in     ! .true. = set cloud droplet to constant
+  logical,  intent(in)  :: do_nicons_in     ! .true. = set ice concentration to constant					    
   logical,  intent(in)  :: use_hetfrz_classnuc_in ! use heterogeneous freezing
 
   character(len=16),intent(in)  :: micro_mg_precip_frac_method_in  ! type of precipitation fraction method
@@ -267,6 +270,8 @@ subroutine micro_mg_init( &
   real(r8), intent(in)  :: prc_coef1_in,prc_exp_in,prc_exp1_in, cld_sed_in
   logical, intent(in)   :: mg_prc_coeff_fix_in
 
+  real(r8), intent(in)  :: ncnst_in
+  real(r8), intent(in)  :: ninst_in        
 
   character(128), intent(out) :: errstring    ! Output status (non-blank for error return)
 
@@ -312,6 +317,10 @@ subroutine micro_mg_init( &
   ! flags
   microp_uniform = microp_uniform_in
   do_cldice  = do_cldice_in
+  nccons = do_nccons_in
+  nicons = do_nicons_in
+  ncnst = ncnst_in
+  ninst = ninst_in
   use_hetfrz_classnuc = use_hetfrz_classnuc_in
 
   ! typical air density at 850 mb
@@ -366,6 +375,7 @@ subroutine micro_mg_tend ( &
      cmeout,                       deffi,                        &
      pgamrad,                      lamcrad,                      &
      qsout,                        dsout,                        &
+     lflx,               iflx,                                   &
      rflx,               sflx,               qrout,              &
      reff_rain,                    reff_snow,                    &
      qcsevap,            qisevap,            qvres,              &
@@ -501,6 +511,8 @@ subroutine micro_mg_tend ( &
   real(r8), intent(out) :: lamcrad(:,:)      ! slope of droplet distribution for optics (radiation) (1/m)
   real(r8), intent(out) :: qsout(:,:)        ! snow mixing ratio (kg/kg)
   real(r8), intent(out) :: dsout(:,:)        ! snow diameter (m)
+  real(r8), intent(out) :: lflx(:,:)         ! grid-box average liquid condensate flux (kg m^-2 s^-1)
+  real(r8), intent(out) :: iflx(:,:)         ! grid-box average ice condensate flux (kg m^-2 s^-1)
   real(r8), intent(out) :: rflx(:,:)         ! grid-box average rain flux (kg m^-2 s^-1)
   real(r8), intent(out) :: sflx(:,:)         ! grid-box average snow flux (kg m^-2 s^-1)
   real(r8), intent(out) :: qrout(:,:)        ! grid-box average rain mixing ratio (kg/kg)
@@ -951,6 +963,8 @@ subroutine micro_mg_tend ( &
 
   rflx=0._r8
   sflx=0._r8
+  lflx=0._r8
+  iflx=0._r8
 
   ! initialize precip output
 
@@ -1950,13 +1964,6 @@ subroutine micro_mg_tend ( &
   qsout = qs
   nsout = ns * rho
 
-  ! calculate precip fluxes
-  ! calculate the precip flux (kg/m2/s) as mixingratio(kg/kg)*airdensity(kg/m3)*massweightedfallspeed(m/s)
-  ! ---------------------------------------------------------------------
-
-  rflx(:,2:) = rflx(:,2:) + (qric*rho*umr*precip_frac)
-  sflx(:,2:) = sflx(:,2:) + (qsic*rho*ums*precip_frac)
-
   ! calculate n0r and lamr from rain mass and number
   ! divide by precip fraction to get in-precip (local) values of
   ! rain mass and number, divide by rhow to get rain number in kg^-1
@@ -2217,6 +2224,11 @@ subroutine micro_mg_tend ( &
 
         end do
 
+        ! Ice flux
+        do k = 1,nlev
+          iflx(i,k+1) = iflx(i,k+1) + falouti(k) / g / real(nstep)
+        end do
+
         ! units below are m/s
         ! sedimentation flux at surface is added to precip flux at surface
         ! to get total precip (cloud + precip water) rate
@@ -2283,6 +2295,11 @@ subroutine micro_mg_tend ( &
 
         end do
 
+        !Liquid condensate flux here
+        do k = 1,nlev
+           lflx(i,k+1) = lflx(i,k+1) + faloutc(k) / g / real(nstep)
+        end do
+
         prect(i) = prect(i)+faloutc(nlev)/g/real(nstep)/1000._r8
 
      end do
@@ -2332,6 +2349,11 @@ subroutine micro_mg_tend ( &
            dumr(i,k) = dumr(i,k)-faltndr*deltat/real(nstep)
            dumnr(i,k) = dumnr(i,k)-faltndnr*deltat/real(nstep)
 
+        end do
+
+        ! Rain Flux
+        do k = 1,nlev
+           rflx(i,k+1) = rflx(i,k+1) + faloutr(k) / g / real(nstep)
         end do
 
         prect(i) = prect(i)+faloutr(nlev)/g/real(nstep)/1000._r8
@@ -2384,6 +2406,11 @@ subroutine micro_mg_tend ( &
            dumns(i,k) = dumns(i,k)-faltndns*deltat/real(nstep)
 
         end do   !! k loop
+
+        ! Snow Flux
+        do k = 1,nlev
+           sflx(i,k+1) = sflx(i,k+1) + falouts(k) / g / real(nstep)
+        end do
 
         prect(i) = prect(i)+falouts(nlev)/g/real(nstep)/1000._r8
         preci(i) = preci(i)+falouts(nlev)/g/real(nstep)/1000._r8

@@ -8,7 +8,7 @@ contains
   subroutine init(elem, edge1,edge2,edge3,red,par, dom_mt)
     use kinds, only : real_kind, longdouble_kind
     ! --------------------------------
-    use thread_mod, only : nthreads, omp_set_num_threads
+    use thread_mod, only : nthreads, nThreadsHoriz, omp_set_num_threads
     ! --------------------------------
     use control_mod, only : restartfreq, topology, partmethod
     ! --------------------------------
@@ -71,8 +71,6 @@ contains
     use restart_mod, only : initRestartFile
     ! --------------------------------
     use params_mod, only : SFCURVE
-    ! ---------------------------------
-    use thread_mod, only : nThreadsHoriz, omp_get_num_threads
     ! ---------------------------------
     use domain_mod, only: domain1d_t, decompose 
     ! ---------------------------------

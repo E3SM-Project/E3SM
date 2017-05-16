@@ -654,11 +654,7 @@ sub write_filepath_cesmbld
                      "biogeophys/vsfm",
 		     "biogeochem", 
 		     "dyn_subgrid",
-		     "ED", 
-		     "ED/main", 
-		     "ED/biogeophys", 
-		     "ED/biogeochem", 
-		     "ED/fire", 
+		     "ED/main",
 		     "utils", 
 		     "cpl" );
 

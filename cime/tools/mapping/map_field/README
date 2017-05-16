@@ -44,8 +44,10 @@ EXAMPLE
 To build:
 
 > cd src
-> setenv CIMEROOT ~/cime1_1_0
-> $CIMEROOT/machines/configure -mach yellowstone
+> setenv CIMEROOT ~/cime
+> setenv CIME_MODEL cesm
+> $CIMEROOT/toolsq/configure --machine yellowstone --macros-format Makefile
+> source ./.env_mach_specific.sh
 > gmake
 > cd ../
 

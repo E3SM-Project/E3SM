@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <!-- attributes -->
+  <xs:attribute name="version" type="xs:decimal"/>
+  <xs:attribute name="id" type="xs:NCName"/>
+  <xs:attribute name="compset" type="xs:string"/>
+  <xs:attribute name="grid" type="xs:string"/>
+
+  <!-- simple elements -->
+  <xs:element name="help" type="xs:string"/>
+  <xs:element name="alias" type="xs:NCName"/>
+  <xs:element name="lname" type="xs:string"/>
+  <xs:element name="science_support"/>
+
+  <!-- complex elements -->
+
+  <xs:element name="compsets">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="help"/>
+        <xs:element maxOccurs="unbounded" ref="compset"/>
+        <xs:element ref="entries" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute ref="version" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+
+  <xs:element name="compset">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="alias"/>
+        <xs:element ref="lname"/>
+	<xs:element ref="science_support" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute ref="grid"/>
+    </xs:complexType>
+  </xs:element>
+
+
+  <xs:element name="entries">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="entry"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="entry">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="values"/>
+      </xs:sequence>
+      <xs:attribute ref="id" use="required" />
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="values">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="value"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="value">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:NMTOKEN">
+          <xs:attribute ref="compset" use="required"/>
+          <xs:attribute ref="grid"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -50,6 +50,8 @@ Module dyn_comp
   ! !REVISION HISTORY:
   !
   !  JPE  06.05.31:  created
+  !  Aaron Donahue 17.04.11: Fixed bug in write_grid_mapping which caused 
+  !       a segmentation fault when dyn_npes<npes
   !
   !----------------------------------------------------------------------
 
@@ -149,6 +151,9 @@ CONTAINS
        write(iulog,*) "dyn_init1: number of OpenMP threads = ", nthreads
        write(iulog,*) " "
     endif
+#ifndef HORIZ_OPENMP
+    call endrun('Error: threaded runs require -DHORIZ_OPENMP')
+#endif
 #ifdef COLUMN_OPENMP
     call omp_set_nested(.true.)
     if (vthreads > nthreads .or. vthreads < 1) &
@@ -441,7 +446,9 @@ CONTAINS
        ierr = pio_def_var(nc, 'element_corners', PIO_INT, (/dim1,dim2/),vid)
     
        ierr = pio_enddef(nc)
-       call createmetadata(par, elem, subelement_corners)
+       if (iam<par%nprocs) then
+          call createmetadata(par, elem, subelement_corners)
+       end if
 
        jj=0
        do cc=0,3

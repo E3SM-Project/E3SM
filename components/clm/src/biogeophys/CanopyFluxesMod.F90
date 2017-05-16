@@ -19,10 +19,6 @@ module CanopyFluxesMod
   use pftvarcon             , only : nbrdlf_dcd_tmp_shrub, nsoybean , nsoybeanirrig
   use decompMod             , only : bounds_type
   use PhotosynthesisMod     , only : Photosynthesis, PhotosynthesisTotal, Fractionation
-  use EDPhotosynthesisMod   , only : Photosynthesis_ED
-  use EDAccumulateFluxesMod , only : AccumulateFluxes_ED
-  use EDBtranMod            , only : BTRAN_ED
-  use EDBioType             , only : EDbio_type
   use SoilMoistStressMod    , only : calc_effective_soilporosity, calc_volumetric_h2oliq
   use SoilMoistStressMod    , only : calc_root_moist_stress, set_perchroot_opt
   use SimpleMathMod         , only : array_div_vector
@@ -44,7 +40,6 @@ module CanopyFluxesMod
   use GridcellType          , only : grc                
   use ColumnType            , only : col                
   use PatchType             , only : pft                
-  use EDtypesMod            , only : site, numpft_ed
   use PhosphorusStateType   , only : phosphorusstate_type
   use CNNitrogenStateType   , only : nitrogenstate_type
   !
@@ -71,7 +66,7 @@ contains
        atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars, &
        frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars, &
        temperature_vars, waterflux_vars, waterstate_vars, ch4_vars, photosyns_vars, &
-       EDbio_vars, soil_water_retention_curve, nitrogenstate_vars, phosphorusstate_vars) 
+       soil_water_retention_curve, nitrogenstate_vars, phosphorusstate_vars) 
     !
     ! !DESCRIPTION:
     ! 1. Calculates the leaf temperature:
@@ -131,7 +126,6 @@ contains
     type(waterflux_type)      , intent(inout) :: waterflux_vars
     type(ch4_type)            , intent(inout) :: ch4_vars
     type(photosyns_type)      , intent(inout) :: photosyns_vars
-    type(EDbio_type)          , intent(inout) :: EDbio_vars
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
     type(nitrogenstate_type)  , intent(inout) :: nitrogenstate_vars
     type(phosphorusstate_type), intent(inout) :: phosphorusstate_vars
@@ -314,9 +308,7 @@ contains
     real(r8) :: dt_veg(bounds%begp:bounds%endp)          ! change in t_veg, last iteration (Kelvin)                              
     integer  :: jtop(bounds%begc:bounds%endc)            ! lbning
     integer  :: filterc_tmp(bounds%endp-bounds%begp+1)   ! temporary variable
-    real(r8) :: rresis_ft(numpft_ed,nlevgrnd)            ! resistance to water uptake per pft and soil layer.
     integer  :: ft                                       ! plant functional type index
-    real(r8) :: pftgs(numpft_ed)                         ! patch weighted stomatal conductance s/m
     real(r8) :: temprootr                 
     real(r8) :: dt_veg_temp(bounds%begp:bounds%endp)
     integer  :: iv
@@ -357,7 +349,8 @@ contains
          htop                 => canopystate_vars%htop_patch               , & ! Input:  [real(r8) (:)   ]  canopy top(m)                                                         
          altmax_lastyear_indx => canopystate_vars%altmax_lastyear_indx_col , & ! Input:  [integer  (:)   ]  prior year maximum annual depth of thaw                                
          altmax_indx          => canopystate_vars%altmax_indx_col          , & ! Input:  [integer  (:)   ]  maximum annual depth of thaw                                           
-         
+
+         dleaf_patch          => canopystate_vars%dleaf_patch                 , & ! Output: [real(r8) (:)   ]  mean leaf diameter for this patch/pft
          watsat               => soilstate_vars%watsat_col                 , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)   (constant)                     
          watdry               => soilstate_vars%watdry_col                 , & ! Input:  [real(r8) (:,:) ]  btran parameter for btran=0                      (constant)                                        
          watopt               => soilstate_vars%watopt_col                 , & ! Input:  [real(r8) (:,:) ]  btran parameter for btran=1                      (constant)                                      
@@ -438,10 +431,7 @@ contains
          eflx_sh_h2osfc       => energyflux_vars%eflx_sh_h2osfc_patch      , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]                      
          eflx_sh_soil         => energyflux_vars%eflx_sh_soil_patch        , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]                      
          eflx_sh_veg          => energyflux_vars%eflx_sh_veg_patch         , & ! Output: [real(r8) (:)   ]  sensible heat flux from leaves (W/m**2) [+ to atm]                    
-         eflx_sh_grnd         => energyflux_vars%eflx_sh_grnd_patch        , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]                    
-
-         rscanopy             => canopystate_vars%rscanopy_patch           ,  & ! Output: [real(r8) (:,:)]   canopy resistance s/m (ED)
-
+         eflx_sh_grnd         => energyflux_vars%eflx_sh_grnd_patch        , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
          begp                 => bounds%begp                               , &
          endp                 => bounds%endp                                 &
          )
@@ -477,6 +467,7 @@ contains
 
       call photosyns_vars%TimeStepInit(bounds)
 
+
       ! -----------------------------------------------------------------
       ! Filter patches where frac_veg_nosno IS NON-ZERO
       ! -----------------------------------------------------------------
@@ -489,6 +480,14 @@ contains
             filterp(fn) = p
          end if
       end do
+
+
+      if (use_ed) then
+         ! (FATES-INTERF) put error call, flag for development
+         call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
+!!         call clm_fates%prep_canopyfluxes(nc, fn, filterp, photosyns_inst)
+      end if
+
 
       ! Initialize
 
@@ -516,49 +515,59 @@ contains
 
       rb1(begp:endp) = 0._r8
 
-      ! FIX(FIX(SPM,032414),032414) refactor this...
-      if ( use_ed ) then  
-
-         do f = 1, fn
-            p = filterp(f)
-            call BTRAN_ED(p, soilstate_vars, waterstate_vars, temperature_vars, energyflux_vars)
-         enddo
-
+      !assign the temporary filter
+      do f = 1, fn
+         p = filterp(f)
+         filterc_tmp(f)=pft%column(p)
+      enddo
+      
+      !compute effective soil porosity
+      call calc_effective_soilporosity(bounds,                          &
+           ubj = nlevgrnd,                                              &
+           numf = fn,                                                   &
+           filter = filterc_tmp(1:fn),                                  &
+           watsat = watsat(bounds%begc:bounds%endc, 1:nlevgrnd),        &
+           h2osoi_ice = h2osoi_ice(bounds%begc:bounds%endc,1:nlevgrnd), &
+           denice = denice,                                             &
+           eff_por=eff_porosity(bounds%begc:bounds%endc, 1:nlevgrnd) )
+      
+      !compute volumetric liquid water content
+      jtop(bounds%begc:bounds%endc) = 1
+      
+      call calc_volumetric_h2oliq(bounds,                                    &
+           jtop = jtop(bounds%begc:bounds%endc),                             &
+           lbj = 1,                                                          &
+           ubj = nlevgrnd,                                                   &
+           numf = fn,                                                        &
+           filter = filterc_tmp(1:fn),                                       &
+           eff_porosity = eff_porosity(bounds%begc:bounds%endc, 1:nlevgrnd), &
+           h2osoi_liq = h2osoi_liq(bounds%begc:bounds%endc, 1:nlevgrnd),     &
+           denh2o = denh2o,                                                  &
+           vol_liq = h2osoi_liqvol(bounds%begc:bounds%endc, 1:nlevgrnd) )
+      
+      !set up perchroot options
+      call set_perchroot_opt(perchroot, perchroot_alt)
+   
+      ! --------------------------------------------------------------------------
+      ! if this is a FATES simulation
+      ! ask fates to calculate btran functions and distribution of uptake
+      ! this will require boundary conditions from CLM, boundary conditions which
+      ! may only be available from a smaller subset of patches that meet the
+      ! exposed veg.  
+      ! calc_root_moist_stress already calculated root soil water stress 'rresis'
+      ! this is the input boundary condition to calculate the transpiration
+      ! wetness factor btran and the root weighting factors for FATES.  These
+      ! values require knowledge of the belowground root structure.
+      ! --------------------------------------------------------------------------
+      
+      if(use_ed)then
+         ! (FATES-INTERF) put error call, flag for development
+         call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
+!!         call clm_fates%wrap_btran(nc, fn, filterc_tmp(1:fn), soilstate_inst, waterstate_inst, &
+!!              temperature_inst, energyflux_inst, soil_water_retention_curve)
+         
       else
-
-         !assign the temporary filter
-         do f = 1, fn
-            p = filterp(f)
-            filterc_tmp(f)=pft%column(p)
-         enddo
-
-         !compute effective soil porosity
-         call calc_effective_soilporosity(bounds,                          &
-              ubj = nlevgrnd,                                              &
-              numf = fn,                                                   &
-              filter = filterc_tmp(1:fn),                                  &
-              watsat = watsat(bounds%begc:bounds%endc, 1:nlevgrnd),        &
-              h2osoi_ice = h2osoi_ice(bounds%begc:bounds%endc,1:nlevgrnd), &
-              denice = denice,                                             &
-              eff_por=eff_porosity(bounds%begc:bounds%endc, 1:nlevgrnd) )
-
-         !compute volumetric liquid water content
-         jtop(bounds%begc:bounds%endc) = 1
-
-         call calc_volumetric_h2oliq(bounds,                                    &
-              jtop = jtop(bounds%begc:bounds%endc),                             &
-              lbj = 1,                                                          &
-              ubj = nlevgrnd,                                                   &
-              numf = fn,                                                        &
-              filter = filterc_tmp(1:fn),                                       &
-              eff_porosity = eff_porosity(bounds%begc:bounds%endc, 1:nlevgrnd), &
-              h2osoi_liq = h2osoi_liq(bounds%begc:bounds%endc, 1:nlevgrnd),     &
-              denh2o = denh2o,                                                  &
-              vol_liq = h2osoi_liqvol(bounds%begc:bounds%endc, 1:nlevgrnd) )
-
-         !set up perchroot options
-         call set_perchroot_opt(perchroot, perchroot_alt)
-
+   
          !calculate root moisture stress
          call calc_root_moist_stress(bounds,     &
               nlevgrnd = nlevgrnd,               &
@@ -570,7 +579,7 @@ contains
               temperature_vars=temperature_vars, &
               waterstate_vars=waterstate_vars,   &
               soil_water_retention_curve=soil_water_retention_curve)
-
+         
       end if !use_ed
 
       ! Determine if irrigation is needed (over irrigated soil columns)
@@ -586,7 +595,11 @@ contains
          p = filterp(f)
          c = pft%column(p)
          g = pft%gridcell(p)
-         if (irrigated(pft%itype(p)) == 1._r8 .and. elai(p) > irrig_min_lai .and. btran(p) < irrig_btran_thresh) then
+         if ( .not.pft%is_fates(p)             .and. &
+              irrigated(pft%itype(p)) == 1._r8 .and. &
+              elai(p) > irrig_min_lai          .and. &
+              btran(p) < irrig_btran_thresh ) then
+            
             ! see if it's the right time of day to start irrigating:
             local_time = modulo(time + nint(grc%londeg(g)/degpsec), isecspday)
             seconds_since_irrig_start_time = modulo(local_time - irrig_start_time, isecspday)
@@ -601,13 +614,16 @@ contains
          else  ! non-irrig pft or elai<=irrig_min_lai or btran>irrig_btran_thresh
             check_for_irrig(p)       = .false.
          end if
-
+         
       end do
 
 
-      ! Now 'measure' soil water for the grid cells identified above and see if the soil is dry enough to warrant irrigation
+      ! Now 'measure' soil water for the grid cells identified above and see if the 
+      ! soil is dry enough to warrant irrigation
       ! (Note: frozen_soil could probably be a column-level variable, but that would be
       ! slightly less robust to potential future modifications)
+      ! This should not be operating on FATES patches (see is_fates filter above, pushes
+      ! check_for_irrig = false
       frozen_soil(bounds%begp : bounds%endp) = .false.
       do j = 1,nlevgrnd
          do f = 1, fn
@@ -755,7 +771,16 @@ contains
 
             uaf(p) = um(p)*sqrt( 1._r8/(ram1(p)*um(p)) )
 
-            cf  = 0.01_r8/(sqrt(uaf(p))*sqrt(dleaf(pft%itype(p))))
+            ! Use pft parameter for leaf characteristic width
+            ! dleaf_patch if this is not an ed patch.
+            ! Otherwise, the value has already been loaded
+            ! during the FATES dynamics call
+            if(.not.pft%is_fates(p)) then  
+               dleaf_patch(p) = dleaf(pft%itype(p))
+            end if
+            
+            
+            cf  = 0.01_r8/(sqrt(uaf(p))*sqrt( dleaf_patch(p) ))
             rb(p)  = 1._r8/(cf*uaf(p))
             rb1(p) = rb(p)
 
@@ -817,38 +842,24 @@ contains
                   btran(p) = min(1._r8, btran(p) * 3.33_r8)
                end if
             end if
-            if (pft%itype(p) == nsoybean .or. pft%itype(p) == nsoybeanirrig) then
-               btran(p) = min(1._r8, btran(p) * 1.25_r8)
+            if(.not.pft%is_fates(p)) then
+               if (pft%itype(p) == nsoybean .or. pft%itype(p) == nsoybeanirrig) then
+                  btran(p) = min(1._r8, btran(p) * 1.25_r8)
+               end if
             end if
          end do
 
          if ( use_ed ) then      
 
-            call t_startf('edpsn')
-            ! FIX(FIX(SPM,032414),032414) Photo*_ED will need refactoring
-            call Photosynthesis_ED (bounds, fn, filterp, &
-                 svpts(begp:endp), &
-                 eah(begp:endp), &
-                 o2(begp:endp), &
-                 co2(begp:endp), &
-                 rb(begp:endp), &
-                 dayl_factor(begp:endp), &
-                 atm2lnd_vars, temperature_vars, canopystate_vars, photosyns_vars, EDbio_vars)
-
-            ! zero all of these things, not just the ones in the filter. 
-            do p = bounds%begp,bounds%endp 
-               photosyns_vars%rssun_patch(p)    = 0._r8
-               photosyns_vars%rssha_patch(p)    = 0._r8
-               photosyns_vars%psnsun_patch(p)   = 0._r8
-               photosyns_vars%psnsha_patch(p)   = 0._r8
-               photosyns_vars%fpsn_patch(p)     = 0._r8
-               canopystate_vars%laisun_patch(p) = 0._r8
-               canopystate_vars%laisha_patch(p) = 0._r8
-            enddo
-
-            call t_stopf('edpsn')
+            ! (FATES-INTERF) put error call, flag for development
+            call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
+!!             call clm_fates%wrap_photosynthesis(nc, bounds, fn, filterp(1:fn), &
+!!                 svpts(begp:endp), eah(begp:endp), o2(begp:endp), &
+!!                 co2(begp:endp), rb(begp:endp), dayl_factor(begp:endp), &
+!!                 atm2lnd_inst, temperature_inst, canopystate_inst, photosyns_inst)
 
          else ! not use_ed
+
             call Photosynthesis (bounds, fn, filterp, &
                  svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                  dayl_factor(begp:endp), atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
@@ -908,33 +919,17 @@ contains
 
             ! Fraction of potential evaporation from leaf
 
-            if ( use_ed ) then
+            if (fdry(p) > 0._r8) then
+               rppdry  = fdry(p)*rb(p)*(laisun(p)/(rb(p)+rssun(p)) + &
+                    laisha(p)/(rb(p)+rssha(p)))/elai(p)
+            else
+               rppdry = 0._r8
+            end if
                
-               if (fdry(p)  >  0._r8) then
-                  rppdry  = fdry(p)*rb(p)/(rb(p)+rscanopy(p))
-               else
-                  rppdry = 0._r8
-               end if
-               if (use_lch4) then
-                  ! Calculate canopy conductance for methane / oxygen (e.g. stomatal conductance & leaf bdy cond)
-                  canopy_cond(p) = 1.0_r8/(rb(p)+rscanopy(p))
-               end if
-
-            else ! use_ed
-
-               if (fdry(p) > 0._r8) then
-                  rppdry  = fdry(p)*rb(p)*(laisun(p)/(rb(p)+rssun(p)) + &
-                       laisha(p)/(rb(p)+rssha(p)))/elai(p)
-               else
-                  rppdry = 0._r8
-               end if
-
-               ! Calculate canopy conductance for methane / oxygen (e.g. stomatal conductance & leaf bdy cond)
-               if (use_lch4) then
-                  canopy_cond(p) = (laisun(p)/(rb(p)+rssun(p)) + laisha(p)/(rb(p)+rssha(p)))/max(elai(p), 0.01_r8)
-               end if
-
-            end if ! end of if use_ed         
+            ! Calculate canopy conductance for methane / oxygen (e.g. stomatal conductance & leaf bdy cond)
+            if (use_lch4) then
+               canopy_cond(p) = (laisun(p)/(rb(p)+rssun(p)) + laisha(p)/(rb(p)+rssha(p)))/max(elai(p), 0.01_r8)
+            end if
 
             efpot = forc_rho(c)*wtl*(qsatl(p)-qaf(p))
 
@@ -1203,45 +1198,39 @@ contains
 
          h2ocan(p) = max(0._r8,h2ocan(p)+(qflx_tran_veg(p)-qflx_evap_veg(p))*dtime)
 
-         if ( use_ed ) then
-            call AccumulateFluxes_ED(p, photosyns_vars)
-         end if
-
       end do
 
-      ! Determine total photosynthesis
+      if ( use_ed ) then
+         ! (FATES-INTERF) put error call, flag for development
+         call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
+!!         call clm_fates%wrap_accumulatefluxes(nc,fn,filterp(1:fn))
+!!         call clm_fates%wrap_hydraulics_drive(bounds,nc,soilstate_inst, &
+!!               waterstate_inst,waterflux_inst,solarabs_inst,energyflux_inst)
 
-      call PhotosynthesisTotal(fn, filterp, &
-           atm2lnd_vars, cnstate_vars, canopystate_vars, photosyns_vars)
+      else
 
-      ! Filter out patches which have small energy balance errors; report others
-
-      fnold = fn
-      fn = 0
-      do f = 1, fnold
-         p = filterp(f)
-         if (abs(err(p)) > 0.1_r8) then
-            fn = fn + 1
-            filterp(fn) = p
-         end if
-      end do
-
-      do f = 1, fn
-         p = filterp(f)
-         write(iulog,*) 'energy balance in canopy ',p,', err=',err(p)
-      end do
-
-      if ( use_ed ) then      
-         ! zero all of the array,  not just the ones in the filter. 
-         do p = bounds%begp,bounds%endp 
-            photosyns_vars%rssun_patch(p)    = 0._r8
-            photosyns_vars%rssha_patch(p)    = 0._r8
-            photosyns_vars%psnsun_patch(p)   = 0._r8
-            photosyns_vars%psnsha_patch(p)   = 0._r8
-            photosyns_vars%fpsn_patch(p)     = 0._r8
-            canopystate_vars%laisun_patch(p) = 0._r8
-            canopystate_vars%laisha_patch(p) = 0._r8
-         enddo
+         ! Determine total photosynthesis
+         
+         call PhotosynthesisTotal(fn, filterp, &
+              atm2lnd_vars, cnstate_vars, canopystate_vars, photosyns_vars)
+         
+         ! Filter out patches which have small energy balance errors; report others
+         
+         fnold = fn
+         fn = 0
+         do f = 1, fnold
+            p = filterp(f)
+            if (abs(err(p)) > 0.1_r8) then
+               fn = fn + 1
+               filterp(fn) = p
+            end if
+         end do
+         
+         do f = 1, fn
+            p = filterp(f)
+            write(iulog,*) 'energy balance in canopy ',p,', err=',err(p)
+         end do
+         
       end if
 
     end associate

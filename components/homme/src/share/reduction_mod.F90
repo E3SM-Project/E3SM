@@ -28,8 +28,8 @@ module reduction_mod
   public :: ParallelMin,ParallelMax
 
   !type (ReductionBuffer_ordered_1d_t), public :: red_sum
-  type (ReductionBuffer_int_1d_t),       public :: red_max_int
-  type (ReductionBuffer_int_1d_t),       public :: red_sum_int
+  type (ReductionBuffer_int_1d_t),     public :: red_max_int
+  type (ReductionBuffer_int_1d_t),     public :: red_sum_int
   type (ReductionBuffer_r_1d_t),       public :: red_sum
   type (ReductionBuffer_r_1d_t),       public :: red_max,red_min
   type (ReductionBuffer_r_1d_t),       public :: red_flops,red_timer
@@ -77,9 +77,7 @@ contains
     real(kind=real_kind), intent(in)    :: data(:)
     type (hybrid_t),      intent(in)    :: hybrid
     real(kind=real_kind)                :: pmin
-
     real(kind=real_kind)                :: tmp(1)
-
 
     tmp(1) = MINVAL(data)
     call pmin_mt(red_min,tmp,1,hybrid)
@@ -94,6 +92,7 @@ contains
     type (hybrid_t),      intent(in)    :: hybrid
     real(kind=real_kind)                :: pmin
     real(kind=real_kind)                :: tmp(1)
+
     tmp(1) = data
     call pmin_mt(red_min,tmp,1,hybrid)
     pmin = red_min%buf(1)
@@ -108,7 +107,7 @@ contains
     type (hybrid_t), intent(in)         :: hybrid
     integer, dimension(n,m)             :: pmax
     integer, dimension(n*m)             :: tmp
-    integer :: ierr,i,j
+    integer :: i,j
     do i=1,n 
       do j=1,m
         tmp(i+(j-1)*n) = data(i,j)
@@ -129,7 +128,6 @@ contains
     integer, intent(in), dimension(len) :: data
     type (hybrid_t), intent(in)         :: hybrid
     integer, dimension(len)             :: pmax, tmp
-    integer :: ierr
 
     tmp = data(:)
     call pmax_mt(red_max_int,tmp,len,hybrid)
@@ -142,9 +140,7 @@ contains
     real(kind=real_kind), intent(in)    :: data(:)
     type (hybrid_t),      intent(in)    :: hybrid
     real(kind=real_kind)                :: pmax
-
     real(kind=real_kind)                :: tmp(1)
-
 
     tmp(1) = MAXVAL(data)
     call pmax_mt(red_max,tmp,1,hybrid)
@@ -160,7 +156,6 @@ contains
     real(kind=real_kind)                :: tmp(1)
 
     tmp(1)=data
-
     call pmax_mt(red_max,tmp,1,hybrid)
     pmax = red_max%buf(1)
 
@@ -174,12 +169,14 @@ contains
     integer                             :: tmp(1)
 
     tmp(1)=data
-
     call pmax_mt(red_max_int,tmp,1,hybrid)
     pmax = red_max_int%buf(1)
 
   end function ParallelMax0d_int
-  !==================================================
+
+
+
+  !****************************************************************
   subroutine InitReductionBuffer_int_1d(red,len)
     use parallel_mod, only: abortmp
     use thread_mod, only: omp_get_num_threads
@@ -199,7 +196,6 @@ contains
        red%buf  = 0
        red%ctr  = 0
     endif
-
   end subroutine InitReductionBuffer_int_1d
   !****************************************************************
   subroutine InitReductionBuffer_r_1d(red,len)
@@ -241,20 +237,20 @@ contains
     endif
   end subroutine InitReductionBuffer_ordered_1d
 
+
+
   ! =======================================
   ! pmax_mt:
   !
   ! thread safe, parallel reduce maximum
   ! of a one dimensional reduction vector
   ! =======================================
-
   subroutine pmax_mt_int_1d(red,redp,len,hybrid)
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
-    use parallel_mod, only: mpi_min, mpi_max, mpiinteger_t,abortmp
-#else
-    use parallel_mod, only: abortmp
+    use parallel_mod, only: mpi_max, mpiinteger_t
 #endif
+    use parallel_mod, only: abortmp
 
     type (ReductionBuffer_int_1d_t)   :: red       ! shared memory reduction buffer struct
     integer,               intent(in) :: len       ! buffer length
@@ -262,33 +258,25 @@ contains
     type (hybrid_t),       intent(in) :: hybrid    ! parallel handle
 
     ! Local variables
-#ifdef _MPI
-    integer ierr
-#endif
+    integer ierr, k
 
-    integer  :: k
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
 
+    ! the first and fastest thread performs initializing copy
+    !$OMP SINGLE
+    red%buf(1:len) = redp(1:len)
+    red%ctr = hybrid%ithr
+    !$OMP END SINGLE
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-    !$OMP CRITICAL (CRITMAX)
-#endif
-    if (red%ctr == 0) red%buf(1:len)= -9999
-    if (red%ctr < hybrid%NThreads) then
+    !$OMP CRITICAL (CRITMAXINT)
+    if (hybrid%ithr /= red%ctr) then
        do k=1,len
           red%buf(k)=MAX(red%buf(k),redp(k))
        enddo
-       red%ctr=red%ctr+1
     end if
-    if (red%ctr == hybrid%NThreads) red%ctr=0
-#if (defined HORIZ_OPENMP)
-    !$OMP END CRITICAL (CRITMAX)
-#endif
+    !$OMP END CRITICAL (CRITMAXINT)
 #ifdef _MPI
-#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
-#endif
     if (hybrid%ithr==0) then
 
        call MPI_Allreduce(red%buf(1),redp,len,MPIinteger_t, &
@@ -297,20 +285,18 @@ contains
        red%buf(1:len)=redp(1:len)
     end if
 #endif
-#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
-#endif
-
-
   end subroutine pmax_mt_int_1d
-  
+
+
+
+  ! =======================================
   subroutine pmax_mt_r_1d(red,redp,len,hybrid)
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
-    use parallel_mod, only: mpi_min, mpi_max, mpireal_t,abortmp
-#else
-    use parallel_mod, only: abortmp
+    use parallel_mod, only: mpi_max, mpireal_t
 #endif
+    use parallel_mod, only: abortmp
 
     type (ReductionBuffer_r_1d_t)     :: red     ! shared memory reduction buffer struct
     real (kind=real_kind), intent(inout) :: redp(:) ! thread private vector of partial sum
@@ -318,32 +304,27 @@ contains
     type (hybrid_t),       intent(in) :: hybrid  ! parallel handle
 
     ! Local variables
-#ifdef _MPI
-    integer ierr
-#endif
+    integer ierr, k
 
-    integer  :: k
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
+    ! the first and fastest thread performs initializing copy
+    !$OMP SINGLE
+    red%buf(1:len) = redp(1:len)
+    red%ctr = hybrid%ithr
+    !$OMP END SINGLE
+
+    ! all other threads now do the max_op wrt the first thread's data
     !$OMP CRITICAL (CRITMAX)
-#endif
-    if (red%ctr == 0) red%buf(1:len)= -9.11e30
-    if (red%ctr < hybrid%NThreads) then
+    if (hybrid%ithr /= red%ctr) then
        do k=1,len
           red%buf(k)=MAX(red%buf(k),redp(k))
        enddo
-       red%ctr=red%ctr+1
     end if
-    if (red%ctr == hybrid%NThreads) red%ctr=0
-#if (defined HORIZ_OPENMP)
     !$OMP END CRITICAL (CRITMAX)
-#endif
+
 #ifdef _MPI
-#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
-#endif
     if (hybrid%ithr==0) then
 
        call MPI_Allreduce(red%buf(1),redp,len,MPIreal_t, &
@@ -352,12 +333,10 @@ contains
        red%buf(1:len)=redp(1:len)
     end if
 #endif
-#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
-#endif
-
-
   end subroutine pmax_mt_r_1d
+
+
 
   ! =======================================
   ! pmin_mt:
@@ -365,15 +344,13 @@ contains
   ! thread safe, parallel reduce maximum
   ! of a one dimensional reduction vector
   ! =======================================
-
   subroutine pmin_mt_r_1d(red,redp,len,hybrid)
     use kinds, only : int_kind
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
-    use parallel_mod, only: mpi_min, mpireal_t,abortmp
-#else
-    use parallel_mod, only: abortmp
+    use parallel_mod, only: mpi_min, mpireal_t
 #endif
+    use parallel_mod, only: abortmp
 
     type (ReductionBuffer_r_1d_t)     :: red     ! shared memory reduction buffer struct
     real (kind=real_kind), intent(inout) :: redp(:) ! thread private vector of partial sum
@@ -381,33 +358,26 @@ contains
     type (hybrid_t),       intent(in) :: hybrid  ! parallel handle
 
     ! Local variables
-
-#ifdef _MPI
-    integer ierr
-#endif
-    integer (kind=int_kind) :: k
+    integer ierr, k
 
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
 
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-    !$OMP CRITICAL (CRITMAX)
-#endif
-    if (red%ctr == 0) red%buf(1:len)= 9.11e30
-    if (red%ctr < hybrid%NThreads) then
+    ! the first and fastest thread performs initializing copy
+    !$OMP SINGLE
+    red%buf(1:len) = redp(1:len)
+    red%ctr = hybrid%ithr
+    !$OMP END SINGLE
+
+    !$OMP CRITICAL (CRITMIN)
+    if (hybrid%ithr /= red%ctr) then
        do k=1,len
           red%buf(k)=MIN(red%buf(k),redp(k))
        enddo
-       red%ctr=red%ctr+1
     end if
-    if (red%ctr == hybrid%NThreads) red%ctr=0
-#if (defined HORIZ_OPENMP)
-    !$OMP END CRITICAL (CRITMAX)
-#endif
+    !$OMP END CRITICAL (CRITMIN)
+
 #ifdef _MPI
-#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
-#endif
     if (hybrid%ithr==0) then
 
        call MPI_Allreduce(red%buf(1),redp,len,MPIreal_t, &
@@ -416,13 +386,12 @@ contains
        red%buf(1:len)=redp(1:len)
     end if
 #endif
-#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
-#endif
-
-
   end subroutine pmin_mt_r_1d
 
+
+
+  ! =======================================
   subroutine ElementSum_1d(res,variable,type,hybrid)
     use hybrid_mod, only : hybrid_t
     use dimensions_mod, only : nelem

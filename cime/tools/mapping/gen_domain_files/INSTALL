@@ -2,10 +2,10 @@
 HOW TO BUILD
 ============
 
-Prior to building, you must make sure $CIMEROOT is set.
+Prior to building, you must make sure environment variables CIMEROOT and CIME_MODEL are set.
 
 (1) $ cd src
-(2) $ $CIMEROOT/tools/configure -mach [machine name]
+(2) $ $CIMEROOT/tools/configure --machine [machine name] --macros-format Makefile
 (3) Bash users:
     $ . .env_mach_specific.sh
     csh users:

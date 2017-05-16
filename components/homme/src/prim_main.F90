@@ -10,7 +10,7 @@ program prim_main
 
   use parallel_mod,     only: parallel_t, initmp, syncmp, haltmp, abortmp
   use hybrid_mod,       only: hybrid_t
-  use thread_mod,       only: nthreads, vert_num_threads, omp_get_thread_num, &
+  use thread_mod,       only: nthreads, vthreads, omp_get_thread_num, &
                               omp_set_num_threads, omp_get_nested, &
                               omp_get_num_threads, omp_get_max_threads
   use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init
@@ -84,7 +84,7 @@ program prim_main
   ! =====================================
 #if (defined HORIZ_OPENMP)
   !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
-  call omp_set_num_threads(vert_num_threads)
+  call omp_set_num_threads(vthreads)
 #endif
   ithr=omp_get_thread_num()
   nets=dom_mt(ithr)%start
@@ -135,7 +135,7 @@ program prim_main
   if(par%masterproc) print *,"Primitive Equation Initialization..."
 #if (defined HORIZ_OPENMP)
   !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
-  call omp_set_num_threads(vert_num_threads)
+  call omp_set_num_threads(vthreads)
 #endif
   ithr=omp_get_thread_num()
   hybrid = hybrid_create(par,ithr,nthreads)
@@ -202,7 +202,7 @@ program prim_main
   do while(tl%nstep < nEndStep)
 #if (defined HORIZ_OPENMP)
      !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
-     call omp_set_num_threads(vert_num_threads)
+     call omp_set_num_threads(vthreads)
 #endif
      ithr=omp_get_thread_num()
      hybrid = hybrid_create(par,ithr,nthreads)

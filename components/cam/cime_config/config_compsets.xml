@@ -130,6 +130,16 @@
   </compset>
 
   <compset>
+    <alias>F1850C5AV1C-H01A</alias>
+    <lname>1850_CAM5%AV1C-H01A_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F1850C5AV1C-H01B</alias>
+    <lname>1850_CAM5%AV1C-H01B_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>FC5AV1C-01</alias>
     <lname>2000_CAM5%AV1C-01_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
   </compset>
@@ -162,6 +172,16 @@
   <compset>
     <alias>FC5AV1C-L</alias>
     <lname>2000_CAM5%AV1C-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FC5AV1C-H01A</alias>
+    <lname>2000_CAM5%AV1C-H01A_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FC5AV1C-H01B</alias>
+    <lname>2000_CAM5%AV1C-H01B_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -202,6 +222,16 @@
   <compset>
    <alias>F20TRC5AV1C-L</alias>
    <lname>20TR_CAM5%AV1C-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+   <alias>F20TRC5AV1C-H01A</alias>
+   <lname>20TR_CAM5%AV1C-H01A_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+   <alias>F20TRC5AV1C-H01B</alias>
+   <lname>20TR_CAM5%AV1C-H01B_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -526,6 +556,16 @@
     <alias>FG20TRCN</alias>
     <lname>20TR_CAM4_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_CISM1_SWAV</lname>
   </compset>
+  
+  <compset>
+    <alias>F_ARM97_SCAM5</alias>
+    <lname>AR97_CAM5%SCAM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset> 
+  
+  <compset>
+    <alias>F_SCAM5</alias>
+    <lname>SCAM_CAM5%SCAM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>   
 
   <entries>
 
@@ -551,7 +591,7 @@
 	<value  compset="C2R[68]_CAM">1950-01-01</value> 
 	<value  compset="C2R4_CAM">2004-01-01</value>
 	<value  compset="AR95_CAM">1995-07-18</value>
-	<value  compset="AR97_CAM">1997-06-18</value>
+	<value  compset="AR97_CAM">1997-06-19</value>
       </values>
     </entry>
 
@@ -595,14 +635,22 @@
     <entry id="STOP_OPTION"> 
       <values>
 	<value compset="AR95_CAM">ndays</value>
+	<value compset="AR97_CAM">ndays</value>
       </values>
     </entry>
 
     <entry id="STOP_N"> 
       <values>
 	<value compset="AR95_CAM">2</value>
+	<value compset="AR97_CAM">29</value>
       </values>
     </entry>
+  
+    <entry id="MASK_GRID"> 
+      <values>
+	<value compset="AR97_CAM">USGS</value>
+      </values>
+    </entry>    
 
     <entry id="GET_REFCASE"> 
       <values>

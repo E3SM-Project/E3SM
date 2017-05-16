@@ -1,8 +1,3 @@
-!===============================================================================
-! SVN $Id: map_mod.F90 56089 2013-12-18 00:50:07Z mlevy@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/gen_mapping_files/runoff_to_ocn/src/map_mod.F90 $
-!===============================================================================
-
 MODULE map_mod
 
    use shr_sys_mod
@@ -385,7 +380,6 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
    map%convention = 'NCAR-CCSM'
    map%history    = 'history'
    map%domain_a   = trim(rfilename)
-   map%domain_b   = trim(ofilename)
 
    if (trim(gridtype) == "rtm") then
       !-------------------------------------------------------------------------
@@ -428,13 +422,8 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
 
          map%area_a(n) = 0.5 * 0.5 * cos(lat*DEGtoRAD) * DEGtoRAD * DEGtoRAD
 
-         if (abs(rdirc) < 0.5) then
-            map%mask_a(n) = 1
-            map%frac_a(n) = 1.0_r8
-         else
-            map%mask_a(n) = 0
-            map%frac_a(n) = 0.0_r8
-         endif
+         map%mask_a(n) = 1
+         map%frac_a(n) = 1.0_r8
       enddo
 
       close(fid)
@@ -751,88 +740,7 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
    !----------------------------------------------------------------------------
    write(*,F00) "read destination domain info -- pop grid"
    !----------------------------------------------------------------------------
-   write(6,F00) 'ocn data file',' = ',trim(ofilename)
-   rcode = nf_open(ofilename,NF_NOWRITE,fid)
-
-   rcode = nf_inq_dimid (fid, 'grid_size' , did)
-   rcode = nf_inq_dimlen(fid, did   , map%n_b  )
-   rcode = nf_inq_dimid (fid, 'grid_corners' , did)
-   rcode = nf_inq_dimlen(fid, did   , map%nv_b  )
-   rcode = nf_inq_dimid (fid, 'grid_rank', did)
-   rcode = nf_inq_dimlen(fid, did   , grid_rank)
-   allocate(grid_dims(grid_rank))
-   rcode = nf_inq_varid  (fid, 'grid_dims', vid)
-   rcode = nf_get_var_int(fid, vid   , grid_dims)
-   if (grid_rank.eq.1) then
-     map%ni_b = grid_dims(1)
-     map%nj_b = 1
-   elseif (grid_rank.eq.2) then
-     map%ni_b = grid_dims(1)
-     map%nj_b = grid_dims(2)
-   else
-      deallocate(grid_dims)
-      write(6,*) 'ERROR: grid_rank is ',grid_rank,' in ',trim(ofilename)
-      call shr_sys_abort(subName//"ERROR: ofilename grid_rank")
-   endif
-   deallocate(grid_dims)
-   map%dims_b(1) = map%ni_b
-   map%dims_b(2) = map%nj_b
-
-   allocate(map%  xc_b(         map%n_b)) ! x-coordinates of center
-   allocate(map%  yc_b(         map%n_b)) ! y-coordinates of center
-   allocate(map%  xv_b(map%nv_b,map%n_b)) ! x-coordinates of verticies
-   allocate(map%  yv_b(map%nv_b,map%n_b)) ! y-coordinates of verticies
-   allocate(map%mask_b(         map%n_b)) ! domain mask
-   allocate(map%area_b(         map%n_b)) ! grid cell area
-   allocate(map%frac_b(         map%n_b)) ! grid cell area
-   allocate(map%sn1            (map%n_b))
-   allocate(map%sn2            (map%n_b))
-
-   rcode = nf_inq_varid     (fid,'grid_center_lon'  ,vid)
-   rcode = nf_get_var_double(fid,vid     ,map%xc_b )
-   units = "" ! units needs to be emptied before reading from netCDF file
-   rcode = nf_get_att_text(fid, vid, "units", units)
-   if (trim(units).eq."radians") then
-      map%xc_b = map%xc_b * RADtoDEG
-   end if
-
-   rcode = nf_inq_varid     (fid,'grid_center_lat'  ,vid)
-   rcode = nf_get_var_double(fid,vid     ,map%yc_b )
-   units = "" ! units needs to be emptied before reading from netCDF file
-   rcode = nf_get_att_text(fid, vid, "units", units)
-   if (trim(units).eq."radians") then
-      map%yc_b = map%yc_b * RADtoDEG
-   end if
-
-   rcode = nf_inq_varid     (fid,'grid_corner_lon'  ,vid)
-   rcode = nf_get_var_double(fid,vid     ,map%xv_b )
-   units = "" ! units needs to be emptied before reading from netCDF file
-   rcode = nf_get_att_text(fid, vid, "units", units)
-   if (trim(units).eq."radians") then
-      map%xv_b = map%xv_b * RADtoDEG
-   end if
-
-   rcode = nf_inq_varid     (fid,'grid_corner_lat'  ,vid)
-   rcode = nf_get_var_double(fid,vid     ,map%yv_b )
-   units = "" ! units needs to be emptied before reading from netCDF file
-   rcode = nf_get_att_text(fid, vid, "units", units)
-   if (trim(units).eq."radians") then
-      map%yv_b = map%yv_b * RADtoDEG
-   end if
-
-   rcode = nf_inq_varid     (fid,'grid_imask',vid )
-   rcode = nf_get_var_int   (fid,vid     ,map%mask_b)
-   rcode = nf_inq_varid     (fid,'grid_area',vid )
-   if (rcode.eq.0) then
-      rcode = nf_get_var_double(fid,vid     ,map%area_b)
-   else
-      write(6,*) "ERROR: could not find variable grid_area in destination grid input file!"
-      stop
-   end if
-
-   map%frac_b = map%mask_b * 1.0_r8
-
-   rcode = nf_close(fid)
+   call map_DestGridRead(map, ofilename)
 
    !----------------------------------------------------------------------------
    write(*,F00) "derive info required to compute NN map"
@@ -1479,10 +1387,6 @@ SUBROUTINE map_write(map, filename)
    rcode = nf_put_att_text(fid,NF_GLOBAL,'normalization',len_trim(str),str)
     str  = map%method
    rcode = nf_put_att_text(fid,NF_GLOBAL,'map_method' ,len_trim(str),str)
-    str  = "$SVN"
-   rcode = nf_put_att_text(fid,NF_GLOBAL,'SVN URL'     ,len_trim(str),str)
-    str  = "$Id"
-   rcode = nf_put_att_text(fid,NF_GLOBAL,'SVN Id'      ,len_trim(str),str)
     str  = map%history
    call date_and_time(cdate,ctime) ! f90 intrinsic
     str = 'File created: '//cdate(1:4)//'-'//cdate(5:6)//'-'//cdate(7:8) &
@@ -2597,6 +2501,119 @@ real(r8) FUNCTION map_distance(x0,y0,x1,y1)
    map_distance = sqrt(dth**2 + dph**2)*DEGtoRAD*rEarth
 
 END FUNCTION map_distance
+
+!===============================================================================
+
+SUBROUTINE map_DestGridRead(map, filename)
+
+   !--- modules ---
+
+   implicit none
+
+   !--- includes ---
+
+   !--- arguments ---
+   type(sMatrix), intent(inout) :: map       ! sMatrix info to be read in
+   character(*) , intent(in)    :: filename  ! name of data file
+
+   !--- local ---
+   character(strLen)     :: units     ! netCDF attribute name string
+   integer               :: rcode   ! netCDF routine return code
+   integer               :: fid     ! netCDF file      ID
+   integer               :: vid     ! netCDF variable  ID
+   integer               :: did     ! netCDF dimension ID
+   integer               :: grid_rank
+   integer, allocatable, dimension(:) :: grid_dims
+
+   character(*),parameter :: subName = "(map_DestGridRead) "
+   !--- formats ---
+   character(len=*),parameter :: F00 = "('(map_DestGridRead) ',3a)"
+   character(len=*),parameter :: F02 = "('(map_DestGridRead) ',a11,a3,60(a1))"
+
+   write(6,F00) 'ocn data file',' = ',trim(filename)
+   rcode = nf_open(filename,NF_NOWRITE,fid)
+
+   rcode = nf_inq_dimid (fid, 'grid_size' , did)
+   rcode = nf_inq_dimlen(fid, did   , map%n_b  )
+   rcode = nf_inq_dimid (fid, 'grid_corners' , did)
+   rcode = nf_inq_dimlen(fid, did   , map%nv_b  )
+   rcode = nf_inq_dimid (fid, 'grid_rank', did)
+   rcode = nf_inq_dimlen(fid, did   , grid_rank)
+   allocate(grid_dims(grid_rank))
+   rcode = nf_inq_varid  (fid, 'grid_dims', vid)
+   rcode = nf_get_var_int(fid, vid   , grid_dims)
+   if (grid_rank.eq.1) then
+     map%ni_b = grid_dims(1)
+     map%nj_b = 1
+   elseif (grid_rank.eq.2) then
+     map%ni_b = grid_dims(1)
+     map%nj_b = grid_dims(2)
+   else
+      deallocate(grid_dims)
+      write(6,*) 'ERROR: grid_rank is ',grid_rank,' in ',trim(filename)
+      call shr_sys_abort(subName//"ERROR: filename grid_rank")
+   endif
+   deallocate(grid_dims)
+   map%dims_b(1) = map%ni_b
+   map%dims_b(2) = map%nj_b
+
+   allocate(map%  xc_b(         map%n_b)) ! x-coordinates of center
+   allocate(map%  yc_b(         map%n_b)) ! y-coordinates of center
+   allocate(map%  xv_b(map%nv_b,map%n_b)) ! x-coordinates of verticies
+   allocate(map%  yv_b(map%nv_b,map%n_b)) ! y-coordinates of verticies
+   allocate(map%mask_b(         map%n_b)) ! domain mask
+   allocate(map%area_b(         map%n_b)) ! grid cell area
+   allocate(map%frac_b(         map%n_b)) ! grid cell area
+   allocate(map%sn1            (map%n_b))
+   allocate(map%sn2            (map%n_b))
+
+   rcode = nf_inq_varid     (fid,'grid_center_lon'  ,vid)
+   rcode = nf_get_var_double(fid,vid     ,map%xc_b )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%xc_b = map%xc_b * RADtoDEG
+   end if
+
+   rcode = nf_inq_varid     (fid,'grid_center_lat'  ,vid)
+   rcode = nf_get_var_double(fid,vid     ,map%yc_b )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%yc_b = map%yc_b * RADtoDEG
+   end if
+
+   rcode = nf_inq_varid     (fid,'grid_corner_lon'  ,vid)
+   rcode = nf_get_var_double(fid,vid     ,map%xv_b )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%xv_b = map%xv_b * RADtoDEG
+   end if
+
+   rcode = nf_inq_varid     (fid,'grid_corner_lat'  ,vid)
+   rcode = nf_get_var_double(fid,vid     ,map%yv_b )
+   units = "" ! units needs to be emptied before reading from netCDF file
+   rcode = nf_get_att_text(fid, vid, "units", units)
+   if (trim(units).eq."radians") then
+      map%yv_b = map%yv_b * RADtoDEG
+   end if
+
+   rcode = nf_inq_varid     (fid,'grid_imask',vid )
+   rcode = nf_get_var_int   (fid,vid     ,map%mask_b)
+   rcode = nf_inq_varid     (fid,'grid_area',vid )
+   if (rcode.eq.0) then
+      rcode = nf_get_var_double(fid,vid     ,map%area_b)
+   else
+      write(6,*) "ERROR: could not find variable grid_area in destination grid input file!"
+      stop
+   end if
+
+   map%frac_b = map%mask_b * 1.0_r8
+   map%domain_b = trim(filename)
+   rcode = nf_close(fid)
+
+END SUBROUTINE map_DestGridRead
 
 !===============================================================================
 !===============================================================================

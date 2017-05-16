@@ -95,9 +95,12 @@ IF (${ENABLE_PERSISTENT_MPI})
 ENDIF ()
 
 OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
-MESSAGE(STATUS "HOMME_USE_MKL=${HOMME_USE_MKL}")
 IF(${HOMME_USE_MKL})
-  MESSAGE(STATUS "For Edison/Cori at NERSC, MKL included with Intel compiler")
+  MESSAGE(STATUS "HOMME_USE_MKL=${HOMME_USE_MKL}, adding -mkl")
+  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mkl")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mkl")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mkl")
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mkl")
 ELSE()
   OPTION(HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" FALSE)
   MESSAGE(STATUS "HOMME_FIND_BLASLAPACK=${HOMME_FIND_BLASLAPACK}")
@@ -143,28 +146,33 @@ IF (${ENABLE_NANOTIMERS})
     ADD_DEFINITIONS(-DBIT64)
   ENDIF ()
 ENDIF ()
-ADD_SUBDIRECTORY(utils/cime/share/timing)
+ADD_SUBDIRECTORY(utils/cime/src/share/timing)
 
 
 # Use CIME's FindNETCDF path
 # CMAKE_CURRENT_SOURCE_DIR == homme
-SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/externals/CMake" ${CMAKE_MODULE_PATH})
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/CMake" ${CMAKE_MODULE_PATH})
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio2/cmake" ${CMAKE_MODULE_PATH})
 FIND_PACKAGE(NETCDF)
 
+# These are needed for pio's FindNetCDF
+SET(NetCDF_PATH ${NETCDF_DIR})
+SET(PnetCDF_PATH ${PNETCDF_DIR})
+
 # pio needs cime/externals/genf90/genf90.pl
-SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/externals/genf90)
+SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/genf90)
 
 # For pio - allow the user to set HDF5_DIR to find libhdf5 etc.
 IF (HDF5_DIR)
   SET(ENV{HDF5_ROOT} ${HDF5_DIR})
 ENDIF ()
-ADD_SUBDIRECTORY(utils/cime/externals/pio1)
+ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
 
 # CPRNC locations
 SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
 SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
 ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
-
 
 SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")
 IF(${BUILD_HOMME_SWEQX})

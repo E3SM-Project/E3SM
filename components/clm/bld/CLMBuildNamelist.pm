@@ -1013,8 +1013,8 @@ sub setup_cmdl_nitrif_denitrif {
     } else {
 
       $var = "bgc_mode";
-      if ($nl_flags->{$var} ne "cn") {
-        fatal_error("-nitrif_denitrif option can ONLY be used for clm4_5 with -bgc cn");
+      if ($nl_flags->{$var} eq "sp") {
+        fatal_error("-nitrif_denitrif option can ONLY be used for clm4_5 with -bgc cn|bgc");
       } else {
 
         $var = "use_nitrif_denitrif";
@@ -1055,8 +1055,8 @@ sub setup_cmdl_methane {
     } else {
 
       $var = "bgc_mode";
-      if ($nl_flags->{$var} ne "cn") {
-        fatal_error("-methane option can ONLY be used for clm4_5 with -bgc cn");
+      if ($nl_flags->{$var} eq "sq") {
+        fatal_error("-methane option can ONLY be used for clm4_5 with -bgc cn|bgc");
       } else {
 
         $val = $nl_flags->{'use_nitrif_denitrif'};
@@ -1094,8 +1094,8 @@ sub setup_cmdl_nutrient {
   } else {
     if ($val ne "default"){
 
-      if ($nl_flags->{"bgc_mode"} ne "cn"){
-        fatal_error("-nutrient nutrient_option can ONLY be used with clm4_5 with -bgc cn");
+      if ($nl_flags->{"bgc_mode"} eq "sp"){
+        fatal_error("-nutrient nutrient_option can ONLY be used with clm4_5 with -bgc cn|bgc");
       } else {
 
         if ($val eq "c"){
@@ -1188,13 +1188,15 @@ sub setup_cmdl_nutrient_comp {
   my $var = "nutrient_comp_pathway";
   my $val = $opts->{$var};
 
+  $nl_flags->{'nu_com'} = "";
+
   if ( $val ne "default" && $physv->as_long() ne $physv->as_long("clm4_5") ) {
     fatal_error("-nutrient_comp_pathway used without clm4_5 physics.");
   } else {
     if ($val ne "default"){
 
-      if ($nl_flags->{"bgc_mode"} ne "cn"){
-        fatal_error("-nutrient_comp_pathway option can ONLY be used with clm4_5 with -bgc cn");
+      if ($nl_flags->{"bgc_mode"} eq "sp"){
+        fatal_error("-nutrient_comp_pathway option can ONLY be used with clm4_5 with -bgc cn|bgc");
       } else {
 
         if ($val eq "rd"){
@@ -1210,6 +1212,8 @@ sub setup_cmdl_nutrient_comp {
             fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
           }
 
+          $nl_flags->{$var} = 'RD';
+
         } elsif ($val eq "eca") {
           $var = "nu_com";
           $val = "'ECA'";
@@ -1222,6 +1226,8 @@ sub setup_cmdl_nutrient_comp {
             my @valid_values   = $definition->get_valid_values( $var );
             fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
           }
+
+          $nl_flags->{$var} = 'ECA';
 
         } else {
           fatal_error("-nutrient_comp_pathway has a value ($val) that is not valid. Valid values are: [rd, eca] \n");
@@ -1243,8 +1249,8 @@ sub setup_cmdl_soil_decomp {
   } else {
     if ($val ne "default"){
 
-      if ($nl_flags->{"bgc_mode"} ne "cn"){
-        fatal_error("-soil_decomp option can ONLY be used with clm4_5 with -bgc cn");
+      if ($nl_flags->{"bgc_mode"} eq "sp"){
+        fatal_error("-soil_decomp option can ONLY be used with clm4_5 with -bgc cn|bgc");
       } else {
 
         if ($val eq "ctc"){
@@ -2246,8 +2252,8 @@ sub setup_logic_params_file {
 
   if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'paramfile', 
-                'use_ed'=>$nl_flags->{'use_ed'}, 'use_crop'=>$nl_flags->{'use_crop'} );
-   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsoilordercon', 
+                'use_ed'=>$nl_flags->{'use_ed'}, 'use_crop'=>$nl_flags->{'use_crop'},'nu_com'=>$nl_flags->{'nu_com'} );
+   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsoilordercon',
                 );   
   } else {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fpftcon');
@@ -3918,7 +3924,7 @@ sub main {
 
   my $physv = config_files::clm_phys_vers->new( $cfg->get('phys') );
   my $cesmroot   = abs_path( "$nl_flags{'cfgdir'}/../../../");
-  my $drvblddir  = "$cesmroot/cime/driver_cpl/bld";
+  my $drvblddir  = "$cesmroot/cime/src/drivers/mct/bld";
   my $definition = read_namelist_definition($drvblddir, \%opts, \%nl_flags, $physv);
   my $defaults   = read_namelist_defaults($drvblddir, \%opts, \%nl_flags, $cfg, $physv);
 

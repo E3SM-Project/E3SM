@@ -112,7 +112,7 @@ contains
 
     do p = bounds%begp,bounds%endp   
 
-       if (pft%itype(p) /= noveg) then
+       if (pft%itype(p) /= noveg .and. .not.pft%is_fates(p)) then
           c = pft%column(p)
 	  nlevbed = njbed(c)
 	  totrootfr = 0._r8

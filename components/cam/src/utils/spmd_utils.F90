@@ -52,7 +52,8 @@ module spmd_utils
 ! Forward from mpishorthand.F with the idea of phasing out use of and removing that file
 !
 #ifndef SPMD
-   integer :: mpi_status_ignore     ! Needs to be defined in mpi-serial
+! MPI_STATUS_IGNORE(MPI_STATUS_SIZE) defined in mpi-serial/mpif.h. commented out by wlin for SCM
+!   integer :: mpi_status_ignore     ! Needs to be defined in mpi-serial
    integer :: mpir8
 #endif
 !

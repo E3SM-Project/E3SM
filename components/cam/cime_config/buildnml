@@ -19,6 +19,7 @@ my $CAM_DYCORE		= `./xmlquery  CAM_DYCORE		-value`;
 my $CAM_TARGET		= `./xmlquery  CAM_TARGET		-value`;
 my $CASEBUILD		= `./xmlquery  CASEBUILD		-value`;
 my $CCSM_CO2_PPMV	= `./xmlquery  CCSM_CO2_PPMV		-value`;
+$CCSM_CO2_PPMV          = sprintf("%f", $CCSM_CO2_PPMV); # for floating point notation
 my $SRCROOT		= `./xmlquery  SRCROOT			-value`;
 my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE		-value`;
 my $COMP_OCN		= `./xmlquery  COMP_OCN			-value`;
@@ -41,6 +42,7 @@ my $RUN_REFTOD	        = `./xmlquery  RUN_REFTOD		-value`;
 my $UTILROOT		= `./xmlquery  UTILROOT			-value`;
 my $DOCN_MODE		= `./xmlquery  DOCN_MODE		-value`;
 my $COMPILER		= `./xmlquery  COMPILER                 -value`; # for chem preprocessor 
+my $BUILD_THREADED      = `./xmlquery  BUILD_THREADED		-value`;
 
 my @dirs = ("$CIMEROOT/utils/perl5lib");
 unshift @INC, @dirs;
@@ -59,13 +61,22 @@ chdir "$CASEBUILD/camconf";
 
 if ($BUILD_COMPLETE eq 'FALSE') {
 
+    # The following translation is hard-wired for backwards compatibility
+    # to support the differences between how the scripts specify the land grid
+    # and how it is specified internally
+    
+    if ($ATM_GRID eq 'T31'){$ATM_GRID = "48x96";}
+    if ($ATM_GRID eq 'T42'){$ATM_GRID = "64x128";}
+    if ($ATM_GRID eq 'T85'){$ATM_GRID = "128x256";}
+    if ($ATM_GRID eq 'T341'){$ATM_GRID = "512x1024";}
+
     # Some settings for single column mode.
     my $scm = "";
     if ($PTS_MODE eq 'TRUE') {$scm = "-scam -nosmp";}
     my $spmd = '-spmd';
     if ($MPILIB eq 'mpi-serial') {$spmd = "-nospmd";}
     my $smp = '-smp';
-    if ($NTHRDS_ATM == 1) {$smp = "-nosmp";}
+    if (($NTHRDS_ATM == 1) && ($BUILD_THREADED eq 'FALSE')) {$smp = "-nosmp";}
 
     # The ocean component setting is only used by CAM to do attribute matching for
     # setting default tuning parameter values.  In SOM mode we want to use the same
