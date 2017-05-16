@@ -3,7 +3,7 @@
         {
 			"set": [4],
 			"case_id": "set5_MERRA",
-			"variables": ["T"],
+                        "variables": ["U","OMEGA","RELHUM","SHUM","T"],
 			"ref_name": "MERRA",
 			"reference_name": "MERRA",
 			"seasons": ["ANN"]

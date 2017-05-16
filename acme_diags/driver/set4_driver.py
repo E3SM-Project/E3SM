@@ -73,8 +73,6 @@ def run_diag(parameter):
     regions = parameter.regions
 
     for season in seasons:
-        print test_data_path
-        print reference_data_path
         if hasattr(parameter, 'test_path'):
             filename1 = parameter.test_path
             print filename1

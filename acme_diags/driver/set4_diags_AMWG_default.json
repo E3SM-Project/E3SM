@@ -3,260 +3,34 @@
 		{
 			"sets": [4],
 			"case_id": "set4_MERRA",
-			"variables": ["T"],
+			"variables": ["T","U","OMEGA","RELHUM","SHUM"],
 			"ref_name": "MERRA",
 			"reference_name": "MERRA Analysis 1979-2013 NASA",
-			"seasons": ["ANN"],
-			"plevs": [200.0, 850.0],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_MERRA",
-			"variables": ["U"],
-			"ref_name": "MERRA",
-			"reference_name": "MERRA Analysis 1979-2013 NASA",
-			"seasons": ["ANN"],
-			"plevs": [200.0],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_MERRA",
-			"variables": ["Z3"],
-			"ref_name": "MERRA",
-			"reference_name": "MERRA Analysis 1979-2013 NASA",
-			"seasons": ["ANN"],
-			"plevs": [300.0, 500.0],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_MERRA",
-			"variables": ["PREH2O"],
-			"ref_name": "MERRA",
-			"reference_name": "MERRA Analysis 1979-2013 NASA",
-			"seasons": ["ANN"],
-			"contour_levels": [4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60],
-			"diff_levels": [-12, -9, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 9, 12],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_MERRA",
-			"variables": ["PSL"],
-			"ref_name": "MERRA",
-			"reference_name": "MERRA Analysis 1979-2013 NASA",
-			"seasons": ["ANN"],
-			"regions": ["polar_S", "polar_N"]
+			"seasons": ["ANN"]
 		},
 		{
 			"sets": [4],
 			"case_id": "set4_ERA40",
-			"variables": ["LHFLX"],
+			"variables": ["T","U","OMEGA","RELHUM","SHUM"],
 			"ref_name": "ERA40",
 			"reference_name": "ERA40 Reanalysis 1980-2001",
-			"seasons": ["ANN"],
-			"contour_levels": [0, 15, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390],
-			"diff_levels": [-150, -120, -90, -60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 120, 150],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_ERA40",
-			"variables": ["PREH2O"],
-			"ref_name": "ERA40",
-			"reference_name": "ERA40 Reanalysis 1980-2001",
-			"seasons": ["ANN"],
-			"contour_levels": [4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60],
-			"diff_levels": [-12, -9, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 9, 12],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_ERA40",
-			"variables": ["U"],
-			"ref_name": "ERA40",
-			"reference_name": "ERA40 Reanalysis 1980-2001",
-			"seasons": ["ANN"],
-			"plevs": [200.0],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_ERA40",
-			"variables": ["Z3"],
-			"ref_name": "ERA40",
-			"reference_name": "ERA40 Reanalysis 1980-2001",
-			"seasons": ["ANN"],
-			"plevs": [300.0, 500.0],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_ERA40",
-			"variables": ["T"],
-			"ref_name": "ERA40",
-			"reference_name": "ERA40 Reanalysis 1980-2001",
-			"seasons": ["ANN"],
-			"plevs": [850.0, 200.0],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_ERAI",
-			"variables": ["LHFLX"],
-			"ref_name": "ERAI",
-			"reference_name": "ERA-Interim Reanalysis 1989-2005",
-			"seasons": ["ANN"],
-			"contour_levels": [0, 15, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390],
-			"diff_levels": [-150, -120, -90, -60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 120, 150],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_ERAI",
-			"variables": ["PRECT"],
-			"ref_name": "ERAI",
-			"reference_name": "ERA-Interim Reanalysis 1989-2005",
-			"seasons": ["ANN"],
-			"contour_levels": [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, [4], 8, 9, 10, 12, 14, 17],
-			"diff_levels": [-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_ERAI",
-			"variables": ["PREH2O"],
-			"ref_name": "ERAI",
-			"reference_name": "ERA-Interim Reanalysis 1989-2005",
-			"seasons": ["ANN"],
-			"contour_levels": [4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60],
-			"diff_levels": [-12, -9, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 9, 12],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_ERAI",
-			"variables": ["U"],
-			"ref_name": "ERAI",
-			"reference_name": "ERA-Interim Reanalysis 1989-2005",
-			"seasons": ["ANN"],
-			"plevs": [200.0],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_ERAI",
-			"variables": ["Z3"],
-			"ref_name": "ERAI",
-			"reference_name": "ERA-Interim Reanalysis 1989-2005",
-			"seasons": ["ANN"],
-			"plevs": [300.0, 500.0],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_ERAI",
-			"variables": ["T"],
-			"ref_name": "ERAI",
-			"reference_name": "ERA-Interim Reanalysis 1989-2005",
-			"seasons": ["ANN"],
-			"plevs": [850.0, 200.0],
-			"regions": ["polar_S", "polar_N"]
+			"seasons": ["ANN"]
 		},
 		{
 			"sets": [4],
 			"case_id": "set4_JRA25",
-			"variables": ["LHFLX"],
+			"variables": ["T","U","OMEGA","SHUM"],
 			"ref_name": "JRA25",
 			"reference_name": "JRA25 Reanalysis 1979-2004",
-			"seasons": ["ANN"],
-			"contour_levels": [0, 15, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390],
-			"diff_levels": [-150, -120, -90, -60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 120, 150],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_JRA25",
-			"variables": ["SHFLX"],
-			"ref_name": "JRA25",
-			"reference_name": "JRA25 Reanalysis 1979-2004",
-			"seasons": ["ANN"],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_JRA25",
-			"variables": ["TREFHT"],
-			"ref_name": "JRA25",
-			"reference_name": "JRA25 Reanalysis 1979-2004",
-			"seasons": ["ANN"],
-			"contour_levels": [210, 220, 230, 240, 250, 260, 270, 275, 280, 285, 290, 295, 300, 305, 310],
-			"diff_levels": [-5, -4, -3, -2, -1, -0.5, -0.2, 0, 0.2, 0.5, 1, 2, 3, 4, 5],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_JRA25",
-			"variables": ["PREH2O"],
-			"ref_name": "JRA25",
-			"reference_name": "JRA25 Reanalysis 1979-2004",
-			"seasons": ["ANN"],
-			"contour_levels": [4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60],
-			"diff_levels": [-12, -9, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 9, 12],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_JRA25",
-			"variables": ["TREFHT"],
-			"ref_name": "JRA25",
-			"reference_name": "JRA25 Reanalysis 1979-2004",
-			"seasons": ["ANN"],
-			"contour_levels": [210, 220, 230, 240, 250, 260, 270, 275, 280, 285, 290, 295, 300, 305, 310],
-			"diff_levels": [-5, -4, -3, -2, -1, -0.5, -0.2, 0, 0.2, 0.5, 1, 2, 3, 4, 5],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_JRA25",
-			"variables": ["U"],
-			"ref_name": "JRA25",
-			"reference_name": "JRA25 Reanalysis 1979-2004",
-			"seasons": ["ANN"],
-			"plevs": [200.0],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_JRA25",
-			"variables": ["Z3"],
-			"ref_name": "JRA25",
-			"reference_name": "JRA25 Reanalysis 1979-2004",
-			"seasons": ["ANN"],
-			"plevs": [300.0, 500.0],
-			"regions": ["polar_S", "polar_N"]
-		},
-		{
-			"sets": [4],
-			"case_id": "set4_JRA25",
-			"variables": ["T"],
-			"ref_name": "JRA25",
-			"reference_name": "JRA25 Reanalysis 1979-2004",
-			"seasons": ["ANN"],
-			"plevs": [850.0, 200.0],
-			"regions": ["polar_S", "polar_N"]
+			"seasons": ["ANN"]
 		},
 		{
 			"sets": [4],
 			"case_id": "set4_AIRS",
-			"variables": ["T"],
+			"variables": ["T","RELHUM","SHUM"],
 			"ref_name": "AIRS",
 			"reference_name": "AIRS IR Sounder 2002-06",
-			"seasons": ["ANN"],
-			"regions": ["polar_S", "polar_N"],
-			"plevs": [200.0, 850.0]
+			"seasons": ["ANN"]
 		}
 	]
 }
