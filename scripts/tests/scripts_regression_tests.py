@@ -295,7 +295,7 @@ class J_TestCreateNewcase(unittest.TestCase):
             primary = case._find_primary_component()
             self.assertEqual(primary, "wilma", msg="primary component test expected wilma but got %s"%primary)
             # this is a "E" compset
-            case._compsetname.replace("XOCN","DOCN%SOM")
+            case._compsetname = case._compsetname.replace("XOCN","DOCN%SOM")
             primary = case._find_primary_component()
             self.assertEqual(primary, "allactive", msg="primary component test expected allactive but got %s"%primary)
             # finally a "B" compset
