@@ -496,8 +496,6 @@ class Case(object):
         else:
             primary_component = "drv"
 
-        print "%s progcomps %s"%(primary_component,progcomps)
-
         return primary_component
 
 
