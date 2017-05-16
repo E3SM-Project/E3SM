@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-config_pes_converter.py -- convert (or verify) config_pes elements from CIME2 
+config_pes_converter.py -- convert (or verify) config_pes elements from CIME2
 format to CIME5. This tool will compare the two versions and suggest updates to
 the CIME5 file.
 
@@ -26,10 +26,15 @@ def parse_command_line(args):
     CIME.utils.setup_standard_logging_options(parser)
 
     # Set command line options
-    parser.add_argument("-cime2file", "--cime2file", help="location of config_grid.xml file in CIME2 format", required=True)
-    parser.add_argument("-cime5file", "--cime5file", help="location of config_grids.xml file in CIME5 format", required=True)
+    parser.add_argument("-cime2file", "--cime2file",
+                        help="location of config_grid.xml file in CIME2 format",
+                        required=True)
+    parser.add_argument("-cime5file", "--cime5file",
+                        help="location of config_grids.xml file in CIME5 format",
+                        required=True)
 
-    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args,
+                                                                     parser)
 
     return args.cime2file, args.cime5file
 
@@ -173,21 +178,19 @@ class PesTree(grid_xml_converter.DataTree):
     def __init__(self, xmlfilename):
         # original xml file has bad comments
         import re, StringIO
-        if os.access(xmlfilename,os.R_OK):
-            with open(xmlfilename,'r') as xmlfile:
+        if os.access(xmlfilename, os.R_OK):
+            with open(xmlfilename, 'r') as xmlfile:
                 t1 = xmlfile.read()
                 t2 = re.sub(r'(?<=<!--)([ -]+)',
-                            lambda x: x.group(0).replace('-',' '), t1)
+                            lambda x: x.group(0).replace('-', ' '), t1)
                 t3 = re.sub(r'([ -]+)(?=-->)',
-                            lambda x: x.group(0).replace('-',' '), t2)
+                            lambda x: x.group(0).replace('-', ' '), t2)
                 tempxml = StringIO.StringIO(t3)
                 super(PesTree, self).__init__(tempxml)
                 tempxml.close()
 
         else:
             super(PesTree, self).__init__(xmlfilename)
-            
-
 
     def populate(self):
         if self.root is None:
@@ -260,7 +263,7 @@ def diff_tree(atree, btree):
     LOGGER.info("Number of wrong nodes: %d" % len(fixlist))
     LOGGER.info("Number of missing nodes: %d" % len(addlist))
     for miss in addlist:
-        LOGGER.info(miss[0].keyvalue())
+        LOGGER.debug(miss[0].keyvalue())
     LOGGER.info("Number of duplicate nodes: %d" % len(duplist))
     for dup in duplist:
         LOGGER.info(dup)
