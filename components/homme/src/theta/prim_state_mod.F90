@@ -127,10 +127,12 @@ contains
     real(kind=real_kind) :: v1, v2, vco(np,np,2,nlev)
 
     real (kind=real_kind) :: time, time2,time1, scale, dt, dt_split
-    real (kind=real_kind) :: KEvertu,KEvertw,IEvert,IEvert2,PEvert1,PEvert2
+    real (kind=real_kind) :: IEvert1,IEvert2,PEvert1,PEvert2
     real (kind=real_kind) :: T1,T2,S1,S2,P1,P2
-    real (kind=real_kind) :: KEhorz,KEhorz2,PEhorz1,PEhorz2,IEhorz,KEH1,KEH2
-    real (kind=real_kind) :: ddt_tot,ddt_diss_tot,ddt_diss
+    real (kind=real_kind) :: PEhorz1,PEhorz2
+    real (kind=real_kind) :: KEH1,KEH2,KEV1,KEV2
+    real (kind=real_kind) :: KEwH1,KEwH2,KEwV1,KEwV2
+    real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
     integer               :: n0, nm1, np1, n0q
     integer               :: npts,n,q
     
@@ -375,7 +377,7 @@ contains
        write(iulog,100) "theta = ",thetamin_p,thetamax_p,thetasum_p
        write(iulog,100) "dz(m) = ",phimin_p/g,phimax_p/g,phisum_p/g
        if (rsplit>0) &
-       write(iulog,100) "dp    = ",dpmin_p,dpmax_p,dpsum_p
+            write(iulog,100) "dp    = ",dpmin_p,dpmax_p,dpsum_p
 
        do q=1,qsize
           write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
@@ -487,49 +489,61 @@ contains
     !   Vertical transport terms
 #ifdef ENERGY_DIAGNOSTICS
     do ie=nets,nete
-      tmp(:,:,ie) = elem(ie)%accum%KEhoriz1
-    enddo
-    KEhorz = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    KEhorz = KEhorz*scale
-
-    do ie=nets,nete
-      tmp(:,:,ie) = elem(ie)%accum%KE1
+      tmp(:,:,ie) = elem(ie)%accum%KEu_horiz1
     enddo
     KEH1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEH1 = KEH1*scale
 
     do ie=nets,nete
-      tmp(:,:,ie) = elem(ie)%accum%KE2
+      tmp(:,:,ie) = elem(ie)%accum%KEu_horiz2
     enddo
     KEH2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEH2 = KEH2*scale
 
-
+    do ie=nets,nete
+      tmp(:,:,ie) = elem(ie)%accum%KEu_vert1
+    enddo
+    KEV1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEV1 = KEV1*scale
 
     do ie=nets,nete
-      tmp(:,:,ie) = elem(ie)%accum%KEhoriz2
+      tmp(:,:,ie) = elem(ie)%accum%KEu_vert2
     enddo
-    KEhorz2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    KEhorz2 = KEhorz2*scale
+    KEV2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEV2 = KEV2*scale
 
     do ie=nets,nete
-       tmp(:,:,ie) = elem(ie)%accum%KEvert1
+      tmp(:,:,ie) = elem(ie)%accum%KEw_horiz1
     enddo
-    KEvertu = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    KEvertu = KEvertu*scale
+    KEwH1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEwH1 = KEwH1*scale
 
     do ie=nets,nete
-       tmp(:,:,ie) = elem(ie)%accum%KEvert2
+      tmp(:,:,ie) = elem(ie)%accum%KEw_horiz2
     enddo
-    KEvertw = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    KEvertw = KEvertw*scale
+    KEwH2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEwH2 = KEwH2*scale
+
+    do ie=nets,nete
+      tmp(:,:,ie) = elem(ie)%accum%KEw_vert1
+    enddo
+    KEwV1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEwV1 = KEwV1*scale
+
+    do ie=nets,nete
+      tmp(:,:,ie) = elem(ie)%accum%KEw_vert2
+    enddo
+    KEwV2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEwV2 = KEwV2*scale
+
+
 
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%IEvert1 
     enddo
-    IEvert = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    IEvert = IEvert*scale
+    IEvert1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    IEvert1 = IEvert1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%IEvert2
@@ -601,8 +615,9 @@ contains
 
 
 #else
-    T1=0; T2=0; S1=0; S2=0; P1=0; P2=0; KEvertu=0; KEvertw=0; IEvert=0; KEhorz=0; IEhorz=0
-    KEhorz2=0; KEH1=0; KEH2=0; PEhorz1=0; PEhorz2=0; PEvert1=0; PEvert2=0; 
+    T1=0; T2=0; S1=0; S2=0; P1=0; P2=0; 
+    IEvert1=0; PEhorz1=0; PEhorz2=0; PEvert1=0; PEvert2=0; 
+    KEH1=0; KEH2=0;  KEV1=0; KEV2=0;  KEwH1=0; KEwH2=0;  KEwV1=0; KEwV2=0; 
 #endif
 
 
@@ -613,62 +628,76 @@ contains
           endif
        endif
        
-       ! note: diagnostics not yet coded for semi-implicit 
-       if (integration == "explicit") then
-          
-          write(iulog,'(3a25)') "**DYNAMICS**        J/m^2","   W/m^2","W/m^2    "
+       write(iulog,'(3a25)') "**DYNAMICS**        J/m^2","   W/m^2","W/m^2    "
 #ifdef ENERGY_DIAGNOSTICS
-          ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
-          write(iulog,'(a,2e22.14)')'horiz adv KE-u terms abs/rel, should = 0 :',KEhorz, abs(KEH1+KEH2)/sqrt(KEH1**2+KEH2**2)
-          write(iulog,'(a,2e22.14)')'horiz adv KE-u terms, should+to 0        :',KEH1,KEH2
-          write(iulog,'(a,2e22.14)')'vert adv etadot KE-u,w terms = 0         :',KEvertu,KEvertw
-          write(iulog,'(a,2e22.14)')'horiz adv KE-w terms, possibly nonzero   :',KEhorz2
-          write(iulog,'(a,2e22.14)')'vert adv IE energy abs/rel, should = 0   :',IEvert+IEvert2,abs(IEvert+IEvert2)/sqrt(IEvert**2+IEvert2**2)
-          write(iulog,'(a,2e22.14)')'Tot IE advection vert =0                 :',IEvert,IEvert2
-          write(iulog,'(a,2e22.14)')'Tot PE advection horiz = 0 abs/rel       :',PEhorz1+PEhorz2,abs(PEhorz1+PEhorz2)/sqrt(PEhorz1**2+PEhorz2**2)
-          write(iulog,'(a,2e22.14)')'Tot PE advection vert  = 0 abs/rel       :',PEvert1+PEvert2,abs(PEvert1+PEvert2)/sqrt(PEvert1**2+PEvert2**2)
-          write(iulog,'(a,2e22.14)')'(T1+S1 abs/rel = 0)                      :',S1+T1, abs(S1+T1)/sqrt(S1**2+T1**2)
-          write(iulog,'(a,2e22.14)')'(S1,T1)                                  :',S1,T1
-          write(iulog,'(a,2e22.14)')'(T2+S2 = 0)                              :',T2+S2, abs(S2+T2)/sqrt(S2**2+T2**2)
-          write(iulog,'(a,2e22.14)')'(S2,T2)                                  :',S2,T2
-          write(iulog,'(a,2e22.14)')'(P1,P2)                                  :',P1,P2
-          ddt_tot =  (KEner(2)-KEner(1))/(dt)
-          ddt_diss_tot = ddt_tot -(KEhorz+KEhorz2+KEvertu+KEvertw+T1+T2+P1) 
-          ddt_diss = ddt_tot -(T1+T2+P1+KEhorz2)
+       ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
+       if (theta_hydrostatic_mode) then
+          write(iulog,'(a,2e22.14)')'KEu h-adv,sum=0:',KEH1,KEH2
+          write(iulog,'(a,2e22.14)')'KEu v-adv,sum=0:',KEV1,KEV2
+          !write(iulog,'(a,3e22.14)')'IE  v-adv,sum~0:',IEvert1,PEvert1,IEvert1+PEvert1
+          write(iulog,'(a,3e22.14)')'IE  v-adv,sum=0:',IEvert1,PEvert1
+          write(iulog,'(a,2e22.14)')'KE->IE, IE->KE :',(T1+PEhorz2),(S1+PEhorz1)
+          
+          ddt_tot  =  (KEner(2)-KEner(1))/dt
+          ddt_diss = ddt_tot -(T1+PEhorz2)
           write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
-          write(iulog,'(a,3E22.14)') "diss_tot:", ddt_diss_tot
           
-          ddt_tot =  (IEner(2)-IEner(1))/(dt)
-          ddt_diss_tot = ddt_tot - (S1+S2+IEvert+IEvert2)
-          ddt_diss = ddt_tot - (S1+S2+IEvert+IEvert2)
+          ddt_tot =  (IEner(2)-IEner(1))/dt
+          ddt_diss = ddt_tot - (S1+PEhorz1)
+          !ddt_diss_adj = ddt_tot - (S1+PEhorz1 + IEvert1+PEvert1)
           write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
-          write(iulog,'(a,3E22.14)') "diss_tot:", ddt_diss_tot
+          ddt_tot = (TOTE(2)-TOTE(1))/dt
+          !write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot,ddt_tot - ( IEvert1+PEvert1)
+          write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot
+       else
+          write(iulog,'(a,2e22.14)')'KEu h-adv,sum=0:',KEH1,KEH2
+          write(iulog,'(a,3e22.14)')'KEw h-adv,sum~0:',KEwH1,KEwH2,KEwH1+KEwH2
+          write(iulog,'(a,2e22.14)')'KEu v-adv,sum=0:',KEV1,KEV2
+          write(iulog,'(a,2e22.14)')'KEw v-adv,sum=0:',KEwV1,KEwV2
+          write(iulog,'(a,2e22.14)')'PE h-adv, sum=0:',PEhorz1,PEhorz2
+          write(iulog,'(a,2e22.14)')'PE v-adv, sum=0:',PEvert1,PEvert2
+          write(iulog,'(a,3e22.14)')'IE v-adv, sum~0:',IEvert1,IEvert2,IEvert1+IEvert2
+          write(iulog,'(a,2e22.14)')'KE->PE, PE->KE :',P1,P2
+          write(iulog,'(a,2e22.14)')'KE->IE, IE->KE :',T1+T2,S1+S2
           
-          ddt_tot = (PEner(2)-PEner(1))/(dt)
-          ddt_diss_tot = ddt_tot - (PEhorz1+PEhorz2+PEvert1+PEvert2+P2)
-          ddt_diss = ddt_tot - (P2)
+          ddt_tot  =  (KEner(2)-KEner(1))/dt
+          ddt_diss = ddt_tot -(T1+T2+P1) 
+          ddt_diss_adj = ddt_tot -(T1+T2+P1+KEwH1+KEwH2)
+          write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss_adj
+          !write(iulog,'(a,3E22.14)') "KE diss(adj):",ddt_diss_adj
+          
+          ddt_tot =  (IEner(2)-IEner(1))/dt
+          ddt_diss = ddt_tot - (S1+S2)
+          ddt_diss_adj = ddt_tot - (S1+S2+IEvert1+IEvert2)
+          write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss_adj
+          !write(iulog,'(a,3E22.14)') "IE diss(adj):",ddt_diss_adj
+          
+          ddt_tot = (PEner(2)-PEner(1))/dt
+          ddt_diss = ddt_tot - P2
           write(iulog,'(a,3E22.14)') "PE,d/dt,diss:",PEner(2),ddt_tot,ddt_diss
-          write(iulog,'(a,3E22.14)') "diss_tot:", ddt_diss_tot
-#else
-          write(iulog,'(a,3E22.14)') "KE,d/dt      ",KEner(2),(KEner(2)-KEner(1))/(dt)
-          write(iulog,'(a,3E22.14)') "IE,d/dt      ",IEner(2),(IEner(2)-IEner(1))/(dt)
-          write(iulog,'(a,3E22.14)') "PE,d/dt      ",PEner(2),(PEner(2)-PEner(1))/(dt)
-#endif
-          ddt_tot = (TOTE(2)-TOTE(1))/(dt)
-          write(iulog,'(a,3E22.14)') " E,dE/dt     ",TOTE(2),ddt_tot
-          
-          do q=1,qsize
-             write(iulog,'(a,i3,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
-                  (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
-          enddo
-
-          write(iulog,'(a)') 'Physics tendencies applied by dycore:'
-          write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt
-          write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt
-          write(iulog,'(a,2e15.7)') 'dPE/dt(W/m^2): ',(PEner(1)-PEner(3))/dt
-          q=1
-          if (qsize>0) write(iulog,'(a,2e15.7)') 'dQ1/dt(kg/sm^2)',(Qmass(q,1)-Qmass(q,3))/dt
+          ddt_tot = (TOTE(2)-TOTE(1))/dt
+          ddt_diss = ddt_tot - (KEwH1+KEwH2+IEvert1+IEvert2)
+          write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot,ddt_diss
        endif
+#else
+       write(iulog,'(a,3E22.14)') "KE,d/dt      ",KEner(2),(KEner(2)-KEner(1))/dt
+       write(iulog,'(a,3E22.14)') "IE,d/dt      ",IEner(2),(IEner(2)-IEner(1))/dt
+       write(iulog,'(a,3E22.14)') "PE,d/dt      ",PEner(2),(PEner(2)-PEner(1))/dt
+       ddt_tot = (TOTE(2)-TOTE(1))/dt
+       write(iulog,'(a,3E22.14)') " E,dE/dt     ",TOTE(2),ddt_tot
+#endif
+       
+       do q=1,qsize
+          write(iulog,'(a,i3,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
+               (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
+       enddo
+       
+       write(iulog,'(a)') 'Physics tendencies applied by dycore:'
+       write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt
+       write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt
+       write(iulog,'(a,2e15.7)') 'dPE/dt(W/m^2): ',(PEner(1)-PEner(3))/dt
+       q=1
+       if (qsize>0) write(iulog,'(a,2e15.7)') 'dQ1/dt(kg/sm^2)',(Qmass(q,1)-Qmass(q,3))/dt
 
        ! Print change in energy and tracer mass from the start of the simulation
 #ifdef CAM
@@ -739,7 +768,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 !  
 
     use kinds, only : real_kind
-    use dimensions_mod, only : np, np, nlev
+    use dimensions_mod, only : np, np, nlev,nlevp
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
     use physical_constants, only : Cp, cpwater_vapor
@@ -758,8 +787,10 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
     real (kind=real_kind) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
-    real (kind=real_kind) :: dpnh(np,np,nlev) ! nh nonhyrdo pressure interfaces
+    real (kind=real_kind) :: dpnh(np,np,nlev) 
     real (kind=real_kind) :: exner(np,np,nlev)  ! exner nh pressure
+    real (kind=real_kind) :: exner_i(np,np,nlevp)  ! exner nh pressure on interfaces
+    real (kind=real_kind) :: pnh_i(np,np,nlevp)  ! exner nh pressure on intefaces
     real (kind=real_kind) :: kappa_star(np,np,nlev)  ! exner nh pressure
 
 
@@ -780,7 +811,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,t1_qdp),dpt1)
        call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,t1),dpt1,&
             elem(ie)%state%phi(:,:,:,t1), &
-            elem(ie)%state%phis(:,:),kappa_star,pnh,dpnh,exner)
+            elem(ie)%state%phis(:,:),kappa_star,pnh,dpnh,exner,exner_i,pnh_i)
    
  !   KE   .5 dp/dn U^2
        do k=1,nlev
@@ -814,7 +845,8 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           suml2(:,:) = suml2(:,:) -dpnh(:,:,k)*elem(ie)%state%phi(:,:,k,t1)
        enddo
        elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
-            elem(ie)%state%ps_v(:,:,t1) * elem(ie)%state%phis(:,:)
+            pnh_i(:,:,nlevp)* elem(ie)%state%phis(:,:)
+!            elem(ie)%state%ps_v(:,:,t1) * elem(ie)%state%phis(:,:)
 
        if (theta_hydrostatic_mode) then
           ! hydrostatic case: combine IE and PE

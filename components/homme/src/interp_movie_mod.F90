@@ -956,63 +956,6 @@ contains
                 deallocate(var3d)
              end if
 
-#ifdef ENERGY_DIAGNOSTICS
-             if(nf_selectedvar('DIFFU', output_varnames) .or. &
-                  nf_selectedvar('DIFFV', output_varnames)) then
-                allocate(var3d(ncnt,2,nlev,1))
-                st=1
-                do ie=1,nelemd
-                   en=st+interpdata(ie)%n_interp-1
-                   call interpolate_vector(interpdata(ie), elem(ie), &
-                        elem(ie)%accum%DIFF(:,:,:,:), nlev, var3d(st:en,:,:,1), 0)
-                   st=st+interpdata(ie)%n_interp
-                enddo
-
-                if(nf_selectedvar('DIFFU', output_varnames)) then
-                   call nf_put_var(ncdf(ios),var3d(:,1,:,1),start3d, count3d, name='DIFFU')
-                end if
-
-                if(nf_selectedvar('DIFFV', output_varnames)) then
-                   call nf_put_var(ncdf(ios),var3d(:,2,:,1),start3d, count3d, name='DIFFV')
-                end if
-                deallocate(var3d)
-             end if
-             if(nf_selectedvar('CONVU', output_varnames) .or. &
-                  nf_selectedvar('CONVV', output_varnames)) then
-                allocate(var3d(ncnt,2,nlev,1))
-                st=1
-                do ie=1,nelemd
-                   en=st+interpdata(ie)%n_interp-1
-                   call interpolate_vector(interpdata(ie), elem(ie), &
-                        elem(ie)%accum%CONV(:,:,:,:), nlev, var3d(st:en,:,:,1), 0)
-                   st=st+interpdata(ie)%n_interp
-                enddo
-
-                if(nf_selectedvar('CONVU', output_varnames)) then
-                   call nf_put_var(ncdf(ios),var3d(:,1,:,1),start3d, count3d, name='CONVU')
-                end if
-
-                if(nf_selectedvar('CONVV', output_varnames)) then
-                   call nf_put_var(ncdf(ios),var3d(:,2,:,1),start3d, count3d, name='CONVV')
-                end if
-                deallocate(var3d)
-             end if
-#if 0
-             if(nf_selectedvar('DIFFT', output_varnames)) then
-                allocate(datall(ncnt,nlev))
-                st=1
-                do ie=1,nelemd
-                   en=st+interpdata(ie)%n_interp-1
-                   call interpolate_scalar(interpdata(ie), elem(ie)%accum%DIFFT, &
-                        np, nlev, datall(st:en,:))
-                   st=st+interpdata(ie)%n_interp
-                enddo
-                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='DIFFT')
-                deallocate(datall)
-             end if
-#endif
-#endif
-
              ! note: HOMME now compiles both interp_movie_mod.F90 and native grid output modules 
              ! (prim_movie_mod.F90 or shal_movie_mod.F90) into a single executable.
              ! the intent is to make PIO_INTERP a run time variable and remove the #ifdef

@@ -350,7 +350,6 @@ module namelist_mod
     nsplit = 1
     pertlim = 0.0_real_kind
 #endif
-    sub_case      = 1
     numnodes      = -1
     restartfreq   = -100
     restartdir    = "./restart/"

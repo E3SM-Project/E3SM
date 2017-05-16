@@ -1,7 +1,7 @@
 &ctl_nl
 theta_hydrostatic_mode = .false.
 dcmip4_moist  = 0
-dcmip4_X      = 100.0
+dcmip4_X      = 1000.0
 vert_num_threads = 1
 NThreads=1
 partmethod    = 4
@@ -9,30 +9,29 @@ topology      = "cube"
 test_case     = "dcmip2012_test4"
 u_perturb = 1
 rotate_grid = 0
-ne=30
+ne=11
 qsize = 0
-nmax = 64800
-statefreq=600
-runtype       = 0
+nmax = 2
+statefreq=1
+restartfreq =   12960
+restartfile   = "./restart/R000012960"
+runtype       = 2
 mesh_file='/dev/null'
-tstep=0.2
-rsplit=8
+tstep=.02
+rsplit=0
 qsplit = 1
 tstep_type = 5
 integration   = "explicit"
-nu=1e9
-nu_div=1e9
-nu_p=1e9
-nu_q=1e9
-nu_s=1e9
+nu=0e9
+nu_p=0e9
+nu_q=0e9
+nu_s=0e9
 nu_top = 0
 se_ftype     = 0
 limiter_option = 8
 vert_remap_q_alg = 0
 hypervis_scaling=0
 hypervis_order = 2
-hypervis_subcycle=3
-hypervis_subcycle=3
 /
 &vert_nl
 vform         = "ccm"
@@ -49,16 +48,15 @@ profile_single_file             = .true.
 ! to compare with EUL ref solution:
 ! interp_nlat = 512
 ! interp_nlon = 1024
- interp_gridtype=2
 
- output_timeunits=0              ! 1 is days, 2- hours, 0 - tsteps
- output_frequency=4320
- output_start_time=30240
- output_end_time=300000000
+ output_timeunits=0              ! 1- days, 2 hours, 0 - tsteps
+ output_frequency=0
+ output_start_time=9
+ output_end_time=3000
  output_varnames1='ps','zeta','u','v','T'
  num_io_procs      = 16
  output_type = 'netcdf'
- output_prefix= 'nonhydro-X100-'
+ output_prefix = 'hydro-X1000-erun1-'
 /
 
 
