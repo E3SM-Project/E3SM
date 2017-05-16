@@ -470,6 +470,7 @@ class Case(object):
         progcomps = {}
         spec = {}
         primary_component = None
+
         for comp in self._component_classes:
 
             if comp == "CPL":
@@ -480,20 +481,35 @@ class Case(object):
                 progcomps[comp] = False
             else:
                 progcomps[comp] = True
+        expect("ATM" in progcomps and "LND" in progcomps and "OCN" in progcomps and \
+               "ICE" in progcomps, " Not finding expected components in %s"%self._component_classes)
         if progcomps["ATM"] and progcomps["LND"] and progcomps["OCN"] and \
            progcomps["ICE"]:
             primary_component = "allactive"
+        elif progcomps["LND"] and progcomps["OCN"] and progcomps["ICE"]:
+            # this is a "J" compset
+            primary_component = "allactive"
         elif progcomps["ATM"]:
-            primary_component = spec["ATM"]
+            if "DOCN%SOM" in self._compsetname:
+                # This is an "E" compset
+                primary_component = "allactive"
+            else:
+                # This is an "F" or "Q" compset
+                primary_component = spec["ATM"]
         elif progcomps["LND"]:
+            # This is an "I" compset
             primary_component = spec["LND"]
         elif progcomps["OCN"]:
+            # This is a "C" or "G" compset
             primary_component = spec["OCN"]
         elif progcomps["ICE"]:
+            # This is a "D" compset
             primary_component = spec["ICE"]
-        elif progcomps["GLC"]:
+        elif "GLC" in progcomps and progcomps["GLC"]:
+            # This is a "TG" compset
             primary_component = spec["GLC"]
         else:
+            # This is "A", "X" or "S"
             primary_component = "drv"
 
         return primary_component
