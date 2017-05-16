@@ -147,8 +147,8 @@
  integer,dimension(:),pointer:: cellSolveThreadStart, cellSolveThreadEnd
 
 !=================================================================================================================
-!write(0,*)
-!write(0,*) '--- enter subroutine mpas_atmphys_driver:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine mpas_atmphys_driver:')
 
  call mpas_timer_start('physics driver')
 
@@ -342,8 +342,8 @@
 
  call mpas_timer_stop('physics driver')
 
-!write(0,*) '--- enter subroutine mpas_atmphys_driver:'
-!write(0,*)
+!call mpas_log_write('--- enter subroutine mpas_atmphys_driver:')
+!call mpas_log_write('')
 
  end subroutine physics_driver
 

@@ -98,7 +98,7 @@ module init_atm_core
       use mpas_derived_types
       use mpas_decomp
       use mpas_stream_manager
-      use mpas_io_units, only : stderrUnit
+      use mpas_log, only : mpas_log_write
    
       implicit none
    
@@ -110,10 +110,10 @@ module init_atm_core
 
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
 
-      write(stderrUnit,'(a)') ''
-      write(stderrUnit,'(a)') '********************************************************'
-      write(stderrUnit,'(a)') '   Finished running the init_atmosphere core'
-      write(stderrUnit,'(a)') '********************************************************'
+      call mpas_log_write('')
+      call mpas_log_write('********************************************************')
+      call mpas_log_write('   Finished running the init_atmosphere core')
+      call mpas_log_write('********************************************************')
    
    end function init_atm_core_finalize
    

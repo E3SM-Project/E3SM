@@ -16,7 +16,7 @@ module ocn_vmix_cvmix
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_timer
-   use mpas_io_units
+   use mpas_log
 
    use ocn_constants
 
@@ -702,8 +702,8 @@ contains
       !
       if (config_use_cvmix_shear) then
         if (.not. config_use_cvmix_background .and. trim(config_cvmix_shear_mixing_scheme) == 'PP') then
-            write(stderrUnit, *) "ERROR: config_use_cvmix_shear cannot be used with with config_cvmix_shear_mixing_scheme = 'PP'"
-            write(stderrUnit, *) "       without config_use_cvmix_background = .true."
+            call mpas_log_write("ERROR: config_use_cvmix_shear cannot be used with with config_cvmix_shear_mixing_scheme = 'PP'")
+            call mpas_log_write("       without config_use_cvmix_background = .true.")
             err = 1
             return
         end if
@@ -725,7 +725,7 @@ contains
 
         ! config_cvmix_convective_basedOnBVF is not supported at this time
         if (.not.config_cvmix_convective_basedOnBVF) then
-            write(stderrUnit, *) "ERROR: config_cvmix_convective_basedOnBVF = .false. is not supported. Change to true."
+            call mpas_log_write("ERROR: config_cvmix_convective_basedOnBVF = .false. is not supported. Change to true.")
             err = 1
             return
         endif

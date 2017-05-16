@@ -13,7 +13,7 @@ else
 endif
 # End duplicated logic
 
-include $(CASEROOT)/Macros
+include $(CASEROOT)/Macros.make
 
 ifneq ($(wildcard core_$(CORE)/build_options.mk), ) # Check for build_options.mk
     include core_$(CORE)/build_options.mk
@@ -44,14 +44,14 @@ CC=$(MPICC)
 CXX=$(MPICXX)
 NETCDF=$(NETCDF_PATH)
 PNETCDF=$(PNETCDF_PATH)
-PIO=$(EXEROOT)/pio
+PIO=$(INSTALL_SHAREDPATH)/pio
 FILE_OFFSET = -DOFFSET64BIT
 override CFLAGS += -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -DMPAS_PERF_MOD_TIMERS
 override FFLAGS += -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -DMPAS_PERF_MOD_TIMERS
 override CPPFLAGS += $(CPPDEFS) $(MODEL_FORMULATION) $(FILE_OFFSET) $(ZOLTAN_DEFINE) -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -D_MPI -DMPAS_NAMELIST_SUFFIX=$(NAMELIST_SUFFIX) -DMPAS_EXE_NAME=$(EXE_NAME) -DMPAS_PERF_MOD_TIMERS
-override CPPINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
-override FCINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
-LIBS += -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -L$(LIBROOT) -L$(SHAREDPATH)/lib -lpio -lpnetcdf -lnetcdf
+override CPPINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
+override FCINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
+LIBS += -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -L$(LIBROOT) -L$(INSTALL_SHAREDPATH)/lib -lpio -lpnetcdf -lnetcdf
 
 ifneq (,$(findstring FORTRANUNDERSCORE, $(CPPFLAGS)))
 ifeq (,$(findstring DUNDERSCORE, $(CPPFLAGS)))

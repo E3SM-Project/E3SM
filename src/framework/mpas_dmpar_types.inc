@@ -50,6 +50,7 @@
      integer :: reqID
      type (mpas_communication_list), pointer :: next => null()
      logical :: received
+     logical :: unpacked
    end type mpas_communication_list
 
    type mpas_exchange_field_list
@@ -71,4 +72,5 @@
       type (mpas_communication_list), pointer :: sendList => null()
       type (mpas_communication_list), pointer :: recvList => null()
       type (mpas_exchange_group), pointer :: next => null()
+      logical :: allReceived
    end type mpas_exchange_group

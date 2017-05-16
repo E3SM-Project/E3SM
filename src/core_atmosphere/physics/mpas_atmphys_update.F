@@ -54,8 +54,8 @@
  integer:: i,j,k
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- begin physics_update:'
+!call mpas_log_write('')
+!call mpas_log_write('--- begin physics_update:')
  block => domain % blocklist
  do while(associated(block))
 
@@ -64,7 +64,7 @@
 
     block => block % next
  end do
-! write(0,*) '--- end physics_update:'
+!call mpas_log_write('--- end physics_update:')
 
  end subroutine physics_update
 

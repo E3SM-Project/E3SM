@@ -76,6 +76,9 @@
 ! * in the call to rrtmg_swrad, substituted the variables qv_p, qc_p, qi_p, and qs_p with qvrad_p, qcrad_p,
 !   qirad_p, and qsrad_p initialized in subroutine cloudiness_from_MPAS.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-07-09.
+! * in subroutines radiation_sw_from_MPAS, revised the initialization of re_cloud, re_ice, re_snow, to
+!   handle the case when the cloud microphysics parameterization is turned off, i.e. config_microp_scheme='off'.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-10.
 ! * since we removed the local variable radt_sw_scheme from mpas_atmphys_vars.F, now defines radt_sw_scheme
 !   as a pointer to config_radt_sw_scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2917-02-16.
@@ -315,6 +318,8 @@
 !local pointers:
  logical,pointer:: config_o3climatology
  character(len=StrKIND),pointer:: radt_sw_scheme
+ character(len=StrKIND),pointer:: microp_scheme
+ logical,pointer:: config_microp_re
 
  real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
  real(kind=RKIND),dimension(:),pointer    :: skintemp,snow,xice,xland
@@ -328,6 +333,8 @@
 
  call mpas_pool_get_config(configs,'config_o3climatology' ,config_o3climatology)
  call mpas_pool_get_config(configs,'config_radt_sw_scheme',radt_sw_scheme      )
+ call mpas_pool_get_config(configs,'config_microp_scheme' ,microp_scheme       )
+ call mpas_pool_get_config(configs,'config_microp_re'     ,config_microp_re    )
 
  call mpas_pool_get_array(mesh,'latCell',latCell)
  call mpas_pool_get_array(mesh,'lonCell',lonCell)
@@ -404,19 +411,40 @@
  radiation_sw_select: select case (trim(radt_sw_scheme))
 
     case("rrtmg_sw")
-       call mpas_pool_get_array(diag_physics,'re_cloud',re_cloud)
-       call mpas_pool_get_array(diag_physics,'re_ice'  ,re_ice  )
-       call mpas_pool_get_array(diag_physics,'re_snow' ,re_snow )
 
-       do j = jts,jte
-       do k = kts,kte
-       do i = its,ite
-          recloud_p(i,k,j) = re_cloud(k,i)
-          reice_p(i,k,j)   = re_ice(k,i)
-          resnow_p(i,k,j)  = re_snow(k,i)
-       enddo
-       enddo
-       enddo
+       microp_select: select case(microp_scheme)
+          case("mp_thompson","mp_wsm6")
+             if(config_microp_re) then
+                call mpas_pool_get_array(diag_physics,'re_cloud',re_cloud)
+                call mpas_pool_get_array(diag_physics,'re_ice'  ,re_ice  )
+                call mpas_pool_get_array(diag_physics,'re_snow' ,re_snow )
+
+                do j = jts,jte
+                do k = kts,kte
+                do i = its,ite
+                   recloud_p(i,k,j) = re_cloud(k,i)
+                   reice_p(i,k,j)   = re_ice(k,i)
+                   resnow_p(i,k,j)  = re_snow(k,i)
+                enddo
+                enddo
+                enddo
+             else
+                has_reqc = 0
+                has_reqi = 0
+                has_reqs = 0
+                do j = jts,jte
+                do k = kts,kte
+                do i = its,ite
+                   recloud_p(i,k,j) = 0._RKIND
+                   reice_p(i,k,j)   = 0._RKIND
+                   resnow_p(i,k,j)  = 0._RKIND
+                enddo
+                enddo
+                enddo
+             endif
+
+          case default          
+       end select microp_select
 
        do j = jts,jte
        do k = kts,kte+2
@@ -429,7 +457,7 @@
        enddo
        enddo
 
-       !ozone volum mixing ratio:
+       !ozone volume mixing ratio:
        if(config_o3climatology) then
           do k = 1, num_oznLevels
              pin_p(k) = pin(k)
@@ -542,10 +570,6 @@
 
  end select radiation_sw_select
 
-!format:
- 101 format(i3,2i6,12(1x,e15.8))
- 102 format(i6,12(1x,e15.8))
-
  end subroutine radiation_sw_from_MPAS
 
 !=================================================================================================================
@@ -564,7 +588,6 @@
 !local pointers:
  real(kind=RKIND),dimension(:),pointer  :: coszr,gsw,swcf,swdnb,swdnbc,swdnt,swdntc, &
                                            swupb,swupbc,swupt,swuptc
-!real(kind=RKIND),dimension(:,:),pointer:: swdnflx,swdnflxc,swupflx,swupflxc
  real(kind=RKIND),dimension(:,:),pointer:: rthratensw
 
 !-----------------------------------------------------------------------------------------------------------------
@@ -580,10 +603,6 @@
  call mpas_pool_get_array(diag_physics,'swupbc'    , swupbc   )
  call mpas_pool_get_array(diag_physics,'swupt'     ,swupt     )
  call mpas_pool_get_array(diag_physics,'swuptc'    ,swuptc    )
-!call mpas_pool_get_array(diag_physics,'swdnflx'   ,swdnflx   )
-!call mpas_pool_get_array(diag_physics,'swdnflxc'  ,swdnflxc  )
-!call mpas_pool_get_array(diag_physics,'swupflx'   ,swupflx   )
-!call mpas_pool_get_array(diag_physics,'swupflxc'  ,swupflxc  )
  call mpas_pool_get_array(tend_physics,'rthratensw',rthratensw)
 
  do j = jts,jte
@@ -601,15 +620,6 @@
     swupt(i)  = swupt_p(i,j)
     swuptc(i) = swuptc_p(i,j)
  enddo
-!not needed:
-!do k = kts,kte+2
-!do i = its,ite
-!   swdnflx(k,i)  = swdnflx_p(i,k,j)
-!   swdnflxc(k,i) = swdnflxc_p(i,k,j)
-!   swupflx(k,i)  = swupflx_p(i,k,j)
-!   swupflxc(k,i) = swupflxc_p(i,k,j)
-!enddo
-!enddo
 
  do k = kts,kte
  do i = its,ite
@@ -691,21 +701,10 @@
  real(kind=RKIND):: radt,xtime_m
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,100) itimestep
+!call mpas_log_write(' --- enter subroutine driver_radiation_sw: $i',intArgs=(/itimestep/))
 
  call mpas_pool_get_config(configs,'config_o3climatology' ,config_o3climatology)
  call mpas_pool_get_config(configs,'config_radt_sw_scheme',radt_sw_scheme      )
-
-!formats:
- 100 format(/,' --- enter subroutine driver_radiation_sw: ',i6)
- 101 format('     ITIMESTEP   =', i6   ,/, &
-            '     YEAR        =', i6   ,/, &
-            '     JULDAY      =', i6   ,/, &
-            '     GMT         =', f16.9,/, &
-            '     XTIME_M     =', f16.9,/, &
-            '     CURR_JULDAY =', f16.9,/, &
-            '     SOLCON      =', f16.9,/, &
-            '     DECLIN      =', f16.9)
 
  xtime_m = xtime_s/60.
 
@@ -715,7 +714,14 @@
 !... calculates solar declination:
 !call radconst(declin,solcon,julday,degrad,dpd)
  call radconst(declin,solcon,curr_julday,degrad,dpd)
-!write(0,101) itimestep,year,julday,gmt,xtime_m,curr_julday,solcon,declin
+!call mpas_log_write('     ITIMESTEP   = $i', intArgs=(/itimestep/))
+!call mpas_log_write('     YEAR        = $i', intArgs=(/year/))
+!call mpas_log_write('     JULDAY      = $i', intArgs=(/julday/))
+!call mpas_log_write('     GMT         = $r', realArgs=(/gmt/))
+!call mpas_log_write('     XTIME_M     = $r', realArgs=(/xtime_m/))
+!call mpas_log_write('     CURR_JULDAY = $r', realArgs=(/curr_julday/))
+!call mpas_log_write('     SOLCON      = $r', realArgs=(/solcon/))
+!call mpas_log_write('     DECLIN      = $r', realArgs=(/declin/))
 
 !... convert the radiation time_step to minutes:
  radt = dt_radtsw/60.
@@ -808,7 +814,7 @@
 !copy local arrays to MPAS grid:
  call radiation_sw_to_MPAS(diag_physics,tend_physics,its,ite)
 
-!write(0,*) '--- end subroutine driver_radiation_sw.'
+!call mpas_log_write('--- end subroutine driver_radiation_sw.')
 
  end subroutine driver_radiation_sw
 

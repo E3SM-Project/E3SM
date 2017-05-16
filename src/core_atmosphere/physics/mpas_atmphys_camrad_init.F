@@ -134,19 +134,19 @@
 
 !initialization of some constants:
  call radini(dminfo,gravity,cp,ep_2,stbolt,pstd*10.0)
-! write(0,*) '    end subroutine radini'
+! call mpas_log_write('    end subroutine radini')
 
 !initialization of saturation vapor pressures:
  call esinti(epsqs,latvap,latice,rh2o,cpair,tmelt)
-! write(0,*) '    end subroutine esinti'
+! call mpas_log_write('    end subroutine esinti')
  
 !initialization of ozone mixing ratios:
  call oznini(mesh,atm_input)
-! write(0,*) '    end subroutine oznini'
+! call mpas_log_write('    end subroutine oznini')
 
 !initialization of aerosol concentrations:
  call aerosol_init(dminfo,mesh,diag,state,time_lev)
-! write(0,*) '    end subroutine aerosol_init'
+! call mpas_log_write('    end subroutine aerosol_init')
 
  end subroutine camradinit
 
@@ -239,7 +239,7 @@
       ntoplw = 1
 !  end if
 !   if (masterproc) then
-!     write (6,*) 'RADINI: ntoplw =',ntoplw, ' pressure:',hypm(ntoplw)
+!     call mpas_log_write('RADINI: ntoplw = $i pressure: $r', intArgs=(/ntoplw/), realArgs=(/hypm(ntoplw)/))
 !   endif
 
    call radaeini(dminfo,pstdx,mwdry,mwco2)
@@ -478,9 +478,8 @@
 
  max_mxaerl = maxval(mxaerl_local(1:nCellsSolve))
  call mpas_dmpar_max_int(dminfo,max_mxaerl,mxaerl)
- write(0,101) max_mxaerl,mxaerl
- 101 format(/,1x,'--- AEROSOLS:mxaerl on node = ',i5, &
-            /,1x,'    AEROSOLS:Background aerosol limited to bottom ',i5,' model interfaces')
+ call mpas_log_write('--- AEROSOLS:mxaerl on node = $i', intArgs=(/max_mxaerl/))
+ call mpas_log_write('    AEROSOLS:Background aerosol limited to bottom $i model interfaces', intArgs=(/mxaerl/))
  if(allocated(mxaerl_local)) deallocate(mxaerl_local)
 
 !initialize indices for water species:
@@ -512,16 +511,16 @@
  idxBG          = idxBG_l
  idxVOLC        = idxVOLC_l
 
- write(0,*) '    idxSUL         =',idxSUL
- write(0,*) '    idxSSLT        =',idxSSLT
- write(0,*) '    idxDUSTfirst   =',idxDUSTfirst
- write(0,*) '    idxOCPHO       =',idxOCPHO
- write(0,*) '    idxCARBONfirst =',idxCARBONfirst
- write(0,*) '    idxBCPHO       =',idxBCPHO
- write(0,*) '    idxOCPHI       =',idxOCPHI
- write(0,*) '    idxBCPHI       =',idxBCPHI
- write(0,*) '    idxBG          =',idxBG
- write(0,*) '    idxVOLC        =',idxVOLC
+ call mpas_log_write('    idxSUL         = $i', intArgs=(/idxSUL/))
+ call mpas_log_write('    idxSSLT        = $i', intArgs=(/idxSSLT/))
+ call mpas_log_write('    idxDUSTfirst   = $i', intArgs=(/idxDUSTfirst/))
+ call mpas_log_write('    idxOCPHO       = $i', intArgs=(/idxOCPHO/))
+ call mpas_log_write('    idxCARBONfirst = $i', intArgs=(/idxCARBONfirst/))
+ call mpas_log_write('    idxBCPHO       = $i', intArgs=(/idxBCPHO/))
+ call mpas_log_write('    idxOCPHI       = $i', intArgs=(/idxOCPHI/))
+ call mpas_log_write('    idxBCPHI       = $i', intArgs=(/idxBCPHI/))
+ call mpas_log_write('    idxBG          = $i', intArgs=(/idxBG/))
+ call mpas_log_write('    idxVOLC        = $i', intArgs=(/idxVOLC/))
 
  do iCell = 1, nCells
  do k = 1, nAerLevels
@@ -597,7 +596,7 @@
  
 !-----------------------------------------------------------------------------------------------------------------
 
-!write(0,*) '--- enter subroutine aer_optics_initialize:'
+!call mpas_log_write('--- enter subroutine aer_optics_initialize:')
 
 !READ AEROSOL OPTICS DATA:
  istat = -999
@@ -737,7 +736,7 @@
     enddo
  enddo
 
-! write(0,*) '    end subroutine aer_optics_initialize:'
+! call mpas_log_write('    end subroutine aer_optics_initialize:')
 
  end subroutine aer_optics_initialize
 
@@ -793,7 +792,7 @@
  do k = 1,levsiz
     read(pin_unit,*) pin(k)
     pin(k) = pin(k)*100.
-!   write(0,*) pin(k)
+!   call mpas_log_write('$r', realArgs=(/pin(k)/))
  enddo
  close(pin_unit)
 
@@ -804,7 +803,7 @@
                              'failure opening OZONE_LAT.TBL')
  do j = 1, latsiz
     read(lat_unit,*) lat_ozone(j)
-!   write(0,101) j,lat_ozone(j)
+!   call mpas_log_write('$i $r', intArgs=(/j/), realArgs=(/lat_ozone(j)/))
  enddo
  close(lat_unit)
 
@@ -827,13 +826,13 @@
  close(oz_unit)
 
 !INTERPOLATION OF INPUT OZONE DATA TO MPAS GRID:
-!write(0,*) 'max latCell=', maxval(latCell)/degrad
-!write(0,*) 'min latCell=', minval(latCell)/degrad
-!write(0,*) 'max lonCell=', maxval(lonCell)/degrad
-!write(0,*) 'min lonCell=', minval(lonCell)/degrad
-!write(0,*)
-!write(0,*) 'max lat_ozone=',maxval(lat_ozone)
-!write(0,*) 'min lat_ozone=',minval(lat_ozone)
+!call mpas_log_write('max latCell= $r', realArgs=(/maxval(latCell)/degrad/))
+!call mpas_log_write('min latCell= $r', realArgs=(/minval(latCell)/degrad/))
+!call mpas_log_write('max lonCell= $r', realArgs=(/maxval(lonCell)/degrad/))
+!call mpas_log_write('min lonCell= $r', realArgs=(/minval(lonCell)/degrad/))
+!call mpas_log_write('')
+!call mpas_log_write('max lat_ozone= $r', realArgs=(/maxval(lat_ozone)/))
+!call mpas_log_write('min lat_ozone= $r', realArgs=(/minval(lat_ozone)/))
  do iCell = 1,nCells
     lat = latCell(iCell)/degrad
     lon = lonCell(iCell)/degrad
@@ -866,15 +865,11 @@
     enddo       
     enddo
 !   do k = 1, levsiz
-!      write(0,102) iCell,i1,i2,lat_ozone(i1),lat,lat_ozone(i2),ozmixin(1,k,i1,1), &
-!                   ozmixm(1,k,iCell),ozmixin(1,k,i2,1)
+!      call mpas_log_write('$i $i $i $i $r $r $r $r $r $r', intArgs=(/iCell,i1,i2/), realArgs=(/lat_ozone(i1),lat,lat_ozone(i2),ozmixin(1,k,i1,1), &
+!                   ozmixm(1,k,iCell),ozmixin(1,k,i2,1)/))
 !   enddo
  enddo
  deallocate(ozmixin)
-
-!formats:
- 101 format(i3,12(1x,e15.8))
- 102 format(i6,i6,i6,6(1x,e15.8))
 
  end subroutine oznini
 

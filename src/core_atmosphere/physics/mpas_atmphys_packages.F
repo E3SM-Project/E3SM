@@ -8,9 +8,9 @@
 !=================================================================================================================
  module mpas_atmphys_packages
  use mpas_kind_types
- use mpas_derived_types,only : mpas_pool_type,mpas_io_context_type
+ use mpas_derived_types,only : mpas_pool_type,mpas_io_context_type,MPAS_LOG_ERR
  use mpas_pool_routines,only : mpas_pool_get_config,mpas_pool_get_package
- use mpas_io_units,only : stderrUnit
+ use mpas_log,only : mpas_log_write
 
  implicit none
  private
@@ -43,13 +43,13 @@
  integer :: ierr
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine atmphys_setup_packages:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine atmphys_setup_packages:')
 
  ierr = 0
 
- write(0,*) '----- Setting up package variables -----'
- write(0,*)
+ call mpas_log_write('----- Setting up package variables -----')
+ call mpas_log_write('')
 
 !--- initialization of all packages for parameterizations of cloud microphysics:
 
@@ -67,9 +67,9 @@
  if(.not.associated(mp_kessler_in)  .or. &
     .not.associated(mp_thompson_in) .or. &
     .not.associated(mp_wsm6_in)) then
-    write(stderrUnit,*) '===================================================================================='
-    write(stderrUnit,*) '* Error while setting up packages for cloud microphysics options in atmosphere core.'
-    write(stderrUnit,*) '===================================================================================='
+    call mpas_log_write('====================================================================================',messageType=MPAS_LOG_ERR)
+    call mpas_log_write('* Error while setting up packages for cloud microphysics options in atmosphere core.',messageType=MPAS_LOG_ERR)
+    call mpas_log_write('====================================================================================',messageType=MPAS_LOG_ERR)
     ierr = 1
     return
  endif
@@ -86,9 +86,9 @@
     mp_wsm6_in = .true.
  endif
 
- write(0,*) '    mp_kessler_in           = ', mp_kessler_in
- write(0,*) '    mp_thompson_in          = ', mp_thompson_in
- write(0,*) '    mp_wsm6_in              = ', mp_wsm6_in
+ call mpas_log_write('    mp_kessler_in           = $l', logicArgs=(/mp_kessler_in/))
+ call mpas_log_write('    mp_thompson_in          = $l', logicArgs=(/mp_thompson_in/))
+ call mpas_log_write('    mp_wsm6_in              = $l', logicArgs=(/mp_wsm6_in/))
 
 !--- initialization of all packages for parameterizations of convection:
 
@@ -106,9 +106,9 @@
  if(.not.associated(cu_grell_freitas_in) .or. &
     .not.associated(cu_kain_fritsch_in)  .or. &
     .not.associated(cu_tiedtke_in)     ) then
-    write(stderrUnit,*) '===================================================================================='
-    write(stderrUnit,*) '* Error while setting up packages for convection options in atmosphere core.'
-    write(stderrUnit,*) '===================================================================================='
+    call mpas_log_write('====================================================================================',messageType=MPAS_LOG_ERR)
+    call mpas_log_write('* Error while setting up packages for convection options in atmosphere core.',        messageType=MPAS_LOG_ERR)
+    call mpas_log_write('====================================================================================',messageType=MPAS_LOG_ERR)
     ierr = 1
     return
  endif
@@ -126,9 +126,9 @@
     cu_tiedtke_in = .true.
  endif
 
- write(0,*) '    cu_grell_freitas_in     = ', cu_grell_freitas_in
- write(0,*) '    cu_kain_fritsch_in      = ', cu_kain_fritsch_in
- write(0,*) '    cu_tiedtke_in           = ', cu_tiedtke_in
+ call mpas_log_write('    cu_grell_freitas_in     = $l', logicArgs=(/cu_grell_freitas_in/))
+ call mpas_log_write('    cu_kain_fritsch_in      = $l', logicArgs=(/cu_kain_fritsch_in/))
+ call mpas_log_write('    cu_tiedtke_in           = $l', logicArgs=(/cu_tiedtke_in/))
 
 !--- initialization of all packages for parameterizations of surface layer and planetary boundary layer:
 
@@ -142,9 +142,9 @@
 
  if(.not.associated(bl_mynn_in) .or. &
     .not.associated(bl_ysu_in)) then
-    write(stderrUnit,*) '===================================================================================='
-    write(stderrUnit,*) '* Error while setting up packages for planetary layer  options in atmosphere core.'
-    write(stderrUnit,*) '===================================================================================='
+    call mpas_log_write('====================================================================================',messageType=MPAS_LOG_ERR)
+    call mpas_log_write('* Error while setting up packages for planetary layer  options in atmosphere core.',  messageType=MPAS_LOG_ERR)
+    call mpas_log_write('====================================================================================',messageType=MPAS_LOG_ERR)
     ierr = 1
     return
  endif
@@ -158,9 +158,9 @@
     bl_ysu_in = .true.
  endif
 
- write(0,*) '    bl_mynn_in              = ', bl_mynn_in
- write(0,*) '    bl_ysu_in               = ', bl_ysu_in
- write(0,*)
+ call mpas_log_write('    bl_mynn_in              = $l', logicArgs=(/bl_mynn_in/))
+ call mpas_log_write('    bl_ysu_in               = $l', logicArgs=(/bl_ysu_in/))
+ call mpas_log_write('')
 
  end function atmphys_setup_packages
 

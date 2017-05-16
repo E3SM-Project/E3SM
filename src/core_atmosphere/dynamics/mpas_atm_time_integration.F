@@ -94,8 +94,8 @@ module atm_time_integration
       if (trim(config_time_integration) == 'SRK3') then
          call atm_srk3(domain, dt, itimestep)
       else
-         call mpas_dmpar_global_abort('Unknown time integration option '//trim(config_time_integration), deferredAbort=.true.)
-         call mpas_dmpar_global_abort('Currently, only ''SRK3'' is supported.')
+         call mpas_log_write('Unknown time integration option '//trim(config_time_integration), messageType=MPAS_LOG_ERR)
+         call mpas_log_write('Currently, only ''SRK3'' is supported.', messageType=MPAS_LOG_CRIT)
       end if
 
       call mpas_set_time(currTime, dateTimeString=timeStamp)
@@ -184,7 +184,6 @@ module atm_time_integration
       type (field2DReal), pointer :: pressure_p_field
       type (field2DReal), pointer :: rtheta_p_field
       type (field2DReal), pointer :: rtheta_pp_field
-      type (field2DReal), pointer :: divergence_3d_field
       type (field2DReal), pointer :: tend_u_field
       type (field2DReal), pointer :: u_field
       type (field2DReal), pointer :: w_field
@@ -258,13 +257,13 @@ module atm_time_integration
       dynamics_split = config_dynamics_split
       if (config_split_dynamics_transport) then
         dt_dynamics = dt/real(dynamics_split)
-        write(0,*) ' split dynamics-transport integration ',dynamics_split
+        call mpas_log_write(' split dynamics-transport integration $i', intArgs=(/dynamics_split/))
       else
         dynamics_split = 1
         dt_dynamics = dt
-        write(0,*) ' coupled RK3 dynamics-transport integration '
+        call mpas_log_write(' coupled RK3 dynamics-transport integration ')
       end if
-      if (.not. config_scalar_advection )  write(0,*) ' scalar advection turned off '
+      if (.not. config_scalar_advection ) call mpas_log_write(' scalar advection turned off ')
 
       number_of_sub_steps = config_number_of_sub_steps
 
@@ -729,8 +728,29 @@ module atm_time_integration
                call mpas_pool_get_field(diag, 'rtheta_pp', rtheta_pp_field)
                call mpas_dmpar_exch_halo_field(rtheta_pp_field, (/ 1 /))
 
-               call mpas_pool_get_field(diag, 'divergence_3d', divergence_3d_field)
-               call mpas_dmpar_exch_halo_field(divergence_3d_field, (/ 1 /))
+!  complete update of horizontal momentum by including 3d divergence damping at the end of the acoustic step
+
+               call mpas_timer_start('atm_divergence_damping_3d')
+               block => domain % blocklist
+               do while (associated(block))
+                  call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+                  call mpas_pool_get_subpool(block % structs, 'state', state)
+                  call mpas_pool_get_subpool(block % structs, 'diag', diag)
+
+                  call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+                  call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+                  call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+
+!$OMP PARALLEL DO
+                  do thread=1,nThreads
+                     call atm_divergence_damping_3d( state, diag, mesh, block % configs, rk_sub_timestep(rk_step), &
+                                                     edgeThreadStart(thread), edgeThreadEnd(thread) )
+                  end do
+!$OMP END PARALLEL DO
+
+                  block => block % next
+               end do
+               call mpas_timer_stop('atm_divergence_damping_3d')
 
             end do  ! end of acoustic steps loop
 
@@ -1834,7 +1854,7 @@ module atm_time_integration
                                                     wwAvg, rho_pp, cofwt, coftz, zxu,        &
                                                     a_tri, alpha_tri, gamma_tri, dss,        &
                                                     tend_ru, tend_rho, tend_rt, tend_rw,     &
-                                                    zgrid, cofwr, cofwz, w, divergence_3d
+                                                    zgrid, cofwr, cofwz, w
 
 ! redefine ru_p to be perturbation from time t, change 3a  ! temporary
       real (kind=RKIND), dimension(:,:), pointer :: ru
@@ -1849,7 +1869,7 @@ module atm_time_integration
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
 
-      real (kind=RKIND), pointer :: epssm, smdiv, smdiv_p_forward
+      real (kind=RKIND), pointer :: epssm
 
       real (kind=RKIND), pointer :: cf1, cf2, cf3
 
@@ -1876,7 +1896,6 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'ruAvg', ruAvg)
       call mpas_pool_get_array(diag, 'wwAvg', wwAvg)
       call mpas_pool_get_array(diag, 'rho_pp', rho_pp)
-      call mpas_pool_get_array(diag, 'divergence_3d', divergence_3d)
       call mpas_pool_get_array(diag, 'cofwt', cofwt)
       call mpas_pool_get_array(diag, 'coftz', coftz)
       call mpas_pool_get_array(diag, 'cofrz', cofrz)
@@ -1919,18 +1938,15 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'rw_save', rw_save)
 
       ! epssm is the offcentering coefficient for the vertically implicit integration.
-      ! smdiv is the 3D divergence-damping coefficients.
       call mpas_pool_get_config(configs, 'config_epssm', epssm) 
-      call mpas_pool_get_config(configs, 'config_smdiv', smdiv) 
-      call mpas_pool_get_config(configs, 'config_smdiv_p_forward', smdiv_p_forward) 
 
       call atm_advance_acoustic_step_work(nCells, nEdges, nCellsSolve, cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
                                    rho_zz, theta_m, ru_p, rw_p, rtheta_pp, rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
                                    rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
-                                   tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, divergence_3d, fzm, fzp, rdzw, dcEdge, invDcEdge, &
+                                   tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, fzm, fzp, rdzw, dcEdge, invDcEdge, &
                                    invAreaCell, cofrz, dvEdge, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
-                                   dts, small_step, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3 &
+                                   dts, small_step, epssm, cf1, cf2, cf3 &
                                    )
 
    end subroutine atm_advance_acoustic_step
@@ -1940,9 +1956,9 @@ module atm_time_integration
                                    cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
                                    rho_zz, theta_m, ru_p, rw_p, rtheta_pp, rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
                                    rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
-                                   tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, divergence_3d, fzm, fzp, rdzw, dcEdge, invDcEdge, &
+                                   tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, fzm, fzp, rdzw, dcEdge, invDcEdge, &
                                    invAreaCell, cofrz, dvEdge, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
-                                   dts, small_step, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3 &
+                                   dts, small_step, epssm, cf1, cf2, cf3 &
                                    )
 
       use mpas_atm_dimensions
@@ -1964,7 +1980,6 @@ module atm_time_integration
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_pp
 
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_pp_old
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: divergence_3d
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: exner
       real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: cqu
@@ -2008,7 +2023,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(maxEdges,nCells+1) :: edgesOnCell_sign
 
       integer, intent(in) :: small_step
-      real (kind=RKIND), intent(in) :: dts, epssm, smdiv, smdiv_p_forward, cf1, cf2, cf3
+      real (kind=RKIND), intent(in) :: dts, epssm,cf1, cf2, cf3
       real (kind=RKIND), dimension(nVertLevels) :: ts, rs
 
   
@@ -2026,17 +2041,6 @@ module atm_time_integration
       rdts = 1./dts
 
       if(small_step /= 1) then  !  not needed on first small step 
-
-         do iCell = cellStart,cellEnd
-           ! acoustic step divergence damping - forward weight rtheta_pp - see Klemp et al MWR 2007
-           do k = 1,nVertLevels
-              rtheta_pp_tmp = rtheta_pp(k,iCell)
-              rtheta_pp(k,iCell) = (rtheta_pp(k,iCell) + smdiv_p_forward * (rtheta_pp(k,iCell)-rtheta_pp_old(k,iCell)))*zz(k,iCell)
-              rtheta_pp_old(k,iCell) = rtheta_pp_tmp
-           end do
-        end do
-        
-!$OMP BARRIER
 
         ! forward-backward acoustic step integration.
         ! begin by updating the horizontal velocity u, 
@@ -2058,12 +2062,10 @@ module atm_time_integration
 
 !DIR$ IVDEP
               do k=1,nVertLevels
-!!                 pgrad = ((zz_rtheta_pp(k,cell2)-rtheta_pp_old(k,cell1))*invDcEdge(iEdge) )/(.5*(zz(k,cell2)+zz(k,cell1)))
                  pgrad = ((rtheta_pp(k,cell2)-rtheta_pp(k,cell1))*invDcEdge(iEdge) )/(.5*(zz(k,cell2)+zz(k,cell1)))
                  pgrad = cqu(k,iEdge)*0.5*c2*(exner(k,cell1)+exner(k,cell2))*pgrad
                  pgrad = pgrad + 0.5*zxu(k,iEdge)*gravity*(rho_pp(k,cell1)+rho_pp(k,cell2))
-                 ru_p(k,iEdge) = ru_p(k,iEdge) + dts*(tend_ru(k,iEdge) - pgrad) &
-                                  - smdiv*dcEdge(iEdge)*(divergence_3d(k,cell2)-divergence_3d(k,cell1))
+                 ru_p(k,iEdge) = ru_p(k,iEdge) + dts*(tend_ru(k,iEdge) - pgrad) 
               end do
 
               ! accumulate ru_p for use later in scalar transport
@@ -2088,11 +2090,10 @@ module atm_time_integration
 
 !DIR$ IVDEP
               do k=1,nVertLevels
-                 ru_p(k,iEdge) = dts*tend_ru(k,iEdge) - smdiv*dcEdge(iEdge)*(tend_rho(k,cell2)-tend_rho(k,cell1))
+                 ru_p(k,iEdge) = dts*tend_ru(k,iEdge)
               end do
 !DIR$ IVDEP
               do k=1,nVertLevels
-!!                 ruAvg(k,iEdge) = ruAvg(k,iEdge) + ru_p(k,iEdge)
                  ruAvg(k,iEdge) = ru_p(k,iEdge)                 
               end do
 
@@ -2101,15 +2102,17 @@ module atm_time_integration
 
       end if ! test for first acoustic step
 
-!$OMP BARRIER
-
       if (small_step == 1) then  ! initialize here on first small timestep.
          do iCell=cellStart,cellEnd
             rtheta_pp_old(1:nVertLevels,iCell) = 0.0
          end do
+      else
+         do iCell=cellStart,cellEnd
+            rtheta_pp_old(1:nVertLevels,iCell) = rtheta_pp(1:nVertLevels,iCell)
+         end do
       end if
 
-!!!OMP BARRIER -- not needed, since rtheta_pp_old not used below when small_step == 1
+!$OMP BARRIER
 
       do iCell=cellSolveStart,cellSolveEnd  ! loop over all owned cells to solve
 
@@ -2120,15 +2123,7 @@ module atm_time_integration
             wwAvg(1:nVertLevels+1,iCell) = 0.0            
             rho_pp(1:nVertLevels,iCell) = 0.0            
             rtheta_pp(1:nVertLevels,iCell) = 0.0            
-!MGD moved to loop above over all cells
-!            rtheta_pp_old(1:nVertLevels,iCell) = 0.0
             rw_p(:,iCell) = 0.0
-            divergence_3d(1:nVertLevels,iCell) = 0.
-         else  ! reset rtheta_pp to input value;
-               !  rtheta_pp_old stores input value for use in div damping on next acoustic step.
-               !  Save rho_pp to compute d_rho_pp/dt to get divergence for next acoustic filter application.
-            rtheta_pp(1:nVertLevels,iCell) = rtheta_pp_old(1:nVertLevels,iCell)  
-            divergence_3d(1:nVertLevels,iCell) = rho_pp(1:nVertLevels,iCell)
          end if
             
          do i=1,nEdgesOnCell(iCell) 
@@ -2210,12 +2205,81 @@ module atm_time_integration
             rho_pp(k,iCell) = rs(k) - cofrz(k) *(rw_p(k+1,iCell)-rw_p(k  ,iCell))
             rtheta_pp(k,iCell) = ts(k) - rdzw(k)*(coftz(k+1,iCell)*rw_p(k+1,iCell)  &
                                -coftz(k  ,iCell)*rw_p(k  ,iCell))
-            divergence_3d(k,iCell) = (rho_pp(k,iCell) - divergence_3d(k,iCell))*rdts
          end do
 
       end do !  end of loop over cells
 
    end subroutine atm_advance_acoustic_step_work
+
+
+   subroutine atm_divergence_damping_3d( state, diag, mesh, configs, dts, edgeStart, edgeEnd )
+
+      !  This subroutine updates the horizontal momentum with the 3d divergence damping component.
+
+      implicit none
+
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(in) :: configs
+      real (kind=RKIND), intent(in) :: dts
+      integer, intent(in) :: edgeStart, edgeEnd
+
+      real (kind=RKIND), dimension(:,:), pointer :: theta_m, ru_p, rtheta_pp, rtheta_pp_old
+!      real (kind=RKIND), dimension(:), pointer :: dcEdge
+      real (kind=RKIND), pointer :: smdiv, config_len_disp
+
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, pointer :: nCellsSolve
+      integer, pointer :: nVertLevels
+
+      real (kind=RKIND) :: divCell1, divCell2, rdts, coef_divdamp
+      integer :: cell1, cell2, iEdge, k
+
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+!      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(state, 'theta_m', theta_m, 1)
+      call mpas_pool_get_array(diag, 'rtheta_pp', rtheta_pp)
+      call mpas_pool_get_array(diag, 'rtheta_pp_old', rtheta_pp_old)
+      call mpas_pool_get_array(diag, 'ru_p', ru_p)
+
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+
+      call mpas_pool_get_config(configs, 'config_smdiv', smdiv) 
+      call mpas_pool_get_config(configs, 'config_len_disp', config_len_disp)
+
+      rdts = 1.0_RKIND / dts
+      coef_divdamp = 2.0_RKIND * smdiv * config_len_disp * rdts
+
+      do iEdge=edgeStart,edgeEnd ! MGD do we really just need edges touching owned cells?
+
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+
+         ! update edges for block-owned cells
+         if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
+
+!DIR$ IVDEP
+            do k=1,nVertLevels
+
+!!  unscaled 3d divergence damping
+!!               divCell1 = -(rtheta_pp(k,cell1)-rtheta_pp_old(k,cell1))*rdts
+!!               divCell2 = -(rtheta_pp(k,cell2)-rtheta_pp_old(k,cell2))*rdts
+!!               ru_p(k,iEdge) = ru_p(k,iEdge) + 2.*smdiv*dcEdge(iEdge)*(divCell2-divCell1) &
+!!                                                      /(theta_m(k,cell1)+theta_m(k,cell2))
+
+!!  scaled 3d divergence damping
+               divCell1 = -(rtheta_pp(k,cell1)-rtheta_pp_old(k,cell1))
+               divCell2 = -(rtheta_pp(k,cell2)-rtheta_pp_old(k,cell2))
+               ru_p(k,iEdge) = ru_p(k,iEdge) + coef_divdamp*(divCell2-divCell1) &
+                                                      /(theta_m(k,cell1)+theta_m(k,cell2))
+
+            end do
+         end if ! edges for block-owned cells
+      end do ! end loop over edges
+
+   end subroutine atm_divergence_damping_3d
 
 
    subroutine atm_recover_large_step_variables( state, diag, tend, mesh, configs, dt, ns, rk_step, &
@@ -2810,7 +2874,7 @@ module atm_time_integration
 
       if (local_advance_density) then
          if ((.not.present(scalar_tend)) .or. (.not.present(rho_zz_int))) then
-            call mpas_dmpar_global_abort('Error: rho_zz_int or scalar_tend not supplied to atm_advance_scalars( ) when advance_density=.true.')
+            call mpas_log_write('Error: rho_zz_int or scalar_tend not supplied to atm_advance_scalars( ) when advance_density=.true.', messageType=MPAS_LOG_CRIT)
          end if
 
          do iCell=cellSolveStart,cellSolveEnd
@@ -3420,7 +3484,7 @@ module atm_time_integration
 
       if (local_advance_density) then
          if (.not.present(rho_zz_int)) then
-            call mpas_dmpar_global_abort('Error: rho_zz_int not supplied to atm_advance_scalars_mono_work( ) when advance_density=.true.')
+            call mpas_log_write('Error: rho_zz_int not supplied to atm_advance_scalars_mono_work( ) when advance_density=.true.', messageType=MPAS_LOG_CRIT)
          end if
 
          !  begin with update of density
@@ -3471,7 +3535,7 @@ module atm_time_integration
             scmax = max(scmax,scalar_old(k,iCell))
          end do
          end do
-         write(0,*) ' scmin, scmin old in ',scmin,scmax
+         call mpas_log_write(' scmin, scmin old in $r $r', realArgs=(/scmin,scmax/))
 
          scmin = scalar_new(1,1)
          scmax = scalar_new(1,1)
@@ -3481,7 +3545,7 @@ module atm_time_integration
             scmax = max(scmax,scalar_new(k,iCell))
          end do
          end do
-         write(0,*) ' scmin, scmin new in ',scmin,scmax
+         call mpas_log_write(' scmin, scmin new in ', realArgs=(/scmin,scmax/))
 #endif
 
 
@@ -3568,7 +3632,7 @@ module atm_time_integration
 
             if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then  ! only for owned cells
   
-               ! speclal treatment of calculations involving edges between hexagonal cells
+               ! special treatment of calculations involving edges between hexagonal cells
                ! original code retained in select "default" case
                ! be sure to see additional declarations near top of subroutine
                select case(nAdvCellsForEdge(iEdge))
@@ -3602,6 +3666,8 @@ module atm_time_integration
                   end do
                end select
 
+            else
+               flux_arr(:,iEdge) = 0.0_RKIND
             end if
 
          end do
@@ -3821,15 +3887,15 @@ module atm_time_integration
             scmax = max(scmax,scalar_new(k,iCell))
             scmin = min(scmin,scalar_new(k,iCell))
             if (s_max(k,iCell) < scalar_new(k,iCell)) then
-               write(32,*) ' over - k,iCell,s_min,s_max,scalar_new ',k,iCell,s_min(k,iCell),s_max(k,iCell),scalar_new(k,iCell)
+               call mpas_log_write(' over - k,iCell,s_min,s_max,scalar_new ', intArgs=(/k,iCell/), realArgs=(/s_min(k,iCell),s_max(k,iCell),scalar_new(k,iCell)/))
             end if
             if (s_min(k,iCell) > scalar_new(k,iCell)) then
-               write(32,*) ' under - k,iCell,s_min,s_max,scalar_new ',k,iCell,s_min(k,iCell),s_max(k,iCell),scalar_new(k,iCell)
+               call mpas_log_write(' under - k,iCell,s_min,s_max,scalar_new ', intArgs=(/k,iCell/), realArgs=(/s_min(k,iCell),s_max(k,iCell),scalar_new(k,iCell)/))
             end if
          end do
          end do
-         write(0,*) ' scmin, scmax new out ',scmin,scmax
-         write(0,*) ' icell_min, k_min ',icellmax, kmax
+         call mpas_log_write(' scmin, scmax new out $r $r', realArgs=(/scmin,scmax/))
+         call mpas_log_write(' icell_min, k_min ', intArgs=(/icellmax, kmax/))
 #endif
 
          ! the update should be positive definite. but roundoff can sometimes leave small negative values
@@ -3928,7 +3994,7 @@ module atm_time_integration
 
       real(kind=RKIND), dimension(:,:), pointer :: tend_w_pgf, tend_w_buoy
 
-      real (kind=RKIND), pointer :: coef_3rd_order, c_s, smdiv
+      real (kind=RKIND), pointer :: coef_3rd_order, c_s
       logical, pointer :: config_mix_full
       character (len=StrKIND), pointer :: config_horiz_mixing
       real (kind=RKIND), pointer :: config_del4u_div_factor
@@ -3956,7 +4022,6 @@ module atm_time_integration
       call mpas_pool_get_config(configs, 'config_visc4_2dsmag', config_visc4_2dsmag)
       call mpas_pool_get_config(configs, 'config_len_disp', config_len_disp)
       call mpas_pool_get_config(configs, 'config_smagorinsky_coef', c_s)
-      call mpas_pool_get_config(configs, 'config_smdiv', smdiv) 
 
       call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
       call mpas_pool_get_array(state, 'u', u, 2)
@@ -4086,7 +4151,7 @@ module atm_time_integration
          cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge, cellsOnCell, edgesOnVertex, nEdgesOnCell, nEdgesOnEdge, &
          latCell, latEdge, angleEdge, u_init, advCellsForEdge, nAdvCellsForEdge, adv_coefs, adv_coefs_3rd, &
          rdzu, rdzw, fzm, fzp, qv_init, t_init, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
-         tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, smdiv, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
+         tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
          config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
          config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
          tend_rtheta_adv, rthdynten, &
@@ -4111,7 +4176,7 @@ module atm_time_integration
       cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge, cellsOnCell, edgesOnVertex, nEdgesOnCell, nEdgesOnEdge, &
       latCell, latEdge, angleEdge, u_init, advCellsForEdge, nAdvCellsForEdge, adv_coefs, adv_coefs_3rd, &
       rdzu, rdzw, fzm, fzp, qv_init, t_init, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
-      tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, smdiv, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
+      tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
       config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
       config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
       tend_rtheta_adv, rthdynten, &
@@ -4220,7 +4285,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: tend_w_pgf
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: tend_w_buoy
 
-      real (kind=RKIND) :: coef_3rd_order, c_s, smdiv
+      real (kind=RKIND) :: coef_3rd_order, c_s
       logical :: config_mix_full
       character (len=StrKIND) :: config_horiz_mixing
       real (kind=RKIND) :: config_del4u_div_factor
@@ -5708,7 +5773,7 @@ module atm_time_integration
        call mpas_pool_get_config(domain % blocklist % configs, 'config_print_global_minmax_sca', config_print_global_minmax_sca)
 
       if (config_print_detailed_minmax_vel) then
-         write(0,*) ' '
+         call mpas_log_write('')
 
          block => domain % blocklist
          do while (associated(block))
@@ -5760,8 +5825,9 @@ module atm_time_integration
             if (lonMax_global > 180.0) then
                lonMax_global = lonMax_global - 360.0
             end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global min w: ', global_scalar_min, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+            ! format statement should be '(a,f9.4,a,i4,a,f7.3,a,f8.3,a)'
+            call mpas_log_write(' global min w: $r k=$i, $r lat, $r lon', intArgs=(/kMax_global/), &
+                                realArgs=(/global_scalar_min, latMax_global, lonMax_global/))
 
             scalar_max = -1.0e20
             indexMax = -1
@@ -5795,8 +5861,9 @@ module atm_time_integration
             if (lonMax_global > 180.0) then
                lonMax_global = lonMax_global - 360.0
             end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global max w: ', global_scalar_max, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+            ! format statement should be '(a,f9.4,a,i4,a,f7.3,a,f8.3,a)'
+            call mpas_log_write(' global max w: $r k=$i, $r lat, $r lon', intArgs=(/kMax_global/), &
+                                realArgs=(/global_scalar_max, latMax_global, lonMax_global/))
 
             scalar_min = 1.0e20
             indexMax = -1
@@ -5830,8 +5897,9 @@ module atm_time_integration
             if (lonMax_global > 180.0) then
                lonMax_global = lonMax_global - 360.0
             end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global min u: ', global_scalar_min, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+            ! format statement should be '(a,f9.4,a,i4,a,f7.3,a,f8.3,a)'
+            call mpas_log_write(' global min u: $r k=$i, $r lat, $r lon', intArgs=(/kMax_global/), &
+                                realArgs=(/global_scalar_min, latMax_global, lonMax_global/))
 
             scalar_max = -1.0e20
             indexMax = -1
@@ -5865,8 +5933,9 @@ module atm_time_integration
             if (lonMax_global > 180.0) then
                lonMax_global = lonMax_global - 360.0
             end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global max u: ', global_scalar_max, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+            ! format statement should be '(a,f9.4,a,i4,a,f7.3,a,f8.3,a)'
+            call mpas_log_write(' global max u: $r k=$i, $r lat, $r lon', intArgs=(/kMax_global/), &
+                                realArgs=(/global_scalar_max, latMax_global, lonMax_global/))
 
             scalar_max = -1.0e20
             indexMax = -1
@@ -5901,8 +5970,9 @@ module atm_time_integration
             if (lonMax_global > 180.0) then
                lonMax_global = lonMax_global - 360.0
             end if
-            write(0,'(a,f9.4,a,i4,a,f7.3,a,f8.3,a)') ' global max wsp: ', global_scalar_max, &
-                                                   ' k=', kMax_global, ', ', latMax_global, ' lat ', lonMax_global, ' lon'
+            ! format statement should be '(a,f9.4,a,i4,a,f7.3,a,f8.3,a)'
+            call mpas_log_write(' global max wsp: $r k=$i, $r lat, $r lon', intArgs=(/kMax_global/), &
+                                realArgs=(/global_scalar_max, latMax_global, lonMax_global/))
 
             !
             ! Check for NaNs
@@ -5910,7 +5980,7 @@ module atm_time_integration
             do iCell = 1, nCellsSolve
             do k = 1, nVertLevels
                if (ieee_is_nan(w(k,iCell))) then
-                  call mpas_dmpar_global_abort('NaN detected in ''w'' field.')
+                  call mpas_log_write('NaN detected in ''w'' field.', messageType=MPAS_LOG_CRIT)
                end if
             end do
             end do
@@ -5918,7 +5988,7 @@ module atm_time_integration
             do iEdge = 1, nEdgesSolve
             do k = 1, nVertLevels
                if (ieee_is_nan(u(k,iEdge))) then
-                  call mpas_dmpar_global_abort('NaN detected in ''u'' field.')
+                  call mpas_log_write('NaN detected in ''u'' field.', messageType=MPAS_LOG_CRIT)
                end if
             end do
             end do
@@ -5927,7 +5997,7 @@ module atm_time_integration
          end do
 
       else if (config_print_global_minmax_vel) then
-         write(0,*) ' '
+         call mpas_log_write('')
 
          block => domain % blocklist
          do while (associated(block))
@@ -5949,7 +6019,7 @@ module atm_time_integration
             end do
             call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
             call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
-            write(0,*) 'global min, max w ', global_scalar_min, global_scalar_max
+            call mpas_log_write('global min, max w $r $r', realArgs=(/global_scalar_min, global_scalar_max/))
 
             scalar_min = 0.0
             scalar_max = 0.0
@@ -5961,14 +6031,16 @@ module atm_time_integration
             end do
             call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
             call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
-            write(0,*) 'global min, max u ', global_scalar_min, global_scalar_max
+            call mpas_log_write('global min, max u $r $r', realArgs=(/global_scalar_min, global_scalar_max/))
 
             block => block % next
          end do
       end if
 
       if (config_print_global_minmax_sca) then
-         if (.not. (config_print_global_minmax_vel .or. config_print_detailed_minmax_vel)) write(0,*) ' '
+         if (.not. (config_print_global_minmax_vel .or. config_print_detailed_minmax_vel)) then
+            call mpas_log_write('')
+         end if
 
          block => domain % blocklist
          do while (associated(block))
@@ -5990,7 +6062,7 @@ module atm_time_integration
                end do
                call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
                call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
-               write(0,'(a,i4,2(1x,e17.10))') ' global min, max scalar ', iScalar, global_scalar_min, global_scalar_max
+               call mpas_log_write(' global min, max scalar $i $r $r', intArgs=(/iScalar/), realArgs=(/global_scalar_min, global_scalar_max/))
             end do
 
             block => block % next

@@ -24,6 +24,7 @@ module li_setup
    use mpas_pool_routines
    use mpas_kind_types
    use mpas_dmpar
+   use mpas_log
 
    implicit none
    private
@@ -175,10 +176,10 @@ contains
       fractionTotal = sum(layerThicknessFractions)
       if (fractionTotal /= 1.0_RKIND) then
          if (abs(fractionTotal - 1.0_RKIND) > 0.001_RKIND) then
-            write(0,*) 'Error: The sum of layerThicknessFractions is different from 1.0 by more than 0.001.'
+            call mpas_log_write('The sum of layerThicknessFractions is different from 1.0 by more than 0.001.', MPAS_LOG_ERR)
             err = 1
          end if
-         write (6,*), 'Adjusting upper layerThicknessFrac by small amount because sum of layerThicknessFractions is slightly different from 1.0.'
+         call mpas_log_write('Adjusting upper layerThicknessFrac by small amount because sum of layerThicknessFractions is slightly different from 1.0.')
          ! TODO - distribute the residual amongst all layers (and then put the residual of that in a single layer
          layerThicknessFractions(1) = layerThicknessFractions(1) - (fractionTotal - 1.0_RKIND)
       endif

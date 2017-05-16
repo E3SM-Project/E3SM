@@ -7,8 +7,10 @@
 !
 module mpas_init_atm_gwd
 
+   use mpas_derived_types, only : MPAS_LOG_ERR
    use mpas_framework
    use mpas_timekeeping
+   use mpas_log, only : mpas_log_write
 
    public :: compute_gwd_fields
 
@@ -118,7 +120,7 @@ module mpas_init_atm_gwd
 
       iErr = read_global_30s_topo(config_geog_data_path)
       if (iErr /= 0) then
-         write(stderrUnit,*) 'Error reading global 30-arc-sec topography for GWD statistics'
+         call mpas_log_write('Error reading global 30-arc-sec topography for GWD statistics', messageType=MPAS_LOG_ERR)
          return
       end if
 
@@ -130,15 +132,15 @@ module mpas_init_atm_gwd
       ! is the case.
       !
       if (maxval(dcEdge(1:nEdges)) < 1.0_RKIND) then
-         write(stderrUnit,*) 'Computing GWD statistics on a unit sphere'
+         call mpas_log_write('Computing GWD statistics on a unit sphere')
          onUnitSphere = .true.
       else
          onUnitSphere = .false.
       end if
 
       if (config_gwd_cell_scaling /= 1.0) then
-         write(stderrUnit,*) 'Using effective cell diameters scaled by a factor of ', config_gwd_cell_scaling
-         write(stderrUnit,*) 'in the computation of GWD static fields.'
+         call mpas_log_write('Using effective cell diameters scaled by a factor of $r', realArgs=(/config_gwd_cell_scaling/))
+         call mpas_log_write('in the computation of GWD static fields.')
       end if
 
       !
@@ -248,7 +250,7 @@ module mpas_init_atm_gwd
          call read_geogrid(filename, len_trim(filename), tile, nx, ny, nz, isigned, endian, &
                            scalefactor, wordsize, istatus)
          if (istatus /= 0) then
-            write(stderrUnit,*) 'Error reading topography tile '//trim(filename)
+            call mpas_log_write('Error reading topography tile '//trim(filename), messageType=MPAS_LOG_ERR)
             iErr = 1
             return
          end if

@@ -833,8 +833,8 @@
  real(kind=RKIND):: dx
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine driver_sfclayer:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine driver_sfclayer:')
 
  call mpas_pool_get_config(configs,'config_do_restart'     ,config_do_restart )
  call mpas_pool_get_config(configs,'config_frac_seaice'    ,config_frac_seaice)
@@ -985,7 +985,7 @@
 !copy local arrays to MPAS grid:
  call sfclayer_to_MPAS(configs,sfc_input,diag_physics,its,ite)
 
-!write(0,*) '--- end subroutine driver_sfclayer.'
+!call mpas_log_write('--- end subroutine driver_sfclayer.')
 
  end subroutine driver_sfclayer
 

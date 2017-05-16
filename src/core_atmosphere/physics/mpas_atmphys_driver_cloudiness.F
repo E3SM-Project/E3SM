@@ -185,8 +185,8 @@
  integer:: i,j,k
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine driver_cloudiness:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine driver_cloudiness:')
 
  call mpas_pool_get_config(configs,'config_radt_cld_scheme',radt_cld_scheme)
 
@@ -217,7 +217,7 @@
 !copy local arrays to MPAS grid:
  call cloudiness_to_MPAS(diag_physics,its,ite)
 
-!write(0,*) '--- end subroutine driver_cloudiness.'
+!call mpas_log_write('--- end subroutine driver_cloudiness.')
 
  end subroutine driver_cloudiness
 

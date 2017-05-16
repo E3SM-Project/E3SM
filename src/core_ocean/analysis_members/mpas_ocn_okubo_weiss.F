@@ -189,9 +189,9 @@ contains
       ! Check that the cell IDs are actually exactly representable in
       ! floating point format.
       if (nTotalCellsGlobal >= 16777216) then
-         write(stderrUnit,*) "Error: Maximum number of cells is not exactly representable " // &
+         call mpas_log_write("Error: Maximum number of cells is not exactly representable " // &
                              "as float. Compile in double precision or change OW eddy " // &
-                             "tracking method to use integers"
+                             "tracking method to use integers")
          err = 1
       end if
 #endif
@@ -881,8 +881,8 @@ contains
                ! Found a new eddy.
                curCC = curCC + 1
                if (curCC > nLocalCCs) then
-                  write (stderrUnit,*) "ERROR: curCC > nLocalCCs", curCC, nLocalCCs
-                  write (stderrUnit,*) "THIS IS A BUG!"
+                  call mpas_log_write("ERROR: curCC > nLocalCCs") !, curCC, nLocalCCs
+                  call mpas_log_write("THIS IS A BUG!")
                end if
                ! Put this cell into the list of cells to be processed as
                ! seed for the flood fill of this eddy

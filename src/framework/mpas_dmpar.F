@@ -18,16 +18,16 @@
 module mpas_dmpar
 
 #define COMMA ,
-#define DMPAR_DEBUG_WRITE(M) ! write(stderrUnit,*) M
-#define DMPAR_WARNING_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
-#define DMPAR_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
+#define DMPAR_DEBUG_WRITE(M) ! call mpas_log_write(M)
+#define DMPAR_WARNING_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_WARN)
+#define DMPAR_ERROR_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_CRIT)
 
    use mpas_derived_types
    use mpas_sort
    use mpas_hash
-   use mpas_io_units
    use mpas_threading
    use mpas_pool_routines
+   use mpas_log
 
 #ifdef _MPI
 #ifndef NOMPIMOD
@@ -241,11 +241,8 @@ include 'mpif.h'
       else
          dminfo % initialized_mpi = .true.
 #ifdef MPAS_OPENMP
-         desiredThreadLevel = MPI_THREAD_MULTIPLE
+         desiredThreadLevel = MPI_THREAD_FUNNELED
          call MPI_Init_thread(desiredThreadLevel, threadLevel, mpi_ierr)
-         if ( threadLevel /= desiredThreadLevel ) then
-            write(stderrUnit, *) 'Warning: MPI implementation gave thread level of ', threadLevel, ' when ', desiredThreadLevel, ' was requested.'
-         end if
 #else
          call MPI_Init(mpi_ierr)
 #endif
@@ -260,7 +257,28 @@ include 'mpif.h'
       dminfo % my_proc_id = mpi_rank
 
       dminfo % info = MPI_INFO_NULL
+
+#ifdef MPAS_OPENMP
+      if ( mpi_rank == 0 .and. threadLevel /= desiredThreadLevel ) then
+         write(0,*) 'Note: MPAS has requested an MPI threading level of MPI_THREAD_MULTIPLE, but'
+         write(0,*) '      this is not supported by the MPI implementation; a threading level of'
+         select case (threadLevel)
+            case (MPI_THREAD_SINGLE)
+               write(0,*) '      MPI_THREAD_SINGLE will be used instead.'
+            case (MPI_THREAD_FUNNELED)
+               write(0,*) '      MPI_THREAD_FUNNELED will be used instead.'
+            case (MPI_THREAD_SERIALIZED)
+               write(0,*) '      MPI_THREAD_SERIALIZED will be used instead.'
+            case (MPI_THREAD_MULTIPLE)
+               write(0,*) '      MPI_THREAD_MULTIPLE will be used instead.'
+            case default
+               write(0,*) '      ', threadLevel ,' will be used instead.'
+         end select
+      end if
+#endif
+
 #else
+      ! Set up single processor run, no MPI.
       dminfo % comm = 0
       dminfo % my_proc_id = IO_NODE
       dminfo % nprocs = 1
@@ -4649,7 +4667,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       if ( .not. field % isActive ) then
 #ifdef MPAS_DEBUG
-         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+         call mpas_log_write(' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName))
 #endif
          return
       end if
@@ -4827,7 +4845,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       if ( .not. field % isActive ) then
 #ifdef MPAS_DEBUG
-         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+         call mpas_log_write(' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName))
 #endif
          return
       end if
@@ -5007,7 +5025,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       if ( .not. field % isActive ) then
 #ifdef MPAS_DEBUG
-         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+         call mpas_log_write(' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName))
 #endif
          return
       end if
@@ -5193,7 +5211,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       if ( .not. field % isActive ) then
 #ifdef MPAS_DEBUG
-         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+         call mpas_log_write(' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName))
 #endif
          return
       end if
@@ -5369,7 +5387,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       if ( .not. field % isActive ) then
 #ifdef MPAS_DEBUG
-         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+         call mpas_log_write(' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName))
 #endif
          return
       end if
@@ -5548,7 +5566,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       if ( .not. field % isActive ) then
 #ifdef MPAS_DEBUG
-         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+         call mpas_log_write(' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName))
 #endif
          return
       end if
@@ -5733,7 +5751,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       if ( .not. field % isActive ) then
 #ifdef MPAS_DEBUG
-         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+         call mpas_log_write(' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName))
 #endif
          return
       end if
@@ -5927,7 +5945,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       if ( .not. field % isActive ) then
 #ifdef MPAS_DEBUG
-         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+         call mpas_log_write(' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName))
 #endif
          return
       end if
@@ -6536,8 +6554,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
             do while (associated(exchGroupPtr))
                if ( nLen == exchGroupPtr % nLen) then
                   if ( groupName(1:nLen) == exchGroupPtr % groupName(1:exchGroupPtr % nLen) ) then
-                     write(stderrUnit, *) 'ERROR: Exchange group ''' // groupName(1:nLen) // ''' already exists.'
-                     write(stderrUnit, *) '       Cannot create group.'
+                     call mpas_log_write('Exchange group ''' // groupName(1:nLen) // ''' already exists.  Cannot create group.', &
+                          MPAS_LOG_ERR)
                      if ( present(iErr) ) then
                         iErr = MPAS_DMPAR_EXISTING_GROUP
                      end if
@@ -6640,8 +6658,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
             exchGroupPtr => exchGroupPtr % next
          end do
 
-         write(stderrUnit, *) 'ERROR: No exchange group found named ''' // trim(groupName) // '''.'
-         write(stderrUnit, *) '       Cannot destroy group.'
+         call mpas_log_write('No exchange group found named ''' // trim(groupName) // '''.  Cannot destroy group.', MPAS_LOG_ERR)
          if ( present(iErr) ) then
             iErr = MPAS_DMPAR_MISSING_GROUP
          end if
@@ -6703,8 +6720,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          call mpas_pool_get_field_info(domain % blocklist % allFields, fieldName, fieldInfo)
 
          if ( fieldInfo % fieldType == -1 .and. fieldInfo % nDims == -1 .and. fieldInfo % nTimeLevels == -1 ) then
-            write(stderrUnit, *) 'ERROR: Field ''' // trim(fieldName) // ''' does not exist.'
-            write(stderrUnit, *) '       Cannot add field.'
+            call mpas_log_write('Field ''' // trim(fieldName) // ''' does not exist. Cannot add field.', MPAS_LOG_ERR)
             if ( present(iErr) ) then
                iErr = MPAS_DMPAR_MISSING_FIELD
             end if
@@ -6713,17 +6729,17 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
          ! Validate dimensions
          if ( fieldInfo % nDims == 0 ) then
-            write(stderrUnit, *) 'WARNING: Field ''' // trim(fieldName) // &
+            call mpas_log_write('Field ''' // trim(fieldName) // &
                                  ''' has zero dimensions and cannot be added to exchange group ''' // &
-                                 trim(groupName) // '''.'
+                                 trim(groupName) // '''.', MPAS_LOG_WARN)
             return
          end if
 
          ! Validate field type
          if ( fieldInfo % fieldType /= MPAS_POOL_REAL .and. fieldInfo % fieldType /= MPAS_POOL_INTEGER ) then
-            write(stderrUnit, *) 'WARNING: Field ''' // trim(fieldName) // &
+            call mpas_log_write('Field ''' // trim(fieldName) // &
                                  ''' is an incorrect type for a halo exchange, and cannot be added to exchange group ''' // &
-                                 trim(groupName) // '''.'
+                                 trim(groupName) // '''.', MPAS_LOG_WARN)
             return
          end if
 
@@ -6735,17 +6751,17 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          end if
 
          if ( timeLevelLocal > fieldInfo % nTimeLevels ) then
-            write(stderrUnit, *) 'ERROR: Field ''' // trim(fieldName) // &
+            call mpas_log_write('Field ''' // trim(fieldName) // &
                                  ''' has fewer time levels than the level requested. Cannot add to exchange group ''' // &
-                                trim(groupName) // '''.'
+                                trim(groupName) // '''.', MPAS_LOG_ERR)
             if ( present(iErr) ) then
                iErr = MPAS_DMPAR_FIELD_TIMELEVEL_ERR
             end if
             return
          else if ( timeLevelLocal < -1 ) then
-            write(stderrUnit, '(a62, i2, a)') 'ERROR: timeLevel argument can only have a value between -1 and ', &
-                                             fieldInfo % nTimeLevels, ' when adding field ''' // trim(fieldName) &
-                                             // ''' to exchange group ''' // trim(groupName) // '''.'
+            call mpas_log_write('timeLevel argument can only have a value between -1 and $i when adding field ''' &
+                                       // trim(fieldName) // ''' to exchange group ''' // trim(groupName) // '''.', &
+                                       MPAS_LOG_ERR, intArgs=(/fieldInfo % nTimeLevels/) )
             if ( present(iErr) ) then
                iErr = MPAS_DMPAR_FIELD_TIMELEVEL_ERR
             end if
@@ -6755,9 +6771,9 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          if ( present(haloLayers) ) then
             do iHalo = 1, size(haloLayers)
                if ( haloLayers(iHalo) > fieldInfo % nHaloLayers ) then
-                  write(stderrUnit, '(a60, i2, a)') 'ERROR: haloLayers argument contains an invalid halo index of ', &
-                                                    haloLayers(iHalo), ' when adding field ''' // trim(fieldName) // &
-                                                    ''' to exchange group ''' // trim(groupName) // '''.'
+                  call mpas_log_write('haloLayers argument contains an invalid halo index of $i when adding field ''' &
+                                              // trim(fieldName) // ''' to exchange group ''' // trim(groupName) // '''.', &
+                                              MPAS_LOG_ERR, intArgs=(/haloLayers(iHalo)/))
                   if ( present(iErr) ) then
                      iErr = MPAS_DMPAR_FIELD_HALO_ERR
                   end if
@@ -6845,8 +6861,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
             exchGroupPtr => exchGroupPtr % next
          end do
 
-         write(stderrUnit, *) 'ERROR: No exchange group found named ''' // trim(groupName) // '''.'
-         write(stderrUnit, *) '       Cannot add field ''' // trim(fieldName) // ''' to group.'
+         call mpas_log_write('No exchange group found named ''' // trim(groupName) // '''.', MPAS_LOG_ERR)
+         call mpas_log_write('       Cannot add field ''' // trim(fieldName) // ''' to group.', MPAS_LOG_ERR)
          if ( present(iErr) ) then
             iErr = MPAS_DMPAR_MISSING_GROUP
          end if
@@ -6943,8 +6959,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
             exchGroupPtr => exchGroupPtr % next
          end do
 
-         write(stderrUnit, *) 'ERROR: No exchange group found named ''' // trim(groupName) // '''.'
-         write(stderrUnit, *) '       Cannot add field ''' // trim(fieldName) // ''' to group.'
+         call mpas_log_write('No exchange group found named ''' // trim(groupName) // '''.', MPAS_LOG_ERR)
+         call mpas_log_write('       Cannot add field ''' // trim(fieldName) // ''' to group.', MPAS_LOG_ERR)
          if ( present(iErr) ) then
             iErr = MPAS_DMPAR_MISSING_GROUP
          end if
@@ -6997,8 +7013,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          exchGroupPtr => exchGroupPtr % next
       end do
 
-      write(stderrUnit, *) 'ERROR: No exchange group found named ''' // trim(groupName) // '''.'
-      write(stderrUnit, *) '       Cannot perform halo exchange on group.'
+      call mpas_log_write('No exchange group found named ''' // trim(groupName) // '''.', MPAS_LOG_ERR)
+      call mpas_log_write('       Cannot perform halo exchange on group.', MPAS_LOG_ERR)
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_MISSING_GROUP
       end if
@@ -7045,8 +7061,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          exchGroupPtr => exchGroupPtr % next
       end do
 
-      write(stderrUnit, *) 'ERROR: No exchange group found named ''' // trim(groupName) // '''.'
-      write(stderrUnit, *) '       Cannot perform halo exchange on group.'
+      call mpas_log_write('No exchange group found named ''' // trim(groupName) // '''.', MPAS_LOG_ERR)
+      call mpas_log_write('       Cannot perform halo exchange on group.', MPAS_LOG_ERR)
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_MISSING_GROUP
       end if
@@ -7094,8 +7110,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          exchGroupPtr => exchGroupPtr % next
       end do
 
-      write(stderrUnit, *) 'ERROR: No exchange group found named ''' // trim(groupName) // '''.'
-      write(stderrUnit, *) '       Cannot perform halo exchange on group.'
+      call mpas_log_write('No exchange group found named ''' // trim(groupName) // '''.', MPAS_LOG_ERR)
+      call mpas_log_write('       Cannot perform halo exchange on group.', MPAS_LOG_ERR)
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_MISSING_GROUP
       end if
@@ -7159,8 +7175,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          exchGroupPtr => exchGroupPtr % next
       end do
 
-      write(stderrUnit, *) 'ERROR: No exchange group found named ''' // trim(groupName) // '''.'
-      write(stderrUnit, *) '       Cannot perform halo exchange on group.'
+      call mpas_log_write('No exchange group found named ''' // trim(groupName) // '''.', MPAS_LOG_ERR)
+      call mpas_log_write('       Cannot perform halo exchange on group.', MPAS_LOG_ERR)
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_MISSING_GROUP
       end if
@@ -7412,8 +7428,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          commListPtr => exchangeGroup % sendList
          do while ( associated(commListPtr) )
             if ( associated(commListPtr % rbuffer) ) then
-               write(stderrUnit, *) 'ERROR: Communication buffer already exists. A halo exchange might be ' // &
-                                    'in progress for group ''' // trim(exchangeGroup % groupName) // '''.'
+               call mpas_log_write('Communication buffer already exists. A halo exchange might be ' // &
+                                    'in progress for group ''' // trim(exchangeGroup % groupName) // '''.', MPAS_LOG_ERR)
                if ( present(iErr) ) then
                   iErr = MPAS_DMPAR_BUFFER_EXISTS
                end if
@@ -7428,8 +7444,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          commListPtr => exchangeGroup % recvList
          do while ( associated(commListPtr) )
             if ( associated(commListPtr % rbuffer) ) then
-               write(stderrUnit, *) 'ERROR: Communication buffer already exists. A halo exchange might be ' // &
-                                    'in progress for group ''' // trim(exchangeGroup % groupName) // '''.'
+               call mpas_log_write('Communication buffer already exists. A halo exchange might be ' // &
+                                    'in progress for group ''' // trim(exchangeGroup % groupName) // '''.', MPAS_LOG_ERR)
                if ( present(iErr) ) then
                   iErr = MPAS_DMPAR_BUFFER_EXISTS
                end if
@@ -7941,7 +7957,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (mpas_exchange_field_list), pointer :: exchFieldListPtr
       type (mpas_communication_list), pointer :: commListPtr
 
-      logical :: allReceived
+      !logical :: allReceived
       integer :: mpi_ierr, iErr_tmp
       integer :: threadNum
 
@@ -7951,54 +7967,60 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
-      !$omp master
-      commListPtr => exchangeGroup % recvList
-      do while ( associated(commListPtr) )
-         DMPAR_DEBUG_WRITE(' -- Marking receive lists as not received, and not unpacked')
-         commListPtr % received = .false.
+      if (threadNum == 0) then
+        commListPtr => exchangeGroup % recvList
+        do while ( associated(commListPtr) )
+           DMPAR_DEBUG_WRITE(' -- Marking receive lists as not received, and not unpacked')
+           commListPtr % received = .false.
+           commListPtr % unpacked = .false.
+           commListPtr => commListPtr % next
+        end do
+        exchangeGroup % allReceived = .false.
+      endif
 
-         commListPtr => commListPtr % next
-      end do
-      !$omp end master
       call mpas_threading_barrier()
 
-      allReceived = .false.
-      do while ( .not. allReceived )
+      ! asarje: changing the loop structures to reduce omp barrier calls to just one
+      !         adding 'unpacked' boolean to the comm list
+      !         moving 'allReceived' to exchange group
 
-         allReceived = .true.
+      do while ( .not. exchangeGroup % allReceived )
+        ! Loop over receive lists to check if they have been received yet.
 
-         DMPAR_DEBUG_WRITE(' -- Test receive messages, and unpack buffers as they receive')
-         ! Loop over receive lists to check if they have been received yet.
-         commListPtr => exchangeGroup % recvList
-         do while ( associated(commListPtr) )
-
-            call mpas_threading_barrier()
-
+        call mpas_threading_barrier()   !! to make sure 'allReceived' is not updated by thread 0 \
+                                        !! before all threads check its value
+        ! first let master thread check what has been received before unpacking
+        commListPtr => exchangeGroup % recvList
+        if(threadNum == 0) then
+          exchangeGroup % allReceived = .true.
+          do while ( associated(commListPtr) )
             ! Poll receive list messages, and unpack as they are received.
             if ( .not. commListPtr % received ) then
-               call mpas_threading_barrier()
-
-               allReceived = .false.
-               if ( threadNum == 0 ) then
-                  call MPI_Test(commListPtr % reqID, commListPtr % received, MPI_STATUS_IGNORE, mpi_ierr)
-               end if
-
-               call mpas_threading_barrier()
-
-               if ( commListPtr % received ) then
-                  call mpas_dmpar_exch_group_unpack_single_buffer(allFieldsPool, exchangeGroup, commListPtr, iErr_tmp)
-                  if ( iErr_tmp /= MPAS_DMPAR_NOERR ) then
-                     if ( present(iErr) ) then
-                        iErr = iErr_tmp
-                     end if
-                     DMPAR_ERROR_WRITE('Halo exchange unpacking encountered an error.')
-                  end if
-               end if
+              exchangeGroup % allReceived = .false.
+              call MPI_Test(commListPtr % reqID, commListPtr % received, MPI_STATUS_IGNORE, mpi_ierr)
             end if
-
-            call mpas_threading_barrier()
             commListPtr => commListPtr % next 
-         end do
+          end do
+        end if
+
+        call mpas_threading_barrier()   !! to make sure thread 0 has tested the list before \
+                                        !! any thread attempts to read its status
+        ! then all threads unpack the new stuff that has been received
+        if ( .not. exchangeGroup % allReceived ) then
+          commListPtr => exchangeGroup % recvList
+          do while ( associated(commListPtr) )
+            ! if it was received but not yet unpacked, then unpack it and mark as unpacked
+            if ( commListPtr % received .and. .not. commListPtr % unpacked ) then
+              call mpas_dmpar_exch_group_unpack_single_buffer(allFieldsPool, exchangeGroup, commListPtr, iErr_tmp)
+              if ( iErr_tmp /= MPAS_DMPAR_NOERR ) then
+                if ( present(iErr) ) then
+                  iErr = iErr_tmp
+                end if
+              end if
+            end if
+            commListPtr => commListPtr % next 
+          end do
+        end if
 
       end do
       DMPAR_DEBUG_WRITE(' -- All buffers have been unpacked. Exiting buffer unpack routine.')
@@ -8042,8 +8064,6 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_NOERR
       end if
-
-      threadNum = mpas_threading_get_thread_num()
 
       exchFieldListPtr => exchangeGroup % fieldList
       do while ( associated(exchFieldListPtr) )
@@ -8132,8 +8152,6 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
          exchFieldListPtr => exchFieldListPtr % next
       end do
-
-      call mpas_threading_barrier()
 
    end subroutine mpas_dmpar_exch_group_unpack_single_buffer!}}}
 
@@ -9236,8 +9254,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
-      call mpas_threading_barrier()
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field1d_integer!}}}
 
@@ -9301,6 +9319,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field2d_integer!}}}
@@ -9368,6 +9387,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field3d_integer!}}}
@@ -9428,6 +9448,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field1d_real!}}}
@@ -9491,6 +9512,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field2d_real!}}}
@@ -9557,6 +9579,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field3d_real!}}}
@@ -9628,6 +9651,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field4d_real!}}}
@@ -9703,6 +9727,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field5d_real!}}}
@@ -9732,48 +9757,48 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       call mpas_threading_barrier()
 
       if ( threadNum == 0 ) then
-         write(stderrUnit, *) ''
-         write(stderrUnit, *) ' -------- Buffer Summary -------'
-         write(stderrUnit, *) ' Thread: ', threadNum, ' writing out send lists'
+         call mpas_log_write('')
+         call mpas_log_write(' -------- Buffer Summary -------')
+         call mpas_log_write(' Thread: $i writing out send lists', intArgs=(/threadNum/))
          commListPtr => exchangeGroup % sendList
          do while ( associated(commListPtr) )
-            write(stderrUnit, *) ''
-            write(stderrUnit, *) '    Send list header: '
-            write(stderrUnit, *) '         proc: ', commListPtr % procID
-            write(stderrUnit, *) '         size check: ', commListPtr % nlist, size( commListPtr % rbuffer )
-            write(stderrUnit, *) '         bufferOffset: ', commListPtr % bufferOffset
-            write(stderrUnit, *) '         reqId: ', commListPtr % reqId
-            write(stderrUnit, *) '         ibuffer assc: ', associated( commListPtr % ibuffer )
-            write(stderrUnit, *) '         rbuffer assc: ', associated( commListPtr % rbuffer )
-            write(stderrUnit, *) '         next assc: ', associated( commListPtr % next )
+            call mpas_log_write('')
+            call mpas_log_write('    Send list header: ')
+            call mpas_log_write('         proc: $i', intArgs=(/commListPtr % procID/))
+            call mpas_log_write('         size check: $i $i', intArgs=(/commListPtr % nlist, size( commListPtr % rbuffer )/))
+            call mpas_log_write('         bufferOffset: $i', intArgs=(/commListPtr % bufferOffset/))
+            call mpas_log_write('         reqId: $i', intArgs=(/commListPtr % reqId/))
+            call mpas_log_write('         ibuffer assc: $l', logicArgs=(/ associated( commListPtr % ibuffer ) /) )
+            call mpas_log_write('         rbuffer assc: $l', logicArgs=(/ associated( commListPtr % rbuffer ) /) )
+            call mpas_log_write('         next assc: $l', logicArgs=(/ associated( commListPtr % next ) /) )
             do iBuffer = 1, size(commListPtr % rbuffer)
-               write(stderrUnit, *) '   IDX: ', iBuffer, ' VAL: ', commListPtr % rbuffer(iBuffer)
+               call mpas_log_write('   IDX: $i VAL: $r', intArgs=(/iBuffer/), realArgs=(/ commListPtr % rbuffer(iBuffer) /) )
             end do
             commListPtr => commListPtr % next
          end do
 
-         write(stderrUnit, *) ''
-         write(stderrUnit, *) ' Thread: ', threadNum, ' writing out recv lists'
+         call mpas_log_write('')
+         call mpas_log_write(' Thread: $i writing out recv lists', intArgs=(/threadNum/) )
          commListPtr => exchangeGroup % recvList
          do while ( associated(commListPtr) )
-            write(stderrUnit, *) ''
-            write(stderrUnit, *) '    Recv list header: '
-            write(stderrUnit, *) '         proc: ', commListPtr % procID
-            write(stderrUnit, *) '         size check: ', commListPtr % nlist, size( commListPtr % rbuffer )
-            write(stderrUnit, *) '         bufferOffset: ', commListPtr % bufferOffset
-            write(stderrUnit, *) '         reqId: ', commListPtr % reqId
-            write(stderrUnit, *) '         ibuffer assc: ', associated( commListPtr % ibuffer )
-            write(stderrUnit, *) '         rbuffer assc: ', associated( commListPtr % rbuffer )
-            write(stderrUnit, *) '         next assc: ', associated( commListPtr % next )
+            call mpas_log_write('')
+            call mpas_log_write('    Recv list header: ')
+            call mpas_log_write('         proc: $i', intArgs=(/ commListPtr % procID /) )
+            call mpas_log_write('         size check: $i $i', intArgs=(/ commListPtr % nlist, size( commListPtr % rbuffer ) /) )
+            call mpas_log_write('         bufferOffset: $i', intArgs=(/ commListPtr % bufferOffset /) )
+            call mpas_log_write('         reqId: $i', intArgs=(/ commListPtr % reqId /) )
+            call mpas_log_write('         ibuffer assc: $l', logicArgs=(/ associated( commListPtr % ibuffer ) /) )
+            call mpas_log_write('         rbuffer assc: $l', logicArgs=(/ associated( commListPtr % rbuffer ) /) )
+            call mpas_log_write('         next assc: $l', logicArgs=(/ associated( commListPtr % next ) /) )
             do iBuffer = 1, size(commListPtr % rbuffer)
-               write(stderrUnit, *) '   IDX: ', iBuffer, ' VAL: ', commListPtr % rbuffer(iBuffer)
+               call mpas_log_write('   IDX: $i VAL: $r', intArgs=(/iBuffer/), realArgs=(/ commListPtr % rbuffer(iBuffer) /) )
             end do
             commListPtr => commListPtr % next
          end do
 
-         write(stderrUnit, *) ''
-         write(stderrUnit, *) ' -------- End Buffer Summary -------'
-         write(stderrUnit, *) ''
+         call mpas_log_write('')
+         call mpas_log_write(' -------- End Buffer Summary -------')
+         call mpas_log_write('')
 
       end if
 

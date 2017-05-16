@@ -435,8 +435,8 @@
  real(kind=RKIND):: cudtacttime
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine driver_convection:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine driver_convection:')
 
  call mpas_pool_get_config(configs,'config_gfconv_closure_deep',gfconv_closure_deep)
  call mpas_pool_get_config(configs,'config_gfconv_closure_shallow',gfconv_closure_shallow)
@@ -594,8 +594,8 @@
 !specific to convection parameterization back to the dynamics grid:
  call convection_to_MPAS(configs,diag_physics,tend_physics,its,ite)
 
-!write(0,*) '--- end subroutine driver_convection.'
-!write(0,*)
+!call mpas_log_write('--- end subroutine driver_convection.')
+!call mpas_log_write('')
 
  end subroutine driver_convection
 

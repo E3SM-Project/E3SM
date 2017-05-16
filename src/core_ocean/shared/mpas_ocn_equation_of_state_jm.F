@@ -24,7 +24,7 @@ module ocn_equation_of_state_jm
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
-   use mpas_io_units
+   use mpas_log
    use ocn_constants
 
    implicit none
@@ -238,8 +238,7 @@ contains
           displacement_type_local = 'relative'
           k_displaced_local = 0
         else
-          write (stderrUnit,*) 'Abort: tracersSurfaceLayerValue must be present'
-          call mpas_dmpar_abort(dminfo)
+          call mpas_log_write('Abort: tracersSurfaceLayerValue must be present', MPAS_LOG_CRIT)
         endif
       else
         tracerTS(1,:,:) = tracers(indexT,:,:)
@@ -290,10 +289,9 @@ contains
       if (displacement_type_local == 'absolute' .and.   &
          (k_displaced_local <= 0 .or. k_displaced_local > nVertLevels) ) then
 
-         write (stderrUnit,*) 'Abort: In equation_of_state_jm', &
-             ' k_displaced must be between 1 and nVertLevels for ', &
-             'displacement_type = absolute'
-         call mpas_dmpar_abort(dminfo)
+         call mpas_log_write('Abort: In equation_of_state_jm' // &
+             ' k_displaced must be between 1 and nVertLevels for ' // &
+             'displacement_type = absolute', MPAS_LOG_CRIT)
       endif
 
       if (k_displaced_local == 0) then

@@ -235,15 +235,15 @@
  real(kind=RKIND):: rho_a,rho1,rho2,tem1,tem2
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine MPAS_to_phys:'
-!write(0,*) 'ims=',ims,' ime=',ime
-!write(0,*) 'jms=',jms,' jme=',jme
-!write(0,*) 'kms=',kms,' kme=',kme
-!write(0,*)
-!write(0,*) 'its=',its,' ite=',ite
-!write(0,*) 'jts=',jts,' jte=',jte
-!write(0,*) 'kts=',kts,' kte=',kte
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine MPAS_to_phys:')
+!call mpas_log_write('ims=$i ime=$i',intArgs=(/ims,ime/))
+!call mpas_log_write('jms=$i jme=$i',intArgs=(/jms,jme/))
+!call mpas_log_write('kms=$i kme=$i',intArgs=(/kms,kme/))
+!call mpas_log_write('')
+!call mpas_log_write('its=$i ite=$i',intArgs=(/its,ite/))
+!call mpas_log_write('jts=$i jte=$i',intArgs=(/jts,jte/))
+!call mpas_log_write('kts=$i kte=$i',intArgs=(/kts,kte/))
 
 !initialization:
  call mpas_pool_get_config(configs,'config_pbl_scheme',pbl_scheme)
@@ -368,20 +368,20 @@
 
 !check that the pressure in the layer above the surface is greater than that in the layer
 !above it:
- 201 format(3i8,10(1x,e15.8))
  do j = jts,jte
  do i = its,ite
     if(pres_p(i,1,j) .le. pres_p(i,2,j)) then
-       write(0,*)
-       write(0,*) '--- subroutine MPAS_to_phys - pressure(1) < pressure(2):'
-       write(0,*) 'i      =', i
-       write(0,*) 'latCell=', latCell(i)/degrad
-       write(0,*) 'lonCell=', lonCell(i)/degrad
+       call mpas_log_write('')
+       call mpas_log_write('--- subroutine MPAS_to_phys - pressure(1) < pressure(2):')
+       call mpas_log_write('i      =$i', intArgs=(/i/))
+       call mpas_log_write('latCell=$r', realArgs=(/latCell(i)/degrad/))
+       call mpas_log_write('lonCell=$r', realArgs=(/lonCell(i)/degrad/))
        do k = kts,kte
-          write(0,201) j,i,k,dz_p(i,k,j),pressure_b(k,i),pressure_p(k,i),pres_p(i,k,j), &
-             rho_p(i,k,j),th_p(i,k,j),t_p(i,k,j),qv_p(i,k,j)
+          call mpas_log_write('$i $i $i $r $r $r $r $r $r $r $r', intArgs=(/j,i,k/),&
+             realArgs=(/dz_p(i,k,j),pressure_b(k,i),pressure_p(k,i),pres_p(i,k,j), &
+                        rho_p(i,k,j),th_p(i,k,j),t_p(i,k,j),qv_p(i,k,j)/))
        enddo
-!      call mpas_dmpar_global_abort('ERROR: pressure increasing with height')
+!      call mpas_log_write('pressure increasing with height', messageType=MPAS_LOG_CRIT)
     endif
  enddo
  enddo
@@ -536,11 +536,6 @@
  qv   => scalars(index_qv,:,:)
  qc   => scalars(index_qc,:,:)
  qr   => scalars(index_qr,:,:)
- qi   => scalars(index_qi,:,:)
- qs   => scalars(index_qs,:,:)
- qg   => scalars(index_qg,:,:)
- ni   => scalars(index_ni,:,:)
- nr   => scalars(index_nr,:,:)
 
 !initialize variables needed in the cloud microphysics schemes:
  do j = jts, jte
@@ -567,6 +562,10 @@
  microp_select_init: select case(microp_scheme)
 
     case ("mp_thompson","mp_wsm6")
+       qi   => scalars(index_qi,:,:)
+       qs   => scalars(index_qs,:,:)
+       qg   => scalars(index_qg,:,:)
+
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
@@ -580,6 +579,9 @@
     microp2_select: select case(microp_scheme)
 
        case("mp_thompson")
+          ni   => scalars(index_ni,:,:)
+          nr   => scalars(index_nr,:,:)
+
           do j = jts,jte
           do i = its,ite
              muc_p(i,j) = mu_c(i)
@@ -686,11 +688,6 @@
  qv   => scalars(index_qv,:,:)
  qc   => scalars(index_qc,:,:)
  qr   => scalars(index_qr,:,:)
- qi   => scalars(index_qi,:,:)
- qs   => scalars(index_qs,:,:)
- qg   => scalars(index_qg,:,:)
- ni   => scalars(index_ni,:,:)
- nr   => scalars(index_nr,:,:)
 
  call mpas_pool_get_array(tend,'rt_diabatic_tend',rt_diabatic_tend)
 
@@ -743,6 +740,10 @@
  microp_select_init: select case(microp_scheme)
 
     case ("mp_thompson","mp_wsm6")
+       qi   => scalars(index_qi,:,:)
+       qs   => scalars(index_qs,:,:)
+       qg   => scalars(index_qg,:,:)
+
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
@@ -756,6 +757,9 @@
     microp2_select: select case(microp_scheme)
 
        case("mp_thompson")
+          ni   => scalars(index_ni,:,:)
+          nr   => scalars(index_nr,:,:)
+
           do j = jts, jte
           do k = kts, kte
           do i = its, ite

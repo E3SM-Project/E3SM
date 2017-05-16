@@ -87,8 +87,8 @@
  real(kind=RKIND),dimension(:,:,:,:),allocatable:: ozmixin
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine physics_init_o3:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine physics_init_o3:')
 
  call mpas_pool_get_dimension(mesh,'nCells',nCells)
  call mpas_pool_get_dimension(mesh,'nMonths',num_months)
@@ -116,7 +116,7 @@
                              'failure opening OZONE_LAT.TBL')
  do j = 1, latsiz
     read(lat_unit,*) lat_ozone(j)
-!   write(0,101) j,lat_ozone(j)
+!   call mpas_log_write('$i $r', intArgs=(/j/), realArgs=(/lat_ozone(j)/))
  enddo
  close(lat_unit)
 
@@ -139,13 +139,13 @@
  close(oz_unit)
 
 !INTERPOLATION OF INPUT OZONE DATA TO MPAS GRID:
-!write(0,*) 'max latCell=', maxval(latCell)/degrad
-!write(0,*) 'min latCell=', minval(latCell)/degrad
-!write(0,*) 'max lonCell=', maxval(lonCell)/degrad
-!write(0,*) 'min lonCell=', minval(lonCell)/degrad
-!write(0,*)
-!write(0,*) 'max lat_ozone=',maxval(lat_ozone)
-!write(0,*) 'min lat_ozone=',minval(lat_ozone)
+!call mpas_log_write('max latCell=$r', realArgs=(/maxval(latCell)/degrad/))
+!call mpas_log_write('min latCell=$r', realArgs=(/minval(latCell)/degrad/))
+!call mpas_log_write('max lonCell=$r', realArgs=(/maxval(lonCell)/degrad/))
+!call mpas_log_write('min lonCell=$r', realArgs=(/minval(lonCell)/degrad/))
+!call mpas_log_write('')
+!call mpas_log_write('max lat_ozone=$r', realArgs=(/maxval(lat_ozone)/))
+!call mpas_log_write('min lat_ozone=$r', realArgs=(/minval(lat_ozone)/))
  do iCell = 1,nCells
     lat = latCell(iCell)/degrad
     lon = lonCell(iCell)/degrad
@@ -178,17 +178,13 @@
     enddo       
     enddo
 !   do k = 1, levsiz
-!      write(0,102) iCell,i1,i2,lat_ozone(i1),lat,lat_ozone(i2),ozmixin(1,k,i1,1), &
-!                   ozmixm(1,k,iCell),ozmixin(1,k,i2,1)
+!      call mpas_log_write('$i $i $i $r $r $r $r $r $r', intArgs=(/iCell,i1,i2/), &
+!                          realArgs=(/lat_ozone(i1),lat,lat_ozone(i2),ozmixin(1,k,i1,1),ozmixm(1,k,iCell),ozmixin(1,k,i2,1)/))
 !   enddo
  enddo
  deallocate(ozmixin)
 
-! write(0,*) '--- end subroutine physics_init_o3.'
-
-!formats:
- 101 format(i3,12(1x,e15.8))
- 102 format(i6,i6,i6,6(1x,e15.8))
+! call mpas_log_write('--- end subroutine physics_init_o3.')
 
  end subroutine init_o3climatology
 
@@ -213,8 +209,8 @@
  integer:: iCell,iLev
 
 !-----------------------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter subroutine physics_update_o3:'
+! call mpas_log_write('')
+! call mpas_log_write('--- enter subroutine physics_update_o3:')
 
  call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
  call mpas_pool_get_dimension(mesh,'nOznLevels',nOznLevels)
@@ -225,7 +221,7 @@
  do iLev = 1,nOznLevels 
     call monthly_interp_to_date(nCellsSolve,current_date,ozmixm(:,iLev,:),o3clim(iLev,:))
  enddo
-! write(0,*) '--- end subroutine physics_update_o3:'
+! call mpas_log_write('--- end subroutine physics_update_o3:')
 
  end subroutine update_o3climatology
 
@@ -261,8 +257,8 @@
  real(kind=RKIND):: fact1,fact2
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine o3climatology_from_MPAS:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine o3climatology_from_MPAS:')
 
  call mpas_pool_get_dimension(mesh,'nOznLevels',nOznLevels)
  call mpas_pool_get_dimension(mesh,'nVertLevels',nVertLevels)
@@ -308,21 +304,20 @@
  fact1 = real(fact1_r8, RKIND)
  fact2 = real(fact2_r8, RKIND)
  
-!write(0,*) '--- end subroutine getfactors:'
-!write(0,*) 'fact1 =', fact1
-!write(0,*) 'fact2 =', fact2 
+!call mpas_log_write('--- end subroutine getfactors:')
+!call mpas_log_write('fact1 =$r', realArgs=(/fact1/))
+!call mpas_log_write('fact2 =$r', realArgs=(/fact2/))
 
 !Time interpolation.
  do k = 1, nOznLevels
  do iCell = 1, nCellsSolve
     o3clim(k,iCell) = fact1 * ozmixm(nm,k,iCell) + fact2 * ozmixm(np,k,iCell)
  end do
-!write(0,101) k,o3clim(k,1),ozmixm(nm,k,1),ozmixm(np,k,1), &
-!             o3clim(k,nCellsSolve),ozmixm(nm,k,nCellsSolve),ozmixm(np,k,nCellsSolve)
+!call mpas_log_write('$i $r $r $r $r $r $r', intArgs=(/k/), realArgs=(/o3clim(k,1),ozmixm(nm,k,1),ozmixm(np,k,1), &
+!             o3clim(k,nCellsSolve),ozmixm(nm,k,nCellsSolve),ozmixm(np,k,nCellsSolve)/))
  end do
- 101 format(i4,6(1x,e15.8))
 
-!write(0,*) '--- end subroutine o3climatology_from_MPAS'
+!call mpas_log_write('--- end subroutine o3climatology_from_MPAS')
 
  end subroutine o3climatology_from_MPAS
 

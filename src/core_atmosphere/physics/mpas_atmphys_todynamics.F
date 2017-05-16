@@ -191,23 +191,19 @@
  deallocate(tend_th)
 
 ! if(rk_step .eq. 3) then
-!    write(0,*)
-!    write(0,*) '--- enter subroutine physics_addtend:'
-!    write(0,*) 'max rthblten   = ',maxval(rthblten(:,1:nCellsSolve))
-!    write(0,*) 'min rthblten   = ',minval(rthblten(:,1:nCellsSolve))
-!    write(0,*) 'max rthcuten   = ',maxval(rthcuten(:,1:nCellsSolve))
-!    write(0,*) 'min rthcuten   = ',minval(rthcuten(:,1:nCellsSolve))
-!    write(0,*) 'max rthratenlw = ',maxval(rthratenlw(:,1:nCellsSolve))
-!    write(0,*) 'min rthratenlw = ',minval(rthratenlw(:,1:nCellsSolve))
-!    write(0,*) 'max rthratensw = ',maxval(rthratensw(:,1:nCellsSolve))
-!    write(0,*) 'min rthratensw = ',minval(rthratensw(:,1:nCellsSolve))
-!    write(0,*) '--- end subroutine physics_addtend'
-!    write(0,*)
+!    call mpas_log_write('')
+!    call mpas_log_write('--- enter subroutine physics_addtend:')
+!    call mpas_log_write('max rthblten   = $r',realArgs=(/maxval(rthblten(:,1:nCellsSolve))/))
+!    call mpas_log_write('min rthblten   = $r',realArgs=(/minval(rthblten(:,1:nCellsSolve))/))
+!    call mpas_log_write('max rthcuten   = $r',realArgs=(/maxval(rthcuten(:,1:nCellsSolve))/))
+!    call mpas_log_write('min rthcuten   = $r',realArgs=(/minval(rthcuten(:,1:nCellsSolve))/))
+!    call mpas_log_write('max rthratenlw = $r',realArgs=(/maxval(rthratenlw(:,1:nCellsSolve))/))
+!    call mpas_log_write('min rthratenlw = $r',realArgs=(/minval(rthratenlw(:,1:nCellsSolve))/))
+!    call mpas_log_write('max rthratensw = $r',realArgs=(/maxval(rthratensw(:,1:nCellsSolve))/))
+!    call mpas_log_write('min rthratensw = $r',realArgs=(/minval(rthratensw(:,1:nCellsSolve))/))
+!    call mpas_log_write('--- end subroutine physics_addtend')
+!    call mpas_log_write('')
 ! endif
-
-!formats:
- 201 format(2i6,10(1x,e15.8))
- 202 format(3i6,10(1x,e15.8))
 
  end subroutine physics_addtend
 
@@ -402,23 +398,19 @@
  deallocate(tend_th)
 
 ! if(rk_step .eq. 3) then
-!    write(0,*)
-!    write(0,*) '--- enter subroutine physics_addtend:'
-!    write(0,*) 'max rthblten   = ',maxval(rthblten(:,1:nCellsSolve))
-!    write(0,*) 'min rthblten   = ',minval(rthblten(:,1:nCellsSolve))
-!    write(0,*) 'max rthcuten   = ',maxval(rthcuten(:,1:nCellsSolve))
-!    write(0,*) 'min rthcuten   = ',minval(rthcuten(:,1:nCellsSolve))
-!    write(0,*) 'max rthratenlw = ',maxval(rthratenlw(:,1:nCellsSolve))
-!    write(0,*) 'min rthratenlw = ',minval(rthratenlw(:,1:nCellsSolve))
-!    write(0,*) 'max rthratensw = ',maxval(rthratensw(:,1:nCellsSolve))
-!    write(0,*) 'min rthratensw = ',minval(rthratensw(:,1:nCellsSolve))
-!    write(0,*) '--- end subroutine physics_addtend'
-!    write(0,*)
+!    call mpas_log_write('')
+!    call mpas_log_write('--- enter subroutine physics_addtend:')
+!    call mpas_log_write('max rthblten   = $r',realArgs=(/maxval(rthblten(:,1:nCellsSolve))/))
+!    call mpas_log_write('min rthblten   = $r',realArgs=(/minval(rthblten(:,1:nCellsSolve))/))
+!    call mpas_log_write('max rthcuten   = $r',realArgs=(/maxval(rthcuten(:,1:nCellsSolve))/))
+!    call mpas_log_write('min rthcuten   = $r',realArgs=(/minval(rthcuten(:,1:nCellsSolve))/))
+!    call mpas_log_write('max rthratenlw = $r',realArgs=(/maxval(rthratenlw(:,1:nCellsSolve))/))
+!    call mpas_log_write('min rthratenlw = $r',realArgs=(/minval(rthratenlw(:,1:nCellsSolve))/))
+!    call mpas_log_write('max rthratensw = $r',realArgs=(/maxval(rthratensw(:,1:nCellsSolve))/))
+!    call mpas_log_write('min rthratensw = $r',realArgs=(/minval(rthratensw(:,1:nCellsSolve))/))
+!    call mpas_log_write('--- end subroutine physics_addtend')
+!    call mpas_log_write('')
 ! endif
-
-!formats:
- 201 format(2i6,10(1x,e15.8))
- 202 format(3i6,10(1x,e15.8))
 
  end subroutine physics_get_tend
 

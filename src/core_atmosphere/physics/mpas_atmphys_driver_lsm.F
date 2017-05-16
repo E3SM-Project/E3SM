@@ -727,16 +727,12 @@
  character(len=StrKIND),pointer:: mminlu
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine driver_lsm:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine driver_lsm:')
 
  call mpas_pool_get_config(configs,'config_sfc_albedo',config_sfc_albedo)
  call mpas_pool_get_config(configs,'config_lsm_scheme',lsm_scheme)
  call mpas_pool_get_array(sfc_input,'mminlu',mminlu)
-
-!formats:
- 101 format(2i6,8(1x,e15.8))
- 102 format(3i6,8(1x,e15.8))
 
 !copy MPAS arrays to local arrays:
  call lsm_from_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
@@ -800,7 +796,7 @@
 !copy local arrays to MPAS grid:
  call lsm_to_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
 
-!write(0,*) '--- end subroutine driver_lsm.'
+!call mpas_log_write('--- end subroutine driver_lsm.')
 
  end subroutine driver_lsm
 

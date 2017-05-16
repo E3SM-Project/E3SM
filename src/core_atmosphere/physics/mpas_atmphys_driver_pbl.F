@@ -595,8 +595,8 @@
  integer:: i,k,j
 
 !-----------------------------------------------------------------------------------------------------------------
-!write(0,*)
-!write(0,*) '--- enter subroutine driver_pbl:'
+!call mpas_log_write('')
+!call mpas_log_write('--- enter subroutine driver_pbl:')
 
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
  call mpas_pool_get_config(configs,'config_pbl_scheme',pbl_scheme       )
@@ -674,7 +674,7 @@
 !copy local arrays to MPAS grid:
  call pbl_to_MPAS(configs,diag_physics,tend_physics,its,ite)
 
-!write(0,*) '--- end subroutine driver_pbl.'
+!call mpas_log_write('--- end subroutine driver_pbl.')
 
  end subroutine driver_pbl
 
