@@ -315,9 +315,12 @@ class SystemTestsCommon(object):
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_FAIL_STATUS, comments=comment)
 
     def compare_env_run(self, expected=None):
-        # JGF implement in check_lockedfiles?
-        f1obj = EnvRun(self._caseroot, "env_run.xml")
-        f2obj = EnvRun(self._caseroot, os.path.join(LOCKED_DIR, "env_run.orig.xml"))
+        """
+        Compare env_run file to original and warn about differences
+        """
+        components = self._case.get_values("COMP_CLASSES")
+        f1obj = EnvRun(self._caseroot, "env_run.xml", components=components)
+        f2obj = EnvRun(self._caseroot, os.path.join(LOCKED_DIR, "env_run.orig.xml"), components=components)
         diffs = f1obj.compare_xml(f2obj)
         for key in diffs.keys():
             if expected is not None and key in expected:
