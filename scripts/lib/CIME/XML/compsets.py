@@ -98,9 +98,5 @@ class Compsets(GenericXML):
         for key in sorted(compsets_text.iterkeys()):
             all_compsets[key] = compsets_text[key]
 
-##        for v in compsets_text.iteritems():
-##            label, definition = v
-##            all_compsets[label] = definition
-
         return help_text, all_compsets
 

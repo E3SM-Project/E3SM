@@ -1,0 +1,1291 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+
+    <style type="text/css">
+      body {
+         font-family:'Open Sans', Arial, sans-serif;
+         font-size:14px;
+         font-weight:300;
+         line-height:1.6em;
+         color:#656565;
+         width: 90%;
+         align: center;
+      }
+
+      .container {
+         padding: 0 30px 0 30px;
+         padding-top: 0px;
+         padding-right: 30px;
+         padding-bottom: 30px;
+         padding-left: 30px;
+         position: relative;
+      }
+      
+      dt { color:#656565; font-weight: bold }
+
+      .accordionItem h2 { margin: 0; font-size: 1.1em; padding: 0.4em; color: #000; background-color: #E3E4E6; border-bottom: 1px solid #66d; width: 90%}
+      .accordionItem h2:hover { cursor: pointer; }
+      .accordionItem div { margin: 0; padding: 1em 0.4em; background-color: #eef; border-bottom: 1px solid #66d; width: 90%}
+      .accordionItem.hide h2 { color: #000; background-color: #E3E4E6; width: 90%}
+      
+      .detailsBtn { background-color: #E3E4E6; }
+
+      #variable { color:#66d; font-size: 1.2em; font-weight: bold; display: inline-block; margin-right: 30px; width: 350px; }
+      #emphasis { color:#656565; font-weight: bold; display: inline-block; }
+      #small { color:#9f9f9f; display: inline-block; }
+
+    </style>
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script type="text/javascript">
+    //<![CDATA[
+
+    var accordionItems = new Array();
+
+    function init() {
+
+      // Grab the accordion items from the page
+      var divs = document.getElementsByTagName( 'div' );
+      for ( var i = 0; i < divs.length; i++ ) {
+        if ( divs[i].className == 'accordionItem' ) accordionItems.push( divs[i] );
+      }
+
+      // Assign onclick events to the accordion item headings
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        var h2 = getFirstChildWithTagName( accordionItems[i], 'H2' );
+        h2.onclick = toggleItem;
+      }
+
+      // Hide all accordion item bodies 
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+    }
+
+    function toggleItem() {
+      var itemClass = this.parentNode.className;
+
+      // Hide all items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+
+      // Show this item if it was previously hidden
+      if ( itemClass == 'accordionItem hide' ) {
+        this.parentNode.className = 'accordionItem';
+        $(this).parent().find('div').slideDown();
+      }
+    }
+
+    function getFirstChildWithTagName( element, tagName ) {
+      for ( var i = 0; i < element.childNodes.length; i++ ) {
+        if ( element.childNodes[i].nodeName == tagName ) return element.childNodes[i];
+      }
+    }
+
+    function hideAll() {
+      // Hide all accordian items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+    }
+
+    function showAll() {
+      // show all accordian items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideDown();
+      }
+    }
+
+     //]]>
+    </script>
+
+  </head>
+  <body onload="init()">
+    <div class="container">
+        <h1>Machine Definitions</h1>
+	<p style="font-size: 0.9em;">
+	  Model Version: CESM2.0<br>
+	  HTML created on: 2017-05-16
+	</p>
+  	<p>
+	This page contains the complete list of machines and their associated settings<br/>
+	relevant to running CESM.<br/>
+	<br/>
+	A <b>supported</b> machine indicates that it has passed statistical validation and <br/>
+	CESM regression testing and may be used for large coupled experiments.<br/>
+	A <b>tested</b> machine indicates that it has passed funtional CESM regression testing <br/>
+	but may not necessarily by appropriate for large coupled experiments due to machine<br/>
+	restrictions; for example, limited number of nodes and disk space.<br/>
+	<br/>
+	<br/>
+	Clicking on the name of a component will display additional descriptive information.<br/>  
+	Click on the "Show Details" button and then cntl+F key to search for specific strings in this file.
+	</p>
+
+	<button class="detailsBtn" onclick="showAll();">Show Details</button>
+	<button class="detailsBtn" onclick="hideAll();">Hide Details</button>
+
+	<br/><br/>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">bluewaters</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>pgi,cray,gnu</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>ORNL XE6, os is CNL, 32 pes/node, batch system is PBS</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>32</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>CNL</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>16</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">brutus</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>pgi,intel</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>Brutus Linux Cluster ETH (pgi(9.0-1)/intel(10.1.018) with openi(1.4.1)/mvapich2(1.4rc2), 16 pes/node, batch system LSF, added by UB</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>16</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>16</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">cheyenne</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel,gnu</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>NCAR SGI platform, os is Linux, 36 pes/node, batch system is PBS</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>36</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>36</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>True</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>True</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">constance</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel,pgi</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>PNL Haswell cluster, OS is Linux, batch system is SLURM</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>24</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>24</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">cori-haswell</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel,gnu,cray</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>NERSC XC40 Haswell, os is CNL, 32 pes/node, batch system is Slurm</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>64</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>CNL</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>32</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>True</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">cori-knl</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel,gnu,cray</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>NERSC XC* KNL, os is CNL, 68 pes/node, batch system is Slurm</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>256</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>CNL</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>64</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>True</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">eastwind</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>pgi,intel</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>PNL IBM Xeon cluster, os is Linux (pgi), batch system is SLURM</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>12</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>12</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">edison</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel,gnu,cray</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>48</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>CNL</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>24</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>True</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">gaea</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>pgi</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>NOAA XE6, os is CNL, 24 pes/node, batch system is PBS</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>24</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>CNL</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>24</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">hobart</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel,pgi,nag,gnu</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>"NCAR CGD Linux Cluster 48 pes/node, batch system is PBS"</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>48</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>24</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>True</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">laramie</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel,gnu</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>NCAR SGI test platform, os is Linux, 36 pes/node, batch system is PBS</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>36</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>36</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">melvin</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>gnu</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>Linux workstation for Jenkins testing</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>64</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>64</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">mira</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>ibm</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>64</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>BGQ</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>8</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">olympus</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>pgi</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>PNL cluster, os is Linux (pgi), batch system is SLURM</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>32</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>32</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">pleiades-has</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>NASA/AMES Linux Cluster, Linux (ia64), 2.5 GHz Haswell Intel Xeon E5-2680v3 processors, 24 pes/node (two 12-core processors) and 128 GB of memory/node, batch system is PBS</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>24</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>24</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">pleiades-ivy</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.8 GHz Ivy Bridge processors, 20 cores/node and 3.2 GB of memory per core, batch system is PBS</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>20</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>20</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">pleiades-san</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.6 GHz Sandy Bridge processors, 16 cores/node and 32 GB of memory, batch system is PBS</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>16</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>16</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">pleiades-wes</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.93 GHz Westmere processors, 12 pes/node and 24 GB of memory, batch system is PBS</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>12</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>12</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">rosa</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>pgi,cray,gnu</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>CSCS Cray XE6, os is CNL, 32 pes/node, batch system is SLURM</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>32</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>CNL</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>32</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">sandia-srn-sems</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>gnu</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>Linux workstation at Sandia on SRN with SEMS TPL modules</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>64</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>64</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">skybridge</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>SNL clust</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>16</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>16</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">stampede</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>TACC DELL, os is Linux, 16 pes/node, batch system is SLURM</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>16</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>16</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">theta</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel,gnu,cray</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>ALCF Cray XC* KNL, os is CNL, 64 pes/node, batch system is cobalt</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>64</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>CNL</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>64</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>False</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+	<div class="accordionItem">
+	  <h2>Machine Name: <span id="variable">yellowstone</span></h2>
+	    <div>
+	      <dl>
+		
+		<dt>compilers</dt>
+		
+		   <dd>intel,pgi,gnu,intel15</dd>
+		
+		
+		<dt>desc</dt>
+		
+		   <dd>NCAR IBM, os is Linux, 16 pes/node, batch system is LSF</dd>
+		
+		
+		<dt>max_tasks_per_node</dt>
+		
+		   <dd>30</dd>
+		
+		
+		<dt>os</dt>
+		
+		   <dd>LINUX</dd>
+		
+		
+		<dt>pes_per_node</dt>
+		
+		   <dd>15</dd>
+		
+		
+		<dt>supported</dt>
+		
+		   
+		      <dd>True</dd>
+		   
+		
+		
+		<dt>tested</dt>
+		
+		   
+		      <dd>True</dd>
+		   
+		
+		
+	      </dl>
+	    </div>
+	</div>
+	
+    </div>
+  </body>
+</html>
