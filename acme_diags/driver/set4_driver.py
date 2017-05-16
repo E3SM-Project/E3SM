@@ -162,7 +162,6 @@ def run_diag(parameter):
                         ps = f_in('PS')   #Pa 
 
                         mv_p = utils.hybrid_to_plevs(mv, hyam, hybm, ps, plev)
-                        print 'tt4'
                     
                     elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1:  # levels are presure levels 
                         mv_p = utils.pressure_to_plevs(mv, plev)
@@ -182,7 +181,6 @@ def run_diag(parameter):
                 parameter.main_title = str(
                     ' '.join([var, season]))
 
-                print 'setttttttt4'
                 # Regrid towards lower resolution of two variables for
                 # calculafor_hsiyen/ting difference
                 if len(mv1_p.getLatitude()) <= len(mv2_p.getLatitude()):
@@ -212,7 +210,6 @@ def run_diag(parameter):
                 plot('4', mv2_p, mv1_p, diff, metrics_dict, parameter)
                 utils.save_ncfiles('4', mv1_p, mv2_p, diff, parameter)
 
-                f_in.close()
 
             # for variables without z axis:
             elif mv1.getLevel() == None and mv2.getLevel() == None:
