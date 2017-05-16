@@ -8,8 +8,90 @@ module test_shr_string
   implicit none
 
   integer, parameter :: list_len = 256
+  character, parameter :: tab_char = char(9)
 
 contains
+
+  ! ------------------------------------------------------------------------
+  ! Tests of shr_string_leftAlign
+  !
+  ! NOTE(wjs, 2017-05-15) There is more duplication in these tests than is warranted by
+  ! the simplicity of the subroutine. This is a historical artifact of when this routine
+  ! handled spaces and tabs separately. Some of these tests could probably be removed in
+  ! the future.
+  ! ------------------------------------------------------------------------
+
+  @Test
+  subroutine test_shr_string_leftAlign_noInitialSpaces()
+    ! With no initial spaces, should have no effect
+    character(len=6) :: str
+
+    str = 'foo   '
+    call shr_string_leftAlign(str)
+    @assertEqual('foo   ', str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_noInitialSpaces
+
+  @Test
+  subroutine test_shr_string_leftAlign_initialSpaces()
+    ! Should remove initial spaces
+    character(len=6) :: str
+
+    str = '  foo '
+    call shr_string_leftAlign(str)
+    @assertEqual('foo   ', str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_initialSpaces
+
+  @Test
+  subroutine test_shr_string_leftAlign_interiorSpaces()
+    ! Should NOT remove interior spaces
+    character(len=6) :: str
+
+    str = 'f oo  '
+    call shr_string_leftAlign(str)
+    @assertEqual('f oo  ', str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_interiorSpaces
+
+  @Test
+  subroutine test_shr_string_leftAlign_initialTabs()
+    ! Should remove initial tabs
+    character(len=6) :: str
+
+    str = tab_char // tab_char // 'foo '
+    call shr_string_leftAlign(str)
+    @assertEqual('foo   ', str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_initialTabs
+
+  @Test
+  subroutine test_shr_string_leftAlign_interiorTabs()
+    ! Should NOT remove interior tabs
+    character(len=6) :: str, expected
+
+    str = 'f' // tab_char // 'oo  '
+    expected = str
+    call shr_string_leftAlign(str)
+    @assertEqual(expected, str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_interiorTabs
+
+  @Test
+  subroutine test_shr_string_leftAlign_initialSpacesAndTabs()
+    ! Should remove an initial mix of spaces and tabs
+    character(len=8) :: str
+
+    str = ' ' // tab_char // ' ' // tab_char // ' ' // 'foo'
+    call shr_string_leftAlign(str)
+    @assertEqual('foo     ', str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_initialSpacesAndTabs
+
+  @Test
+  subroutine test_shr_string_leftAlign_allSpacesAndTabs()
+    ! If string is just a mix of spaces and tabs, the resulting string should be all
+    ! spaces
+    character(len=6) :: str
+
+    str = ' ' // tab_char // ' ' // tab_char // '  '
+    call shr_string_leftAlign(str)
+    @assertEqual('      ', str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_allSpacesAndTabs
 
   ! ------------------------------------------------------------------------
   ! Tests of shr_string_listDiff

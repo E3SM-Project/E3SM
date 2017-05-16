@@ -1,4 +1,4 @@
-#! /bin/csh -fx
+#! /bin/tcsh -fx
 
 #==============================================================================
 # Purpose: Build the mct library
@@ -59,4 +59,3 @@ echo "MCT_LIBDIR   $MCT_LIBDIR"
   cp -p mpeu/*.mod $LIBDIR/include/
 
 exit 0
-

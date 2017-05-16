@@ -120,8 +120,11 @@ class _TimingParser:
         rundir = self.case.get_value("RUNDIR")
         run_type = self.case.get_value("RUN_TYPE")
         ncpl_base_period = self.case.get_value("NCPL_BASE_PERIOD")
-        atm_ncpl = self.case.get_value("ATM_NCPL")
+        ncpl = 0
+        for compclass in self.case.get_values("COMP_CLASSES"):
+            ncpl = max(ncpl, self.case.get_value("%s_NCPL"%compclass))
         ocn_ncpl = self.case.get_value("OCN_NCPL")
+
         compset = self.case.get_value("COMPSET")
         if compset is None:
             compset = ""
@@ -199,10 +202,12 @@ class _TimingParser:
 
         nprocs, ncount = self.gettime2('CPL:CLOCK_ADVANCE ')
         nsteps = ncount / nprocs
-        adays = nsteps*tlen/atm_ncpl
-        odays = adays
+
+        adays = nsteps*tlen/ncpl
+        odays = nsteps*tlen/ncpl
         if inittype == "TRUE":
-            odays = adays - (tlen/ocn_ncpl)
+            odays = odays - (tlen/ocn_ncpl)
+
         peminmax = max([m.rootpe for m in self.models.values()])+1
         if ncpl_base_period in ["decade","year","day"] and int(adays) > 0:
             adays = int(adays)

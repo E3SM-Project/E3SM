@@ -35,6 +35,9 @@ class SystemTestsCommon(object):
         self._init_environment(caseroot)
         self._init_locked_files(caseroot, expected)
 
+    def __del__(self):
+        self._case.set_value("RUN_WITH_SUBMIT", False)
+
     def _init_environment(self, caseroot):
         """
         Do initializations of environment variables that are needed in __init__
@@ -53,14 +56,14 @@ class SystemTestsCommon(object):
         elif os.path.isfile(os.path.join(caseroot, "env_run.xml")):
             lock_file("env_run.xml", caseroot=caseroot, newname="env_run.orig.xml")
 
-    def _resetup_case(self, phase):
+    def _resetup_case(self, phase, reset=False):
         """
         Re-setup this case. This is necessary if user is re-running an already-run
         phase.
         """
         # We never want to re-setup if we're doing the resubmitted run
         phase_status = self._test_status.get_status(phase)
-        if self._case.get_value("IS_FIRST_RUN") and phase_status != TEST_PEND_STATUS:
+        if reset or (self._case.get_value("IS_FIRST_RUN") and phase_status != TEST_PEND_STATUS):
 
             logging.warning("Resetting case due to detected re-run of phase %s" % phase)
             self._case.set_initial_test_values()
@@ -312,9 +315,12 @@ class SystemTestsCommon(object):
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_FAIL_STATUS, comments=comment)
 
     def compare_env_run(self, expected=None):
-        # JGF implement in check_lockedfiles?
-        f1obj = EnvRun(self._caseroot, "env_run.xml")
-        f2obj = EnvRun(self._caseroot, os.path.join(LOCKED_DIR, "env_run.orig.xml"))
+        """
+        Compare env_run file to original and warn about differences
+        """
+        components = self._case.get_values("COMP_CLASSES")
+        f1obj = EnvRun(self._caseroot, "env_run.xml", components=components)
+        f2obj = EnvRun(self._caseroot, os.path.join(LOCKED_DIR, "env_run.orig.xml"), components=components)
         diffs = f1obj.compare_xml(f2obj)
         for key in diffs.keys():
             if expected is not None and key in expected:

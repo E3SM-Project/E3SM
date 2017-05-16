@@ -42,7 +42,7 @@ def _set_up_signal_handlers():
         signum = getattr(signal, signame)
         signal.signal(signum, _signal_handler)
 
-def case_test(case, testname=None):
+def case_test(case, testname=None, reset=False):
     if testname is None:
         testname = case.get_value('TESTCASE')
 
@@ -64,6 +64,11 @@ def case_test(case, testname=None):
         append_testlog(str(sys.exc_info()[1]))
         return False
 
+    if reset:
+        logger.info("Reset test to initial conditions and exit")
+        # pylint: disable=protected-access
+        test._resetup_case(RUN_PHASE)
+        return True
     success = test.run()
 
     case.set_value("RUN_WITH_SUBMIT", False)

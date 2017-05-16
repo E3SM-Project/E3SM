@@ -76,7 +76,8 @@ OR
     parser.add_argument("--pesfile",
                         help="Only used and required for --user-compset argument."
                         "Full pathname of the pes specification file"
-                        "This argument is required if --user-compset is True")
+                        "This argument is required if --user-compset is True"
+                        "The file can follow either the config_pes.xml or the env_mach_pes.xml format")
 
     parser.add_argument("--user-grid", action="store_true",
                         help="If set, then the -grid argument is treated as a user specified grid."
