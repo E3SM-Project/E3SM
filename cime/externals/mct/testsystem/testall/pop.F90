@@ -2,7 +2,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: pop.F90,v 1.15 2004-03-04 20:04:17 eong Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !ROUTINE: pop2_2  -- dummy ocean model for unit tester
@@ -68,7 +68,7 @@
       use m_GeneralGrid,only : MCT_GGrid_exportRAttr => exportRAttr
       use m_GeneralGrid,only : MCT_GGrid_importRAttr => importRAttr
       use m_GeneralGrid,only : MCT_GGrid_SortPermute => sortpermute
-      use m_GeneralGridComms,only: MCT_GGrid_send => send   
+      use m_GeneralGridComms,only: MCT_GGrid_send => send
       use m_GeneralGridComms,only: MCT_GGrid_scatter => scatter
       use m_GeneralGridComms,only: MCT_GGrid_gather => gather
 !---Spatial Integral DataType and associated methods
@@ -84,14 +84,14 @@
       use m_List, only : List_clean => clean
       use m_List, only : List_exportToChar => exportToChar
 !---mpeu routines for MPI communications
-      use m_mpif90        
+      use m_mpif90
 !---mpeu timers
       use m_zeit
 
       use m_stdio
       use m_ioutil, only: luavail
       use m_die
- 
+
 !---Tester Modules
       use m_ACTEST, only : Accumulator_test => testall
       use m_AVTEST, only : AttrVect_test => testall
@@ -105,7 +105,7 @@
       use m_ROUTERTEST, only : Router_test => testall
       use m_SMATTEST, only : sMat_test => testall
       use m_SMATTEST, only : sMat_identical   => Identical
-     
+
 !
 ! !REVISION HISTORY:
 !        Oct00 - Yun (Helen) He and Chris Ding, NERSC/LBNL - initial version
@@ -134,7 +134,7 @@
 !----------------------- MCT vars
 
       ! Variables used for GlobalSegMap
-      integer,dimension(1) :: starts,lengths      
+      integer,dimension(1) :: starts,lengths
       integer :: osize,osize2
       integer :: i,j,k,n
 
@@ -208,7 +208,7 @@
 
   !  Get the coupler's component id
   coupler_id = MPH_get_component_id("coupler")
-                   
+
   ! Initialize MCTWorld
   ncomps=MPH_total_components()
   mycompid=MPH_component_id_ME_SE()
@@ -219,7 +219,7 @@
   call MCTWorld_test("POP::MCTWorld",6200+myProc)
 
   ! Get the Sparse Matrix dimensions and processor layout
-  root = MCTComponentRootRank(coupler_id,ThisMCTWorld) 
+  root = MCTComponentRootRank(coupler_id,ThisMCTWorld)
   call MPI_BCAST(Nax,1,MP_INTEGER,root,MPI_COMM_WORLD,ierr)
   call MPI_BCAST(Nay,1,MP_INTEGER,root,MPI_COMM_WORLD,ierr)
   call MPI_BCAST(Nox,1,MP_INTEGER,root,MPI_COMM_WORLD,ierr)
@@ -232,14 +232,14 @@
 
 if(myProc==0) then
 
-   write(*,*) popname, ":: Initializing Ocean General Grid" 
+   write(*,*) popname, ":: Initializing Ocean General Grid"
 
 ! NOTE: Since POP grids already have a predefined order,
 !       do not impose a sorting order upon initialization
 
    call convertPOPT(POPGrid, &
 	     "../../data/grid.320x384.da", &
-	     "../../data/kmt_full_40.da", Nox, Noy)    
+	     "../../data/kmt_full_40.da", Nox, Noy)
 
    call GGrid_test(POPGrid,"POP::POPGrid",3400+myProc)
 
@@ -258,8 +258,8 @@ if(myProc==0) then
 !                       List_exportToChar(POPGrid%coordinate_sort_order)
   write(stdout,'(3a)') popname, ":: POPGrid%weight_list = ", &
                        List_exportToChar(POPGrid%weight_list)
-  write(stdout,*) popname, ":: POPGrid%other_list = ", & 
-                       ! * is used for SUPER_UX compatibility  
+  write(stdout,*) popname, ":: POPGrid%other_list = ", &
+                       ! * is used for SUPER_UX compatibility
                        List_exportToChar(POPGrid%other_list)
   write(stdout,'(3a)') popname, ":: POPGrid%index_list = ", &
                        List_exportToChar(POPGrid%index_list)
@@ -333,7 +333,7 @@ if(myProc==0) then
  allocate(dummyI(MCT_GGrid_lsize(POPGrid)), stat=ierr)
  if(ierr/=0) call die(popname, "allocate(dummyI)", ierr)
 
- call MCT_GGrid_exportIAttr(POPGrid, 'GlobGridNum', dummyI, length) 
+ call MCT_GGrid_exportIAttr(POPGrid, 'GlobGridNum', dummyI, length)
 
   write(stdout,'(2a,i8)') popname, &
        ':: No. exported POPGrid GlobalGridNum values =.',length
@@ -358,7 +358,7 @@ endif   ! if(myProc==0)
 ! send the ocean's grid from the ocean's root to the
 ! coupler's root.  2800 is the randomly chosen tag base.
 if(myProc==0) call MCT_GGrid_send(POPGrid,coupler_id,2800,ierr)
-                                                           
+
 !::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   !  Describe OGSMap, the ocean grid decomposition
@@ -502,7 +502,7 @@ if(myProc==0) call MCT_GGrid_send(POPGrid,coupler_id,2800,ierr)
   if(myProc == 0) write(stdout,*) popname,':: Before MCT_RECV from CPL.'
   call zeit_ci('OinputAVrecv')
   call MCT_Recv(OinputAV,Cpl2Ocn)
-  call zeit_co('OinputAVrecv') 
+  call zeit_co('OinputAVrecv')
   call AttrVect_test(OinputAV,"POP::OinputAV",2600)
   if(myProc == 0) write(stdout,*) popname,':: After MCT_RECV from CPL.'
 
@@ -546,7 +546,7 @@ if(myProc==0) call MCT_GGrid_send(POPGrid,coupler_id,2800,ierr)
      enddo
      call MCT_AtrVt_clean(gatherAV_ocn)
   endif
-  
+
   ! Now, Test the MCT Spatial Integration/Averaging Services...
   if(myProc==0)write(stdout,'(3a)') popname,':: on-Root test of MCT Spatial ', &
        'Integration Services...'
@@ -555,7 +555,7 @@ if(myProc==0) call MCT_GGrid_send(POPGrid,coupler_id,2800,ierr)
 
   call MCT_SpatialIntegral(OinputAV, integratedOinputAV, dPOPGrid, 'grid_area', &
                           comm=POP_World)
-  
+
   if(myProc==0)then
      do i=1,MCT_AtrVt_nReal(integratedOinputAV)
 	write(stdout,'(3a,i2,a,f12.6)') popname,':: Unmasked distributed MCT ', &
@@ -563,7 +563,7 @@ if(myProc==0) call MCT_GGrid_send(POPGrid,coupler_id,2800,ierr)
 	     integratedOinputAV%rAttr(i,1)
      end do
   endif
-  
+
   call MCT_AtrVt_clean(integratedOinputAV)
 
   ! simple unmasked average case:
@@ -597,7 +597,7 @@ endif
 
   call GGrid_test(dPOPGrid,"POP::dPOPGrid",3500+myProc)
 
-  ! Fill the Ocean's output with test values: 
+  ! Fill the Ocean's output with test values:
   ! the first attribute will be constant, while
   ! the rest will contain interolated values from OinputAV
   call AttrVect_copy(aVin=OinputAV,aVout=OoutputAV, &

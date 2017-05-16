@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <!-- definition of attributes -->
+  <xs:attribute name="name" type="xs:string"/>
+  <xs:attribute name="compiler" type="xs:string"/>
+  <xs:attribute name="testtype" type="xs:string"/>
+  <xs:attribute name="testmods" type="xs:string"/>
+
+  <!-- definition of complex elements -->
+  <xs:element name="machine">
+    <xs:complexType>
+      <xs:simpleContent>
+	<xs:extension base="xs:string">
+	  <xs:attribute ref="compiler" use="required"/>
+	  <xs:attribute ref="testtype" use="required"/>
+	  <xs:attribute ref="testmods" use="required"/>
+	</xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="test">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element ref="machine" minOccurs="1" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="grid">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element ref="test" minOccurs="1" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="compset">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element ref="grid" minOccurs="1" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="testlist">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element ref="compset" minOccurs="1" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

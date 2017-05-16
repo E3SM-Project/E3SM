@@ -7,7 +7,7 @@ setenv cesmsrc /global/u1/m/mickelso/cesm1_3_alpha04b/
 setenv res ne30_g16
 setenv compset B1850C5
 setenv mach edison_intel
-setenv casedir $SCRATCH/tests/cesm_timing_tests/B1850C5.ne30_g16/
+setenv casedir $SCRATCH/tests/timing_tests/B1850C5.ne30_g16/
 setenv casestr  _B1850C5_ne30_g16__
 setenv run_len 10
 

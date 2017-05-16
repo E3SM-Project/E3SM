@@ -207,7 +207,7 @@ OPTIONS
   Options for surface components used in standalone CAM mode:
 
      -ice <name>        Build CAM with sea ice model [cice | sice | none ]. Default: cice.
-     -ocn <name>        Build CAM with ocean model [docn | dom | socn | aquaplanet | pop | mpas-o]. Default: docn.
+     -ocn <name>        Build CAM with ocean model [docn | dom | socn | aquaplanet | pop | mpaso]. Default: docn.
      -lnd <name>        Build CAM with land model [clm | slnd | none]. Default: clm.
      -rof <name>        Build CAM with runoff model [rtm | srof | none]. Default: rtm.
 

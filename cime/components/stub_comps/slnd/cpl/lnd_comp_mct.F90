@@ -43,7 +43,7 @@ CONTAINS
     type(ESMF_Clock)            , intent(inout) :: EClock
     type(seq_cdata)             , intent(inout) :: cdata
     type(mct_aVect)             , intent(inout) :: x2d, d2x
-    character(len=*), optional  , intent(in)    :: NLFilename 
+    character(len=*), optional  , intent(in)    :: NLFilename
 
 !EOP
 !-------------------------------------------------------------------------------
@@ -73,8 +73,8 @@ subroutine lnd_run_mct( EClock, cdata, x2d, d2x)
 
    type(ESMF_Clock)            ,intent(inout) :: EClock
    type(seq_cdata)             ,intent(inout) :: cdata
-   type(mct_aVect)             ,intent(inout) :: x2d        
-   type(mct_aVect)             ,intent(inout) :: d2x        
+   type(mct_aVect)             ,intent(inout) :: x2d
+   type(mct_aVect)             ,intent(inout) :: d2x
 
 !EOP
 !-------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ end subroutine lnd_run_mct
 ! !IROUTINE: lnd_final_mct
 !
 ! !DESCRIPTION:
-!     stub lnd model finalize 
+!     stub lnd model finalize
 !
 ! !REVISION HISTORY:
 !
@@ -99,10 +99,10 @@ subroutine lnd_final_mct( EClock, cdata, x2d, d2x)
 
 ! !INPUT/OUTPUT PARAMETERS:
 
-    type(ESMF_Clock)            ,intent(inout) :: EClock     
+    type(ESMF_Clock)            ,intent(inout) :: EClock
     type(seq_cdata)             ,intent(inout) :: cdata
-    type(mct_aVect)             ,intent(inout) :: x2d        
-    type(mct_aVect)             ,intent(inout) :: d2x        
+    type(mct_aVect)             ,intent(inout) :: x2d
+    type(mct_aVect)             ,intent(inout) :: d2x
 
 !EOP
 !-------------------------------------------------------------------------------

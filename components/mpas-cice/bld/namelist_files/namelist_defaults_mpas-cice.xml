@@ -6,10 +6,13 @@
 <!-- cice_model -->
 <config_dt>1800.0</config_dt>
 <config_dt ice_grid="oQU240">7200.0</config_dt>
+<config_dt ice_grid="oQU240wLI">7200.0</config_dt>
 <config_dt ice_grid="oQU120">3600.0</config_dt>
 <config_dt ice_grid="mpas120">3600.0</config_dt>
 <config_dt ice_grid="oEC60to30">1800.0</config_dt>
+<config_dt ice_grid="oEC60to30wLI">1800.0</config_dt>
 <config_dt ice_grid="oRRS30to10">900.0</config_dt>
+<config_dt ice_grid="oRRS30to10wLI">900.0</config_dt>
 <config_dt ice_grid="oRRS18to6">900.0</config_dt>
 <config_dt ice_grid="oRRS15to5">900.0</config_dt>
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
@@ -91,6 +94,8 @@
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
 <config_stress_divergence_scheme>'variational'</config_stress_divergence_scheme>
 <config_variational_basis>'wachspress'</config_variational_basis>
+<config_wachspress_integration_type>'dunavant'</config_wachspress_integration_type>
+<config_wachspress_integration_order>8</config_wachspress_integration_order>
 <config_revised_evp>false</config_revised_evp>
 <config_use_air_stress>true</config_use_air_stress>
 <config_use_ocean_stress>true</config_use_ocean_stress>

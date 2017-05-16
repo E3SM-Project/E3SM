@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 
 use strict;
 
@@ -47,7 +47,7 @@ only matched variables.
                  type="button">
           <br>
           <label>
-            <input id="logical_operator_and" name="logical_operator" value="AND" 
+            <input id="logical_operator_and" name="logical_operator" value="AND"
                    type="radio" checked> AND
           </label>
           <label>
@@ -72,10 +72,10 @@ only matched variables.
 <p>
 
 <center>
-<input id="btn_expand_help" value="Show All Help Text" 
+<input id="btn_expand_help" value="Show All Help Text"
        onclick="expandAllHelp();return false;"
        type="button">
-<input id="btn_collapse_help" value="Collapse All Help Text" 
+<input id="btn_collapse_help" value="Collapse All Help Text"
        onclick="collapseAllHelp();return false;"
        type="button">
 </center>
@@ -102,7 +102,7 @@ foreach my $k (@nldef_cats) {
 # in the %cat_heading hash (order is not important in the hash definition).
 
 my @categories = qw/
-setup    
+setup
 grid
 decomp
 parameterizations
@@ -122,7 +122,7 @@ my %cat_heading = (
     'swrad'             => 'CICE:  Short Wave Radiation Settings',
     'tracers'           => 'CICE:  Tracer Settings',
     'icepresc'          => 'CICE:  Prescribed Ice  Settings (F compset only)',
-    'history'           => 'CICE:  History Output Fields Settings', 
+    'history'           => 'CICE:  History Output Fields Settings',
     );
 
 foreach my $cat (@categories) {

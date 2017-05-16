@@ -8,15 +8,18 @@ if ($#ARGV == -1) {
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my $CIMEROOT            = `./xmlquery  CIMEROOT            -value`;
+my $CIMEROOT        = `./xmlquery  CIMEROOT             -value`;
 my $CASEROOT        = `./xmlquery  CASEROOT		-value`;
 my $CASEBUILD       = `./xmlquery  CASEBUILD		-value`;
-my $SRCROOT        = `./xmlquery  SRCROOT		-value`;
+my $COMPSET         = `./xmlquery  CCSM_COMPSET         -value`;
+my $SRCROOT         = `./xmlquery  SRCROOT              -value`;
 my $OBJROOT         = `./xmlquery  OBJROOT		-value`;
 my $SCRIPTSROOT	    = `./xmlquery  SCRIPTSROOT		-value`;
 my $COMP_INTERFACE  = `./xmlquery  COMP_INTERFACE	-value`;
 my $DIN_LOC_ROOT    = `./xmlquery  DIN_LOC_ROOT		-value`;
 my $ICE_GRID        = `./xmlquery  ICE_GRID		-value`;
+my $ICE_MASK        = `./xmlquery  MASK_GRID            -value`;
+my $IC_MODE         = `./xmlquery  MPASCICE_IC_MODE     -value`;
 my $NTASKS_ICE      = `./xmlquery  NTASKS_ICE		-value`;
 #my $NINST_ICE       = `./xmlquery  NINST_ICE		-value`;
 my $NINST_ICE       = 1; # Change if you want multiple instances... though this isn't coded yet.
@@ -40,31 +43,58 @@ if (! -d "$CASEBUILD/mpas-ciceconf" ) {
 
 my $grid_date = '';
 my $grid_prefix = '';
+my $decomp_date = '';
 my $decomp_prefix = '';
 
 if ( $ICE_GRID eq 'oEC60to30' ) {
 	$grid_date .= '151020';
 	$grid_prefix .= 'cice.EC60to30km';
+	$decomp_date .= '151020';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
+} elsif ( $ICE_GRID eq 'oEC60to30_ICG' ) {
+        $grid_date .= '160827';
+	$grid_prefix .= 'cice.EC60to30km.restartFrom_eos1b';
+	$decomp_date .= '151020';
+	$decomp_prefix .= 'mpas-cice.graph.info.';
+} elsif ( $ICE_GRID eq 'oEC60to30wLI' ) {
+        $grid_date .= '160830';
+        $grid_prefix .= 'cice.EC60to30wLI';
+        $decomp_date .= '160830';
+        $decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'mpas120' ) {
 	$grid_date .= '121116';
 	$grid_prefix .= 'cice120km';
+	$decomp_date .= '121116';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oQU120' ) {
 	$grid_date .= '151209';
 	$grid_prefix .= 'seaice.oQU120km';
+	$decomp_date .= '151209';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oQU240' ) {
 	$grid_date .= '151209';
 	$grid_prefix .= 'seaice.oQU240km';
+	$decomp_date .= '151209';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
+} elsif ( $ICE_GRID eq 'oQU240wLI' ) {
+        $grid_date .= '160929';
+        $grid_prefix .= 'cice.QU240wLI';
+        $decomp_date .= '160929';
+        $decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'mpasgx1' ) {
 	$grid_date .= '121116';
 	$grid_prefix .= 'grid_gx1';
+	$decomp_date .= '121116';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS30to10' ) {
         $grid_date .= '151031';
         $grid_prefix .= 'seaice.RRS.30-10km';
+        $decomp_date .= '151031';
+        $decomp_prefix .= 'mpas-cice.graph.info.';
+} elsif ( $ICE_GRID eq 'oRRS30to10wLI' ) {
+        $grid_date .= '160930';
+        $grid_prefix .= 'seaice.RRS30-10wLI';
+        $decomp_date .= '160930';
         $decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS18to6' ) {
         $grid_date .= '160830';
@@ -73,6 +103,7 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 } elsif ( $ICE_GRID eq 'oRRS15to5' ) {
         $grid_date .= '151209';
         $grid_prefix .= 'seaice.RRS.15to5km';
+        $decomp_date .= '151209';
         $decomp_prefix .= 'mpas-cice.graph.info.';
 }
 
@@ -83,9 +114,9 @@ chdir "$CASEBUILD/mpas-ciceconf";
 #--------------------------------------------------------------------
 
 open(my $input_list, "+>", "$CASEBUILD/mpas-cice.input_data_list");
-print $input_list "mesh = $DIN_LOC_ROOT/ice/mpas-cice/$ICE_GRID/$grid_prefix.$grid_date.nc\n";
+print $input_list "mesh = $DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc\n";
 #print $input_list "full_graph = $DIN_LOC_ROOT/ice/mpas-cice/$ICE_GRID/$decomp_prefix$grid_date\n";
-print $input_list "graph$NTASKS_ICE = $DIN_LOC_ROOT/ice/mpas-cice/$ICE_GRID/$decomp_prefix$grid_date.part.$NTASKS_ICE\n";
+print $input_list "graph$NTASKS_ICE = $DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$decomp_prefix$decomp_date.part.$NTASKS_ICE\n";
 close($input_list);
 
 #--------------------------------------------------------------------
@@ -117,7 +148,7 @@ while ($inst_counter <= $NINST_ICE) {
     # -----------------------------------------------------
 
     SetupTools::create_namelist_infile("$CASEROOT", 
-				       "$CASEROOT/user_nl_mpascice${inst_string}", 
+				       "$CASEROOT/user_nl_mpascice${inst_string}",
 				       "$CASEBUILD/mpas-ciceconf/cesm_namelist"); 
 
     # -----------------------------------------------------
@@ -140,8 +171,13 @@ while ($inst_counter <= $NINST_ICE) {
 	$sysmod .= " -casebuild $CASEBUILD";
 	$sysmod .= " -cimeroot $CIMEROOT";
 	$sysmod .= " -inst_string '$inst_string'";
-	$sysmod .= " -date_stamp '$grid_date'";
-	$sysmod .= " -ice_grid '$ICE_GRID'";
+	$sysmod .= " -date_stamp '$decomp_date'";
+	$sysmod .= " -ice_grid '$ICE_MASK'";
+	$sysmod .= " -ic_mode '$IC_MODE'";
+
+    # pass in ICE_MASK for now as a short-cut for the grid
+    # at some point, we may want to pass both -- but for now this is simpler
+    # also, pass in decomp_date for date_stamp, since that's the one required by the scripts
 
     system($sysmod) == 0 or die "ERROR mpas-cice.buildnml: $sysmod failed: $?\n";
 
@@ -180,8 +216,8 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '                  type="input"' . "\n";
 	print $stream_file '                  filename_interval="none"' . "\n";
 	print $stream_file "                  filename_template=" . '"' 
-						. "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_GRID/$grid_prefix.$grid_date.nc" 
-						 . '"' . "\n";
+						. "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc" 
+						. '"' . "\n";
 	print $stream_file '                  input_interval="initial_only" />' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file "<!--\n";
@@ -197,15 +233,27 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<immutable_stream name="restart"' . "\n";
 	print $stream_file '                  type="input;output"' . "\n";
-	print $stream_file '                  filename_template="rst.mpas-cice.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file '                  filename_template="mpascice.rst.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '                  filename_interval="output_interval"' . "\n";
 	print $stream_file '                  input_interval="initial_only"' . "\n";
 	print $stream_file '                  clobber_mode="replace_files"' . "\n";
 	print $stream_file '                  output_interval="00-00-00_00:00:01" />' . "\n";
 	print $stream_file '' . "\n";
+
+        if ( $IC_MODE eq 'spunup' ) {
+                print $stream_file '<immutable_stream name="restart_ic"' . "\n";
+                print $stream_file '                  type="input"' . "\n";
+                print $stream_file "                  filename_template=" . '"'
+                                                        . "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc"
+                                                        . '"' . "\n";
+                print $stream_file '                  filename_interval="none"' . "\n";
+                print $stream_file '                  input_interval="initial_only" />' . "\n";
+                print $stream_file '' . "\n";
+        }
+
 	print $stream_file '<stream name="output"' . "\n";
 	print $stream_file '        type="output"' . "\n";
-	print $stream_file '        filename_template="hist.mpas-cice.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="replace_files"' . "\n";
 	print $stream_file '        output_interval="none" >' . "\n";
@@ -216,7 +264,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '                  type="input"' . "\n";
 	print $stream_file '                  filename_template="forcing/atmosphere_forcing_six_hourly.$Y.nc"' . "\n";
 	print $stream_file '                  filename_interval="0001-00-00_00:00:00"' . "\n";
-	print $stream_file '		  reference_time="2000-01-01_03:00:00"' . "\n";
+	print $stream_file '                  reference_time="2000-01-01_03:00:00"' . "\n";
 	print $stream_file '                  input_interval="none" />' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<immutable_stream name="LYqMonthlyForcing"' . "\n";
@@ -240,10 +288,9 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="highFrequencyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
-	print $stream_file '        filename_template="am.mpas-cice.highFrequencyOutput.$Y-$M-$D.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.highFrequencyOutput.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="none"' . "\n";
-	print $stream_file '        reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="highFrequencyOutputAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -254,7 +301,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="regionalStatisticsOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
-	print $stream_file '        filename_template="am.mpas-cice.regionalStatistics.$Y.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.regionalStatistics.$Y.nc"' . "\n";
 	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-00_01:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
@@ -275,7 +322,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="conservationCheckOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
-	print $stream_file '        filename_template="am.mpas-cice.conservationCheck.$Y.nc"' . "\n";
+	print $stream_file '        filename_template="mpascicehist.am.conservationCheck.$Y.nc"' . "\n";
 	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
@@ -287,26 +334,28 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '	<var name="finalEnergy"/>' . "\n";
 	print $stream_file '	<var name="energyChange"/>' . "\n";
 	print $stream_file '	<var name="netEnergyFlux"/>' . "\n";
-	print $stream_file '	<var name="energyError"/>' . "\n";
+	print $stream_file '	<var name="absoluteEnergyError"/>' . "\n";
+	print $stream_file '	<var name="relativeEnergyError"/>' . "\n";
 	print $stream_file '	<var name="initialMass"/>' . "\n";
 	print $stream_file '	<var name="finalMass"/>' . "\n";
 	print $stream_file '	<var name="massChange"/>' . "\n";
 	print $stream_file '	<var name="netMassFlux"/>' . "\n";
-	print $stream_file '	<var name="massError"/>' . "\n";
+	print $stream_file '	<var name="absoluteMassError"/>' . "\n";
+	print $stream_file '	<var name="relativeMassError"/>' . "\n";
 	print $stream_file '	<var name="initialSalt"/>' . "\n";
 	print $stream_file '	<var name="finalSalt"/>' . "\n";
 	print $stream_file '	<var name="saltChange"/>' . "\n";
 	print $stream_file '	<var name="netSaltFlux"/>' . "\n";
-	print $stream_file '	<var name="saltError"/>' . "\n";
+	print $stream_file '	<var name="absoluteSaltError"/>' . "\n";
+	print $stream_file '	<var name="relativeSaltError"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="loadBalanceOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
-	print $stream_file '        filename_template="am.mpas-cice.cice_loadBalance.$Y.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.cice_loadBalance.$Y.nc"' . "\n";
 	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-00_01:00:00"' . "\n";
-	print $stream_file '        reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="loadBalanceAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -317,10 +366,9 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="maximumIcePresenceOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
-	print $stream_file '        filename_template="am.mpas-cice.cice_maximumIcePresence.$Y.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.cice_maximumIcePresence.$Y.nc"' . "\n";
 	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="01-00-00_00:00:00"' . "\n";
-	print $stream_file '        reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="maximumIcePresenceAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -331,17 +379,16 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeSeriesStatsDailyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
-	print $stream_file '        filename_template="am.mpas-cice.timeSeriesStatsDaily.$Y-$M-$D.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.timeSeriesStatsDaily.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
-	print $stream_file '        reference_time="00-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsDailyAMPKG">' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeSeriesStatsDailyRestart"' . "\n";
 	print $stream_file '        type="input;output"' . "\n";
-	print $stream_file '        filename_template="am.rst.mpas-cice.timeSeriesStatsDaily.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.rst.am.timeSeriesStatsDaily.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '        filename_interval="output_interval"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsDailyAMPKG"' . "\n";
@@ -351,10 +398,9 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeSeriesStatsMonthlyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
-	print $stream_file '        filename_template="am.mpas-cice.timeSeriesStatsMonthly.$Y-$M-$D.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
-	print $stream_file '        reference_time="00-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsMonthlyAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -387,8 +433,8 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '	<var name="icePressure"/>' . "\n";
 	print $stream_file '	<var name="divergence"/>' . "\n";
 	print $stream_file '	<var name="shear"/>' . "\n";
-	print $stream_file '	<var name="principalStress1"/>' . "\n";
-	print $stream_file '	<var name="principalStress2"/>' . "\n";
+	print $stream_file '	<var name="principalStress1Var"/>' . "\n";
+	print $stream_file '	<var name="principalStress2Var"/>' . "\n";
 	print $stream_file '	<var name="iceVolumeTendencyThermodynamics"/>' . "\n";
 	print $stream_file '	<var name="iceVolumeTendencyTransport"/>' . "\n";
 	print $stream_file '	<var name="iceAreaTendencyThermodynamics"/>' . "\n";
@@ -415,7 +461,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeSeriesStatsMonthlyRestart"' . "\n";
 	print $stream_file '        type="input;output"' . "\n";
-	print $stream_file '        filename_template="am.rst.mpas-cice.timeSeriesStatsMonthly.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.rst.am.timeSeriesStatsMonthly.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '        filename_interval="output_interval"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsMonthlyAMPKG"' . "\n";
@@ -425,7 +471,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeSeriesStatsClimatologyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
-	print $stream_file '        filename_template="am.mpas-cice.timeSeriesStatsClimatology.$Y.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.hist.am.timeSeriesStatsClimatology.$Y.nc"' . "\n";
 	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsClimatologyAMPKG"' . "\n";
@@ -439,7 +485,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeSeriesStatsClimatologyRestart"' . "\n";
 	print $stream_file '        type="input;output"' . "\n";
-	print $stream_file '        filename_template="am.rst.mpas-cice.timeSeriesStatsClimatology.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file '        filename_template="mpascice.rst.am.timeSeriesStatsClimatology.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '        filename_interval="output_interval"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsClimatologyAMPKG"' . "\n";
@@ -447,6 +493,16 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
+        print $stream_file '<stream name="landIceMasks"' . "\n";
+        print $stream_file '       type="input"' . "\n";
+        print $stream_file '       input_interval="initial_only"' . "\n";
+        print $stream_file "       filename_template=" . '"'
+                                                . "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc"
+                                                . '">' . "\n";
+        print $stream_file '' . "\n";
+        print $stream_file '       <var name="landIceMask"/>' . "\n";
+        print $stream_file '</stream>' . "\n";
+        print $stream_file '' . "\n";
 	print $stream_file '</streams>' . "\n";
 
 }

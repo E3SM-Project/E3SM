@@ -1,63 +1,48 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python
+"""
+This script compares xml files
+"""
 
-use strict;
-use Cwd;
-use English;
-use Getopt::Long;
-use File::Basename;
-use IO::File;
-use IO::Handle;
+from standard_script_setup import *
+from CIME.check_lockedfiles import check_lockedfiles
 
-sub usage {
-    die <<'EOF';
+def parse_command_line(args, description):
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [--verbose]
+OR
+%s --help
+OR
+%s --test
 
-SYNOPSIS 
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# check_lockedfiles SMS\033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
 
-  check_lockedfiles [options]
+        description=description,
 
-  checks that any files in the $CASEROOT/LockedFiles directory
-  match those in the $CASEROOT directory 
-  (assumes that this utility exists in $CASEROOT/Tools)
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
-OPTIONS
+    CIME.utils.setup_standard_logging_options(parser)
 
-  -help [or -h]  Print usage to STDOUT (optional).
+    parser.add_argument("--caseroot", default=os.getcwd(),
+                        help="Case directory to build")
 
-EOF
-} 
+    args = parser.parse_args(args[1:])
 
-my %opts = ( );
+    CIME.utils.handle_standard_logging_options(args)
 
-GetOptions(
-    "h|help"  => \$opts{'help'},
-    )  or usage();
+    return args.caseroot
 
-# Give usage message.
-usage() if $opts{'help'};
+def _main_func(description):
+    if "--test" in sys.argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
-`./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 0`;
+    caseroot = parse_command_line(sys.argv, description)
 
-my @lockedfiles = glob ("./LockedFiles/*");
-foreach my $lockedfile (@lockedfiles) {
-    my $file = basename("$lockedfile");
-    $file =~ m/(.*)(\.locked)/;
-    $file = $1;
-    if (!-f $file) {
-	die "Locked file $file cannot be found";
-    }
-    my $sysmod = "cmp -s $lockedfile $file ";
-    if (system($sysmod) != 0) {
-	print "$file has been modified and is different than the LockedFiles version \n";
-	if ($file =~ /env_build/ ) {
-	    print "setting BUILD_COMPLETE to FALSE \n";
-	    `./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE`;
-	    `./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 1`;
-	} elsif ($file =~ /.*env_mach_pes.*/) {
-	    die "Invoke cesm_setup -clean followed by cesm_setup \n";
-	} else {
-	    die "Cannot change $file, please recover the original copy from LockedFiles \n";
-	}
-    }
-}
+    check_lockedfiles(caseroot)
 
-exit (0);
+if __name__ == "__main__":
+    _main_func(__doc__)

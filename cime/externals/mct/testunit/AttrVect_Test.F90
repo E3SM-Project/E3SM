@@ -100,7 +100,7 @@ integer returnedLength
 
 type(AttrVect) :: av
 
-length = 3 
+length = 3
 
 ! initialize vector
 call MCT_AtrVt_init(av,iList="lat:lon:time",lsize=length)
@@ -127,7 +127,7 @@ end subroutine
 !#
 !####################################
 subroutine testAttrVect_clean(mypid,AVui)
- 
+
 use m_AttrVect,only    : MCT_AtrVt_init => init
 use m_AttrVect,only    : MCT_AtrVt_clean => clean
 use m_AttrVect,only    : MCT_AtrVt_lsize => lsize
@@ -153,7 +153,7 @@ call MCT_AtrVt_clean(av, ier)
 if(MCT_AtrVt_lsize(av) == 0 .AND. ier == 0) then
   if(mypid .eq. 0) call outputTestStatus(AVui,"AttrVect_clean",1,"PASS")
 else
-  if(mypid .eq. 0) call outputTestStatus(AVui,"AttrVect_clean",1,"FAIL") 
+  if(mypid .eq. 0) call outputTestStatus(AVui,"AttrVect_clean",1,"FAIL")
   result = 1
 endif
 
@@ -171,7 +171,7 @@ if (result == 0)then
 else
   if(mypid .eq. 0) call outputRoutineStatus(AVui,"AttrVect_clean","FAIL")
 endif
-end subroutine 
+end subroutine
 
 !####################################
 !#
@@ -240,7 +240,7 @@ end subroutine
 subroutine testAttrVect_zero(mypid,AVui)
 
 use m_AttrVect,only    : MCT_AtrVt_init => init
-use m_AttrVect,only    : MCT_AtrVt_zero => zero 
+use m_AttrVect,only    : MCT_AtrVt_zero => zero
 use m_AttrVect,only    : MCT_AtrVt_clean => clean
 use m_AttrVect,only    : MCT_AtrVt_lsize => lsize
 use m_AttrVect
@@ -255,7 +255,7 @@ integer result, localResult
 
 type(AttrVect) :: av
 
-integer i,x,y,totalSize 
+integer i,x,y,totalSize
 
 integer intSize,realSize,listTotal
 
@@ -279,7 +279,7 @@ call MCT_AtrVt_zero(av)
 do x=1,listTotal
 do y=1,totalSize
 if(av%iAttr(x,y) /= 0 .OR. av%rAttr(x,y) /= 0._FP)then
-  localResult = 1 
+  localResult = 1
 endif
 enddo
 enddo
@@ -389,7 +389,7 @@ subroutine testAttrVect_nIAttr(mypid,AVui)
 
 use m_AttrVect,only    : MCT_AtrVt_init => init
 use m_AttrVect,only    : MCT_AtrVt_clean => clean
-use m_AttrVect,only    : MCT_AtrVt_nIAttr => nIAttr 
+use m_AttrVect,only    : MCT_AtrVt_nIAttr => nIAttr
 use m_AttrVect
 
 implicit none
@@ -415,7 +415,7 @@ if (argLength == returnedLength) then
 else
   if(mypid .eq. 0) call outputTestStatus(AVui,"AttrVect_nIAttr",1,"FAIL")
   if(mypid .eq. 0) call outputRoutineStatus(AVui,"AttrVect_nIAttr","FAIL")
-endif 
+endif
 
 call MCT_AtrVt_clean(av)
 
@@ -472,7 +472,7 @@ subroutine testAttrVect_indexIA(mypid,AVui)
 
 use m_AttrVect,only    : MCT_AtrVt_init => init
 use m_AttrVect,only    : MCT_AtrVt_clean => clean
-use m_AttrVect,only    : MCT_AtrVt_indexIA => indexIA 
+use m_AttrVect,only    : MCT_AtrVt_indexIA => indexIA
 use m_AttrVect
 
 implicit none
@@ -500,7 +500,7 @@ index = 3 !This must match the location of 'var' in above line
 call MCT_AtrVt_init(av,iList=variables,lsize=length)
 
 indexFound = MCT_AtrVt_indexIA(av,var)
-if(index == indexFound) then 
+if(index == indexFound) then
   if(mypid .eq. 0) call outputTestStatus(AVui,"AttrVect_indexIA",1,"PASS")
 else
   if(mypid .eq. 0) call outputTestStatus(AVui,"AttrVect_indexIA",1,"FAIL")
@@ -637,7 +637,7 @@ else
 endif
 
 call MCT_AtrVt_clean(av)
- 
+
 end subroutine
 
 !####################################
@@ -652,7 +652,7 @@ use m_AttrVect,only    : MCT_AtrVt_clean => clean
 use m_AttrVect,only    : MCT_AtrVt_getIList => getIList
 use m_AttrVect
 use m_String,only      : String
-use m_String,only      : ptr_chars 
+use m_String,only      : ptr_chars
 
 implicit none
 
@@ -683,7 +683,7 @@ write(temp1,*)ptr_chars(returnVar)
 if (verify(temp1,var)==0) then
    if(mypid .eq. 0) call outputTestStatus(AVui,"AttrVect_getIList",1,"PASS")
 else
-  if(mypid .eq. 0) call outputTestStatus(AVui,"AttrVect_getIList",1,"FAIL") 
+  if(mypid .eq. 0) call outputTestStatus(AVui,"AttrVect_getIList",1,"FAIL")
   result = 1
 endif
 
@@ -766,7 +766,7 @@ use m_AttrVect,only    : MCT_AtrVt_init => init
 use m_AttrVect,only    : MCT_AtrVt_clean => clean
 use m_AttrVect,only    : MCT_AtrVt_exportIList => exportIList
 use m_AttrVect
-use m_List,only        : List 
+use m_List,only        : List
 
 implicit none
 
@@ -781,7 +781,7 @@ type(AttrVect) :: av
 
 type(List) vList
 
-length = 32 
+length = 32
 write(variables,*) "lat:lon:time"
 
 ! initialize vector
@@ -790,7 +790,7 @@ call MCT_AtrVt_init(av,iList=variables,lsize=length)
 call MCT_AtrVt_exportIList(av,vList,result)
 
 if (result == 0) then
-  if(mypid .eq. 0) call outputTestStatus(AVui,"AttrVect_exportIList",1,"PASS")  
+  if(mypid .eq. 0) call outputTestStatus(AVui,"AttrVect_exportIList",1,"PASS")
   if(mypid .eq. 0) call outputRoutineStatus(AVui,"AttrVect_exportIList","PASS")
 else
   if(mypid .eq. 0) call outputTestStatus(AVui,"AttrVect_exportIList",1,"FAIL")
@@ -955,7 +955,7 @@ subroutine testAttrVect_appendIAttr(mypid,AVui)
 
 use m_AttrVect,only    : MCT_AtrVt_init => init
 use m_AttrVect,only    : MCT_AtrVt_clean => clean
-use m_AttrVect,only    : MCT_AtrVt_appendIAttr => appendIAttr 
+use m_AttrVect,only    : MCT_AtrVt_appendIAttr => appendIAttr
 use m_AttrVect
 
 implicit none
@@ -1126,7 +1126,7 @@ else
   result = 1
 endif
 
-!!! bug? --> call MCT_AtrVt_exportIAttr(av, AttrTag="foo",outVect=out, perrWith="quiet") 
+!!! bug? --> call MCT_AtrVt_exportIAttr(av, AttrTag="foo",outVect=out, perrWith="quiet")
 if (result == 0) then
   if(mypid .eq. 0) call outputRoutineStatus(AVui,"AttrVect_exportIAttr","PASS")
 else
@@ -1262,7 +1262,7 @@ keyVar="date"
 variables="lat:lon:"//keyVar
 
 i=4
-importVect = i 
+importVect = i
 importVectP => importVect
 
 call MCT_AtrVt_init(av,iList=variables,lsize=length)
@@ -1311,7 +1311,7 @@ endif
 
 call MCT_AtrVt_clean(av)
 
-end subroutine 
+end subroutine
 
 
 !####################################

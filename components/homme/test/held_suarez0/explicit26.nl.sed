@@ -6,7 +6,6 @@ test_case     = "held_suarez0"
 ne            = NE
 ndays         = 400
 statefreq     = SFREQ
-tracer_advection_formulation = 1
 tstep_type    = 1
 qsize         = 1
 ftype         = 0 

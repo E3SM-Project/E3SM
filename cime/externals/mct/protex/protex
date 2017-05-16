@@ -7,12 +7,12 @@
 #         protex [-hbACFS] ] [+-nlsxf] [src_file(s)]
 #
 # !DESCRIPTION:
-#         Perl filter to produce a \LaTeX compatible document 
-#         from a DAO Fortran source code with standard Pro\TeX 
+#         Perl filter to produce a \LaTeX compatible document
+#         from a DAO Fortran source code with standard Pro\TeX
 #         prologues. If source files are not specified it
 #         reads from stdin; output is always to stdout.
-# 
-# \noindent        
+#
+# \noindent
 # {\bf Command Line Switches:} \vspace{0.2cm}
 #
 # \begin{center}
@@ -49,10 +49,10 @@
 #         For a more detailed description of ProTeX functionality,
 #         DAO Prologue and other conventions, consult:
 #
-#           Sawyer, W., and A. da Silva, 1997: ProTeX: A Sample 
+#           Sawyer, W., and A. da Silva, 1997: ProTeX: A Sample
 #           Fortran 90 Source Code Documentation System.
 #           DAO Office Note 97-11
-#         
+#
 #
 # !REVISION HISTORY:
 #
@@ -66,7 +66,7 @@
 #  05Aug1998  Sawyer    Fixed LPChang-bug-support-for-files-with-underscores
 #  10Oct1998  da Silva  Introduced -f option for removing source file info
 #                       from subsection, etc.  Added help (WS).
-#  06Dec1999  C. Redder Added LaTeX command "\label{sec:prologues}" just 
+#  06Dec1999  C. Redder Added LaTeX command "\label{sec:prologues}" just
 #                       after the beginning of the proglogue section.
 #  13Dec1999  C. Redder Increased flexbility in command-line
 #                       interface.  The options can appear in any
@@ -92,7 +92,7 @@
 # -----------------------
   $GlobOptions = 'hb';    # Global options (i.e for all files)
   $LangOptions = 'ACFS';  # Options for setting programming languages
-  $SwOptions   = 'flnsx'; # Options that can change for each input 
+  $SwOptions   = 'flnsx'; # Options that can change for each input
                           #   file
   $RegOptions  = "$GlobOptions$LangOptions";
                           # Scan for global options until first first
@@ -115,7 +115,7 @@ Arg:
 # If all inut arguments are options, then assume the
 # filename, "-", for the standard input
 # --------------------------------------------------
-  if ( $NFiles == 0 ) { push (@ARGV, "-"); } 
+  if ( $NFiles == 0 ) { push (@ARGV, "-"); }
 
 # Implement help option
 # ---------------------
@@ -203,7 +203,7 @@ ARG:
 }#   end if
 
      if ( $opt_C ) {
-        $comment_string = '//'; # C 
+        $comment_string = '//'; # C
         $boi_string = '//BOI';  # -
         $eoi_string = '//EOI';
         $bop_string = '//BOP';
@@ -358,7 +358,7 @@ LINE:
 
 #       A new subroutine/function
 #       -------------------------
-        if ($Fld[2] eq '!ROUTINE:' ) { 
+        if ($Fld[2] eq '!ROUTINE:' ) {
            if ($prologue) {
               shift @Fld;
               shift @Fld;
@@ -376,7 +376,7 @@ LINE:
 
 #       A new Module
 #       ------------
-        if ($Fld[2] eq '!MODULE:' ) { 
+        if ($Fld[2] eq '!MODULE:' ) {
            if ($prologue) {
               shift @Fld;
               shift @Fld;
@@ -395,7 +395,7 @@ LINE:
 
 #       A new include file
 #       ------------------
-        if ($Fld[2] eq '!INCLUDE:' ) { 
+        if ($Fld[2] eq '!INCLUDE:' ) {
            if ($prologue) {
               shift @Fld;
               shift @Fld;
@@ -404,14 +404,14 @@ LINE:
               s/_/\\_/g;                         # Replace "_" with "\_"
               if ( $opt_n && $not_first ) { printf "\\newpage\n"; }
               unless($opt_f) {printf "\\subsection{Include File %s (Source File: %s)}\n\n", $_, $FileBaseName;}
-              else           {printf "\\subsection{Include File %s }\n\n", $_;}  
+              else           {printf "\\subsection{Include File %s }\n\n", $_;}
               $have_name = 1;
               $have_intf = 1;  # fake it, it does not need one.
               $not_first = 1;
               next LINE;
 }#         end if
 }#      end if
- 
+
 #       A new INTERNAL subroutine/function
 #       ----------------------------------
         if ($Fld[2] eq '!IROUTINE:') {            # Internal routine
@@ -524,12 +524,12 @@ KEY:       foreach $key ( @keys ) {
               next LINE;
 }#         end if
 }#      end unless
-   
+
 #   Prologue or Introduction, print regular line (except for !)
 #   -----------------------------------------------------------
     if ($prologue||$intro) {
         if ( $verb && $#Fld == 1 && ( $Fld[1] eq $comment_string ) ) {
-           next LINE;                # to eliminate excessive blanks 
+           next LINE;                # to eliminate excessive blanks
 }#      end if
         if ( $Fld[2] eq "\\ev" ) {   # special handling
            $_ = $comment_string . " \\end{verbatim}";
@@ -557,7 +557,7 @@ KEY:       foreach $key ( @keys ) {
 }# end main loop for each command-line argument
  # --------------------------------------------
   print $_;
-  if ( $source ) { &do_eoc(); }     
+  if ( $source ) { &do_eoc(); }
   print '%...............................................................';
 
   unless ( $opt_b ) {
@@ -594,7 +594,7 @@ KEY:       foreach $key ( @keys ) {
 #                               not recognized as a list of options
 #                            =  0 if all options are valid.
 #                            >  0 for the number of invalid options.
-# 
+#
 {    local($options,
            $valid_reg_options,
            $valid_sw_options,
@@ -618,11 +618,11 @@ KEY:       foreach $key ( @keys ) {
                             . $valid_sw_options; }
            else
               { $valid_list = $valid_sw_options; }
-           $pos = index ($valid_list,$option); 
+           $pos = index ($valid_list,$option);
            if ( $pos < $[ &&
                 $quiet_mode ) {
               $errs++;
-              print STDERR "Invalid option: $option_sign$option \n"; 
+              print STDERR "Invalid option: $option_sign$option \n";
 
 }#         end if
 }#      end if
@@ -649,7 +649,7 @@ KEY:       foreach $key ( @keys ) {
 #                            = -1 if the arguement, options, is
 #                               not recognized as a list of options.
 #                            =  0 otherwise
-# 
+#
 {    local($options,$valid_options) = @_;
 
      if ( $options eq "+" ||
@@ -699,10 +699,10 @@ KEY:       foreach $key ( @keys ) {
 #                               not recognized as a list of options.
 #                            =  0 otherwise
 #       Note: For the examples provided for the input arguments,
-#             $opt_d = 0, $opt_e = 0, and $opt_f = 1, since the 
+#             $opt_d = 0, $opt_e = 0, and $opt_f = 1, since the
 #             input option, -f, was the last in the argument,
 #             option.
-# 
+#
 {    local($options,$valid_options) = @_;
 
      if ( $options eq "+" ||
@@ -738,7 +738,7 @@ sub print_help {
     print " ";
     print " Options:";
     print "     -h   Help mode: list command line options";
-    print "     -b   Bare mode, meaning no preamble, etc."; 
+    print "     -b   Bare mode, meaning no preamble, etc.";
     print "     +-n  New Page for each subsection (wastes paper)";
     print "     +-l  Listing mode, default is prologues only";
     print "     +-s  Shut-up mode, i.e., ignore any code from BOC to EOC";
@@ -753,7 +753,7 @@ sub print_help {
     print "  affect the input from all files listed on command-line input.";
     print "  Each of the remaining options effects only the input from the";
     print "  files listed after the option and prior to any overriding";
-    print "  option.  The plus sign turns off the option."; 
+    print "  option.  The plus sign turns off the option.";
 }# end sub print_help
 
 sub print_notice {
@@ -861,19 +861,19 @@ sub set_missing {
 
 }# end sub set_missing
 
-    
+
 sub check_if_all_there {
 
-$have_name || 
+$have_name ||
 die "ProTeX: invalid prologue, missing !ROUTINE: or !IROUTINE: in <$name_is>";
 
-$have_desc || 
+$have_desc ||
 die "ProTeX: invalid prologue, missing !DESCRIPTION: in <$name_is>";
 
-$have_intf || 
+$have_intf ||
 die "ProTeX: invalid prologue, missing !INTERFACE: in <$name_is>";
 
-$have_hist || 
+$have_hist ||
 die "ProTeX: invalid prologue, missing !REVISION HISTORY: in <$name_is>";
 
 }# end sub check_if_all_there

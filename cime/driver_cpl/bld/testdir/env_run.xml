@@ -1,0 +1,1269 @@
+<?xml version="1.0"?>
+<file id="env_run.xml">
+  <header>
+    These variables MAY BE CHANGED ANYTIME during a run.
+    Additional machine speific variables that can be changed
+    during a run are contained in the env_mach_specific file
+    Note1: users SHOULD NOT modify BUILD_COMPETE in env_build.xml
+    this is done automatically by the scripts.
+    </header>
+  <group id="run_desc">
+    <entry id="LOGDIR" value="$CASEROOT/logs">
+      <type>char</type>
+      <desc>Extra copies of the component log files will be saved here.</desc>
+    </entry>
+    <entry id="CASESTR" value="UNSET">
+      <type>char</type>
+      <desc>case description</desc>
+    </entry>
+    <entry id="RUNDIR" value="/glade/scratch/erik/$CASE/run">
+      <type>char</type>
+      <desc>
+      The directory where the executable will be run.
+      By default this is set to EXEROOT/../run.
+      RUNDIR allows you to keep the run directory separate from the build directory
+    </desc>
+    </entry>
+  </group>
+  <group id="run_begin_stop_restart">
+    <entry id="RUN_TYPE" value="startup">
+      <type>char</type>
+      <valid_values>startup,hybrid,branch</valid_values>
+      <desc>
+      Determines the model run initialization type.
+      This setting is only important for the initial run of a production run when the
+      CONTINUE_RUN variable is set to FALSE.  After the initial run, the CONTINUE_RUN
+      variable is set to TRUE, and the model restarts exactly using input
+      files in a case, date, and bit-for-bit continuous fashion.
+      Default: startup.
+      -- In a startup run (the default), all components are initialized
+      using baseline states.  These baseline states are set independently by
+      each component and can include the use of restart files, initial
+      files, external observed data files, or internal initialization (i.e.,
+      a cold start). In a startup run, the coupler sends the start date to
+      the components at initialization. In addition, the coupler does not
+      need an input data file.  In a startup initialization, the ocean model
+      does not start until the second ocean coupling (normally the second
+      day).
+      -- In a branch run, all components are initialized using a consistent
+      set of restart files from a previous run (determined by the
+      RUN_REFCASE and RUN_REFDATE variables in env_run.xml).  The case name
+      is generally changed for a branch run, although it does not have to
+      be. In a branch run, setting RUN_STARTDATE is ignored because the
+      model components obtain the start date from their restart datasets.
+      Therefore, the start date cannot be changed for a branch run. This is
+      the same mechanism that is used for performing a restart run (where
+      CONTINUE_RUN is set to TRUE in the env_run.xml) Branch runs are
+      typically used when sensitivity or parameter studies are required, or
+      when settings for history file output streams need to be modified
+      while still maintaining bit-for-bit reproducibility. Under this
+      scenario, the new case is able to produce an exact bit-for-bit restart
+      in the same manner as a continuation run IF no source code or
+      component namelist inputs are modified. All models use restart files
+      to perform this type of run.  RUN_REFCASE and RUN_REFDATE are required
+      for branch runs.
+      To set up a branch run, locate the restart tar file or restart
+      directory for RUN_REFCASE and RUN_REFDATE from a previous run, then
+      place those files in the RUNDIR directory.
+      --- In a hybrid run the model is initialized as a startup, BUT uses
+      initialization datasets FROM A PREVIOUS case.  This
+      is somewhat analogous to a branch run with relaxed restart
+      constraints.  A hybrid run allows users to bring together combinations
+      of initial/restart files from a previous case (specified by
+      RUN_REFCASE) at a given model output date (specified by
+      RUN_REFDATE). Unlike a branch run, the starting date of a hybrid run
+      (specified by RUN_STARTDATE) can be modified relative to the reference
+      case. In a hybrid run, the model does not continue in a bit-for-bit
+      fashion with respect to the reference case. The resulting climate,
+      however, should be continuous provided that no model source code or
+      namelists are changed in the hybrid run.  In a hybrid initialization,
+      the ocean model does not start until the second ocean coupling
+      (normally the second day), and the coupler does a cold start without
+      a restart file.
+    </desc>
+    </entry>
+    <entry id="RUN_REFDIR" value="ccsm4_init">
+      <type>char</type>
+      <desc>
+      Reference directory containing RUN_REFCASE data - used for hybrid or branch runs
+    </desc>
+    </entry>
+    <entry id="RUN_REFCASE" value="case.std">
+      <type>char</type>
+      <desc>
+      Reference case for hybrid or branch runs
+    </desc>
+    </entry>
+    <entry id="RUN_REFDATE" value="0001-01-01">
+      <type>char</type>
+      <desc>
+      Reference date for hybrid or branch runs (yyyy-mm-dd)
+    </desc>
+    </entry>
+    <entry id="RUN_REFTOD" value="00000">
+      <type>char</type>
+      <desc>
+      Reference time of day (seconds) for hybrid or branch runs (sssss)
+    </desc>
+    </entry>
+    <entry id="BRNCH_RETAIN_CASENAME" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>
+      Allow same branch casename as reference casename. Only used for branch runs.
+    </desc>
+    </entry>
+    <entry id="GET_REFCASE" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>
+      Flag for automatically prestaging the refcase restart dataset.
+      If TRUE, then the refcase data is prestaged into the executable directory
+    </desc>
+    </entry>
+    <entry id="RUN_STARTDATE" value="1938-01-01">
+      <type>char</type>
+      <desc>
+      Run start date (yyyy-mm-dd). Only used for startup or hybrid runs.
+    </desc>
+    </entry>
+    <entry id="START_TOD" value="0">
+      <type>integer</type>
+      <desc>
+      Run start time-of-day
+    </desc>
+    </entry>
+    <entry id="STOP_OPTION" value="nyears">
+      <type>char</type>
+      <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
+      <desc>
+      Sets the run length along with STOP_N and STOP_DATE (must be nyear(s) for _GLC compsets for restarts to work properly).
+    </desc>
+    </entry>
+    <entry id="STOP_N" value="8">
+      <type>integer</type>
+      <desc>
+      Provides a numerical count for $STOP_OPTION.
+    </desc>
+    </entry>
+    <entry id="STOP_DATE" value="-999">
+      <type>integer</type>
+      <desc>
+      Alternative date yyyymmdd date option, sets the run length with STOP_OPTION and STOP_N
+      negative value implies off
+    </desc>
+    </entry>
+    <entry id="REST_OPTION" value="$STOP_OPTION">
+      <type>char</type>
+      <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
+      <desc>
+      sets frequency of model restart writes (same options as STOP_OPTION) (must be nyear(s) for _GLC compsets)
+      (must be nyear(s) for _GLC compsets)
+    </desc>
+    </entry>
+    <entry id="REST_N" value="$STOP_N">
+      <type>integer</type>
+      <desc>
+      sets model restart writes with REST_OPTION and REST_DATE
+    </desc>
+    </entry>
+    <entry id="REST_DATE" value="$STOP_DATE">
+      <type>char</type>
+      <desc>
+      Alternative date in yyyymmdd format
+      sets model restart write date with REST_OPTION and REST_N
+    </desc>
+    </entry>
+    <entry id="BARRIER_OPTION" value="ndays">
+      <type>char</type>
+      <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
+      <desc>
+      sets frequency of full model barrier (same options as STOP_OPTION) for synchronization with BARRIER_N and BARRIER_DATE
+    </desc>
+    </entry>
+    <entry id="BARRIER_N" value="1">
+      <type>char</type>
+      <desc>
+      sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
+    </desc>
+    </entry>
+    <entry id="BARRIER_DATE" value="-999">
+      <type>char</type>
+      <desc>
+      Alternative date in yyyymmdd format
+      sets periodic model barriers with BARRIER_OPTION and BARRIER_N for synchronization
+    </desc>
+    </entry>
+    <entry id="CONTINUE_RUN" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>
+      A setting of TRUE implies a continuation run
+      When you first begin a branch, hybrid or startup run, CONTINUE_RUN
+      must be set to FALSE. When you successfully run and get a restart
+      file, you will need to change CONTINUE_RUN to TRUE for the remainder
+      of your run. This variable determines if the run is a restart run.
+      Set to FALSE when initializing a startup, branch or hybrid case.
+      Set to TRUE when continuing a run.
+    </desc>
+    </entry>
+    <entry id="RESUBMIT" value="0">
+      <type>integer</type>
+      <desc>If RESUBMIT is greater than 0, then case will automatically resubmit
+    Enables the model to automatically resubmit a new run.  To get
+    multiple runs, set RESUBMIT greater than 0, then RESUBMIT will be
+    decremented and the case will be resubmitted.  The case will stop automatically
+    resubmitting when the RESUBMIT value reaches 0.
+    Long runs can easily outstrip supercomputer queue time limits. For
+    this reason, a case is usually run as a series of jobs, each
+    restarting where the previous finished.
+    </desc>
+    </entry>
+    <entry id="RESUBMIT_SETS_CONTINUE_RUN" value="TRUE">
+      <type>logical</type>
+      <desc>This flag controls whether the RESUBMIT flag causes
+      CONTINUE_RUN to toggle from FALSE to TRUE.  The default is
+      TRUE.  This flag might be used in conjunction with COMP_RUN_BARRIERS for
+      timing tests.
+    </desc>
+    </entry>
+    <entry id="RUN_WITH_SUBMIT" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>Logical to determine whether CESM run has been submitted with the submit script or not</desc>
+    </entry>
+  </group>
+  <group id="run_data_archive">
+    <entry id="DOUT_S" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>Logical to turn on short term archiving.
+    If TRUE, short term archiving will be turned on.</desc>
+    </entry>
+    <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>Logical to archive all interim restart files, not just those at eor
+    If TRUE, perform short term archiving on all interim restart files,
+    not just those at the end of the run. By default, this value is FALSE.
+    The restart files are saved under the specific component directory
+    ($DOUT_S_ROOT/$CASE/$COMPONENT/rest rather than the top-level $DOUT_S_ROOT/$CASE/rest directory).
+    Interim restart files are created using the REST_N and REST_OPTION variables.
+    This is for expert users ONLY and requires expert knowledge.
+    We will not document this further in this guide.</desc>
+    </entry>
+    <entry id="DOUT_L_MS" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>If TRUE, perform long-term archiving on the output data.
+      logical to turn on long term archiving (if DOUT_S is also TRUE)</desc>
+    </entry>
+    <entry id="DOUT_L_HPSS_ACCNT" value="00000000">
+      <type>char</type>
+      <desc/>
+    </entry>
+  </group>
+  <group id="run_flags">
+    <entry id="CHECK_TIMING" value="TRUE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>logical to diagnose model timing at the end of the run</desc>
+    </entry>
+    <entry id="SAVE_TIMING" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>logical to save timing files in rundir</desc>
+    </entry>
+    <entry id="SAVE_TIMING_DIR" value="UNSET">
+      <type>char</type>
+      <valid_values/>
+      <desc>Where to auto archive timing data</desc>
+    </entry>
+    <entry id="TIMER_LEVEL" value="12">
+      <type>integer</type>
+      <desc>timer output depth</desc>
+    </entry>
+    <entry id="COMP_RUN_BARRIERS" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>Turns on component barriers for component timing.
+          This variable is for testing and debugging only and should never
+          be set for a production run.
+    </desc>
+    </entry>
+    <entry id="FLDS_WISO" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>Turn on the passing of water isotope fields through the coupler</desc>
+    </entry>
+    <entry id="DRV_THREADING" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>Turns on component varying thread control in the driver.
+    Used to set the driver namelist variable "drv_threading".</desc>
+    </entry>
+    <entry id="CPL_DECOMP" value="0">
+      <type>integer</type>
+      <valid_values>0,1,2,3,4,5,6</valid_values>
+      <desc>Coupler decomposition option.</desc>
+    </entry>
+    <entry id="BFBFLAG" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>turns on coupler bit-for-bit reproducibility with varying pe counts</desc>
+    </entry>
+    <entry id="INFO_DBUG" value="1">
+      <type>integer</type>
+      <valid_values>0,1,2,3</valid_values>
+      <desc>level of debug output, 0=minimum, 1=normal, 2=more, 3=too much</desc>
+    </entry>
+  </group>
+  <group id="run_cesm">
+    <entry id="PROFILE_PAPI_ENABLE" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>Enables the papi hardware counters in gptl
+    The papi library must be included in the build step for
+    this to work.</desc>
+    </entry>
+  </group>
+  <group id="run_domain">
+    <entry id="PTS_MODE" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>Operate on only a single point of the global grid  - DO NOT EDIT (for experts only)</desc>
+    </entry>
+    <entry id="PTS_LAT" value="-999.99">
+      <type>real</type>
+      <desc>Latitude to find nearest points for points mode (only used if PTS_MODE is TRUE)</desc>
+    </entry>
+    <entry id="PTS_LON" value="-999.99">
+      <type>real</type>
+      <desc>Longitude to find nearest points for points mode (only used if PTS_MODE is TRUE)</desc>
+    </entry>
+    <entry id="ATM_DOMAIN_FILE" value="domain.lnd.1x1pt-tropicAtl_test.111004.nc">
+      <type>char</type>
+      <desc>atm domain file</desc>
+    </entry>
+    <entry id="ATM_DOMAIN_PATH" value="$DIN_LOC_ROOT/share/domains/domain.clm">
+      <type>char</type>
+      <desc>path of atm domain file</desc>
+    </entry>
+    <entry id="LND_DOMAIN_FILE" value="domain.lnd.1x1pt-tropicAtl_test.111004.nc">
+      <type>char</type>
+      <desc>lnd domain file</desc>
+    </entry>
+    <entry id="LND_DOMAIN_PATH" value="$DIN_LOC_ROOT/share/domains/domain.clm">
+      <type>char</type>
+      <desc>path of lnd domain file</desc>
+    </entry>
+    <entry id="ROF_DOMAIN_FILE" value="UNSET">
+      <type>char</type>
+      <desc>rof domain file</desc>
+    </entry>
+    <entry id="ROF_DOMAIN_PATH" value="$DIN_LOC_ROOT/share/domains">
+      <type>char</type>
+      <desc>path of rof domain file</desc>
+    </entry>
+    <entry id="WAV_DOMAIN_FILE" value="UNSET">
+      <type>char</type>
+      <desc>wav domain file</desc>
+    </entry>
+    <entry id="WAV_DOMAIN_PATH" value="$DIN_LOC_ROOT/share/domains">
+      <type>char</type>
+      <desc>path of wav domain file</desc>
+    </entry>
+    <entry id="ICE_DOMAIN_FILE" value="UNSET">
+      <type>char</type>
+      <desc>ice domain file</desc>
+    </entry>
+    <entry id="ICE_DOMAIN_PATH" value="$DIN_LOC_ROOT/share/domains">
+      <type>char</type>
+      <desc>path of ice domain file</desc>
+    </entry>
+    <entry id="OCN_DOMAIN_FILE" value="UNSET">
+      <type>char</type>
+      <desc>ocn domain file</desc>
+    </entry>
+    <entry id="OCN_DOMAIN_PATH" value="$DIN_LOC_ROOT/share/domains">
+      <type>char</type>
+      <desc>path of ocn domain file</desc>
+    </entry>
+    <entry id="GLC_DOMAIN_FILE" value="UNSET">
+      <type>char</type>
+      <desc>glc domain file</desc>
+    </entry>
+    <entry id="GLC_DOMAIN_PATH" value="$DIN_LOC_ROOT/share/domains">
+      <type>char</type>
+      <desc>path of glc domain file</desc>
+    </entry>
+    <entry id="ATM2OCN_FMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>atm2ocn flux mapping file</desc>
+    </entry>
+    <entry id="ATM2OCN_FMAPTYPE" value="X">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>atm2ocn flux mapping file decomp type</desc>
+    </entry>
+    <entry id="ATM2OCN_SMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>atm2ocn state mapping file</desc>
+    </entry>
+    <entry id="ATM2OCN_SMAPTYPE" value="X">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>atm2ocn state mapping file decomp type</desc>
+    </entry>
+    <entry id="ATM2OCN_VMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>atm2ocn vector mapping file</desc>
+    </entry>
+    <entry id="ATM2OCN_VMAPTYPE" value="X">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>atm2ocn vector mapping file decomp type</desc>
+    </entry>
+    <entry id="ATM2LND_FMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>atm2lnd flux mapping file</desc>
+    </entry>
+    <entry id="ATM2LND_FMAPTYPE" value="X">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>atm2lnd flux mapping file decomp type</desc>
+    </entry>
+    <entry id="ATM2LND_SMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>atm2lnd state mapping file</desc>
+    </entry>
+    <entry id="ATM2LND_SMAPTYPE" value="X">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>atm2lnd state mapping file decomp type</desc>
+    </entry>
+    <entry id="ATM2WAV_SMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>atm2wav state mapping file</desc>
+    </entry>
+    <entry id="ATM2WAV_SMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>atm2wav state mapping file decomp type</desc>
+    </entry>
+    <entry id="OCN2ATM_FMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>ocn2atm flux mapping file</desc>
+    </entry>
+    <entry id="OCN2ATM_FMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>ocn2atm flux mapping file decomp type</desc>
+    </entry>
+    <entry id="OCN2ATM_SMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>ocn2atm state mapping file</desc>
+    </entry>
+    <entry id="OCN2ATM_SMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>ocn2atm state mapping file decomp type</desc>
+    </entry>
+    <entry id="LND2ATM_FMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>lnd2atm flux mapping file</desc>
+    </entry>
+    <entry id="LND2ATM_FMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>lnd2atm flux mapping file decomp type</desc>
+    </entry>
+    <entry id="LND2ATM_SMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>lnd2atm state mapping file</desc>
+    </entry>
+    <entry id="LND2ATM_SMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>lnd2atm state mapping file decomp type</desc>
+    </entry>
+    <entry id="LND2GLC_FMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>lnd2glc flux mapping file</desc>
+    </entry>
+    <entry id="LND2GLC_FMAPTYPE" value="X">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>lnd2glc flux mapping file decomp type</desc>
+    </entry>
+    <entry id="LND2GLC_SMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>lnd2glc state mapping file</desc>
+    </entry>
+    <entry id="LND2GLC_SMAPTYPE" value="X">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>lnd2glc state mapping file decomp type</desc>
+    </entry>
+    <entry id="LND2ROF_FMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>lnd2rof flux mapping file</desc>
+    </entry>
+    <entry id="LND2ROF_FMAPTYPE" value="X">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>lnd2rof flux mapping file decomp type</desc>
+    </entry>
+    <entry id="ROF2LND_FMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>rof2lnd flux mapping file</desc>
+    </entry>
+    <entry id="ROF2LND_FMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>rof2lnd flux mapping file decomp type</desc>
+    </entry>
+    <entry id="ROF2OCN_FMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>rof2ocn flux mapping file</desc>
+    </entry>
+    <entry id="ROF2OCN_FMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>rof2ocn flux mapping file decomp type</desc>
+    </entry>
+    <entry id="ROF2OCN_RMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>rof2ocn runoff mapping file</desc>
+    </entry>
+    <entry id="ROF2OCN_RMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>rof2ocn runoff mapping file decomp type</desc>
+    </entry>
+    <entry id="GLC2LND_FMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>glc2lnd flux mapping file</desc>
+    </entry>
+    <entry id="GLC2LND_FMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>glc2lnd flux mapping file decomp type</desc>
+    </entry>
+    <entry id="GLC2LND_SMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>glc2lnd state mapping file</desc>
+    </entry>
+    <entry id="GLC2LND_SMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>glc2lnd state mapping file decomp type</desc>
+    </entry>
+    <entry id="GLC2ICE_RMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>glc2ice runoff mapping file</desc>
+    </entry>
+    <entry id="GLC2ICE_RMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>glc2ice runoff mapping file decomp type</desc>
+    </entry>
+    <entry id="GLC2OCN_RMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>glc2ocn runoff mapping file</desc>
+    </entry>
+    <entry id="GLC2OCN_RMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>glc2ocn runoff mapping file decomp type</desc>
+    </entry>
+    <entry id="OCN2WAV_SMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>ocn2wav state mapping file</desc>
+    </entry>
+    <entry id="OCN2WAV_SMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>ocn2wav state mapping file decomp type</desc>
+    </entry>
+    <entry id="ICE2WAV_SMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>ice2wav state mapping file</desc>
+    </entry>
+    <entry id="ICE2WAV_SMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>ice2wav state mapping file decomp type</desc>
+    </entry>
+    <entry id="WAV2OCN_SMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>wav2ocn state mapping file</desc>
+    </entry>
+    <entry id="WAV2OCN_SMAPTYPE" value="X">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>wav2ocn state mapping file decomp type</desc>
+    </entry>
+    <entry id="VECT_MAP" value="cart3d">
+      <type>char</type>
+      <valid_values>none,npfix,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag</valid_values>
+      <desc>vector mapping option</desc>
+    </entry>
+    <entry id="EPS_FRAC" value="1.0e-02">
+      <type>char</type>
+      <desc>Error tolerance for differences in fractions in domain checking</desc>
+    </entry>
+    <entry id="EPS_AAREA" value="9.0e-07">
+      <type>real</type>
+      <desc>Error tolerance for differences in atm/land areas in domain checking</desc>
+    </entry>
+    <entry id="EPS_AMASK" value="1.0e-13">
+      <type>real</type>
+      <desc>Error tolerance for differences in atm/land masks in domain checking</desc>
+    </entry>
+    <entry id="EPS_AGRID" value="1.0e-12">
+      <type>real</type>
+      <desc>Error tolerance for differences in atm/land lat/lon in domain checking</desc>
+    </entry>
+    <entry id="EPS_OAREA" value="1.0e-01">
+      <type>real</type>
+      <desc>Error tolerance for differences in ocean/ice lon/lat in domain checking</desc>
+    </entry>
+    <entry id="EPS_OMASK" value="1.0e-06">
+      <type>real</type>
+      <desc>Error tolerance for differences in ocean/ice lon/lat in domain checking</desc>
+    </entry>
+    <entry id="EPS_OGRID" value="1.0e-02">
+      <type>real</type>
+      <desc>Error tolerance for differences in ocean/ice lon/lat in domain checking</desc>
+    </entry>
+  </group>
+  <group id="run_din">
+    <entry id="NODENAME_REGEX" value=".*yellowstone">
+      <type>char</type>
+      <desc>
+      A regular expression to match machine node names to ACME machine.
+    </desc>
+    </entry>
+    <entry id="PROXY" value="UNSET">
+      <type>char</type>
+      <desc>
+      Proxy (if any) setting for http_proxy to allow web access on this machine.
+    </desc>
+    </entry>
+    <entry id="TEST" value="FALSE">
+      <type>logical</type>
+      <desc>
+      Indicates to case.submit that this is a test case.
+    </desc>
+    </entry>
+    <entry id="DIN_LOC_ROOT" value="/glade/p/cesmdata/cseg/inputdata">
+      <type>char</type>
+      <desc>
+      The root directory of all CIME and component input data for the selected machine.
+      This is usually a shared disk area.
+      Default values for the target machine are in the
+      $CIMEROOT/machines/config_machines.xml
+    </desc>
+    </entry>
+    <entry id="DIN_LOC_ROOT_CLMFORC" value="/glade/p/cesm/lmwg">
+      <type>char</type>
+      <desc>CLM-specific root directory for CLM type input forcing data
+    This directory will only be used for I (CLM/DATM) compsets and only
+    for datm forcing data that is NOT checked into the svn repository
+    (datasets other than the Qian or single-point forcing).
+    This is usually a shared disk area.
+    Default values for the target machine are in the
+    $CIMEROOT/machines/config_machines.xml</desc>
+    </entry>
+  </group>
+  <group id="run_dout">
+    <entry id="DOUT_S_ROOT" value="/glade/scratch/erik/archive/$CASE">
+      <type>char</type>
+      <desc>Root directory for short term archiving. This directory must be visible to compute nodes.</desc>
+    </entry>
+    <entry id="DOUT_L_MSROOT" value="csm/$CASE">
+      <type>char</type>
+      <desc>Root directory on long term archiving store system for long-term data archives.</desc>
+    </entry>
+  </group>
+  <group id="run_mpi">
+    <entry id="MPI_RUN_COMMAND" value="UNSET">
+      <type>char</type>
+      <desc>mpi run command</desc>
+    </entry>
+  </group>
+  <group id="run_pio">
+    <entry id="PIO_ASYNC_INTERFACE" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>TRUE implies perform asynchronous i/o</desc>
+    </entry>
+    <entry id="PIO_STRIDE" value="$PES_PER_NODE">
+      <type>integer</type>
+      <desc>mpi task stride between io tasks</desc>
+    </entry>
+    <entry id="PIO_ROOT" value="-1">
+      <type>integer</type>
+      <desc>pio root processor</desc>
+    </entry>
+    <entry id="PIO_NUMTASKS" value="-1">
+      <type>integer</type>
+      <desc>pio number of io tasks</desc>
+    </entry>
+    <entry id="PIO_REARRANGER" value="$PIO_VERSION">
+      <type>integer</type>
+      <desc>pio rearranger choice box=1, subset=2 </desc>
+    </entry>
+    <entry id="PIO_REARR_COMM_TYPE" value="p2p">
+      <type>char</type>
+      <valid_values>p2p,coll,default</valid_values>
+      <desc>pio rearranger communication type</desc>
+    </entry>
+    <entry id="PIO_REARR_COMM_FCD" value="2denable">
+      <type>char</type>
+      <valid_values>2denable,io2comp,comp2io,disable,default</valid_values>
+      <desc>pio rearranger communication flow control direction</desc>
+    </entry>
+    <entry id="PIO_REARR_COMM_MAX_PEND_REQ" value="64">
+      <type>integer</type>
+      <valid_values/>
+      <desc>pio rearranger communication max pending requests</desc>
+    </entry>
+    <entry id="PIO_REARR_COMM_ENABLE_HS" value="TRUE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>pio rearranger communiation options: TRUE implies enable handshake</desc>
+    </entry>
+    <entry id="PIO_REARR_COMM_ENABLE_ISEND" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>pio rearranger communiation options: TRUE implies enable isend</desc>
+    </entry>
+    <entry id="PIO_TYPENAME" value="pnetcdf">
+      <type>char</type>
+      <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
+      <desc>pio io type</desc>
+    </entry>
+    <entry id="PIO_DEBUG_LEVEL" value="0">
+      <type>integer</type>
+      <desc>pio debug level</desc>
+    </entry>
+    <entry id="PIO_BLOCKSIZE" value="-1">
+      <type>integer</type>
+      <desc>pio blocksize for box decompositions</desc>
+    </entry>
+    <entry id="PIO_BUFFER_SIZE_LIMIT" value="-1">
+      <type>integer</type>
+      <desc>pio buffer size limit for pnetcdf output</desc>
+    </entry>
+    <entry id="OCN_PIO_STRIDE" value="-99">
+      <type>integer</type>
+      <desc>pio stride</desc>
+    </entry>
+    <entry id="OCN_PIO_REARRANGER" value="-99">
+      <type>integer</type>
+      <desc>pio rearranger choice box=1, subset=2 </desc>
+    </entry>
+    <entry id="OCN_PIO_ROOT" value="0">
+      <type>integer</type>
+      <desc>pio root processor</desc>
+    </entry>
+    <entry id="OCN_PIO_NUMTASKS" value="-99">
+      <type>integer</type>
+      <desc>pio number of io tasks</desc>
+    </entry>
+    <entry id="OCN_PIO_TYPENAME" value="nothing">
+      <type>char</type>
+      <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
+      <desc>pio io type</desc>
+    </entry>
+    <entry id="LND_PIO_STRIDE" value="-99">
+      <type>integer</type>
+      <desc>pio stride</desc>
+    </entry>
+    <entry id="LND_PIO_REARRANGER" value="1">
+      <type>integer</type>
+      <desc>pio rearranger choice box=1, subset=2 </desc>
+    </entry>
+    <entry id="LND_PIO_ROOT" value="-99">
+      <type>integer</type>
+      <desc>pio root processor</desc>
+    </entry>
+    <entry id="LND_PIO_NUMTASKS" value="-99">
+      <type>integer</type>
+      <desc>pio number of io tasks</desc>
+    </entry>
+    <entry id="LND_PIO_TYPENAME" value="nothing">
+      <type>char</type>
+      <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
+      <desc>pio io type</desc>
+    </entry>
+    <entry id="ROF_PIO_STRIDE" value="-99">
+      <type>integer</type>
+      <desc>pio stride</desc>
+    </entry>
+    <entry id="ROF_PIO_REARRANGER" value="-99">
+      <type>integer</type>
+      <desc>pio rearranger choice box=1, subset=2 </desc>
+    </entry>
+    <entry id="ROF_PIO_ROOT" value="-99">
+      <type>integer</type>
+      <desc>pio root processor</desc>
+    </entry>
+    <entry id="ROF_PIO_NUMTASKS" value="-99">
+      <type>integer</type>
+      <desc>pio number of io tasks</desc>
+    </entry>
+    <entry id="ROF_PIO_TYPENAME" value="nothing">
+      <type>char</type>
+      <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
+      <desc>pio io type</desc>
+    </entry>
+    <entry id="ICE_PIO_STRIDE" value="-99">
+      <type>integer</type>
+      <desc>pio stride</desc>
+    </entry>
+    <entry id="ICE_PIO_REARRANGER" value="-99">
+      <type>integer</type>
+      <desc>pio rearranger choice box=1, subset=2 </desc>
+    </entry>
+    <entry id="ICE_PIO_ROOT" value="-99">
+      <type>integer</type>
+      <desc>pio root processor</desc>
+    </entry>
+    <entry id="ICE_PIO_NUMTASKS" value="-99">
+      <type>integer</type>
+      <desc>pio number of io tasks</desc>
+    </entry>
+    <entry id="ICE_PIO_TYPENAME" value="nothing">
+      <type>char</type>
+      <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
+      <desc>pio io type</desc>
+    </entry>
+    <entry id="ATM_PIO_STRIDE" value="-99">
+      <type>integer</type>
+      <desc>pio stride</desc>
+    </entry>
+    <entry id="ATM_PIO_REARRANGER" value="-99">
+      <type>integer</type>
+      <desc>pio rearranger choice box=1, subset=2 </desc>
+    </entry>
+    <entry id="ATM_PIO_ROOT" value="-99">
+      <type>integer</type>
+      <desc>pio root processor</desc>
+    </entry>
+    <entry id="ATM_PIO_NUMTASKS" value="-99">
+      <type>integer</type>
+      <desc>pio number of io tasks, -99 value means inherit whatever the driver uses</desc>
+    </entry>
+    <entry id="ATM_PIO_TYPENAME" value="netcdf">
+      <type>char</type>
+      <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
+      <desc>pio io type</desc>
+    </entry>
+    <entry id="CPL_PIO_STRIDE" value="-99">
+      <type>integer</type>
+      <desc>pio stride</desc>
+    </entry>
+    <entry id="CPL_PIO_REARRANGER" value="-99">
+      <type>integer</type>
+      <desc>pio rearranger choice box=1, subset=2 </desc>
+    </entry>
+    <entry id="CPL_PIO_ROOT" value="-99">
+      <type>integer</type>
+      <desc>pio root processor</desc>
+    </entry>
+    <entry id="CPL_PIO_NUMTASKS" value="-99">
+      <type>integer</type>
+      <desc>pio number of io tasks</desc>
+    </entry>
+    <entry id="CPL_PIO_TYPENAME" value="nothing">
+      <type>char</type>
+      <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
+      <desc>pio io type</desc>
+    </entry>
+    <entry id="GLC_PIO_STRIDE" value="-99">
+      <type>integer</type>
+      <desc>pio stride</desc>
+    </entry>
+    <entry id="GLC_PIO_REARRANGER" value="-99">
+      <type>integer</type>
+      <desc>pio rearranger choice box=1, subset=2 </desc>
+    </entry>
+    <entry id="GLC_PIO_ROOT" value="-99">
+      <type>integer</type>
+      <desc>pio root processor</desc>
+    </entry>
+    <entry id="GLC_PIO_NUMTASKS" value="-99">
+      <type>integer</type>
+      <desc>pio number of io tasks</desc>
+    </entry>
+    <entry id="GLC_PIO_TYPENAME" value="nothing">
+      <type>char</type>
+      <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
+      <desc>pio io type</desc>
+    </entry>
+    <entry id="WAV_PIO_STRIDE" value="-99">
+      <type>integer</type>
+      <desc>pio stride</desc>
+    </entry>
+    <entry id="WAV_PIO_REARRANGER" value="-99">
+      <type>integer</type>
+      <desc>pio rearranger choice box=1, subset=2 </desc>
+    </entry>
+    <entry id="WAV_PIO_ROOT" value="-99">
+      <type>integer</type>
+      <desc>pio root processor</desc>
+    </entry>
+    <entry id="WAV_PIO_NUMTASKS" value="-99">
+      <type>integer</type>
+      <desc>pio number of io tasks</desc>
+    </entry>
+    <entry id="WAV_PIO_TYPENAME" value="nothing">
+      <type>char</type>
+      <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
+      <desc>pio io type</desc>
+    </entry>
+  </group>
+  <group id="run_coupling">
+    <entry id="CPL_SEQ_OPTION" value="CESM1_MOD">
+      <type>char</type>
+      <valid_values>CESM1_ORIG,CESM1_ORIG_TIGHT,CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
+      <desc>
+      Coupler sequencing option. This is used to set the driver namelist variable cpl_seq_option.
+      CESM1_ORIG is the cesm1.1 implementation.
+      CESM1_MOD includes a cesm1.3 mod that swaps ocean merging and atm/ocn flux
+      computation.
+      RASM_OPTION1 runs prep ocean before the ocean coupling reducing
+      most of the lags and field inconsistency but still allowing the ocean to run
+      concurrently with the ice and atmosphere.
+      RASM_OPTION2 is similar to RASM_OPTION1
+      but sequences the ice model, prep ocean and ocean model in that order.  The
+      ocean model loses some of the concurrency with the ice model.
+      CESM1_ORIG_TIGHT and CESM1_MOD_TIGHT are consistent with the old variables
+      ocean_tight_coupling = true in the driver.  That namelist is gone and the
+      cpl_seq_option flags take it's place.
+      TIGHT coupling makes no sense with the OPTION5 and OPTION6 flags.
+    </desc>
+    </entry>
+    <entry id="CPL_I2O_PER_CAT" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>determine if per ice thickness category fields are passed from ice to ocean - DO NOT EDIT (set by POP build-namelist)</desc>
+    </entry>
+    <entry id="CCSM_BGC" value="CO2A">
+      <type>char</type>
+      <valid_values>none,CO2A,CO2B,CO2C,CO2_DMSA</valid_values>
+      <desc>Flag to turn on new fields in coupling.
+    If the value is not none, the coupler is compiled so that optional
+    BGC related fields are exchanged between component models.
+    </desc>
+    </entry>
+    <entry id="NCPL_BASE_PERIOD" value="day">
+      <type>char</type>
+      <valid_values>hour,day,year,decade</valid_values>
+      <desc>Base period associated with NCPL coupling frequency.
+    This xml variable is only used to set the driver namelist variables,
+    atm_cpl_dt, lnd_cpl_dt, ocn_cpl_dt, ice_cpl_dt, glc_cpl_dt, rof_cpl_dt, wav_cpl_dt, and esp_dt.</desc>
+    </entry>
+    <entry id="ATM_NCPL" value="48">
+      <type>integer</type>
+      <desc>Number of atm coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist atm_cpl_dt, equal to basedt/ATM_NCPL,
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+    </entry>
+    <entry id="LND_NCPL" value="$ATM_NCPL">
+      <type>integer</type>
+      <desc>Number of land coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist atm_cpl_dt, equal to basedt/LND_NCPL,
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+    </entry>
+    <entry id="ICE_NCPL" value="$ATM_NCPL">
+      <type>integer</type>
+      <desc>Number of ice coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist ice_cpl_dt, equal to basedt/ICE_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+    </entry>
+    <entry id="OCN_NCPL" value="1">
+      <type>integer</type>
+      <desc>Number of ocn coupling intervals per NCPL_BASE_PERIOD.
+    Thisn is used to set the driver namelist ocn_cpl_dt, equal to basedt/OCN_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+    </entry>
+    <entry id="GLC_NCPL" value="1">
+      <type>integer</type>
+      <desc>Number of glc coupling intervals per NCPL_BASE_PERIOD.</desc>
+    </entry>
+    <entry id="ROF_NCPL" value="8">
+      <type>integer</type>
+      <desc>Number of rof coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist rof_cpl_dt, equal to basedt/ROF_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+    </entry>
+    <entry id="WAV_NCPL" value="$ATM_NCPL">
+      <type>integer</type>
+      <desc>Number of wav coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist wav_cpl_dt, equal to basedt/WAV_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+    </entry>
+  </group>
+  <group id="run_component_cpl">
+    <entry id="CPL_ALBAV" value="false">
+      <type>logical</type>
+      <valid_values>true,false</valid_values>
+      <desc>
+      Only used for compsets with DATM and POP (currently C, G and J):
+      If true, compute albedos to work with daily avg SW down
+      If false (default), albedos are computed with the assumption that downward
+      solar radiation from the atm component has a diurnal cycle and zenith-angle
+      dependence. This is normally the case when using an active atm component
+      If true, albedos are computed with the assumption that downward
+      solar radiation from the atm component is a daily average quantity and
+      does not have a zenith-angle dependence. This is often the case when
+      using a data atm component. Only used for compsets with DATM and POP (currently C, G and J).
+      NOTE: This should really depend on the datm forcing and not the compset per se.
+      So, for example, whether it is set in a J compset should depend on
+      what datm forcing is used.
+    </desc>
+    </entry>
+    <entry id="CPL_EPBAL" value="off">
+      <type>char</type>
+      <valid_values>off,ocn</valid_values>
+      <desc>
+      Only used for compsets with DATM and POP (currently C, G and J):
+      If ocn, ocn provides EP balance factor for precipitation.
+      Provides EP balance factor for precip for POP. A factor computed by
+      POP is applied to precipitation so that precipitation balances
+      evaporation and ocn global salinity does not drift. This is intended
+      for use when coupling POP to a DATM. Only used for C, G and J compsets.
+      Default is off
+    </desc>
+    </entry>
+  </group>
+  <group id="run_drv_history">
+    <entry id="HIST_OPTION" value="never">
+      <type>char</type>
+      <valid_values/>
+      <desc>Sets driver snapshot history file frequency (like REST_OPTION)</desc>
+    </entry>
+    <entry id="HIST_N" value="-999">
+      <type>integer</type>
+      <valid_values/>
+      <desc>Sets driver snapshot history file frequency (like REST_N)
+    </desc>
+    </entry>
+    <entry id="HIST_DATE" value="-999">
+      <type>integer</type>
+      <valid_values/>
+      <desc>yyyymmdd format, sets coupler snapshot history date (like REST_DATE)</desc>
+    </entry>
+    <entry id="AVGHIST_OPTION" value="never">
+      <type>char</type>
+      <valid_values/>
+      <desc>Sets driver average history file frequency (like REST_OPTION)</desc>
+    </entry>
+    <entry id="AVGHIST_N" value="-999">
+      <type>char</type>
+      <valid_values/>
+      <desc>Sets driver average history file frequency (like REST_N)</desc>
+    </entry>
+    <entry id="AVGHIST_DATE" value="-999">
+      <type>integer</type>
+      <valid_values/>
+      <desc>yyyymmdd format, sets driver average history date (like REST_DATE)</desc>
+    </entry>
+  </group>
+  <group id="run_budgets">
+    <entry id="BUDGETS" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>logical that turns on diagnostic budgets for driver</desc>
+    </entry>
+  </group>
+  <group id="run_co2">
+    <entry id="CCSM_CO2_PPMV" value="367.0">
+      <type>real</type>
+      <valid_values/>
+      <desc>This set the namelist values of CO2 ppmv for CAM and CLM. This variables is
+      introduced to coordinate this value among multiple components.</desc>
+    </entry>
+  </group>
+  <group id="run_glc">
+    <entry id="GLC_NEC" value="0">
+      <type>integer</type>
+      <valid_values>0,1,3,5,10,36</valid_values>
+      <desc>Glacier model number of elevation classes, 0 implies no glacier land unit in clm
+    Used by both CLM and CISM (even if CISM is not running, and only SGLC is used).</desc>
+    </entry>
+    <entry id="GLC_TWO_WAY_COUPLING" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>Whether the glacier component feeds back to the rest of the system
+      This affects:
+      (1) Whether CLM updates its areas based on glacier areas sent from GLC
+      (2) Whether GLC sends fluxes (e.g., calving fluxes) to the coupler
+      Note that this is set to TRUE by default for TG compsets - even though there are
+      no feedbacks for TG compsets, this enables extra coupler diagnostics for these
+      compsets.</desc>
+    </entry>
+  </group>
+  <group id="external_tools">
+    <entry id="DATA_ASSIMILATION" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc> Run the external tool pointed to by DATA_ASSIMILATION_SCRIPT after the model run completes </desc>
+    </entry>
+    <entry id="DATA_ASSIMILATION_CYCLES" value="1">
+      <type>integer</type>
+      <valid_values/>
+      <desc> Number of model run - data assimilation steps to complete </desc>
+    </entry>
+    <entry id="DATA_ASSIMILATION_SCRIPT" value="">
+      <type>char</type>
+      <valid_values/>
+      <desc>External script to be run after model completion</desc>
+    </entry>
+  </group>
+  <group id="run_component_datm">
+    <entry id="DATM_MODE" value="CLM_QIAN">
+      <type>char</type>
+      <valid_values>CORE2_NYF,CORE2_IAF,TN460,CLM_QIAN,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CLMGSWP3,CPLHIST3HrWx,COPYALL_NPS_v1,COPYALL_NPS_CORE2_v1,WRF,WW3</valid_values>
+      <desc>Mode for data atmosphere component.
+      The default is CORE2_NYF (CORE2 normal year forcing) is the 
+      DATM mode used in C and G compsets. CLM_QIAN, CLMCRUNCEP, CLMGSWP3 and CLM1PT are 
+      modes using observational data for forcing CLM in I compsets.</desc>
+    </entry>
+    <entry id="DATM_PRESAERO" value="trans_1850-2000">
+      <type>char</type>
+      <valid_values>none,clim_1850,clim_2000,trans_1850-2000,rcp2.6,rcp4.5,rcp6.0,rcp8.5,pt1_pt1</valid_values>
+      <desc>DATM prescribed aerosol forcing</desc>
+    </entry>
+    <entry id="DATM_TOPO" value="observed">
+      <type>char</type>
+      <valid_values>none,observed</valid_values>
+      <desc>DATM surface topography forcing</desc>
+    </entry>
+    <entry id="DATM_CO2_TSERIES" value="20tr">
+      <type>char</type>
+      <valid_values>none,20tr,rcp2.6,rcp4.5,rcp6.0,rcp8.5</valid_values>
+      <desc>DATM CO2 time series</desc>
+    </entry>
+    <entry id="DATM_CPLHIST_CASE" value="UNSET">
+      <type>char</type>
+      <valid_values/>
+      <desc>case name for coupler history data mode (only used for CPLHIST3HrWx mode)</desc>
+    </entry>
+    <entry id="DATM_CPLHIST_YR_ALIGN" value="1">
+      <type>integer</type>
+      <valid_values/>
+      <desc>Simulation year corresponding to starting year (only used for CPLHIST3HrWx mode)</desc>
+    </entry>
+    <entry id="DATM_CPLHIST_YR_START" value="-999">
+      <type>integer</type>
+      <valid_values/>
+      <desc>starting year to loop data over (only used for CPLHIST3HrWx mode)</desc>
+    </entry>
+    <entry id="DATM_CPLHIST_YR_END" value="-999">
+      <type>integer</type>
+      <valid_values/>
+      <desc>ending year to loop data over (only used for CPLHIST3HrWx mode)</desc>
+    </entry>
+    <entry id="DATM_CLMNCEP_YR_ALIGN" value="1895">
+      <type>integer</type>
+      <valid_values/>
+      <desc>year align</desc>
+    </entry>
+    <entry id="DATM_CLMNCEP_YR_START" value="1948">
+      <type>integer</type>
+      <valid_values/>
+      <desc>starting year to loop data over</desc>
+    </entry>
+    <entry id="DATM_CLMNCEP_YR_END" value="1972">
+      <type>integer</type>
+      <valid_values/>
+      <desc>ending year to loop data over</desc>
+    </entry>
+  </group>
+  <group id="run_component_clm">
+    <entry id="LND_TUNING_MODE" value="clm4_5_CRUNCEP">
+      <type>char</type>
+      <desc>Tuning parameters should be optimized for what CLM model version and what meteorlogical forcing combination?
+    </desc>
+      <valid_values>clm4_0_default,clm5_0_cam5.5,clm5_0_GSW3P,clm4_5_CRUNCEP</valid_values>
+    </entry>
+    <entry id="CLM_NML_USE_CASE" value="20thC_transient">
+      <type>char</type>
+      <desc>CLM namelist use_case.
+      Determines the use-case that will be sent to the CLM build-namelist utility.
+      This is normally set by the component set. This is an advanced flag and should only be
+      used by expert users.</desc>
+    </entry>
+    <entry id="CLM_BLDNML_OPTS" value="-fire_emis -bgc bgc">
+      <type>char</type>
+      <desc>CLM build-namelist options</desc>
+    </entry>
+    <entry id="CLM_CO2_TYPE" value="diagnostic">
+      <type>char</type>
+      <valid_values>constant,diagnostic,prognostic</valid_values>
+      <list>1</list>
+      <desc>Determines how CLM will determine where CO2 is set.
+      If value is constant, it will be set to CCSM_CO2_PPMV,
+      if value is either diagnostic or prognostic, the atmosphere model
+      MUST send it to CLM. CLM_CO2_TYPE is normally set by the specific
+      compset, since it HAS to be coordinated with settings for the
+      atmospheric model. Do not modify this variable. If you want to modify for
+      your experiment, use your own user-defined component set
+      This is an advanced flag and should only be used by expert users.</desc>
+    </entry>
+    <entry id="CLM_NAMELIST_OPTS" value="">
+      <type>char</type>
+      <desc>CLM-specific namelist settings for -namelist option in the CLM
+      build-namelist. CLM_NAMELIST_OPTS is normally set as a compset variable
+      and in general should not be modified for supported compsets.
+      It is recommended that if you want to modify this value for your experiment,
+      you should use your own user-defined component sets via using create_newcase
+      with a compset_file argument.
+      This is an advanced flag and should only be used by expert users.</desc>
+    </entry>
+    <entry id="CLM_ACCELERATED_SPINUP" value="off">
+      <type>char</type>
+      <valid_values>on,off</valid_values>
+      <desc>Turn on any settings for accellerating the model spinup.
+    </desc>
+    </entry>
+    <entry id="CLM_USRDAT_NAME" value="UNSET">
+      <type>char</type>
+      <desc>Dataset name for user-created datasets. This is used as the argument
+      in Buildconf/clm.buildnml to build-namelist -clm_usr_name. An example of
+      such a dataset would be 1x1pt_boulderCO_c090722. The default value is UNSET.
+      This is an advanced flag and should only be used by expert users.</desc>
+    </entry>
+    <entry id="CLM_FORCE_COLDSTART" value="off">
+      <type>char</type>
+      <valid_values>on,off</valid_values>
+      <desc>Flag to the CLM build-namelist command to force CLM to do a
+      cold start (finidat will be set to blanks).
+      A value of on forces the model to spin up from a cold-start
+      (arbitrary initial conditions). Setting this value in the xml file will take
+      precedence over any settings for finidat in the $CASEROOT/user_clm_clm file.</desc>
+    </entry>
+  </group>
+  <group id="run_component_rtm">
+    <entry id="RTM_BLDNML_OPTS" value="-simyr 1850">
+      <type>char</type>
+      <valid_values/>
+      <desc>RTM build-namelist options</desc>
+    </entry>
+    <entry id="RTM_NAMELIST_OPTS" value="rtm_effvel='ACTIVE'">
+      <type>char</type>
+      <valid_values/>
+      <desc>RTM-specific namelist settings in the RTM build-namelist.
+      RTM_NAMELIST_OPTS is normally set as a compset variable
+      and in general should not be modified for supported compsets. 
+      It is recommended that if you want to modify this value for your experiment, 
+      you should use your own user-defined component sets via using create_newcase 
+      with a compset_file argument.</desc>
+    </entry>
+  </group>
+</file>

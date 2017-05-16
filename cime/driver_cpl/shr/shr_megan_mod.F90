@@ -2,10 +2,10 @@
 ! Handles MEGAN VOC emissions metadata for CLM produced chemical emissions
 ! MEGAN = Model of Emissions of Gases and Aerosols from Nature
 !
-! This reads the megan_emis_nl namelist in drv_flds_in and makes the relavent 
-! information available to CAM, CLM, and driver. The driver sets up CLM to CAM 
+! This reads the megan_emis_nl namelist in drv_flds_in and makes the relavent
+! information available to CAM, CLM, and driver. The driver sets up CLM to CAM
 ! communication for the  VOC flux fields. CLM needs to know what specific VOC
-! fluxes need to be passed to the coupler and how to assimble the fluxes.  
+! fluxes need to be passed to the coupler and how to assimble the fluxes.
 ! CAM needs to know what specific VOC fluxes to expect from CLM.
 !
 ! Francis Vitt -- 26 Oct 2011
@@ -53,7 +53,7 @@ module shr_megan_mod
   ! chemical compound in CAM mechanism that has MEGAN emissions
   type shr_megan_mechcomp_t
      character(len=16)             :: name           ! compound name
-     type(shr_megan_comp_ptr), pointer :: megan_comps(:) ! an array of pointers to megan emis compounds 
+     type(shr_megan_comp_ptr), pointer :: megan_comps(:) ! an array of pointers to megan emis compounds
      integer                       :: n_megan_comps  ! number of megan emis compounds that make up the emissions for this mechanis compound
   end type shr_megan_mechcomp_t
 
@@ -69,25 +69,25 @@ module shr_megan_mod
 contains
 
   !-------------------------------------------------------------------------
-  ! 
+  !
   ! This reads the megan_emis_nl namelist group in drv_flds_in and parses the
   ! namelist information for the driver, CLM, and CAM.
   !
   ! Namelist variables:
   !   megan_specifier, megan_mapped_emisfctrs, megan_factors_file
   !
-  ! megan_specifier is a series of strings where each string contains one 
-  !  CAM chemistry constituent name (left of = sign) and one or more MEGAN 
+  ! megan_specifier is a series of strings where each string contains one
+  !  CAM chemistry constituent name (left of = sign) and one or more MEGAN
   !  compound (separated by + sign if more than one).  Each MEGAN compound
-  !  can be proceeded by a multiplication factor (separated by *).  The 
+  !  can be proceeded by a multiplication factor (separated by *).  The
   !  specification of the MEGAN compounds to the right of the = signs tells
   !  the MEGAN VOC model within CLM how to construct the VOC fluxes using
   !  the factors in megan_factors_file and land surface state.
   !
   ! megan_factors_file read by CLM contains valid MEGAN compound names,
   !  MEGAN class groupings and scalar emission factors
-  ! 
-  ! megan_mapped_emisfctrs switch is used to tell the MEGAN model to use 
+  !
+  ! megan_mapped_emisfctrs switch is used to tell the MEGAN model to use
   !  mapped emission factors read in from the CLM surface data input file
   !  rather than the scalar factors from megan_factors_file
   !
@@ -112,7 +112,7 @@ contains
 
     character(len=*), intent(in)  :: NLFileName
     integer         , intent(in)  :: ID          ! seq_comm ID
-    character(len=*), intent(out) :: megan_fields	
+    character(len=*), intent(out) :: megan_fields
 
     integer :: unitn            ! namelist unit number
     integer :: ierr             ! error code
@@ -125,7 +125,7 @@ contains
     logical           :: megan_mapped_emisfctrs = .false.
     character(len=CL) :: megan_factors_file = ' '
 
-    character(*),parameter :: F00   = "('(shr_megan_readnl) ',2a)" 
+    character(*),parameter :: F00   = "('(shr_megan_readnl) ',2a)"
 
     namelist /megan_emis_nl/ megan_specifier, megan_factors_file, megan_mapped_emisfctrs
 
@@ -176,7 +176,7 @@ contains
     use shr_expr_parser_mod, only : shr_exp_parse, shr_exp_item_t, shr_exp_list_destroy
 
     character(len=*), intent(in) :: specifier(:)
-    character(len=*), intent(out) :: megan_fields	
+    character(len=*), intent(out) :: megan_fields
 
     integer :: n_entries
     integer :: i, j, k
@@ -186,7 +186,7 @@ contains
 
     nullify(shr_megan_linkedlist)
 
-    items_list => shr_exp_parse( specifier, nitems=n_entries ) 
+    items_list => shr_exp_parse( specifier, nitems=n_entries )
 
     allocate(shr_megan_mechcomps(n_entries))
     shr_megan_mechcomps(:)%n_megan_comps = 0
@@ -219,7 +219,7 @@ contains
           megan_fields = trim(token)
           shr_megan_fields_token = token
        else
-          megan_fields = trim(megan_fields)//':'//trim(token)                 
+          megan_fields = trim(megan_fields)//':'//trim(token)
        endif
 
        item => item%next_item

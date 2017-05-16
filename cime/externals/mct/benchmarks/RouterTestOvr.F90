@@ -26,7 +26,7 @@ program RouterTestOvr
   use m_MCTWorld,only: MCTWorld_init => init
   use m_ioutil,       only : luavail
   use m_stdio,        only : stdout,stderr
-  use m_die,          only : die 
+  use m_die,          only : die
   use m_mpif90
 
   implicit none
@@ -40,7 +40,7 @@ program RouterTestOvr
 
   character(len=*), parameter :: myname_='RouterTestOvr'
 
-  integer :: ncomps = 2   ! Must know total number of 
+  integer :: ncomps = 2   ! Must know total number of
                          ! components in coupled system
 
   integer,dimension(:),pointer :: comps  ! array with component ids
@@ -57,9 +57,9 @@ program RouterTestOvr
   integer, dimension(:), allocatable :: root_start, root_length, root_pe_loc
 
 !-----------------------------------------------------------------------
-! The Main program. 
+! The Main program.
 !
-! This main program initializes MCT 
+! This main program initializes MCT
 
 ! Initialize MPI
   call MPI_INIT(ier)
@@ -77,7 +77,7 @@ program RouterTestOvr
   if(rank == 0) then
    mdev1 = luavail()
    open(mdev1,file=trim(filename1),status='old')
-  
+
    mdev2 = luavail()
    open(mdev2,file=trim(filename2),status='old')
 
@@ -96,8 +96,8 @@ program RouterTestOvr
    close(mdev2)
   endif
 
-  call MPI_BCAST(nprocs1,1,MP_INTEGER,0,MPI_COMM_WORLD,ier) 
-  call MPI_BCAST(nprocs2,1,MP_INTEGER,0,MPI_COMM_WORLD,ier) 
+  call MPI_BCAST(nprocs1,1,MP_INTEGER,0,MPI_COMM_WORLD,ier)
+  call MPI_BCAST(nprocs2,1,MP_INTEGER,0,MPI_COMM_WORLD,ier)
 
   call mpi_comm_dup(MPI_COMM_WORLD,comm1,ier)
   call mpi_comm_dup(MPI_COMM_WORLD,comm2,ier)
@@ -120,7 +120,7 @@ program RouterTestOvr
 
      allocate(root_start(1), root_length(1), &
              root_pe_loc(1), stat=ier)
-     if (ier /= 0) then 
+     if (ier /= 0) then
      call die(myname_, 'allocate((non)root_start...',ier)
      endif
     endif
@@ -134,7 +134,7 @@ program RouterTestOvr
       read(mdev1,*) gsize
       allocate(root_start(ngseg), root_length(ngseg), &
              root_pe_loc(ngseg), stat=ier)
-      if (ier /= 0) then 
+      if (ier /= 0) then
         call die(myname_, 'allocate((non)root_start...',ier)
       endif
       do n=1,ngseg
@@ -159,7 +159,7 @@ program RouterTestOvr
 
      allocate(root_start(1), root_length(1), &
              root_pe_loc(1), stat=ier)
-     if (ier /= 0) then 
+     if (ier /= 0) then
      call die(myname_, 'allocate((non)root_start...',ier)
      endif
     endif
@@ -173,7 +173,7 @@ program RouterTestOvr
       read(mdev2,*) gsize
       allocate(root_start(ngseg), root_length(ngseg), &
              root_pe_loc(ngseg), stat=ier)
-      if (ier /= 0) then 
+      if (ier /= 0) then
         call die(myname_, 'allocate((non)root_start...',ier)
       endif
       do n=1,ngseg

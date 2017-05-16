@@ -8,14 +8,26 @@ two netcdf files.
 Quick Start Guide:
 ------------------
 
-On cime supported systems you can generate a Macros file using
-cime/machines/configure -mach $machinename -compiler $compilername
-then run make to build cprnc and put the resulting executable in 
-CCSM_CPRNC as defined in config_machines.xml   
-You can also build cprnc using cmake. 
+On cime supported systems you can generate a Macros file using the following
+(assuming you are running the command from the directory cime/tools/cprnc):
+
+CIMEROOT=../.. ../configure --macros-format=Makefile
+
+To change the compiler or MPI library used, or to enable debugging options,
+set the COMPILER, MPILIB, or DEBUG environment variables prior to running
+configure.
+
+Next, run make to build cprnc. For instance, using sh/bash as a login shell:
+
+CIMEROOT=../.. source .env_mach_specific.sh && make
+
+Finally, put the resulting executable in CCSM_CPRNC as defined in
+config_machines.xml.
+
+You can also build cprnc using cmake.
 
  Usage: cprnc  [-v] [-d dimname:start[:count]] file1 [file2]
- -m: Compare each time sample. Default is false, i.e. match "time" 
+ -m: Compare each time sample. Default is false, i.e. match "time"
      coordinate values before comparing
  -v: Verbose output
  -d dimname:start[:count]
@@ -27,11 +39,11 @@ Users Guide:
 
 cprnc is a Fortran-90 application. It relies on netcdf version 3 or
 later and uses the f90 netcdf interfaces.  It requires a netcdf include
-file and a netcdf library.  
+file and a netcdf library.
 
 cprnc generates an ascii output file via standard out.  It initially
 summarizes some characteristics of the input file[s].  A compare file is
-generally 132 characters wide and an analyze file is less than 80 
+generally 132 characters wide and an analyze file is less than 80
 characters wide.
 
 In analyze mode, the output for a field looks like
@@ -49,15 +61,15 @@ and a guide to this information is printed at the top of the file
 
 
 The first 10 characters of the field name are identified in the first
-  dozen columns of the third line.  
+  dozen columns of the third line.
 The first line summarizes the names of the dimensions of the field
-The second line summarizes the indices of the maximum and minimum value 
-  of the field for the first three dimensions.  If the fourth dimension 
+The second line summarizes the indices of the maximum and minimum value
+  of the field for the first three dimensions.  If the fourth dimension
   exists, it's always assumed to be time.  Time is handled separately.
 The third line summarizes the number of valid values in the array
   and the maximum and minimum value over those valid values.  Invalid
   values are values that are identified to be "fill" value.
-The last line summarizes some overall statistics including the average 
+The last line summarizes some overall statistics including the average
   absolute value of the valid values of the field.
 
 In comparison mode, the output (132 chars wide) for a field looks like
@@ -87,7 +99,7 @@ information about the maximum difference, the location and values
 of the maximum difference, the relative difference and the location
 and values of the maximum relative difference.  The last two line
 summarize some overall statistics including average absolute values
-of the field on the two files, rms difference, average relative 
+of the field on the two files, rms difference, average relative
 difference, average number of digits that match, and the worst
 case for the number of digits that match.
 
@@ -115,7 +127,7 @@ SUMMARY of cprnc:
                and     17 had differences in fill patterns
  A total number of     10 fields could not be analyzed
  A total number of      0 fields on file 1 were not found on file2
-  diff_test: the two files seem to be DIFFERENT 
+  diff_test: the two files seem to be DIFFERENT
 
 
 This summarizes:
@@ -135,10 +147,10 @@ Developers Guide:
 
 The tool works as follows.
 
-Fields can be analyzed if they are int, float or double and 
-have between 0 and n dimensions 
+Fields can be analyzed if they are int, float or double and
+have between 0 and n dimensions
 
-In general, fields that appear on both files are 
+In general, fields that appear on both files are
 compared.  If they are sizes, no difference
 statistics are computed and only a summary of the fields on
 the files are presented.  If  fields only appear
@@ -148,7 +160,7 @@ The unlimited dimension is treated uniquely.  In general, for files
 that have a dimension named "time", the time axes are compared
 and matching time values on the two files are compared one
 timestep at a time.  Time values that don't match are skipped.
-To override the matching behaviour, use cprnc -m.  In this mode, 
+To override the matching behaviour, use cprnc -m.  In this mode,
 timestamps are compared in indexical space.  In analyze mode,
 the fields are analyzed one timestamp at a time.  In general,
 if there is a "time" axis, it will be the outer-most loop in

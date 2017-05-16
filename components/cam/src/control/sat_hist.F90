@@ -503,7 +503,6 @@ contains
 !-------------------------------------------------------------------------------
   subroutine dump_columns( File, hitem, ncols, nfils, fdims, ldims, owners  )
     use cam_history_support,  only: field_info, hentry, hist_coords, fillvalue
-    use pionfwrite_mod, only: write_nf
     use pio,            only: pio_initdecomp, pio_freedecomp, pio_setframe, pio_iam_iotask, pio_setdebuglevel, pio_offset_kind
 
     type(File_desc_t),intent(inout)  :: File

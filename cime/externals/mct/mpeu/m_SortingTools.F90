@@ -2,7 +2,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_SortingTools - A collection of different sorting tools
@@ -24,7 +24,7 @@
 !   of IndexBin() with the two integer index arrays to do the sorting.
 !   This mapping rule, however, is application dependent.
 !
-!	Also note that, in principle, it is possible to use both 
+!	Also note that, in principle, it is possible to use both
 !   IndexSort() and IndexBin() in the same sorting task.
 !
 ! !INTERFACE:

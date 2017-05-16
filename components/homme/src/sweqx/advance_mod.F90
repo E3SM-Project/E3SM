@@ -14,14 +14,13 @@ module advance_mod
 
 contains
 
-  subroutine advance_nonstag( elem, edge2,  edge3,  deriv,  flt,   hybrid,  &
+  subroutine advance_nonstag( elem, edge2,  edge3,  deriv,  hybrid,  &
        dt,  pmean,     tl,   nets,   nete)
 
     use kinds,          only: real_kind
     use dimensions_mod, only: np, nlev
     use element_mod,    only: element_t
     use edgetype_mod,   only: EdgeBuffer_t
-    use filter_mod,     only: filter_t
     use hybrid_mod,     only: hybrid_t
     use derivative_mod, only: derivative_t
     use time_mod,       only: timelevel_t, smooth
@@ -37,7 +36,6 @@ contains
 
     type (derivative_t)  , intent(in) :: deriv
 
-    type (filter_t)                   :: flt
     type (hybrid_t)      , intent(in) :: hybrid
 
     real (kind=real_kind), intent(in) :: dt
@@ -172,7 +170,7 @@ contains
 
 !--------------------------------------------------------------------------------------------
 
-  subroutine advance_nonstag_rk( MyRk, elem, edge2,  edge3,  deriv,  flt,   hybrid,  &
+  subroutine advance_nonstag_rk( MyRk, elem, edge2,  edge3,  deriv,  hybrid,  &
        dt,  pmean,     tl,   nets,   nete)
 
     use kinds,          only: real_kind
@@ -180,13 +178,11 @@ contains
     use element_mod,    only: element_t
     use edge_mod,       only: edgevpack, edgevunpack, edgedgvunpack
     use edgetype_mod,   only: EdgeBuffer_t
-    use filter_mod,     only: filter_t
     use hybrid_mod,     only: hybrid_t
     use derivative_mod, only: derivative_t, gradient_sphere, divergence_sphere,vorticity_sphere,&
          divergence_sphere_wk, edge_flux_u_cg
     use time_mod,       only: timelevel_t
-    use control_mod,    only:  test_case, limiter_option, nu, nu_s, &
-         tracer_advection_formulation, TRACERADV_UGRADQ, kmass
+    use control_mod,    only:  test_case, limiter_option, nu, nu_s, kmass
     use bndry_mod,      only: bndry_exchangev
     use viscosity_mod,  only: neighbor_minmax, biharmonic_wk
     !  FOR DEBUGING use only 
@@ -204,7 +200,6 @@ contains
 
     type (derivative_t)  , intent(in) :: deriv
 
-    type (filter_t)                   :: flt
     type (hybrid_t)      , intent(in) :: hybrid
 
     real (kind=real_kind), intent(in) :: dt
@@ -250,12 +245,6 @@ contains
     integer :: ntmp
 
     logical :: Debug = .FALSE.
-
-    ! shallow water test cases require conservation form of h equation
-    if (tracer_advection_formulation==TRACERADV_UGRADQ) then
-      print *,'ERROR: shallow water tests require conservation formulation:'
-      stop '(tracer_advection_formulation=1)'
-    endif
 
     if (kmass==-1) then
        if (limiter_option ==0 .or. limiter_option==4) then
@@ -404,12 +393,7 @@ contains
              grade = gradient_sphere(E,deriv,elem(ie)%Dinv)       ! scalar -> latlon vector
              !grade = gradient_sphere_wk(E,deriv,elem(ie)%Dinv)       ! scalar -> latlon vector
              zeta = vorticity_sphere(ulatlon,deriv,elem(ie)) ! latlon vector -> scalar 
-             if (tracer_advection_formulation==TRACERADV_UGRADQ) then
-                gradh = gradient_sphere(elem(ie)%state%p(:,:,k,n0),deriv,elem(ie)%Dinv)
-                div = ulatlon(:,:,1)*gradh(:,:,1)+ulatlon(:,:,2)*gradh(:,:,2)
-             else
-                div = divergence_sphere(pv,deriv,elem(ie))      ! latlon vector -> scalar
-             endif
+             div = divergence_sphere(pv,deriv,elem(ie))      ! latlon vector -> scalar
 
              ! ==============================================
              ! Compute velocity tendency terms
@@ -907,570 +891,6 @@ contains
     ! unpack+mass_inv    1015  12%     
     ! total 8692
   end subroutine advance_hypervis
-
-!-----------------------------------------------------------------------------------
-
-  subroutine advance_si_nonstag(elem, edge1,edge2,   edge3 ,  red     ,            &
-       deriv,                    &
-       flt  ,                   &
-       cg   ,   blkjac    ,  lambdasq, &
-       dt   ,   pmean ,  tl      ,            &
-       nets ,    nete)
-
-    use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev
-    use element_mod, only : element_t
-    use edge_mod, only : edgevpack, edgevunpack
-    use edgetype_mod, only : EdgeBuffer_t
-    use filter_mod, only : filter_t, filter_P
-    use reduction_mod, only : reductionbuffer_ordered_1d_t
-    !    use parallel_mod
-    use derivative_mod, only : derivative_t,  gradient_wk, divergence, &
-         vorticity, gradient
-    use time_mod, only : timelevel_t, smooth
-    use control_mod, only : filter_freq, precon_method
-    use cg_mod, only : cg_t
-    use solver_mod, only : pcg_solver, blkjac_t, blkjac_init
-    use bndry_mod, only : bndry_exchangev
-    use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
-    !    use schedule_mod
-    implicit none
-    type (element_t), intent(inout), target :: elem(:)
-    type (EdgeBuffer_t)               :: edge1
-    type (EdgeBuffer_t)               :: edge2
-    type (EdgeBuffer_t)               :: edge3
-    type (ReductionBuffer_ordered_1d_t)     :: red
-    type (derivative_t)               :: deriv
-    type (filter_t)                   :: flt
-    type (cg_t)                       :: cg
-
-    integer              , intent(in) :: nets
-    integer              , intent(in) :: nete
-    type (blkjac_t), allocatable      :: blkjac(:)
-
-    real (kind=real_kind), intent(in) :: dt
-    real (kind=real_kind), intent(in) :: pmean
-    real (kind=real_kind), intent(inout) :: lambdasq(nlev)
-    type (TimeLevel_t)   , intent(in) :: tl
-    ! =================
-    ! Local Variables
-    ! =================
-
-    ! pointers ...
-
-    real (kind=real_kind), dimension(:,:), pointer     :: mp
-
-    real (kind=real_kind), dimension(:,:), pointer     :: fcor
-    real (kind=real_kind), dimension(:,:), pointer     :: rmp
-    real (kind=real_kind), dimension(:,:), pointer     :: metdet
-    real (kind=real_kind), dimension(:,:,:,:), pointer :: Dinv
-
-    ! Thread private working set ...
-
-    real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: Ru
-    real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: grad_dp
-    real (kind=real_kind), dimension(np,np,nlev,nets:nete)    :: vgradp     ! v.grad(p) on velocity grid
-    real (kind=real_kind), dimension(np,np,nlev,nets:nete)    :: Rs   
-    real (kind=real_kind), dimension(np,np,nlev,nets:nete)    :: dp ! solution to Helmholtz equation
-
-    real (kind=real_kind), dimension(np,np,2)    :: gradp      ! weak pressure gradient, time level (n  )
-    real (kind=real_kind), dimension(np,np,2)    :: gradpm1    ! weak pressure gradient, time level (n-1)
-    real (kind=real_kind), dimension(np,np,2)    :: grade      ! strong kinetic energy gradient
-    real (kind=real_kind), dimension(np,np,2)    :: gvm1       ! metdet*v(n-1), v contravariant
-    real (kind=real_kind), dimension(np,np,2)    :: gv         ! metdet*v(n-1), v contravariant
-    real (kind=real_kind), dimension(np,np,2)    :: vco        ! covariant velocity
-    real (kind=real_kind), dimension(np,np,2)    :: ulatlon    ! lat-lon velocity
-
-    real (kind=real_kind), dimension(np,np)      :: E          ! kinetic energy term
-    real (kind=real_kind), dimension(np,np)      :: zeta       ! relative vorticity
-
-    real (kind=real_kind), dimension(np,np)      :: div        ! timestep n   velocity divergence (p-grid)
-    real (kind=real_kind), dimension(np,np)      :: divm1      ! timestep n-1 velocity divergence (p-grid)
-
-    real (kind=real_kind) ::  v1,v2
-    real (kind=real_kind) ::  grad_dp1,grad_dp2
-    real (kind=real_kind) ::  Ru1,Ru2
-
-    real (kind=real_kind) ::  dt2
-
-!    real (kind=real_kind) :: et,st
-    integer i,j,k,ie
-    integer kptr
-    integer iptr
-    integer nm1,n0,np1
-    integer nstep
-
-    call t_startf('advance_si_nonstag')
-
-    if ( dt /= initialized_for_dt ) then
-       if(cg%hybrid%par%masterproc) print *,'Initializing semi-implicit matricies for dt=',dt
-
-       lambdasq(:) = pmean*dt*dt
-       if (precon_method == "block_jacobi") then
-          call blkjac_init(elem, deriv,lambdasq,nets,nete,blkjac)
-       end if
-       initialized_for_dt = dt
-    endif
-
-
-
-    nm1 = tl%nm1
-    n0  = tl%n0
-    np1 = tl%np1
-    nstep = tl%nstep
-
-    dt2 = 2*dt
-
-    !DBG print *,'advance_si: point #1'
-
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
-    ! ====================
-    ! Call Filter...
-    ! ====================
-    !DBG print *,'advance_si: point #3'
-
-    if (nstep > 0 .and. filter_freq > 0 .and. MODULO(nstep,filter_freq) == 0 ) then
-
-       !DBG print *,'advance_si: point #4'
-       do ie=nets,nete
-          do k=1,nlev
-             call filter_P(elem(ie)%state%p(:,:,k,n0),flt)
-
-             ulatlon(:,:,1)=elem(ie)%D(:,:,1,1)*elem(ie)%state%v(:,:,1,k,n0)+&
-                            elem(ie)%D(:,:,1,2)*elem(ie)%state%v(:,:,2,k,n0)
-             ulatlon(:,:,2)=elem(ie)%D(:,:,2,1)*elem(ie)%state%v(:,:,1,k,n0)+&
-                            elem(ie)%D(:,:,2,2)*elem(ie)%state%v(:,:,2,k,n0)
-
-             do j=1,np
-                do i=1,np
-                   elem(ie)%state%v(i,j,1,k,n0) = elem(ie)%mp(i,j)*ulatlon(i,j,1)
-                   elem(ie)%state%v(i,j,2,k,n0) = elem(ie)%mp(i,j)*ulatlon(i,j,2)
-                   elem(ie)%state%p(i,j,k,n0)   = elem(ie)%mp(i,j)*elem(ie)%state%p(i,j,k,n0)
-                end do
-             end do
-
-          end do
-          kptr=0
-          call edgeVpack(edge3, elem(ie)%state%v(:,:,:,:,n0),2*nlev,kptr,ie)
-          kptr=2*nlev
-          call edgeVpack(edge3, elem(ie)%state%p(:,:,:,n0),nlev,kptr,ie)
-          kptr=0
-          !DBG print *,'advance_si: point #6'
-       end do
-
-       !DBG print *,'advance_si: point #8'
-#if (defined HORIZ_OPENMP)
-       !$OMP BARRIER
-#endif
-
-       call bndry_exchangeV(cg%hybrid,edge3)
-#if (defined HORIZ_OPENMP)
-       !$OMP BARRIER
-#endif
-
-       do ie=nets,nete
-
-          kptr=0
-          call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,n0), 2*nlev, kptr, ie)
-          kptr=2*nlev
-          call edgeVunpack(edge3, elem(ie)%state%p(:,:,:,n0), nlev, kptr, ie)
-
-          do k=1,nlev
-             vco(:,:,1) = elem(ie)%Dinv(:,:,1,1)*elem(ie)%state%v(:,:,1,k,n0)+&
-                          elem(ie)%Dinv(:,:,1,2)*elem(ie)%state%v(:,:,2,k,n0)
-             vco(:,:,2) = elem(ie)%Dinv(:,:,2,1)*elem(ie)%state%v(:,:,1,k,n0)+&
-                          elem(ie)%Dinv(:,:,2,2)*elem(ie)%state%v(:,:,2,k,n0)
-             do j=1,np
-                do i=1,np
-                   elem(ie)%state%v(i,j,1,k,n0) = elem(ie)%rmp(i,j)*vco(i,j,1)
-                   elem(ie)%state%v(i,j,2,k,n0) = elem(ie)%rmp(i,j)*vco(i,j,2)
-                   elem(ie)%state%p(i,j,k,n0)   = elem(ie)%rmp(i,j)*elem(ie)%state%p(i,j,k,n0)
-                end do
-             end do
-          end do
-
-       end do
-
-#if (defined HORIZ_OPENMP)
-       !$OMP BARRIER
-#endif
-
-    end if
-    !DBG print *,'advance_si: point #10'
-
-    do ie=nets,nete
-
-       mp => elem(ie)%mp
-       fcor => elem(ie)%fcor
-       metdet => elem(ie)%metdet
-       Dinv => elem(ie)%Dinv
-
-       !JMD       TIMER_DETAIL_START(timer,2,st)
-       !JMD metdet => elem(ie)%metdet
-       !JMD if(TIMER_DETAIL(2,timer)) then
-       !JMD	 TIMER_START(et)
-       !JMD	 timer%pointers = timer%pointers + (et - st)
-       !JMD       endif
-
-       !DBG print *,'advance_si: point #11'
-       do k=1,nlev
-
-          ! ==============================================
-          !
-          ! Compute gradient of pressure field at time 
-          ! level n-1 and n
-          ! 
-          !   2 x {2.0*(np+np)*np*(2.0*np-1.0) + 2*np*np} Flops
-          !
-          ! ==============================================
-! this would become gradient_sphere
-
-       ! scale  by rearth to get scaling right between phi and v.
-#ifdef _WK_GRAD
-          gradpm1(:,:,:)=gradient_wk(elem(ie)%state%p(:,:,k,nm1),deriv)*rrearth
-          gradp(:,:,:)  =gradient_wk(elem(ie)%state%p(:,:,k,n0), deriv)*rrearth
-#else
-          gradpm1(:,:,:)=gradient(elem(ie)%state%p(:,:,k,nm1),deriv)*rrearth
-          gradp(:,:,:)  =gradient(elem(ie)%state%p(:,:,k,n0), deriv)*rrearth
-! ---
-#endif
-! --- endif _WK_GRAD
-
-          ! ==============================================
-          !
-          ! Compute kinetic energy term: 10*np*np Flops
-          !
-          ! ==============================================
-          do j=1,np
-             do i=1,np
-                v1     = elem(ie)%state%v(i,j,1,k,n0)
-                v2     = elem(ie)%state%v(i,j,2,k,n0)
-
-                vco(i,j,1) = elem(ie)%met(i,j,1,1)*v1 + elem(ie)%met(i,j,1,2)*v2
-                vco(i,j,2) = elem(ie)%met(i,j,2,1)*v1 + elem(ie)%met(i,j,2,2)*v2
-
-                E(i,j) = 0.5D0*( vco(i,j,1)*v1 + vco(i,j,2)*v2 )
-
-             end do
-          end do
-
-          ! =========================================
-          !
-          ! Compute metdet * relative vorticity (zeta)
-          !
-          !   2.0*np*np*(2.0*np-1.0) + 3 np*np Flops
-          !
-          ! =========================================
-
-          !DBG print *,'advance_si: point #12'
-          zeta(:,:)  = vorticity(vco,deriv)*rrearth
-
-          ! ==============================================
-          !
-          ! Compute vgradient of kinetic energy field
-          !
-          !   2.0*np*np*(2.0*np-1.0) + 2*np*np Flops
-          !
-          ! ==============================================
-          grade(:,:,:)=gradient(E,deriv)*rrearth
-
-
-          ! ==============================================
-          !
-          ! Compute Ru^i and v.grad(p) term
-          !
-          !    23*np*np Flops
-          !
-          ! ==============================================
-          !DBG print *,'advance_si: point #13 ie:=',ie
-          do j=1,np
-             do i=1,np
-
-!make sure its consistent lat lon NOT not contra or co-variant
-                Ru1 =  mp(i,j)*(   elem(ie)%state%v(i,j,2,k,n0)*(metdet(i,j)*fcor(i,j) + zeta(i,j)) &
-                     - grade(i,j,1))                                              &
-                     + gradpm1(i,j,1) + elem(ie)%state%gradps(i,j,1)
-
-                Ru2 =  mp(i,j)*( - elem(ie)%state%v(i,j,1,k,n0)*(metdet(i,j)*fcor(i,j) + zeta(i,j)) &
-                     - grade(i,j,2))                                               &
-                     + gradpm1(i,j,2) + elem(ie)%state%gradps(i,j,2)
-                Ru(i,j,1,k,ie)   = dt2*(Dinv(i,j,1,1)*Ru1 + Dinv(i,j,2,1)*Ru2)
-                Ru(i,j,2,k,ie)   = dt2*(Dinv(i,j,1,2)*Ru1 + Dinv(i,j,2,2)*Ru2)
-
-                vgradp(i,j,k,ie)  =  elem(ie)%state%v(i,j,1,k,n0)*gradp(i,j,1) + &
-                     elem(ie)%state%v(i,j,2,k,n0)*gradp(i,j,2)
-
-             end do
-          end do
-       end do
-
-
-       ! ===================================================
-       !
-       ! Pack cube edges of grad(p) and V.grad(V) 
-       ! into edge buffer
-       !
-       ! ===================================================
-
-       !DBG print *,'advance_si: point #14'
-       kptr=0
-       call edgeVpack(edge3, vgradp(1,1,1,ie),nlev,kptr,ie)
-
-       kptr=nlev
-       call edgeVpack(edge3,Ru(1,1,1,1,ie),2*nlev,kptr,ie)
-       !DBG print *,'advance_si: point #15'
-
-       ! =============================================================
-       !
-       ! Rotate edges (if necessary, e.g. if we're on the cube)
-       !
-       ! ============================================================= 
-
-       !DBG print *,'advance_si: point #15.1'
-    end do
-
-    ! =============================================================
-    ! Insert communications here: for shared memory, just a single
-    ! thread barrier is required
-    ! =============================================================
-
-    call bndry_exchangeV(cg%hybrid,edge3)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
-    do ie=nets,nete
-
-       rmp     => elem(ie)%rmp
-       mp      => elem(ie)%mp
-       Dinv    => elem(ie)%Dinv
-       metdet  => elem(ie)%metdet
-
-       ! ===========================================================
-       ! Unpack the edges for vgradp and vtens
-       !   3*4*(np+1)
-       ! ===========================================================
-
-       kptr=0
-       call edgeVunpack(edge3, vgradp(1,1,1,ie), nlev, kptr, ie)
-
-       kptr=nlev
-       call edgeVunpack(edge3, Ru(1,1,1,1,ie), 2*nlev, kptr, ie)
-
-       ! ===========================================================
-       ! Compute velocity and pressure tendencies for all levels
-       ! ===========================================================
-
-       do k=1,nlev
-
-          ! =========================================================
-          !
-          ! Scale velocity tendency and v.grad(p) term by inverse mass
-          ! matrix, scale velocity by metric g factor.
-          !
-          !     11 np*np Flops
-          !
-          ! =========================================================
-
-          do j=1,np
-             do i=1,np
-                vgradp(i,j,k,ie) = rmp(i,j)*vgradp(i,j,k,ie)
-
-                Ru1 = Ru(i,j,1,k,ie)
-                Ru2 = Ru(i,j,2,k,ie)
-                Ru(i,j,1,k,ie) = rmp(i,j)*(Dinv(i,j,1,1)*Ru1+Dinv(i,j,1,2)*Ru2)
-                Ru(i,j,2,k,ie) = rmp(i,j)*(Dinv(i,j,2,1)*Ru1+Dinv(i,j,2,2)*Ru2)
-
-                gv(i,j,1)   = metdet(i,j)*elem(ie)%state%v(i,j,1,k,n0)
-                gv(i,j,2)   = metdet(i,j)*elem(ie)%state%v(i,j,2,k,n0)
-
-                gvm1(i,j,1) = metdet(i,j)*(elem(ie)%state%v(i,j,1,k,nm1) + 0.5D0*Ru(i,j,1,k,ie))
-                gvm1(i,j,2) = metdet(i,j)*(elem(ie)%state%v(i,j,2,k,nm1) + 0.5D0*Ru(i,j,2,k,ie))
-
-             end do
-          end do
-          ! ==========================================================
-          !
-          ! Compute divergence of metdet*v(n  ), v(n  ) contravariant
-          ! Compute divergence of metdet*v(n-1), v(n-1) contravariant
-          !
-          !  2 x [ 2*(np+np)*np*(2*np-1) + 3*np*np ] Flops
-          ! ==========================================================
-
-          div    = divergence(gv  ,deriv)*rrearth
-          divm1  = divergence(gvm1,deriv)*rrearth
-
-          ! ====================================================
-          ! Compute the Right Hand Side of the Helmholtz eq
-          !
-          !    7*np*np Flops
-          !
-          ! ====================================================
-
-          iptr=1
-          do j=1,np
-             do i=1,np
-                Rs(i,j,k,ie) = dt2*mp(i,j)*(vgradp(i,j,k,ie)*metdet(i,j)   &
-                     - elem(ie)%state%p(i,j,k,n0)*div(i,j)       &
-                     -                 pmean*divm1(i,j))
-             end do
-          end do
-
-       end do
-       !DBG print *,'advance_si: point #14'
-       kptr=0
-       call edgeVpack(edge1, Rs(1,1,1,ie),nlev,kptr,ie)
-
-    end do
-
-    call bndry_exchangeV(cg%hybrid,edge1)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
-    do ie=nets,nete
-
-       rmp     => elem(ie)%rmp
-       kptr=0
-       call edgeVunpack(edge1, Rs(1,1,1,ie), nlev, kptr, ie)
-       do k=1,nlev
-          do j=1,np
-             do i=1,np
-                Rs(i,j,k,ie) = rmp(i,j)*Rs(i,j,k,ie)
-             enddo
-          enddo
-       enddo
-    enddo
-
-    ! ======================================================
-    ! Invoke the solver!
-    ! ======================================================
-
-    !DBG print *,'advance_si: before call to pcg_solver'
-
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
-
-    dp(:,:,:,nets:nete) = pcg_solver(elem, &
-         Rs(:,:,:,nets:nete),  &     ! rhs of Helmholtz problem
-         cg,              &     ! cg struct
-         red,             &     ! reduction buffer
-         edge1 ,          &     ! single vector edge exchange buffer
-         edge2 ,          &     ! single vector edge exchange buffer
-         lambdasq,        &     ! Helmholtz length scale squared
-         deriv,      &     ! staggered derivative struct
-         nets,            &     ! starting element number
-         nete,            &     ! ending   element number
-         blkjac)
-
-    do ie=nets,nete
-
-       Dinv => elem(ie)%Dinv
-
-       do k=1,nlev
-
-          ! compute grad dp needed to back substitute for du
-
-#ifdef _WK_GRAD
-          grad_dp(:,:,:,k,ie)=gradient_wk(dp(:,:,k,ie),deriv)*rrearth
-#else
-          grad_dp(:,:,:,k,ie)=gradient(dp(:,:,k,ie),deriv)*rrearth
-! ---
-#endif
-! --- endif _WK_GRAD
-
-
-          ! ==================================================
-          ! Rotate grad_dp to form contravariant object:
-          !        6 np*np Flops
-          ! ==================================================
-
-          do j=1,np
-             do i=1,np
-                grad_dp1 = grad_dp(i,j,1,k,ie)
-                grad_dp2 = grad_dp(i,j,2,k,ie)
-                grad_dp(i,j,1,k,ie) = Dinv(i,j,1,1)*grad_dp1 + Dinv(i,j,2,1)*grad_dp2
-                grad_dp(i,j,2,k,ie) = Dinv(i,j,1,2)*grad_dp1 + Dinv(i,j,2,2)*grad_dp2
-
-             end do
-          end do
-
-       enddo
-
-       kptr=0
-       call edgeVpack(edge2, grad_dp(1,1,1,1,ie),2*nlev,kptr,ie)
-    end do
-
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-    call bndry_exchangeV(cg%hybrid,edge2)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-    do ie=nets,nete
-       rmp => elem(ie)%rmp
-       Dinv => elem(ie)%Dinv
-
-
-       kptr=0      
-
-       call edgeVunpack(edge2, grad_dp(1,1,1,1,ie), 2*nlev, kptr, ie)
-
-       do k=1,nlev
-
-          ! ==============================
-          ! Update geopotential
-          !    6 np*np Flops
-          ! ==============================
-
-
-          iptr=1
-          do j=1,np
-             do i=1,np
-                elem(ie)%state%p(i,j,k,np1) = elem(ie)%state%p(i,j,k,nm1) + dp(i,j,k,ie)
-                elem(ie)%state%p(i,j,k,n0)  = elem(ie)%state%p(i,j,k,n0) + smooth*(elem(ie)%state%p(i,j,k,nm1) &
-                     - 2.0D0*elem(ie)%state%p(i,j,k,n0) + elem(ie)%state%p(i,j,k,np1))
-                iptr=iptr+1
-             end do
-          end do
-
-          ! ==============================
-          ! Update velocity
-          !    16 np*np Flops
-          ! ==============================
-
-          do j=1,np
-             do i=1,np
-                grad_dp1 = rmp(i,j)* &
-                          (Dinv(i,j,1,1)*grad_dp(i,j,1,k,ie)+Dinv(i,j,1,2)*grad_dp(i,j,2,k,ie))
-                grad_dp2 = rmp(i,j)* &
-                          (Dinv(i,j,2,1)*grad_dp(i,j,1,k,ie)+Dinv(i,j,2,2)*grad_dp(i,j,2,k,ie))
-
-                elem(ie)%state%v(i,j,1,k,np1) = elem(ie)%state%v(i,j,1,k,nm1) + Ru(i,j,1,k,ie) + dt*grad_dp1
-                elem(ie)%state%v(i,j,2,k,np1) = elem(ie)%state%v(i,j,2,k,nm1) + Ru(i,j,2,k,ie) + dt*grad_dp2
-                elem(ie)%state%v(i,j,1,k,n0)  = elem(ie)%state%v(i,j,1,k,n0) + smooth*(elem(ie)%state%v(i,j,1,k,nm1) &
-                     - 2.0D0*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%state%v(i,j,1,k,np1))
-                elem(ie)%state%v(i,j,2,k,n0)  = elem(ie)%state%v(i,j,2,k,n0) + smooth*(elem(ie)%state%v(i,j,2,k,nm1) &
-                     - 2.0D0*elem(ie)%state%v(i,j,2,k,n0) + elem(ie)%state%v(i,j,2,k,np1))
-
-             end do
-          end do
-       end do
-    end do
-
-    call t_stopf('advance_si_nonstag')
-
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
-  end subroutine advance_si_nonstag
 
 
 !----------------------------------------------------------------------------------------

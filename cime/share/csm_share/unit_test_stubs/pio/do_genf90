@@ -2,7 +2,7 @@
 
 # Run genf90 on all files that need it in this directory
 
-genf90=../../../../tools/cprnc/genf90/genf90.pl
+genf90=../../../../externals/genf90/genf90.pl
 
 for fl in *.in; do
     echo $fl

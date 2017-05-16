@@ -2,24 +2,24 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_SparseMatrix -- Sparse Matrix Object
 !
 ! !DESCRIPTION:
-! The {\tt SparseMatrix} data type is MCT's object for storing sparse 
-! matrices.  In MCT, intergrid interpolation is implemented as a sparse 
-! matrix-vector multiplication, with the {\tt AttrVect} type playing the 
+! The {\tt SparseMatrix} data type is MCT's object for storing sparse
+! matrices.  In MCT, intergrid interpolation is implemented as a sparse
+! matrix-vector multiplication, with the {\tt AttrVect} type playing the
 ! roles of the input and output vectors.  The interpolation matrices tend
 ! to be {\em extremely} sparse.  For ${\bf x} \in \Re^{N_x}$, and
-! ${\bf y} \in \Re^{N_y}$, the interpolation matrix {\bf M} used to effect 
-! ${\bf y} = {\bf M} {\bf x}$ will typically have ${\cal O}({N_y})$ 
-! non-zero elements.  For that reason, the {\tt SparseMatrix} type 
-! stores {\em only} information about non-zero matrix elements, along 
-! with the number of rows and columns in the full matrix.  The nonzero  
-! matrix elements are stored in {\tt AttrVect} form (see the module 
-! {\tt m\_AttrVect} for more details), and the set of attributes are 
+! ${\bf y} \in \Re^{N_y}$, the interpolation matrix {\bf M} used to effect
+! ${\bf y} = {\bf M} {\bf x}$ will typically have ${\cal O}({N_y})$
+! non-zero elements.  For that reason, the {\tt SparseMatrix} type
+! stores {\em only} information about non-zero matrix elements, along
+! with the number of rows and columns in the full matrix.  The nonzero
+! matrix elements are stored in {\tt AttrVect} form (see the module
+! {\tt m\_AttrVect} for more details), and the set of attributes are
 ! listed below:
 !
 !\begin{table}[htbp]
@@ -41,15 +41,15 @@
 !\end{tabular}
 !\end{center}
 !\end{table}
-! 
-! The provision of both local and global column and row indices is 
-! made because this datatype can be used in either shared-memory or 
+!
+! The provision of both local and global column and row indices is
+! made because this datatype can be used in either shared-memory or
 ! distributed-memory parallel matrix-vector products.
 !
-! This module contains the definition of the {\tt SparseMatrix} type, 
-! creation and destruction methods, a variety of accessor methods, 
-! routines for testing the suitability of the matrix for interpolation 
-! (i.e. the sum of each row is either zero or unity), and methods for 
+! This module contains the definition of the {\tt SparseMatrix} type,
+! creation and destruction methods, a variety of accessor methods,
+! routines for testing the suitability of the matrix for interpolation
+! (i.e. the sum of each row is either zero or unity), and methods for
 ! sorting and permuting matrix entries.
 !
 ! For better performance of the Matrix-Vector multiply on vector
@@ -99,23 +99,23 @@
       public :: nRows             ! Total number of rows
       public :: nCols             ! Total number of columns
 
-      public :: exportGlobalRowIndices    ! Return global row indices 
+      public :: exportGlobalRowIndices    ! Return global row indices
                                           ! for matrix elements
-      public :: exportGlobalColumnIndices ! Return global column indices 
+      public :: exportGlobalColumnIndices ! Return global column indices
                                           ! for matrix elements
-      public :: exportLocalRowIndices     ! Return local row indices 
+      public :: exportLocalRowIndices     ! Return local row indices
                                           ! for matrix elements
-      public :: exportLocalColumnIndices  ! Return local column indices 
+      public :: exportLocalColumnIndices  ! Return local column indices
                                           ! for matrix elements
       public :: exportMatrixElements      ! Return matrix elements
 
-      public :: importGlobalRowIndices    ! Set global row indices 
-                                          ! using 
-      public :: importGlobalColumnIndices ! Return global column indices 
+      public :: importGlobalRowIndices    ! Set global row indices
+                                          ! using
+      public :: importGlobalColumnIndices ! Return global column indices
                                           ! for matrix elements
-      public :: importLocalRowIndices     ! Return local row indices 
+      public :: importLocalRowIndices     ! Return local row indices
                                           ! for matrix elements
-      public :: importLocalColumnIndices  ! Return local column indices 
+      public :: importLocalColumnIndices  ! Return local column indices
                                           ! for matrix elements
       public :: importMatrixElements      ! Return matrix elements
       public :: Copy                      ! Copy a SparseMatrix
@@ -148,19 +148,19 @@
     interface nCols ; module procedure nCols_ ; end interface
 
     interface exportGlobalRowIndices ; module procedure &
-	 exportGlobalRowIndices_ 
+	 exportGlobalRowIndices_
     end interface
 
     interface exportGlobalColumnIndices ; module procedure &
-	 exportGlobalColumnIndices_ 
+	 exportGlobalColumnIndices_
     end interface
 
     interface exportLocalRowIndices ; module procedure &
-	 exportLocalRowIndices_ 
+	 exportLocalRowIndices_
     end interface
 
     interface exportLocalColumnIndices ; module procedure &
-	 exportLocalColumnIndices_ 
+	 exportLocalColumnIndices_
     end interface
 
     interface exportMatrixElements ; module procedure &
@@ -169,55 +169,55 @@
     end interface
 
     interface importGlobalRowIndices ; module procedure &
-	 importGlobalRowIndices_ 
+	 importGlobalRowIndices_
     end interface
 
     interface importGlobalColumnIndices ; module procedure &
-	 importGlobalColumnIndices_ 
+	 importGlobalColumnIndices_
     end interface
 
     interface importLocalRowIndices ; module procedure &
-	 importLocalRowIndices_ 
+	 importLocalRowIndices_
     end interface
 
     interface importLocalColumnIndices ; module procedure &
-	 importLocalColumnIndices_ 
+	 importLocalColumnIndices_
     end interface
 
     interface importMatrixElements ; module procedure &
-	 importMatrixElementsSP_, & 
+	 importMatrixElementsSP_, &
 	 importMatrixElementsDP_
     end interface
 
     interface Copy ; module procedure Copy_ ; end interface
 
     interface GlobalNumElements ; module procedure &
-	 GlobalNumElements_ 
+	 GlobalNumElements_
     end interface
 
     interface ComputeSparsity ; module procedure &
 	 ComputeSparsitySP_,  &
-	 ComputeSparsityDP_ 
+	 ComputeSparsityDP_
     end interface
 
     interface local_row_range ; module procedure &
-	 local_row_range_ 
+	 local_row_range_
     end interface
 
     interface global_row_range ; module procedure &
-	 global_row_range_ 
+	 global_row_range_
     end interface
 
     interface local_col_range ; module procedure &
-	 local_col_range_ 
+	 local_col_range_
     end interface
 
     interface global_col_range ; module procedure &
-	 global_col_range_ 
+	 global_col_range_
     end interface
 
     interface CheckBounds; module procedure &
-	 CheckBounds_ 
+	 CheckBounds_
     end interface
 
     interface row_sum ; module procedure &
@@ -226,7 +226,7 @@
     end interface
 
     interface row_sum_check ; module procedure &
-	 row_sum_checkSP_, & 
+	 row_sum_checkSP_, &
 	 row_sum_checkDP_
     end interface
 
@@ -271,10 +271,10 @@
 !
 ! !DESCRIPTION:  This routine creates the storage space for the
 ! entries of a {\tt SparseMatrix}, and sets the number of rows and
-! columns in it.  The input {\tt INTEGER} arguments {\tt nrows} and 
+! columns in it.  The input {\tt INTEGER} arguments {\tt nrows} and
 ! {\tt ncols} specify the number of rows and columns respectively.
-! The optional input argument {\tt lsize} specifies the number of 
-! nonzero entries in the {\tt SparseMatrix}.  The initialized 
+! The optional input argument {\tt lsize} specifies the number of
+! nonzero entries in the {\tt SparseMatrix}.  The initialized
 ! {\tt SparseMatrix} is returned in the output argument {\tt sMat}.
 !
 ! {\bf N.B.}:  This routine is allocating dynamical memory in the form
@@ -340,14 +340,14 @@
 !
 ! !IROUTINE: vecinit_ - Initialize vector parts of a SparseMatrix
 !
-! !DESCRIPTION:  This routine creates the storage space for 
+! !DESCRIPTION:  This routine creates the storage space for
 ! and intializes the vector parts of a {\tt SparseMatrix}.
 !
 ! {\bf N.B.}:  This routine assumes the locally indexed parts of a
 ! {\tt SparseMatrix} have been initialized.  This is
 ! accomplished by either importing the values directly with
 ! {\tt importLocalRowIndices} and {\tt importLocalColIndices} or by
-! importing the Global Row and Col Indices and making two calls to 
+! importing the Global Row and Col Indices and making two calls to
 ! {\tt GlobalToLocalMatrix}.
 !
 ! {\bf N.B.}:   The vector portion can use a large amount of
@@ -531,7 +531,7 @@
     endif
     sMat%vecinit = .FALSE.
   endif
-   
+
 
  end subroutine clean_
 
@@ -541,9 +541,9 @@
 !
 ! !IROUTINE: lsize_ - Local Number Non-zero Elements
 !
-! !DESCRIPTION:  This {\tt INTEGER} function reports on-processor storage 
-! of the number of nonzero elements in the input {\tt SparseMatrix} 
-! argument {\tt sMat}.  
+! !DESCRIPTION:  This {\tt INTEGER} function reports on-processor storage
+! of the number of nonzero elements in the input {\tt SparseMatrix}
+! argument {\tt sMat}.
 !
 ! !INTERFACE:
 
@@ -575,11 +575,11 @@
 !
 ! !IROUTINE:  GlobalNumElements_ - Global Number of Non-zero Elements
 !
-! !DESCRIPTION:  This routine computes the number of nonzero elements 
-! in a distributed {\tt SparseMatrix} variable {\tt sMat}.  The input 
-! {\tt SparseMatrix} argument {\tt sMat} is examined on each process 
-! to determine the number of nonzero elements it holds, and this value 
-! is summed across the communicator associated with the input 
+! !DESCRIPTION:  This routine computes the number of nonzero elements
+! in a distributed {\tt SparseMatrix} variable {\tt sMat}.  The input
+! {\tt SparseMatrix} argument {\tt sMat} is examined on each process
+! to determine the number of nonzero elements it holds, and this value
+! is summed across the communicator associated with the input
 ! {\tt INTEGER} handle {\tt comm}, with the total returned {\em on each
 ! process on the communicator}.
 !
@@ -595,7 +595,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(SparseMatrix), intent(in)  :: sMat
       integer, optional,  intent(in)  :: comm
@@ -629,23 +629,23 @@
 !
 ! !IROUTINE: indexIA_ - Index an Integer Attribute
 !
-! !DESCRIPTION:  This {\tt INTEGER} function reports the row index 
-! for a given {\tt INTEGER} attribute of the input {\tt SparseMatrix} 
-! argument {\tt sMat}.  The attribute requested is represented by the 
-! input {\tt CHARACTER} variable {\tt attribute}.  The list of integer 
-! attributes one can request is defined in the description block of the 
+! !DESCRIPTION:  This {\tt INTEGER} function reports the row index
+! for a given {\tt INTEGER} attribute of the input {\tt SparseMatrix}
+! argument {\tt sMat}.  The attribute requested is represented by the
+! input {\tt CHARACTER} variable {\tt attribute}.  The list of integer
+! attributes one can request is defined in the description block of the
 ! header of this module ({\tt m\_SparseMatrix}).
 !
 ! Here is how {\tt indexIA\_} provides access to integer attribute data
 ! in a {\tt SparseMatrix} variable {\tt sMat}.  Suppose we wish to access
-! global row information.  This attribute has associated with it the 
-! string tag {\tt grow}.  The corresponding index returned ({\tt igrow}) 
+! global row information.  This attribute has associated with it the
+! string tag {\tt grow}.  The corresponding index returned ({\tt igrow})
 ! is determined by invoking {\tt indexIA\_}:
 ! \begin{verbatim}
 ! igrow = indexIA_(sMat, 'grow')
 ! \end{verbatim}
 !
-! Access to the global row index data in {\tt sMat} is thus obtained by 
+! Access to the global row index data in {\tt sMat} is thus obtained by
 ! referencing {\tt sMat\%data\%iAttr(igrow,:)}.
 !
 !
@@ -713,23 +713,23 @@
 !
 ! !IROUTINE: indexRA_ - Index a Real Attribute
 !
-! !DESCRIPTION:  This {\tt INTEGER} function reports the row index 
-! for a given {\tt REAL} attribute of the input {\tt SparseMatrix} 
-! argument {\tt sMat}.  The attribute requested is represented by the 
-! input {\tt CHARACTER} variable {\tt attribute}.  The list of real 
-! attributes one can request is defined in the description block of the 
+! !DESCRIPTION:  This {\tt INTEGER} function reports the row index
+! for a given {\tt REAL} attribute of the input {\tt SparseMatrix}
+! argument {\tt sMat}.  The attribute requested is represented by the
+! input {\tt CHARACTER} variable {\tt attribute}.  The list of real
+! attributes one can request is defined in the description block of the
 ! header of this module ({\tt m\_SparseMatrix}).
 !
 ! Here is how {\tt indexRA\_} provides access to integer attribute data
 ! in a {\tt SparseMatrix} variable {\tt sMat}.  Suppose we wish to access
-! matrix element values.  This attribute has associated with it the 
-! string tag {\tt weight}.  The corresponding index returned ({\tt iweight}) 
+! matrix element values.  This attribute has associated with it the
+! string tag {\tt weight}.  The corresponding index returned ({\tt iweight})
 ! is determined by invoking {\tt indexRA\_}:
 ! \begin{verbatim}
 ! iweight = indexRA_(sMat, 'weight')
 ! \end{verbatim}
 !
-! Access to the matrix element data in {\tt sMat} is thus obtained by 
+! Access to the matrix element data in {\tt sMat} is thus obtained by
 ! referencing {\tt sMat\%data\%rAttr(iweight,:)}.
 !
 ! !INTERFACE:
@@ -799,7 +799,7 @@
 !
 ! !DESCRIPTION:  This routine returns the {\em total} number of rows
 ! in the input {\tt SparseMatrix} argument {\tt sMat}.  This number of
-! rows is a constant, and not dependent on the decomposition of the 
+! rows is a constant, and not dependent on the decomposition of the
 ! {\tt SparseMatrix}.
 !
 ! !INTERFACE:
@@ -832,7 +832,7 @@
 !
 ! !DESCRIPTION:  This routine returns the {\em total} number of columns
 ! in the input {\tt SparseMatrix} argument {\tt sMat}.  This number of
-! columns is a constant, and not dependent on the decomposition of the 
+! columns is a constant, and not dependent on the decomposition of the
 ! {\tt SparseMatrix}.
 !
 ! !INTERFACE:
@@ -864,12 +864,12 @@
 ! !IROUTINE: exportGlobalRowIndices_ - Return Global Row Indices
 !
 ! !DESCRIPTION:
-! This routine extracts from the input {\tt SparseMatrix} argument 
-! {\tt sMat} its global row indices, and returns them in the {\tt INTEGER} 
-! output array {\tt GlobalRows}, and its length in the output {\tt INTEGER} 
+! This routine extracts from the input {\tt SparseMatrix} argument
+! {\tt sMat} its global row indices, and returns them in the {\tt INTEGER}
+! output array {\tt GlobalRows}, and its length in the output {\tt INTEGER}
 ! argument {\tt length}.
 !
-! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer
 ! association status of the output argument {\tt GlobalRows} means the
 ! user must invoke this routine with care.  If the user wishes this
 ! routine to fill a pre-allocated array, then obviously this array
@@ -879,8 +879,8 @@
 ! must nullify this pointer) at the time this routine is invoked.
 !
 ! {\bf N.B.:}  If the user has relied on this routine to allocate memory
-! associated with the pointer {\tt GlobalRows}, then the user is responsible 
-! for deallocating this array once it is no longer needed.  Failure to 
+! associated with the pointer {\tt GlobalRows}, then the user is responsible
+! for deallocating this array once it is no longer needed.  Failure to
 ! do so will result in a memory leak.
 !
 ! !INTERFACE:
@@ -889,18 +889,18 @@
 !
 ! !USES:
 !
-      use m_die 
+      use m_die
       use m_stdio
 
       use m_AttrVect,      only : AttrVect_exportIAttr => exportIAttr
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(SparseMatrix),     intent(in)  :: sMat
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       integer,  dimension(:), pointer     :: GlobalRows
       integer,  optional,     intent(out) :: length
@@ -928,12 +928,12 @@
 ! !IROUTINE: exportGlobalColumnIndices_ - Return Global Column Indices
 !
 ! !DESCRIPTION:
-! This routine extracts from the input {\tt SparseMatrix} argument 
-! {\tt sMat} its global column indices, and returns them in the {\tt INTEGER} 
-! output array {\tt GlobalColumns}, and its length in the output {\tt INTEGER} 
+! This routine extracts from the input {\tt SparseMatrix} argument
+! {\tt sMat} its global column indices, and returns them in the {\tt INTEGER}
+! output array {\tt GlobalColumns}, and its length in the output {\tt INTEGER}
 ! argument {\tt length}.
 !
-! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer
 ! association status of the output argument {\tt GlobalColumns} means the
 ! user must invoke this routine with care.  If the user wishes this
 ! routine to fill a pre-allocated array, then obviously this array
@@ -943,8 +943,8 @@
 ! must nullify this pointer) at the time this routine is invoked.
 !
 ! {\bf N.B.:}  If the user has relied on this routine to allocate memory
-! associated with the pointer {\tt GlobalColumns}, then the user is responsible 
-! for deallocating this array once it is no longer needed.  Failure to 
+! associated with the pointer {\tt GlobalColumns}, then the user is responsible
+! for deallocating this array once it is no longer needed.  Failure to
 ! do so will result in a memory leak.
 !
 ! !INTERFACE:
@@ -954,18 +954,18 @@
 !
 ! !USES:
 !
-      use m_die 
+      use m_die
       use m_stdio
 
       use m_AttrVect,      only : AttrVect_exportIAttr => exportIAttr
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(SparseMatrix),     intent(in)  :: sMat
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       integer,  dimension(:), pointer     :: GlobalColumns
       integer,  optional,     intent(out) :: length
@@ -993,12 +993,12 @@
 ! !IROUTINE: exportLocalRowIndices_ - Return Local Row Indices
 !
 ! !DESCRIPTION:
-! This routine extracts from the input {\tt SparseMatrix} argument 
-! {\tt sMat} its local row indices, and returns them in the {\tt INTEGER} 
-! output array {\tt LocalRows}, and its length in the output {\tt INTEGER} 
+! This routine extracts from the input {\tt SparseMatrix} argument
+! {\tt sMat} its local row indices, and returns them in the {\tt INTEGER}
+! output array {\tt LocalRows}, and its length in the output {\tt INTEGER}
 ! argument {\tt length}.
 !
-! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer
 ! association status of the output argument {\tt LocalRows} means the
 ! user must invoke this routine with care.  If the user wishes this
 ! routine to fill a pre-allocated array, then obviously this array
@@ -1008,8 +1008,8 @@
 ! must nullify this pointer) at the time this routine is invoked.
 !
 ! {\bf N.B.:}  If the user has relied on this routine to allocate memory
-! associated with the pointer {\tt LocalRows}, then the user is responsible 
-! for deallocating this array once it is no longer needed.  Failure to 
+! associated with the pointer {\tt LocalRows}, then the user is responsible
+! for deallocating this array once it is no longer needed.  Failure to
 ! do so will result in a memory leak.
 !
 ! !INTERFACE:
@@ -1018,18 +1018,18 @@
 !
 ! !USES:
 !
-      use m_die 
+      use m_die
       use m_stdio
 
       use m_AttrVect,      only : AttrVect_exportIAttr => exportIAttr
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(SparseMatrix),     intent(in)  :: sMat
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       integer,  dimension(:), pointer     :: LocalRows
       integer,  optional,     intent(out) :: length
@@ -1054,15 +1054,15 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportLocalColumnIndices_ - Return Local Column Indices 
+! !IROUTINE: exportLocalColumnIndices_ - Return Local Column Indices
 !
 ! !DESCRIPTION:
-! This routine extracts from the input {\tt SparseMatrix} argument 
-! {\tt sMat} its local column indices, and returns them in the {\tt INTEGER} 
-! output array {\tt LocalColumns}, and its length in the output {\tt INTEGER} 
+! This routine extracts from the input {\tt SparseMatrix} argument
+! {\tt sMat} its local column indices, and returns them in the {\tt INTEGER}
+! output array {\tt LocalColumns}, and its length in the output {\tt INTEGER}
 ! argument {\tt length}.
 !
-! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer
 ! association status of the output argument {\tt LocalColumns} means the
 ! user must invoke this routine with care.  If the user wishes this
 ! routine to fill a pre-allocated array, then obviously this array
@@ -1072,8 +1072,8 @@
 ! must nullify this pointer) at the time this routine is invoked.
 !
 ! {\bf N.B.:}  If the user has relied on this routine to allocate memory
-! associated with the pointer {\tt LocalColumns}, then the user is responsible 
-! for deallocating this array once it is no longer needed.  Failure to 
+! associated with the pointer {\tt LocalColumns}, then the user is responsible
+! for deallocating this array once it is no longer needed.  Failure to
 ! do so will result in a memory leak.
 !
 ! !INTERFACE:
@@ -1083,18 +1083,18 @@
 !
 ! !USES:
 !
-      use m_die 
+      use m_die
       use m_stdio
 
       use m_AttrVect,      only : AttrVect_exportIAttr => exportIAttr
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(SparseMatrix),     intent(in)  :: sMat
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       integer,  dimension(:), pointer     :: LocalColumns
       integer,  optional,     intent(out) :: length
@@ -1122,12 +1122,12 @@
 ! !IROUTINE: exportMatrixElementsSP_ - Return Matrix Elements as Array
 !
 ! !DESCRIPTION:
-! This routine extracts the matrix elements from the input {\tt SparseMatrix} 
-! argument {\tt sMat}, and returns them in the {\tt REAL} output array 
-! {\tt MatrixElements}, and its length in the output {\tt INTEGER} 
+! This routine extracts the matrix elements from the input {\tt SparseMatrix}
+! argument {\tt sMat}, and returns them in the {\tt REAL} output array
+! {\tt MatrixElements}, and its length in the output {\tt INTEGER}
 ! argument {\tt length}.
 !
-! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer
 ! association status of the output argument {\tt MatrixElements} means the
 ! user must invoke this routine with care.  If the user wishes this
 ! routine to fill a pre-allocated array, then obviously this array
@@ -1137,8 +1137,8 @@
 ! must nullify this pointer) at the time this routine is invoked.
 !
 ! {\bf N.B.:}  If the user has relied on this routine to allocate memory
-! associated with the pointer {\tt MatrixElements}, then the user is responsible 
-! for deallocating this array once it is no longer needed.  Failure to 
+! associated with the pointer {\tt MatrixElements}, then the user is responsible
+! for deallocating this array once it is no longer needed.  Failure to
 ! do so will result in a memory leak.
 !
 ! The native precision version is described here.  A double precision version
@@ -1151,7 +1151,7 @@
 !
 ! !USES:
 !
-      use m_die 
+      use m_die
       use m_stdio
       use m_realkinds, only : SP
 
@@ -1159,11 +1159,11 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(SparseMatrix),     intent(in)  :: sMat
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       real(SP),  dimension(:),    pointer     :: MatrixElements
       integer,   optional,        intent(out) :: length
@@ -1201,7 +1201,7 @@
 !
 ! !USES:
 !
-      use m_die 
+      use m_die
       use m_stdio
       use m_realkinds, only : DP
 
@@ -1209,11 +1209,11 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(SparseMatrix),     intent(in)  :: sMat
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       real(DP),  dimension(:),    pointer     :: MatrixElements
       integer,   optional,        intent(out) :: length
@@ -1241,9 +1241,9 @@
 ! !IROUTINE: importGlobalRowIndices_ - Set Global Row Indices of Elements
 !
 ! !DESCRIPTION:
-! This routine imports global row index data into the {\tt SparseMatrix} 
-! argument {\tt sMat}.  The user provides the index data in the input 
-! {\tt INTEGER} vector {\tt inVect}.  The input {\tt INTEGER} argument 
+! This routine imports global row index data into the {\tt SparseMatrix}
+! argument {\tt sMat}.  The user provides the index data in the input
+! {\tt INTEGER} vector {\tt inVect}.  The input {\tt INTEGER} argument
 ! {\tt lsize} is used as a consistencey check to ensure the user is
 ! sufficient space in the {\tt SparseMatrix} to store the data.
 !
@@ -1261,12 +1261,12 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       integer,  dimension(:), pointer       :: inVect
       integer,                intent(in)    :: lsize
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
       type(SparseMatrix),     intent(inout) :: sMat
 
@@ -1298,9 +1298,9 @@
 ! !IROUTINE: importGlobalColumnIndices_ - Set Global Column Indices of Elements
 !
 ! !DESCRIPTION:
-! This routine imports global column index data into the {\tt SparseMatrix} 
-! argument {\tt sMat}.  The user provides the index data in the input 
-! {\tt INTEGER} vector {\tt inVect}.  The input {\tt INTEGER} argument 
+! This routine imports global column index data into the {\tt SparseMatrix}
+! argument {\tt sMat}.  The user provides the index data in the input
+! {\tt INTEGER} vector {\tt inVect}.  The input {\tt INTEGER} argument
 ! {\tt lsize} is used as a consistencey check to ensure the user is
 ! sufficient space in the {\tt SparseMatrix} to store the data.
 !
@@ -1318,12 +1318,12 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       integer,  dimension(:), pointer       :: inVect
       integer,                intent(in)    :: lsize
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
       type(SparseMatrix),     intent(inout) :: sMat
 
@@ -1355,9 +1355,9 @@
 ! !IROUTINE: importLocalRowIndices_ - Set Local Row Indices of Elements
 !
 ! !DESCRIPTION:
-! This routine imports local row index data into the {\tt SparseMatrix} 
-! argument {\tt sMat}.  The user provides the index data in the input 
-! {\tt INTEGER} vector {\tt inVect}.  The input {\tt INTEGER} argument 
+! This routine imports local row index data into the {\tt SparseMatrix}
+! argument {\tt sMat}.  The user provides the index data in the input
+! {\tt INTEGER} vector {\tt inVect}.  The input {\tt INTEGER} argument
 ! {\tt lsize} is used as a consistencey check to ensure the user is
 ! sufficient space in the {\tt SparseMatrix} to store the data.
 !
@@ -1375,12 +1375,12 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       integer,  dimension(:), pointer       :: inVect
       integer,                intent(in)    :: lsize
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
       type(SparseMatrix),     intent(inout) :: sMat
 
@@ -1412,9 +1412,9 @@
 ! !IROUTINE: importLocalColumnIndices_ - Set Local Column Indices of Elements
 !
 ! !DESCRIPTION:
-! This routine imports local column index data into the {\tt SparseMatrix} 
-! argument {\tt sMat}.  The user provides the index data in the input 
-! {\tt INTEGER} vector {\tt inVect}.  The input {\tt INTEGER} argument 
+! This routine imports local column index data into the {\tt SparseMatrix}
+! argument {\tt sMat}.  The user provides the index data in the input
+! {\tt INTEGER} vector {\tt inVect}.  The input {\tt INTEGER} argument
 ! {\tt lsize} is used as a consistencey check to ensure the user is
 ! sufficient space in the {\tt SparseMatrix} to store the data.
 !
@@ -1432,12 +1432,12 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       integer,  dimension(:), pointer       :: inVect
       integer,                intent(in)    :: lsize
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
       type(SparseMatrix),     intent(inout) :: sMat
 
@@ -1469,11 +1469,11 @@
 ! !IROUTINE: importMatrixElementsSP_ - Import Non-zero Matrix Elements
 !
 ! !DESCRIPTION:
-! This routine imports matrix elements index data into the 
-! {\tt SparseMatrix} argument {\tt sMat}.  The user provides the index 
-! data in the input {\tt REAL} vector {\tt inVect}.  The input 
-! {\tt INTEGER} argument {\tt lsize} is used as a consistencey check 
-! to ensure the user is sufficient space in the {\tt SparseMatrix} 
+! This routine imports matrix elements index data into the
+! {\tt SparseMatrix} argument {\tt sMat}.  The user provides the index
+! data in the input {\tt REAL} vector {\tt inVect}.  The input
+! {\tt INTEGER} argument {\tt lsize} is used as a consistencey check
+! to ensure the user is sufficient space in the {\tt SparseMatrix}
 ! to store the data.
 !
 ! !INTERFACE:
@@ -1491,12 +1491,12 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       real(SP),  dimension(:),    pointer       :: inVect
       integer,                intent(in)    :: lsize
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
       type(SparseMatrix),     intent(inout) :: sMat
 
@@ -1546,12 +1546,12 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       real(DP),  dimension(:),    pointer       :: inVect
       integer,                intent(in)    :: lsize
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
       type(SparseMatrix),     intent(inout) :: sMat
 
@@ -1583,12 +1583,12 @@
 ! !IROUTINE: Copy_ - Create a Copy of an Input SparseMatrix
 !
 ! !DESCRIPTION:
-! This routine creates a copy of the input {\tt SparseMatrix} argument 
-! {\tt sMat}, returning it as the output {\tt SparseMatrix} argument 
+! This routine creates a copy of the input {\tt SparseMatrix} argument
+! {\tt sMat}, returning it as the output {\tt SparseMatrix} argument
 ! {\tt sMatCopy}.
 !
-! {\bf N.B.:}  The output argument {\tt sMatCopy} represents allocated 
-! memory the user must deallocate when it is no longer needed.  The 
+! {\bf N.B.:}  The output argument {\tt sMatCopy} represents allocated
+! memory the user must deallocate when it is no longer needed.  The
 ! MCT routine to use for this purpose is {\tt clean()} from this module.
 !
 ! !INTERFACE:
@@ -1608,11 +1608,11 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(SparseMatrix), intent(in) :: sMat
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       type(SparseMatrix), intent(out) :: sMatCopy
 
@@ -1648,10 +1648,10 @@
 !
 ! !IROUTINE: local_row_range_ - Local Row Extent of Non-zero Elements
 !
-! !DESCRIPTION: This routine examines the input distributed 
-! {\tt SparseMatrix} variable {\tt sMat}, and returns the range of local 
-! row values having nonzero elements.  The first local row with 
-! nonzero elements is returned in the {\tt INTEGER} argument 
+! !DESCRIPTION: This routine examines the input distributed
+! {\tt SparseMatrix} variable {\tt sMat}, and returns the range of local
+! row values having nonzero elements.  The first local row with
+! nonzero elements is returned in the {\tt INTEGER} argument
 ! {\tt start\_row}, the last row in {\tt end\_row}.
 !
 ! !INTERFACE:
@@ -1708,11 +1708,11 @@
 !
 ! !IROUTINE: global_row_range_ - Global Row Extent of Non-zero Elements
 !
-! !DESCRIPTION:  This routine examines the input distributed 
-! {\tt SparseMatrix} variable {\tt sMat}, and returns the range of 
-! global row values having nonzero elements.  The first local row with 
-! nonzero elements is returned in the {\tt INTEGER} argument 
-! {\tt start\_row}, the last row in {\tt end\_row}. 
+! !DESCRIPTION:  This routine examines the input distributed
+! {\tt SparseMatrix} variable {\tt sMat}, and returns the range of
+! global row values having nonzero elements.  The first local row with
+! nonzero elements is returned in the {\tt INTEGER} argument
+! {\tt start\_row}, the last row in {\tt end\_row}.
 !
 ! !INTERFACE:
 
@@ -1769,10 +1769,10 @@
 !
 ! !IROUTINE: local_col_range_ - Local Column Extent of Non-zero Elements
 !
-! !DESCRIPTION: This routine examines the input distributed 
+! !DESCRIPTION: This routine examines the input distributed
 ! {\tt SparseMatrix} variable {\tt sMat}, and returns the range of
-! local column values having nonzero elements.  The first local column 
-! with nonzero elements is returned in the {\tt INTEGER} argument 
+! local column values having nonzero elements.  The first local column
+! with nonzero elements is returned in the {\tt INTEGER} argument
 ! {\tt start\_col}, the last column in {\tt end\_col}.
 !
 ! !INTERFACE:
@@ -1829,11 +1829,11 @@
 !
 ! !IROUTINE: global_col_range_ - Global Column Extent of Non-zero Elements
 !
-! !DESCRIPTION:  This routine examines the input distributed 
-! {\tt SparseMatrix} variable {\tt sMat}, and returns the range of 
-! global column values having nonzero elements.  The first global 
-! column with nonzero elements is returned in the {\tt INTEGER} argument 
-! {\tt start\_col}, the last column in {\tt end\_col}.  
+! !DESCRIPTION:  This routine examines the input distributed
+! {\tt SparseMatrix} variable {\tt sMat}, and returns the range of
+! global column values having nonzero elements.  The first global
+! column with nonzero elements is returned in the {\tt INTEGER} argument
+! {\tt start\_col}, the last column in {\tt end\_col}.
 !
 ! !INTERFACE:
 
@@ -1891,12 +1891,12 @@
 ! !IROUTINE: ComputeSparsitySP_ - Compute Matrix Sparsity
 !
 ! !DESCRIPTION:  This routine computes the sparsity of a consolidated
-! (all on one process) or distributed {\tt SparseMatrix}.  The input 
+! (all on one process) or distributed {\tt SparseMatrix}.  The input
 ! {\tt SparseMatrix} argument {\tt sMat} is examined to determine the
 ! number of nonzero elements it holds, and this value is divided by the
-! product of the number of rows and columns in {\tt sMat}.  If the 
-! optional input argument {\tt comm} is given, then the distributed 
-! elements are counted and the sparsity computed accordingly, and the 
+! product of the number of rows and columns in {\tt sMat}.  If the
+! optional input argument {\tt comm} is given, then the distributed
+! elements are counted and the sparsity computed accordingly, and the
 ! resulting value of {\tt sparsity} is returned {\em to all processes}.
 !
 ! Given the inherent problems with multiplying and dividing large integers,
@@ -1918,7 +1918,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(SparseMatrix), intent(in)  :: sMat
       integer, optional,  intent(in)  :: comm
@@ -1952,7 +1952,7 @@
        ! Extract number of columns and compute its logarithm
 
   num_cols = nCols_(sMat)
-  Lnum_cols = log(REAL(num_cols,FP))  
+  Lnum_cols = log(REAL(num_cols,FP))
 
        ! Compute logarithm of the (local) sparsity
 
@@ -2002,7 +2002,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(SparseMatrix), intent(in)  :: sMat
       integer, optional,  intent(in)  :: comm
@@ -2036,7 +2036,7 @@
        ! Extract number of columns and compute its logarithm
 
   num_cols = nCols_(sMat)
-  Lnum_cols = log(REAL(num_cols,FP))  
+  Lnum_cols = log(REAL(num_cols,FP))
 
        ! Compute logarithm of the (local) sparsity
 
@@ -2068,14 +2068,14 @@
 !
 ! !IROUTINE: CheckBounds_ - Check for Out-of-Bounds Row/Column Values
 !
-! !DESCRIPTION:  This routine examines the input distributed 
+! !DESCRIPTION:  This routine examines the input distributed
 ! {\tt SparseMatrix} variable {\tt sMat}, and examines the global row
-! and column index for each element, comparing them with the known 
+! and column index for each element, comparing them with the known
 ! maximum values for each (as returned by the routines {\tt nRows\_()}
-! and {\tt nCols\_()}, respectively).  If global row or column entries 
+! and {\tt nCols\_()}, respectively).  If global row or column entries
 ! are non-positive, or greater than the defined maximum values, this
 ! routine stops execution with an error message.  If no out-of-bounds
-! values are detected, the output {\tt INTEGER} status {\tt ierror} is 
+! values are detected, the output {\tt INTEGER} status {\tt ierror} is
 ! set to zero.
 !
 ! !INTERFACE:
@@ -2169,7 +2169,7 @@
 ! {\tt num\_rows} and {\tt sums} are valid on all processes.
 !
 ! {\bf N.B.:  } This routine allocates an array {\tt sums}.  The user is
-! responsible for deallocating this array when it is no longer needed.  
+! responsible for deallocating this array when it is no longer needed.
 ! Failure to do so will cause a memory leak.
 !
 ! !INTERFACE:
@@ -2289,7 +2289,7 @@
 ! Double precision version of row_sumSP_
 !
 ! {\bf N.B.:  } This routine allocates an array {\tt sums}.  The user is
-! responsible for deallocating this array when it is no longer needed.  
+! responsible for deallocating this array when it is no longer needed.
 ! Failure to do so will cause a memory leak.
 !
 ! !INTERFACE:
@@ -2406,13 +2406,13 @@
 !
 ! !IROUTINE: row_sum_checkSP_ - Check Row Sums vs. Valid Values
 !
-! !DESCRIPTION:  The routine {\tt row\_sum\_check()} sums the rows of 
-! the input distributed (across the communicator identified by {\tt comm}) 
-! {\tt SparseMatrix} variable {\tt sMat}.  It then compares these sums 
-! with the {\tt num\_valid} input "valid" values stored in the array 
+! !DESCRIPTION:  The routine {\tt row\_sum\_check()} sums the rows of
+! the input distributed (across the communicator identified by {\tt comm})
+! {\tt SparseMatrix} variable {\tt sMat}.  It then compares these sums
+! with the {\tt num\_valid} input "valid" values stored in the array
 ! {\tt valid\_sums}.  If all of the sums are within the absolute tolerence
 ! specified by the input argument {\tt abs\_tol} of any of the valid values,
-! the output {\tt LOGICAL} flag {\tt valid} is set to {\tt .TRUE}.  
+! the output {\tt LOGICAL} flag {\tt valid} is set to {\tt .TRUE}.
 ! Otherwise, this flag is returned with value {\tt .FALSE}.
 !
 ! !INTERFACE:
@@ -2460,7 +2460,7 @@
   valid = .TRUE.
   i = 1
 
-  SCAN_LOOP:  do 
+  SCAN_LOOP:  do
 
        ! Count the number of elements in valid_sums(:) that
        ! are separated from sums(i) by more than abs_tol
@@ -2545,7 +2545,7 @@
   valid = .TRUE.
   i = 1
 
-  SCAN_LOOP:  do 
+  SCAN_LOOP:  do
 
        ! Count the number of elements in valid_sums(:) that
        ! are separated from sums(i) by more than abs_tol
@@ -2583,17 +2583,17 @@
 ! !IROUTINE: Sort_ - Generate Index Permutation
 !
 ! !DESCRIPTION:
-! The subroutine {\tt Sort\_()} uses a list of sorting keys defined by 
-! the input {\tt List} argument {\tt key\_list}, searches for the appropriate 
-! integer or real attributes referenced by the items in {\tt key\_list} 
-! ( that is, it identifies the appropriate entries in {sMat\%data\%iList} 
-! and {\tt sMat\%data\%rList}), and then uses these keys to generate an index 
+! The subroutine {\tt Sort\_()} uses a list of sorting keys defined by
+! the input {\tt List} argument {\tt key\_list}, searches for the appropriate
+! integer or real attributes referenced by the items in {\tt key\_list}
+! ( that is, it identifies the appropriate entries in {sMat\%data\%iList}
+! and {\tt sMat\%data\%rList}), and then uses these keys to generate an index
 ! permutation {\tt perm} that will put the nonzero matrix entries of stored
-! in {\tt sMat\%data} in lexicographic order as defined by {\tt key\_ist} 
-! (the ordering in {\tt key\_list} being from left to right.  The optional 
+! in {\tt sMat\%data} in lexicographic order as defined by {\tt key\_ist}
+! (the ordering in {\tt key\_list} being from left to right.  The optional
 ! {\tt LOGICAL} array input argument {\tt descend} specifies whether or
-! not to sort by each key in {\em descending} order or {\em ascending} 
-! order.  Entries in {\tt descend} that have value {\tt .TRUE.} correspond 
+! not to sort by each key in {\em descending} order or {\em ascending}
+! order.  Entries in {\tt descend} that have value {\tt .TRUE.} correspond
 ! to a sort by the corresponding key in descending order.  If the argument
 ! {\tt descend} is not present, the sort is performed for all keys in
 ! ascending order.
@@ -2614,13 +2614,13 @@
 
       implicit none
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(SparseMatrix),              intent(in) :: sMat
       type(List),                      intent(in) :: key_list
       logical, dimension(:), optional, intent(in) :: descend
 !
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       integer, dimension(:), pointer              :: perm
 
@@ -2646,9 +2646,9 @@
 ! !IROUTINE: Permute_ - Permute Matrix Elements using Supplied Index Permutation
 !
 ! !DESCRIPTION:
-! The subroutine {\tt Permute\_()} uses an input index permutation 
-! {\tt perm} to re-order the entries of the {\tt SparseMatrix} argument 
-! {\tt sMat}.  The index permutation {\tt perm} is generated using the 
+! The subroutine {\tt Permute\_()} uses an input index permutation
+! {\tt perm} to re-order the entries of the {\tt SparseMatrix} argument
+! {\tt sMat}.  The index permutation {\tt perm} is generated using the
 ! routine {\tt Sort\_()} (in this module).
 !
 ! !INTERFACE:
@@ -2665,12 +2665,12 @@
 
       implicit none
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
 
       integer, dimension(:), pointer               :: perm
 !
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
       type(SparseMatrix),            intent(inout) :: sMat
 
@@ -2692,22 +2692,22 @@
 ! !IROUTINE: SortPermute_ - Sort and Permute Matrix Elements
 !
 ! !DESCRIPTION:
-! The subroutine {\tt SortPermute\_()} uses a list of sorting keys defined 
-! by the input {\tt List} argument {\tt key\_list}, searches for the 
-! appropriate integer or real attributes referenced by the items in 
-! {\tt key\_ist} ( that is, it identifies the appropriate entries in 
-! {sMat\%data\%iList} and {\tt sMat\%data\%rList}), and then uses these 
-! keys to generate an index permutation that will put the nonzero matrix 
-! entries of stored in {\tt sMat\%data} in lexicographic order as defined 
-! by {\tt key\_list} (the ordering in {\tt key\_list} being from left to 
-! right.  The optional {\tt LOGICAL} array input argument {\tt descend} 
-! specifies whether or not to sort by each key in {\em descending} order 
-! or {\em ascending} order.  Entries in {\tt descend} that have value 
-! {\tt .TRUE.} correspond to a sort by the corresponding key in descending 
-! order.  If the argument {\tt descend} is not present, the sort is 
+! The subroutine {\tt SortPermute\_()} uses a list of sorting keys defined
+! by the input {\tt List} argument {\tt key\_list}, searches for the
+! appropriate integer or real attributes referenced by the items in
+! {\tt key\_ist} ( that is, it identifies the appropriate entries in
+! {sMat\%data\%iList} and {\tt sMat\%data\%rList}), and then uses these
+! keys to generate an index permutation that will put the nonzero matrix
+! entries of stored in {\tt sMat\%data} in lexicographic order as defined
+! by {\tt key\_list} (the ordering in {\tt key\_list} being from left to
+! right.  The optional {\tt LOGICAL} array input argument {\tt descend}
+! specifies whether or not to sort by each key in {\em descending} order
+! or {\em ascending} order.  Entries in {\tt descend} that have value
+! {\tt .TRUE.} correspond to a sort by the corresponding key in descending
+! order.  If the argument {\tt descend} is not present, the sort is
 ! performed for all keys in ascending order.
 !
-! Once this index permutation is created, it is applied to re-order the 
+! Once this index permutation is created, it is applied to re-order the
 ! entries of the {\tt SparseMatrix} argument {\tt sMat} accordingly.
 !
 ! !INTERFACE:
@@ -2724,12 +2724,12 @@
 
       implicit none
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(List),                      intent(in)    :: key_list
       logical, dimension(:), optional, intent(in)    :: descend
 !
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
       type(SparseMatrix),              intent(inout) :: sMat
 

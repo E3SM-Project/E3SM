@@ -1,6 +1,6 @@
 03/2013 BFJ
 02/2016 MT
-
+10/2016 DMH
 
 Please see the HOMME wiki for information on how to build HOMME using the CMake build system.
 https://wiki.ucar.edu/display/homme/The+HOMME+CMake+build+and+testing+system
@@ -29,9 +29,12 @@ $WDIR/test_execs/swtcB     directory for swtcB executable
 $WDIR/utils         cprnc utility, and PIO and timing libraries
 $WDIR/tests     directory containing all the HOMME regression tests
 
-
 HOMME has a large regression test suite.  For instructions on running and adding
 new tests, see homme/test/reg_test/README
+
+DCMIP tests provide a standard means for testing and comparing the ACME HOMME dycore with other dycores
+both hydrostatic and nonhydrostatic. They have been placed in their own dcmip_test directory for now.
+To run a DCMIP tests, navigate to the appropriate directory and type make install to install test scripts and namelists.
 
 The CMAKE code could use some cleanup. 
 - user configured variables should not need to be prefixed by the exectuable name
@@ -39,9 +42,6 @@ The CMAKE code could use some cleanup.
   to maintain.
 - the test cases are created after all the test executables are created. In keeping
   with cmake's tree-like directory approach, the tests should be associated with their
-
-
-
 
 
 ************************************************************************************************

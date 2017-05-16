@@ -4,18 +4,18 @@
 !===============================================================================
 
 MODULE shr_mem_mod
-    
+
    use shr_kind_mod, only : shr_kind_r8
    use shr_log_mod, only: s_logunit => shr_log_Unit
 
    implicit none
    private
-    
+
 ! PUBLIC: Public interfaces
 
    public ::  shr_mem_getusage, &
 	      shr_mem_init
-    
+
 ! PUBLIC: Public interfaces
 
    real(shr_kind_r8) :: mb_blk = 0.0_shr_kind_r8
@@ -31,10 +31,10 @@ subroutine shr_mem_init(prt)
    !----- arguments -----
 
    logical, optional :: prt
-     
+
    !----- local -----
 
-   ! --- Memory stats --- 
+   ! --- Memory stats ---
    integer :: msize                   ! memory size (high water)
    integer :: mrss                    ! resident size (current memory use)
    integer :: msize0,msize1           ! temporary size
@@ -42,18 +42,18 @@ subroutine shr_mem_init(prt)
    integer :: mshare,mtext,mdatastack
    logical :: lprt
    integer :: ierr
- 
+
    integer :: GPTLget_memusage
 
    real(shr_kind_r8),allocatable :: mem_tmp(:)
-    
+
    !---------------------------------------------------
 
    lprt = .false.
    if (present(prt)) then
       lprt = prt
    endif
-  
+
    ierr = GPTLget_memusage (msize, mrss0, mshare, mtext, mdatastack)
    allocate(mem_tmp(1024*1024))    ! 1 MWord, 8 MB
    mem_tmp = -1.0

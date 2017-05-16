@@ -7,25 +7,19 @@
 #endif
 
 module prim_advection_mod
-  !OVERWRITING: Prim_Advec_Tracers_remap, prim_advec_init1, prim_advec_init2, prim_advec_init_deriv, deriv, Prim_Advec_Tracers_remap_rk2
-  use prim_advection_mod_base, only: Prim_Advec_Tracers_remap_ALE, prim_advec_tracers_fvm, vertical_remap
+  !OVERWRITING: Prim_Advec_Tracers_remap, prim_advec_init1, prim_advec_init2, Prim_Advec_Tracers_remap_rk2
   use kinds, only              : real_kind
-  use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac, nc, nelemd
+  use dimensions_mod, only     : nlev, nlevp, np, qsize, nelemd
   use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
   use element_mod, only        : element_t
-  use fvm_control_volume_mod, only        : fvm_struct
-  use filter_mod, only         : filter_t, filter_P
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, smooth, TimeLevel_Qdp
-  use prim_si_mod, only        : preq_pressure
-  use diffusion_mod, only      : scalar_diffusion, diffusion_init
-  use control_mod, only        : integration, test_case, filter_freq_advection,  hypervis_order, &
-        statefreq, moisture, TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, &
-        nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
-  use edge_mod, only           : edgevpack, edgerotate, edgevunpack, initedgebuffer, initedgesbuffer, &
-        edgevunpackmin, initghostbuffer3D
+  use control_mod, only        : integration, test_case, hypervis_order, &
+        statefreq, nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
+  use edge_mod, only           : edgevpack, edgevunpack, initedgebuffer, initedgesbuffer, &
+        edgevunpackmin
  
-  use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t, ghostbuffer3D_t
+  use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
   use perf_mod, only           : t_startf, t_stopf, t_barrierf ! _EXTERNAL
@@ -33,7 +27,6 @@ module prim_advection_mod
   use derivative_mod, only: derivative_t
   implicit none
   private
-  type (derivative_t), allocatable :: deriv(:) ! derivative struct (nthreads)
   real(kind=real_kind), private, allocatable :: qmin(:,:,:), qmax(:,:,:)
   real(kind=real_kind), private, allocatable :: dp0(:)
   real(kind=real_kind), private, allocatable :: Qtens_biharmonic(:,:,:,:,:)
@@ -48,18 +41,15 @@ module prim_advection_mod
   real(kind=real_kind), allocatable, private :: data_pack(:,:,:,:), data_pack2(:,:,:,:)
   logical, private :: first_time = .true.
 
-  public :: Prim_Advec_Tracers_remap_ALE, prim_advec_tracers_fvm, vertical_remap
   public :: Prim_Advec_Tracers_remap
   public :: prim_advec_init1
   public :: prim_advec_init2
-  public :: prim_advec_init_deriv
-  public :: deriv
-  public :: Prim_Advec_Tracers_remap_rk2
 
 contains
 
   subroutine copy_qdp1_h2d( elem , tl , nets , nete )
-    use element_mod, only: element_t, state_qdp
+    use element_mod, only: element_t
+    use element_state, only: state_qdp
     use perf_mod, only: t_startf, t_stopf
     implicit none
     type(element_t), intent(in) :: elem(:)
@@ -94,7 +84,8 @@ contains
   end subroutine copy_qdp1_h2d
 
   subroutine copy_qdp1_d2h( elem , tl , nets , nete )
-    use element_mod, only: element_t, state_qdp
+    use element_mod, only: element_t
+    use element_state, only: state_qdp
     use perf_mod, only: t_startf, t_stopf
     implicit none
     type(element_t), intent(in) :: elem(:)
@@ -128,13 +119,12 @@ contains
     call t_stopf('qdp1_pcie')
   end subroutine copy_qdp1_d2h
 
-  subroutine Prim_Advec_Tracers_remap( elem , deriv , hvcoord , flt , hybrid , dt , tl , nets , nete )
+  subroutine Prim_Advec_Tracers_remap( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )
     use perf_mod      , only : t_startf, t_stopf, t_barrierf            ! _EXTERNAL
     use element_mod   , only: element_t
     use derivative_mod, only: derivative_t
     use hybvcoord_mod , only: hvcoord_t
     use hybrid_mod    , only: hybrid_t
-    use filter_mod    , only: filter_t
     use time_mod      , only: TimeLevel_t, TimeLevel_Qdp
     use control_mod   , only: limiter_option, nu_p, qsplit
     use bndry_mod, only: bndry_exchangeV_timing
@@ -142,7 +132,6 @@ contains
     type (element_t)     , intent(inout) :: elem(:)
     type (derivative_t)  , intent(in   ) :: deriv
     type (hvcoord_t)     , intent(in   ) :: hvcoord
-    type (filter_t)      , intent(in   ) :: flt
     type (hybrid_t)      , intent(in   ) :: hybrid
     real(kind=real_kind) , intent(in   ) :: dt
     type (TimeLevel_t)   , intent(inout) :: tl
@@ -155,7 +144,7 @@ contains
       enddo
       first_time = .false.
     endif
-    call Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , flt , hybrid , dt , tl , nets , nete )
+    call Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )
   end subroutine Prim_Advec_Tracers_remap
 
   !-----------------------------------------------------------------------------
@@ -183,20 +172,18 @@ contains
   !
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
-  subroutine Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , flt , hybrid , dt , tl , nets , nete )
+  subroutine Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )
     use perf_mod      , only : t_startf, t_stopf, t_barrierf            ! _EXTERNAL
     use element_mod   , only: element_t
     use derivative_mod, only: derivative_t
     use hybvcoord_mod , only: hvcoord_t
     use hybrid_mod    , only: hybrid_t
-    use filter_mod    , only: filter_t
     use time_mod      , only: TimeLevel_t, TimeLevel_Qdp
     use control_mod   , only: limiter_option, nu_p, qsplit
     implicit none
     type (element_t)     , intent(inout) :: elem(:)
     type (derivative_t)  , intent(in   ) :: deriv
     type (hvcoord_t)     , intent(in   ) :: hvcoord
-    type (filter_t)      , intent(in   ) :: flt
     type (hybrid_t)      , intent(in   ) :: hybrid
     real(kind=real_kind) , intent(in   ) :: dt
     type (TimeLevel_t)   , intent(inout) :: tl
@@ -281,29 +268,13 @@ contains
     allocate(qtens(np,np,nlev,qsize,nelemd))
     allocate(grads_tracer(np,np,2,nlev,qsize,nelemd))
     allocate(dp0(nlev))
-    allocate(deriv(0:n_domains-1))
     allocate(data_pack(np,np,nlev,nelemd))
     allocate(data_pack2(np,np,nlev,nelemd))
   end subroutine prim_advec_init1
 
-  subroutine Prim_Advec_Init_deriv(hybrid,fvm_corners, fvm_points)
-    use kinds         , only : longdouble_kind
-    use dimensions_mod, only : nc
-    use derivative_mod, only : derivinit
-    use hybrid_mod    , only : hybrid_t
-    implicit none
-    type (hybrid_t), intent(in) :: hybrid
-    real(kind=longdouble_kind), intent(in) :: fvm_corners(nc+1)
-    real(kind=longdouble_kind), intent(in) :: fvm_points(nc)
-
-    ! ==================================
-    ! Initialize derivative structure
-    ! ==================================
-    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points)
-  end subroutine Prim_Advec_Init_deriv
-
   subroutine prim_advec_init2(elem,hvcoord,hybrid)
-    use element_mod   , only: element_t, state_Qdp, derived_vn0, derived_divdp, derived_divdp_proj
+    use element_mod   , only: element_t
+    use element_state , only: state_Qdp, derived_vn0, derived_divdp, derived_divdp_proj
     use hybvcoord_mod , only: hvcoord_t
     use hybrid_mod    , only: hybrid_t
     implicit none
@@ -343,7 +314,8 @@ contains
     use kinds                , only: real_kind
     use dimensions_mod       , only: np, nlev
     use hybrid_mod           , only: hybrid_t
-    use element_mod          , only: element_t, derived_divdp_proj, state_qdp
+    use element_mod          , only: element_t
+    use element_state        , only: derived_divdp_proj, state_qdp
     use derivative_mod       , only: derivative_t
     use perf_mod             , only: t_startf, t_stopf                          ! _EXTERNAL
     use hybvcoord_mod        , only: hvcoord_t
@@ -463,7 +435,8 @@ contains
   end subroutine advance_hypervis_scalar
 
   subroutine qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
-    use element_mod, only: element_t, state_qdp
+    use element_mod, only: element_t
+    use element_state, only: state_qdp
     implicit none
     type(element_t)     , intent(inout) :: elem(:)
     integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete , limiter_option
@@ -509,7 +482,7 @@ contains
   use hybvcoord_mod         , only: hvcoord_t
   use control_mod           , only: limiter_option, nu_p, nu_q
   use perf_mod              , only: t_startf, t_stopf
-  use element_mod           , only: derived_divdp_proj, state_qdp, derived_vn0, derived_divdp
+  use element_state         , only: derived_divdp_proj, state_qdp, derived_vn0, derived_divdp
   use derivative_mod, only: divergence_sphere_openacc
   use viscosity_mod , only: biharmonic_wk_scalar_openacc, neighbor_minmax_openacc
   use edge_mod      , only: edgeVpack_openacc, edgeVunpack_openacc
@@ -955,7 +928,8 @@ contains
   end subroutine limiter_optim_iter_full
 
   subroutine precompute_divdp( elem , hybrid , deriv , dt , nets , nete , n0_qdp )
-    use element_mod           , only: element_t, derived_vn0, derived_divdp, derived_divdp_proj
+    use element_mod           , only: element_t
+    use element_state         , only: derived_vn0, derived_divdp, derived_divdp_proj
     use hybrid_mod            , only: hybrid_t
     use derivative_mod        , only: derivative_t
     use edge_mod              , only: edgeVpack, edgeVunpack

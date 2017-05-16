@@ -1,12 +1,11 @@
-#!/bin/bash 
+#!/bin/bash
 
 msls () {
 
     rd=$1
     ssh_loc=$2
-    scp_loc=$3
-    if [ "${ssh_loc}" != "" ] && [ "${scp_loc}" != "" ]; then
-	ssh -q ${ssh_loc} "ssh -q ${scp_loc} ls -l ${rd}"
+    if [ "${ssh_loc}" != "" ]; then
+	ssh -q ${ssh_loc} "ls -l ${rd}"
     fi
 }
 
@@ -14,7 +13,6 @@ msmkdir () {
 
     rd=$1
     ssh_loc=$2
-    scp_loc=$3
     if  [ `which hsi | wc -w` == 1 ]; then
 	echo "msmkdir: hsi 'mkdir -p ${rd}'"
 	hsi -q "mkdir -p ${rd}"
@@ -24,16 +22,16 @@ msmkdir () {
 	    echo "mksmkdir: error"
 	    return $?
 	fi
-    else 
-        echo "msmkdir: ssh -q ${ssh_loc}  ssh -q ${scp_loc} mkdir -p ${rd} ":
-        ssh -q ${ssh_loc} "ssh -q ${scp_loc} mkdir -p ${rd}"
+    else
+        echo "msmkdir: ssh -q ${ssh_loc} mkdir -p ${rd} ":
+        ssh -q ${ssh_loc} "mkdir -p ${rd}"
         sleep 2
 	return 0
     fi
 }
 
 msfsize() {
-    # function to get the size of a file 
+    # function to get the size of a file
     # from its long listing
     if [ $# -lt 5 ]; then
         echo "0"
@@ -56,7 +54,7 @@ msget () {
     #------------------------------------------------------------------
     rdf=$1; rd=`dirname ${rdf}`;  rf=`basename ${rdf}`
     ldf=$2; ld=`dirname ${ldf}`;  lf=`basename ${ldf}`
-    if [ "${lf}" == '' ]; then 
+    if [ "${lf}" == '' ]; then
 	lf=${rf}
     fi
     if [ `which hsi | wc -w` == 1 ];  then
@@ -67,26 +65,28 @@ msget () {
 
 mscpdir () {
     #------------------------------------------------------------------
-    # Copy entire directory to the local mass store
+    # Copy entire directory to the local mass store -- for NAS pleiades lou
     #------------------------------------------------------------------
 
     ldr=$1
     rdr=$2
     ssh_loc=$3
-    scp_loc=$4
 
-    # ssh/scp to ssh_loc by first ssh to ssh_loc. 
+    # copy dir tree by first ssh to ssh_loc.
+    # ssh to lou (lfe) and copy from /nobackup disk system to the lou /ur/$USER
+    #  -- /nobackup/ and /ur/ are both mounted on lou
     myld=`pwd`
 
-    if  [ `ssh -q ${ssh_loc} "which bbscp" | wc -w` == 1 ]; then
-      echo "mscpdir: ssh -q ${ssh_loc}  bbscp -z ${ldr} ${scp_loc}:${rdr}"
-      ssh -q ${ssh_loc} "bbscp -z ${ldr} ${scp_loc}:${rdr}"
+    if [ `ssh -q ${ssh_loc} "which cxfscp" | wc -w` == 1 ]; then
+       echo ssh -q ${ssh_loc} "cxfscp -r ${ldr} ${rdr}"
+       ssh -q ${ssh_loc} "cxfscp -r ${ldr} ${rdr}"
+    elif [ `ssh -q ${ssh_loc} "which shiftc" | wc -w` == 1 ]; then
+      echo "mscpdir: ssh -q ${ssh_loc} shiftc --wait --hosts 8 -r ${ldr} ${rdr}"
+      ssh -q ${ssh_loc} "shiftc --wait --hosts 8 -r ${ldr} ${rdr}"
     else
-      echo "mscpdir: ssh -q ${ssh_loc} /usr/bin/scp -r -q ${ldr} ${scp_loc}:${rdr}"
-      ssh -q ${ssh_loc} "/usr/bin/scp -r -q ${ldr} ${scp_loc}:${rdr}"
+      echo "mscpdir: ssh -q ${ssh_loc} /bin/cp -r -q ${ldr} ${rdr}"
+      ssh -q ${ssh_loc} "/bin/cp -r ${ldr} ${rdr}"
     fi
-
-    sleep 2
 
     return 0
 }
@@ -106,23 +106,19 @@ msput() {
     ldf=$1; ld=`dirname ${ldf}`; lf=`basename ${ldf}`
     rdf=$2; rd=`dirname ${rdf}`; rf=`basename ${rdf}`
     ssh_loc=$3
-    scp_loc=$4
+
     if [ "${rf}" == "" ]; then
 	rf=$lf
     fi
     if [ `which hsi | wc -w` == 1 ]; then
 	opts=" "
-	if ! [[ "$DOUT_L_HPSS_ACCNT" =~ "0000*" ]]; then  
+	if ! [[ "$DOUT_L_HPSS_ACCNT" =~ "0000*" ]]; then
 	    opts=" -a ${DOUT_L_HPSS_ACCNT} "
 	fi
 	# note that the -d flag will delete the local copy
 	echo "msput: hsi ${opts} 'cd ${rd} ; put -d ${ldf} : ${rf}'"
 	hsi ${opts} -q "cd ${rd} ; put -d ${ldf} : ${rf} ; chmod +r ${rf}"
 	return $?
-    fi
-    if [ "${ssh_loc}" != "" ] && [ "${scp_loc}" != "" ]; then
-        ssh -q ${ssh_loc} "scp -q ${ldf} ${scp_loc}:${rdf}"
-	sleep 2
     fi
 }
 
@@ -134,37 +130,37 @@ msput() {
 #   $DOUT_S_ROOT, $DOUT_L_MSROOT, $DOUT_L_HPSS_ACCNT
 #   Above name for $MACH is there just for brief backwards compatibility
 
-mode="unknown"
+mode="copy_dirs_hsi"
 ssh_loc="unknown"
-scp_loc="unknown"
 arc_root="unknown"
+rm_loc_files="TRUE" # default is to remove files from short-term archive
 
 while [ $# -gt 0 ]; do
    case $1 in
        -m|--mode )
 	   mode=$2
-	   echo " mode is $2" 
+	   echo " mode is $2"
 	   shift
 	   ;;
        --ssh_loc )
 	   ssh_loc=$2
 	   shift
 	   ;;
-       --scp_loc )
-	   scp_loc=$2
-	   shift
-	   ;;
        --arc_root )
 	   arc_root=$2
 	   shift
 	   ;;
+       --rm_loc_files )
+	   rm_loc_files=$2
+	   shift
+	   ;;
        * )
    esac
-   shift 
+   shift
 done
 
 found=0
-for name in copy_files copy_dirs_hsi copy_dirs_sshscp copy_dirs_local ; do
+for name in copy_files copy_dirs_hsi copy_dirs_ssh copy_dirs_local ; do
     if [ "$name" == "$mode" ] ; then
 	found=1
 	break
@@ -179,27 +175,24 @@ fi
 
 if [ "$mode" == "copy_dirs_hsi" ]; then
 
-    if_hsi=`which hsi | wc -w` 
+    if_hsi=`which hsi | wc -w`
     if  [ $if_hsi != 1 ] ; then
 	echo "lt_archive: asked for copy_dirs_hsi - but hsi not found"
 	echo "lt_archive: check path"
 	exit -1
     fi
 
-    # Long-term archiver for HPSS (Trey White, December 6, 2011)
     date
 
-    if [ ! $?DOUT_L_HPSS_ACCNT ]; then
-	DOUT_L_HPSS_ACCNT=0
-    fi
-
-    # send files to HPSS and delete upon success
-
+    # send files to HPSS
+    saveFlag="-PR"
     cd $DOUT_S_ROOT
-    if [ $DOUT_L_HPSS_ACCNT -gt 0 ]; then
-	hsi -a $DOUT_L_HPSS_ACCNT "mkdir -p $DOUT_L_MSROOT ; chmod +t $DOUT_L_MSROOT ; cd $DOUT_L_MSROOT ; put -dPR *"
+    hsiArgs="mkdir -p $DOUT_L_MSROOT ; chmod +t $DOUT_L_MSROOT ; cd $DOUT_L_MSROOT ; put $saveFlag *"
+    # echo $hsiArgs
+    if ! [[ "$DOUT_L_HPSS_ACCNT" =~ "0000*" ]]; then
+	hsi -a $DOUT_L_HPSS_ACCNT "$hsiArgs"
     else
-	hsi "mkdir -p $DOUT_L_MSROOT ; chmod +t $DOUT_L_MSROOT ; cd $DOUT_L_MSROOT ; put -dPR *"
+	hsi "$hsiArgs"
     fi
 
     date
@@ -210,7 +203,7 @@ fi
 if [ "$mode" == "copy_files" ]; then
 
     #------------------------------------------------------------------
-    # Copy files and dir structure from short term archiving 
+    # Copy files and dir structure from short term archiving
     # Assume there are up to two levels of dirs below $DOUT_S_ROOT
     #   $DOUT_S_ROOT/$dirl1/$dirl2
     #   dirl1 =>  normallly [atm,lnd,ocn,ice,cpl,glc,rof,wav,rest]
@@ -218,7 +211,7 @@ if [ "$mode" == "copy_files" ]; then
     #------------------------------------------------------------------
     cd $DOUT_S_ROOT
     msmkdir $DOUT_L_MSROOT
-    for dirl1 in */ ; do 
+    for dirl1 in */ ; do
 	cd ${DOUT_S_ROOT}/${dirl1}
 	msmkdir ${DOUT_L_MSROOT}/${dirl1}
 	for dirl2 in */ ; do
@@ -251,53 +244,52 @@ fi # if copy_files
 
 #----------------------------------------------------------------------
 
-if [ "$mode" == "copy_dirs_sshscp" ]; then 
+if [ "$mode" == "copy_dirs_ssh" ]; then
 
-    echo "time : "`date`
+    echo "START copy_dirs_ssh :"`date`
     cd $DOUT_S_ROOT
 
-    msmkdir ${DOUT_L_MSROOT} $ssh_loc $scp_loc
-    echo "time : "`date`
+    msmkdir ${DOUT_L_MSROOT} $ssh_loc
 
-    for dirl1 in */ ; do 
-	cd $DOUT_S_ROOT/${dirl1}
-	mscpdir ${DOUT_S_ROOT}/${dirl1} ${DOUT_L_MSROOT} $ssh_loc $scp_loc
-	echo "time : "`date`
-	for dirl2 in */ ; do
-	    cd ${DOUT_S_ROOT}/${dirl1}/${dirl2}
+    for dirl1 in */ ; do
+        cd $DOUT_S_ROOT/${dirl1}
+        mscpdir ${DOUT_S_ROOT}/${dirl1} ${DOUT_L_MSROOT} $ssh_loc
+        echo "time : "`date`
+        for dirl2 in */ ; do
+            cd ${DOUT_S_ROOT}/${dirl1}/${dirl2}
             for file in `ls -1`; do
-		if [ -f ${file} ]; then
-		    echo "local file: $file ...  long-term archive file: ${DOUT_L_MSROOT}/${dirl1}/${dirl2}/${file}"
-		    lta_listing=`msls ${DOUT_L_MSROOT}/${dirl1}/${dirl2}/${file} $ssh_loc $scp_loc`
-		    echo "time : "`date`
-		    loc_listing=`ls -l ${file}`
-		    lta_size=`msfsize $lta_listing`
-		    loc_size=`msfsize $loc_listing`
-		    if [ $loc_size -gt 0 ] && [ $loc_size -eq $lta_size ]; then
-			echo "local file and long-term archive file are same size"
-			echo rm -f ${file}
-			rm -f ${file}
-		    else
-			echo "local file and long-term archive file are NOT the same size... ${file} will remain on local disk"
-			#exit -1 #??? ask francis if this is right 
-                        # Not sure what to do here... maybe make the log entry and carry on...
-		    fi
-		fi
-	    done # for file
-	done # for dirl2
+                if [ -f ${file} ]; then
+                    echo "local file: $file ...  long-term archive file: ${DOUT_L_MSROOT}/${dirl1}/${dirl2}/${file}"
+                    lta_listing=`msls ${DOUT_L_MSROOT}/${dirl1}/${dirl2}/${file} $ssh_loc`
+                    loc_listing=`ls -l ${file}`
+                    lta_size=`msfsize $lta_listing`
+                    loc_size=`msfsize $loc_listing`
+                    if [ $loc_size -gt 0 ] && [ $loc_size -eq $lta_size ]; then
+                        echo "local file and long-term archive file are same size"
+                        if [ $rm_loc_files == 'TRUE' ]; then
+                            echo "rm -f ${file}"
+                            rm -f ${file}
+                        fi
+                    else
+                        echo "*** local file and long-term archive file are NOT the same size... ${file} will remain on local disk ***"
+                    fi
+                fi
+            done # for file
+        done # for dirl2
     done # dirl1
 
-fi  # if copy_dirs
+    echo "DONE copy_dirs_ssh :"`date`
+fi  # if copy_dirs_ssh
 
 #----------------------------------------------------------------------
 
-if [ "$mode" == "copy_dirs_local" ]; then 
+if [ "$mode" == "copy_dirs_local" ]; then
 
     cd $DOUT_S_ROOT
 
     mkdir -p ${arc_root}/${DOUT_L_MSROOT}
 
-    for dirl1 in */ ; do 
+    for dirl1 in */ ; do
 	cd $DOUT_S_ROOT/${dirl1}
 	cp -r ${DOUT_S_ROOT}/${dirl1} ${arc_root}/${DOUT_L_MSROOT}
 	for dirl2 in */ ; do
@@ -315,8 +307,6 @@ if [ "$mode" == "copy_dirs_local" ]; then
 			rm -f ${file}
 		    else
 			echo "local file and long-term archive file are NOT the same size... ${file} will remain on local disk"
-			#exit -1 #??? ask francis if this is right 
-                        # Not sure what to do here... maybe make the log entry and carry on...
 		    fi
 		fi
 	    done # for file

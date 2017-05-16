@@ -29,7 +29,7 @@ begin
             if (stddev(i,j).le.tol) then
               return_val(i,j) = 0.
             else
-              return_val(i,j) =(val(i,j)-avg(i,j))/stddev(i,j) 
+              return_val(i,j) =(val(i,j)-avg(i,j))/stddev(i,j)
             end if
           end do
         end do

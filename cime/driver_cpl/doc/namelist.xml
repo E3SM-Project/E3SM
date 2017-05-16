@@ -4,14 +4,14 @@
 <sect1 id="namelist_overview ">
 <title>Namelist Overview</title>
 
-<para> 
+<para>
 A full description of all driver namelist options are in <ulink
 url="../../cesm/doc/modelnl/nl_drv.html">driver namelists</ulink>
 There are three important driver/coupler namelist input files
 (cpl_modelio.nml, drv_in, and seq_maps.rc)
 and each file has at least one namelist input group.  The namelist groups
 are modelio, seq_infodata_inparm, seq_timemgr_inparm, ccsm_pes,
-prof_inparm, pio_inparm, and seq_maps.  
+prof_inparm, pio_inparm, and seq_maps.
 </para>
 
 <para>

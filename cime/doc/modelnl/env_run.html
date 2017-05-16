@@ -35,7 +35,7 @@ contain only matched variables.  </p>
                  type="button">
           <br>
           <label>
-            <input id="logical_operator_and" name="logical_operator" value="AND" 
+            <input id="logical_operator_and" name="logical_operator" value="AND"
                    type="radio" checked> AND
           </label>
           <label>
@@ -60,10 +60,10 @@ contain only matched variables.  </p>
 <p>
 
 <center>
-<input id="btn_expand_help" value="Show All Help Text" 
+<input id="btn_expand_help" value="Show All Help Text"
        onclick="expandAllHelp();return false;"
        type="button">
-<input id="btn_collapse_help" value="Collapse All Help Text" 
+<input id="btn_collapse_help" value="Collapse All Help Text"
        onclick="collapseAllHelp();return false;"
        type="button">
 </center>
@@ -82,9 +82,9 @@ contain only matched variables.  </p>
         <div id="RUNDIR_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>case run directory (by default will be set to $EXEROOT/../run) . 
-The directory where the executable will be run. 
-By default this is set to EXEROOT/../run. 
+	     <pre>case run directory (by default will be set to $EXEROOT/../run) .
+The directory where the executable will be run.
+By default this is set to EXEROOT/../run.
 RUNDIR allows you to keep the run directory separate from the build directory.</pre>
         </div>
     </td>
@@ -130,7 +130,7 @@ RUNDIR allows you to keep the run directory separate from the build directory.</
         <div id="LOGDIR_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>directory where log files should be copied . 
+	     <pre>directory where log files should be copied .
 Extra copies of the component log files will be saved here.</pre>
         </div>
     </td>
@@ -151,9 +151,9 @@ Extra copies of the component log files will be saved here.</pre>
         <div id="RUN_TYPE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>Run initialization type . 
-Determines the model run initialization type.  
-This setting is only important for the initial run of a production run when the 
+	     <pre>Run initialization type .
+Determines the model run initialization type.
+This setting is only important for the initial run of a production run when the
 CONTINUE_RUN variable is set to FALSE.  After the initial run, the CONTINUE_RUN
 variable is set to TRUE, and the model restarts exactly using input
 files in a case, date, and bit-for-bit continuous fashion.
@@ -329,7 +329,7 @@ Valid Values: TRUE,FALSE </pre>
         <div id="STOP_OPTION_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>sets the run length with STOP_N and STOP_DATE (must be nyear(s) for _GLC compsets for restarts to work properly) . 
+	     <pre>sets the run length with STOP_N and STOP_DATE (must be nyear(s) for _GLC compsets for restarts to work properly) .
 Ending simulation time (character)
 (must be nyear(s) for _GLC compsets for restarts to work properly)
 Valid Values: none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end </pre>
@@ -347,7 +347,7 @@ Valid Values: none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,n
         <div id="STOP_N_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>sets the run length with STOP_OPTION and STOP_DATE . 
+	     <pre>sets the run length with STOP_OPTION and STOP_DATE .
 Provides a numerical count for $STOP_OPTION. (integer)</pre>
         </div>
     </td>
@@ -363,7 +363,7 @@ Provides a numerical count for $STOP_OPTION. (integer)</pre>
         <div id="STOP_DATE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>date in yyyymmdd format, sets the run length with STOP_OPTION and STOP_N . 
+	     <pre>date in yyyymmdd format, sets the run length with STOP_OPTION and STOP_N .
 Alternative yyyymmdd date option, negative value implies off. (integer)</pre>
         </div>
     </td>
@@ -384,8 +384,8 @@ Alternative yyyymmdd date option, negative value implies off. (integer)</pre>
         <div id="REST_OPTION_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>sets frequency of model restart writes (same options as STOP_OPTION) (must be nyear(s) for _GLC compsets) . 
-Restart write interval. 
+	     <pre>sets frequency of model restart writes (same options as STOP_OPTION) (must be nyear(s) for _GLC compsets) .
+Restart write interval.
 valid varlues: none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end
 (must be nyear(s) for _GLC compsets)</pre>
         </div>
@@ -402,7 +402,7 @@ valid varlues: none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,
         <div id="REST_N_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>sets model restart writes with REST_OPTION and REST_DATE . 
+	     <pre>sets model restart writes with REST_OPTION and REST_DATE .
 Number of intervals to write a restart. (integer)</pre>
         </div>
     </td>
@@ -418,7 +418,7 @@ Number of intervals to write a restart. (integer)</pre>
         <div id="REST_DATE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>date in yyyymmdd format, sets model restart write date with REST_OPTION and REST_N . 
+	     <pre>date in yyyymmdd format, sets model restart write date with REST_OPTION and REST_N .
 Alternative yyyymmdd date option, negative value implies off. (integer)</pre>
         </div>
     </td>
@@ -434,11 +434,11 @@ Alternative yyyymmdd date option, negative value implies off. (integer)</pre>
         <div id="CONTINUE_RUN_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>A setting of TRUE implies a continuation run . 
+	     <pre>A setting of TRUE implies a continuation run .
 When you first begin a branch, hybrid or startup run, CONTINUE_RUN
 must be set to FALSE. When you successfully run and get a restart
 file, you will need to change CONTINUE_RUN to TRUE for the remainder
-of your run. This variable determines if the run is a restart run.   
+of your run. This variable determines if the run is a restart run.
 Set to FALSE when initializing a startup, branch or hybrid case.
 Set to TRUE when continuing a run. (logical)
 Valid Values: TRUE,FALSE </pre>
@@ -456,11 +456,11 @@ Valid Values: TRUE,FALSE </pre>
         <div id="RESUBMIT_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>If RESUBMIT is greater than 0, then case will automatically resubmit . 
+	     <pre>If RESUBMIT is greater than 0, then case will automatically resubmit .
 Enables the model to automatically resubmit a new run.  To get
 multiple runs, set RESUBMIT greater than 0, then RESUBMIT will be
 decremented and the case will be resubmitted.  The case will stop automatically
-resubmitting when the RESUBMIT value reaches 0. 
+resubmitting when the RESUBMIT value reaches 0.
 Long runs can easily outstrip supercomputer queue time limits. For
 this reason, a case is usually run as a series of jobs, each
 restarting where the previous finished.</pre>
@@ -1483,12 +1483,12 @@ Valid Values: hour,day,year,decade </pre>
         <div id="CPL_SEQ_OPTION_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>coupler sequencing option . coupler sequencing option. CESM1_ORIG is the cesm1.1 implementation.  
-CESM!_MOD includes a cesm1.3 mod that swaps ocean merging and atm/ocn flux 
-computation.  RASM_OPTION1 runs prep ocean before the ocean coupling reducing 
-most of the lags and field inconsistency but still allowing the ocean to run 
-concurrently with the ice and atmosphere.  RASM_OPTION2 is similar to RASM_OPTION1 
-but sequences the ice model, prep ocean and ocean model in that order.  The 
+	     <pre>coupler sequencing option . coupler sequencing option. CESM1_ORIG is the cesm1.1 implementation.
+CESM!_MOD includes a cesm1.3 mod that swaps ocean merging and atm/ocn flux
+computation.  RASM_OPTION1 runs prep ocean before the ocean coupling reducing
+most of the lags and field inconsistency but still allowing the ocean to run
+concurrently with the ice and atmosphere.  RASM_OPTION2 is similar to RASM_OPTION1
+but sequences the ice model, prep ocean and ocean model in that order.  The
 ocean model loses some of the concurrency with the ice model.  CESM1_ORIG_TIGHT
 and CESM1_MOD_TIGHT are consistent with the old variables ocean_tight_coupling = true
 in the driver.  That namelist is gone and the cpl_seq_option flags take it's place.
@@ -2185,7 +2185,7 @@ Valid Values: none,npfix,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag </pre>
         <div id="DIN_LOC_ROOT_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>local inputdata directory for CCSM prestaged data . 
+	     <pre>local inputdata directory for CCSM prestaged data .
 The root directory of CESM input data for the selected machine.
 This is usually a shared disk area.
 Default values for the target machine are in the
@@ -2204,7 +2204,7 @@ $CIMEROOT/scripts/ccsm_utils/Machines/config_machines.xml</pre>
         <div id="DIN_LOC_ROOT_CLMFORC_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>general ccsm inputdata directory for CLM datm forcing . 
+	     <pre>general ccsm inputdata directory for CLM datm forcing .
 CLM-specific root directory for CLM type input forcing data.
 This directory will only be used for I (CLM/DATM) compsets and only
 for datm forcing data that is NOT checked into the svn repository
@@ -2231,7 +2231,7 @@ $CIMEROOT/scripts/ccsm_utils/Machines/config_machines.xml</pre>
         <div id="DOUT_S_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>logical to turn on short term archiving . 
+	     <pre>logical to turn on short term archiving .
 If TRUE, short term archiving will be turned on. (default is TRUE)
 Valid Values: TRUE,FALSE </pre>
         </div>
@@ -2248,7 +2248,7 @@ Valid Values: TRUE,FALSE </pre>
         <div id="DOUT_S_ROOT_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>local short term archiving root directory . 
+	     <pre>local short term archiving root directory .
 Root directory for short term archiving. This directory must be
 visible to compute nodes.</pre>
         </div>
@@ -2265,7 +2265,7 @@ visible to compute nodes.</pre>
         <div id="DOUT_S_SAVE_INTERIM_RESTART_FILES_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>logical to archive all interim restart files, not just those at eor . 
+	     <pre>logical to archive all interim restart files, not just those at eor .
 If TRUE, perform short term archiving on all interim restart files,
 not just those at the end of the run. By default, this value is FALSE.
 The restart files are saved under the specific component directory
@@ -2288,8 +2288,8 @@ Valid Values: TRUE,FALSE </pre>
         <div id="DOUT_S_SAVE_EVERY_NTH_RESTART_FILE_SET_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>Save every Nth set of restart files and delete all others. . 
-If value is greater than 0, then only save the nth restart set in the DOUT_S_ROOT/rest location. 
+	     <pre>Save every Nth set of restart files and delete all others. .
+If value is greater than 0, then only save the nth restart set in the DOUT_S_ROOT/rest location.
 Always preserve the most recent restart set regardless.</pre>
         </div>
     </td>
@@ -2305,7 +2305,7 @@ Always preserve the most recent restart set regardless.</pre>
         <div id="DOUT_S_SAVE_ALL_ON_DISK_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>logical to save contents of the short term archive on disk . 
+	     <pre>logical to save contents of the short term archive on disk .
 If TRUE, create hardlinks from the short term archive DOUT_S_ROOT.locked
 directory to the DOUT_S_ROOT directory.
 Valid Values: TRUE,FALSE </pre>
@@ -2323,9 +2323,9 @@ Valid Values: TRUE,FALSE </pre>
         <div id="DOUT_S_GENERATE_TSERIES_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>logical to generate time-series files from the history time-slice files . 
+	     <pre>logical to generate time-series files from the history time-slice files .
 If TRUE, create the single variable time series files using the history time slice files.
-All the time invariant metadata is included in each variable time series file header. 
+All the time invariant metadata is included in each variable time series file header.
 Rules for how the tseries files are created are specified in the env_archive.xml file.
 Valid Values: TRUE,FALSE </pre>
         </div>
@@ -2342,7 +2342,7 @@ Valid Values: TRUE,FALSE </pre>
         <div id="DOUT_S_SAVE_HISTORY_FILES_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>logical to save history time slice files after the variable time series have been generated . 
+	     <pre>logical to save history time slice files after the variable time series have been generated .
 If TRUE, none of the history time slice files will be deleted from the DOUT_S_ROOT location after the
 variable time series files are successfully generated. *WARNING* setting this option to TRUE can
 more than double the disk space used by the output data for a given job.
@@ -2361,8 +2361,8 @@ Valid Values: TRUE,FALSE </pre>
         <div id="DOUT_L_MS_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>logical to turn on long term archiving (if DOUT_S is also TRUE) . 
-If TRUE, perform long-term archiving on the output data. Default is FALSE 
+	     <pre>logical to turn on long term archiving (if DOUT_S is also TRUE) .
+If TRUE, perform long-term archiving on the output data. Default is FALSE
 Valid Values: TRUE,FALSE </pre>
         </div>
     </td>
@@ -2378,7 +2378,7 @@ Valid Values: TRUE,FALSE </pre>
         <div id="DOUT_L_MSROOT_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>local long term archiving root directory . 
+	     <pre>local long term archiving root directory .
 Root directory on long term archiving store system for long-term data archives.</pre>
         </div>
     </td>
@@ -2409,8 +2409,8 @@ Root directory on long term archiving store system for long-term data archives.<
         <div id="DOUT_L_HTAR_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>logical to tar up long term archiver history files . 
-If true, DOUT_L_HTAR the long-term archiver will store history data in annual tar files. 
+	     <pre>logical to tar up long term archiver history files .
+If true, DOUT_L_HTAR the long-term archiver will store history data in annual tar files.
 Default is FALSE. Not currently implemented.
 Valid Values: TRUE,FALSE </pre>
         </div>
@@ -2428,8 +2428,8 @@ Valid Values: TRUE,FALSE </pre>
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>logical to save contents of the short term archive on disk after
-the long term archiver has successfully completed. . 
-If TRUE, this keeps the output data 
+the long term archiver has successfully completed. .
+If TRUE, this keeps the output data
 in DOUT_S_ROOT on disk after the long term (lt_archive.sh) archiver is run.
 Valid Values: TRUE,FALSE </pre>
         </div>
@@ -2451,7 +2451,7 @@ Valid Values: TRUE,FALSE </pre>
         <div id="CPL_EPBAL_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>Only used for C,G compsets: if ocn, ocn provides EP balance factor for precip . 
+	     <pre>Only used for C,G compsets: if ocn, ocn provides EP balance factor for precip .
 Provides EP balance factor for precip for POP2. A factor computed by
 POP2 is applied to precipitation so that precipitation balances
 evaporation and ocn global salinity does not drift. This is intended
@@ -2472,7 +2472,7 @@ Valid Values: off,ocn </pre>
         <div id="CPL_ALBAV_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>Only used for C,G compsets: if true, compute albedos to work with daily avg SW down . 
+	     <pre>Only used for C,G compsets: if true, compute albedos to work with daily avg SW down .
 If false, albedos are computed with the assumption that downward
 solar radiation from the atm component has a diurnal cycle and
 zenith-angle dependence. This is normally the case when using an active
@@ -2481,7 +2481,7 @@ If true, albedos are computed with the assumption that downward
 solar radiation from the atm component is a daily average quantity and
 does not have a zenith-angle dependence. This is often the case when
 using a data atm component.
-This is only used for C and G compsets. 
+This is only used for C and G compsets.
 Default is false.
 Valid Values: true,false </pre>
         </div>
@@ -2498,10 +2498,10 @@ Valid Values: true,false </pre>
         <div id="CCSM_BGC_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>BGC flag . 
-If the value is not none, the coupler is compiled so that optional 
-BGC related fields are exchanged between component models.  Currently 
-only none and CO2A are supported.  CO2A will activate sending 
+	     <pre>BGC flag .
+If the value is not none, the coupler is compiled so that optional
+BGC related fields are exchanged between component models.  Currently
+only none and CO2A are supported.  CO2A will activate sending
 diagnostic and prognostic co2 from the atm component to the lnd component.
 Valid Values: none,CO2A,CO2B,CO2C,CO2_DMSA </pre>
         </div>
@@ -2518,7 +2518,7 @@ Valid Values: none,CO2A,CO2B,CO2C,CO2_DMSA </pre>
         <div id="GLC_NEC_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>Glacier model number of elevation classes, 0 implies no glacier land unit in clm . 
+	     <pre>Glacier model number of elevation classes, 0 implies no glacier land unit in clm .
 Used by both CLM and CISM (even if CISM is not running, and only SGLC is used)
 Valid Values: 0,1,3,5,10,36 </pre>
         </div>
@@ -2535,7 +2535,7 @@ Valid Values: 0,1,3,5,10,36 </pre>
         <div id="GLC_TWO_WAY_COUPLING_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>Whether the glacier component feeds back to the rest of the system . 
+	     <pre>Whether the glacier component feeds back to the rest of the system .
 This affects:
 (1) Whether CLM updates its areas based on glacier areas sent from GLC
 (2) Whether GLC sends fluxes (e.g., calving fluxes) to the coupler
@@ -2558,7 +2558,7 @@ Valid Values: TRUE,FALSE </pre>
         <div id="CCSM_CO2_PPMV_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>CO2 ppmv . 
+	     <pre>CO2 ppmv .
 This set the namelist values of CO2 ppmv for CAM and CLM. This variables is
 introduced to coordinate this value among multiple components. </pre>
         </div>
@@ -2580,16 +2580,16 @@ introduced to coordinate this value among multiple components. </pre>
         <div id="CAM_NML_USE_CASE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>CAM namelist use_case . 
-Provides the use_case option for the CAM build-namelist utility 
+	     <pre>CAM namelist use_case .
+Provides the use_case option for the CAM build-namelist utility
 (which is called from $CASEROOT/Buildconf/cam.buildnml.csh).
 The CAM build-namelist leverages groups of namelist options
 (use cases) that are often paired with the CAM configure options.
 These use cases are xml files located in
 $CIMEROOT/../components/cam/bld/namelist_files/use_cases.
 In general, this variable should not be modified for supported
-component sets (compsets). 
-Recommendation: If you want to modify this value for your experiment, 
+component sets (compsets).
+Recommendation: If you want to modify this value for your experiment,
 use your own user-defined component sets.</pre>
         </div>
     </td>
@@ -2605,8 +2605,8 @@ use your own user-defined component sets.</pre>
         <div id="CAM_NAMELIST_OPTS_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>CAM specific namelist settings for -namelist option . 
-Provides options to the -namelist argument for the CAM build-namelist utility (see above).  
+	     <pre>CAM specific namelist settings for -namelist option .
+Provides options to the -namelist argument for the CAM build-namelist utility (see above).
 This should be reserved for component set specification. Users
 should modify CAM namelists only via the $CASEROOT/user_nl_cam file</pre>
         </div>
@@ -2644,7 +2644,7 @@ should modify CAM namelists only via the $CASEROOT/user_nl_cam file</pre>
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>CLM namelist use_case . Determines the use-case that will be sent to the CLM build-namelist utility.
-This is normally set by the component set. This is an advanced flag and should only be 
+This is normally set by the component set. This is an advanced flag and should only be
 used by expert users.</pre>
         </div>
     </td>
@@ -2662,10 +2662,10 @@ used by expert users.</pre>
              #cccccc;">
 	     <pre>CLM specific namelist settings . CLM-specific namelist settings for -namelist option in the CLM
 build-namelist. CLM_NAMELIST_OPTS is normally set as a compset variable
-and in general should not be modified for supported compsets. 
-It is recommended that if you want to modify this value for your experiment, 
-you should use your own user-defined component sets via using create_newcase 
-with a compset_file argument. 
+and in general should not be modified for supported compsets.
+It is recommended that if you want to modify this value for your experiment,
+you should use your own user-defined component sets via using create_newcase
+with a compset_file argument.
 This is an advanced flag and should only be used by expert users.</pre>
         </div>
     </td>
@@ -2681,12 +2681,12 @@ This is an advanced flag and should only be used by expert users.</pre>
         <div id="CLM_CO2_TYPE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>clm co2 type . 
+	     <pre>clm co2 type .
 Determines how CLM will determine where CO2 is set.
 If value is constant, it will be set to CCSM_CO2_PPMV,
-if value is either diagnostic or prognostic, the atmosphere model 
-MUST send it to CLM. CLM_CO2_TYPE is normally set by the specific 
-compset, since it HAS to be coordinated with settings for the 
+if value is either diagnostic or prognostic, the atmosphere model
+MUST send it to CLM. CLM_CO2_TYPE is normally set by the specific
+compset, since it HAS to be coordinated with settings for the
 atmospheric model. Do not modify this variable. If you want to modify for
 your experiment, use your own user-defined component set
 This is an advanced flag and should only be used by expert users.
@@ -2705,10 +2705,10 @@ Valid Values: constant,diagnostic,prognostic </pre>
         <div id="CLM_FORCE_COLDSTART_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>Force CLM model to do a cold-start . 
+	     <pre>Force CLM model to do a cold-start .
 Flag to the CLM build-namelist command to force CLM to do a
-cold start (finidat will be set to blanks). 
-A value of on forces the model to spin up from a cold-start 
+cold start (finidat will be set to blanks).
+A value of on forces the model to spin up from a cold-start
 (arbitrary initial conditions). Setting this value in the xml file will take
 precedence over any settings for finidat in the $CASEROOT/user_clm_clm file.
 Valid Values: on,off </pre>
@@ -2726,9 +2726,9 @@ Valid Values: on,off </pre>
         <div id="CLM_USRDAT_NAME_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>My Data ID . 
+	     <pre>My Data ID .
 Dataset name for user-created datasets. This is used as the argument
-in Buildconf/clm.buildnml.csh to build-namelist -clm_usr_name. An example of 
+in Buildconf/clm.buildnml.csh to build-namelist -clm_usr_name. An example of
 such a dataset would be 1x1pt_boulderCO_c090722. The default value is UNSET.
 This is an advanced flag and should only be used by expert users.</pre>
         </div>
@@ -2770,13 +2770,13 @@ This is an advanced flag and should only be used by expert users.</pre>
         <div id="OCN_COUPLING_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>surface heat and freshwater forcing, partial is consistent with coupling to a data atm model . 
-Determine surface freshwater and heat forcing settings. 
-The full option yields settings that are appropriate for coupling to an 
-active atmospheric model (e.g., a B-type compset). The partial option yields 
-settings that are appropriate for coupling to a data atmospheric model 
-(e.g., a C or G-type compset). The create_newcase command selects the 
-appropriate setting for this variable based on the specified compset. 
+	     <pre>surface heat and freshwater forcing, partial is consistent with coupling to a data atm model .
+Determine surface freshwater and heat forcing settings.
+The full option yields settings that are appropriate for coupling to an
+active atmospheric model (e.g., a B-type compset). The partial option yields
+settings that are appropriate for coupling to a data atmospheric model
+(e.g., a C or G-type compset). The create_newcase command selects the
+appropriate setting for this variable based on the specified compset.
 Users should NOT EDIT this setting.
 Valid Values: full,partial </pre>
         </div>
@@ -2793,12 +2793,12 @@ Valid Values: full,partial </pre>
         <div id="OCN_ICE_FORCING_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>under ice forcing, inactive is consistent with coupling to a data ice model . 
-Determine under-ice forcing settings. 
-The active option yields settings that are appropriate for coupling to an active ice model 
-(e.g., a B or G-type compset). The inactive option yields settings that are appropriate for 
+	     <pre>under ice forcing, inactive is consistent with coupling to a data ice model .
+Determine under-ice forcing settings.
+The active option yields settings that are appropriate for coupling to an active ice model
+(e.g., a B or G-type compset). The inactive option yields settings that are appropriate for
 coupling to a data ice model (e.g., a C-type compset). The create_newcase command
-selects the appropriate setting for this variable based on the specified compset. 
+selects the appropriate setting for this variable based on the specified compset.
 Users should NOT EDIT this setting.
 Valid Values: active,inactive </pre>
         </div>
@@ -2815,7 +2815,7 @@ Valid Values: active,inactive </pre>
         <div id="OCN_CHL_TYPE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>provenance of surface Chl for radiative penetration computations . 
+	     <pre>provenance of surface Chl for radiative penetration computations .
 Determines provenance of surface Chl for radiative penetration
 computations. This option is used in the POP2 ecosystem model.
 The default is diagnostic.
@@ -2834,9 +2834,9 @@ Valid Values: diagnostic,prognostic </pre>
         <div id="OCN_CO2_TYPE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>provenance of atmospheric CO2 for gas flux computation . 
+	     <pre>provenance of atmospheric CO2 for gas flux computation .
 Determines provenance of atmospheric CO2 for gas flux computation.
-This option is used in the POP2 ecosystem model. 
+This option is used in the POP2 ecosystem model.
 The default is constant.
 Valid Values: constant,prognostic,diagnostic </pre>
         </div>
@@ -2869,9 +2869,9 @@ Valid Values: TRUE,FALSE </pre>
         <div id="OCN_TRANSIENT_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>specification of transient forcing datasets . 
+	     <pre>specification of transient forcing datasets .
 Determine settings for transient forcing datasets (e.g., atmospheric pCFC
-concentrations). The create_newcase command selects the appropriate setting for this 
+concentrations). The create_newcase command selects the appropriate setting for this
 variable based on the specified compset. This option is used in the POP2 ecosystem model.
 Users should NOT EDIT this setting.
 Valid Values: unset,1850-2000,rcp4.5,rcp8.5 </pre>
@@ -2942,10 +2942,10 @@ Valid Values: TRUE,FALSE </pre>
         <div id="CISM_GRID_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>Glacier model grid - used only for glacier land mask in clm . 
-The glimmer-cism grid for coupling is assumed to be identical to the land grid. 
-CISM_GRID determines the specific local internal grid that CISM will use for 
-internal calculations. 
+	     <pre>Glacier model grid - used only for glacier land mask in clm .
+The glimmer-cism grid for coupling is assumed to be identical to the land grid.
+CISM_GRID determines the specific local internal grid that CISM will use for
+internal calculations.
 The default is gland5UM (5km grid).
 Valid Values: gland20,gland10,gland5,gland5UM,null </pre>
         </div>
@@ -2978,7 +2978,7 @@ Valid Values: cism1,cism2 </pre>
         <div id="CISM_OBSERVED_IC_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>For hybrid runs, whether CISM should use observed initial conditions instead of restart file . 
+	     <pre>For hybrid runs, whether CISM should use observed initial conditions instead of restart file .
 For hybrid runs, a value of FALSE (default) implies that CISM should
 use the restart file from the reference case; a value of TRUE implies
 that CISM should instead use the observed initial conditions that are
@@ -3020,10 +3020,10 @@ Valid Values: true,false </pre>
         <div id="DATM_MODE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>DATM mode . 
+	     <pre>DATM mode .
 Mode for data atmosphere component.
-The default is CORE2_NYF (CORE2 normal year forcing) is the 
-DATM mode used in C and G compsets. CLM_QIAN, CLMCRUNCEP and CLM1PT are 
+The default is CORE2_NYF (CORE2 normal year forcing) is the
+DATM mode used in C and G compsets. CLM_QIAN, CLMCRUNCEP and CLM1PT are
 modes using observational data for forcing CLM in I compsets.
 Valid Values: CORE2_NYF,CORE2_IAF,TN460,CLM_QIAN,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CPLHIST3HrWx,COPYALL_NPS_v1,COPYALL_NPS_CORE2_v1,WRF,WW3 </pre>
         </div>
@@ -3087,7 +3087,7 @@ Valid Values: none,clim_1850,clim_2000,trans_1850-2000,rcp2.6,rcp4.5,rcp6.0,rcp8
         <div id="DATM_CLMNCEP_YR_START_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>starting year to loop data over (only used for CLM_QIAN mode) . 
+	     <pre>starting year to loop data over (only used for CLM_QIAN mode) .
 For I compset only. Starting year to loop data over for
 CLM_QIAN mode. Default value is 2004.</pre>
         </div>
@@ -3104,7 +3104,7 @@ CLM_QIAN mode. Default value is 2004.</pre>
         <div id="DATM_CLMNCEP_YR_END_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>ending year to loop data over (only used for CLM_QIAN mode) . 
+	     <pre>ending year to loop data over (only used for CLM_QIAN mode) .
 For I compset only. Ending year to loop data over for CLM_QIAN
 mode. Default value is 2004.</pre>
         </div>
@@ -3136,7 +3136,7 @@ mode. Default value is 2004.</pre>
         <div id="DATM_CPLHIST_YR_ALIGN_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>year align (only used for CPLHIST3HrWx mode) . 
+	     <pre>year align (only used for CPLHIST3HrWx mode) .
 For I compset only. Year align (simulation year corresponding to
 starting year) for CLM_QIAN mode. Default value is 1.</pre>
         </div>
@@ -3188,21 +3188,21 @@ starting year) for CLM_QIAN mode. Default value is 1.</pre>
         <div id="DICE_MODE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>DICE mode . 
-DICE is a combination of a data model and a prognostic model. 
-The data functionality reads in ice coverage. The prognostic functionality 
-calculates the ice/atmosphere and ice/ocean fluxes. DICE receives the same 
-atmospheric input from the coupler as the active CICE model (i.e., atmospheric 
+	     <pre>DICE mode .
+DICE is a combination of a data model and a prognostic model.
+The data functionality reads in ice coverage. The prognostic functionality
+calculates the ice/atmosphere and ice/ocean fluxes. DICE receives the same
+atmospheric input from the coupler as the active CICE model (i.e., atmospheric
 states, shortwave fluxes, and ocean ice melt flux). DICE acts very similarly
 to CICE running in prescribed mode.) Currently, this component is only
 used to drive POP2 in C compsets.
-If DICE_MODE is set to ssmi or ssmi_iaf, it is a prognostic mode. 
-It requires data be sent to the ice model. 
+If DICE_MODE is set to ssmi or ssmi_iaf, it is a prognostic mode.
+It requires data be sent to the ice model.
 Ice fraction (extent) data is read from an input stream,
 atmosphere state variables are received from the coupler, and then
 an atmosphere-ice surface flux is computed and sent to the
-coupler. Normally the ice fraction data is found in the same data files 
-that provide SST data to the data ocean model. They are normally found 
+coupler. Normally the ice fraction data is found in the same data files
+that provide SST data to the data ocean model. They are normally found
 in the same file because the SST and ice fraction data are derived from the
 same observational data sets and are consistent with each other.
 Valid Values: prescribed,ssmi,ssmi_iaf,copyall,null </pre>
@@ -3225,7 +3225,7 @@ Valid Values: prescribed,ssmi,ssmi_iaf,copyall,null </pre>
         <div id="DOCN_MODE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>DOCN mode . 
+	     <pre>DOCN mode .
 The data ocean component (DOCN) always returns SSTs to the
 driver. The atmosphere/ocean fluxes are computed in the
 coupler. Therefore, the data ocean model does not compute fluxes like
@@ -3259,7 +3259,7 @@ of a fully coupled CCSM run.  Note that while this mode runs out of
 the box, the default SOM forcing file is not scientifically
 appropriate and is provided for testing and development purposes only.
 Users must create scientifically appropriate data for their particular
-application.  A tool is available to derive valid SOM forcing. 
+application.  A tool is available to derive valid SOM forcing.
 Default is prescribed.
 Valid Values: prescribed,som,copyall,null </pre>
         </div>
@@ -3296,13 +3296,13 @@ Valid Values: prescribed,som,copyall,null </pre>
         <div id="DLND_MODE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>valid values: CPLHIST,GLC_CPLHIST,NULL . 
+	     <pre>valid values: CPLHIST,GLC_CPLHIST,NULL .
 DLND mode. Valid values are CPLHIST, GLC_CPLHIST and NULL. In CPLHIST mode, land
 forcing data (produced by CLM) from a previous model run is output in
 coupler history files and read in by the data land model. IN GLC_CPLHIST,
 glc coupling fields are read in from a coupler history file.  In NULL
 mode, land forcing is set to zero and not utilized. The default is
-NULL. 
+NULL.
 Valid Values: CPLHIST,GLC_CPLHIST,NULL </pre>
         </div>
     </td>
@@ -3398,7 +3398,7 @@ Valid Values: CPLHIST,GLC_CPLHIST,NULL </pre>
         <div id="DROF_MODE_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>valid values: CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,NULL . 
+	     <pre>valid values: CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,NULL .
 DROF mode. Values are CPLHIST, *_RX1, and NULL. In *_RX1 mode,
 observational climatological or interannual
 1-degree runoff data is used. In CPLHIST mode, runoff
@@ -3502,7 +3502,7 @@ Valid Values: CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,NULL </pre>
         <div id="SSTICE_STREAM_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>Prescribed SST and ice coverage stream name. . 
+	     <pre>Prescribed SST and ice coverage stream name. .
 Sets SST and ice coverage stream name for prescribed runs.
 
 Only used in F and A compsets.</pre>
@@ -3520,7 +3520,7 @@ Only used in F and A compsets.</pre>
         <div id="SSTICE_DATA_FILENAME_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>Prescribed SST and ice coverage data file name. . 
+	     <pre>Prescribed SST and ice coverage data file name. .
 Sets SST and ice coverage data file name for prescribed runs.
 
 Only used in F and A compsets.</pre>
@@ -3538,7 +3538,7 @@ Only used in F and A compsets.</pre>
         <div id="SSTICE_GRID_FILENAME_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>Prescribed SST and ice coverage grid file name. . 
+	     <pre>Prescribed SST and ice coverage grid file name. .
 Sets SST and ice coverage grid file name for prescribed runs.
 
 Only used in F and A compsets.</pre>
@@ -3556,7 +3556,7 @@ Only used in F and A compsets.</pre>
         <div id="SSTICE_YEAR_ALIGN_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>The model year that corresponds to SSTICE_YEAR_START on the data file. . 
+	     <pre>The model year that corresponds to SSTICE_YEAR_START on the data file. .
 Prescribed SST and ice coverage data will be aligned so that the first year of
 data corresponds to SSTICE_YEAR_ALIGN in the model. For instance, if the first
 year of prescribed data is the same as the first year of the model run, this
@@ -3584,7 +3584,7 @@ Only used in F and A compsets.</pre>
         <div id="SSTICE_YEAR_START_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>The first year of data to use from SSTICE_DATA_FILENAME. . 
+	     <pre>The first year of data to use from SSTICE_DATA_FILENAME. .
 This is the first year of prescribed SST and ice coverage data to use. For
 example, if a data file has data for years 0-99, and SSTICE_YEAR_START is 10,
 years 0-9 in the file will not be used.
@@ -3604,7 +3604,7 @@ Only used in F and A compsets.</pre>
         <div id="SSTICE_YEAR_END_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre>The last year of data to use from SSTICE_DATA_FILENAME. . 
+	     <pre>The last year of data to use from SSTICE_DATA_FILENAME. .
 This is the last year of prescribed SST and ice coverage data to use. For
 example, if a data file has data for years 0-99, and SSTICE_YEAR_END is 49,
 years 50-99 in the file will not be used.

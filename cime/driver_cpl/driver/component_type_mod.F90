@@ -11,9 +11,8 @@ module component_type_mod
   use seq_comm_mct     , only: seq_comm_namelen
   use seq_comm_mct     , only: num_inst_atm, num_inst_lnd, num_inst_rof
   use seq_comm_mct     , only: num_inst_ocn, num_inst_ice, num_inst_glc
-  use seq_comm_mct     , only: num_inst_wav
+  use seq_comm_mct     , only: num_inst_wav, num_inst_esp
   use mct_mod            
-  use ESMF
 
   implicit none
   save
@@ -61,11 +60,6 @@ module component_type_mod
      type(mct_gsMap) , pointer       :: gsMap_cx    => null() ! decomposition on coupler pes (same for all instances)
      type(mct_aVect) , pointer       :: x2c_cx      => null() ! 
      type(mct_aVect) , pointer       :: c2x_cx      => null()
-#ifdef ESMF_INTERFACE
-     type(ESMF_Array)                :: x2c_cx_array          ! valid values only on component pes
-     type(ESMF_Array)                :: c2x_cx_array          ! valid values only on component pes
-     type(ESMF_Array)                :: dom_cx_array          ! valid values only on component pes
-#endif
      !
      ! Component pes
      !
@@ -74,11 +68,6 @@ module component_type_mod
      type(mct_gsMap) , pointer       :: gsMap_cc    => null() ! decomposition on component pes
      type(mct_aVect) , pointer       :: x2c_cc      => null()
      type(mct_aVect) , pointer       :: c2x_cc      => null()
-#ifdef ESMF_INTERFACE
-     type(ESMF_GridComp)             :: gridcomp_cc           ! valid values only on component pes
-     type(ESMF_State)                :: x2c_cc_state          ! valid values only on component pes
-     type(ESMF_State)                :: c2x_cc_state          ! valid values only on component pes
-#endif
      real(r8)        , pointer       :: drv2mdl(:)  => null() ! area correction factors
      real(r8)        , pointer       :: mdl2drv(:)  => null() ! area correction factors
      !
@@ -121,8 +110,9 @@ module component_type_mod
   type(component_type), target :: ice(num_inst_ice)
   type(component_type), target :: glc(num_inst_glc)
   type(component_type), target :: wav(num_inst_wav)
+  type(component_type), target :: esp(num_inst_esp)
 
-  public :: atm, lnd, rof, ocn, ice, glc, wav
+  public :: atm, lnd, rof, ocn, ice, glc, wav, esp
 
   !===============================================================================
 

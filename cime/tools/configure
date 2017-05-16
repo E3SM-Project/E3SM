@@ -1,0 +1,176 @@
+#!/usr/bin/env python
+
+"""This script writes CIME build information to a directory.
+
+The pieces of information that will be written include:
+
+1. Machine-specific build settings (i.e. the "Macros" file).
+2. File-specific build settings (i.e. "Depends" files).
+3. Environment variable loads (i.e. the env_mach_specific files).
+
+The .env_mach_specific.sh and .env_mach_specific.csh files are specific to a
+given compiler, MPI library, and DEBUG setting. By default, these will be the
+machine's default compiler, the machine's default MPI library, and FALSE,
+respectively. These can be changed by setting the environment variables
+COMPILER, MPILIB, and DEBUG, respectively.
+"""
+
+import os
+import shutil
+import sys
+
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
+
+_LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
+sys.path.append(_LIBDIR)
+
+from standard_script_setup import *
+from CIME.utils import expect
+from CIME.XML.build import Build
+from CIME.XML.env_mach_specific import EnvMachSpecific
+from CIME.XML.machines import Machines
+
+logger = logging.getLogger(__name__)
+
+def parse_command_line(args):
+    """Command line argument parser for configure."""
+    description = __doc__
+    parser = argparse.ArgumentParser(description=description)
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("--machine",
+                        help="The machine to create build information for.")
+    parser.add_argument("--machines-dir",
+                        help="The machines directory to take build information "
+                        "from. Overrides the CIME_MODEL environment variable, "
+                        "and must be specified if that variable is not set.")
+    parser.add_argument("--macros-format", action='append',
+                        choices=['Makefile', 'CMake'],
+                        help="The format of Macros file to generate. If "
+                        "'Makefile' is passed in, a file called 'Macros.make' "
+                        "is generated. If 'CMake' is passed in, a file called "
+                        "'Macros.cmake' is generated. This option can be "
+                        "specified multiple times to generate multiple files. "
+                        "If not used at all, Macros generation is skipped. "
+                        "Note that Depends files are currently always in "
+                        "Makefile format, regardless of this option.")
+    parser.add_argument("--output-dir", default=os.getcwd(),
+                        help="The directory to write files to. If not "
+                        "specified, defaults to the current working directory.")
+
+    args = parser.parse_args()
+    CIME.utils.handle_standard_logging_options(args)
+
+    opts = {}
+    if args.machines_dir is not None:
+        machines_file = os.path.join(args.machines_dir, "config_machines.xml")
+        machobj = Machines(infile=machines_file, machine=args.machine)
+    else:
+        if os.environ.get('CIME_MODEL') is not None:
+            machobj = Machines(machine=args.machine)
+        else:
+            expect(False, "Either --mach-dir or the CIME_MODEL environment "
+                   "variable must be specified!")
+
+    opts['machobj'] = machobj
+
+    if args.macros_format is None:
+        opts['macros_format'] = []
+    else:
+        opts['macros_format'] = args.macros_format
+
+    expect(os.path.isdir(args.output_dir),
+           "Output directory '%s' does not exist." % args.output_dir)
+
+    opts['output_dir'] = args.output_dir
+
+    # Set compiler.
+    if "COMPILER" in os.environ:
+        compiler = os.environ["COMPILER"]
+    else:
+        compiler = machobj.get_default_compiler()
+        os.environ["COMPILER"] = compiler
+    expect(opts['machobj'].is_valid_compiler(compiler),
+           "Invalid compiler vendor given in COMPILER environment variable: %s"
+           % compiler)
+    opts['compiler'] = compiler
+
+    # Set MPI library.
+    if "MPILIB" in os.environ:
+        mpilib = os.environ["MPILIB"]
+    else:
+        mpilib = machobj.get_default_MPIlib()
+        os.environ["MPILIB"] = mpilib
+    expect(opts['machobj'].is_valid_MPIlib(mpilib),
+           "Invalid MPI library name given in MPILIB environment variable: %s" %
+           mpilib)
+    opts['mpilib'] = mpilib
+
+    # Set DEBUG flag.
+    if "DEBUG" in os.environ:
+        expect(os.environ["DEBUG"].lower() in ('true', 'false'),
+               "Invalid DEBUG environment variable value (must be 'TRUE' or "
+               "'FALSE'): %s" % os.environ["DEBUG"])
+        debug = os.environ["DEBUG"].lower() == "true"
+    else:
+        debug = False
+        os.environ["DEBUG"] = "FALSE"
+    opts['debug'] = debug
+
+    return opts
+
+def configure(machobj, output_dir, macros_format, compiler, mpilib, debug):
+    """Add Macros, Depends, and env_mach_specific files to a directory.
+
+    Arguments:
+    machobj - Machines argument for this machine.
+    output_dir - Directory in which to place output.
+    macros_format - Container containing the string 'Makefile' to produce
+                    Makefile Macros output, and/or 'CMake' for CMake output.
+    compiler - String containing the compiler vendor to configure for.
+    mpilib - String containing the MPI implementation to configure for.
+    debug - Boolean specifying whether debugging options are enabled.
+    """
+    # Macros generation.
+    suffixes = {'Makefile': '.make', 'CMake': '.cmake'}
+    macro_maker = Build(machobj)
+    build_file_name = os.path.join(machobj.machines_dir, "config_build.xml")
+    for form in macros_format:
+        out_file_name = os.path.join(output_dir,
+                                     "Macros"+suffixes[form])
+        with open(out_file_name, "w") as macros_file:
+            macro_maker.write_macros(form, build_file_name, macros_file)
+
+    # Depends file copy.
+    mach_depends = os.path.join(machobj.machines_dir,
+                                "Depends."+machobj.get_machine_name())
+    if os.path.isfile(mach_depends):
+        shutil.copy(mach_depends, output_dir)
+    compiler_depends = os.path.join(machobj.machines_dir, "Depends."+compiler)
+    if os.path.isfile(compiler_depends):
+        shutil.copy(compiler_depends, output_dir)
+
+    # env_mach_specific generation.
+    ems_path = os.path.join(output_dir, "env_mach_specific.xml")
+    if os.path.exists(ems_path):
+        os.remove(ems_path)
+    ems_file = EnvMachSpecific(output_dir)
+    ems_file.populate(machobj)
+    ems_file.write()
+    for shell in ('sh', 'csh'):
+        ems_file.make_env_mach_specific_file(compiler, debug, mpilib, shell)
+        shell_path = os.path.join(output_dir, ".env_mach_specific." + shell)
+        with open(shell_path, 'a') as shell_file:
+            shell_file.write("\nexport COMPILER=%s\n" % compiler)
+            shell_file.write("export MPILIB=%s\n" % mpilib)
+            shell_file.write("export DEBUG=%s\n" % repr(debug).upper())
+
+def _main():
+    opts = parse_command_line(sys.argv)
+    configure(opts['machobj'], opts['output_dir'], opts['macros_format'],
+              opts['compiler'], opts['mpilib'], opts['debug'])
+
+if __name__ == "__main__":
+    _main()

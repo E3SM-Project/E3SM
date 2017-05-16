@@ -1,13 +1,13 @@
 module prep_glc_mod
 
-  use shr_kind_mod    , only: r8 => SHR_KIND_R8 
+  use shr_kind_mod    , only: r8 => SHR_KIND_R8
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct    , only: num_inst_glc, num_inst_lnd, num_inst_frc
   use seq_comm_mct    , only: CPLID, GLCID, logunit
-  use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs 
-  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata  
-  use seq_map_type_mod 
+  use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs
+  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
+  use seq_map_type_mod
   use seq_map_mod
   use seq_flds_mod
   use t_drv_timers_mod
@@ -53,7 +53,7 @@ module prep_glc_mod
   type(seq_map), pointer :: mapper_Sl2g
   type(seq_map), pointer :: mapper_Fl2g
 
-  ! attribute vectors 
+  ! attribute vectors
   type(mct_aVect), pointer :: l2x_gx(:) ! Lnd export, glc grid, cpl pes - allocated in driver
 
   ! accumulation variables
@@ -110,10 +110,10 @@ contains
 
        l2x_lx => component_get_c2x_cx(lnd(1))
        lsize_l = mct_aVect_lsize(l2x_lx)
-       
+
        x2g_gx => component_get_x2c_cx(glc(1))
        lsize_g = mct_aVect_lsize(x2g_gx)
-       
+
        allocate(l2x_gx(num_inst_lnd))
        allocate(l2gacc_lx(num_inst_lnd))
        do eli = 1,num_inst_lnd
@@ -128,7 +128,7 @@ contains
        if (lnd_c2_glc) then
           samegrid_lg = .true.
           if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
-          
+
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sl2g'
@@ -145,7 +145,7 @@ contains
                'mapper_Fl2g initialization', esmf_map_flag)
        end if
        call shr_sys_flush(logunit)
-          
+
     end if
 
   end subroutine prep_glc_init
@@ -205,12 +205,12 @@ contains
     end if
     l2gacc_lx_cnt = 0
     call t_drvstopf  (trim(timer))
-    
+
   end subroutine prep_glc_accum_avg
 
   !================================================================================================
-  
-  subroutine prep_glc_mrg(infodata, fractions_gx, timer_mrg) 
+
+  subroutine prep_glc_mrg(infodata, fractions_gx, timer_mrg)
 
     !---------------------------------------------------------------
     ! Description
@@ -233,7 +233,7 @@ contains
        eli = mod((egi-1),num_inst_lnd) + 1
        efi = mod((egi-1),num_inst_frc) + 1
 
-       x2g_gx => component_get_x2c_cx(glc(egi)) 
+       x2g_gx => component_get_x2c_cx(glc(egi))
        call prep_glc_merge(l2x_gx(eli), fractions_gx(efi), x2g_gx)
     enddo
     call t_drvstopf  (trim(timer_mrg))
@@ -244,7 +244,7 @@ contains
 
   subroutine prep_glc_merge( l2x_g, fractions_g, x2g_g )
 
-    !----------------------------------------------------------------------- 
+    !-----------------------------------------------------------------------
     ! Description
     ! "Merge" land forcing for glc input.
     !
@@ -258,7 +258,7 @@ contains
     type(mct_aVect), intent(inout)  :: l2x_g  ! input
     type(mct_aVect), intent(in)     :: fractions_g
     type(mct_aVect), intent(inout)  :: x2g_g  ! output
-    !----------------------------------------------------------------------- 
+    !-----------------------------------------------------------------------
 
     integer       :: num_flux_fields
     integer       :: num_state_fields
@@ -276,14 +276,14 @@ contains
     character(CL) :: field   ! string converted to char
     character(*), parameter   :: subname = '(prep_glc_merge) '
 
-    !----------------------------------------------------------------------- 
+    !-----------------------------------------------------------------------
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
     lsize = mct_aVect_lsize(x2g_g)
-    
+
     num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes))
     num_state_fields = shr_string_listGetNum(trim(seq_flds_x2g_states))
-    
+
     if (first_time) then
        nflds = mct_aVect_nRattr(x2g_g)
        if (nflds /= (num_flux_fields + num_state_fields)) then
@@ -291,7 +291,7 @@ contains
                nflds, num_flux_fields, num_state_fields
           call shr_sys_abort(subname//' ERROR: nflds /= num_flux_fields + num_state_fields')
        end if
-          
+
        allocate(mrgstr(nflds))
     end if
 
@@ -319,12 +319,12 @@ contains
        call seq_flds_getField(field, i, seq_flds_x2g_fluxes)
        index_l2x = mct_aVect_indexRA(l2x_g, trim(field))
        index_x2g = mct_aVect_indexRA(x2g_g, trim(field))
-       
+
        if (first_time) then
           mrgstr(mrgstr_index) = subname//'x2g%'//trim(field)//' =' // &
                ' = lfrac*l2x%'//trim(field)
        end if
-       
+
        do n = 1, lsize
           lfrac = fractions_g%rAttr(index_lfrac,n)
           x2g_g%rAttr(index_x2g,n) = l2x_g%rAttr(index_l2x,n) * lfrac
@@ -373,12 +373,12 @@ contains
 
     num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes))
     num_state_fields = shr_string_listGetNum(trim(seq_flds_x2g_states))
-    
+
     do egi = 1,num_inst_glc
        ! Use fortran mod to address ensembles in merge
        eli = mod((egi-1),num_inst_lnd) + 1
        efi = mod((egi-1),num_inst_frc) + 1
-       
+
        do field_num = 1, num_flux_fields
           call seq_flds_getField(fieldname, field_num, seq_flds_x2g_fluxes)
           call prep_glc_map_one_field_lnd2glc(egi=egi, eli=eli, &
@@ -407,7 +407,9 @@ contains
     ! vertical gradient calculator.
 
     use vertical_gradient_calculator_2nd_order, only : vertical_gradient_calculator_2nd_order_type
-    use glc_elevclass_mod, only : glc_get_num_elevation_classes
+    use vertical_gradient_calculator_factory
+    use glc_elevclass_mod, only : glc_get_num_elevation_classes, &
+         glc_get_elevclass_bounds, glc_all_elevclass_strings
     use map_lnd2glc_mod, only : map_lnd2glc
 
     ! Arguments
@@ -424,12 +426,12 @@ contains
 
     g2x_gx => component_get_c2x_cx(glc(egi))
 
-    gradient_calculator = vertical_gradient_calculator_2nd_order_type( &
+    gradient_calculator = create_vertical_gradient_calculator_2nd_order( &
          attr_vect = l2gacc_lx(eli), &
          fieldname = fieldname, &
          toponame = 'Sl_topo', &
-         min_elevation_class = 1, &
-         max_elevation_class = glc_get_num_elevation_classes())
+         elevclass_names = glc_all_elevclass_strings(), &
+         elevclass_bounds = glc_get_elevclass_bounds())
     call map_lnd2glc(l2x_l = l2gacc_lx(eli), &
          landfrac_l = fractions_lx, &
          g2x_g = g2x_gx, &
@@ -444,12 +446,12 @@ contains
 
   function prep_glc_get_l2x_gx()
     type(mct_aVect), pointer :: prep_glc_get_l2x_gx(:)
-    prep_glc_get_l2x_gx => l2x_gx(:)   
+    prep_glc_get_l2x_gx => l2x_gx(:)
   end function prep_glc_get_l2x_gx
 
   function prep_glc_get_l2gacc_lx()
     type(mct_aVect), pointer :: prep_glc_get_l2gacc_lx(:)
-    prep_glc_get_l2gacc_lx => l2gacc_lx(:)   
+    prep_glc_get_l2gacc_lx => l2gacc_lx(:)
   end function prep_glc_get_l2gacc_lx
 
   function prep_glc_get_l2gacc_lx_cnt()
@@ -459,12 +461,12 @@ contains
 
   function prep_glc_get_mapper_Sl2g()
     type(seq_map), pointer :: prep_glc_get_mapper_Sl2g
-    prep_glc_get_mapper_Sl2g => mapper_Sl2g  
+    prep_glc_get_mapper_Sl2g => mapper_Sl2g
   end function prep_glc_get_mapper_Sl2g
 
   function prep_glc_get_mapper_Fl2g()
     type(seq_map), pointer :: prep_glc_get_mapper_Fl2g
-    prep_glc_get_mapper_Fl2g => mapper_Fl2g  
+    prep_glc_get_mapper_Fl2g => mapper_Fl2g
   end function prep_glc_get_mapper_Fl2g
 
 end module prep_glc_mod

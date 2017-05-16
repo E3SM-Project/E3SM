@@ -13,8 +13,8 @@
 
       public :: testall
 
-    interface testall  
-       module procedure testRouter_  
+    interface testall
+       module procedure testRouter_
     end interface
 
 
@@ -29,10 +29,10 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: aVtest_ - Test the functions in the AttrVect module 
+! !IROUTINE: aVtest_ - Test the functions in the AttrVect module
 !
 ! !DESCRIPTION:
-! This routine writes diagnostic information about the input 
+! This routine writes diagnostic information about the input
 ! {\tt AttrVect}. Each line of the output will be preceded by the
 ! character argument {\tt identifier}. The output device is specified
 ! by the integer argument {\tt device}.
@@ -45,13 +45,13 @@
 ! !USES:
 !
       use m_Router         ! Use all GlobalSegMap routines
-      use m_stdio       
+      use m_stdio
       use m_die
       use m_mpif90
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(Router),               intent(in)  :: Rout
       character(len=*),           intent(in)  :: identifier

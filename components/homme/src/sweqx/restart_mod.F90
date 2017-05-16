@@ -14,7 +14,7 @@ module restart_mod
    !------------------
    !use time_mod
    !------------------
-   use element_mod, only : elem_state_t
+   use element_state, only : elem_state_t
    !------------------
    !use control_mod
    !------------------

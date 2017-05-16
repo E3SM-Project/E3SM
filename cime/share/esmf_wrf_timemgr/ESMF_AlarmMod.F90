@@ -15,7 +15,7 @@
 !
 !==============================================================================
 !
-! This file contains the Alarm class definition and all Alarm class 
+! This file contains the Alarm class definition and all Alarm class
 ! methods.
 !
 !------------------------------------------------------------------------------
@@ -72,10 +72,10 @@
       end type
 
 ! Actual public type:  this bit allows easy mimic of "deep" ESMF_AlarmCreate
-! in ESMF 2.1.0+.  Note that ESMF_AlarmCreate is in a separate module to avoid 
-! cyclic dependence.  
-! NOTE:  DO NOT ADD NON-POINTER STATE TO THIS DATA TYPE.  It emulates ESMF 
-!        shallow-copy-masquerading-as-reference-copy insanity.  
+! in ESMF 2.1.0+.  Note that ESMF_AlarmCreate is in a separate module to avoid
+! cyclic dependence.
+! NOTE:  DO NOT ADD NON-POINTER STATE TO THIS DATA TYPE.  It emulates ESMF
+!        shallow-copy-masquerading-as-reference-copy insanity.
       type ESMF_Alarm
         type(ESMF_AlarmInt), pointer :: alarmint => null()
       end type
@@ -105,7 +105,7 @@
       public ESMF_AlarmIsRinging
 !      public ESMF_AlarmCheckRingTime
       public operator(==)
- 
+
 ! Required inherited and overridden ESMF_Base class methods
 
 !      public ESMF_AlarmRead
@@ -279,7 +279,7 @@
         IF ( PRESENT( rc ) ) rc = ESMF_FAILURE
       ENDIF
       end subroutine ESMF_AlarmGetRingInterval
- 
+
 !------------------------------------------------------------------------------
 !BOP
 ! !IROUTINE: ESMF_AlarmSetRingInterval - Set an alarm's ring interval
@@ -504,7 +504,7 @@
       type(ESMF_Alarm), intent(out) :: alarm
       type(ESMF_Time), intent(in) :: PrevRingTime
       integer, intent(out), optional :: rc
-   
+
 ! !DESCRIPTION:
 !     Set an {\tt ESMF\_Alarm}'s previous ring time
 !
@@ -663,7 +663,7 @@
 ! !ARGUMENTS:
       type(ESMF_Alarm), intent(inout) :: alarm
       integer, intent(out), optional :: rc
-    
+
 ! !DESCRIPTION:
 !     Turn on an {\tt ESMF\_Alarm}; sets ringing state
 !
@@ -702,14 +702,14 @@
 ! !ARGUMENTS:
       type(ESMF_Alarm), intent(inout) :: alarm
       integer, intent(out), optional :: rc
-    
+
 ! !DESCRIPTION:
 !     Turn off an {\tt ESMF\_Alarm}; unsets ringing state
 !
 !     The arguments are:
 !     \begin{description}
 !     \item[alarm]
-!          The object instance to turn off   
+!          The object instance to turn off
 !     \item[{[rc]}]
 !          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
 !     \end{description}
@@ -749,7 +749,7 @@
 !     The arguments are:
 !     \begin{description}
 !     \item[alarm]
-!          The object instance to check for ringing state  
+!          The object instance to check for ringing state
 !     \item[{[rc]}]
 !          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
 !     \end{description}
@@ -788,12 +788,12 @@
 !
 ! !DESCRIPTION:
 !     Main method used by a {\tt ESMF\_Clock} to check whether to trigger
-!     the {\tt ESMF\_Alarm} 
+!     the {\tt ESMF\_Alarm}
 !
 !     The arguments are:
 !     \begin{description}
 !     \item[alarm]
-!          The object instance to check if time to ring   
+!          The object instance to check if time to ring
 !     \item[ClockCurrTime]
 !          The {\tt ESMF\_Clock}'s current time
 !     \item[positive]
@@ -835,7 +835,7 @@
 !          The second {\tt ESMF\_Alarm} to compare
 !     \end{description}
 !
-! !REQUIREMENTS:  
+! !REQUIREMENTS:
 !EOP
       CALL wrf_error_fatal( 'ESMF_AlarmEQ not supported ' )
       ESMF_AlarmEQ = .FALSE.       ! keep compilers happy
@@ -961,7 +961,7 @@
 ! !DESCRIPTION:
 !     Perform a validation check on a {\tt ESMF\_Alarm}'s properties
 !
-!     The arguments are:  
+!     The arguments are:
 !     \begin{description}
 !     \item[alarm]
 !          {\tt ESMF\_Alarm} to validate
@@ -969,7 +969,7 @@
 !          Validate options
 !     \item[{[rc]}]
 !          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
-!     \end{description} 
+!     \end{description}
 !
 ! !REQUIREMENTS:
 !     TMGn.n.n
@@ -992,7 +992,7 @@
 ! !DESCRIPTION:
 !     To support testing/debugging, print out a {\tt ESMF\_Alarm}'s
 !     properties.
-! 
+!
 !     The arguments are:
 !     \begin{description}
 !     \item[alarm]
@@ -1018,7 +1018,7 @@
                               prevringtime=prevringtime, rc=ierr )
           IF ( PRESENT(rc) .AND. (ierr /= ESMF_SUCCESS) )THEN
              rc = ierr
-          END IF 
+          END IF
           print *, 'Alarm name: ', trim(name)
           print *, 'Next ring time'
           call ESMF_TimePrint( ringtime )
@@ -1029,7 +1029,7 @@
           call ESMF_AlarmGet( alarm, ringinterval=ringinterval, rc=ierr )
           IF ( PRESENT(rc) .AND. (ierr /= ESMF_SUCCESS) )THEN
              rc = ierr
-          END IF 
+          END IF
           print *, 'Ring Interval'
           call ESMF_TimeIntervalPrint( ringinterval )
         END IF

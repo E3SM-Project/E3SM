@@ -13,7 +13,7 @@
 !
 ! File utilites used with CCSM Message passing:
 !
-! shr_file_stdio is the main example here, it changes the working directory, 
+! shr_file_stdio is the main example here, it changes the working directory,
 !                changes stdin and stdout to a given filename.
 !
 ! This is needed because some implementations of MPI with MPMD so that
@@ -22,11 +22,11 @@
 !
 ! File name archival convention, eg.
 !    call shr_file_put(rcode,"foo","mss:/USER/foo",rtpd=3650)
-! is extensible -- the existence of the option file name prefix, eg. "mss:", 
-! and optional arguments, eg. rtpd-3650 can be used to access site-specific 
+! is extensible -- the existence of the option file name prefix, eg. "mss:",
+! and optional arguments, eg. rtpd-3650 can be used to access site-specific
 ! storage devices.  Based on CCM (atmosphere) getfile & putfile routines, but
 ! intended to be a more extensible, shared code.
-! 
+!
 ! !REVISION HISTORY:
 !   2006-05-08 E. Kluzek, Add in shr_file_mod and getUnit, freeUnif methods.
 !   2000-??-?? B. Kauffman, original version circa 2000
@@ -41,13 +41,13 @@ MODULE shr_file_mod
    use shr_sys_mod   ! system calls
    use shr_log_mod, only: s_loglev  => shr_log_Level
    use shr_log_mod, only: s_logunit => shr_log_Unit
-   
+
    IMPLICIT none
 
    PRIVATE           ! By default everything is private to this module
-   
-! !PUBLIC TYPES:               
-   
+
+! !PUBLIC TYPES:
+
    ! no public types
 
 ! !PUBLIC MEMBER FUNCTIONS:
@@ -80,7 +80,7 @@ MODULE shr_file_mod
 !EOP
    !--- unit numbers, users can ask for unit numbers from 0 to min, but getUnit
    !--- won't give a unit below min, users cannot ask for unit number above max
-   !--- for backward compatability.  
+   !--- for backward compatability.
    !--- eventually, recommend min as hard lower limit (tcraig, 9/2007)
    integer(SHR_KIND_IN),parameter :: shr_file_minUnit = 10      ! Min unit number to give
    integer(SHR_KIND_IN),parameter :: shr_file_maxUnit = 99      ! Max unit number to give
@@ -105,7 +105,7 @@ CONTAINS
 !    call shr_file_put(rcode,"foo","mss:/USER/foo",rtpd=3650)
 !    if ( rcode /= 0 ) call shr_sys_abort( "error archiving foo to MSS" )
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_put(rcode,loc_fn,rem_fn,passwd,rtpd,async,remove)
 
@@ -123,7 +123,7 @@ SUBROUTINE shr_file_put(rcode,loc_fn,rem_fn,passwd,rtpd,async,remove)
 
 !EOP
 
-   !----- local -----  
+   !----- local -----
    integer(SHR_KIND_IN)   :: rtpd2    ! MSS retention period
    logical                :: remove2  ! true <=> rm after put
    logical                :: async2   ! true <=> asynchronous put
@@ -139,7 +139,7 @@ SUBROUTINE shr_file_put(rcode,loc_fn,rem_fn,passwd,rtpd,async,remove)
    character(*),parameter :: F02 =   "(a,i4)"
 
 !-------------------------------------------------------------------------------
-! Notes: 
+! Notes:
 ! - On some machines the system call will not return a valid error code
 ! - when things are sent asynchronously, there probably won't be a error code
 !   returned.
@@ -214,7 +214,7 @@ END SUBROUTINE shr_file_put
 !    call shr_file_get(rcode,"foo","mss:/USER/foo",clobber=.true.)
 !    if ( rcode /= 0 ) call shr_sys_abort( "error getting file foo from MSS" )
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_get(rcode,loc_fn,rem_fn,passwd,async,clobber)
 
@@ -246,7 +246,7 @@ SUBROUTINE shr_file_get(rcode,loc_fn,rem_fn,passwd,async,clobber)
    character(*),parameter :: F01 =   "('(shr_file_get) ',a,i3,2a)"
 
 !-------------------------------------------------------------------------------
-! Notes: 
+! Notes:
 ! - On some machines the system call will not return a valid error code
 ! - When things are sent asynchronously, there probably won't be a error code
 !   returned.
@@ -313,8 +313,8 @@ END SUBROUTINE shr_file_get
 ! !IROUTINE: shr_file_queryPrefix -- Get the prefix type from a filepath.
 !
 ! !DESCRIPTION:
-!    
-! !INTERFACE: ------------------------------------------------------------------  
+!
+! !INTERFACE: ------------------------------------------------------------------
 
 integer(SHR_KIND_IN) FUNCTION shr_file_queryPrefix( filepath, prefix )
 
@@ -330,7 +330,7 @@ integer(SHR_KIND_IN) FUNCTION shr_file_queryPrefix( filepath, prefix )
    !----- local -----
 
 !-------------------------------------------------------------------------------
-! Notes: 
+! Notes:
 !-------------------------------------------------------------------------------
 
    if (     filepath(1:5) == "null:" )then
@@ -362,7 +362,7 @@ END FUNCTION shr_file_queryPrefix
 ! !REVISION HISTORY:
 !     2005-Dec-14 - E. Kluzek - creation
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 INTEGER FUNCTION shr_file_getUnit ( unit )
 
@@ -430,7 +430,7 @@ END FUNCTION shr_file_getUnit
 ! !REVISION HISTORY:
 !     2005-Dec-14 - E. Kluzek - creation
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_freeUnit ( unit)
 
@@ -472,15 +472,15 @@ END SUBROUTINE shr_file_freeUnit
 ! !IROUTINE: shr_file_stdio -- Change working directory, and redirect stdin/stdout
 !
 ! !DESCRIPTION:
-!   1) change the cwd (current working directory) and 
+!   1) change the cwd (current working directory) and
 !   2) redirect stdin & stdout (units 5 & 6) to named files,
 !   where the desired cwd & files are specified by namelist file.
 !
 !   Normally this is done to work around limitations in the execution syntax
-!   of common MPI implementations.  For example, SGI's mpirun syntax is not 
+!   of common MPI implementations.  For example, SGI's mpirun syntax is not
 !   flexible enough to allow MPMD models to select different execution
-!   directories or to redirect stdin & stdout on the command line.  
-!   Such functionality is highly desireable for CCSM purposes.  
+!   directories or to redirect stdin & stdout on the command line.
+!   Such functionality is highly desireable for CCSM purposes.
 !   ie. mpirun can't handle this:
 !   unix> cd /usr/tmp/jdoe/csm/case01/atm ; atm < atm.parm > atm.log &
 !   unix> cd /usr/tmp/jdoe/csm/case01/cpl ; cpl < cpl.parm > cpl.log &
@@ -489,9 +489,9 @@ END SUBROUTINE shr_file_freeUnit
 ! ASSUMPTIONS:
 ! o if the cwd, stdin, or stdout are to be changed, there must be a namelist
 !   file in the cwd named <model>_stdio.nml  where <model> is provided via
-!   subroutine dummy argument. 
+!   subroutine dummy argument.
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_stdio(model)
 
@@ -514,7 +514,7 @@ SUBROUTINE shr_file_stdio(model)
    call shr_file_chdir   (model) ! changes cwd
    call shr_file_chStdOut(model) ! open units 5 & 6 to named files
    call shr_file_chStdIn (model) ! open units 5 & 6 to named files
- 
+
 END SUBROUTINE shr_file_stdio
 
 !===============================================================================
@@ -525,7 +525,7 @@ END SUBROUTINE shr_file_stdio
 ! !DESCRIPTION:
 !   change the cwd (current working directory), see shr_file_stdio for notes
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_chdir(model, rcodeOut)
 
@@ -562,7 +562,7 @@ SUBROUTINE shr_file_chdir(model, rcodeOut)
       rcode = 1
    endif
    if ( present(rcodeOut) ) rcodeOut = rcode
- 
+
 END SUBROUTINE shr_file_chdir
 
 !===============================================================================
@@ -573,7 +573,7 @@ END SUBROUTINE shr_file_chdir
 ! !DESCRIPTION:
 !   change the stdin & stdout (units 5 & 6), see shr_file_stdio for notes
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_dirio(model)
 
@@ -597,7 +597,7 @@ SUBROUTINE shr_file_dirio(model)
 
    call shr_file_chStdIn (model)
    call shr_file_chStdOut(model)
- 
+
 END SUBROUTINE shr_file_dirio
 
 !===============================================================================
@@ -608,7 +608,7 @@ END SUBROUTINE shr_file_dirio
 ! !DESCRIPTION:
 !   change the stdin (unit 5), see shr_file_stdio for notes
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_chStdIn( model, NLFilename, rcodeOut )
 
@@ -669,7 +669,7 @@ SUBROUTINE shr_file_chStdIn( model, NLFilename, rcodeOut )
    endif
    if ( present(NLFilename) ) NLFilename = nlfile
    if ( present(rcodeOut)   ) rcodeOut   = rcode
- 
+
 END SUBROUTINE shr_file_chStdIn
 
 !===============================================================================
@@ -680,7 +680,7 @@ END SUBROUTINE shr_file_chStdIn
 ! !DESCRIPTION:
 !   change the stdout (unit 6), see shr_file_stdio for notes
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_chStdOut(model,rcodeOut)
 
@@ -718,9 +718,9 @@ SUBROUTINE shr_file_chStdOut(model,rcodeOut)
          ': unit 6 has *not* been redirected'
       rcode = 1
    endif
- 
+
    if ( present(rcodeOut)   ) rcodeOut = rcode
- 
+
 END SUBROUTINE shr_file_chStdOut
 
 !===============================================================================
@@ -733,7 +733,7 @@ END SUBROUTINE shr_file_chStdOut
 ! needed input namelist variables as optional arguments. Return "nochange" in
 ! dir, stdin, or stdout if shouldn't change.
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_stdioReadNL( model, filename, dirOut, stdinOut, stdoutOut, &
                                  NLFileOut, rcodeOut )
@@ -783,7 +783,7 @@ SUBROUTINE shr_file_stdioReadNL( model, filename, dirOut, stdinOut, stdoutOut, &
    inquire(file=filename,exist=exists)
 
    if (.not. exists) then
-      if (s_loglev > 0) write(s_logunit,F00) "file ",trim(filename),& 
+      if (s_loglev > 0) write(s_logunit,F00) "file ",trim(filename),&
       & " doesn't exist, can not read stdio namelist from it"
       rcode = 9
    else
@@ -808,7 +808,7 @@ SUBROUTINE shr_file_stdioReadNL( model, filename, dirOut, stdinOut, stdoutOut, &
    if ( present(stdinOut)  ) stdinOut  = stdin
    if ( present(stdoutOut) ) stdoutOut = stdout
    if ( present(rcodeOut)  ) rcodeOut  = rcode
- 
+
 END SUBROUTINE shr_file_stdioReadNL
 
 !===============================================================================
@@ -821,7 +821,7 @@ END SUBROUTINE shr_file_stdioReadNL
 !   a log file associated with the unit argument.  This may be extended
 !   in the future.
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_setIO( nmlfile, funit)
 
@@ -888,7 +888,7 @@ END SUBROUTINE shr_file_setIO
 !
 ! !IROUTINE: shr_file_setLogUnit -- Set the Log I/O Unit number
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_setLogUnit(unit)
 
@@ -914,7 +914,7 @@ SUBROUTINE shr_file_setLogUnit(unit)
    endif
 
    s_logunit = unit
- 
+
 END SUBROUTINE shr_file_setLogUnit
 
 !===============================================================================
@@ -922,7 +922,7 @@ END SUBROUTINE shr_file_setLogUnit
 !
 ! !IROUTINE: shr_file_setLogLevel -- Set the Log I/O Unit number
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_setLogLevel(newlevel)
 
@@ -939,14 +939,14 @@ SUBROUTINE shr_file_setLogLevel(newlevel)
    character(*),parameter :: F00   = "('(shr_file_setLogLevel) ',4a)"
 
 !-------------------------------------------------------------------------------
-! Notes: 
+! Notes:
 !-------------------------------------------------------------------------------
 
    if (s_loglev+newlevel > 2 .and. s_loglev-newlevel /= 0) &
       write(s_logunit,*) subName,': reset log level from/to ',s_loglev, newlevel
 
    s_loglev = newlevel
- 
+
 END SUBROUTINE shr_file_setLogLevel
 
 !===============================================================================
@@ -954,7 +954,7 @@ END SUBROUTINE shr_file_setLogLevel
 !
 ! !IROUTINE: shr_file_getLogUnit -- Set the Log I/O Unit number
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_getLogUnit(unit)
 
@@ -971,11 +971,11 @@ SUBROUTINE shr_file_getLogUnit(unit)
    character(*),parameter :: F00   = "('(shr_file_getLogUnit) ',4a)"
 
 !-------------------------------------------------------------------------------
-! Notes: 
+! Notes:
 !-------------------------------------------------------------------------------
 
    unit = s_logunit
- 
+
 END SUBROUTINE shr_file_getLogUnit
 
 !===============================================================================
@@ -983,7 +983,7 @@ END SUBROUTINE shr_file_getLogUnit
 !
 ! !IROUTINE: shr_file_getLogLevel -- Set the Log I/O Unit number
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_file_getLogLevel(curlevel)
 
@@ -1000,11 +1000,11 @@ SUBROUTINE shr_file_getLogLevel(curlevel)
    character(*),parameter :: F00   = "('(shr_file_getLogLevel) ',4a)"
 
 !-------------------------------------------------------------------------------
-! Notes: 
+! Notes:
 !-------------------------------------------------------------------------------
 
    curlevel = s_loglev
- 
+
 END SUBROUTINE shr_file_getLogLevel
 
 !===============================================================================

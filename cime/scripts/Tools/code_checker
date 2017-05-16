@@ -1,0 +1,119 @@
+#!/usr/bin/env python
+
+"""
+Ensure that all CIME python files are free of errors
+and follow the PEP8 standard.
+"""
+
+from standard_script_setup import *
+
+from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_python_libs_root
+
+import argparse, sys, os, doctest
+from multiprocessing.dummy import Pool as ThreadPool
+from distutils.spawn import find_executable
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n%s [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Check code \033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("--dir", default=get_python_libs_root(),
+                        help="The root directory containing python files to check.")
+
+    parser.add_argument("-j", "--num-procs", type=int, default=8,
+                        help="The number of files to check in parallel")
+
+    parser.add_argument("files", nargs="*",
+                        help="Restrict checking to specific files. Relative name is fine.")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.dir, args.num_procs, args.files
+
+###############################################################################
+def run_pylint(on_file):
+###############################################################################
+    pylint = find_executable("pylint")
+
+    cmd = "%s --disable I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement %s" % (pylint, on_file)
+    stat, out, err = run_cmd(cmd)
+    if stat != 0:
+        logging.info("File %s has pylint problems, please fix\n    Use command: %s" % (on_file, cmd))
+        return False
+    else:
+        logging.info("File %s has no pylint problems" % on_file)
+        return True
+
+###############################################################################
+def matches(file_path, file_ends):
+###############################################################################
+    for file_end in file_ends:
+        if file_path.endswith(file_end):
+            return True
+
+    return False
+
+###############################################################################
+def check_code(dir_to_check, num_procs, files):
+###############################################################################
+    """
+    Check all python files in the given directory
+
+    Returns True if all files had no problems
+    """
+    # Pylint won't work right if the imports within the checked files fails
+    if "PYTHONPATH" in os.environ:
+        os.environ["PYTHONPATH"] += ':' + dir_to_check
+    else:
+        os.environ["PYTHONPATH"] = dir_to_check
+
+    # Get list of files to check
+    files_to_check = run_cmd_no_fail('git ls-files %s' % dir_to_check).splitlines()
+    if files:
+        files_to_check = [item for item in files_to_check if matches(item, files)]
+    else:
+        files_to_check = [item for item in files_to_check if item.endswith(".py")]
+
+    pool = ThreadPool(num_procs)
+    results = pool.map(run_pylint, files_to_check)
+
+    return False not in results
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    pylint = find_executable("pylint")
+    expect(pylint is not None, "pylint not found")
+
+    dir_to_check, num_procs, files = parse_command_line(sys.argv, description)
+
+    sys.exit(0 if check_code(dir_to_check, num_procs, files) else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

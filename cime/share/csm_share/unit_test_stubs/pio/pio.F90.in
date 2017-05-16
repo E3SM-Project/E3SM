@@ -23,23 +23,23 @@ module pio
 #ifndef NO_MPIMOD
    use mpi, only : MPI_OFFSET_KIND ! _EXTERNAL
 #endif
-  
+
   implicit none
   private
 
 #ifdef NO_MPIMOD
    include 'mpif.h'   ! _EXTERNAL
 #endif
-  
+
   type, public :: file_desc_t
   end type file_desc_t
 
   type, public :: io_desc_t
   end type io_desc_t
-  
+
   type, public :: iosystem_desc_t
   end type iosystem_desc_t
-  
+
   type, public :: var_desc_t
   end type var_desc_t
 
@@ -64,6 +64,7 @@ module pio
   integer, parameter, public :: pio_offset = MPI_OFFSET_KIND
   integer, parameter, public :: pio_offset_kind = pio_offset
   integer, parameter, public :: pio_rearr_subset = 0
+  integer, parameter, public :: pio_rearr_box = 1
   integer, parameter, public :: PIO_WRITE = 0
 
   public :: PIO_def_dim
@@ -72,7 +73,7 @@ module pio
   public :: pio_inq_dimid
   public :: pio_inq_dimlen
   public :: pio_set_blocksize
-  
+
   public :: PIO_closefile
   interface PIO_closefile
      module procedure closefile
@@ -100,14 +101,14 @@ module pio
      module procedure freedecomp_ios
      module procedure freedecomp_file
   end interface
-  
+
   public :: pio_get_att
   interface pio_get_att
      module procedure get_att_{TYPE}, get_att_desc_{TYPE}
      ! TYPE real,int,double
      module procedure get_att_1d_{TYPE}, get_att_desc_1d_{TYPE}
   end interface
-  
+
   public :: pio_get_var
   interface pio_get_var
      module procedure get_var_{DIMS}d_{TYPE}, get_var_vdesc_{DIMS}d_{TYPE}
@@ -126,7 +127,7 @@ module pio
   interface PIO_initdecomp
      module procedure PIO_initdecomp_dof_i4  ! previous name: initdecomop_1dof_nf_box
      module procedure PIO_initdecomp_dof_i8  ! previous name: initdecomop_1dof_nf_box
-     module procedure PIO_initdecomp_dof_i8_vdc 
+     module procedure PIO_initdecomp_dof_i8_vdc
      module procedure initdecomp_1dof_nf_i4
      module procedure initdecomp_1dof_nf_i8
      module procedure initdecomp_1dof_bin_i4
@@ -138,7 +139,7 @@ module pio
      module procedure PIO_initdecomp_bc
      module procedure PIO_initdecomp_dof_dof
   end interface
-  
+
   public :: pio_inq_varid
   interface pio_inq_varid
      module procedure inq_varid_vid, &
@@ -183,20 +184,20 @@ module pio
   interface PIO_setdebuglevel
      module procedure setdebuglevel
   end interface PIO_setdebuglevel
-  
+
   public :: PIO_seterrorhandling
   interface PIO_seterrorhandling
      module procedure seterrorhandlingf
      module procedure seterrorhandlingi
   end interface
-  
+
   public :: PIO_write_darray
   interface PIO_write_darray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5,6,7
      module procedure write_darray_{DIMS}d_{TYPE}
   end interface
-  
+
 contains
 
   subroutine closefile(file)
@@ -234,12 +235,12 @@ contains
   end function def_var_md
 
   subroutine finalize(iosystem,ierr)
-     type (iosystem_desc_t), intent(inout) :: iosystem 
+     type (iosystem_desc_t), intent(inout) :: iosystem
      integer(i4), intent(out) :: ierr
 
      ierr = 0
    end subroutine finalize
-     
+
   subroutine freedecomp_ios(ios,iodesc)
     type (iosystem_desc_t) :: ios
     type (io_desc_t) :: iodesc
@@ -249,7 +250,7 @@ contains
     type (file_desc_t) :: file
     type (io_desc_t) :: iodesc
   end subroutine freedecomp_file
-    
+
   integer function get_att_desc_{TYPE} (File,varDesc,name,value) result(ierr)
     type (File_desc_t), intent(inout) , target :: File
     type (VAR_desc_t), intent(in)     :: varDesc
@@ -287,7 +288,7 @@ contains
 
     ierr = 0
   end function get_att_1d_{TYPE}
-    
+
   integer function get_var1_{TYPE} (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
@@ -343,7 +344,7 @@ contains
   subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
     integer(i4), intent(in) :: comp_rank
     integer(i4), intent(in) :: comp_comm
-    integer(i4), intent(in) :: num_iotasks 
+    integer(i4), intent(in) :: num_iotasks
     integer(i4), intent(in) :: num_aggregator
     integer(i4), intent(in) :: stride
     integer(i4), intent(in) :: rearr
@@ -365,11 +366,11 @@ contains
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)               :: basepiotype
     integer(i4), intent(in)               :: dims(:)
-    integer (kind=PIO_OFFSET)             :: compstart(:)  
-    integer (kind=PIO_OFFSET)             :: compcount(:)    
+    integer (kind=PIO_OFFSET)             :: compstart(:)
+    integer (kind=PIO_OFFSET)             :: compcount(:)
     type (IO_desc_t), intent(inout)         :: iodesc
-    integer (kind=PIO_OFFSET),optional    :: iostart(:)  
-    integer (kind=PIO_OFFSET),optional    :: iocount(:)    
+    integer (kind=PIO_OFFSET),optional    :: iostart(:)
+    integer (kind=PIO_OFFSET),optional    :: iocount(:)
   end subroutine PIO_initdecomp_bc
 
   subroutine PIO_initdecomp_dof_dof(iosystem,basepiotype,dims,compdof,iodesc,iodof)
@@ -380,15 +381,15 @@ contains
     type (IO_desc_t), intent(inout)                   :: iodesc
     integer(i4), intent(in)                        :: iodof(:)
   end subroutine PIO_initdecomp_dof_dof
-    
+
   subroutine initdecomp_2dof_bin_i4(iosystem,basepiotype,dims,lenblocks,compdof,iodofr,iodofw,iodesc)
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
     integer (i4), intent(in)          :: lenblocks
     integer (i4), intent(in)          :: compdof(:)   !> global degrees of freedom for computational decomposition
-    integer (i4), intent(in)          :: iodofr(:)     !> global degrees of freedom for io decomposition 
-    integer (i4), intent(in)          :: iodofw(:)     !> global degrees of freedom for io decomposition 
+    integer (i4), intent(in)          :: iodofr(:)     !> global degrees of freedom for io decomposition
+    integer (i4), intent(in)          :: iodofw(:)     !> global degrees of freedom for io decomposition
     type (io_desc_t), intent(inout)     :: iodesc
   end subroutine initdecomp_2dof_bin_i4
 
@@ -398,8 +399,8 @@ contains
     integer(i4), intent(in)           :: dims(:)
     integer (i4), intent(in)          :: lenblocks
     integer (kind=pio_offset), intent(in)          :: compdof(:)   !> global degrees of freedom for computational decomposition
-    integer (kind=pio_offset), intent(in)          :: iodofr(:)     !> global degrees of freedom for io decomposition 
-    integer (kind=pio_offset), intent(in)          :: iodofw(:)     !> global degrees of freedom for io decomposition 
+    integer (kind=pio_offset), intent(in)          :: iodofr(:)     !> global degrees of freedom for io decomposition
+    integer (kind=pio_offset), intent(in)          :: iodofw(:)     !> global degrees of freedom for io decomposition
     type (io_desc_t), intent(inout)     :: iodesc
   end subroutine initdecomp_2dof_bin_i8
 
@@ -409,7 +410,7 @@ contains
     integer(i4), intent(in)           :: dims(:)
     integer(i4), intent(in)          :: lenblocks
     integer(kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
-    integer(kind=pio_offset), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition 
+    integer(kind=pio_offset), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition
     type (io_desc_t), intent(inout)     :: iodesc
   end subroutine initdecomp_1dof_bin_i8
 
@@ -419,7 +420,7 @@ contains
     integer(i4), intent(in)           :: dims(:)
     integer (i4), intent(in)          :: lenblocks
     integer (i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
-    integer (i4), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition 
+    integer (i4), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition
     type (io_desc_t), intent(inout)     :: iodesc
   end subroutine initdecomp_1dof_bin_i4
 
@@ -429,8 +430,8 @@ contains
     integer(i4), intent(in)           :: dims(:)
     integer (i4), intent(in)          :: lenblocks
     integer (i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
-    integer (i4), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition 
-    integer (i4), intent(in)          :: iodofw(:)     ! global degrees of freedom for io decomposition 
+    integer (i4), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition
+    integer (i4), intent(in)          :: iodofw(:)     ! global degrees of freedom for io decomposition
 
     type (io_desc_t), intent(inout)     :: iodesc
 
@@ -443,8 +444,8 @@ contains
     integer(i4), intent(in)           :: dims(:)
     integer (i4), intent(in)          :: lenblocks
     integer (kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
-    integer (kind=pio_offset), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition 
-    integer (kind=pio_offset), intent(in)          :: iodofw(:)     ! global degrees of freedom for io decomposition 
+    integer (kind=pio_offset), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition
+    integer (kind=pio_offset), intent(in)          :: iodofw(:)     ! global degrees of freedom for io decomposition
 
     type (io_desc_t), intent(inout)     :: iodesc
 
@@ -457,9 +458,9 @@ contains
     integer(i4), intent(in)           :: dims(:)
     integer (i4), intent(in) :: lenblocks
     integer (i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
-    integer (i4), intent(in)          :: iodof(:)     ! global degrees of freedom for io decomposition 
+    integer (i4), intent(in)          :: iodof(:)     ! global degrees of freedom for io decomposition
     type (io_desc_t), intent(inout)     :: iodesc
-    integer :: piotype	
+    integer :: piotype
     integer(kind=PIO_offset), intent(in) :: start(:), count(:)
   end subroutine initdecomp_1dof_nf_i4
 
@@ -469,7 +470,7 @@ contains
     integer(i4), intent(in)           :: dims(:)
     integer (i4), intent(in) :: lenblocks
     integer (kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
-    integer (kind=pio_offset), intent(in)          :: iodof(:)     ! global degrees of freedom for io decomposition 
+    integer (kind=pio_offset), intent(in)          :: iodof(:)     ! global degrees of freedom for io decomposition
     type (io_desc_t), intent(inout)     :: iodesc
     integer :: piotype
     integer(kind=PIO_offset), intent(in) :: start(:), count(:)
@@ -507,16 +508,16 @@ contains
     integer(i4), intent(in) :: num_ts
     integer(i4), intent(in), optional:: bsize(3)
   end subroutine PIO_initdecomp_dof_i8_vdc
-    
+
   integer function inq_varid_vardesc(File,name,vardesc) result(ierr)
-      
+
     type (File_desc_t), intent(in)   :: File
     character(len=*), intent(in)     :: name
     type (Var_desc_t), intent(inout) :: vardesc
 
     ierr = 0
   end function inq_varid_vardesc
-    
+
   integer function inq_varid_vid(File,name,varid) result(ierr)
 
     type (File_desc_t), intent(in)   :: File
@@ -527,7 +528,7 @@ contains
     ierr = 0
   end function inq_varid_vid
 
-  
+
   integer function PIO_def_dim(File,name,len,dimid) result(ierr)
 
     type (File_desc_t), intent(in)  :: File
@@ -550,9 +551,9 @@ contains
 
     PIO_FILE_IS_OPEN = .false.
   end function PIO_FILE_IS_OPEN
-    
+
   integer function pio_inq_dimid(File,name,dimid) result(ierr)
-    
+
     type (File_desc_t), intent(in) :: File
     character(len=*), intent(in)   :: name
     integer, intent(out)           :: dimid        !dimension ID
@@ -560,9 +561,9 @@ contains
     dimid = 0
     ierr = 0
   end function pio_inq_dimid
-  
+
   integer function pio_inq_dimlen(File,dimid,dimlen) result(ierr)
-    
+
     type (File_desc_t), intent(in) :: File
     integer(i4)     , intent(in)   :: dimid
     integer(i4)     , intent(out)  :: dimlen        !dimension name
@@ -591,9 +592,9 @@ contains
   end subroutine pio_set_buffer_size_limit_i4
 
   subroutine pio_set_buffer_size_limit_i8(limit)
-    integer(pio_offset), intent(in) :: limit 
+    integer(pio_offset), intent(in) :: limit
   end subroutine pio_set_buffer_size_limit_i8
-    
+
   integer function put_att_{TYPE} (File, varid, name, value) result(ierr)
     type (File_desc_t), intent(inout) , target :: File
     integer, intent(in) :: varid
@@ -631,7 +632,7 @@ contains
 
     ierr = 0
   end function put_att_desc_1d_{TYPE}
-  
+
   integer function put_var1_text (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
@@ -705,7 +706,7 @@ contains
 
     ierr = 0
   end function put_vara_{DIMS}d_text
-  
+
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
   integer function put_vara_{DIMS}d_{TYPE} (File,varid, start, count, ival) result(ierr)
@@ -763,9 +764,9 @@ contains
 
     iostat = 0
   end subroutine read_darray_{DIMS}d_{TYPE}
-    
+
   subroutine setdebuglevel(level)
-    integer(i4), intent(in) :: level	
+    integer(i4), intent(in) :: level
   end subroutine setdebuglevel
 
   subroutine seterrorhandlingf(file, method)
@@ -777,7 +778,7 @@ contains
     type(iosystem_desc_t), intent(inout) :: ios
     integer, intent(in) :: method
   end subroutine seterrorhandlingi
-    
+
 ! TYPE real,int,double
   subroutine write_darray_1d_{TYPE} (File,varDesc,ioDesc, array, iostat, fillval)
     type (File_desc_t), intent(inout) :: &
@@ -820,5 +821,5 @@ contains
 
     iostat = 0
   end subroutine write_darray_{DIMS}d_{TYPE}
-  
+
 end module pio

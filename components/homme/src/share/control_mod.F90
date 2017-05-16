@@ -7,29 +7,16 @@
 !
 module control_mod
   use kinds, only : real_kind
+  use physical_constants, only: dd_pi
 
   integer, public, parameter :: MAX_STRING_LEN=240
   integer, public, parameter :: MAX_FILE_LEN=240
-  character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, semi_imp, or full imp)
+  character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, or full imp)
 
 ! none of this is used anymore:
-  integer, public, parameter :: TRACERADV_UGRADQ=0            !  u grad(Q) formulation
-  integer, public, parameter :: TRACERADV_TOTAL_DIVERGENCE=1   ! div(u dp/dn Q ) formulation
-  integer, public  :: tracer_advection_formulation  = TRACERADV_TOTAL_DIVERGENCE
   logical, public  :: use_semi_lagrange_transport   = .false.
   logical, public  :: use_semi_lagrange_transport_local_conservation   = .false.
 
-! Tracer transport type
-! We potentially have five types of tracer advection. However, not all of them
-! may be chosen at runtime due to compile-type restrictions on arrays
-  integer, public, parameter :: TRACERTRANSPORT_SE_GLL          = 1
-  integer, public, parameter :: TRACERTRANSPORT_SEMILAGRANG_GLL = 2
-  integer, public, parameter :: TRACERTRANSPORT_LAGRANGIAN_FVM  = 3
-  integer, public, parameter :: TRACERTRANSPORT_FLUXFORM_FVM    = 4
-  integer, public            :: tracer_transport_type = TRACERTRANSPORT_SE_GLL
-  integer, public, parameter :: TRACER_GRIDTYPE_GLL = 11
-  integer, public, parameter :: TRACER_GRIDTYPE_FVM = 12
-  integer, public            :: tracer_grid_type = TRACER_GRIDTYPE_GLL
 
 !shallow water advection tests:
 !kmass points to a level with density.  other levels contain test tracers
@@ -37,28 +24,17 @@ module control_mod
   integer, public  :: toy_chemistry = 0            !  1 = toy chemestry is turned on in 2D advection code
   real (kind=real_kind), public :: g_sw_output            	   = 9.80616D0          ! m s^-2
 
-  real (kind=real_kind), public ::nu_mc = 0.0
-
-  integer, public  :: tstep_type= 0                           ! 0 = leapfrog
-                                                              ! 1 = RK (foward-in-time)
-  integer, public  :: rk_stage_user  = 0                      ! number of RK stages to use  
+  integer, public  :: tstep_type= 5                           ! preqx timestepping options
+  integer, public  :: rk_stage_user  = 0                      ! number of RK stages (shallow water model) 
   integer, public  :: ftype = 0                                ! Forcing Type
                                                                ! ftype = 0  HOMME ApplyColumn() type forcing process split
                                                                ! ftype = -1   ignore forcing  (used for testing energy balance)
-  integer, public  :: use_cpstar=0                             ! use cp or cp* in T equation                               
-  integer, public  :: energy_fixer = 0    !  -1: No fixer, use non-staggered formula
-                                          !   0: No Fixer, use staggered in time formula
-                                          !       (only for leapfrog)
-                                          !   1 or 4:  Enable fixer, non-staggered formula
-
+  integer, public  :: energy_fixer = 0    !  not used anymore
                                               
   integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps
   integer, public :: rsplit = 0           ! for vertically lagrangian dynamics, apply remap
                                           ! every rsplit tracer timesteps
-  integer, public :: physics = 0          ! Defines if the program is to use its own physics (HOMME standalone), valid values 1,2,3
-                                          ! physics = 0, no physics
-                                          ! physics = 1, Use physics
-  integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency
+  integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency (shallow water only)
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
                                           ! 0 = disabled
 
@@ -80,13 +56,6 @@ module control_mod
   real (kind=real_kind), public, parameter :: tol_limiter=1e-13
 
   integer              , public :: limiter_option = 0
-  character(len=8)     , public :: filter_type
-  character(len=8)     , public :: transfer_type
-  integer              , public :: filter_freq
-  integer              , public :: filter_freq_advection
-  integer              , public :: filter_counter
-  real (kind=real_kind), public :: filter_mu
-  real (kind=real_kind), public :: filter_mu_advection
   character(len=MAX_STRING_LEN)    , public :: precon_method  ! if semi_implicit, type of preconditioner:
                                                   ! choices block_jacobi or identity
 
@@ -108,22 +77,18 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: restartdir
 
   character(len=MAX_STRING_LEN)    , public :: columnpackage
-  character(len=MAX_STRING_LEN)    , public :: moisture
+! namelist variable set to dry,notdry,moist
+! internally the code should use logical "use_moisture"
+  character(len=MAX_STRING_LEN)    , public :: moisture  
+
+  integer, public  :: use_cpstar=0          ! use cp or cp* in thermodynamics
+  logical, public  :: use_moisture=.false.  ! use Q(:,:,:,1) to compute T_v
+
   
   integer              , public :: maxits         ! max iterations of solver
   real (kind=real_kind), public :: tol            ! solver tolerance (convergence criteria)
   integer              , public :: debug_level    ! debug level of CG solver
 
-
-  ! Boyd Vandeven filter Transfer fn parameters
-
-  real (kind=real_kind), public :: p_bv
-  real (kind=real_kind), public :: s_bv
-
-  ! Fischer-Mullen filter Transfer fn parameters
-
-  real (kind=real_kind), public :: wght_fm
-  integer              , public :: kcut_fm
 
   character(len=MAX_STRING_LEN)    ,public  :: vfile_int=""   ! vertical formulation (ecmwf,ccm1)
   character(len=MAX_STRING_LEN)    ,public  :: vfile_mid=""   ! vertical grid spacing (equal,unequal)
@@ -131,7 +96,6 @@ module control_mod
   integer,                          public  :: vanalytic = 0  ! if 1, test initializes vertical coords
   real (kind=real_kind),            public  :: vtop = 0.1     ! top coordinate level for analytic vcoords
 
-  integer              , public :: while_iter
   integer              , public :: fine_ne = -1               ! set for refined exodus meshes (variable viscosity)
   real (kind=real_kind), public :: max_hypervis_courant = 1d99! upper bound for Courant number
                                                               ! (only used for variable viscosity, recommend 1.9 in namelist)
@@ -174,34 +138,33 @@ module control_mod
   real (kind=real_kind), public :: smooth_phis_nudt = 0
 
   integer, public :: prescribed_wind=0    ! fix the velocities?
-  logical, public :: se_prescribed_wind_2d=.false.
-#ifdef CAM
-  real (kind=real_kind), public :: se_met_nudge_u = 0.D0  ! velocity nudging rate (1/sec)
-  real (kind=real_kind), public :: se_met_nudge_p = 0.D0  ! pressure nudging rate (1/sec)
-  real (kind=real_kind), public :: se_met_nudge_t = 0.D0  ! temperature nudging rate (1/sec)
-  integer,               public :: se_met_tevolve = 0     ! switch to turn on time evolution of nudging within dynamics
-  integer,               public :: prescribed_vertwind = 0
-#endif
 
   real (kind=real_kind), public :: initial_total_mass = 0    ! initial perturbation in JW test case
   real (kind=real_kind), public :: u_perturb   = 0         ! initial perturbation in JW test case
 #ifndef CAM
   real (kind=real_kind), public :: pertlim = 0          !pertibation to temperature [like CESM]
 #endif
+
   integer, public, parameter :: west  = 1
   integer, public, parameter :: east  = 2
   integer, public, parameter :: south = 3
   integer, public, parameter :: north = 4
-
   integer, public, parameter :: swest = 5
   integer, public, parameter :: seast = 6
   integer, public, parameter :: nwest = 7
   integer, public, parameter :: neast = 8
   
-  logical, public            :: test_cfldep=.FALSE.
+  logical, public :: disable_diagnostics  = .FALSE.
 
-  logical, public :: disable_diagnostics = .FALSE. 
+  ! parameters for dcmip12 test 2-0: steady state atmosphere with orography
+  real(real_kind), public :: dcmip2_0_h0      = 2000.d0        ! height of mountain range        (meters)
+  real(real_kind), public :: dcmip2_0_Rm      = 3.d0*dd_pi/4.d0   ! radius of mountain range        (radians)
+  real(real_kind), public :: dcmip2_0_zetam   = dd_pi/16.d0       ! mountain oscillation half-width (radians)
 
-
+  ! parameters for dcmip12 test 2-x: mountain waves
+  real(real_kind), public :: dcmip2_x_ueq     = 20.d0          ! wind speed at equator (m/s)
+  real(real_kind), public :: dcmip2_x_h0      = 250.0d0        ! mountain height       (m)
+  real(real_kind), public :: dcmip2_x_d       = 5000.0d0       ! mountain half width   (m)
+  real(real_kind), public :: dcmip2_x_xi      = 4000.0d0       ! mountain wavelength   (m)
 
 end module control_mod

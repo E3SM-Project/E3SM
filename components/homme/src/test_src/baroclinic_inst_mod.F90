@@ -20,7 +20,7 @@ module baroclinic_inst_mod
 !  Jablonowski and Williamson, QJR (2006) 132 
 !
     ! ====================
-    use kinds, only : real_kind
+    use kinds, only : real_kind, iulog
     ! ====================
     use physical_constants, only : omega, rearth, rgas, p0, dd_pi, Cp,g
     ! ====================
@@ -84,6 +84,7 @@ subroutine jw_baroclinic(elem,hybrid,hvcoord,nets,nete)
 
    real(kind=real_kind), allocatable :: var3d(:,:,:,:)
 
+   if (hybrid%masterthread) write(iulog,*) 'initializing Jablonowski and Williamson baroclinic instability test V1'
 
 !      Call eta_levels(ak,bk,eta,etai)
 !          interfaces   p(k) = hyai(k)*ps0 + hybi(k)*ps
@@ -181,7 +182,6 @@ do ie=nets,nete
           trm3 = (1.60D0 *cslat**3 *(snlat**2 + 2.0D0/3.0D0) - DD_PI *0.25D0)* erad*omg
 
           elem(ie)%state%phis(i,j) = trm1 *(trm2 * trm1 + trm3) 
-          elem(ie)%state%lnps(i,j,:) = LOG(p0)
           elem(ie)%state%ps_v(i,j,:) = p0
        end do
     end do
@@ -258,16 +258,8 @@ if (qsize==10) then
 endif
 
 
-
 !=======================================================================================================!
  end subroutine 
-
-
-
-
-
-
-
 
 
 
@@ -327,6 +319,8 @@ endif
     n0 = 2
     np1= 3
 
+    if (hybrid%masterthread) write(iulog,*) 'initializing Jablonowski and Williamson ASP baroclinic instability test'
+
     do k=1,nhl
 #if 1
        shalf(k) = (k-1)*1.0D0/REAL(nlev,kind=real_kind)
@@ -377,10 +371,7 @@ endif
     allocate(t1(nptsp,nptsp,nets:nete))
 
     do ie=nets,nete
-       elem(ie)%state%lnps(:,:,:) = LOG(p0)
        elem(ie)%state%ps_v(:,:,:) = p0
-       !       elem(ie)%state%lnps(:,:,nm1)= elem(ie)%state%lnps(:,:,n0)
-       !       elem(ie)%state%lnps(:,:,np1)= 0.0D0
     end do
 
     gs = gauss(nlat)

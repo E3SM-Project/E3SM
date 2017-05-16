@@ -286,7 +286,7 @@ sub process_commandline {
                chk_res               => undef,
                note                  => undef,
                drydep                => 0,
-               megan                 => 1,
+               megan                 => 0,
                irrig                 => "default",
                res                   => "default",
                silent                => 0,
@@ -392,7 +392,7 @@ sub check_for_perl_utils {
   my $perl5lib_dir = "$cesmroot/cime/utils/perl5lib";
 
   # The root diretory for the perl SetupTools.pm module
-  my $SetupTools_dir = "$cesmroot/cime/scripts/Tools";
+  my $SetupTools_dir = "$perl5lib_dir/Config/";
   (-f "$SetupTools_dir/SetupTools.pm")  or
       fatal_error("Cannot find perl module \"SetupTools.pm\" in directory\n" .
 		  "\"$SetupTools_dir\" \n");

@@ -2,7 +2,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !-----------------------------------------------------------------------
 !BOP
 !
@@ -55,7 +55,7 @@ contains
 ! !REVISION HISTORY:
 ! 	20Feb97 - Jing Guo <guo@eramus> - defined template
 !       09Jan07 - R. Loy <rloy@mcs.anl.gov> - check for initialized, add
-!                 options for abort 
+!                 options for abort
 !
 !EOP
 !_______________________________________________________________________
@@ -131,7 +131,7 @@ end subroutine die_
 ! !REVISION HISTORY:
 ! 	20Feb97 - Jing Guo <guo@eramus> - defined template
 !       09Jan07 - R. Loy <rloy@mcs.anl.gov> - check for initialized, add
-!                 options for abort 
+!                 options for abort
 !
 !EOP
 !_______________________________________________________________________

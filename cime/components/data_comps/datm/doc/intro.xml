@@ -7,7 +7,7 @@
 <sect2 id="data_overview">
 <title>Overview</title>
 
-<para> 
+<para>
 
 The CESM1.2 data models continue to perform the basic function of
 reading external data files, modifying that data, and then sending it
@@ -26,9 +26,9 @@ significant amounts of source code.  Methods for reading
 and interpolating data have been established and can
 easily be reused.  There is a natural hierarchy in the
 system.  The data model calls strdata
-("stream data") methods which then call stream methods.  
+("stream data") methods which then call stream methods.
 There are inputs associated with the
-data model, <link linkend="strdata">strdata</link>, and 
+data model, <link linkend="strdata">strdata</link>, and
 <link linkend="streams">streams</link> to configure the setup.
 The stream methods are responsible for managing lists of input data files
 and their time axis.
@@ -37,7 +37,7 @@ data is read and interpolated in space and time.  The interpolated
 data is passed up to the data model where final fields are
 derived, packed, and returned to the coupler.
 
-</para> 
+</para>
 </sect2>
 
 <sect2 id="data_design">
@@ -109,14 +109,14 @@ changing the order of operations will not fundamentally change the
 results.  The present order of operations generally minimizes the
 mapping cost for typical data model use cases.
 
-</para> 
+</para>
 <para>
 
 There are several limitations in both options and usage within the
 data models at the present time.  Spatial interpolation can
-only be performed from a two-dimensional latitude-longitude 
+only be performed from a two-dimensional latitude-longitude
 input grid.  The target grid can be arbitrary but the source
-grid must be able to be described by simple one-dimensional lists of longitudes  
+grid must be able to be described by simple one-dimensional lists of longitudes
 and latitudes, although they don't have to have equally spaced.
 
 </para>
@@ -135,22 +135,22 @@ is hardwired into the Macros file for the specific machine.
 To turn on pnetcdf in the build, make sure the Macros variables
 PNETCDF_PATH, INC_PNETCDF, and LIB_PNETCDF are set and that the
 pio CONFIG_ARGS sets the PNETCDF_PATH argument.  See the CESM1.2 users
-guide for more information.  
+guide for more information.
 
 </para> <para>
 
 Beyond just the option of selecting IO with pio,
-several namelist are available to help optimize pio IO performance.  
+several namelist are available to help optimize pio IO performance.
 Those are TODO - list these.
 The total mpi tasks that can be used for IO is limited
 to the total number of tasks used by the data model.  Often though,
 fewer io tasks result in improved performance.  In
-general, [io_root + (num_iotasks-1)*io_stride + 1] has to be less 
+general, [io_root + (num_iotasks-1)*io_stride + 1] has to be less
 than the total number of data model tasks.  In practice, pio seems
-to perform optimally somewhere between the extremes of 1 task and 
-all tasks, and is highly machine and problem dependent.  
+to perform optimally somewhere between the extremes of 1 task and
+all tasks, and is highly machine and problem dependent.
 
-</para> 
+</para>
 </sect2>
 
 <sect2 id="data_restart">
@@ -186,7 +186,7 @@ restart without it but may need to reread data from the input data
 files that would have been stored in the stream restart file.  This
 will take extra time but will not impact the results.
 
-</para> 
+</para>
 
 </sect2>
 
@@ -198,7 +198,7 @@ The hierarchy of data models, strdata, and streams also
 compartmentalize grids and fields.  In CESM1.2, data models communicate with
 the coupler with fields on only the data model model grid (in CESM1.0 the
 data land model communicated with the coupler on two different grids,
-a land grid and a runoff grid).  
+a land grid and a runoff grid).
 <emphasis>Although for each strdata namelist, data is
 interpolated to a single model grid, each strdata namelist input
 can have multiple stream description files and each stream input file
@@ -211,15 +211,15 @@ model time.  The text box below provides a schematic of the hierarchy
 <screen>
   driver     :      call data land model
   data model :         data land model
-  data model :           land_data               
-  data model :            grid                  
-  data model :           strdata                
-  strdata    :    interpa   interpb   interpc     
-  strdata    :    streama   streamb   streamc      
-  stream     :     grida     gridb     gridc      
-  stream     :   filea_01   fileb_01  filec_01   
-  stream     :     ...                  ...       
-  stream     :   filea_04             filec_96   
+  data model :           land_data
+  data model :            grid
+  data model :           strdata
+  strdata    :    interpa   interpb   interpc
+  strdata    :    streama   streamb   streamc
+  stream     :     grida     gridb     gridc
+  stream     :   filea_01   fileb_01  filec_01
+  stream     :     ...                  ...
+  stream     :   filea_04             filec_96
 </screen>
 
 <para>
@@ -233,14 +233,14 @@ filename.  The detailed namelist options for each data model will be
 described later, but each model will specify a filename or filenames
 for strdata namelist input and each strdata namelist will specify a
 set of stream input files.
-</para> 
+</para>
 
 <para>
 To continue with the above example, the following inputs would be
 consistent with the above figure.
 The data model namelist input file is hardwired to "dlnd_in" and in this case,
 the namelist would look something like
-</para> 
+</para>
 
 <screen>
 file="dlnd_in":
@@ -327,7 +327,7 @@ linkend="streams_description_file">later</link>.  In general, these
 examples of input files are not complete, but they do show the general
 hierarchy and feel of the data model input.
 
-</para> 
+</para>
 </sect2>
 
 <sect2 id="data_summary">
@@ -347,7 +347,7 @@ From a user perspective, for any data model, it's important to know
 what modes are supported and the internal field names in the data model.
 That information will be used in the strdata namelist and stream input files.
 
-</para> 
+</para>
 </sect2>
 <sect2 id="data_next">
 <title>Next Sections</title>

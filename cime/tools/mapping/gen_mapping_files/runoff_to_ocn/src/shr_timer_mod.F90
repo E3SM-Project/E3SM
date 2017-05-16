@@ -9,10 +9,10 @@ module shr_timer_mod
    !
    ! routines that support multiple CPU timers via F90 intrinsics
    !
-   ! Note: 
+   ! Note:
    ! o if   an operation is requested on an invalid timer number n
    !   then nothing is done in a routine
-   ! o if   more than max_timers are requested, 
+   ! o if   more than max_timers are requested,
    !   then timer n=max_timers is "overloaded" and becomes invalid/undefined
    !
    ! * cpp if-defs were introduced in 2005 to work-around a bug in the ORNL Cray
@@ -30,12 +30,12 @@ module shr_timer_mod
 
    private  ! restricted access
 
-   public  :: shr_timer_init , shr_timer_get      
-   public  :: shr_timer_start, shr_timer_stop     
+   public  :: shr_timer_init , shr_timer_get
+   public  :: shr_timer_start, shr_timer_stop
    public  :: shr_timer_print, shr_timer_print_all
    public  :: shr_timer_check, shr_timer_check_all
-   public  :: shr_timer_zero , shr_timer_zero_all 
-   public  :: shr_timer_free , shr_timer_free_all 
+   public  :: shr_timer_zero , shr_timer_zero_all
+   public  :: shr_timer_free , shr_timer_free_all
    public  :: shr_timer_sleep
 
    integer(SHR_KIND_IN),parameter :: stat_free    = 0  ! timer status constants
@@ -49,11 +49,11 @@ module shr_timer_mod
    ! the following ifdef circumvents a bug in the X1 system_clock function
    !----------------------------------------------------------------------------
 #if (defined UNICOSMP)
-   integer(kind=8)      :: cycles1(max_timers) ! cycle number at timer start 
-   integer(kind=8)      :: cycles2(max_timers) ! cycle number at timer stop  
+   integer(kind=8)      :: cycles1(max_timers) ! cycle number at timer start
+   integer(kind=8)      :: cycles2(max_timers) ! cycle number at timer stop
 #else
-   integer(SHR_KIND_IN) :: cycles1(max_timers) ! cycle number at timer start 
-   integer(SHR_KIND_IN) :: cycles2(max_timers) ! cycle number at timer stop  
+   integer(SHR_KIND_IN) :: cycles1(max_timers) ! cycle number at timer start
+   integer(SHR_KIND_IN) :: cycles2(max_timers) ! cycle number at timer stop
 #endif
    integer(SHR_KIND_IN) :: cycles_max = -1     ! max cycles before wrapping
    character   (len=80) :: name   (max_timers) ! name assigned to each timer
@@ -97,7 +97,7 @@ subroutine shr_timer_init
      clock_rate = 1.0_SHR_KIND_R8/real(cycles,SHR_KIND_R8)
    else
      clock_rate = 0._SHR_KIND_R8
-     write(6,F00) 'ERROR: no system clock available' 
+     write(6,F00) 'ERROR: no system clock available'
    endif
 
 end subroutine shr_timer_init
@@ -107,7 +107,7 @@ end subroutine shr_timer_init
 subroutine shr_timer_get(n, str)
 
    !----- arguments -----
-   integer(SHR_KIND_IN),intent(out) :: n    ! timer number 
+   integer(SHR_KIND_IN),intent(out) :: n    ! timer number
    character (*)       ,intent( in) :: str  ! text string with timer name
 
    !----- i/o formats -----
@@ -165,7 +165,7 @@ subroutine shr_timer_start(n)
    end if
 
 end subroutine shr_timer_start
- 
+
 !===============================================================================
 
 subroutine shr_timer_stop(n)
@@ -183,7 +183,7 @@ subroutine shr_timer_stop(n)
    character(len=*),parameter :: F00 = "('(shr_timer_stop) ',a,i5)"
 
 !-------------------------------------------------------------------------------
-!  This routine stops a given timer, checks for cycle wrapping, computes the 
+!  This routine stops a given timer, checks for cycle wrapping, computes the
 !  elapsed time, and accumulates the elapsed time in the dt(n) array
 !-------------------------------------------------------------------------------
 
@@ -207,7 +207,7 @@ subroutine shr_timer_stop(n)
    end if
 
 end subroutine shr_timer_stop
- 
+
 !===============================================================================
 
 subroutine shr_timer_print(n)
@@ -265,7 +265,7 @@ subroutine shr_timer_zero(n)
 
    !----- arguments -----
    integer(SHR_KIND_IN), intent(in) :: n       ! timer number
-   
+
    !----- i/o formats -----
    character(len=*),parameter :: F00 = "('(shr_timer_zero) ',a,i5)"
 
@@ -353,7 +353,7 @@ end subroutine shr_timer_check_all
 subroutine shr_timer_free(n)
 
    !----- arguments -----
-   integer(SHR_KIND_IN),intent(in) :: n    ! timer number 
+   integer(SHR_KIND_IN),intent(in) :: n    ! timer number
 
    !----- i/o formats -----
    character(len=*),parameter :: F00 = "('(shr_timer_free) ',a,i5)"
@@ -406,8 +406,8 @@ subroutine shr_timer_sleep(sec)
 !-------------------------------------------------------------------------------
 ! Sleep for approximately sec seconds
 !
-! Note: sleep is typically a system call, hence it is implemented in 
-!       shr_sys_mod, although it probably would only be used in a timing 
+! Note: sleep is typically a system call, hence it is implemented in
+!       shr_sys_mod, although it probably would only be used in a timing
 !       context, which is why there is a shr_timer_* wrapper provided here.
 !-------------------------------------------------------------------------------
 

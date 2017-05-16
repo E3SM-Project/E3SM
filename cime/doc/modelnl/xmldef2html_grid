@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 
 use strict;
 use Data::Dumper;
@@ -43,7 +43,7 @@ only matched variables.
                  type="button">
           <br>
           <label>
-            <input id="logical_operator_and" name="logical_operator" value="AND" 
+            <input id="logical_operator_and" name="logical_operator" value="AND"
                    type="radio" checked> AND
           </label>
           <label>
@@ -68,10 +68,10 @@ only matched variables.
 <p>
 
 <center>
-<input id="btn_expand_help" value="Show All Help Text" 
+<input id="btn_expand_help" value="Show All Help Text"
        onclick="expandAllHelp();return false;"
        type="button">
-<input id="btn_collapse_help" value="Collapse All Help Text" 
+<input id="btn_collapse_help" value="Collapse All Help Text"
        onclick="collapseAllHelp();return false;"
        type="button">
 </center>
@@ -85,20 +85,20 @@ my $root = $list->getDocumentElement();
 # Print table
 print_start_table("config_grid.xml variables");
 
-foreach my $grid ($root->findnodes('/config_compset/GRID')) { 
+foreach my $grid ($root->findnodes('/config_compset/GRID')) {
     my $alias = $grid->getAttribute('alias');
     if (! defined $alias) {$alias = 'NOT_DEFINED';}
     my $sname = $grid->getAttribute('sname');
-    my $lname = $grid->textContent; 
+    my $lname = $grid->textContent;
     my $doc = "";
     $lname =~ /(a%)(.+)(_l%)/ ; my $atm_grid  = $2;
     $lname =~ /(l%)(.+)(_oi%)/; my $lnd_grid  = $2; my $glc_grid = $2;
     $lname =~ /(oi%)(.+)(_r%)/; my $ocn_grid  = $2; my $ice_grid = $2;
-    $lname =~ /(r%)(.+)(_m%)/ ; my $rof_grid  = $2; 
-    $lname =~ /(m%)(.+)(_g%)/ ; my $mask_grid = $2; 
-    $lname =~ /(g%)(.+)(_w%)/ ; my $cism_grid = $2; 
-    $lname =~ /(w%)(.+)$/     ; my $wav_grid  = $2; 
-    foreach my $griddesc ($root->findnodes('/config_compset/gridhorz')) { 
+    $lname =~ /(r%)(.+)(_m%)/ ; my $rof_grid  = $2;
+    $lname =~ /(m%)(.+)(_g%)/ ; my $mask_grid = $2;
+    $lname =~ /(g%)(.+)(_w%)/ ; my $cism_grid = $2;
+    $lname =~ /(w%)(.+)$/     ; my $wav_grid  = $2;
+    foreach my $griddesc ($root->findnodes('/config_compset/gridhorz')) {
 	my $hgrid      = $griddesc->getAttribute('name');
 	my $hgrid_alias= $griddesc->getAttribute('alias');
 	my $gridname;
@@ -193,7 +193,7 @@ sub print_row {
     my $doc  = shift;
     my $grp  = shift;
     my $alias = shift;
-    
+
 print <<"END_of_row";
   <tr id="${name}_tr">
     <td><a name="$name"></a>

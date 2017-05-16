@@ -4,7 +4,7 @@
 ** Author: Jim Rosinski
 **   Credit to Chuck Bardeen for MACOS section (__APPLE__ ifdef)
 **
-** get_memusage: 
+** get_memusage:
 **
 **   Designed to be called from Fortran, returns information about memory
 **   usage in each of 5 input int* args.  On Linux read from the /proc
@@ -73,7 +73,7 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
 #endif
   long long total;
   int node_config;
- 
+
  /* memory available */
 #if defined(BGP)
   Kernel_GetPersonality(&pers, sizeof(pers));
@@ -135,7 +135,7 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   ** arguments, close the file and return.
   */
 
-  ret = fscanf (fd, "%d %d %d %d %d %d %d", 
+  ret = fscanf (fd, "%d %d %d %d %d %d %d",
 		size, rss, share, text, datastack, &dum, &dum);
   ret = fclose (fd);
   return 0;
@@ -143,9 +143,9 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
 #elif (defined __APPLE__)
 
   FILE *fd;
-  char cmd[60];  
+  char cmd[60];
   int pid = (int) getpid ();
-  
+
   sprintf (cmd, "ps -o vsz -o rss -o tsiz -p %d | grep -v RSS", pid);
   fd = popen (cmd, "r");
 
@@ -164,7 +164,7 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
 
   if (getrusage (RUSAGE_SELF, &usage) < 0)
     return -1;
-  
+
   *size      = -1;
   *rss       = usage.ru_maxrss;
   *share     = -1;

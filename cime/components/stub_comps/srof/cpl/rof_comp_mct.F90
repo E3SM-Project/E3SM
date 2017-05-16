@@ -43,7 +43,7 @@ CONTAINS
     type(ESMF_Clock)            , intent(inout) :: EClock
     type(seq_cdata)             , intent(inout) :: cdata
     type(mct_aVect)             , intent(inout) :: x2r, r2x
-    character(len=*), optional  , intent(in)    :: NLFilename 
+    character(len=*), optional  , intent(in)    :: NLFilename
 
 !EOP
 !-------------------------------------------------------------------------------
@@ -74,7 +74,7 @@ subroutine rof_run_mct( EClock, cdata, x2r, r2x )
 
    type(ESMF_Clock)            ,intent(inout) :: EClock
    type(seq_cdata)             ,intent(inout) :: cdata
-   type(mct_aVect)             ,intent(inout) :: x2r, r2x        
+   type(mct_aVect)             ,intent(inout) :: x2r, r2x
 
 !EOP
 !-------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ end subroutine rof_run_mct
 ! !IROUTINE: rof_final_mct
 !
 ! !DESCRIPTION:
-!     stub rof model finalize 
+!     stub rof model finalize
 !
 ! !REVISION HISTORY:
 !
@@ -99,7 +99,7 @@ subroutine rof_final_mct( EClock, cdata, x2r, r2x)
 
 ! !INPUT/OUTPUT PARAMETERS:
 
-    type(ESMF_Clock)            ,intent(inout) :: EClock 
+    type(ESMF_Clock)            ,intent(inout) :: EClock
     type(seq_cdata)             ,intent(inout) :: cdata
     type(mct_aVect)             ,intent(inout) :: x2r, r2x
 

@@ -10,7 +10,7 @@ FC_FUNC(mpi_op_create, MPI_OP_CREATE)(MPI_User_function *func, int * commute, in
   *ierr = MPI_Op_create(func, *commute, op);
 }
 
-int MPI_Op_create(MPI_User_function *function, int commute, MPI_Op *op) 
+int MPI_Op_create(MPI_User_function *function, int commute, MPI_Op *op)
 {
   *op = 0;
   return MPI_SUCCESS;

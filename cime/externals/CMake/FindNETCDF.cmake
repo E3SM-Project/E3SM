@@ -109,15 +109,6 @@ ENDIF ()
 
 IF (${NETCDF_REQUIRE_CURL})
 
-  find_path(CURL_INCLUDE_DIR
-            curl.h
-            PATHS ${CURL_DIR}
-            PATH_SUFFIXES include/curl
-            NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
-  find_library(CURL_LIBRARY
-               NAMES libcurl.a
-               HINTS ${CURL_DIR}/lib
-               NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
   # For some reasone CURL uses CURL_ROOT rather than CURL_DIR
   #   - change the variable for consistency
   SET(CURL_ROOT ${CURL_DIR})
@@ -126,7 +117,6 @@ IF (${NETCDF_REQUIRE_CURL})
   IF (${CURL_FOUND})
     MESSAGE(STATUS "Found CURL: ${CURL_LIBRARY}")
     set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${CURL_LIBRARY})
-    set(Netcdf_INCLUDE_DIR ${Netcdf_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
   ELSE ()
     MESSAGE(FATAL_ERROR "CURL Not found")
   ENDIF ()

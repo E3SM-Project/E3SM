@@ -6,12 +6,12 @@
 ! !DESCRIPTION:
 !   These calendar routines do conversions between...
 !   \begin{itemize}
-!   \item the integer number of elapsed days 
+!   \item the integer number of elapsed days
 !   \item the integers year, month, day (three inter-related integers)
 !   \item the integer coded calendar date (yyyymmdd)
 !   \end{itemize}
-!   Possible uses include: a calling routine can increment the elapsed days 
-!   integer and use this module to determine what the corresponding calendar 
+!   Possible uses include: a calling routine can increment the elapsed days
+!   integer and use this module to determine what the corresponding calendar
 !   date is;  this module can be used to determine how many days apart two
 !   arbitrary calendar dates are.
 !
@@ -23,8 +23,8 @@
 ! !REMARKS:
 !   Following are some internal assumptions.  These assumptions are somewhat
 !   arbitrary -- they were chosen because they result in the simplest code given
-!   the requirements of this module.  These assumptions can be relaxed as 
-!   necessary: 
+!   the requirements of this module.  These assumptions can be relaxed as
+!   necessary:
 !   o the valid range of years is [-999,9999]
 !   o elapsed days = 0 <=> January 1st, year 0000 for noleap
 !
@@ -46,8 +46,8 @@ module shr_cal_mod
 
    private ! except
 
-! !PUBLIC TYPES: 
- 
+! !PUBLIC TYPES:
+
    type, public :: calParamType
       ! parameters to replace use of numbers for dates in code
 
@@ -411,11 +411,11 @@ subroutine shr_cal_date2ymd (date,year,month,day)
    year =int(     tdate       /10000)
    if (date < 0) year = -year
    month=int( mod(tdate,10000)/  100)
-   day  =     mod(tdate,  100) 
+   day  =     mod(tdate,  100)
 
    if (debug > 1) write(s_logunit,*) trim(subname),'_b ',year,month,day
 
-end subroutine shr_cal_date2ymd 
+end subroutine shr_cal_date2ymd
 
 !===============================================================================
 !BOP ===========================================================================
@@ -563,7 +563,7 @@ end subroutine shr_cal_ymd2date
 ! !REVISION HISTORY:
 !     2009-Jun-09 - T. Craig - allows delta < 0
 !     2005-Jun-10 - B. Kauffman - bug fix, simplified algorithm
-!     2005-May-15 - T. Craig - initial version 
+!     2005-May-15 - T. Craig - initial version
 !
 ! !INTERFACE:  -----------------------------------------------------------------
 
@@ -598,7 +598,7 @@ subroutine shr_cal_advDate(delta,units,dateIN,secIN,dateOUT,secOUT,calendar)
    character(*),parameter :: subName = "(shr_cal_advDate)"
    character(*),parameter :: F00 = "('(shr_cal_advDate) ',a,i5)"
    character(*),parameter :: F02 = "('(shr_cal_advDate) ',a,i8.8,f10.3)"
-   
+
 !-------------------------------------------------------------------------------
 ! NOTE:
 !-------------------------------------------------------------------------------
@@ -694,7 +694,7 @@ subroutine shr_cal_advDateInt(delta,units,dateIN,secIN,dateOUT,secOUT,calendar)
    character(*),parameter :: subName = "(shr_cal_advDateInt)"
    character(*),parameter :: F00 = "('(shr_cal_advDateInt) ',a,i5)"
    character(*),parameter :: F02 = "('(shr_cal_advDateInt) ',a,i8.8,f10.3)"
-   
+
 !-------------------------------------------------------------------------------
 ! NOTE:
 !-------------------------------------------------------------------------------
@@ -746,7 +746,7 @@ end subroutine shr_cal_advDateInt
 !
 ! !INTERFACE:  -----------------------------------------------------------------
 
-logical function shr_cal_validDate(date,calendar) 
+logical function shr_cal_validDate(date,calendar)
 
    implicit none
 

@@ -13,6 +13,19 @@
     <desc>Name of sea-ice component</desc>
   </entry>
 
+  <entry id="MPASCICE_IC_MODE">
+        <type>char</type>
+        <valid_values>cold_start,spunup</valid_values>
+        <default_value>cold_start</default_value>
+        <values>
+           <value compset="MPASCICE_">cold_start</value> 
+           <value compset="_MPASCICE%SPUNUP">spunup</value> 
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to describe the MPASCICE initial condition model</desc>
+ </entry>
+
   <description>
     <desc compset="_MPASCICE">mpas ice default:</desc>
   </description>

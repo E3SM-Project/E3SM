@@ -2,7 +2,7 @@
 cart.c  - new file, cleaned
 collective.c - done
 comm.c - done
-copy.c - new file, cleaned 
+copy.c - new file, cleaned
 getcount.c - new file, cleaned
 group.c - copied over git updates
 handles.c - nothing to merge, svn updates OK

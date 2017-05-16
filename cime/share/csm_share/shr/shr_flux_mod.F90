@@ -115,16 +115,23 @@ end subroutine shr_flux_adjust_constants
 !     2003-Apr-02 - B. Kauffman - tref,qref,duu10n mods as per Bill Large
 !     2006-Nov-07 - B. Kauffman - code migrated from cpl6 to share
 !
+!     2011-Mar-13 - J. Nusbaumer - Water Isotope ocean flux added.
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,prec_gust, gust_fac, & 
-           &               qbot  ,rbot  ,tbot  ,us    ,vs    ,   &
+SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_fac, &
+           &               qbot  ,s16O  ,sHDO  ,s18O  ,rbot  ,   & 
+           &               tbot  ,us    ,vs    ,   &
            &               ts    ,mask  ,sen   ,lat   ,lwup  ,   &
-           &               evap  ,taux  ,tauy  ,tref  ,qref  ,   &
+           &               r16O, rhdo, r18O, &
+           &               evap  ,evap_16O, evap_HDO, evap_18O, &
+           &               taux  ,tauy  ,tref  ,qref  ,   &
            &               duu10n,  ustar_sv   ,re_sv ,ssq_sv,   &
            &               missval    )
 
 ! !USES:
+
+   use water_isotopes, only: wiso_flxoce !subroutine used to calculate water isotope fluxes.
 
    implicit none
 
@@ -138,12 +145,18 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,prec_gust, gust_fa
    real(R8)   ,intent(in) :: vbot (nMax) ! atm v wind            (m/s)
    real(R8)   ,intent(in) :: thbot(nMax) ! atm potential T       (K)
    real(R8)   ,intent(in) :: qbot (nMax) ! atm specific humidity (kg/kg)
+   real(R8)   ,intent(in) :: s16O (nMax) ! atm H216O tracer conc. (kg/kg)
+   real(R8)   ,intent(in) :: sHDO (nMax) ! atm HDO tracer conc.  (kg/kg)
+   real(R8)   ,intent(in) :: s18O (nMax) ! atm H218O tracer conc. (kg/kg)
+   real(R8)   ,intent(in) :: r16O (nMax) ! ocn H216O tracer ratio/Rstd  
+   real(R8)   ,intent(in) :: rHDO (nMax) ! ocn HDO tracer ratio/Rstd   
+   real(R8)   ,intent(in) :: r18O (nMax) ! ocn H218O tracer ratio/Rstd   
    real(R8)   ,intent(in) :: rbot (nMax) ! atm air density       (kg/m^3)
    real(R8)   ,intent(in) :: tbot (nMax) ! atm T                 (K) 
    real(R8)   ,intent(in) :: us   (nMax) ! ocn u-velocity        (m/s)
    real(R8)   ,intent(in) :: vs   (nMax) ! ocn v-velocity        (m/s)
    real(R8)   ,intent(in) :: ts   (nMax) ! ocn temperature       (K)
-   real(R8)   ,intent(in) :: prec_gust (nMax) ! atm precip for convective gustiness (kg/m^3)  
+   real(R8)   ,intent(in) :: prec_gust (nMax) ! atm precip for convective gustiness (kg/m^3)
    real(R8)   ,intent(in) :: gust_fac    ! wind gustiness factor
 
    !--- output arguments -------------------------------
@@ -151,6 +164,9 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,prec_gust, gust_fa
    real(R8),intent(out)  ::  lat  (nMax) ! heat flux: latent      (W/m^2)
    real(R8),intent(out)  ::  lwup (nMax) ! heat flux: lw upward   (W/m^2)
    real(R8),intent(out)  ::  evap (nMax) ! water flux: evap  ((kg/s)/m^2)
+   real(R8),intent(out)  ::  evap_16O (nMax) ! water flux: evap ((kg/s/m^2)
+   real(R8),intent(out)  ::  evap_HDO (nMax) ! water flux: evap ((kg/s)/m^2)
+   real(R8),intent(out)  ::  evap_18O (nMax) ! water flux: evap ((kg/s/m^2)
    real(R8),intent(out)  ::  taux (nMax) ! surface stress, zonal      (N)
    real(R8),intent(out)  ::  tauy (nMax) ! surface stress, maridional (N)
    real(R8),intent(out)  ::  tref (nMax) ! diag:  2m ref height T     (K)
@@ -224,7 +240,6 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,prec_gust, gust_fa
    ! Ug = log(1.0+6.69R-0.476R^2)
    ! Coefficients X by 8640 for mm/s (from cam) -> cm/day (for above forumla)
    ugust(gprec) = gust_fac*log(1._R8+57801.6_R8*gprec-3.55332096e7_R8*(gprec**2.0_R8))
-
  
    !--- formats ----------------------------------------
    character(*),parameter :: subName = '(shr_flux_atmOcn) '
@@ -262,8 +277,14 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,prec_gust, gust_fa
      if (mask(n) /= 0) then
     
         !--- compute some needed quantities ---
+
+        ! old version
+        !vmag   = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
+
         !--- vmag+ugust (convective gustiness) Limit to a max precip 6 cm/day = 0.00069444 mm/s.
-        vmag   = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) + ugust(min(prec_gust(n),6.94444e-4_R8)))
+        !--- reverts to original formula if gust_fac=0 
+        vmag   = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) +  ugust(min(prec_gust(n),6.94444e-4_R8)))
+
 
         thvbot = thbot(n) * (1.0_R8 + loc_zvir * qbot(n)) ! virtual temp (K)
         ssq    = 0.98_R8 * qsat(ts(n)) / rbot(n)   ! sea surf hum (kg/kg)
@@ -367,6 +388,15 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,prec_gust, gust_fa
         !--- water flux ---
         evap(n) = lat(n)/loc_latvap 
     
+        !---water isotope flux ---
+
+        call wiso_flxoce(2,rbot(n),zbot(n),s16O(n),ts(n),r16O(n),ustar,re,ssq,evap_16O(n), &
+                         qbot(n),evap(n))
+        call wiso_flxoce(3,rbot(n),zbot(n),sHDO(n),ts(n),rHDO(n),ustar,re,ssq, evap_HDO(n),&
+                         qbot(n),evap(n))
+        call wiso_flxoce(4,rbot(n),zbot(n),s18O(n),ts(n),r18O(n),ustar,re,ssq, evap_18O(n), &
+                         qbot(n),evap(n))
+
         !------------------------------------------------------------
         ! compute diagnositcs: 2m ref T & Q, 10m wind speed squared
         !------------------------------------------------------------
@@ -397,6 +427,9 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,prec_gust, gust_fa
         lat   (n) = spval  ! latent           heat flux  (W/m^2)
         lwup  (n) = spval  ! long-wave upward heat flux  (W/m^2)
         evap  (n) = spval  ! evaporative water flux ((kg/s)/m^2)
+        evap_16O (n) = spval !water tracer flux (kg/s)/m^2) 
+        evap_HDO (n) = spval !HDO tracer flux  (kg/s)/m^2)
+        evap_18O (n) = spval !H218O tracer flux (kg/s)/m^2)
         taux  (n) = spval  ! x surface stress (N)
         tauy  (n) = spval  ! y surface stress (N)
         tref  (n) = spval  !  2m reference height temperature (K)
@@ -430,9 +463,12 @@ END subroutine shr_flux_atmOcn
 
 SUBROUTINE shr_flux_atmOcn_diurnal &
                           (nMax  ,zbot  ,ubot  ,vbot  ,thbot ,             & 
-                           qbot  ,rbot  ,tbot  ,us    ,vs    ,             &
+                           qbot  ,s16O  ,sHDO  ,s18O  ,rbot  ,             &
+                           tbot  ,us    ,vs    ,                           &
                            ts    ,mask  ,sen   ,lat   ,lwup  ,             &
-                           evap  ,taux  ,tauy  ,tref  ,qref  ,             &
+                           r16O  ,rhdo  ,r18O  ,evap  ,evap_16O,           &
+                           evap_HDO     ,evap_18O,                         &
+                           taux  ,tauy  ,tref  ,qref  ,                    &
                            uGust, lwdn , swdn , swup, prec   ,             &
                            swpen, ocnsal, ocn_prognostic, flux_diurnal,    &
                            latt, long , warm , salt , speed, regime,       &
@@ -441,8 +477,10 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                            tBulk, tSkin, tSkin_day, tSkin_night,           &
                            cSkin, cSkin_night, secs ,dt,                   &
                            duu10n,  ustar_sv   ,re_sv ,ssq_sv,             &
-                           missval    )
+                           missval, cold_start    )
 ! !USES:
+
+   use water_isotopes, only: wiso_flxoce !subroutine used to calculate water isotope fluxes.
 
    implicit none
 
@@ -456,6 +494,12 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8)   ,intent(in) :: vbot (nMax) ! atm v wind            (m/s)
    real(R8)   ,intent(in) :: thbot(nMax) ! atm potential T       (K)
    real(R8)   ,intent(in) :: qbot (nMax) ! atm specific humidity (kg/kg)
+   real(R8)   ,intent(in) :: s16O (nMax) ! atm H216O tracer conc. (kg/kg)
+   real(R8)   ,intent(in) :: sHDO (nMax) ! atm HDO tracer conc.  (kg/kg)
+   real(R8)   ,intent(in) :: s18O (nMax) ! atm H218O tracer conc. (kg/kg)
+   real(R8)   ,intent(in) :: r16O (nMax) ! ocn H216O tracer ratio/Rstd
+   real(R8)   ,intent(in) :: rHDO (nMax) ! ocn HDO tracer ratio/Rstd
+   real(R8)   ,intent(in) :: r18O (nMax) ! ocn H218O tracer ratio/Rstd
    real(R8)   ,intent(in) :: rbot (nMax) ! atm air density       (kg/m^3)
    real(R8)   ,intent(in) :: tbot (nMax) ! atm T                 (K) 
    real(R8)   ,intent(in) :: us   (nMax) ! ocn u-velocity        (m/s)
@@ -497,14 +541,18 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8),intent(out)   :: cSkin_night (nMax) ! NEW
    integer(IN),intent(in) :: secs               ! NEW  elsapsed seconds in day (GMT)
    integer(IN),intent(in) :: dt                 ! NEW
+   logical ,intent(in)    :: cold_start         ! cold start flag
 
-   real(R8),intent(in) ,optional :: missval        ! masked value
+   real(R8),intent(in) ,optional :: missval     ! masked value
 
    !--- output arguments -------------------------------
    real(R8),intent(out)  ::  sen  (nMax) ! heat flux: sensible    (W/m^2)
    real(R8),intent(out)  ::  lat  (nMax) ! heat flux: latent      (W/m^2)
    real(R8),intent(out)  ::  lwup (nMax) ! heat flux: lw upward   (W/m^2)
    real(R8),intent(out)  ::  evap (nMax) ! water flux: evap  ((kg/s)/m^2)
+   real(R8),intent(out)  ::  evap_16O (nMax) ! water flux: evap ((kg/s/m^2)
+   real(R8),intent(out)  ::  evap_HDO (nMax) ! water flux: evap ((kg/s)/m^2)
+   real(R8),intent(out)  ::  evap_18O (nMax) ! water flux: evap ((kg/s/m^2)
    real(R8),intent(out)  ::  taux (nMax) ! surface stress, zonal      (N)
    real(R8),intent(out)  ::  tauy (nMax) ! surface stress, maridional (N)
    real(R8),intent(out)  ::  tref (nMax) ! diag:  2m ref height T     (K)
@@ -623,7 +671,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8)    :: phid   
    real(R8)    :: spval
 
-
    !--- local functions --------------------------------
    real(R8)    :: qsat   ! function: the saturation humididty of air (kg/m^3)
    real(R8)    :: cdn    ! function: neutral drag coeff at 10m
@@ -691,9 +738,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
          ! use swpen and ocnsal from input argument
       endif
  
-!     tcraig, dec 2013, this should only occur on a cold startup.
-      if (nint(minval(nInc(:))) == 0 .and. &
-          nint(maxval(nInc(:))) == 0 ) then
+       if (cold_start) then
 !         if (s_loglev > 0) then
             write(s_logunit,F00) "Initialize diurnal cycle fields"
 !         end if
@@ -826,6 +871,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                Qdel   = Qnsol + Qsol * &
                   (0.137_R8 + 11.0_R8*Dcool - 6.6e-5/Dcool *(1.0_R8 - exp((-1.0_R8*Dcool)/8.0e-4)))
                Hb = (Qdel/rcpocn)+(Fd*betaS/alphaT)
+               Hb = min(Hb , 0.0_R8)
                lambdaV = lambdaC*(1.0_R8 + ( (0.0_R8-Hb)*16.0_R8*molvisc(tBulk(n))* &
                     shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75)**(-1/3)
                cSkin(n) =  MIN(0.0_R8, lambdaV * molPr(tBulk(n)) * Qdel / ustarw / rcpocn )   
@@ -951,6 +997,15 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
          !--- water flux ---
          evap(n) = lat(n)/shr_const_latvap
+
+         !---water isotope flux ---
+
+         call wiso_flxoce(2,rbot(n),zbot(n),s16O(n),ts(n),r16O(n),ustar,re,ssq, evap_16O(n),&
+                          qbot(n),evap(n))
+         call wiso_flxoce(3,rbot(n),zbot(n),sHDO(n),ts(n),rHDO(n),ustar,re,ssq, evap_HDO(n),&
+                          qbot(n),evap(n))
+         call wiso_flxoce(4,rbot(n),zbot(n),s18O(n),ts(n),r18O(n),ustar,re,ssq, evap_18O(n),&
+                          qbot(n),evap(n))
  
          !------------------------------------------------------------
          ! compute diagnostics: 2m ref T & Q, 10m wind speed squared
@@ -1062,15 +1117,18 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             windInc    (n) = spval ! NEW
             nInc       (n) = 0.0_R8 ! NEW
 
-            sen   (n) = spval  ! sensible         heat flux  (W/m^2)
-            lat   (n) = spval  ! latent           heat flux  (W/m^2)
-            lwup  (n) = spval  ! long-wave upward heat flux  (W/m^2)
-            evap  (n) = spval  ! evaporative water flux ((kg/s)/m^2)
-            taux  (n) = spval  ! x surface stress (N)
-            tauy  (n) = spval  ! y surface stress (N)
-            tref  (n) = spval  ! 2m reference height temperature (K)
-            qref  (n) = spval  ! 2m reference height humidity (kg/kg)
-            duu10n(n) = spval  ! 10m wind speed squared (m/s)^2
+            sen   (n)    = spval  ! sensible         heat flux  (W/m^2)
+            lat   (n)    = spval  ! latent           heat flux  (W/m^2)
+            lwup  (n)    = spval  ! long-wave upward heat flux  (W/m^2)
+            evap  (n)    = spval  ! evaporative water flux ((kg/s)/m^2)
+            evap_16O (n) = spval  ! water tracer flux (kg/s)/m^2)
+            evap_HDO (n) = spval  ! HDO tracer flux  (kg/s)/m^2)
+            evap_18O (n) = spval  ! H218O tracer flux (kg/s)/m^2)
+            taux  (n)    = spval  ! x surface stress (N)
+            tauy  (n)    = spval  ! y surface stress (N)
+            tref  (n)    = spval  ! 2m reference height temperature (K)
+            qref  (n)    = spval  ! 2m reference height humidity (kg/kg)
+            duu10n(n)    = spval  ! 10m wind speed squared (m/s)^2
 
             if (present(ustar_sv)) ustar_sv(n) = spval
             if (present(re_sv   )) re_sv   (n) = spval

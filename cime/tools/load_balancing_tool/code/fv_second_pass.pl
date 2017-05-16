@@ -26,7 +26,7 @@ if ($test_list[$index] != $target){
     $lower = $index - 10;
   }
   $upper = $index + 9;
- 
+
   my $dataFile = $codeDir."/model.data";
   open(MD, ">>$dataFile");
 

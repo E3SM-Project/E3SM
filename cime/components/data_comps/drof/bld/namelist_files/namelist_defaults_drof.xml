@@ -11,23 +11,23 @@ variables.  Values that depend on the model configuration use
 attributes to express the dependency.  The recognized attributes
 are: grid.attributes from the config_cache.xml file (with keys converted to upper-case).
 
-strm_year_first is the first year of the stream data that will be used 
-strm_year_last  is the last  year of the stream data that will be used 
-strm_year_align is the model year that will be aligned with stream data for year_first 
+strm_year_first is the first year of the stream data that will be used
+strm_year_last  is the last  year of the stream data that will be used
+strm_year_align is the model year that will be aligned with stream data for year_first
 
 For cplhist forcing - the following substitutions will be made belwo
 Replace any instance of the following substring indicators with the appropriate values:
     %y    => year from the range yearfirst to yearlast
-             using in build-namelist $namelist_defaults_opts{'yearfirst'} 
-             using in build-namelist $namelist_defaults_opts{'yearlast'} 
+             using in build-namelist $namelist_defaults_opts{'yearfirst'}
+             using in build-namelist $namelist_defaults_opts{'yearlast'}
              obtained from values of <strm_year_start> -> <strm_year_end> below
     %ym   => year-month from the range yearfirst to yearlast with all 12 months
-             using in build-namelist $namelist_defaults_opts{'yearfirst'} 
-             using in build-namelist $namelist_defaults_opts{'yearlast'} 
+             using in build-namelist $namelist_defaults_opts{'yearfirst'}
+             using in build-namelist $namelist_defaults_opts{'yearlast'}
              obtained from values of <strm_year_start> -> <strm_year_end> below
     %ymd  => year-month-day from the range yearfirst to yearlast with all 12 months
-             using in build-namelist $namelist_defaults_opts{'yearfirst'} 
-             using in build-namelist $namelist_defaults_opts{'yearlast'} 
+             using in build-namelist $namelist_defaults_opts{'yearfirst'}
+             using in build-namelist $namelist_defaults_opts{'yearlast'}
              obtained from values of <strm_year_start> -> <strm_year_end> below
 
 Replace any instance of $VARNAME with the environment variable obtained from any

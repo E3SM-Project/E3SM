@@ -1,156 +1,64 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python
 
-use strict;
-use Cwd;
-use English;
-use Getopt::Long;
-use IO::File;
-use IO::Handle;
+"""
+preview_namelists runs the buildnml script for each case component
+which creates the namelist and other model input files, it then
+copies those files to the CaseDocs subdirectory for inspection
+"""
 
+from standard_script_setup import *
 
-sub usage {
-    die <<EOF;
+from CIME.preview_namelists import preview_namelists
+from CIME.case              import Case
 
-SYNOPSIS
-  preview_namelists  [options]
+import argparse, doctest
 
-OPTIONS
-  -verbose       If this is set, components (POP for now) will write out 
-                 more verbose output regarding its namelist creation
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [--debug]
+OR
+%s --verbose
+OR
+%s --help
+OR
+%s --test
 
-  -help [or -h]  Print usage to STDOUT (optional).
-EOF
-} 
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run \033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 5),
 
-my %opts = ( verbose => undef);
+description=description,
 
-GetOptions(
-    "verbose" => \$opts{'verbose'},
-    "h|help"  => \$opts{'help'},
-    )  or usage();
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
 
-# Give usage message.
-usage() if $opts{'help'};
+    CIME.utils.setup_standard_logging_options(parser)
 
-# Check for unparsed argumentss
-if (@ARGV) {
-    print "ERROR: unrecognized arguments: @ARGV\n";
-    usage();
-}
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to build")
 
-my $EXEROOT		= `./xmlquery  EXEROOT		-value`;
-my $LIBROOT		= `./xmlquery  LIBROOT		-value`;
-my $INCROOT		= `./xmlquery  INCROOT		-value`;
-my $RUNDIR		= `./xmlquery  RUNDIR	 	-value`;
-my $SHAREDLIBROOT	= `./xmlquery  SHAREDLIBROOT	-value`;
-my $CASEROOT		= `./xmlquery  CASEROOT		-value`;
-my $CASEBUILD		= `./xmlquery  CASEBUILD	-value`;
-my $COMP_CPL		= `./xmlquery  COMP_CPL		-value`;
-my $COMP_ATM		= `./xmlquery  COMP_ATM		-value`;
-my $COMP_LND		= `./xmlquery  COMP_LND		-value`;
-my $COMP_ICE		= `./xmlquery  COMP_ICE		-value`;
-my $COMP_OCN		= `./xmlquery  COMP_OCN		-value`;
-my $COMP_GLC		= `./xmlquery  COMP_GLC		-value`;
-my $COMP_WAV		= `./xmlquery  COMP_WAV		-value`;
-my $COMP_ROF		= `./xmlquery  COMP_ROF		-value`;
-my $CIMEROOT             	= `./xmlquery  CIMEROOT		-value`;
-my $COMPILER             	= `./xmlquery  COMPILER		-value`;
-my $CIMEROOT             	= `./xmlquery  CIMEROOT		-value`;
-my $MACH             	        = `./xmlquery  MACH		-value`;
-my $MPILIB             	= `./xmlquery  MPILIB		-value`;
-my $DEBUG             	= `./xmlquery  DEBUG		-value`;
-# ------------------------------------------
-#  Load Modules
-# ------------------------------------------
+    parser.add_argument("--dryrun", action="store_true",
+                        help="Do not attempt to load modules or create directories")
 
+    args = parser.parse_args(args[1:])
 
-my $perl5lib = "$CIMEROOT/utils/perl5lib";
-push(@INC, $perl5lib);
-require Module::ModuleLoader;
+    CIME.utils.handle_standard_logging_options(args)
 
-my $moduleloader = new Module::ModuleLoader(machine => "$MACH", compiler => "$COMPILER",
-	                                    mpilib => $MPILIB, debug => $DEBUG, 
-	                                    scriptsroot => "$CIMEROOT/scripts", caseroot => "$CASEROOT");
-$moduleloader->loadModules();
+    return args.caseroot, args.dryrun
 
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
+    caseroot, dryrun = parse_command_line(sys.argv, description)
+    with Case(caseroot, read_only=False) as case:
+        preview_namelists(case, dryrun=False)
 
-
-# -------------------------------------------------------------------------
-# Make necessary directories
-# -------------------------------------------------------------------------
-
-my @dirs = ("$EXEROOT", "$LIBROOT", "$INCROOT", "$RUNDIR", "$SHAREDLIBROOT");
-foreach my $dir (@dirs) {
-    if (! -d $dir) {
-	my $sysmod = "mkdir -p $dir";
-	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
-    }
-}
-
-my @models = ("cpl", "atm", "lnd", "ice", "ocn", "glc", "wav", "rof");
-foreach my $model ( @models ){
-    my $objdir = "$EXEROOT/$model/obj"; 
-    if (! -d $objdir) {
-	my $sysmod = "mkdir -p $objdir";
-	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
-    }
-    my $libdir = "$EXEROOT/$model";
-    if (! -d libdir) {
-	my $sysmod = "mkdir -p $libdir";
-	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
-    }
-}
-
-# -------------------------------------------------------------------------
-# Create namelists
-# -------------------------------------------------------------------------
-
-my @comps = ("$COMP_CPL", "$COMP_ATM", "$COMP_LND", "$COMP_ICE", "$COMP_OCN", "$COMP_GLC", "$COMP_WAV", "$COMP_ROF");  
-foreach my $comp (@comps) {
-    if ($opts{'verbose'}) {
-	my $sysmod = "env PREVIEW_NML=1 $CASEBUILD/$comp.buildnml $CASEROOT";
-	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
-    } else {
-	my $sysmod = "$CASEBUILD/$comp.buildnml $CASEROOT";
-	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
-    }
-}
-
-# -------------------------------------------------------------------------
-# Save namelists to docdir
-# -------------------------------------------------------------------------
-
-my $docdir = "$CASEROOT/CaseDocs";
-if (! -d "$docdir") {
-    my $sysmod = "mkdir -p $docdir";
-    system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
-    open my $fileh, ">", "$docdir/README" or die $!;
-    print $fileh " CESM Resolved Namelist Files";
-    print $fileh "   For documentation only DO NOT MODIFY";
-    close $fileh;
-}
-`chmod +w $docdir/*`;
-
-`cp -p $RUNDIR/*_in_[0-9]*         $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*modelio*nml_[0-9]*	$docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*_in                $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*modelio*nml        $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*streams*txt*       $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*.stxt              $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*maps.rc            $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/cism.config*        $docdir/ >& /dev/null`;
-
-# copy over chemistry mechanism docs if they exist
-if ( -e "$CASEBUILD/camconf" ) {
-    `cp -p $CASEBUILD/camconf/chem_mech.* $docdir/ >& /dev/null`;
-}
-
-my $sysmod = "chmod 444 $docdir/*";
-system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
-
-exit (0);
-
-
-
-
+if (__name__ == "__main__"):
+    _main_func(__doc__)

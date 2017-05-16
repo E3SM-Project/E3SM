@@ -20,20 +20,20 @@
 
 \author CESM Software Engineering Group
 
-This is the CESM scripts API documentation for development tags. 
-It is the responsibility of the programmer to 
-include accurate code documentation in-line with their code. Here are the general 
+This is the CESM scripts API documentation for development tags.
+It is the responsibility of the programmer to
+include accurate code documentation in-line with their code. Here are the general
 work-flow steps for including Doxygen compartible markup in CESM API script code.
 <ol>
 <li>become familiar with the Doxygen markup language and syntax for your script flavor</li>
 <li> document your code accurately and concisely</li>
 <li> follow the normal CESM workflow for testing and repo check-in</li>
 </ol>
-As new development tags become available, this website will be updated accordingly to 
-reflect the code. 
+As new development tags become available, this website will be updated accordingly to
+reflect the code.
 
-Please refer to the links below for detailed information 
-regarding documentation standards for CESM scripts codes to accomodate inclusion in this Doxygen web. 
+Please refer to the links below for detailed information
+regarding documentation standards for CESM scripts codes to accomodate inclusion in this Doxygen web.
 
  - \ref python
  - \ref perl

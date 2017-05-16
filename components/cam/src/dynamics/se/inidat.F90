@@ -411,7 +411,6 @@ contains
           elem(ie)%state%v(:,:,:,:,t)=elem(ie)%state%v(:,:,:,:,1)
           elem(ie)%state%T(:,:,:,t)=elem(ie)%state%T(:,:,:,1)
        end do
-       call shr_vmath_log(elem(ie)%state%ps_v,elem(ie)%state%lnps,size(elem(ie)%state%lnps))
     end do
 
     if(iam < par%nprocs) then

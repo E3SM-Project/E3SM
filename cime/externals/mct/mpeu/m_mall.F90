@@ -2,7 +2,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !-----------------------------------------------------------------------
 !BOP
 !
@@ -1478,7 +1478,7 @@ end subroutine cox_
   do i=1,min(n_,MXL)
     call wcount_(hwm_(i),hwm_wd)
     call wcount_(nwm_(i),nwm_wd)
-      
+
     flag_ci=' '
     if(nci_(i) /= 0) flag_ci='*'
 
@@ -1493,7 +1493,7 @@ end subroutine cox_
 
   call wcount_(hwm,hwm_wd)
   call wcount_(nwm,nwm_wd)
-      
+
   flag_ci=' '
   if(nci /= 0) flag_ci='*'
   flag_wm=' '

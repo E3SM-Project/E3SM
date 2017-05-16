@@ -22,7 +22,7 @@ contains
     integer,intent(inout), optional :: hashint
 
     character(len=128) :: strbar
- 
+
     logical :: lcplrun,lcplcom,lbudget
     !-------------------------------------------------------------------------------
 

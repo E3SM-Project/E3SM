@@ -2,12 +2,12 @@
 !         NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-------------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !-----------------------------------------------------------------------
 !BOP
 !
 ! !MODULE:  m_FileResolv --- Resolve file name templates
-! 
+!
 ! !INTERFACE:
 !
 
@@ -28,9 +28,9 @@
    PUBLIC  gunzip
 !
 ! !DESCRIPTION: This module provides routines for resolving GrADS like
-!               file name templates. 
+!               file name templates.
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  10Jan2000 da Silva  Initial code.
 !
@@ -48,18 +48,18 @@ CONTAINS
 !BOP
 !
 ! !IROUTINE: FileResolv -- Resolve file name templates (single file)
-! 
+!
 ! !INTERFACE:
 !
     subroutine FileResolv ( expid, nymd, nhms, templ, fname, &
-                            stat, cache )  
+                            stat, cache )
 
 ! !USES:
 
     IMPLICIT NONE
 
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
     character(len=*), intent(in) :: expid          ! Experiment id
     integer,          intent(in) :: nymd           ! Year-month-day
@@ -67,7 +67,7 @@ CONTAINS
     character(len=*), intent(in) :: templ       ! file name template
 
 !
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
     character(len=*),  intent(out) :: fname        ! resolved file name
 
@@ -82,9 +82,9 @@ CONTAINS
 !               performing gunzip'ing as necessary.
 !
 ! !TO DO:
-!         1. Expand environment variables in templates           
+!         1. Expand environment variables in templates
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 ! 10Jan2000  da Silva  Initial code,
 ! 23Jul2002  J. Larson <larson@mcs.anl.gov> - fixed bug detected by the
@@ -118,7 +118,7 @@ CONTAINS
 !  ---------------------------
    call strTemplate ( path, templ, 'GRADS', trim(expid), nymd, nhms, rc )
    if ( rc .ne. 0 ) then
-        if ( present(stat) ) then 
+        if ( present(stat) ) then
              stat = 1
              return
         else
@@ -140,13 +140,13 @@ CONTAINS
    i = index ( trim(fname), '/', back=.true. )
    if ( i .gt. 1 ) then
         dirn  = fname(1:i-1)
-        basen = fname(i+1:) 
+        basen = fname(i+1:)
    else if ( i .gt. 0 ) then
         dirn  = fname(1:i)
-        basen = fname(i+1:) 
+        basen = fname(i+1:)
    else
         dirn  = ''
-        basen = fname 
+        basen = fname
    end if
    i = index ( basen, '.', back=.true. )
    if ( i .gt. 0 ) then
@@ -171,7 +171,7 @@ CONTAINS
 !  --------------------------------
    if ( len_trim(host) .gt. 0 ) then
       if ( trim(tail) .eq. 'gz' ) then
-           inquire ( file=trim(head),  exist=fexists ) 
+           inquire ( file=trim(head),  exist=fexists )
            filen = head
       else
            inquire ( file=trim(basen), exist=fexists )
@@ -181,9 +181,9 @@ CONTAINS
          cmd = trim(remote_cp) // ' ' // &
                trim(host) // ':' // trim(fname) // ' . '
 #if SYSUNICOS || CPRCRAY
-         rc = ishell ( cmd ) 
+         rc = ishell ( cmd )
 #else
-         rc = system ( cmd ) 
+         rc = system ( cmd )
 #endif
 
          if ( rc .eq. 0 ) then
@@ -197,7 +197,7 @@ CONTAINS
                call die ( myname, 'cannot execute: '//trim(cmd) )
             end if
          end if
-       else 
+       else
          fname = filen
          call warn(myname,'using cached version of '//trim(filen) )
        end if
@@ -215,8 +215,8 @@ CONTAINS
               call die(myname,'cannot find '//trim(fname) )
            end if
       end if
- 
-   end if 
+
+   end if
 
 
 !  If file is gzip'ed, leave original alone and create uncompressed
@@ -225,18 +225,18 @@ CONTAINS
    if ( trim(tail) .eq. 'gz' ) then
       inquire ( file=trim(head), exist=fexists ) ! do we have a local copy?
       if ( .not. ( fexists .and. caching ) ) then
-        if ( len_trim(host) .gt. 0 ) then             ! remove file.gz 
-             cmd = trim(gunzip) // ' -f ' // trim(fname) 
+        if ( len_trim(host) .gt. 0 ) then             ! remove file.gz
+             cmd = trim(gunzip) // ' -f ' // trim(fname)
         else                                          ! keep   file.gz
              cmd = trim(gunzip) // ' -c ' // trim(fname) // ' > ' // trim(head)
         end if
 #if SYSUNICOS || CPRCRAY
-        rc = ishell ( cmd ) 
+        rc = ishell ( cmd )
 #else
-        rc = system ( cmd ) 
+        rc = system ( cmd )
 #endif
         if ( rc .eq. 0 ) then
-           fname = head             
+           fname = head
         else
            if ( present(stat) ) then
               stat = 4
@@ -245,8 +245,8 @@ CONTAINS
               call die ( myname, 'cannot execute: '//trim(cmd) )
            end if
         end if
-       else 
-         fname = head             
+       else
+         fname = head
          call warn(myname,'using cached version of '//trim(head) )
        end if
     end if
@@ -262,10 +262,10 @@ CONTAINS
           call die(myname,'cannot find '//trim(fname) )
        end if
     end if
- 
+
 
 !   All done
-!   --------        
+!   --------
     if ( present(stat) ) stat = 0
 
   end subroutine FileResolv

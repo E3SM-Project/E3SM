@@ -37,7 +37,7 @@ module rof_comp_esmf
   save ! save everything
   !
   ! Author: Mariana Vertenstein
-  ! This module is ESMF compliant rof data component 
+  ! This module is ESMF compliant rof data component
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 contains
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -237,7 +237,7 @@ contains
     integer, intent(out)         :: rc
 
     !----------------------------------------------------------------------------
-    ! Finalize routine 
+    ! Finalize routine
     !----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS

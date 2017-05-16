@@ -86,8 +86,6 @@ if ($BUILD_COMPLETE eq 'FALSE') {
 	$ATM_GRID = $1;
 	$nlev="-nlev $3";
     }
-    # set this for now until we restore logic for setting it by compiler
-    my $CAM_TARGET = "preqx";
 
     $sysmod = "$SRCROOT/components/cam/bld/configure -s -ccsm_seq -ice none -ocn $ocn -comp_intf $comp $scm -spmd $spmd -smp $smp -dyn $CAM_DYCORE -dyn_target $CAM_TARGET -res $ATM_GRID $nlev $CAM_LIB_DIRS $CAM_CONFIG_OPTS";
     system($sysmod) == 0 or die "ERROR cam.buildnml: $sysmod failed: $?\n";

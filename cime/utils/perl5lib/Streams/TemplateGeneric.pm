@@ -40,7 +40,7 @@
 # Methods:
 #
 #     new ---------------- Constructor.
-#     Read --------------- Read in input template. 
+#     Read --------------- Read in input template.
 #     Write -------------- Write output stream text file based on input Read.
 #     GetDataFilenames --- Get the full filepath to all of the filenames.
 #                          (can either get domain file or data files)
@@ -53,7 +53,7 @@
 #
 #
 # COLLABORATORS
-# 
+#
 # IO::File
 # XML::Lite
 #
@@ -105,8 +105,8 @@ sub new {
   my $ProgName     = $opts{'ProgName'};
   my $nm = "${ProgName}::new";
   # Error check that input and opts hash has the expected variables
-  my @required_list = ( "printing",   "ProgName", "cmdline", "yearfirst", "yearlast",  
-                        "domainpath", "domain", "filepath", "filenames", 
+  my @required_list = ( "printing",   "ProgName", "cmdline", "yearfirst", "yearlast",
+                        "domainpath", "domain", "filepath", "filenames",
 			"offset", "datvarnames");
   foreach my $var ( @required_list ) {
      if ( ! defined($opts{$var}) ) {
@@ -171,8 +171,8 @@ print $fh  <<"EOF";
 <comment> Generic Stream description file</comment>
 <dataSource>GENERIC</dataSource>
 <domainInfo>
-  <variableNames> </variableNames> 
-  <filePath> </filePath> 
+  <variableNames> </variableNames>
+  <filePath> </filePath>
   <fileNames> </fileNames>
 </domainInfo>
 <fieldInfo>
@@ -315,7 +315,7 @@ $fh->close;
          } else {
             $child_value =~  s/^[ \n]+//;          # remove leading spaces
             $child_value =~  s/[ \n]+$//;          # remove ending spaces
-  
+
             $defaults{$child_name} = $child_value;
          }
     }
@@ -425,7 +425,9 @@ sub GetDataFilenames {
   #
   # Get path
   #
+
   my $filepath = $self->GetDataFilepath( $type );
+
   my $key = "fileNames";
   my $info;
   if (      $type eq "data" ) {
@@ -463,8 +465,8 @@ sub GetDataFilepath {
   if ( ! defined($self->{'template'}) ) {
      die "${nm}:: a template has NOT been read in yet -- abort.\n";
   }
-  my $defaults_ref = $self->{'defaults'};
-  my %defaults     = %$defaults_ref;
+  my %defaults = %{$self->{'defaults'}};
+
   my $key;
   if (      $type eq "data" ) {
      $key = "fieldInfo";
@@ -473,13 +475,14 @@ sub GetDataFilepath {
   } else {
      die "${nm}:: bad input type to method: $type should be data or domain\n";
   }
+
   my $Info_ref = $defaults{$key};
+
   if ( ref($Info_ref) ne "HASH" ) {
      die "${nm}:: $key is NOT a hash -- something must have went wrong in the Read\n";
   }
-  my %Info = %$Info_ref;
-  my $filepath = $self->__Sub__( $Info_ref, 'filePath');
 
+  my $filepath = $self->__Sub__( $Info_ref, 'filePath');
   return( $filepath );
 }
 
@@ -490,7 +493,6 @@ sub expandXMLVar {
     my $value        = shift;
     my $varhash_ref  = shift;
     my $nm = "expandXMLVar";
-
     if ( ! defined($value) ) {
        die "${nm}:: a value was NOT input\n";
     }
@@ -559,9 +561,10 @@ sub __Sub__ {
    my $lastmonth = $opts{'lastmonth'};
 
    my $value = $$Info_ref{$name};
+
    $value =~  s/^[ \n]+//;          # remove leading spaces
    $value =~  s/[ \n]+$//;          # remove ending spaces
- 
+
    #
    # Replace % indicators appropriately
    #
@@ -577,12 +580,12 @@ sub __Sub__ {
       my $months = 1;
       if ( $2 eq "" ) { $months = 0; }
       my $days   = 0;
-      if ( $3 ne "" ) { 
+      if ( $3 ne "" ) {
           if ( ! $months ) {
              die "${nm}:: Months NOT defined but days are? (\%yd is NOT valid indicator)\n";
           }
           $months = 0;
-          $days   = 1; 
+          $days   = 1;
       }
       if ( ($yearfirst < 0)  || ($yearlast < 0) ) {
          die "${nm}:: yearfirst and yearlast  was NOT defined on command line and needs to be set\n";
@@ -603,7 +606,7 @@ sub __Sub__ {
           if ( $filename =~ /^([^%]*)%[1-9]?ym([^ ]*)$/ ) {
              $startfilename = $1;
              $endfilename   = $2;
-             $filename = sprintf "%s%${digits}.${digits}d-%2.2d%s", $startfilename, 
+             $filename = sprintf "%s%${digits}.${digits}d-%2.2d%s", $startfilename,
                                  $year, $month, $endfilename;
              push @filenames, $filename;
           }
@@ -619,7 +622,7 @@ sub __Sub__ {
           if ( $filename =~ /^([^%]*)%[1-9]?ymd([^ ]*)$/ ) {
              $startfilename = $1;
              $endfilename   = $2;
-             $filename = sprintf "%s%${digits}.${digits}d-%2.2d-%2.2d%s", $startfilename, 
+             $filename = sprintf "%s%${digits}.${digits}d-%2.2d-%2.2d%s", $startfilename,
                                  $year, $month, $day, $endfilename;
              push @filenames, $filename;
           }
@@ -636,7 +639,7 @@ sub __Sub__ {
                   if ( $filename =~ /^([^%]*)%[1-9]?ymd([^ ]*)$/ ) {
                      $startfilename = $1;
                      $endfilename   = $2;
-                     $filename = sprintf "%s%${digits}.${digits}d-%2.2d-%2.2d%s", 
+                     $filename = sprintf "%s%${digits}.${digits}d-%2.2d-%2.2d%s",
                                     $startfilename, $year, $month, $day, $endfilename;
                      push @filenames, $filename;
                   }
@@ -651,7 +654,7 @@ sub __Sub__ {
                if ( $filename =~ /^([^%]*)%[1-9]?ym([^ ]*)$/ ) {
                   $startfilename = $1;
                   $endfilename   = $2;
-                  $filename = sprintf "%s%${digits}.${digits}d-%2.2d%s", $startfilename, 
+                  $filename = sprintf "%s%${digits}.${digits}d-%2.2d%s", $startfilename,
                                         $year, $month, $endfilename;
                   push @filenames, $filename;
                }
@@ -664,13 +667,13 @@ sub __Sub__ {
             if ( $filename =~ /^([^%]*)%[1-9]?y([^ ]*)$/ ) {
                $startfilename = $1;
                $endfilename   = $2;
-               $filename = sprintf "%s%${digits}.${digits}d%s", $startfilename, $year, 
+               $filename = sprintf "%s%${digits}.${digits}d%s", $startfilename, $year,
                              $endfilename;
                push @filenames, $filename;
             }
          }
       }
-      if ( $#filenames < 0 ) { 
+      if ( $#filenames < 0 ) {
          die "${nm}:: No output filenames -- must be something wrong in template or input filename indicator\n";
       }
       return( \@filenames );
@@ -691,7 +694,7 @@ sub __Sub__ {
          $filenames[$i] =~  s/^[ \n]+//;          # remove leading spaces
          $filenames[$i] =~  s/[ \n]+$//;          # remove ending spaces
       }
-      if ( $#filenames < 0 ) { 
+      if ( $#filenames < 0 ) {
          die "${nm}:: No output filenames -- must be something wrong in template or input filename indicator\n";
       }
       return( \@filenames );
@@ -719,7 +722,7 @@ sub __SubFields__ {
 # Returns a reference to an array
 #
 # Example: If __SubFields__ is called with an array containing two elements, each of which
-# contains two strings, and glc_nec=3: 
+# contains two strings, and glc_nec=3:
 #     foo               bar
 #     s2x_Ss_tsrf%glc   tsrf%glc
 #
@@ -736,12 +739,12 @@ sub __SubFields__ {
 #
    my $self       = shift;
    my $fields_ref = shift;
-   
+
    my $ProgName = $self->{'ProgName'};
    my $nm       = "${ProgName}::__SubFields__";
-   
+
    my @subbedFields;
-   
+
    foreach my $field (@$fields_ref) {
       if ($field =~ /%glc/) {
 	 if (! exists($self->{'glc_nec'})) {
@@ -807,7 +810,7 @@ sub __WriteValue__ {
      $value =~ s/\n/\n${val_spacing}/g;
      print $fh "$spacing<$name>\n${val_spacing}${value}\n${spacing}</$name>\n";
   } else {
-     die "${nm}:: $name was NOT defined in the Read of template $template \n " 
+     die "${nm}:: $name was NOT defined in the Read of template $template \n "
   }
 }
 

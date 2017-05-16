@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+
+<definitions_variables>
+
+  <entry id="COMP_OCN">
+    <type>char</type>
+    <valid_values>xocn</valid_values>
+    <default_value>xocn</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of ocean component</desc>
+  </entry>
+
+  <description>
+    <desc compset="_XOCN">Dead ocean component</desc>
+  </description>
+
+</definitions_variables>

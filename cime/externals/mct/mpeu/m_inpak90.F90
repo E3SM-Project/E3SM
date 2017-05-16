@@ -2,7 +2,7 @@
 !         NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-------------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !-------------------------------------------------------------------------
 !BOI
 !
@@ -16,8 +16,8 @@
 !
 ! !INTRODUCTION: Package Overview
 !
-!      Inpak 90 is a Fortran (77/90) collection of 
-!      routines/functions for accessing {\em Resource Files} 
+!      Inpak 90 is a Fortran (77/90) collection of
+!      routines/functions for accessing {\em Resource Files}
 !      in ASCII format. The package is optimized
 !      for minimizing formatted I/O, performing all of its string
 !      operations in memory using Fortran intrinsic functions.
@@ -26,7 +26,7 @@
 !
 !      A {\em Resource File} is a text file consisting of variable
 !     length lines (records), each possibly starting with a {\em label}
-!     (or {\em key}), followed by some data. A simple resource file 
+!     (or {\em key}), followed by some data. A simple resource file
 !     looks like this:
 !
 ! \begin{verbatim}
@@ -45,13 +45,13 @@
 !
 ! \begin{verbatim}
 ! my_table_name::
-!  1000     3000     263.0   
+!  1000     3000     263.0
 !   925     3000     263.0
 !   850     3000     263.0
 !   700     3000     269.0
 !   500     3000     287.0
 !   400     3000     295.8
-!   300     3000     295.8    
+!   300     3000     295.8
 ! ::
 ! \end{verbatim}
 !
@@ -95,7 +95,7 @@
 !       call i90_Gtoken ( fn3, iret )  ! ==> fn1 = 'jan89.dat'
 ! \end{verbatim}
 !
-! To access the table above, the user first must use {\tt i90\_label()} to 
+! To access the table above, the user first must use {\tt i90\_label()} to
 ! locate the beginning of the table, e.g.,
 !
 ! \begin{verbatim}
@@ -115,12 +115,12 @@
 !          call i90_gline ( iret )
 !          do j = 1, 3
 !             table(i,j) = i90_gfloat ( iret )
-!          end do                   
+!          end do
 !       end do
 ! \end{verbatim}
 !
 ! Get the idea?
-! 
+!
 ! \newpage
 ! \subsection{Main Routine/Functions}
 !
@@ -131,7 +131,7 @@
 !  I90_LoadF ( filen, iret )     loads resource file into memory
 !  I90_Label ( label, iret )     selects a label (key)
 !  I90_GLine ( iret )            selects next line (for tables)
-!  I90_Gtoken ( word, iret )     get next token 
+!  I90_Gtoken ( word, iret )     get next token
 !  I90_Gfloat ( iret )           returns next float number (function)
 !  I90_GInt ( iret )             returns next integer number (function)
 !  i90_AtoF ( string, iret )     ASCII to float (function)
@@ -158,7 +158,7 @@
 ! See the Prologues in the next section for additional details.
 !
 !
-!    \subsection{Package History} 
+!    \subsection{Package History}
 !       Back in the 70s Eli Isaacson wrote IOPACK in Fortran
 !       66.  In June of 1987 I wrote Inpak77 using
 !       Fortran 77 string functions; Inpak 77 is a vastly
@@ -168,16 +168,16 @@
 !       performance.  Despite its name, Inpak 90 compiles fine
 !       under any modern Fortran 77 compiler.
 !
-!   \subsection{Bugs} 
-!       Inpak 90 is not very gracious with error messages.  
+!   \subsection{Bugs}
+!       Inpak 90 is not very gracious with error messages.
 !       The interactive functionality of Inpak77 has not been implemented.
 !       The comment character \# cannot be escaped.
 !
 !  \subsection{Availability}
 !
-!   This software is available at 
+!   This software is available at
 ! \begin{verbatim}
-!         ftp://niteroi.gsfc.nasa.gov/pub/packages/i90/ 
+!         ftp://niteroi.gsfc.nasa.gov/pub/packages/i90/
 ! \end{verbatim}
 !   There you will find the following files:
 ! \begin{verbatim}
@@ -220,8 +220,8 @@
 !	28Sep99 - Jing Guo	- Merged with the MPI version with
 !				  some addtional changes based on
 !				  merging decisions.
-!	12Oct99 - Larson/Guo	- Overloaded fltget() to new routines 
-!                 getfltsp() and fltgetdp(), providing better support 
+!	12Oct99 - Larson/Guo	- Overloaded fltget() to new routines
+!                 getfltsp() and fltgetdp(), providing better support
 !                 for 32 and 64 bit platforms, respectively.
 !_______________________________________________________________________
 
@@ -236,7 +236,7 @@
      public :: I90_fullRelease ! Releases the whole stack
      public :: I90_Label   ! selects a label (key)
      public :: I90_GLine   ! selects the next line (for tables)
-     public :: I90_Gtoken  ! gets the next token 
+     public :: I90_Gtoken  ! gets the next token
      public :: I90_Gstr    ! get a string upto to a "$" or EOL
 
      public :: I90_AtoF	! ASCII to float (function)
@@ -265,7 +265,7 @@
 
 !ams
 ! On Linux with the Fujitsu compiler, I needed to reduce NBUF_MAX
-!ams 
+!ams
 ! integer,   parameter :: NBUF_MAX = 400*(LSZ) ! max size of buffer
 ! integer,   parameter :: NBUF_MAX = 200*(LSZ) ! max size of buffer
 ! Further reduction of NBUF_MAX was necessary for the Fujitsu VPP:
@@ -504,7 +504,7 @@ end subroutine pop_
       subroutine I90_Release(stat)
 	use m_die,only : perr,die
 	implicit none
-	integer,optional, intent(out) :: stat 
+	integer,optional, intent(out) :: stat
 !
 ! !DESCRIPTION:
 !
@@ -575,18 +575,18 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE:  I90_LoadF() --- Loads resource file into memory.
-! 
-! !DESCRIPTION: 
+!
+! !DESCRIPTION:
 !
 !  Reads resource file, strips out comments, translate TABs into
 !  blanks, and loads the modified file contents into memory.
 !  Must be called only once for each resource file.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !     call i90_LoadF ( filen, iret )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       character*(*) filen            ! file name
 
@@ -601,21 +601,21 @@ end subroutine i90_fullRelease
                                      !        NBUF_MAX in 'i90.h'
                                      ! other  iostat from open statement.
 !
-! !BUGS:  
+! !BUGS:
 !
 !  It does not perform dynamic allocation, mostly to keep vanilla f77
 !  compatibility. Overall amount of static memory is small (~100K
 !  for default NBUF_MAX = 400*256).
 !
-! !SEE ALSO: 
+! !SEE ALSO:
 !
 !  i90_label()   selects a label (key)
 !
-! !FILES USED:  
+! !FILES USED:
 !
 !  File name supplied on input. The file is opened, read and then closed.
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !
@@ -635,7 +635,7 @@ end subroutine i90_fullRelease
   endif
 
 !     Open file
-!     ---------     
+!     ---------
 !      lu = i90_lua()
 
       lu = luavail()	! a more portable version
@@ -693,7 +693,7 @@ end subroutine i90_fullRelease
 
       end do
 
-      iret = -98 ! good chance i90_now%buffer is not big enough 
+      iret = -98 ! good chance i90_now%buffer is not big enough
       return
 
  11   continue
@@ -715,7 +715,7 @@ end subroutine i90_fullRelease
       return
       end subroutine I90_LoadF
 
-            
+
 !...................................................................
 
       subroutine i90_label ( label, iret )
@@ -728,18 +728,18 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE:  I90_Label() --- Selects a label (record).
-! 
-! !DESCRIPTION: 
+!
+! !DESCRIPTION:
 !
 !  Once the buffer has been loaded with {\tt i90\_loadf()}, this routine
-!  selects a given ``line'' (record/table) associated with ``label''. 
+!  selects a given ``line'' (record/table) associated with ``label''.
 !  Think of ``label'' as a resource name or data base ``key''.
 !
-! !CALLING SEQUENCE: 
-!           
+! !CALLING SEQUENCE:
+!
 !     call i90_Label ( label, iret )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       character(len=*),intent(in) :: label            ! input label
 
@@ -748,20 +748,20 @@ end subroutine i90_fullRelease
       integer       iret             ! Return code:
                                      !   0    no error
                                      !  -1    buffer not loaded
-                                     !  -2    could not find label   
+                                     !  -2    could not find label
 !
-! !SEE ALSO: 
+! !SEE ALSO:
 !
 !  i90_loadf()    load file into buffer
 !  i90_gtoken()   get next token
 !  i90_gline()    get next line (for tables)
 !  atof()         convert word (string) to float
 !  atoi()         convert word (string) to integer
-!  
-! !REVISION HISTORY: 
+!
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
-!  19Jan01   Jay Larson <larson@mcs.anl.gov> - introduced CHARACTER 
+!  19Jan01   Jay Larson <larson@mcs.anl.gov> - introduced CHARACTER
 !            variable EOL_label, which is used to circumvent pgf90
 !            problems with passing concatenated characters as an argument
 !            to a function.
@@ -781,7 +781,7 @@ end subroutine i90_fullRelease
 	endif
 
 !     Determine whether label exists
-!     ------------------------------     
+!     ------------------------------
       EOL_label = EOL // label
       i = index ( i90_now%buffer(1:i90_now%nbuf), EOL_label ) + 1
       if ( i .le. 1 ) then
@@ -815,8 +815,8 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE:  I90_GLine() --- Selects next line.
-! 
-! !DESCRIPTION: 
+!
+! !DESCRIPTION:
 !
 !     Selects next line, irrespective of of label. If the next line starts
 ! with :: (end of table mark), then it lets the user know. This sequential
@@ -825,17 +825,17 @@ end subroutine i90_fullRelease
 !
 ! \begin{verbatim}
 ! my_table_name::
-!  1000     3000     263.0   
+!  1000     3000     263.0
 !   925     3000     263.0
 !   850     3000     263.0
 !   700     3000     269.0
 !   500     3000     287.0
 !   400     3000     295.8
-!   300     3000     295.8    
+!   300     3000     295.8
 ! ::
 ! \end{verbatim}
 !
-! To access this table, the user first must use {\tt i90\_label()} to 
+! To access this table, the user first must use {\tt i90\_label()} to
 ! locate the beginning of the table, e.g.,
 !
 ! \begin{verbatim}
@@ -855,7 +855,7 @@ end subroutine i90_fullRelease
 !          call i90_gline ( iret )
 !          do j = 1, 3
 !             table(i,j) = fltget ( 0. )
-!          end do                   
+!          end do
 !       end do
 ! \end{verbatim}
 !
@@ -863,11 +863,11 @@ end subroutine i90_fullRelease
 !  known. It is relatively simple to infer the table dimensions
 !  by manipulating ``iret''.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !     call i90_gline ( iret )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
 !     None.
 !
@@ -878,11 +878,11 @@ end subroutine i90_fullRelease
                                      !  -1    end of buffer reached
                                      !  +1    end of table  reached
 
-! !SEE ALSO: 
+! !SEE ALSO:
 !
 !  i90_label()    selects a line (record/table)
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  10feb95   Guo        Wrote rdnext(), Inpak 77 extension.
 !  19Jun96   da Silva   Original code with functionality of rdnext()
@@ -907,7 +907,7 @@ end subroutine i90_fullRelease
       i = i90_now%next_line
       j = i + index(i90_now%buffer(i:i90_now%nbuf),EOL) - 2
       i90_now%this_line = i90_now%buffer(i:j) // BLK // EOL
-      
+
       if ( i90_now%this_line(1:2) .eq. '::' ) then
            iret = 1                        ! end of table
            i90_now%next_line = i90_now%nbuf + 1
@@ -921,7 +921,7 @@ end subroutine i90_fullRelease
       end subroutine i90_gline
 
 !...................................................................
-            
+
       subroutine i90_GToken ( token, iret )
 
       implicit NONE
@@ -932,15 +932,15 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE:  I90_GToken()  --- Gets next token.
-! 
-! !DESCRIPTION: 
+!
+! !DESCRIPTION:
 !
 !  Get next token from current line. The current line is defined by a
 !  call to {\tt i90\_label()}. Tokens are sequences of characters (including
-!  blanks) which may be enclosed by single or double quotes. 
+!  blanks) which may be enclosed by single or double quotes.
 !  If no quotes are present, the token from the current position to the next
 !  blank of TAB is returned.
-!  
+!
 !  {\em Examples of valid token:}
 !
 !  \begin{verbatim}
@@ -952,7 +952,7 @@ end subroutine i90_fullRelease
 !               This is valid too   # the line ends before the #
 !  \end{verbatim}
 !  The last line has 4 valid tokens: {\tt This, is, valid} and {\tt too}.
-!  
+!
 !  {\em Invalid string constructs:}
 !
 !  \begin{verbatim}
@@ -963,11 +963,11 @@ end subroutine i90_fullRelease
 !  The \# character is reserved for comments and cannot be included
 !  inside quotation marks.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !     call i90_GToken ( token, iret )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
 !     None.
 !
@@ -980,20 +980,20 @@ end subroutine i90_fullRelease
                                      !        on line or mismatched
                                      !        quotation marks.
 
-! !BUGS:  
+! !BUGS:
 !
 !     Standard Unix escaping is not implemented at the moment.
-!     
 !
-! !SEE ALSO: 
+!
+! !SEE ALSO:
 !
 !  i90_label()    selects a line (record/table)
 !  i90_gline()    get next line (for tables)
 !  atof()         convert word (string) to float
 !  atoi()         convert word (string) to integer
-!  
 !
-! !REVISION HISTORY: 
+!
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !
@@ -1011,11 +1011,11 @@ end subroutine i90_fullRelease
 	endif
 
       call i90_trim ( i90_now%this_line )
-     
+
       ch = i90_now%this_line(1:1)
       if ( ch .eq. '"' .or. ch .eq. "'" ) then
            ib = 2
-           ie = index ( i90_now%this_line(ib:), ch ) 
+           ie = index ( i90_now%this_line(ib:), ch )
       else
            ib = 1
            ie = min(index(i90_now%this_line,BLK),	&
@@ -1031,7 +1031,7 @@ end subroutine i90_fullRelease
 		! Get the token, and shift the rest of %this_line to
 		! the left
 
-           token = i90_now%this_line(ib:ie) 
+           token = i90_now%this_line(ib:ie)
            i90_now%this_line = i90_now%this_line(ie+2:)
            iret = 0
       end if
@@ -1048,13 +1048,13 @@ end subroutine i90_fullRelease
 !-------------------------------------------------------------------------
 !
 ! !ROUTINE:  I90\_GStr()
-! 
-! !DESCRIPTION: 
+!
+! !DESCRIPTION:
 !
 !  Get next string from current line. The current line is defined by a
 !  call to {\tt i90\_label()}. Strings are sequence of characters (including
 !  blanks) enclosed by single or double quotes. If no quotes
-!  are present, the string from the current position to the end of 
+!  are present, the string from the current position to the end of
 !  the line is returned.
 !
 !  NOTE: This routine is defined differently from \verb"i90_GTolen()",
@@ -1072,7 +1072,7 @@ end subroutine i90_fullRelease
 !               This is valid too   # the line ends before the #
 !
 !  \end{verbatim}
-!  
+!
 !  {\em Invalid string constructs:}
 !
 !  \begin{verbatim}
@@ -1086,13 +1086,13 @@ end subroutine i90_fullRelease
 !               the string ends after a $ this is another string
 !  \end{verbatim}
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !  \begin{verbatim}
 !     call i90_Gstr ( string, iret )
 !  \end{verbatim}
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       character*(*) string           ! A NULL (char(0)) delimited string.
 
@@ -1104,22 +1104,22 @@ end subroutine i90_fullRelease
                                      !        on line or mismatched
                                      !        quotation marks.
 
-! !BUGS:  
+! !BUGS:
 !
 !     Standard Unix escaping is not implemented at the moment.
 !     No way to tell sintax error from end of line (same iret).
-!     
 !
-! !SEE ALSO: 
+!
+! !SEE ALSO:
 !
 !  i90_label()    selects a line (record/table)
 !  i90_gtoken()   get next token
 !  i90_gline()    get next line (for tables)
 !  atof()         convert word (string) to float
 !  atoi()         convert word (string) to integer
-!  
 !
-! !REVISION HISTORY: 
+!
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !  01Oct96   Jing Guo	Removed the null terminitor
@@ -1137,11 +1137,11 @@ end subroutine i90_fullRelease
 	endif
 
       call i90_trim ( i90_now%this_line )
-     
+
       ch = i90_now%this_line(1:1)
       if ( ch .eq. '"' .or. ch .eq. "'" ) then
            ib = 2
-           ie = index ( i90_now%this_line(ib:), ch ) 
+           ie = index ( i90_now%this_line(ib:), ch )
       else
            ib = 1
            ie = index(i90_now%this_line,'$')-1  ! undocumented feature!
@@ -1173,18 +1173,18 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE: i90_GFloat() --- Returns next float number.
-! 
-! !DESCRIPTION: 
+!
+! !DESCRIPTION:
 !
 !  Returns next float (real number) from the current line.
 !  If an error occurs a zero value is returned.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !      real  rnumber
 !      rnumber = i90_gfloat ( default )
 !
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer,intent(out) :: iret    ! Return code:
                                      !   0    no error
@@ -1194,7 +1194,7 @@ end subroutine i90_fullRelease
                                      !  -2    parsing error
 
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !
@@ -1235,18 +1235,18 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE: I90_GInt() --- Returns next integer number.
-! 
-! !DESCRIPTION: 
+!
+! !DESCRIPTION:
 !
 !  Returns next integer number from the current line.
 !  If an error occurs a zero value is returned.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !      integer number
 !      number = i90_gint ( default )
 !
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer       iret             ! Return code:
                                      !   0    no error
@@ -1256,7 +1256,7 @@ end subroutine i90_fullRelease
                                      !  -2    parsing error
 
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !  24may00   da Silva   delcared x as real*8 in case this module is compiled
@@ -1286,7 +1286,7 @@ end subroutine i90_fullRelease
 
       return
       end function i90_gint
-      
+
 !...................................................................
 
       real(FP) function i90_AtoF( string, iret )
@@ -1299,17 +1299,17 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE:  i90_AtoF() --- Translates ASCII (string) to float.
-! 
-! !DESCRIPTION: 
+!
+! !DESCRIPTION:
 !
 !     Converts string to real number. Same as obsolete {\tt str2rn()}.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !     real  rnumber
 !     rnumber = i90_atof ( string, iret )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       character(len=*),intent(in) :: string           ! a string
 
@@ -1321,7 +1321,7 @@ end subroutine i90_fullRelease
                                      !        string is not a number
 
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !
@@ -1347,17 +1347,17 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE:  I90_AtoI() --- Translates ASCII (strings) to integer.
-! 
-! !DESCRIPTION: 
+!
+! !DESCRIPTION:
 !
 !     Converts string to integer number.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !     integer number
 !     number = i90_atoi ( string, iret )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       character*(*) string           ! a string
 
@@ -1369,7 +1369,7 @@ end subroutine i90_fullRelease
                                      !        string is not a number
 
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !
@@ -1395,27 +1395,27 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE:  I90_Len() --- Returns length of string.
-! 
-! !DESCRIPTION: 
+!
+! !DESCRIPTION:
 !
 !  Returns the length of a string excluding trailing blanks.
-!  It follows that 
+!  It follows that
 !  \begin{verbatim}
 !              i90_len(string) .le. len(string),
 !  \end{verbatim}
-!  where {\tt len} is the intrinsic string length function.  
+!  where {\tt len} is the intrinsic string length function.
 !  Example:
 !  \begin{verbatim}
 !         ls = len('abc  ')       ! results in ls = 5
 !         ls = i90_len ('abc  ')  ! results in ls = 3
 !  \end{verbatim}
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !       integer ls
 !       ls = i90_len ( string )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
          character*(*)   string     ! a string
 !
@@ -1423,7 +1423,7 @@ end subroutine i90_fullRelease
 !
 !        The length of the string, excluding trailing blanks.
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  01Apr94   Guo        Original code (a.k.a. luavail())
 !  19Jun96   da Silva   Minor modification + prologue.
@@ -1442,7 +1442,7 @@ end subroutine i90_fullRelease
       i90_len = l
       return
       end function i90_len
-      
+
 !...................................................................
 
       integer function I90_Lua()
@@ -1455,17 +1455,17 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE:  I90_Lua() --- Returns available logical unit number.
-! 
-! !DESCRIPTION: 
+!
+! !DESCRIPTION:
 !
 !  Look for an available (not opened) Fortran logical unit for i/o.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !       integer lu
 !       lu = i90_lua()
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
 !       None.
 !
@@ -1473,7 +1473,7 @@ end subroutine i90_fullRelease
 !
 !       The desired unit number if positive, -1 if unsucessful.
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  01Apr94   Guo        Original code (a.k.a. luavail())
 !  19Jun96   da Silva   Minor modification + prologue.
@@ -1494,7 +1494,7 @@ end subroutine i90_fullRelease
       i90_lua=lu
       return
       end function i90_lua
-      
+
 !...................................................................
 
       subroutine i90_pad ( string )
@@ -1507,18 +1507,18 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE:  I90_Pad() --- Pad strings.
-! 
-! !DESCRIPTION: 
+!
+! !DESCRIPTION:
 !
 !     Pads from the right with the comment character (\#). It also
 !  replaces TABs with blanks for convenience. This is a low level
 !  i90 routine.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !      call i90_pad ( string )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
        character*256 string       ! input string
 
@@ -1526,12 +1526,12 @@ end subroutine i90_fullRelease
 !
 !      character*256 string
 !
-! !BUGS:  
+! !BUGS:
 !
 !      It alters TABs even inside strings.
 !
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !
@@ -1542,7 +1542,7 @@ end subroutine i90_fullRelease
 
 !     Pad end of string with #
 !     ------------------------
-      do i = 256, 1, -1 
+      do i = 256, 1, -1
          if ( string(i:i) .ne. ' ' .and.	&
 	        string(i:i) .ne. '$' ) go to 11
          string(i:i) = '#'
@@ -1559,7 +1559,7 @@ end subroutine i90_fullRelease
 
       return
       end subroutine i90_pad
-         
+
 !...................................................................
 
       subroutine I90_Trim ( string )
@@ -1573,16 +1573,16 @@ end subroutine i90_fullRelease
 !
 ! !ROUTINE:  I90_Trim() - Removes leading blanks from strings.
 !
-! !DESCRIPTION: 
+! !DESCRIPTION:
 !
-!    Removes blanks and TABS from begenning of string. 
+!    Removes blanks and TABS from begenning of string.
 !    This is a low level i90 routine.
-! 
-! !CALLING SEQUENCE: 
+!
+! !CALLING SEQUENCE:
 !
 !     call i90_Trim ( string )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       character*256 string    ! the input string
 !
@@ -1591,7 +1591,7 @@ end subroutine i90_fullRelease
 !     character*256 string    ! the modified string
 !
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !
@@ -1636,18 +1636,18 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE:  Lablin() --- Selects a Label (Inpak 77)
-! 
-! !DESCRIPTION: 
 !
-!    Selects a given ``line'' (record/table) associated with ``label''. 
+! !DESCRIPTION:
+!
+!    Selects a given ``line'' (record/table) associated with ``label''.
 !    Similar to {\tt i90\_label()}, but prints a message to {\tt stdout}
 !    if it cannot locate the label. Kept for Inpak 77 upward compatibility.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !     call lablin ( label )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       character(len=*),intent(in) :: label   ! string with label name
 !
@@ -1655,7 +1655,7 @@ end subroutine i90_fullRelease
 !
 !    None.
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !
@@ -1670,7 +1670,7 @@ end subroutine i90_fullRelease
       endif
 
       end subroutine lablin
-      
+
 !...................................................................
 
       real(SP) function fltgetsp ( default )
@@ -1683,24 +1683,24 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE: FltGetsp() --- Returns next float (Inpak 77, single precision)
-! 
-! !DESCRIPTION: 
 !
-!  Returns next float (real number, single precision) from the current 
+! !DESCRIPTION:
+!
+!  Returns next float (real number, single precision) from the current
 !  line, or a default value if it fails to obtain the desired number.
 !  Kept for Inpak 77 upward compatibility.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !      real  rnumber, default
 !      rnumber = fltgetsp ( default )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       real(SP), intent(IN) ::    default       ! default value.
 
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !  12Oct99   Guo/Larson - Built from original FltGet() function.
@@ -1722,7 +1722,7 @@ end subroutine i90_fullRelease
 
       return
       end function fltgetsp
-      
+
 !...................................................................
 
       real(DP) function fltgetdp ( default )
@@ -1735,25 +1735,25 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE: FltGetdp() --- Returns next float (Inpak 77)
-! 
-! !DESCRIPTION: 
 !
-!  Returns next float (real number) from the current line, or a 
-!  default value (double precision) if it fails to obtain the desired 
+! !DESCRIPTION:
+!
+!  Returns next float (real number) from the current line, or a
+!  default value (double precision) if it fails to obtain the desired
 !  number.  Kept for Inpak 77 upward compatibility.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !      real(DP) :: default
-!      real :: rnumber 
+!      real :: rnumber
 !      rnumber = FltGetdp(default)
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       real(DP), intent(IN) ::    default       ! default value.
 
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !  12Oct99   Guo/Larson - Built from original FltGet() function.
@@ -1775,7 +1775,7 @@ end subroutine i90_fullRelease
 
       return
       end function fltgetdp
-      
+
 !...................................................................
 
       integer function intget ( default )
@@ -1787,25 +1787,25 @@ end subroutine i90_fullRelease
 !-------------------------------------------------------------------------
 !BOP
 !
-! !ROUTINE: IntGet() --- Returns next integer (Inpak 77). 
-! 
-! !DESCRIPTION: 
+! !ROUTINE: IntGet() --- Returns next integer (Inpak 77).
 !
-!  Returns next integer number from the current line, or a default 
+! !DESCRIPTION:
+!
+!  Returns next integer number from the current line, or a default
 !  value if it fails to obtain the desired number.
 !  Kept for Inpak 77 upward compatibility.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !      integer number, default
 !      number = intget ( default )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
        integer     default       ! default value.
 
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !
@@ -1826,7 +1826,7 @@ end subroutine i90_fullRelease
 
       return
       end function intget
-      
+
 !...................................................................
 
       character(len=1) function chrget ( default )
@@ -1839,24 +1839,24 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE: ChrGet() --- Returns next character (Inpak 77).
-! 
-! !DESCRIPTION: 
 !
-!  Returns next non-blank character from the current line, or a default 
+! !DESCRIPTION:
+!
+!  Returns next non-blank character from the current line, or a default
 !  character if it fails for whatever reason.
 !  Kept for Inpak 77 upward compatibility.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !     character*1 ch, default
 !     ch = chrget ( default )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       character*1    default       ! default value.
 
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !
@@ -1890,17 +1890,17 @@ end subroutine i90_fullRelease
 !BOP
 !
 ! !ROUTINE: TokGet() --- Gets next token (Inpakk 77 like).
-! 
-! !DESCRIPTION: 
 !
-!  Returns next token from the current line, or a default 
+! !DESCRIPTION:
+!
+!  Returns next token from the current line, or a default
 !  word if it fails for whatever reason.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !      call TokGet ( token, default )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
        character*(*) default     ! default token
 
@@ -1908,7 +1908,7 @@ end subroutine i90_fullRelease
 !
        character*(*) token       ! desired token
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !
@@ -1925,7 +1925,7 @@ end subroutine i90_fullRelease
 
       return
       end subroutine tokget
-      
+
 !====================================================================
 
 !                          --------------------------
@@ -1940,22 +1940,22 @@ end subroutine i90_fullRelease
            'i90: iniin() is obsolete, use i90_loadf() instead!'
       return
       end subroutine iniin
-   
+
 
 !...................................................................
 
       subroutine iunits ( mifans, moftrm, moferr, miftrm )
-      integer mifans, moftrm, moferr, miftrm 
+      integer mifans, moftrm, moferr, miftrm
       print *, 		&
            'i90: iunits() is obsolete, use i90_loadf() instead!'
       return
       end subroutine iunits
-   
+
 !...................................................................
 
       subroutine getstr ( iret, string )
       implicit NONE
-      character*(*) string 
+      character*(*) string
       integer       iret  !, ls
       call i90_gstr ( string, iret )
       return
@@ -1981,7 +1981,7 @@ end subroutine i90_fullRelease
       end subroutine rdnext
 
 !...................................................................
-            
+
       real(FP) function str2rn ( string, iret )
       implicit NONE
       character*(*) string
@@ -2004,10 +2004,10 @@ end subroutine i90_fullRelease
 !-------------------------------------------------------------------------
 !
 ! !ROUTINE: StrGet()
-! 
-! !DESCRIPTION: 
 !
-!  Returns next string on the current line, or a default 
+! !DESCRIPTION:
+!
+!  Returns next string on the current line, or a default
 !  string if it fails for whatever reason. Similar to {\tt i90\_gstr()}.
 !  Kept for Inpak 77 upward compatibility.
 !
@@ -2015,11 +2015,11 @@ end subroutine i90_fullRelease
 !        here is not conventional. Please use routine {\tt TokGet()}
 !        instead.
 !
-! !CALLING SEQUENCE: 
+! !CALLING SEQUENCE:
 !
 !      call strget ( string, default )
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
        character*(*) default      ! default string
 
@@ -2028,7 +2028,7 @@ end subroutine i90_fullRelease
        character*(*) string       ! desired string
 
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !  19Jun96   da Silva   Original code.
 !  01Oct96   Jing Guo   Removed the null terminitor
@@ -2044,6 +2044,6 @@ end subroutine i90_fullRelease
 
       return
       end subroutine strget
-      
+
 
 end module m_inpak90

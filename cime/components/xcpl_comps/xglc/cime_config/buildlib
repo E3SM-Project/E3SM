@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+
+"""
+build data model library
+"""
+
+import sys, os
+
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
+sys.path.append(os.path.join(os.environ["CIMEROOT"],"scripts","Tools"))
+
+from standard_script_setup import *
+from CIME.buildlib import build_xcpl_lib
+
+build_xcpl_lib(sys.argv, 'glc')

@@ -42,7 +42,7 @@ else:
     (msg,offset) = neos.getIntermediateResults(jobNumber,password,offset)
     sys.stdout.write(msg.data)
     status = neos.getJobStatus(jobNumber, password)
- 
+
   #Print out the final result
   msg = neos.getFinalResults(jobNumber, password).data
 

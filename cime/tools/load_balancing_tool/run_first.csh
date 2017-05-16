@@ -39,13 +39,13 @@ foreach NA (${NATM})
   @ EXPN = $CNT
 
   echo "case for $NA $CNT $NT "
-  @ NTASKS_A = $NATM[$CNT] 
-  @ NTASKS_L = $NLND[$CNT] 
+  @ NTASKS_A = $NATM[$CNT]
+  @ NTASKS_L = $NLND[$CNT]
   @ NTASKS_R = $NROF[$CNT]
-  @ NTASKS_O = $NOCN[$CNT] 
-  @ NTASKS_I = $NICE[$CNT] 
+  @ NTASKS_O = $NOCN[$CNT]
+  @ NTASKS_I = $NICE[$CNT]
   @ NTASKS_C = $NCPL[$CNT]
-  @ NTASKS_W = $NWAV[$CNT] 
+  @ NTASKS_W = $NWAV[$CNT]
   @ NTASKS_G = $NGLC[$CNT]
 
   @ ROOTPE_ATM = $RATM[$CNT]
@@ -72,7 +72,7 @@ foreach NA (${NATM})
     ./create_newcase -case ${casedir}/${case} -res ${res} -compset {$compset} -mach ${mach}
 
     cd ${casedir}/${case}
-    ./cesm_setup -clean
+    ./case_setup -clean
 
     #generic stuff
     ./xmlchange -file env_run.xml -id STOP_N -val $run_len
@@ -99,7 +99,7 @@ foreach NA (${NATM})
     ./xmlchange -file env_mach_pes.xml -id ROOTPE_ICE -val ${ROOTPE_ICE}
 
     ./xmlchange -file env_mach_pes.xml -id NTASKS_OCN -val $NTASKS_O
-    ./xmlchange -file env_mach_pes.xml -id NTHRDS_OCN -val $NT 
+    ./xmlchange -file env_mach_pes.xml -id NTHRDS_OCN -val $NT
     ./xmlchange -file env_mach_pes.xml -id ROOTPE_OCN -val ${ROOTPE_OCN}
 
     ./xmlchange -file env_mach_pes.xml -id NTASKS_CPL -val $NTASKS_C
@@ -114,13 +114,13 @@ foreach NA (${NATM})
     ./xmlchange -file env_mach_pes.xml -id NTHRDS_GLC -val $NT
     ./xmlchange -file env_mach_pes.xml -id ROOTPE_GLC -val ${ROOTPE_GLC}
 
-    ./cesm_setup
+    ./case_setup
 
     if ($bldrun == "1") then
        ./${case}*.build
 
        rm tmpsubmit >& /dev/null
-cat > tmpsubmit << EOF  
+cat > tmpsubmit << EOF
    ./${case}*.submit
 EOF
        source tmpsubmit

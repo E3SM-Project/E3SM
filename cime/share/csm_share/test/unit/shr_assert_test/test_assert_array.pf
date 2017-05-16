@@ -30,7 +30,7 @@ function new_TestAssertArray(rank) result(test)
   type(TestAssertArray) :: test
 
   test%rank = rank%rank
-  
+
 end function new_TestAssertArray
 
 function getParameters() result(params)

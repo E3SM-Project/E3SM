@@ -27,6 +27,10 @@
 <histavg_ymd>$AVGHIST_DATE</histavg_ymd>
 <max_cplstep_time>0.0</max_cplstep_time>
 
+<barrier_option>$BARRIER_OPTION</barrier_option>
+<barrier_n>$BARRIER_N</barrier_n>
+<barrier_ymd>$BARRIER_DATE</barrier_ymd>
+
 <!-- =========================================  -->
 <!--- seq_infodata_inparm                       -->
 <!-- =========================================  -->
@@ -57,15 +61,15 @@
 <histavg_xao    >.true.</histavg_xao    >
 
 <budget_inst >0</budget_inst>
-<budget_daily>0</budget_daily> 
+<budget_daily>0</budget_daily>
 <budget_month>1</budget_month>
 <budget_ann  >1</budget_ann>
 <budget_ltann>1</budget_ltann>
 <budget_ltend>0</budget_ltend>
- 
+
 <tprof_option>never</tprof_option>
 <tprof_n>-999</tprof_n>
-<tprof_ymd>-999</tprof_ymd> 
+<tprof_ymd>-999</tprof_ymd>
 
 <orb_mode>fixed_year</orb_mode>
 <orb_iyear>1990</orb_iyear>
@@ -75,6 +79,8 @@
 <wv_sat_transition_start>20.0D0</wv_sat_transition_start>
 <wv_sat_use_tables>.false.</wv_sat_use_tables>
 <wv_sat_table_spacing>1.0D0</wv_sat_table_spacing>
+
+<tfreeze_option>minus1p8</tfreeze_option>
 
 <timing_dir>./timing</timing_dir>
 
@@ -88,8 +94,8 @@
 
 <cpl_cdf64>.true.</cpl_cdf64>
 
-<vect_map>$VECT_MAP</vect_map>  
-<eps_frac>$EPS_FRAC</eps_frac> 
+<vect_map>$VECT_MAP</vect_map>
+<eps_frac>$EPS_FRAC</eps_frac>
 <eps_amask>$EPS_AMASK</eps_amask>
 <eps_agrid>$EPS_AGRID</eps_agrid>
 <eps_aarea>$EPS_AAREA</eps_aarea>
@@ -99,27 +105,25 @@
 
 <info_debug>$INFO_DBUG</info_debug>
 <cpl_decomp>$CPL_DECOMP</cpl_decomp>
-<flux_epbal>$CPL_EPBAL</flux_epbal>
-<flux_albav>.$CPL_ALBAV.</flux_albav> 
-<wall_time_limit>-1.0</wall_time_limit> 
-<force_stop_at>month</force_stop_at> 
-<flux_diurnal>.false.</flux_diurnal> 
-<gust_fac>0.0D0</gust_fac> 
+<wall_time_limit>-1.0</wall_time_limit>
+<force_stop_at>month</force_stop_at>
+<flux_diurnal>.false.</flux_diurnal>
+<gust_fac>0.0D0</gust_fac>
 
-<run_barriers COMP_RUN_BARRIERS="TRUE">.true.</run_barriers> 
-<run_barriers COMP_RUN_BARRIERS="FALSE">.false.</run_barriers> 
+<run_barriers COMP_RUN_BARRIERS="TRUE">.true.</run_barriers>
+<run_barriers COMP_RUN_BARRIERS="FALSE">.false.</run_barriers>
 
-<drv_threading DRV_THREADING="TRUE">.true.</drv_threading> 
-<drv_threading DRV_THREADING="FALSE">.false.</drv_threading> 
+<drv_threading DRV_THREADING="TRUE">.true.</drv_threading>
+<drv_threading DRV_THREADING="FALSE">.false.</drv_threading>
 
-<do_budgets BUDGETS="TRUE" >.true.</do_budgets> 
-<do_budgets BUDGETS="FALSE">.false.</do_budgets> 
+<do_budgets BUDGETS="TRUE" >.true.</do_budgets>
+<do_budgets BUDGETS="FALSE">.false.</do_budgets>
 
-<bfbflag BFBFLAG="TRUE">.true.</bfbflag> 
-<bfbflag BFBFLAG="FALSE">.false.</bfbflag> 
+<bfbflag BFBFLAG="TRUE">.true.</bfbflag>
+<bfbflag BFBFLAG="FALSE">.false.</bfbflag>
 
-<brnch_retain_casename BRNCH_RETAIN_CASENAME="TRUE">.true.</brnch_retain_casename> 
-<brnch_retain_casename BRNCH_RETAIN_CASENAME="FALSE">.false.</brnch_retain_casename> 
+<brnch_retain_casename BRNCH_RETAIN_CASENAME="TRUE">.true.</brnch_retain_casename>
+<brnch_retain_casename BRNCH_RETAIN_CASENAME="FALSE">.false.</brnch_retain_casename>
 
 <!-- =========================================  -->
 <!--- prof_inparm                               -->
@@ -167,10 +171,11 @@
 
 <pio_stride           >$PIO_STRIDE</pio_stride>
 <pio_root             >$PIO_ROOT</pio_root>
-<pio_numiotasks       >$PIO_NUMTASKS</pio_numiotasks> 
+<pio_numiotasks       >$PIO_NUMTASKS</pio_numiotasks>
 <pio_typename         >$PIO_TYPENAME</pio_typename>
 <pio_debug_level      >$PIO_DEBUG_LEVEL</pio_debug_level>
 <pio_blocksize        >$PIO_BLOCKSIZE</pio_blocksize>
+<pio_rearranger>$PIO_REARRANGER</pio_rearranger>
 <pio_buffer_size_limit>$PIO_BUFFER_SIZE_LIMIT</pio_buffer_size_limit>
 <pio_async_interface PIO_ASYNC_INTERFACE="TRUE">.true.</pio_async_interface>
 <pio_async_interface PIO_ASYNC_INTERFACE="FALSE">.false.</pio_async_interface>
@@ -262,5 +267,11 @@
 <ocn2wav_smaptype BFBFLAG="TRUE">X</ocn2wav_smaptype>
 <ice2wav_smaptype BFBFLAG="TRUE">X</ice2wav_smaptype>
 <ocn2wav_smaptype BFBFLAG="TRUE">X</ocn2wav_smaptype>
+
+
+<!-- =========================================  -->
+<!--- drv_flds_in fields                        -->
+<!-- =========================================  -->
+<drv_flds_in_files>Buildconf/camconf/drv_flds_in,Buildconf/clmconf/drv_flds_in</drv_flds_in_files>
 
 </namelist_defaults>

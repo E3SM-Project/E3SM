@@ -34,7 +34,7 @@ FC_FUNC( mpi_isend , MPI_ISEND )(void *buf, int *count, int *datatype,
 
 
 int MPI_Isend(void *buf, int count, MPI_Datatype datatype,
-	      int dest, int tag, MPI_Comm comm, MPI_Request *request) 
+	      int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
   pListitem match;
   Comm *mycomm;

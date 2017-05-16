@@ -1,6 +1,6 @@
 #if 0
 $Id$
- 
+
 Earth System Modeling Framework
 Copyright 2002-2003, University Corporation for Atmospheric Research,
 Massachusetts Institute of Technology, Geophysical Fluid Dynamics
@@ -37,9 +37,9 @@ by both C++ and F90 compilers.
 #define HOURS_PER_DAY 24_ESMF_KIND_I8
 #define MONTHS_PER_YEAR 12_ESMF_KIND_I8
 
-! Note that MAX_ALARMS must match MAX_WRF_ALARMS defined in 
-! ../../frame/module_domain.F !!!  Eliminate this dependence with 
-! grow-as-you-go AlarmList in ESMF_Clock...  
+! Note that MAX_ALARMS must match MAX_WRF_ALARMS defined in
+! ../../frame/module_domain.F !!!  Eliminate this dependence with
+! grow-as-you-go AlarmList in ESMF_Clock...
 #define MAX_ALARMS 60
 
 #endif

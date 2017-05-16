@@ -2,7 +2,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !-----------------------------------------------------------------------
 !BOP
 !
@@ -105,7 +105,7 @@ contains
 !
 !	If the mask is 3 or "11"b, any PE of rank with any "dirty" bit
 !   in its rank value will not have output.
-! 
+!
 ! !REVISION HISTORY:
 ! 	25Feb98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP
@@ -234,7 +234,7 @@ end subroutine close_
 !	would make the final multi-stream merging verifiable.  However,
 !	since the \verb"tag"s have not been forced to be unique, the
 !	synchronization operations are still symbolic.
-!	
+!
 ! \{itemize}
 !EOP
 !_______________________________________________________________________

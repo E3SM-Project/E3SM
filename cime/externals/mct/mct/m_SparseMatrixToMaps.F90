@@ -2,20 +2,20 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_SparseMatrixToMaps -- Maps from the Sparse Matrix 
+! !MODULE: m_SparseMatrixToMaps -- Maps from the Sparse Matrix
 !
 ! !DESCRIPTION:
-! The {\tt SparseMatrix} provides consolidated (on one process) or 
+! The {\tt SparseMatrix} provides consolidated (on one process) or
 ! distributed sparse matrix storage for the operation
-! ${\bf y} = {\bf M} {\bf x}$, where {\bf x} and {\bf y} are vectors, 
-! and {\bf M} is a matrix.  In performing parallel matrix-vector 
-! multiplication, one has numerous options regarding the decomposition 
+! ${\bf y} = {\bf M} {\bf x}$, where {\bf x} and {\bf y} are vectors,
+! and {\bf M} is a matrix.  In performing parallel matrix-vector
+! multiplication, one has numerous options regarding the decomposition
 ! of the matrix {\bf M}, and the vectors {\bf y} and {\bf x}.
 ! This module provides services to generate mct mapping components---the
-! {\tt GlobalMap} and {\tt GlobalSegMap} for the vectors {\bf y} and/or 
+! {\tt GlobalMap} and {\tt GlobalSegMap} for the vectors {\bf y} and/or
 ! {\bf x} based on the decomposition of the sparse matrix {\bf M}.
 !
 ! !INTERFACE:
@@ -57,9 +57,9 @@
 ! !IROUTINE: SparseMatrixToXGlobalSegMap_ - Generate X GlobalSegmap.
 !
 ! !DESCRIPTION:  Given an input {\tt SparseMatrix} argument {\tt sMat},
-! this routine generates an output {\tt GlobalSegMap} variable 
-! {\tt xGSMap}, which describes the domain decomposition of the vector 
-! {\bf x} in the distributed matrix-vector multiplication 
+! this routine generates an output {\tt GlobalSegMap} variable
+! {\tt xGSMap}, which describes the domain decomposition of the vector
+! {\bf x} in the distributed matrix-vector multiplication
 ! $${\bf y} = {\bf M} {\bf x}.$$
 !
 ! !INTERFACE:
@@ -87,17 +87,17 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer,            intent(in)    :: root    ! communicator root
       integer,            intent(in)    :: comm    ! communicator handle
       integer,            intent(in)    :: comp_id ! component id
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
       type(SparseMatrix), intent(inout) :: sMat    ! input SparseMatrix
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(GlobalSegMap), intent(out)   :: xGSMap  ! segmented decomposition
                                                    ! for x
@@ -106,7 +106,7 @@
 ! 25Apr01 - J.W. Larson <larson@mcs.anl.gov> - First version.
 ! 27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--intent of
 !           argument sMat changed from (IN) to (INOUT)
-! 27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - bug fix-- add use 
+! 27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - bug fix-- add use
 !           statement for SortPermute
 ! 01May01 - R.L. Jacob <jacob@mcs.anl.gov> - make comp_id an
 !           input argument
@@ -119,9 +119,9 @@
 ! GlobalSegMap input attributes:
   integer :: gsize, ngseg
   integer, dimension(:), pointer :: starts, lengths
-! Temporary array for identifying each matrix element column and 
+! Temporary array for identifying each matrix element column and
 ! process ID destination
-  integer, dimension(:), allocatable :: gCol, element_pe_locs 
+  integer, dimension(:), allocatable :: gCol, element_pe_locs
 ! Index to identify the gcol attribute in sMat:
   integer :: igCol
 ! Matrix element sorting keys list:
@@ -181,7 +181,7 @@
 
   call GlobalSegMap_init(xGSMap, starts, lengths, root, comm, &
                          comp_id, gsize=gsize)
-  
+
        ! clean up temporary arrays gCol(:), starts(:) and lengths(:),
        ! (the latter two were allocated in the call to the routine
        ! ComputeSegments_())
@@ -201,9 +201,9 @@
 ! !IROUTINE: SparseMatrixToYGlobalSegMap_ - Generate Y GlobalSegmap.
 !
 ! !DESCRIPTION:  Given an input {\tt SparseMatrix} argument {\tt sMat},
-! this routine generates an output {\tt GlobalSegMap} variable 
-! {\tt yGSMap}, which describes the domain decomposition of the vector 
-! {\bf y} in the distributed matrix-vector multiplication 
+! this routine generates an output {\tt GlobalSegMap} variable
+! {\tt yGSMap}, which describes the domain decomposition of the vector
+! {\bf y} in the distributed matrix-vector multiplication
 ! ${\bf y} = {\bf M} {\bf x}$.
 !
 ! !INTERFACE:
@@ -230,17 +230,17 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer,            intent(in)    :: root    ! communicator root
       integer,            intent(in)    :: comm    ! communicator handle
       integer,            intent(in)    :: comp_id ! component id
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
       type(SparseMatrix), intent(inout) :: sMat    ! input SparseMatrix
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(GlobalSegMap), intent(out)   :: yGSMap  ! segmented decomposition
                                                    ! for y
@@ -249,7 +249,7 @@
 ! 25Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial code.
 ! 27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--intent of
 !           argument sMat changed from (IN) to (INOUT)
-! 27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - bug fix-- add use 
+! 27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - bug fix-- add use
 !           statement for SortPermute
 ! 01May01 - R.L. Jacob <jacob@mcs.anl.gov> - make comp_id an
 !           input argument
@@ -264,9 +264,9 @@
 ! GlobalSegMap input attributes:
   integer :: gsize, ngseg
   integer, dimension(:), pointer :: starts, lengths
-! Temporary array for identifying each matrix element column and 
+! Temporary array for identifying each matrix element column and
 ! process ID destination
-  integer, dimension(:), allocatable :: gRow, element_pe_locs 
+  integer, dimension(:), allocatable :: gRow, element_pe_locs
 ! Index to identify the gRow attribute in sMat:
   integer :: igRow
 ! Matrix element sorting keys list:
@@ -326,7 +326,7 @@
 
   call GlobalSegMap_init(yGSMap, starts, lengths, root, comm, &
                          comp_id, gsize=gsize)
-  
+
        ! clean up temporary arrays gRow(:), starts(:) and lengths(:),
        ! (the latter two were allocated in the call to the routine
        ! ComputeSegments_())
@@ -348,7 +348,7 @@
 ! !DESCRIPTION:  This routine examines an input {\tt INTEGER} list of
 ! numbers {\tt indices} (of length {\tt num\_indices}), determines the
 ! number of segments of consecutive numbers (or runs) {\tt nsegs}.  The
-! starting indices for each run, and their lengths are returned in the 
+! starting indices for each run, and their lengths are returned in the
 ! {\tt INTEGER} arrays {\tt starts(:)} and {\tt lengths(:)}, respectively.
 !
 ! !INTERFACE:
@@ -363,7 +363,7 @@
 
       implicit none
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
 
       integer, dimension(:), intent(in)  :: indices
@@ -432,7 +432,7 @@
 	if(i == num_indices) then ! last point
 	   if(indices(i) > indices(i-1) + 1) then ! new segment with 1 pt.
        ! first, close the books on the penultimate segment:
-	      lengths(nsegs) = indices(i-1) - starts(nsegs) + 1 
+	      lengths(nsegs) = indices(i-1) - starts(nsegs) + 1
 	      nsegs = nsegs + 1
 	      starts(nsegs) = indices(i)
 	      lengths(nsegs) = 1  ! (just one point)

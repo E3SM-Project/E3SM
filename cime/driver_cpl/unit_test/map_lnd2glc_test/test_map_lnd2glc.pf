@@ -1,7 +1,7 @@
 module test_map_lnd2glc
 
   ! Tests of map_lnd2glc_mod
-  
+
   use pfunit_mod
   use map_lnd2glc_mod
   use glc_elevclass_mod, only : glc_elevclass_init, glc_elevclass_clean
@@ -12,7 +12,8 @@ module test_map_lnd2glc
   use simple_map_mod
   use create_mapper_mod
   use vertical_gradient_calculator_base, only : vertical_gradient_calculator_base_type
-  use vertical_gradient_calculator_constant, only : vertical_gradient_calculator_constant_type
+  use vertical_gradient_calculator_specified, only : &
+       vertical_gradient_calculator_specified_type, vgc_specified_ec_times_ptSquared
   use shr_kind_mod, only : r8 => shr_kind_r8
 
   implicit none
@@ -35,7 +36,7 @@ module test_map_lnd2glc
      real(r8) :: topo(0:n_elev_classes)
      real(r8) :: data(0:n_elev_classes)
   end type lnd_data_type
-     
+
   @TestCase
   type, extends(TestCase) :: TestMapLnd2glc
      type(seq_map) :: mapper
@@ -66,7 +67,7 @@ contains
 
   subroutine tearDown(this)
     class(TestMapLnd2glc), intent(inout) :: this
-    
+
     call clean_mapper(this%mapper)
     call mct_aVect_clean(this%data_l)
     call mct_aVect_clean(this%landfrac_l)
@@ -88,12 +89,12 @@ contains
     ! If provided, this gives the landfrac of each land cell. If absent, landfrac is
     ! assumed to be 1 for every land cell
     real(r8), intent(in), optional :: landfrac(:)
-    
+
     integer :: npts_glc
     integer :: npts_lnd
     integer :: lnd_index
     real(r8), allocatable :: l_landfrac(:)  ! local version of landfrac
-    
+
     ! ------------------------------------------------------------------------
     ! Do some initial error-checking to make sure this routine is being called properly
     ! ------------------------------------------------------------------------
@@ -104,7 +105,7 @@ contains
     if (present(landfrac)) then
        @assertEqual(npts_lnd, size(landfrac))
     end if
-    
+
     ! ------------------------------------------------------------------------
     ! Set local version of optional arguments
     ! ------------------------------------------------------------------------
@@ -115,7 +116,7 @@ contains
     else
        l_landfrac(:) = 1._r8
     end if
-    
+
     ! ------------------------------------------------------------------------
     ! Setup
     ! ------------------------------------------------------------------------
@@ -129,11 +130,11 @@ contains
          data = reshape([(lnd_data(lnd_index)%data, lnd_data(lnd_index)%topo, &
                         lnd_index = 1, npts_lnd)], &
                         [8,npts_lnd]))
-    
+
     call create_aVect_with_data_rows_are_fields(this%landfrac_l, &
          attr_tags = ['lfrac'], &
          data = reshape(l_landfrac, [1, npts_lnd]))
-    
+
     call create_aVect_with_data_rows_are_points(this%g2x, &
          attr_tags = ['Sg_ice_covered', 'Sg_topo       '], &
          data = reshape([frac_glc, topo_glc], [npts_glc, 2]))
@@ -148,7 +149,7 @@ contains
     ! This utility function wraps the call to the map_lnd2glc routine
 
     class(TestMapLnd2glc), intent(inout) :: this
-    class(vertical_gradient_calculator_base_type), intent(in) :: gradient_calculator
+    class(vertical_gradient_calculator_base_type), intent(inout) :: gradient_calculator
 
     ! Name of field to map. If not provided, uses 'data'. (This argument is available to
     ! test particular cases, such as having trailing blanks in the fieldname; for most
@@ -165,7 +166,7 @@ contains
     call map_lnd2glc(this%data_l, this%landfrac_l, this%g2x, l_fieldname, gradient_calculator, &
          this%mapper, this%data_g)
   end subroutine run_map_lnd2glc
-    
+
   subroutine verify_data_g(this, expected_data_glc, message)
     ! Verify that the remapped data (in this%data_g) matches expected_data_glc
 
@@ -174,10 +175,10 @@ contains
     character(len=*), intent(in) :: message  ! message printed if assertion fails
 
     real(r8), allocatable :: actual_data_glc(:)
-    
+
     actual_data_glc = aVect_exportRattr(this%data_g, 'data')
     @assertEqual(expected_data_glc, actual_data_glc, message=message, tolerance=tol)
-    
+
   end subroutine verify_data_g
 
   subroutine create_data_for_EC2_gradient2(my_map, gradient_calculator, lnd_data, &
@@ -189,7 +190,7 @@ contains
     ! complex.
 
     type(simple_map_type), intent(out) :: my_map
-    type(vertical_gradient_calculator_constant_type), intent(out) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type), intent(out) :: gradient_calculator
     type(lnd_data_type), intent(out) :: lnd_data
     real(r8), intent(out) :: frac_glc(1)
     real(r8), intent(out) :: topo_glc(1)
@@ -198,7 +199,8 @@ contains
     my_map = create_simple_map_with_one_source(ndest = 1)
 
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 1, gradient = 2._r8)
+         vgc_specified_ec_times_ptSquared(num_points = 1, &
+         nelev = n_elev_classes, gradient = 2._r8)
 
     ! data in elev class:   0       1       2        3
     lnd_data%topo(:) = [25._r8, 50._r8, 150._r8, 250._r8]
@@ -210,13 +212,13 @@ contains
     ! For expected data, note that we multiply the topo difference by 4:
     ! gradient * EC = 2 * 2 = 4
     expected_data_glc(1) = lnd_data%data(2) + 4._r8*(125._r8 - lnd_data%topo(2))
-    
+
   end subroutine create_data_for_EC2_gradient2
-    
+
   ! ========================================================================
   ! Actual tests
   ! ========================================================================
-  
+
   @Test
   subroutine test_mapLnd2glc_with_EC0_gradient0(this)
     ! Do a test of the map_lnd2glc routine with only an elevation class 0 destination
@@ -231,16 +233,17 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! ------------------------------------------------------------------------
     ! Setup
     ! ------------------------------------------------------------------------
 
     my_map = create_simple_map_with_one_source(ndest = npts_glc)
-    
+
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 1, gradient = 0._r8)
+         vgc_specified_ec_times_ptSquared(num_points = 1, &
+         nelev = n_elev_classes, gradient = 0._r8)
 
     ! data in elev class:   0       1       2        3
     lnd_data%topo(:) = [25._r8, 50._r8, 150._r8, 250._r8]
@@ -253,13 +256,13 @@ contains
     ! ------------------------------------------------------------------------
 
     call this%run_map_lnd2glc(gradient_calculator)
-    
+
     ! ------------------------------------------------------------------------
     ! Verify
     ! ------------------------------------------------------------------------
 
     expected_data_glc(1) = lnd_data%data(0)
-    
+
     call this%verify_data_g(expected_data_glc, message = "test_mapLnd2glc_with_EC0_gradient0")
 
   end subroutine test_mapLnd2glc_with_EC0_gradient0
@@ -271,14 +274,14 @@ contains
     class(TestMapLnd2glc), intent(inout) :: this
 
     type(lnd_data_type) :: lnd_data
-    
+
     integer, parameter :: npts_glc = 1
     real(r8), parameter :: frac_glc(npts_glc) = [1._r8]
     real(r8), parameter :: topo_glc(npts_glc) = [125._r8]
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! ------------------------------------------------------------------------
     ! Setup
@@ -287,20 +290,21 @@ contains
     my_map = create_simple_map_with_one_source(ndest = npts_glc)
 
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 1, gradient = 0._r8)
+         vgc_specified_ec_times_ptSquared(num_points = 1, &
+         nelev = n_elev_classes, gradient = 0._r8)
 
     ! data in elev class:   0       1       2        3
     lnd_data%topo(:) = [25._r8, 50._r8, 150._r8, 250._r8]
     lnd_data%data(:) = [10._r8, 11._r8, 12._r8,  13._r8]
 
     call this%setup_inputs(frac_glc, topo_glc, [lnd_data], my_map)
-    
+
     ! ------------------------------------------------------------------------
     ! Exercise
     ! ------------------------------------------------------------------------
 
     call this%run_map_lnd2glc(gradient_calculator)
-    
+
     ! ------------------------------------------------------------------------
     ! Verify
     ! ------------------------------------------------------------------------
@@ -310,7 +314,7 @@ contains
     call this%verify_data_g(expected_data_glc, message = "test_mapLnd2glc_with_EC2_gradient0")
 
   end subroutine test_mapLnd2glc_with_EC2_gradient0
-  
+
   @Test
   subroutine test_mapLnd2glc_with_multipleDest_gradient0(this)
     ! Do a test of the map_lnd2glc routine with multiple destination points, and a
@@ -320,7 +324,7 @@ contains
     class(TestMapLnd2glc), intent(inout) :: this
 
     type(lnd_data_type) :: lnd_data
-    
+
     ! On the glc grid, there are 4 grid cells: one bare land and one in each elevation class
     integer, parameter :: npts_glc = 4
     real(r8), parameter :: frac_glc(npts_glc) = [1._r8, 1._r8, 1._r8, 0._r8]
@@ -328,7 +332,7 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! ------------------------------------------------------------------------
     ! Setup
@@ -337,26 +341,27 @@ contains
     my_map = create_simple_map_with_one_source(ndest = npts_glc)
 
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 1, gradient = 0._r8)
+         vgc_specified_ec_times_ptSquared(num_points = 1, &
+         nelev = n_elev_classes, gradient = 0._r8)
     
     ! data in elev class:   0       1       2        3
     lnd_data%topo(:) = [25._r8, 50._r8, 150._r8, 250._r8]
     lnd_data%data(:) = [10._r8, 11._r8, 12._r8,  13._r8]
 
     call this%setup_inputs(frac_glc, topo_glc, [lnd_data], my_map)
-    
+
     ! ------------------------------------------------------------------------
     ! Exercise
     ! ------------------------------------------------------------------------
 
     call this%run_map_lnd2glc(gradient_calculator)
-    
+
     ! ------------------------------------------------------------------------
     ! Verify
     ! ------------------------------------------------------------------------
 
     expected_data_glc(:) = [lnd_data%data(3), lnd_data%data(2), lnd_data%data(1), lnd_data%data(0)]
-    
+
     call this%verify_data_g(expected_data_glc, message = "test_mapLnd2glc_with_multipleDest_gradient0")
 
   end subroutine test_mapLnd2glc_with_multipleDest_gradient0
@@ -368,14 +373,14 @@ contains
     class(TestMapLnd2glc), intent(inout) :: this
 
     type(lnd_data_type) :: lnd_data
-    
+
     integer, parameter :: npts_glc = 1
     real(r8) :: frac_glc(npts_glc)
     real(r8) :: topo_glc(npts_glc)
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! ------------------------------------------------------------------------
     ! Setup
@@ -384,13 +389,13 @@ contains
     call create_data_for_EC2_gradient2(my_map, gradient_calculator, lnd_data, &
          frac_glc, topo_glc, expected_data_glc)
     call this%setup_inputs(frac_glc, topo_glc, [lnd_data], my_map)
-    
+
     ! ------------------------------------------------------------------------
     ! Exercise
     ! ------------------------------------------------------------------------
 
     call this%run_map_lnd2glc(gradient_calculator)
-    
+
     ! ------------------------------------------------------------------------
     ! Verify
     ! ------------------------------------------------------------------------
@@ -405,14 +410,14 @@ contains
     class(TestMapLnd2glc), intent(inout) :: this
 
     type(lnd_data_type) :: lnd_data
-    
+
     integer, parameter :: npts_glc = 1
     real(r8) :: frac_glc(npts_glc)
     real(r8) :: topo_glc(npts_glc)
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! ------------------------------------------------------------------------
     ! Setup
@@ -421,13 +426,13 @@ contains
     call create_data_for_EC2_gradient2(my_map, gradient_calculator, lnd_data, &
          frac_glc, topo_glc, expected_data_glc)
     call this%setup_inputs(frac_glc, topo_glc, [lnd_data], my_map)
-    
+
     ! ------------------------------------------------------------------------
     ! Exercise
     ! ------------------------------------------------------------------------
 
     call this%run_map_lnd2glc(gradient_calculator, fieldname = 'data   ')
-    
+
     ! ------------------------------------------------------------------------
     ! Verify
     ! ------------------------------------------------------------------------
@@ -446,7 +451,7 @@ contains
     class(TestMapLnd2glc), intent(inout) :: this
 
     type(lnd_data_type) :: lnd_data(2)
-    
+
     integer, parameter :: npts_glc = 3
     ! For simplicity, all glc points are in elevation class 2:
     real(r8), parameter :: frac_glc(npts_glc) = [1._r8, 1._r8, 1._r8]
@@ -454,9 +459,9 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
-    
+
     ! ------------------------------------------------------------------------
     ! Setup
     ! ------------------------------------------------------------------------
@@ -467,22 +472,23 @@ contains
          overlap_weights = [1._r8, 1._r8, 0.4_r8, 0.6_r8])
 
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 2, gradient = 2._r8)
+         vgc_specified_ec_times_ptSquared(num_points = 2, &
+         nelev = n_elev_classes, gradient = 2._r8)
 
     ! data in elev class:  0       1       2        3
     lnd_data(1)%topo(:) = [25._r8, 50._r8, 150._r8, 250._r8]
     lnd_data(1)%data(:) = [10._r8, 11._r8, 12._r8,  13._r8]
     lnd_data(2)%topo(:) = [25._r8, 10._r8, 110._r8, 210._r8]
     lnd_data(2)%data(:) = [14._r8, 15._r8, 16._r8,  17._r8]
-    
+
     call this%setup_inputs(frac_glc, topo_glc, lnd_data, my_map)
-    
+
     ! ------------------------------------------------------------------------
     ! Exercise
     ! ------------------------------------------------------------------------
 
     call this%run_map_lnd2glc(gradient_calculator)
-    
+
     ! ------------------------------------------------------------------------
     ! Verify
     ! ------------------------------------------------------------------------
@@ -499,7 +505,7 @@ contains
     expected_data_glc(3) = &
          0.4_r8 * (lnd_data(1)%data(2) + 4._r8*(topo_glc(3) - lnd_data(1)%topo(2))) + &
          0.6_r8 * (lnd_data(2)%data(2) + 16._r8*(topo_glc(3) - lnd_data(2)%topo(2)))
-    
+
     call this%verify_data_g(expected_data_glc, message = "test_mapLnd2glc_with_multipleSource_multipleDest")
 
   end subroutine test_mapLnd2glc_with_multipleSource_multipleDest
@@ -522,7 +528,7 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! ------------------------------------------------------------------------
     ! Setup
@@ -534,7 +540,8 @@ contains
          overlap_weights = lnd_overlaps)
 
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 2, gradient = 0._r8)
+         vgc_specified_ec_times_ptSquared(num_points = 2, &
+         nelev = n_elev_classes, gradient = 0._r8)
 
     ! data in elev class:  0       1       2        3
     lnd_data(1)%topo(:) = [25._r8, 50._r8, 150._r8, 250._r8]
@@ -550,7 +557,7 @@ contains
     ! ------------------------------------------------------------------------
 
     call this%run_map_lnd2glc(gradient_calculator)
-    
+
     ! ------------------------------------------------------------------------
     ! Verify
     ! ------------------------------------------------------------------------
@@ -558,7 +565,7 @@ contains
     expected_data_glc(1) = (lnd_overlaps(1) * landfracs(1) * lnd_data(1)%data(0) + &
                             lnd_overlaps(2) * landfracs(2) * lnd_data(2)%data(0)) / &
                            (lnd_overlaps(1) * landfracs(1) + lnd_overlaps(2) * landfracs(2))
-                            
+
     call this%verify_data_g(expected_data_glc, message = "test_mapLnd2glc_with_landfrac_EC0_gradient0")
 
   end subroutine test_mapLnd2glc_with_landfrac_EC0_gradient0
@@ -581,7 +588,7 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! ------------------------------------------------------------------------
     ! Setup
@@ -593,7 +600,8 @@ contains
          overlap_weights = lnd_overlaps)
 
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 2, gradient = 0._r8)
+         vgc_specified_ec_times_ptSquared(num_points = 2, &
+         nelev = n_elev_classes, gradient = 0._r8)
 
     ! data in elev class:  0       1       2        3
     lnd_data(1)%topo(:) = [25._r8, 50._r8, 150._r8, 250._r8]
@@ -609,7 +617,7 @@ contains
     ! ------------------------------------------------------------------------
 
     call this%run_map_lnd2glc(gradient_calculator)
-    
+
     ! ------------------------------------------------------------------------
     ! Verify
     ! ------------------------------------------------------------------------
@@ -617,11 +625,11 @@ contains
     expected_data_glc(1) = (lnd_overlaps(1) * landfracs(1) * lnd_data(1)%data(2) + &
                             lnd_overlaps(2) * landfracs(2) * lnd_data(2)%data(2)) / &
                            (lnd_overlaps(1) * landfracs(1) + lnd_overlaps(2) * landfracs(2))
-                            
+
     call this%verify_data_g(expected_data_glc, message = "test_mapLnd2glc_with_landfrac_EC2_gradient0")
 
   end subroutine test_mapLnd2glc_with_landfrac_EC2_gradient0
-  
+
   @Test
   subroutine test_mapLnd2glc_conservation(this)
     ! This is a more complex test with multiple lnd points and multiple glc points, where
@@ -642,7 +650,7 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! These parameters give the fraction of each glc cell that is in lnd1 and the
     ! fraction in lnd2 (note that this sums to 1 for each glc point)
@@ -656,7 +664,7 @@ contains
     real(r8) :: topo_ec2_lnd1, topo_ec2_lnd2
     real(r8) :: lnd_sum
     real(r8) :: glc_sum
-    
+
     ! ------------------------------------------------------------------------
     ! Setup
     ! ------------------------------------------------------------------------
@@ -667,7 +675,8 @@ contains
          overlap_weights = [overlaps_with_lnd1, overlaps_with_lnd2])
 
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 2, gradient = 2._r8)
+         vgc_specified_ec_times_ptSquared(num_points = 2, &
+         nelev = n_elev_classes, gradient = 2._r8)
 
     areas_lnd1(:) = overlaps_with_lnd1(:) * area_glc(:)
     areas_lnd2(:) = overlaps_with_lnd2(:) * area_glc(:)
@@ -692,7 +701,7 @@ contains
     ! cell in elevation class 1. The topographic heights of elevation classes 0 and 3 are
     ! arbitrary. (The topographic height of elevation class 0 doesn't matter for
     ! conservation, and there is no CISM cell in elevation class 3.)
-     
+
     ! data in elev class:  0       1       2              3
     lnd_data(1)%topo(:) = [25._r8, 25._r8, topo_ec2_lnd1, 250._r8]
     lnd_data(1)%data(:) = [10._r8, 11._r8, 12._r8,        13._r8]
@@ -700,13 +709,13 @@ contains
     lnd_data(2)%data(:) = [14._r8, 15._r8, 16._r8,        17._r8]
 
     call this%setup_inputs(frac_glc, topo_glc, lnd_data, my_map)
-    
+
     ! ------------------------------------------------------------------------
     ! Exercise
     ! ------------------------------------------------------------------------
 
     call this%run_map_lnd2glc(gradient_calculator)
-    
+
     ! ------------------------------------------------------------------------
     ! Verify: Ensure that the actual glc values are the same as expected
     ! ------------------------------------------------------------------------
@@ -732,7 +741,7 @@ contains
          overlaps_with_lnd2(4) * (lnd_data(2)%data(2) + 16._r8*(topo_glc(4) - lnd_data(2)%topo(2)))
 
     call this%verify_data_g(expected_data_glc, message = "test_mapLnd2glc_conservation")
-    
+
     ! ------------------------------------------------------------------------
     ! Verify: Ensure conservation
     ! ------------------------------------------------------------------------
@@ -747,7 +756,7 @@ contains
     ec_areas_lnd2(1) = areas_lnd2(2)
     ec_areas_lnd2(2) = areas_lnd2(3) + areas_lnd2(4)
     ec_areas_lnd2(3) = 0._r8
-    
+
     ! Determine weighted sum of field on the land grid
     lnd_sum = sum(ec_areas_lnd1(:) * lnd_data(1)%data(:) + &
          ec_areas_lnd2(:) * lnd_data(2)%data(:))
@@ -755,10 +764,10 @@ contains
     ! Determine weighted sum of EXPECTED field on the glc grid (we have already shown that
     ! the actual field on the glc grid is the same as expected)
     glc_sum = sum(area_glc(:) * expected_data_glc(:))
-    
+
     ! Show these are the same
     @assertEqual(glc_sum, lnd_sum, message='Conservation', tolerance=tol)
-    
+
   end subroutine test_mapLnd2glc_conservation
-    
+
 end module test_map_lnd2glc

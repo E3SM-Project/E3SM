@@ -100,7 +100,7 @@ Use clm, stub land or no lnd model in cam build: clm, slnd, none
 <entry id="rof" valid_values="rtm,srof,none" value="rtm">
 Use rtm, stub runoff or no runoff model in cam build: rtm, srof, none
 </entry>
-<entry id="ocn" valid_values="docn,dom,socn,aquaplanet,pop,mpas-o" value="docn">
+<entry id="ocn" valid_values="docn,dom,socn,aquaplanet,pop,mpaso" value="docn">
 Use data ocean model (docn or dom), stub ocean (socn), or aqua planet ocean
 (aquaplanet) in cam build.  When built from the CESM scripts the value of
 ocn may be set to pop, but this doesn't impact how CAM is built.

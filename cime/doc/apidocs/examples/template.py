@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """template python program to do something useful with example documentation markup.
 
-    A Template python program with examples of function calls and associated 
+    A Template python program with examples of function calls and associated
     documentation markup.
 
     Author:

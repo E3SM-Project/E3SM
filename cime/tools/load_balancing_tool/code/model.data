@@ -7,7 +7,7 @@ param Tsync := 3.0;
 param Etarget := 0.5;
 param MinNodes := 64;
 param MaxNodes := 48160;
- 
+
 param rawx:   1 2 3 4 5 :=
           'atm'  32 64 128 256 512
           'ocn'  32 64 128 256 512

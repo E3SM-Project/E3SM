@@ -295,13 +295,14 @@ module clm_varctl
   logical, public :: use_vancouver       = .false.
   logical, public :: use_mexicocity      = .false.
   logical, public :: use_noio            = .false.
-  logical, public :: do_varsoil          = .false.      ! Added by MAB, 6/8/16
+  logical, public :: do_varsoil          = .false.
 
   !----------------------------------------------------------
   ! VSFM switches
   !----------------------------------------------------------
-  logical          , public :: use_vsfm          = .false.
-  character(len=32), public :: vsfm_satfunc_type = 'smooth_brooks_corey_bz3'
+  logical          , public :: use_vsfm                    = .false.
+  character(len=32), public :: vsfm_satfunc_type           = 'smooth_brooks_corey_bz3'
+  logical          , public :: vsfm_use_dynamic_linesearch = .false.
 
   !----------------------------------------------------------
   ! To retrieve namelist

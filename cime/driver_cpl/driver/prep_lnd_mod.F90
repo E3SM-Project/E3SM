@@ -1,6 +1,6 @@
 module prep_lnd_mod
 
-  use shr_kind_mod    , only: r8 => SHR_KIND_R8 
+  use shr_kind_mod    , only: r8 => SHR_KIND_R8
   use shr_kind_mod    , only: cs => SHR_KIND_CS
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_kind_mod    , only: cxx => SHR_KIND_CXX
@@ -8,9 +8,9 @@ module prep_lnd_mod
   use seq_comm_mct    , only: num_inst_atm, num_inst_rof, num_inst_glc
   use seq_comm_mct    , only: num_inst_lnd, num_inst_frc
   use seq_comm_mct    , only: CPLID, LNDID, logunit
-  use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs                               
-  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata  
-  use seq_map_type_mod 
+  use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs
+  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
+  use seq_map_type_mod
   use seq_map_mod
   use seq_flds_mod
   use t_drv_timers_mod
@@ -63,7 +63,7 @@ module prep_lnd_mod
   type(seq_map), pointer :: mapper_Sg2l           ! currently unused (all g2l mappings use the flux mapper)
   type(seq_map), pointer :: mapper_Fg2l
 
-  ! attribute vectors 
+  ! attribute vectors
   type(mct_aVect), pointer :: a2x_lx(:) ! Atm export, lnd grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: r2x_lx(:) ! Rof export, lnd grid, lnd pes - allocated in lnd gc
   type(mct_aVect), pointer :: g2x_lx(:) ! Glc export, lnd grid, cpl pes - allocated in driver
@@ -87,7 +87,7 @@ contains
   !================================================================================================
 
   subroutine prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd)
-       
+
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -132,11 +132,11 @@ contains
     allocate(mapper_Fg2l)
 
     if (lnd_present) then
-       
+
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
-       l2x_lx => component_get_c2x_cx(lnd(1)) 
+       l2x_lx => component_get_c2x_cx(lnd(1))
        lsize_l = mct_aVect_lsize(l2x_lx)
 
        allocate(a2x_lx(num_inst_atm))
@@ -147,7 +147,7 @@ contains
        allocate(r2x_lx(num_inst_rof))
        do eri = 1,num_inst_rof
           call mct_aVect_init(r2x_lx(eri), rlist=seq_flds_r2x_fields, lsize=lsize_l)
-          call mct_aVect_zero(r2x_lx(eri)) 
+          call mct_aVect_zero(r2x_lx(eri))
        end do
        allocate(g2x_lx(num_inst_glc))
        do egi = 1,num_inst_glc
@@ -155,13 +155,13 @@ contains
           call mct_aVect_zero(g2x_lx(egi))
        end do
 
-       samegrid_al = .true. 
+       samegrid_al = .true.
        samegrid_lr = .true.
        samegrid_lg = .true.
        if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
        if (trim(lnd_gnam) /= trim(rof_gnam)) samegrid_lr = .false.
        if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
-       
+
        if (rof_c2_lnd) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -257,7 +257,7 @@ contains
                              glc2lnd_ec_extra_fields)
 
   end subroutine prep_lnd_set_glc2lnd_fields
-    
+
   !================================================================================================
 
   subroutine prep_lnd_mrg(infodata, timer_mrg)
@@ -275,7 +275,7 @@ contains
     type(mct_aVect), pointer :: x2l_lx
     character(*), parameter  :: subname = '(prep_lnd_mrg)'
     !---------------------------------------------------------------
-    
+
     call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
     do eli = 1,num_inst_lnd
        ! Use fortran mod to address ensembles in merge
@@ -295,14 +295,14 @@ contains
   subroutine prep_lnd_merge( a2x_l, r2x_l, g2x_l, x2l_l )
     !---------------------------------------------------------------
     ! Description
-    ! Create input land state directly from atm, runoff and glc outputs 
+    ! Create input land state directly from atm, runoff and glc outputs
     !
     ! Arguments
-    type(mct_aVect), intent(in)     :: a2x_l 
-    type(mct_aVect), intent(in)     :: r2x_l 
-    type(mct_aVect), intent(in)     :: g2x_l 
-    type(mct_aVect), intent(inout)  :: x2l_l 
-    !----------------------------------------------------------------------- 
+    type(mct_aVect), intent(in)     :: a2x_l
+    type(mct_aVect), intent(in)     :: r2x_l
+    type(mct_aVect), intent(in)     :: g2x_l
+    type(mct_aVect), intent(inout)  :: x2l_l
+    !-----------------------------------------------------------------------
     integer       :: nflds,i,i1,o1
     logical       :: iamroot
     logical, save :: first_time = .true.
@@ -313,7 +313,7 @@ contains
     type(mct_aVect_sharedindices),save :: g2x_sharedindices
     character(*), parameter   :: subname = '(prep_lnd_merge) '
 
-    !----------------------------------------------------------------------- 
+    !-----------------------------------------------------------------------
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 
@@ -448,7 +448,7 @@ contains
        ! fields to be mapped conservatively.)
        call seq_map_map(mapper_Fg2l, g2x_gx, g2x_lx(egi), &
             fldlist = glc2lnd_non_ec_fields, norm=.true.)
-       
+
        ! Map fields that are separated by elevation class on the land grid
        call map_glc2lnd_ec( &
             g2x_g = g2x_gx, &
@@ -467,42 +467,42 @@ contains
 
   function prep_lnd_get_a2x_lx()
     type(mct_aVect), pointer :: prep_lnd_get_a2x_lx(:)
-    prep_lnd_get_a2x_lx => a2x_lx(:)   
-  end function prep_lnd_get_a2x_lx 
+    prep_lnd_get_a2x_lx => a2x_lx(:)
+  end function prep_lnd_get_a2x_lx
 
   function prep_lnd_get_r2x_lx()
     type(mct_aVect), pointer :: prep_lnd_get_r2x_lx(:)
-    prep_lnd_get_r2x_lx => r2x_lx(:)   
-  end function prep_lnd_get_r2x_lx 
+    prep_lnd_get_r2x_lx => r2x_lx(:)
+  end function prep_lnd_get_r2x_lx
 
   function prep_lnd_get_g2x_lx()
     type(mct_aVect), pointer :: prep_lnd_get_g2x_lx(:)
-    prep_lnd_get_g2x_lx => g2x_lx(:)   
-  end function prep_lnd_get_g2x_lx 
+    prep_lnd_get_g2x_lx => g2x_lx(:)
+  end function prep_lnd_get_g2x_lx
 
   function prep_lnd_get_mapper_Sa2l()
     type(seq_map), pointer :: prep_lnd_get_mapper_Sa2l
-    prep_lnd_get_mapper_Sa2l => mapper_Sa2l  
+    prep_lnd_get_mapper_Sa2l => mapper_Sa2l
   end function prep_lnd_get_mapper_Sa2l
 
   function prep_lnd_get_mapper_Fa2l()
     type(seq_map), pointer :: prep_lnd_get_mapper_Fa2l
-    prep_lnd_get_mapper_Fa2l => mapper_Fa2l  
+    prep_lnd_get_mapper_Fa2l => mapper_Fa2l
   end function prep_lnd_get_mapper_Fa2l
 
   function prep_lnd_get_mapper_Fr2l()
     type(seq_map), pointer :: prep_lnd_get_mapper_Fr2l
-    prep_lnd_get_mapper_Fr2l => mapper_Fr2l  
+    prep_lnd_get_mapper_Fr2l => mapper_Fr2l
   end function prep_lnd_get_mapper_Fr2l
 
   function prep_lnd_get_mapper_Sg2l()
     type(seq_map), pointer :: prep_lnd_get_mapper_Sg2l
-    prep_lnd_get_mapper_Sg2l => mapper_Sg2l  
+    prep_lnd_get_mapper_Sg2l => mapper_Sg2l
   end function prep_lnd_get_mapper_Sg2l
 
   function prep_lnd_get_mapper_Fg2l()
     type(seq_map), pointer :: prep_lnd_get_mapper_Fg2l
-    prep_lnd_get_mapper_Fg2l => mapper_Fg2l  
+    prep_lnd_get_mapper_Fg2l => mapper_Fg2l
   end function prep_lnd_get_mapper_Fg2l
-  
+
 end module prep_lnd_mod

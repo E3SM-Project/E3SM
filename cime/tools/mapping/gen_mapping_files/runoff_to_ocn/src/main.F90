@@ -71,7 +71,7 @@ PROGRAM main
 ! PURPOSE:
 !   Take a scrip conservative map matrix, runoff->ocean (unmasked ocean)
 !   and produce a runoff->ocean map suitable for use in CCSM
-! 
+!
 ! Step 1: Read raw grids and genearate nearest neighbor mapping file
 !         (or read nearest neighbor map)
 ! Step 2: Create the smoothing map (and sort it)
@@ -103,7 +103,7 @@ PROGRAM main
    step3         = .true.
 
    ! These two variables typically don't appear in namelist
-   lmake_rSCRIP  = .false.    
+   lmake_rSCRIP  = .false.
    file_roff_out = "runoff.nc"
 
    open (10,file="runoff_map.nml",status="old",action="read")
@@ -155,7 +155,7 @@ if (step1) then
    call map_gennn0(map_orig)    ! non-optimized nn map generation
    call mapsort_sort(map_orig)  ! sort map
    call map_check(map_orig)
-   call map_write(map_orig, trim(file_nn)) 
+   call map_write(map_orig, trim(file_nn))
 else if (step2.or.step3) then
    !----------------------------------------------------------------------------
    write(6,F10) "Step 1: read nearest neighbor map"
@@ -181,7 +181,7 @@ if (step2) then
    call smooth(map_smooth,eFold,rMax)
    call mapsort_sort(map_smooth)
    call map_check(map_smooth)
-   call map_write(map_smooth, trim(file_smooth)) 
+   call map_write(map_smooth, trim(file_smooth))
 else if (step3) then
    !----------------------------------------------------------------------------
    write(6,F10) "Step 2:  read smoothing map"
@@ -207,13 +207,13 @@ if (step3) then
    call map_matMatMult(map_orig,map_new,map_smooth) ! mult(A,B,S): B=S*A
    call mapsort_sort(map_new)
    call map_check(map_new)
-   call map_write(map_new, trim(file_new)) 
+   call map_write(map_new, trim(file_new))
 else if (.not.(step1.or.step2)) then
    ! If we want to generate the rof->ocn nearest-neighbor or ocn->ocn smooth
    ! map, we won't necessarily have the rof->ocn nnsm map to sort and check.
    ! It only makes sense to call this step if we are skipping all three
    ! steps.
-   call map_read(map_new, trim(file_new)) 
+   call map_read(map_new, trim(file_new))
    call mapsort_sort(map_new)
    call map_check(map_new)
 endif

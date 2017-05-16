@@ -29,8 +29,8 @@ module shr_strconvert_mod
 !
 ! - Since the main purpose of toString is to provide a human-readable
 !   representation of a type, especially for documentation or debugging
-!   purposes, refrain from printing large array components in their entirety 
-!   (instead consider printing only the shape, or statistics such as 
+!   purposes, refrain from printing large array components in their entirety
+!   (instead consider printing only the shape, or statistics such as
 !   min/mean/max for arrays of numbers).
 
 use shr_kind_mod, only: &

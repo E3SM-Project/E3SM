@@ -23,7 +23,7 @@ Originator: jedwards
 Date: Nov 14, 2013
 Model: genf90
 Version: genf90_131114
-One-line summary: minor change to avoid undefined variable 
+One-line summary: minor change to avoid undefined variable
 
 ===========================
 Originator: jedwards
@@ -40,7 +40,7 @@ Date: Apr 02, 2013
 Model: genf90
 Version: genf90_130402
 One-line summary: correct when dtypes.h is generated
-	
+
 	M genf90.pl
 
 ===========================
@@ -50,7 +50,7 @@ Model: genf90
 Version: genf90_130320a
 One-line summary: generate helper file dtypes.h
 	M genf90.pl
-	
+
 ===========================
 Originator: jedwards
 Date: Mar 20, 2013

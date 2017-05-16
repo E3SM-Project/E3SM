@@ -1,4 +1,4 @@
-#! /usr/bin/csh -f 
+#! /usr/bin/csh -f
 ####################################################
 #
 #  Example run script for LoadLeveler, the queue
@@ -15,15 +15,15 @@
 # @ tasks_per_node = 4
 # @ checkpoint = no
 # @ node_usage = not_shared
-# @ network.MPI = csss,not_shared,us 
+# @ network.MPI = csss,not_shared,us
 # @ class = share
 # @ notification = never
 # @ queue
 
 setenv MP_STDOUTMODE     ordered
 setenv MP_INFOLEVEL      2
- 
-echo "`date` -- UTMCT EXECUTION BEGINS HERE" 
+
+echo "`date` -- UTMCT EXECUTION BEGINS HERE"
 poe twocon
-echo "`date` -- UTMCT EXECUTION finishes HERE" 
+echo "`date` -- UTMCT EXECUTION finishes HERE"
 

@@ -2,12 +2,12 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_SpatialIntegralV - Spatial Integrals and Averages using vectors of weights
 !
-! !DESCRIPTION:  This module provides spatial integration and averaging 
+! !DESCRIPTION:  This module provides spatial integration and averaging
 ! services for the MCT similar to those in {\tt m\_SpatialIntegral} except
 ! the weights are provided by an input vector instead of through a
 ! {\tt GeneralGrid}.  See the description for {\tt m\_SpatialIntegral} for
@@ -33,10 +33,10 @@
       public :: MaskedSpatialIntegralV  ! Masked Spatial Integral
       public :: MaskedSpatialAverageV   ! MaskedSpatial Area Average
 
-      public :: PairedSpatialIntegralsV ! A Pair of Spatial 
-                                      ! Integrals 
+      public :: PairedSpatialIntegralsV ! A Pair of Spatial
+                                      ! Integrals
 
-      public :: PairedSpatialAveragesV  ! A Pair of Spatial 
+      public :: PairedSpatialAveragesV  ! A Pair of Spatial
                                       ! Area Averages
 
       interface SpatialIntegralV ; module procedure &
@@ -81,36 +81,36 @@
 !
 ! !DESCRIPTION:
 ! This routine computes spatial integrals of the {\tt REAL} attributes
-! of the {\tt REAL} attributes of the input {\tt AttrVect} argument 
-! {\tt inAv}.  {\tt SpatialIntegralRAttrV\_()} takes the input 
-! {\tt AttrVect} argument {\tt inAv} and computes the spatial 
-! integral using weights stored in the input {\tt REAL} array argument 
-! {\tt Weights}.  The integral of each {\tt REAL} attribute is returned 
-! in the output {\tt AttrVect} argument {\tt outAv}. If 
-! {\tt SpatialIntegralRAttrV\_()} is invoked with the optional {\tt LOGICAL} 
-! input argument {\tt SumWeights} set as {\tt .TRUE.}, then the weights 
-! are also summed and stored in {\tt outAv} (and can be referenced with 
-! the attribute name {\tt WeightTag}.  If {\tt SpatialIntegralRAttrV\_()} is 
-! invoked with the optional {\tt INTEGER} argument {\tt comm} (a Fortran 
-! MPI communicator handle), the summation operations for the integral are 
-! completed on the local process, then reduced across the communicator, 
+! of the {\tt REAL} attributes of the input {\tt AttrVect} argument
+! {\tt inAv}.  {\tt SpatialIntegralRAttrV\_()} takes the input
+! {\tt AttrVect} argument {\tt inAv} and computes the spatial
+! integral using weights stored in the input {\tt REAL} array argument
+! {\tt Weights}.  The integral of each {\tt REAL} attribute is returned
+! in the output {\tt AttrVect} argument {\tt outAv}. If
+! {\tt SpatialIntegralRAttrV\_()} is invoked with the optional {\tt LOGICAL}
+! input argument {\tt SumWeights} set as {\tt .TRUE.}, then the weights
+! are also summed and stored in {\tt outAv} (and can be referenced with
+! the attribute name {\tt WeightTag}.  If {\tt SpatialIntegralRAttrV\_()} is
+! invoked with the optional {\tt INTEGER} argument {\tt comm} (a Fortran
+! MPI communicator handle), the summation operations for the integral are
+! completed on the local process, then reduced across the communicator,
 ! with all processes receiving the result.
 !
-! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv} 
-! and the input array {\tt Weights} must be equal.  That is, there must be 
-! a one-to-one correspondence between the field point values stored 
+! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv}
+! and the input array {\tt Weights} must be equal.  That is, there must be
+! a one-to-one correspondence between the field point values stored
 ! in {\tt inAv} and the point weights stored in {\tt Weights}.
 !
-! {\bf N.B.:  }  If {\tt SpatialIntegralRAttrV\_()} is invoked with the 
-! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}. 
-! In this case, the none of {\tt REAL} attribute tags in {\tt inAv} may be 
-! named the same as the string contained in {\tt WeightTag}, which is an 
-! attribute name reserved for the sum of the weights in the output {\tt AttrVect} 
+! {\bf N.B.:  }  If {\tt SpatialIntegralRAttrV\_()} is invoked with the
+! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}.
+! In this case, the none of {\tt REAL} attribute tags in {\tt inAv} may be
+! named the same as the string contained in {\tt WeightTag}, which is an
+! attribute name reserved for the sum of the weights in the output {\tt AttrVect}
 ! {\tt outAv}.
 !
-! {\bf N.B.:  } The output {\tt AttrVect} argument {\tt outAv} is an 
-! allocated data structure.  The user must deallocate it using the routine 
-! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to do so 
+! {\bf N.B.:  } The output {\tt AttrVect} argument {\tt outAv} is an
+! allocated data structure.  The user must deallocate it using the routine
+! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to do so
 ! will result in a memory leak.
 !
 ! !INTERFACE:
@@ -309,25 +309,25 @@
 !
 ! !DESCRIPTION:
 ! This routine computes spatial averages of the {\tt REAL} attributes
-! of the input {\tt AttrVect} argument {\tt inAv}.  
-! {\tt SpatialAverageRAttrV\_()} takes the input {\tt AttrVect} argument 
-! {\tt inAv} and computes the spatial average using weights 
-! stored in the {\tt REAL} array {\tt Weights}.  The average of each 
-! {\tt REAL} attribute is returned in the output {\tt AttrVect} argument 
-! {\tt outAv}.  If {\tt SpatialAverageRAttrV\_()} is invoked with the 
-! optional {\tt INTEGER} argument {\tt comm} (a Fortran MPI communicator 
-! handle), the summation operations for the average are completed on the 
-! local process, then reduced across the communicator, with all processes 
+! of the input {\tt AttrVect} argument {\tt inAv}.
+! {\tt SpatialAverageRAttrV\_()} takes the input {\tt AttrVect} argument
+! {\tt inAv} and computes the spatial average using weights
+! stored in the {\tt REAL} array {\tt Weights}.  The average of each
+! {\tt REAL} attribute is returned in the output {\tt AttrVect} argument
+! {\tt outAv}.  If {\tt SpatialAverageRAttrV\_()} is invoked with the
+! optional {\tt INTEGER} argument {\tt comm} (a Fortran MPI communicator
+! handle), the summation operations for the average are completed on the
+! local process, then reduced across the communicator, with all processes
 ! receiving the result.
 !
-! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv} 
-! and the input array {\tt Weights} must be equal.  That is, there must 
-! be a one-to-one correspondence between the field point values stored 
+! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv}
+! and the input array {\tt Weights} must be equal.  That is, there must
+! be a one-to-one correspondence between the field point values stored
 ! in {\tt inAv} and the point weights stored in {\tt Weights}.
 !
-! {\bf N.B.:  } The output {\tt AttrVect} argument {\tt outAv} is an 
-! allocated data structure.  The user must deallocate it using the routine 
-! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to do so 
+! {\bf N.B.:  } The output {\tt AttrVect} argument {\tt outAv} is an
+! allocated data structure.  The user must deallocate it using the routine
+! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to do so
 ! will result in a memory leak.
 !
 ! !INTERFACE:
@@ -397,12 +397,12 @@
   call AttrVect_init(outAv, iList=nullIList, rList=inAv%rList, lsize=1)
   call AttrVect_zero(outAv)
 
-       ! Divide by global weight sum to compute spatial averages from 
+       ! Divide by global weight sum to compute spatial averages from
        ! spatial integrals.
 
   do i=1,AttrVect_nRAttr(outAv)
      outAv%rAttr(i,1) = integratedAv%rAttr(i,1) &
-	                               / integratedAv%rAttr(iweight,1) 
+	                               / integratedAv%rAttr(iweight,1)
   end do
 
        ! Clean up temporary AttrVect:
@@ -487,12 +487,12 @@
   call AttrVect_init(outAv, iList=nullIList, rList=inAv%rList, lsize=1)
   call AttrVect_zero(outAv)
 
-       ! Divide by global weight sum to compute spatial averages from 
+       ! Divide by global weight sum to compute spatial averages from
        ! spatial integrals.
 
   do i=1,AttrVect_nRAttr(outAv)
      outAv%rAttr(i,1) = integratedAv%rAttr(i,1) &
-	                               / integratedAv%rAttr(iweight,1) 
+	                               / integratedAv%rAttr(iweight,1)
   end do
 
        ! Clean up temporary AttrVect:
@@ -507,41 +507,41 @@
 !
 ! !IROUTINE: MaskedSpatialIntegralRAttrVSP_ - Masked spatial integral.
 !
-! !DESCRIPTION: 
-! This routine computes masked spatial integrals of the {\tt REAL} 
-! attributes of the input {\tt AttrVect} argument {\tt inAv}, returning 
-! the masked integrals in the output {\tt AttrVect} argument {\tt outAv}.  
-! The masked integral is computed using weights stored in the input 
-! {\tt REAL} array argument {\tt SpatialWeights}.  Integer masking (if 
+! !DESCRIPTION:
+! This routine computes masked spatial integrals of the {\tt REAL}
+! attributes of the input {\tt AttrVect} argument {\tt inAv}, returning
+! the masked integrals in the output {\tt AttrVect} argument {\tt outAv}.
+! The masked integral is computed using weights stored in the input
+! {\tt REAL} array argument {\tt SpatialWeights}.  Integer masking (if
 ! desired) is provided in the optional input {\tt INTEGER} array {\tt iMask},
-! and real masking (if desired) is provided in the optional input {\tt REAL} 
-! array {\tt rMask}.  If {\tt SpatialIntegralRAttrV\_()} is invoked with the 
-! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}, 
-! then the weights are also summed and stored in {\tt outAv} (and can be 
-! referenced with the attribute name defined by the optional input 
-! {\tt CHARACTER} argument {\tt WeightSumTag}.  If 
-! {\tt SpatialIntegralRAttrV\_()} is invoked with the optional {\tt INTEGER} 
-! argument {\tt comm} (a Fortran MPI communicator handle), the summation 
-! operations for the integral are completed on the local process, then 
-! reduced across the communicator, with all processes receiving the result.  
-! Otherwise, the integral is assumed to be local (or equivalent to a global 
+! and real masking (if desired) is provided in the optional input {\tt REAL}
+! array {\tt rMask}.  If {\tt SpatialIntegralRAttrV\_()} is invoked with the
+! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.},
+! then the weights are also summed and stored in {\tt outAv} (and can be
+! referenced with the attribute name defined by the optional input
+! {\tt CHARACTER} argument {\tt WeightSumTag}.  If
+! {\tt SpatialIntegralRAttrV\_()} is invoked with the optional {\tt INTEGER}
+! argument {\tt comm} (a Fortran MPI communicator handle), the summation
+! operations for the integral are completed on the local process, then
+! reduced across the communicator, with all processes receiving the result.
+! Otherwise, the integral is assumed to be local (or equivalent to a global
 ! address space).
 !
-! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv} 
-! and the input array {\tt Weights} must be equal.  That is, there must be 
-! a one-to-one correspondence between the field point values stored 
+! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv}
+! and the input array {\tt Weights} must be equal.  That is, there must be
+! a one-to-one correspondence between the field point values stored
 ! in {\tt inAv} and the point weights stored in {\tt SpatialWeights}.
 !
-! {\bf N.B.:  }  If {\tt SpatialIntegralRAttrV\_()} is invoked with the 
-! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}. 
-! In this case, the none of {\tt REAL} attribute tags in {\tt inAv} may be 
-! named the same as the string contained in {\tt WeightSumTag}, which is an 
-! attribute name reserved for the sum of the weights in the output {\tt AttrVect} 
+! {\bf N.B.:  }  If {\tt SpatialIntegralRAttrV\_()} is invoked with the
+! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}.
+! In this case, the none of {\tt REAL} attribute tags in {\tt inAv} may be
+! named the same as the string contained in {\tt WeightSumTag}, which is an
+! attribute name reserved for the sum of the weights in the output {\tt AttrVect}
 ! {\tt outAv}.
 !
-! {\bf N.B.:  } The output {\tt AttrVect} argument {\tt outAv} is an 
-! allocated data structure.  The user must deallocate it using the routine 
-! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to do so 
+! {\bf N.B.:  } The output {\tt AttrVect} argument {\tt outAv} is an
+! allocated data structure.  The user must deallocate it using the routine
+! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to do so
 ! will result in a memory leak.
 !
 ! !INTERFACE:
@@ -669,7 +669,7 @@
 	else
 	   do i=1,length
 	      Weights(i) = SpatialWeights(i)
-	   end do	   
+	   end do
 	endif ! if(present(iMask))...
      endif ! if(present(rMask))...
 
@@ -732,13 +732,13 @@
 		 write(stderr,'(3a,i8,a,i8)') myname_, &
 		      ':: invalid value for integer', &
 		      'mask entry iMask(',i,') = ',iMask(i)
-		 call die(myname_)		 
+		 call die(myname_)
 	      end select
 	   end do
-	else ! straight assignment of SpatialWeights(:) 
+	else ! straight assignment of SpatialWeights(:)
 	   do i=1,length
 		 Weights(i) = SpatialWeights(i)
-	   end do	   
+	   end do
 	endif ! if(present(iMask))...
      endif ! if(present(rMask))...
 
@@ -749,7 +749,7 @@
        ! compute the masked weighted sum:
 
   if(present(comm)) then ! compute distributed AllReduce-style sum:
-	
+
      if(mySumWeights) then ! return the global sum of the weights in outAV
 	call AttrVect_GlobalWeightedSumRAttr(inAV, outAV, Weights, &
    	                                     comm, WeightSumTag)
@@ -785,7 +785,7 @@
 !
 ! !IROUTINE: MaskedSpatialIntegralRAttrVDP_ - Masked spatial integral.
 !
-! !DESCRIPTION: 
+! !DESCRIPTION:
 ! Double precision version of MaskedSpatialIntegralRAttrVSP_
 !
 ! !INTERFACE:
@@ -912,7 +912,7 @@
 	else
 	   do i=1,length
 	      Weights(i) = SpatialWeights(i)
-	   end do	   
+	   end do
 	endif ! if(present(iMask))...
      endif ! if(present(rMask))...
 
@@ -975,13 +975,13 @@
 		 write(stderr,'(3a,i8,a,i8)') myname_, &
 		      ':: invalid value for integer', &
 		      'mask entry iMask(',i,') = ',iMask(i)
-		 call die(myname_)		 
+		 call die(myname_)
 	      end select
 	   end do
-	else ! straight assignment of SpatialWeights(:) 
+	else ! straight assignment of SpatialWeights(:)
 	   do i=1,length
 		 Weights(i) = SpatialWeights(i)
-	   end do	   
+	   end do
 	endif ! if(present(iMask))...
      endif ! if(present(rMask))...
 
@@ -992,7 +992,7 @@
        ! compute the masked weighted sum:
 
   if(present(comm)) then ! compute distributed AllReduce-style sum:
-	
+
      if(mySumWeights) then ! return the global sum of the weights in outAV
 	call AttrVect_GlobalWeightedSumRAttr(inAV, outAV, Weights, &
    	                                     comm, WeightSumTag)
@@ -1031,36 +1031,36 @@
 !
 ! !DESCRIPTION: [NEEDS **LOTS** of work...]
 ! This routine computes spatial integrals of the {\tt REAL} attributes
-! of the {\tt REAL} attributes of the input {\tt AttrVect} argument 
-! {\tt inAv}.  {\tt SpatialIntegralRAttrV\_()} takes the input 
-! {\tt AttrVect} argument {\tt inAv} and computes the spatial 
-! integral using weights stored in the input {\tt REAL} array argument 
-! {\tt Weights}.  The integral of each {\tt REAL} attribute is returned 
-! in the output {\tt AttrVect} argument {\tt outAv}. If 
-! {\tt SpatialIntegralRAttrV\_()} is invoked with the optional {\tt LOGICAL} 
-! input argument {\tt SumWeights} set as {\tt .TRUE.}, then the weights 
-! are also summed and stored in {\tt outAv} (and can be referenced with 
-! the attribute name {\tt WeightTag}.  If {\tt SpatialIntegralRAttrV\_()} is 
-! invoked with the optional {\tt INTEGER} argument {\tt comm} (a Fortran 
-! MPI communicator handle), the summation operations for the integral are 
-! completed on the local process, then reduced across the communicator, 
+! of the {\tt REAL} attributes of the input {\tt AttrVect} argument
+! {\tt inAv}.  {\tt SpatialIntegralRAttrV\_()} takes the input
+! {\tt AttrVect} argument {\tt inAv} and computes the spatial
+! integral using weights stored in the input {\tt REAL} array argument
+! {\tt Weights}.  The integral of each {\tt REAL} attribute is returned
+! in the output {\tt AttrVect} argument {\tt outAv}. If
+! {\tt SpatialIntegralRAttrV\_()} is invoked with the optional {\tt LOGICAL}
+! input argument {\tt SumWeights} set as {\tt .TRUE.}, then the weights
+! are also summed and stored in {\tt outAv} (and can be referenced with
+! the attribute name {\tt WeightTag}.  If {\tt SpatialIntegralRAttrV\_()} is
+! invoked with the optional {\tt INTEGER} argument {\tt comm} (a Fortran
+! MPI communicator handle), the summation operations for the integral are
+! completed on the local process, then reduced across the communicator,
 ! with all processes receiving the result.
 !
-! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv} 
-! and the input array {\tt Weights} must be equal.  That is, there must be 
-! a one-to-one correspondence between the field point values stored 
+! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv}
+! and the input array {\tt Weights} must be equal.  That is, there must be
+! a one-to-one correspondence between the field point values stored
 ! in {\tt inAv} and the point weights stored in {\tt Weights}.
 !
-! {\bf N.B.:  }  If {\tt SpatialIntegralRAttrV\_()} is invoked with the 
-! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}. 
-! In this case, the none of {\tt REAL} attribute tags in {\tt inAv} may be 
-! named the same as the string contained in {\tt WeightTag}, which is an 
-! attribute name reserved for the sum of the weights in the output {\tt AttrVect} 
+! {\bf N.B.:  }  If {\tt SpatialIntegralRAttrV\_()} is invoked with the
+! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}.
+! In this case, the none of {\tt REAL} attribute tags in {\tt inAv} may be
+! named the same as the string contained in {\tt WeightTag}, which is an
+! attribute name reserved for the sum of the weights in the output {\tt AttrVect}
 ! {\tt outAv}.
 !
-! {\bf N.B.:  } The output {\tt AttrVect} argument {\tt outAv} is an 
-! allocated data structure.  The user must deallocate it using the routine 
-! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to do so 
+! {\bf N.B.:  } The output {\tt AttrVect} argument {\tt outAv} is an
+! allocated data structure.  The user must deallocate it using the routine
+! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to do so
 ! will result in a memory leak.
 !
 ! !INTERFACE:
@@ -1146,7 +1146,7 @@
      endif
   endif
 
-       ! Compute the masked weighted sum, including the sum of the 
+       ! Compute the masked weighted sum, including the sum of the
        ! masked weights.
 
   if(present(comm)) then ! communicator handle present
@@ -1235,12 +1235,12 @@
   call AttrVect_init(outAv, iList=nullIList, rList=inAv%rList, lsize=1)
   call AttrVect_zero(outAv)
 
-       ! Divide by global weight sum to compute spatial averages from 
+       ! Divide by global weight sum to compute spatial averages from
        ! spatial integrals.
 
   do i=1,AttrVect_nRAttr(outAv)
      outAv%rAttr(i,1) = integratedAv%rAttr(i,1) &
-	                               / integratedAv%rAttr(iweight,1) 
+	                               / integratedAv%rAttr(iweight,1)
   end do
 
        ! Clean up temporary AttrVect:
@@ -1341,7 +1341,7 @@
      endif
   endif
 
-       ! Compute the masked weighted sum, including the sum of the 
+       ! Compute the masked weighted sum, including the sum of the
        ! masked weights.
 
   if(present(comm)) then ! communicator handle present
@@ -1430,12 +1430,12 @@
   call AttrVect_init(outAv, iList=nullIList, rList=inAv%rList, lsize=1)
   call AttrVect_zero(outAv)
 
-       ! Divide by global weight sum to compute spatial averages from 
+       ! Divide by global weight sum to compute spatial averages from
        ! spatial integrals.
 
   do i=1,AttrVect_nRAttr(outAv)
      outAv%rAttr(i,1) = integratedAv%rAttr(i,1) &
-	                               / integratedAv%rAttr(iweight,1) 
+	                               / integratedAv%rAttr(iweight,1)
   end do
 
        ! Clean up temporary AttrVect:
@@ -1450,41 +1450,41 @@
 !
 ! !IROUTINE: PairedSpatialIntegralRAttrVSP_ - Do two spatial integrals at once.
 !
-! !DESCRIPTION: 
+! !DESCRIPTION:
 ! This routine computes spatial integrals of the {\tt REAL} attributes
-! of the {\tt REAL} attributes of the input {\tt AttrVect} arguments 
-! {\tt inAv1} and {\tt inAv2}, returning the integrals in the output 
-! {\tt AttrVect} arguments {\tt outAv1} and {\tt outAv2}, respectively .  
-! The integrals of {\tt inAv1} and {\tt inAv2} are computed using 
-! spatial weights stored in the input {\tt REAL} array arguments  
-! {\tt Weights1} and {\tt Weights2}, respectively.  
-! If {\tt SpatialIntegralRAttrV\_()} is invoked with the optional 
-! {\tt LOGICAL} input argument 
-! {\tt SumWeights} set as {\tt .TRUE.}, then the weights are also summed 
-! and stored in {\tt outAv1} and {\tt outAv2}, and can be referenced with 
-! the attribute tags defined by the arguments {\tt WeightName1} and 
-! {\tt WeightName2}, respectively.  This paired integral is implicitly a 
-! distributed operation (the whole motivation for pairing the integrals is 
+! of the {\tt REAL} attributes of the input {\tt AttrVect} arguments
+! {\tt inAv1} and {\tt inAv2}, returning the integrals in the output
+! {\tt AttrVect} arguments {\tt outAv1} and {\tt outAv2}, respectively .
+! The integrals of {\tt inAv1} and {\tt inAv2} are computed using
+! spatial weights stored in the input {\tt REAL} array arguments
+! {\tt Weights1} and {\tt Weights2}, respectively.
+! If {\tt SpatialIntegralRAttrV\_()} is invoked with the optional
+! {\tt LOGICAL} input argument
+! {\tt SumWeights} set as {\tt .TRUE.}, then the weights are also summed
+! and stored in {\tt outAv1} and {\tt outAv2}, and can be referenced with
+! the attribute tags defined by the arguments {\tt WeightName1} and
+! {\tt WeightName2}, respectively.  This paired integral is implicitly a
+! distributed operation (the whole motivation for pairing the integrals is
 ! to reduce communication latency costs), and the Fortran MPI communicator
-! handle is defined by the input {\tt INTEGER} argument {\tt comm}.  The 
-! summation is an AllReduce operation, with all processes receiving the 
+! handle is defined by the input {\tt INTEGER} argument {\tt comm}.  The
+! summation is an AllReduce operation, with all processes receiving the
 ! global sum.
 !
-! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv1} 
-! and the input {\tt REAL} array {\tt Weights1} must be equal.  That is, there 
-! must be a one-to-one correspondence between the field point values stored 
+! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv1}
+! and the input {\tt REAL} array {\tt Weights1} must be equal.  That is, there
+! must be a one-to-one correspondence between the field point values stored
 ! in {\tt inAv1} and the point weights stored in {\tt Weights}.  The same
 ! relationship must apply between {\tt inAv2} and {\tt Weights2}.
 !
-! {\bf N.B.:  }  If {\tt SpatialIntegralRAttrV\_()} is invoked with the 
-! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}, 
-! then the value of {\tt WeightName1} must not conflict with any of the 
-! {\tt REAL} attribute tags in {\tt inAv1} and the value of {\tt WeightName2} 
+! {\bf N.B.:  }  If {\tt SpatialIntegralRAttrV\_()} is invoked with the
+! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.},
+! then the value of {\tt WeightName1} must not conflict with any of the
+! {\tt REAL} attribute tags in {\tt inAv1} and the value of {\tt WeightName2}
 ! must not conflict with any of the {\tt REAL} attribute tags in {\tt inAv2}.
 !
-! {\bf N.B.:  } The output {\tt AttrVect} arguments {\tt outAv1} and 
+! {\bf N.B.:  } The output {\tt AttrVect} arguments {\tt outAv1} and
 ! {\tt outAv2} are allocated data structures.  The user must deallocate them
-!  using the routine {\tt AttrVect\_clean()} when they are no longer needed.  
+!  using the routine {\tt AttrVect\_clean()} when they are no longer needed.
 ! Failure to do so will result in a memory leak.
 !
 ! !INTERFACE:
@@ -1627,7 +1627,7 @@
 !
 ! !IROUTINE: PairedSpatialIntegralRAttrVDP_ - Two spatial integrals.
 !
-! !DESCRIPTION: 
+! !DESCRIPTION:
 ! Double precision interface version of PairedSpatialIntegralRAttrVSP_.
 !
 ! !INTERFACE:
@@ -1772,27 +1772,27 @@
 !
 ! !DESCRIPTION:
 ! This routine computes spatial averages of the {\tt REAL} attributes
-! of the {\tt REAL} attributes of the input {\tt AttrVect} arguments 
-! {\tt inAv1} and {\tt inAv2}, returning the integrals in the output 
-! {\tt AttrVect} arguments {\tt outAv1} and {\tt outAv2}, respectively .  
-! The averages of {\tt inAv1} and {\tt inAv2} are computed using 
-! spatial weights stored in the input {\tt REAL} array arguments  
-! {\tt Weights1} and {\tt Weights2}, respectively.  This paired average 
-! is implicitly a 
-! distributed operation (the whole motivation for pairing the integrals is 
+! of the {\tt REAL} attributes of the input {\tt AttrVect} arguments
+! {\tt inAv1} and {\tt inAv2}, returning the integrals in the output
+! {\tt AttrVect} arguments {\tt outAv1} and {\tt outAv2}, respectively .
+! The averages of {\tt inAv1} and {\tt inAv2} are computed using
+! spatial weights stored in the input {\tt REAL} array arguments
+! {\tt Weights1} and {\tt Weights2}, respectively.  This paired average
+! is implicitly a
+! distributed operation (the whole motivation for pairing the integrals is
 ! to reduce communication latency costs), and the Fortran MPI communicator
-! handle is defined by the input {\tt INTEGER} argument {\tt comm}.  The 
-! summation is an AllReduce operation, with all processes receiving the 
+! handle is defined by the input {\tt INTEGER} argument {\tt comm}.  The
+! summation is an AllReduce operation, with all processes receiving the
 ! global sum.
 !
-! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv1} 
-! and the array {\tt Weights} must be equal.  That is, there must be a 
-! one-to-one correspondence between the field point values stored 
+! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv1}
+! and the array {\tt Weights} must be equal.  That is, there must be a
+! one-to-one correspondence between the field point values stored
 ! in {\tt inAv1} and the spatial weights stored in {\tt Weights}
 !
-! {\bf N.B.:  } The output {\tt AttrVect} arguments {\tt outAv1} and 
+! {\bf N.B.:  } The output {\tt AttrVect} arguments {\tt outAv1} and
 ! {\tt outAv2} are allocated data structures.  The user must deallocate them
-!  using the routine {\tt AttrVect\_clean()} when they are no longer needed.  
+!  using the routine {\tt AttrVect\_clean()} when they are no longer needed.
 ! Failure to do so will result in a memory leak.
 !
 ! !INTERFACE:
@@ -1859,7 +1859,7 @@
        ! Check value of summed weights (to avoid division by zero):
 
   iweight1 = AttrVect_indexRA(integratedAv1, WeightName1)
-  if(integratedAv1%rAttr(iweight1, 1) == 0._FP) then   
+  if(integratedAv1%rAttr(iweight1, 1) == 0._FP) then
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights in first integral is zero.'
      call die(myname_)
@@ -1880,17 +1880,17 @@
   call AttrVect_init(outAv2, iList=nullIList, rList=inAv2%rList, lsize=1)
   call AttrVect_zero(outAv2)
 
-       ! Divide by global weight sum to compute spatial averages from 
+       ! Divide by global weight sum to compute spatial averages from
        ! spatial integrals.
 
   do i=1,AttrVect_nRAttr(outAv1)
      outAv1%rAttr(i,1) = integratedAv1%rAttr(i,1) &
-	                               / integratedAv1%rAttr(iweight1,1) 
+	                               / integratedAv1%rAttr(iweight1,1)
   end do
 
   do i=1,AttrVect_nRAttr(outAv2)
      outAv2%rAttr(i,1) = integratedAv2%rAttr(i,1) &
-	                               / integratedAv2%rAttr(iweight2,1) 
+	                               / integratedAv2%rAttr(iweight2,1)
   end do
 
        ! Clean up temporary AttrVects:
@@ -1973,7 +1973,7 @@
        ! Check value of summed weights (to avoid division by zero):
 
   iweight1 = AttrVect_indexRA(integratedAv1, WeightName1)
-  if(integratedAv1%rAttr(iweight1, 1) == 0._FP) then   
+  if(integratedAv1%rAttr(iweight1, 1) == 0._FP) then
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights in first integral is zero.'
      call die(myname_)
@@ -1994,17 +1994,17 @@
   call AttrVect_init(outAv2, iList=nullIList, rList=inAv2%rList, lsize=1)
   call AttrVect_zero(outAv2)
 
-       ! Divide by global weight sum to compute spatial averages from 
+       ! Divide by global weight sum to compute spatial averages from
        ! spatial integrals.
 
   do i=1,AttrVect_nRAttr(outAv1)
      outAv1%rAttr(i,1) = integratedAv1%rAttr(i,1) &
-	                               / integratedAv1%rAttr(iweight1,1) 
+	                               / integratedAv1%rAttr(iweight1,1)
   end do
 
   do i=1,AttrVect_nRAttr(outAv2)
      outAv2%rAttr(i,1) = integratedAv2%rAttr(i,1) &
-	                               / integratedAv2%rAttr(iweight2,1) 
+	                               / integratedAv2%rAttr(iweight2,1)
   end do
 
        ! Clean up temporary AttrVects:

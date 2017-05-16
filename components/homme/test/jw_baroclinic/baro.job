@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/bin/tcsh 
 #
 #  This script will configure, build and run HOMME using the
 #  Jablownowski and Williamson baroclinic instability test case
@@ -20,12 +20,12 @@
 #  set paths to source code, build directory and run directory
 #
 set wdir =  ~/scratch1/preqx             # run directory
-set HOMME = ~/codes/acme-dev/components/homme                # HOMME svn checkout     
+set HOMME = ~/codes/acme/components/homme                # HOMME svn checkout     
 set input = $HOMME/test/jw_baroclinic    # input files for test case
 set vdir = $HOMME/test/vcoord            # vertical coordinate files
 set bld = $wdir/bld                      # cmake/build directory
 
-set MACH = $HOMME/cmake/machineFiles/skybridge.cmake
+set MACH = $HOMME/cmake/machineFiles/sandia-srn-sems.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan-cuda.cmake    # CMAKE file for Titan GPU support
 #set MACH = $HOMME/cmake/machineFiles/darwin.cmake
@@ -35,7 +35,7 @@ setenv CRAY_CUDA_PROXY 1
 #
 #  mpi run command
 #
-set NCPU = 4
+set NCPU = 40
 #setenv OMP_NUM_THREADS 4
 setenv OMP_NUM_THREADS 1
 
@@ -66,12 +66,12 @@ set u_perturb = 1
 set rotate = 0
 
                   # number of elemnets:  6*ne*ne
-set ne = 30        # horizontal resolution   4,16,30,60,120,240
+set ne = 16        # horizontal resolution   4,16,30,60,120,240
 set qsize = 4     # use 4 tracers for testing
 
 # CAM4
-#set nlev=26       # vertical resolution
-#set qsize = 4     # number of passive tracers
+set nlev=26       # vertical resolution
+set qsize = 4     # number of passive tracers
 
 # simulate CAM5:
 #set nlev=30
@@ -79,12 +79,11 @@ set qsize = 4     # use 4 tracers for testing
 
 # simulate ACME v1
 # NE=120, nlev=72, qsize=35
-set nlev=72
+#set nlev=72
 #set qsize=35
 
- set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
-#set namelist = jw_baroclinic_eulerian.nl
-               
+set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
+#set namelist = jw_baroclinic-eul.nl
 
 #
 #  BUILD PREQX
@@ -176,33 +175,32 @@ cd $run
 # default: assume pure sigma levels:
 set vfile_mid     = "./sabm-$nlev.ascii"
 set vfile_int     = "./sabi-$nlev.ascii"
-cp $vdir/sab?-*.ascii  $run   
 
 # special cases:
 # copy vertical level files to run directory
 if ( $nlev == 26 ) then
    set vfile_mid     = "./camm-26.ascii"
    set vfile_int     = "./cami-26.ascii"
-   cp $vdir/cam*26.ascii  $run   
 endif
 if ( $nlev == 30 ) then
    set vfile_mid     = "./camm-30.ascii"
    set vfile_int     = "./cami-30.ascii"
-   cp $vdir/cam*30.ascii  $run   
 endif
 if ( $nlev == 60 ) then
    set vfile_mid     = "./aspL60_mid.ascii"
    set vfile_int     = "./aspL60_int.ascii"
-   cp $vdir/aspL60_*.ascii $run
 endif
 if ( $nlev == 72 ) then
    set vfile_mid     = "./acme-72m.ascii"
    set vfile_int     = "./acme-72i.ascii"
-   cp $vdir/acme-72?.ascii $run
 endif
+
+# copy all vertical levels to run directory
+rsync -a  $vdir/*.ascii  $run   
 
 
 #  create a new namelist from original ne16 template:
+rm -f input.nl
 sed s/ne=.\*/ne=$ne/ $input/$namelist |\
 sed s/tstep=.\*/tstep=$tstep/ | \
 sed s/nu=.\*/nu=$nu/ | \
@@ -219,7 +217,6 @@ sed s:mesh_file.\*:mesh_file="'$mesh_file'": | \
 sed s:vfile_mid.\*:"vfile_mid = '$vfile_mid'":  |\
 sed s:vfile_int.\*:"vfile_int = '$vfile_int'":  |\
 sed s/qsize.\*/"qsize = $qsize"/  > input.nl
-
 
 date
 $mpirun $exe  < input.nl

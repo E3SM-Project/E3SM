@@ -3,10 +3,10 @@ my $pkg = 'Build::NamelistDefaults';
 #-----------------------------------------------------------------------------------------------
 #
 # SYNOPSIS
-# 
+#
 #   use Build::Config;
 #   use Build::NamelistDefaults;
-# 
+#
 #   # Create an object containing the configuration from a previous run of configure
 #   # (the config_cache.xml file written by configure contains all the parameters needed
 #   # to build an executable).
@@ -14,7 +14,7 @@ my $pkg = 'Build::NamelistDefaults';
 #
 #   # Create a namelist defaults object (read the namelist defaults XML file).
 #   my $defaults = Build::NamelistDefaults->new("namelist_defaults.xml", $cfg);
-# 
+#
 #   # Get the default value for the specified namelist variable
 #   my $nl_var_default = $defaults->get_value('nl_variable');
 #
@@ -22,9 +22,9 @@ my $pkg = 'Build::NamelistDefaults';
 #   $defaults->add('namelist_defaults.xml',$cfg);
 #
 # DESCRIPTION
-# 
+#
 # Build::NamelistDefaults objects are used to represent the default values of namelist
-# variables that are stored in an XML file.  Default values may depend on a number of 
+# variables that are stored in an XML file.  Default values may depend on a number of
 # attributes that are listed in the XML file.  For example, default values may depend
 # on specific parameters that were specified when building the executable code, such
 # as the horizontal grid resolution.
@@ -42,7 +42,7 @@ my $pkg = 'Build::NamelistDefaults';
 #
 #
 # COLLABORATORS
-# 
+#
 # IO::File
 # XML::Lite
 # Build::Config
@@ -115,10 +115,10 @@ sub get_value
     my $cfg = $self->{'cfg_ref'};  # configuration object
     my %usr_att = ();              # hash of user supplied attributes
 
-    if (defined $usr_att_ref) { 
+    if (defined $usr_att_ref) {
        ref($usr_att_ref) eq "HASH" or die
 	   "ERROR: $pkg\:\:get_value -- user attributes arg must be a hash reference\n";
-       %usr_att = %$usr_att_ref; 
+       %usr_att = %$usr_att_ref;
     }
 
     # Return now if this variable name is not in the list of names
@@ -167,7 +167,7 @@ sub get_value
 	    }
 	    else {
 
-		# If the attribute isn't part of the configuration then do addition 
+		# If the attribute isn't part of the configuration then do addition
 		# checks here.
 		#
 		# Start with attributes that require special handling...
@@ -187,8 +187,8 @@ sub get_value
 			}
 		    }
 		    # Did user specify that only the month/day needs to match?
-		    elsif (defined $usr_att{'ic_md'}) { 
-			
+		    elsif (defined $usr_att{'ic_md'}) {
+
 			# Check for match (numeric) against month/day part of ic_ymd
 			my $ic_md = $attributes{$att_name} % 10000;
 			if ($ic_md == $usr_att{'ic_md'} % 10000) {
@@ -229,7 +229,7 @@ sub get_value
 
     } # Finished loop over elements in defaults file.
 
-    # All elements have been examined.  Return the value from the best fit.  That's the 
+    # All elements have been examined.  Return the value from the best fit.  That's the
     # index of the max value of @fit.  In case of a tie it's the first one found.
     my $max_val = $fit[0];
     my $max_idx = 0;
@@ -268,10 +268,10 @@ sub get_usr_file
     my $cfg = $self->{'cfg_ref'};  # configuration object
     my %usr_att = ();              # hash of user supplied attributes
 
-    if (defined $usr_att_ref) { 
+    if (defined $usr_att_ref) {
        ref($usr_att_ref) eq "HASH" or die
 	   "ERROR: $pkg\:\:$nm -- user attributes arg must be a hash reference\n";
-       %usr_att = %$usr_att_ref; 
+       %usr_att = %$usr_att_ref;
     }
 
     # Return now if this variable name is not in the list of names
@@ -363,7 +363,7 @@ sub get_usr_file
 
 	    } else {
 
-		# If the attribute isn't part of the configuration then do addition 
+		# If the attribute isn't part of the configuration then do addition
 		# checks here.
 		#
 
@@ -390,7 +390,7 @@ sub get_usr_file
 
     } # Finished loop over elements in defaults file.
 
-    # All elements have been examined.  Return the value from the best fit.  That's the 
+    # All elements have been examined.  Return the value from the best fit.  That's the
     # index of the max value of @fit.  In case of a tie it's the first one found.
     my $max_val = $fit[0];
     my $max_idx = 0;
@@ -453,7 +453,7 @@ sub _initialize
     $name eq "namelist_defaults" or die
 	"ERROR: $defaults_file is not a namelist defaults file\n";
 
-    # The children of the XML root object are xml elements, each of which contains a default 
+    # The children of the XML root object are xml elements, each of which contains a default
     # value for a namelist variable along with attributes that determine the configuration for
     # which the default is appropriate.
     my @children = $root->get_children();

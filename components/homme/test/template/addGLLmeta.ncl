@@ -3,7 +3,7 @@ load "$NCARG_NCARG/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_NCARG/nclscripts/csm/contributed.ncl"
 
 ;
-;  Starting with a OMME grid template file with subcell metadata (the *_latlon.nc file),
+;  Starting with a HOMME grid template file with subcell metadata (the *_latlon.nc file),
 ;  compute the spectral element metadata, in array GLLnodes(np,np,nelem) and
 ;  add this data to the template file
 ;  

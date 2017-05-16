@@ -17,7 +17,7 @@
 
 
 #include <sys/types.h>
-#ifndef NOTIMES 
+#ifndef NOTIMES
 #include <sys/times.h>
 #endif
 

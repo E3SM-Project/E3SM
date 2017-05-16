@@ -26,7 +26,7 @@ To generate documentation for a CESM1.3 tag, follow these steps:
    - cp *.* [path-to-web-server-accessible-directory]
      example on CGD host: cp -R html /cesmweb/html/models/cesm1.3/cesm/doc/apidocs
      and corresponding URL: http://www.cesm.ucar.edu/models/cesm1.3/cesm/doc/apidocs/html
-   
+
 http://www.cesm.ucar.edu/models/cesm1.3/cesm/doc
 
 --------------------------------------------------------------------------------

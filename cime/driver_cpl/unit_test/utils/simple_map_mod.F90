@@ -5,11 +5,11 @@ module simple_map_mod
 #include "shr_assert.h"
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_log_mod, only : errMsg => shr_log_errMsg
-  
+
   implicit none
   private
 
-  
+
   type, public :: simple_map_type
      private
      integer :: n_overlaps ! number of overlaps between the source & destination grid (size of sparse matrix)
@@ -36,7 +36,7 @@ module simple_map_mod
   ! Note: This could be written as a constructor, but instead is made a module-level
   ! routine so that it can be called with a more meaningful name.
   public :: create_simple_map_with_one_source  ! create a simple_map_type instance with a single source cell
-  
+
 contains
 
   ! ========================================================================
@@ -61,7 +61,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: n_overlaps
-    
+
     character(len=*), parameter :: subname = 'constructor'
     !-----------------------------------------------------------------------
 
@@ -97,7 +97,7 @@ contains
     integer :: source_indices(ndest)
     integer :: dest_indices(ndest)
     real(r8) :: overlap_weights(ndest)
-    
+
     character(len=*), parameter :: subname = 'create_simple_map_with_one_source'
     !-----------------------------------------------------------------------
 
@@ -106,7 +106,7 @@ contains
     overlap_weights(:) = 1._r8
     simple_map = simple_map_type(source_indices=source_indices, dest_indices=dest_indices,&
          overlap_weights=overlap_weights)
-    
+
   end function create_simple_map_with_one_source
 
 
@@ -127,7 +127,7 @@ contains
     class(simple_map_type), intent(in) :: this
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'get_n_overlaps'
     !-----------------------------------------------------------------------
 
@@ -147,7 +147,7 @@ contains
     class(simple_map_type), intent(in) :: this
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'get_n_source_points'
     !-----------------------------------------------------------------------
 
@@ -167,7 +167,7 @@ contains
     class(simple_map_type), intent(in) :: this
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'get_n_dest_points'
     !-----------------------------------------------------------------------
 
@@ -187,7 +187,7 @@ contains
     class(simple_map_type), intent(in) :: this
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'get_source_indices'
     !-----------------------------------------------------------------------
 
@@ -207,7 +207,7 @@ contains
     class(simple_map_type), intent(in) :: this
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'get_dest_indices'
     !-----------------------------------------------------------------------
 
@@ -227,7 +227,7 @@ contains
     class(simple_map_type), intent(in) :: this
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'get_overlap_weights'
     !-----------------------------------------------------------------------
 
@@ -246,7 +246,7 @@ contains
     class(simple_map_type), intent(in) :: this
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'check_okay'
     !-----------------------------------------------------------------------
 
@@ -255,7 +255,7 @@ contains
   end subroutine check_okay
 
 
-  
+
   !-----------------------------------------------------------------------
   subroutine check_for_duplicate_overlaps(this)
     !
@@ -275,7 +275,7 @@ contains
     integer :: overlap_index
     integer :: source_index
     integer :: dest_index
-    
+
     character(len=*), parameter :: subname = 'check_for_duplicate_overlaps'
     !-----------------------------------------------------------------------
 
@@ -291,7 +291,7 @@ contains
        end if
        overlap_found(source_index, dest_index) = .true.
     end do
-       
+
   end subroutine check_for_duplicate_overlaps
 
   !-----------------------------------------------------------------------
@@ -309,7 +309,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: overlap_index
-    
+
     character(len=*), parameter :: subname = 'check_for_nonpositive_weights'
     !-----------------------------------------------------------------------
 
@@ -322,5 +322,5 @@ contains
     end do
   end subroutine check_for_nonpositive_weights
 
-  
+
 end module simple_map_mod

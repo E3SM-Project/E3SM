@@ -100,7 +100,7 @@ FC_FUNC( mpi_gatherv , MPI_GATHERV )
 }
 
 
-int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype, 
+int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 		void* recvbuf, int *recvcounts, int *displs,
 		MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
@@ -200,7 +200,7 @@ int MPI_Allgatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 
 /*********/
 
-/* MPI_Scatter 
+/* MPI_Scatter
  * Scattering to one proc involves only one copy operation, so copy
  * data from source to dest pointer
  */
@@ -233,7 +233,7 @@ int MPI_Scatter(void * sendbuf, int sendcount, MPI_Datatype sendtype,
 
   copy_data2(sendbuf, sendcount, sendtype,
              recvbuf, recvcount, recvtype);
-  
+
   return(MPI_SUCCESS);
 }
 
@@ -251,11 +251,11 @@ FC_FUNC( mpi_scatterv , MPI_SCATTERV )
 		       *sendtype, mpi_c_in_place(recvbuf), *recvcount,
 		       *recvtype, *root, *comm);
 }
-		       
-		       
 
-int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs, 
-		 MPI_Datatype sendtype, void* recvbuf, int recvcount, 
+
+
+int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
+		 MPI_Datatype sendtype, void* recvbuf, int recvcount,
 		 MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
   int offset;
@@ -278,7 +278,7 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
   copy_data2((char*)sendbuf+offset, sendcounts[0], sendtype,
              recvbuf, recvcount, recvtype);
 //  memcpy(recvbuf,(char *)sendbuf+offset,sendcounts[0] * sendtype);
-  
+
   return(MPI_SUCCESS);
 }
 
@@ -298,7 +298,7 @@ FC_FUNC( mpi_reduce , MPI_REDUCE )
 
 
 
-int MPI_Reduce(void* sendbuf, void* recvbuf, int count, 
+int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
 	       MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
 
 {
@@ -328,7 +328,7 @@ FC_FUNC( mpi_allreduce , MPI_ALLREDUCE )
 }
 
 
-int MPI_Allreduce(void* sendbuf, void* recvbuf, int count, 
+int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 		  MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
   if (sendbuf==MPI_IN_PLACE)
@@ -345,7 +345,7 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 /*********/
 
 
-/* MPI_Reduce_scatter 
+/* MPI_Reduce_scatter
  * Performs reduction of n*sum(recvcounts) and distributes to all members
  * in a group. We do this to only one proc, so recvcounts[0] is only used.
  */
@@ -358,8 +358,8 @@ FC_FUNC(mpi_reduce_scatter, MPI_REDUCE_SCATTER)
 }
 
 
-int MPI_Reduce_scatter(void* sendbuf, void* recvbuf, int *recvcounts, 
-                         MPI_Datatype datatype, MPI_Op op, MPI_Comm comm) 
+int MPI_Reduce_scatter(void* sendbuf, void* recvbuf, int *recvcounts,
+                         MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
   copy_data2(sendbuf, recvcounts[0], datatype, recvbuf, recvcounts[0], datatype);
 }
@@ -379,7 +379,7 @@ FC_FUNC( mpi_scan , MPI_SCAN)
 
 
 
-int MPI_Scan(void* sendbuf, void* recvbuf, int count, 
+int MPI_Scan(void* sendbuf, void* recvbuf, int count,
              MPI_Datatype datatype, MPI_Op op, MPI_Comm comm )
 {
     copy_data2(sendbuf, count, datatype, recvbuf, count, datatype);
@@ -431,7 +431,7 @@ int MPI_Alltoallv(void *sendbuf, int *sendcounts,
 		  int *sdispls, MPI_Datatype sendtype,
                   void *recvbuf, int *recvcounts,
 		  int *rdispls, MPI_Datatype recvtype,
-                  MPI_Comm comm) 
+                  MPI_Comm comm)
 
 {
   int send_offset;
@@ -447,7 +447,7 @@ int MPI_Alltoallv(void *sendbuf, int *sendcounts,
 
   copy_data2((char*)sendbuf+send_offset, sendcounts[0], sendtype,
              (char*)recvbuf+recv_offset, recvcounts[0], recvtype);
-  
+
 //  memcpy( (char *)recvbuf+recv_offset, (char *)sendbuf+send_offset,
 //	  sendcounts[0] * sendtype);
 
@@ -476,13 +476,13 @@ int MPI_Alltoallw(void *sendbuf, int *sendcounts,
 		  int *sdispls, MPI_Datatype *sendtypes,
                   void *recvbuf, int *recvcounts,
 		  int *rdispls, MPI_Datatype *recvtypes,
-                  MPI_Comm comm) 
+                  MPI_Comm comm)
 
 {
 
   copy_data2((char*)sendbuf+sdispls[0], sendcounts[0], sendtypes[0],
              (char*)recvbuf+rdispls[0], recvcounts[0], recvtypes[0]);
-  
+
 
   return(MPI_SUCCESS);
 }

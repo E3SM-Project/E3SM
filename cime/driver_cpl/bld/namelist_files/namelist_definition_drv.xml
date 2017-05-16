@@ -19,7 +19,7 @@
           An abbreviation of the fortran declaration for the variable.
 	  Valid declarations are:
 
-          char*n  
+          char*n
 	  integer
 	  logical
 	  real
@@ -33,12 +33,12 @@
      input_pathname
           Only include this attribute to indicate that the variable
           contains the pathname of an input dataset that resides in the
-          CESM inputdata directory tree.  
+          CIME inputdata directory tree.
 
-	  The recognized values are 
+	  The recognized values are
            "abs"  - an absolute  pathname is required
-	   "rel:var_name"  - the  pathname is relative and that 
-            the namelist variable "var_name" contains the absolute 
+	   "rel:var_name"  - the  pathname is relative and that
+            the namelist variable "var_name" contains the absolute
 	    root directory.
            "mapping" - the absolute inputdata path is specified and
             will be included in the cpl.inputdata_list
@@ -58,58 +58,58 @@
 <!-- group seq_cplflds_inparm    -->
 <!-- =========================== -->
 
-<entry 
+<entry
 id="flds_co2a"
-type="logical" 
-category="seq_flds" 
+type="logical"
+category="seq_flds"
 group="seq_cplflds_inparm" >
 Previously, new fields that were needed to be passed between components
-for certain compsets were specified by cpp-variables. This has been 
-modified to now be use cases. This use cases are specified in the 
+for certain compsets were specified by cpp-variables. This has been
+modified to now be use cases. This use cases are specified in the
 namelist cpl_flds_inparm and are currently triggered by the xml variable CCSM_BGC.
 If CCSM_BGC is set to 'CO2A', then flds_co2a will be set to .true.
 </entry>
 
-<entry 
+<entry
 id="flds_co2b"
-type="logical" 
-category="seq_flds" 
+type="logical"
+category="seq_flds"
 group="seq_cplflds_inparm" >
 Previously, new fields that were needed to be passed between components
-for certain compsets were specified by cpp-variables. This has been 
-modified to now be use cases. This use cases are specified in the 
+for certain compsets were specified by cpp-variables. This has been
+modified to now be use cases. This use cases are specified in the
 namelist cpl_flds_inparm and are currently triggered by the xml variable CCSM_BGC.
 If CCSM_BGC is set to 'CO2B', then flds_co2b will be set to .true.
 </entry>
 
-<entry 
+<entry
 id="flds_co2c"
-type="logical" 
-category="seq_flds" 
+type="logical"
+category="seq_flds"
 group="seq_cplflds_inparm" >
 Previously, new fields that were needed to be passed between components
-for certain compsets were specified by cpp-variables. This has been 
-modified to now be use cases. This use cases are specified in the 
+for certain compsets were specified by cpp-variables. This has been
+modified to now be use cases. This use cases are specified in the
 namelist cpl_flds_inparm and are currently triggered by the xml variable CCSM_BGC.
 If CCSM_BGC is set to 'CO2C', then flds_co2c will be set to .true.
 </entry>
 
-<entry 
+<entry
 id="flds_co2_dmsa"
-type="logical" 
-category="seq_flds" 
+type="logical"
+category="seq_flds"
 group="seq_cplflds_inparm" >
 Previously, new fields that were needed to be passed between components
-for certain compsets were specified by cpp-variables. This has been 
-modified to now be use cases. This use cases are specified in the 
+for certain compsets were specified by cpp-variables. This has been
+modified to now be use cases. This use cases are specified in the
 namelist cpl_flds_inparm and are currently triggered by the xml variable CCSM_BGC.
 If CCSM_BGC is set to 'CO2_DMSA', then flds_co2_dmsa will be set to .true.
 </entry>
 
-<entry 
+<entry
 id="flds_bgc"
-type="logical" 
-category="seq_flds" 
+type="logical"
+category="seq_flds"
 group="seq_cplflds_inparm" >
 Previously, new fields that were needed to be passed between components
 for certain compsets were specified by cpp-variables. This has been
@@ -120,36 +120,61 @@ If ACME_BGC is set to 'TRUE', then flds_bgc will be set to .true.
 </entry>
 
 <entry 
-id="glc_nec"
-type="integer" 
+id="flds_wiso"
+type="logical" 
 category="seq_flds" 
 group="seq_cplflds_inparm" >
-Number of cism elevation classes. 
+Pass water isotopes between components
+</entry>
+
+<entry 
+id="glc_nec"
+type="integer"
+category="seq_flds"
+group="seq_cplflds_inparm" >
+Number of cism elevation classes.
 Set by the xml variable GLC_NEC in env_run.xml
 </entry>
 
+<entry
+id="ice_ncat"
+type="integer"
+category="seq_flds"
+group="seq_cplflds_inparm" >
+Number of sea ice thickness categories.
+Set by the xml variable ICE_NCAT in env_build.xml
+</entry>
+
+<entry
+id="seq_flds_i2o_per_cat"
+type="logical"
+category="seq_flds"
+group="seq_cplflds_inparm" >
+.true. if select per ice thickness category fields are passed to the ocean.
+Set by the xml variable CPL_I2O_PER_CAT in env_run.xml
+</entry>
 
 <!-- =========================== -->
 <!-- -group seq_cplflds_custom   -->
 <!-- =========================== -->
 
-<entry 
+<entry
 id="cplflds_custom"
-type="char*1024(200)" 
-category="seq_flds" 
+type="char*1024(200)"
+category="seq_flds"
 group="seq_cplflds_userspec" >
 New fields that are user specidied can be added as namelist variables
 by the user in the cpl namelist seq_flds_user using the namelist variable
 array cplflds_customs. The user specified new fields must follow the
 above naming convention.
-As an example, say you want to add a new state 'foo' that is passed 
-from the land to the atm - you would do this as follows 
+As an example, say you want to add a new state 'foo' that is passed
+from the land to the atm - you would do this as follows
    &amp;seq_flds_user
       cplflds_custom = 'Sa_foo->a2x', 'Sa_foo->x2a'
    /
-This would add the field 'Sa_foo' to the character strings defining the 
-attribute vectors a2x and x2a. It is assumed that code would need to be 
-introduced in the atm and land components to deal with this new attribute 
+This would add the field 'Sa_foo' to the character strings defining the
+attribute vectors a2x and x2a. It is assumed that code would need to be
+introduced in the atm and land components to deal with this new attribute
 vector field.
 Modify user_nl_cpl to edit this.
 </entry>
@@ -158,145 +183,154 @@ Modify user_nl_cpl to edit this.
 <!--  group seq_infodata_inparm  -->
 <!-- =========================== -->
 
-<entry 
-id="atm_adiabatic"     
+<entry
+id="cime_model"
+type="char*8"
+category="expdef"
+group="seq_infodata_inparm"
+valid_values="acme,cesm">
+cime model 
+</entry>
+
+<entry
+id="atm_adiabatic"
 type="logical"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
 true => turn on adiabatic mode in cam
 </entry>
 
-<entry 
-id="atm_ideal_phys"     
+<entry
+id="atm_ideal_phys"
 type="logical"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
 true => turn on ideal physics mode in cam
 </entry>
 
-<entry 
-id="aqua_planet"     
+<entry
+id="aqua_planet"
 type="logical"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
 true => turn on aquaplanet mode in cam
 </entry>
 
-<entry 
-id="aqua_planet_sst"     
+<entry
+id="aqua_planet_sst"
 type="integer"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
 1 => default sst mode for aquaplanet in cam
 </entry>
 
-<entry 
-id="case_name"     
+<entry
+id="case_name"
 type="char*128"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
-case name.  
+case name.
 set by CASE in env_case.xml.
 </entry>
 
-<entry 
+<entry
 id="case_desc"
 type="char*256"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
-case description.  
+case description.
 set by CASESTR in env_run.xml.
 </entry>
 
-<entry 
+<entry
 id="model_version"
 type="char*256"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
-model version documentation, 
+model version documentation,
 set by CCSM_REPOTAG in env_run.xml
 </entry>
 
-<entry 
+<entry
 id="username"
 type="char*256"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
 username documentation
 set by CCSMUSER in env_run.xml
 </entry>
 
-<entry 
+<entry
 id="hostname"
 type="char*256"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
-hostname information, 
+hostname information,
 set by MACH in env_case.xml
 </entry>
 
-<entry 
+<entry
 id="timing_dir"
 type="char*256"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
 location of timing output.
 </entry>
 
-<entry 
+<entry
 id="tchkpt_dir"
 type="char*256"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
 location of timing checkpoint output.
 </entry>
 
-<entry 
+<entry
 id="start_type"
 type="char*64"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm"
 valid_values="startup,branch,continue" >
-mode to start the run up, [startup,branch,continue], 
+mode to start the run up, [startup,branch,continue],
 automatically derived from RUN_TYPE in env_run.xml
 </entry>
-    
-<entry 
+
+<entry
 id="brnch_retain_casename"
 type="logical"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
 Allow same branch casename as reference casename
 </entry>
 
-<entry 
-id="info_debug"    
+<entry
+id="info_debug"
 type="integer"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
 Level of debug output, 0=minimum, 1=normal, 2=more, 3=too much
-set by INFO_DBUG in env_run.xml 
+set by INFO_DBUG in env_run.xml
 default: 1
 </entry>
 
-<entry 
+<entry
 id="bfbflag"
 type="logical"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
 turns on bfb option in coupler which produce bfb results in the
-coupler on different processor counts.  
+coupler on different processor counts.
 default: .false.
 </entry>
 
-<entry 
+<entry
 id="orb_mode"
 type="char*64"
-category="orbital" 
+category="orbital"
 group="seq_infodata_inparm"
-valid_values="fixed_year,variable_year,fixed_parameters">  
+valid_values="fixed_year,variable_year,fixed_parameters">
 orbital model setting.  this sets how the orbital mode will be
-configured.  
+configured.
 "fixed_year" uses the orb_iyear and other orb inputs are ignored.  In
 this mode, the orbital parameters are constant and based on the year.
 "variable_year" uses the orb_iyear and orb_iyear_align.  In this mode,
@@ -309,19 +343,19 @@ variable_year, fixed_parameters]
 default: 'fixed_year'.
 </entry>
 
-<entry 
+<entry
 id="orb_iyear_align"
 type="integer"
-category="orbital" 
+category="orbital"
 group="seq_infodata_inparm">
-model year associated with orb_iyear when orb_mode is variable_year.  
+model year associated with orb_iyear when orb_mode is variable_year.
 default: 1990
 </entry>
 
-<entry 
+<entry
 id="orb_iyear"
 type="integer"
-category="orbital" 
+category="orbital"
 group="seq_infodata_inparm">
 year of orbit, used when orb_mode is fixed_year or variable_year.
 default: 1990
@@ -330,9 +364,9 @@ default: 1990
 <entry
 id="orb_eccen"
 type="real"
-category="orbital" 
+category="orbital"
 group="seq_infodata_inparm">
-eccentricity of orbit, used when orb_mode is fixed_parameters.  
+eccentricity of orbit, used when orb_mode is fixed_parameters.
 default: SHR_ORB_UNDEF_REAL (1.e36)
 (Not currently used in build-namelist)
 </entry>
@@ -340,7 +374,7 @@ default: SHR_ORB_UNDEF_REAL (1.e36)
 <entry
 id="orb_mvelp"
 type="real"
-category="orbital" 
+category="orbital"
 group="seq_infodata_inparm">
 location of vernal equinox in longitude degrees, used when orb_mode is fixed_parameters.
 default: SHR_ORB_UNDEF_REAL (1.e36)
@@ -350,9 +384,9 @@ default: SHR_ORB_UNDEF_REAL (1.e36)
 <entry
 id="orb_obliq"
 type="real"
-category="orbital" 
+category="orbital"
 group="seq_infodata_inparm">
-obliquity of orbit in degrees, used when orb_mode is fixed_parameters.  
+obliquity of orbit in degrees, used when orb_mode is fixed_parameters.
 default: SHR_ORB_UNDEF_REAL (1.e36)
 (Not currently used in build-namelist)
 </entry>
@@ -404,48 +438,58 @@ Temperature resolution of saturation vapor pressure lookup tables in Kelvin.
 Default: 1.0
 </entry>
 
+<entry
+id="tfreeze_option"
+type="char*16"
+category="control"
+group="seq_infodata_inparm"
+valid_values="minus1p8,linear_salt,mushy">
+Freezing point calculation for salt water.
+Default: minus1p8
+</entry>
+
 <entry 
 id="flux_epbal"
 type="char*8"
-category="control" 
+category="control"
 group="seq_infodata_inparm"
-valid_values="off,on">
+valid_values="off,ocn">
 Only used for C,G compsets: if ocn, ocn provides EP balance factor for precip
 default: off
 </entry>
 
-<entry 
-id="flux_albav" 
+<entry
+id="flux_albav"
 type="logical"
-category="control" 
+category="control"
 group="seq_infodata_inparm">
 Only used for C,G compsets: if true, compute albedos to work with daily avg SW down
 default: false
 </entry>
 
-<entry 
+<entry
 id="wall_time_limit"
 type="real"
-category="control" 
+category="control"
 group="seq_infodata_inparm">
 Wall time limit for run
 default: -1.0
 </entry>
 
-<entry 
+<entry
 id="force_stop_at"
 type="char*8"
-category="control" 
+category="control"
 group="seq_infodata_inparm"
 valid_values="day,month,year">
 Force stop at the next month, day, etc when wall_time_limit is hit
 default: month
 </entry>
 
-<entry 
-id="flux_diurnal" 
+<entry
+id="flux_diurnal"
 type="logical"
-category="control" 
+category="control"
 group="seq_infodata_inparm">
 If true, turn on diurnal cycle in computing atm/ocn fluxes
 default: false
@@ -460,83 +504,82 @@ wind gustiness factor
 default: 0.0D0
 </entry>
 
-
-<entry 
+<entry
 id="atm_gnam"
 type="char*64"
-category="mapping" 
+category="mapping"
 group="seq_infodata_inparm">
 ATM_GRID values passed into driver.
 default: undefined
 </entry>
 
-<entry 
+<entry
 id="lnd_gnam"
 type="char*64"
-category="mapping" 
+category="mapping"
 group="seq_infodata_inparm">
 LND_GRID values passed into driver.
 default: undefined
 </entry>
 
-<entry 
+<entry
 id="ocn_gnam"
 type="char*64"
-category="mapping" 
+category="mapping"
 group="seq_infodata_inparm">
 OCN_GRID values passed into driver.
 default: undefined
 </entry>
 
-<entry 
+<entry
 id="ice_gnam"
 type="char*64"
-category="mapping" 
+category="mapping"
 group="seq_infodata_inparm">
 ICE_GRID values passed into driver.
 default: undefined
 </entry>
 
-<entry 
+<entry
 id="rof_gnam"
 type="char*64"
-category="mapping" 
+category="mapping"
 group="seq_infodata_inparm">
 ROF_GRID values passed into driver.
 default: undefined
 </entry>
 
-<entry 
+<entry
 id="glc_gnam"
 type="char*64"
-category="mapping" 
+category="mapping"
 group="seq_infodata_inparm">
 GLC_GRID values passed into driver.
 default: undefined
 </entry>
 
-<entry 
+<entry
 id="wav_gnam"
 type="char*64"
-category="mapping" 
+category="mapping"
 group="seq_infodata_inparm">
 WAV_GRID values passed into driver.
 default: undefined
 </entry>
 
-<entry 
+<entry
 id="shr_map_dopole"
 type="logical"
-category="mapping" 
+category="mapping"
 group="seq_infodata_inparm">
 invoke pole averaging corrections in shr_map_mod weights generation
 default: true
 </entry>
 
-<entry 
+<entry
 id="vect_map"
 type="char*64"
-category="mapping" 
+category="mapping"
 group="seq_infodata_inparm"
 valid_values="none,npfix,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag">
 vect_map
@@ -553,44 +596,44 @@ and north (v) directions.  the cart3d ignores the resuling "w"
 velocity.  the cart3d_uvw calculates the resulting u and v vectors by
 preserving the total "u,v,w" speed and the angle of the (u,v) vector.
 the _diag options just add diagnotics to the log file about the vector
-mapping.  
+mapping.
 default: npfix
 </entry>
 
-<entry 
+<entry
 id="aoflux_grid"
 type="char*64"
-category="mapping" 
+category="mapping"
 group="seq_infodata_inparm"
-valid_values="ocn,atm,exch">  
+valid_values="ocn,atm,exch">
 Grid for atm ocn flux calc (untested)
 default: ocn
 </entry>
 
-<entry 
+<entry
 id="mct_usealltoall"
 type="logical"
-category="mapping" 
+category="mapping"
 group="seq_infodata_inparm">
 mct alltoall mapping flag
 default: false
 </entry>
 
-<entry 
+<entry
 id="mct_usevector"
 type="logical"
-category="mapping" 
+category="mapping"
 group="seq_infodata_inparm">
 mct vector flag
 default: false
 </entry>
 
-<entry 
+<entry
 id="cpl_decomp"
 type="integer"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm"
-valid_values="0,1,2,3,4,5,6">  
+valid_values="0,1,2,3,4,5,6">
 cpl decomp option (0=default, 1=comp decomp, 2=rearr comp decomp, 3=new single 1d seg
 default: 0
 </entry>
@@ -605,306 +648,306 @@ Set the coupler sequencing.  See CPL_SEQ_OPTION in env_run.
 default: CESM1_MOD
 </entry>
 
-<entry 
+<entry
 id="cpl_cdf64"
 type="logical"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm">
 default: true
 </entry>
 
-<entry 
+<entry
 id="do_budgets"
 type="logical"
-category="budget" 
+category="budget"
 group="seq_infodata_inparm">
 logical that turns on diagnostic budgets, false means budgets will never be written
 default: false
 </entry>
 
-<entry 
+<entry
 id="do_histinit"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
 logical to write an extra initial coupler history file
 </entry>
 
-<entry 
+<entry
 id="budget_inst"
 type="integer"
-category="budget" 
+category="budget"
 group="seq_infodata_inparm"
-valid_values="0,1,2,3">  
+valid_values="0,1,2,3">
 sets the diagnotics level of the instantaneous budgets. [0,1,2,3],
 written only if BUDGETS variable is true
-0=none, 
-1=+net summary budgets, 
-2=+detailed lnd/ocn/ice component budgets, 
+0=none,
+1=+net summary budgets,
+2=+detailed lnd/ocn/ice component budgets,
 3=+detailed atm budgets
 default: 0
 </entry>
 
-<entry 
+<entry
 id="budget_daily"
 type="integer"
-category="budget" 
+category="budget"
 group="seq_infodata_inparm"
-valid_values="0,1,2,3">  
-sets the diagnotics level of the daily budgets. [0,1,2,3], 
+valid_values="0,1,2,3">
+sets the diagnotics level of the daily budgets. [0,1,2,3],
 written only if do_budgets variable is .true.,
 0=none,
-1=+net summary budgets, 
+1=+net summary budgets,
 2=+detailed lnd/ocn/ice component budgets,
 3=+detailed atm budgets
 default: 0
 </entry>
 
-<entry 
+<entry
 id="budget_month"
 type="integer"
-category="expdef" 
+category="expdef"
 group="seq_infodata_inparm"
-valid_values="0,1,2,3">  
-sets the diagnotics level of the monthy budgets. [0,1,2,3], 
+valid_values="0,1,2,3">
+sets the diagnotics level of the monthy budgets. [0,1,2,3],
 written only if do_budgets variable is .true.,
 0=none,
-1=+net summary budgets, 
+1=+net summary budgets,
 2=+detailed lnd/ocn/ice component budgets,
 3=+detailed atm budgets
 default: 1
 </entry>
 
-<entry 
+<entry
 id="budget_ann"
 type="integer"
-category="budget" 
+category="budget"
 group="seq_infodata_inparm"
-valid_values="0,1,2,3">  
-sets the diagnotics level of the annual budgets. [0,1,2,3], 
+valid_values="0,1,2,3">
+sets the diagnotics level of the annual budgets. [0,1,2,3],
 written only if do_budgets variable is .true.,
 0=none,
-1=+net summary budgets, 
+1=+net summary budgets,
 2=+detailed lnd/ocn/ice component budgets,
 3=+detailed atm budgets
 default: 1
 </entry>
 
-<entry 
+<entry
 id="budget_ltann"
 type="integer"
-category="budget" 
+category="budget"
 group="seq_infodata_inparm"
-valid_values="0,1,2,3">  
+valid_values="0,1,2,3">
 sets the diagnotics level of the longterm budgets written at the end
-of the year. [0,1,2,3], 
+of the year. [0,1,2,3],
 written only if do_budgets variable is .true.,
-0=none, 
-1=+net summary budgets, 
-2=+detailed lnd/ocn/ice component budgets, 
-3=+detailed atm budgets, 
+0=none,
+1=+net summary budgets,
+2=+detailed lnd/ocn/ice component budgets,
+3=+detailed atm budgets,
 default: 1
 </entry>
 
-<entry 
+<entry
 id="budget_ltend"
 type="integer"
-category="budget" 
+category="budget"
 group="seq_infodata_inparm"
-valid_values="0,1,2,3">  
+valid_values="0,1,2,3">
 sets the diagnotics level of the longterm budgets written at the end
-of each run. [0,1,2,3], 
+of each run. [0,1,2,3],
 written only if do_budgets variable is .true.,
-0=none, 
-1=+net summary budgets, 
-2=+detailed lnd/ocn/ice component budgets, 
-3=+detailed atm budgets, 
+0=none,
+1=+net summary budgets,
+2=+detailed lnd/ocn/ice component budgets,
+3=+detailed atm budgets,
 default: 0
 </entry>
 
-<entry 
+<entry
 id="histaux_a2x"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
-turns on coupler history stream for instantaneous atm to coupler fields.  
+turns on coupler history stream for instantaneous atm to coupler fields.
 default: false
 </entry>
 
-<entry 
+<entry
 id="histaux_a2x3hr"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
-turns on coupler history stream for 3-hour average atm to coupler fields.  
+turns on coupler history stream for 3-hour average atm to coupler fields.
 default: false
 </entry>
 
-<entry 
+<entry
 id="histaux_a2x3hrp"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
-turns on coupler history stream for 3-hour average atm to coupler precip fields.  
+turns on coupler history stream for 3-hour average atm to coupler precip fields.
 default: false
 </entry>
 
-<entry 
+<entry
 id="histaux_a2x24hr"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
-turns on coupler history stream for daily average atm to coupler fields.  
+turns on coupler history stream for daily average atm to coupler fields.
 default: false
 </entry>
 
-<entry 
+<entry
 id="histaux_l2x"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
-turns on coupler history stream for instantaneous land to coupler fields.  
+turns on coupler history stream for instantaneous land to coupler fields.
 default: false
 </entry>
 
-<entry 
+<entry
 id="histaux_r2x"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
-turns on coupler history stream for instantaneous runoff to coupler fields.  
+turns on coupler history stream for instantaneous runoff to coupler fields.
 default: false
 </entry>
 
-<entry 
+<entry
 id="histaux_l2x1yr"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
-turns on coupler history stream for annual sno to coupler fields.  
+turns on coupler history stream for annual sno to coupler fields.
 default: false
 </entry>
 
-<entry 
+<entry
 id="histavg_atm"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
 writes atm fields in coupler average history files.
 default: true
 </entry>
 
-<entry 
+<entry
 id="histavg_lnd"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
 writes lnd fields in coupler average history files.
 default: true
 </entry>
 
-<entry 
+<entry
 id="histavg_ocn"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
 writes ocn fields in coupler average history files.
 default: true
 </entry>
 
-<entry 
+<entry
 id="histavg_ice"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
 writes ice fields in coupler average history files.
 default: true
 </entry>
 
-<entry 
+<entry
 id="histavg_rof"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
 writes rof fields in coupler average history files.
 default: true
 </entry>
 
-<entry 
+<entry
 id="histavg_glc"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
 writes glc fields in coupler average history files.
 default: true
 </entry>
 
-<entry 
+<entry
 id="histavg_wav"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
 writes wav fields in coupler average history files.
 default: true
 </entry>
 
-<entry 
+<entry
 id="histavg_xao"
 type="logical"
-category="history" 
+category="history"
 group="seq_infodata_inparm">
 writes xao fields in coupler average history files.
 default: true
 </entry>
 
-<entry 
+<entry
 id="drv_threading"
 type="logical"
-category="performance" 
+category="performance"
 group="seq_infodata_inparm">
 turn on run time control of threading per pe per component by the driver
 default: false
 </entry>
 
-<entry 
+<entry
 id="run_barriers"
 type="logical"
-category="performance" 
+category="performance"
 group="seq_infodata_inparm">
 default: .false.
 </entry>
 
-<entry 
+<entry
 id="eps_frac"
 type="real"
-category="domain_check" 
+category="domain_check"
 group="seq_infodata_inparm">
 Error tolerance for differences in fractions in domain checking
 default: 1.0e-02
 </entry>
 
-<entry 
+<entry
 id="eps_amask"
 type="real"
-category="domain_check" 
+category="domain_check"
 group="seq_infodata_inparm">
 Error tolerance for differences in atm/land masks in domain checking
 default: 1.0e-13
 </entry>
 
-<entry 
+<entry
 id="eps_agrid"
 type="real"
-category="domain_check" 
+category="domain_check"
 group="seq_infodata_inparm">
 Error tolerance for differences in atm/land lat/lon in domain checking
 default: 1.0e-12
 </entry>
 
-<entry 
+<entry
 id="eps_aarea"
 type="real"
-category="domain_check" 
+category="domain_check"
 group="seq_infodata_inparm">
 Error tolerance for differences in atm/land areas in domain checking
 default: 1.0e-07
@@ -913,7 +956,7 @@ default: 1.0e-07
 <entry
 id="eps_omask"
 type="real"
-category="domain_check" 
+category="domain_check"
 group="seq_infodata_inparm">
 Error tolerance for differences in ocean/ice masks in domain checking
 default: 1.0e-06
@@ -922,78 +965,78 @@ default: 1.0e-06
 <entry
 id="eps_ogrid"
 type="real"
-category="domain_check" 
+category="domain_check"
 group="seq_infodata_inparm">
 Error tolerance for differences in ocean/ice lon/lat in domain checking
 default: 1.0e-2
 </entry>
 
-<entry 
+<entry
 id="eps_oarea"
 type="real"
-category="domain_check" 
+category="domain_check"
 group="seq_infodata_inparm">
 Error tolerance for differences in ocean/ice lon/lat in domain checking
 default: 1.0e-1
 </entry>
 
-<entry 
-id="pts_settings"     
+<entry
+id="pts_settings"
 type="char*512"
-category="domain_check" 
+category="domain_check"
 group="seq_infodata_inparm">
 </entry>
 
-<entry 
+<entry
 id="single_column"
 type="logical"
-category="seq_infodata_inparm" 
+category="seq_infodata_inparm"
 group="seq_infodata_inparm">
-turns on single column mode.  
-set by PTS_MODE in env_case.xml, 
+turns on single column mode.
+set by PTS_MODE in env_case.xml,
 default: false
 </entry>
 
-<entry 
+<entry
 id="scmlat"
 type="real"
-category="seq_infodata_inparm" 
+category="seq_infodata_inparm"
 group="seq_infodata_inparm">
-grid point latitude associated with single column mode.  
+grid point latitude associated with single column mode.
 set by PTS_LAT in env_run.xml.
 </entry>
 
-<entry 
+<entry
 id="scmlon"
 type="real"
-category="seq_infodata_inparm" 
+category="seq_infodata_inparm"
 group="seq_infodata_inparm">
-grid point longitude associated with single column mode.  
+grid point longitude associated with single column mode.
 set by PTS_LON in env_run.xml.
 </entry>
 
-<entry 
+<entry
 id="reprosum_use_ddpdd"
 type="logical"
-category="reprosum" 
+category="reprosum"
 group="seq_infodata_inparm">
 Use faster method for reprosum, but one where reproducibility is not always guaranteed.
 default: .false.
 </entry>
 
-<entry 
+<entry
 id="reprosum_diffmax"
 type="real"
-category="reprosum" 
+category="reprosum"
 group="seq_infodata_inparm">
 Tolerance for relative error
 default: -1.0e-8
 </entry>
 
-<entry 
+<entry
 id="reprosum_recompute"
 type="logical"
-category="reprosum" 
+category="reprosum"
 group="seq_infodata_inparm">
 Recompute with non-scalable algorithm if reprosum_diffmax is exceeded.
 default: .false.
@@ -1006,10 +1049,10 @@ default: .false.
 <entry
 id="atm_cpl_dt"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 atm coupling interval in seconds
-set via ATM_NCPL in env_run.xml.  
+set via ATM_NCPL in env_run.xml.
 ATM_NCPL is the number of times the atm is coupled per NCPL_BASE_PERIOD
 NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
 associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
@@ -1019,10 +1062,10 @@ default: 0
 <entry
 id="lnd_cpl_dt"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 lnd coupling interval in seconds
-set via LND_NCPL in env_run.xml.  
+set via LND_NCPL in env_run.xml.
 LND_NCPL is the number of times the lnd is coupled per NCPL_BASE_PERIOD
 NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
 associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
@@ -1032,7 +1075,7 @@ default: 0
 <entry
 id="rof_cpl_dt"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 river runoff coupling interval in seconds
 currently set by default to 10800 seconds.
@@ -1042,10 +1085,10 @@ default: 10800
 <entry
 id="ice_cpl_dt"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 ice coupling interval in seconds
-set via ICE_NCPL in env_run.xml.  
+set via ICE_NCPL in env_run.xml.
 ICE_NCPL is the number of times the ice is coupled per NCPL_BASE_PERIOD
 NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
 associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
@@ -1055,10 +1098,10 @@ default: 0
 <entry
 id="ocn_cpl_dt"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 ocn coupling interval in seconds
-set via OCN_NCPL in env_run.xml.  
+set via OCN_NCPL in env_run.xml.
 OCN_NCPL is the number of times the ocn is coupled per NCPL_BASE_PERIOD
 NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
 associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
@@ -1068,10 +1111,10 @@ default: 0
 <entry
 id="glc_cpl_dt"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 glc coupling interval in seconds
-set via GLC_NCPL in env_run.xml.  
+set via GLC_NCPL in env_run.xml.
 GLC_NCPL is the number of times the glc is coupled per NCPL_BASE_PERIOD
 NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
 associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
@@ -1081,10 +1124,10 @@ default: 0
 <entry
 id="wav_cpl_dt"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 wav coupling interval in seconds
-set via WAV_NCPL in env_run.xml.  
+set via WAV_NCPL in env_run.xml.
 WAV_NCPL is the number of times the wav is coupled per NCPL_BASE_PERIOD
 NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
 associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
@@ -1094,7 +1137,7 @@ default: 0
 <entry
 id="atm_cpl_offset"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 atm coupling interval offset in seconds
 default: 0
@@ -1103,7 +1146,7 @@ default: 0
 <entry
 id="lnd_cpl_offset"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 lnd coupling interval offset in seconds
 default: 0
@@ -1112,7 +1155,7 @@ default: 0
 <entry
 id="ice_cpl_offset"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 ice coupling interval offset in seconds
 default: 0
@@ -1121,7 +1164,7 @@ default: 0
 <entry
 id="ocn_cpl_offset"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 ocn coupling interval offset in seconds
 default: 0
@@ -1130,7 +1173,7 @@ default: 0
 <entry
 id="glc_cpl_offset"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 glc coupling interval offset in seconds
 default: 0
@@ -1139,7 +1182,7 @@ default: 0
 <entry
 id="wav_cpl_offset"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 wav coupling interval offset in seconds
 default: 0
@@ -1148,18 +1191,18 @@ default: 0
 <entry
 id="calendar"
 type="char*16"
-category="time" 
+category="time"
 group="seq_timemgr_inparm"
 valid_values="NO_LEAP,GREGORIAN">
-calendar in use.  [NO_LEAP, GREOGORIAN].  
+calendar in use.  [NO_LEAP, GREOGORIAN].
 set by CALENDAR in env_run.xml
-default: "NO_LEAP".  
+default: "NO_LEAP".
 </entry>
 
 <entry
 id="start_ymd"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 Run start date in yyyymmdd format, only used for startup and hybrid runs.
 default: 00010101
@@ -1168,7 +1211,7 @@ default: 00010101
 <entry
 id="start_tod"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 Start time-of-day in universal time (seconds), should be between zero and 86400
 default: 0
@@ -1177,7 +1220,7 @@ default: 0
 <entry
 id="stop_option"
 type="char*16"
-category="time" 
+category="time"
 group="seq_timemgr_inparm"
 valid_values="none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear,date,ifdays0,end">
 sets the run length with stop_n and stop_ymd
@@ -1199,7 +1242,7 @@ stop_option alarms are:
 <entry
 id="stop_n"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 Sets the run length with stop_option and stop_ymd
 </entry>
@@ -1207,17 +1250,17 @@ Sets the run length with stop_option and stop_ymd
 <entry
 id="stop_ymd"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 date in yyyymmdd format, sets the run length with stop_option and stop_n,
 can be in addition to stop_option and stop_n, negative value implies off
 </entry>
 
-<entry 
-id="restart_file" 
-type="char*256" 
+<entry
+id="restart_file"
+type="char*256"
 category="expdef"
-group="seq_infodata_inparm" 
+group="seq_infodata_inparm"
 valid_values="" >
 Driver restart filename.
 (NOTE: Normally THIS IS NOT USED -- Set with RUN_REFCASE and RUN_REFDATE)
@@ -1226,11 +1269,11 @@ Driver restart filename.
 <entry
 id="restart_option"
 type="char*16"
-category="time" 
+category="time"
 group="seq_timemgr_inparm"
 valid_values="none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,monthly,nmonth,nyears,nyear,date,ifdays0,end">
-sets the run length with stop_n and stop_ymd
-stop_option alarms are:
+sets the restart frequency with restart_n and restart_ymd
+restart_option alarms are:
 [none/never], turns option off
 [nstep/s]   , restarts every restart_n nsteps  , relative to current run start time
 [nsecond/s] , restarts every restart_n nseconds, relative to current run start time
@@ -1248,15 +1291,15 @@ stop_option alarms are:
 <entry
 id="restart_n"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
-Ssets model restart writes with restart_option and restart_ymd (same options as stop_n)
+Sets model restart writes with restart_option and restart_ymd (same options as stop_n)
 </entry>
 
 <entry
 id="restart_ymd"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 Date in yyyymmdd format, sets model restart write date with rest_option and restart_n
 default: STOP_N
@@ -1265,7 +1308,7 @@ default: STOP_N
 <entry
 id="end_restart"
 type="logical"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 true => write restarts at end of run
 forces a restart write at the end of the run in addition to any
@@ -1277,7 +1320,7 @@ default: false
 <entry
 id="history_option"
 type="char*16"
-category="time" 
+category="time"
 group="seq_timemgr_inparm"
 valid_values="none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear,date,ifdays0,end">
 coupler history snapshot option (used with history_n and history_ymd)
@@ -1300,7 +1343,7 @@ history_option alarms are:
 <entry
 id="history_n"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 sets coupler snapshot history file frequency (like restart_n)
 set by HIST_N in env_run.xml.
@@ -1309,16 +1352,16 @@ set by HIST_N in env_run.xml.
 <entry
 id="history_ymd"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
-date associated with history_option date.  yyyymmdd format.  
+date associated with history_option date.  yyyymmdd format.
 set by HIST_DATE in env_run.xml.
 </entry>
 
 <entry
 id="histavg_option"
 type="char*16"
-category="time" 
+category="time"
 group="seq_timemgr_inparm"
 valid_values="none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear,date,ifdays0,end">
 coupler time average history option (used with histavg_n and histavg_ymd)
@@ -1341,7 +1384,7 @@ histavg_option alarms are:
 <entry
 id="histavg_n"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 Sets coupler time-average history file frequency (like restart_option)
 set by AVGHIST_N in env_run.xml.
@@ -1350,16 +1393,44 @@ set by AVGHIST_N in env_run.xml.
 <entry
 id="histavg_ymd"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
-date associated with histavg_option date.  yyyymmdd format.  
+date associated with histavg_option date.  yyyymmdd format.
 set by AVGHIST_DATE in env_run.xml.
+</entry>
+
+<entry
+id="barrier_option"
+type="char*16"
+category="time"
+group="seq_timemgr_inparm"
+valid_values="none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,monthly,nmonth,nyears,nyear,date,ifdays0,end">
+sets the driver barrier frequency to sync models across all tasks with barrier_n and barrier_ymd
+barrier_option alarms are like restart_option
+default: never
+</entry>
+
+<entry
+id="barrier_n"
+type="integer"
+category="time"
+group="seq_timemgr_inparm">
+Sets model barriers with barrier_option and barrier_ymd (same options as stop_n)
+default: 1
+</entry>
+
+<entry
+id="barrier_ymd"
+type="integer"
+category="time"
+group="seq_timemgr_inparm">
+Date in yyyymmdd format, sets model barriers date with barrier_option and barrier_n
 </entry>
 
 <entry
 id="tprof_option"
 type="char*16"
-category="time" 
+category="time"
 group="seq_timemgr_inparm"
 valid_values="none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear,date,ifdays0,end">
 Sets timing output file frequency (like rest_option but relative to run start date)
@@ -1381,7 +1452,7 @@ tprof_option alarms are:
 <entry
 id="tprof_n"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 Sets timing output file frequency (like restart_n)
 </entry>
@@ -1389,39 +1460,39 @@ Sets timing output file frequency (like restart_n)
 <entry
 id="tprof_ymd"
 type="integer"
-category="time" 
+category="time"
 group="seq_timemgr_inparm">
 yyyymmdd format, sets timing output file date (like restart_date)
 </entry>
 
 
-<entry 
-id="logfilepostfix" 
-type="char*80" 
+<entry
+id="logfilepostfix"
+type="char*80"
 category="driver"
-group="seq_infodata_inparm" 
+group="seq_infodata_inparm"
 valid_values="" >
 Ending suffix "postfix" for output log files.
 </entry>
 
-<entry 
-id="outpathroot" 
-type="char*256" 
+<entry
+id="outpathroot"
+type="char*256"
 category="drv_history"
-group="seq_infodata_inparm" 
+group="seq_infodata_inparm"
 valid_values="" >
 Root directory for driver output files
 </entry>
 
 
-<entry 
-id="max_cplstep_time"    
+<entry
+id="max_cplstep_time"
 type="real"
-category="driver" 
+category="driver"
 group="seq_infodata_inparm">
 Abort model if coupler timestep wallclock time exceeds this value, ignored if 0,
 if &lt; 0 then use abs(max_cplstep_time)*cktime as the threshold.
-default: 0 
+default: 0
 </entry>
 
 
@@ -1431,355 +1502,400 @@ default: 0
 <!-- group seq_ccsm_pes          -->
 <!-- =========================== -->
 
-<entry 
+<entry
 id="atm_ntasks"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of mpi tasks assigned to the atm components. 
-set by NTASKS_ATM in env_configure.xml.  
+the number of mpi tasks assigned to the atm components.
+set by NTASKS_ATM in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="atm_nthreads"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of threads per mpi task for the atm component.  
-set by NTHRDS_ATM in env_configure.xml.  
+the number of threads per mpi task for the atm component.
+set by NTHRDS_ATM in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="atm_rootpe"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the global mpi task rank of the root processor assigned to the atm component.  
+the global mpi task rank of the root processor assigned to the atm component.
 set by ROOTPE_ATM in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="atm_pestride"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the mpi global processors stride associated with the mpi tasks for the atm component.  
-set by PSTRID_ATM in env_configure.xml.  
+the mpi global processors stride associated with the mpi tasks for the atm component.
+set by PSTRID_ATM in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="atm_layout"
 type="char*32"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes"
-valid_values="concurrent,sequential">  
+valid_values="concurrent,sequential">
 Layout of multi-instance atms (if there are more than 1)
 </entry>
 
-<entry 
+<entry
 id="lnd_ntasks"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of mpi tasks assigned to the lnd components. 
-set by NTASKS_LND in env_configure.xml.  
+the number of mpi tasks assigned to the lnd components.
+set by NTASKS_LND in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="lnd_nthreads"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of threads per mpi task for the lnd component.  
-set by NTHRDS_LND in env_configure.xml.  
+the number of threads per mpi task for the lnd component.
+set by NTHRDS_LND in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="lnd_rootpe"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the global mpi task rank of the root processor assigned to the lnd component.  
+the global mpi task rank of the root processor assigned to the lnd component.
 set by ROOTPE_LND in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="lnd_pestride"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the mpi global processors stride associated with the mpi tasks for the lnd component.  
-set by PSTRID_LND in env_configure.xml.  
+the mpi global processors stride associated with the mpi tasks for the lnd component.
+set by PSTRID_LND in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="lnd_layout"
 type="char*32"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes"
-valid_values="concurrent,sequential">  
+valid_values="concurrent,sequential">
 Layout of multi-instance lnds (if there are more than 1)
 </entry>
 
-<entry 
+<entry
 id="ice_ntasks"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of mpi tasks assigned to the ice components. 
-set by NTASKS_ICE in env_configure.xml.  
+the number of mpi tasks assigned to the ice components.
+set by NTASKS_ICE in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="ice_nthreads"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of threads per mpi task for the ice component.  
-set by NTHRDS_ICE in env_configure.xml.  
+the number of threads per mpi task for the ice component.
+set by NTHRDS_ICE in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="ice_rootpe"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the global mpi task rank of the root processor assigned to the ice component.  
+the global mpi task rank of the root processor assigned to the ice component.
 set by ROOTPE_ICE in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="ice_pestride"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the mpi global processors stride associated with the mpi tasks for the ice component.  
-set by PSTRID_ICE in env_configure.xml.  
+the mpi global processors stride associated with the mpi tasks for the ice component.
+set by PSTRID_ICE in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="ice_layout"
 type="char*32"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes"
-valid_values="concurrent,sequential">  
+valid_values="concurrent,sequential">
 Layout of multi-instance ices (if there are more than 1)
 </entry>
 
-<entry 
+<entry
 id="ocn_ntasks"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of mpi tasks assigned to the ocn components. 
-set by NTASKS_OCN in env_configure.xml.  
+the number of mpi tasks assigned to the ocn components.
+set by NTASKS_OCN in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="ocn_nthreads"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of threads per mpi task for the ocn component.  
-set by NTHRDS_OCN in env_configure.xml.  
+the number of threads per mpi task for the ocn component.
+set by NTHRDS_OCN in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="ocn_rootpe"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the global mpi task rank of the root processor assigned to the ocn component.  
+the global mpi task rank of the root processor assigned to the ocn component.
 set by ROOTPE_OCN in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="ocn_pestride"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the mpi global processors stride associated with the mpi tasks for the ocn component.  
+the mpi global processors stride associated with the mpi tasks for the ocn component.
 set by PSTRID_OCN in env_configure.xml.  default: 1
 </entry>
 
-<entry 
+<entry
 id="ocn_layout"
 type="char*32"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes"
-valid_values="concurrent,sequential">  
+valid_values="concurrent,sequential">
 Layout of multi-instance ocns (if there are more than 1)
 </entry>
 
-<entry 
+<entry
 id="glc_ntasks"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of mpi tasks assigned to the glc components. 
-set by NTASKS_GLC in env_configure.xml.  
+the number of mpi tasks assigned to the glc components.
+set by NTASKS_GLC in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="glc_nthreads"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of threads per mpi task for the glc component.  
-set by NTHRDS_GLC in env_configure.xml.  
+the number of threads per mpi task for the glc component.
+set by NTHRDS_GLC in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="glc_rootpe"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the global mpi task rank of the root processor assigned to the glc component.  
+the global mpi task rank of the root processor assigned to the glc component.
 set by ROOTPE_GLC in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="glc_pestride"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the mpi global processors stride associated with the mpi tasks for the glc component.  
-set by PSTRID_GLC in env_configure.xml.  
+the mpi global processors stride associated with the mpi tasks for the glc component.
+set by PSTRID_GLC in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="glc_layout"
 type="char*32"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes"
-valid_values="concurrent,sequential">  
+valid_values="concurrent,sequential">
 Layout of multi-instance glcs (if there are more than 1)
 </entry>
 
-<entry 
+<entry
 id="wav_ntasks"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of mpi tasks assigned to the wav components. 
-set by NTASKS_WAV in env_configure.xml.  
+the number of mpi tasks assigned to the wav components.
+set by NTASKS_WAV in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="wav_nthreads"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of threads per mpi task for the wav component.  
-set by NTHRDS_WAV in env_configure.xml.  
+the number of threads per mpi task for the wav component.
+set by NTHRDS_WAV in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="wav_rootpe"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the global mpi task rank of the root processor assigned to the wav component.  
+the global mpi task rank of the root processor assigned to the wav component.
 set by ROOTPE_WAV in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="wav_pestride"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the mpi global processors stride associated with the mpi tasks for the wav component.  
-set by PSTRID_WAV in env_configure.xml.  
+the mpi global processors stride associated with the mpi tasks for the wav component.
+set by PSTRID_WAV in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="wav_layout"
 type="char*32"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes"
-valid_values="concurrent,sequential">  
+valid_values="concurrent,sequential">
 Layout of multi-instance wavs (if there are more than 1)
 </entry>
 
-<entry 
+<entry
 id="rof_ntasks"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of mpi tasks assigned to the lnd components. 
-set by NTASKS_LND in env_configure.xml.  
+the number of mpi tasks assigned to the lnd components.
+set by NTASKS_LND in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="rof_nthreads"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of threads per mpi task for the lnd component.  
-set by NTHRDS_LND in env_configure.xml.  
+the number of threads per mpi task for the lnd component.
+set by NTHRDS_LND in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="rof_rootpe"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the global mpi task rank of the root processor assigned to the lnd component.  
+the global mpi task rank of the root processor assigned to the lnd component.
 set by ROOTPE_LND in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="rof_pestride"
+type="integer"
+category="ccsm_pes"
+group="ccsm_pes">
+the mpi global processors stride associated with the mpi tasks for the lnd component.
+set by PSTRID_LND in env_configure.xml.
+</entry>
+
+<entry
+id="rof_layout"
+type="char*32"
+category="ccsm_pes"
+group="ccsm_pes"
+valid_values="concurrent,sequential">
+Layout of multi-instance lnds (if there are more than 1)
+</entry>
+
+<entry
+id="esp_ntasks"
 type="integer"
 category="ccsm_pes" 
 group="ccsm_pes">
-the mpi global processors stride associated with the mpi tasks for the lnd component.  
-set by PSTRID_LND in env_configure.xml.  
+the number of mpi tasks assigned to the esp components. 
+set by NTASKS_ESP in env_configure.xml.  
 </entry>
 
 <entry 
-id="rof_layout"
+id="esp_nthreads"
+type="integer"
+category="ccsm_pes" 
+group="ccsm_pes">
+the number of threads per mpi task for the esp component.  
+set by NTHRDS_ESP in env_configure.xml.  
+</entry>
+
+<entry 
+id="esp_rootpe"
+type="integer"
+category="ccsm_pes" 
+group="ccsm_pes">
+the global mpi task rank of the root processor assigned to the esp component.  
+set by ROOTPE_ESP in env_configure.xml.
+</entry>
+
+<entry 
+id="esp_pestride"
+type="integer"
+category="ccsm_pes" 
+group="ccsm_pes">
+the mpi global processors stride associated with the mpi tasks for the esp component.  
+set by PSTRID_ESP in env_configure.xml.  
+</entry>
+
+<entry 
+id="esp_layout"
 type="char*32"
 category="ccsm_pes" 
 group="ccsm_pes"
 valid_values="concurrent,sequential">  
-Layout of multi-instance lnds (if there are more than 1)
+Layout of multi-instance external system processor (if there are more than 1)
 </entry>
 
 <entry 
 id="cpl_ntasks"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of mpi tasks assigned to the cpl components. 
-set by NTASKS_CPL in env_configure.xml.  
+the number of mpi tasks assigned to the cpl components.
+set by NTASKS_CPL in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="cpl_nthreads"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the number of threads per mpi task for the cpl component.  
-set by NTHRDS_CPL in env_configure.xml.  
+the number of threads per mpi task for the cpl component.
+set by NTHRDS_CPL in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="cpl_rootpe"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the global mpi task rank of the root processor assigned to the cpl component.  
+the global mpi task rank of the root processor assigned to the cpl component.
 set by ROOTPE_CPL in env_configure.xml.
 </entry>
 
-<entry 
+<entry
 id="cpl_pestride"
 type="integer"
-category="ccsm_pes" 
+category="ccsm_pes"
 group="ccsm_pes">
-the mpi global processors stride associated with the mpi tasks for the cpl component.  
-set by PSTRID_CPL in env_configure.xml.  
+the mpi global processors stride associated with the mpi tasks for the cpl component.
+set by PSTRID_CPL in env_configure.xml.
 </entry>
 
 
@@ -1788,72 +1904,72 @@ set by PSTRID_CPL in env_configure.xml.
 <!--  in perf_mod.F90            -->
 <!-- =========================== -->
 
-<entry 
+<entry
 id="profile_global_stats"
 type="logical"
-category="performance" 
+category="performance"
 group="prof_inparm">
 </entry>
 
-<entry 
+<entry
 id="profile_single_file"
 type="logical"
-category="performance" 
+category="performance"
 group="prof_inparm">
 </entry>
 
-<entry 
+<entry
 id="profile_disable"
 type="logical"
-category="performance" 
+category="performance"
 group="prof_inparm">
 </entry>
 
-<entry 
+<entry
 id="profile_barrier"
 type="logical"
-category="performance" 
+category="performance"
 group="prof_inparm">
 </entry>
 
-<entry 
+<entry
 id="profile_depth_limit"
 type="integer"
-category="performance" 
+category="performance"
 group="prof_inparm">
 </entry>
 
-<entry 
+<entry
 id="profile_outpe_stride"
 type="integer"
-category="performance" 
+category="performance"
 group="prof_inparm">
 </entry>
 
-<entry 
+<entry
 id="profile_detail_limit"
 type="integer"
-category="performance" 
+category="performance"
 group="prof_inparm">
 default: 0
 </entry>
 
-<entry 
+<entry
 id="profile_timer"
 type="integer"
-category="performance" 
+category="performance"
 group="prof_inparm">
 </entry>
 
-<entry 
+<entry
 id="profile_ovhd_measurement"
 type="logical"
-category="performance" 
+category="performance"
 group="prof_inparm">
 default: .false.
 </entry>
 
-<entry 
+<entry
 id="profile_add_detail"
 type="logical"
 category="performance" 
@@ -1864,15 +1980,15 @@ default: .false.
 <entry 
 id="profile_outpe_num"
 type="integer"
-category="performance" 
+category="performance"
 group="prof_inparm">
 default: 1
 </entry>
 
-<entry 
+<entry
 id="profile_papi_enable"
 type="logical"
-category="performance" 
+category="performance"
 group="prof_inparm">
 default: .false.
 </entry>
@@ -1882,34 +1998,34 @@ default: .false.
 <!--  in perf_mod.F90            -->
 <!-- =========================== -->
 
-<entry 
+<entry
 id="papi_ctr1_str"
 type="char*16"
-category="performance" 
+category="performance"
 group="papi_inparm">
 See gptl_papi.c for the list of valid values
 </entry>
 
-<entry 
+<entry
 id="papi_ctr2_str"
 type="char*16"
-category="performance" 
+category="performance"
 group="papi_inparm">
 See gptl_papi.c for the list of valid values
 </entry>
 
-<entry 
+<entry
 id="papi_ctr3_str"
 type="char*16"
-category="performance" 
+category="performance"
 group="papi_inparm">
 See gptl_papi.c for the list of valid values
 </entry>
 
-<entry 
+<entry
 id="papi_ctr4_str"
 type="char*16"
-category="performance" 
+category="performance"
 group="papi_inparm">
 See gptl_papi.c for the list of valid values
 </entry>
@@ -1920,142 +2036,150 @@ See gptl_papi.c for the list of valid values
 <!-- group pio_default_inparm    -->
 <!-- =========================== -->
 
-<entry 
+<entry
 id="pio_async_interface"
 type="logical"
-category="pio" 
+category="pio"
 group="pio_default_inparm">
-future asynchronous IO capability (not currently supported). 
+future asynchronous IO capability (not currently supported).
 default: .false.
 </entry>
 
-<entry 
+<entry
 id="pio_stride"
 type="integer"
-category="pio" 
+category="pio"
 group="pio_default_inparm">
-stride of tasks in pio used generically, component based value takes precedent. 
+stride of tasks in pio used generically, component based value takes precedent.
 </entry>
 
-<entry 
+<entry
 id="pio_root"
 type="integer"
-category="pio" 
+category="pio"
 group="pio_default_inparm">
-io task root in pio used generically, component based value takes precedent. 
+io task root in pio used generically, component based value takes precedent.
 </entry>
 
-<entry 
+<entry
+id="pio_rearranger"
+type="integer"
+category="pio"
+group="pio_default_inparm">
+Rearranger method for pio 1=box, 2=subset.
+</entry>
+
+<entry
 id="pio_numiotasks"
 type="integer"
-category="pio" 
+category="pio"
 group="pio_default_inparm">
-number of io tasks in pio used generically, component based value takes precedent. 
+number of io tasks in pio used generically, component based value takes precedent.
 </entry>
 
-<entry 
+<entry
 id="pio_typename"
 type="char*64"
-category="pio" 
+category="pio"
 group="pio_default_inparm"
 valid_values="netcdf,pnetcdf,netcdf4p,netcdf4c,default">
-io type in pio used generically, component based value takes precedent.  
-valid values: netcdf, pnetcdf, netcdf4p, netcdf4c, default 
+io type in pio used generically, component based value takes precedent.
+valid values: netcdf, pnetcdf, netcdf4p, netcdf4c, default
 </entry>
 
-<entry 
+<entry
 id="pio_debug_level"
 type="integer"
-category="pio" 
-group="pio_default_inparm" 
+category="pio"
+group="pio_default_inparm"
 valid_values="0,1,2,3,4,5,6">
 pio debug level
 valid values: 0,1,2,3,4,5,6
 </entry>
 
-<entry 
+<entry
 id="pio_blocksize"
 type="integer"
-category="pio" 
+category="pio"
 group="pio_default_inparm">
 pio blocksize
 </entry>
 
-<entry 
+<entry
 id="pio_buffer_size_limit"
 type="integer"
-category="pio" 
+category="pio"
 group="pio_default_inparm">
 pio buffer size limit
 </entry>
 
-<entry 
+<entry
 id="pio_rearr_comm_type"
 type="char*16"
-category="pio" 
+category="pio"
 group="pio_default_inparm"
 valid_values="p2p,coll,default">
 pio rearranger communication type.
-valid values: p2p, coll, default 
+valid values: p2p, coll, default
 </entry>
 
-<entry 
+<entry
 id="pio_rearr_comm_fcd"
 type="char*16"
-category="pio" 
+category="pio"
 group="pio_default_inparm"
 valid_values="2denable,io2comp,comp2io,disable,default">
 pio rearranger communication flow control direction.
-valid values: 2denable,io2comp,comp2io,disable,default 
+valid values: 2denable,io2comp,comp2io,disable,default
 </entry>
 
-<entry 
+<entry
 id="pio_rearr_comm_max_pend_req_comp2io"
 type="integer"
-category="pio" 
+category="pio"
 group="pio_default_inparm">
 pio rearranger communication max pending req (comp2io)
 </entry>
 
-<entry 
+<entry
 id="pio_rearr_comm_enable_hs_comp2io"
 type="logical"
-category="pio" 
+category="pio"
 group="pio_default_inparm">
 pio rearranger communication option: Enable handshake (comp2io)
 default: .true.
 </entry>
 
-<entry 
+<entry
 id="pio_rearr_comm_enable_isend_comp2io"
 type="logical"
-category="pio" 
+category="pio"
 group="pio_default_inparm">
 pio rearranger communication option: Enable isends (comp2io)
 default: .false.
 </entry>
 
-<entry 
+<entry
 id="pio_rearr_comm_max_pend_req_io2comp"
 type="integer"
-category="pio" 
+category="pio"
 group="pio_default_inparm">
 pio rearranger communication max pending req (io2comp)
 </entry>
 
-<entry 
+<entry
 id="pio_rearr_comm_enable_hs_io2comp"
 type="logical"
-category="pio" 
+category="pio"
 group="pio_default_inparm">
 pio rearranger communication option: Enable handshake (io2comp)
 default: .true.
 </entry>
 
-<entry 
+<entry
 id="pio_rearr_comm_enable_isend_io2comp"
 type="logical"
-category="pio" 
+category="pio"
 group="pio_default_inparm">
 pio rearranger communication option: Enable isends (io2comp)
 default: .false.
@@ -2065,24 +2189,24 @@ default: .false.
 <!-- group modelio               -->
 <!-- =========================== -->
 
-<entry 
+<entry
 id="diri"
 type="char*256"
-category="modelio" 
+category="modelio"
 group="modelio">
 </entry>
 
-<entry 
+<entry
 id="diro"
 type="char*256"
-category="modelio" 
+category="modelio"
 group="modelio">
 </entry>
 
-<entry 
+<entry
 id="logfile"
 type="char*256"
-category="modelio" 
+category="modelio"
 group="modelio">
 </entry>
 
@@ -2090,19 +2214,19 @@ group="modelio">
 <!-- seq_maps.rc                 -->
 <!-- =========================== -->
 
-<entry 
+<entry
 id="atm2ocn_fmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
-atm to ocn flux mapping file for fluxes 
+atm to ocn flux mapping file for fluxes
 </entry>
 
-<entry 
+<entry
 id="atm2ocn_fmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2111,19 +2235,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="atm2ocn_smapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 atm to ocn state mapping file for states
 </entry>
 
-<entry 
+<entry
 id="atm2ocn_smaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2132,19 +2256,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="atm2ocn_vmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 atm to ocn state mapping file for velocity
 </entry>
 
-<entry 
+<entry
 id="atm2ocn_vmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2153,19 +2277,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="ocn2atm_fmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 ocn to atm mapping file for fluxes
 </entry>
 
-<entry 
+<entry
 id="ocn2atm_fmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2174,19 +2298,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="ocn2atm_smapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 ocn to atm mapping file for states
 </entry>
 
-<entry 
+<entry
 id="ocn2atm_smaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2195,19 +2319,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="atm2ice_fmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 atm to ice flux mapping file for fluxes
 </entry>
 
-<entry 
+<entry
 id="atm2ice_fmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2216,19 +2340,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="atm2ice_smapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 atm to ice state mapping file for states
 </entry>
 
-<entry 
+<entry
 id="atm2ice_smaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2237,19 +2361,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="atm2ice_vmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 atm to ice state mapping file for velocity
 </entry>
 
-<entry 
+<entry
 id="atm2ice_vmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2258,19 +2382,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="ice2atm_fmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 ice to atm mapping file for fluxes
 </entry>
 
-<entry 
+<entry
 id="ice2atm_fmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2279,19 +2403,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="ice2atm_smapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 ice to atm mapping file for states
 </entry>
 
-<entry 
+<entry
 id="ice2atm_smaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2300,19 +2424,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="atm2lnd_fmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 atm to land mapping file for fluxes
 </entry>
 
-<entry 
+<entry
 id="atm2lnd_fmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2321,19 +2445,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="atm2lnd_smapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 atm to land mapping file for states
 </entry>
 
-<entry 
+<entry
 id="atm2lnd_smaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2342,19 +2466,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="lnd2atm_fmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 land to atm mapping file for fluxes
 </entry>
 
-<entry 
+<entry
 id="lnd2atm_fmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2363,19 +2487,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="lnd2atm_smapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 land to atm mapping file for states
 </entry>
 
-<entry 
+<entry
 id="lnd2atm_smaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2384,19 +2508,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="lnd2rof_fmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 lnd to runoff conservative mapping file
 </entry>
 
-<entry 
+<entry
 id="lnd2rof_fmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2405,19 +2529,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="rof2lnd_fmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 runoff to lnd conservative mapping file
 </entry>
 
-<entry 
+<entry
 id="rof2lnd_fmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2426,19 +2550,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="rof2ocn_fmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 runoff to ocn area overlap conservative mapping file
 </entry>
 
-<entry 
+<entry
 id="rof2ocn_fmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2447,19 +2571,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="glc2ocn_rmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 glc to ocn runoff conservative mapping file
 </entry>
 
-<entry 
+<entry
 id="glc2ocn_rmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2468,19 +2592,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="glc2ice_rmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 glc to ice runoff conservative mapping file
 </entry>
 
-<entry 
+<entry
 id="glc2ice_rmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2489,19 +2613,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="rof2ocn_rmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 runoff to ocn nearest neighbor plus smoothing conservative mapping file
 </entry>
 
-<entry 
+<entry
 id="rof2ocn_rmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2510,19 +2634,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="lnd2glc_fmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 land to glc mapping file for fluxes
 </entry>
 
-<entry 
+<entry
 id="lnd2glc_fmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2531,19 +2655,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="lnd2glc_smapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 land to glc mapping file for states
 </entry>
 
-<entry 
+<entry
 id="lnd2glc_smaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2552,19 +2676,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="glc2lnd_fmapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 glc to land mapping file for fluxes
 </entry>
 
-<entry 
+<entry
 id="glc2lnd_fmaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2573,19 +2697,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="glc2lnd_smapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 glc to land mapping file for states
 </entry>
 
-<entry 
+<entry
 id="glc2lnd_smaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2594,19 +2718,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="atm2wav_smapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 atm to wav state mapping file for states
 </entry>
 
-<entry 
+<entry
 id="atm2wav_smaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2615,19 +2739,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="ocn2wav_smapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 ocn to wav state mapping file for states
 </entry>
 
-<entry 
+<entry
 id="ocn2wav_smaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2636,19 +2760,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="ice2wav_smapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 ice to wav state mapping file for states
 </entry>
 
-<entry 
+<entry
 id="ice2wav_smaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the
@@ -2657,19 +2781,19 @@ on the source grid and then rearrangement and sum to the destination
 grid.
 </entry>
 
-<entry 
+<entry
 id="wav2ocn_smapname"
 type="char*256"
-category="mapping" 
+category="mapping"
 input_pathname="abs"
 group="seq_maps">
 wav to ocn state mapping file for states
 </entry>
 
-<entry 
+<entry
 id="wav2ocn_smaptype"
 type="char*256"
-category="mapping" 
+category="mapping"
 group="seq_maps">
 The type of mapping desired, either "source" or "destination" mapping.
 X is associated with rearrangement of the source grid to the

@@ -1,14 +1,14 @@
 module prep_atm_mod
 
-  use shr_kind_mod,     only: r8 => SHR_KIND_R8 
+  use shr_kind_mod,     only: r8 => SHR_KIND_R8
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_atm, num_inst_ocn, num_inst_ice, num_inst_lnd, num_inst_xao, &
                               num_inst_frc, num_inst_max, CPLID, ATMID, logunit
-  use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs                               
-  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata  
-  use seq_map_type_mod 
+  use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
+  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
+  use seq_map_type_mod
   use seq_map_mod
   use seq_flds_mod
   use t_drv_timers_mod
@@ -36,12 +36,12 @@ module prep_atm_mod
   public :: prep_atm_calc_i2x_ax
   public :: prep_atm_calc_o2x_ax
 
-  public :: prep_atm_get_mapper_So2a 
-  public :: prep_atm_get_mapper_Fo2a 
-  public :: prep_atm_get_mapper_Sl2a 
-  public :: prep_atm_get_mapper_Fl2a 
-  public :: prep_atm_get_mapper_Si2a 
-  public :: prep_atm_get_mapper_Fi2a 
+  public :: prep_atm_get_mapper_So2a
+  public :: prep_atm_get_mapper_Fo2a
+  public :: prep_atm_get_mapper_Sl2a
+  public :: prep_atm_get_mapper_Fl2a
+  public :: prep_atm_get_mapper_Si2a
+  public :: prep_atm_get_mapper_Fi2a
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -54,18 +54,18 @@ module prep_atm_mod
   !--------------------------------------------------------------------------
 
   ! mappers
-  type(seq_map), pointer :: mapper_So2a 
-  type(seq_map), pointer :: mapper_Sl2a 
-  type(seq_map), pointer :: mapper_Si2a 
+  type(seq_map), pointer :: mapper_So2a
+  type(seq_map), pointer :: mapper_Sl2a
+  type(seq_map), pointer :: mapper_Si2a
   type(seq_map), pointer :: mapper_Fo2a           ! needed for seq_frac_init
   type(seq_map), pointer :: mapper_Fl2a           ! needed for seq_frac_init
   type(seq_map), pointer :: mapper_Fi2a           ! needed for seq_frac_init
-  
-  ! attribute vectors 
+
+  ! attribute vectors
   type(mct_aVect), pointer :: l2x_ax(:)   ! Lnd export, atm grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: i2x_ax(:)   ! Ice export, atm grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: o2x_ax(:)   ! Ocn export, atm grid, cpl pes - allocated in driver
-  
+
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
   logical :: iamroot_CPLID ! .true. => CPLID masterproc
@@ -117,18 +117,18 @@ contains
          esmf_map_flag=esmf_map_flag)
 
     allocate(mapper_So2a)
-    allocate(mapper_Sl2a) 
-    allocate(mapper_Si2a) 
-    allocate(mapper_Fo2a) 
-    allocate(mapper_Fl2a) 
-    allocate(mapper_Fi2a) 
+    allocate(mapper_Sl2a)
+    allocate(mapper_Si2a)
+    allocate(mapper_Fo2a)
+    allocate(mapper_Fl2a)
+    allocate(mapper_Fi2a)
 
     if (atm_present) then
 
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
-       a2x_ax => component_get_c2x_cx(atm(1)) 
+       a2x_ax => component_get_c2x_cx(atm(1))
        lsize_a = mct_aVect_lsize(a2x_ax)
 
        allocate(l2x_ax(num_inst_lnd))
@@ -146,12 +146,12 @@ contains
           call mct_aVect_init(i2x_ax(eii), rList=seq_flds_i2x_fields, lsize=lsize_a)
           call mct_aVect_zero(i2x_ax(eii))
        enddo
-   
-       samegrid_al = .true. 
+
+       samegrid_al = .true.
        samegrid_ao = .true.
        if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
        if (trim(atm_gnam) /= trim(ocn_gnam)) samegrid_ao = .false.
-       
+
        if (ocn_c2_atm) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -161,7 +161,7 @@ contains
                'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
                'mapper_So2a initialization',esmf_map_flag)
        end if
-       
+
        ! needed for domain checking
        if (ocn_present) then
           if (iamroot_CPLID) then
@@ -173,7 +173,7 @@ contains
                'mapper_Fo2a initialization',esmf_map_flag)
        endif
        call shr_sys_flush(logunit)
-       
+
        if (ice_c2_atm) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -183,7 +183,7 @@ contains
                'seq_maps.rc','ice2atm_smapname:','ice2atm_smaptype:',samegrid_ao, &
                'mapper_Si2a initialization',esmf_map_flag)
        end if
-       
+
        ! needed for domain checking
        if (ice_present) then
           if (iamroot_CPLID) then
@@ -195,7 +195,7 @@ contains
                'mapper_Fi2a initialization',esmf_map_flag)
        endif
        call shr_sys_flush(logunit)
-       
+
        ! needed for domain checking
        if (lnd_present) then
           if (iamroot_CPLID) then
@@ -218,7 +218,7 @@ contains
                'mapper_Sl2a initialization',esmf_map_flag)
        end if
 
-       
+
     end if
 
   end subroutine prep_atm_init
@@ -234,7 +234,7 @@ contains
     ! Arguments
     type(seq_infodata_type) , intent(in)    :: infodata
     type(mct_aVect)         , intent(in)    :: fractions_ax(:)
-    type(mct_aVect)         , intent(in)    :: xao_ax(:) 
+    type(mct_aVect)         , intent(in)    :: xao_ax(:)
     character(len=*)        , intent(in)    :: timer_mrg
     !
     ! Local Variables
@@ -266,7 +266,7 @@ contains
 
   subroutine prep_atm_merge( l2x_a, o2x_a, xao_a, i2x_a, fractions_a, x2a_a )
 
-    !----------------------------------------------------------------------- 
+    !-----------------------------------------------------------------------
     !
     ! Arguments
     type(mct_aVect), intent(in)    :: l2x_a
@@ -279,7 +279,7 @@ contains
     ! Local workspace
     real(r8) :: fracl, fraci, fraco
     integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,i,i1,o1
-    integer  :: lsize       
+    integer  :: lsize
     integer  :: index_x2a_Sf_lfrac
     integer  :: index_x2a_Sf_ifrac
     integer  :: index_x2a_Sf_ofrac
@@ -293,7 +293,7 @@ contains
     character(CL),allocatable :: itemc_ice(:)   ! string converted to char
     character(CL),allocatable :: itemc_xao(:)   ! string converted to char
     character(CL),allocatable :: itemc_ocn(:)   ! string converted to char
-    logical :: iamroot  
+    logical :: iamroot
     character(CL),allocatable :: mrgstr(:)   ! temporary string
     logical, save :: first_time = .true.
     type(mct_aVect_sharedindices),save :: l2x_sharedindices
@@ -309,7 +309,7 @@ contains
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 
     if (first_time) then
-          
+
        naflds = mct_aVect_nRattr(x2a_a)
        nlflds = mct_aVect_nRattr(l2x_a)
        niflds = mct_aVect_nRattr(i2x_a)
@@ -364,14 +364,14 @@ contains
 
        ! Field naming rules
        ! Only atm states that are Sx_... will be merged
-       ! Only fluxes that are F??x_... will be merged 
+       ! Only fluxes that are F??x_... will be merged
        ! All fluxes will be multiplied by corresponding component fraction
 
        do ka = 1,naflds
           !--- document merge ---
           mrgstr(ka) = subname//'x2a%'//trim(field_atm(ka))//' ='
           if (field_atm(ka)(1:2) == 'PF') then
-             cycle ! if flux has first character as P, pass straight through 
+             cycle ! if flux has first character as P, pass straight through
           end if
           if (field_atm(ka)(1:1) == 'S' .and. field_atm(ka)(2:2) /= 'x') then
              cycle ! any state fields that are not Sx_ will just be copied
@@ -498,7 +498,7 @@ contains
     endif
 
     ! Copy attributes that do not need to be merged
-    ! These are assumed to have the same name in 
+    ! These are assumed to have the same name in
     ! (o2x_a and x2a_a) and in (l2x_a and x2a_a), etc.
 
     !--- document copy operations ---
@@ -532,26 +532,26 @@ contains
 !    call mct_aVect_copy(aVin=xao_a, aVout=x2a_a, vector=mct_usevector)
     call mct_aVect_copy(aVin=l2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=l2x_SharedIndices)
     call mct_aVect_copy(aVin=o2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
-    call mct_aVect_copy(aVin=i2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=i2x_SharedIndices) 
+    call mct_aVect_copy(aVin=i2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=i2x_SharedIndices)
     call mct_aVect_copy(aVin=xao_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=xao_SharedIndices)
 
-    ! If flux to atm is coming only from the ocean (based on field being in o2x_a) - 
+    ! If flux to atm is coming only from the ocean (based on field being in o2x_a) -
     ! -- then scale by both ocean and ice fraction
     ! If flux to atm is coming only from the land or ice or coupler
     ! -- then do scale by fraction above
-   
+
     do ka = 1,naflds
        !--- document merge ---
        if (first_time) then
           if (lindx(ka) > 0) then
-             if (lmerge(ka)) then 
+             if (lmerge(ka)) then
                 mrgstr(ka) = trim(mrgstr(ka))//' + lfrac*l2x%'//trim(field_lnd(lindx(ka)))
              else
                 mrgstr(ka) = trim(mrgstr(ka))//' = lfrac*l2x%'//trim(field_lnd(lindx(ka)))
              end if
           end if
           if (iindx(ka) > 0) then
-             if (imerge(ka)) then 
+             if (imerge(ka)) then
                 mrgstr(ka) = trim(mrgstr(ka))//' + ifrac*i2x%'//trim(field_ice(iindx(ka)))
              else
                 mrgstr(ka) = trim(mrgstr(ka))//' = ifrac*i2x%'//trim(field_ice(iindx(ka)))
@@ -579,14 +579,14 @@ contains
           fraci = fractions_a%Rattr(kif,n)
           fraco = fractions_a%Rattr(kof,n)
           if (lindx(ka) > 0 .and. fracl > 0._r8) then
-             if (lmerge(ka)) then 
+             if (lmerge(ka)) then
                 x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + l2x_a%rAttr(lindx(ka),n) * fracl
              else
                 x2a_a%rAttr(ka,n) = l2x_a%rAttr(lindx(ka),n) * fracl
              end if
           end if
           if (iindx(ka) > 0 .and. fraci > 0._r8) then
-             if (imerge(ka)) then 
+             if (imerge(ka)) then
                 x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + i2x_a%rAttr(iindx(ka),n) * fraci
              else
                 x2a_a%rAttr(ka,n) = i2x_a%rAttr(iindx(ka),n) * fraci
@@ -606,7 +606,7 @@ contains
              if (.not. omerge(ka)) then
                 !--- NOTE: This IS using the ocean fields and ice fraction !! ---
                 x2a_a%rAttr(ka,n) = o2x_a%rAttr(oindx(ka),n) * fraci
-                x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + o2x_a%rAttr(oindx(ka),n) * fraco 
+                x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + o2x_a%rAttr(oindx(ka),n) * fraco
              end if
           end if
        end do
@@ -716,7 +716,7 @@ contains
     character(len=*), intent(in) :: timer
     !
     ! Local Variables
-    integer :: eli, efi 
+    integer :: eli, efi
     type(mct_avect), pointer :: l2x_lx
     character(*), parameter  :: subname = '(prep_atm_calc_l2x_ax)'
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
@@ -742,47 +742,47 @@ contains
 
   function prep_atm_get_l2x_ax()
     type(mct_aVect), pointer :: prep_atm_get_l2x_ax(:)
-    prep_atm_get_l2x_ax => l2x_ax(:)   
+    prep_atm_get_l2x_ax => l2x_ax(:)
   end function prep_atm_get_l2x_ax
 
   function prep_atm_get_i2x_ax()
     type(mct_aVect), pointer :: prep_atm_get_i2x_ax(:)
-    prep_atm_get_i2x_ax => i2x_ax(:)   
+    prep_atm_get_i2x_ax => i2x_ax(:)
   end function prep_atm_get_i2x_ax
 
   function prep_atm_get_o2x_ax()
     type(mct_aVect), pointer :: prep_atm_get_o2x_ax(:)
-    prep_atm_get_o2x_ax => o2x_ax(:)   
+    prep_atm_get_o2x_ax => o2x_ax(:)
   end function prep_atm_get_o2x_ax
 
   function prep_atm_get_mapper_So2a()
     type(seq_map), pointer :: prep_atm_get_mapper_So2a
-    prep_atm_get_mapper_So2a => mapper_So2a  
+    prep_atm_get_mapper_So2a => mapper_So2a
   end function prep_atm_get_mapper_So2a
 
   function prep_atm_get_mapper_Fo2a()
     type(seq_map), pointer :: prep_atm_get_mapper_Fo2a
-    prep_atm_get_mapper_Fo2a => mapper_Fo2a  
+    prep_atm_get_mapper_Fo2a => mapper_Fo2a
   end function prep_atm_get_mapper_Fo2a
 
   function prep_atm_get_mapper_Sl2a()
     type(seq_map), pointer :: prep_atm_get_mapper_Sl2a
-    prep_atm_get_mapper_Sl2a => mapper_Sl2a  
+    prep_atm_get_mapper_Sl2a => mapper_Sl2a
   end function prep_atm_get_mapper_Sl2a
 
   function prep_atm_get_mapper_Fl2a()
     type(seq_map), pointer :: prep_atm_get_mapper_Fl2a
-    prep_atm_get_mapper_Fl2a => mapper_Fl2a  
+    prep_atm_get_mapper_Fl2a => mapper_Fl2a
   end function prep_atm_get_mapper_Fl2a
 
   function prep_atm_get_mapper_Si2a()
     type(seq_map), pointer :: prep_atm_get_mapper_Si2a
-    prep_atm_get_mapper_Si2a => mapper_Si2a  
+    prep_atm_get_mapper_Si2a => mapper_Si2a
   end function prep_atm_get_mapper_Si2a
 
   function prep_atm_get_mapper_Fi2a()
     type(seq_map), pointer :: prep_atm_get_mapper_Fi2a
-    prep_atm_get_mapper_Fi2a => mapper_Fi2a  
+    prep_atm_get_mapper_Fi2a => mapper_Fi2a
   end function prep_atm_get_mapper_Fi2a
 
   !================================================================================================

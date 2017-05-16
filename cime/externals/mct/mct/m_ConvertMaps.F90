@@ -2,19 +2,19 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_ConvertMaps - Conversion Between MCT Domain Decomposition Descriptors
 !
 ! !DESCRIPTION:
 !
-! This module contains routines to convert between the {\tt GlobalMap} 
-! and {\tt GlobalSegMap} types.  Since the {\tt GlobalMap} is a 1-D 
-! decomposition with one contiguous segment per process, it is always 
+! This module contains routines to convert between the {\tt GlobalMap}
+! and {\tt GlobalSegMap} types.  Since the {\tt GlobalMap} is a 1-D
+! decomposition with one contiguous segment per process, it is always
 ! possible to create a {\tt GlobalSegMap} containing the same decomposition
-! information.  In the unusual case that a {\tt GlobalSegMap} contains 
-! {\em at most} one segment per process, and no two segments overlap, it 
+! information.  In the unusual case that a {\tt GlobalSegMap} contains
+! {\em at most} one segment per process, and no two segments overlap, it
 ! is possible to create a {\tt GlobalMap} describing the same decomposition.
 !
 ! !INTERFACE:
@@ -65,11 +65,11 @@
 ! of the more general {\tt GlobalSegMap} decomposition, this conversion is
 ! always possible.
 !
-! The motivation of this routine is the fact that the majority of the 
-! APIs for MCT services require the user to supply a {\tt GlobalSegMap} 
+! The motivation of this routine is the fact that the majority of the
+! APIs for MCT services require the user to supply a {\tt GlobalSegMap}
 ! as a domain decomposition descriptor argument.  This routine is the
-! means by which the user can enjoy the convenience and simplicity of 
-! the {\tt GlobalMap} datatype (where it is appropriate), but still 
+! means by which the user can enjoy the convenience and simplicity of
+! the {\tt GlobalMap} datatype (where it is appropriate), but still
 ! access all of the MCT's functionality.
 !
 ! {\bf N.B.:}  This routine creates an allocated structure {\tt GSMap}.
@@ -154,28 +154,28 @@
 ! !IROUTINE: GlobalSegMapToGlobalMap_ - Convert GlobalSegMap to GlobalMap
 !
 ! !DESCRIPTION:
-! This routine takes an input {\tt GlobalSegMap} argument {\tt GSMap}, 
-! and examines it to determine whether or not it may be expressed in 
-! {\tt GlobalMap} form.  A {\tt GlobalSegMap} can be converted to a 
+! This routine takes an input {\tt GlobalSegMap} argument {\tt GSMap},
+! and examines it to determine whether or not it may be expressed in
+! {\tt GlobalMap} form.  A {\tt GlobalSegMap} can be converted to a
 ! {\tt GlobalMap} if and only if:
 ! \begin{enumerate}
-! \item Each process on the communicator covered by the 
+! \item Each process on the communicator covered by the
 ! {\tt GlobalSegMap} contains {\em at most one} segment;
 ! \item The {\tt GlobalSegMap} is {\em not} haloed (that is, none of
 ! the segments overlap); and
-! \item The start indices of the segments are in the same order as their 
+! \item The start indices of the segments are in the same order as their
 ! respective process ID numbers.
 ! \end{enumerate}
-! If these conditions are satisfied, {\tt GlobalSegMapToGlobalMap\_()} 
-! creates an output {\tt GlobalMap} argument {\tt GMap} describing the 
+! If these conditions are satisfied, {\tt GlobalSegMapToGlobalMap\_()}
+! creates an output {\tt GlobalMap} argument {\tt GMap} describing the
 ! same decomposition as {\tt GSMap}.  If these conditions are not satisfied,
-! map conversion can not occur, and {\tt GlobalSegMapToGlobalMap\_()} 
+! map conversion can not occur, and {\tt GlobalSegMapToGlobalMap\_()}
 ! has one of two outcomes:
 ! \begin{enumerate}
-! \item If the optional output {\tt INTEGER} argument {\tt status} is 
-! provided, {\tt GlobalSegMapToGlobalMap\_()} returns without creating 
+! \item If the optional output {\tt INTEGER} argument {\tt status} is
+! provided, {\tt GlobalSegMapToGlobalMap\_()} returns without creating
 ! {\tt GMap}, and returns a non-zero value for {\tt status}.
-! \item If the optional output {\tt INTEGER} argument {\tt status} is 
+! \item If the optional output {\tt INTEGER} argument {\tt status} is
 ! not provided, execution will terminate with an error message.
 ! \end{enumerate}
 !
@@ -265,10 +265,10 @@
      status = 0
   endif
 
-       ! How many segments are there in GSMap?  If the number of 
+       ! How many segments are there in GSMap?  If the number of
        ! segments is greater than the number of processes on the
-       ! GlobalSegMap's native communicator conversion to a 
-       ! GlobalMap is not possible.  If the number of segments is 
+       ! GlobalSegMap's native communicator conversion to a
+       ! GlobalMap is not possible.  If the number of segments is
        ! fewer than the number of PEs, further checks are necessary
        ! to determine whether map conversion is possible.
 
@@ -303,11 +303,11 @@
      endif
   endif
 
-       ! At this point, we've done the easy tests. 
+       ! At this point, we've done the easy tests.
 
        ! Return to the first condition:  at most one segment per PE.
        ! We've eliminated the obvious case of more segments than PEs.
-       ! Now, we examine the case of fewer segments than PEs, to see 
+       ! Now, we examine the case of fewer segments than PEs, to see
        ! if any single PE has more than one segment.
 
   allocate(NumSegs(0:NumPes-1), stat=ierr)
@@ -340,13 +340,13 @@
      endif
 
   end do ! do n=0,NumPes-1
-  
+
   deallocate(NumSegs, stat=ierr)
   if(ierr /= 0) call die(myname_,'deallocate(NumSegs,...)',ierr)
 
        ! If execution has reached this point in the code, GSMap has
        ! satisfied the first two criteria for conversion to a GlobalMap.
-       ! The final test is whether or not the global start indices for 
+       ! The final test is whether or not the global start indices for
        ! the segments (which we know by now are at most one per PE) are
        ! in the same order as their resident process ID ranks.
 
@@ -365,7 +365,7 @@
        ! Begin sorting process.  First, set index permutation.
   call IndexSet(perm)
        ! Generate sort permutation keyed by PE location
-  call IndexSort(NGSegs, perm, GSMpe_locs, descend=.false.) 
+  call IndexSort(NGSegs, perm, GSMpe_locs, descend=.false.)
        ! Permute segment info arrays using perm(:)
   call Permute(GSMstarts, perm, NGSegs)
   call Permute(GSMlengths, perm, NGSegs)

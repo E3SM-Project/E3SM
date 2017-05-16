@@ -1,9 +1,9 @@
 #include "mpiP.h"
 
-/* 
+/*
  * MPI_Cart_create
  *
- * create a new communicator, 
+ * create a new communicator,
  */
 
 
@@ -53,7 +53,7 @@ FC_FUNC( mpi_cart_get , MPI_CART_GET )
 
 
 int MPI_Cart_get(MPI_Comm comm, int maxdims, int *dims,
-                 int *periods, int *coords) 
+                 int *periods, int *coords)
 {
   int i;
   for (i=0;i<maxdims;i++)
@@ -80,7 +80,7 @@ FC_FUNC( mpi_cart_coords , MPI_CART_COORDS)
 }
 
 
-int MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int *coords) 
+int MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int *coords)
 {
   int i;
 

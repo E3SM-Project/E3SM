@@ -1,16 +1,16 @@
 module test_shr_string
-  
+
   ! Tests of shr_string_mod
-  
+
   use pfunit_mod
   use shr_string_mod
-  
+
   implicit none
 
   integer, parameter :: list_len = 256
-  
+
 contains
-  
+
   ! ------------------------------------------------------------------------
   ! Tests of shr_string_listDiff
   ! ------------------------------------------------------------------------
@@ -36,7 +36,7 @@ contains
          listout = actual)
     @assertEqual('first:second:third:fourth', actual)
   end subroutine test_shr_string_listDiff_emptyList2
-  
+
   @Test
   subroutine test_shr_string_listDiff_List2equalsList1()
     character(len=list_len) :: actual
@@ -59,7 +59,7 @@ contains
     call shr_string_listAddSuffix(list=' ', suffix='00', new_list=actual)
     @assertEqual(' ', actual)
   end subroutine test_shr_string_listAddSuffix_with_empty_list
-    
+
   @Test
   subroutine test_shr_string_listAddSuffix_with_one_element()
     character(len=list_len) :: actual
@@ -67,7 +67,7 @@ contains
     call shr_string_listAddSuffix(list='first', suffix='00', new_list=actual)
     @assertEqual('first00', actual)
   end subroutine test_shr_string_listAddSuffix_with_one_element
-  
+
   @Test
   subroutine test_shr_string_listAddSuffix_with_multiple_elements()
     character(len=list_len) :: actual, expected
@@ -76,7 +76,7 @@ contains
     expected = 'first00:second00:third00'
     @assertEqual(expected, actual)
   end subroutine test_shr_string_listAddSuffix_with_multiple_elements
-  
+
   @Test
   subroutine test_shr_string_listAddSuffix_with_empty_suffix()
     character(len=list_len) :: actual, expected
@@ -85,5 +85,5 @@ contains
     expected = 'first:second:third'
     @assertEqual(expected, actual)
   end subroutine test_shr_string_listAddSuffix_with_empty_suffix
-  
+
 end module test_shr_string

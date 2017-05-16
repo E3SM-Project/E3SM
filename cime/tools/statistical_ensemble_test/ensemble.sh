@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 #==============================================================================
 # $Id$
@@ -18,23 +18,23 @@ gen_random_numbers ()
   # Instead, we pick between 0 and floor(32768/N)*N-1. max_rand contains
   # floor(32768/N)*N-1 for N = 151, 150, and 149.
   max_rand=( 32723 32699 32669 )
-    
+
   for i in `seq 0 2`
   do
     # Want a random number between 0 and N-1, inclusive
     N=$(( 151 - i ))
-    
+
     # Pick a random number
     tmp_rand=$((RANDOM))
     # if number is too big (see comment relating to max_rand), pick again
     while [ $tmp_rand -gt ${max_rand[$i]} ]; do
       tmp_rand=$((RANDOM))
     done
-    
+
     # Store random number mod N (=> between 0 and N-1)
     rand_ints+=( $(( tmp_rand % N )) )
   done
-    
+
   # We want 3 numbers in {0,150}, but no duplicates. So we pick one number in
   # {0,150}, one in {0,149}, and one in {0,148}. If the second number is smaller
   # than the first we keep it as is, otherwise we increment it by 1 (so instead
@@ -42,12 +42,12 @@ gen_random_numbers ()
   # {0,R1-1} U {R1+1,105}). Similarly, we want to pick R3 in the set
   # {0,R1-1} U (R1+1,R2-1} U {R2+1,150} (assuming R1 < R2, which is reasonable
   # because we know R1 != R2).
-    
+
   # If first and second number are same, increment second number by 1
   if [ ${rand_ints[1]} -ge ${rand_ints[0]} ]; then
     rand_ints[1]=$((rand_ints[1]+1))
   fi
-    
+
   # If the third number is larger than both the first and second, increment the
   # third number by 2
   # Otherwise, if the third number is only larger than one of the first two,
@@ -154,7 +154,7 @@ get_pertlim ()
 
 
   i=$1
-  if (( $i == 0 )); then 
+  if (( $i == 0 )); then
     ptlim=0
   elif (( $i < 76 )); then
     let j=i+9
@@ -178,7 +178,7 @@ create_cases ()
     exit 1
   fi
 
-  # If we're doing validation, we have to give the first run a random pertlim 
+  # If we're doing validation, we have to give the first run a random pertlim
   # and set the arguments appropriately, otherwise, no pertlim value needed for
   # the first case
   if [ $runtype = 'validation' ]; then
@@ -201,13 +201,13 @@ create_cases ()
   CASE_PFX=$(basename $CASE .000) # It was checked above that the CASENAME suffix is "000"
   for i in `seq 1 $CLONECOUNT`; do
     iens=`/usr/bin/printf "%3.3d" $i`
-    # If we're doing validations, set the pertlim based on 
-    # the random numbers previously generated, otherwise 
+    # If we're doing validations, set the pertlim based on
+    # the random numbers previously generated, otherwise
     # just get a pertlim value in sequence.
-    if [ $runtype = 'validation' ]; then 
+    if [ $runtype = 'validation' ]; then
       PERTLIM=$(get_pertlim ${rand_ints[$i]}  )
-    else 
-      PERTLIM=$(get_pertlim $i ) 
+    else
+      PERTLIM=$(get_pertlim $i )
     fi
 
     CASE1_NAME=$CASE_PFX.$iens
@@ -215,7 +215,10 @@ create_cases ()
 
     # Create clone
     cd $SCRIPTS_ROOT
-    ./create_clone -case $CASE1 -clone $CASE # Copy $CASE to $CASE1
+    echo "=== SCRIPTS_ROOT ==="
+    echo $SCRIPTS_ROOT
+    #./create_clone -keepexe -case $CASE1 -clone $CASE # Copy $CASE to $CASE1
+    $SCRIPTS_ROOT/create_clone -keepexe -case $CASE1 -clone $CASE # Copy $CASE to $CASE1
 
     # Get value for EXEROOT from $CASE
     # Note return string is "EXEROOT = $EXEROOT"
@@ -224,8 +227,8 @@ create_cases ()
     else
       cd $CASE
     fi
-    EXE=`./xmlquery EXEROOT -valonly`
-    EXEROOT=${EXE#"EXEROOT = "}
+    EXE=`./xmlquery EXEROOT -value`
+    EXEROOT="$(echo -e "$EXE" | sed -e 's/[[:space:]]*$//')"
 
     # Edit env_build in cloned case
     if [ $test_suite = 'TRUE' ]; then
@@ -233,9 +236,12 @@ create_cases ()
     else
       cd $CASE1
     fi
-    ./xmlchange -file env_build.xml -id EXEROOT -val $EXEROOT
-    ./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
-    ./cesm_setup
+	#echo "running ./xmlchange EXEROOT=\"$EXEROOT\""
+    #./xmlchange EXEROOT="$EXEROOT"
+    #echo "running ./xmlchange BUILD_COMPLETE=\"TRUE\""
+    #./xmlchange BUILD_COMPLETE="TRUE"
+    echo "running case.setup"
+    ./case.setup
 
     # For validations, subsequent cloned cases will have the pertlim from the
     # parent case. We neet to remove the original case's pertlim before we set
@@ -249,11 +255,12 @@ create_cases ()
     ./preview_namelists
 
     # Adjust walltime, account number and ptile in clone
-    fix_run_script $CASE1_NAME
+    #fix_run_script $CASE1_NAME
+    fix_run_script case
 
     # Only submit the cloned case if --nosubmit is off
     if [ $nosubmit != 'on' ]; then
-      ./$CASE1_NAME.submit
+      ./case.submit
     fi
 
   done
@@ -268,8 +275,8 @@ if [[ -z $SCRIPTS_ROOT ]]; then
   SCRIPTS_ROOT=`pwd`
 fi
 
-# The default runtype is 'validation', if the -ensemble option is set, 
-# we change this to 'ensemble'. We make two clones (to have three runs). 
+# The default runtype is 'validation', if the -ensemble option is set,
+# we change this to 'ensemble'. We make two clones (to have three runs).
 runtype="validation"
 CLONECOUNT=2
 
@@ -277,8 +284,8 @@ CLONECOUNT=2
 # then a couple of directories change
 test_suite="FALSE"
 
-# globals to disable building and submitting, this will be needed if and when 
-# this script gets used in the test suite. 
+# globals to disable building and submitting, this will be needed if and when
+# this script gets used in the test suite.
 nobuild="off"
 nosubmit="off"
 
@@ -308,7 +315,7 @@ while [ $i -le ${#Args[@]} ]; do
       runtype="ensemble"
     ;;
     -nb|-nobuild )
-      nobuild="on"         
+      nobuild="on"
       nosubmit="on"
     ;;
     -ns|-nosubmit )

@@ -1,0 +1,481 @@
+/******************************************************************************
+ *
+ * 
+ *
+ * Copyright (C) 2013
+ *
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation under the terms of the GNU General Public License is hereby 
+ * granted. No representations are made about the suitability of this software 
+ * for any purpose. It is provided "as is" without express or implied warranty.
+ * See the GNU General Public License for more details.
+ *
+ * Documents produced by Doxygen are derivative works derived from the
+ * input used in their production; they are not affected by this license.
+ *
+ */ /*! \page mach_walkthrough Install Walk-through
+
+This document provides specific instructions for installing PIO using a variety of compilers on a few commonly used super computers. Click on the link below to go directly to the machine of interest.
+
+-    <a href="#Yellowstone">Yellowstone</a> (NCAR's 1.5-petaflop IBM Supercomputer)
+-    <a href="#Edison">Edison</a> (A NERSC Cray XC30 Supercomputer)
+-    <a href="#Mira">Mira</a> (IBM Blue Gene Supercomputer at ALCF)
+-    <a href="#BlueWat">Blue Waters</a> (NCSA's 1.3-petaflop Cray Supercomputer)
+-    <a href="#Hobart">Hobart</a> (The NCAR CGD local cluster)
+-    <a href="#Linux">Linux with MPICH</a> (Standard Linux box with MPICH)
+
+<a name="Yellowstone"></a>
+### Yellowstone ###
+
+<ol>
+<li>Directory setup
+
+Download a copy of the PIO source into a sub-directory of your working directory (refered to here as the PIO_source directory). Create another sub-directory for the build (refered to here as the PIO_build directory) and 'cd' into it. 
+
+<li>Modules
+
+Modules required for installation depend on your prefered compiler. Issue the commands below to set the module environment for building PIO on Yellowstone. 
+
++ Intel
+
+   %> module reset<br>
+   %> module unload netcdf<br>
+   %> module swap intel intel/15.0.3<br>
+   %> module load git/2.3.0<br>
+   %> module load cmake/3.0.2<br>
+   %> module load netcdf-mpi/4.3.3.1<br>
+   %> module load pnetcdf/1.6.1<br>
+
++ GNU
+
+   %> module reset<br>
+   %> module unload netcdf<br>
+   %> module swap intel gnu/4.8.2<br>
+   %> module load git/2.3.0<br>
+   %> module load cmake/3.0.2<br>
+   %> module load netcdf-mpi/4.3.3.1<br>
+   %> module load pnetcdf/1.6.1<br>
+
++ PGI
+
+   %> module reset<br>
+   %> module unload netcdf<br>
+   %> module swap intel pgi/13.3<br>
+   %> module load git/2.3.0<br>
+   %> module load cmake/3.0.2<br>
+   %> module load netcdf-mpi/4.3.3.1<br>
+   %> module load pnetcdf/1.6.1<br>
+
+<li>Environment Variables
+
+The appropriate compiler wrappers must be chosen for cmake, so the environment variables CC and FC must be set as:<br>
+    CC=mpicc<br>
+    FC=mpif90<br>
+
+<li>Build
+
+Building PIO requires running the CMake configure and then make. In the PIO_build directory type<br>
+    %> cmake ../PIO_source/<br>
+    %> make<br>
+</ol>
+
+<a name="Edison"></a>
+### Edison ###
+
+<ol>
+<li>Directory setup
+
+Download a copy of the PIO source into a sub-directory of your working directory (refered to here as the PIO_source directory). Create another sub-directory for the build (refered to here as the PIO_build directory) and 'cd' into it. 
+
+<li>Modules
+
+Modules required for installation depend on your prefered compiler. Issue the commands below to set the module environment for building PIO on Edison. 
+
++ Intel 
+
+  %> module purge<br>
+  %> module load PrgEnv-intel<br>
+  %> module load craype-ivybridge<br>
+  %> module load cray-shmem<br>
+  %> module load cray-mpich<br>
+  %> module load torque<br>
+  %> module load git/2.4.6 <br>
+  %> module load cmake/3.0.0<br>
+  %> module load cray-hdf5-parallel/1.8.14<br>
+  %> module load cray-netcdf-hdf5parallel/4.3.3.1<br>
+  %> module load cray-parallel-netcdf/1.6.1<br>
+
++ GNU
+
+  %> module purge<br>
+  %> module load PrgEnv-gnu<br>
+  %> module load craype-ivybridge<br>
+  %> module load cray-shmem<br>
+  %> module load cray-mpich<br>
+  %> module load torque<br>
+  %> module load git/2.4.6<br>
+  %> module load cmake/3.0.0<br>
+  %> module load cray-hdf5-parallel/1.8.14<br>
+  %> module load cray-netcdf-hdf5parallel/4.3.3.1<br>
+  %> module load cray-parallel-netcdf/1.6.1<br>
+
++ Cray
+
+  %> module purge<br>
+  %> module load PrgEnv-cray<br>
+  %> module load craype-ivybridge<br>
+  %> module load cray-shmem<br>
+  %> module load cray-mpich<br>
+  %> module swap cce cce/8.4.0.223<br>
+  %> module load torque<br>
+  %> module load git/2.4.6 <br>
+  %> module load cmake/3.0.0<br>
+  %> module load cray-hdf5-parallel/1.8.14<br>
+  %> module load cray-netcdf-hdf5parallel/4.3.3.1<br>
+  %> module load cray-parallel-netcdf/1.6.1<br>
+
+<li>Environment Variables
+
+The appropriate compiler wrappers must be chosen for cmake, so the environment variables CC and FC must be set as:<br>
+    CC=cc<br>
+    FC=ftn<br>
+
+<li>Build
+
+Building PIO requires running the CMake configure and then make. In the PIO_build directory type<br>
+  %> cmake -DCMAKE_VERBOSE_MAKEFILE=TRUE \\<br>
+     -DPREFER_STATIC=TRUE \\<br>
+     -DNetCDF_PATH=${NETCDF_DIR} \\<br>
+     -DPnetCDF_PATH=${PARALLEL_NETCDF_DIR} \\<br>
+     -DHDF5_PATH=${HDF5_DIR} \\<br>
+     -DMPI_C_INCLUDE_PATH=${MPICH_DIR}/include \\<br>
+     -DMPI_Fortran_INCLUDE_PATH=${MPICH_DIR}/include \\<br>
+     -DMPI_C_LIBRARIES=${MPICH_DIR}/lib/libmpich.a \\<br>
+     -DMPI_Fortran_LIBRARIES=${MPICH_DIR}/lib/libmpichf90.a \\<br>
+     -DCMAKE_SYSTEM_NAME=Catamount \\<br>
+     ../PIO_source/<br>
+  %> make
+
+</ol>
+
+<a name="Mira"></a>
+### Mira/Cetus ###
+
+<ol>
+<li>Directory setup
+
+Download a copy of the PIO source into a sub-directory of your working directory (refered to here as the PIO_source directory). Create another sub-directory for the build (refered to here as the PIO_build directory) and 'cd' into it. 
+
+<li> Softenv packages and environment variables
+
+It is not necessary to edit your .soft file on Mira inorder to build PIO. Execute the following commands to temporarily load packages into your softenv. These packages use the IBM/XL compiler.<br>
+  %> soft add +mpiwrapper-xl (or switch from the default in your softenv)<br>
+  %> soft add @ibm-compilers-2015-02<br>
+  %> soft add +cmake<br>
+  %> soft add +git<br>
+
+And then set the following environment variables to add in the rest of the library paths.<br>
+  %> setenv LIBZ /soft/libraries/alcf/current/xl/ZLIB<br>
+  %> setenv HDF5 /soft/libraries/hdf5/1.8.14/cnk-xl/V1R2M2-20150213<br>
+  %> setenv NETCDF /soft/libraries/netcdf/4.3.3-f4.4.1/cnk-xl/V1R2M2-20150213<br>
+  %> setenv PNETCDF /soft/libraries/pnetcdf/1.6.1/cnk-xl/V1R2M2-20150213<br>
+  %> setenv CC /soft/compilers/wrappers/xl/mpixlc_r<br>
+  %> setenv FC /soft/compilers/wrappers/xl/mpixlf90_r<br>
+
+<li>Build
+
+Building PIO requires running the CMake configure and then make. In the PIO_build directory type<br>
+  %> cmake -DPREFER_STATIC=TRUE ../PIO_source/<br>
+  %> make
+
+</ol>
+
+<a name="BlueWat"></a>
+### Blue Waters ###
+<ol>
+<li>Directory setup
+
+Download a copy of the PIO source into a sub-directory of your working directory (refered to here as the PIO_source directory). Create another sub-directory for the build (refered to here as the PIO_build directory) and 'cd' into it. 
+
+<li>Modules
+
+Modules required for installation depend on your prefered compiler. Issue the commands below to set the module environment for building PIO on Hobart. 
+
++ Intel
+
+  %> module swap PrgEnv-cray PrgEnv-intel<br>
+  %> module load torque<br>
+  %> module load git<br>
+  %> module load cmake<br>
+  %> module load cray-hdf5-parallel/1.8.14<br>
+  %> module load cray-netcdf-hdf5parallel/4.3.3.1<br>
+  %> module load cray-parallel-netcdf/1.6.1<br>
+
++ PGI
+
+  %> module swap PrgEnv-cray PrgEnv-pgi<br>
+  %> module load torque<br>
+  %> module load git<br>
+  %> module load cmake<br>
+  %> module load cray-hdf5-parallel/1.8.14<br>
+  %> module load cray-netcdf-hdf5parallel/4.3.3.1<br>
+  %> module load cray-parallel-netcdf/1.6.1<br>
+
+<li>Environment Variables
+
+The appropriate compiler wrappers must be chosen for cmake, so the environment variables CC and FC must be set as:<br>
+    CC=cc<br>
+    FC=ftn<br>
+
+<li>Build
+
+Building PIO requires running the CMake configure and then make. In the PIO_build directory type<br>
+  %> cmake -DCMAKE_VERBOSE_MAKEFILE=TRUE \\<br>
+     -DPREFER_STATIC=TRUE \\<br>
+     -DNetCDF_PATH=${NETCDF_DIR} \\<br>
+     -DPnetCDF_PATH=${PARALLEL_NETCDF_DIR} \\<br>
+     -DHDF5_PATH=${HDF5_DIR} \\<br>
+     -DMPI_C_INCLUDE_PATH=${MPICH_DIR}/include \\<br>
+     -DMPI_Fortran_INCLUDE_PATH=${MPICH_DIR}/include \\<br>
+     -DMPI_C_LIBRARIES=${MPICH_DIR}/lib/libmpich.a \\<br>
+     -DMPI_Fortran_LIBRARIES=${MPICH_DIR}/lib/libmpichf90.a \\<br>
+     -DCMAKE_SYSTEM_NAME=Catamount \\<br>
+     ../PIO_source/<br>
+  %> make
+
+</ol>
+
+
+
+<a name="Hobart"></a>
+### Hobart ###
+<ol>
+<li>Directory setup
+
+Download a copy of the PIO source into a sub-directory of your working directory (refered to here as the PIO_source directory). Create another sub-directory for the build (refered to here as the PIO_build directory) and 'cd' into it. 
+
+<li>Modules
+
+Modules required for installation depend on your prefered compiler. Issue the commands below to set the module environment for building PIO on Hobart. 
+
++ Intel
+
+  %> module purge<br>
+  %> module load compiler/intel/15.0.2.164<br>
+  %> module load tool/parallel-netcdf/1.6.1/intel<br>
+
++ Nag
+
+  %> module purge<br>
+  %> module load compiler/nag/6.0<br>
+  %> module load tool/parallel-netcdf/1.6.1/nag/openmpi<br>
+  
++ PGI
+
+  %> module purge<br>
+  %> module load compiler/pgi/15.1<br>
+  %> module load tool/parallel-netcdf/1.6.1/pgi/mvapich2<br>
+
+<li>Environment Variables
+
+The appropriate compiler wrappers must be chosen for cmake, so the environment variables CC and FC must be set as:<br>
+    CC=mpicc<br>
+    FC=mpif90<br>
+
+<li>Build
+
+Building PIO requires running the CMake configure and then make. In the PIO_build directory type<br>
+  %> cmake -DNETCDF_DIR=$NETCDF_PATH -DPNETCDF_DIR=$PNETCDF_PATH ../PIO_source/<br>
+  %> make
+
+ParallelIO does not require Parallel netcdf to run, so if you decide to use the GNU compiler on Hobart (not described here) without the parallel-netcdf library, use the cmake configure flags:<br>
+  %> cmake -DNETCDF_DIR=$NETCDF_PATH -DWITH_PNETCDF=FALSE ../PIO_source/<br>
+  %> make
+
+</ol>
+
+<a name="Linux"></a>
+### Linux with MPICH ###
+<ol>
+<li>Installing MPICH
+
+<p>Download from the <a href="http://www.mpich.org/downloads/">MPICH2
+downloads page</a>. (These instructions were tested using version
+3.2). Untar with:
+<pre>tar zxf mpich-3.2.tar.gz</pre>
+
+<p>Build with:
+<pre>cd mpich-3.2 && ./configure --prefix=/usr/local && make all check
+&& sudo make install </pre>
+
+<p>Now you should be able to access mpicc, mpifort, and mpirun from
+the command line. (If not, make sure /usr/local/bin is in path.)
+
+<li>Installing Zlib
+
+<p>Download from the <a href="http://www.zlib.net/">zlib
+downloads page</a>. (These instructions were tested using version
+1.2.8). Untar with:
+<pre>tar zxf zlib-1.2.8.tar.gz</pre>
+
+
+<p>Build with:
+<pre>cd zlib-1.2.8
+CC=mpicc ./configure --prefix=/usr/local
+make all check
+sudo make install </pre>
+
+<li>Installing SZlib
+
+<p>Download szlib from the <a
+href="https://www.hdfgroup.org/doc_resource/SZIP/">HDF5 szlib
+page</a>. (These instructions were tested using version 2.1). Untar
+with: <pre>tar zxf szip-2.1.tar.gz</pre>
+
+
+<p>Build with:
+<pre>cd slib-2.1
+CC=mpicc ./configure --prefix=/usr/local
+make all check
+sudo make install </pre>
+
+<li>Installing pNetCDF
+
+<p>Download parallel-netcdf from the <a
+href="https://trac.mcs.anl.gov/projects/parallel-netcdf/wiki/Download">parallel-netcdf download
+page</a>. (These instructions were tested using version 1.6.1). Untar
+with: <pre>tar zxf parallel-netcdf-1.6.1.tar.gz</pre>
+
+
+<p>Build with:
+<pre>cd parallel-netcdf-1.6.1
+FC=mpifort CC=mpicc CFLAGS=-fPIC ./configure --prefix=/usr/local
+make all check
+sudo make install </pre>
+
+<li>Installing HDF5
+
+<p>Download HDF5 from the <a
+href="https://www.hdfgroup.org/HDF5/release/obtain5.html">HDF5 download
+page</a>. (These instructions were tested using version 1.8.15-patch1). Untar
+with: <pre>tar zxf hdf5-1.8.15-patch1.tar.gz</pre>
+
+
+<p>Build with:
+<pre>cd hdf5-1.8.15-patch1
+CC=mpicc ./configure --with-zlib=/usr/local --prefix=/usr/local --with-szlib=/usr/local --enable-parallel
+make all check
+sudo make install </pre>
+
+<li>Installing NetCDF-4 C Library
+
+<p>Download the netcdf C library from the <a
+href="http://www.unidata.ucar.edu/downloads/netcdf/index.jsp">NetCDF download
+page</a>. (These instructions were tested using version 4.4.0). Untar
+with: <pre>tar zxf netcdf-c-4.4.0.tar.gz</pre>
+
+
+<p>Build with:
+<pre>cd netcdf-c-4.4.0
+CC=mpicc ./configure --with-zlib=/usr/local --prefix=/usr/local --with-szlib=/usr/local --with-hdf5=/usr/local --enable-pnetcdf --enable-parallel-tests --enable-logging
+make all check
+sudo make install </pre>
+
+<li>Installing NetCDF-4 Fortran Library
+
+<p>Download the netcdf Fortran library from the <a
+href="http://www.unidata.ucar.edu/downloads/netcdf/index.jsp">NetCDF download
+page</a>. (These instructions were tested using version 4.4.3). Untar
+with: <pre>tar zxf netcdf-fortran-4.4.3.tar.gz</pre>
+
+
+<p>Build with:
+<pre>cd netcdf-fortran-4.4.3
+F77=mpif77 F90=mpif90  ./configure --with-zlib=/usr/local --prefix=/usr/local --with-szlib=/usr/local --with-hdf5=/usr/local --enable-pnetcdf --enable-parallel-tests --enable-logging
+make all check
+sudo make install </pre>
+
+<li>Installing ParallelIO Library
+
+<p>Clone the ParallelIO library.
+
+<p>Create a build directory and run cmake.
+<pre>
+cd ParallelIO
+mkdir build
+cd build
+CC=mpicc FC=mpifort cmake -DNetCDF_C_PATH=/usr/local -DNetCDF_Fortran_PATH=/usr/local -DPnetCDF_PATH=/usr/local -DPIO_HDF5_LOGGING=On ..
+make
+make check
+sudo make install
+</pre>
+
+<p>When debugging build issues, it's helpful to be able to do a clean
+build from the command line, including tests:
+
+<pre>
+cd build
+rm -rf * && CFLAGS=-g FFLAGS=-g CC=mpicc FC=mpifort cmake -DNetCDF_C_PATH=/usr/local -DNetCDF_Fortran_PATH=/usr/local -DPnetCDF_PATH=/usr/local -DPIO_HDF5_LOGGING=On .. && make VERBOSE=1 all tests check
+</pre>
+
+<p>(Note the optional CFLAGS=-g which allows the use of a debugger
+with this code. Also note the optional VERBOSE=1 provided to make,
+which causes the build commands to be made visible.)
+
+<li>Building and Running Performance Tests
+
+<p>Download a decomp file from our <a
+href="http://parallelio.googlecode.com/svn/perfdecomps/trunk/30/">google
+code page</a>. You can use any of those files, save them to
+build/test/performance. (These instructions were tested with the first
+one in the list.)
+
+<p>Create a namelist file, named "pioperf.nl". Save this file in the
+subdirectory (note that it is in the BUILD directory):
+<pre>
+build/tests/performance/
+</pre>
+
+<p>The contents of the namelist file should look like:
+<pre>
+&pioperf
+decompfile = "/u/sciteam/thayerca/scratch/pio_work/piodecomp30tasks01dims06.dat"
+pio_typenames = 'pnetcdf'
+niotasks = 30
+rearrangers = 1
+nvars = 2
+/
+</pre>
+
+<p>You should change the path to your decomp file to wherever you
+saved it. You can add items to the list to run more tests, so, for
+instance, to test all of the types of io, your pio_typenames would
+look like: pio_typenames = 'pnetcdf','netcdf','netcdf4p','netcdf4c'
+
+<p>HDF5 is netcdf4p, and Parallel-Netcdf is pnetcdf.
+
+<p>Example to test with different numbers of tasks, you could do:
+niotasks = 30,15,5
+
+<p>Example to test with both of the rearranger algorithms:
+rearrangers = 1,2
+
+<p>Example to test with different numbers of variables:
+nvars = 8,5,3,2
+
+<p>Once you have your decomp file and your namelist set up, run like this:
+
+<pre>
+mpiexec -n 30 ./pioperf
+</pre>
+
+<p>If you run the most basic performance tests (as in the first
+pioperf.nl example), this script should only take a few minutes (less
+than 5) to complete. The output and results will be written to your
+pioperf.o$PBS_JOBID file. Adding more iotypes and rearrangers and
+variables to these tests will increase the time significantly.
+
+</ol>
+
+_Last updated: 05-16-2016_
+*/

@@ -21,7 +21,7 @@ coupler.F90 - the third component, a coupler which takes
                  the ocean grid.
 
 -----------------------------------------------------
-To compile: 
+To compile:
 First make sure you have compiled MCT. See instructions in
 MCT/README
 

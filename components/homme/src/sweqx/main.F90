@@ -22,8 +22,6 @@ program main
   ! -----------------------------------------------
   use element_mod, only : element_t
   ! -----------------------------------------------
-  use fvm_control_volume_mod, only : fvm_struct
-  ! -----------------------------------------------
   !      use state_mod
   ! -----------------------------------------------
   use edgetype_mod, only : EdgeBuffer_t
@@ -36,7 +34,6 @@ program main
 
   implicit none
   type (element_t), pointer :: elem(:)
-  type (fvm_struct), pointer  :: fvm(:)
   
   type (EdgeBuffer_t)  :: edge1            ! 1 component edge buffer (1, 3d scalar field)
   type (EdgeBuffer_t)  :: edge2            ! 2 component edge buffer (1, 3d vector field)
@@ -58,7 +55,7 @@ program main
        Mpicom=par%comm, MasterTask=par%masterproc)
   call t_startf('Total')
   
-  call init(elem,edge1,edge2,edge3,red,par,dom_mt,fvm)
+  call init(elem,edge1,edge2,edge3,red,par,dom_mt)
   ! =====================================================
   ! Allocate state variables
   ! =====================================================
@@ -108,7 +105,7 @@ program main
   if(integration == "runge_kutta")then
      call sweq_rk(elem,edge1,edge2,edge3,red,par,ithr,nets,nete)
   else
-     call sweq(elem,fvm,edge1,edge2,edge3,red,par,ithr,nets,nete)
+     call sweq(elem,edge1,edge2,edge3,red,par,ithr,nets,nete)
   endif
 
 #if (defined HORIZ_OPENMP)

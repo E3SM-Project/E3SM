@@ -94,6 +94,10 @@ module clubb_intr
     rtpthlp_const = 0.01_r8             ! Constant to add to rtpthlp when moments are advected
     
   real(r8), parameter :: unset_r8 = huge(1.0_r8)
+
+!PMA
+ real(r8), parameter :: qsmall = 1.e-18_r8 ! qsmall used in MG
+
     
   real(r8) :: clubb_timestep = unset_r8  ! Default CLUBB timestep, unless overwriten by namelist
   real(r8) :: clubb_rnevap_effic = unset_r8
@@ -193,7 +197,8 @@ module clubb_intr
   character(len=8)   :: cnst_names(ncnst)
   logical            :: do_cnst=.false.
 
-  logical :: liqcf_fix  ! HW for liquid cloud fraction fix
+  logical :: liqcf_fix = .FALSE.  ! HW for liquid cloud fraction fix
+  logical :: relvar_fix = .FALSE. !PMA for relvar fix
   
   real(r8) :: micro_mg_accre_enhan_fac = huge(1.0_r8) !Accretion enhancement factor from namelist
 
@@ -370,7 +375,7 @@ end subroutine clubb_init_cnst
     namelist /clubbpbl_diff_nl/ clubb_cloudtop_cooling, clubb_rainevap_turb, clubb_expldiff, &
                                 clubb_do_adv, clubb_do_deep, clubb_timestep, clubb_stabcorrect, &
                                 clubb_rnevap_effic, clubb_liq_deep, clubb_liq_sh, clubb_ice_deep, &
-                                clubb_ice_sh, clubb_tk1, clubb_tk2
+                                clubb_ice_sh, clubb_tk1, clubb_tk2, relvar_fix
 
     !----- Begin Code -----
 
@@ -381,7 +386,7 @@ end subroutine clubb_init_cnst
     do_cldcool         = .false.   ! Initialize to false
     do_rainturb        = .false.   ! Initialize to false
     do_expldiff        = .false.   ! Initialize to false
-    
+    relvar_fix         = .false.   ! Initialize to false
 
     !  Read namelist to determine if CLUBB history should be called
     if (masterproc) then
@@ -426,6 +431,7 @@ end subroutine clubb_init_cnst
       call mpibcast(clubb_ice_sh,             1,   mpir8,   0, mpicom)
       call mpibcast(clubb_tk1,                1,   mpir8,   0, mpicom)
       call mpibcast(clubb_tk2,                1,   mpir8,   0, mpicom)
+      call mpibcast(relvar_fix,               1,   mpilog,  0, mpicom)
 #endif
 
     !  Overwrite defaults if they are true
@@ -1079,7 +1085,7 @@ end subroutine clubb_init_cnst
    real(r8) :: minqn                            ! minimum total cloud liquid + ice threshold    [kg/kg]
    real(r8) :: tempqn                           ! temporary total cloud liquid + ice            [kg/kg]
    real(r8) :: cldthresh                        ! threshold to determin cloud fraction          [kg/kg]
-   real(r8) :: relvarmax
+   real(r8) :: relvarmax,relvarmin
    real(r8) :: qmin
    real(r8) :: varmu(pcols)
    real(r8) :: varmu2
@@ -2199,10 +2205,33 @@ end subroutine clubb_init_cnst
    endif
    
    relvar(:,:) = relvarmax  ! default
+!
+!PMA c20161114: The lower bound of 0.7 is the mean of scattered Cu in Barker et al (1996).
+!     With the new formulation the lower bound and is rarely reached. 
+!
+   relvarmin   = 0.7_r8
+   
+!PMA c20161114: Xue Zheng identified the issue with small relvar: the original
+!               code uses grid mean variance and water content instead of in-cloud 
+!               quantities.
+!               Following equation A7 in Guo et al (2014), relvar is now  calculated
+!               using in-cloud variance and in-cloud total water instead of grid
+!               mean. This effectively reduces autoconversion rate especially
+!               for thin clouds. 
+!
+!
 
    if (deep_scheme .ne. 'CLUBB_SGS') then    
-      where (rcm(:ncol,:pver) /= 0 .and. qclvar(:ncol,:pver) /= 0) &
-          relvar(:ncol,:pver) = min(relvarmax,max(0.001_r8,rcm(:ncol,:pver)**2/qclvar(:ncol,:pver)))
+      if (relvar_fix) then    
+         where (rcm(:ncol,:pver) > qsmall .and. qclvar(:ncol,:pver) /= 0._r8)  &
+              relvar(:ncol,:pver) = min(relvarmax,max(relvarmin,rcm(:ncol,:pver)**2/max(qsmall,  &
+              cloud_frac(:ncol,:pver)*qclvar(:ncol,:pver)-  &
+              (1._r8-cloud_frac(:ncol,:pver))*rcm(:ncol,:pver)**2)))
+      else
+         
+         where (rcm(:ncol,:pver) /= 0 .and. qclvar(:ncol,:pver) /= 0) &
+              relvar(:ncol,:pver) = min(relvarmax,max(0.001_r8,rcm(:ncol,:pver)**2/qclvar(:ncol,:pver)))
+      endif
    endif
    
    ! ------------------------------------------------- !

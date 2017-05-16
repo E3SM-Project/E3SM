@@ -21,11 +21,12 @@ my %tests = ('copy.nc' => {control => 'control.nc'},
              'diffs_in_fill.nc' => {control => 'control.nc'},
              'diffs_in_vals_and_diffs_in_fill.nc' => {control => 'control.nc'},
              'diffs_in_vals_and_fill.nc' => {control => 'control.nc'},
+             'lon_differs.nc' => {control => 'control.nc'},
              'vals_differ_by_1.1.nc' => {control => 'control.nc'},
              'vals_differ_by_1.1_somewhere.nc' => {control => 'control.nc'},
              'vals_differ_by_varying_amounts.nc' => {control => 'control.nc'},
              'vals_differ_by_varying_amounts2.nc' => {control => 'control.nc'},
-             
+
              'multipleTimes_someTimeless_diffs_in_vals_and_fill.nc' => {control => 'control_multipleTimes_someTimeless.nc'},
 
              'noTime_diffs_in_vals_and_fill.nc' => {control => 'control_noTime.nc',
@@ -73,6 +74,7 @@ my $num_tests = keys %tests;
 print "Running $num_tests tests...\n";
 
 foreach my $test (keys %tests) {
+   print "$test\n";
    my $test_file = $test;
    my $control_file = $tests{$test}{'control'};
    my $outfile = "$opts{'outdir'}/${test}.out";
@@ -80,7 +82,7 @@ foreach my $test (keys %tests) {
    my $extra_args = $tests{$test}{'extra_args'};
 
    open (my $file, ">", "$outfile") or die "ERROR opening $outfile";
-   print $file `cprnc $extra_args test_inputs/$control_file test_inputs/$test_file`;
+   print $file `./cprnc $extra_args test_inputs/$control_file test_inputs/$test_file`;
    close $file;
 }
 

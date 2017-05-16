@@ -1,22 +1,22 @@
 
 
-find_path(Netcdf_INCLUDE_DIR 
+find_path(Netcdf_INCLUDE_DIR
           NAMES netcdf.h
           PATHS ${NETCDF_DIR} ${Homme_NETCDF_DIR}
           PATH_SUFFIXES include
           NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
-find_library(Netcdf_LIBRARY 
+find_library(Netcdf_LIBRARY
              NAMES libnetcdf.a netcdf
              HINTS ${Netcdf_INCLUDE_DIR}/../lib
              NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
-find_library(NetcdfF_LIBRARY 
+find_library(NetcdfF_LIBRARY
              NAMES libnetcdff.a netcdff
              HINTS ${Netcdf_INCLUDE_DIR}/../lib
              NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
-find_library(Pnetcdf_LIBRARY 
+find_library(Pnetcdf_LIBRARY
              NAMES libpnetcdf.a netcdff
              HINTS ${Netcdf_INCLUDE_DIR}/../lib
              NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
@@ -81,8 +81,8 @@ ELSE ()
   MESSAGE(STATUS "nc-config not found assuming hdf5 and curl dependencies")
 ENDIF ()
 
-IF (${NETCDF_REQUIRE_CURL}) 
-  
+IF (${NETCDF_REQUIRE_CURL})
+
   # For some reasone CURL uses CURL_ROOT rather than CURL_DIR
   #   - change the variable for consistency
   SET(CURL_ROOT ${CURL_DIR})
@@ -96,7 +96,7 @@ IF (${NETCDF_REQUIRE_CURL})
   ENDIF ()
 ENDIF ()
 
-IF (${NETCDF_REQUIRE_HDF5}) 
+IF (${NETCDF_REQUIRE_HDF5})
 
   find_path(HDF5_INCLUDE_DIR
             hdf5.h

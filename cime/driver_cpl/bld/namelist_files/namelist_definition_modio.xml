@@ -19,7 +19,7 @@
           An abbreviation of the fortran declaration for the variable.
 	  Valid declarations are:
 
-          char*n  
+          char*n
 	  integer
 	  logical
 	  real
@@ -33,7 +33,7 @@
      input_pathname
           Only include this attribute to indicate that the variable
           contains the pathname of an input dataset that resides in the
-          CESM inputdata directory tree.  
+          CESM inputdata directory tree.
 
 	  The recognized values are "abs" to indicate that an absolute
           pathname is required, or "rel:var_name" to indicate that the
@@ -55,60 +55,68 @@
 <!-- group modelio               -->
 <!-- =========================== -->
 
-<entry 
+<entry
 id="pio_stride"
 type="integer"
-category="pio" 
+category="pio"
 group="pio_inparm"
-valid_values="">  
+valid_values="">
 </entry>
 
-<entry 
+<entry
 id="pio_root"
 type="integer"
-category="pio" 
+category="pio"
 group="pio_inparm"
-valid_values="">  
+valid_values="">
 </entry>
 
-<entry 
+<entry
+id="pio_rearranger"
+type="integer"
+category="pio"
+group="pio_inparm"
+valid_values="-99,1,2">
+</entry>
+
+<entry
 id="pio_numiotasks"
 type="integer"
-category="pio" 
+category="pio"
 group="pio_inparm"
-valid_values="">  
+valid_values="">
 </entry>
 
-<entry 
+<entry
 id="pio_typename"
 type="char*64"
-category="pio" 
+category="pio"
 group="pio_inparm"
-valid_values="">  
+valid_values="">
 </entry>
 
-<entry 
+<entry
 id="diri"
 type="char*256"
-category="modelio" 
+category="modelio"
 group="modelio"
-valid_values="">  
+valid_values="">
 </entry>
 
-<entry 
+<entry
 id="diro"
 type="char*256"
-category="modelio" 
+category="modelio"
 group="modelio"
-valid_values="">  
+valid_values="">
 </entry>
 
-<entry 
+<entry
 id="logfile"
 type="char*256"
-category="modelio" 
+category="modelio"
 group="modelio"
-valid_values="">  
+valid_values="">
 </entry>
 
 </namelist_definition>

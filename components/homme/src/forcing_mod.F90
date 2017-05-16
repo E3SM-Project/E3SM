@@ -31,7 +31,6 @@ contains
     use element_mod,    only : element_t
     use dimensions_mod, only : np, nlev, qsize
     use time_mod,       only : TimeLevel_t
-    use control_mod, only : tracer_advection_formulation, TRACERADV_TOTAL_DIVERGENCE
 
     !input
     type (hvcoord_t), intent(inout)      :: hvcoord         ! hybrid vertical coordinate struct
@@ -109,20 +108,18 @@ contains
        ! Selects no forcing       
     end select
 
-    if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
-       ! forcing always applied to Q, update Qdp:
-       do q=1,qsize
+    ! forcing always applied to Q, update Qdp:
+    do q=1,qsize
        do k=1,nlev
-       do j=1,np
-       do i=1,np
-          dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elemin%state%ps_v(i,j,np1_d)
-          elemin%state%Qdp(i,j,k,q,np1_d) = elemin%state%Q(i,j,k,q)*dp
+          do j=1,np
+             do i=1,np
+                dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                     ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elemin%state%ps_v(i,j,np1_d)
+                elemin%state%Qdp(i,j,k,q,np1_d) = elemin%state%Q(i,j,k,q)*dp
+             enddo
+          enddo
        enddo
-       enddo
-       enddo
-       enddo
-    endif
+    enddo
   end subroutine Apply_Forcing
 
 

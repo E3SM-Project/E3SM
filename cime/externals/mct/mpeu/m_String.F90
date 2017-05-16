@@ -2,7 +2,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_String - The String Datatype
@@ -36,7 +36,7 @@
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
-      public :: toChar		
+      public :: toChar
       public :: char		! convert to a CHARACTER(*)
 
       public :: String_init
@@ -118,8 +118,8 @@ contains
 ! !IROUTINE: str2ch0_ - Convert a String to a CHARACTER
 !
 ! !DESCRIPTION:
-! This function returns the contents of the character buffer of the 
-! input {\tt String} argument {\tt str} as a {\tt CHARCTER} suitable 
+! This function returns the contents of the character buffer of the
+! input {\tt String} argument {\tt str} as a {\tt CHARCTER} suitable
 ! for printing.
 !
 ! !INTERFACE:
@@ -132,11 +132,11 @@ contains
 
      implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
      type(String),              intent(in) :: str
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
      character(len=size(str%c,1))            :: str2ch0_
 
@@ -173,11 +173,11 @@ contains
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       character(len=1), dimension(:), intent(in) :: ch1
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       character(len=size(ch1,1))                   :: ch12ch0_
 
@@ -201,7 +201,7 @@ contains
 ! !IROUTINE: initc_ - Create a String using a CHARACTER
 !
 ! !DESCRIPTION:
-! This routine takes an input scalar {\tt CHARACTER} argument {\tt chr}, 
+! This routine takes an input scalar {\tt CHARACTER} argument {\tt chr},
 ! and uses it to create the output {\tt String} argument {\tt str}.
 !
 ! !INTERFACE:
@@ -212,14 +212,14 @@ contains
 !
       use m_die, only : die,perr
       use m_mall,only : mall_mci,mall_ison
- 
+
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       character(len=*), intent(in)  :: chr
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(String),     intent(out) :: str
 
@@ -252,7 +252,7 @@ contains
 ! !IROUTINE: initc1_ - Create a String using a CHARACTER array
 !
 ! !DESCRIPTION:
-! This routine takes an input {\tt CHARACTER(:)} argument {\tt chr}, 
+! This routine takes an input {\tt CHARACTER(:)} argument {\tt chr},
 ! and uses it to create the output {\tt String} argument {\tt str}.
 !
 ! !INTERFACE:
@@ -263,14 +263,14 @@ contains
 !
       use m_die, only : die,perr
       use m_mall,only : mall_mci,mall_ison
- 
+
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       character,     dimension(:), intent(in)  :: chr
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(String),                intent(out) :: str
 
@@ -303,14 +303,14 @@ contains
 ! !IROUTINE: inits_ - Initialization of a String from another String
 !
 ! !DESCRIPTION:
-! This routine takes an input {\tt String} argument {\tt iStr} and 
+! This routine takes an input {\tt String} argument {\tt iStr} and
 ! creates an output {\tt String} argument {\tt oStr}.  In other words,
 ! it copies {\tt iStr} to {\tt oStr}.
 !
 ! !INTERFACE:
 
  subroutine inits_(oStr, iStr)
- 
+
 ! !USES:
 !
       use m_die, only : die
@@ -318,11 +318,11 @@ contains
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(String),  intent(in)  :: iStr
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(String),  intent(out) :: oStr
 
@@ -354,8 +354,8 @@ contains
 ! !IROUTINE: clean_ - Deallocate Memory Occupied by a String
 !
 ! !DESCRIPTION:
-! This routine deallocates memory associated with the input/output 
-! {\tt String} argument {\tt str}.  This amounts to deallocating 
+! This routine deallocates memory associated with the input/output
+! {\tt String} argument {\tt str}.  This amounts to deallocating
 ! {\tt str\%c}.
 !
 ! !INTERFACE:
@@ -369,7 +369,7 @@ contains
 
       implicit none
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
       type(String), intent(inout) :: str
 
@@ -400,10 +400,10 @@ contains
 ! This routine performs an MPI broadcast of the input/output {\tt String}
 ! argument {\tt Str} on a communicator associated with the Fortran integer
 ! handle {\tt comm}.  The broadcast originates from the process with rank
-! given by {\tt root} on {\tt comm}.  The {\tt String} argument {\tt Str} 
+! given by {\tt root} on {\tt comm}.  The {\tt String} argument {\tt Str}
 ! is on entry valid only on the {\tt root} process, and is valid on exit
-! on all processes on the communicator {\tt comm}.  The success (failure) 
-! is signified by a zero (non-zero) value of the optional {\tt INTEGER} 
+! on all processes on the communicator {\tt comm}.  The success (failure)
+! is signified by a zero (non-zero) value of the optional {\tt INTEGER}
 ! output argument {\tt stat}.
 !
 ! !INTERFACE:
@@ -418,17 +418,17 @@ contains
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer,           intent(in)    :: root
       integer,           intent(in)    :: comm
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
-      type(String),      intent(inout) :: Str ! (IN) on the root, 
+      type(String),      intent(inout) :: Str ! (IN) on the root,
                                               ! (OUT) elsewhere
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer, optional, intent(out)   :: stat
 
@@ -503,7 +503,7 @@ contains
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(String),     intent(in) :: marg
       character(len=*), intent(in) :: thread
@@ -569,7 +569,7 @@ contains
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(String),     dimension(:), intent(in) :: marg
       character(len=*),               intent(in) :: thread
@@ -603,7 +603,7 @@ contains
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(String),     dimension(:), intent(in) :: marg
       character(len=*),               intent(in) :: thread
@@ -637,7 +637,7 @@ contains
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(String),     dimension(:,:), intent(in) :: marg
       character(len=*),                 intent(in) :: thread
@@ -671,7 +671,7 @@ contains
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(String),     dimension(:,:), intent(in) :: marg
       character(len=*),                 intent(in) :: thread
@@ -705,7 +705,7 @@ contains
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(String),     dimension(:,:,:), intent(in) :: marg
       character(len=*),                   intent(in) :: thread
@@ -739,7 +739,7 @@ contains
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(String),     dimension(:,:,:), intent(in) :: marg
       character(len=*),                   intent(in) :: thread
@@ -773,7 +773,7 @@ contains
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(String),intent(in) :: str
 
@@ -795,8 +795,8 @@ contains
 ! !IROUTINE: ptr_chars_ - direct
 !
 ! !DESCRIPTION:
-! This pointer-valued function provides a direct interface to the 
-! character buffer in the input {\tt String} argument {\tt str}.  That 
+! This pointer-valued function provides a direct interface to the
+! character buffer in the input {\tt String} argument {\tt str}.  That
 ! is, {\tt ptr\_chars\_ => str\%c}.
 !
 ! !INTERFACE:
@@ -809,11 +809,11 @@ contains
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(String),                   intent(in) :: str
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       character(len=1), dimension(:), pointer    :: ptr_chars_
 

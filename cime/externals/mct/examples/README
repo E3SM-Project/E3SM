@@ -1,8 +1,8 @@
 
-Directories containing example programs showing 
+Directories containing example programs showing
 the use of MCT.
 
-simple/ - Multiple single-source file examples showing how to set 
+simple/ - Multiple single-source file examples showing how to set
           up MCTWorld, GSMaps and send/recv data in various two-component
           coupled configurations (sequential and concurrent).  Require
 	  no input data.

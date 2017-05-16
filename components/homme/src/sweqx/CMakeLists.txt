@@ -8,7 +8,7 @@ SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/sweqx)
 SET(SRC_BASE          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE         ${HOMME_SOURCE_DIR}/src/share)
 SET(SRC_UTILS         ${HOMME_SOURCE_DIR}/utils/csm_share)
-SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/timing)
+SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/cime/share/timing)
 
 # Find F90 files in target directory
 FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
@@ -37,16 +37,6 @@ SET(SWEQX_SRCS
   ${SRC_SHARE}/domain_mod.F90
   ${SRC_SHARE}/edge_mod_base.F90
   ${SRC_SHARE}/element_mod.F90
-  ${SRC_SHARE}/filter_mod.F90
-  ${SRC_SHARE}/fvm_bsp_mod.F90
-  ${SRC_SHARE}/fvm_transformation_mod.F90
-  ${SRC_SHARE}/fvm_analytic_mod.F90
-  ${SRC_SHARE}/fvm_control_volume_mod.F90
-  ${SRC_SHARE}/fvm_filter_mod.F90
-  ${SRC_SHARE}/fvm_line_integrals_mod.F90
-  ${SRC_SHARE}/fvm_line_integrals_flux_mod.F90
-  ${SRC_SHARE}/fvm_mod.F90
-  ${SRC_SHARE}/fvm_reconstruction_mod.F90
   ${SRC_SHARE}/global_norms_mod.F90
   ${SRC_SHARE}/gridgraph_mod.F90
   ${SRC_SHARE}/hybrid_mod.F90
@@ -81,8 +71,6 @@ SET(SWEQX_SRCS
   ${SRC_UTILS}/shr_vmath_mod.F90
   ${SRC_UTILS}/shr_const_mod.F90
   ${SRC_UTILS}/shr_spfn_mod.F90
-  ${SRC_BASE}/ref_state_mod.F90
-  ${SRC_BASE}/jrio.c
 )
 
 SET(EXEC_SOURCES ${SWEQX_SRCS} )

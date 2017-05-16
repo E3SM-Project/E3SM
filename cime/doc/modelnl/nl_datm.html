@@ -11,7 +11,7 @@
 
 <body>
 
-<h2>Search or Browse DATM Component Model Namelist Variables</h2> 
+<h2>Search or Browse DATM Component Model Namelist Variables</h2>
 
 <p> This page contains the complete list of DATM namelist variables
 available.  They are grouped by categories designed to aid browsing.
@@ -21,7 +21,7 @@ list will be condensed to contain only matched variables.  </p>
 
 <p> DATM namelists can be separated into two groups, <a
 href="#nonstream">stream-independent namelist variables</a> that are
-specific to the DATM model and <a href="#stream">stream-specific 
+specific to the DATM model and <a href="#stream">stream-specific
 namelist variables</a> that are contained in share code.
 In particular,  <emphasis>strdata</emphasis> (short for "stream data") input is
 set via a fortran namelist called "shr_strdata_nml".  That namelist,
@@ -66,7 +66,7 @@ href="#stream">datamode</a>.  </p>
                  type="button">
           <br>
           <label>
-            <input id="logical_operator_and" name="logical_operator" value="AND" 
+            <input id="logical_operator_and" name="logical_operator" value="AND"
                    type="radio" checked> AND
           </label>
           <label>
@@ -91,10 +91,10 @@ href="#stream">datamode</a>.  </p>
 <p>
 
 <center>
-<input id="btn_expand_help" value="Show All Help Text" 
+<input id="btn_expand_help" value="Show All Help Text"
        onclick="expandAllHelp();return false;"
        type="button">
-<input id="btn_collapse_help" value="Collapse All Help Text" 
+<input id="btn_collapse_help" value="Collapse All Help Text"
        onclick="collapseAllHelp();return false;"
        type="button">
 </center>
@@ -125,7 +125,7 @@ data will be generated.  default='NULL'
 datamode = "NULL"
   turns off the data model as a provider of data to the coupler.
   The atm_present flag will be set to false
-  and the coupler will assume no exchange of data to or from the data model. 
+  and the coupler will assume no exchange of data to or from the data model.
 datamode = "COPYALL"
   The default science mode of the data model is the COPYALL mode.
   COPYALL mode will examine the fields found in all input data streams,
@@ -137,7 +137,7 @@ datamode = "COPYALL"
   scientific modes supported by the model, they are listed below.  The
   mode is selected by a character string set in the strdata namelist
   variable dataMode.
-datamode = "CPLHIST" 
+datamode = "CPLHIST"
   The same as COPYALL mode.
 datamode = "CORE2_NYF"
   Coordinated Ocean-ice Reference Experiments (CORE) Version 2 Normal Year Forcing.
@@ -150,7 +150,7 @@ datamode = "CORE2_IAF"
   NCAR.  See the documentation for CORE version 2 datasets at
   http://data1.gfdl.noaa.gov/nomads/forms/mom4/COREv2.html Also see
   W.G.Large, S.G.Yeager (2008), The global climatology of an
-  interannually varying air-sea flux data set.  
+  interannually varying air-sea flux data set.
   Clm Dyn doi 10.1007/s00382-008-0441-3.
 datamode = "CLMNCEP"
   In conjunction with NCEP climatological atmosphere data, provides the
@@ -178,7 +178,7 @@ datamode = "CLMNCEP"
 	     <pre>
 spatial gridfile associated with the strdata.  grid information will
 be read from this file and that grid will serve as the target grid
-for all input data for this strdata input.  
+for all input data for this strdata input.
 </pre>
         </div>
     </td>
@@ -208,7 +208,7 @@ maximum ratio should be about 1.1.  the running value of the delta
 time is computed as data is read and any wraparound or cycling is also
 included.  this input helps trap missing data or errors in cycling.
 to turn off trapping, set the value to 1.0e30 or something similar.
-default=1.5. 
+default=1.5.
 </pre>
         </div>
     </td>
@@ -230,7 +230,7 @@ array (up to 30 elements) of fill algorithms associated with the array
 of streams.  valid options are just copy (ie. no fill), special value,
 nearest neighbor, nearest neighbor in "i" direction, or nearest
 neighbor in "j" direction.
-valid values:  'copy','spval','nn','nnoni','nnonj'  
+valid values:  'copy','spval','nn','nnoni','nnonj'
 <br/>default: "nn".
 </pre>
         </div>
@@ -249,7 +249,7 @@ valid values:  'copy','spval','nn','nnoni','nnonj'
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-plays no role is fill algorithm at the present time.  
+plays no role is fill algorithm at the present time.
 valid values: "nomask,srcmask,dstmask,bothmask"
 <br/>default: "nomask"
 </pre>
@@ -294,7 +294,7 @@ and fillmask are ignored.
 array (up to 30 elements)  of filenames associated with the array of
 streams.  specifies the weights file to generate after weights are
 computed on the fly for the fill operation.  this allows a user to
-save and reuse a set of weights later.  
+save and reuse a set of weights later.
 default="unset".
 </pre>
         </div>
@@ -316,7 +316,7 @@ default="unset".
 array (up to 30 elements) of fill algorithms associated with the array
 of streams.  valid options are copy by index, set to special value,
 nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
-in "j" direction, or bilinear.  
+in "j" direction, or bilinear.
 valid values: copy,spval,nn,nnoni,nnonj,bilinear
 <br/>default: bilinear
 </pre>
@@ -358,7 +358,7 @@ valid values: srcmask, dstmask, nomask,bothmask
         <div id="mapread_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre> 
+	     <pre>
 array (up to 30 elements) of filenames associated with the array of
 streams.  specifies the weights file to read instead of computing
 weights on the fly for the mapping (interpolation) operation.  if this
@@ -409,7 +409,7 @@ specified by the stream module.  this string consists of a
 stream_input_filename is a stream text input file and the format and
 options are described elsewhere.  year_align, year_first, and
 year_last provide information about the time axis of the file and how
-to relate the input time axis to the model time axis.  
+to relate the input time axis to the model time axis.
 default="null".
 </pre>
         </div>
@@ -429,7 +429,7 @@ default="null".
              #cccccc;">
 	     <pre>
 array of time axis modes associated with the array of streams for
-handling data outside the specified stream time axis.  
+handling data outside the specified stream time axis.
 valid options are to cycle the data based on the first, last, and
 align settings associated with the stream dataset, to extend the first
 and last valid value indefinitely, or to limit the interpolated data
@@ -454,7 +454,7 @@ default="cycle".
              #cccccc;">
 	     <pre>
 array (up to 30 elements) of time interpolation options associated with the array of
-streams.  
+streams.
 valid values: lower,upper,nearest,linear,coszen
   lower   = Use lower time-value
   upper   = Use upper time-value
@@ -484,8 +484,8 @@ vectors when carrying out spatial interpolation.  unlike other
 character arrays in this namelist, this array is completely decoupled
 from the list of streams.  this is a list of vector pairs that span
 all input streams where different fields of the vector pair could
-appear in different streams.  
-for example, vectors = 'u:v','taux:tauy'.  
+appear in different streams.
+for example, vectors = 'u:v','taux:tauy'.
 default="".
 </pre>
         </div>
@@ -575,11 +575,11 @@ default = ""
 Set the decomposition option for the data model.  valid options are
 placing the global array on the root task or a simple stride-one
 load balanced one-dimensional decomposition.  other decompositions
-may be added in the future.  
+may be added in the future.
 valid values are ['root','1d'].
   1d   = Vector decomposition
   root = run only on the master task
-default='1d'. 
+default='1d'.
 </pre>
         </div>
     </td>
@@ -598,7 +598,7 @@ default='1d'.
              #cccccc;">
 	     <pre>
 filename containing correction factors for use only with CORE2 modes (CORE2_IAF and CORE2_NYF).
-default='null'.  
+default='null'.
 </pre>
         </div>
     </td>
@@ -617,7 +617,7 @@ default='null'.
              #cccccc;">
 	     <pre>
 If TRUE, prognostic is forced to true.
-default=false 
+default=false
 </pre>
         </div>
     </td>

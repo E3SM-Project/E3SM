@@ -5,14 +5,12 @@
 
 module init_mod
 contains
-! not a nice way to integrate fvm but otherwise DG does not work anymore
-  subroutine init(elem, edge1,edge2,edge3,red,par, dom_mt, fvm)
+  subroutine init(elem, edge1,edge2,edge3,red,par, dom_mt)
     use kinds, only : real_kind, longdouble_kind
     ! --------------------------------
     use thread_mod, only : nthreads, omp_set_num_threads
     ! --------------------------------
-    use control_mod, only : filter_counter, restartfreq, topology, &
-          partmethod, while_iter
+    use control_mod, only : restartfreq, topology, partmethod
     ! --------------------------------
     use namelist_mod, only : readnl
     ! --------------------------------
@@ -35,7 +33,7 @@ contains
                            MeshCubeElemCount, &
                            MeshCubeEdgeCount
     ! --------------------------------
-    use cube_mod, only : cube_init_atomic, rotation_init_atomic, set_corner_coordinates, &
+    use cube_mod, only : cube_init_atomic, set_corner_coordinates, &
          assign_node_numbers_to_elem
 
     ! --------------------------------
@@ -80,9 +78,6 @@ contains
     ! ---------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! --------------------------------
-    use fvm_mod, only : fvm_init1
-    use fvm_control_volume_mod, only : fvm_struct
-    use dimensions_mod, only : nc, ntrac
 
     implicit none
 #ifdef _MPI
@@ -92,7 +87,6 @@ contains
 !   G95  "pointer attribute conflicts with INTENT attribute":  
 !    type (element_t), intent(inout), pointer :: elem(:)
     type (element_t), pointer :: elem(:)
-    type (fvm_struct), pointer, optional :: fvm(:)
         
     type (EdgeBuffer_t)           :: edge1
     type (EdgeBuffer_t)           :: edge2
@@ -118,7 +112,6 @@ contains
     integer :: n_domains
     real(kind=real_kind) :: et,st
 
-    character(len=80) rot_type   ! cube edge rotation type
     real(kind=real_kind), allocatable       :: mass(:,:,:)
 
     logical, parameter :: Debug = .FALSE.
@@ -135,12 +128,6 @@ contains
     call t_startf('init')
 
     call readnl(par)
-
-    ! =====================================
-    ! Set cube edge rotation type for model
-    ! =====================================
-
-    rot_type="contravariant"
 
     if (par%masterproc) then
 
@@ -254,13 +241,6 @@ contains
 
     allocate(elem(nelemd))
     call allocate_element_desc(elem)
-    if (present(fvm)) then
-    if (ntrac>0) then
-       allocate(fvm(nelemd))
-    else
-       allocate(fvm(0))  ! create mesh, even if no cslam tracers
-    endif
-    endif
 
     ! ====================================================
     !  Generate the communication schedule
@@ -290,7 +270,6 @@ contains
 
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points)
-          call rotation_init_atomic(elem(ie),rot_type)
        enddo
        if(par%masterproc) write(6,*)"...done."
     end if
@@ -321,11 +300,6 @@ contains
        call CreateUniqueIndex(elem(ie)%GlobalId,elem(ie)%gdofP,elem(ie)%idxP)
     enddo
     call SetElemOffset(par,elem,GlobalUniqueCols)
-
-    ! use a copy.  has to be done *after* SetElemOffset()
-    do ie=1,nelemd
-       elem(ie)%idxV=>elem(ie)%idxP
-    end do
 
     !JMD call PrintDofV(elem)
     !JMD call PrintDofP(elem)
@@ -359,9 +333,6 @@ contains
 
     allocate(mass(np,np,nelemd))
 
-    while_iter = 0
-    filter_counter = 0
-
     ! ==========================================================
     !  This routines initalizes a Restart file.  This involves:
     !      I)  Setting up the MPI datastructures
@@ -369,7 +340,6 @@ contains
     if(restartfreq > 0) then
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
-    if (ntrac>0) call fvm_init1(par,elem)
     
     call t_stopf('init')
   end subroutine init

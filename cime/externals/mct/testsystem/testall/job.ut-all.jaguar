@@ -8,7 +8,7 @@
 
 # job starts in home directory, cd to the submission directory
 
-# IMPORTANT!  after CNL upgrade, all files (input,output,pwd) 
+# IMPORTANT!  after CNL upgrade, all files (input,output,pwd)
 # must be in /lustre.
 
 cd $PBS_O_WORKDIR

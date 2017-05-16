@@ -14,8 +14,8 @@ are <command>create_production_test</command> and $&create_test;.
 </para>
 <para>
 The <command>create_production_test</command>
-tool is executed from your $&CASEROOT;, and tests your case's ability to be restarted in a 
-bit-for-bit fashion in a separate directory.  
+tool is executed from your $&CASEROOT;, and tests your case's ability to be restarted in a
+bit-for-bit fashion in a separate directory.
 </para>
 <para>
 New perl-based $&create_test; and $&query_tests; utilities are
@@ -30,13 +30,13 @@ used by the CESM developers for testing the model.
 <sect1 id="create_production_test">
 <title>Using <command>create_production_test</command></title>
 
-<para> In general, after configuring and testing a case and before 
+<para> In general, after configuring and testing a case and before
 starting a long production job based on that case, it's important
 to verify that the model restarts exactly.  This is a standard
 requirement of the system and will help demonstrate stability
 of the configuration technically.  The tool
 create_production_test is located in the case directory,
-and it sets up an ERT two month exact restart test in the same directory 
+and it sets up an ERT two month exact restart test in the same directory
 as the current case.  To use it, do the following
 </para>
 
@@ -58,7 +58,7 @@ test debugging guidance.
 </sect1>
 
 <sect1 id="query_tests">
-<title>Using <command>query_tests</command></title> 
+<title>Using <command>query_tests</command></title>
 
 <para>
 In CESM1.2, automated regression and system tests are now found in a
@@ -71,26 +71,26 @@ compilers. You should use this command to become familiar with the
 latest CESM testing capabilities before you utilize &create_test;.
 You should first use the -h option in calling &query_tests; to
 document its input options.  &query_tests; can be called with the
-following arguments: 
+following arguments:
 </para>
 <para><screen>
 query_tests \
-   -list <emphasis>name</emphasis>             
+   -list <emphasis>name</emphasis>
         name can be [compsets,grids,compilers,machines,categories,tests] \
    -compset <emphasis>name</emphasis>
        limit selection to target compset name \
-   -category <emphasis>name</emphasis>             
+   -category <emphasis>name</emphasis>
        limit selection to target category name \
-   -machine <emphasis>name</emphasis>             
+   -machine <emphasis>name</emphasis>
        limit selection to target machine name \
-   -compiler <emphasis>name</emphasis>             
+   -compiler <emphasis>name</emphasis>
        limit selection to target compiler name \
-   -grid <emphasis>name</emphasis>             
+   -grid <emphasis>name</emphasis>
        limit selection to target grid name match \
-   -outputlist   
-       outputs the found tests to the old-style text test lists. \ 
-   -outputxml  
-       outputs the found tests to an xml test list. 
+   -outputlist
+       outputs the found tests to the old-style text test lists. \
+   -outputxml
+       outputs the found tests to an xml test list.
 </screen></para>
 <para>
 As an example to see all the tests that are supported for the compset B1850C5CN,
@@ -103,32 +103,32 @@ call $&query_tests; as follows
 <para>
 And the following output will appear
 <screen>
-Compset                      TestName  Grid       Machine_compiler      Category  
+Compset                      TestName  Grid       Machine_compiler      Category
 ==================================================================================
-B1850C5CN (B_1850_CAM5_CN)   ERI       f19_g16    hopper_pgi            prerelease                      
-B1850C5CN (B_1850_CAM5_CN)   ERI       f19_g16    intrepid_ibm          prerelease                      
-B1850C5CN (B_1850_CAM5_CN)   ERI       ne30_g16   hopper_pgi            prebeta                         
-B1850C5CN (B_1850_CAM5_CN)   ERI       ne30_g16   intrepid_ibm          prebeta                         
-B1850C5CN (B_1850_CAM5_CN)   ERS       ne30_g16   yellowstone_pgi       prebeta                         
-B1850C5CN (B_1850_CAM5_CN)   ERS       ne30_g16   yellowstone_gnu       prebeta                         
-B1850C5CN (B_1850_CAM5_CN)   ERS       ne30_g16   yellowstone_intel     prebeta                         
-B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   edison_intel          prebeta                         
-B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   mira_ibm              prebeta                         
-B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   titan_pgi             prebeta                         
-B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   yellowstone_gnu       prebeta                         
-B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   yellowstone_pgi       prebeta                         
-B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   yellowstone_intel     prebeta                         
+B1850C5CN (B_1850_CAM5_CN)   ERI       f19_g16    hopper_pgi            prerelease
+B1850C5CN (B_1850_CAM5_CN)   ERI       f19_g16    intrepid_ibm          prerelease
+B1850C5CN (B_1850_CAM5_CN)   ERI       ne30_g16   hopper_pgi            prebeta
+B1850C5CN (B_1850_CAM5_CN)   ERI       ne30_g16   intrepid_ibm          prebeta
+B1850C5CN (B_1850_CAM5_CN)   ERS       ne30_g16   yellowstone_pgi       prebeta
+B1850C5CN (B_1850_CAM5_CN)   ERS       ne30_g16   yellowstone_gnu       prebeta
+B1850C5CN (B_1850_CAM5_CN)   ERS       ne30_g16   yellowstone_intel     prebeta
+B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   edison_intel          prebeta
+B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   mira_ibm              prebeta
+B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   titan_pgi             prebeta
+B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   yellowstone_gnu       prebeta
+B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   yellowstone_pgi       prebeta
+B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   yellowstone_intel     prebeta
 </screen></para>
 <para>
 To find all the tests that are configured to run on Yellowstone, run:
 <screen>
-> ./query_tests -mach yellowstone 
-</screen> 
+> ./query_tests -mach yellowstone
+</screen>
 </para>
 <para>
-The output will show the compset, test name, grid, machine / compiler combinaton, test category, and and optional namelist directory. 
+The output will show the compset, test name, grid, machine / compiler combinaton, test category, and and optional namelist directory.
 (used for specifying custom namelists for tests)
-</para> 
+</para>
 <para>
 To find all the tests configured to run on titan, using the PGI compiler, and using the 'prebeta' category, run:
 </para>
@@ -148,8 +148,8 @@ If one wanted a new test list based on a particular query, one can use the -outp
 > ./query_tests -category aux_clm -outputxml > aux_clm.xml
 </screen>
 <para>
-The above command will give one all of the 'aux_clm' tests in the file 'aux_clm.xml'.  Then, this test list can be used 
-by create_test to run the aux_clm tests using the -xml_list option. 
+The above command will give one all of the 'aux_clm' tests in the file 'aux_clm.xml'.  Then, this test list can be used
+by create_test to run the aux_clm tests using the -xml_list option.
 </para>
 
 </sect1>
@@ -160,7 +160,7 @@ by create_test to run the aux_clm tests using the -xml_list option.
 <para>
 The new $&create_test; tool is located in the
 <filename>$CIMEROOT/scripts/</filename> directory and can be used to
-set up entire CESM test suites, as well as single standalone test cases. 
+set up entire CESM test suites, as well as single standalone test cases.
 To see the list of test cases, and to view the available script options,
 execute create_test -help or create_test without any arguments.
 Creating a single test looks like:
@@ -180,7 +180,7 @@ Check your test results. A successful test produces "PASS" as
 The above commands set up an exact restart test (ERS) at the 1.9x2.5_gx1v6
 resolution using a dead model component set (X) for the machine yellowstone.
 The testid provides a unique tag for the test in case it needs to
-be rerun (i.e. using -testid t02).  
+be rerun (i.e. using -testid t02).
 </para>
 
 <para>
@@ -195,10 +195,10 @@ the 'prebeta' test category, do the following:
      -xml_compiler intel \
      -xml_category prebeta \
      -testid alpha01a \
-     -testroot /glade/scratch/$USER/alpha01a 
+     -testroot /glade/scratch/$USER/alpha01a
 </screen>
 
-<para> 
+<para>
 The above command will run all of the 'prebeta' tests in the
 ccsm_utils/Testlistxml/testlist.xml file that are configured for the
 category prebeta using the Intel compiler on yellowstone.  This is
@@ -258,7 +258,7 @@ one to accomplish several goals: </para>
   <para> -compare will compare the current tag's tests against a
   previous tag's results, again for numerical accuracy.</para>
   </listitem>
-  <listitem> 
+  <listitem>
   <para> -baselineroot simply specifies where you would like your
   baseline files to be stored. By default, the test system will choose
   the configured baseline root for your machine.</para>
@@ -377,9 +377,9 @@ context of the test conditions.
 </para>
 
 <para>
-Not all tests will pass for all model configurations.  For more information, 
+Not all tests will pass for all model configurations.  For more information,
 please check the known problems page for this release to find out which machines
-have problems with which compsets and/or resolutions. 
+have problems with which compsets and/or resolutions.
 </para>
 
 <itemizedlist>

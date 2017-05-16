@@ -6,7 +6,7 @@ two components.
 
 Each example is contained in one .F90 file.
 
-To compile: 
+To compile:
 First make sure you have compiled MCT. See instructions in
 MCT/README
 

@@ -18,39 +18,7 @@ conservative ocean -> atmosphere mapping file).
 HOW TO BUILD
 ============
 
-Prior to building, you must make sure $CIMEROOT is set.
-
-$ cd src
-$ $CIMEROOT/machines/configure -mach [machine name]
-$ ./build.csh
-
-Note: in the second step, replace [machine name] with the machine you are
-building on. Also, some machines (such as janus) have dedicated build nodes,
-so you might need to SSH to another node before the 'build.csh' step.
-
-==================================
-COMMON BUILD / RUN ISSUES ON JANUS
-==================================
-
-1) As hinted at in the "How to Build" section, you can not build on the login
-  nodes on janus. If you see the error
-
-  ld: cannot find -lrdmacm
-  ld: cannot find -libverbs
-
-  you are still on the headnode and need to SSH to node0001.
-
-2) At present, the netCDF libraries available on janus have all been built
-   with mpif90, which means that everything linking with netCDF must also
-   be built in parallel. Unfortunately, this means you can not run gen_domains
-   from the head node -- you either need to push it through the queue or just
-   run it from node0001. Running on node0001 is easier, but to run from the
-   queue, edit gen_domain.janus.run (both the header info to set the requested
-   walltime and the body of the script to point to the correct mapping file and
-   name the domain files appropriately), and then run
-
-   qsub gen_domain.janus.run
-
+See INSTALL file in this directory
 
 ==========
 HOW TO RUN
@@ -89,10 +57,10 @@ NOTES
     gridlnd has fractions that represent the complement of gridocn fraction
     data, as computed by the input mapping data.  Thus gridocn is intended
     to be an ocean domain file and gridlnd is intended to be the complementary
-    land domain file.  Related, the input mapping data, filemap, should be 
+    land domain file.  Related, the input mapping data, filemap, should be
     a conservative mapping: ocean -> atmosphere.
 
-    Computed land fractions will be truncated into the range [0,1] 
+    Computed land fractions will be truncated into the range [0,1]
     after the min/max land fraction values have been documented.
     Computed land fractions that are less than fminval will be truncated to 0
     to avoid active land cells with tiny land fractions.
@@ -104,12 +72,12 @@ NOTES
 (b) Fraction error reported in stdout
 
     In the stdout, the min/max land fraction is reported.  Land fractions should
-    be in the range [0,1], but due to either unavoidable/acceptable numerical 
+    be in the range [0,1], but due to either unavoidable/acceptable numerical
     errors or other avoidable/unacceptable errors (eg. bad mapping matrix data)
     this code may compute land fractions outside the range [0,1].
 
-    *** THE USER IS RESPONSIBLE FOR EXAMINING THE STDOUT MIN/MAX LAND 
-    *** FRACTION DATA AND MAKING THEIR OWN SUBJECTIVE DECISION ABOUT WHETHER 
+    *** THE USER IS RESPONSIBLE FOR EXAMINING THE STDOUT MIN/MAX LAND
+    *** FRACTION DATA AND MAKING THEIR OWN SUBJECTIVE DECISION ABOUT WHETHER
     *** SUCH ERRORS ARE ACCEPTABLE OR NOT.
 
 (c) The "pole fix" option
@@ -118,26 +86,26 @@ NOTES
     set_fv_pole_yc = 1 => do the pole-fix on gridocn
     set_fv_pole_yc = 2 => do the pole-fix on gridlnd
 
-    The "pole fix" means setting 
+    The "pole fix" means setting
     yc(i,j) = -90 for j=1  (the min value of j: 1), and
     yc(i,j) =  90 for j=nj (the max value of j, the size of the j-dimension)
     regardless of what the coordinate values are in the input mapping data file.
 
-    In other words, if the input mapping data min/max yc coordinates ARE NOT at 
-    +/- 90 degrees but the desire is to have domain data with min/max yc coordinates 
+    In other words, if the input mapping data min/max yc coordinates ARE NOT at
+    +/- 90 degrees but the desire is to have domain data with min/max yc coordinates
     at +/- 90, the "pole fix" namelist option can be activated to accomplish this.
     This would only work for lat/lon grids, ie. grids that could be described
     by x(i) and y(j) coordinate arrays.
-    
+
     Why?
 
-    This option was introduced to accommodate a request by the CESM Atmosphere 
-    Model Working Group wherein they want certain finite volume grids 
-    with min/max yc coordinates (latitude of grid cell "centers") at +/- 90 degrees, 
+    This option was introduced to accommodate a request by the CESM Atmosphere
+    Model Working Group wherein they want certain finite volume grids
+    with min/max yc coordinates (latitude of grid cell "centers") at +/- 90 degrees,
     yet they want the corresponding mapping data created for grids
-    where the min/max yc coordinates ARE NOT at +/- 90 degrees, 
-    (they are somewhat displaced toward the equator).  
+    where the min/max yc coordinates ARE NOT at +/- 90 degrees,
+    (they are somewhat displaced toward the equator).
 
-    While this type of manipulation has been requested by the AMWG, it is not 
+    While this type of manipulation has been requested by the AMWG, it is not
     required by the CESM model, CESM coupler, or the SCRIP map generation tool.
 

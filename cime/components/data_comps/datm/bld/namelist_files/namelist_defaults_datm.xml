@@ -12,20 +12,20 @@ attributes to express the dependency.  The recognized attributes
 are: grid, datm_presaero and all configuration
 attributes from the config_cache.xml file (with keys converted to upper-case).
 
-strm_year_first is the first year of the stream data that will be used 
-strm_year_last  is the last  year of the stream data that will be used 
-strm_year_align is the model year that will be aligned with stream data for year_first 
+strm_year_first is the first year of the stream data that will be used
+strm_year_last  is the last  year of the stream data that will be used
+strm_year_align is the model year that will be aligned with stream data for year_first
 
 Replace any instance of the following substring indicators with the appropriate values:
     %y    => year from the range yearfirst to yearlast
-             using in build-namelist $namelist_defaults_opts{'yearfirst'} 
-             using in build-namelist $namelist_defaults_opts{'yearlast'} 
+             using in build-namelist $namelist_defaults_opts{'yearfirst'}
+             using in build-namelist $namelist_defaults_opts{'yearlast'}
     %ym   => year-month from the range yearfirst to yearlast with all 12 months
-             using in build-namelist $namelist_defaults_opts{'yearfirst'} 
-             using in build-namelist $namelist_defaults_opts{'yearlast'} 
+             using in build-namelist $namelist_defaults_opts{'yearfirst'}
+             using in build-namelist $namelist_defaults_opts{'yearlast'}
     %ymd  => year-month-day from the range yearfirst to yearlast with all 12 months
-             using in build-namelist $namelist_defaults_opts{'yearfirst'} 
-             using in build-namelist $namelist_defaults_opts{'yearlast'} 
+             using in build-namelist $namelist_defaults_opts{'yearfirst'}
+             using in build-namelist $namelist_defaults_opts{'yearlast'}
 
 In datm_atm_in,  streams namelist input has the form
      streams = 'stream1.txt year_align year_first year_last ',
@@ -41,18 +41,20 @@ Currently the following streams are supported (term definitions precede the stre
     CLM_QIAN        = Run with the CLM Qian dataset valid from 1948 to 2004 (force CLM)
     CLMCRUNCEP      = Run with the CLM CRU NCEP V4 ( default ) forcing valid from 1900 to 2010 (force CLM)
     CLMCRUNCEP_V5   = Run with the CLM CRU NCEP V5 forcing valid from 1900 to 2010 (force CLM)
+    CLMGSWP3        = Run with the CLM GSWP3 forcing (force CLM)
     CLM1PT          = Run with supplied single point data (force CLM)
     CORE2_NYF       = CORE2 normal year forcing (for forcing POP and CICE)
     CORE2_IAF       = CORE2 intra-annual year forcing (for forcing POP and CICE)
     CPLHIST3HrWx    = Run with CESM 3-hourly coupler history output
-    presaero        = Prescribed aerosol forcing 
+    presaero        = Prescribed aerosol forcing
+    topo            = Surface topography
     co2tseries      = Time series of prescribed CO2 forcing
     Anomaly.Forcing = Time series of correction terms
     BC              = Bias Correction for a stream to a given set of observations
     WW3             = Wave model forcing
 
-    Anomaly.Forcing.Humidity 
-    Anomaly.Forcing.Longwave 
+    Anomaly.Forcing.Humidity
+    Anomaly.Forcing.Longwave
     Anomaly.Forcing.Precip
     Anomaly.Forcing.Pressure
     Anomaly.Forcing.Shortwave
@@ -91,6 +93,10 @@ Currently the following streams are supported (term definitions precede the stre
     CLMCRUNCEP_V5.Solar
     CLMCRUNCEP_V5.Precip
     CLMCRUNCEP_V5.TPQW
+
+    CLMGSWP3.Solar
+    CLMGSWP3.Precip
+    CLMGSWP3.TPQW
 
     co2tseries.20tr
     co2tseries.rcp2.6
@@ -136,6 +142,8 @@ Currently the following streams are supported (term definitions precede the stre
     presaero.rcp6.0
     presaero.rcp8.5
 
+    topo.observed
+
     WW3
 
 -->
@@ -149,6 +157,7 @@ Currently the following streams are supported (term definitions precede the stre
 <datamode datm_mode="CLM1PT"        >CLMNCEP</datamode>
 <datamode datm_mode="CLMCRUNCEP"    >CLMNCEP</datamode>
 <datamode datm_mode="CLMCRUNCEP_V5" >CLMNCEP</datamode>
+<datamode datm_mode="CLMGSWP3"      >CLMNCEP</datamode>
 <datamode datm_mode="CPLHIST3HrWx"  >CPLHIST</datamode>
 <datamode datm_mode="CORE2_NYF"     >CORE2_NYF</datamode>
 <datamode datm_mode="CORE2_IAF"     >CORE2_IAF</datamode>
@@ -163,8 +172,10 @@ Currently the following streams are supported (term definitions precede the stre
 <streamslist datm_mode="CLM1PT"    >CLM1PT.$ATM_GRID</streamslist>
 <streamslist datm_mode="CLMCRUNCEP"   >CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</streamslist>
 <streamslist datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</streamslist>
+<streamslist datm_mode="CLMGSWP3"     >CLMGSWP3.Solar,CLMGSWP3.Precip,CLMGSWP3.TPQW</streamslist>
 <streamslist datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</streamslist>
 <streamslist datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</streamslist>
+<streamslist datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SHUM.SOFS.6HOUR,CORE2_IAF.TBOT.SOFS.6HOUR,CORE2_IAF.U.SOFS.6HOUR,CORE2_IAF.V.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</streamslist>
 <streamslist datm_mode="CPLHIST3HrWx">CPLHIST3HrWx.Solar,CPLHIST3HrWx.Precip,CPLHIST3HrWx.nonSolarNonPrecip</streamslist>
 <streamslist datm_mode="WW3"       >WW3</streamslist>
 <streamslist datm_mode="NLDAS"     >NLDAS</streamslist>
@@ -177,6 +188,7 @@ Currently the following streams are supported (term definitions precede the stre
 <vectors datm_mode="CLM_QIAN"      >null</vectors>
 <vectors datm_mode="CLMCRUNCEP"    >null</vectors>
 <vectors datm_mode="CLMCRUNCEP_V5" >null</vectors>
+<vectors datm_mode="CLMGSWP3"      >null</vectors>
 <vectors datm_mode="CLM1PT"        >null</vectors>
 <vectors datm_mode="CPLHIST3HrWx"  >null</vectors>
 <vectors datm_mode="CORE2_NYF"     >u:v</vectors>
@@ -258,7 +270,7 @@ Currently the following streams are supported (term definitions precede the stre
 <strm_domdir     stream="CLM1PT.1x1_urbanc_alpha">$DIN_LOC_ROOT/atm/datm7/domain.clm</strm_domdir>
 <strm_domfil     stream="CLM1PT.1x1_urbanc_alpha">domain.lnd.1x1pt-urbanc_alpha_navy.090715.nc </strm_domfil>
 <strm_datdir     stream="CLM1PT.1x1_urbanc_alpha">$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416 </strm_datdir>
-<strm_datfil     stream="CLM1PT.1x1_urbanc_alpha"> 
+<strm_datfil     stream="CLM1PT.1x1_urbanc_alpha">
   clm1pt-0001-08.nc
   clm1pt-0001-09.nc
   clm1pt-0001-10.nc
@@ -399,7 +411,7 @@ Currently the following streams are supported (term definitions precede the stre
   a2x3h_Sa_u           u
   a2x3h_Sa_v           v
   a2x3h_Sa_tbot        tbot
-  a2x3h_Sa_ptem        ptem  
+  a2x3h_Sa_ptem        ptem
   a2x3h_Sa_shum        shum
   a2x3h_Sa_pbot        pbot
   a2x3h_Faxa_lwdn      lwdn
@@ -633,6 +645,83 @@ Currently the following streams are supported (term definitions precede the stre
   PSRF     pbot
 </strm_datvar>
 
+<!-- =============== -->
+<!-- == CLMGSWP3   = -->
+<!-- =============== -->
+
+<!-- == Solar    === -->
+<strm_year_start stream="CLMGSWP3.Solar">$DATM_CLMNCEP_YR_START</strm_year_start>
+<strm_year_end   stream="CLMGSWP3.Solar">$DATM_CLMNCEP_YR_END  </strm_year_end>
+<strm_year_align stream="CLMGSWP3.Solar">$DATM_CLMNCEP_YR_ALIGN</strm_year_align>
+<strm_domdir     stream="CLMGSWP3.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016</strm_domdir>
+<strm_domfil     stream="CLMGSWP3.Solar">domain.GSWP3.c2014.0.5d.nc</strm_domfil>
+<strm_datdir     stream="CLMGSWP3.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016/Solar</strm_datdir>
+<strm_datfil     stream="CLMGSWP3.Solar">clmforc.GSWP3.c2011.0.5x0.5.Solr.%ym.nc</strm_datfil>
+<strm_offset     stream="CLMGSWP3.Solar">0</strm_offset>
+<strm_tintalgo   stream="CLMGSWP3.Solar">coszen</strm_tintalgo>
+<strm_mapalgo    stream="CLMGSWP3.Solar">bilinear</strm_mapalgo>
+<strm_mapalgo    stream="CLMGSWP3.Solar" ATM_GRID="hcru">copy</strm_mapalgo>
+<strm_domvar     stream="CLMGSWP3.Solar">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CLMGSWP3.Solar">
+  FSDS swdn
+</strm_datvar>
+
+<!-- == Precip    === -->
+<strm_year_start stream="CLMGSWP3.Precip">$DATM_CLMNCEP_YR_START</strm_year_start>
+<strm_year_end   stream="CLMGSWP3.Precip">$DATM_CLMNCEP_YR_END  </strm_year_end>
+<strm_year_align stream="CLMGSWP3.Precip">$DATM_CLMNCEP_YR_ALIGN</strm_year_align>
+<strm_domdir     stream="CLMGSWP3.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016</strm_domdir>
+<strm_domfil     stream="CLMGSWP3.Precip">domain.GSWP3.c2014.0.5d.nc</strm_domfil>
+<strm_datdir     stream="CLMGSWP3.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016/Precip</strm_datdir>
+<strm_datfil     stream="CLMGSWP3.Precip">clmforc.GSWP3.c2011.0.5x0.5.Prec.%ym.nc</strm_datfil>
+<strm_offset     stream="CLMGSWP3.Precip">0</strm_offset>
+<strm_tintalgo   stream="CLMGSWP3.Precip">nearest</strm_tintalgo>
+<strm_mapalgo    stream="CLMGSWP3.Precip">bilinear</strm_mapalgo>
+<strm_mapalgo    stream="CLMGSWP3.Precip" ATM_GRID="hcru">copy</strm_mapalgo>
+<strm_domvar     stream="CLMGSWP3.Precip">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CLMGSWP3.Precip">
+  PRECTmms precn
+</strm_datvar>
+
+<!-- == TPQW    === -->
+<strm_year_start stream="CLMGSWP3.TPQW">$DATM_CLMNCEP_YR_START</strm_year_start>
+<strm_year_end   stream="CLMGSWP3.TPQW">$DATM_CLMNCEP_YR_END  </strm_year_end>
+<strm_year_align stream="CLMGSWP3.TPQW">$DATM_CLMNCEP_YR_ALIGN</strm_year_align>
+<strm_domdir     stream="CLMGSWP3.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016</strm_domdir>
+<strm_domfil     stream="CLMGSWP3.TPQW">domain.GSWP3.c2014.0.5d.nc</strm_domfil>
+<strm_datdir     stream="CLMGSWP3.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016/TPHWL</strm_datdir>
+<strm_datfil     stream="CLMGSWP3.TPQW">clmforc.GSWP3.c2011.0.5x0.5.TPQWL.%ym.nc</strm_datfil>
+<strm_offset     stream="CLMGSWP3.TPQW">0</strm_offset>
+<strm_tintalgo   stream="CLMGSWP3.TPQW">linear</strm_tintalgo>
+<strm_mapalgo    stream="CLMGSWP3.TPQW">bilinear</strm_mapalgo>
+<strm_mapalgo    stream="CLMGSWP3.TPQW" ATM_GRID="hcru">copy</strm_mapalgo>
+<strm_domvar     stream="CLMGSWP3.TPQW">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CLMGSWP3.TPQW">
+  TBOT     tbot
+  WIND     wind
+  QBOT     shum
+  PSRF     pbot
+  FLDS     lwdn
+</strm_datvar>
+
 <!-- =========================================  -->
 <!-- CORE2_NYF                                  -->
 <!-- =========================================  -->
@@ -656,7 +745,7 @@ Currently the following streams are supported (term definitions precede the stre
 </strm_domvar>
 <strm_datvar stream="CORE2_NYF.GISS">
   lwdn  lwdn
-  swdn  swdn 
+  swdn  swdn
   swup  swup
 </strm_datvar>
 
@@ -725,6 +814,250 @@ Currently the following streams are supported (term definitions precede the stre
 <!-- ncep.u_10.T62.current   			-->
 <!-- ncep.v_10.T62.current   			-->
 <!-- =========================================  -->
+
+<!-- == Single Column SOFS forcing -->
+<!-- == dens and pslv from NCEP    -->
+<strm_year_start stream="CORE2_IAF.NCEP.DENS.SOFS">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.NCEP.DENS.SOFS">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.NCEP.DENS.SOFS">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.NCEP.DENS.SOFS">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.NCEP.DENS.SOFS">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.NCEP.DENS.SOFS">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.NCEP.DENS.SOFS">
+ncep.SOFS.2010.nc
+</strm_datfil>
+
+<strm_tintalgo   stream="CORE2_IAF.NCEP.DENS.SOFS">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.NCEP.DENS.SOFS">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.NCEP.DENS.SOFS">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.NCEP.DENS.SOFS">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CORE2_IAF.NCEP.DENS.SOFS">
+  dn10  dens
+</strm_datvar>
+
+<strm_year_start stream="CORE2_IAF.NCEP.PSLV.SOFS">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.NCEP.PSLV.SOFS">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.NCEP.PSLV.SOFS">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.NCEP.PSLV.SOFS">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.NCEP.PSLV.SOFS">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.NCEP.PSLV.SOFS">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.NCEP.PSLV.SOFS">
+ncep.SOFS.2010.nc
+</strm_datfil>
+
+<strm_tintalgo   stream="CORE2_IAF.NCEP.PSLV.SOFS">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.NCEP.PSLV.SOFS">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.NCEP.PSLV.SOFS">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.NCEP.PSLV.SOFS">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CORE2_IAF.NCEP.PSLV.SOFS">
+  slp_  pslv
+</strm_datvar>
+
+<!-- == daily lwdn, prec, swdn, swup from SOFS   -->
+<strm_year_start stream="CORE2_IAF.PREC.SOFS.DAILY">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.PREC.SOFS.DAILY">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.PREC.SOFS.DAILY">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.PREC.SOFS.DAILY">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.PREC.SOFS.DAILY">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.PREC.SOFS.DAILY">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.PREC.SOFS.DAILY">
+SOFS.daily.03-09.2010.nc
+</strm_datfil>
+
+<strm_tintalgo   stream="CORE2_IAF.PREC.SOFS.DAILY">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.PREC.SOFS.DAILY">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.PREC.SOFS.DAILY">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.PREC.SOFS.DAILY">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CORE2_IAF.PREC.SOFS.DAILY">
+  prec  prec
+</strm_datvar>
+
+<strm_year_start stream="CORE2_IAF.LWDN.SOFS.DAILY">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.LWDN.SOFS.DAILY">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.LWDN.SOFS.DAILY">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.LWDN.SOFS.DAILY">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.LWDN.SOFS.DAILY">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.LWDN.SOFS.DAILY">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.LWDN.SOFS.DAILY">
+SOFS.daily.03-09.2010.nc
+</strm_datfil>
+
+<strm_tintalgo   stream="CORE2_IAF.LWDN.SOFS.DAILY">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.LWDN.SOFS.DAILY">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.LWDN.SOFS.DAILY">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.LWDN.SOFS.DAILY">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CORE2_IAF.LWDN.SOFS.DAILY">
+  lwdn  lwdn
+</strm_datvar>
+
+<strm_year_start stream="CORE2_IAF.SWDN.SOFS.DAILY">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.SWDN.SOFS.DAILY">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.SWDN.SOFS.DAILY">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.SWDN.SOFS.DAILY">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.SWDN.SOFS.DAILY">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.SWDN.SOFS.DAILY">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.SWDN.SOFS.DAILY">
+SOFS.daily.03-09.2010.nc
+</strm_datfil>
+
+<strm_tintalgo   stream="CORE2_IAF.SWDN.SOFS.DAILY">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.SWDN.SOFS.DAILY">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.SWDN.SOFS.DAILY">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.SWDN.SOFS.DAILY">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CORE2_IAF.SWDN.SOFS.DAILY">
+  swdn  swdn
+</strm_datvar>
+
+<strm_year_start stream="CORE2_IAF.SWUP.SOFS.DAILY">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.SWUP.SOFS.DAILY">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.SWUP.SOFS.DAILY">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.SWUP.SOFS.DAILY">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.SWUP.SOFS.DAILY">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.SWUP.SOFS.DAILY">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.SWUP.SOFS.DAILY">
+SOFS.daily.03-09.2010.nc
+</strm_datfil>
+
+<strm_tintalgo   stream="CORE2_IAF.SWUP.SOFS.DAILY">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.SWUP.SOFS.DAILY">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.SWUP.SOFS.DAILY">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.SWUP.SOFS.DAILY">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CORE2_IAF.SWUP.SOFS.DAILY">
+  swup  swup
+</strm_datvar>
+
+<!-- == 6-hourly shum, tbot, u, v from SOFS   -->
+<strm_year_start stream="CORE2_IAF.SHUM.SOFS.6HOUR">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.SHUM.SOFS.6HOUR">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.SHUM.SOFS.6HOUR">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.SHUM.SOFS.6HOUR">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.SHUM.SOFS.6HOUR">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.SHUM.SOFS.6HOUR">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.SHUM.SOFS.6HOUR">
+SOFS.6hour.03-09.2010.nc
+</strm_datfil>
+
+<strm_tintalgo   stream="CORE2_IAF.SHUM.SOFS.6HOUR">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.SHUM.SOFS.6HOUR">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.SHUM.SOFS.6HOUR">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.SHUM.SOFS.6HOUR">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CORE2_IAF.SHUM.SOFS.6HOUR">
+  q3_5  shum
+</strm_datvar>
+
+<strm_year_start stream="CORE2_IAF.TBOT.SOFS.6HOUR">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.TBOT.SOFS.6HOUR">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.TBOT.SOFS.6HOUR">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.TBOT.SOFS.6HOUR">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.TBOT.SOFS.6HOUR">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.TBOT.SOFS.6HOUR">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.TBOT.SOFS.6HOUR">
+SOFS.6hour.03-09.2010.nc
+</strm_datfil>
+
+<strm_tintalgo   stream="CORE2_IAF.TBOT.SOFS.6HOUR">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.TBOT.SOFS.6HOUR">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.TBOT.SOFS.6HOUR">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.TBOT.SOFS.6HOUR">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CORE2_IAF.TBOT.SOFS.6HOUR">
+  t3_5  tbot
+</strm_datvar>
+
+<strm_year_start stream="CORE2_IAF.U.SOFS.6HOUR">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.U.SOFS.6HOUR">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.U.SOFS.6HOUR">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.U.SOFS.6HOUR">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.U.SOFS.6HOUR">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.U.SOFS.6HOUR">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.U.SOFS.6HOUR">
+SOFS.6hour.03-09.2010.nc
+</strm_datfil>
+
+<strm_tintalgo   stream="CORE2_IAF.U.SOFS.6HOUR">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.U.SOFS.6HOUR">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.U.SOFS.6HOUR">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.U.SOFS.6HOUR">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CORE2_IAF.U.SOFS.6HOUR">
+  u3_5  u
+</strm_datvar>
+
+<strm_year_start stream="CORE2_IAF.V.SOFS.6HOUR">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.V.SOFS.6HOUR">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.V.SOFS.6HOUR">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.V.SOFS.6HOUR">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.V.SOFS.6HOUR">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.V.SOFS.6HOUR">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.V.SOFS.6HOUR">
+SOFS.6hour.03-09.2010.nc
+</strm_datfil>
+
+<strm_tintalgo   stream="CORE2_IAF.V.SOFS.6HOUR">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.V.SOFS.6HOUR">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.V.SOFS.6HOUR">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.V.SOFS.6HOUR">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CORE2_IAF.V.SOFS.6HOUR">
+  v3_5  v
+</strm_datvar>
 
 <!-- == GCGCS Precip === -->
 
@@ -1806,7 +2139,7 @@ ncep.v_10.T62.2009.20120412.nc
 <strm_domfil     stream="BC.QIAN.Precip">qian.bc.domain.c130531.nc</strm_domfil>
 <strm_datdir     stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</strm_datdir>
 <strm_datfil     stream="BC.QIAN.Precip">
-bias_correction.Prec.%y.nc  
+bias_correction.Prec.%y.nc
 </strm_datfil>
 <strm_offset     stream="BC.QIAN.Precip">0</strm_offset>
 <strm_tintalgo   stream="BC.QIAN.Precip">linear</strm_tintalgo>
@@ -1831,9 +2164,9 @@ bias_correction.Prec.%y.nc
 <strm_year_align stream="BC.CRUNCEP.GPCP.Precip">1979</strm_year_align>
 <strm_domdir     stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</strm_domdir>
 <strm_domfil     stream="BC.CRUNCEP.GPCP.Precip">cruncep.bc.domain.0.9x1.25.nc</strm_domfil>
-<strm_datdir     stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</strm_datdir> 
+<strm_datdir     stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</strm_datdir>
 <strm_datfil     stream="BC.CRUNCEP.GPCP.Precip">
-bias_correction.Prec.%y.nc  
+bias_correction.Prec.%y.nc
 </strm_datfil>
 <strm_offset     stream="BC.CRUNCEP.GPCP.Precip">0</strm_offset>
 <strm_tintalgo   stream="BC.CRUNCEP.GPCP.Precip">nearest</strm_tintalgo>
@@ -1857,7 +2190,7 @@ bias_correction.Prec.%y.nc
 <strm_domfil     stream="BC.CRUNCEP.CMAP.Precip">cruncep.bc.domain.c100429.nc</strm_domfil>
 <strm_datdir     stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</strm_datdir>
 <strm_datfil     stream="BC.CRUNCEP.CMAP.Precip">
-bias_correction.Prec.%y.nc  
+bias_correction.Prec.%y.nc
 </strm_datfil>
 <strm_offset     stream="BC.CRUNCEP.CMAP.Precip">0</strm_offset>
 <strm_tintalgo   stream="BC.CRUNCEP.CMAP.Precip">nearest</strm_tintalgo>
@@ -2074,20 +2407,20 @@ af.rlds.ccsm4.rcp45.2006-2300.nc
   mask    mask
 </strm_domvar>
 <strm_datvar    presaero_flag="active" ispresaerostream="TRUE">
-  BCDEPWET   bcphiwet        
-  BCPHODRY   bcphodry        
+  BCDEPWET   bcphiwet
+  BCPHODRY   bcphodry
   BCPHIDRY   bcphidry
-  OCDEPWET   ocphiwet        
-  OCPHIDRY   ocphidry        
-  OCPHODRY   ocphodry                
-  DSTX01WD   dstwet1         
-  DSTX01DD   dstdry1         
-  DSTX02WD   dstwet2         
-  DSTX02DD   dstdry2         
-  DSTX03WD   dstwet3         
-  DSTX03DD   dstdry3 
-  DSTX04WD   dstwet4                         
-  DSTX04DD   dstdry4         
+  OCDEPWET   ocphiwet
+  OCPHIDRY   ocphidry
+  OCPHODRY   ocphodry
+  DSTX01WD   dstwet1
+  DSTX01DD   dstdry1
+  DSTX02WD   dstwet2
+  DSTX02DD   dstdry2
+  DSTX03WD   dstwet3
+  DSTX03DD   dstdry3
+  DSTX04WD   dstwet4
+  DSTX04DD   dstdry4
 </strm_datvar>
 
 <strm_year_start presaero_mode="pt1_pt1" ispresaerostream="TRUE">1</strm_year_start>
@@ -2264,6 +2597,35 @@ af.rlds.ccsm4.rcp45.2006-2300.nc
 <strm_datfil     stream="presaero.rcp8.5">aerosoldep_rcp8.5_monthly_1849-2104_1.9x2.5_c100201.nc</strm_datfil>
 
 <!-- =========================================  -->
+<!-- Surface topographic height                 -->
+<!-- =========================================  -->
+
+<strm_offset   stream="topo.observed">0</strm_offset>
+<!-- tintalgo is arbitrary here since we only have one time slice; however, note
+     that setting this to 'linear' gives roundoff-level differences between time
+     steps, which is undesirable unless we truly want linear interpolation
+     between multiple input values -->
+<strm_tintalgo stream="topo.observed">lower</strm_tintalgo>
+<strm_domvar   stream="topo.observed">
+   time   time
+   LONGXY lon
+   LATIXY lat
+   area   area
+   mask   mask
+</strm_domvar>
+<strm_datvar stream="topo.observed">
+   TOPO topo
+</strm_datvar>
+
+<strm_year_start stream="topo.observed">1</strm_year_start>
+<strm_year_end   stream="topo.observed">1</strm_year_end>
+<strm_year_align stream="topo.observed">1</strm_year_align>
+<strm_domdir     stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</strm_domdir>
+<strm_domfil     stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</strm_domfil>
+<strm_datdir     stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</strm_datdir>
+<strm_datfil     stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</strm_datfil>
+
+<!-- =========================================  -->
 <!-- Other stream variables                     -->
 <!-- =========================================  -->
 
@@ -2299,9 +2661,10 @@ af.rlds.ccsm4.rcp45.2006-2300.nc
 
 <iradsw>1</iradsw>
 
-<factorfn>unused</factorfn> 
+<factorfn>unused</factorfn>
 <factorfn stream="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</factorfn>
 <factorfn stream="CORE2_IAF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</factorfn>
+<factorfn stream="CORE2_IAF" atm_grid="01col">unused</factorfn>
 
 </namelist_defaults>
 

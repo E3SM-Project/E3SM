@@ -1,323 +1,79 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python
 
-# Searches for inputdata files
+"""
+Check (and optionally download) input data files.
 
-use Getopt::Long;
+Should be run from case.
+"""
+from standard_script_setup import *
 
-#-----------------------------------------------------------------------------------------------
+from CIME.utils import expect, get_model
+from CIME.XML.machines import Machines
+from CIME.check_input_data import check_input_data, SVN_LOCS
+from CIME.case import Case
 
-if ($#ARGV == -1) {
-    usage();
-    exit;
-}
+import argparse, doctest, fnmatch
 
-#-----------------------------------------------------------------------------------------------
+MACHINE = Machines()
 
-sub usage {
-    die <<EOF;
-SYNOPSIS
-    check_input_data [options]
-OPTIONS
-     -inputdata <inputdata> Set the inputdata directory.  
-     -check                 Check whether data is available in "inputdata",
-     -export                Export missing data into "inputdata",
-     -prestage <prestage>   Prestage data from inputdata to prestage
-     -datalistdir <dir>     Directory which will be searched for .input_data_list files
-                            Default is $CASEBUILD.  Optional.
-     -svnloc <svnloc>       Location of the svn inputdata repository from which to export
-                            missing data. Optional.
-     -verbose [or -v]       Print extra information. Optional.
-     -help [or -h]          Print usage to STDOUT.  Optional.
-SUMMARY
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [--download] [--verbose]
+OR
+%s --help
+OR
+%s --test
 
-   This utility checks, exports and prestages necessary input data for CESM.
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Download input data \033[0m
+    > %s --download
+""" % ((os.path.basename(args[0]), ) * 4),
 
-   The utility first searches for .input_data_list files in the then
-   prints their locations and passes them to the caseroot
-   Tools/get-input-data utility via the -flist option.
+description=description,
 
-   Default directory to search for .input_data_list files is
-   $CASEBUILD
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
 
-EOF
-}# Process command-line options.
+    CIME.utils.setup_standard_logging_options(parser)
 
-my %opts = ( inputdata      => undef,
-	     check          => 0,
-	     export         => 0,
-	     prestage       => 0,
-	     datalistdir    => undef,
-	     svnloc         => undef,
-	     verbose        => 0,
-	     help           => 0
-	    );
+    parser.add_argument("--svn-loc", default=SVN_LOCS[get_model()],
+                        help="The input data repository from which to download data.")
 
-GetOptions(
-    "inputdata=s"               => \$opts{'inputdata'},
-    "check"                     => \$opts{'check'},
-    "export"                    => \$opts{'export'},
-    "prestage=s"                => \$opts{'prestage'},
-    "datalistdir=s"             => \$opts{'datalistdir'},
-    "svnloc=s"                  => \$opts{'svnloc'},
-    "v|verbose"                 => \$opts{'verbose'},
-    "h|help"                    => \$opts{'help'},
-)  or usage();
+    parser.add_argument("-i", "--input-data-root", default=MACHINE.get_value("DIN_LOC_ROOT"),
+                        help="The root directory where input data goes")
 
-# Give usage message.
-usage() if $opts{'help'};
+    parser.add_argument("--data-list-dir", default="Buildconf",
+                        help="Where to find list of input files")
 
-# Check for unparsed arguments
-if (@ARGV) {
-    print "ERROR: unrecognized arguments: @ARGV\n";
-    usage();
-}
+    parser.add_argument("--download", action="store_true",
+                        help="Attempt to download missing input files")
 
-$opts{'check'} ? ($checkopt = 1) : ($checkopt = 0);
-$opts{'export'} ? ($exportopt = 1) : ($exportopt = 0);
-$opts{'prestage'} ? ($prestageopt = 1) : ($prestageopt = 0);
-$opts{'verbose'} ? ($verboseopt = 1) : ($verboseopt = 0);
+    args = parser.parse_args(args[1:])
 
-##print "opts $checkopt $exportopt $prestageopt \n";
+    CIME.utils.handle_standard_logging_options(args)
 
-if (!$checkopt && !$exportopt && !$prestageopt) {
-  usage();
-  exit;
-}
+    return args.svn_loc, args.input_data_root, args.data_list_dir, args.download
 
-if (defined($opts{'datalistdir'})) {
-    # continue
-}
-elsif (defined $ENV{'CASEBUILD'} ){
-    $opts{'datalistdir'} = $ENV{'CASEBUILD'};
-}
-else {
-    $opts{'datalistdir'} = "./Buildconf";
-}
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
-##print "datalistdir $opts{'datalistdir'}\n";
+    svn_loc, input_data_root, data_list_dir, download = parse_command_line(sys.argv, description)
 
-# Check that input directory exists.
-(-d $opts{'datalistdir'})  or  die <<EOF;
-** $ProgName - Cannot find input directory: \"$opts{'datalistdir'}\" **
-EOF
+    with Case() as case:
+        sys.exit(0 if check_input_data(case,
+                                       svn_loc=svn_loc,
+                                       input_data_root=input_data_root,
+                                       data_list_dir=data_list_dir,
+                                       download=download) else 1)
 
-# Check that the CESM inputdata root directory has been specified.
-my $inputdata_rootdir = undef;
-if (defined($opts{'inputdata'})) {
-    $inputdata_rootdir = $opts{'inputdata'};
-}
-else {
-    die "$ProgName - ERROR: CESM inputdata root directory must be specified by the -inputdata argument\n";
-}
+###############################################################################
 
-# The inputdata root directory must be local or nfs mounted.
-(-d $inputdata_rootdir)  or  die <<EOF;
-** $ProgName - CESM inputdata root is not a directory: \"$inputdata_rootdir\" **
-EOF
+if (__name__ == "__main__"):
+    _main_func(__doc__)
 
-# Check prestage dir
-if ($prestageopt) {
-    $prestage_rootdir = $opts{'prestage'};
-    (-d $prestage_rootdir)  or  die <<EOF;
-** $ProgName - CESM prestage dir is not a directory: \"$prestage_rootdir\" **
-EOF
-}
-
-# Find .input_data_list files
-@filelocations = `find "$opts{'datalistdir'}" -name '*.input_data_list'`;
-
-if ($verboseopt) {
-    print "Input Data List Files Found:\n";
-    print @filelocations;
-}
-
-# Determine if will prestage input data
-if ($prestageopt) {
-    if ($prestage_rootdir eq $inputdata_rootdir) {
-	print "Prestaging turned off; inputdata_rootdir eq $prestage_rootdir, $inputdata_rootdir,  $prestage_rootdir\n";
-	$prestageopt = 0;
-    }
-}    
-
-# Subversion repository location.
-my $svn_loc = undef;
-if (defined($opts{'svnloc'})) {
-    $svn_loc = "$opts{'svnloc'}/";
-}
-else {
-    $svn_loc = 'https://acme-svn2.ornl.gov/acme-repo/acme/inputdata/';
-}
-my $svn_loc_backup = 'https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/';
-
-# If export option is set, test for svn install, and server
-if ($exportopt) {
-  my $error = `svn --version 2> /dev/null`;
-  if ($error eq '') {
-    die "Error: the subversion client svn was not found.\n";
-  }
-  my $error = `svn --non-interactive --trust-server-cert list $svn_loc > /dev/null`;
-}
-
-$inputdata_rootdir .= "/";
-$prestage_rootdir .= "/";
-if (defined $ENV{'DIN_LOC_ROOT'}) {
-  $dinlocroot = $ENV{'DIN_LOC_ROOT'};
-  $dinlocroot .= "/";
-}
-else {
-  $dinlocroot = "long_undefined_string_2_ignore";
-}
-
-my $status = 0;
-foreach $i (@filelocations) {
-    chop($i);
-    my $flist = $i;
-#    get_input_data ($flist, $inputdata_rootdir, $din_loc_root, $exportopt, $copyfiles);
-
-    # Open input file.
-    open(filelist,$flist) or die <<EOF;
-** $ProgName - Cannot open input file: \"$flist\" **
-EOF
-    # Search for filenames in file. Note that all strings following " = " are assumed to be filenames.
-    while(<filelist>) {
-	my $filend = "undefined";
-        my $fileneed = $_;
-        my $isinput = 0;
-        my $docheck = 0;
-	#        print "tcx fn1 is $fileneed\n";
-        if ($fileneed =~ m/(\S*)\#.*/) {
-           $fileneed = $1;
-           $docheck = 0;
-       }
-	#        print "tcx fn2 is $fileneed\n";
-        if ($fileneed =~ m/.* = (\S*)/) {
-           $fileneed = $1;
-           $docheck = 0;
-       }
-	#        print "tcx fn3 is $fileneed\n";
-	if (/.* = (?:$dinlocroot|\$DIN_LOC_ROOT\/|DIN_LOC_ROOT\/|$inputdata_rootdir)+(\S*)/) { 
-	   $filend = $1;
-           $fileneed = $inputdata_rootdir.$filend;
-           $isinput = 1;
-           $docheck = 1;
-        }
-
-        # If any values have variables in them, read in xml variables and expand
-	my @dirs = ("./Tools");
-	unshift @INC, @dirs;
-	require SetupTools;
-
-        if ($fileneed =~ m/\$/) {
-           print "Print expand any xml variables for: $fileneed\n";
-
-           my %xmlvars = ();
-           foreach my $file ( glob("env_*xml") ) {
-	       my $parser = XML::LibXML->new( no_blanks => 1);
-	       my $xml = $parser->parse_file($file);
-	       my @nodes = $xml->findnodes("//entry");
-	       foreach my $node (@nodes) {
-		   my $id_attr = $node->getAttribute('id');
-		   my $val_attr = $node->getAttribute('value');
-		   $xmlvars{$id_attr} = $val_attr;
-	       }
-	       $fileneed = SetupTools::expand_xml_var( $fileneed, \%xmlvars );
-	   }
-        }
-
-        if ($docheck) {
-           if (($checkopt)  && ($fileneed =~ m/.*(\w)+.*/)) {
-	      if (! -e $fileneed) {
-                 print "File is missing: $fileneed \n";
-                 $status = 1;
-              }
-           }
-	   if (($isinput) && ($exportopt) && (!-e $fileneed)) {
-         my $fileloc = $svn_loc.$filend;     # Location in subversion repository.
-  	     my $lsearch = $fileloc;             # Variable used in  searches for symbolic links.
-         if (isinrepository($fileloc)) {
-             dataexport($fileneed, $fileloc);
-         }
-         else {
-             print "File was not found in svn repo: $fileloc, trying backup... \n";
-             $fileloc = $svn_loc_backup.$filend;     # Location in subversion repository.
-             $lsearch = $fileloc;             # Variable used in  searches for symbolic links.
-             if (isinrepository($fileloc)) {
-                 dataexport($fileneed, $fileloc);
-             }
-             else {
-                 print "File was not found in backup svn repo: $fileloc\n";
-             }
-         }
-	   }
-	   if (($isinput) && ($prestageopt)) {
-	      my $filecopy = $prestage_rootdir.$filend;
-              my $dirname = $filecopy;
-              if (-d $fileneed) {
-                 system("umask 2; mkdir -p -m 775 $dirname");
-	         system("cp $fileneed/* $filecopy/ 2>/dev/null");
-                 print "Dir  copied to: $filecopy \n";
-              } else {
-                 if ((-e $fileneed) && (!-e $filecopy)) {
-	            $dirname =~  s!/[^/]+$!!;
-  	            system("umask 2; mkdir -p -m 775 $dirname");
-	            system("cp $fileneed $filecopy");
-	            print "File copied to: $filecopy \n";
-                 }
-	      }
-	   }
-        }
-        else {
-           if (($checkopt)  && ($fileneed =~ m/.*(\w)+.*/)) {
-	      if (! -e $fileneed) {
-		 print "File status unknown: $fileneed \n";
-              }
-           }
-        }
-    }
-}
-
-exit( $status );
-
-#-----------------------------------------------------------------------------------------------
-
-# Check for existence of a file in the subversion repository, returns 1 if so.
-sub isinrepository($) {
-    return 1 if `svn --non-interactive --trust-server-cert ls $_[0]`;
-}
-
-# Checks a link in the subversion repository and returns the target location of that link.
-sub linktarget($) {
-    my $filetext = `svn --non-interactive --trust-server-cert cat $_[0]`;
-    $filetext =~ s/link // or return 0;  # File relative path from link.
-    (my $linktar = $_[0]) =~ s!(.*)/+.*?$!$1/!;
-    $linktar .= $filetext;               # Absolute path target of link.
-    1 while ($linktar =~ s!/+[^/]*?/+\.\./!/!);       # Removes any up-directory (..) commands from target path.
-    return $linktar;
-}
-
-# Exports a file from the subversion repository, creating any necessary files along the way.
-sub dataexport($$) {
-    $_[0] =~ m!(.*)/(.*)!;                             # Stores directory containing file in $1.
-    my $dir = $1;
-    print "export $_[1] $_[0] ..... " ;
-    my $listing = `svn --non-interactive --trust-server-cert ls $_[1]`;
-    if ($2 and $listing =~ /^$2\b/) {                  # Check if input is a file or directory (links treated as files).
-	unless (-e $dir) {                             # Make containing directory unless it already exists.
-	    my $dexist = $dir;
-	    while (! -e $dexist) {
-		$dexist =~ s:(.*)/(.+):$1:;
-	    }
-	    system("umask 2; mkdir -p -m 775 $dir");
-	}
-	system("svn --non-interactive --trust-server-cert export $_[1] $_[0] 1>/dev/null"); # Export file.
-    } else {
-	system("svn --non-interactive --trust-server-cert export --depth=files $_[1] $_[0] 1>/dev/null"); # Export dir.
-    }
-    if (-f $_[0]) {                                    # Store checksum.
-        my $checksumfile = $dir.'/.checksums';         # Checksums saved here.
-	chmod 0555, $_[0];                             # Don't allow writing to file.
-	system("cksum $_[0] >>$checksumfile");
-	chmod 0775, $checksumfile;
-    }
-    print "success\n" if (-e $_[0]);
-}

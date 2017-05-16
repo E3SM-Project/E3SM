@@ -244,7 +244,7 @@ else:
     machines_guesses = []
 
     if cesm_root_dir is not None:
-        machines_guesses.append(os.path.join(cesm_root_dir, "cime", "machines"))
+        machines_guesses.append(os.path.join(cesm_root_dir, "cime", "cime_config", "cesm", "machines"))
 
     machines_guesses.append(os.path.abspath("machines"))
 
@@ -357,7 +357,7 @@ def cmake_stage(name, test_spec_dir):
 
         if options.cmake_args is not None:
             cmake_command.extend(options.cmake_args.split(" "))
-            
+
         macros_path = os.path.abspath("CESM_Macros.cmake")
 
         if machines_dir is not None:

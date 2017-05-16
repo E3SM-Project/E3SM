@@ -1,14 +1,14 @@
 module prep_aoflux_mod
 
-  use shr_kind_mod,     only: r8 => SHR_KIND_R8 
+  use shr_kind_mod,     only: r8 => SHR_KIND_R8
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_xao, num_inst_frc, num_inst_ocn
   use seq_comm_mct,     only: CPLID, logunit
-  use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs 
-  use seq_infodata_mod, only: seq_infodata_getdata, seq_infodata_type   
-  use seq_map_type_mod 
+  use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
+  use seq_infodata_mod, only: seq_infodata_getdata, seq_infodata_type
+  use seq_map_type_mod
   use seq_map_mod
   use seq_flds_mod
   use t_drv_timers_mod
@@ -38,8 +38,8 @@ module prep_aoflux_mod
   !--------------------------------------------------------------------------
 
   ! attribute vectors
-  type(mct_aVect), pointer :: xao_ox(:)   ! Atm-ocn fluxes, ocn grid, cpl pes 
-  type(mct_aVect), pointer :: xao_ax(:)   ! Atm-ocn fluxes, atm grid, cpl pes 
+  type(mct_aVect), pointer :: xao_ox(:)   ! Atm-ocn fluxes, ocn grid, cpl pes
+  type(mct_aVect), pointer :: xao_ax(:)   ! Atm-ocn fluxes, atm grid, cpl pes
 
   ! seq_comm_getData variables
   logical :: iamroot_CPLID                ! .true. => CPLID masterproc
@@ -61,8 +61,8 @@ contains
     !
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
-    type(mct_aVect)          , intent(in)    :: fractions_ox(:) 
-    type(mct_aVect)          , intent(in)    :: fractions_ax(:) 
+    type(mct_aVect)          , intent(in)    :: fractions_ox(:)
+    type(mct_aVect)          , intent(in)    :: fractions_ax(:)
     !
     ! Local Variables
     integer                     :: exi  , efi, eoi
@@ -80,15 +80,15 @@ contains
     call seq_comm_getdata(CPLID, &
          mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
-    a2x_ax => component_get_c2x_cx(atm(1)) 
+    a2x_ax => component_get_c2x_cx(atm(1))
     if (associated(a2x_ax)) then
        lsize_a = mct_aVect_lsize(a2x_ax)
     else
        lsize_a = 0
     end if
 
-    o2x_ox => component_get_c2x_cx(ocn(1)) 
-    if (associated(o2x_ox)) then 
+    o2x_ox => component_get_c2x_cx(ocn(1))
+    if (associated(o2x_ox)) then
        lsize_o = mct_aVect_lsize(o2x_ox)
     else
        lsize_o = 0
@@ -112,7 +112,7 @@ contains
   subroutine prep_aoflux_calc_xao_ax(fractions_ox, flds, timer)
     !---------------------------------------------------------------
     ! Description
-    ! Create xao_ox 
+    ! Create xao_ox
     !
     ! Uses
     use prep_atm_mod, only: prep_atm_get_mapper_So2a
@@ -167,7 +167,7 @@ contains
   subroutine prep_aoflux_calc_xao_ox(timer)
     !---------------------------------------------------------------
     ! Description
-    ! Create xao_ox 
+    ! Create xao_ox
     !
     ! Uses
     use prep_ocn_mod, only: prep_ocn_get_mapper_Fa2o
@@ -182,12 +182,12 @@ contains
     character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
 
-    ! this mapping has to be done with area overlap mapping for all fields 
+    ! this mapping has to be done with area overlap mapping for all fields
     ! due to the masking of the xao_ax data and the fact that a2oS is bilinear
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    do exi = 1,num_inst_xao 
-!       if (iamroot_CPLID .and. exi == 1) then 
+    do exi = 1,num_inst_xao
+!       if (iamroot_CPLID .and. exi == 1) then
 !          write(logunit,F00) 'Calling map_atm2ocn_mct for mapping xao_ax to xao_ox'
 !       end if
 
@@ -202,12 +202,12 @@ contains
 
   function prep_aoflux_get_xao_ox()
     type(mct_aVect), pointer :: prep_aoflux_get_xao_ox(:)
-    prep_aoflux_get_xao_ox => xao_ox(:)   
+    prep_aoflux_get_xao_ox => xao_ox(:)
   end function prep_aoflux_get_xao_ox
 
   function prep_aoflux_get_xao_ax()
     type(mct_aVect), pointer :: prep_aoflux_get_xao_ax(:)
-    prep_aoflux_get_xao_ax => xao_ax(:)   
+    prep_aoflux_get_xao_ax => xao_ax(:)
   end function prep_aoflux_get_xao_ax
 
 end module prep_aoflux_mod

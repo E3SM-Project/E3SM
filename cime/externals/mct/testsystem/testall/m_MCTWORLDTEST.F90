@@ -13,8 +13,8 @@
 
       public :: testall
 
-    interface testall  
-       module procedure testMCTWorld_  
+    interface testall
+       module procedure testMCTWorld_
     end interface
 
 
@@ -29,10 +29,10 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: aVtest_ - Test the functions in the AttrVect module 
+! !IROUTINE: aVtest_ - Test the functions in the AttrVect module
 !
 ! !DESCRIPTION:
-! This routine writes diagnostic information about the input 
+! This routine writes diagnostic information about the input
 ! {\tt AttrVect}. Each line of the output will be preceded by the
 ! character argument {\tt identifier}. The output device is specified
 ! by the integer argument {\tt device}.
@@ -44,14 +44,14 @@
 !
 ! !USES:
 !
-      use m_MCTWorld         ! Use all of MCTWorld 
-      use m_stdio       
+      use m_MCTWorld         ! Use all of MCTWorld
+      use m_stdio
       use m_die
       use m_mpif90
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       character(len=*),           intent(in)  :: identifier
       integer,                    intent(in)  :: device
@@ -69,7 +69,7 @@
   write(device,*) identifier, ":: MCT_comm = ", ThisMCTWorld%MCT_comm
   write(device,*) identifier, ":: ncomps = ", ThisMCTWorld%ncomps
   write(device,*) identifier, ":: mygrank = ", ThisMCTWorld%mygrank
-  
+
   if(associated(ThisMCTWorld%nprocspid).and.associated(ThisMCTWorld%idGprocid)) then
 
      write(device,*) identifier, ":: nprocspid = &

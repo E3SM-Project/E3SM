@@ -495,10 +495,17 @@ contains
          jwt(c) = nlevbed
          ! allow jwt to equal zero when zwt is in top layer
          do j = 1,nlevbed
+          if(do_varsoil) then
+            if(zwt(c) <= zi(c,j) .and. zwt(c) < zi(c,nlevbed)) then
+               jwt(c) = j-1
+               exit
+            end if
+          else
             if(zwt(c) <= zi(c,j)) then
                jwt(c) = j-1
                exit
             end if
+          end if
          enddo
 
          ! compute vwc at water table depth (mainly for case when t < tfrz)
@@ -769,9 +776,15 @@ contains
             den    = (zmm(c,j+1)-zmm(c,j))
             dzq    = (zq(c,j+1)-zq(c,j))
             num    = (smp1-smp(c,j)) - dzq
+           if(do_varsoil) then
+            qout(c,j) = 0._r8
+            dqodw1(c,j) = 0._r8
+            dqodw2(c,j) = 0._r8
+           else
             qout(c,j)   = -hk(c,j)*num/den
             dqodw1(c,j) = -(-hk(c,j)*dsmpdw(c,j)   + num*dhkdw(c,j))/den
             dqodw2(c,j) = -( hk(c,j)*dsmpdw1 + num*dhkdw(c,j))/den
+           end if
 
             rmx(c,j) =  qin(c,j) - qout(c,j) - qflx_tran_veg_col(c)*rootr_col(c,j)
             amx(c,j) = -dqidw0(c,j)
@@ -784,10 +797,17 @@ contains
             dqidw1(c,j+1) = -( hk(c,j)*dsmpdw1   + num*dhkdw(c,j))/den
             qout(c,j+1)   =  0._r8  ! zero-flow bottom boundary condition
             dqodw1(c,j+1) =  0._r8  ! zero-flow bottom boundary condition
+           if(do_varsoil) then
+            rmx(c,j+1) = 0._r8
+            amx(c,j+1) = 0._r8
+            bmx(c,j+1) = dzmm(c,j+1)/dtime
+            cmx(c,j+1) = 0._r8
+           else
             rmx(c,j+1) =  qin(c,j+1) - qout(c,j+1)
             amx(c,j+1) = -dqidw0(c,j+1)
             bmx(c,j+1) =  dzmm(c,j+1)/dtime - dqidw1(c,j+1) + dqodw1(c,j+1)
             cmx(c,j+1) =  0._r8
+           end if
          endif
       end do
 
@@ -841,7 +861,45 @@ contains
          end do
 
          ! calculate qcharge for case jwt < nlevsoi
-         if(jwt(c) < nlevbed) then
+        if(do_varsoil) then
+          if(jwt(c) <= nlevbed) then
+            wh_zwt = 0._r8   !since wh_zwt = -sucsat - zq_zwt, where zq_zwt = -sucsat
+
+            ! Recharge rate qcharge to groundwater (positive to aquifer)
+            s_node = max(h2osoi_vol(c,jwt(c)+1)/watsat(c,jwt(c)+1), 0.01_r8)
+            s1 = min(1._r8, s_node)
+
+            !scs: this is the expression for unsaturated hk
+            ka = imped(c,jwt(c)+1)*hksat(c,jwt(c)+1) &
+                 *s1**(2._r8*bsw(c,jwt(c)+1)+3._r8)
+
+            !compute unsaturated hk, this shall be tested later, because it
+            !is not bit for bit
+            !call soil_water_retention_curve%soil_hk(hksat(c,jwt(c)+1), s1, bsw(c,jwt(c)+1), ka)
+            !apply ice impedance
+            !ka = imped(c,jwt(c)+1) * ka 
+            ! Recharge rate qcharge to groundwater (positive to aquifer)
+            smp1 = max(smpmin(c), smp(c,max(1,jwt(c))))
+            wh      = smp1 - zq(c,max(1,jwt(c)))
+
+            !scs: original formulation
+            if(jwt(c) == 0) then
+               qcharge(c) = -ka * (wh_zwt-wh)  /((zwt(c)+1.e-3)*1000._r8)
+            else
+               !             qcharge(c) = -ka * (wh_zwt-wh)/((zwt(c)-z(c,jwt(c)))*1000._r8)
+               !scs: 1/2, assuming flux is at zwt interface, saturation deeper than zwt
+               qcharge(c) = -ka * (wh_zwt-wh)/((zwt(c)-z(c,jwt(c)))*1000._r8*2.0)
+            endif
+
+            ! To limit qcharge  (for the first several timesteps)
+            qcharge(c) = max(-10.0_r8/dtime,qcharge(c))
+            qcharge(c) = min( 10.0_r8/dtime,qcharge(c))
+          else
+            ! if water table is below soil column, compute qcharge from dwat2(11)
+            qcharge(c) = 0._r8
+          endif
+         else
+          if(jwt(c) < nlevbed) then
             wh_zwt = 0._r8   !since wh_zwt = -sucsat - zq_zwt, where zq_zwt = -sucsat
 
             ! Recharge rate qcharge to groundwater (positive to aquifer)
@@ -877,6 +935,7 @@ contains
             ! if water table is below soil column, compute qcharge from dwat2(11)
             qcharge(c) = dwat2(c,nlevsoi+1)*dzmm(c,nlevsoi+1)/dtime
          endif
+        endif
       end do
 
       ! compute the water deficit and reset negative liquid water content

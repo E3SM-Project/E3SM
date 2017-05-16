@@ -1,6 +1,6 @@
 module lnd_comp_esmf
 
-#ifdef ESMF_INTERFACE 
+#ifdef ESMF_INTERFACE
   use shr_kind_mod, only:  R8=>SHR_KIND_R8, IN=>SHR_KIND_IN, &
        CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_sys_mod   ! shared system calls
@@ -38,7 +38,7 @@ module lnd_comp_esmf
 
   !
   ! Author: Fei Liu
-  ! This module is ESMF compliant lnd data component 
+  ! This module is ESMF compliant lnd data component
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 contains
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -239,7 +239,7 @@ contains
     integer, intent(out)         :: rc
 
     !----------------------------------------------------------------------------
-    ! Finalize routine 
+    ! Finalize routine
     !----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS

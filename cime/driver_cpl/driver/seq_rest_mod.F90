@@ -30,10 +30,10 @@ module seq_rest_mod
    use shr_file_mod,      only: shr_file_getunit, shr_file_freeunit
    use mct_mod
    use ESMF
-   use component_type_mod     
+   use component_type_mod
 
    ! diagnostic routines
-   use seq_diag_mct, only : budg_dataG, budg_ns      
+   use seq_diag_mct, only : budg_dataG, budg_ns
 
    ! Sets mpi communicators, logunit and loglevel
    use seq_comm_mct, only: seq_comm_getdata=>seq_comm_setptrs, seq_comm_setnthreads, &
@@ -43,18 +43,18 @@ module seq_rest_mod
    use seq_infodata_mod
 
    ! clock & alarm routines
-   use seq_timemgr_mod   
+   use seq_timemgr_mod
 
-   ! diagnostic routines                          
+   ! diagnostic routines
    use seq_diag_mct, only: budg_datag
 
    ! lower level io routines
-   use seq_io_mod        
+   use seq_io_mod
 
    ! prep modules - coupler communication between different components
    use prep_ocn_mod,    only: prep_ocn_get_x2oacc_ox
    use prep_ocn_mod,    only: prep_ocn_get_x2oacc_ox_cnt
-   use prep_rof_mod,    only: prep_rof_get_l2racc_lx 
+   use prep_rof_mod,    only: prep_rof_get_l2racc_lx
    use prep_rof_mod,    only: prep_rof_get_l2racc_lx_cnt
    use prep_glc_mod,    only: prep_glc_get_l2gacc_lx
    use prep_glc_mod,    only: prep_glc_get_l2gacc_lx_cnt
@@ -100,6 +100,7 @@ module seq_rest_mod
    logical     :: rof_prognostic         ! .true.  => rof comp expects input
    logical     :: glc_present            ! .true.  => glc is present
    logical     :: wav_present            ! .true.  => wav is present
+   logical     :: esp_present            ! .true.  => esp is present
 
    logical     :: atm_prognostic         ! .true.  => atm comp expects input
    logical     :: lnd_prognostic         ! .true.  => lnd comp expects input
@@ -108,6 +109,7 @@ module seq_rest_mod
    logical     :: ocnrof_prognostic      ! .true.  => ocn comp expects runoff input
    logical     :: glc_prognostic         ! .true.  => glc comp expects input
    logical     :: wav_prognostic         ! .true.  => wav comp expects input
+   logical     :: esp_prognostic         ! .true.  => esp comp expects input
 
    integer(IN) :: info_debug = 0         ! local info_debug level
 
@@ -127,7 +129,7 @@ contains
 !===============================================================================
 
   subroutine seq_rest_read(rest_file, infodata, &
-       atm, lnd, ice, ocn, rof, glc, wav, &
+       atm, lnd, ice, ocn, rof, glc, wav, esp,  &
        fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
        fractions_rx, fractions_gx, fractions_wx)
 
@@ -142,6 +144,7 @@ contains
    type (component_type) , intent(inout) :: rof(:)
    type (component_type) , intent(inout) :: glc(:)
    type (component_type) , intent(inout) :: wav(:)
+   type (component_type) , intent(inout) :: esp(:)
    type(mct_aVect)  , intent(inout) :: fractions_ax(:)   ! Fractions on atm grid/decomp
    type(mct_aVect)  , intent(inout) :: fractions_lx(:)   ! Fractions on lnd grid/decomp
    type(mct_aVect)  , intent(inout) :: fractions_ix(:)   ! Fractions on ice grid/decomp
@@ -171,23 +174,25 @@ contains
    call seq_comm_getdata(CPLID, &
         mpicom=mpicom_CPLID, nthreads=nthreads_CPLID)
 
-   call seq_infodata_getData(infodata,		&
-        drv_threading=drv_threading,		&
-        atm_present=atm_present,		&
-        lnd_present=lnd_present,		&
-        rof_present=rof_present,		&
-        ice_present=ice_present,		&
-        ocn_present=ocn_present,		&
-        glc_present=glc_present,		&
-        wav_present=wav_present,		&
-        atm_prognostic=atm_prognostic,		&
-        lnd_prognostic=lnd_prognostic,		&
-        ice_prognostic=ice_prognostic,		&
-        ocn_prognostic=ocn_prognostic,		&
-        rof_prognostic=rof_prognostic,		&
-        ocnrof_prognostic=ocnrof_prognostic,	&
-        glc_prognostic=glc_prognostic,		&
-        wav_prognostic=wav_prognostic)
+   call seq_infodata_getData(infodata,      &
+        drv_threading=drv_threading,        &
+        atm_present=atm_present,        &
+        lnd_present=lnd_present,        &
+        rof_present=rof_present,        &
+        ice_present=ice_present,        &
+        ocn_present=ocn_present,        &
+        glc_present=glc_present,        &
+        wav_present=wav_present,        &
+        esp_present=esp_present,        &
+        atm_prognostic=atm_prognostic,      &
+        lnd_prognostic=lnd_prognostic,      &
+        ice_prognostic=ice_prognostic,      &
+        ocn_prognostic=ocn_prognostic,      &
+        rof_prognostic=rof_prognostic,      &
+        ocnrof_prognostic=ocnrof_prognostic,    &
+        glc_prognostic=glc_prognostic,      &
+        wav_prognostic=wav_prognostic,      &
+        esp_prognostic=esp_prognostic)
 
    if (iamin_CPLID) then
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -230,23 +235,24 @@ contains
       if (ice_present) then
          gsmap => component_get_gsmap_cx(ice(1))
          call seq_io_read(rest_file, gsmap, fractions_ix, 'fractions_ix')
-         call seq_io_read(rest_file, ice, 'c2x', 'i2x_ix') 
+         call seq_io_read(rest_file, ice, 'c2x', 'i2x_ix')
       endif
       if (rof_present) then
          gsmap => component_get_gsmap_cx(rof(1))
          call seq_io_read(rest_file, gsmap, fractions_rx, 'fractions_rx')
-         call seq_io_read(rest_file, rof, 'c2x', 'r2x_rx') 
+         call seq_io_read(rest_file, rof, 'c2x', 'r2x_rx')
       endif
       if (glc_present) then
          gsmap => component_get_gsmap_cx(glc(1))
          call seq_io_read(rest_file, gsmap, fractions_gx, 'fractions_gx')
-         call seq_io_read(rest_file, glc, 'c2x', 'g2x_gx') 
+         call seq_io_read(rest_file, glc, 'c2x', 'g2x_gx')
       endif
       if (wav_present) then
          gsmap => component_get_gsmap_cx(wav(1))
          call seq_io_read(rest_file, gsmap, fractions_wx, 'fractions_wx')
-         call seq_io_read(rest_file, wav, 'c2x', 'w2x_wx') 
+         call seq_io_read(rest_file, wav, 'c2x', 'w2x_wx')
       endif
+      ! Add ESP restart read here
 
       n = size(budg_dataG)
       allocate(ds(n),ns(n))
@@ -276,7 +282,7 @@ end subroutine seq_rest_read
 !===============================================================================
 
 subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
-     atm, lnd, ice, ocn, rof, glc, wav,                      &
+     atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
      fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
      fractions_rx, fractions_gx, fractions_wx)
 
@@ -292,6 +298,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
    type (component_type)       , intent(inout) :: rof(:)
    type (component_type)       , intent(inout) :: glc(:)
    type (component_type)       , intent(inout) :: wav(:)
+   type (component_type)       , intent(inout) :: esp(:)
    type(mct_aVect)        , intent(inout) :: fractions_ax(:)   ! Fractions on atm grid/decomp
    type(mct_aVect)        , intent(inout) :: fractions_lx(:)   ! Fractions on lnd grid/decomp
    type(mct_aVect)        , intent(inout) :: fractions_ix(:)   ! Fractions on ice grid/decomp
@@ -335,24 +342,26 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
    call seq_comm_getdata(CPLID,&
         mpicom=mpicom_CPLID, nthreads=nthreads_CPLID, iamroot=cplroot)
 
-   call seq_infodata_getData(infodata,		&
-        drv_threading=drv_threading,		&
-        atm_present=atm_present,		&
-        lnd_present=lnd_present,		&
-        rof_present=rof_present,		&
-        ice_present=ice_present,		&
-        ocn_present=ocn_present,		&
-        glc_present=glc_present,		&
-        wav_present=wav_present,		&
-        atm_prognostic=atm_prognostic,		&
-        lnd_prognostic=lnd_prognostic,		&
-        ice_prognostic=ice_prognostic,		&
-        rof_prognostic=rof_prognostic,		&
-        ocn_prognostic=ocn_prognostic,		&
-        ocnrof_prognostic=ocnrof_prognostic,	&
-        glc_prognostic=glc_prognostic,		&
-        wav_prognostic=wav_prognostic,		&
-        cpl_cdf64=cdf64,			& 
+   call seq_infodata_getData(infodata,      &
+        drv_threading=drv_threading,        &
+        atm_present=atm_present,        &
+        lnd_present=lnd_present,        &
+        rof_present=rof_present,        &
+        ice_present=ice_present,        &
+        ocn_present=ocn_present,        &
+        glc_present=glc_present,        &
+        wav_present=wav_present,        &
+        esp_present=esp_present,        &
+        atm_prognostic=atm_prognostic,      &
+        lnd_prognostic=lnd_prognostic,      &
+        ice_prognostic=ice_prognostic,      &
+        rof_prognostic=rof_prognostic,      &
+        ocn_prognostic=ocn_prognostic,      &
+        ocnrof_prognostic=ocnrof_prognostic,    &
+        glc_prognostic=glc_prognostic,      &
+        wav_prognostic=wav_prognostic,      &
+        esp_prognostic=esp_prognostic,      &
+        cpl_cdf64=cdf64,            &
         case_name=case_name)
 
    ! Write out infodata and time manager data to restart file
@@ -440,7 +449,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
             call seq_io_write(rest_file, gsmap, fractions_ax, 'fractions_ax', &
                  whead=whead, wdata=wdata)
             call seq_io_write(rest_file, atm, 'c2x', 'a2x_ax', &
-                 whead=whead, wdata=wdata) 
+                 whead=whead, wdata=wdata)
             call seq_io_write(rest_file, gsmap, xao_ax, 'xao_ax', &
                  whead=whead, wdata=wdata)
          endif
@@ -475,7 +484,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
             call seq_io_write(rest_file, gsmap, fractions_ox, 'fractions_ox', &
                  whead=whead, wdata=wdata)
             call seq_io_write(rest_file, ocn, 'c2x', 'o2x_ox', &
-                 whead=whead, wdata=wdata) 
+                 whead=whead, wdata=wdata)
             call seq_io_write(rest_file, gsmap, x2oacc_ox, 'x2oacc_ox', &
                  whead=whead, wdata=wdata)
             call seq_io_write(rest_file, x2oacc_ox_cnt, 'x2oacc_ox_cnt', &
@@ -488,7 +497,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
             call seq_io_write(rest_file, gsmap, fractions_ix, 'fractions_ix', &
                  whead=whead, wdata=wdata)
             call seq_io_write(rest_file, ice, 'c2x', 'i2x_ix', &
-                 whead=whead, wdata=wdata) 
+                 whead=whead, wdata=wdata)
          endif
          if (rof_present) then
             gsmap  => component_get_gsmap_cx(rof(1))
@@ -502,15 +511,16 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
             call seq_io_write(rest_file, gsmap, fractions_gx, 'fractions_gx', &
                  whead=whead, wdata=wdata)
             call seq_io_write(rest_file, glc, 'c2x', 'g2x_gx', &
-                 whead=whead, wdata=wdata) 
+                 whead=whead, wdata=wdata)
          endif
          if (wav_present) then
             gsmap  => component_get_gsmap_cx(wav(1))
             call seq_io_write(rest_file, gsmap, fractions_wx, 'fractions_wx', &
                  whead=whead, wdata=wdata)
             call seq_io_write(rest_file, wav, 'c2x', 'w2x_wx', &
-                 whead=whead, wdata=wdata) 
+                 whead=whead, wdata=wdata)
          endif
+         ! Write ESP restart data here
       enddo
 
       call seq_io_close(rest_file)

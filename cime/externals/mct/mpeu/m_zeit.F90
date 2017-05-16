@@ -2,7 +2,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !-----------------------------------------------------------------------
 !BOP
 !
@@ -83,7 +83,7 @@
 ! !DESIGN ISSUES:
 !
 !	05Mar98	- Jing Guo <guo@thunder>	-
-!		. Removing the data structure may be consider as a 
+!		. Removing the data structure may be consider as a
 !		  limitation to future changes to multiple _instance_
 !		  applications.  However, it is unlikely there will be
 !		  any neccessary multi-_intance_ application soon, if
@@ -280,7 +280,7 @@ contains
 	! table entry is given.
 	!
 	! If the name is not in the list, a new entry will be added
-	! to the list, if 1) there is room, and 2) 
+	! to the list, if 1) there is room, and 2)
 
   iname=lookup_(name)
 
@@ -293,8 +293,8 @@ contains
   lnk_n(ndep)=iname
   knt_l(iname)=knt_l(iname)+1
 
-	! Recording the check-in time, if there is no remaining 
-	! levels for the same name.  This is used to handle 
+	! Recording the check-in time, if there is no remaining
+	! levels for the same name.  This is used to handle
 	! recursive ci_() calls for the same name.
 
   if(level_l(iname) == 0) then
@@ -334,7 +334,7 @@ end subroutine ci_
 !   the last ci() with the same account name and at the out most level.
 !
 ! !REVISION HISTORY:
-! 	11Oct99 - J.W. Larson - <jlarson@dao> explicit definition of 
+! 	11Oct99 - J.W. Larson - <jlarson@dao> explicit definition of
 !                 tms as real*8
 ! 	05Mar98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP
@@ -389,7 +389,7 @@ end subroutine ci_
 	!
 	!   tms(:,1) is for the SCOPE timing data since the ci() of the
 	!	same account name at the out most level.
-	!  
+	!
 
         tms(i,0)=tms0
         tms(i,1)=tms1	! only the sub-segments
@@ -911,7 +911,7 @@ end subroutine allflush_
 !                 with 1x.  This is apparently strict adherance to the
 !                 f90 standard (though the first of many, many compilers
 !                 where it has arisen).  This was for the SunOS platform.
-!       25Feb01 - R. Jacob <jacob@mcs.anl.gov> change number of 
+!       25Feb01 - R. Jacob <jacob@mcs.anl.gov> change number of
 !                 decimal places from 1 to 4.
 !EOP
 !_______________________________________________________________________
@@ -966,7 +966,7 @@ do l=0,min(MXN,nname)
 
     if(ztmp(itm,0,l,ix_o) < ztmp(itm,0,l,k)) ix_o=k
     if(ztmp(itm,1,l,ix_s) < ztmp(itm,1,l,k)) ix_s=k
-      
+
   end do
 
   zta_o=zts_o/max(1,nPE)		! compute mean()

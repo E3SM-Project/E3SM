@@ -4,7 +4,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif 
+#endif
 
 #ifdef TEST_INTERNAL
 #include <mpiP.h>
@@ -154,7 +154,7 @@ void test_simple_indexed()
   //Indexed of simple types
 
   printf("\nIndexed type of MPI_INT.\n");
-  
+
   MPI_Type_indexed(3, blens, disps, MPI_INT, &indexed_type);
   MPI_Type_commit(&indexed_type);
 
@@ -184,7 +184,7 @@ void test_simple_indexed()
       return;
     }
 }
-  
+
 //block indexed.  Same as indexed except
 //static block length
 
@@ -226,7 +226,7 @@ void test_simple_bindexed()
       errcount++;
       return;
     }
-} 
+}
 
 //hindexed:  same as indexed, but
 //using byte displacements based off of sizeof(int)
@@ -322,7 +322,7 @@ void test_simple_hindexed()
 
   MPI_Type_struct(5, blocklengths, boffsets, types, &newtype2);
   print_typemap(newtype2);
-  
+
   //struct type:  2 int, 1 float
   printf("\nSimple struct for use: 2 int, 1 float\n");
   blocklengths[0] = 2;
@@ -370,7 +370,7 @@ void test_simple_hindexed()
   types[1]        = indexed_type;
   types[2]        = MPI_CHAR;
   types[3]        = newtype2;
-  
+
   MPI_Type_struct(4, blocklengths, boffsets, types, &struct_type);
   print_typemap(struct_type);
 }
@@ -430,7 +430,7 @@ void test_complex_struct()
   MPI_Datatype types[3] = {MPI_LONG, MPI_INT, MPI_CHAR};
   MPI_Datatype newtype;
 
-  
+
   printf("\nSimple struct to create complex struct\n");
   MPI_Type_struct(3, blens, disps, types, &newtype);
   MPI_Type_commit(&newtype);
@@ -449,7 +449,7 @@ void test_complex_struct()
     return;
   }
   MPI_Datatype newtype2;
-  
+
   blens[0] = 1;
   blens[1] = 1;
   blens[2] = 1;
@@ -486,7 +486,7 @@ void test_complex_struct()
 void test_indexed_struct()
 {
   int i;
-  
+
   //simple struct vars
   int s_blens[4] = {1,1,1,2};
   MPI_Aint s_disps[4];
@@ -504,7 +504,7 @@ void test_indexed_struct()
 
   struct_t send[10];
   struct_t recv[10];
-  
+
   //initialize the structs
   for (i = 0; i < 10; i++)
   {
@@ -519,7 +519,7 @@ void test_indexed_struct()
     recv[i].d=0;
     recv[i].e=0;
   }
-  
+
   //set the displacements by using address differences
   sadd = (char *)&send[0];
   s_disps[0] = (char*)&(send[0].a) - sadd;
@@ -536,7 +536,7 @@ void test_indexed_struct()
 #endif
 
   //now, create an indexed type of this struct
-  MPI_Type_indexed(3, i_blens, i_disps, 
+  MPI_Type_indexed(3, i_blens, i_disps,
                    s_struct, &i_struct_indexed);
   MPI_Type_commit(&i_struct_indexed);
 
@@ -563,9 +563,9 @@ void test_indexed_struct()
   }
 
   //to make things really interesting, let's send as the
-  //indexed type, and receive instead as _count_ 
+  //indexed type, and receive instead as _count_
   //consecutive struct types
-#ifdef TEST_INTERNAL 
+#ifdef TEST_INTERNAL
   copy_data2(send, 1, i_struct_indexed, recv, 6, s_struct);
 #else
   MPI_Gather(&send, 1, i_struct_indexed, &recv,
@@ -573,7 +573,7 @@ void test_indexed_struct()
 
 //  MPI_Isend(&send, 1, i_struct_indexed, 0, 0, MPI_COMM_WORLD, &req);
 //  MPI_Irecv(&recv, 6, s_struct, 0, 0, MPI_COMM_WORLD, &req);
- 
+
 #endif
 
   for (i = 0; i < 6; i++)
@@ -604,14 +604,14 @@ void test_multiple()
   int b[5] = {0, 0, 0, 0, 0};
 
 
-  
+
   MPI_Datatype contig5int;
 
   printf("\nSend contiguous of 5 MPI_INT, receive 5 x MPI_INT\n");
   MPI_Type_contiguous(5, MPI_INT, &contig5int);
   MPI_Type_commit(&contig5int);
 
-#ifdef TEST_INTERNAL  
+#ifdef TEST_INTERNAL
   copy_data2(&a, 5, MPI_INT, &b, 1, contig5int);
 #else
   MPI_Isend(&a, 5, MPI_INT, 0, 0, MPI_COMM_WORLD, &req);
@@ -785,7 +785,7 @@ void test_packed_complex()
     errcount++; \
     printf(">>>FAILED: test_collectives: %s\n", op); \
   } \
-}     
+}
 
 void test_collectives()
 {
@@ -797,7 +797,7 @@ void test_collectives()
 
   int disp = 0;
   int sendcount = 1, recvcount = 1;
-  
+
 
   int blens[3] = {2,1,1};
   MPI_Datatype types[3] = {MPI_INT, MPI_DOUBLE, MPI_LONG};
@@ -837,7 +837,7 @@ void test_collectives()
   MPI_Scatterv(&s1, &sendcount, &disp, struct_type, &s2, recvcount,
              struct_type, 0, MPI_COMM_WORLD);
   test_eq(s1,s2,"MPI_Scatterv");
-  
+
   s2.a=0; s2.b=0; s2.c=0.00; s2.d=0;
   MPI_Reduce(&s1, &s2, sendcount, struct_type, MPI_MAX, 0, MPI_COMM_WORLD);
   test_eq(s1, s2, "MPI_Reduce");
@@ -918,7 +918,7 @@ void structtests()
   printf("Done.\n");
   fflush(stdout);
   print_typemap(type);
-  copy_data(&a, &b, type); 
+  copy_data(&a, &b, type);
   printf("b = %d\n", a[4]);
 }
 */
@@ -929,10 +929,10 @@ int main(int argc, char ** argv)
   int vlen;
 
   MPI_Init(&argc, &argv);
-  
+
   MPI_Get_library_version(version,&vlen);
   printf("MPI version=\"%s\" (len=%d)\n",version,vlen);
-  
+
 //  structtests();
 //  indexed_test();
 //  struct_test();
@@ -949,7 +949,7 @@ int main(int argc, char ** argv)
   test_simple_hindexed();
   test_simple_struct();
   test_complex_struct();
-  test_indexed_struct();  
+  test_indexed_struct();
   test_multiple();
   test_multiple_struct();
   test_packed();
@@ -961,7 +961,7 @@ int main(int argc, char ** argv)
     printf("Found %d errors\n", errcount);
   else
     printf(">>>PASSED ALL TESTS. No errors. <<<\n");
-  
+
   return(errcount);
 }
 

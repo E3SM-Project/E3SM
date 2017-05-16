@@ -10,7 +10,7 @@
 ! Except this combination?
 #if defined CPRPGI && defined CNL
 #undef HAVE_GET_ENVIRONMENT
-#endif 
+#endif
 
 #if defined CPRNAG
 #define HAVE_EXECUTE

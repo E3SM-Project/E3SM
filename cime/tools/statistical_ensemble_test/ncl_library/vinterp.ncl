@@ -4,7 +4,7 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 undef("get_interpolation_levels")
 function get_interpolation_levels(interp_type)
 ; For interpolating in vertical direction, plevs are the same as plvlM in AMWG
-; diagnostics (functions_vertical_xz) "for comparison with another model 
+; diagnostics (functions_vertical_xz) "for comparison with another model
 ; interpolate the model data to these 25 constant pressure levels" (they also
 ; use log interpolation)
 begin
@@ -13,7 +13,7 @@ begin
             950., 975., 1000./)
   plevs@units="mb"
   plevs@long_name = "pressure"
-  
+
   interp_type = 2 ; 1 = LINEAR, 2 = LOG, 3 = LOG LOG
   return(plevs)
 end

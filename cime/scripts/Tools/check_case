@@ -1,53 +1,71 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python
 
-use strict;
-use Cwd;
-use English;
-use Getopt::Long;
-use File::Basename;
-use IO::File;
-use IO::Handle;
+"""
+check_case verifies that the case is set up correctly
+"""
 
-sub usage {
-    die <<'EOF';
+from standard_script_setup import *
 
-SYNOPSIS 
+from CIME.utils import expect
+from CIME.case  import Case
+from CIME.check_lockedfiles import check_lockedfiles
+from CIME.preview_namelists import preview_namelists
 
-  check_case [options]
+import argparse, doctest
 
-  checks that case is set up correctly
+logger = logging.getLogger(__name__)
 
-OPTIONS
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
 
-  -help [or -h]  Print usage to STDOUT (optional).
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [--verbose]
+OR
+%s --help
+OR
+%s --test
 
-EOF
-} 
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run \033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
 
-my %opts = ( );
+description=description,
 
-GetOptions(
-    "h|help"  => \$opts{'help'},
-    )  or usage();
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
 
-# Give usage message.
-usage() if $opts{'help'};
+    CIME.utils.setup_standard_logging_options(parser)
 
-my $sysmod = "./Tools/check_lockedfiles";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    args = parser.parse_args(args[1:])
 
-my $CASE           = `./xmlquery CASE           -value`;
-my $BUILD_COMPLETE = `./xmlquery BUILD_COMPLETE -value`;
+    CIME.utils.handle_standard_logging_options(args)
 
-my $sysmod = "./preview_namelists";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+###############################################################################
+def _main_func(description):
+###############################################################################
 
-if ($BUILD_COMPLETE ne "TRUE") {
-    print "BUILD_COMPLETE is not TRUE \n" ;
-    print "Please rebuild the model interactively via calling \n";
-    print "   ./${CASE}.build \n";
-    die;
-}
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
-print "check_case OK \n";
+    parse_command_line(sys.argv, description)
+
+    check_lockedfiles()
+
+    with Case(read_only=False) as case:
+        preview_namelists(case)
+        build_complete = case.get_value("BUILD_COMPLETE")
+
+    if not build_complete:
+        expect(False,
+               "Please rebuild the model interactively by calling case.build")
+
+    logger.info( "check_case OK ")
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func(__doc__)
 

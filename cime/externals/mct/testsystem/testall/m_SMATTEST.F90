@@ -17,17 +17,17 @@
       public :: ImportExport
       public :: Identical
 
-    interface testall  
-       module procedure testsMat_  
+    interface testall
+       module procedure testsMat_
     end interface
     interface IndexAttr
        module procedure IndexTest_
     end interface
-    interface SortPermute 
-       module procedure SortPermuteTest_  
+    interface SortPermute
+       module procedure SortPermuteTest_
     end interface
-    interface ImportExport 
-       module procedure ImportExportTest_ 
+    interface ImportExport
+       module procedure ImportExportTest_
     end interface
     interface Identical
        module procedure Identical_
@@ -45,10 +45,10 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: sMattest_ - Test the functions in the SparseMatrix module 
+! !IROUTINE: sMattest_ - Test the functions in the SparseMatrix module
 !
 ! !DESCRIPTION:
-! This routine writes diagnostic information about the input 
+! This routine writes diagnostic information about the input
 ! {\tt SparseMatrix}. Each line of the output will be preceded by the
 ! character argument {\tt identifier}. The output device is specified
 ! by the integer argument {\tt device}.
@@ -61,14 +61,14 @@
 ! !USES:
 !
       use m_SparseMatrix         ! Use all SparseMatrix routines
-      use m_stdio       
+      use m_stdio
       use m_die
 
       use m_realkinds, only : FP
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(SparseMatrix),         intent(in)  :: sMat
       character(len=*),           intent(in)  :: identifier
@@ -106,9 +106,9 @@
   ! Add vecinit to smat_identical
   call CheckBounds(sMat,ierr)
   write(device,*) identifier, ":: CheckBounds ierror = ", ierr
-  
+
   call local_row_range(sMat,start,end)
-  
+
   write(device,*) identifier, ":: local_row_range (start_row, end_row) = ", &
        start,end
 
@@ -131,7 +131,7 @@
      write(device,*) identifier, ":: ComputeSparsity = ", sparsity
 
      call global_row_range(sMat,mycomm,start,end)
-  
+
      write(device,*) identifier,":: global_row_range (start_row, end_row) = ",&
           start,end
 
@@ -153,7 +153,7 @@
      validsums(2)=1.
 
      call row_sum_check(sMat=sMat,comm=mycomm,num_valid=2, &
-                        valid_sums=validsums,abs_tol=1e-5,valid=rowsumcheck)   
+                        valid_sums=validsums,abs_tol=1e-5,valid=rowsumcheck)
 
      write(device,*) identifier,":: row_sum_check = ", rowsumcheck
 
@@ -174,10 +174,10 @@
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 
 ! NOTE: THIS IS NOT A CHECK FOR CORRECTNESS, JUST A CHECK FOR CONSISTENCY
-  
+
   call SortPermuteTest_(sMat,identifier,device)
 
-!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!  
+!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 !:::::TESTING EXPORT AND IMPORT FUNCTIONS:::::::::::::::::::::::::::::::!
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
   call ImportExportTest_(sMat,identifier,device)
@@ -201,7 +201,7 @@ end subroutine testsMat_
     use m_SparseMatrix
     use m_AttrVect, only: getIList, getRList
     use m_AttrVect, only: nIAttr, nRAttr
-    use m_List,   only: List_allocated   => allocated    
+    use m_List,   only: List_allocated   => allocated
     use m_String, only: String
     use m_String, only: StringToChar     => toChar
     use m_String, only: String_clean     => clean
@@ -209,7 +209,7 @@ end subroutine testsMat_
     use m_die
 
     implicit none
-    
+
     type(SparseMatrix),         intent(in)  :: sMat
     character(len=*),           intent(in)  :: identifier
     integer,                    intent(in)  :: device
@@ -271,7 +271,7 @@ end subroutine testsMat_
             "::sMat Index = ", j,      &
             "::Attribute Name = ", StringToChar(ItemStr)
        call String_clean(ItemStr)
-       
+
     enddo
 
   end subroutine IndexTest_
@@ -313,7 +313,7 @@ end subroutine testsMat_
          (nRAttr(SMATCOPY1%data)>0) ) then
 
     if(nIAttr(SMATCOPY1%data)>0) then
-     
+
        allocate(descend(nIAttr(SMATCOPY1%data)),stat=ierr)
        if(ierr /= 0) call die(myname_,"allocate(descend)")
 
@@ -342,20 +342,20 @@ end subroutine testsMat_
              endif
           enddo
        enddo
-       
+
        write(device,*) identifier, ":: Integer SparseMatrix data IN DESCENDING ORDER:: ", &
             SMATCOPY1%data%iAttr(1,1:5)
-       
+
        deallocate(perm,stat=ierr)
        if(ierr /= 0) call die(myname_,"deallocate(perm)")
-     
+
        deallocate(descend,stat=ierr)
        if(ierr /= 0) call die(myname_,"deallocate(descend)")
 
     endif
 
     if(nRAttr(SMATCOPY1%data)>0) then
-       
+
        allocate(descend(nRAttr(SMATCOPY1%data)),stat=ierr)
        if(ierr /= 0) call die(myname_,"allocate(descend)")
 
@@ -390,7 +390,7 @@ end subroutine testsMat_
 
        deallocate(perm,stat=ierr)
        if(ierr /= 0) call die(myname_,"deallocate(perm)")
-     
+
        deallocate(descend,stat=ierr)
        if(ierr /= 0) call die(myname_,"deallocate(descend)")
 
@@ -399,14 +399,14 @@ end subroutine testsMat_
     write(device,*) identifier, ":: NOT TESTING SORTING AND PERMUTING. CONSULT &
          &SOURCE CODE TO ENABLE TESTING."
     endif
-       
+
     call clean(SMATCOPY1)
     call clean(SMATCOPY2)
 
   end subroutine SortPermuteTest_
 
 
-!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!  
+!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 !:::::TEST FOR EXPORT AND IMPORT FUNCTIONS:::::::::::::::::::::::::::::::!
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 
@@ -458,7 +458,7 @@ end subroutine testsMat_
     if(.NOT.aVEqualsMat_(sMat=sMat,ivector=GlobalRows,attribute="grow")) then
        call die(myname_,"exportGlobalRowIndices failed")
     endif
-    
+
     call exportGlobalColumnIndices(sMat,GlobalColumns,size)
     if(.NOT.aVEqualsMat_(sMat=sMat,ivector=GlobalColumns,attribute="gcol")) then
        call die(myname_,"exportGlobalColumnIndices failed")
@@ -510,12 +510,12 @@ end subroutine testsMat_
     if(.NOT.aVEqualsMat_(sMat=sMatCopy,ivector=importIVect,attribute="lcol")) then
        call die(myname_,"importLocalColumnIndices failed")
     endif
-    
+
     call importMatrixElements(sMatCopy,importRVect,lsize(sMat))
     if(.NOT.aVEqualsMat_(sMat=sMatCopy,rvector=importRVect,attribute="weight")) then
        call die(myname_,"importMatrixElements failed")
     endif
-    
+
     call clean(sMatCopy)
 
     deallocate(GlobalRows,GlobalColumns,LocalRows,LocalColumns, &
@@ -533,7 +533,7 @@ end subroutine testsMat_
       use m_realkinds, only : FP
 
       implicit none
-      
+
       type(SparseMatrix),         intent(in)   :: sMat
       integer, dimension(:), pointer, optional :: ivector
       real(FP), dimension(:), pointer, optional    :: rvector
@@ -542,24 +542,24 @@ end subroutine testsMat_
       integer :: i, attribute_index
 
       aVEqualsMat_ = .TRUE.
-      
+
       if(present(ivector)) then
 
          attribute_index = indexIA(sMat,trim(attribute))
-         
+
          do i=1,lsize(sMat)
             if(sMat%data%iAttr(attribute_index,i) /= ivector(i)) then
                aVEqualsMat_ = .FALSE.
                EXIT
             endif
          enddo
-         
+
       else
-         
+
          if(present(rvector)) then
 
             attribute_index = indexRA(sMat,trim(attribute))
-         
+
             do i=1,lsize(sMat)
                if(sMat%data%rAttr(attribute_index,i) /= rvector(i)) then
                   aVEqualsMat_ = .FALSE.
@@ -591,7 +591,7 @@ end subroutine testsMat_
     use m_realkinds, only : FP
 
     implicit none
-      
+
     type(SparseMatrix), intent(in) :: SMAT1
     type(SparseMatrix), intent(in) :: SMAT2
     real, optional,     intent(in) :: Range
@@ -607,7 +607,7 @@ end subroutine testsMat_
     else
        if(.NOT. AttrVect_identical(SMAT1%data,SMAT2%data)) then
           Identical_=.false.
-       endif   
+       endif
     endif
 
     if(SMAT1%nrows /= SMAT2%nrows) then

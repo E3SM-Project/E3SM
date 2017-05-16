@@ -244,7 +244,7 @@ contains
     namelist /clm_inparm/ do_varsoil
 
     namelist /clm_inparm / &
-         use_vsfm, vsfm_satfunc_type
+         use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -688,7 +688,7 @@ contains
 
     call mpi_bcast (use_vsfm, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (vsfm_satfunc_type, len(vsfm_satfunc_type), MPI_CHARACTER, 0, mpicom, ier)
-
+    call mpi_bcast (vsfm_use_dynamic_linesearch, 1, MPI_LOGICAL, 0, mpicom, ier)
 
   end subroutine control_spmd
 
@@ -903,6 +903,7 @@ contains
        write(iulog,*)
        write(iulog,*) 'VSFM Namelists:'
        write(iulog, *) '  vsfm_satfunc_type                                      : ', vsfm_satfunc_type
+       write(iulog, *) '  vsfm_use_dynamic_linesearch                            : ', vsfm_use_dynamic_linesearch
     endif
 
   end subroutine control_print

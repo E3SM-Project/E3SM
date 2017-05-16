@@ -217,7 +217,7 @@ FC_FUNC(mpi_testsome, MPI_TESTSOME)
 }
 
 int MPI_Testsome(int incount, MPI_Request *array_of_requests, int *outcount,
-                 int *array_of_indices, MPI_Status *array_of_statuses) 
+                 int *array_of_indices, MPI_Status *array_of_statuses)
 {
   int i;
   int flag;
@@ -236,7 +236,7 @@ int MPI_Testsome(int incount, MPI_Request *array_of_requests, int *outcount,
 
 }
 
-/* Waitsome: checks for availability of at least one status from array of 
+/* Waitsome: checks for availability of at least one status from array of
  * requests.  If no statuses are available, abort with error
  */
 
@@ -249,7 +249,7 @@ FC_FUNC(mpi_waitsome, MPI_WAITSOME)
 }
 
 int MPI_Waitsome(int incount, MPI_Request *array_of_requests, int *outcount,
-                 int *array_of_indices, MPI_Status *array_of_statuses) 
+                 int *array_of_indices, MPI_Status *array_of_statuses)
 {
   MPI_Testsome(incount, array_of_requests, outcount,
                array_of_indices, array_of_statuses);

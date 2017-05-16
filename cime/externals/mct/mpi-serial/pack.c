@@ -34,7 +34,7 @@ int MPI_Pack( void *inbuf, int incount, MPI_Datatype datatype,
 
 
 
-int Pack(void *inbuf, int incount, Datatype type, 
+int Pack(void *inbuf, int incount, Datatype type,
               void *outbuf, int outsize, int *position, Comm * comm)
 {
   int i, j;
@@ -51,19 +51,19 @@ int Pack(void *inbuf, int incount, Datatype type,
         exit(1);
       }
       memcpy(((char*) outbuf)+(*position), inbuf+type->pairs[j].disp + (extent*i),
-             Simpletype_length(type->pairs[j].type)); 
+             Simpletype_length(type->pairs[j].type));
       *position += Simpletype_length(type->pairs[j].type);
     }
   }
 }
 
-FC_FUNC( mpi_pack_size, MPI_PACK_SIZE )(int * incount, int * datatype, 
+FC_FUNC( mpi_pack_size, MPI_PACK_SIZE )(int * incount, int * datatype,
                                           int * comm, long * size, int *ierr)
 {
   *ierr = MPI_Pack_size(*incount, *datatype, *comm, size);
 }
 
-int MPI_Pack_size(int incount, MPI_Datatype datatype, 
+int MPI_Pack_size(int incount, MPI_Datatype datatype,
                   MPI_Comm comm, MPI_Aint * size)
 {
   int ret;
@@ -76,7 +76,7 @@ int MPI_Pack_size(int incount, MPI_Datatype datatype,
 }
 
 
-int Pack_size(int incount, Datatype datatype, 
+int Pack_size(int incount, Datatype datatype,
                    Comm * comm, MPI_Aint * size)
 {
   int i;
@@ -106,7 +106,7 @@ FC_FUNC( mpi_unpack , MPI_UNPACK )
 }
 
 
-int MPI_Unpack(void * inbuf, int insize, int * position, void * outbuf, 
+int MPI_Unpack(void * inbuf, int insize, int * position, void * outbuf,
                int outcount, MPI_Datatype type, MPI_Comm comm)
 {
   int ret;
@@ -114,7 +114,7 @@ int MPI_Unpack(void * inbuf, int insize, int * position, void * outbuf,
   Comm * comm_ptr = mpi_handle_to_ptr(comm);
 
   ret = Unpack(inbuf, insize, position, outbuf, outcount, type_ptr, comm_ptr);
-  
+
   return ret;
 }
 
@@ -129,7 +129,7 @@ int Unpack(void * inbuf, int insize, int * position, void *outbuf,
   for (i = 0; i < outcount; i++)
   {
     for (j = 0; j < type->count; j++)
-    {    
+    {
       if ((*position) + Simpletype_length(type->pairs[j].type) > insize)
       {
         printf("MPI_Unpack: Data exceeds buffer size\n");

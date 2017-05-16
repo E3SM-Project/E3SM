@@ -32,9 +32,14 @@ module shr_dmodel_mod
   public :: shr_dmodel_translate_list
   public :: shr_dmodel_rearrGGrid
 
+   interface shr_dmodel_gsmapCreate; module procedure &
+      shr_dmodel_gsmapCreate_gsize, &
+      shr_dmodel_gsmapCreate_nxnynz
+   end interface
+
    interface shr_dmodel_mapSet; module procedure &
+!      shr_dmodel_mapSet_dest, &
       shr_dmodel_mapSet_global
-!      shr_dmodel_mapSet_dest
    end interface
 
   integer(IN),parameter,public :: shr_dmodel_gGridCompareXYabs      = 1 ! X,Y  relative error
@@ -66,7 +71,8 @@ CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 !===============================================================================
-subroutine shr_dmodel_gsmapCreate(gsmap,gsize,compid,mpicom,decomp)
+!===============================================================================
+subroutine shr_dmodel_gsmapCreate_gsize(gsmap,gsize,compid,mpicom,decomp)
 
     implicit none
 
@@ -82,9 +88,9 @@ subroutine shr_dmodel_gsmapCreate(gsmap,gsize,compid,mpicom,decomp)
     integer(IN), pointer :: start(:)     ! for gsmap initialization
     integer(IN), pointer :: length(:)    ! for gsmap initialization
     integer(IN), pointer :: pe_loc(:)    ! for gsmap initialization
-    character(*), parameter :: subname = '(shr_dmodel_gsmapCreate) '
-    character(*), parameter :: F00   = "('(shr_dmodel_gsmapCreate) ',8a)"
-    character(*), parameter :: F01   = "('(shr_dmodel_gsmapCreate) ',a,5i8)"
+    character(*), parameter :: subname = '(shr_dmodel_gsmapCreate_gsize) '
+    character(*), parameter :: F00   = "('(shr_dmodel_gsmapCreate_gsize) ',8a)"
+    character(*), parameter :: F01   = "('(shr_dmodel_gsmapCreate_gsize) ',a,5i8)"
 
     ! ---------------------------------------------
 
@@ -116,18 +122,92 @@ subroutine shr_dmodel_gsmapCreate(gsmap,gsize,compid,mpicom,decomp)
        deallocate(start,length,pe_loc)
     endif
 
-end subroutine shr_dmodel_gsmapCreate
+end subroutine shr_dmodel_gsmapCreate_gsize
+!===============================================================================
+subroutine shr_dmodel_gsmapCreate_nxnynz(gsmap,nxg,nyg,nzg,compid,mpicom,decomp)
+
+    implicit none
+
+    type(mct_gsMap), intent(inout) :: gsmap
+    integer(IN)    , intent(in)    :: nxg,nyg,nzg
+    integer(IN)    , intent(in)    :: compid
+    integer(IN)    , intent(in)    :: mpicom
+    character(len=*),intent(in)    :: decomp
+
+    ! local
+
+    integer(IN) :: n,nz,nb,npes,ierr,gsize,dsize,ngseg,lnzg
+    integer(IN), pointer :: start(:)     ! for gsmap initialization
+    integer(IN), pointer :: length(:)    ! for gsmap initialization
+    integer(IN), pointer :: pe_loc(:)    ! for gsmap initialization
+    character(*), parameter :: subname = '(shr_dmodel_gsmapCreate_nxnynz) '
+    character(*), parameter :: F00   = "('(shr_dmodel_gsmapCreate_nxnynz) ',8a)"
+    character(*), parameter :: F01   = "('(shr_dmodel_gsmapCreate_nxnynz) ',a,5i8)"
+
+    ! ---------------------------------------------
+
+    gsize = abs(nxg*nyg*nzg)
+    dsize = nxg*nyg
+    lnzg = 1
+    if (nzg > 1) lnzg = nzg  ! check for 3d
+
+    if (gsize > 0) then
+       call mpi_comm_size(mpicom,npes,ierr)
+
+       !--- 1d decomp of 2d grid plus 3rd dim if exists ---
+       if (trim(decomp) == '2d1d') then
+          ngseg = npes*lnzg
+          allocate(start(ngseg),length(ngseg),pe_loc(ngseg))
+          start = 0
+          length = 0
+          pe_loc = 0
+          do n = 1,npes
+             length(n)  = dsize/npes
+             if (n <= mod(dsize,npes)) length(n) = length(n) + 1
+             if (n == 1) then
+                start(n) = 1
+             else
+                start(n) = start(n-1) + length(n-1)
+             endif
+             pe_loc(n) = n-1
+             do nz = 2,lnzg
+                nb = (nz-1)*npes + n
+                start(nb)  = start(n) + (nz-1)*dsize
+                length(nb) = length(n)
+                pe_loc(nb) = pe_loc(n)
+             enddo
+          enddo
+
+       !--- all data on root ---
+       elseif (trim(decomp) == 'root') then
+          ngseg = 1
+          allocate(start(ngseg),length(ngseg),pe_loc(ngseg))
+          start(1) = 1
+          length(1) = gsize
+          pe_loc(1) = 0
+
+       else
+          write(logunit,F00) ' ERROR: decomp not allowed, ',trim(decomp)
+          call shr_sys_abort(subname//' ERROR decomp')
+       endif
+
+       call mct_gsMap_init( gsMap, COMPID, ngseg, gsize, start, length, pe_loc)
+       deallocate(start,length,pe_loc)
+    endif
+
+end subroutine shr_dmodel_gsmapCreate_nxnynz
 !===============================================================================
 
-subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, filename, compid, mpicom, &
-  decomp, lonname, latname, maskname, areaname, fracname, readfrac, &
+subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, nzgo, filename, compid, mpicom, &
+  decomp, lonname, latname, hgtname, maskname, areaname, fracname, readfrac, &
   scmmode, scmlon, scmlat)
 
   use seq_flds_mod, only : seq_flds_dom_coord, seq_flds_dom_other
   use shr_file_mod, only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
   use shr_string_mod, only : shr_string_lastindex
   use shr_ncread_mod, only : shr_ncread_domain, shr_ncread_vardimsizes, &
-                             shr_ncread_varexists, shr_ncread_vardimnum
+                             shr_ncread_varexists, shr_ncread_vardimnum, &
+                             shr_ncread_field4dG
   implicit none
 
   !----- arguments -----
@@ -135,12 +215,14 @@ subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, filename, compid, mpic
   type(mct_gsMap), intent(inout) :: gsMap
   integer(IN)    , intent(out)   :: nxgo
   integer(IN)    , intent(out)   :: nygo
+  integer(IN)    , intent(out)   :: nzgo
   character(len=*),intent(in)    :: filename
   integer(IN)    , intent(in)    :: compid
   integer(IN)    , intent(in)    :: mpicom
   character(len=*),optional,intent(in)    ::   decomp ! decomp strategy for gsmap
   character(len=*),optional,intent(in)    ::  lonname ! name of  lon variable in file
   character(len=*),optional,intent(in)    ::  latname ! name of  lat variable in file
+  character(len=*),optional,intent(in)    ::  hgtname ! name of  hgt variable in file
   character(len=*),optional,intent(in)    :: maskname ! name of mask variable in file
   character(len=*),optional,intent(in)    :: areaname ! name of area variable in file
   character(len=*),optional,intent(in)    :: fracname ! name of frac variable in file
@@ -150,27 +232,28 @@ subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, filename, compid, mpic
   real(R8)        ,optional,intent(in)    :: scmlat   ! single column lat
 
   !----- local -----
-  integer(IN)   :: n,k,j,i    ! indices  
+  integer(IN)   :: n,k,j,i    ! indices
   integer(IN)   :: lsize      ! lsize
   integer(IN)   :: gsize      ! gsize
   integer(IN)   :: my_task, master_task
   integer(IN)   :: ierr       ! error code
-  logical       :: fileexists ! 
+  logical       :: fileexists !
   integer(IN)   :: rCode      ! return code
   character(CL) :: remoteFn   ! input file name (possibly at an archival location)
   character(CL) :: localFn    ! file name to be opened (possibly a local copy)
   character(CS) :: prefix     ! file prefix
   character(CS) ::   ldecomp  ! decomp strategy
-  character(CS) ::  llatname  ! name of  lat variable
   character(CS) ::  llonname  ! name of  lon variable
+  character(CS) ::  llatname  ! name of  lat variable
+  character(CS) ::  lhgtname  ! name of  hgt variable
   character(CS) :: lmaskname  ! name of mask variable
   character(CS) :: lareaname  ! name of area variable
   character(CS) :: lfracname  ! name of area variable
   logical       :: lreadfrac  ! read fraction
   logical       :: maskexists ! is mask on dataset
-  integer(IN)   :: nxg,nyg    ! size of input fields
+  integer(IN)   :: nxg,nyg,nzg  ! size of input fields
   integer(IN)   :: ndims      ! number of dims
-  integer(IN)   :: nlon,nlat,narea,nmask,nfrac
+  integer(IN)   :: nlon,nlat,narea,nmask,nfrac,nhgt
   logical       :: lscmmode   ! local scm mode
   real(R8)      :: dist,mind  ! scmmode point search
   integer(IN)   :: ni,nj      ! scmmode point search
@@ -181,6 +264,8 @@ subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, filename, compid, mpic
   integer(IN),allocatable :: mask(:,:) ! temp array for domain mask info
   real   (R8),allocatable :: area(:,:) ! temp array for domain area info
   real   (R8),allocatable :: frac(:,:) ! temp array for domain frac info
+  real   (R8),allocatable ::  hgt(:)   ! temp array for domain height info
+  real   (R8),allocatable ::  a4d(:,:,:,:) ! temp array for reading generic stuff
 
   integer(IN), pointer :: idata(:)   ! temporary
   type(mct_ggrid)      :: gGridRoot       ! global mct ggrid
@@ -237,9 +322,10 @@ subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, filename, compid, mpic
   endif
 
   lreadfrac = .false.
-  ldecomp   = "1d"
+  ldecomp   = "2d1d"
   llonname  = "xc"  ! default values / standard data model domain file format
   llatname  = "yc"
+  lhgtname  = "hgt"
   lmaskname = "mask"
   lareaname = "area"
   lfracname = "frac"
@@ -247,6 +333,7 @@ subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, filename, compid, mpic
   if (present(readfrac)) lreadfrac = readfrac
   if (present( lonname))  llonname =  lonname
   if (present( latname))  llatname =  latname
+  if (present( hgtname))  lhgtname =  hgtname
   if (present(maskname)) lmaskname = maskname
   if (present(areaname)) lareaname = areaname
   if (present(fracname)) lfracname = fracname
@@ -268,21 +355,29 @@ subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, filename, compid, mpic
            call shr_ncread_varDimSizes(localFn,llonName,nxg,nyg)
         endif
      endif
+     if (shr_ncread_varexists(localFn,lhgtName)) then
+        call shr_ncread_varDimSizes(localFn,lhgtname,nzg)
+     else
+        nzg = -1
+     endif
   endif
   call shr_mpi_bcast(nxg,mpicom)
   call shr_mpi_bcast(nyg,mpicom)
+  call shr_mpi_bcast(nzg,mpicom)
   if (lscmmode) then
      nxgo = 1
      nygo = 1
+     nzgo = -1
      gsize = 1
   else
      nxgo = nxg
      nygo = nyg
-     gsize = nxg*nyg
+     nzgo = nzg
+     gsize = abs(nxg*nyg*nzg)
      if (gsize < 1) return
   endif
 
-  call shr_dmodel_gsmapCreate(gsMap,gsize,compid,mpicom,trim(ldecomp))
+  call shr_dmodel_gsmapCreate(gsMap,nxgo,nygo,nzgo,compid,mpicom,trim(ldecomp))
   lsize = mct_gsMap_lsize(gsMap, mpicom)
   call mct_gGrid_init( GGrid=gGrid, CoordChars=trim(seq_flds_dom_coord), &
      OtherChars=trim(seq_flds_dom_other), lsize=lsize )
@@ -306,6 +401,7 @@ subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, filename, compid, mpic
      allocate(area(nxg,nyg))
      allocate(mask(nxg,nyg))
      allocate(frac(nxg,nyg))
+     allocate(hgt(abs(nzg)))
 
      if (.not.maskexists) then
         call shr_ncread_domain(localFn,llonName,lon,llatName,lat)
@@ -327,6 +423,15 @@ subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, filename, compid, mpic
         endif
      endif
 
+     if (nzg > 1) then
+        allocate(a4d(nzg,1,1,1))
+        call shr_ncread_field4dG(localFn,hgtName,rfld=a4d)
+        hgt(:) = a4d(:,1,1,1)
+        deallocate(a4d)
+     else
+        hgt = 1
+     endif
+
      call mct_gGrid_init(gGridRoot,gGrid,gsize)
 
 ! initialize gGridRoot to avoid errors when using strict compiler checks
@@ -337,6 +442,7 @@ subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, filename, compid, mpic
      narea = mct_aVect_indexRA(gGridRoot%data,'area')
      nmask = mct_aVect_indexRA(gGridRoot%data,'mask')
      nfrac = mct_aVect_indexRA(gGridRoot%data,'frac')
+     nhgt  = mct_aVect_indexRA(gGridRoot%data,'hgt')
 
      if (lscmmode) then
         !--- assumes regular 2d grid for compatability with shr_scam_getCloseLatLon ---
@@ -353,7 +459,7 @@ subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, filename, compid, mpic
               mind = dist
               ni = i
            endif
-        enddo        
+        enddo
 
         nj = -1
         mind = 1.0e20
@@ -373,24 +479,32 @@ subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, filename, compid, mpic
         gGridRoot%data%rAttr(narea,n) = area(i,j)
         gGridRoot%data%rAttr(nmask,n) = real(mask(i,j),R8)
         gGridRoot%data%rAttr(nfrac,n) = frac(i,j)
+        gGridRoot%data%rAttr(nhgt, n) = 1
      else
-        n=0                                                                                    
+        n=0
+        do k=1,abs(nzg)
         do j=1,nyg
         do i=1,nxg
-           n=n+1                                                                               
+           n=n+1
            gGridRoot%data%rAttr(nlat ,n) = lat(i,j)
            gGridRoot%data%rAttr(nlon ,n) = lon(i,j)
            gGridRoot%data%rAttr(narea,n) = area(i,j)
            gGridRoot%data%rAttr(nmask,n) = real(mask(i,j),R8)
            gGridRoot%data%rAttr(nfrac,n) = frac(i,j)
+           gGridRoot%data%rAttr(nhgt ,n) = hgt(k)
+        enddo
         enddo
         enddo
      endif
+  endif
+
+  if (my_task == master_task) then
      deallocate(lon)
      deallocate(lat)
      deallocate(area)
      deallocate(mask)
      deallocate(frac)
+     deallocate(hgt)
   endif
 
   call mct_gGrid_scatter(gGridRoot, gGrid, gsMap, master_task, mpicom)
@@ -425,7 +539,7 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
   character(len=*),optional  ,intent(in)    :: istr
 
   !----- local -----
-  integer(IN)   :: n,k,j,i    ! indices  
+  integer(IN)   :: n,k,j,i    ! indices
   integer(IN)   :: lsize      ! lsize
   integer(IN)   :: gsize      ! gsize
   integer(IN)   :: my_task, master_task
@@ -517,7 +631,7 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
         call t_stopf(trim(lstr)//'_LB_copy')
      else
         if (my_task == master_task) then
-           write(logunit,F02) 'reading file: ',trim(path),trim(fn_lb),n_lb
+           write(logunit,F02) 'file lb: ',trim(path),trim(fn_lb),n_lb
            call shr_sys_flush(logunit)
         endif
         call shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, avLB, mpicom, &
@@ -528,7 +642,7 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
   if (mDateUB /= oDateUB .or. mSecUB /= oSecUB) then
      newdata = .true.
      if (my_task == master_task) then
-        write(logunit,F02) 'reading file: ',trim(path),trim(fn_ub),n_ub
+        write(logunit,F02) 'file ub: ',trim(path),trim(fn_ub),n_ub
         call shr_sys_flush(logunit)
      endif
      call shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, avUB, mpicom, &
@@ -546,7 +660,7 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
      inquire(file=trim(fn_next),exist=fileExists)
      if ( trim(fn_next) == "unknown" .or. fileExists) then
         ! do nothing
-     else 
+     else
         call shr_file_get(rCode,fn_next,trim(path)//fn_next,async=.true.)
         write(logunit,F00) "get next file: ",trim(fn_next)
         call shr_sys_flush(logunit)
@@ -554,7 +668,7 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
 
      !---  remove the old file? (only if acquiring local copies) ---
      if ( rmOldFile .and. &
-          fn_prev/=fn_lb .and. fn_prev/=fn_ub .and. fn_prev/=fn_next ) then 
+          fn_prev/=fn_lb .and. fn_prev/=fn_ub .and. fn_prev/=fn_next ) then
         !--- previous file is not in use and is not next in list ---
         inquire(file=trim(fn_prev),exist=fileExists)
         if ( fileExists ) then
@@ -575,7 +689,8 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
 
   use shr_file_mod, only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
   use shr_stream_mod
-  use shr_ncread_mod
+  use shr_ncread_mod, only: shr_ncread_open, shr_ncread_close, shr_ncread_varDimSizes, &
+                            shr_ncread_tField
   implicit none
 
   !----- arguments -----
@@ -584,7 +699,7 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
   integer(IN)     ,intent(in)    :: pio_iotype
   type(io_desc_t)      ,intent(inout)  :: pio_iodesc
   type(mct_gsMap) ,intent(in)    :: gsMap
-  type(mct_aVect) ,intent(inout) :: av  
+  type(mct_aVect) ,intent(inout) :: av
   integer(IN)     ,intent(in)    :: mpicom
   character(len=*),intent(in)    :: path
   character(len=*),intent(in)    :: fn
@@ -597,15 +712,19 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
   integer(IN) :: ierr
   logical     :: localCopy,fileexists
   type(mct_avect) :: avG
-  integer(IN) :: gsize,nx,ny
+  integer(IN) :: gsize,nx,ny,nz
   integer(IN) :: k
   integer(IN) :: fid
   integer(IN) :: rCode      ! return code
-  real(R8),allocatable :: data(:,:)
+  real(R8),allocatable :: data2d(:,:)
+  real(R8),allocatable :: data3d(:,:,:)
+  logical     :: d3dflag
   character(CL) :: fileName
   character(CL) :: sfldName
   type(mct_avect) :: avtmp
   character(len=32) :: lstr
+  logical :: fileopen
+  character(CL) :: currfile
 
   integer(in) :: ndims
   integer(in),pointer :: dimid(:)
@@ -656,21 +775,35 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
 
      call t_startf(trim(lstr)//'_readcdf')
      if (my_task == master_task) then
-        call shr_ncread_varDimSizes(trim(fileName),trim(sfldName),nx,ny)
-        if (gsize /= nx*ny) then
-           write(logunit,F01) "ERROR in data sizes ",nx,ny,gsize
+        call shr_ncread_varDimSizes(trim(fileName),trim(sfldName),nx,ny,nz)
+        if (gsize == nx*ny) then
+           d3dflag = .false.
+           allocate(data2d(nx,ny))
+        elseif (gsize == nx*ny*nz) then
+           d3dflag = .true.
+           allocate(data3d(nx,ny,nz))
+        else
+           write(logunit,F01) "ERROR in data sizes ",nx,ny,nz,gsize
            call shr_sys_abort(subname//"ERROR in data sizes")
         endif
         call mct_aVect_init(avG,av,gsize)
-        allocate(data(nx,ny))
         call shr_ncread_open(trim(fileName),fid,rCode)
         do k = 1,mct_aVect_nRAttr(av)
            call shr_stream_getFileFieldName(stream,k,sfldName)
-           call shr_ncread_tField(fileName,nt,sfldName,data,fidi=fid,rc=rCode)
-           avG%rAttr(k,:) = reshape(data, (/gsize/))
+           if (d3dflag) then
+              call shr_ncread_tField(fileName,nt,sfldName,data3d,fidi=fid,rc=rCode)
+              avG%rAttr(k,:) = reshape(data3d, (/gsize/))
+           else
+              call shr_ncread_tField(fileName,nt,sfldName,data2d,fidi=fid,rc=rCode)
+              avG%rAttr(k,:) = reshape(data2d, (/gsize/))
+           endif
         enddo
         call shr_ncread_close(fid,rCode)
-        deallocate(data)
+        if (d3dflag) then
+           deallocate(data3d)
+        else
+           deallocate(data2d)
+        endif
      endif
      call t_stopf(trim(lstr)//'_readcdf')
      call t_barrierf(trim(lstr)//'_scatter'//'_BARRIER',mpicom)
@@ -686,18 +819,40 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
      call t_startf(trim(lstr)//'_readpio')
      call shr_mpi_bcast(sfldName,mpicom,'sfldName')
      call shr_mpi_bcast(filename,mpicom,'filename')
-     rcode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(filename), pio_nowrite)
+
+     call shr_stream_getCurrFile(stream,fileopen=fileopen,currfile=currfile,currpioid=pioid)
+
+     if (fileopen .and. currfile==filename) then
+        ! don't reopen file, all good
+     else
+        ! otherwise close the old file if open and open new file
+        if (fileopen) then
+           if (my_task == master_task) then
+              write(logunit,F00) 'close  : ',trim(currfile)
+              call shr_sys_flush(logunit)
+           endif
+           call pio_closefile(pioid)
+        endif
+        if (my_task == master_task) then
+           write(logunit,F00) 'open   : ',trim(filename)
+           call shr_sys_flush(logunit)
+        endif
+        rcode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(filename), pio_nowrite)
+        call shr_stream_setCurrFile(stream,fileopen=.true.,currfile=trim(filename),currpioid=pioid)
+     endif
+
      call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
 
      rcode = pio_inq_varid(pioid,trim(sfldName),varid)
      rcode = pio_inq_varndims(pioid, varid, ndims)
      allocate(dimid(ndims))
      rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
-     rcode = pio_inq_dimlen(pioid, dimid(1), nx)
-     rcode = pio_inq_dimlen(pioid, dimid(2), ny)
+     if (ndims >= 1) rcode = pio_inq_dimlen(pioid, dimid(1), nx)
+     if (ndims >= 2) rcode = pio_inq_dimlen(pioid, dimid(2), ny)
+     if (ndims >= 3) rcode = pio_inq_dimlen(pioid, dimid(3), nz)
      deallocate(dimid)
-     if (gsize /= nx*ny) then
-        write(logunit,F01) "ERROR in data sizes ",nx,ny,gsize
+     if (gsize /= nx*ny .and. gsize /= nx*ny*nz) then
+        write(logunit,F01) "ERROR in data sizes ",nx,ny,nz,gsize
         call shr_sys_abort(subname//"ERROR in data sizes")
      endif
 
@@ -712,7 +867,6 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
         call pio_read_darray(pioid,varid,pio_iodesc,av%rattr(k,:),rcode)
      enddo
 
-     call pio_closefile(pioid)
      call t_stopf(trim(lstr)//'_readpio')
 
   endif
@@ -768,10 +922,10 @@ logical function shr_dmodel_gGridCompare(ggrid1,gsmap1,ggrid2,gsmap2,method,mpic
    type(mct_aVect) :: avG2     ! global av
    integer(IN) :: lmethod      ! local method
    logical     :: maskmethod, maskpoint ! masking on method
- 
+
    !--- formats ---
    character(*),parameter :: subName = '(shr_dmodel_gGridCompare) '
-   character(*),parameter :: F01     = "('(shr_dmodel_gGridCompare) ',4a)" 
+   character(*),parameter :: F01     = "('(shr_dmodel_gGridCompare) ',4a)"
 
 !-------------------------------------------------------------------------------
 !
@@ -795,7 +949,7 @@ logical function shr_dmodel_gGridCompare(ggrid1,gsmap1,ggrid2,gsmap2,method,mpic
 
    if (my_task == master_task) then
 
-      compare = .true. 
+      compare = .true.
       gsize = mct_aVect_lsize(avG1)
       if (gsize /= mct_aVect_lsize(avG2)) then
          compare = .false.
@@ -803,7 +957,7 @@ logical function shr_dmodel_gGridCompare(ggrid1,gsmap1,ggrid2,gsmap2,method,mpic
 
       if (.not. compare ) then
          !--- already failed the comparison test, check no futher ---
-      else 
+      else
          nlon1 = mct_aVect_indexRA(avG1,'lon')
          nlat1 = mct_aVect_indexRA(avG1,'lat')
          nlon2 = mct_aVect_indexRA(avG2,'lon')
@@ -1311,7 +1465,7 @@ subroutine shr_dmodel_rearrGGrid( ggridi, ggrido, gsmap, rearr, mpicom )
 
   !----- arguments -----
   type(mct_ggrid), intent(in)    :: ggridi
-  type(mct_ggrid), intent(inout) :: ggrido  
+  type(mct_ggrid), intent(inout) :: ggrido
   type(mct_gsmap), intent(in)    :: gsmap
   type(mct_rearr), intent(in)    :: rearr
   integer(IN)    , intent(in)    :: mpicom
@@ -1346,14 +1500,14 @@ subroutine shr_dmodel_rearrGGrid( ggridi, ggrido, gsmap, rearr, mpicom )
 
   allocate(data(lsize))
 
-  data(:) = -9999.0_R8 
-  call mct_gGrid_importRAttr(ggrido,"lat"  ,data,lsize) 
-  call mct_gGrid_importRAttr(ggrido,"lon"  ,data,lsize) 
-  call mct_gGrid_importRAttr(ggrido,"area" ,data,lsize) 
-  call mct_gGrid_importRAttr(ggrido,"aream",data,lsize) 
-  data(:) = 0.0_R8     
-  call mct_gGrid_importRAttr(ggrido,"mask",data,lsize) 
-  call mct_gGrid_importRAttr(ggrido,"frac",data,lsize) 
+  data(:) = -9999.0_R8
+  call mct_gGrid_importRAttr(ggrido,"lat"  ,data,lsize)
+  call mct_gGrid_importRAttr(ggrido,"lon"  ,data,lsize)
+  call mct_gGrid_importRAttr(ggrido,"area" ,data,lsize)
+  call mct_gGrid_importRAttr(ggrido,"aream",data,lsize)
+  data(:) = 0.0_R8
+  call mct_gGrid_importRAttr(ggrido,"mask",data,lsize)
+  call mct_gGrid_importRAttr(ggrido,"frac",data,lsize)
 
   deallocate(data)
 
@@ -1375,7 +1529,7 @@ subroutine shr_dmodel_translateAV( avi, avo, avifld, avofld, rearr )
   type(mct_rearr), intent(in),optional :: rearr     ! rearranger for diff decomp
 
   !----- local -----
-  integer(IN)      :: n,k,ka,kb,kc,cnt  ! indices  
+  integer(IN)      :: n,k,ka,kb,kc,cnt  ! indices
   integer(IN)      :: lsize      ! lsize
   integer(IN)      :: gsize      ! gsize
   integer(IN)      :: nflds      ! number of fields in avi
@@ -1451,7 +1605,7 @@ end subroutine shr_dmodel_translateAV
 
 !===============================================================================
 
-subroutine shr_dmodel_translate_list( avi, avo, avifld, avofld, ilist, olist, cnt) 
+subroutine shr_dmodel_translate_list( avi, avo, avifld, avofld, ilist, olist, cnt)
 
   implicit none
 
@@ -1462,11 +1616,11 @@ subroutine shr_dmodel_translate_list( avi, avo, avifld, avofld, ilist, olist, cn
   character(len=*),intent(in)    :: avofld(:) ! output field names for translation
   character(CL)   ,intent(out)   :: ilist     ! input list for translation
   character(CL)   ,intent(out)   :: olist     ! output list for translation
-  integer(IN)     ,intent(out)   :: cnt       ! indices  
+  integer(IN)     ,intent(out)   :: cnt       ! indices
 
 
   !----- local -----
-  integer(IN)      :: n,k,ka,kb,kc ! indices  
+  integer(IN)      :: n,k,ka,kb,kc ! indices
   integer(IN)      :: lsize        ! lsize
   integer(IN)      :: nflds        ! number of fields in avi
   character(CL)    :: cfld         ! character field name
@@ -1541,7 +1695,7 @@ subroutine shr_dmodel_translateAV_list( avi, avo, ilist, olist, rearr )
   lsize = mct_avect_lsize(avi)
   call mct_avect_init(avtri,rlist=olist,lsize=lsize)
   call mct_avect_Copy(avi,avtri,rList=ilist,TrList=olist)
-  
+
   if (present(rearr)) then
      lsize = mct_avect_lsize(avo)
      call mct_avect_init(avtro,rlist=olist,lsize=lsize)
@@ -1552,9 +1706,9 @@ subroutine shr_dmodel_translateAV_list( avi, avo, ilist, olist, rearr )
   else
      call mct_avect_Copy(avtri,avo)
   endif
-  
+
   call mct_aVect_clean(avtri)
-  
+
 end subroutine shr_dmodel_translateAV_list
 
 !===============================================================================

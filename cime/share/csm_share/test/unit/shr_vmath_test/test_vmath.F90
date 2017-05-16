@@ -107,4 +107,4 @@ contains
 
   end subroutine assert
 
-end program test_vmath        
+end program test_vmath

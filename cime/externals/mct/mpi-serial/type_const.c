@@ -7,34 +7,34 @@
   Typestruct TSchar   = {.count=1,     .lb=0,   .ub=sizeof(char),
                          .committed=1, .o_lb=0, .o_ub=0, .pairs[0] =
 			 {.disp = 0,   .type = (Simpletype) SIMPLE_CHAR }};
-  Typestruct TSshort  = {.count=1,     .lb=0,   .ub=sizeof(short), 
+  Typestruct TSshort  = {.count=1,     .lb=0,   .ub=sizeof(short),
                          .committed=1, .o_lb=0, .o_ub=0, .pairs[0] =
 			 {.disp = 0,   .type = (Simpletype) SIMPLE_SHORT }};
-  Typestruct TSint    = {.count = 1,   .lb = 0,   .ub=sizeof(int), 
+  Typestruct TSint    = {.count = 1,   .lb = 0,   .ub=sizeof(int),
                          .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0]=
 			 {.disp = 0,   .type = (Simpletype) SIMPLE_INT }};
-  Typestruct TSlong   = {.count = 1,   .lb = 0,   .ub = sizeof(long), 
+  Typestruct TSlong   = {.count = 1,   .lb = 0,   .ub = sizeof(long),
                          .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0] =
 			 {.disp = 0,   .type = (Simpletype) SIMPLE_LONG }};
   Typestruct TSuchar  = {.count = 1,   .lb = 0, .ub=sizeof(unsigned char),
-                         .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0] = 
+                         .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0] =
 			 {.disp = 0,   .type = (Simpletype) SIMPLE_UCHAR }};
   Typestruct TSushort = {.count = 1,   .lb = 0, .ub=sizeof(unsigned short),
-                         .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0] = 
+                         .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0] =
 			 {.disp = 0,   .type = (Simpletype) SIMPLE_USHORT }};
   Typestruct TSuint   = {.count = 1,   .lb = 0,   .ub = sizeof(unsigned int),
-                         .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0] = 
+                         .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0] =
 			 {.disp = 0,   .type = (Simpletype) SIMPLE_UINT }};
-  Typestruct TSulong  = {.count = 1,   .lb = 0, .ub = sizeof(unsigned long), 
-                         .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0] = 
+  Typestruct TSulong  = {.count = 1,   .lb = 0, .ub = sizeof(unsigned long),
+                         .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0] =
 			 {.disp = 0,   .type = (Simpletype) SIMPLE_ULONG }};
-  Typestruct TSfloat  = {.count = 1,   .lb = 0, .ub = sizeof(float), 
+  Typestruct TSfloat  = {.count = 1,   .lb = 0, .ub = sizeof(float),
                          .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0] =
 			 {.disp = 0,   .type = (Simpletype) SIMPLE_FLOAT }};
   Typestruct TSdouble = {.count = 1,   .lb = 0, .ub = sizeof(double),
-                         .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0] = 
+                         .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0] =
 			 {.disp = 0,   .type = (Simpletype) SIMPLE_DOUBLE }};
-  Typestruct TSldouble = {.count = 1,  .lb = 0, .ub = sizeof(long double), 
+  Typestruct TSldouble = {.count = 1,  .lb = 0, .ub = sizeof(long double),
                          .committed=1,.o_lb = 0, .o_ub = 0, .pairs[0] =
 			  {.disp = 0, .type = (Simpletype) SIMPLE_LDOUBLE }};
 
@@ -47,7 +47,7 @@
    .o_lb = 0, .o_ub = 0, .pairs[0] = { .disp = 0, .type = (Simpletype) SIMPLE_LOWER } };
   Typestruct TSupper = { .count = 1, .lb = 0, .ub = 0, .committed = 1,
    .o_lb = 0, .o_ub = 0, .pairs[0] = { .disp = 0, .type = (Simpletype) SIMPLE_UPPER } };
-  
+
   //Fortran type structs
   Typestruct TSinteger = { .count = 1, .lb = 0, .ub = FSIZE_INTEGER, .committed = 1,
    .o_lb = 0, .o_ub = 0, .pairs[0] = { .disp = 0, .type = (Simpletype) SIMPLE_FINTEGER } };
@@ -99,7 +99,7 @@
 
 
   /* Fortran sized types
-   */ 	     
+   */
 
   Typestruct TSinteger1  = {.count = 1,   .lb = 0,   .ub=1,
                             .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0]=
@@ -168,8 +168,8 @@ Typestruct TSoffset = {.count = 1,   .lb = 0,   .ub=sizeof(MPI_Offset),
   * This should be coded in a better way to avoid human error.
   */
 
-  const Datatype simpletypes[64] = 
-                      {&TSchar    , &TSshort     , &TSint        , &TSlong, 
+  const Datatype simpletypes[64] =
+                      {&TSchar    , &TSshort     , &TSint        , &TSlong,
 		       &TSuchar   , &TSushort    , &TSuint       , &TSulong,      //4
 		       &TSfloat   , &TSdouble    , &TSldouble    , &TSbyte,       //8
 		       &TSpacked  , &TSlower     , &TSupper      , &TSinteger,    //12
@@ -177,11 +177,11 @@ Typestruct TSoffset = {.count = 1,   .lb = 0,   .ub=sizeof(MPI_Offset),
 		       &TSlogical , &TScharacter , &TS2real      , &TS2dprecision,//20
 		       &TS2integer, &TSfloat_int , &TSdouble_int , &TSlong_int,   //24
 		       &TS2int    , &TSshort_int , &TSldouble_int, &TSinteger1,   //28
-                       &TSinteger2, &TSinteger4  , &TSinteger8   , &TSinteger16,  //32 
+                       &TSinteger2, &TSinteger4  , &TSinteger8   , &TSinteger16,  //32
                        &TSreal4	  , &TSreal8	 , &TSreal16     , &TScomplex8,   //36
                        &TScomplex16, &TScomplex32, &TSlonglong   , &TSulonglong,  //40
                        &TSoffset
-                       }; 
+                       };
 
 
   /* optional datatypes (Fortran)  MPI_INTEGER1 MPI_INTEGER2 MPI_INTEGER4 MPI_REAL2 MPI_REAL4 MPI_REAL8

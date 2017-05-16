@@ -2,7 +2,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !-----------------------------------------------------------------------
 !BOP
 !
@@ -35,7 +35,7 @@
       integer,parameter :: DP = kind(1.D0)
 #endif
 
-!     Set the current default floating point precision 
+!     Set the current default floating point precision
       integer,parameter :: FP = DP
 
       integer,parameter :: kind_r4=kind(mpeuR4)

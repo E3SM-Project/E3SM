@@ -3,9 +3,9 @@
 ; and creates a slab ocean model (SOM) forcing file. This script does the
 ; same steps as the pop_frc.m matlab script used by C. Bitz.
 
-load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl" 
-load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"   
-load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl" 
+load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
+load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
+load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 
 case = "b40.999"
 
@@ -199,46 +199,46 @@ begin
  time@units = "days since 0001-01-01 00:00:00"
  time@long_name = "observation time"
  time@calendar = "noleap"
- 
+
  area@units = "area"
  area@long_name = "area of grid cell in radians squared"
- 
+
  maskr@long_name = "domain maskr"
  maskr@units = "unitless"
 
  xc@long_name = "longitude of grid cell center"
  xc@units = "degrees east"
- 
+
  yc@long_name = "latitude of grid cell center"
  yc@units = "degrees north"
- 
+
  S@long_name = "salinity"
  S@units = "ppt"
- 
+
  T@long_name = "temperature"
  T@units = "degC"
- 
+
  U@long_name = "u ocean current"
  U@units = "m/s"
- 
+
  V@long_name = "v ocean current"
  V@units = "m/s"
- 
+
  dhdx@long_name = "ocean surface slope: zonal"
  dhdx@units = "m/m"
- 
+
  dhdy@long_name = "ocean surface slope: meridional"
  dhdy@units = "m/m"
- 
+
  hblt@long_name = "boundary layer depth"
  hblt@units = "m"
- 
+
  qdp@long_name = "ocean heat flux convergence"
  qdp@units = "W/m^2"
- 
+
  fout = addfile("oceanmixed_ice.nc","c")
  setfileoption(fout,"DefineMode",True)
- 
+
  fileAtt = True
  fileAtt@title = "Monthly averaged ocean forcing from POP output"
  fileAtt@conventions = "CCSM data model domain description"
@@ -252,12 +252,12 @@ begin
  fileAtt@comment = "This data is on the displaced pole grid gx1v5"
  fileAtt@creation_date = systemfunc("date")
  fileattdef(fout,fileAtt)
- 
+
  dimNames = (/"time","nj","ni"/)
  dimSizes = (/ntime,nlat,nlon/)
  dimUnlim = (/False,False,False/)
  filedimdef(fout,dimNames,dimSizes,dimUnlim)
- 
+
  filevardef(fout,"area",typeof(area),(/"nj","ni"/))
  filevarattdef(fout,"area",area)
  filevardef(fout,"mask",typeof(maskr),(/"nj","ni"/))
@@ -300,5 +300,5 @@ begin
  fout->dhdy = (/dhdy/)
  fout->hblt = (/hblt/)
  fout->qdp = (/qdp/)
- 
+
 end

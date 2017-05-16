@@ -178,6 +178,7 @@ real(r8) :: prc_exp   = huge(1.0_r8)
 real(r8) :: prc_exp1  = huge(1.0_r8)
 real(r8) :: cld_sed   = huge(1.0_r8) !scale fac for cld sedimentation velocity
 
+logical  :: mg_prc_coeff_fix = .false.
 ! latent heats of:
 real(r8) :: xxlv        ! vaporization
 real(r8) :: xlf         ! freezing
@@ -225,7 +226,7 @@ subroutine micro_mg_init( &
      microp_uniform_in, do_cldice_in, use_hetfrz_classnuc_in, &
      micro_mg_precip_frac_method_in, micro_mg_berg_eff_factor_in, &
      allow_sed_supersat_in, ice_sed_ai, prc_coef1_in,prc_exp_in,  &
-     prc_exp1_in, cld_sed_in, errstring)
+     prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, errstring)
 
   use micro_mg_utils, only: micro_mg_utils_init
 
@@ -264,6 +265,7 @@ subroutine micro_mg_init( &
   real(r8),         intent(in)  :: micro_mg_berg_eff_factor_in     ! berg efficiency factor
   logical,  intent(in)  ::  allow_sed_supersat_in ! allow supersaturated conditions after sedimentation loop
   real(r8), intent(in)  :: prc_coef1_in,prc_exp_in,prc_exp1_in, cld_sed_in
+  logical, intent(in)   :: mg_prc_coeff_fix_in
 
 
   character(128), intent(out) :: errstring    ! Output status (non-blank for error return)
@@ -280,6 +282,8 @@ subroutine micro_mg_init( &
  prc_exp   = prc_exp_in
  prc_exp1  = prc_exp1_in
  cld_sed   = cld_sed_in
+
+ mg_prc_coeff_fix = mg_prc_coeff_fix_in
 
   ! Initialize subordinate utilities module.
   call micro_mg_utils_init(kind, rh2o, cpair, tmelt_in, latvap, latice, &
@@ -1261,7 +1265,7 @@ subroutine micro_mg_tend ( &
      ! minimum qc of 1 x 10^-8 prevents floating point error
 
      call kk2000_liq_autoconversion(microp_uniform, qcic(:,k), &
-          ncic(:,k), rho(:,k), relvar(:,k),prc_coef1,prc_exp,prc_exp1, prc(:,k), nprc(:,k), nprc1(:,k))
+          ncic(:,k), rho(:,k), relvar(:,k),mg_prc_coeff_fix,prc_coef1,prc_exp,prc_exp1, prc(:,k), nprc(:,k), nprc1(:,k))
 
      ! assign qric based on prognostic qr, using assumed precip fraction
      ! note: this could be moved above for consistency with qcic and qiic calculations

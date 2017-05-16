@@ -65,7 +65,7 @@ ncrcat -O ??.nc ${CASE}.pop.h.${BEGYR}-${ENDYR}.MAC.nc
 endif
 
 if ( $CPLFILES == TRUE ) then
- 
+
 setenv PATH_MSS /${CCSMUSER}/csm/${CASE}/cpl/hist/
 setenv FILE_HEADER ${CASE}.cpl6.ha.
 

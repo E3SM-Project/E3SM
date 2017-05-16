@@ -16,8 +16,6 @@ module shr_log_mod
   use shr_kind_mod
   use shr_strconvert_mod, only: toString
 
-  use shr_strconvert_mod, only: toString
-
   use, intrinsic :: iso_fortran_env, only: output_unit
 
   implicit none

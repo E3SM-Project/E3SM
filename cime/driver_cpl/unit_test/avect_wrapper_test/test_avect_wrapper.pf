@@ -28,7 +28,7 @@ contains
 
   subroutine tearDown(this)
     class(TestCreateAvect), intent(inout) :: this
-    
+
     call mct_aVect_clean(this%av)
     call mct_clean()
   end subroutine tearDown
@@ -39,7 +39,7 @@ contains
     character(len=*), parameter :: attr_tag = 'foo'
     integer, parameter :: lsize = 5 ! not important for this test
     character(len=64) :: actual_rlist
-    
+
     call create_aVect_without_data(this%av, [attr_tag], lsize)
 
     actual_rlist = mct_aVect_exportRList2c(this%av)

@@ -2,27 +2,27 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_AttrVectComms - MPI Communications Methods for the AttrVect
 !
 ! !DESCRIPTION:
 !
-! This module defines the communications methods for the {\tt AttrVect} 
-! datatype (see the module {\tt m\_AttrVect} for more information about 
-! this class and its methods).  MCT's communications are implemented 
-! in terms of the Message Passing Interface (MPI) standard, and we have 
+! This module defines the communications methods for the {\tt AttrVect}
+! datatype (see the module {\tt m\_AttrVect} for more information about
+! this class and its methods).  MCT's communications are implemented
+! in terms of the Message Passing Interface (MPI) standard, and we have
 ! as best as possible, made the interfaces to these routines appear as
-! similar as possible to the corresponding MPI routines.  For the 
-! { \tt AttrVect}, we supply {\em blocking} point-to-point send and 
-! receive operations.  We also supply the following collective 
-! operations: broadcast, gather, and scatter.  The gather and scatter 
+! similar as possible to the corresponding MPI routines.  For the
+! { \tt AttrVect}, we supply {\em blocking} point-to-point send and
+! receive operations.  We also supply the following collective
+! operations: broadcast, gather, and scatter.  The gather and scatter
 ! operations rely on domain decomposition descriptors that are defined
-! elsewhere in MCT:  the {\tt GlobalMap}, which is a one-dimensional 
-! decomposition (see the MCT module {\tt m\_GlobalMap} for more details); 
+! elsewhere in MCT:  the {\tt GlobalMap}, which is a one-dimensional
+! decomposition (see the MCT module {\tt m\_GlobalMap} for more details);
 ! and the {\tt GlobalSegMap}, which is a segmented decomposition capable
-! of supporting multidimensional domain decompositions (see the MCT module 
+! of supporting multidimensional domain decompositions (see the MCT module
 ! {\tt m\_GlobalSegMap} for more details).
 !
 ! !INTERFACE:
@@ -44,11 +44,11 @@
 
     interface gather ; module procedure &
 	      GM_gather_, &
-	      GSM_gather_ 
+	      GSM_gather_
     end interface
     interface scatter ; module procedure &
 	      GM_scatter_, &
-	      GSM_scatter_ 
+	      GSM_scatter_
     end interface
     interface bcast  ; module procedure bcast_  ; end interface
     interface send  ; module procedure send_  ; end interface
@@ -57,22 +57,22 @@
 ! !REVISION HISTORY:
 ! 27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated routines
 !           from m_AttrVect to create this module.
-! 15Jan01 - J.W. Larson <larson@mcs.anl.gov> - Added APIs for 
+! 15Jan01 - J.W. Larson <larson@mcs.anl.gov> - Added APIs for
 !           GSM_gather_() and GSM_scatter_().
 !  9May01 - J.W. Larson <larson@mcs.anl.gov> - Modified GM_scatter_
 !           so its communication model agrees with MPI_scatter().
 !           Also tidied up prologues in all module routines.
-!  7Jun01 - J.W. Larson <larson@mcs.anl.gov> - Added send() 
+!  7Jun01 - J.W. Larson <larson@mcs.anl.gov> - Added send()
 !           and recv().
-!  3Aug01 - E.T. Ong <eong@mcs.anl.gov> - in GSM_scatter, call 
+!  3Aug01 - E.T. Ong <eong@mcs.anl.gov> - in GSM_scatter, call
 !           GlobalMap_init with actual shaped array to satisfy
 !           Fortran 90 standard. See comment in subroutine.
 ! 23Aug01 - E.T. Ong <eong@mcs.anl.gov> - replaced assignment(=)
 !           with copy for list type to avoid compiler bugs in pgf90.
-!           Added more error checking in gsm scatter. Fixed minor bugs 
+!           Added more error checking in gsm scatter. Fixed minor bugs
 !          in gsm and gm gather.
 ! 13Dec01 - E.T. Ong <eong@mcs.anl.gov> - GSM_scatter, allow users
-!           to scatter with a haloed GSMap. Fixed some bugs in 
+!           to scatter with a haloed GSMap. Fixed some bugs in
 !           GM_scatter.
 ! 19Dec01 - E.T. Ong <eong@mcs.anl.gov> - allow bcast of an AttrVect
 !           with only an integer or real attribute.
@@ -90,16 +90,16 @@
 !
 ! !IROUTINE: send_ - Point-to-point Send of an AttrVect
 !
-! !DESCRIPTION:  This routine takes an input {\tt AttrVect} argument 
-! {\tt inAV} and sends it to processor {\tt dest} on the communicator 
-! associated with the Fortran {\tt INTEGER} MPI communicator handle 
-! {\tt comm}.  The overalll message is tagged by the input {\tt INTEGER} 
-! argument {\tt TagBase}.  The success (failure) of this operation is 
+! !DESCRIPTION:  This routine takes an input {\tt AttrVect} argument
+! {\tt inAV} and sends it to processor {\tt dest} on the communicator
+! associated with the Fortran {\tt INTEGER} MPI communicator handle
+! {\tt comm}.  The overalll message is tagged by the input {\tt INTEGER}
+! argument {\tt TagBase}.  The success (failure) of this operation is
 ! reported in the zero (nonzero) optional output argument {\tt status}.
 !
-! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
-! between {\tt TagBase} and {\tt TagBase+7}, inclusive.  This is 
-! because {\tt send\_()} performs the send of the {\tt AttrVect} as 
+! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values
+! between {\tt TagBase} and {\tt TagBase+7}, inclusive.  This is
+! because {\tt send\_()} performs the send of the {\tt AttrVect} as
 ! a series of eight send operations.
 !
 ! !INTERFACE:
@@ -122,14 +122,14 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(AttrVect),     intent(in)  :: inAV
       integer,            intent(in)  :: dest
       integer,            intent(in)  :: TagBase
       integer,            intent(in)  :: comm
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer, optional,  intent(out) :: status
 
@@ -153,13 +153,13 @@
        ! Step 1. Are inAV%iList and inAV%rList filled?  Store
        ! the answers in the LOGICAL array ListAssoc and send.
 
-  ListAssoc(1) = List_allocated(inAV%iList) 
-  ListAssoc(2) = List_allocated(inAV%rList) 
+  ListAssoc(1) = List_allocated(inAV%iList)
+  ListAssoc(2) = List_allocated(inAV%rList)
 
   if(.NOT. (ListAssoc(1).or.ListAssoc(2)) ) then
      call die(myname_,"inAV has not been initialized")
   endif
-     
+
   call MPI_SEND(ListAssoc, 2, MP_LOGICAL, dest, TagBase, comm, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_,':: MPI_SEND(ListAssoc...',ierr)
@@ -209,7 +209,7 @@
      call MP_perr_die(myname_,':: call MPI_SEND(AVlength...',ierr)
   endif
 
-       ! Step 4. If AVlength > 0, we may have INTEGER and REAL 
+       ! Step 4. If AVlength > 0, we may have INTEGER and REAL
        ! data to send.  Send as needed.
 
   if(AVlength > 0) then
@@ -250,16 +250,16 @@
 !
 ! !IROUTINE: recv_ - Point-to-point Receive of an AttrVect
 !
-! !DESCRIPTION:  This routine receives the output {\tt AttrVect} argument 
-! {\tt outAV} from processor {\tt source} on the communicator associated 
-! with the Fortran {\tt INTEGER} MPI communicator handle {\tt comm}.  The 
-! overall message is tagged by the input {\tt INTEGER} argument 
-! {\tt TagBase}.  The success (failure) of this operation is reported in 
+! !DESCRIPTION:  This routine receives the output {\tt AttrVect} argument
+! {\tt outAV} from processor {\tt source} on the communicator associated
+! with the Fortran {\tt INTEGER} MPI communicator handle {\tt comm}.  The
+! overall message is tagged by the input {\tt INTEGER} argument
+! {\tt TagBase}.  The success (failure) of this operation is reported in
 ! the zero (nonzero) optional output argument {\tt status}.
 !
-! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
-! between {\tt TagBase} and {\tt TagBase+7}, inclusive.  This is 
-! because {\tt recv\_()} performs the receive of the {\tt AttrVect} as 
+! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values
+! between {\tt TagBase} and {\tt TagBase+7}, inclusive.  This is
+! because {\tt recv\_()} performs the receive of the {\tt AttrVect} as
 ! a series of eight receive operations.
 !
 ! !INTERFACE:
@@ -280,13 +280,13 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer,            intent(in)  :: dest
       integer,            intent(in)  :: TagBase
       integer,            intent(in)  :: comm
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(AttrVect),     intent(out) :: outAV
       integer, optional,  intent(out) :: status
@@ -359,7 +359,7 @@
      call MP_perr_die(myname_,':: call MPI_RECV(AVlength...',ierr)
   endif
 
-       ! Step 4. If AVlength > 0, we may have to receive INTEGER 
+       ! Step 4. If AVlength > 0, we may have to receive INTEGER
        ! and/or REAL data.  Receive as needed.
 
   if(AVlength > 0) then
@@ -411,9 +411,9 @@
 ! !IROUTINE: GM_gather_ - Gather an AttrVect Distributed by a GlobalMap
 !
 ! !DESCRIPTION:
-! This routine gathers a {\em distributed} {\tt AttrVect} {\tt iV} to 
+! This routine gathers a {\em distributed} {\tt AttrVect} {\tt iV} to
 ! the {\tt root} process, and returns it in the output {\tt AttrVect}
-! argument {\tt oV}.  The decomposition of {\tt iV} is described by 
+! argument {\tt oV}.  The decomposition of {\tt iV} is described by
 ! the input {\tt GlobalMap} argument {\tt GMap}.  The input {\tt INTEGER}
 ! argument {\tt comm} is the Fortran integer MPI communicator handle.
 ! The success (failure) of this operation corresponds to a zero (nonzero)
@@ -434,7 +434,7 @@
       use m_GlobalMap, only : GlobalMap_gsize => gsize
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
-      use m_AttrVect, only : AttrVect_zero => zero 
+      use m_AttrVect, only : AttrVect_zero => zero
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
@@ -443,7 +443,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(AttrVect),           intent(in)  :: iV
       type(GlobalMap),          intent(in)  :: GMap
@@ -512,7 +512,7 @@
   mp_type_Av = MP_Type(1._FP)   ! set mpi type to same as AV%rAttr
 
   if(nIA > 0) then
-     
+
      if(myID == root) then
 
         call fc_gatherv_int(iV%iAttr,niV*nIA,MP_INTEGER,		&
@@ -520,13 +520,13 @@
              MP_INTEGER,root,comm)
 
      else
-        
+
         call fc_gatherv_int(iV%iAttr,niV*nIA,MP_INTEGER,		&
              nonRootAV%iAttr,GMap%counts*nIA,GMap%displs*nIA,      &
              MP_INTEGER,root,comm)
 
      endif  ! if(myID == root)
-        
+
   endif  ! if(nIA > 0)
 
   if(nRA > 0) then
@@ -534,7 +534,7 @@
      if(myID == root) then
 
         call fc_gatherv_fp(iV%rAttr,niV*nRA,mp_type_Av,	        &
-             oV%rAttr,GMap%counts*nRA,GMap%displs*nRA,             & 
+             oV%rAttr,GMap%counts*nRA,GMap%displs*nRA,             &
              mp_type_Av,root,comm)
 
      else
@@ -569,29 +569,29 @@
 ! !IROUTINE: GSM_gather_ - Gather an AttrVect Distributed by a GlobalSegMap
 !
 ! !DESCRIPTION:
-! The routine {\tt GSM\_gather\_()} takes a distributed input 
-! {\tt AttrVect} argument {\tt iV}, whose decomposition is described 
-! by the input {\tt GlobalSegMap} argument {\tt GSMap}, and gathers 
-! it to the output {\tt AttrVect} argument {\tt oV}.  The gathered 
-! {\tt AttrVect} {\tt oV} is valid only on the root process specified 
+! The routine {\tt GSM\_gather\_()} takes a distributed input
+! {\tt AttrVect} argument {\tt iV}, whose decomposition is described
+! by the input {\tt GlobalSegMap} argument {\tt GSMap}, and gathers
+! it to the output {\tt AttrVect} argument {\tt oV}.  The gathered
+! {\tt AttrVect} {\tt oV} is valid only on the root process specified
 ! by the input argument {\tt root}.  The communicator used to gather
 ! the data is specified by the argument {\tt comm}.  The success (failure)
-! is reported in the zero (non-zero) value of the output argument 
+! is reported in the zero (non-zero) value of the output argument
 ! {\tt stat}.
 !
-! {\tt GSM\_gather\_()} converts the problem of gathering data 
-! according to a {\tt GlobalSegMap} into the simpler problem of 
+! {\tt GSM\_gather\_()} converts the problem of gathering data
+! according to a {\tt GlobalSegMap} into the simpler problem of
 ! gathering data as specified by a {\tt GlobalMap}.  The {\tt GlobalMap}
-! variable {\tt GMap} is created based on the local storage requirements 
-! for each distributed piece of {\tt iV}.  On the root, a complete 
-! (including halo points) gathered copy of {\tt iV} is collected into 
+! variable {\tt GMap} is created based on the local storage requirements
+! for each distributed piece of {\tt iV}.  On the root, a complete
+! (including halo points) gathered copy of {\tt iV} is collected into
 ! the temporary {\tt AttrVect} variable {\tt workV} (the length of
 ! {\tt workV} is the larger of {\tt GlobalSegMap\_GlobalStorage(GSMap)} or
-! {\tt GlobalSegMap\_GlobalSize(GSMap)}).  The 
-! variable {\tt workV} is segmented by process, and segments are 
+! {\tt GlobalSegMap\_GlobalSize(GSMap)}).  The
+! variable {\tt workV} is segmented by process, and segments are
 ! copied into it by process, but ordered in the same order the segments
-! appear in {\tt GSMap}.  Once {\tt workV} is loaded, the data are 
-! copied segment-by-segment to their appropriate locations in the output 
+! appear in {\tt GSMap}.  Once {\tt workV} is loaded, the data are
+! copied segment-by-segment to their appropriate locations in the output
 ! {\tt AttrVect} {\tt oV}.
 !
 ! !INTERFACE:
@@ -620,7 +620,7 @@
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
-      use m_AttrVect, only : AttrVect_clean => clean 
+      use m_AttrVect, only : AttrVect_clean => clean
 ! GlobalMap and associated services:
       use m_GlobalMap, only : GlobalMap
       use m_GlobalMap, only : GlobalMap_init => init
@@ -628,7 +628,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(AttrVect),            intent(in)  :: iV
       type(GlobalSegMap),        intent(in)  :: GSMap
@@ -689,7 +689,7 @@
   if(present(stat)) stat = 0
 
        ! Initial Check:  If GSMap contains halo points, die
-       
+
   if(GlobalSegMap_haloed(GSMap)) then
      ierr = 1
      call die(myname_,"Input GlobalSegMap haloed--not allowed",ierr)
@@ -799,7 +799,7 @@
 
        ! Load each segment of iV into its appropriate segment
        ! of workV:
-     
+
      ngseg = GlobalSegMap_ngseg(GSMap)
 
      do n=1,ngseg
@@ -876,9 +876,9 @@
 !
 ! !DESCRIPTION:
 ! The routine {\tt GM\_scatter\_} takes an input {\tt AttrVect} type
-! {\tt iV} (valid only on the root), and scatters it to a distributed 
-! {\tt AttrVect} {\tt oV}.  The input {\tt GlobalMap} argument 
-! {\tt GMap} dictates how {\tt iV} is scattered to {\tt oV}.  The 
+! {\tt iV} (valid only on the root), and scatters it to a distributed
+! {\tt AttrVect} {\tt oV}.  The input {\tt GlobalMap} argument
+! {\tt GMap} dictates how {\tt iV} is scattered to {\tt oV}.  The
 ! success (failure) of this routine is reported in the zero (non-zero)
 ! value of the output argument {\tt stat}.
 !
@@ -919,7 +919,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(AttrVect),           intent(in)  :: iV
       type(GlobalMap),          intent(in)  :: GMap
@@ -985,7 +985,7 @@
 
   endif
 
-        ! On the root, read the integer and real attribute 
+        ! On the root, read the integer and real attribute
         ! lists off of iV.
 
   call List_nullify(iList)
@@ -1007,7 +1007,7 @@
      endif
 
   endif
-  
+
         ! From the root, broadcast iList and rList
 
   call MPI_BCAST(nIA,1,MP_INTEGER,root,comm,ier)
@@ -1021,7 +1021,7 @@
 
   noV = GlobalMap_lsize(GMap) ! the _scatterd_ local size
 
-        ! On all processes, use List data and noV to initialize oV 
+        ! On all processes, use List data and noV to initialize oV
 
   call AttrVect_init(oV, iList, rList, noV)
   call AttrVect_zero(oV)
@@ -1111,28 +1111,28 @@
 !
 ! !DESCRIPTION:
 ! The routine {\tt GSM\_scatter\_} takes an input {\tt AttrVect} type
-! {\tt iV} (valid only on the root), and scatters it to a distributed 
-! {\tt AttrVect} {\tt oV}.  The input {\tt GlobalSegMap} argument 
-! {\tt GSMap} dictates how {\tt iV} is scattered to {\tt oV}.  The 
+! {\tt iV} (valid only on the root), and scatters it to a distributed
+! {\tt AttrVect} {\tt oV}.  The input {\tt GlobalSegMap} argument
+! {\tt GSMap} dictates how {\tt iV} is scattered to {\tt oV}.  The
 ! success (failure) of this routine is reported in the zero (non-zero)
 ! value of the output argument {\tt stat}.
 !
-! {\tt GSM\_scatter\_()} converts the problem of scattering data 
-! according to a {\tt GlobalSegMap} into the simpler problem of 
+! {\tt GSM\_scatter\_()} converts the problem of scattering data
+! according to a {\tt GlobalSegMap} into the simpler problem of
 ! scattering data as specified by a {\tt GlobalMap}.  The {\tt GlobalMap}
-! variable {\tt GMap} is created based on the local storage requirements 
-! for each distributed piece of {\tt iV}.  On the root, a complete 
-! (including halo points) copy of {\tt iV} is stored in 
+! variable {\tt GMap} is created based on the local storage requirements
+! for each distributed piece of {\tt iV}.  On the root, a complete
+! (including halo points) copy of {\tt iV} is stored in
 ! the temporary {\tt AttrVect} variable {\tt workV} (the length of
-! {\tt workV} is {\tt GlobalSegMap\_GlobalStorage(GSMap)}).  The 
-! variable {\tt workV} is segmented by process, and segments are 
+! {\tt workV} is {\tt GlobalSegMap\_GlobalStorage(GSMap)}).  The
+! variable {\tt workV} is segmented by process, and segments are
 ! copied into it by process, but ordered in the same order the segments
-! appear in {\tt GSMap}.  Once {\tt workV} is loaded, the data are 
+! appear in {\tt GSMap}.  Once {\tt workV} is loaded, the data are
 ! scattered to the output {\tt AttrVect} {\tt oV} by a call to the
 ! routine {\tt GM\_scatter\_()} defined in this module, with {\tt workV}
 ! and {\tt GMap} as the input arguments.
 !
-! {\bf N.B.:}  This algorithm  assumes that memory access times are much 
+! {\bf N.B.:}  This algorithm  assumes that memory access times are much
 ! shorter than message-passing transmission times.
 !
 ! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt oV} represents
@@ -1168,7 +1168,7 @@
       use m_AttrVect,  only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
-      use m_AttrVect, only : AttrVect_clean => clean 
+      use m_AttrVect, only : AttrVect_clean => clean
 ! GlobalMap and associated services:
       use m_GlobalMap, only : GlobalMap
       use m_GlobalMap, only : GlobalMap_init => init
@@ -1176,7 +1176,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(AttrVect),            intent(in)  :: iV
       type(GlobalSegMap),        intent(in)  :: GSMap
@@ -1196,7 +1196,7 @@
 !           GlobalSegMap_ProcessStorage().
 ! 26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statement for
 !           AttVect_clean
-! 26Apr01 - J.W. Larson <larson@mcs.anl.gov> - bug fixes--data 
+! 26Apr01 - J.W. Larson <larson@mcs.anl.gov> - bug fixes--data
 !           misalignment in use of the GlobalMap to compute the
 !           memory map into workV, and initialization of workV
 !           on all processes.
@@ -1211,7 +1211,7 @@
 !           all the pointers in workV for non-root processes.
 ! 20Aug01 - E.T. Ong <eong@mcs.anl.gov> - Added argument check
 !           for matching processors in gsmap and comm.
-! 13Dec01 - E.T. Ong <eong@mcs.anl.gov> - got rid of restriction 
+! 13Dec01 - E.T. Ong <eong@mcs.anl.gov> - got rid of restriction
 !           GlobalStorage(GSMap)==AttrVect_lsize(AV) to allow for
 !           GSMap to be haloed.
 ! 11Aug08 - R. Jacob <jacob@mcs.anl.gov> - remove call to ProcessStorage
@@ -1252,7 +1252,7 @@
   endif
 
   if(myID == root) then
-     
+
      if(GSMap%gsize > AttrVect_lsize(iV)) then
 	write(stderr,'(2a,i5,a,i8,a,i8)') myname_,	&
 	     ': myID = ',myID,'.  Invalid input, GSMap%gsize =',&
@@ -1264,11 +1264,11 @@
 	endif
      endif
 
-  endif     
+  endif
 
-       ! On the root, initialize a work AttrVect type of the 
+       ! On the root, initialize a work AttrVect type of the
        ! above length, and with the same attribute lists as iV.
-       ! on other processes, initialize workV only with the 
+       ! on other processes, initialize workV only with the
        ! attribute information, but no storage.
 
   if(myID == root) then
@@ -1279,7 +1279,7 @@
 
   else
        ! nullify workV just to be safe
- 
+
      call List_nullify(workV%iList)
      call List_nullify(workV%rList)
      nullify(workV%iAttr)
@@ -1336,10 +1336,10 @@
   endif ! if(myID == root)
 
         ! Non-root processes call GlobalMap_init with lns,
-        ! although this argument is not used in the 
+        ! although this argument is not used in the
         ! subroutine. Since it correspond to a dummy shaped array arguments
-        ! in GlobslMap_init, the Fortran 90 standard dictates that the actual 
-        ! argument must contain complete shape information. Therefore, 
+        ! in GlobslMap_init, the Fortran 90 standard dictates that the actual
+        ! argument must contain complete shape information. Therefore,
         ! the array argument must be allocated on all processes.
 
   if(myID /= root) then
@@ -1357,7 +1357,7 @@
 
   endif ! if(myID /= root)...
 
-       ! Create a GlobalMap describing the 1-D decomposition 
+       ! Create a GlobalMap describing the 1-D decomposition
        ! of workV:
 
   comp_id = GlobalSegMap_comp_id(GSMap)
@@ -1443,10 +1443,10 @@
   endif ! if(myID == root)
 
        ! Now we are in business...we have:  1) an AttrVect laid out
-       ! in contiguous segments, each segment corresponding to a 
-       ! process, and in the same order dictated by GSMap; 
-       ! 2) a GlobalMap telling us which segment of workV goes to 
-       ! which process.  Thus, we can us GM_scatter_() to achieve 
+       ! in contiguous segments, each segment corresponding to a
+       ! process, and in the same order dictated by GSMap;
+       ! 2) a GlobalMap telling us which segment of workV goes to
+       ! which process.  Thus, we can us GM_scatter_() to achieve
        ! our goal.
 
   call GM_scatter_(workV, oV, GMap, root, comm, ierr)
@@ -1462,7 +1462,7 @@
   endif
 
        ! Finally, clean up allocated structures:
-  
+
   if(myID == root) then
      call AttrVect_clean(workV)
   endif
@@ -1490,13 +1490,13 @@
 !
 ! !DESCRIPTION:  This routine takes an {\tt AttrVect} argument {\tt aV}
 ! (at input, valid on the root only), and broadcasts it to all the
-! processes associated with the communicator handle {\tt comm}.  The 
+! processes associated with the communicator handle {\tt comm}.  The
 ! success (failure) of this routine is reported in the zero (non-zero)
 ! value of the output argument {\tt stat}.
 !
-! {\bf N.B.}:  The output (on non-root processes) {\tt AttrVect} argument 
-! {\tt aV} represents dynamically allocated memory.  When it is no longer 
-! needed, it should be deallocated by invoking {\tt AttrVect\_clean()} 
+! {\bf N.B.}:  The output (on non-root processes) {\tt AttrVect} argument
+! {\tt aV} represents dynamically allocated memory.  When it is no longer
+! needed, it should be deallocated by invoking {\tt AttrVect\_clean()}
 ! (see the module {\tt m\_AttrVect} for details).
 !
 ! !INTERFACE:
@@ -1520,14 +1520,14 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer,                  intent(in)    :: root
       integer,                  intent(in)    :: comm
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
-      type(AttrVect),           intent(inout) :: aV ! (IN) on the root, 
+      type(AttrVect),           intent(inout) :: aV ! (IN) on the root,
                                                     ! (OUT) elsewhere
 
 ! !OUTPUT PARAMETERS:
@@ -1541,8 +1541,8 @@
 !  9May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
 ! 18May01 - R.L. Jacob <jacob@mcs.anl.gov> - use MP_Type function
 !           to determine type for bcast
-! 19Dec01 - E.T. Ong <eong@mcs.anl.gov> - adjusted for case of AV with 
-!           only integer or real attribute 
+! 19Dec01 - E.T. Ong <eong@mcs.anl.gov> - adjusted for case of AV with
+!           only integer or real attribute
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::bcast_'
@@ -1582,7 +1582,7 @@
     call MP_perr_die(myname_,'MPI_bcast(lsize)',ier)
   endif
 
-	! Convert the two Lists to two Strings 
+	! Convert the two Lists to two Strings
 
   if(nIA>0) then
 
@@ -1621,7 +1621,7 @@
   endif ! if(nRA > 0)...
 
   if(myID /= root) then
-     
+
      if( (nIA>0) .and. (nRA>0) ) then
 	call AttrVect_init(aV,iList=char(iLStr),rList=char(rLStr), &
 	                   lsize=lsize)

@@ -1,0 +1,118 @@
+#!/usr/bin/env python
+
+"""
+Jenkins runs this script to perform a test of an acme
+test suite. Essentially, a wrapper around create_test and
+wait_for_tests that handles cleanup of old test results and
+ensures that the batch system is left in a clean state.
+"""
+
+from standard_script_setup import *
+
+import CIME.wait_for_tests
+from CIME.utils import expect
+from CIME.XML.machines import Machines
+from jenkins_generic_job import jenkins_generic_job
+
+import argparse, sys, os, shutil, glob, doctest, signal, time
+
+# Don't know if this belongs here longterm
+MACHINES_THAT_MAINTAIN_BASELINES = ("redsky", "melvin", "skybridge")
+
+_MACHINE = Machines()
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n%s [-g] [-d] [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run the tests and compare baselines \033[0m
+    > %s
+    \033[1;32m# Run the tests, compare baselines, and update dashboard \033[0m
+    > %s -d
+    \033[1;32m# Run the tests, generating a full set of baselines (useful for first run on a machine) \033[0m
+    > %s -g
+""" % ((os.path.basename(args[0]), ) * 6),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    machine = _MACHINE.get_machine_name()
+    default_test_suite = _MACHINE.get_value("TESTS")
+    default_maintain_baselines = machine in MACHINES_THAT_MAINTAIN_BASELINES
+    default_scratch_root = _MACHINE.get_value("CESMSCRATCHROOT")
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("-g", "--generate-baselines", action="store_true",
+                        help="Generate baselines")
+
+    parser.add_argument("--baseline-compare", action="store", choices=("yes", "no"), default=("yes" if default_maintain_baselines else "no"),
+                        help="Do baseline comparisons")
+
+    parser.add_argument("--submit-to-cdash", action="store_true",
+                        help="Send results to CDash")
+
+    parser.add_argument("--no-batch", action="store_true",
+                        help="Do not use batch system even if on batch machine")
+
+    parser.add_argument("-c", "--cdash-build-name",
+                        help="Build name to use for CDash submission. Default will be <TEST_SUITE>_<BRANCH>_<COMPILER>")
+
+    parser.add_argument("-p", "--cdash-project", default=CIME.wait_for_tests.ACME_MAIN_CDASH,
+                        help="The name of the CDash project where results should be uploaded")
+
+    parser.add_argument("-b", "--baseline-name", default=CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root()),
+                        help="Baseline name for baselines to use. Also impacts dashboard job name. Useful for testing a branch other than next or master")
+
+    parser.add_argument("-t", "--test-suite", default=default_test_suite,
+                        help="Override default acme test suite that will be run")
+
+    parser.add_argument("-r", "--scratch-root", default=default_scratch_root,
+                        help="Override default acme scratch root. Use this to avoid conflicting with other jenkins jobs")
+
+    parser.add_argument("--cdash-build-group", default=CIME.wait_for_tests.CDASH_DEFAULT_BUILD_GROUP,
+                        help="The build group to be used to display results on the CDash dashboard.")
+
+    parser.add_argument("-j", "--parallel-jobs", type=int, default=None,
+                        help="Number of tasks create_test should perform simultaneously. Default "
+                        "will be min(num_cores, num_tests).")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    expect(not (args.submit_to_cdash and args.generate_baselines),
+           "Does not make sense to use --generate-baselines and --submit-to-cdash together")
+    expect(not (args.cdash_build_name is not None and not args.submit_to_cdash),
+           "Does not make sense to use --cdash-build-name without --submit-to-cdash")
+    expect(not (args.cdash_project is not CIME.wait_for_tests.ACME_MAIN_CDASH and not args.submit_to_cdash),
+           "Does not make sense to use --cdash-project without --submit-to-cdash")
+
+    return args.generate_baselines, args.submit_to_cdash, args.no_batch, args.baseline_name, args.cdash_build_name, args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare, args.scratch_root, args.parallel_jobs
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, scratch_root, parallel_jobs = \
+        parse_command_line(sys.argv, description)
+
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, scratch_root, parallel_jobs)
+             else CIME.utils.TESTS_FAILED_ERR_CODE)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

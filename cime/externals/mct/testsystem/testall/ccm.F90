@@ -2,7 +2,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: ccm.F90,v 1.13 2004-06-02 22:22:51 eong Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !ROUTINE: ccm3  -- dummy atmosphere model for unit tester
@@ -43,7 +43,7 @@
       use m_GeneralGrid,only : MCT_GGrid_exportRAttr => exportRAttr
       use m_GeneralGrid,only : MCT_GGrid_importRAttr => importRAttr
       use m_GeneralGrid,only : MCT_GGrid_SortPermute => sortpermute
-      use m_GeneralGridComms,only: MCT_GGrid_send => send 
+      use m_GeneralGridComms,only: MCT_GGrid_send => send
       use m_GeneralGridComms,only: MCT_GGrid_scatter => scatter
 !---MCT Spatial Integral services...
       use m_SpatialIntegral,only : MCT_SpatialIntegral => SpatialIntegral
@@ -79,7 +79,7 @@
       use m_List, only : List_copy => copy
       use m_List, only : List_exportToChar => exportToChar
 !---mpeu routines for MPI communications
-      use m_mpif90        
+      use m_mpif90
 !---mpeu timers
       use m_zeit
 !---mpeu error handling
@@ -118,8 +118,8 @@
 !      08Jun01 - R. Jacob <jacob@mcs.anl.gov> initialize a General Grid
 !      11Jun01 - Jacob/Larson <jacob@mcs.anl.gov> Send a General Grid to cpl
 !      15Feb02 - R.Jacob <jacob@mcs.anl.gov> -- new MCTWorld_init interface.
-!      13Jun02 - J. Larson <larson@mcs.anl.gov> - More GeneralGrid usage, 
-!                including import/export of attributes, and sorting by 
+!      13Jun02 - J. Larson <larson@mcs.anl.gov> - More GeneralGrid usage,
+!                including import/export of attributes, and sorting by
 !                coordinate.  Also added mpeu error handling and stdout/stderr.
 !      18Jun02 - J. Larson <larson@mcs.anl.gov> - Introduction of Spatial
 !                Integral/Average services.
@@ -146,7 +146,7 @@
       integer :: steps
       integer, parameter :: nsteps = 10
 
-!  Arrays used to initialize the MCT GlobalSegMap      
+!  Arrays used to initialize the MCT GlobalSegMap
       integer,dimension(:),pointer :: starts
       integer,dimension(:),pointer :: lengths
       integer,dimension(:,:),pointer :: myglobalmap
@@ -172,7 +172,7 @@
       type(AttrVect) :: a2coupler
 !  AttrVect for atm data used to test spatial integration services
       type(AttrVect) :: a2coupler2, integratedA2CaV
-!  The atmosphere's grid 
+!  The atmosphere's grid
       type(GeneralGrid) :: AtmGrid, dAtmGrid
 
 ! Test Grids and test dummy vars
@@ -207,8 +207,8 @@
 
 ! if profiling with the MPE lib
 #ifdef MPE
-  call mpe_logging_init(myProc_global,init_s,init_e,gsmi_s,gsmi_e,& 
-        atri_s,atri_e,routi_s,routi_e,send_s,send_e,recv_s,recv_e,& 
+  call mpe_logging_init(myProc_global,init_s,init_e,gsmi_s,gsmi_e,&
+        atri_s,atri_e,routi_s,routi_e,send_s,send_e,recv_s,recv_e,&
      	clean_s,clean_e)
 #endif
 
@@ -233,7 +233,7 @@
   call MCTWorld_test("CCM::MCTWorld",6100+myProc)
 
   ! Get the Sparse Matrix dimensions and processor layout
-  root = MCTComponentRootRank(coupler_id,ThisMCTWorld) 
+  root = MCTComponentRootRank(coupler_id,ThisMCTWorld)
   call MPI_BCAST(Nax,1,MP_INTEGER,root,MPI_COMM_WORLD,ierr)
   call MPI_BCAST(Nay,1,MP_INTEGER,root,MPI_COMM_WORLD,ierr)
   call MPI_BCAST(Nox,1,MP_INTEGER,root,MPI_COMM_WORLD,ierr)
@@ -262,7 +262,7 @@
   if(ierr/=0) call die(ccmname, "allocate(myglobalmap)", ierr)
   n=0
   do j=1,Nay
-    do i= 1,Nax     
+    do i= 1,Nax
       n=n+1
       myglobalmap(i,j) = n
      enddo
@@ -355,7 +355,7 @@ if(myProc==0) then
   if((aylength/=Nay*Nax).or.(axlength/=Nax*Nay)) then
      call die(ccmname,"Atmosphere GeneralGrid failed the second LENGTH test")
   endif
-     
+
   ! The lowest limit I have found for this is 1e-5 on the Absoft compiler
   ! This is not as precise as the lons because of round off
   do i=1,Nay*Nax
@@ -372,7 +372,7 @@ if(myProc==0) then
   deallocate(cartdims,cartaxis,cartdescend,dummycartlats,dummycartlons, &
              dummyatmlats,dummyatmlons,gauss_wgt,gauss_lat,stat=ierr)
   if(ierr/=0) call die(ccmname,"deallocate(cart...)",ierr)
-  
+
   call List_clean(cartlist)
   call List_clean(cartweight)
   call List_clean(cartindex)
@@ -483,7 +483,7 @@ if(myProc==0) then
  allocate(dummyI(MCT_GGrid_lsize(AtmGrid)), stat=ierr)
  if(ierr/=0) call die(ccmname, "allocate(dummyI)", ierr)
 
- call MCT_GGrid_exportIAttr(AtmGrid, 'GlobGridNum', dummyI, length) 
+ call MCT_GGrid_exportIAttr(AtmGrid, 'GlobGridNum', dummyI, length)
 
   write(stdout,'(2a,i8)') ccmname, &
        ':: No. exported AtmGrid GlobalGridNum values =.',length
@@ -510,7 +510,7 @@ if(myProc==0) then
      ':: ERROR--deallocate(dummyI,dummyR) failed with ierr=', ierr
      call die(ccmname)
   endif
-                  
+
 endif    ! if(myProc==0)
 
 !!!!!!!!!!!!!!!!!----------GlobalSegMap
@@ -560,7 +560,7 @@ endif    ! if(myProc==0)
        rList=&
 ! height of first atm level
        "alevh:&
-!  u wind 
+!  u wind
        &uwind:&
 !  v wind
        &vwind:&
@@ -570,7 +570,7 @@ endif    ! if(myProc==0)
        &s_hum:&
 !  density
        &rho:&
-!  barometric pressure 
+!  barometric pressure
        &barpres:&
 ! surface pressure
        &surfp:&
@@ -674,13 +674,13 @@ if(myProc==0)write(stdout,*) ccmname, ':: copy two real, translate', &
   endif
 
 ! Now, Test the MCT Spatial Integration/Averaging Services...
-  if(myProc==0)write(stdout,'(3a)') ccmname, & 
+  if(myProc==0)write(stdout,'(3a)') ccmname, &
        ':: on-Root test of MCT Spatial Integration Services...'
 
 ! simple unmasked integral case:
   call MCT_SpatialIntegral(a2coupler, integratedA2CaV, &
                            dAtmGrid, 'grid_area', comm=CCM_World)
-  
+
 if(myProc==0)then
   do i=1,MCT_AtrVt_nReal(integratedA2CaV)
      write(stdout,'(3a,i2,a,f12.6)') ccmname, &
@@ -706,7 +706,7 @@ if(myProc==0)then
 endif
 
   call MCT_AtrVt_clean(integratedA2CaV)
-  
+
 ! not-so-simple masked average cases...
   call MCT_MaskedSpatialAverage(inAv=a2coupler, &
                                 outAv=integratedA2CaV, &
@@ -792,7 +792,7 @@ contains
       integer, intent(in) :: nx,ny
       integer :: i,j,n,row,col,plat,plon
 !  For this example, we will do a fold-over-the-equator
-!  mapping of our grid onto the cartesian processor topology: 
+!  mapping of our grid onto the cartesian processor topology:
 !  each row of processors handles latitudes from
 !  the northern and southern hemispheres.
 
@@ -806,7 +806,7 @@ contains
   plat = ny / NPROCS_LATA
   plon = nx / NPROCS_LONA
 
-! define a Cartesian topology by assigning 
+! define a Cartesian topology by assigning
 ! row and column indicies to each processor.
 ! processor with rank 0 is (0,0)
   row = myProc / NPROCS_LONA

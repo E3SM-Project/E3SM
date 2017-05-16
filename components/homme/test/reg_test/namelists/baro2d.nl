@@ -6,7 +6,6 @@ test_case                    = "asp_baroclinic"
 rotate_grid                  = 0
 ne                           = 15
 qsize                        = 4
-ntrac                        = 0
 tstep_type                   = 1 
 ndays                        = 9
 statefreq                    = 576

@@ -12,25 +12,25 @@
 !
 !     ESMF Clock Module
       module ESMF_ClockMod
-!     
+!
 !==============================================================================
-!     
+!
 ! This file contains the Clock class definition and all Clock class methods.
-!     
+!
 !------------------------------------------------------------------------------
 ! INCLUDES
-#include <ESMF_TimeMgr.inc> 
+#include <ESMF_TimeMgr.inc>
 
 !==============================================================================
 !BOPI
 ! !MODULE: ESMF_ClockMod
-!     
+!
 ! !DESCRIPTION:
 ! Part of Time Manager F90 API wrapper of C++ implemenation
 !
 ! Defines F90 wrapper entry points for corresponding
 ! C++ class {\tt ESMC\_Time} implementation
-!     
+!
 ! See {\tt ../include/ESMC\_Clock.h} for complete description
 !
 !------------------------------------------------------------------------------
@@ -50,7 +50,7 @@
       private
 !------------------------------------------------------------------------------
 !     ! ESMF_Clock
-!     
+!
 !     ! F90 class type to match C++ Clock class in size only;
 !     !  all dereferencing within class is performed by C++ implementation
 
@@ -66,20 +66,20 @@
         integer(ESMF_KIND_I8) :: AdvanceCount
         integer :: ClockMutex
         integer :: NumAlarms
-        ! Note:  to mimic ESMF 2.1.0+, AlarmList is maintained 
-        ! within ESMF_Clock even though copies of each alarm are 
-        ! returned from ESMF_AlarmCreate() at the same time they 
-        ! are copied into the AlarmList!  This duplication is not 
-        ! as hideous as it might be because the ESMF_Alarm type 
-        ! has data members that are all POINTERs (thus the horrible 
-        ! shallow-copy-masquerading-as-reference-copy hack works).  
+        ! Note:  to mimic ESMF 2.1.0+, AlarmList is maintained
+        ! within ESMF_Clock even though copies of each alarm are
+        ! returned from ESMF_AlarmCreate() at the same time they
+        ! are copied into the AlarmList!  This duplication is not
+        ! as hideous as it might be because the ESMF_Alarm type
+        ! has data members that are all POINTERs (thus the horrible
+        ! shallow-copy-masquerading-as-reference-copy hack works).
         type(ESMF_Alarm), pointer, dimension(:) :: AlarmList => null()
       end type
 
-! Actual public type:  this bit allows easy mimic of "deep" ESMF_ClockCreate 
+! Actual public type:  this bit allows easy mimic of "deep" ESMF_ClockCreate
 ! in ESMF 2.1.0+
-! NOTE:  DO NOT ADD NON-POINTER STATE TO THIS DATA TYPE.  It emulates ESMF 
-!        shallow-copy-masquerading-as-reference-copy.  
+! NOTE:  DO NOT ADD NON-POINTER STATE TO THIS DATA TYPE.  It emulates ESMF
+!        shallow-copy-masquerading-as-reference-copy.
       type ESMF_Clock
         type(ESMF_ClockInt), pointer  :: clockint => null()
       end type
@@ -107,7 +107,7 @@
 !      public ESMF_ClockGetPrevTime
 !      public ESMF_ClockGetCurrSimTime
 !      public ESMF_ClockGetPrevSimTime
-! This must be public for ESMF_AlarmClockMod...  
+! This must be public for ESMF_AlarmClockMod...
       public ESMF_ClockAddAlarm
       public ESMF_ClockGetAlarmList
 !      public ESMF_ClockGetNumAlarms
@@ -154,10 +154,10 @@
       integer, intent(out), optional :: rc
 ! Local
       integer i
-    
+
 ! !DESCRIPTION:
 !     Initialize an {\tt ESMF\_Clock}
-!     
+!
 !     The arguments are:
 !     \begin{description}
 !     \item[clockint]
@@ -173,7 +173,7 @@
 !     \item[{[rc]}]
 !          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
 !     \end{description}
-!     
+!
 ! !REQUIREMENTS:
 !     TMG3.1, TMG3.4.4
 !EOP
@@ -189,13 +189,13 @@
       clockint%NumAlarms = 0
       clockint%AdvanceCount = 0
       ALLOCATE(clockint%AlarmList(MAX_ALARMS))
-      ! TBH:  This incredible hack can be removed once ESMF_*Validate() 
-      ! TBH:  can tell if a deep ESMF_* was created or not.  
+      ! TBH:  This incredible hack can be removed once ESMF_*Validate()
+      ! TBH:  can tell if a deep ESMF_* was created or not.
       DO i = 1, MAX_ALARMS
         NULLIFY( clockint%AlarmList( i )%alarmint )
       ENDDO
       IF ( PRESENT( rc ) ) rc = ESMF_SUCCESS
-    
+
       end subroutine ESMF_ClockSetOLD
 
 
@@ -215,10 +215,10 @@
       integer, intent(out), optional :: rc
 ! Local
       integer ierr
-    
+
 ! !DESCRIPTION:
 !     Initialize an {\tt ESMF\_Clock}
-!     
+!
 !     The arguments are:
 !     \begin{description}
 !     \item[clock]
@@ -234,7 +234,7 @@
 !     \item[{[rc]}]
 !          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
 !     \end{description}
-!     
+!
 ! !REQUIREMENTS:
 !     TMG3.1, TMG3.4.4
 !EOP
@@ -298,7 +298,7 @@
 
 !------------------------------------------------------------------------------
 !BOP
-! !IROUTINE: ESMF_ClockGet - Get clock properties -- for compatibility with ESMF 2.0.1 
+! !IROUTINE: ESMF_ClockGet - Get clock properties -- for compatibility with ESMF 2.0.1
 
 ! tcraig added alarmCount for ccsm4, consistent with ESMF3 interface
 
@@ -382,7 +382,7 @@
       IF ( PRESENT (rc) ) THEN
         rc = ierr
       ENDIF
-    
+
       end subroutine ESMF_ClockGet
 
 
@@ -417,7 +417,7 @@
       AdvanceCount = clock%clockint%AdvanceCount
 
       IF ( PRESENT(rc) ) rc = ESMF_SUCCESS
-    
+
       end subroutine ESMF_ClockGetAdvanceCount
 
 !------------------------------------------------------------------------------
@@ -451,7 +451,7 @@
 
       TimeStep = clock%clockint%TimeStep
       IF ( PRESENT(rc) ) rc = ESMF_SUCCESS
-    
+
       end subroutine ESMF_ClockGetTimeStep
 
 !------------------------------------------------------------------------------
@@ -501,7 +501,7 @@
       integer, intent(out), optional :: rc
 
 ! !DESCRIPTION:
-!     Get an {\tt ESMF\_Clock}'s current time     
+!     Get an {\tt ESMF\_Clock}'s current time
 !
 !     The arguments are:
 !     \begin{description}
@@ -552,7 +552,7 @@
 
       clock%clockint%CurrTime = CurrTime
       IF ( PRESENT(rc) ) rc = ESMF_SUCCESS
-    
+
       end subroutine ESMF_ClockSetCurrTime
 
 !------------------------------------------------------------------------------
@@ -586,7 +586,7 @@
 
       StartTime = clock%clockint%StartTime
       IF ( PRESENT(rc) ) rc = ESMF_SUCCESS
-    
+
       end subroutine ESMF_ClockGetStartTime
 
 !------------------------------------------------------------------------------
@@ -603,7 +603,7 @@
 
 ! !DESCRIPTION:
 !     Get an {\tt ESMF\_Clock}'s stop time
-! 
+!
 !     The arguments are:
 !     \begin{description}
 !     \item[clock]
@@ -620,7 +620,7 @@
 
       StopTime = clock%clockint%StopTime
       IF ( PRESENT(rc) ) rc = ESMF_SUCCESS
-    
+
       end subroutine ESMF_ClockGetStopTime
 
 !------------------------------------------------------------------------------
@@ -702,7 +702,7 @@
 
 ! !DESCRIPTION:
 !     Get an {\tt ESMF\_Clock}'s current simulation time
-! 
+!
 !     The arguments are:
 !     \begin{description}
 !     \item[clock]
@@ -775,11 +775,11 @@
 !     \item[{[rc]}]
 !          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
 !     \end{description}
-!   
+!
 ! !REQUIREMENTS:
 !     TMG4.1, TMG4.2
 !EOP
-    
+
       IF ( PRESENT( rc ) ) rc = ESMF_SUCCESS
       clock%clockint%NumAlarms = clock%clockint%NumAlarms + 1
       IF ( clock%clockint%NumAlarms > SIZE (clock%clockint%AlarmList) ) THEN
@@ -788,7 +788,7 @@
         CALL wrf_error_fatal ( &
                'ESMF_ClockAddAlarm:  alarm not created' )
       ELSE
-!TBH:  why do all this initialization here?  
+!TBH:  why do all this initialization here?
         IF ( Alarm%alarmint%RingTimeSet ) THEN
            Alarm%alarmint%PrevRingTime = Alarm%alarmint%RingTime - &
                                          Alarm%alarmint%RingInterval
@@ -800,7 +800,7 @@
         ! finally, load the alarm into the list
         clock%clockint%AlarmList(clock%clockint%NumAlarms) = Alarm
       ENDIF
-    
+
       end subroutine ESMF_ClockAddAlarm
 
 !------------------------------------------------------------------------------
@@ -816,8 +816,8 @@
       integer, intent(out), optional :: rc
 
 ! !DESCRIPTION:
-!     Get an {\tt ESMF\_Clock}'s {\tt ESMF\_Alarm} list     
-!   
+!     Get an {\tt ESMF\_Clock}'s {\tt ESMF\_Alarm} list
+!
 !     The arguments are:
 !     \begin{description}
 !     \item[clock]
@@ -827,7 +827,7 @@
 !     \item[{[rc]}]
 !          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
 !     \end{description}
-!   
+!
 ! !REQUIREMENTS:
 !     TMG4.3
 !EOP
@@ -851,8 +851,8 @@
 
 ! !DESCRIPTION:
 !     Get the number of {\tt ESMF\_Alarm}s in an {\tt ESMF\_Clock}'s
-!       {\tt ESMF\_Alarm} list     
-!   
+!       {\tt ESMF\_Alarm} list
+!
 !     The arguments are:
 !     \begin{description}
 !     \item[clock]
@@ -863,14 +863,14 @@
 !     \item[{[rc]}]
 !          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
 !     \end{description}
-!   
+!
 ! !REQUIREMENTS:
 !     TMG4.3
 !EOP
 
       NumAlarms = clock%clockint%NumAlarms
       IF ( PRESENT(rc) ) rc = ESMF_SUCCESS
-    
+
       end subroutine ESMF_ClockGetNumAlarms
 
 !------------------------------------------------------------------------------
@@ -883,10 +883,10 @@
 ! !ARGUMENTS:
       type(ESMF_Clock), intent(inout) :: clock
       integer, intent(out), optional :: rc
-    
+
 ! !DESCRIPTION:
-!     Set an {\tt ESMF\_Clock}'s current time to wall clock time     
-!   
+!     Set an {\tt ESMF\_Clock}'s current time to wall clock time
+!
 !     The arguments are:
 !     \begin{description}
 !     \item[clock]
@@ -894,7 +894,7 @@
 !     \item[{[rc]}]
 !          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
 !     \end{description}
-!   
+!
 ! !REQUIREMENTS:
 !     TMG3.4.5
 !EOP
@@ -921,10 +921,10 @@ use ESMF_TimeMod
       logical pred1, pred2, pred3
       integer i, n
       type(ESMF_Alarm) :: alarm
-!   
+!
 ! !DESCRIPTION:
 !     Advance an {\tt ESMF\_Clock}'s current time by one time step
-!  
+!
 !     The arguments are:
 !     \begin{description}
 !     \item[clock]
@@ -936,7 +936,7 @@ use ESMF_TimeMod
 !     \item[{[rc]}]
 !          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
 !     \end{description}
-!  
+!
 ! !REQUIREMENTS:
 !     TMG3.4.1
 !EOP
@@ -947,9 +947,9 @@ use ESMF_TimeMod
       clock%clockint%AdvanceCount = clock%clockint%AdvanceCount + 1
       DO i = 1, MAX_ALARMS
         alarm = clock%clockint%AlarmList(i)
-        ! TBH:  This is really dangerous.  We need to be able to NULLIFY 
-        ! TBH:  alarmint at compile-time (F95 synax) to make this safe.  
-!$$$TBH:  see if F95 compile-time pointer-nullification is supported by all 
+        ! TBH:  This is really dangerous.  We need to be able to NULLIFY
+        ! TBH:  alarmint at compile-time (F95 synax) to make this safe.
+!$$$TBH:  see if F95 compile-time pointer-nullification is supported by all
 !$$$TBH:  compilers we support
         IF ( ASSOCIATED( alarm%alarmint ) ) THEN
           IF ( alarm%alarmint%Enabled ) THEN
@@ -995,7 +995,7 @@ use ESMF_TimeMod
         clock%clockint%AlarmList(i) = alarm
       ENDDO
       IF ( PRESENT( rc ) ) rc = ESMF_SUCCESS
-    
+
       end subroutine ESMF_ClockAdvance
 
 !------------------------------------------------------------------------------
@@ -1028,8 +1028,8 @@ use ESMF_TimeMod
       integer, intent(out), optional :: rc
 
 ! !DESCRIPTION:
-!     Return true if {\tt ESMF\_Clock} has reached its stop time, false 
-!     otherwise     
+!     Return true if {\tt ESMF\_Clock} has reached its stop time, false
+!     otherwise
 !
 !     The arguments are:
 !     \begin{description}
@@ -1049,7 +1049,7 @@ use ESMF_TimeMod
         ESMF_ClockIsStopTime = .FALSE.
       endif
       IF ( PRESENT( rc ) ) rc = ESMF_SUCCESS
-    
+
       end function ESMF_ClockIsStopTime
 
 !------------------------------------------------------------------------------
@@ -1077,10 +1077,10 @@ use ESMF_TimeMod
       integer(ESMF_KIND_I8), intent(in) :: AdvanceCount
       type(ESMF_Alarm), dimension(MAX_ALARMS), intent(in) :: AlarmList
       integer, intent(out), optional :: rc
-    
+
 ! !DESCRIPTION:
 !     Restore an {\tt ESMF\_Clock}
-!     
+!
 !     The arguments are:
 !     \begin{description}
 !     \item[clock]
@@ -1104,7 +1104,7 @@ use ESMF_TimeMod
 !     \item[{[rc]}]
 !          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
 !     \end{description}
-!     
+!
 ! !REQUIREMENTS:
 !EOP
       CALL wrf_error_fatal( 'ESMF_ClockRead not supported' )
@@ -1130,10 +1130,10 @@ use ESMF_TimeMod
       integer(ESMF_KIND_I8), intent(out) :: AdvanceCount
       type(ESMF_Alarm), dimension(MAX_ALARMS), intent(out) :: AlarmList
       integer, intent(out), optional :: rc
-    
+
 ! !DESCRIPTION:
 !     Save an {\tt ESMF\_Clock}
-!     
+!
 !     The arguments are:
 !     \begin{description}
 !     \item[clock]
@@ -1157,7 +1157,7 @@ use ESMF_TimeMod
 !     \item[{[rc]}]
 !          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
 !     \end{description}
-!     
+!
 ! !REQUIREMENTS:
 !EOP
       CALL wrf_error_fatal( 'ESMF_ClockWrite not supported' )
@@ -1178,7 +1178,7 @@ use ESMF_TimeMod
 ! !DESCRIPTION:
 !     Perform a validation check on an {\tt ESMF\_Clock}'s properties
 !
-!     The arguments are:  
+!     The arguments are:
 !     \begin{description}
 !     \item[clock]
 !          {\tt ESMF\_Clock} to validate
@@ -1186,7 +1186,7 @@ use ESMF_TimeMod
 !          Validate options
 !     \item[{[rc]}]
 !          Return code; equals {\tt ESMF\_SUCCESS} if there are no errors.
-!     \end{description} 
+!     \end{description}
 !
 ! !REQUIREMENTS:
 !     TMGn.n.n
@@ -1209,7 +1209,7 @@ use ESMF_TimeMod
 ! !DESCRIPTION:
 !     To support testing/debugging, print out an {\tt ESMF\_Clock}'s
 !     properties.
-! 
+!
 !     The arguments are:
 !     \begin{description}
 !     \item[clock]

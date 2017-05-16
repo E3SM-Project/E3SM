@@ -5,7 +5,7 @@
 # These macros can be changed by setting environment variables:
 #
 # Set the path to netcdf:
-# 
+#
 # gmake NETCDF=pathToNetcdf
 #
 # This sets LIB_NETCDF=$NETCDF/lib and INC_NETCDF=$NETCDF/include
@@ -26,18 +26,18 @@
 # VPATH -------- GNU make path. (Defaults to current directory)
 #
 #------------------------------------------------------------------------
-include Macros
+include Macros.make
 # Set up special characters
 null  :=
 
 EXENAME = cprnc
 RM = rm
 
-# Default for the netcdf library and include directories 
+# Default for the netcdf library and include directories
 LIB_NETCDF := $(NETCDF_PATH)/lib
 INC_NETCDF := $(NETCDF_PATH)/include
 
-# Determine platform 
+# Determine platform
 UNAMES := $(shell uname -s)
 SNAME := $(shell uname -n | cut -c1-2)
 
@@ -78,7 +78,7 @@ compare_vars_mod.F90 : compare_vars_mod.F90.in
 	perl $(GENF90) $< > $@
 
 clean:
-	$(RM) -f $(OBJS) *.mod $(EXEDIR)/$(EXENAME) 
+	$(RM) -f $(OBJS) *.mod $(EXEDIR)/$(EXENAME)
 
 # remove generated file during clean
 realclean:
