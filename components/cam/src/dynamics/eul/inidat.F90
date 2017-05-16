@@ -8,26 +8,25 @@ module inidat
 ! 
 ! Author: J. Olson  May 2004
 ! 
-! Modified: A. Gettelman and C. Craig Nov 2010 - put micro/macro physics into separate routines
-! 
 !-----------------------------------------------------------------------
-   use ppgrid,          only: begchunk, endchunk, pcols
-   use pmgrid,          only: beglat, endlat, plon, plat, plev, plnlv 
-   use rgrid,           only: nlon
-   use prognostics,     only : div, vort, t3, u3, v3, q3, n3, phis, dpsm, dpsl, ps
-   use ncdio_atm,       only: infld
-   use shr_kind_mod,    only: r8 => shr_kind_r8
+   use ppgrid,              only: begchunk, endchunk, pcols
+   use pmgrid,              only: beglat, endlat, plon, plat, plev, plnlv 
+   use rgrid,               only: nlon
+   use prognostics,         only : div, vort, t3, u3, v3, q3, n3, phis, dpsm, dpsl, ps
+   use ncdio_atm,           only: infld
+   use shr_kind_mod,        only: r8 => shr_kind_r8
    use cam_abortutils  ,    only: endrun
-   use phys_grid,       only: get_ncols_p
+   use phys_grid,           only: get_ncols_p
    
-   use spmd_utils,      only: masterproc, mpicom, mpir8
-   use cam_control_mod, only: ideal_phys, aqua_planet, moist_physics, adiabatic
-   use scamMod,         only: single_column, use_camiop, have_u, have_v, &
-                              have_cldliq, have_cldice,loniop,latiop,scmlat,scmlon
-   use cam_logfile,     only: iulog
-   use pio,             only: file_desc_t, pio_noerr, pio_inq_varid, pio_get_att, &
+   use spmd_utils,          only: masterproc, mpicom, mpir8
+   use cam_control_mod,     only: ideal_phys, aqua_planet, moist_physics, adiabatic
+   use cam_initfiles,       only: initial_file_get_id, topo_file_get_id
+   use scamMod,             only: single_column, use_camiop, have_u, have_v, &
+                                  have_cldliq, have_cldice,loniop,latiop,scmlat,scmlon
+   use cam_logfile,         only: iulog
+   use pio,                 only: file_desc_t, pio_noerr, pio_inq_varid, pio_get_att, &
         pio_inq_attlen, pio_inq_dimid, pio_inq_dimlen, pio_get_var,var_desc_t, &
-        pio_seterrorhandling, pio_bcast_error, pio_internal_error
+        pio_seterrorhandling, pio_bcast_error, pio_internal_error, pio_offset_kind
    implicit none
 
 PRIVATE
@@ -60,7 +59,7 @@ contains
 !*********************************************************************
 
 
-  subroutine read_inidat( ncid_ini, ncid_topo, dyn_in, datatype)
+  subroutine read_inidat(fh_ini, fh_topo, dyn_in)
 !
 !-----------------------------------------------------------------------
 !
@@ -69,27 +68,29 @@ contains
 !
 !-----------------------------------------------------------------------
 !
-    use ppgrid,       only: pverp
-    use phys_grid,        only: scatter_field_to_chunk, gather_chunk_to_field,clat_p,clon_p
+    use phys_grid,        only: clat_p, clon_p
     
     use constituents,     only: pcnst, cnst_name, cnst_read_iv, cnst_get_ind
     use commap,           only: clat,clon
     use iop,              only: setiopupdate,readiopdata
     use dyn_comp ,        only: dyn_import_t
-    use physconst,         only: pi
-
+    use physconst,        only: pi
+    use cam_pio_utils,    only: cam_pio_get_var
+    
 !
 ! Arguments
 !
-   type(file_desc_t), intent(inout) :: ncid_ini, ncid_topo
+   implicit none
+   type(file_desc_t),intent(inout) :: fh_ini, fh_topo
    type(dyn_import_t)            :: dyn_in   ! not used in eul dycore
-   integer, optional, intent(in) :: datatype !  in:  model or analysis dataset
    integer type
 !
 !---------------------------Local workspace-----------------------------
 !
     integer i,c,m,n,lat                     ! indices
     integer ncol
+
+!   type(file_desc_t), pointer :: fh_ini, fh_topo
 
     real(r8), pointer, dimension(:,:,:)   :: convptr_2d
     real(r8), pointer, dimension(:,:,:,:) :: convptr_3d
@@ -104,6 +105,8 @@ contains
 
     integer londimid,dimlon,latdimid,dimlat,latvarid,lonvarid
     integer strt(3),cnt(3)
+    character(len=3), parameter :: arraydims3(3) = (/ 'lon', 'lev', 'lat' /)
+    character(len=3), parameter :: arraydims2(2) = (/ 'lon', 'lat' /)
     type(var_desc_t) :: varid
     real(r8), allocatable :: tmp2d(:,:)
 !
@@ -122,8 +125,10 @@ contains
 !     processors on the physics grid.
 !
 !-----------------------------------------------------------------------
-!
-!
+
+!  fh_ini  => initial_file_get_id()
+!  fh_topo => topo_file_get_id()
+
 !-------------------------------------
 ! Allocate memory for temporary arrays
 !-------------------------------------
@@ -150,21 +155,18 @@ contains
 
 
     fieldname = 'U'
-    call infld(fieldname, ncid_ini, 'lon', 'lev', 'lat', 1, plon, 1, plev, 1, plat, &
-         arr3d_a, readvar, grid_map='global')
+    call cam_pio_get_var(fieldname, fh_ini, arraydims3, arr3d_a, found=readvar)
     if(.not. readvar) call endrun('dynamics/eul/inidat.F90')
     
     fieldname = 'V'
-    call infld(fieldname, ncid_ini, 'lon', 'lev', 'lat', 1, plon, 1, plev, 1, plat, &
-         arr3d_b, readvar, grid_map='global')
+    call cam_pio_get_var(fieldname, fh_ini, arraydims3, arr3d_b, found=readvar)
     if(.not. readvar) call endrun('dynamics/eul/inidat.F90')
     
     call process_inidat('UV')
     
 
     fieldname = 'T'
-    call infld(fieldname, ncid_ini, 'lon', 'lev', 'lat', 1, plon, 1, plev, 1, plat, &
-         t3_tmp, readvar, grid_map='global')
+    call cam_pio_get_var(fieldname, fh_ini, arraydims3, t3_tmp, found=readvar)
     if(.not. readvar) call endrun('dynamics/eul/inidat.F90')
 
     call process_inidat('T')
@@ -175,10 +177,10 @@ contains
 
        readvar   = .false.
        fieldname = cnst_name(m)
-       if(cnst_read_iv(m)) &
-            call infld(fieldname, ncid_ini, 'lon', 'lev', 'lat', 1, plon, 1, plev, 1, plat, &
-            arr3d_a, readvar, grid_map='global')
-       call process_inidat('CONSTS', m_cnst=m, ncid=ncid_ini)
+       if(cnst_read_iv(m)) then
+         call cam_pio_get_var(fieldname, fh_ini, arraydims3, arr3d_a, found=readvar)
+       end if
+       call process_inidat('CONSTS', m_cnst=m, fh=fh_ini)
 
     end do
 
@@ -192,20 +194,19 @@ contains
     
     fieldname = 'PHIS'
     readvar   = .false.
+!   if (ideal_phys .or. aqua_planet .or. .not. associated(fh_topo)) then
     if (ideal_phys .or. aqua_planet) then
        phis_tmp(:,:) = 0._r8
     else
-       call infld(fieldname, ncid_topo, 'lon', 'lat', 1, plon, 1, plat, &
-            phis_tmp, readvar, grid_map='global')
-       if(.not. readvar) call endrun('dynamics/eul/inidat.F90')
+      call cam_pio_get_var(fieldname, fh_topo, arraydims2, phis_tmp, found=readvar)
+       if(.not. readvar) call endrun('dynamics/eul/inidat.F90: PHIS not found')
     end if
 
-    call process_inidat('PHIS', ncid=ncid_topo)
+    call process_inidat('PHIS', fh=fh_topo)
 
 
     fieldname = 'PS'
-    call infld(fieldname, ncid_ini, 'lon', 'lat', 1, plon, 1, plat, &
-         ps_tmp  , readvar, grid_map='global')
+    call cam_pio_get_var(fieldname, fh_ini, arraydims2, ps_tmp, found=readvar)
     
     if(.not. readvar) call endrun('PS not found in init file')
 
@@ -231,8 +232,8 @@ contains
     if (single_column) then
        if ( use_camiop ) then
           fieldname = 'CLAT1'
-          call infld(fieldname, ncid_ini, 'lon', 'lat', 1, pcols, begchunk, endchunk, &
-               clat2d, readvar, grid_map='phys')
+          call infld(fieldname, fh_ini, 'lon', 'lat', 1, pcols, begchunk, endchunk, &
+               clat2d, readvar, gridname='physgrid')
           if(.not. readvar) then
              call endrun('CLAT not on iop initial file')
           else
@@ -241,8 +242,8 @@ contains
           end if
           
           fieldname = 'CLON1'
-          call infld(fieldname, ncid_ini, 'lon', 'lat', 1, pcols, begchunk, endchunk, &
-               clon2d, readvar, grid_map='phys')
+          call infld(fieldname, fh_ini, 'lon', 'lat', 1, pcols, begchunk, endchunk, &
+               clon2d, readvar, gridname='physgrid')
           if(.not. readvar) then
              call endrun('CLON not on iop initial file')
           else
@@ -254,10 +255,10 @@ contains
           ! Get latdeg/londeg from initial file for bfb calculations
           ! needed for dyn_grid to determine bounding area and verticies
           !
-          ierr = pio_inq_dimid  (ncid_ini, 'lon'  , londimid)
-          ierr = pio_inq_dimlen (ncid_ini, londimid, dimlon)
-          ierr = pio_inq_dimid  (ncid_ini, 'lat'  , latdimid)
-          ierr = pio_inq_dimlen (ncid_ini, latdimid, dimlat)
+          ierr = pio_inq_dimid  (fh_ini, 'lon'  , londimid)
+          ierr = pio_inq_dimlen (fh_ini, londimid, dimlon)
+          ierr = pio_inq_dimid  (fh_ini, 'lat'  , latdimid)
+          ierr = pio_inq_dimlen (fh_ini, latdimid, dimlat)
           strt(:)=1
           cnt(1)=dimlon
           cnt(2)=dimlat
@@ -265,11 +266,11 @@ contains
           allocate(latiop(dimlat))
           allocate(loniop(dimlon))
           allocate(tmp2d(dimlon,dimlat))
-          ierr = pio_inq_varid (ncid_ini,'CLAT1', varid)
-          ierr = pio_get_var(ncid_ini,varid,strt,cnt,tmp2d)
+          ierr = pio_inq_varid (fh_ini,'CLAT1', varid)
+          ierr = pio_get_var(fh_ini,varid,strt,cnt,tmp2d)
           latiop(:)=tmp2d(1,:)
-          ierr = pio_inq_varid (ncid_ini,'CLON1', varid)
-          ierr = pio_get_var(ncid_ini,varid,strt,cnt,tmp2d)
+          ierr = pio_inq_varid (fh_ini,'CLON1', varid)
+          ierr = pio_get_var(fh_ini,varid,strt,cnt,tmp2d)
           loniop(:)=tmp2d(:,1)
           deallocate(tmp2d)
        else
@@ -315,7 +316,7 @@ contains
 
 !*********************************************************************
 
-  subroutine process_inidat(fieldname, m_cnst, ncid)
+  subroutine process_inidat(fieldname, m_cnst, fh)
 !
 !-----------------------------------------------------------------------
 !
@@ -338,9 +339,9 @@ contains
     use tracers     , only: tracers_implements_cnst, tracers_init_cnst
     use aoa_tracers , only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
     use clubb_intr  , only: clubb_implements_cnst, clubb_init_cnst
-    use stratiform,      only: stratiform_implements_cnst, stratiform_init_cnst
-    use microp_driver, only: microp_driver_implements_cnst, microp_driver_init_cnst
-    use phys_control,  only: phys_getopts
+    use stratiform  , only: stratiform_implements_cnst, stratiform_init_cnst
+    use microp_driver,only: microp_driver_implements_cnst, microp_driver_init_cnst
+    use phys_control, only: phys_getopts
     use co2_cycle   , only: co2_implements_cnst, co2_init_cnst
     use unicon_cam,   only: unicon_implements_cnst, unicon_init_cnst
 #if ( defined SPMD )
@@ -351,16 +352,17 @@ contains
 !
 ! Input arguments
 !
-    character(len=*), intent(in)           :: fieldname ! fields to be processed
-    integer         , intent(in), optional :: m_cnst    ! constituent index
-    type(file_desc_t), intent(inout), optional :: ncid ! netcdf file handle
+    character(len=*),  intent(in)              :: fieldname ! fields to be processed
+    integer,           intent(in),    optional :: m_cnst    ! constituent index
+    type(file_desc_t), intent(inout), optional :: fh        ! pio file handle
 !
 !---------------------------Local workspace-----------------------------
 !
     integer i,j,k,n,lat,irow               ! grid and constituent indices
     real(r8) pertval                       ! perturbation value
     integer  varid                         ! netCDF variable id
-    integer  ret, attlen                   ! netcdf return values
+    integer  ret
+    integer(pio_offset_kind) :: attlen                   ! netcdf return values
     logical  phis_hires                    ! true => PHIS came from hi res topo
     character*256 text
     character*256 trunits                  ! tracer untis
@@ -485,58 +487,67 @@ contains
 
        allocate ( tmp3d_extend(plon,plev,beglat:endlat) )
 
-!
-! Check that all tracer units are in mass mixing ratios
-!
-       if(readvar) then
-          ret = pio_inq_varid(NCID,cnst_name(m_cnst), varid)
-          ret = pio_get_att(NCID,varid,'units',trunits)
+       if (readvar) then
+          ! Check that all tracer units are in mass mixing ratios
+          ret = pio_inq_varid(fh, cnst_name(m_cnst), varid)
+          ret = pio_get_att(fh, varid, 'units', trunits)
           if (trunits(1:5) .ne. 'KG/KG' .and. trunits(1:5) .ne. 'kg/kg') then
              call endrun('  '//trim(subname)//' Error:  Units for tracer ' &
                   //trim(cnst_name(m_cnst))//' must be in KG/KG')
           end if
-!
-! Constituents not read from initial file are initialized by the package that implements them.
-!
-     else
+
+       else
+          ! Constituents not read from initial file are initialized by the package that implements them.
+
         if(m_cnst == 1 .and. moist_physics) then
            call endrun('  '//trim(subname)//' Error:  Q must be on Initial File')
         end if
+
+        if (masterproc) write(iulog,*) 'Warning:  Not reading ',cnst_name(m_cnst), ' from IC file.'
 
         arr3d_a(:,:,:) = 0._r8
         allocate(gcid(plon))
         do j=1,plat
            gcid(:) = j
-           if(masterproc) write(iulog,*) 'Warning:  Not reading ',cnst_name(m_cnst), ' from IC file.'
            if (microp_driver_implements_cnst(cnst_name(m_cnst))) then
               call microp_driver_init_cnst(cnst_name(m_cnst),arr3d_a(:,:,j) , gcid)
-              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "microp_driver_init_cnst"'
+              if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&
+                                         ' initialized by "microp_driver_init_cnst"'
            else if (clubb_implements_cnst(cnst_name(m_cnst))) then
               call clubb_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
-              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "clubb_init_cnst"'
+              if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&
+                                         ' initialized by "clubb_init_cnst"'
            else if (stratiform_implements_cnst(cnst_name(m_cnst))) then
               call stratiform_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
-              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "stratiform_init_cnst"'
+              if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&
+                                         ' initialized by "stratiform_init_cnst"'
            else if (chem_implements_cnst(cnst_name(m_cnst))) then
               call chem_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
-              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "chem_init_cnst"'
+              if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&
+                                         ' initialized by "chem_init_cnst"'
            else if (tracers_implements_cnst(cnst_name(m_cnst))) then
               call tracers_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
-              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "tracers_init_cnst"'
+              if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&
+                                         ' initialized by "tracers_init_cnst"'
            else if (aoa_tracers_implements_cnst(cnst_name(m_cnst))) then
               call aoa_tracers_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
-              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "aoa_tracers_init_cnst"'
+              if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&
+                                         ' initialized by "aoa_tracers_init_cnst"'
            else if (carma_implements_cnst(cnst_name(m_cnst))) then
               call carma_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
-              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "carma_init_cnst"'
+              if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&
+                                         ' initialized by "carma_init_cnst"'
            else if (co2_implements_cnst(cnst_name(m_cnst))) then
               call co2_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
-              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "co2_init_cnst"'
+              if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&
+                                         ' initialized by "co2_init_cnst"'
            else if (unicon_implements_cnst(cnst_name(m_cnst))) then
               call unicon_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
-              if (masterproc) write(iulog,*) '         ', cnst_name(m_cnst), ' initialized by "unicon_init_cnst"'
+              if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&
+                                         ' initialized by "unicon_init_cnst"'
            else
-              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' set to 0.'
+              if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&
+                                         ' set to 0.'
            end if
         end do
         
@@ -546,7 +557,7 @@ contains
 !$omp parallel do private(lat)
      do lat = 1,plat
         call qneg3(trim(subname), lat   ,nlon(lat),plon   ,plev    , &
-             m_cnst, m_cnst, qmin(m_cnst) ,arr3d_a(1,1,lat))
+             m_cnst, m_cnst, qmin(m_cnst) ,arr3d_a(1,1,lat), .True.)
      end do
 !
 ! if "Q", "CLDLIQ", or "CLDICE", save off for later use
@@ -556,7 +567,7 @@ contains
 #if ( defined SPMD )
      numperlat = plnlv
      call compute_gsfactors (numperlat, numrecv, numsend, displs)
-     call mpiscatterv (arr3d_a  , numsend, displs, mpir8, tmp3d_extend(:,:,beglat:endlat) ,numrecv, mpir8,0,mpicom)
+     call mpiscatterv (arr3d_a  , numsend, displs, mpir8, tmp3d_extend ,numrecv, mpir8,0,mpicom)
      q3(:,:,m_cnst,:,1) = tmp3d_extend(:,:,beglat:endlat)
 #else
      q3(:,:plev,m_cnst,:,1) = arr3d_a(:plon,:plev,:plat)
@@ -593,8 +604,8 @@ contains
 #if ( defined SPMD )
        numperlat = plon
        call compute_gsfactors (numperlat, numrecv, numsend, displs)
-       call mpiscatterv (tmp2d_a ,numsend, displs, mpir8,dpsl(:,beglat:endlat) ,numrecv, mpir8,0,mpicom)
-       call mpiscatterv (tmp2d_b ,numsend, displs, mpir8,dpsm(:,beglat:endlat) ,numrecv, mpir8,0,mpicom)
+       call mpiscatterv (tmp2d_a ,numsend, displs, mpir8,dpsl ,numrecv, mpir8,0,mpicom)
+       call mpiscatterv (tmp2d_b ,numsend, displs, mpir8,dpsm ,numrecv, mpir8,0,mpicom)
 #else
        dpsl(:,:) = tmp2d_a(:,:)
        dpsm(:,:) = tmp2d_b(:,:)
@@ -612,14 +623,14 @@ contains
 ! Check for presence of 'from_hires' attribute to decide whether to filter
 !
        if(readvar) then
-          ret = pio_inq_varid (ncid, 'PHIS', varid)
+          ret = pio_inq_varid (fh, 'PHIS', varid)
           ! Allow pio to return errors in case from_hires doesn't exist
-          call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
-          ret = pio_inq_attlen (ncid, varid, 'from_hires', attlen)
+          call pio_seterrorhandling(fh, PIO_BCAST_ERROR)
+          ret = pio_inq_attlen (fh, varid, 'from_hires', attlen)
           if (ret.eq.PIO_NOERR .and. attlen.gt.256) then
              call endrun('  '//trim(subname)//' Error:  from_hires attribute length is too long')
           end if
-          ret = pio_get_att(ncid, varid, 'from_hires', text)
+          ret = pio_get_att(fh, varid, 'from_hires', text)
 
           if (ret.eq.PIO_NOERR .and. text(1:4).eq.'true') then
              phis_hires = .true.
@@ -629,7 +640,7 @@ contains
              if(masterproc) write(iulog,*)trim(subname), ': Will not filter input PHIS: attribute ', &
                   'from_hires is either false or not present'
           end if
-          call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
+          call pio_seterrorhandling(fh, PIO_INTERNAL_ERROR)
           
        else
           phis_hires = .false.
@@ -647,7 +658,7 @@ contains
 #if ( defined SPMD )
        numperlat = plon
        call compute_gsfactors (numperlat, numrecv, numsend, displs)
-       call mpiscatterv (phis_tmp  ,numsend, displs, mpir8,phis  (:,beglat:endlat) ,numrecv, mpir8,0,mpicom)
+       call mpiscatterv (phis_tmp  ,numsend, displs, mpir8,phis ,numrecv, mpir8,0,mpicom)
 #else
 !$omp parallel do private(lat)
        do lat = 1,plat

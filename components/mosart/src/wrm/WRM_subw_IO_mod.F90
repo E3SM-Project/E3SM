@@ -59,7 +59,7 @@ MODULE WRM_subw_IO_mod
      integer :: iunit
      integer :: ncdfid, did, dids(2), ndims, dsize(1), dsizes(2), ier, varid
      integer :: start(2), count(2)
-     integer(kind=pio_offset) :: frame
+     integer(kind=PIO_OFFSET_KIND) :: frame
      real(r8) :: peak, prorata , mn, mx                  ! peak value to define the start of operationalyr
      integer :: sgn,curr_sgn, nsc, ct, ct_mx, mth_op , idepend      ! number of sign change
      integer :: igrow,igcol,iwgt
@@ -694,7 +694,7 @@ MODULE WRM_subw_IO_mod
         do mth = 1,12
            ier = pio_inq_varid (ncid, name='Qmon', vardesc=vardesc)
            frame = mth
-           call pio_setframe(vardesc,frame)
+           call pio_setframe(ncid,vardesc,frame)
            call pio_read_darray(ncid, vardesc, iodesc_dbl_dam2dam, WRMUnit%MeanMthFlow(:,mth), ier)
            if (masterproc) write(iulog,FORMR) trim(subname),' read Qmon',minval(WRMUnit%MeanMthFlow(:,mth)),maxval(WRMUnit%MeanMthFlow(:,mth))
            call shr_sys_flush(iulog)
@@ -713,7 +713,7 @@ MODULE WRM_subw_IO_mod
         do mth = 1,12
            ier = pio_inq_varid (ncid, name='demand', vardesc=vardesc)
            frame = mth
-           call pio_setframe(vardesc,frame)
+           call pio_setframe(ncid,vardesc,frame)
            call pio_read_darray(ncid, vardesc, iodesc_dbl_dam2dam, WRMUnit%MeanMthDemand(:,mth), ier)
            if (masterproc) write(iulog,FORMR) trim(subname),' read demand',minval(WRMUnit%MeanMthDemand(:,mth)),maxval(WRMUnit%MeanMthDemand(:,mth))
            call shr_sys_flush(iulog)

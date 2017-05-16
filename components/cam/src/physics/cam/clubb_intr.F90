@@ -94,6 +94,10 @@ module clubb_intr
     rtpthlp_const = 0.01_r8             ! Constant to add to rtpthlp when moments are advected
     
   real(r8), parameter :: unset_r8 = huge(1.0_r8)
+
+!PMA
+ real(r8), parameter :: qsmall = 1.e-18_r8 ! qsmall used in MG
+
     
   real(r8) :: clubb_timestep = unset_r8  ! Default CLUBB timestep, unless overwriten by namelist
   real(r8) :: clubb_rnevap_effic = unset_r8
@@ -103,7 +107,8 @@ module clubb_intr
   real(r8) :: clubb_liq_sh   = unset_r8
   real(r8) :: clubb_ice_deep = unset_r8
   real(r8) :: clubb_ice_sh   = unset_r8
-
+  real(r8) :: clubb_tk1      = unset_r8
+  real(r8) :: clubb_tk2      = unset_r8
 
 !  Constant parameters
   logical, parameter, private :: &
@@ -192,7 +197,10 @@ module clubb_intr
   character(len=8)   :: cnst_names(ncnst)
   logical            :: do_cnst=.false.
 
-  logical :: liqcf_fix  ! HW for liquid cloud fraction fix
+  logical :: liqcf_fix = .FALSE.  ! HW for liquid cloud fraction fix
+  logical :: relvar_fix = .FALSE. !PMA for relvar fix
+  
+  real(r8) :: micro_mg_accre_enhan_fac = huge(1.0_r8) !Accretion enhancement factor from namelist
 
   contains
   
@@ -222,7 +230,8 @@ module clubb_intr
                        do_tms_out                      = do_tms,      &
                        history_budget_out              = history_budget, &
                        history_budget_histfile_num_out = history_budget_histfile_num, &
-                       micro_do_icesupersat_out        = micro_do_icesupersat)
+                       micro_do_icesupersat_out        = micro_do_icesupersat, &
+                       micro_mg_accre_enhan_fac_out    = micro_mg_accre_enhan_fac)
 
     if (clubb_do_adv) then
        cnst_names =(/'THLP2  ','RTP2   ','RTPTHLP','WPTHLP ','WPRTP  ','WP2    ','WP3    ','UP2    ','VP2    '/)
@@ -366,7 +375,7 @@ end subroutine clubb_init_cnst
     namelist /clubbpbl_diff_nl/ clubb_cloudtop_cooling, clubb_rainevap_turb, clubb_expldiff, &
                                 clubb_do_adv, clubb_do_deep, clubb_timestep, clubb_stabcorrect, &
                                 clubb_rnevap_effic, clubb_liq_deep, clubb_liq_sh, clubb_ice_deep, &
-                                clubb_ice_sh
+                                clubb_ice_sh, clubb_tk1, clubb_tk2, relvar_fix
 
     !----- Begin Code -----
 
@@ -377,7 +386,9 @@ end subroutine clubb_init_cnst
     do_cldcool         = .false.   ! Initialize to false
     do_rainturb        = .false.   ! Initialize to false
     do_expldiff        = .false.   ! Initialize to false
-    
+    relvar_fix         = .false.   ! Initialize to false
+    clubb_do_adv       = .false.   ! Initialize to false
+    clubb_do_deep      = .false.   ! Initialize to false
 
     !  Read namelist to determine if CLUBB history should be called
     if (masterproc) then
@@ -420,6 +431,9 @@ end subroutine clubb_init_cnst
       call mpibcast(clubb_liq_sh,             1,   mpir8,   0, mpicom)
       call mpibcast(clubb_ice_deep,           1,   mpir8,   0, mpicom)
       call mpibcast(clubb_ice_sh,             1,   mpir8,   0, mpicom)
+      call mpibcast(clubb_tk1,                1,   mpir8,   0, mpicom)
+      call mpibcast(clubb_tk2,                1,   mpir8,   0, mpicom)
+      call mpibcast(relvar_fix,               1,   mpilog,  0, mpicom)
 #endif
 
     !  Overwrite defaults if they are true
@@ -1073,11 +1087,11 @@ end subroutine clubb_init_cnst
    real(r8) :: minqn                            ! minimum total cloud liquid + ice threshold    [kg/kg]
    real(r8) :: tempqn                           ! temporary total cloud liquid + ice            [kg/kg]
    real(r8) :: cldthresh                        ! threshold to determin cloud fraction          [kg/kg]
-   real(r8) :: relvarmax
+   real(r8) :: relvarmax,relvarmin
    real(r8) :: qmin
    real(r8) :: varmu(pcols)
    real(r8) :: varmu2
-   
+
    ! Variables below are needed to compute energy integrals for conservation
    real(r8) :: ke_a(pcols), ke_b(pcols), te_a(pcols), te_b(pcols)
    real(r8) :: wv_a(pcols), wv_b(pcols), wl_b(pcols), wl_a(pcols)
@@ -1133,6 +1147,7 @@ end subroutine clubb_init_cnst
    real(r8) :: es(pcols,pver)
    real(r8) :: qs(pcols,pver)
    real(r8) :: gam(pcols,pver)
+   real(r8) :: tmp_array(state%ncol,pverp)
    real(r8) :: bfact, orgparam, delpavg
    character(len=6) :: choice_radf
    
@@ -1503,13 +1518,14 @@ end subroutine clubb_init_cnst
    ! ------------------------------------------------- !
    ! Begin module to compute turbulent mountain stress !
    ! ------------------------------------------------- !
-   
-   call t_startf('compute_tms')
-   call compute_tms( pcols,        pver,      ncol,                   &
+    if ( do_tms) then
+       call t_startf('compute_tms')
+       call compute_tms( pcols,        pver,      ncol,                   &
                      state1%u,     state1%v,  state1%t,  state1%pmid, &
                      state1%exner, state1%zm, sgh30,     ksrftms,     &
                      tautmsx,      tautmsy,   cam_in%landfrac ) 
-   call t_stopf('compute_tms')
+       call t_stopf('compute_tms')
+    endif
    
    if (micro_do_icesupersat) then
      call physics_ptend_init(ptend_loc,state%psetcols, 'clubb', ls=.true., lu=.true., lv=.true., lq=lq)
@@ -1683,16 +1699,17 @@ end subroutine clubb_init_cnst
       
       !  Surface fluxes provided by host model
       wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zm(1))       ! Sensible heat flux
-      wprtp_sfc  = cam_in%lhf(i)/(latvap*rho_ds_zm(1))      ! Latent heat flux
+      wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zm(1))      ! Latent heat flux
       upwp_sfc   = cam_in%wsx(i)/rho_ds_zm(1)               ! Surface meridional momentum flux
       vpwp_sfc   = cam_in%wsy(i)/rho_ds_zm(1)               ! Surface zonal momentum flux  
       
       ! ------------------------------------------------- !
       ! Apply TMS                                         !
       ! ------------------------------------------------- !    
-      
-      upwp_sfc = upwp_sfc-((ksrftms(i)*state1%u(i,pver))/rho_ds_zm(1))
-      vpwp_sfc = vpwp_sfc-((ksrftms(i)*state1%v(i,pver))/rho_ds_zm(1))           
+       if ( do_tms) then
+          upwp_sfc = upwp_sfc-((ksrftms(i)*state1%u(i,pver))/rho_ds_zm(1))
+          vpwp_sfc = vpwp_sfc-((ksrftms(i)*state1%v(i,pver))/rho_ds_zm(1))           
+       endif
   
       !  Need to flip arrays around for CLUBB core
       do k=1,pverp
@@ -1989,7 +2006,7 @@ end subroutine clubb_init_cnst
       enddo
      
       ! Take into account the surface fluxes of heat and moisture
-      te_b(i) = te_b(i)+(cam_in%shf(i)+(cam_in%lhf(i)/latvap)*(latvap+latice))*hdtime
+      te_b(i) = te_b(i)+(cam_in%shf(i)+(cam_in%cflx(i,1))*(latvap+latice))*hdtime
 
       ! Limit the energy fixer to find highest layer where CLUBB is active
       ! Find first level where wp2 is higher than lowest threshold
@@ -2139,12 +2156,14 @@ end subroutine clubb_init_cnst
    call t_startf('ice_cloud_detrain_diag')
    do k=1,pver
       do i=1,ncol
-         if( state1%t(i,k) > 268.15_r8 ) then
+         if( state1%t(i,k) > clubb_tk1 ) then
             dum1 = 0.0_r8
-         elseif ( state1%t(i,k) < 238.15_r8 ) then
+         elseif ( state1%t(i,k) < clubb_tk2 ) then
             dum1 = 1.0_r8
          else
-            dum1 = ( 268.15_r8 - state1%t(i,k) ) / 30._r8 
+            !Note: Denominator is changed from 30.0_r8 to (clubb_tk1 - clubb_tk2),
+            !(clubb_tk1 - clubb_tk2) is also 30.0 but it introduced a non-bfb change
+            dum1 = ( clubb_tk1 - state1%t(i,k) ) /(clubb_tk1 - clubb_tk2)
          endif
         
          ptend_loc%q(i,k,ixcldliq) = dlf(i,k) * ( 1._r8 - dum1 )
@@ -2189,17 +2208,41 @@ end subroutine clubb_init_cnst
    endif
    
    relvar(:,:) = relvarmax  ! default
+!
+!PMA c20161114: The lower bound of 0.7 is the mean of scattered Cu in Barker et al (1996).
+!     With the new formulation the lower bound and is rarely reached. 
+!
+   relvarmin   = 0.7_r8
+   
+!PMA c20161114: Xue Zheng identified the issue with small relvar: the original
+!               code uses grid mean variance and water content instead of in-cloud 
+!               quantities.
+!               Following equation A7 in Guo et al (2014), relvar is now  calculated
+!               using in-cloud variance and in-cloud total water instead of grid
+!               mean. This effectively reduces autoconversion rate especially
+!               for thin clouds. 
+!
+!
 
    if (deep_scheme .ne. 'CLUBB_SGS') then    
-      where (rcm(:ncol,:pver) /= 0 .and. qclvar(:ncol,:pver) /= 0) &
-          relvar(:ncol,:pver) = min(relvarmax,max(0.001_r8,rcm(:ncol,:pver)**2/qclvar(:ncol,:pver)))
+      if (relvar_fix) then    
+         where (rcm(:ncol,:pver) > qsmall .and. qclvar(:ncol,:pver) /= 0._r8)  &
+              relvar(:ncol,:pver) = min(relvarmax,max(relvarmin,rcm(:ncol,:pver)**2/max(qsmall,  &
+              cloud_frac(:ncol,:pver)*qclvar(:ncol,:pver)-  &
+              (1._r8-cloud_frac(:ncol,:pver))*rcm(:ncol,:pver)**2)))
+      else
+         
+         where (rcm(:ncol,:pver) /= 0 .and. qclvar(:ncol,:pver) /= 0) &
+              relvar(:ncol,:pver) = min(relvarmax,max(0.001_r8,rcm(:ncol,:pver)**2/qclvar(:ncol,:pver)))
+      endif
    endif
    
    ! ------------------------------------------------- !
    ! Optional Accretion enhancement factor             !
    ! ------------------------------------------------- !   
 
-     accre_enhan(:ncol,:pver) = 1._r8
+     accre_enhan(:ncol,:pver) = micro_mg_accre_enhan_fac !default is 1._r8
+
    
    ! ------------------------------------------------- !
    ! Diagnose some output variables                    !
@@ -2369,7 +2412,7 @@ end subroutine clubb_init_cnst
       rrho = (1._r8/gravit)*(state1%pdel(i,pver)/dz_g(pver))
       call calc_ustar( state1%t(i,pver), state1%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
                        rrho, ustar2(i) )
-      call calc_obklen( th(i,pver), thv(i,pver), cam_in%lhf(i)/latvap, cam_in%shf(i), rrho, ustar2(i), &
+      call calc_obklen( th(i,pver), thv(i,pver), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar2(i), &
                         kinheat(i), kinwat(i), kbfs(i), obklen(i) )  
    enddo
    
@@ -2407,17 +2450,25 @@ end subroutine clubb_init_cnst
    call outfld( 'VPWP_CLUBB',       vpwp,                    pcols, lchnk )
    call outfld( 'WPTHLP_CLUBB',     wpthlp_output,           pcols, lchnk )
    call outfld( 'WPRTP_CLUBB',      wprtp_output,            pcols, lchnk )
-   call outfld( 'RTP2_CLUBB',       rtp2*1000._r8,           pcols, lchnk )
+   tmp_array = rtp2(:ncol,:)*1000._r8
+   call outfld( 'RTP2_CLUBB',       tmp_array,               ncol,  lchnk )
    call outfld( 'THLP2_CLUBB',      thlp2,                   pcols, lchnk )
-   call outfld( 'RTPTHLP_CLUBB',    rtpthlp_output*1000._r8, pcols, lchnk )
-   call outfld( 'RCM_CLUBB',        rcm*1000._r8,            pcols, lchnk )
-   call outfld( 'WPRCP_CLUBB',      wprcp*latvap,            pcols, lchnk )
+   tmp_array = rtpthlp_output(:ncol,:)*1000._r8
+   call outfld( 'RTPTHLP_CLUBB',    tmp_array,               ncol,  lchnk )
+   tmp_array = rcm(:ncol,:)*1000._r8
+   call outfld( 'RCM_CLUBB',        tmp_array,               ncol,  lchnk )
+   tmp_array = wprcp(:ncol,:)*latvap
+   call outfld( 'WPRCP_CLUBB',      tmp_array,               ncol,  lchnk )
    call outfld( 'CLOUDFRAC_CLUBB',  alst,                    pcols, lchnk )
-   call outfld( 'RCMINLAYER_CLUBB', rcm_in_layer*1000._r8,   pcols, lchnk )
+   tmp_array = rcm_in_layer(:ncol,:)*1000._r8
+   call outfld( 'RCMINLAYER_CLUBB', tmp_array,               ncol,  lchnk )
    call outfld( 'CLOUDCOVER_CLUBB', cloud_frac,              pcols, lchnk )
-   call outfld( 'WPTHVP_CLUBB',     wpthvp*cpair,            pcols, lchnk )
-   call outfld( 'ZT_CLUBB',         1._r8*zt_out,            pcols, lchnk )
-   call outfld( 'ZM_CLUBB',         1._r8*zi_out,            pcols, lchnk )
+   tmp_array = wpthvp(:ncol,:)*cpair
+   call outfld( 'WPTHVP_CLUBB',     tmp_array,               ncol,  lchnk )
+   tmp_array = 1._r8*zt_out(:ncol,:)
+   call outfld( 'ZT_CLUBB',         tmp_array,               ncol,  lchnk )
+   tmp_array = 1._r8*zi_out(:ncol,:)
+   call outfld( 'ZM_CLUBB',         tmp_array,               ncol,  lchnk )
    call outfld( 'UM_CLUBB',         um,                      pcols, lchnk )
    call outfld( 'VM_CLUBB',         vm,                      pcols, lchnk )
    call outfld( 'THETAL',           thetal_output,           pcols, lchnk )
@@ -2560,7 +2611,7 @@ end subroutine clubb_init_cnst
     do i = 1, ncol
        call calc_ustar( state%t(i,pver), state%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
                         rrho, ustar(i) )
-       call calc_obklen( th(i), thv(i), cam_in%lhf(i)/latvap, cam_in%shf(i), rrho, ustar(i), &
+       call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
                         kinheat, kinwat, kbfs, obklen(i) )
     enddo
 

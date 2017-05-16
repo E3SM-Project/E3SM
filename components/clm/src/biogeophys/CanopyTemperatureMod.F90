@@ -16,7 +16,7 @@ module CanopyTemperatureMod
   use shr_const_mod        , only : SHR_CONST_PI
   use decompMod            , only : bounds_type
   use abortutils           , only : endrun
-  use clm_varctl           , only : iulog
+  use clm_varctl           , only : iulog, use_ed
   use PhotosynthesisMod    , only : Photosynthesis, PhotosynthesisTotal, Fractionation
   use SurfaceResistanceMod , only : calc_soilevap_stress
   use EcophysConType       , only : ecophyscon
@@ -30,7 +30,7 @@ module CanopyTemperatureMod
   use WaterstateType       , only : waterstate_type
   use LandunitType         , only : lun                
   use ColumnType           , only : col                
-  use PatchType            , only : pft                
+  use PatchType            , only : pft
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -392,6 +392,24 @@ contains
 
       end do ! (end of columns loop)
 
+      ! Set roughness and displacement
+      ! Note that FATES passes back z0m and displa at the end
+      ! of its dynamics call.  If and when crops are
+      ! enabled simultaneously with FATES, we will 
+      ! have to apply a filter here.
+      if(use_ed) then
+         ! (FATES-INTERF)
+         ! call clm_fates%TransferZ0mDisp(bounds,frictionvel_inst,canopystate_inst)
+      end if
+
+      do fp = 1,num_nolakep
+         p = filter_nolakep(fp)
+         if( .not.(pft%is_fates(p))) then
+            z0m(p)    = z0mr(pft%itype(p)) * htop(p)
+            displa(p) = displar(pft%itype(p)) * htop(p)
+         end if
+      end do
+
       ! Initialization
 
       do fp = 1,num_nolakep
@@ -427,11 +445,6 @@ contains
 
          avmuir = 1._r8
          emv(p) = 1._r8-exp(-(elai(p)+esai(p))/avmuir)
-
-         ! Roughness lengths over vegetation
-
-         z0m(p)    = z0mr(pft%itype(p)) * htop(p)
-         displa(p) = displar(pft%itype(p)) * htop(p)
 
          z0mv(p)   = z0m(p)
          z0hv(p)   = z0mv(p)

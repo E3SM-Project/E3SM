@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 
 use Cwd;
 use Getopt::Long;
@@ -13,8 +13,8 @@ sub usage {
 die <<EOF;
 SYNOPSIS
      create_train [options]
-    
-     Creates a manifest file and a train script.  After running you'll 
+
+     Creates a manifest file and a train script.  After running you'll
      need to submit the train script by doing a qsub train.trainid.YYYYMMDD-HHmmss.run
 
 OPTIONS
@@ -22,9 +22,9 @@ OPTIONS
      quoted.
 
      (casedir or manifestfile are required)
-    -casedir      "<casedir1,casedir2,casedir3,...>"     Specifies the case directories, the quotes are needed. 
-     or 
-    -manifestfile  <manifestfile> Specifies a manifest file you want to use.  A new manifest file will not be created. 
+    -casedir      "<casedir1,casedir2,casedir3,...>"     Specifies the case directories, the quotes are needed.
+     or
+    -manifestfile  <manifestfile> Specifies a manifest file you want to use.  A new manifest file will not be created.
 
     -trainid       <trainid>      Specifies the train ID (required)
     -email         <email>        Specifies email address (required)
@@ -33,11 +33,11 @@ EXAMPLES
      The first three examples will create a manifest file for you.  The manifest file contains information about the location of the cases,
      how many tasks are needed, run script names, and trainids.
 
-     create_train -casedir "/ccs/home/userid/cases/TESTCASE1,/ccs/home/userid/cases/TESTCASE2,/tmp/proj/ccsm/runs/b40.1850.case" -trainid A -email youremail\@ucar.edu 
+     create_train -casedir "/ccs/home/userid/cases/TESTCASE1,/ccs/home/userid/cases/TESTCASE2,/tmp/proj/ccsm/runs/b40.1850.case" -trainid A -email youremail\@ucar.edu
      create_train -casedir "/ccs/home/userid/cases/TESTCASE[12],/tmp/proj/ccsm/runs/b40.1850.case" -trainid A -email youremail\@ucar.edu
-     create_train -casedir "/ccs/home/userid/cases/TESTCASE*,/tmp/proj/ccsm/runs/b40.1850.case" -trainid A -email youremail\@ucar.edu 
- 
-     If you already have an old manifest file, or one that you've edited, that you want to use you can do the following.  
+     create_train -casedir "/ccs/home/userid/cases/TESTCASE*,/tmp/proj/ccsm/runs/b40.1850.case" -trainid A -email youremail\@ucar.edu
+
+     If you already have an old manifest file, or one that you've edited, that you want to use you can do the following.
 
      create_train -manifestfile old_manifest_file -trainid A -email youremail\@ucar.edu
 
@@ -163,7 +163,7 @@ chomp $qtasks;
 open(TRAIN_SCRIPT, ">$train_script");
 print TRAIN_SCRIPT <<"SCRIPT";
 ##============================================================================
-## Batch script for Climate Train ${TRAIN_ID} 
+## Batch script for Climate Train ${TRAIN_ID}
 ## Created $date
 ##============================================================================
 #PBS -A ${pbs_account}

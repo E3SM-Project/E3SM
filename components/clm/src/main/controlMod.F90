@@ -42,6 +42,7 @@ module controlMod
   use clm_varctl              , only: use_dynroot
   use CNAllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
   use clm_varctl              , only: nu_com
+  use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -242,7 +243,7 @@ contains
     namelist /clm_inparm/ use_dynroot
 
     namelist /clm_inparm / &
-         use_vsfm, vsfm_satfunc_type
+         use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -328,6 +329,34 @@ contains
        else
           create_glacier_mec_landunit = .false.
        end if
+
+       ! Check compatibility with the FATES model 
+       if ( use_ed ) then
+
+          use_voc = .false.
+
+          if ( use_cn) then
+             call endrun(msg=' ERROR: use_cn and use_ed cannot both be set to true.'//&
+                   errMsg(__FILE__, __LINE__))
+          end if
+          
+          if ( use_crop ) then
+             call endrun(msg=' ERROR: use_crop and use_ed cannot both be set to true.'//&
+                   errMsg(__FILE__, __LINE__))
+          end if
+          
+          if( use_lch4 ) then
+             call endrun(msg=' ERROR: use_lch4 (methane) and use_ed cannot both be set to true.'//&
+                   errMsg(__FILE__, __LINE__))
+          end if
+
+          if ( n_drydep > 0 .and. drydep_method /= DD_XLND ) then
+             call endrun(msg=' ERROR: dry deposition via ML Welsey is not compatible with FATES.'//&
+                   errMsg(__FILE__, __LINE__))
+          end if
+
+       end if
+
 
        if (use_crop .and. (use_c13 .or. use_c14)) then
           call endrun(msg=' ERROR:: CROP and C13/C14 can NOT be on at the same time'//&
@@ -686,7 +715,7 @@ contains
 
     call mpi_bcast (use_vsfm, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (vsfm_satfunc_type, len(vsfm_satfunc_type), MPI_CHARACTER, 0, mpicom, ier)
-
+    call mpi_bcast (vsfm_use_dynamic_linesearch, 1, MPI_LOGICAL, 0, mpicom, ier)
 
   end subroutine control_spmd
 
@@ -900,6 +929,7 @@ contains
        write(iulog,*)
        write(iulog,*) 'VSFM Namelists:'
        write(iulog, *) '  vsfm_satfunc_type                                      : ', vsfm_satfunc_type
+       write(iulog, *) '  vsfm_use_dynamic_linesearch                            : ', vsfm_use_dynamic_linesearch
     endif
 
   end subroutine control_print

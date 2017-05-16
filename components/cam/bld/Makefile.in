@@ -45,7 +45,7 @@
 # GPTL_SRCDIR   Source directory for GPTL timing library
 #
 # Note: An internal implementation of the ESMF time-manager interface is provided
-#       with the sequential CCSM distribution in $ROOTDIR/cime/share/esmf_wrf_timemgr.
+#       with the sequential CCSM distribution in $ROOTDIR/cime/src/share/esmf_wrf_timemgr.
 #
 #------------------------------------------------------------------------
 
@@ -146,7 +146,7 @@ endif
 # Rules to build MCT in its own library. 
 # SRCDIR is passed via the commandline because of a bug in the MCT configure.
 $(MCT_LIBDIR)/mct/libmct.a: 
-	$(MAKE) -C $(MCT_LIBDIR) SRCDIR=$(ROOTDIR)/cime/externals/mct
+	$(MAKE) -C $(MCT_LIBDIR) SRCDIR=$(ROOTDIR)/cime/src/externals/mct
 shr_kind_mod.o: $(MCT_LIBDIR)/mct/libmct.a
 perf_utils.o: $(MCT_LIBDIR)/mct/libmct.a
 pio_kinds.o: $(MCT_LIBDIR)/mct/libmct.a
@@ -172,7 +172,7 @@ RtmSpmd.o: $(MCT_LIBDIR)/mct/libmct.a
 	$(AS) -m  $<
 
 %.F90: %.F90.in
-	 $(ROOTDIR)/cime/externals/genf90/genf90.pl $< > $@
+	 $(ROOTDIR)/cime/src/externals/genf90/genf90.pl $< > $@
 
 # Rules used for the tests run by "configure -test"
 test_fc: test_fc.o

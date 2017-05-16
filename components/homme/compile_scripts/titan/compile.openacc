@@ -1,7 +1,7 @@
 #!/bin/bash
 
-do_cmake=0
-do_clean=0
+do_cmake=1
+do_clean=1
 do_make=1
  
 HOMME_ROOT=/ccs/home/$USER/ACME/components/homme
@@ -14,7 +14,6 @@ mkdir -p titan-openacc     || exit -1
 cd titan-openacc
  
 if [ $do_cmake -eq 1 ]; then
-sed -i "s/  integer, parameter         :: qsize_d=.*/  integer, parameter         :: qsize_d=$NTRACERS/g" $HOMME_ROOT/src/share/dimensions_mod.F90 || exit -1
 rm -rf CMakeFiles CMakeCache.txt
 cmake                                                                                           \
   -C $HOMME_ROOT/cmake/machineFiles/titan.cmake                                                 \
@@ -27,10 +26,11 @@ cmake                                                                           
   -DWITH_PNETCDF=FALSE                                                                          \
   -DHDF5_DIR=$HDF5_DIR                                                                          \
   -DPREQX_NP=4                                                                                  \
+  -DPREQX_QSIZE_D=$NTRACERS                                                                     \
   -DPREQX_PLEV=$NLEVELS                                                                         \
-  -DBUILD_HOMME_SWDGX=FALSE                                                                     \
   -DBUILD_HOMME_SWEQX=FALSE                                                                     \
-  -DBUILD_HOMME_PRIMDGX=FALSE                                                                   \
+  -DBUILD_HOMME_PREQX_ACC=TRUE                                                                  \
+  -DBUILD_HOMME_PREQX=FALSE                                                                     \
   -DENABLE_OPENMP=TRUE                                                                          \
   -DHOMME_PROJID=STF006                                                                         \
   -DENABLE_OPENACC=TRUE                                                                         \
@@ -49,7 +49,7 @@ make clean                                                  || exit -1
 fi
 
 if [ $do_make -eq 1 ]; then
-make -j16 preqx                                             || exit -1
+make -j16 preqx_acc                                         || exit -1
 mkdir -p $HOMME_ROOT/build/preqx
-cp ./src/preqx/preqx $HOMME_ROOT/build/preqx/preqx.openacc  || exit -1
+cp ./src/preqx_acc/preqx_acc $HOMME_ROOT/build/preqx/preqx.openacc  || exit -1
 fi

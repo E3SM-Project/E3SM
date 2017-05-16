@@ -1,6 +1,6 @@
 undef("area_avg_SE")
 function area_avg_SE(data, weight)
-; Calculate global mean for single level of CAM-SE output 
+; Calculate global mean for single level of CAM-SE output
 begin
   area2d = (/sum(data*weight(:))/)
   if (typeof(area2d).eq."double") then
@@ -9,10 +9,10 @@ begin
     return(area2d)
   end if
 end
- 
+
 undef("area_avg_FV")
 function area_avg_FV(data, weight)
-; Calculate global mean for single level of CAM-FV output 
+; Calculate global mean for single level of CAM-FV output
 begin
   area2d = (/wgt_areaave(data, weight, 1.0, 1)/)
   if (typeof(area2d).eq."double") then

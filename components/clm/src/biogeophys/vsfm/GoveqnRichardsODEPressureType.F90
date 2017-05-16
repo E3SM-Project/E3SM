@@ -506,27 +506,24 @@ contains
     ! LOCAL VARIABLES
     PetscInt                                                      :: iauxvar
     PetscInt                                                      :: nauxvar
-    type(rich_ode_pres_auxvar_type), dimension(:), pointer        :: ge_avars
 
-    ge_avars => this%aux_vars_in
-
-    nauxvar = size(ge_avars)
+    nauxvar = size(this%aux_vars_in)
     if( nauxvar > size(soe_avars) ) then
-       write(iulog,*) 'size(ge_avars) > size(soe_avars)'
+       write(iulog,*) 'size(this%aux_vars_in) > size(soe_avars)'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
 
     do iauxvar = 1, nauxvar
        ! Copy temperature.
-       ge_avars(iauxvar)%temperature =  &
+       this%aux_vars_in(iauxvar)%temperature =  &
             soe_avars(iauxvar+offset)%temperature
 
        ! Copy frac_liq_sat.
-       ge_avars(iauxvar)%frac_liq_sat =  &
+       this%aux_vars_in(iauxvar)%frac_liq_sat =  &
             soe_avars(iauxvar+offset)%frac_liq_sat
 
        ! Copy pressure.
-       ge_avars(iauxvar)%pressure =  &
+       this%aux_vars_in(iauxvar)%pressure =  &
             soe_avars(iauxvar+offset)%pressure
     enddo
 
@@ -553,24 +550,22 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(goveqn_richards_ode_pressure_type), intent(inout) :: this
+    class(goveqn_richards_ode_pressure_type), intent(inout)    :: this
     type(sysofeqns_vsfm_auxvar_type), dimension(:), intent(in) :: soe_avars
     !
     ! LOCAL VARIABLES
-    integer :: iauxvar, iauxvar_off, iconn
-    integer :: auxVarCt_ge, auxVarCt_soe
-    integer :: condition_id, sum_conn
-    type(rich_ode_pres_auxvar_type), dimension(:), pointer :: ge_avars
-    type(condition_type), pointer :: cur_cond
-    type(connection_set_type), pointer :: cur_conn_set
-    character(len=256) :: string
+    integer                                                    :: iauxvar, iauxvar_off, iconn
+    integer                                                    :: auxVarCt_ge, auxVarCt_soe
+    integer                                                    :: condition_id, sum_conn
+    type(condition_type), pointer                              :: cur_cond
+    type(connection_set_type), pointer                         :: cur_conn_set
+    character(len=256)                                         :: string
 
-    ge_avars => this%aux_vars_bc
-    auxVarCt_ge = size(ge_avars)
+    auxVarCt_ge = size(this%aux_vars_bc)
 
     auxVarCt_soe = size(soe_avars)
     if( auxVarCt_ge > auxVarCt_soe ) then
-       write(iulog,*) 'size(ge_avars) > size(soe_avars)'
+       write(iulog,*) 'size(this%_aux_bc) > size(soe_avars)'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
 
@@ -605,7 +600,7 @@ contains
           sum_conn = sum_conn + 1
           select case(cur_cond%itype)
           case (COND_DIRICHLET, COND_MASS_RATE, COND_MASS_FLUX)
-             ge_avars(sum_conn)%condition_value =  &
+             this%aux_vars_bc(sum_conn)%condition_value =  &
                   soe_avars(iconn + iauxvar_off)%condition_value
           case (COND_DIRICHLET_FRM_OTR_GOVEQ)
              ! Do nothing
@@ -649,17 +644,15 @@ contains
     integer                                                    :: auxVarCt_ge, auxVarCt_soe
     integer                                                    :: condition_id, sum_conn
     PetscReal                                                  :: var_value
-    type(rich_ode_pres_auxvar_type), dimension(:), pointer     :: ge_avars
     type(condition_type), pointer                              :: cur_cond
     type(connection_set_type), pointer                         :: cur_conn_set
     character(len=256)                                         :: string
 
-    ge_avars => this%aux_vars_ss
-    auxVarCt_ge = size(ge_avars)
+    auxVarCt_ge = size(this%aux_vars_ss)
 
     auxVarCt_soe = size(soe_avars)
     if( auxVarCt_ge > auxVarCt_soe ) then
-       write(iulog,*) 'size(ge_avars) > size(soe_avars)'
+       write(iulog,*) 'size(this%aux_vars_ss) > size(soe_avars)'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
 
@@ -695,7 +688,7 @@ contains
           select case(cur_cond%itype)
           case (COND_MASS_RATE)
              var_value = soe_avars(iconn + iauxvar_off)%condition_value
-             ge_avars(sum_conn)%condition_value = var_value
+             this%aux_vars_ss(sum_conn)%condition_value = var_value
              cur_cond%value(iconn) = var_value
           case default
              write(string,*) cur_cond%itype
@@ -733,7 +726,6 @@ contains
     PetscInt, intent(in), optional :: offset
     !
     ! !LOCAL VARIABLES
-    type (rich_ode_pres_auxvar_type), pointer       :: ge_avars(:)
     PetscInt                                        :: iauxvar_off
 
     select case(soe_avar_type)
@@ -782,7 +774,6 @@ contains
     PetscInt, optional                                             :: offset
     !
     ! !LOCAL VARIABLES
-    type (rich_ode_pres_auxvar_type), pointer                      :: ge_avars(:)
     PetscInt                                                       :: iauxvar
     PetscInt                                                       :: iauxvar_off
     PetscInt                                                       :: iconn
@@ -800,17 +791,16 @@ contains
 
     select case(soe_avar_type)
     case (AUXVAR_INTERNAL)
-       ge_avars => this%aux_vars_in
 
-       if ( size(ge_avars) > size(soe_avars)) then
-          write(iulog,*) 'size(ge_avars) > size(soe_avars)'
+       if ( size(this%aux_vars_in) > size(soe_avars)) then
+          write(iulog,*) 'size(this%aux_vars_in) > size(soe_avars)'
           call endrun(msg=errMsg(__FILE__, __LINE__))
        endif
 
-       do iauxvar = 1, size(ge_avars)
+       do iauxvar = 1, size(this%aux_vars_in)
           if (this%mesh%is_active(iauxvar)) then
              soe_avars(iauxvar+iauxvar_off)%liq_sat =  &
-                  ge_avars(iauxvar)%sat
+                  this%aux_vars_in(iauxvar)%sat
 
              mass =  &
                   this%aux_vars_in(iauxvar)%por*        & ! [-]

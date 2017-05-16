@@ -11,7 +11,7 @@ module pftvarcon
   use abortutils  , only : endrun
   use clm_varpar  , only : mxpft, numrad, ivis, inir
   use clm_varctl  , only : iulog, use_cndv, use_vertsoilc
-  use clm_varpar  , only : nlevdecomp, nsoilorder
+  use clm_varpar  , only : nlevdecomp_full, nsoilorder
   use clm_varctl  , only : nu_com
   !
   ! !PUBLIC TYPES:
@@ -208,6 +208,14 @@ module pftvarcon
   real(r8), allocatable :: frootcp_obs(:)      !fine root C:P (gC/gP)
   real(r8), allocatable :: livewdcp_obs(:)     !live wood (phloem and ray parenchyma) C:P (gC/gP)
   real(r8), allocatable :: deadwdcp_obs(:)     !dead wood (xylem and heartwood) C:P (gC/gP)
+  real(r8), allocatable :: leafcn_obs_flex(:,:)       !upper and lower range of leaf C:N [gC/gN]
+  real(r8), allocatable :: frootcn_obs_flex(:,:)      !upper and lower range of fine root C:N (gC/gN)
+  real(r8), allocatable :: livewdcn_obs_flex(:,:)     !upper and lower range of live wood (phloem and ray parenchyma) C:N (gC/gN)
+  real(r8), allocatable :: deadwdcn_obs_flex(:,:)     !upper and lower range of dead wood (xylem and heartwood) C:N (gC/gN)
+  real(r8), allocatable :: leafcp_obs_flex(:,:)       !upper and lower range of leaf C:P [gC/gP]
+  real(r8), allocatable :: frootcp_obs_flex(:,:)      !upper and lower range of fine root C:P (gC/gP)
+  real(r8), allocatable :: livewdcp_obs_flex(:,:)     !upper and lower range of live wood (phloem and ray parenchyma) C:P (gC/gP)
+  real(r8), allocatable :: deadwdcp_obs_flex(:,:)     !upper and lower range of dead wood (xylem and heartwood) C:P (gC/gP)
   ! Photosynthesis parameters
   real(r8), allocatable :: fnr(:)              !fraction of nitrogen in RuBisCO
   real(r8), allocatable :: act25(:)           
@@ -229,6 +237,13 @@ module pftvarcon
   real(r8), allocatable :: mbbopt(:)           !Ball-Berry stomatal conductance slope
   real(r8), allocatable :: nstor(:)            !Nitrogen storage pool timescale 
   real(r8)              :: tc_stress           !Critial temperature for moisture stress
+  real(r8)              :: vcmax_np1           !vcmax~np relationship coefficient
+  real(r8)              :: vcmax_np2           !vcmax~np relationship coefficient
+  real(r8)              :: vcmax_np3           !vcmax~np relationship coefficient
+  real(r8)              :: vcmax_np4           !vcmax~np relationship coefficient
+  real(r8)              :: jmax_np1            !jmax~np relationship coefficient
+  real(r8)              :: jmax_np2            !jmax~np relationship coefficient
+  real(r8)              :: jmax_np3            !jmax~np relationship coefficient
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: pftconrd ! Read and initialize vegetation (PFT) constants
@@ -256,7 +271,7 @@ contains
     use clm_varctl,  only : use_crop, use_dynroot
     use clm_varcon,  only : tfrz
     use spmdMod   ,  only : masterproc
-    use EDPftvarcon, only : EDpftconrd
+
     !
     ! !ARGUMENTS:
     implicit none
@@ -422,13 +437,13 @@ contains
     allocate( VMAX_PLANT_NH4(0:mxpft) )
     allocate( VMAX_PLANT_NO3(0:mxpft) )
     allocate( VMAX_PLANT_P(0:mxpft) )
-    allocate( VMAX_MINSURF_P_vr(1:nlevdecomp,0:nsoilorder))
+    allocate( VMAX_MINSURF_P_vr(1:nlevdecomp_full,0:nsoilorder))
     allocate( KM_PLANT_NH4(0:mxpft) ) 
     allocate( KM_PLANT_NO3(0:mxpft) )
     allocate( KM_PLANT_P(0:mxpft) )
-    allocate( KM_MINSURF_P_vr(1:nlevdecomp,0:nsoilorder))
-    allocate( decompmicc_patch_vr (1:nlevdecomp,0:mxpft))
-    allocate( VMAX_PTASE_vr(1:nlevdecomp))
+    allocate( KM_MINSURF_P_vr(1:nlevdecomp_full,0:nsoilorder))
+    allocate( decompmicc_patch_vr (1:nlevdecomp_full,0:mxpft))
+    allocate( VMAX_PTASE_vr(1:nlevdecomp_full))
     allocate( i_vc               (0:mxpft) ) 
     allocate( s_vc               (0:mxpft) ) 
     ! new stoichiometry
@@ -440,6 +455,14 @@ contains
     allocate( frootcp_obs        (0:mxpft) )   
     allocate( livewdcp_obs       (0:mxpft) )
     allocate( deadwdcp_obs       (0:mxpft) ) 
+    allocate( leafcn_obs_flex         (0:mxpft,1:2) )   
+    allocate( frootcn_obs_flex        (0:mxpft,1:2) )   
+    allocate( livewdcn_obs_flex       (0:mxpft,1:2) )
+    allocate( deadwdcn_obs_flex       (0:mxpft,1:2) )      
+    allocate( leafcp_obs_flex         (0:mxpft,1:2) )   
+    allocate( frootcp_obs_flex        (0:mxpft,1:2) )   
+    allocate( livewdcp_obs_flex       (0:mxpft,1:2) )
+    allocate( deadwdcp_obs_flex       (0:mxpft,1:2) ) 
     ! Photosynthesis
     allocate( fnr                (0:mxpft) )
     allocate( act25              (0:mxpft) )
@@ -460,6 +483,9 @@ contains
     allocate( bbbopt             (0:mxpft) )
     allocate( mbbopt             (0:mxpft) )
     allocate( nstor              (0:mxpft) )
+
+    ! (FATES-INTERF) check .not.use_ed logic after converting to new fates parameter system
+    ! these logic checks should probably be removed
   
     ! Set specific vegetation type values
 
@@ -763,6 +789,37 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
         call ncd_io('deadwdcp_obs',deadwdcp_obs, 'read', ncid, readvar=readv, posNOTonfile=.true.)
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+         call ncd_io('leafcn_obs_flex',leafcn_obs_flex, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('frootcn_obs_flex',frootcn_obs_flex, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('livewdcn_obs_flex',livewdcn_obs_flex, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('deadwdcn_obs_flex',deadwdcn_obs_flex, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('leafcp_obs_flex',leafcp_obs_flex, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('frootcp_obs_flex',frootcp_obs_flex, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('livewdcp_obs_flex',livewdcp_obs_flex, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('deadwdcp_obs_flex',deadwdcp_obs_flex, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+
+        call ncd_io('vcmax_np1',vcmax_np1, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in vcmax_np data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('vcmax_np2',vcmax_np2, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in vcmax_np data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('vcmax_np3',vcmax_np3, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in vcmax_np data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('vcmax_np4',vcmax_np4, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in vcmax_np data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('jmax_np1',jmax_np1, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in vcmax_np data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('jmax_np2',jmax_np2, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in vcmax_np data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('jmax_np3',jmax_np3, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in vcmax_np data'//errMsg(__FILE__, __LINE__))
     end if
     call ncd_io('fnr', fnr, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
@@ -804,17 +861,15 @@ contains
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
     call ncd_io('tc_stress', tc_stress, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
-    !
-    ! ED variables
-    !
-    if ( use_ed ) then
-       ! The following sets the module variable EDpftcon_inst in EDPftcon
-       call EDpftconrd ( ncid )
-    endif
        
     call ncd_pio_closefile(ncid)
 
+
     do i = 0, mxpft
+
+       ! (FATES-INTERF) Later, depending on how the team plans to structure the crop model
+       ! or other modules that co-exist while FATES is on, we may want to preserve these pft definitions
+       ! on non-fates columns.  For now, they are incompatible (rgk 04-2017)
        if(.not. use_ed)then
           if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
              write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &
@@ -857,11 +912,9 @@ contains
     if (use_cndv) then
        fcur(:) = fcurdv(:)
     end if
-    !
-    ! Do some error checking, but not if ED is on.
-    !
-    ! FIX(SPM,032414) double check if some of these should be on...
 
+    ! (FATES-INTERF) FATES will not change mxpft, it has its own pft list and maximums
+    ! so this logic should not be necessary. Leaving it for now.  (rgk 04-2017)
     if( .not. use_ed ) then
        if ( npcropmax /= mxpft )then
           call endrun(msg=' ERROR: npcropmax is NOT the last value'//errMsg(__FILE__, __LINE__))

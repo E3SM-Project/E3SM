@@ -248,7 +248,8 @@ contains
    if (num_pcropp > 0 ) then
       call CNCropHarvest(num_pcropp, filter_pcropp, &
            num_soilc, filter_soilc, crop_vars, &
-           cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+           cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenstate_vars, &
+           nitrogenflux_vars, phosphorusstate_vars, phosphorusflux_vars)
    end if
 
     call CNOffsetLitterfall(num_soilp, filter_soilp, &
@@ -1409,11 +1410,9 @@ contains
          dwt_seedn_to_leaf =>    nitrogenflux_vars%dwt_seedn_to_leaf_col , & ! Output: [real(r8) (:) ]  (gN/m2/s) seed source to PFT-level                
          crpyld            =>    crop_vars%crpyld_patch                  , & ! Output:  [real(r8) ):)]  harvested crop (bu/acre)
          dmyield           =>    crop_vars%dmyield_patch                 , & ! Output:  [real(r8) ):)]  dry matter harvested crop (t/ha)
-
          leafcp            =>    ecophyscon%leafcp                       , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)                                  
          leafp_xfer        =>    phosphorusstate_vars%leafp_xfer_patch   , & ! Output: [real(r8) (:) ]  (gP/m2)   leaf P transfer                           
          dwt_seedp_to_leaf =>    phosphorusflux_vars%dwt_seedp_to_leaf_col , & ! Output: [real(r8) (:) ]  (gP/m2/s) seed source to PFT-level                
-
          fert              =>    nitrogenflux_vars%fert_patch              & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep 
          )
 
@@ -1527,7 +1526,7 @@ contains
                   dwt_seedn_to_leaf(c) = dwt_seedn_to_leaf(c) + leafn_xfer(p)/dt
 
                   leafp_xfer(p)  = leafc_xfer(p) / leafcp(ivt(p)) ! with onset
-                  dwt_seedp_to_leaf(c) = dwt_seedp_to_leaf(c) + leafn_xfer(p)/dt
+                  dwt_seedp_to_leaf(c) = dwt_seedp_to_leaf(c) + leafp_xfer(p)/dt
 
                   ! latest possible date to plant winter cereal and after all other 
                   ! crops were harvested for that year
@@ -1755,6 +1754,7 @@ contains
                else                      ! plant never emerged from the ground
                   dwt_seedc_to_leaf(c) = dwt_seedc_to_leaf(c) - leafc_xfer(p)/dt
                   dwt_seedn_to_leaf(c) = dwt_seedn_to_leaf(c) - leafn_xfer(p)/dt
+                  dwt_seedp_to_leaf(c) = dwt_seedp_to_leaf(c) - leafp_xfer(p)/dt
                   leafc_xfer(p) = 0._r8  ! revert planting transfers
                   leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p))
                   leafp_xfer(p) = leafc_xfer(p) / leafcp(ivt(p))
@@ -2161,7 +2161,8 @@ contains
 
  !----------------------------------------------------------------------
  subroutine CNCropHarvest (num_pcropp, filter_pcropp, num_soilc, filter_soilc, crop_vars, &
-            cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+            cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars, &
+            phosphorusstate_vars, phosphorusflux_vars)
    !
    ! !DESCRIPTION:
    ! This routine handles harvest for agriculture vegetation types, such as
@@ -2181,6 +2182,8 @@ contains
     type(carbonflux_type)   , intent(inout) :: carbonflux_vars
     type(nitrogenstate_type), intent(in)    :: nitrogenstate_vars
     type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
+    type(phosphorusstate_type),intent(inout):: phosphorusstate_vars
+    type(phosphorusflux_type), intent(inout):: phosphorusflux_vars
    !
    ! !LOCAL VARIABLES:
    ! local pointers to implicit in scalars
@@ -2204,19 +2207,27 @@ contains
    leafn                 =>    nitrogenstate_vars%leafn_patch              , & ! Input:  [real(r8) (:) ]  (gN/m2) leaf N
    grainn                =>    nitrogenstate_vars%grainn_patch             , & ! Input:  [real(r8) (:) ]  (gN/m2) grain N
    livestemn             =>    nitrogenstate_vars%livestemn_patch          , & ! Input:  [real(r8) (:) ]  (gN/m2) livestem N
-
+   leafp                 =>    phosphorusstate_vars%leafp_patch            , & ! Input:  [real(r8) (:) ]  (gP/m2) leaf P
+   grainp                =>    phosphorusstate_vars%grainp_patch           , & ! Input:  [real(r8) (:) ]  (gP/m2) grain P
+   livestemp             =>    phosphorusstate_vars%livestemp_patch        , & ! Input:  [real(r8) (:) ]  (gP/m2) livestem P
    cpool_to_grainc       =>    carbonflux_vars%cpool_to_grainc_patch       , & ! Input:  [real(r8) (:) ]  allocation to grain C (gC/m2/s)
    cpool_to_livestemc    =>    carbonflux_vars%cpool_to_livestemc_patch    , & ! Input:  [real(r8) (:) ]  allocation to live stem C (gC/m2/s)
    cpool_to_leafc        =>    carbonflux_vars%cpool_to_leafc_patch        , & ! Input:  [real(r8) (:) ]  allocation to leaf C (gC/m2/s)
-   npool_to_leafn        =>    nitrogenflux_vars%npool_to_leafn_patch      , & ! Input:  [real(r8) (:)]  allocation to grain N (gC/m2/s)
-   npool_to_livestemn    =>    nitrogenflux_vars%npool_to_livestemn_patch  , & ! Input:  [real(r8) (:)]  allocation to grain N (gC/m2/s)
-   npool_to_grainn       =>    nitrogenflux_vars%npool_to_grainn_patch     , & ! Input:  [real(r8) (:)]  allocation to grain N (gC/m2/s)
+   npool_to_leafn        =>    nitrogenflux_vars%npool_to_leafn_patch      , & ! Input:  [real(r8) (:)]  allocation to grain N (gN/m2/s)
+   npool_to_livestemn    =>    nitrogenflux_vars%npool_to_livestemn_patch  , & ! Input:  [real(r8) (:)]  allocation to grain N (gN/m2/s)
+   npool_to_grainn       =>    nitrogenflux_vars%npool_to_grainn_patch     , & ! Input:  [real(r8) (:)]  allocation to grain N (gN/m2/s)
+   ppool_to_leafp        =>    phosphorusflux_vars%ppool_to_leafp_patch    , & ! Input:  [real(r8) (:)]  allocation to grain P (gP/m2/s)
+   ppool_to_livestemp    =>    phosphorusflux_vars%ppool_to_livestemp_patch, & ! Input:  [real(r8) (:)]  allocation to grain P (gP/m2/s)
+   ppool_to_grainp       =>    phosphorusflux_vars%ppool_to_grainp_patch   , & ! Input:  [real(r8) (:)]  allocation to grain P (gP/m2/s)
    hrv_leafc_to_prod1c   =>    carbonflux_vars%hrv_leafc_to_prod1c_patch   , & ! Input:  [real(r8) (:)] crop leafc harvested
    hrv_livestemc_to_prod1c  => carbonflux_vars%hrv_livestemc_to_prod1c_patch, & ! Input:  [real(r8) (:)] crop stemc harvested
    hrv_grainc_to_prod1c  =>    carbonflux_vars%hrv_grainc_to_prod1c_patch  , & ! Input:  [real(r8) (:)] crop grainc harvested
    hrv_leafn_to_prod1n   =>    nitrogenflux_vars%hrv_leafn_to_prod1n_patch , & ! Input:  [real(r8) (:)] crop leafn harvested
    hrv_livestemn_to_prod1n  => nitrogenflux_vars%hrv_livestemn_to_prod1n_patch, & ! Input:  [real(r8) (:)] crop stemn harvested
    hrv_grainn_to_prod1n  =>    nitrogenflux_vars%hrv_grainn_to_prod1n_patch, & ! Input:  [real(r8) (:)] crop grainn harvested
+   hrv_leafp_to_prod1p   =>    phosphorusflux_vars%hrv_leafp_to_prod1p_patch , & ! Input:  [real(r8) (:)] crop leafp harvested
+   hrv_livestemp_to_prod1p  => phosphorusflux_vars%hrv_livestemp_to_prod1p_patch, & ! Input:  [real(r8) (:)] crop stemp harvested
+   hrv_grainp_to_prod1p  =>    phosphorusflux_vars%hrv_grainp_to_prod1p_patch, & ! Input:  [real(r8) (:)] crop grainp harvested
    crpyld                =>    crop_vars%crpyld_patch                      , & ! InOut:  [real(r8) ):)]  harvested crop (bu/acre)
    dmyield               =>    crop_vars%dmyield_patch                       & ! InOut:  [real(r8) ):)]  dry matter harvested crop (t/ha)
    )
@@ -2241,10 +2252,14 @@ contains
               hrv_grainc_to_prod1c(p) = t1 * grainc(p) + cpool_to_grainc(p)
 
               ! Do the same for Nitrogen
-              hrv_leafn_to_prod1n(p) = t1 * presharv(ivt(p)) * leafn(p) + npool_to_leafn(p)
-              hrv_livestemn_to_prod1n(p) = t1 * presharv(ivt(p)) * livestemn(p) + npool_to_livestemn(p)
+              hrv_leafn_to_prod1n(p) = presharv(ivt(p)) * ((t1 * leafn(p)) + npool_to_leafn(p))
+              hrv_livestemn_to_prod1n(p) = presharv(ivt(p)) * ((t1 * livestemn(p)) + npool_to_livestemn(p))
               hrv_grainn_to_prod1n(p) = t1 * grainn(p) + npool_to_grainn(p)
 
+              ! Do the same for Phosphorus
+              hrv_leafp_to_prod1p(p) = presharv(ivt(p)) * ((t1 * leafp(p)) + ppool_to_leafp(p))
+              hrv_livestemp_to_prod1p(p) = presharv(ivt(p)) * ((t1 * livestemp(p)) + ppool_to_livestemp(p))
+              hrv_grainp_to_prod1p(p) = t1 * grainp(p) + ppool_to_grainp(p)
 
          end if ! offseddt_counter
 
@@ -2255,7 +2270,7 @@ contains
    ! for C and N inputs
 
    call CNCropHarvestPftToColumn(num_soilc, filter_soilc,cnstate_vars, &
-                   carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars)
+                   carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars)
     end associate
  end subroutine CNCropHarvest
 
@@ -2371,8 +2386,8 @@ contains
                   frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
                   livestemc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemc(p)) + cpool_to_livestemc(p))
                else
-               leafc_to_litter(p)  = t1 * leafc(p)  + cpool_to_leafc(p)
-               frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
+                  leafc_to_litter(p)  = t1 * leafc(p)  + cpool_to_leafc(p)
+                  frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
                end if
             else
                t1 = dt * 2.0_r8 / (offset_counter(p) * offset_counter(p))
@@ -2398,7 +2413,6 @@ contains
                if (ivt(p) >= npcropmin) then
                   livestemn_to_litter(p) = livestemc_to_litter(p) / livewdcn(ivt(p))
                   livestemp_to_litter(p) = livestemc_to_litter(p) / livewdcp(ivt(p))
-                  grainp_to_food(p) = grainc_to_food(p) / graincp(ivt(p))
                end if
             else
                if (offset_counter(p) == dt) then
@@ -2406,47 +2420,35 @@ contains
                   if (ivt(p) >= npcropmin) then
                      ! this assumes that offset_counter == dt for crops
                      ! if this were ever changed, we'd need to add code to the "else"
-                     leafn_to_litter(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafn(p)) + npool_to_leafn(p))),leafn(p))* 0.38_r8 ! 62% N resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
-                     leafn_to_retransn(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafn(p)) + npool_to_leafn(p))),leafn(p))* 0.62_r8
+                     leafn_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafn(p)) + npool_to_leafn(p))
+                     leafp_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafp(p)) + ppool_to_leafp(p))
 
-                     leafp_to_litter(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafp(p)) + ppool_to_leafp(p))),leafp(p))* 0.35_r8 ! 65% N resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
-                     leafp_to_retransp(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafp(p)) + ppool_to_leafp(p))),frootp(p))* 0.65_r8
-                        
-                     frootn_to_litter(p) = min(t1 * frootn(p) + npool_to_frootn(p),frootn(p))
-                     frootp_to_litter(p) = min(t1 * frootp(p) + ppool_to_frootp(p),frootp(p))
-
-                     livestemn_to_litter(p) = min((1.0_r8 - presharv(ivt(p))) * ((t1 * livestemn(p)) + npool_to_livestemn(p)),livestemn(p))
-                     livestemp_to_litter(p) = min((1.0_r8 - presharv(ivt(p))) * ((t1 * livestemp(p)) + ppool_to_livestemp(p)),livestemp(p))
-                        
-                     !grainp_to_food(p) = grainc_to_food(p) / graincp(ivt(p))
-                  else
-                     leafn_to_litter(p)  = (t1 * leafn(p)  + npool_to_leafn(p))*0.38_r8
-                     leafn_to_retransn(p) = (t1 * leafn(p)  + npool_to_leafn(p))*0.62_r8
                      frootn_to_litter(p) = t1 * frootn(p) + npool_to_frootn(p)
-
-                     leafp_to_litter(p)  = (t1 * leafp(p)  + ppool_to_leafp(p))*0.35_r8
-                     leafp_to_retransp(p) = (t1 * leafp(p)  + ppool_to_leafp(p))*0.65_r8
                      frootp_to_litter(p) = t1 * frootp(p) + ppool_to_frootp(p)
+
+                     livestemn_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemn(p)) + npool_to_livestemn(p))
+                     livestemp_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemp(p)) + ppool_to_livestemp(p))
+                        
+                  else
+                     leafn_to_litter(p)   = (t1 * leafn(p) + npool_to_leafn(p))*0.38_r8
+                     leafn_to_retransn(p) = (t1 * leafn(p) + npool_to_leafn(p))*0.62_r8
+                     frootn_to_litter(p)  = t1 * frootn(p) + npool_to_frootn(p)
+                     
+                     leafp_to_litter(p)   = (t1 * leafp(p) + ppool_to_leafp(p))*0.35_r8
+                     leafp_to_retransp(p) = (t1 * leafp(p) + ppool_to_leafp(p))*0.65_r8
+                     frootp_to_litter(p)  = t1 * frootp(p) + ppool_to_frootp(p)
                   end if
                else
-                  t1 = dt * 2.0_r8 / (offset_counter(p) * offset_counter(p))
-                  leafn_to_litter(p)  = min((prev_leafn_to_litter(p)  + t1*(leafn(p)  - prev_leafn_to_litter(p)*offset_counter(p))),leafn(p))*0.38_r8
-                  leafn_to_retransn(p) = min((prev_leafn_to_litter(p)  + t1*(leafn(p)  - prev_leafn_to_litter(p)*offset_counter(p))),leafn(p))*0.62_r8
-                  frootn_to_litter(p) = min(prev_frootn_to_litter(p) + t1*(frootn(p) - prev_frootn_to_litter(p)*offset_counter(p)),frootn(p))
-                  
-                  leafp_to_litter(p)  = min((prev_leafp_to_litter(p)  + t1*(leafp(p)  - prev_leafp_to_litter(p)*offset_counter(p))),leafp(p))*0.35_r8
-                  leafp_to_retransp(p) =min((prev_leafp_to_litter(p)  + t1*(leafp(p)  - prev_leafp_to_litter(p)*offset_counter(p))),leafp(p))*0.65_r8
-                  frootp_to_litter(p) = min(prev_frootp_to_litter(p) + t1*(frootp(p) - prev_frootp_to_litter(p)*offset_counter(p)),frootp(p))
+                  leafn_to_litter(p)   = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p) * 0.38_r8
+                  leafn_to_retransn(p) = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p) * 0.62_r8
+                  frootn_to_litter(p)  = frootc_to_litter(p)/ max(frootc(p), 1.e-20_r8) * frootn(p)
+                    
+                  leafp_to_litter(p)   = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p) * 0.35_r8
+                  leafp_to_retransp(p) = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p) * 0.65_r8
+                  frootp_to_litter(p)  = frootc_to_litter(p)/ max(frootc(p), 1.e-20_r8) * frootp(p)
                end if
-
-               ! save the current litterfall fluxes
-               prev_leafn_to_litter(p)  = leafn_to_litter(p)
-               prev_frootn_to_litter(p) = frootn_to_litter(p)
-                
-               prev_leafp_to_litter(p)  = leafp_to_litter(p)
-               prev_frootp_to_litter(p) = frootp_to_litter(p)
             end if
-            
+ 
             ! save the current litterfall fluxes
             prev_leafc_to_litter(p)  = leafc_to_litter(p)
             prev_frootc_to_litter(p) = frootc_to_litter(p)
@@ -2662,10 +2664,10 @@ contains
                ptovr = livestemp(p) * lwtop
 
                livestemc_to_deadstemc(p) = ctovr
-               livestemn_to_deadstemn(p) = ntovr * 0.1 ! 90%  N retranslocation
+               livestemn_to_deadstemn(p) = ntovr * livewdcn(ivt(p))/deadwdcn(ivt(p)) ! N retranslocation
                livestemn_to_retransn(p)  = ntovr - livestemn_to_deadstemn(p)
 
-               livestemp_to_deadstemp(p) = ptovr* 0.1  ! 90%  P retranslocation
+               livestemp_to_deadstemp(p) = ptovr*  livewdcp(ivt(p))/deadwdcp(ivt(p)) ! P retranslocation
                livestemp_to_retransp(p)  = ptovr - livestemp_to_deadstemp(p)
                ! live coarse root to dead coarse root turnover
 
@@ -2674,10 +2676,10 @@ contains
                ptovr = livecrootp(p) * lwtop
 
                livecrootc_to_deadcrootc(p) = ctovr
-               livecrootn_to_deadcrootn(p) = ntovr * 0.1 ! 90%  N retranslocation
+               livecrootn_to_deadcrootn(p) = ntovr * livewdcn(ivt(p))/deadwdcn(ivt(p)) ! N retranslocation
                livecrootn_to_retransn(p)  = ntovr - livecrootn_to_deadcrootn(p)
 
-               livecrootp_to_deadcrootp(p) = ptovr * 0.1 ! 90%  P retranslocation
+               livecrootp_to_deadcrootp(p) = ptovr *  livewdcp(ivt(p))/deadwdcp(ivt(p)) ! P retranslocation
                livecrootp_to_retransp(p)  = ptovr - livecrootp_to_deadcrootp(p)
             end if
 
@@ -2730,13 +2732,13 @@ contains
          leafc_to_litter                     =>    carbonflux_vars%leafc_to_litter_patch           , & ! Input:  [real(r8) (:)   ]  leaf C litterfall (gC/m2/s)                       
          frootc_to_litter                    =>    carbonflux_vars%frootc_to_litter_patch          , & ! Input:  [real(r8) (:)   ]  fine root N litterfall (gN/m2/s)                  
          livestemc_to_litter                 =>    carbonflux_vars%livestemc_to_litter_patch       , & ! Input:  [real(r8) (:)   ]  live stem C litterfall (gC/m2/s)                  
-         grainc_to_food                      =>    carbonflux_vars%grainc_to_food_patch            , & ! Input:  [real(r8) (:)   ]  grain C to food (gC/m2/s)                         
+!         grainc_to_food                      =>    carbonflux_vars%grainc_to_food_patch            , & ! Input:  [real(r8) (:)   ]  grain C to food (gC/m2/s)                         
          phenology_c_to_litr_met_c           =>    carbonflux_vars%phenology_c_to_litr_met_c_col   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
          phenology_c_to_litr_cel_c           =>    carbonflux_vars%phenology_c_to_litr_cel_c_col   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
          phenology_c_to_litr_lig_c           =>    carbonflux_vars%phenology_c_to_litr_lig_c_col   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
 
          livestemn_to_litter                 =>    nitrogenflux_vars%livestemn_to_litter_patch     , & ! Input:  [real(r8) (:)   ]  livestem N to litter (gN/m2/s)                    
-         grainn_to_food                      =>    nitrogenflux_vars%grainn_to_food_patch          , & ! Input:  [real(r8) (:)   ]  grain N to food (gN/m2/s)                         
+!         grainn_to_food                      =>    nitrogenflux_vars%grainn_to_food_patch          , & ! Input:  [real(r8) (:)   ]  grain N to food (gN/m2/s)                         
          leafn_to_litter                     =>    nitrogenflux_vars%leafn_to_litter_patch         , & ! Input:  [real(r8) (:)   ]  leaf N litterfall (gN/m2/s)                       
          frootn_to_litter                    =>    nitrogenflux_vars%frootn_to_litter_patch        , & ! Input:  [real(r8) (:)   ]  fine root N litterfall (gN/m2/s)                  
          phenology_n_to_litr_met_n           =>    nitrogenflux_vars%phenology_n_to_litr_met_n_col , & ! Output: [real(r8) (:,:) ]  N fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gN/m3/s)
@@ -2744,7 +2746,7 @@ contains
          phenology_n_to_litr_lig_n           =>    nitrogenflux_vars%phenology_n_to_litr_lig_n_col , & ! Output: [real(r8) (:,:) ]  N fluxes associated with phenology (litterfall and crop) to litter lignin pool (gN/m3/s)
 
          livestemp_to_litter                 =>    phosphorusflux_vars%livestemp_to_litter_patch     , & ! Input:  [real(r8) (:)   ]  livestem P to litter (gP/m2/s)                    
-         grainp_to_food                      =>    phosphorusflux_vars%grainp_to_food_patch          , & ! Input:  [real(r8) (:)   ]  grain P to food (gP/m2/s)                         
+!         grainp_to_food                      =>    phosphorusflux_vars%grainp_to_food_patch          , & ! Input:  [real(r8) (:)   ]  grain P to food (gP/m2/s)                         
          leafp_to_litter                     =>    phosphorusflux_vars%leafp_to_litter_patch         , & ! Input:  [real(r8) (:)   ]  leaf P litterfall (gP/m2/s)                       
          frootp_to_litter                    =>    phosphorusflux_vars%frootp_to_litter_patch        , & ! Input:  [real(r8) (:)   ]  fine root P litterfall (gP/m2/s)                  
          phenology_p_to_litr_met_p           =>    phosphorusflux_vars%phenology_p_to_litr_met_p_col , & ! Output: [real(r8) (:,:) ]  P fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gP/m3/s)
@@ -2840,30 +2842,6 @@ contains
                         phenology_p_to_litr_lig_p(c,j) = phenology_p_to_litr_lig_p(c,j) &
                              + livestemp_to_litter(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
 
-                        ! grain litter carbon fluxes
-                        phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
-                             + grainc_to_food(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                        phenology_c_to_litr_cel_c(c,j) = phenology_c_to_litr_cel_c(c,j) &
-                             + grainc_to_food(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                        phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
-                             + grainc_to_food(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-
-                        ! grain litter nitrogen fluxes
-                        phenology_n_to_litr_met_n(c,j) = phenology_n_to_litr_met_n(c,j) &
-                             + grainn_to_food(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                        phenology_n_to_litr_cel_n(c,j) = phenology_n_to_litr_cel_n(c,j) &
-                             + grainn_to_food(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                        phenology_n_to_litr_lig_n(c,j) = phenology_n_to_litr_lig_n(c,j) &
-                             + grainn_to_food(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-
-                        ! grain litter phosphorus fluxes
-                        phenology_p_to_litr_met_p(c,j) = phenology_p_to_litr_met_p(c,j) &
-                             + grainp_to_food(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                        phenology_p_to_litr_cel_p(c,j) = phenology_p_to_litr_cel_p(c,j) &
-                             + grainp_to_food(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                        phenology_p_to_litr_lig_p(c,j) = phenology_p_to_litr_lig_p(c,j) &
-                             + grainp_to_food(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-
                      end if
                   end if
                end if
@@ -2879,7 +2857,7 @@ contains
 
  !-----------------------------------------------------------------------
  subroutine CNCropHarvestPftToColumn (num_soilc, filter_soilc, &
-            cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars)
+            cnstate_vars, carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars)
    !
    ! !DESCRIPTION:
    ! called at the end of CNCropHarvest to gather all pft-level harvest fluxes
@@ -2888,10 +2866,9 @@ contains
    ! !USES:
    use clm_varpar, only : maxpatch_pft
    type(cnstate_type)       , intent(in)    :: cnstate_vars
-   type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-   type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+   type(phosphorusflux_type), intent(inout) :: phosphorusflux_vars
    !
    ! !ARGUMENTS:
    integer, intent(in) :: num_soilc       ! number of soil columns in filter
@@ -2903,7 +2880,6 @@ contains
    associate(&
    ivt                                 =>   pft%itype                                    , & ! Input:  [integer (:)]  pft vegetation type
    wtcol                               =>   pft%wtcol                                    , & ! Input:  [real(r8) (:)]  pft weight relative to column (0-1)
-
    phrv_leafc_to_prod1c                =>   carbonflux_vars%hrv_leafc_to_prod1c_patch    , & ! Input:  [real(r8) (:)] crop leafc harvested
    phrv_livestemc_to_prod1c            =>   carbonflux_vars%hrv_livestemc_to_prod1c_patch, & ! Input:  [real(r8) (:)] crop stemc harvested
    phrv_grainc_to_prod1c               =>   carbonflux_vars%hrv_grainc_to_prod1c_patch   , & ! Input:  [real(r8) (:)] crop grainc harvested
@@ -2912,8 +2888,13 @@ contains
    phrv_livestemn_to_prod1n            =>   nitrogenflux_vars%hrv_livestemn_to_prod1n_patch, & ! Input:  [real(r8) (:)] crop stemn harvested
    phrv_grainn_to_prod1n               =>   nitrogenflux_vars%hrv_grainn_to_prod1n_patch   , & ! Input:  [real(r8) (:)] crop grainn harvested
    phrv_cropn_to_prod1n                =>   nitrogenflux_vars%hrv_cropn_to_prod1n_patch    , & ! InOut:  [real(r8) (:)] crop grainn harvested
+   phrv_leafp_to_prod1p                =>   phosphorusflux_vars%hrv_leafp_to_prod1p_patch  , & ! InOut:  [real(r8) (:)] crop grainp harvested
+   phrv_livestemp_to_prod1p            =>   phosphorusflux_vars%hrv_livestemp_to_prod1p_patch, & ! InOut:  [real(r8) (:)] column level crop carbon harvested
+   phrv_grainp_to_prod1p               =>   phosphorusflux_vars%hrv_grainp_to_prod1p_patch , & ! InOut:  [real(r8) (:)] column level crop nitrogen harvested
+   phrv_cropp_to_prod1p                =>   phosphorusflux_vars%hrv_cropp_to_prod1p_patch  , & ! InOut:  [real(r8) (:)] column level crop phosphorus harvested
    chrv_cropc_to_prod1c                =>   carbonflux_vars%hrv_cropc_to_prod1c_col        , & ! InOut:  [real(r8) (:)] column level crop carbon harvested
-   chrv_cropn_to_prod1n                =>   nitrogenflux_vars%hrv_cropn_to_prod1n_col        & ! InOut:  [real(r8) (:)] column level crop nitrogen harvested
+   chrv_cropn_to_prod1n                =>   nitrogenflux_vars%hrv_cropn_to_prod1n_col      , & ! InOut:  [real(r8) (:)] column level crop nitrogen harvested
+   chrv_cropp_to_prod1p                =>   phosphorusflux_vars%hrv_cropp_to_prod1p_col      & ! InOut:  [real(r8) (:)] column level crop phosphorus harvested
    )
 
    do pi = 1,maxpatch_pft
@@ -2934,6 +2915,11 @@ contains
                                          phrv_grainn_to_prod1n(p)
 
                 chrv_cropn_to_prod1n(c) = chrv_cropn_to_prod1n(c) + phrv_cropn_to_prod1n(p) * wtcol(p)
+
+                phrv_cropp_to_prod1p(p) = phrv_leafp_to_prod1p(p) + phrv_livestemp_to_prod1p(p) + &
+                                         phrv_grainp_to_prod1p(p)
+
+                chrv_cropp_to_prod1p(c) = chrv_cropp_to_prod1p(c) + phrv_cropp_to_prod1p(p) * wtcol(p)
 
             end if
          end if

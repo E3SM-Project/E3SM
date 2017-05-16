@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 $ENV{SHELL}="/bin/csh";  # Some of the comands assume csh syntax
-#### compare the two log files with check_exactrestart.pl  $file1 $file2 
+#### compare the two log files with check_exactrestart.pl  $file1 $file2
 
 if($#ARGV != 1){
    print "Usage: check_exactrestart.pl  file1 file2\n";
@@ -71,14 +71,14 @@ sub alignmodeldate{
     return @align;
 
 }
-    
+
 
 #sub compare
 #
 #  This subroutine compares two cpl log files by aligning the files
 # on the first common model date field and then comparing diagnostics
 # from that point forward in the file.   If any diag fields are found to be different
-# the next 10 diag fields of the file are printed to stdout and the test fails. 
+# the next 10 diag fields of the file are printed to stdout and the test fails.
 # The test also fails if no diag fields are found after that aligned point.
 #
 sub compare{

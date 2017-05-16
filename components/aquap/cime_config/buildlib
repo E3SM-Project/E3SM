@@ -1,0 +1,28 @@
+#! /usr/bin/env perl
+use strict;
+
+if ($#ARGV == -1) {
+    die " ERROR aquap.buildexe: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my $CASETOOLS = `./xmlquery CASETOOLS -value`;
+my $SRCROOT  = `./xmlquery SRCROOT  -value`;
+my $OBJROOT   = `./xmlquery OBJROOT   -value`;
+my $LIBROOT   = `./xmlquery LIBROOT   -value`;
+my $EXEROOT   = `./xmlquery EXEROOT   -value`;
+my $GMAKE     = `./xmlquery GMAKE     -value`;
+my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
+
+chdir "${OBJROOT}/ocn/obj";
+
+open(file,">Filepath") or die "Could not open file Filepath to write";
+print file "${CASEROOT}/SourceMods/src.aquap\n";
+print file "${SRCROOT}/components/cam/src/utils/cam_aqua\n";
+print file "${SRCROOT}/components/cam/src/utils/cam_aqua/cpl\n";
+close(file);
+
+system("$GMAKE complib -j ${GMAKE_J} MODEL=aquap COMPLIB=${LIBROOT}/libocn.a -f ${CASETOOLS}/Makefile USER_INCLDIR=-I${EXEROOT}/atm/obj");
+
+exit(0);

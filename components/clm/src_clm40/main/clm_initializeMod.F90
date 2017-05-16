@@ -464,6 +464,7 @@ contains
 
     call t_startf('init_io2')
     if (do_restread()) then
+       call UrbanInitTimeVar( )
        if (masterproc) write(iulog,*)'reading restart file ',fnamer
        call restFile_read( fnamer )
     else if (nsrest == nsrStartup .and. finidat == ' ') then

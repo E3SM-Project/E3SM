@@ -1,9 +1,0 @@
-All test list creation and modification could now concievably be done with manage_xml_entries.
-For manage_xml_entries help, please check the script's usage. 
-
-Testing:
-The directory test_manage_xml_entries contains unit tests for
-the script, as well as files intended to support the unit tests. 
-
-To run the unit tests, cd to test_manage_xml_entries, and run: 
-prove -v test_manage_xml_entries.t

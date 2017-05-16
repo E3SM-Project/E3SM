@@ -3,13 +3,13 @@ my $pkg = 'Build::NamelistDefinition';
 #-----------------------------------------------------------------------------------------------
 #
 # SYNOPSIS
-# 
+#
 #   use Build::Namelist;
 #   use Build::NamelistDefinition;
-# 
+#
 #   # Create a namelist definition object (read the namelist definition file).
 #   my $nldef = Build::NamelistDefinition->new("namelist_definition.xml");
-# 
+#
 #   # Create a namelist object from an input file that contains one or more namelist groups.
 #   my $nl = Build::Namelist->new('namelist.in');
 #
@@ -33,12 +33,12 @@ my $pkg = 'Build::NamelistDefinition';
 #
 #   # Write validated namelist to output file.
 #   $nl_valid->write('namelist.out');
-# 
+#
 #   # If some of your namelist definition are in different files -- use Add
 #   $nldef->Add("namelist_definition2.xml");
-# 
+#
 # DESCRIPTION
-# 
+#
 # Build::NamelistDefinition objects encapsulate a namelist definition.
 # They provide a method used to validate a namelist object (created by the
 # Build::Namelist module) against a namelist definition file.  The
@@ -67,7 +67,7 @@ my $pkg = 'Build::NamelistDefinition';
 #
 # add()
 #       Adds definitions from an additional file.
-# 
+#
 # validate()
 #       Validate a namelist object (created by the Build::Namelist module)
 #       against a namelist definition file.  Each variable is checked to
@@ -129,7 +129,7 @@ my $pkg = 'Build::NamelistDefinition';
 #       is valid.
 #
 # COLLABORATORS
-# 
+#
 # IO::File
 # XML::Lite
 # Build::Namelist
@@ -203,7 +203,7 @@ sub validate
 
     my $self  = shift;
     my $nl    = shift;    # namelist to be validated
-    
+
     # Create an empty namelist which will be populated with variables from the
     # input namelist as they are validated.
     my $nl_valid = Build::Namelist->new();
@@ -329,7 +329,7 @@ sub get_var_names
     foreach my $k (keys %$self) {
 	unless ($k eq 'definition_filepath') {
 
-	    # If a specific category has been requested then only add variables in 
+	    # If a specific category has been requested then only add variables in
 	    # that category.
 	    if ( defined $opt{'category'} ) {
 		if ( $opt{'category'} eq $self->{$k}->{'category'} ) { $var{$k} = ''; }
@@ -422,7 +422,7 @@ sub get_valid_values
 
 sub is_valid_value {
 
-# Check that a given single variable value matches the input list 
+# Check that a given single variable value matches the input list
 # NOTE: This only works for a single value entered (NOT a list of values)
 
   my $self           = shift;
@@ -458,7 +458,7 @@ sub _initialize
 #          arr_len        => "...",     # size of an array type, 0 if not an array
 #          input_pathname => "...",     # if value is an input pathname then this attribute is
 #                                       # set to either 'abs' for an absolute pathname, or 'rel:var_name'
-#                                       # for a relative pathname.  If the pathname is relative, 
+#                                       # for a relative pathname.  If the pathname is relative,
 #                                       # var_name specifies the namelist variable that contains the
 #                                       # root directory that the pathname is relative to.  If variable
 #                                       # is not an input pathname this entry is set to ''.
@@ -506,7 +506,7 @@ sub _initialize
 	    $str_len = $1;
 	}
 
-	# Is the type an array or a scalar?  An array will be indicated by $arr_len > 0 
+	# Is the type an array or a scalar?  An array will be indicated by $arr_len > 0
 	# where $arr_len is the size of the array.  $arr_len = 0 indicates a scalar.
 
 	# If the variable is a component of a derived type then strip that part of the
@@ -518,7 +518,7 @@ sub _initialize
                         (.*)       # capture everything between the parens in $1
                         \)         # closing paren
                        }x ) {
-	    # split the dimensions between the parenthesis on "," and multiply the 
+	    # split the dimensions between the parenthesis on "," and multiply the
 	    # dimensions together to get the array size
 	    my @dims = split /,/, $1;  #/
             $arr_len = 1;
@@ -559,12 +559,12 @@ sub _validate_pair
     my $def    = $self->{'definition_filepath'};
 
     # Is variable in namelist definition file?
-    
+
     # Strip out any array element syntax since that is not part of the
     # name in the definition file.
     $var =~ s/\([\d,]+\)//g;
 
-    $self->_is_valid_name($var) or die 
+    $self->_is_valid_name($var) or die
 	"ERROR: in _validate_pair (package $pkg): Variable name $var not found in $def \n";
 
     # Parse the value string
@@ -588,13 +588,13 @@ sub _validate_pair
 	die "ERROR: in _validate_pair (package $pkg): Variable name $var has an input value of type numeric, \n".
 	    "$value \n".
 	    "but is defined as type $type_def in $def \n";
-    }	
+    }
 
     # 22 September 2007, bee
     # The intention is to include more rigorous checking for valid input values.
-    # But postpone this for now.  It requires re-parsing the value that's currently 
-    # only available as a string from the namelist parser.  The functionality of 
-    # breaking input values into arrays of the input type belongs in the namelist 
+    # But postpone this for now.  It requires re-parsing the value that's currently
+    # only available as a string from the namelist parser.  The functionality of
+    # breaking input values into arrays of the input type belongs in the namelist
     # parser and shouldn't be done here.
     # The following validations depend on breaking the input value string into
     # an array of elements.
@@ -657,7 +657,7 @@ sub _get_type
 
 #-----------------------------------------------------------------------------------------------
 
-sub _get_datatype 
+sub _get_datatype
 #
 # Return hash of description of data type read in from the file:
 # Hash keys are:

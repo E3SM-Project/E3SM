@@ -111,8 +111,8 @@ CONTAINS
           ncols = elem(ie)%idxP%NumUniquePts
           call UniquePoints(elem(ie)%idxP, elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
           call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%state%T(:,:,:,tl_f), T_tmp(1:ncols,:,ie))
-          call UniquePoints(elem(ie)%idxV, 2, nlev, elem(ie)%state%V(:,:,:,:,tl_f), uv_tmp(1:ncols,:,:,ie))
-          call UniquePoints(elem(ie)%idxV, nlev, elem(ie)%derived%omega_p, omega_tmp(1:ncols,:,ie))
+          call UniquePoints(elem(ie)%idxP, 2, nlev, elem(ie)%state%V(:,:,:,:,tl_f), uv_tmp(1:ncols,:,:,ie))
+          call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%derived%omega_p, omega_tmp(1:ncols,:,ie))
 
           call UniquePoints(elem(ie)%idxP, elem(ie)%state%phis, phis_tmp(1:ncols,ie))
           call UniquePoints(elem(ie)%idxP, nlev,pcnst, elem(ie)%state%Q(:,:,:,:), Q_tmp(1:ncols,:,:,ie))
@@ -441,9 +441,9 @@ CONTAINS
        do ie=1,nelemd
           ncols = elem(ie)%idxP%NumUniquePts
           call putUniquePoints(elem(ie)%idxP, nlev, T_tmp(1:ncols,:,ie), elem(ie)%derived%fT(:,:,:,1))
-          call putUniquePoints(elem(ie)%idxV, 2, nlev, uv_tmp(1:ncols,:,:,ie), &
+          call putUniquePoints(elem(ie)%idxP, 2, nlev, uv_tmp(1:ncols,:,:,ie), &
                elem(ie)%derived%fM(:,:,:,:,1))
-          call putUniquePoints(elem(ie)%idxV, nlev,pcnst, q_tmp(1:ncols,:,:,ie), &
+          call putUniquePoints(elem(ie)%idxP, nlev,pcnst, q_tmp(1:ncols,:,:,ie), &
                elem(ie)%derived%fQ(:,:,:,:,1))
        end do
        call t_stopf('putUniquePoints')

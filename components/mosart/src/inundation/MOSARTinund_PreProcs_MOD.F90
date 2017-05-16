@@ -1,7 +1,8 @@
 
 MODULE MOSARTinund_PreProcs_MOD
 
-!--------------------------------------------------------------------------------------------------------------------------------
+#ifdef INCLUDE_INUND
+!-----------------------------------------------------------------------------
 ! DESCRIPTION: Pre-processing for MOSART-Inundation.
 ! 
 ! HISTORY:
@@ -9,7 +10,7 @@ MODULE MOSARTinund_PreProcs_MOD
 ! 2017: Integrated with ACME.
 ! ... ... ...
 !
-!--------------------------------------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------
 
   use shr_kind_mod, only: r8 => shr_kind_r8
   use shr_sys_mod, only: shr_sys_abort
@@ -319,5 +320,7 @@ MODULE MOSARTinund_PreProcs_MOD
 
     return
   end function interpolation_linear
+
+#endif
   
 end MODULE MOSARTinund_PreProcs_MOD

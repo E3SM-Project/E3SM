@@ -6,6 +6,7 @@ module hybvcoord_mod
 use kinds,              only: r8 => real_kind, iulog
 use dimensions_mod,     only: plev => nlev, plevp => nlevp
 use physical_constants, only: p0
+use control_mod,        only: vanalytic
 
 implicit none
 private
@@ -29,7 +30,7 @@ type, public :: hvcoord_t
   integer  pad
 end type
 
-public :: hvcoord_init
+public :: hvcoord_init, set_layer_locations
 contains
 
   !_____________________________________________________________________
@@ -49,6 +50,11 @@ contains
 
     ierr=0            ! clear error state
     hvcoord%ps0 = p0  ! set base-state surface pressure
+
+    hvcoord%hyai=0.0d0; hvcoord%hybi=0.0d0
+    hvcoord%hyam=0.0d0; hvcoord%hybm=0.0d0
+
+    if(vanalytic == 1) return ! exit if setting vertical coordinates analytically
 
 #if (defined HORIZ_OPENMP)
 !$OMP CRITICAL

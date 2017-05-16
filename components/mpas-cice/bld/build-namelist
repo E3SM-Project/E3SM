@@ -43,13 +43,15 @@ OPTIONS
      -verbose              Turn on verbose echoing of informational messages.
      -caseroot             CASEROOT directory variable
      -casebuild            CASEBUILD directory variable          
-     -scriptsroot          SCRIPTSROOT directory variable
+     -cimeroot             CIMEROOT directory variable
      -ice_grid             ICE_GRID variable
      -date_stamp           date_stamp variable
      -cfg_grid             Directory containing MPAS-CICE configuration scripts.
                            If not defined, location is set as \$ProgDir or \$cwd
                            (Needed to run build-namelist from SourceMods dir)
      -inst_string          inst_string variable
+     -ic_mode              variable for initial condition file mode
+                           Options are: spunup, cold_start
 
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -87,10 +89,11 @@ my %opts = ( help        => 0,
              preview     => 0,
              caseroot    => undef,
              casebuild   => undef,
-             scriptsroot => undef,
+             cimeroot    => undef,
              inst_string => undef,
              ice_grid    => undef,
              date_stamp  => undef,
+             ic_mode     => undef,
              cfg_dir     => $cfgdir,
            );
 
@@ -101,10 +104,11 @@ GetOptions(
     "v|verbose"     => \$opts{'verbose'},
     "caseroot=s"    => \$opts{'caseroot'},
     "casebuild=s"   => \$opts{'casebuild'},
-    "scriptsroot=s" => \$opts{'scriptsroot'},
+    "cimeroot=s"    => \$opts{'cimeroot'},
     "inst_string=s" => \$opts{'inst_string'},	   
     "ice_grid=s"    => \$opts{'ice_grid'},
     "date_stamp=s"  => \$opts{'date_stamp'},
+    "ic_mode=s"     => \$opts{'ic_mode'},
     "cfg_dir=s"     => \$opts{'cfg_dir'},
     "preview"       => \$opts{'preview'},
 )  or usage();
@@ -132,11 +136,18 @@ if ($print>=2) { print "Setting MPAS-CICE configuration script directory to $cfg
 
 my $CASEROOT    = $opts{'caseroot'};
 my $CASEBUILD   = $opts{'casebuild'};
-my $SCRIPTSROOT = $opts{'scriptsroot'};
+my $CIMEROOT    = $opts{'cimeroot'};
 my $inst_string = $opts{'inst_string'};
 my $ICE_GRID    = $opts{'ice_grid'};
 my $date_stamp  = $opts{'date_stamp'};
+my $ic_mode     = $opts{'ic_mode'};
 $cfgdir         = $opts{'cfg_dir'};
+
+my $CIMEROOT;     
+if ( defined $opts{'cimeroot'} ) {
+    $CIMEROOT = $opts{'cimeroot'};
+}
+
 
 # Validate some of the commandline option values.
 validate_options("commandline", \%opts);
@@ -164,14 +175,14 @@ EOF
 
 # The root directory for the input data files must be specified.
 
-my $cesmroot = abs_path("$SCRIPTSROOT/../../");
+my $cesmroot = abs_path("$CIMEROOT/../");
 if (! -d "$cesmroot") {
     die "** Invalid CESM root directory: $cesmroot ** ";
 }
 
 print "CESM ROOT IS: $cesmroot\n";
 
-my $perl5lib = "$cesmroot/cime/utils/perl5lib";
+my $perl5lib = "$CIMEROOT/utils/perl5lib";
 if (! -d "$perl5lib") {
     die "** Invalid perl5lib root directory: $perl5lib ** ";
 }
@@ -233,13 +244,13 @@ if ($print>=2) { print "Using namelist defaults file $nl_defaults_file$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $perl5lib_dir to the list of paths that Perl searches for modules
-unshift @INC, "$perl5lib", "$CASEROOT/Tools", "$cesmroot/cime/scripts/Tools";
+unshift @INC, "$perl5lib";
 #require XML::Lite;
 require Build::Config;
 require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
-require SetupTools;
+require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the MPAS-CICE config_cache.xml file-  created by 
@@ -367,8 +378,8 @@ my $CALENDAR               = "$xmlvars{'CALENDAR'}";
 my $NCPL_BASE_PERIOD       = "$xmlvars{'NCPL_BASE_PERIOD'}";
 my $ICE_NCPL               = "$xmlvars{'ICE_NCPL'}";
 my $ICE_COUPLING           = "$xmlvars{'ICE_COUPLING'}";
-my $NTASKS_ICE             = "$xmlvars{'NTASKS_ICE'}";
-my $NINST_ICE              = "$xmlvars{'NINST_ICE'}";
+my $NTASKS_ICE             = `$CASEROOT/xmlquery NTASKS_ICE -value -caseroot $CASEROOT`;
+my $NINST_ICE              = `$CASEROOT/xmlquery NINST_ICE -value -caseroot $CASEROOT`;
 my $INFO_DBUG              = "$xmlvars{'INFO_DBUG'}";
 my $RUN_TYPE               = "$xmlvars{'RUN_TYPE'}";
 my $RUN_STARTDATE          = "$xmlvars{'RUN_STARTDATE'}";
@@ -424,6 +435,7 @@ add_default($nl, 'config_num_halos');
 
 add_default($nl, 'config_pio_num_iotasks');
 add_default($nl, 'config_pio_stride');
+add_default($nl, 'config_write_output_on_startup');
 add_default($nl, 'config_test_case_diag');
 add_default($nl, 'config_test_case_diag_type');
 
@@ -457,10 +469,22 @@ add_default($nl, 'config_do_restart_zsalinity');
 add_default($nl, 'config_do_restart_bgc');
 
 ##############################
+# Namelist group: dimensions #
+##############################
+
+add_default($nl, 'config_nCategories');
+add_default($nl, 'config_nIceLayers');
+add_default($nl, 'config_nSnowLayers');
+
+##############################
 # Namelist group: initialize #
 ##############################
 
-add_default($nl, 'config_initial_condition_type');
+if ($ic_mode eq 'spunup') {
+        add_default($nl, 'config_initial_condition_type', 'val'=>"restart");
+} else {
+        add_default($nl, 'config_initial_condition_type');
+}
 add_default($nl, 'config_initial_ice_area');
 add_default($nl, 'config_initial_ice_volume');
 add_default($nl, 'config_initial_snow_volume');
@@ -469,6 +493,7 @@ add_default($nl, 'config_initial_latitude_south');
 add_default($nl, 'config_initial_velocity_type');
 add_default($nl, 'config_initial_uvelocity');
 add_default($nl, 'config_initial_vvelocity');
+add_default($nl, 'config_calculate_coriolis');
 
 ################################
 # Namelist group: use_sections #
@@ -500,6 +525,7 @@ add_default($nl, 'config_include_pond_freshwater_feedback');
 add_default($nl, 'config_perform_unit_test');
 add_default($nl, 'config_unit_test_type');
 add_default($nl, 'config_unit_test_subtype');
+add_default($nl, 'config_use_test_ice_shelf');
 
 ###################################
 # Namelist group: velocity_solver #
@@ -511,6 +537,8 @@ add_default($nl, 'config_include_metric_terms');
 add_default($nl, 'config_elastic_subcycle_number');
 add_default($nl, 'config_stress_divergence_scheme');
 add_default($nl, 'config_variational_basis');
+add_default($nl, 'config_wachspress_integration_type');
+add_default($nl, 'config_wachspress_integration_order');
 add_default($nl, 'config_revised_evp');
 add_default($nl, 'config_use_air_stress');
 add_default($nl, 'config_use_ocean_stress');
@@ -581,6 +609,120 @@ add_default($nl, 'config_zsalinity_gravity_drainage_scale');
 add_default($nl, 'config_snow_porosity_at_ice_surface');
 add_default($nl, 'config_new_ice_fraction_biotracer');
 add_default($nl, 'config_fraction_biotracer_in_frazil');
+add_default($nl, 'config_ratio_Si_to_N_diatoms');
+add_default($nl, 'config_ratio_Si_to_N_small_plankton');
+add_default($nl, 'config_ratio_Si_to_N_phaeocystis');
+add_default($nl, 'config_ratio_S_to_N_diatoms');
+add_default($nl, 'config_ratio_S_to_N_small_plankton');
+add_default($nl, 'config_ratio_S_to_N_phaeocystis');
+add_default($nl, 'config_ratio_Fe_to_C_diatoms');
+add_default($nl, 'config_ratio_Fe_to_C_small_plankton');
+add_default($nl, 'config_ratio_Fe_to_C_phaeocystis');
+add_default($nl, 'config_ratio_Fe_to_N_diatoms');
+add_default($nl, 'config_ratio_Fe_to_N_small_plankton');
+add_default($nl, 'config_ratio_Fe_to_N_phaeocystis');
+add_default($nl, 'config_ratio_Fe_to_DON');
+add_default($nl, 'config_ratio_Fe_to_DOC_saccharids');
+add_default($nl, 'config_ratio_Fe_to_DOC_lipids');
+add_default($nl, 'config_respiration_fraction_of_growth');
+add_default($nl, 'config_rapid_mobile_to_stationary_time');
+add_default($nl, 'config_long_mobile_to_stationary_time');
+add_default($nl, 'config_algal_maximum_velocity');
+add_default($nl, 'config_ratio_Fe_to_dust');
+add_default($nl, 'config_solubility_of_Fe_in_dust');
+add_default($nl, 'config_chla_absorptivity_of_diatoms');
+add_default($nl, 'config_chla_absorptivity_of_small_plankton');
+add_default($nl, 'config_chla_absorptivity_of_phaeocystis');
+add_default($nl, 'config_light_attenuation_diatoms');
+add_default($nl, 'config_light_attenuation_small_plankton');
+add_default($nl, 'config_light_attenuation_phaeocystis');
+add_default($nl, 'config_light_inhibition_diatoms');
+add_default($nl, 'config_light_inhibition_small_plankton');
+add_default($nl, 'config_light_inhibition_phaeocystis');
+add_default($nl, 'config_maximum_growth_rate_diatoms');
+add_default($nl, 'config_maximum_growth_rate_small_plankton');
+add_default($nl, 'config_maximum_growth_rate_phaeocystis');
+add_default($nl, 'config_temperature_growth_diatoms');
+add_default($nl, 'config_temperature_growth_small_plankton');
+add_default($nl, 'config_temperature_growth_phaeocystis');
+add_default($nl, 'config_grazed_fraction_diatoms');
+add_default($nl, 'config_grazed_fraction_small_plankton');
+add_default($nl, 'config_grazed_fraction_phaeocystis');
+add_default($nl, 'config_mortality_diatoms');
+add_default($nl, 'config_mortality_small_plankton');
+add_default($nl, 'config_mortality_phaeocystis');
+add_default($nl, 'config_temperature_mortality_diatoms');
+add_default($nl, 'config_temperature_mortality_small_plankton');
+add_default($nl, 'config_temperature_mortality_phaeocystis');
+add_default($nl, 'config_exudation_diatoms');
+add_default($nl, 'config_exudation_small_plankton');
+add_default($nl, 'config_exudation_phaeocystis');
+add_default($nl, 'config_nitrate_saturation_diatoms');
+add_default($nl, 'config_nitrate_saturation_small_plankton');
+add_default($nl, 'config_nitrate_saturation_phaeocystis');
+add_default($nl, 'config_ammonium_saturation_diatoms');
+add_default($nl, 'config_ammonium_saturation_small_plankton');
+add_default($nl, 'config_ammonium_saturation_phaeocystis');
+add_default($nl, 'config_silicate_saturation_diatoms');
+add_default($nl, 'config_silicate_saturation_small_plankton');
+add_default($nl, 'config_silicate_saturation_phaeocystis');
+add_default($nl, 'config_iron_saturation_diatoms');
+add_default($nl, 'config_iron_saturation_small_plankton');
+add_default($nl, 'config_iron_saturation_phaeocystis');
+add_default($nl, 'config_fraction_spilled_to_DON');
+add_default($nl, 'config_degredation_of_DON');
+add_default($nl, 'config_fraction_DON_ammonium');
+add_default($nl, 'config_fraction_loss_to_saccharids');
+add_default($nl, 'config_fraction_loss_to_lipids');
+add_default($nl, 'config_fraction_exudation_to_saccharids');
+add_default($nl, 'config_fraction_exudation_to_lipids');
+add_default($nl, 'config_remineralization_saccharids');
+add_default($nl, 'config_remineralization_lipids');
+add_default($nl, 'config_maximum_brine_temperature');
+add_default($nl, 'config_salinity_dependence_of_growth');
+add_default($nl, 'config_minimum_optical_depth');
+add_default($nl, 'config_slopped_grazing_fraction');
+add_default($nl, 'config_excreted_fraction');
+add_default($nl, 'config_fraction_mortality_to_ammonium');
+add_default($nl, 'config_fraction_iron_remineralized');
+add_default($nl, 'config_nitrification_rate');
+add_default($nl, 'config_desorption_loss_particulate_iron');
+add_default($nl, 'config_maximum_loss_fraction');
+add_default($nl, 'config_maximum_ratio_iron_to_saccharids');
+add_default($nl, 'config_respiration_loss_to_DMSPd');
+add_default($nl, 'config_DMSP_to_DMS_conversion_fraction');
+add_default($nl, 'config_DMSP_to_DMS_conversion_time');
+add_default($nl, 'config_DMS_oxidation_time');
+add_default($nl, 'config_mobility_type_diatoms');
+add_default($nl, 'config_mobility_type_small_plankton');
+add_default($nl, 'config_mobility_type_phaeocystis');
+add_default($nl, 'config_mobility_type_nitrate');
+add_default($nl, 'config_mobility_type_ammonium');
+add_default($nl, 'config_mobility_type_silicate');
+add_default($nl, 'config_mobility_type_DMSPp');
+add_default($nl, 'config_mobility_type_DMSPd');
+add_default($nl, 'config_mobility_type_humics');
+add_default($nl, 'config_mobility_type_saccharids');
+add_default($nl, 'config_mobility_type_lipids');
+add_default($nl, 'config_mobility_type_proteins');
+add_default($nl, 'config_mobility_type_dissolved_iron');
+add_default($nl, 'config_mobility_type_particulate_iron');
+add_default($nl, 'config_mobility_type_black_carbon1');
+add_default($nl, 'config_mobility_type_black_carbon2');
+add_default($nl, 'config_mobility_type_dust1');
+add_default($nl, 'config_mobility_type_dust2');
+add_default($nl, 'config_mobility_type_dust3');
+add_default($nl, 'config_mobility_type_dust4');
+add_default($nl, 'config_ratio_C_to_N_diatoms');
+add_default($nl, 'config_ratio_C_to_N_small_plankton');
+add_default($nl, 'config_ratio_C_to_N_phaeocystis');
+add_default($nl, 'config_ratio_chla_to_N_diatoms');
+add_default($nl, 'config_ratio_chla_to_N_small_plankton');
+add_default($nl, 'config_ratio_chla_to_N_phaeocystis');
+add_default($nl, 'config_scales_absorption_diatoms');
+add_default($nl, 'config_scales_absorption_small_plankton');
+add_default($nl, 'config_scales_absorption_phaeocystis');
+add_default($nl, 'config_ratio_C_to_N_proteins');
 
 #############################
 # Namelist group: shortwave #
@@ -662,6 +804,12 @@ add_default($nl, 'config_use_ocean_mixed_layer');
 add_default($nl, 'config_min_friction_velocity');
 add_default($nl, 'config_ocean_heat_transfer_type');
 add_default($nl, 'config_sea_freezing_temperature_type');
+
+###############################
+# Namelist group: diagnostics #
+###############################
+
+add_default($nl, 'config_check_state');
 
 ##########################################
 # Namelist group: AM_highFrequencyOutput #
@@ -778,6 +926,16 @@ add_default($nl, 'config_AM_pondDiagnostics_compute_on_startup');
 add_default($nl, 'config_AM_pondDiagnostics_write_on_startup');
 
 #####################################
+# Namelist group: AM_unitConversion #
+#####################################
+
+add_default($nl, 'config_AM_unitConversion_enable');
+add_default($nl, 'config_AM_unitConversion_compute_interval');
+add_default($nl, 'config_AM_unitConversion_output_stream');
+add_default($nl, 'config_AM_unitConversion_compute_on_startup');
+add_default($nl, 'config_AM_unitConversion_write_on_startup');
+
+#####################################
 # Namelist group: AM_pointwiseStats #
 #####################################
 
@@ -786,6 +944,16 @@ add_default($nl, 'config_AM_pointwiseStats_compute_interval');
 add_default($nl, 'config_AM_pointwiseStats_output_stream');
 add_default($nl, 'config_AM_pointwiseStats_compute_on_startup');
 add_default($nl, 'config_AM_pointwiseStats_write_on_startup');
+
+#################################
+# Namelist group: AM_iceShelves #
+#################################
+
+add_default($nl, 'config_AM_iceShelves_enable');
+add_default($nl, 'config_AM_iceShelves_compute_interval');
+add_default($nl, 'config_AM_iceShelves_output_stream');
+add_default($nl, 'config_AM_iceShelves_compute_on_startup');
+add_default($nl, 'config_AM_iceShelves_write_on_startup');
 
 #################################
 # Namelist group: AM_icePresent #
@@ -807,12 +975,12 @@ add_default($nl, 'config_AM_timeSeriesStatsDaily_write_on_startup');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_compute_interval');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_output_stream');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_restart_stream');
-add_default($nl, 'config_AM_timeSeriesStatsDaily_add_mesh');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_operation');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_reference_times');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_duration_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_repeat_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_backward_output_offset');
 
 #############################################
 # Namelist group: AM_timeSeriesStatsMonthly #
@@ -824,12 +992,12 @@ add_default($nl, 'config_AM_timeSeriesStatsMonthly_write_on_startup');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_compute_interval');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_output_stream');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_restart_stream');
-add_default($nl, 'config_AM_timeSeriesStatsMonthly_add_mesh');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_operation');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_reference_times');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_duration_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_repeat_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_backward_output_offset');
 
 #################################################
 # Namelist group: AM_timeSeriesStatsClimatology #
@@ -841,13 +1009,29 @@ add_default($nl, 'config_AM_timeSeriesStatsClimatology_write_on_startup');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_compute_interval');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_output_stream');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_restart_stream');
-add_default($nl, 'config_AM_timeSeriesStatsClimatology_add_mesh');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_operation');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_reference_times');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_duration_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_repeat_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_backward_output_offset');
 
+############################################
+# Namelist group: AM_timeSeriesStatsCustom #
+############################################
+
+add_default($nl, 'config_AM_timeSeriesStatsCustom_enable');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_compute_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_write_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_compute_interval');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_output_stream');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_restart_stream');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_operation');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_reference_times');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_duration_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_repeat_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_backward_output_offset');
 
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpas-cice_in) and input dataset list (mpas--cice.input_data_list) ***
@@ -858,6 +1042,7 @@ my @groups = qw(cice_model
                 io
                 decomposition
                 restart
+                dimensions
                 initialize
                 use_sections
                 forcing
@@ -874,6 +1059,7 @@ my @groups = qw(cice_model
                 ridging
                 atmosphere
                 ocean
+                diagnostics
                 am_highfrequencyoutput
                 am_temperatures
                 am_regionalstatistics
@@ -885,11 +1071,14 @@ my @groups = qw(cice_model
                 am_miscellaneous
                 am_areavariables
                 am_ponddiagnostics
+                am_unitconversion
                 am_pointwisestats
+                am_iceshelves
                 am_icepresent
                 am_timeseriesstatsdaily
                 am_timeseriesstatsmonthly
                 am_timeseriesstatsclimatology
+                am_timeseriesstatscustom
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group

@@ -71,7 +71,7 @@ contains
     allocate(tau_soil%tau_liq(bounds%begc:bounds%endc, 1 : nlevtrc_soil))
     tau_soil%tau_liq(:,:) = 0._r8
 
-
+    allocate(h2osoi_liq_copy(bounds%begc:bounds%endc, 1:nlevsoi));  h2osoi_liq_copy(:, :) = spval
   end subroutine tracer_param_init
 
   !--------------------------------------------------------------------------------------------------------------
@@ -211,8 +211,12 @@ contains
     SHR_ASSERT_ALL((ubound(jtops)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
     SHR_ASSERT_ALL((ubound(t_soisno)        == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
     SHR_ASSERT_ALL((ubound(jtops)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-    SHR_ASSERT_ALL((ubound(bunsencef_col)   == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
-    SHR_ASSERT_ALL((ubound(bulkdiffus)      == (/bounds%endc, ubj, betrtracer_vars%ntracer_groups/)),   errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bunsencef_col, 1)== (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bunsencef_col, 2)== (/ubj/))        ,   errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bunsencef_col, 3)== (/betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bulkdiffus, 1)   == (/bounds%endc/))                   ,   errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bulkdiffus, 2)   == (/ubj/))                           ,   errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bulkdiffus, 3)   == (/betrtracer_vars%ntracer_groups/)),   errMsg(__FILE__,__LINE__))
 
     associate(                                                                                              &
          ngwmobile_tracer_groups                => betrtracer_vars%ngwmobile_tracer_groups                , & ! Integer[intent(in)], number of dual phase (gw) tracers
@@ -356,8 +360,12 @@ contains
 
    SHR_ASSERT_ALL((ubound(jtops)             == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dz)                == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(bulkdiffus)        == (/bounds%endc, ubj, betrtracer_vars%ntracer_groups/)),     errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(hmconductance_col) == (/bounds%endc, ubj-1, betrtracer_vars%ntracer_groups/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bulkdiffus,1)      == (/bounds%endc/)),                     errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bulkdiffus,2)      == (/ubj/)),                             errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bulkdiffus,3)      == (/betrtracer_vars%ntracer_groups/)),  errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(hmconductance_col,1) == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(hmconductance_col,2) == (/ubj-1/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(hmconductance_col,3) == (/betrtracer_vars%ntracer_groups/)),   errMsg(__FILE__,__LINE__))
 
    associate( &
     ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups   , & !Integer[intent(in)], number of gw tracers
@@ -409,8 +417,12 @@ contains
    SHR_ASSERT_ALL((ubound(jtops)             == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(t_soisno)          == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(soi_pH)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(aqu2neutralcef_col)== (/bounds%endc, ubj, betrtracer_vars%ngwmobile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(henrycef_col)      == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(aqu2neutralcef_col,1)== (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(aqu2neutralcef_col,2)== (/ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(aqu2neutralcef_col,3)== (/betrtracer_vars%ngwmobile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(henrycef_col,1)      == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(henrycef_col,2)      == (/ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(henrycef_col,3)      == (/betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
 
 
    associate( &
@@ -474,8 +486,12 @@ contains
    SHR_ASSERT_ALL((ubound(jtops)             == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(t_soisno)          == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(smp_l)             == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(henrycef_col)      == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(bunsencef_col)     == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(henrycef_col,1)    == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(henrycef_col,2)    == (/ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(henrycef_col,3)    == (/betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bunsencef_col,1)   == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bunsencef_col,2)   == (/ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bunsencef_col,3)   == (/betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
 
    associate( &
     ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups      , & !Integer[intent(in)], number of tracers
@@ -1047,8 +1063,12 @@ contains
    character(len=255) :: subname = 'convert_mobile2gas'
 
    SHR_ASSERT_ALL((ubound(jtops)                  == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(gas2bulkcef_mobile_col) == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracers/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(tracer_conc_mobile)     == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracers/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(gas2bulkcef_mobile_col,1) == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(gas2bulkcef_mobile_col,2) == (/ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(gas2bulkcef_mobile_col,3) == (/betrtracer_vars%nvolatile_tracers/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(tracer_conc_mobile,1)     == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(tracer_conc_mobile,2)     == (/ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(tracer_conc_mobile,3)     == (/betrtracer_vars%nvolatile_tracers/)),   errMsg(__FILE__,__LINE__))
 
 
    associate( &
@@ -1123,10 +1143,12 @@ contains
 
    !compute tortuosity
    !gaseous phase
-   call calc_gaseous_diffusion_soil_tortuosity(bounds, lbj, ubj, jtops, numf, filter, soilstate_vars, waterstate_vars, tau_soil%tau_gas)
+   call calc_gaseous_diffusion_soil_tortuosity(bounds, lbj, ubj, jtops, numf, filter, soilstate_vars, waterstate_vars, &
+      tau_soil%tau_gas(bounds%begc:bounds%endc,lbj:ubj))
 
    !aqueous phase
-   call calc_aqueous_diffusion_soil_tortuosity(bounds, lbj, ubj, jtops, numf, filter, soilstate_vars, waterstate_vars, tau_soil%tau_liq)
+   call calc_aqueous_diffusion_soil_tortuosity(bounds, lbj, ubj, jtops, numf, filter, soilstate_vars, waterstate_vars, &
+      tau_soil%tau_liq(bounds%begc:bounds%endc,lbj:ubj))
 
    !compute bulk diffusivity
    call calc_bulk_diffusivity(bounds, lbj, ubj, jtops, numf, filter       , &
@@ -1289,7 +1311,6 @@ contains
    integer :: j, fc, c
    SHR_ASSERT_ALL((ubound(h2osoi_liq) == (/bounds%endc, nlevsoi/)), errMsg(__FILE__,__LINE__))
 
-   allocate(h2osoi_liq_copy(bounds%begc:bounds%endc, 1:nlevsoi));  h2osoi_liq_copy(:, :) = spval
    do j = 1, nlevsoi
      do fc = 1, num_hydrologyc
        c = filter_hydrologyc(fc)
@@ -1347,7 +1368,7 @@ contains
        if(j==nlevsoi)then
          qflx_adv(c,j) = qcharge(c) * 1.e-3_r8
        else
-         qflx_adv(c,j) = 1.e-3_r8 * (h2osoi_liq(c,j+1)-h2osoi_liq_copy(c,j+1))/dtime + qflx_adv(c,j+1) + qflx_rootsoi(c,j+1)
+         qflx_adv(c,j) = 1.e-3_r8 * (h2osoi_liq(c,j+1)-h2osoi_liq_copy(c,j+1))/dtime + qflx_adv(c,j+1) + qflx_rootsoi(c,j+1)*1.e-3_r8
        endif
 
      enddo
@@ -1359,7 +1380,7 @@ contains
      c = filter_hydrologyc(fc)
 
      !obtain the corrected infiltration
-     qflx_infl(c) = (h2osoi_liq(c,1)-h2osoi_liq_copy(c,1))/dtime + (qflx_rootsoi(c,1)+qflx_adv(c,1))*1.e3_r8
+     qflx_infl(c) = (h2osoi_liq(c,1)-h2osoi_liq_copy(c,1))/dtime + qflx_rootsoi(c,1) + qflx_adv(c,1)*1.e3_r8
      !the predicted net infiltration
      infl_tmp=qflx_gross_infl_soil(c)-qflx_gross_evap_soil(c)
      diff=qflx_infl(c)-infl_tmp
@@ -1392,7 +1413,6 @@ contains
 
    enddo
 
-   deallocate(h2osoi_liq_copy)
    end associate
    end subroutine diagnose_advect_water_flux
 
@@ -1441,7 +1461,6 @@ contains
      enddo
    enddo
 
-   deallocate(h2osoi_liq_copy)
    end associate
    end subroutine diagnose_drainage_water_flux
 

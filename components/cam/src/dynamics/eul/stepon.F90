@@ -15,16 +15,15 @@ module stepon
   use camsrfexch,       only: cam_out_t     
   use ppgrid,           only: begchunk, endchunk
   use physics_types,    only: physics_state, physics_tend
-  use time_manager,     only: is_first_step
+  use time_manager,     only: is_first_step, get_step_size
   use iop,              only: setiopupdate, readiopdata
   use scamMod,          only: use_iop,doiopupdate,use_pert_frc,wfld,wfldh,single_column
   use perf_mod
-  implicit none
 
-  private   ! By default make all data and methods private to this module
-!
-! Public methods
-!
+  implicit none
+  private
+  save
+
   public stepon_init     ! Initialization
   public stepon_run1     ! Run method phase 1
   public stepon_run2     ! Run method phase 2
@@ -33,7 +32,6 @@ module stepon
 !
 ! Private module data
 !
-  save
   type(physics_state), pointer :: phys_state(:)   ! Physics state data
   type(physics_tend ), pointer :: phys_tend(:)    ! Physics tendency data
 
@@ -53,18 +51,15 @@ module stepon
   real(r8) :: pdel(plon,plev)           ! Pressure depth of layer
   real(r8) :: pint(plon,plevp)          ! Pressure at interfaces
   real(r8) :: pmid(plon,plev)           ! Pressure at midpoint
-  real(r8) :: dtime                     ! timestep size
   type(advection_state) :: adv_state    ! Advection state data
+
+  real(r8) :: etamid(plev)              ! vertical coords at midpoints or pmid if single_column
 
 !======================================================================= 
 contains
 !======================================================================= 
 
-!
-!======================================================================= 
-!
-
-subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
+subroutine stepon_init(dyn_in, dyn_out)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose:  Initialization, primarily of dynamics.
@@ -76,8 +71,6 @@ subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
    use constituents,   only: pcnst
    use physconst,      only: gravit
    use rgrid,          only: nlon
-   use hycoef,         only: hyam, hybm
-   use time_manager,   only: get_step_size
    use eul_control_mod,only: eul_nsplit
 #if ( defined BFB_CAM_SCAM_IOP )
    use iop,            only:init_iop_fields
@@ -85,8 +78,6 @@ subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
 !-----------------------------------------------------------------------
 ! Arguments
 !
-  real(r8), intent(out) :: gw(plat)                  ! Gaussian weights
-  real(r8), intent(out) :: etamid(plev)              ! vertical coords at midpoints
   type(dyn_import_t) :: dyn_in                       ! included for compatibility
   type(dyn_export_t) :: dyn_out                      ! included for compatibility
 !-----------------------------------------------------------------------
@@ -97,16 +88,7 @@ subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
 
    call t_startf ('stepon_startup')
 
-   dtime = get_step_size()
-   !
-   ! Define eta coordinates: Used for calculation etadot vertical velocity 
-   ! for slt.
-   !
-   do k=1,plev
-      etamid(k) = hyam(k) + hybm(k)
-   end do
-
-   call scanslt_initial( adv_state, etamid, gravit, gw, detam, cwava )
+   call scanslt_initial(adv_state, etamid, gravit, detam, cwava)
    !
    ! Initial guess for trajectory midpoints in spherical coords.
    ! nstep = 0:  use arrival points as initial guess for trajectory midpoints.
@@ -195,25 +177,20 @@ subroutine stepon_run1( ztodt, phys_state, phys_tend , pbuf2d, dyn_in, dyn_out)
   type(dyn_import_t) :: dyn_in                       ! included for compatibility
   type(dyn_export_t) :: dyn_out                      ! included for compatibility
 
+  real(r8) :: dtime                     ! timestep size
+  !----------------------------------------------------------------------- 
+
+  dtime = get_step_size()
+
   ztodt = 2.0_r8*dtime
-  !
+
   ! If initial time step adjust dt
-  !
   if (is_first_step()) ztodt = dtime
 
   ! subcycling case, physics dt is always dtime
   if (eul_nsplit>1) ztodt = dtime	
 
-  !
-  ! adjust hydrostatic matrices if the time step has changed.  This only
-  ! happens on transition from time 0 to time 1. 
-  ! (this is now initialized in dynpgk)
-  !if (get_nstep() == 1) then
-  !   call settau(dtime)
-  !end if
-  !
   ! Dump state variables to IC file
-  !
   call t_startf ('diag_dynvar_ic')
   call diag_dynvar_ic (phis, ps(:,beglat:endlat,n3m1), t3(:,:,beglat:endlat,n3m1), u3(:,:,beglat:endlat,n3m1), &
                        v3(:,:,beglat:endlat,n3m1), q3(:,:,:,beglat:endlat,n3m1) )
@@ -250,7 +227,7 @@ subroutine stepon_run2( phys_state, phys_tend, dyn_in, dyn_out )
 
   call t_startf ('p_d_coupling')
   call p_d_coupling (phys_state, phys_tend, t2, fu, fv, flx_net, &
-                     qminus(:,:,:,beglat:endlat) )
+                     qminus )
   call t_stopf  ('p_d_coupling')
 end subroutine stepon_run2
 
@@ -258,7 +235,7 @@ end subroutine stepon_run2
 !======================================================================= 
 !
 
-subroutine stepon_run3( ztodt, etamid, cam_out, phys_state, dyn_in, dyn_out )
+subroutine stepon_run3( ztodt, cam_out, phys_state, dyn_in, dyn_out )
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose:  Final phase of dynamics run method. Run the actual dynamics.
@@ -268,7 +245,6 @@ subroutine stepon_run3( ztodt, etamid, cam_out, phys_state, dyn_in, dyn_out )
   use eul_control_mod,only: eul_nsplit
   real(r8), intent(in) :: ztodt            ! twice time step unless nstep=0
   type(cam_out_t), intent(inout) :: cam_out(begchunk:endchunk)
-  real(r8), intent(in) :: etamid(plev)     ! vertical coords at midpoints
   type(physics_state), intent(in):: phys_state(begchunk:endchunk)
   type(dyn_import_t) :: dyn_in                       ! included for compatibility
   type(dyn_export_t) :: dyn_out                      ! included for compatibility

@@ -62,7 +62,8 @@ module WaterfluxType
      real(r8), pointer :: qflx_gross_infl_soil_col (:)   ! col gross infiltration, before considering the evaporation
      real(r8), pointer :: qflx_adv_col             (:,:) ! col advective flux across different soil layer interfaces [mm H2O/s] [+ downward]
      real(r8), pointer :: qflx_rootsoi_col         (:,:) ! col root and soil water exchange [mm H2O/s] [+ into root]     
-     
+    
+     real(r8), pointer :: dwb_col                  (:)   ! coll water mass change [+ increase] [mm H2O/s] 
      real(r8), pointer :: qflx_infl_col            (:)   ! col infiltration (mm H2O /s)
      real(r8), pointer :: qflx_surf_col            (:)   ! col surface runoff (mm H2O /s)
      real(r8), pointer :: qflx_drain_col           (:)   ! col sub-surface runoff (mm H2O /s)
@@ -197,6 +198,7 @@ contains
     allocate(this%qflx_evap_tot_patch      (begp:endp))              ; this%qflx_evap_tot_patch      (:)   = nan
     allocate(this%qflx_evap_grnd_patch     (begp:endp))              ; this%qflx_evap_grnd_patch     (:)   = nan
 
+    allocate(this%dwb_col                  (begc:endc))              ; this%dwb_col                  (:)   = nan
     allocate( this%qflx_ev_snow_patch      (begp:endp))              ; this%qflx_ev_snow_patch       (:)   = nan
     allocate( this%qflx_ev_snow_col        (begc:endc))              ; this%qflx_ev_snow_col         (:)   = nan
     allocate( this%qflx_ev_soil_patch      (begp:endp))              ; this%qflx_ev_soil_patch       (:)   = nan
@@ -306,6 +308,11 @@ contains
     call hist_addfld1d (fname='QRGWL',  units='mm/s',  &
          avgflag='A', long_name='surface runoff at glaciers (liquid only), wetlands, lakes', &
          ptr_col=this%qflx_qrgwl_col, c2l_scale_type='urbanf')
+
+    this%dwb_col(begc:endc) = spval
+    call hist_addfld1d (fname='DWB',  units='mm/s',  &
+         avgflag='A', long_name='net change in total water mass', &
+         ptr_col=this%dwb_col, c2l_scale_type='urbanf')
 
     this%qflx_drain_col(begc:endc) = spval
     call hist_addfld1d (fname='QDRAI',  units='mm/s',  &
@@ -526,6 +533,7 @@ contains
     this%qflx_h2osfc_surf_col(bounds%begc:bounds%endc) = 0._r8
     this%qflx_snow_melt_col(bounds%begc:bounds%endc)   = 0._r8
 
+    this%dwb_col(bounds%begc:bounds%endc) = 0._r8
     ! needed for CNNLeaching 
     do c = bounds%begc, bounds%endc
        l = col%landunit(c)

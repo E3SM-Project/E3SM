@@ -10,7 +10,7 @@
 <history_aero_optics>.true.</history_aero_optics>
 
 <!-- File for BC dep in snow feature -->
-<fsnowoptics>lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</fsnowoptics>
+<fsnowoptics>lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</fsnowoptics>
 
 <!-- Tunable parameters for 72 layer model-->
 
@@ -25,5 +25,7 @@
 <effgw_oro>          0.25   </effgw_oro>
 <seasalt_emis_scale> 0.5    </seasalt_emis_scale>
 <dust_emis_fact>     0.40D0 </dust_emis_fact>
+<zmconv_mx_bot_lyr_adj   >1</zmconv_mx_bot_lyr_adj>
+<zmconv_dmpdz>      -0.5e-3</zmconv_dmpdz>
 
 </namelist_defaults>

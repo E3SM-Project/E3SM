@@ -119,7 +119,7 @@ contains
        call abortmp('one of the optional arguments name and varid must be provided')   
     end if
 
-    if(varptr%timedependent) call PIO_SetFrame(varptr%vardesc,start(2))
+    if(varptr%timedependent) call PIO_SetFrame(ncdf%FileID,varptr%vardesc,start(2))
     call PIO_write_darray(ncdf%FileID, varptr%vardesc, iodesct, var, ierr)
 
     !$OMP END SINGLE
@@ -149,7 +149,7 @@ contains
     end if
 
 !    if(associated(varptr%vardesc%iodesc)) then
-       if(varptr%timedependent) call PIO_SetFrame(varptr%vardesc,start(2))
+       if(varptr%timedependent) call PIO_SetFrame(ncdf%FileID,varptr%vardesc,start(2))
        if(present(iodescin)) then
           call PIO_write_darray(ncdf%FileID, varptr%vardesc, iodescin, var, ierr)
        else	
@@ -182,7 +182,7 @@ contains
     else
        call abortmp('one of the optional arguments name and varid must be provided')   
     end if
-    if(varptr%timedependent) call PIO_SetFrame(varptr%vardesc,start(3))
+    if(varptr%timedependent) call PIO_SetFrame(ncdf%FileID,varptr%vardesc,start(3))
     msize = size(var)
     if(present(iodescin)) then
        call PIO_write_darray(ncdf%FileID, varptr%vardesc, iodescin, reshape(var,(/msize/)), ierr)
@@ -215,7 +215,7 @@ contains
     else
        call abortmp('one of the optional arguments name and varid must be provided')   
     end if
-    if(varptr%timedependent) call PIO_SetFrame(varptr%vardesc,start(3))
+    if(varptr%timedependent) call PIO_SetFrame(ncdf%FileID,varptr%vardesc,start(3))
     msize = size(var)
     if(present(iodescin)) then
        call PIO_write_darray(ncdf%FileID, varptr%vardesc, iodescin, reshape(var,(/msize/)), ierr)

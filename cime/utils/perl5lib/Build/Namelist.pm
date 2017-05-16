@@ -3,9 +3,9 @@ my $pkg_nm = 'Build::Namelist';
 #-----------------------------------------------------------------------------------------------
 #
 # SYNOPSIS
-# 
+#
 #   use Build::Namelist;
-# 
+#
 #   # create empty object
 #   my $nl = Build::Namelist->new();
 #
@@ -14,7 +14,7 @@ my $pkg_nm = 'Build::Namelist';
 #
 #   # initialize object with a namelist formatted string
 #   my $nl = Build::Namelist->new("&nl1 var1=val1 var2=val2 /");
-# 
+#
 #   # get array of namelist group names defined in $nl
 #   my @groups = $nl->get_group_names();
 #
@@ -40,16 +40,16 @@ my $pkg_nm = 'Build::Namelist';
 #   $nl->write($namelist_file_out, 'append'=>1);
 #
 #   # write a subset of the groups to the output file
-#   $nl->write($namelist_file_out, 'groups'=>['name1','name2']) 
+#   $nl->write($namelist_file_out, 'groups'=>['name1','name2'])
 #
 #   # write the namelist group(s) to an output rc (seq_map.rc) file
 #   $nl->write_rc($namelist_file_out);
-# 
+#
 #   # write the namelist group(s) to an output cism.config file
 #   $nl->write_cism_config($namelist_file_out);
 
 # DESCRIPTION
-# 
+#
 # Build::Namelist objects are used to:
 # 1. Parse Fortran namelist input (can handle multiple namelist groups).
 # 2. Get group name, variable names, variable values.
@@ -70,7 +70,7 @@ my $pkg_nm = 'Build::Namelist';
 # In addition to accepting 'variable = value', the parser also accepts 'variable
 # += value'. The latter will append the new value to any existing value(s) for
 # the given variable, separating values with commas. For example, this lets you
-# specify: 
+# specify:
 #
 # hist_fincl1 += 'foo'
 # hist_fincl1 += 'bar'
@@ -98,12 +98,12 @@ my $pkg_nm = 'Build::Namelist';
 #     Returns a scalar containing the value of variable in the specified namelist group.
 #
 # get_value($variable_name)
-#     Convenience function to get the value of a variable assuming there is only 
+#     Convenience function to get the value of a variable assuming there is only
 #     one group with that variable name in it.
 #
 # get_defined_vars_in_group($group_name)
 #     Find the namelist items that have been defined (i.e., given a value) in a namelist group.
-# 
+#
 # set_variable_value($group_name, $variable_name, $value)
 #     Set the value of the specified variable in the specified group.
 #
@@ -124,7 +124,7 @@ my $pkg_nm = 'Build::Namelist';
 #     **** N.B. **** This is a class method.
 #
 # COLLABORATORS
-# 
+#
 #-----------------------------------------------------------------------------------------------
 #
 # Date        Author                  Modification
@@ -151,7 +151,7 @@ my $variable_name;    # variable name for current parser state
 my $variable_value;   # variable value for current parser state
 my $variable_assignment_op; # assignment operator for current parser state ('=' or '+=')
 
-sub new 
+sub new
 {
     my $class = shift;
     my $in    = shift;   # input namelist as either a string or the name of a file
@@ -162,10 +162,10 @@ sub new
     # if new is invoked with no argument, create empty namelist object
     if ( ! defined($in) ) { return bless($self, $class); }
 
-    # Determine which form of input has been used.  If a filename has been given then 
+    # Determine which form of input has been used.  If a filename has been given then
     # read the namelist file before invoking the parser.
 
-    # Pass the parser an array of lines.  If the namelist input has been provided in 
+    # Pass the parser an array of lines.  If the namelist input has been provided in
     # a string, then put it into $line[0].  It the namelist has been provided by a
     # file, then read the file into @lines.
 
@@ -192,7 +192,7 @@ sub new
     }
 
     _parse($self, \@lines);
-    
+
     return bless($self, $class);
 }
 
@@ -271,7 +271,7 @@ sub get_defined_vars_in_group {
 # defined, returns 0 and an empty string.
 #
 # Usage:
-# 
+#
 # ($num_found, $defined_vars) = $nl->get_defined_vars_in_group($group)
 #
 # Inputs:
@@ -301,13 +301,13 @@ sub get_defined_vars_in_group {
 		$num_found = $num_found + 1;
 	    }
 	}
-    } 
+    }
 
     else {  # not(defined($self->{$group}))
 	# This will be the case if there are no namelist items in the given
 	# group (in which case it appears that the hash is not created), or
 	# the given group is not a valid group in this namelist
-	
+
 	$num_found = 0;
 	$defined_vars = "";
     }
@@ -360,7 +360,7 @@ sub delete_variable {
       delete $self->{$lc_group}->{$lc_var};
   }
 
-  # Check whether the group has any other variables.  If not then delete the 
+  # Check whether the group has any other variables.  If not then delete the
   # group as well.
   my @vars = $self->get_variable_names($lc_group);
   unless (@vars) {delete $self->{$lc_group};}
@@ -375,11 +375,16 @@ sub merge_nl {
 # Merge the contents of the namelist object argument into the object invoking the method.
 # The variables in the invoking object have higher precedence and are not overwritten.
 #
-# 
+#
 
     my $self = shift;    # namelist object to merge into
     my $nl   = shift;    # namelist object to merge from
     my %opts = @_;       # options
+
+    my $nm = "$pkg_nm\:\:_merge_nl";
+    if ( (defined($opts{'overwrite'}) && defined($opts{'die_on_conflict'})) ) {
+       die "$nm:ERROR: You can not specify both the overwrite and die_on_conflict options to this subroutine \n";
+    }
 
     # loop over groups in namelist argument
     my @groups = $nl->get_group_names();
@@ -397,7 +402,10 @@ sub merge_nl {
 
 		my $val = $nl->get_variable_value($group, $var);
 		$self->set_variable_value($group, $var, $val);
-	    }
+	    } elsif ( (defined($opts{'die_on_conflict'}) && $opts{'die_on_conflict'}) &&
+	         (defined $self->get_variable_value($group, $var)) ) {
+                die "$nm:ERROR: A variable was already set, so we are terminating on the conflict variable name is =$var \n";
+            }
 	}
     }
 }
@@ -411,13 +419,13 @@ sub write {
 # The default is to overwrite an existing file.  To append
 # to existing file set the optional argument 'append' to true, e.g.,
 #
-# $nl->write('filepath', 'append'=>1) 
+# $nl->write('filepath', 'append'=>1)
 #
-# The default is to write all the groups in the namelist to the 
+# The default is to write all the groups in the namelist to the
 # specified output file.  To only write a subset of the groups
 # supply the optional argument 'groups'=>['name1','name2',...], i.e.,
 #
-# $nl->write('filepath', 'groups'=>['name1','name2']) 
+# $nl->write('filepath', 'groups'=>['name1','name2'])
 #
 # To write a note at the end of the file:
 #
@@ -491,13 +499,13 @@ sub write_rc {
 # The default is to overwrite an existing file.  To append
 # to existing file set the optional argument 'append' to true, e.g.,
 #
-# $nl->write_rc('filepath', 'append'=>1) 
+# $nl->write_rc('filepath', 'append'=>1)
 #
-# The default is to write all the groups in the namelist to the 
+# The default is to write all the groups in the namelist to the
 # specified output file.  To only write a subset of the groups
 # supply the optional argument 'groups'=>['name1','name2',...], i.e.,
 #
-# $nl->write_rc('filepath', 'groups'=>['name1','name2']) 
+# $nl->write_rc('filepath', 'groups'=>['name1','name2'])
 #
 # To write a note at the end of the file:
 #
@@ -558,9 +566,9 @@ sub write_cism_config {
 # The default is to overwrite an existing file.  To append
 # to existing file set the optional argument 'append' to true, e.g.,
 #
-# $nl->write('filepath', 'append'=>1) 
+# $nl->write('filepath', 'append'=>1)
 #
-# The default is to write all the groups in the namelist to the 
+# The default is to write all the groups in the namelist to the
 # specified output file.  To only write a subset of the groups
 # supply the optional argument 'groups'=>['name1','name2',...], i.e.,
 #
@@ -647,12 +655,12 @@ my $valcomplex = "$valcomplex1|$valcomplex2|$valcomplex3|$valcomplex4";
 my $valcomplex_repeat = "${valint}\\*$valcomplex1|${valint}\\*$valcomplex2|${valint}\\*$valcomplex3|${valint}\\*$valcomplex4";
 
 # Match for all valid data-types: integer, real, complex, logical, or string data
-# note: valreal MUST come before valint in this string to prevent integer portion of real 
+# note: valreal MUST come before valint in this string to prevent integer portion of real
 #       being separated from decimal portion
 my $valall = "$vallogical|$valstring|$valreal|$valint|$valcomplex";
 
 # Match for all valid data-types with repeater: integer, real, complex, logical, or string data
-# note: valrepeat MUST come before valall in this string to prevent integer repeat specifier 
+# note: valrepeat MUST come before valall in this string to prevent integer repeat specifier
 #       being accepted alone as a value
 my $valrepeat = "$vallogical_repeat|$valstring_repeat|$valreal_repeat|$valint_repeat|$valcomplex_repeat";
 
@@ -692,13 +700,13 @@ sub validate_variable_value
   }
   foreach my $item ( "arrayNDims", "arrayDims", "type", "strlen", "validValues" ) {
      if ( ! exists($$type_ref{$item}) ) {
-         die "ERROR: in $nm (package $pkg_nm): Variable name $item not " . 
+         die "ERROR: in $nm (package $pkg_nm): Variable name $item not " .
              "defined in input type hash.\n";
      }
   }
   # if multi-dimensional array -- signal an error
   if ( $$type_ref{'arrayNDims'} > 1 ) {
-      die "ERROR: in $nm (package $pkg_nm): Variable name $var is defined " . 
+      die "ERROR: in $nm (package $pkg_nm): Variable name $var is defined " .
           "as a multidimensional array -- which is invalid for a namelist.\n";
   }
 
@@ -717,7 +725,7 @@ sub validate_variable_value
         } elsif ( $$type_ref{'type'} eq "real" ) {
            $compare = $valreal;
         } else {
-	   die "ERROR: in $nm (package $pkg_nm): Type of variable name $var is " . 
+	   die "ERROR: in $nm (package $pkg_nm): Type of variable name $var is " .
                "not a valid FORTRAN type (logical, integer, real, complex or char).\n";
         }
         if ( $i !~ /^\s*(${compare})$/ ) {
@@ -746,7 +754,7 @@ sub validate_variable_value
   # Otherwise if a string
   } else {
     if ( $$type_ref{'type'} ne "char" ) {
-       die "ERROR: in $nm (package $pkg_nm): Type of variable name $var is " . 
+       die "ERROR: in $nm (package $pkg_nm): Type of variable name $var is " .
            "not a valid FORTRAN type (logical, integer, real, complex or char).\n";
     }
     my $val = $value;
@@ -773,7 +781,7 @@ sub validate_variable_value
   # Check that array size not exceeded
   my $arr_ref = $$type_ref{'arrayDims'};
   if ( $#values > $$arr_ref[0] ) {
-     die "ERROR: in $nm (package $pkg_nm): Variable name $var has exceeded " . 
+     die "ERROR: in $nm (package $pkg_nm): Variable name $var has exceeded " .
          "the dimension size of the array.\n";
   }
 
@@ -810,10 +818,10 @@ sub _AppendNote {
   my $class = ref($self);
   my $nm    = "$class::AppendNote";
 
-  $note =~ s/\n/\n\#\! /g;
-  print $fh "#!--------------------------------------------------------------------------------------------------------------------------\n";
-  print $fh  "#! ${file}:: $note\n";
-  print $fh "#!--------------------------------------------------------------------------------------------------------------------------\n";
+  $note =~ s/\n/\n\!\# /g;
+  print $fh "!#--------------------------------------------------------------------------------------------------------------------------\n";
+  print $fh  "!# ${file}:: $note\n";
+  print $fh "!#--------------------------------------------------------------------------------------------------------------------------\n";
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -838,7 +846,7 @@ sub _parse {
     # Loop over each line in the namelist.
     while ( defined(my $line = shift @lines) ) {
 
-	# The local variable $line is modified by the parser.  It removes tokens 
+	# The local variable $line is modified by the parser.  It removes tokens
 	# from $line as they are recognized.  Loop over line until all recognized
 	# tokens have been removed.
 	while ( defined($line) ) {
@@ -878,7 +886,7 @@ sub _parse_next {
 # In addition to accepting 'variable = value', the parser also accepts 'variable
 # += value'. The latter will append the new value to any existing value(s) for
 # the given variable, separating values with commas. For example, this lets you
-# specify: 
+# specify:
 #
 # hist_fincl1 += 'foo'
 # hist_fincl1 += 'bar'
@@ -896,7 +904,7 @@ sub _parse_next {
 #
     my $self   = shift;
     my $line_ref   = shift;      # Current state of a line read from file
-    my $expect_ref = shift;      # Type of item you expect next 
+    my $expect_ref = shift;      # Type of item you expect next
                                  # ("group", "variable", "varorvalue", "=", or "value")
 
     my $line = $$line_ref;
@@ -1088,7 +1096,7 @@ sub _setkeypair {
         elsif ($variable_assignment_op eq "+=") {
            # the following assumes that the variable is a list, and appends the
            # current value to the end of any existing value, separated by a
-           # comma 
+           # comma
            if (defined $self->{$group_name}->{$variable_name}) {
               $self->{$group_name}->{$variable_name} .= "," . $variable_value;
            }

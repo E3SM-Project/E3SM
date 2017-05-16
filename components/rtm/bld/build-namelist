@@ -149,7 +149,7 @@ my $perl5dir = "$cesmroot/cime/utils/perl5lib";
 
 # The root directory to cesm utils Tools
 
-my $SetupTools_dir = "$cesmroot/cime/scripts/Tools";
+my $SetupTools_dir = "$perl5dir/Config";
 (-f "$SetupTools_dir/SetupTools.pm")  or
     fatal_error("Cannot find perl module \"SetupTools.pm\" in directory\n" .
                 "\"$SetupTools_dir\" \n");

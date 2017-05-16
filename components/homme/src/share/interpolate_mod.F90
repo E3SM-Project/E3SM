@@ -1,3 +1,17 @@
+!---------------------------------------------------------------------------------------
+! Interpolate_mod:
+!
+! 07/2016: O. Guba Changing interpolate_vector routine: 
+!    (1) Instead of interpolating velocity in contravariant bases which are not
+!    continuous across elements' edges, use interpolation in Cartesian basis.
+!    (2) Affected routine is interpolate_vector3d. Its other version for 
+!    velocities on 1 level only, interpolate_vector2d, is removed since it is 
+!    not used.   
+!    (3) Removing npts parameter from input params of interpolate_vector3d
+!    because npts is always equal to np.
+!
+!
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -5,7 +19,7 @@
 module interpolate_mod
   use kinds, only : real_kind, iulog
   use element_mod, only : element_t
-  use dimensions_mod, only : np, ne, nelemd, nc, nhe, nhc
+  use dimensions_mod, only : np, ne, nelemd
   use quadrature_mod, only : quadrature_t, legendre, quad_norm
   use coordinate_systems_mod, only : spherical_polar_t, cartesian2d_t, &
        cartesian3D_t, sphere2cubedsphere, spherical_to_cart, &
@@ -19,7 +33,6 @@ module interpolate_mod
   use cube_mod,               only : convert_gbl_index, dmap, ref2sphere
   use mesh_mod,               only : MeshUseMeshFile
   use control_mod,            only : cubed_sphere_map
-  use edgetype_mod, only : ghostbuffertr_t
 
   implicit none
   private
@@ -68,10 +81,6 @@ module interpolate_mod
   public :: interpolate_scalar
   public :: interpolate_ce
   
-  public :: interpol_phys_latlon
-#if defined(_SPELT)
-  public :: interpol_spelt_latlon
-#endif
   public :: interpolate_vector
   public :: set_interp_parameter
   public :: get_interp_parameter
@@ -81,7 +90,6 @@ module interpolate_mod
 #ifndef CAM
   public :: var_is_vector_uvar, var_is_vector_vvar
 #endif
-! ^ ifndef CAM
   public :: cube_facepoint_ne
   public :: cube_facepoint_unstructured
   public :: parametric_coordinates
@@ -100,7 +108,6 @@ module interpolate_mod
      module procedure interpolate_scalar3d
   end interface
   interface interpolate_vector
-     module procedure interpolate_vector2d
      module procedure interpolate_vector3d
   end interface
 
@@ -127,15 +134,6 @@ module interpolate_mod
                                   ! 1 = grid set via mesh resolution
 
 
-  ! static data, used by bilin_phys2gll()
-  ! shared by all threads.  only allocate if subroutine will be used
-  type (ghostBuffertr_t), save               :: ghostbuf_tr
-  integer  :: nphys_init=0
-  integer  :: index_l(np),index_r(np)
-  real(kind=real_kind),allocatable :: weights(:,:,:,:,:) ! np,np,2,2,nelemd
-
-  public :: bilin_phys2gll
-  public :: bilin_phys2gll_init
 contains
 
 
@@ -648,195 +646,8 @@ contains
 
   end function interpol_bilinear
 
-! ----------------------------------------------------------------------------------!
-!FUNCTION   interpol_phys_latlon----------------------------------------CE-for fvm!
-! AUTHOR: CHRISTOPH ERATH, 23. May 2012                                             !
-! DESCRIPTION: evaluation of the reconstruction for every physics grid cell         !
-!                                                                                   !
-! CALLS: 
-! INPUT: 
-!        
-! OUTPUT: 
-!-----------------------------------------------------------------------------------!
-subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
-  use fvm_control_volume_mod, only : fvm_struct
-  use fvm_reconstruction_mod, only: reconstruction
-  use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
-  use edgetype_mod, only : edgedescriptor_t
-  
-  type (interpdata_t), intent(in)     :: interpdata                        
-  real (kind=real_kind), intent(in)   :: f(1-nhc:nc+nhc,1-nhc:nc+nhc)
-  type (fvm_struct), intent(in)       :: fvm
-  type (cartesian2d_t), intent(in)    :: corners(:)
-  type (edgedescriptor_t),intent(in)  :: desc
-  
-                          
-  real (kind=real_kind)             :: flatlon(:)
-  ! local variables
-  real (kind=real_kind)             :: xp,yp, tmpval
-  real (kind=real_kind)             :: tmpaxp,tmpaxm, tmpayp, tmpaym
-  integer                           :: i, ix, jy, starti,endi,tmpi
-  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
-  
-  call reconstruction(f, fvm,recons)
-  call monotonic_gradient_cart(f, fvm,recons, desc) 
-!phl PCoM  recons=0.0
-
-  tmpaxp=(corners(1)%x+corners(2)%x)/2
-  tmpaxm=(corners(2)%x-corners(1)%x)/2
-  tmpayp=(corners(1)%y+corners(4)%y)/2
-  tmpaym=(corners(4)%y-corners(1)%y)/2
-  do i=1,interpdata%n_interp
-    ! caculation phys grid coordinate of xp point, note the interp_xy are on the reference [-1,1]x[-1,1]
-    xp=tan(tmpaxp+interpdata%interp_xy(i)%x*tmpaxm)
-    yp=tan(tmpayp+interpdata%interp_xy(i)%y*tmpaym)   
-
-    ! Search index along "x"  (bisection method)
-    starti = 1
-    endi = nc+1
-    do
-       if  ((endi-starti) <=  1)  exit
-       tmpi = (endi + starti)/2
-       if (xp  >  fvm%acartx(tmpi)) then
-          starti = tmpi
-       else
-          endi = tmpi
-       endif
-    enddo
-    ix = starti
-
-  ! Search index along "y"
-    starti = 1
-    endi = nc+1
-    do
-       if  ((endi-starti) <=  1)  exit
-       tmpi = (endi + starti)/2
-       if (yp  >  fvm%acarty(tmpi)) then
-          starti = tmpi
-       else
-          endi = tmpi
-       endif
-    enddo
-    jy = starti
-    
-    call recons_val_cart(f, xp,yp,fvm%spherecentroid,recons,ix,jy,tmpval)
-    flatlon(i)=tmpval    
-!phl PCoM     flatlon(i)=f(ix,jy)    
-  end do
-end subroutine interpol_phys_latlon
-
-
-#if defined(_SPELT)
-! ----------------------------------------------------------------------------------!
-!FUNCTION   interpol_spelt_latlon---------------------------------------CE-for spelt!
-! AUTHOR: CHRISTOPH ERATH, 24. August 2012                                          !
-! DESCRIPTION: evaluation of the reconstruction for every spelt grid cell         !
-!                                                                                   !
-! CALLS: 
-! INPUT: 
-!        
-! OUTPUT: 
-!-----------------------------------------------------------------------------------!
-subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
-  use spelt_mod, only : spelt_struct, cell_search, cip_coeff, cell_minmax, &
-                        cip_interpolate, qmsl_cell_filter, metric_term
-  use dimensions_mod, only: nip, nipm, nep
-  use coordinate_systems_mod, only : cartesian2d_t
-  
-  use edgetype_mod, only : edgedescriptor_t
-  
-  type (interpdata_t), intent(in)     :: interpdata                        
-  real (kind=real_kind), intent(in)   :: f(1-nipm:nep+nipm,1-nipm:nep+nipm)
-  type (spelt_struct), intent(in)     :: spelt  
-  type (cartesian2d_t), intent(in)    :: corners(4)
-                            
-  real (kind=real_kind)             :: flatlon(:)
-  ! local variables
-  real (kind=real_kind)             :: xp,yp,dxp,dyp, tmpval
-  integer                           :: i, j, ix,jy, icell, jcell, starti,endi,tmpi
-  real (kind=real_kind)             :: cf(nip,nip,1:nc,1:nc)
-  real (kind=real_kind)             :: ff(nip,nip)
-  real (kind=real_kind)             :: minmax(1-nhe:nc+nhe,1-nhe:nc+nhe,2)
-  
-  type (cartesian2d_t)              :: alphabeta   
-  real(kind=real_kind)              :: pi,pj,qi,qj, sga, tmp
-  
-
-  do j=1,nc
-    do i=1,nc
-      icell=1+(i-1)*nipm
-      jcell=1+(j-1)*nipm
-      ff=f(icell:icell+nipm,jcell:jcell+nipm)*spelt%sga(icell:icell+nipm,jcell:jcell+nipm)
-      minmax(i,j,:)=cell_minmax(ff)
-      call cip_coeff(spelt%drefx(i,j),spelt%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
-    enddo
-  enddo
-! 
-  do i=1,interpdata%n_interp
-    ! caculation phys grid coordinate of xp point, note the interp_xy are on the reference [-1,1]x[-1,1] 
-    xp=interpdata%interp_xy(i)%x
-    yp=interpdata%interp_xy(i)%y
-    ! Search index along "x"  (bisection method)
-    starti = 1
-    endi = nc+1
-    do
-       if  ((endi-starti) <=  1)  exit
-       tmpi = (endi + starti)/2
-       if (xp  >  spelt%pref(tmpi)) then
-          starti = tmpi
-       else
-          endi = tmpi
-       endif
-    enddo
-    icell = starti
-
-  ! Search index along "y"
-    starti = 1
-    endi = nc+1
-    do
-       if  ((endi-starti) <=  1)  exit
-       tmpi = (endi + starti)/2
-       if (yp  >  spelt%pref(tmpi)) then
-          starti = tmpi
-       else
-          endi = tmpi
-       endif
-    enddo
-    jcell = starti
-    
-    if ((icell<1) .or.(icell>nc) .or. (jcell<1) .or. (jcell>nc)) then
-      write(*,*) 'icell, jcell,Something is wrong in the search of interpol_spelt_latlon!'
-      stop
-    endif
-    dxp=xp-spelt%pref(icell)
-    dyp=yp-spelt%pref(jcell)
-    tmp=cip_interpolate(cf(:,:,icell,jcell),dxp,dyp)      
-    tmp=qmsl_cell_filter(icell,jcell,minmax,tmp) 
-    
-    !next lines can be deleted, once the subroutine for the metric term for ref points works
-    pi = (1-xp)/2
-    pj = (1-yp)/2
-    qi = (1+xp)/2
-    qj = (1+yp)/2
-    alphabeta%x = pi*pj*corners(1)%x &
-         + qi*pj*corners(2)%x &
-         + qi*qj*corners(3)%x &
-         + pi*qj*corners(4)%x 
-    alphabeta%y = pi*pj*corners(1)%y &
-         + qi*pj*corners(2)%y &
-         + qi*qj*corners(3)%y &
-         + pi*qj*corners(4)%y
-
-    sga=metric_term(alphabeta)
-    
-    flatlon(i)=tmp/sga
-!     flatlon(i)=f(icell*nipm,jcell*nipm)    
-  end do
-end subroutine interpol_spelt_latlon
-#endif
-
-
   function parametric_coordinates(sphere, corners3D,ref_map_in, corners,cartp,facenum) result (ref)
+
     implicit none
     type (spherical_polar_t), intent(in) :: sphere
     type (cartesian2D_t) :: ref
@@ -1761,167 +1572,111 @@ end subroutine interpolate_ce
   ! input_coords = 0    fld_cube given in lat-lon
   ! input_coords = 1    fld_cube given in contravariant
   !
-  ! Note that it is possible the given element contains none of the interpolation points
+  ! Note that it is possible the given element contains none of the
+  ! interpolation points
   ! =======================================
-  subroutine interpolate_vector2d(interpdata,elem,fld_cube,npts,fld,input_coords, fillvalue)
-    implicit none
-    integer                  ::  npts
-    real (kind=real_kind)    ::  fld_cube(npts,npts,2) ! vector field
-    real (kind=real_kind)    ::  fld(:,:)          ! field at new grid lat,lon coordinates
-    type (interpdata_t)      ::  interpdata
-    type (element_t), intent(in)         :: elem
-    real (kind=real_kind), intent(in), optional :: fillvalue
-    integer                  ::  input_coords
-
-
-    ! Local variables
-    real (kind=real_kind)    ::  fld_contra(npts,npts,2) ! vector field
-    type (interpolate_t), pointer  ::  interp          ! interpolation structure
-
-    real (kind=real_kind)    ::  v1,v2
-    real (kind=real_kind)    ::  D(2,2)   ! derivative of gnomonic mapping
-    real (kind=real_kind)    ::  JJ(2,2), tmpD(2,2)   ! derivative of gnomonic mapping
-
-    integer :: i,j
-
-    type (cartesian2D_t) :: cart
-
-    if(present(fillvalue)) then
-       if (any(fld_cube==fillvalue)) then
-          fld = fillvalue
-          return
-       end if
-    end if
-
-    if (input_coords==0 ) then
-       ! convert to contra
-       do j=1,npts
-          do i=1,npts
-             ! latlon->contra
-             fld_contra(i,j,1) = elem%Dinv(i,j,1,1)*fld_cube(i,j,1) + elem%Dinv(i,j,1,2)*fld_cube(i,j,2)
-             fld_contra(i,j,2) = elem%Dinv(i,j,2,1)*fld_cube(i,j,1) + elem%Dinv(i,j,2,2)*fld_cube(i,j,2)
-          enddo
-       enddo
-    else
-       fld_contra=fld_cube
-    endif
-
-
-    if (npts==np) then
-       interp => interp_p
-    else if (npts==np) then
-       call abortmp('Error in interpolate_vector(): input must be on velocity grid')
-    endif
-
-
-       ! Choice for Native (high-order) or Bilinear interpolations
-
-    if (itype == 0) then
-       do i=1,interpdata%n_interp
-          fld(i,1)=interpolate_2d(interpdata%interp_xy(i),fld_contra(:,:,1),interp,npts)
-          fld(i,2)=interpolate_2d(interpdata%interp_xy(i),fld_contra(:,:,2),interp,npts)
-       end do
-    elseif (itype == 1) then
-       do i=1,interpdata%n_interp
-          fld(i,1)=interpol_bilinear(interpdata%interp_xy(i),fld_contra(:,:,1),interp,npts)
-          fld(i,2)=interpol_bilinear(interpdata%interp_xy(i),fld_contra(:,:,2),interp,npts)
-       end do
-    else
-       write(iulog,*) itype
-       call abortmp("wrong interpolation type")
-    endif
-    do i=1,interpdata%n_interp
-       ! convert fld from contra->latlon
-       call dmap(D,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y,&
-            elem%corners3D,cubed_sphere_map,elem%cartp,elem%facenum)
-       ! convert fld from contra->latlon
-       v1 = fld(i,1)
-       v2 = fld(i,2)
-
-       fld(i,1)=D(1,1)*v1 + D(1,2)*v2
-       fld(i,2)=D(2,1)*v1 + D(2,2)*v2
-    end do
-
-  end subroutine interpolate_vector2d
-  ! =======================================
-  ! interpolate_vector
-  !
-  ! Interpolate a vector field given in an element (fld_cube)
-  ! to the points in interpdata%interp_xy(i), i=1 .. interpdata%n_interp.
-  !
-  ! input_coords = 0    fld_cube given in lat-lon
-  ! input_coords = 1    fld_cube given in contravariant
-  !
-  ! Note that it is possible the given element contains none of the interpolation points
-  ! =======================================
-  subroutine interpolate_vector3d(interpdata,elem,fld_cube,npts,nlev,fld,input_coords, fillvalue)
+  subroutine interpolate_vector3d(interpdata,elem,fld_cube,nlev,fld,input_coords,fillvalue)
     implicit none
     type (interpdata_t),intent(in)       ::  interpdata
-    type (element_t), intent(in)         :: elem
-    integer, intent(in)                  ::  npts, nlev
-    real (kind=real_kind), intent(in)    ::  fld_cube(npts,npts,2,nlev) ! vector field
+    type (element_t), intent(in)         ::  elem
+    integer, intent(in)                  ::  nlev
+    real (kind=real_kind), intent(in)    ::  fld_cube(np,np,2,nlev) ! vector field
     real (kind=real_kind), intent(out)   ::  fld(:,:,:)          ! field at new grid lat,lon coordinates
     real (kind=real_kind), intent(in),optional :: fillvalue
     integer, intent(in)                  ::  input_coords
 
     ! Local variables
-    real (kind=real_kind)    ::  fld_contra(npts,npts,2,nlev) ! vector field
+    real (kind=real_kind)    ::  fld_contra(np,np,2,nlev) ! vector field
+    real (kind=real_kind)    ::  fld_lonlat(np,np,2,nlev) ! vector field in lonlat
+    real (kind=real_kind)    ::  fld_cart(np,np,3,nlev) ! vector field in cartesian
+    real (kind=real_kind), allocatable    ::  fld_cart_interp(:,:,:) ! vector field in cartesian
     type (interpolate_t), pointer  ::  interp          ! interpolation structure
 
     real (kind=real_kind)    ::  v1,v2
     real (kind=real_kind)    ::  D(2,2)   ! derivative of gnomonic mapping
     real (kind=real_kind)    ::  JJ(2,2), tmpD(2,2)   ! derivative of gnomonic mapping
-
-
-    integer :: i,j,k
-
+    real (kind=real_kind)    ::  Km(3,2) !transform from/to lonlat basis for vectors at interp. point
+    real (kind=real_kind)    ::  llon, llat
+    
+    integer :: i,j,k 
+    integer :: ilon, ilat
     type (cartesian2D_t) :: cart
+    
+    
     if(present(fillvalue)) then
        if (any(fld_cube==fillvalue)) then
           fld = fillvalue
           return
        end if
     end if
-    if (input_coords==0 ) then
-       ! convert to contra
+
+    interp => interp_p
+
+    if (input_coords ==1 ) then
+       ! convert to lonlat
        do k=1,nlev
-          do j=1,npts
-             do i=1,npts
-                ! latlon->contra
-                fld_contra(i,j,1,k) = elem%Dinv(i,j,1,1)*fld_cube(i,j,1,k) + elem%Dinv(i,j,1,2)*fld_cube(i,j,2,k)
-                fld_contra(i,j,2,k) = elem%Dinv(i,j,2,1)*fld_cube(i,j,1,k) + elem%Dinv(i,j,2,2)*fld_cube(i,j,2,k)
+          do j=1,np
+             do i=1,np
+                ! contra -> lonlat
+                fld_lonlat(i,j,1,k) = elem%D(i,j,1,1)*fld_cube(i,j,1,k) + elem%D(i,j,1,2)*fld_cube(i,j,2,k)
+                fld_lonlat(i,j,2,k) = elem%D(i,j,2,1)*fld_cube(i,j,1,k) + elem%D(i,j,2,2)*fld_cube(i,j,2,k)
+                
+                ! lonlat -> cart
+                fld_cart(i,j,1,k) = elem%vec_sphere2cart(i,j,1,1)*fld_lonlat(i,j,1,k) + &
+                                    elem%vec_sphere2cart(i,j,1,2)*fld_lonlat(i,j,2,k)
+                fld_cart(i,j,2,k) = elem%vec_sphere2cart(i,j,2,1)*fld_lonlat(i,j,1,k) + &
+                                    elem%vec_sphere2cart(i,j,2,2)*fld_lonlat(i,j,2,k)
+                ! vec_sphere2cart(...,3,1) = 0
+                ! fld_cart(i,j,3,k) =
+                ! elem%vec_sphere2cart(i,j,3,1)*fld_lonlat(i,j,1,k) +
+                ! elem%vec_sphere2cart(i,j,3,2)*fld_lonlat(i,j,2,k)
+                fld_cart(i,j,3,k) = elem%vec_sphere2cart(i,j,3,2)*fld_lonlat(i,j,2,k)
              enddo
           enddo
        end do
+    elseif(input_coords == 0) then 
+       fld_lonlat = fld_cube
+       do k=1,nlev
+          do j=1,np
+             do i=1,np               
+                ! lonlat -> cart
+                fld_cart(i,j,1,k) = elem%vec_sphere2cart(i,j,1,1)*fld_lonlat(i,j,1,k) + &
+                                    elem%vec_sphere2cart(i,j,1,2)*fld_lonlat(i,j,2,k)
+                fld_cart(i,j,2,k) = elem%vec_sphere2cart(i,j,2,1)*fld_lonlat(i,j,1,k) + &
+                                    elem%vec_sphere2cart(i,j,2,2)*fld_lonlat(i,j,2,k)
+                ! vec_sphere2cart(...,3,1) = 0
+                ! fld_cart(i,j,3,k) =
+                ! elem%vec_sphere2cart(i,j,3,1)*fld_lonlat(i,j,1,k) +
+                ! elem%vec_sphere2cart(i,j,3,2)*fld_lonlat(i,j,2,k)
+                fld_cart(i,j,3,k) = elem%vec_sphere2cart(i,j,3,2)*fld_lonlat(i,j,2,k)
+             enddo
+          enddo
+       end do       
     else
-       fld_contra=fld_cube
+       call abortmp('Error in interpolate_vector3d(): Unknown value of input_coords. Use 0 or 1.')
     endif
 
-    if (npts==np) then
-       interp => interp_p
-    else if (npts==np) then
-       call abortmp('Error in interpolate_vector(): input must be on velocity grid')
-    endif
+    allocate(fld_cart_interp(interpdata%n_interp,3,nlev))
 
-
-       ! Choice for Native (high-order) or Bilinear interpolations
-
+    ! Choice for Native (high-order) or Bilinear interpolations
     if (itype == 0) then
        do k=1,nlev
           do i=1,interpdata%n_interp
-             fld(i,k,1)=interpolate_2d(interpdata%interp_xy(i),fld_contra(:,:,1,k),interp,npts)
-             fld(i,k,2)=interpolate_2d(interpdata%interp_xy(i),fld_contra(:,:,2,k),interp,npts)
+             do j=1,3
+                fld_cart_interp(i,j,k)=interpolate_2d(interpdata%interp_xy(i),fld_cart(:,:,j,k),interp,np)
+             enddo
           end do
        end do
     elseif (itype == 1) then
        do k=1,nlev
           do i=1,interpdata%n_interp
-             fld(i,k,1)=interpol_bilinear(interpdata%interp_xy(i),fld_contra(:,:,1,k),interp,npts)
-             fld(i,k,2)=interpol_bilinear(interpdata%interp_xy(i),fld_contra(:,:,2,k),interp,npts)
-          end do
+             do j=1,3
+                fld_cart_interp(i,j,k)=interpol_bilinear(interpdata%interp_xy(i),fld_cart(:,:,j,k),interp,np)
+             end do
+           enddo  
        end do
     else
-       call abortmp("wrong interpolation type")
+       call abortmp("Error in interpolate_vector3d(): wrong interpolation type")
     endif
 
 
@@ -1938,7 +1693,31 @@ end subroutine interpolate_ce
           fld(i,k,2)=D(2,1)*v1 + D(2,2)*v2
        end do
     end do
+    
+    do i=1,interpdata%n_interp
+       ! convert from cart to lonlat: we need to recover matrix K, for that we
+       ! need lon,lat at the interp. point.
+       ilon = interpdata%ilon(i)
+       ilat = interpdata%ilat(i)
+       llon = lon(ilon)
+       llat = lat(ilat)
+       Km(1,1) = -SIN(llon)
+       Km(2,1) =  COS(llon)
+       Km(3,1) =  0.0_real_kind
+       Km(1,2) = -SIN(llat)*COS(llon)
+       Km(2,2) = -SIN(llat)*SIN(llon)
+       Km(3,2) =  COS(llat)
+       do k=1,nlev
+          fld(i,k,1) = Km(1,1)*fld_cart_interp(i,1,k) + Km(2,1)*fld_cart_interp(i,2,k) ! Km(3,1) = 0
+          fld(i,k,2) = Km(1,2)*fld_cart_interp(i,1,k) + Km(2,2)*fld_cart_interp(i,2,k) + Km(3,2)*fld_cart_interp(i,3,k) 
+       enddo
+    end do
+
+    deallocate(fld_cart_interp)
+
   end subroutine interpolate_vector3d
+
+
 
 #ifndef CAM
   function var_is_vector_uvar(name)
@@ -1980,319 +1759,6 @@ end subroutine interpolate_ce
   end function var_is_vector_vvar
 #endif
 ! ^ ifndef CAM
-
-
-!  ================================================
-!  bilin_phys2gll:
-!
-!  interpolate to an equally spaced (in reference element coordinate system)
-!  CSLAM grid to the GLL grid
-!
-!  bilinear map 
-!
-!  MT initial version 3/2014
-!  ================================================
-  subroutine bilin_phys2gll_init(nphys,elem,hybrid,nets,nete)
-    use control_mod, only : neast, nwest, seast, swest, cubed_sphere_map
-    use dimensions_mod, only :  max_corner_elem
-    use coordinate_systems_mod, only : cartesian3D_t,cartesian2D_t,spherical_polar_t,&
-       spherical_to_cart,cart2spherical, distance, cart2cubedsphere, sphere2cubedsphere,&
-       distance
-    use cube_mod, only : ref2sphere
-    use quadrature_mod, only : quadrature_t, gausslobatto
-    use parallel_mod, only : abortmp
-    use hybrid_mod, only : hybrid_t
-    use element_mod, only : element_t
-!    use fvm_control_volume_mod, only : fvm_struct
-    use bndry_mod, only :  ghost_exchangev
-    use edge_mod, only :  freeghostbufferTR, initghostbufferTR, &
-         ghostvpackR, ghostvunpackR
-         
-    ! input
-    integer :: nphys,nets,nete,ie_in
-    type (element_t)     , intent(inout), target :: elem(:)
-!    type (fvm_struct)    , intent(inout), target :: fvm(:)
-    type (hybrid_t)    , intent(in) :: hybrid
-    
-    ! static data, shared by all threads
-    real(kind=real_kind),allocatable :: fvm_cart3d(:,:,:,:) ! np,np,3,nelemd
-
-    ! local
-    type (cartesian3D_t) ::   cart3d,corners3D(4)
-    type (cartesian2D_t) ::   ref_cart2d
-    integer i,j,i1,i2,j1,j2,ie, l ,ic, cube_corner, ij_corner
-    real(kind=real_kind) :: phys_centers(nphys)
-    real(kind=real_kind) :: dx,gll,sum,d11,d12,d21,d22
-    type(quadrature_t) :: gll_pts
-
-
-
-    if (nphys_init/=nphys) then
-       if (hybrid%masterthread) print *,'Initializing PHYS_GRID -> GLL bilinear interpolation weights'
-       ! initialize static data on master thread only
-#if (defined HORIZ_OPENMP)
-!OMP BARRIER
-!OMP MASTER
-#endif
-       if (nphys_init /= 0 ) then
-          ! using a new phys grid.  need to recompute weights
-          deallocate(weights)
-       endif
-       allocate(weights(np,np,2,2,nelemd))
-       allocate(fvm_cart3d(0:nphys+1,0:nphys+1,3,nelemd))
-       nphys_init=nphys
-
-       ! compute phys grid cell centers [-1,1]
-       ! these are the phys grid cell in the reference element [-1,1] coordinate system
-       do i=1,nphys
-          dx = 2d0/nphys
-          phys_centers(i)=-1 + (dx/2) + (i-1)*dx
-       enddo
-
-       ! compute 1D interpolation weights
-       ! for every GLL point, find the index of the phys point to the left and right:
-       !    index_l, index_r
-       index_l(1)=0
-       index_r(1)=1
-
-       index_l(np)=nphys
-       index_r(np)=nphys+1
-
-       ! compute GLL cell edges on [-1,1]
-       gll_pts = gausslobatto(np)
-
-       do i=2,np-1
-          ! find: i1,i2 such that:
-          ! phys_centers(i1) <=  gll(i)  <= phys_centers(i2)
-          gll = gll_pts%points(i)
-          i1=0
-          do j=1,nphys-1
-             if (phys_centers(j) <= gll .and. phys_centers(j+1)>gll) then
-                i1=j
-                i2=j+1
-             endif
-          enddo
-          if (i1==0) stop 'ERROR: bilin_phys2gll() bad logic0'
-          index_l(i)=i1
-          index_r(i)=i2  
-       enddo
-#if (defined HORIZ_OPENMP)
-!OMP END MASTER
-!OMP BARRIER
-#endif
-       ! do a ghost cell update to compute 
-       call initghostbufferTR(ghostbuf_tr,3,1,1,nphys)  ! 3 variables, 1 row halo cells
-       do ie=nets,nete
-          do i=1,nphys
-          do j=1,nphys
-             ! recompute physics grid centers
-             ! this could be made an input argument?
-             cart3d=spherical_to_cart(ref2sphere(phys_centers(i),&
-                  phys_centers(j),elem(ie)%corners3D,cubed_sphere_map,elem(ie)%corners,elem(ie)%facenum))
-             !cart3d=spherical_to_cart(fvm(ie)%centersphere(i,j))       ! lat/lon -> 3D 
-             fvm_cart3d(i,j,1,ie) = cart3d%x
-             fvm_cart3d(i,j,2,ie) = cart3d%y
-             fvm_cart3d(i,j,3,ie) = cart3d%z
-          enddo
-          enddo
-          call ghostVpackR(ghostbuf_tr, fvm_cart3d(:,:,:,ie),1,nphys,3,1,0,elem(ie)%desc)
-       enddo
-       call ghost_exchangeV(hybrid,ghostbuf_tr,1,nphys,1)
-       do ie=nets,nete
-          call ghostVunpackR(ghostbuf_tr, fvm_cart3d(:,:,:,ie),1,nphys,3,1,0,elem(ie)%desc)
-       enddo
-!OMP BARRIER
-!OMP MASTER
-       call freeghostbufferTR(ghostbuf_tr)
-!OMP END MASTER
-
-       ! this can be done threaded (but not really needed)
-       do ie=nets,nete
-           if ( elem(ie)%desc%actual_neigh_edges > 8 ) then
-              call abortmp('ERROR: bilinear interpolation not coded for unstructured meshes')
-           endif
-
-           cube_corner=0
-           if ( elem(ie)%desc%actual_neigh_edges == 7 ) then
-              ! SW
-              ic = elem(ie)%desc%getmapP_ghost(swest)
-              if(ic == -1) cube_corner=swest
-              ic = elem(ie)%desc%getmapP_ghost(seast)
-              if(ic == -1) cube_corner=seast
-              ic = elem(ie)%desc%getmapP_ghost(neast)
-              if(ic == -1) cube_corner=neast
-              ic = elem(ie)%desc%getmapP_ghost(nwest)
-              if(ic == -1) cube_corner=nwest
-           endif
-
-           do j=1,np
-           do i=1,np
-
-              i1 = index_l(i)
-              i2 = index_r(i)
-              j1 = index_l(j)
-              j2 = index_r(j)
-              
-              corners3D(1)%x = fvm_cart3d(i1,j1,1,ie)
-              corners3D(1)%y = fvm_cart3d(i1,j1,2,ie)
-              corners3D(1)%z = fvm_cart3d(i1,j1,3,ie)
-              
-              corners3D(2)%x = fvm_cart3d(i2,j1,1,ie)
-              corners3D(2)%y = fvm_cart3d(i2,j1,2,ie)
-              corners3D(2)%z = fvm_cart3d(i2,j1,3,ie)
-              
-              corners3D(3)%x = fvm_cart3d(i2,j2,1,ie)
-              corners3D(3)%y = fvm_cart3d(i2,j2,2,ie)
-              corners3D(3)%z = fvm_cart3d(i2,j2,3,ie)
-              
-              corners3D(4)%x = fvm_cart3d(i1,j2,1,ie)
-              corners3D(4)%y = fvm_cart3d(i1,j2,2,ie)
-              corners3D(4)%z = fvm_cart3d(i1,j2,3,ie)
-
-              ! cube corner
-              ij_corner=0
-              if (i==1  .and. j==1)  ij_corner=SWEST
-              if (i==1  .and. j==np) ij_corner=NWEST
-              if (i==np  .and.j==1)  ij_corner=SEAST
-              if (i==np .and. j==np) ij_corner=NEAST
-
-              !  NW(4)d12  NE(3)d22
-              !
-              !  SW(1)d11  SE(2)d21
-              !   (1,1)     (np,1)
-              !
-              if (cube_corner == SEAST .and. ij_corner == SEAST ) then
-                 ! distance weighting
-                 cart3d=spherical_to_cart(elem(ie)%spherep(i,j))
-                 d11=1/distance(cart3d,corners3D(1))
-                 d21=0 ! 1/distance(cart3d,corners3D(2))
-                 d22=1/distance(cart3d,corners3D(3))
-                 d12=1/distance(cart3d,corners3D(4))
-              else if (cube_corner == SWEST .and. ij_corner == SWEST ) then
-                 cart3d=spherical_to_cart(elem(ie)%spherep(i,j))
-                 d11=0 ! 1/distance(cart3d,corners3D(1))
-                 d21=1/distance(cart3d,corners3D(2))
-                 d22=1/distance(cart3d,corners3D(3))
-                 d12=1/distance(cart3d,corners3D(4))
-              else if (cube_corner == NWEST .and. ij_corner == NWEST ) then
-                 cart3d=spherical_to_cart(elem(ie)%spherep(i,j))
-                 d11=1/distance(cart3d,corners3D(1))
-                 d21=1/distance(cart3d,corners3D(2))
-                 d22=1/distance(cart3d,corners3D(3))
-                 d12=0 ! 1/distance(cart3d,corners3D(4))
-              else if (cube_corner == NEAST .and. ij_corner == NEAST ) then
-                 cart3d=spherical_to_cart(elem(ie)%spherep(i,j))
-                 d11=1/distance(cart3d,corners3D(1))
-                 d21=1/distance(cart3d,corners3D(2))
-                 d22=0 ! 1/distance(cart3d,corners3D(3))
-                 d12=1/distance(cart3d,corners3D(4))
-              else
-                 ! here we need to use a local projection that works across element
-                 ! edges.  so force cubed_sphere_map=2 even if HOMME is
-                 ! using a different map. 
-                 ref_cart2d=parametric_coordinates(elem(ie)%spherep(i,j),corners3D,2)
-                 ! sanity check.  allow for small amount of extrapolation
-                 if (abs(ref_cart2d%x)>1.05 .or. abs(ref_cart2d%y)>1.05 )then
-                    ! this means the element was two distorted for our simple 1D
-                    ! search - need better search to find quad containing GLL point
-                    print *,'ERROR: bilinear interpolation: ref point outside quad'
-                 endif
-                 ref_cart2d%x = (ref_cart2d%x + 1)/2  ! convert to [0,1]
-                 ref_cart2d%y = (ref_cart2d%y + 1)/2  ! convert to [0,1]
-                 ! point in quad
-                 !   D12  C22
-                 !   A11  B21                     
-                 !  l1 =   A + x(B-A)  
-                 !  l2 =   D + x(C-D)
-                 !  X = l1 + y(l2-l1)  = (1-y) l1 +  y l2
-                 !    =  (1-y)(1-x) A  + (1-y)x B  + (1-x) y D  + x y C
-                 d11 = (1-ref_cart2d%x)*(1-ref_cart2d%y)
-                 d21 = (  ref_cart2d%x)*(1-ref_cart2d%y)
-                 d22 = (  ref_cart2d%x)*(  ref_cart2d%y)
-                 d12 = (1-ref_cart2d%x)*(  ref_cart2d%y)
-                 
-              endif
-              sum = d11+d12+d21+d22
-              ! with the weights defined above, we would need to do an
-              ! unweighted sum on edge boundaries.  To avoid confusion,
-              ! lets adjust the weights so we do the normal Jacobian weighted
-              ! average at element boundaries:
-              sum = sum*(elem(ie)%spheremp(i,j)*elem(ie)%rspheremp(i,j))
-
-              weights(i,j,1,1,ie) = d11/sum
-              weights(i,j,1,2,ie) = d12/sum
-              weights(i,j,2,1,ie) = d21/sum
-              weights(i,j,2,2,ie) = d22/sum
-
-              if (d11<0) call abortmp("Error: bilin_phys2gll weight d11<0")
-              if (d12<0) call abortmp("Error: bilin_phys2gll weight d12<0")
-              if (d21<0) call abortmp("Error: bilin_phys2gll weight d21<0")
-              if (d22<0) call abortmp("Error: bilin_phys2gll weight d22<0")
-                 
-           enddo
-           enddo
-        enddo
-
-        deallocate(fvm_cart3d)
-        deallocate(gll_pts%points)
-        deallocate(gll_pts%weights)
-    endif
-  end subroutine
-
-
-!----------------------------------------------------------------
-  function bilin_phys2gll(pin,nphys,ie) result(pout)
-    use parallel_mod, only : abortmp
-
-    ! input
-    integer :: nphys,ie
-    real(kind=real_kind), intent(in) :: pin(nphys,nphys)
-    real(kind=real_kind) :: pout(np,np)
-
-    ! local
-    integer i,j,i1,i2,j1,j2
-
-    if (nphys_init/=nphys) call abortmp(&
-         "Error: bilin_phys2gll(): bilin_phys2gll_init must be called first")
-
-    ! interpolate i dimension
-    do j=1,np
-       j1 = index_l(j)
-       j2 = index_r(j)
-       do i=1,np
-          i1 = index_l(i)
-          i2 = index_r(i)
-
-          ! only include contributions from this element
-          ! contributions from other elements will be handled by DSS
-          pout(i,j)=0
-          if (i==1 .or. j==1) then
-             !d11 = 0  
-          else
-             pout(i,j)=pout(i,j) + weights(i,j,1,1,ie)*pin(i1,j1)
-          endif
-          
-          if (i==1 .or. j==np) then
-             !d12 = 0
-          else
-             pout(i,j)=pout(i,j) + weights(i,j,1,2,ie)*pin(i1,j2)
-          endif
-          
-          if (i==np .or. j==1) then
-             !d21 = 0
-          else
-             pout(i,j)=pout(i,j) + weights(i,j,2,1,ie)*pin(i2,j1)
-          endif
-          
-          if (i==np .or. j==np) then
-             !d22 = 0
-          else
-             pout(i,j)=pout(i,j) + weights(i,j,2,2,ie)*pin(i2,j2)
-          endif
-       enddo
-    enddo
-  end function bilin_phys2gll
-!----------------------------------------------------------------
 
 
 end module interpolate_mod

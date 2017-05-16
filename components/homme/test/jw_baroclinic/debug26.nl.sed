@@ -5,7 +5,6 @@ topology      = "cube"
 test_case     = "jw_baroclinic"
 ne            = NE
 qsize         = 0
-tracer_advection_formulation = 0
 nmax          = NMAX
 statefreq     = SFREQ
 restartfreq   = -100

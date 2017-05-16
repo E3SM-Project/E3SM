@@ -1,7 +1,8 @@
 
 MODULE MOSARTinund_Core_MOD
 
-!--------------------------------------------------------------------------------------------------------------------------------
+#ifdef INCLUDE_INUND
+!--------------------------------------------------------------------------------------
 ! DESCRIPTION: Core simulation of MOSART-Inundation.
 ! 
 ! HISTORY:
@@ -10,7 +11,7 @@ MODULE MOSARTinund_Core_MOD
 ! 2017: Integrated with ACME.
 ! ... ... ...
 !
-!--------------------------------------------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------
 
   use shr_kind_mod, only: r8 => shr_kind_r8
   use shr_sys_mod, only: shr_sys_abort
@@ -696,5 +697,7 @@ MODULE MOSARTinund_Core_MOD
     end if    
   
   end subroutine transition2nextStep
+
+#endif
   
 end MODULE MOSARTinund_Core_MOD

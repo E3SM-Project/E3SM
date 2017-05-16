@@ -246,15 +246,14 @@ contains
     use kinds,       only : real_kind
     use hybrid_mod,  only : hybrid_t
     use element_mod, only : element_t
-    use dimensions_mod, only : np,ne,nelem,nelemd,nc,nhe,ntrac,qsize
+    use dimensions_mod, only : np,ne,nelem,nelemd,qsize
     use quadrature_mod, only : gausslobatto, quadrature_t
 
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : rrearth, rearth,dd_pi
     use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top, hypervis_power, &
                             fine_ne, rk_stage_user, max_hypervis_courant, hypervis_scaling
-    use control_mod, only : tracer_transport_type, tstep_type
-    use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACERTRANSPORT_SE_GLL
+    use control_mod, only : tstep_type
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
     use edgetype_mod, only : EdgeBuffer_t 
     use edge_mod, only : initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
@@ -530,18 +529,6 @@ contains
        if (qsize>0) &
           write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *',&
                1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
-       if (ntrac>0) then
-          !
-          ! rough estimate of Courant number limted time-step:
-          !
-          ! U_max*dt_tracer/dx < nhe
-          !
-          ! where U_max=120 m/s and dx = 360 degrees/(4*ne*nc) = (2*pi*Rearth m)/(4*ne*nc)
-          !
-          write(iulog,'(a,f10.2,a)') "Stability (fvm Courant number): advective (120m/s)   dt_tracer < ",&
-               dble(nhe)*(2.0D0*dd_pi*Rearth/dble(4.0*ne*nc))/120.0d0,'s'
-          write(iulog,*) "(note that fvm stability is also limited by flow deformation - Lipschitz criterion!)"
-       end if
        write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *', &
                                    1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
        write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s)   dt_dyn  < S *', &

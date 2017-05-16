@@ -596,6 +596,8 @@ end subroutine ocean_data_readnl
        endif
        enddo section_loop_sslt_mass
 
+enddo tracer_loop
+
 #if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM )
 
 add_om_species: if ( has_mam_mom ) then
@@ -645,10 +647,6 @@ add_om_species: if ( has_mam_mom ) then
        end if
        m = om_num_ind(m_om)
        mn=seasalt_indices(nslt+nslt_om+m)
-
-       if (m > nslt) then
-          cflx(:ncol,mn)=0.0_r8
-       end if
 
           ! add number tracers for organics-only modes
           if (emit_this_mode(m_om)) then
@@ -733,8 +731,6 @@ add_om_species: if ( has_mam_mom ) then
 
  end if add_om_species
 #endif
-
-  enddo tracer_loop
 
   end subroutine seasalt_emis
 

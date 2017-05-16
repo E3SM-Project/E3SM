@@ -56,17 +56,12 @@ ENDIF ()
 # Some options for conditional builds
 OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
-OPTION(BUILD_HOMME_SWDGX "Shallow water equations DG" OFF)
-OPTION(BUILD_HOMME_PRIMDGX "Primitive equations DG" OFF)
+OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 
-# Primitive equations FEM with separate tracer routines
-OPTION(BUILD_PREQX_SPELT "Primitive euqations with SPELT tracers" OFF)
-
 # Cristoph's "standalone" executables
 OPTION(BUILD_HOMME_FVM  "Standalone FVM tracers" OFF)
-OPTION(BUILD_HOMME_SPELT  "Standalone SPELT tracers" OFF)
 
 # swim and prim executables require C++ compiler
 IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
@@ -81,13 +76,6 @@ IF (${HOMME_USE_CXX})
   MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
   ENABLE_LANGUAGE(CXX)
 ENDIF ()
-
-OPTION(REFSOLN "Whether to read/write reference soln data" FALSE)
-# Reference solution data
-IF(REFSOLN)
-  MESSAGE(STATUS "Including option to read or write reference soln data...")
-  ADD_DEFINITIONS(-D_REFSOLN)
-ENDIF()
 
 ##############################################################################
 # Compiler options set in cmake/SetCompiler.cmake
@@ -106,19 +94,27 @@ IF (${ENABLE_PERSISTENT_MPI})
   SET(MPI_PERSISTENT TRUE)
 ENDIF ()
 
-OPTION(HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" FALSE)
-MESSAGE(STATUS "HOMME_FIND_BLASLAPACK=${HOMME_FIND_BLASLAPACK}")
-
-IF(${HOMME_FIND_BLASLAPACK})
-  FIND_PACKAGE(BLAS REQUIRED)
-  FIND_PACKAGE(LAPACK REQUIRED)
+OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
+IF(${HOMME_USE_MKL})
+  MESSAGE(STATUS "HOMME_USE_MKL=${HOMME_USE_MKL}, adding -mkl")
+  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mkl")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mkl")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mkl")
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mkl")
 ELSE()
-  SET(HOMME_FIND_BLASLAPACK FALSE)
-  # Build the blas and lapack provided with homme
-  ADD_SUBDIRECTORY(libs/blas)
-  ADD_SUBDIRECTORY(libs/lapack)
-ENDIF()
+  OPTION(HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" FALSE)
+  MESSAGE(STATUS "HOMME_FIND_BLASLAPACK=${HOMME_FIND_BLASLAPACK}")
 
+  IF(${HOMME_FIND_BLASLAPACK})
+    FIND_PACKAGE(BLAS REQUIRED)
+    FIND_PACKAGE(LAPACK REQUIRED)
+  ELSE()
+    SET(HOMME_FIND_BLASLAPACK FALSE)
+    # Build the blas and lapack provided with homme
+    ADD_SUBDIRECTORY(libs/blas)
+    ADD_SUBDIRECTORY(libs/lapack)
+  ENDIF()
+ENDIF()
 IF (${HOMME_USE_TRILINOS})
   MESSAGE(STATUS "This configuration of requires Trilinos")
   FIND_PACKAGE(Trilinos REQUIRED)
@@ -150,23 +146,35 @@ IF (${ENABLE_NANOTIMERS})
     ADD_DEFINITIONS(-DBIT64)
   ENDIF ()
 ENDIF ()
+ADD_SUBDIRECTORY(utils/cime/src/share/timing)
 
-# Use ccsm_utils FindNETCDF path
-SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../cime/externals/CMake" ${CMAKE_MODULE_PATH})
+
+# Use CIME's FindNETCDF path
+# CMAKE_CURRENT_SOURCE_DIR == homme
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/CMake" ${CMAKE_MODULE_PATH})
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio2/cmake" ${CMAKE_MODULE_PATH})
 FIND_PACKAGE(NETCDF)
+
+# These are needed for pio's FindNetCDF
+SET(NetCDF_PATH ${NETCDF_DIR})
+SET(PnetCDF_PATH ${PNETCDF_DIR})
+
+# pio needs cime/externals/genf90/genf90.pl
+SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/genf90)
+
 # For pio - allow the user to set HDF5_DIR to find libhdf5 etc.
 IF (HDF5_DIR)
   SET(ENV{HDF5_ROOT} ${HDF5_DIR})
 ENDIF ()
-ADD_SUBDIRECTORY(utils/pio)
+ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
 
 # CPRNC locations
-SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cprnc)
-SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cprnc/cprnc)
-ADD_SUBDIRECTORY(utils/cprnc)
+SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
+SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
+ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
 
-ADD_SUBDIRECTORY(utils/timing)
-
+SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")
 IF(${BUILD_HOMME_SWEQX})
   ADD_SUBDIRECTORY(src/sweqx)
 ENDIF()
@@ -175,20 +183,12 @@ IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(src/preqx)
 ENDIF()
 
-IF(${BUILD_HOMME_SWDGX})
-  ADD_SUBDIRECTORY(src/swdgx)
-ENDIF()
-
-IF(${BUILD_HOMME_PRIMDGX})
-  ADD_SUBDIRECTORY(src/primdgx)
+IF(${BUILD_HOMME_PREQX_ACC})
+  ADD_SUBDIRECTORY(src/preqx_acc)
 ENDIF()
 
 IF(${BUILD_HOMME_FVM})
   ADD_SUBDIRECTORY(src/fvm)
-ENDIF()
-
-IF(${BUILD_HOMME_SPELT})
-  ADD_SUBDIRECTORY(src/spelt)
 ENDIF()
 
 IF(${BUILD_HOMME_SWIM})
@@ -206,3 +206,5 @@ ADD_CUSTOM_TARGET(clean-all
    COMMAND ${CMAKE_BUILD_TOOL} clean
    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
 )
+
+ADD_SUBDIRECTORY(dcmip_tests)

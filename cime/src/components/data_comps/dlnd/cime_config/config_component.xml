@@ -1,0 +1,121 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
+
+<entry_id>
+
+  <entry id="COMP_LND">
+    <type>char</type>
+    <valid_values>dlnd</valid_values>
+    <default_value>dlnd</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of land component</desc>
+  </entry>
+
+  <entry id="DLND_MODE">
+    <type>char</type>
+    <valid_values>CPLHIST,GLC_CPLHIST,NULL</valid_values>
+    <default_value>NULL</default_value>
+    <values>
+      <value compset="DLND%NULL">NULL</value>
+      <value compset="DLND%LCPL">CPLHIST</value>
+      <value compset="DLND%SCPL">GLC_CPLHIST</value>
+    </values>
+    <group>run_component_dlnd</group>
+    <file>env_run.xml</file>
+    <desc>DLND mode. In CPLHIST mode, land forcing data (produced by CLM) from a previous
+    model run is output in coupler history files and read in by the data land model. IN GLC_CPLHIST,
+    glc coupling fields are read in from a coupler history file.  In NULL mode, land forcing is
+    set to zero and not utilized. The default is NULL.</desc>
+  </entry>
+
+  <entry id="DLND_CPLHIST_DIR">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <values>
+      <value compset="2000.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
+      <value compset="1850.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG1850CN.f09_g16.002_c121001</value>
+      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
+      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BGRCP85CN.f09_g16.002_c121001</value>
+      <value compset="20TR.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
+    </values>
+    <group>run_component_dlnd</group>
+    <file>env_run.xml</file>
+    <desc>directory for coupler history data mode (only used for CPLHIST mode)</desc>
+  </entry>
+
+  <entry id="DLND_CPLHIST_CASE">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <values>
+      <value compset="2000.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">b.e10.BG20TRCN.f09_g16.002</value>
+      <value compset="1850.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">b.e10.BG1850CN.f09_g16.002</value>
+      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">b.e10.BG20TRCN.f09_g16.002</value>
+      <value compset="20TR.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">b.e10.BG20TRCN.f09_g16.002</value>
+      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">b.e10.BGRCP85CN.f09_g16.002</value>
+    </values>
+    <group>run_component_dlnd</group>
+    <file>env_run.xml</file>
+    <desc>case name for coupler history data mode (only used for CPLHIST mode)</desc>
+  </entry>
+
+  <entry id="DLND_CPLHIST_YR_ALIGN">
+    <type>integer</type>
+    <default_value>1</default_value>
+    <values>
+      <value compset="2000.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">1</value>
+      <value compset="1850.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">1</value>
+      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">1850</value>
+      <value compset="20TR.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">1850</value>
+      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">2006</value>
+    </values>
+    <group>run_component_dlnd</group>
+    <file>env_run.xml</file>
+    <desc>year align (only used for CPLHIST mode)</desc>
+  </entry>
+
+  <entry id="DLND_CPLHIST_YR_START">
+    <type>integer</type>
+    <default_value>1</default_value>
+    <values>
+      <value compset="2000.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">1976</value>
+      <value compset="1850.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">26</value>
+      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">1850</value>
+      <value compset="20TR.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">1850</value>
+      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">2006</value>
+    </values>
+    <group>run_component_dlnd</group>
+    <file>env_run.xml</file>
+    <desc>starting year to loop data over (only used for CPLHIST mode)</desc>
+  </entry>
+
+  <entry id="DLND_CPLHIST_YR_END">
+    <type>integer</type>
+    <default_value>1</default_value>
+    <values>
+      <value compset="2000.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">2005</value>
+      <value compset="1850.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">100</value>
+      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">2005</value>
+      <value compset="20TR.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">2005</value>
+      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">2100</value>
+    </values>
+    <group>run_component_dlnd</group>
+    <file>env_run.xml</file>
+    <desc>ending year to loop data over (only used for CPLHIST mode)</desc>
+  </entry>
+
+  <description>
+    <desc compset="_DLND%NULL">dlnd modes are DLND_MODE=NULL:</desc>
+    <desc compset="_DLND%SCPL">dlnd modes are DLND_MODE=GLC_CPLHIST:</desc>
+    <desc compset="_DLND%LCPL">dlnd modes are DLND_MODE=CPLHIST:</desc>
+  </description>
+
+  <help>
+    =========================================
+    DLND naming conventions
+    =========================================
+  </help>
+
+</entry_id>
+

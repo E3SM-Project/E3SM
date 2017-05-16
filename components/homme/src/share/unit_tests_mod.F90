@@ -46,7 +46,7 @@ contains
 !    curl_sphere_wk(a) - MASS*curl(a) = b.c. (b.c. are contra)
 !
     ! ---------------------
-    use kinds, only : real_kind
+    use kinds, only : real_kind, iulog
     ! ---------------------
     use physical_constants, only : rearth 
     ! ---------------------
@@ -57,8 +57,10 @@ contains
     use hybrid_mod, only : hybrid_t
     ! ---------------------
     use derivative_mod, only : derivative_t, gradient_sphere, divergence_sphere,vorticity_sphere,&
-                               divergence_sphere_wk, curl_sphere
+                               divergence_sphere_wk, curl_sphere, derivinit
+    use viscosity_mod, only : make_c0, make_c0_vector
     use global_norms_mod
+    use coordinate_systems_mod, only : cartesian3D_t, spherical_to_cart
 
     implicit none
 
@@ -69,7 +71,6 @@ contains
     integer              , intent(in) :: nets
     integer              , intent(in) :: nete
 
-#if 0
 #undef CURLGRAD_TEST
 #define IBYP_TEST
     ! =================
@@ -90,72 +91,38 @@ contains
     real (kind=real_kind), dimension(np,np,nets:nete)  :: wdivbig
     real (kind=real_kind), dimension(np,np,2,nets:nete)    :: gradbig
 
-    real (kind=real_kind), dimension(np,np,2)      :: ulatlon
     real (kind=real_kind), dimension(np,np,2)      :: grade
     real (kind=real_kind), dimension(np,np,2)      :: grade2
     real (kind=real_kind), dimension(np,np)      :: vor
     real (kind=real_kind), dimension(np,np)      :: div  
     real (kind=real_kind), dimension(np,np)      :: wdiv  
 
-    real (kind=real_kind) ::  v1,v2,v3
+    real (kind=real_kind) ::  v1,v2,v3,mx
 
     real*8                :: st,et, time_adv
-    integer    :: i,j,k,ie,iie,ii,jj
+    integer    :: i,j,k,ie
     integer    :: kptr
     integer    :: nm1,n0,np1
     integer    :: nstep
-
+    type (cartesian3D_t)             :: cart
     type (derivative_t)          :: deriv
     call derivinit(deriv)
 
-
-
     ! ===================================
-    ! construct test function
+    ! construct test functions for pv and E
     ! ===================================
-
-    do iie=nets,nete
-       do jj=1,np
-          do ii=1,np
-             ! test for cardinal function at iie,jj,ii
-
-    write(iulog,'(a,3i4,2e20.10)') 'carinal function:  ',iie,ii,jj
-
-    ! construct two global cardinal functions  pv and E    
     do ie=nets,nete
        do j=1,np
           do i=1,np
-
-
-             E(i,j,ie)=0
-#ifdef CURLGRAD_TEST
-             if (ie==iie .and. i==ii .and. j==jj) E(i,j,ie)=1
-#else
-             if (ie==1 .and. i==1 .and. j==1) E(i,j,ie)=1
-             if (ie==1 .and. i==1 .and. j==2) E(i,j,ie)=1
-             if (ie==1 .and. i==2 .and. j==1) E(i,j,ie)=1
-             if (ie==1 .and. i==3 .and. j==3) E(i,j,ie)=1
-#endif
-             
-             ! delta function in contra coordinates
-             v1     = 0
-             v2     = 0
-             if (ie==iie .and. i==ii .and. j==jj) then
-                !v1=rearth
-                v2=rearth
-             endif
-             
-             ulatlon(i,j,1)=elem(ie)%D(1,1,i,j)*v1 + elem(ie)%D(1,2,i,j)*v2   ! contra->latlon
-             ulatlon(i,j,2)=elem(ie)%D(2,1,i,j)*v1 + elem(ie)%D(2,2,i,j)*v2   ! contra->latlon
-             pv(i,j,1,ie) = ulatlon(i,j,1)
-             pv(i,j,2,ie) = ulatlon(i,j,2)
-             
+             cart = spherical_to_cart(elem(ie)%spherep(i,j))
+             E(i,j,ie)=cart%x**2 + cart%y + cart%z
+             pv(i,j,1,ie) = cart%x + cart%y**2 + cart%z
+             pv(i,j,2,ie) = cart%x + cart%y + cart%z**2
           end do
        end do
     enddo
     call make_C0(E,elem,hybrid,nets,nete)
     call make_C0_vector(pv,elem,hybrid,nets,nete) 
-
 
 #ifdef CURLGRAD_TEST
     ! check curl(grad(E)) 
@@ -222,12 +189,9 @@ contains
        grade = gradient_sphere(E(1,1,ie),deriv,elem(ie)%Dinv)
        wdiv = divergence_sphere_wk(pv(1,1,1,ie),deriv,elem(ie)) 
 
-
-
        do j=1,np
           do i=1,np
 !             write(iulog,'(3i3,3e22.14)') ie,i,j,pv(i,j,1,ie),pv(i,j,2,ie),div(i,j)
-
              ! (grad(E) dot pv )
              ptens3(i,j,ie) = grade(i,j,1)*pv(i,j,1,ie) + grade(i,j,2)*pv(i,j,2,ie)
              v2=v2+wdiv(i,j)*E(i,j,ie)
@@ -238,73 +202,69 @@ contains
        ! ===================================================
        ! Pack cube edges of tendencies, rotate velocities
        ! ===================================================
-       divbig(:,:,ie)=div(:,:)*spheremv(:,:)
-       wdivbig(:,:,ie)=wdiv(:,:)
+!       divbig(:,:,ie)=div(:,:)*spheremv(:,:)
+!       wdivbig(:,:,ie)=wdiv(:,:)
+       divbig(:,:,ie)=div(:,:)
+       wdivbig(:,:,ie)=wdiv(:,:)/spheremv(:,:)
     end do
     call make_C0(divbig,elem,hybrid,nets,nete)
     call make_C0(wdivbig,elem,hybrid,nets,nete)
 
-    
-!!$    v1=global_integral(elem,ptens,hybrid,np,nets,nete)
-!!$    v3=global_integral(elem,ptens3,hybrid,np,nets,nete)
-!!$    print *,'< E div(pv) >   =',v1
-!!$    print *,'< E div_wk(pv) >=',v2/(4*4*atan(1d0))
-!!$    v2=global_integral(elem,ptens2,hybrid,np,nets,nete)
-!!$    print *,'< E div_wk(pv) >=',v2
-!!$    print *,'-<grad(E),pv >  =',-v3
-!!$!    print *,'sum1-sum2/max',(v1-v2)/max(abs(v1),abs(v2))
-!!$
-
-
+    v1=global_integral(elem,ptens,hybrid,np,nets,nete)                                                 
+    v2=global_integral(elem,ptens2,hybrid,np,nets,nete)                                                
+    v3=global_integral(elem,ptens3,hybrid,np,nets,nete)                                                
+    mx =max(abs(v1),abs(v2),abs(v3))
+    if (hybrid%masterthread) then   
+       print *,'< E div(pv) >   =',v1                                                                     
+       print *,'< E div_wk(pv) >=',v2                                                                     
+       print *,'-<grad(E),pv >  =',-v3                                                                    
+       print *,'integration by parts rel error:',(v1-v2)/mx,(v1+v3)/mx
+    endif
+    if (( abs(v1-v2)/mx .gt. 1e-12 ) .or. ( abs(v1+v3)/mx .gt. 1e-12 )) then
+       stop 'integration by parts error1 too large?'
+    endif
+  
+#if 0  
     do ie=nets,nete
        div(:,:)=divbig(:,:,ie)
        wdiv(:,:)=wdivbig(:,:,ie)
-       ! ===========================================================
-       ! Compute velocity and pressure tendencies for all levels
-       ! ===========================================================
-          do j=1,np
-             do i=1,np
-                ! < div(pv) >   vs < div_wk(pv) >
-                if ( abs(div(i,j)-wdiv(i,j)) > .15e-17) then
-!                   write(iulog,'(3i3,4e22.14)') ie,i,j,div(i,j),wdiv(i,j),div(i,j)-wdiv(i,j),E(i,j,ie)
-                endif
-                if ( E(i,j,ie)/=0 ) then
-!                   write(iulog,'(3i3,4e22.14)') ie,i,j,div(i,j),wdiv(i,j),div(i,j)-wdiv(i,j),E(i,j,ie)
-                endif
-                
-             end do
-          end do
-
-
+       do j=1,np
+       do i=1,np
+          ! < div(pv) >   vs < div_wk(pv) >
+          if ( abs(div(i,j)-wdiv(i,j)) > .15e-17) then
+             write(iulog,'(3i3,4e22.14)') ie,i,j,div(i,j),wdiv(i,j),div(i,j)-wdiv(i,j),E(i,j,ie)
+          endif
+       end do
+       end do
     end do
-#ifdef DEBUGOMP
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
 #endif
-#endif
-    write(iulog,'(a,3i4,2e20.10)') 'max diff div-wdiv: ',iie,ii,jj,maxval(abs(divbig(:,:,:)-wdivbig(:,:,:))),maxval(divbig(:,:,:))
-#endif
-
-
-    enddo
-    enddo
-    enddo
-    stop
+    ! test function is O(1). gradient is O(1/rearth).  lets require agreement to
+    ! 1e-11/rearth
+    mx = rearth*maxval(abs(divbig(:,:,:)-wdivbig(:,:,:)))
+    if (hybrid%masterthread) then   
+       write(iulog,'(a,2e20.10)') 'div vs. weak div, max error on masterthread: ',mx
+    endif
+    if (mx >  1e-11 ) then
+       write(iulog,'(a,2e20.10)') 'max diff div-wdiv: ',mx,maxval(divbig(:,:,:))
+       stop 'integration by parts error2 too large?'
+    endif
 #endif
   end subroutine test_ibyp
 
 
-  subroutine test_subcell_dss_fluxes(elem,deriv,nets,nete)
+  subroutine test_subcell_dss_fluxes(elem,hybrid,deriv,nets,nete)
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_dss_fluxes
     use derivative_mod, only : subcell_integration
     use element_mod,    only : element_t
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
+    use hybrid_mod, only : hybrid_t
 
     implicit none
 
     type (element_t)     , intent(in) :: elem(:)
+    type (hybrid_t)      , intent(in) :: hybrid
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
@@ -362,14 +322,14 @@ contains
     end do
 
     if (success) then
-      print *,__FILE__,__LINE__," test_subcell_dss_fluxes test passed."
+      if (hybrid%masterthread) print *,__FILE__,__LINE__," test_subcell_dss_fluxes test passed."
     else
       print *,__FILE__,__LINE__," test_subcell_dss_fluxes test FAILED."
     end if
 
   end subroutine test_subcell_dss_fluxes
 
-  subroutine test_subcell_div_fluxes(elem,deriv,nets,nete)
+  subroutine test_subcell_div_fluxes(elem,hybrid,deriv,nets,nete)
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_div_fluxes
     use derivative_mod, only : subcell_integration
@@ -378,11 +338,12 @@ contains
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
     use coordinate_systems_mod, only: spherical_polar_t
-
+    use hybrid_mod, only : hybrid_t
 
     implicit none
 
     type (element_t)     , intent(in) :: elem(:)
+    type (hybrid_t)      , intent(in) :: hybrid
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
@@ -442,7 +403,7 @@ contains
     end do
 
     if (success) then
-      print *,__FILE__,__LINE__," test_subcell_div_fluxes test passed."
+      if (hybrid%masterthread) print *,__FILE__,__LINE__," test_subcell_div_fluxes test passed."
     else
       print *,__FILE__,__LINE__," test_subcell_div_fluxes test FAILED."
     end if
@@ -450,7 +411,7 @@ contains
   end subroutine test_subcell_div_fluxes
 
 
-  subroutine test_subcell_div_fluxes_again(elem,deriv,nets,nete)
+  subroutine test_subcell_div_fluxes_again(elem,hybrid,deriv,nets,nete)
     use physical_constants, only : rearth
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_div_fluxes
@@ -458,9 +419,11 @@ contains
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
     use quadrature_mod, only : gausslobatto, quadrature_t
+    use hybrid_mod, only : hybrid_t
 
     implicit none
 
+    type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(in) :: elem(:)
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
@@ -601,14 +564,14 @@ contains
     end do
 
     if (success) then
-      print *,__FILE__,__LINE__," test_subcell_div_fluxes_again test passed."
+      if (hybrid%masterthread) print *,__FILE__,__LINE__," test_subcell_div_fluxes_again test passed."
     else
       print *,__FILE__,__LINE__," test_subcell_div_fluxes_again test FAILED."
     end if
 
   end subroutine test_subcell_div_fluxes_again
 
-  subroutine test_subcell_dss_fluxes_again(elem,deriv,nets,nete)
+  subroutine test_subcell_dss_fluxes_again(elem,hybrid,deriv,nets,nete)
     use physical_constants, only : rearth
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_dss_fluxes
@@ -616,9 +579,11 @@ contains
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
     use quadrature_mod, only : gausslobatto, quadrature_t
+    use hybrid_mod, only : hybrid_t
 
     implicit none
 
+    type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(in) :: elem(:)
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
@@ -718,7 +683,7 @@ contains
   end subroutine test_subcell_dss_fluxes_again
 
 
-  subroutine test_subcell_Laplace_fluxes_again(elem,deriv,nets,nete)
+  subroutine test_subcell_Laplace_fluxes_again(elem,hybrid,deriv,nets,nete)
     use physical_constants, only : rearth
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_Laplace_fluxes
@@ -726,9 +691,11 @@ contains
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
     use quadrature_mod, only : gausslobatto, quadrature_t
+    use hybrid_mod, only : hybrid_t
 
     implicit none
 
+    type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(in) :: elem(:)
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
@@ -788,14 +755,14 @@ contains
     end do
 
     if (success) then
-      print *,__FILE__,__LINE__," test_subcell_laplace_fluxes_again test passed."
+      if (hybrid%masterthread) print *,__FILE__,__LINE__," test_subcell_laplace_fluxes_again test passed."
     else
       print *,__FILE__,__LINE__," test_subcell_laplace_fluxes_again test FAILED."
     end if
 
   end subroutine test_subcell_Laplace_fluxes_again
 
-  subroutine test_subcell_Laplace_fluxes(elem,deriv,nets,nete)
+  subroutine test_subcell_Laplace_fluxes(elem,hybrid,deriv,nets,nete)
     use physical_constants, only : rearth
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_Laplace_fluxes
@@ -806,10 +773,12 @@ contains
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
     use coordinate_systems_mod, only: spherical_polar_t
+    use hybrid_mod, only : hybrid_t
 
     implicit none
 
     type (element_t)     , intent(in) :: elem(:)
+    type (hybrid_t)      , intent(in) :: hybrid
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
@@ -864,23 +833,25 @@ contains
     end do
 
     if (success) then
-      print *,__FILE__,__LINE__," test_subcell_Laplace_fluxes test passed."
+      if (hybrid%masterthread) print *,__FILE__,__LINE__," test_subcell_Laplace_fluxes test passed."
     else
       print *,__FILE__,__LINE__," test_subcell_Laplace_fluxes test FAILED."
     end if
 
   end subroutine test_subcell_Laplace_fluxes
 
-  subroutine test_sub_integration(elem,deriv,nets,nete)
+  subroutine test_sub_integration(elem,hybrid,deriv,nets,nete)
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_integration
     use element_mod,    only : element_t
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
+    use hybrid_mod, only : hybrid_t
 
     implicit none
 
     type (element_t)     , intent(in) :: elem(:)
+    type (hybrid_t)      , intent(in) :: hybrid
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
@@ -918,7 +889,7 @@ contains
       end if
     end do
     if (success) then
-      print *,__FILE__,__LINE__," test_sub_integration test passed."
+      if (hybrid%masterthread) print *,__FILE__,__LINE__," test_sub_integration test passed."
     else
       print *,__FILE__,__LINE__," test_sub_integration test FAILED."
     end if
@@ -926,7 +897,7 @@ contains
   end subroutine test_sub_integration
 
 
-  subroutine test_edge_flux(elem,deriv,nets,nete)
+  subroutine test_edge_flux(elem,hybrid,deriv,nets,nete)
 !
 !  check local element vector dentities:
 !*****
@@ -1010,24 +981,27 @@ contains
                              gradient_sphere_wk_testcontra,gradient_sphere_wk_testcov, &
                              curl_sphere, curl_sphere_wk_testcov
   use physical_constants, only : rrearth
-    use kinds,          only : real_kind
+  use kinds,          only : real_kind
+  use hybrid_mod, only : hybrid_t
 
   implicit none
   
   type (element_t)     , intent(inout), target :: elem(:)
   type (derivative_t)  , intent(in) :: deriv
+  type (hybrid_t)      , intent(in) :: hybrid
   integer :: nets,nete
   ! local 
   real (kind=real_kind), dimension(np,np,2) :: ucontra,ulatlon,gradp,gradp_wk,ucov
   real (kind=real_kind), dimension(np,np) :: phidivu,ugradphi,rhs,lhs,p
   real (kind=real_kind), dimension(np,np) :: rhs2,lhs2
-  integer :: i,j,ie
+  integer :: i,j,ie,count
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  print *,'integration by parts identity: check div/weak div:'
+  if (hybrid%masterthread) print *,'integration by parts identity: check div/weak div:'
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! test integration by parts identity for each Cardinal function PHI:
   ! div(u)*spheremp - div_wk(u) = boundary integral phi u dot n
+  count = 0
   do ie=nets,nete
      call random_number(ucontra)
      ! contra->latlon
@@ -1041,17 +1015,17 @@ contains
      
      
      do j=1,np
-        do i=1,np
-           if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
-              write(*,'(a)') 'ERROR: div/div_wk integration by parts failure!'
-              write(*,'(a,2i3,a,3e12.5)') 'for test function (i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j)
-           endif
-        enddo
+     do i=1,np
+        if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
+           write(*,'(a)') 'ERROR: div/div_wk integration by parts failure!'
+           write(*,'(a,2i3,a,3e12.5)') 'for test function (i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j)
+           count=count+1
+        endif
+     enddo
      enddo
   enddo
-
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  print *,'check grad/weak grad (gradient_sphere_wk_testcontra)'
+  if (hybrid%masterthread) print *,'check grad/weak grad (gradient_sphere_wk_testcontra)'
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! PHIVEC = contra cardinal function 
   !          check each contra component seperately
@@ -1092,28 +1066,30 @@ contains
 
 
      do j=1,np
-        do i=1,np
-           if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
-              write(*,'(a)') 'ERROR: grad/grad_wk CONTRA (1) integration by parts failure!'
-              write(*,'(a,2i3,a,4e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),&
-                   lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
-           endif
-        enddo
+     do i=1,np
+        if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
+           write(*,'(a)') 'ERROR: grad/grad_wk CONTRA (1) integration by parts failure!'
+           write(*,'(a,2i3,a,4e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),&
+                lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
+           count=count+1
+        endif
+     enddo
      enddo
 
 
      do j=1,np
-        do i=1,np
-           if ( abs(lhs2(i,j)-rhs2(i,j)) .gt. 1d-20) then
-              write(*,'(a)') 'ERROR: grad/grad_wk CONTRA (2) integration by parts failure!'
-              write(*,'(a,2i2,a,3e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs2(i,j),rhs2(i,j),lhs2(i,j)-rhs2(i,j)
-           endif
-        enddo
+     do i=1,np
+        if ( abs(lhs2(i,j)-rhs2(i,j)) .gt. 1d-20) then
+           write(*,'(a)') 'ERROR: grad/grad_wk CONTRA (2) integration by parts failure!'
+           write(*,'(a,2i2,a,3e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs2(i,j),rhs2(i,j),lhs2(i,j)-rhs2(i,j)
+           count=count+1
+        endif
+     enddo
      enddo
   enddo
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  print *,'check grad/weak grad (gradient_sphere_wk_testcov)'
+  if (hybrid%masterthread) print *,'check grad/weak grad (gradient_sphere_wk_testcov)'
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   do ie=nets,nete
      call random_number(p)
@@ -1151,26 +1127,28 @@ contains
 
 
      do j=1,np
-        do i=1,np
-           if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
-              write(*,'(a)') 'ERROR: grad/grad_wk COV (1) integration by parts failure!'
-              write(*,'(a,2i2,a,4e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
-           endif
-        enddo
+     do i=1,np
+        if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
+           write(*,'(a)') 'ERROR: grad/grad_wk COV (1) integration by parts failure!'
+           write(*,'(a,2i2,a,4e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
+           count=count+1
+        endif
+     enddo
      enddo
 
      do j=1,np
-        do i=1,np
-           if ( abs(lhs2(i,j)-rhs2(i,j)) .gt. 1d-20) then
-              write(*,'(a)') 'ERROR: grad/grad_wk COV (2) integration by parts failure!'
-              write(*,'(a,2i2,a,3e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs2(i,j),rhs2(i,j),lhs2(i,j)-rhs2(i,j)
-           endif
-        enddo
+     do i=1,np
+        if ( abs(lhs2(i,j)-rhs2(i,j)) .gt. 1d-20) then
+           write(*,'(a)') 'ERROR: grad/grad_wk COV (2) integration by parts failure!'
+           write(*,'(a,2i2,a,3e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs2(i,j),rhs2(i,j),lhs2(i,j)-rhs2(i,j)
+           count=count+1
+        endif
+     enddo
      enddo
   enddo
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  print *,'check curl/weak curl (curl_sphere_wk_testcov)'
+  if (hybrid%masterthread) print *,'check curl/weak curl (curl_sphere_wk_testcov)'
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   do ie=nets,nete
      call random_number(p)
@@ -1207,25 +1185,28 @@ contains
 
 
      do j=1,np
-        do i=1,np
-           if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
-              write(*,'(a)') 'ERROR: curl/curl_wk COV (1) integration by parts failure!'
-              write(*,'(a,2i2,a,4e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
-           endif
-        enddo
+     do i=1,np
+        if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
+           write(*,'(a)') 'ERROR: curl/curl_wk COV (1) integration by parts failure!'
+           write(*,'(a,2i2,a,4e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
+           count=count+1
+        endif
+     enddo
      enddo
 
      do j=1,np
-        do i=1,np
-           if ( abs(lhs2(i,j)-rhs2(i,j)) .gt. 1d-20) then
-              write(*,'(a)') 'ERROR: curl/curl_wk COV (2) integration by parts failure!'
-              write(*,'(a,2i2,a,3e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs2(i,j),rhs2(i,j),lhs2(i,j)-rhs2(i,j)
-           endif
-        enddo
+     do i=1,np
+        if ( abs(lhs2(i,j)-rhs2(i,j)) .gt. 1d-20) then
+           write(*,'(a)') 'ERROR: curl/curl_wk COV (2) integration by parts failure!'
+           write(*,'(a,2i2,a,3e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs2(i,j),rhs2(i,j),lhs2(i,j)-rhs2(i,j)
+           count=count+1
+        endif
+     enddo
      enddo
   enddo
 
-  print *,'done. integration by parts identity check:'
+  if (hybrid%masterthread) print *,'done integration by parts identity check'
+  if (count>0) stop 'ERROR: at least one integration by parts failuure'
   end subroutine
 
 end module

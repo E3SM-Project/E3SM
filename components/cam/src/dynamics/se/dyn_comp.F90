@@ -2,16 +2,16 @@ Module dyn_comp
 
   use shr_kind_mod, only: r8 => shr_kind_r8
   use domain_mod, only : domain1d_t
-  use element_mod, only : element_t, elem_state_t
+  use element_mod, only : element_t
   use time_mod, only : TimeLevel_t, se_nsplit=>nsplit
   use hybvcoord_mod, only : hvcoord_t
   use hybrid_mod, only : hybrid_t
+  use thread_mod, only: nthreads, vthreads, omp_get_max_threads, omp_get_thread_num
   use perf_mod, only: t_startf, t_stopf
   use cam_logfile, only : iulog
   use time_manager, only: is_first_step
   use spmd_utils,  only : iam, npes_cam => npes
   use pio,         only: file_desc_t
-  use fvm_control_volume_mod, only : fvm_struct
 
   implicit none
   private
@@ -19,7 +19,7 @@ Module dyn_comp
 
 
   ! PUBLIC MEMBER FUNCTIONS:
-  public dyn_init1, dyn_init2, dyn_run, dyn_final
+  public dyn_init1, dyn_init2, dyn_run
 
   ! PUBLIC DATA MEMBERS:
   public dyn_import_t, dyn_export_t
@@ -29,12 +29,10 @@ Module dyn_comp
 
   type dyn_import_t
      type (element_t), pointer :: elem(:) => null()
-     type (fvm_struct), pointer :: fvm(:) => null()
   end type dyn_import_t
 
   type dyn_export_t
      type (element_t), pointer :: elem(:) => null()
-     type (fvm_struct), pointer :: fvm(:) => null()
   end type dyn_export_t
   type (hvcoord_t), public  :: hvcoord
   integer, parameter  ::  DYN_RUN_SUCCESS           = 0
@@ -52,6 +50,8 @@ Module dyn_comp
   ! !REVISION HISTORY:
   !
   !  JPE  06.05.31:  created
+  !  Aaron Donahue 17.04.11: Fixed bug in write_grid_mapping which caused 
+  !       a segmentation fault when dyn_npes<npes
   !
   !----------------------------------------------------------------------
 
@@ -83,7 +83,7 @@ CONTAINS
     use ref_pres,            only: ref_pres_init
 
     use pmgrid,              only: dyndecomp_set
-    use dyn_grid,            only: dyn_grid_init, fvm, elem, get_dyn_grid_parm,&
+    use dyn_grid,            only: dyn_grid_init, elem, get_dyn_grid_parm,&
                                    set_horiz_grid_cnt_d, define_cam_grids
     use rgrid,               only: fullgrid
     use spmd_utils,          only: mpi_integer, mpicom, mpi_logical
@@ -93,7 +93,6 @@ CONTAINS
 
     use dimensions_mod,   only: globaluniquecols, nelem, nelemd, nelemdmax
     use prim_driver_mod,  only: prim_init1
-    use thread_mod,       only: nthreads
     use parallel_mod,     only: par, initmp
     use namelist_mod,     only: readnl
     use control_mod,      only: runtype, qsplit, rsplit
@@ -101,6 +100,7 @@ CONTAINS
     use phys_control,     only: use_gw_front
     use physics_buffer,   only: pbuf_add_field, dtype_r8
     use ppgrid,           only: pcols, pver
+    use cam_abortutils,   only : endrun
 
     ! PARAMETERS:
     type(file_desc_t),   intent(in)  :: fh       ! PIO file handle for initial or restart file
@@ -108,9 +108,6 @@ CONTAINS
     type (dyn_import_t), intent(OUT) :: dyn_in
     type (dyn_export_t), intent(OUT) :: dyn_out
 
-#ifdef _OPENMP    
-    integer omp_get_num_threads
-#endif
     integer :: neltmp(3)
     integer :: npes_se
 
@@ -148,20 +145,29 @@ CONTAINS
 
 #ifdef _OPENMP    
 !   Set by driver
-!$omp parallel
-    nthreads = omp_get_num_threads()
-!$omp end parallel
+    nthreads = omp_get_max_threads()
     if(par%masterproc) then
        write(iulog,*) " "
        write(iulog,*) "dyn_init1: number of OpenMP threads = ", nthreads
        write(iulog,*) " "
     endif
+#ifndef HORIZ_OPENMP
+    call endrun('Error: threaded runs require -DHORIZ_OPENMP')
+#endif
 #ifdef COLUMN_OPENMP
+    call omp_set_nested(.true.)
+    if (vthreads > nthreads .or. vthreads < 1) &
+         call endrun('Error: vthreads<1 or vthreads > NTHRDS_ATM')
+    nthreads = nthreads / vthreads
     if(par%masterproc) then
        write(iulog,*) " "
-       write(iulog,*) "dyn_init1: using OpenMP within element instead of across elements"
+       write(iulog,*) "dyn_init1: using OpenMP across and within elements"
+       write(iulog,*) "dyn_init1: nthreads=",nthreads,"vthreads=",vthreads
        write(iulog,*) " "
     endif
+#else
+    if (vthreads>1) &
+         call endrun('Error: vthreads>1 requires -DCOLUMN_OPENMP')
 #endif
 #else
     nthreads = 1
@@ -172,12 +178,10 @@ CONTAINS
     endif
 #endif
     if(iam < par%nprocs) then
-       call prim_init1(elem,fvm,par,dom_mt,TimeLevel)
+       call prim_init1(elem,par,dom_mt,TimeLevel)
 
        dyn_in%elem => elem
        dyn_out%elem => elem
-       dyn_in%fvm => fvm
-       dyn_out%fvm => fvm
     
        call set_horiz_grid_cnt_d(GlobalUniqueCols)
 
@@ -239,14 +243,13 @@ CONTAINS
 
   subroutine dyn_init2(dyn_in)
     use dimensions_mod,   only: nlev, nelemd
-    use prim_driver_mod,  only: prim_init2, prim_run
+    use prim_driver_mod,  only: prim_init2
     use prim_si_ref_mod,  only: prim_set_mass
     use hybrid_mod,       only: hybrid_create
     use hycoef,           only: hyam, hybm, hyai, hybi, ps0
     use parallel_mod,     only: par
     use time_mod,         only: time_at
     use control_mod,      only: moisture, runtype
-    use thread_mod,       only: nthreads, omp_get_thread_num
     use cam_control_mod,  only: aqua_planet, ideal_phys, adiabatic
     use comsrf,           only: landm, sgh, sgh30
     use nctopo_util_mod,  only: nctopo_util_driver
@@ -255,7 +258,6 @@ CONTAINS
     type (dyn_import_t), intent(inout) :: dyn_in
 
     type(element_t),    pointer :: elem(:)
-    type(fvm_struct), pointer :: fvm(:)
 
     integer :: ithr, nets, nete, ie, k
     real(r8), parameter :: Tinit=300.0_r8
@@ -263,7 +265,6 @@ CONTAINS
     type(hybrid_t) :: hybrid
 
     elem  => dyn_in%elem
-    fvm => dyn_in%fvm
 
     dyn_ps0=ps0
     hvcoord%hyam=hyam
@@ -277,7 +278,12 @@ CONTAINS
     if(iam < par%nprocs) then
 
 #ifdef HORIZ_OPENMP
-       !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ie,ithr,nets,nete,hybrid)
+       if (iam==0) write (iulog,*) "dyn_init2: nthreads=",nthreads,&
+                                   "max_threads=",omp_get_max_threads()
+       !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ie,ithr,nets,nete,hybrid)
+#endif
+#ifdef COLUMN_OPENMP
+       call omp_set_num_threads(vthreads)
 #endif
        ithr=omp_get_thread_num()
        nets=dom_mt(ithr)%start
@@ -298,8 +304,6 @@ CONTAINS
           moisture='dry'
           if(runtype == 0) then
              do ie=nets,nete
-                elem(ie)%state%lnps(:,:,:) =LOG(dyn_ps0)
-
                 elem(ie)%state%ps_v(:,:,:) =dyn_ps0
 
                 elem(ie)%state%phis(:,:)=0.0_r8
@@ -314,8 +318,6 @@ CONTAINS
           end if
        else if(aqua_planet .and. runtype==0)  then
           do ie=nets,nete
-             !          elem(ie)%state%lnps(:,:,:) =LOG(dyn_ps0)
-             !          elem(ie)%state%ps_v(:,:,:) =dyn_ps0
              elem(ie)%state%phis(:,:)=0.0_r8
           end do
           if(allocated(landm)) landm=0.0_r8
@@ -334,7 +336,7 @@ CONTAINS
           ! new run, scale mass to value given in namelist, if needed
           call prim_set_mass(elem, TimeLevel,hybrid,hvcoord,nets,nete)
        endif
-       call prim_init2(elem,fvm,hybrid,nets,nete, TimeLevel, hvcoord)
+       call prim_init2(elem,hybrid,nets,nete, TimeLevel, hvcoord)
        !
        ! This subroutine is used to create nc_topo files, if requested
        ! 
@@ -359,9 +361,8 @@ CONTAINS
 
     ! !USES:
     use parallel_mod,     only : par
-    use prim_driver_mod,  only: prim_run, prim_run_subcycle
+    use prim_driver_mod,  only: prim_run_subcycle
     use dimensions_mod,   only : nlev
-    use thread_mod,       only: omp_get_thread_num, nthreads
     use time_mod,         only: tstep
     use hybrid_mod,       only: hybrid_create
 !    use perf_mod, only : t_startf, t_stopf
@@ -380,7 +381,13 @@ CONTAINS
     !
     if(iam < par%nprocs) then
 #ifdef HORIZ_OPENMP
-       !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,n)
+       !if (iam==0) write (iulog,*) "dyn_run: nthreads=",nthreads,&
+       !                            "max_threads=",omp_get_max_threads()
+       !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,n)
+#endif
+#ifdef COLUMN_OPENMP
+       ! nested threads
+       call omp_set_num_threads(vthreads)
 #endif
        ithr=omp_get_thread_num()
        nets=dom_mt(ithr)%start
@@ -390,7 +397,7 @@ CONTAINS
        do n=1,se_nsplit
           ! forward-in-time RK, with subcycling
           call t_startf("prim_run_sybcycle")
-          call prim_run_subcycle(dyn_state%elem,dyn_state%fvm,hybrid,nets,nete,&
+          call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&
                tstep, TimeLevel, hvcoord, n)
           call t_stopf("prim_run_sybcycle")
        end do
@@ -405,16 +412,6 @@ CONTAINS
     !EOC
   end subroutine dyn_run
   !-----------------------------------------------------------------------
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine dyn_final(DYN_STATE, RESTART_FILE)
-
-    type (elem_state_t), target     :: DYN_STATE
-    character(LEN=*)   , intent(IN) :: RESTART_FILE
-
-
-
-  end subroutine dyn_final
 
 
 
@@ -449,7 +446,9 @@ CONTAINS
        ierr = pio_def_var(nc, 'element_corners', PIO_INT, (/dim1,dim2/),vid)
     
        ierr = pio_enddef(nc)
-       call createmetadata(par, elem, subelement_corners)
+       if (iam<par%nprocs) then
+          call createmetadata(par, elem, subelement_corners)
+       end if
 
        jj=0
        do cc=0,3

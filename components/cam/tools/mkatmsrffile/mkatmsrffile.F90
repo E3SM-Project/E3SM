@@ -158,7 +158,7 @@ program mkatmsrffile
      pft(i)%fld => srf_av%rattr(mct_avect_indexra(srf_av,str(1:5)),:)
      apft(i)%fld => atm_av%rattr(mct_avect_indexra(atm_av,str(1:5)),:)
 
-     call pio_setframe(vid,int(i,kind=PIO_OFFSET))
+     call pio_setframe(landFile, vid,int(i,kind=PIO_OFFSET_KIND))
      call pio_read_darray(landFile, vid, srf_iodesc, pft(i)%fld, ierr)
      pft(i)%fld = pft(i)%fld * 0.01_r8
   end do
@@ -195,7 +195,7 @@ program mkatmsrffile
      soilw(i)%fld => srf_av%rattr(mct_avect_indexra(srf_av,str(1:5)),:)
      asoilw(i)%fld => atm_av%rattr(mct_avect_indexra(atm_av,str(1:5)),:)
 
-     call pio_setframe(vid,int(i,kind=PIO_OFFSET))
+     call pio_setframe(landFile, vid,int(i,kind=PIO_OFFSET_KIND))
      call pio_read_darray(landFile, vid, srf_iodesc, soilw(i)%fld, ierr)
   end do
   call pio_closefile(landfile)

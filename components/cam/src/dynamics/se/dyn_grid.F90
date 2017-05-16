@@ -37,7 +37,6 @@ module dyn_grid
   use shr_kind_mod,           only: r8 => shr_kind_r8
   use shr_const_mod,          only: SHR_CONST_PI
   use cam_grid_support,       only: iMap
-  use fvm_control_volume_mod, only: fvm_struct
 
   implicit none
   private
@@ -62,7 +61,6 @@ module dyn_grid
 
   type(block_global_data), allocatable :: gblocks(:)
   type(element_t), public, pointer :: elem(:) => null()
-  type(fvm_struct), public, pointer :: fvm(:) => null()
 
   public :: dyn_grid_init, define_cam_grids
   public :: get_block_owner_d, get_gcol_block_d, get_gcol_block_cnt_d

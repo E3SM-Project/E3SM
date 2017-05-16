@@ -146,12 +146,12 @@ contains
     par%intercomm = 0
     
 #ifdef CAM
+    call MPI_comm_size(mpicom,npes_cam,ierr)
     if(present(npes_in)) then
        npes_homme=npes_in
     else
        npes_homme=npes_cam
     end if
-    call MPI_comm_size(mpicom,npes_cam,ierr)
     call MPI_comm_rank(mpicom,iam_cam,ierr)
     color = iam_cam/npes_homme
     call mpi_comm_split(mpicom, color, iam_cam, par%comm, ierr)

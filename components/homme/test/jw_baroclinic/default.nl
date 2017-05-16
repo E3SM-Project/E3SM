@@ -4,7 +4,7 @@ partmethod    = 4
 topology      = "cube"
 test_case = 'jw_baroclinic'
 ne            = 30
-qsize = 2 tracer_advection_formulation=1 
+qsize = 2 
 ndays          = 30
 statefreq     = 120
 restartfreq   = 43200

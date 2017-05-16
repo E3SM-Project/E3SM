@@ -1,10 +1,10 @@
 
-#!/bin/sh 
+#!/bin/sh
 # script to archive case directory to subversion repository
 #
 # aliceb - 11/1/11
 # commented out prompts for case metadata.
-# Case metadata is now being entered and stored in 
+# Case metadata is now being entered and stored in
 # mysql run db at http://csegweb.cgd.ucar.edu.
 #
 # aliceb - 2013/5/30
@@ -70,7 +70,7 @@ if [ "$no_svn" == "TRUE" ]; then
     exit 99
 fi
 
-#look for existence of this case's trunk in repository to see if case should be imported 
+#look for existence of this case's trunk in repository to see if case should be imported
 #or committed to an existing trunk
 svn list $svnstr/trunk > /dev/null
 if [ $? -ne 0 ]; then
@@ -162,7 +162,7 @@ if [ $? -ne 0 ]; then
 #    echo "setenv    CASE_CONTACT          \"$contact\""                      >> env_metadata
 #    echo "setenv    CASE_WORKING_GROUP    \"$wg\""                           >> env_metadata
 #    echo "setenv    CASE_1ST_SUBMIT_DT    \"$submit_dt\""                    >> env_metadata
-    
+
     #initial tag name, will increment from here on
     casetag=${casename}_0001
 
@@ -191,11 +191,10 @@ if [ $? -ne 0 ]; then
     archive_list="${archive_list} SourceMods"
     archive_list="${archive_list} Tools"
     archive_list="${archive_list} archive_metadata.sh"
-    archive_list="${archive_list} ${casename}.build"
-    archive_list="${archive_list} ${casename}.l_archive"
-    archive_list="${archive_list} ${casename}.run"
+    archive_list="${archive_list} case.build"
+    archive_list="${archive_list} case.run"
     archive_list="${archive_list} check_input_data"
-    archive_list="${archive_list} cesm_setup"
+    archive_list="${archive_list} case.setup"
     archive_list="${archive_list} create_production_test"
     archive_list="${archive_list} env_build.xml"
     archive_list="${archive_list} env_case.xml"
@@ -273,7 +272,7 @@ if [ $? -ne 0 ]; then
     else
 	#convert current sandbox to a subversion sandbox
 	for item in ${archive_list}; do
-	    rm -rf $item 
+	    rm -rf $item
 	done
 	svn co $svnstr/trunk . > /dev/null
 

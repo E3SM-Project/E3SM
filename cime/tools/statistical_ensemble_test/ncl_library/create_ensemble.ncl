@@ -126,7 +126,7 @@ begin
   if (vinterp) then
     interp_type = new(1,"integer")
     plevs = get_interpolation_levels(interp_type) ; interp_type is intent(out)
-  else 
+  else
     plevs = plev
   end if
   print((/"Setting up Output variables..."/))

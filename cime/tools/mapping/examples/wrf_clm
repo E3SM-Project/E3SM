@@ -22,7 +22,7 @@ these scripts were run (e.g., YYMMDD=120606)
    ./gen_cesm_maps.sh --fileocn $wrfclm/remap_grid_nwAtl_12km_5m_ocn.nc \
                       --fileatm $wrfclm/remap_grid_nwAtl_12km_5m_atm.nc \
                       --typeocn regional --typeatm regional \
-                      --nameocn nwAtl_12km_5m_ocn --nameatm nwAtl_12km_5m_atm 
+                      --nameocn nwAtl_12km_5m_ocn --nameatm nwAtl_12km_5m_atm
 
 This generates 5 mapping files, including:
 map_nwAtl_12km_5m_ocn_TO_nwAtl_12km_5m_atm_aave.$YYMMDD.nc
@@ -42,12 +42,12 @@ map_nwAtl_12km_5m_ocn_TO_nwAtl_12km_5m_atm_aave.$YYMMDD.nc
 
    cd $CIMEROOT/../components//clm/tools/mkmapdata
    ./mkmapdata.sh --gridfile $wrfclm/remap_grid_nwAtl_12km_5m_atm.nc \
-                  --res nwAtl_12km_5km --gridtype regional   
+                  --res nwAtl_12km_5km --gridtype regional
 
    This generates many mapping files
 
-4) Generate clm surface dataset   
-   
+4) Generate clm surface dataset
+
    cd $CIMEROOT/../components/clm/tools/mksurfdata_map
    ./mksurfdata.pl -res usrspec -usr_gname nwAtl_12km_5km -usr_gdate $YYMMDD \
                    -y 2000
@@ -64,7 +64,7 @@ map_nwAtl_12km_5m_ocn_TO_nwAtl_12km_5m_atm_aave.$YYMMDD.nc
 <config_horiz_grid>
 <horiz_grid GLOB_GRID="nwatl1205" nx="539" ny="359" />
 <horiz_grid GRID="nwatl1205_nwatl1205" SHORTNAME="nwatl_nwatl"
-            ATM_GRID="nwatl1205" LND_GRID="nwatl1205" OCN_GRID="nwatl1205" ICE_GRID="nwatl1205" 
+            ATM_GRID="nwatl1205" LND_GRID="nwatl1205" OCN_GRID="nwatl1205" ICE_GRID="nwatl1205"
             ATM_NCPL="48" OCN_NCPL="1"
             ATM_DOMAIN_FILE="domain.lnd.nwAtl_12km_5m_lnd_nwAtl_12km_5m_ocn.$YYMMDD.nc"
             LND_DOMAIN_FILE="domain.lnd.nwAtl_12km_5m_lnd_nwAtl_12km_5m_ocn.$YYMMDD.nc"
@@ -84,7 +84,7 @@ map_nwAtl_12km_5m_ocn_TO_nwAtl_12km_5m_atm_aave.$YYMMDD.nc
    ./create_newcase -case pi_nwatl -compset PI_2000 -res nwatl1205_nwatl1205 \
                     -grid_file nwatl_12km5km_grid_file.xml -mach bluefire
    cd pi_nwatl
-   ./cesm_setup
+   ./case_setup
 
    edit user_nl_cpl and add the following line at the end:
 
@@ -95,7 +95,7 @@ vect_map = 'none'
 
 fatmlndfrc = '$CIMEROOT/mapping/gen_domain_files/domain.lnd.nwAtl_12km_5m_lnd_nwAtl_12km_5m_ocn.$YYMMDD.nc'
 fsurdat = '$CIMEROOT/../components/clm/tools/mksurfdata_map/surfdata_nwAtl_12km_5km_simyr2000_c$YYMMDD.nc'
-      
+
    edit env_run.xml to change the following
 
 <entry id="RUN_STARTDATE"   value="2003-10-01"  />
@@ -104,7 +104,7 @@ fsurdat = '$CIMEROOT/../components/clm/tools/mksurfdata_map/surfdata_nwAtl_12km_
 <entry id="CLM_BLDNML_OPTS"   value="-rtm off"  />
 <entry id="DOCN_MODE"   value="prescribed"  />
 <entry id="SSTICE_STREAM"   value="CAMDATA"  />
-<entry id="SSTICE_DATA_FILENAME"   value="$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc"  /> 
+<entry id="SSTICE_DATA_FILENAME"   value="$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc"  />
 <entry id="SSTICE_GRID_FILENAME"   value="$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.9x1.25_gx1v6_090403.nc"  />
 <entry id="SSTICE_YEAR_ALIGN"   value="1"  />
 <entry id="SSTICE_YEAR_START"   value="0"  />
@@ -118,7 +118,7 @@ fsurdat = '$CIMEROOT/../components/clm/tools/mksurfdata_map/surfdata_nwAtl_12km_
 
    cd $CIMEROOT/scripts
    ./create_newcase -case pk_nwatl -compset PK_2000 -res nwatl1205_nwatl1205 -grid_file nwatl_12km5km_grid_file.xml -mach bluefire
-   ./cesm_setup
+   ./case_setup
    cp user_nl_clm from (5)
    cp user_nl_cpl from (5)
    edit env_run.xml to change the following
@@ -131,6 +131,6 @@ fsurdat = '$CIMEROOT/../components/clm/tools/mksurfdata_map/surfdata_nwAtl_12km_
 <entry id="SSTICE_GRID_FILENAME"   value="$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.9x1.25_gx1v6_090403.nc"  />
 <entry id="SSTICE_YEAR_ALIGN"   value="2011"  />
 <entry id="SSTICE_YEAR_START"   value="0"  />
-<entry id="SSTICE_YEAR_END"   value="0"  /> 
+<entry id="SSTICE_YEAR_END"   value="0"  />
 
    ./preview_namelists

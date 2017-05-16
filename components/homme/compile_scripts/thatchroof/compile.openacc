@@ -20,16 +20,16 @@ cmake                                                                          \
   -DCMAKE_Fortran_COMPILER=mpif90                                              \
   -DCMAKE_C_COMPILER=mpicc                                                     \
   -DCMAKE_CXX_COMPILER=mpiCC                                                   \
-  -DOPT_FLAGS="-fast -acc -Mcuda=7.5,cc35,ptxinfo -ta=tesla,pin -Minfo=accel" \
+  -DOPT_FLAGS="-fast -acc -Mcuda=7.5,cc35,ptxinfo -ta=tesla,pin -Minfo=accel"  \
   -DDEBUG_FLAGS=" "                                                            \
   -DNETCDF_DIR=$NETCDF_DIR                                                     \
   -DWITH_PNETCDF=FALSE                                                         \
   -DHDF5_DIR=$HDF5_DIR                                                         \
   -DPREQX_NP=4                                                                 \
   -DPREQX_PLEV=$NLEVELS                                                        \
-  -DBUILD_HOMME_SWDGX=FALSE                                                    \
   -DBUILD_HOMME_SWEQX=FALSE                                                    \
-  -DBUILD_HOMME_PRIMDGX=FALSE                                                  \
+  -DBUILD_HOMME_PREQX=FALSE                                                    \
+  -DBUILD_HOMME_PREQX_ACC=TRUE                                                 \
   -DENABLE_OPENMP=TRUE                                                         \
   -DHOMME_PROJID=STF006                                                        \
   -DENABLE_OPENACC=TRUE                                                        \
@@ -39,11 +39,11 @@ cmake                                                                          \
   -DZLIB_DIR=$ZLIB_PATH                                                        \
   -DSZIP_DIR=$SZIP_PATH                                                        \
   -DCURL_DIR=/opt/curl-7.45_pgi15.9                                            \
-  -DCMAKE_EXE_LINKER_FLAGS:STRING='-ta=tesla,pin -Mcuda=7.0,cc35 -acc -L$NETCDF_DIR/lib -lnetcdf -lnetcdff -ldl'         \
+  -DCMAKE_EXE_LINKER_FLAGS:STRING='-ta=tesla,pin -Mcuda=7.5,cc35 -acc -L$NETCDF_DIR/lib -lnetcdf -lnetcdff -ldl'         \
                                                                                \
                                                                                \
                                                                                \
-  -DPREQX_CUSTOM_FLAGS_FILE=${HOMME_ROOT}/compile_scripts//thatchroof/customFlags.cmake.openacc \
+  -DPREQX_CUSTOM_FLAGS_FILE=${HOMME_ROOT}/compile_scripts/thatchroof/customFlags.cmake.openacc \
   $HOMME_ROOT                                               
 fi
 # -DOPT_FLAGS="-fastsse -Mvect"                                                \
@@ -54,7 +54,7 @@ make clean                                                  || exit -1
 fi
 
 if [ $do_make -eq 1 ]; then
-make -j16 preqx                                             || exit -1
+make -j16 preqx_acc                                         || exit -1
 mkdir -p $HOMME_ROOT/build/preqx
-cp ./src/preqx/preqx $HOMME_ROOT/build/preqx/preqx.openacc  || exit -1
+cp ./src/preqx_acc/preqx_acc $HOMME_ROOT/build/preqx/preqx.openacc  || exit -1
 fi

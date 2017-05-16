@@ -14,7 +14,7 @@ module histFileMod
   use abortutils     , only : endrun
   use clm_varctl     , only : iulog, use_vertsoilc
   use clm_varcon     , only : spval, ispval, dzsoi_decomp 
-  use clm_varcon     , only : grlnd, nameg, namel, namec, namep, nameCohort
+  use clm_varcon     , only : grlnd, nameg, namel, namec, namep
   use decompMod      , only : get_proc_bounds, get_proc_global, bounds_type
   use GridcellType   , only : grc                
   use LandunitType   , only : lun                

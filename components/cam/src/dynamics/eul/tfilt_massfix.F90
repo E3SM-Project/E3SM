@@ -316,7 +316,7 @@ subroutine tfilt_massfixrun (ztodt,         lat,    u3m1,   u3,     &
 ! Check for and correct invalid constituents
 !
    call qneg3 ('TFILT_MASSFIX',lat   ,nlon    ,plon   ,plev    , &
-               1, pcnst, qmin ,q3(1,1,1))
+               1, pcnst, qmin ,q3(1,1,1),.True.)
 !
 ! Send slt tendencies to the history tape
 !

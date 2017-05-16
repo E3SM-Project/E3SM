@@ -129,6 +129,7 @@
 <R_snw hgrid='gx3v7'> -2.00 </R_snw>
 
 <advection>'remap'</advection>
+<fsnowoptics>'lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc'</fsnowoptics> 
 
 <!--------------------------->
 <!-- ice_nml settings ------->

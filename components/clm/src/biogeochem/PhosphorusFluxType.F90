@@ -75,6 +75,13 @@ module PhosphorusFluxType
      real(r8), pointer :: harvest_p_to_litr_lig_p_col               (:,:)   ! col P fluxes associated with harvest to litter lignin pool (gP/m3/s)
      real(r8), pointer :: harvest_p_to_cwdp_col                     (:,:)   ! col P fluxes associated with harvest to CWD pool (gP/m3/s)
 
+     ! crop harvest
+     real(r8), pointer :: hrv_leafp_to_prod1p_patch                 (:)     ! crop leafp harvested (gP/m2/s)
+     real(r8), pointer :: hrv_livestemp_to_prod1p_patch             (:)     ! crop stemp harvested (gP/m2/s)
+     real(r8), pointer :: hrv_grainp_to_prod1p_patch                (:)     ! crop grain harvested (gP/m2/s)
+     real(r8), pointer :: hrv_cropp_to_prod1p_patch                 (:)     ! total amount of crop P harvested (gP/m2/s)
+     real(r8), pointer :: hrv_cropp_to_prod1p_col                   (:)     ! crop P harvest mortality to 1-yr product pool (gP/m2/s)
+
      ! fire P fluxes 
      real(r8), pointer :: m_decomp_ppools_to_fire_vr_col            (:,:,:) ! col vertically-resolved decomposing P fire loss (gP/m3/s)
      real(r8), pointer :: m_decomp_ppools_to_fire_col               (:,:)   ! col vertically-integrated (diagnostic) decomposing P fire loss (gP/m2/s)
@@ -294,6 +301,7 @@ module PhosphorusFluxType
      real(r8), pointer :: desorb_to_solutionp_vr                    (:,:)
      real(r8), pointer :: adsorb_to_labilep_col                     (:)
      real(r8), pointer :: desorb_to_solutionp_col                   (:)
+     real(r8), pointer :: pmpf_decomp_cascade                       (:,:,:)
 
      real(r8), pointer :: plant_p_uptake_flux                       (:)     ! for the purpose of mass balance check  
      real(r8), pointer :: soil_p_immob_flux                         (:)     ! for the purpose of mass balance check
@@ -387,6 +395,10 @@ contains
     allocate(this%hrv_livestemp_to_litter_patch             (begp:endp)) ; this%hrv_livestemp_to_litter_patch             (:) = nan
     allocate(this%hrv_deadstemp_to_prod10p_patch            (begp:endp)) ; this%hrv_deadstemp_to_prod10p_patch            (:) = nan
     allocate(this%hrv_deadstemp_to_prod100p_patch           (begp:endp)) ; this%hrv_deadstemp_to_prod100p_patch           (:) = nan
+    allocate(this%hrv_leafp_to_prod1p_patch                 (begp:endp)) ; this%hrv_leafp_to_prod1p_patch                 (:) = nan
+    allocate(this%hrv_livestemp_to_prod1p_patch             (begp:endp)) ; this%hrv_livestemp_to_prod1p_patch             (:) = nan
+    allocate(this%hrv_grainp_to_prod1p_patch                (begp:endp)) ; this%hrv_grainp_to_prod1p_patch                (:) = nan
+    allocate(this%hrv_cropp_to_prod1p_patch                 (begp:endp)) ; this%hrv_cropp_to_prod1p_patch                 (:) = nan
     allocate(this%hrv_livecrootp_to_litter_patch            (begp:endp)) ; this%hrv_livecrootp_to_litter_patch            (:) = nan
     allocate(this%hrv_deadcrootp_to_litter_patch            (begp:endp)) ; this%hrv_deadcrootp_to_litter_patch            (:) = nan
     allocate(this%hrv_retransp_to_litter_patch              (begp:endp)) ; this%hrv_retransp_to_litter_patch              (:) = nan
@@ -486,6 +498,7 @@ contains
     allocate(this%fert_p_to_sminp_col             (begc:endc))    ; this%fert_p_to_sminp_col     (:) = nan
     allocate(this%hrv_deadstemp_to_prod10p_col  (begc:endc))    ; this%hrv_deadstemp_to_prod10p_col  (:) = nan
     allocate(this%hrv_deadstemp_to_prod100p_col (begc:endc))    ; this%hrv_deadstemp_to_prod100p_col (:) = nan
+    allocate(this%hrv_cropp_to_prod1p_col       (begc:endc))    ; this%hrv_cropp_to_prod1p_col       (:) = nan
     allocate(this%sminp_to_plant_col            (begc:endc))    ; this%sminp_to_plant_col     (:) = nan
     allocate(this%potential_immob_p_col           (begc:endc))    ; this%potential_immob_p_col           (:) = nan
     allocate(this%actual_immob_p_col              (begc:endc))    ; this%actual_immob_p_col              (:) = nan
@@ -620,6 +633,7 @@ contains
     allocate(this%desorb_to_solutionp_vr      (begc:endc,1:nlevdecomp_full )) ; this%desorb_to_solutionp_vr      (:,:) = nan
     allocate(this%adsorb_to_labilep_col       (begc:endc                   )) ; this%adsorb_to_labilep_col       (:)   = nan
     allocate(this%desorb_to_solutionp_col     (begc:endc                   )) ; this%desorb_to_solutionp_col     (:)   = nan
+    allocate(this%pmpf_decomp_cascade(begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions)); this%pmpf_decomp_cascade(:,:,:) = nan
     
     allocate(this%plant_p_uptake_flux         (begc:endc                   )) ; this%plant_p_uptake_flux         (:)   = nan
     allocate(this%soil_p_immob_flux           (begc:endc                   )) ; this%soil_p_immob_flux           (:)   = nan
@@ -1413,7 +1427,7 @@ contains
     this%prod1p_loss_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD1P_LOSS', units='gP/m^2/s', &
          avgflag='A', long_name='loss from 1-yr crop product pool', &
-         ptr_col=this%prod100p_loss_col)
+         ptr_col=this%prod1p_loss_col)
 
     this%product_ploss_col(begc:endc) = spval
     call hist_addfld1d (fname='PRODUCT_PLOSS', units='gP/m^2/s', &
@@ -1482,12 +1496,12 @@ contains
     this%adsorb_to_labilep_col(begc:endc) = spval
     call hist_addfld1d (fname='ADSORBTION_P', units='gP/m^2/s', &
          avgflag='A', long_name='adsorb P flux', &
-         ptr_patch=this%adsorb_to_labilep_col, default='active')
+         ptr_col=this%adsorb_to_labilep_col, default='active')
          
     this%desorb_to_solutionp_col(begc:endc) = spval
     call hist_addfld1d (fname='DESORPTION_P', units='gP/m^2/s', &
          avgflag='A', long_name='desorp P flux', &
-         ptr_patch=this%desorb_to_solutionp_col, default='active')
+         ptr_col=this%desorb_to_solutionp_col, default='active')
          
   end subroutine InitHistory
 
@@ -1784,6 +1798,10 @@ contains
        this%hrv_livestemp_to_litter_patch(i)             = value_patch         
        this%hrv_deadstemp_to_prod10p_patch(i)            = value_patch        
        this%hrv_deadstemp_to_prod100p_patch(i)           = value_patch       
+       this%hrv_leafp_to_prod1p_patch(i)                 = value_patch
+       this%hrv_livestemp_to_prod1p_patch(i)             = value_patch
+       this%hrv_grainp_to_prod1p_patch(i)                = value_patch
+       this%hrv_cropp_to_prod1p_patch(i)                 = value_patch
        this%hrv_livecrootp_to_litter_patch(i)            = value_patch        
        this%hrv_deadcrootp_to_litter_patch(i)            = value_patch        
        this%hrv_retransp_to_litter_patch(i)              = value_patch    
@@ -1942,6 +1960,7 @@ contains
        this%fert_p_to_sminp_col(i)           = value_column
        this%hrv_deadstemp_to_prod10p_col(i)  = value_column        
        this%hrv_deadstemp_to_prod100p_col(i) = value_column      
+       this%hrv_cropp_to_prod1p_col(i)       = value_column
        this%prod10p_loss_col(i)              = value_column
        this%prod100p_loss_col(i)             = value_column
        this%product_ploss_col(i)             = value_column
@@ -2098,7 +2117,8 @@ contains
     ! !USES:
     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use clm_varctl    , only: use_nitrif_denitrif
-    use subgridAveMod , only: p2c 
+    use subgridAveMod , only: p2c
+    use pftvarcon     , only: npcropmin
     ! pflotran
 !    use clm_varctl    , only: use_pflotran, pf_cmode
     !
@@ -2128,6 +2148,11 @@ contains
        this%wood_harvestp_patch(p) = &
             this%hrv_deadstemp_to_prod10p_patch(p) + &
             this%hrv_deadstemp_to_prod100p_patch(p)
+       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+            this%wood_harvestp_patch(p) = &
+            this%wood_harvestp_patch(p) + &
+            this%hrv_cropp_to_prod1p_patch(p)
+       end if
 
        ! total pft-level fire P losses
        this%fire_ploss_patch(p) = &
@@ -2286,7 +2311,7 @@ contains
        this%product_ploss_col(c) = &
             this%prod10p_loss_col(c) + &
             this%prod100p_loss_col(c) + &
-            this%prod1p_loss_col(c) 
+            this%prod1p_loss_col(c)
     end do
 
     ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these

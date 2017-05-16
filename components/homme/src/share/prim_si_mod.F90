@@ -5,11 +5,8 @@
 module prim_si_mod
   implicit none
   private
-  public :: preq_omegap
   public :: preq_omega_ps
-  public :: preq_omega_lnps
   public :: preq_hydrostatic, geopotential_t
-  public :: preq_pressure
   public :: preq_vertadv
 contains
 	
@@ -98,70 +95,6 @@ contains
 
 
 
-!----------------------------------------------------------------------- 
-! preq_omegap:
-
-! Purpose: 
-! Calculate (omega/p) needed for the Thermodynamics Equation
-! 
-! Method: 
-! Simplified version in CAM2 for clarity
-! 
-! Author: Modified by Rich Loft for use in HOMME. 
-! 
-!-----------------------------------------------------------------------
-
-  subroutine preq_omegap(div     ,vgrad_ps,pdel    ,rpmid, &
-       hybm    ,hybd    ,omegap   )
-    use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev
-    implicit none
-
-
-    !------------------------------Arguments---------------------------------------------------------------
-    real(kind=real_kind), intent(in) :: div(np,np,nlev)      ! divergence
-    real(kind=real_kind), intent(in) :: vgrad_ps(np,np,nlev) ! v.grad(ps)
-    real(kind=real_kind), intent(in) :: pdel(np,np,nlev)     ! layer thicknesses (pressure)
-    real(kind=real_kind), intent(in) :: rpmid(np,np,nlev)    ! 1./pmid
-    real(kind=real_kind), intent(in) :: hybm(nlev)           ! Hybrid B coefficient on mid levels
-    real(kind=real_kind), intent(in) :: hybd(nlev)           ! Hybrid dB coefficient on mid levels
-    real(kind=real_kind), intent(out):: omegap(np,np,nlev)   ! vertical pressure velocity
-    !------------------------------------------------------------------------------------------------------
-
-    !---------------------------Local workspace-----------------------------
-    integer i,j,k                         ! longitude, level indices
-    real(kind=real_kind) term             ! one half of basic term in omega/p summation 
-    real(kind=real_kind) Ckk              ! diagonal term of energy conversion matrix
-    real(kind=real_kind) suml(np,np)      ! partial sum over l = (1, k-1)
-    !-----------------------------------------------------------------------
-
-    ! =========================
-    ! Zero partial sum
-    ! =========================
-
-    do j=1,np
-       do i=1,np
-          suml(i,j)=0.0_real_kind
-       end do
-    end do
-
-    ! =============================
-    ! Compute omegap 
-    ! =============================
-
-    do k=1,nlev
-       do j=1,np
-          do i=1,np
-             Ckk       = 0.5_real_kind
-             term      = Ckk*(div(i,j,k)*pdel(i,j,k) + vgrad_ps(i,j,k)*hybd(k))
-             suml(i,j) = suml(i,j) + term
-             omegap(i,j,k) = rpmid(i,j,k)*(hybm(k)*vgrad_ps(i,j,k) - suml(i,j))
-             suml(i,j) = suml(i,j) + term
-          end do
-       end do
-    end do
-
-  end subroutine preq_omegap
 
 
 
@@ -235,71 +168,6 @@ contains
 
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-!
-!  compute omega/p using lnps 
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-  subroutine preq_omega_lnps(omega_p,hvcoord,ps,p,dp,vgrad_lnps,div)
-    use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev
-    use hybvcoord_mod, only : hvcoord_t
-    implicit none
-
-
-    !------------------------------Arguments---------------------------------------------------------------
-    real(kind=real_kind), intent(in) :: div(np,np,nlev)      ! divergence
-    real(kind=real_kind), intent(in) :: vgrad_lnps(np,np,nlev) ! v.grad(ps)
-    real(kind=real_kind), intent(in) :: p(np,np,nlev)      ! pressure
-    real(kind=real_kind), intent(in) :: dp(np,np,nlev)     ! dp/dn
-    real(kind=real_kind), intent(in) :: ps(np,np)
-    type (hvcoord_t),     intent(in) :: hvcoord
-    real(kind=real_kind), intent(out):: omega_p(np,np,nlev)   ! vertical pressure velocity
-    !------------------------------------------------------------------------------------------------------
-
-    !---------------------------Local workspace-----------------------------
-    integer i,j,k                         ! longitude, level indices
-    real(kind=real_kind) term             ! one half of basic term in omega/p summation 
-    real(kind=real_kind) Ckk,Ckl          ! diagonal term of energy conversion matrix
-    real(kind=real_kind) suml(np,np)      ! partial sum over l = (1, k-1)
-    !-----------------------------------------------------------------------
-       do j=1,np	
-          do i=1,np
-             ckk = 0.5d0/p(i,j,1)
-             term = div(i,j,1)*dp(i,j,1) + vgrad_lnps(i,j,1)*ps(i,j)*hvcoord%hybd(1)
-             omega_p(i,j,1) = hvcoord%hybm(1)*(ps(i,j)/p(i,j,1))*vgrad_lnps(i,j,1)
-             omega_p(i,j,1) = omega_p(i,j,1) - ckk*term
-             suml(i,j) = term
-          end do
-       end do
-
-       do k=2,nlev-1
-
-          do j=1,np
-             do i=1,np
-                ckk = 0.5d0/p(i,j,k)
-                ckl = 2*ckk
-                term = div(i,j,k)*dp(i,j,k) + vgrad_lnps(i,j,k)*ps(i,j)*hvcoord%hybd(k)
-                omega_p(i,j,k) = hvcoord%hybm(k)*(ps(i,j)/p(i,j,k))*vgrad_lnps(i,j,k)
-                omega_p(i,j,k) = omega_p(i,j,k) - ckl*suml(i,j) - ckk*term
-                suml(i,j) = suml(i,j) + term
-
-             end do
-          end do
-
-       end do
-
-       do j=1,np
-          do i=1,np
-             ckk = 0.5d0/p(i,j,nlev)
-             ckl = 2*ckk
-             term = div(i,j,nlev)*dp(i,j,nlev) + vgrad_lnps(i,j,nlev)*ps(i,j)*hvcoord%hybd(nlev)
-             omega_p(i,j,nlev) = hvcoord%hybm(nlev)*(ps(i,j)/p(i,j,nlev))*vgrad_lnps(i,j,nlev)
-             omega_p(i,j,nlev) = omega_p(i,j,nlev) - ckl*suml(i,j) - ckk*term
-          end do
-       end do
-
-  end subroutine preq_omega_lnps
 
 
 
@@ -441,75 +309,6 @@ subroutine geopotential_t(                                 &
 
     return
   end subroutine geopotential_t
-
-
-
-
-
-!----------------------------------------------------------------------- 
-! preq_pressure:
-!
-! Purpose: 
-! Define the pressures of the interfaces and midpoints from the
-! coordinate definitions and the surface pressure. Originally plevs0!
-! 
-! Method: 
-! 
-! Author: B. Boville/ Adapted for HOMME by Rich Loft
-! 
-!-----------------------------------------------------------------------
-!
-! $Id: prim_si_mod.F90,v 2.10 2005/10/14 20:17:22 jedwards Exp $
-! $Author: jedwards $
-!
-!-----------------------------------------------------------------------
-
-  subroutine preq_pressure (ps0,  ps,               &
-       hyai, hybi, hyam, hybm, &
-       pint, pmid, pdel)
-    use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev, nlevp
-    implicit none
-
-    !-----------------------------------------------------------------------
-
-    real(kind=real_kind), intent(in)  :: ps0                ! Hybrid coordinate reference pressure (pascals)
-    real(kind=real_kind), intent(in)  :: ps(np,np)          ! Surface pressure (pascals)
-    real(kind=real_kind), intent(in)  :: hyai(nlevp)        ! Hybrid interface A coefficients
-    real(kind=real_kind), intent(in)  :: hybi(nlevp)        ! Hybrid interface B coefficients
-    real(kind=real_kind), intent(in)  :: hyam(nlev)         ! Hybrid midpoint  A coefficients
-    real(kind=real_kind), intent(in)  :: hybm(nlev)         ! Hybrid midpoint  B coefficients
-    real(kind=real_kind), intent(out) :: pint(np,np,nlevp)  ! Pressure at model interfaces
-    real(kind=real_kind), intent(out) :: pmid(np,np,nlev)   ! Pressure at model levels
-    real(kind=real_kind), intent(out) :: pdel(np,np,nlev)   ! Layer thickness (pint(k+1) - pint(k))
-    !-----------------------------------------------------------------------
-
-    !---------------------------Local workspace-----------------------------
-    integer i,j,k             ! Horizontal, level indices
-    !-----------------------------------------------------------------------
-    !
-    ! Set interface pressures
-    !
-    do k=1,nlevp
-       do j=1,np
-          do i=1,np
-             pint(i,j,k) = hyai(k)*ps0 + hybi(k)*ps(i,j)
-          end do
-       end do
-    end do
-    !
-    ! Set midpoint pressures and layer thicknesses
-    !
-    do k=1,nlev
-       do j=1,np
-          do i=1,np
-             pmid(i,j,k) = hyam(k)*ps0 + hybm(k)*ps(i,j)
-             pdel(i,j,k) = pint(i,j,k+1) - pint(i,j,k)
-          end do
-       end do
-    end do
-
-  end subroutine preq_pressure
 
 
 

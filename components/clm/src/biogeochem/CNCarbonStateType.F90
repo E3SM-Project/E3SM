@@ -86,6 +86,9 @@ module CNCarbonStateType
      real(r8), pointer :: totpftc_col              (:)     ! (gC/m2) total patch-level carbon, including cpool averaged to column (p2c)
      real(r8), pointer :: decomp_cpools_1m_col     (:,:)   ! col (gC/m2)  Diagnostic: decomposing (litter, cwd, soil) c pools to 1 meter
      real(r8), pointer :: decomp_cpools_col        (:,:)   ! col (gC/m2)  decomposing (litter, cwd, soil) c pools
+
+     ! (FATES-INTERF)  cwdc_col is prevented from allocation in fates-clm
+     !                 waiting for discussion with cdk to determin its ... fate ... here
      real(r8), pointer :: cwdc_col                 (:)     ! col (gC/m2) Diagnostic: coarse woody debris C
      real(r8), pointer :: ctrunc_col               (:)     ! col (gC/m2) column-level sink for C truncation
      real(r8), pointer :: totlitc_col              (:)     ! col (gC/m2) total litter carbon
@@ -404,7 +407,7 @@ contains
        this%xsmrpool_patch(begp:endp) = spval
        call hist_addfld1d (fname='XSMRPOOL', units='gC/m^2', &
             avgflag='A', long_name='temporary photosynthate C pool', &
-            ptr_patch=this%xsmrpool_patch, default='inactive')
+            ptr_patch=this%xsmrpool_patch, default='active')
 
        this%ctrunc_patch(begp:endp) = spval
        call hist_addfld1d (fname='PFT_CTRUNC', units='gC/m^2', &
@@ -1108,27 +1111,23 @@ contains
           this%deadstemc_xfer_patch(p)     = 0._r8
           
           if (nu_com .ne. 'RD') then
-              ! eca competition calculate root NP uptake as a function of fine root biomass
-              ! better to initialize frootc(p) with a non-zero value
-              if (pft%itype(p) == noveg) then
-                  this%frootc_patch(p) = 0._r8
-                  this%frootc_storage_patch(p) = 0._r8
-              else
-                  if (ecophyscon%evergreen(pft%itype(p)) == 1._r8) then
-                      this%leafc_patch(p) = 20._r8 * ratio
-                      this%frootc_patch(p) = 20._r8 * ratio
-                      this%frootc_storage_patch(p) = 0._r8
-                  else if (pft%itype(p) >= npcropmin) then ! prognostic crop types
-                      this%frootc_patch(p) = 0._r8
-                      this%frootc_storage_patch(p) = 0._r8
-                  else
-                      this%leafc_storage_patch(p) = 20._r8 * ratio
-                      this%frootc_patch(p) = 0._r8
-                      this%frootc_storage_patch(p) = 20._r8 * ratio
-                  end if
+              ! ECA competition calculate root NP uptake as a function of fine root biomass
+              ! better to initialize root CNP pools with a non-zero value
+              if (pft%itype(p) .ne. noveg) then
+                 if (ecophyscon%evergreen(pft%itype(p)) == 1._r8) then
+                    this%leafc_patch(p) = 20._r8 * ratio
+                    this%leafc_storage_patch(p) = 0._r8
+                    this%frootc_patch(p) = 20._r8 * ratio
+                    this%frootc_storage_patch(p) = 0._r8
+                 else
+                    this%leafc_patch(p) = 0._r8 
+                    this%leafc_storage_patch(p) = 20._r8 * ratio
+                    this%frootc_patch(p) = 0._r8
+                    this%frootc_storage_patch(p) = 20._r8 * ratio
+                 end if
               end if
           end if
-           
+
           this%livecrootc_patch(p)         = 0._r8 
           this%livecrootc_storage_patch(p) = 0._r8 
           this%livecrootc_xfer_patch(p)    = 0._r8 

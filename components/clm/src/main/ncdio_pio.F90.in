@@ -30,9 +30,9 @@ module ncdio_pio
   use pio            , only : pio_def_var, pio_double, pio_enddef, pio_get_att, pio_get_var, pio_global, pio_initdecomp
   use pio            , only : pio_inq_att, pio_inq_dimid, pio_inq_dimlen, pio_inq_dimname, pio_inq_vardimid, pio_inq_varid
   use pio            , only : pio_inq_varname, pio_inq_varndims, pio_inquire, pio_int, pio_internal_error
-  use pio            , only : pio_noclobber, pio_noerr, pio_nofill, pio_nowrite, pio_offset, pio_openfile
+  use pio            , only : pio_noclobber, pio_noerr, pio_nofill, pio_nowrite, pio_offset_kind, pio_openfile
   use pio            , only : pio_put_att, pio_put_var, pio_read_darray, pio_real, pio_seterrorhandling
-  use pio            , only : pio_setframe, pio_unlimited, pio_write, pio_write_darray, var_desc_t
+  use pio            , only : pio_setframe, pio_unlimited, pio_write, pio_write_darray, var_desc_t, pio_iotask_rank
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -189,7 +189,7 @@ contains
 
     if(ierr/= PIO_NOERR) then
        call shr_sys_abort('ncd_pio_openfile ERROR: Failed to open file')
-    else if(pio_subsystem%io_rank==0) then
+    else if(pio_iotask_rank(pio_subsystem)==0) then
        write(iulog,*) 'Opened existing file ', trim(fname), file%fh
     end if
 
@@ -241,7 +241,7 @@ contains
     if (l_avoid_pnetcdf) then
        if (my_io_type == pio_iotype_pnetcdf) then
           my_io_type = pio_iotype_netcdf
-          if (pio_subsystem%io_rank==0) then
+          if (pio_iotask_rank(pio_subsystem)==0) then
              write(iulog,*) 'Workaround for bugz 1730: creating'
              write(iulog,*) trim(fname)
              write(iulog,*) 'with type netcdf instead of pnetcdf'
@@ -253,7 +253,7 @@ contains
 
     if(ierr/= PIO_NOERR) then
        call shr_sys_abort( ' ncd_pio_createfile ERROR: Failed to open file to write: '//trim(fname))
-    else if(pio_subsystem%io_rank==0) then
+    else if(pio_iotask_rank(pio_subsystem)==0) then
        write(iulog,*) 'Opened file ', trim(fname),  ' to write', file%fh
     end if
 
@@ -312,7 +312,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: att_type  ! attribute type
-    integer :: att_len   ! attribute length
+    integer(PIO_OFFSET_KIND) :: att_len   ! attribute length
     integer :: status
 
     character(len=*), parameter :: subname = 'check_att'
@@ -1443,7 +1443,7 @@ contains
 #endif
              iodesc_plus => iodesc_list(iodnum)
              if (present(nt)) then
-                call pio_setframe(vardesc, int(nt,kind=PIO_Offset))
+                call pio_setframe(ncid,vardesc, int(nt,kind=PIO_OFFSET_KIND))
              end if
 #if ({ITYPE}==TYPELOGICAL)
              allocate(idata(size(data))) 
@@ -1483,7 +1483,7 @@ contains
 #endif
        iodesc_plus => iodesc_list(iodnum)
        if (present(nt)) then
-          call pio_setframe(vardesc, int(nt,kind=PIO_Offset))
+          call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
        end if
 #if ({ITYPE}==TYPELOGICAL)
        allocate( idata(size(data)) ) 
@@ -1640,7 +1640,7 @@ contains
              end if
              iodesc_plus => iodesc_list(iodnum)
              if (present(nt)) then
-                call pio_setframe(vardesc, int(nt,kind=PIO_Offset))
+                call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
              end if
              if (present(switchdim)) then
                 call pio_read_darray(ncid, vardesc, iodesc_plus%iodesc, temp, status)
@@ -1694,7 +1694,7 @@ contains
        end if
        iodesc_plus => iodesc_list(iodnum)
        if (present(nt)) then
-          call pio_setframe(vardesc, int(nt,kind=PIO_Offset))
+          call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
        end if
        if (present(switchdim)) then
           do j = lb2,ub2
@@ -1828,7 +1828,7 @@ contains
                   PIO_{TYPE}, iodnum)
              iodesc_plus => iodesc_list(iodnum)
              if (present(nt)) then
-                call pio_setframe(vardesc, int(nt,kind=PIO_Offset))
+                call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
              end if
              call pio_read_darray(ncid, vardesc, iodesc_plus%iodesc, data, status)
           end if
@@ -1857,7 +1857,7 @@ contains
             PIO_{TYPE}, iodnum)
        iodesc_plus => iodesc_list(iodnum)
        if (present(nt)) then
-          call pio_setframe(vardesc, int(nt,kind=PIO_Offset))
+          call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
        end if
        call pio_write_darray(ncid, vardesc, iodesc_plus%iodesc, data, status)
 

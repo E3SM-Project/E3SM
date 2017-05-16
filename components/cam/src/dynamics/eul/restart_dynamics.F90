@@ -2,8 +2,8 @@ module restart_dynamics
 
   use shr_kind_mod,    only: r8 => shr_kind_r8
   use pio, only : var_desc_t, file_desc_t, pio_double, pio_unlimited, pio_def_var, &
-	          pio_def_dim, io_desc_t, pio_offset, pio_put_var, pio_write_darray, &
-                  pio_setdebuglevel, pio_setframe, pio_initdecomp, pio_freedecomp, &
+	          pio_def_dim, io_desc_t, pio_offset_kind, pio_put_var, pio_write_darray, &
+                  pio_setdebuglevel,pio_setframe, pio_initdecomp, pio_freedecomp, &
                   pio_read_darray, pio_inq_varid, pio_get_var
   use prognostics,     only:  u3, v3, t3, q3, &
        pdeld, ps, vort, div, &
@@ -168,33 +168,36 @@ CONTAINS
 
 
 
-subroutine init_restart_dynamics(File, hdimids, dyn_out)
+subroutine init_restart_dynamics(File, dyn_out)
 
-    use dyn_comp,     only: dyn_export_t
-    use dyn_grid,     only: get_horiz_grid_dim_d
-    use constituents, only: pcnst
-    use hycoef,       only: init_restart_hycoef
+    use dyn_comp,         only: dyn_export_t
+    use constituents,     only: pcnst
+    use hycoef,           only: init_restart_hycoef
+    use cam_grid_support, only: cam_grid_write_attr, cam_grid_id
+    use cam_grid_support, only: cam_grid_header_info_t
 
     ! Input arguments
     type(File_desc_t),  intent(inout) :: File
-    integer,            pointer       :: hdimids(:)
     type(Dyn_export_t), intent(in)    :: dyn_out
 
+    integer :: hdimids(2)
     integer :: vdimids(2)
     character(len=namlen) :: name
 
     integer :: alldims(4), alldims2d(3), qdims(5)
-    integer :: timelevels_dimid, i, hdim1, hdim2, ierr
+    integer :: timelevels_dimid, i, ierr
     type(var_desc_t), pointer :: vdesc
+    integer :: grid_id
     integer :: ndims, timelevels
+    type(cam_grid_header_info_t) :: info
 
     call init_restart_hycoef(File, vdimids)
 
-    call get_horiz_grid_dim_d(hdim1, hdim2)
-    allocate(hdimids(2))
-    ierr = PIO_Def_Dim(File, 'lon',hdim1, hdimids(1))
-
-    ierr = PIO_Def_Dim(File, 'lat',hdim2, hdimids(2))
+    ! Grid attributes
+    grid_id = cam_grid_id('gauss_grid')
+    call cam_grid_write_attr(File, grid_id, info)
+    hdimids(1) = info%get_hdimid(1)
+    hdimids(2) = info%get_hdimid(2)
 
     ierr = PIO_Def_Dim(File,'timelevels',PIO_UNLIMITED,timelevels_dimid)
 
@@ -265,6 +268,8 @@ subroutine init_restart_dynamics(File, hdimids, dyn_out)
     use constituents,    only: pcnst
     use eul_control_mod, only: fixmas, tmass0
     use hycoef, only: write_restart_hycoef
+    use cam_grid_support, only: cam_grid_write_var
+    use dyn_grid,        only: dyn_decomp
 
 
     !
@@ -280,13 +285,16 @@ subroutine init_restart_dynamics(File, hdimids, dyn_out)
     integer :: ndcur, nscur
     real(r8) :: time, dtime, mold(1)
     integer :: i, s3d(1), s2d(1), ct
-    integer(kind=pio_offset) :: t
+    integer(kind=pio_offset_kind) :: t
     type(io_desc_t) :: iodesc4d, iodesc3d, iodesc2d
     integer, pointer :: ldof(:)
     integer :: ndims, timelevels
     type(var_desc_t), pointer :: vdesc
     character(len=namlen) :: name
     !
+
+    ! Write grid vars
+    call cam_grid_write_var(File, dyn_decomp)
 
     call write_restart_hycoef(File)
 
@@ -334,7 +342,7 @@ subroutine init_restart_dynamics(File, hdimids, dyn_out)
              if(t==2) ct=n3m1
              if(t==3) ct=n3
 
-             call pio_setframe(vdesc, t)
+             call pio_setframe(File, vdesc, t)
              if(ndims==3) then
                 call pio_write_darray(File, vdesc, iodesc2d, transfer(restartvars(i)%v3d(:,:,ct), mold), ierr)
              else if(ndims==4) then
@@ -367,7 +375,6 @@ subroutine init_restart_dynamics(File, hdimids, dyn_out)
        allocate(restartvars(i)%vdesc)
     end if
     vdesc => restartvars(i)%vdesc
-    call pio_setframe(vdesc, int(-1,pio_offset))
 
   end subroutine get_restart_var
 
@@ -405,7 +412,7 @@ subroutine init_restart_dynamics(File, hdimids, dyn_out)
     !
     integer :: dims3d(3), dims2d(2), dims4d(4)
     integer :: ierr, ct
-    integer(kind=pio_offset) :: t
+    integer(kind=pio_offset_kind) :: t
     character(len=namlen) :: name
     integer :: ndims, timelevels, i, s2d, s3d, s4d
     type(var_desc_t), pointer :: vdesc
@@ -482,7 +489,7 @@ subroutine init_restart_dynamics(File, hdimids, dyn_out)
              if(t==1) ct=n3m2
              if(t==2) ct=n3m1
              if(t==3) ct=n3
-             call pio_setframe(vdesc, t)
+             call pio_setframe(File, vdesc, t)
              if(ndims==3) then
                 call pio_read_darray(File, vdesc, iodesc2d, tmp(1:s2d), ierr)
                 restartvars(i)%v3d(:,:,ct) = reshape(tmp(1:s2d), dims2d)

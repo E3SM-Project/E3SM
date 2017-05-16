@@ -717,7 +717,6 @@ contains
     !
     ! !LOCAL VARIABLES:
     PetscReal, pointer                         :: var_p(:)
-    type (sysofeqns_vsfm_auxvar_type), pointer :: avars(:)
     PetscInt                                   :: nauxvar
     PetscInt                                   :: nvar
     PetscInt, optional                         :: offset
@@ -725,35 +724,36 @@ contains
     PetscInt                                   :: iauxvar_off
     PetscErrorCode                             :: ierr
 
-    select case(auxvar_type)
-    case (AUXVAR_INTERNAL)
-       avars => vsfm_soe%aux_vars_in
-    case default
-       write(iulog,*) 'VSFMSOESetAuxVars: auxvar_type not supported'
-       call endrun(msg=errMsg(__FILE__, __LINE__))
-    end select
-
     if (present(offset)) then
        iauxvar_off = offset
     else
        iauxvar_off = 0
     endif
 
-    nauxvar = size(avars)
+    select case(auxvar_type)
+    case (AUXVAR_INTERNAL)
 
-    call VecGetLocalSize(var_vec, nvar, ierr); CHKERRQ(ierr)
+       nauxvar = size(vsfm_soe%aux_vars_in)
 
-    if (nvar+iauxvar_off > nauxvar) then
-       write(iulog,*) 'VSFMSOESetAuxVars: nvar+iauxvar_off > nauxvar.'
+       call VecGetLocalSize(var_vec, nvar, ierr); CHKERRQ(ierr)
+
+       if (nvar+iauxvar_off > nauxvar) then
+          write(iulog,*) 'VSFMSOESetAuxVars: nvar+iauxvar_off > nauxvar.'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       endif
+
+       call VecGetArrayF90(var_vec, var_p, ierr); CHKERRQ(ierr)
+       do iauxvar = 1, nvar
+          call vsfm_soe%aux_vars_in(iauxvar + iauxvar_off)%SetValue(var_type, var_p(iauxvar))
+       enddo
+
+       call VecRestoreArrayF90(var_vec, var_p, ierr); CHKERRQ(ierr)
+
+    case default
+       write(iulog,*) 'VSFMSOESetAuxVars: auxvar_type not supported'
        call endrun(msg=errMsg(__FILE__, __LINE__))
-    endif
+    end select
 
-    call VecGetArrayF90(var_vec, var_p, ierr); CHKERRQ(ierr)
-    do iauxvar = 1, nvar
-       call avars(iauxvar + iauxvar_off)%SetValue(var_type, var_p(iauxvar))
-    enddo
-
-    call VecRestoreArrayF90(var_vec, var_p, ierr); CHKERRQ(ierr)
 
   end subroutine VSFMSOESetAuxVars
 
@@ -874,6 +874,7 @@ contains
     PetscErrorCode                  :: ierr
 
     call VecCopy(this%soln, this%soln_prev,ierr); CHKERRQ(ierr)
+    call VSFMSOEUpdateAuxVarsODE(this, this%soln)
 
     select case (this%itype)
     case(SOE_RE_ODE)
@@ -884,6 +885,8 @@ contains
           select type(cur_goveq)
              class is (goveqn_richards_ode_pressure_type)
 
+             call cur_goveq%GetFromSOEAuxVarsIntrn(this%aux_vars_in, 0)
+             call cur_goveq%UpdateAuxVarsIntrn()
              call cur_goveq%SetDataInSOEAuxVar(AUXVAR_INTERNAL, this%aux_vars_in)
 
           end select
@@ -924,36 +927,57 @@ contains
     PetscInt                                   :: iauxvar
     PetscInt                                   :: iauxvar_off
     PetscInt                                   :: nauxvar
-    type (sysofeqns_vsfm_auxvar_type), pointer :: auxvars(:)
 
     select case(soe_auxvar_type)
     case(AUXVAR_INTERNAL)
-       auxvars      => this%aux_vars_in
        iauxvar_off  = 0
        nauxvar      = this%num_auxvars_in
+
+       if (size(data_1d) /= nauxvar) then
+          write(iulog,*) 'VSFMSOESetDataFromCLM: size(data_1d) /= nauxvar'
+          write(iulog,*) 'size(data_1d) = ',size(data_1d)
+          write(iulog,*) 'nauxvar       = ', nauxvar
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       endif
+
+       do iauxvar = 1, nauxvar
+          call this%aux_vars_in(iauxvar + iauxvar_off)%SetValue(var_type, data_1d(iauxvar))
+       enddo
+
     case(AUXVAR_BC)
-       auxvars      => this%aux_vars_bc
        iauxvar_off  = this%soe_auxvars_bc_offset(soe_auxvar_id)
        nauxvar      = this%soe_auxvars_bc_ncells(soe_auxvar_id)
+
+       if (size(data_1d) /= nauxvar) then
+          write(iulog,*) 'VSFMSOESetDataFromCLM: size(data_1d) /= nauxvar'
+          write(iulog,*) 'size(data_1d) = ',size(data_1d)
+          write(iulog,*) 'nauxvar       = ', nauxvar
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       endif
+
+       do iauxvar = 1, nauxvar
+          call this%aux_vars_bc(iauxvar + iauxvar_off)%SetValue(var_type, data_1d(iauxvar))
+       enddo
+
     case(AUXVAR_SS)
-       auxvars      => this%aux_vars_ss
        iauxvar_off  = this%soe_auxvars_ss_offset(soe_auxvar_id)
        nauxvar      = this%soe_auxvars_ss_ncells(soe_auxvar_id)
+
+       if (size(data_1d) /= nauxvar) then
+          write(iulog,*) 'VSFMSOESetDataFromCLM: size(data_1d) /= nauxvar'
+          write(iulog,*) 'size(data_1d) = ',size(data_1d)
+          write(iulog,*) 'nauxvar       = ', nauxvar
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       endif
+
+       do iauxvar = 1, nauxvar
+          call this%aux_vars_ss(iauxvar + iauxvar_off)%SetValue(var_type, data_1d(iauxvar))
+       enddo
+
     case default
        write(iulog,*) 'VSFMSOESetDataFromCLM: Unknown soe_auxvar_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
-
-    if (size(data_1d) /= nauxvar) then
-       write(iulog,*) 'VSFMSOESetDataFromCLM: size(data_1d) /= nauxvar'
-       write(iulog,*) 'size(data_1d) = ',size(data_1d)
-       write(iulog,*) 'nauxvar       = ', nauxvar
-       call endrun(msg=errMsg(__FILE__, __LINE__))
-    endif
-
-    do iauxvar = 1, nauxvar
-       call auxvars(iauxvar + iauxvar_off)%SetValue(var_type, data_1d(iauxvar))
-    enddo
 
   end subroutine VSFMSOESetDataFromCLM
 
@@ -985,29 +1009,28 @@ contains
     PetscInt                                   :: iauxvar_off
     PetscInt                                   :: nauxvar
     PetscReal                                  :: var_value
-    type (sysofeqns_vsfm_auxvar_type), pointer :: auxvars(:)
 
     select case(soe_auxvar_type)
     case(AUXVAR_INTERNAL)
-       auxvars      => this%aux_vars_in
        iauxvar_off  = 0
        nauxvar      = this%num_auxvars_in
+
+       if (size(data_1d) /= nauxvar) then
+          write(iulog,*) 'VSFMSOEGetDataFromCLM: size(data_1d) /= nauxvar'
+          write(iulog,*) 'size(data_1d) = ',size(data_1d)
+          write(iulog,*) 'nauxvar       = ', nauxvar
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       endif
+
+       do iauxvar = 1, nauxvar
+          call this%aux_vars_in(iauxvar + iauxvar_off)%GetValue(var_type, var_value)
+          data_1d(iauxvar) = var_value
+       enddo
+
     case default
        write(iulog,*) 'VSFMSOESetDataFromCLM: Unknown soe_auxvar_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
-
-    if (size(data_1d) /= nauxvar) then
-       write(iulog,*) 'VSFMSOEGetDataFromCLM: size(data_1d) /= nauxvar'
-       write(iulog,*) 'size(data_1d) = ',size(data_1d)
-       write(iulog,*) 'nauxvar       = ', nauxvar
-       call endrun(msg=errMsg(__FILE__, __LINE__))
-    endif
-
-    do iauxvar = 1, nauxvar
-       call auxvars(iauxvar + iauxvar_off)%GetValue(var_type, var_value)
-       data_1d(iauxvar) = var_value
-    enddo
 
   end subroutine VSFMSOEGetDataForCLM
 
@@ -1025,6 +1048,7 @@ contains
     PetscErrorCode                :: ierr
 
     call VecCopy(this%soln_prev_clm, this%soln_prev, ierr); CHKERRQ(ierr)
+    call VecCopy(this%soln_prev_clm, this%soln     , ierr); CHKERRQ(ierr)
 
   end subroutine VSFMSPreStepDT
 

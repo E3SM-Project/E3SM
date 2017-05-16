@@ -24,6 +24,7 @@ module CNDecompMod
   !!  add phosphorus  -X. YANG
   use PhosphorusStateType    , only : phosphorusstate_type
   use PhosphorusFluxType     , only : phosphorusflux_type
+  use clm_varctl             , only : nu_com
 
   use CNCarbonStateType      , only : carbonstate_type
   use CNCarbonFluxType       , only : carbonflux_type
@@ -140,8 +141,8 @@ contains
     integer :: c,j,k,l,m                                                                               !indices
     integer :: fc                                                                                      !lake filter column index
     real(r8):: p_decomp_cpool_loss(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential C loss from one pool to another
-    real(r8):: pmnf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential mineral N flux, from one pool to another
-    real(r8):: pmpf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential mineral P flux, from one pool to another
+    !real(r8):: pmnf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential mineral N flux, from one pool to another
+    !real(r8):: pmpf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential mineral P flux, from one pool to another
     real(r8):: immob(bounds%begc:bounds%endc,1:nlevdecomp)                                             !potential N immobilization
     real(r8):: immob_p(bounds%begc:bounds%endc,1:nlevdecomp)                                             !potential P immobilization
     real(r8):: ratio                                                                                   !temporary variable
@@ -199,7 +200,8 @@ contains
          decomp_k                         =>    carbonflux_vars%decomp_k_col                           , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)      
          phr_vr                           =>    carbonflux_vars%phr_vr_col                             , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)                           
          fphr                             =>    carbonflux_vars%fphr_col                               , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
-         
+         pmnf_decomp_cascade              =>    nitrogenflux_vars%pmnf_decomp_cascade                  , &
+         pmpf_decomp_cascade              =>    phosphorusflux_vars%pmpf_decomp_cascade                , & 
          soil_n_immob_flux                =>    nitrogenflux_vars%soil_n_immob_flux                    , &
          soil_n_immob_flux_vr             =>    nitrogenflux_vars%soil_n_immob_flux_vr                 , &
          soil_n_grossmin_flux             =>    nitrogenflux_vars%soil_n_grossmin_flux                 , &
@@ -414,7 +416,8 @@ contains
                cnstate_vars,                                        &
                carbonstate_vars, carbonflux_vars,                   &
                nitrogenstate_vars, nitrogenflux_vars,               &
-               phosphorusstate_vars,phosphorusflux_vars)
+               phosphorusstate_vars,phosphorusflux_vars,            &
+               soilstate_vars,waterstate_vars)
       call t_stopf('CNAllocation - phase-2')
 
       
@@ -543,7 +546,8 @@ contains
             end do
          end do
       end do
-      
+     
+      if (nu_com .ne. 'RD') then
       do fc = 1,num_soilc
           c = filter_soilc(fc)
           soil_n_immob_flux(c) =0.0_r8
@@ -553,6 +557,8 @@ contains
           do j = 1,nlevdecomp
               soil_n_immob_flux_vr(c,j) = 0.0_r8
               soil_p_immob_flux_vr(c,j) = 0.0_r8
+              gross_nmin_vr(c,j) = 0.0_r8
+              gross_pmin_vr(c,j) = 0.0_r8
           end do
       end do
       do k = 1, ndecomp_cascade_transitions
@@ -564,17 +570,20 @@ contains
                    soil_n_immob_flux_vr(c,j) = soil_n_immob_flux_vr(c,j) + pmnf_decomp_cascade(c,j,k)
                else
                    soil_n_grossmin_flux(c) = soil_n_grossmin_flux(c) -1.0_r8*pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+                   gross_nmin_vr(c,j) = gross_nmin_vr(c,j) - 1.0_r8*pmnf_decomp_cascade(c,j,k)
                end if
                if (pmpf_decomp_cascade(c,j,k) > 0._r8) then 
                    soil_p_immob_flux(c) = soil_p_immob_flux(c) + pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
                    soil_p_immob_flux_vr(c,j) = soil_p_immob_flux_vr(c,j) + pmpf_decomp_cascade(c,j,k)
                else
                    soil_p_grossmin_flux(c) = soil_p_grossmin_flux(c) -1.0_r8*pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+                   gross_pmin_vr(c,j) = gross_pmin_vr(c,j) - 1.0_r8*pmpf_decomp_cascade(c,j,k)
                end if
-          	end do
+             end do
           end do
        end do
-       
+       end if
+
       if (use_lch4) then
          ! Calculate total fraction of potential HR, for methane code
          do j = 1,nlevdecomp

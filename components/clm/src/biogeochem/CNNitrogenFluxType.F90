@@ -367,10 +367,6 @@ module CNNitrogenFluxType
      real(r8), pointer :: smin_no3_to_plant_patch                   (:)     ! pft level plant uptake of soil NO3 (gN/m2/s) BGC mode
      real(r8), pointer :: smin_nh4_to_plant_patch                   (:)     ! pft level plant uptake of soil Nh4 (gN/m2/s) BGC mode
      real(r8), pointer :: sminn_to_plant_patch                      (:)     ! pft level plant uptake of soil N (gN/m2/s) CN mode
-     real(r8), pointer :: pnup_pfrootc_patch                        (:)     ! partial nitrogen uptake / partial fine root carbon (used by symbiotic n2 fixation)
-     real(r8), pointer :: pgpp_pleafc_patch                         (:)     ! partial gpp / partial leaf carbon (used by symbiotic n2 fixation)
-     real(r8), pointer :: pgpp_pleafn_patch                         (:)     ! partial gpp / partial leaf nitrogen (used by phosphatase activity)
-     real(r8), pointer :: pgpp_pleafp_patch                         (:)     ! partial gpp / partial leaf phosphorus (used by phosphatase activity)
      real(r8), pointer :: col_plant_ndemand_vr                      (:,:)   ! column-level plant N demand
      real(r8), pointer :: col_plant_nh4demand_vr                    (:,:)   ! column-level plant NH4 demand
      real(r8), pointer :: col_plant_no3demand_vr                    (:,:)   ! column-level plant NO3 demand
@@ -380,6 +376,7 @@ module CNNitrogenFluxType
      real(r8), pointer :: plant_ndemand_vr_patch                    (:,:)   ! pft-level plant N demand CN mode
      real(r8), pointer :: prev_leafn_to_litter_patch                (:)     ! previous timestep leaf N litterfall flux (gN/m2/s)
      real(r8), pointer :: prev_frootn_to_litter_patch               (:)     ! previous timestep froot N litterfall flux (gN/m2/s)
+     real(r8), pointer :: pmnf_decomp_cascade                       (:,:,:) !potential mineral N flux, from one pool to another
 
      real(r8), pointer :: plant_n_uptake_flux                       (:)     ! for the purpose of mass balance check  
      real(r8), pointer :: soil_n_immob_flux                         (:)     ! for the purpose of mass balance check
@@ -764,10 +761,6 @@ contains
     allocate(this%smin_no3_to_plant_patch     (begp:endp)) ;             this%smin_no3_to_plant_patch     (:) = nan
     allocate(this%smin_nh4_to_plant_patch     (begp:endp)) ;             this%smin_nh4_to_plant_patch     (:) = nan
     allocate(this%sminn_to_plant_patch        (begp:endp)) ;             this%sminn_to_plant_patch        (:) = nan
-    allocate(this%pnup_pfrootc_patch          (begp:endp)) ;             this%pnup_pfrootc_patch          (:) = nan
-    allocate(this%pgpp_pleafc_patch           (begp:endp)) ;             this%pgpp_pleafc_patch           (:) = nan
-    allocate(this%pgpp_pleafn_patch           (begp:endp)) ;             this%pgpp_pleafn_patch           (:) = nan
-    allocate(this%pgpp_pleafp_patch           (begp:endp)) ;             this%pgpp_pleafp_patch           (:) = nan
     allocate(this%col_plant_ndemand_vr        (begc:endc,1:nlevdecomp)); this%col_plant_ndemand_vr        (:,:) = nan
     allocate(this%col_plant_nh4demand_vr      (begc:endc,1:nlevdecomp)); this%col_plant_nh4demand_vr      (:,:) = nan
     allocate(this%col_plant_no3demand_vr      (begc:endc,1:nlevdecomp)); this%col_plant_no3demand_vr      (:,:) = nan
@@ -777,6 +770,7 @@ contains
     allocate(this%plant_ndemand_vr_patch      (begp:endp,1:nlevdecomp)); this%plant_ndemand_vr_patch      (:,:) = nan
     allocate(this%prev_leafn_to_litter_patch  (begp:endp)) ;             this%prev_leafn_to_litter_patch  (:) = nan
     allocate(this%prev_frootn_to_litter_patch (begp:endp)) ;             this%prev_frootn_to_litter_patch (:) = nan
+    allocate(this%pmnf_decomp_cascade(begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions)); this%pmnf_decomp_cascade(:,:,:) = nan
 
     allocate(this%plant_n_uptake_flux         (begc:endc)) ;	         this%plant_n_uptake_flux   (:)   = nan
     allocate(this%soil_n_immob_flux           (begc:endc)) ;	         this%soil_n_immob_flux	    (:)   = nan
@@ -3027,7 +3021,7 @@ contains
                this%decomp_npools_leached_col(c,l)
        end do
     end do
-    
+
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%smin_no3_to_plant_col(c) = 0._r8
@@ -3035,10 +3029,6 @@ contains
        this%plant_to_litter_nflux(c) = 0._r8
        this%plant_to_cwd_nflux(c) = 0._r8
        do j = 1, nlevdecomp
-          this%smin_no3_to_plant_col(c)= this%smin_no3_to_plant_col(c) + & 
-               this%smin_no3_to_plant_vr_col(c,j) * dzsoi_decomp(j)
-          this%smin_nh4_to_plant_col(c)= this%smin_nh4_to_plant_col(c) + & 
-               this%smin_nh4_to_plant_vr_col(c,j) * dzsoi_decomp(j) 
           this%plant_to_litter_nflux(c) = &
                this%plant_to_litter_nflux(c)  + &
                this%phenology_n_to_litr_met_n_col(c,j)* dzsoi_decomp(j) + &
@@ -3056,6 +3046,18 @@ contains
                this%fire_mortality_n_to_cwdn_col(c,j)* dzsoi_decomp(j)
        end do
     end do
+
+    if (use_nitrif_denitrif) then
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          do j = 1, nlevdecomp
+             this%smin_no3_to_plant_col(c)= this%smin_no3_to_plant_col(c) + & 
+                  this%smin_no3_to_plant_vr_col(c,j) * dzsoi_decomp(j)
+             this%smin_nh4_to_plant_col(c)= this%smin_nh4_to_plant_col(c) + & 
+                  this%smin_nh4_to_plant_vr_col(c,j) * dzsoi_decomp(j) 
+          enddo
+       enddo
+    endif
 
     ! bgc interface & pflotran
     !----------------------------------------------------------------

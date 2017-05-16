@@ -43,7 +43,7 @@ OPTIONS
      -verbose              Turn on verbose echoing of informational messages.
      -caseroot             CASEROOT directory variable
      -casebuild            CASEBUILD directory variable          
-     -scriptsroot          SCRIPTSROOT directory variable
+     -cimeroot          CIMEROOT directory variable
      -glc_grid             GLC_GRID variable
      -date_stamp           date_stamp variable
      -cfg_grid             Directory containing MPASLI configuration scripts.
@@ -87,7 +87,7 @@ my %opts = ( help        => 0,
              preview     => 0,
              caseroot    => undef,
              casebuild   => undef,
-             scriptsroot => undef,
+             cimeroot => undef,
              inst_string => undef,
              glc_grid    => undef,
              date_stamp  => undef,
@@ -101,7 +101,7 @@ GetOptions(
     "v|verbose"     => \$opts{'verbose'},
     "caseroot=s"    => \$opts{'caseroot'},
     "casebuild=s"   => \$opts{'casebuild'},
-    "scriptsroot=s" => \$opts{'scriptsroot'},
+    "cimeroot=s" => \$opts{'cimeroot'},
     "inst_string=s" => \$opts{'inst_string'},	   
     "glc_grid=s"    => \$opts{'glc_grid'},
     "date_stamp=s"  => \$opts{'date_stamp'},
@@ -132,11 +132,18 @@ if ($print>=2) { print "Setting MPASLI configuration script directory to $cfgdir
 
 my $CASEROOT    = $opts{'caseroot'};
 my $CASEBUILD   = $opts{'casebuild'};
-my $SCRIPTSROOT = $opts{'scriptsroot'};
+my $CIMEROOT = $opts{'cimeroot'};
 my $inst_string = $opts{'inst_string'};
 my $GLC_GRID    = $opts{'glc_grid'};
 my $date_stamp  = $opts{'date_stamp'};
 $cfgdir         = $opts{'cfg_dir'};
+
+my $CIMEROOT;
+if ( defined $opts{'cimeroot'} ) {
+    $CIMEROOT = $opts{'cimeroot'};
+}
+
+
 
 # Validate some of the commandline option values.
 validate_options("commandline", \%opts);
@@ -164,14 +171,14 @@ EOF
 # Look for them under the directory that contains the configure script.
 
 # The root directory for the input data files must be specified.
-my $cesmroot = abs_path("$SCRIPTSROOT/../../");
+my $cesmroot = abs_path("$CIMEROOT/../");
 if (! -d "$cesmroot") {
     die "** Invalid CESM root directory: $cesmroot ** ";
 }
 
 print "CESM ROOT IS: $cesmroot\n";
 
-my $perl5lib = "$cesmroot/cime/utils/perl5lib";
+my $perl5lib = "$CIMEROOT/utils/perl5lib";
 if (! -d "$perl5lib") {
     die "** Invalid perl5lib root directory: $perl5lib ** ";
 }
@@ -233,12 +240,12 @@ if ($print>=2) { print "Using namelist defaults file $nl_defaults_file$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $perl5lib_dir to the list of paths that Perl searches for modules
-unshift @INC, "$perl5lib", "$CASEROOT/Tools", "$cesmroot/cime/scripts/Tools";
+unshift @INC, "$perl5lib";
 require Build::Config;
 require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
-require SetupTools;
+require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the MPASLI config_cache.xml file-  created by 
@@ -361,8 +368,8 @@ my $CALENDAR               = "$xmlvars{'CALENDAR'}";
 my $NCPL_BASE_PERIOD       = "$xmlvars{'NCPL_BASE_PERIOD'}";
 my $GLC_NCPL               = "$xmlvars{'GLC_NCPL'}";
 my $GLC_COUPLING           = "$xmlvars{'GLC_COUPLING'}";
-my $NTASKS_GLC             = "$xmlvars{'NTASKS_GLC'}";
-my $NINST_GLC              = "$xmlvars{'NINST_GLC'}";
+my $NTASKS_GLC             = `$CASEROOT/xmlquery NTASKS_GLC -value -caseroot $CASEROOT`;
+my $NINST_GLC              = `$CASEROOT/xmlquery NINST_GLC -value -caseroot $CASEROOT`;
 my $INFO_DBUG              = "$xmlvars{'INFO_DBUG'}";
 my $RUN_TYPE               = "$xmlvars{'RUN_TYPE'}";
 my $RUN_STARTDATE          = "$xmlvars{'RUN_STARTDATE'}";
@@ -440,6 +447,8 @@ add_default($nl, 'config_surface_air_temperature_value');
 add_default($nl, 'config_basal_heat_flux_source');
 add_default($nl, 'config_basal_heat_flux_value');
 add_default($nl, 'config_basal_mass_bal_float');
+add_default($nl, 'config_bmlt_float_flux');
+add_default($nl, 'config_bmlt_float_xlimit');
 
 #######################################
 # Namelist group: physical_parameters #
@@ -516,6 +525,27 @@ add_default($nl, 'config_print_thermal_info');
 add_default($nl, 'config_always_compute_fem_grid');
 add_default($nl, 'config_print_velocity_cleanup_details');
 
+####################################
+# Namelist group: subglacial_hydro #
+####################################
+
+add_default($nl, 'config_SGH');
+add_default($nl, 'config_SGH_adaptive_timestep');
+add_default($nl, 'config_SGH_adaptive_timestep_fraction');
+add_default($nl, 'config_SGH_max_adaptive_timestep');
+add_default($nl, 'config_SGH_tangent_slope_calculation');
+add_default($nl, 'config_SGH_pressure_calc');
+add_default($nl, 'config_SGH_alpha');
+add_default($nl, 'config_SGH_beta');
+add_default($nl, 'config_SGH_conduc_coeff');
+add_default($nl, 'config_SGH_till_drainage');
+add_default($nl, 'config_SGH_advection');
+add_default($nl, 'config_SGH_bed_roughness');
+add_default($nl, 'config_SGH_bed_roughness_max');
+add_default($nl, 'config_SGH_creep_coefficient');
+add_default($nl, 'config_SGH_englacial_porosity');
+add_default($nl, 'config_SGH_till_max');
+
 ##################################
 # Namelist group: AM_globalStats #
 ##################################
@@ -525,6 +555,17 @@ add_default($nl, 'config_AM_globalStats_compute_interval');
 add_default($nl, 'config_AM_globalStats_stream_name');
 add_default($nl, 'config_AM_globalStats_compute_on_startup');
 add_default($nl, 'config_AM_globalStats_write_on_startup');
+
+####################################
+# Namelist group: AM_regionalStats #
+####################################
+
+add_default($nl, 'config_AM_regionalStats_enable');
+add_default($nl, 'config_AM_regionalStats_compute_interval');
+add_default($nl, 'config_AM_regionalStats_stream_name');
+add_default($nl, 'config_AM_regionalStats_compute_on_startup');
+add_default($nl, 'config_AM_regionalStats_write_on_startup');
+
 
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpasli_in) and input dataset list (mpasli.input_data_list) ***
@@ -541,7 +582,9 @@ my @groups = qw(velocity_solver
                 io
                 decomposition
                 debug
+                subglacial_hydro
                 am_globalstats
+                am_regionalstats
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group

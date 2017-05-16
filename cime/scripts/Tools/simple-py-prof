@@ -1,0 +1,8 @@
+#! /bin/bash
+
+if [ "$#" -eq 0 ]; then
+    echo "Usage: simple-py-prof <python exec and arguments>"
+    exit 0
+fi
+
+python -m cProfile -s time "$@"

@@ -1343,7 +1343,7 @@ contains
     real(r8) , allocatable :: max_volr(:)
     real(r8) , allocatable :: tempr1(:,:),tempr2(:,:) ! temporary buffer for netcdf read
 
-    integer(kind=pio_offset), pointer   :: compdof(:) ! computational degrees of freedom for pio 
+    integer(kind=PIO_OFFSET_KIND), pointer   :: compdof(:) ! computational degrees of freedom for pio 
     integer :: nt,n,cnt,nr           ! indices
     logical :: readvar               ! read variable in or not
     integer :: ier                   ! status variable

@@ -190,6 +190,7 @@ module clm_varctl
   !----------------------------------------------------------
 
   logical, public :: use_ed = .false.            ! true => use  ED
+  ! (FATES-INTERF) CHANGE TO USE_ED_SPITFIRE
   logical, public :: use_ed_spit_fire = .false.  ! true => use spitfire model
 
   !----------------------------------------------------------
@@ -299,8 +300,9 @@ module clm_varctl
   !----------------------------------------------------------
   ! VSFM switches
   !----------------------------------------------------------
-  logical          , public :: use_vsfm          = .false.
-  character(len=32), public :: vsfm_satfunc_type = 'smooth_brooks_corey_bz3'
+  logical          , public :: use_vsfm                    = .false.
+  character(len=32), public :: vsfm_satfunc_type           = 'smooth_brooks_corey_bz3'
+  logical          , public :: vsfm_use_dynamic_linesearch = .false.
 
   !----------------------------------------------------------
   ! To retrieve namelist

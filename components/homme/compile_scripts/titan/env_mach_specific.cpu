@@ -32,20 +32,20 @@
   module rm cray-parallel-netcdf
     module load PrgEnv-pgi
 #   module switch pgi pgi/14.2.0
-    module switch pgi pgi/15.10.lustre
-    module switch cray-mpich cray-mpich/7.2.2
-    module switch cray-libsci cray-libsci/13.0.4
-    module load esmf/5.2.0rp2
-    module switch atp atp/1.7.5
-
+    module switch pgi pgi/15.10.0
+    module switch cray-mpich cray-mpich/7.4.0
+    module switch cray-libsci cray-libsci/16.06.1
+    module switch atp atp/2.0.2
+    module add cudatoolkit
+    export CRAY_CUDA_MPS=1
 
     export CRAY_CPU_TARGET=istanbul
-    module load cray-netcdf-hdf5parallel/4.3.3.1
-    module load cray-parallel-netcdf/1.5.0
+    module load cray-netcdf-hdf5parallel/4.4.0
+    module load cray-parallel-netcdf/1.7.0
     module load cray-hdf5-parallel
     module load curl/7.30.0
   module load subversion
-  module load cmake/2.8.11.2
+  module load cmake/2.8.10.2
 
 module list
 

@@ -16,9 +16,9 @@ module interpolate_driver_mod
 #ifdef PIO_INTERP
   use pio, only : file_desc_t, var_desc_t , io_desc_t, & ! _EXTERNAL
    pio_get_att, pio_setdebuglevel, pio_closefile, &
-   pio_put_att, pio_global, pio_put_var, &
+   pio_put_att, pio_global, pio_put_var, pio_iotask_rank, &
    pio_read_darray, pio_setframe, pio_get_var, &
-   pio_Offset, pio_char, &
+   PIO_OFFSET_KIND, pio_char, &
    pio_inq_varid, pio_inq_attname, pio_copy_att, pio_inq_varnatts,&
    PIO_MAX_NAME, pio_double
 
@@ -170,7 +170,7 @@ contains
     integer :: ne_file, np_file, nlev_file
 
     integer, pointer :: ldof(:)
-    integer(kind=PIO_Offset) :: start(3), count(3)
+    integer(kind=PIO_OFFSET_KIND) :: start(3), count(3)
     integer :: iorank, dimcnt
 
     call PIO_Init(par%rank, par%comm, num_io_procs, num_agg, &
@@ -229,7 +229,7 @@ contains
     end if
 
 ! define the decompositions...
-    iorank=piofs%io_rank
+    iorank=pio_iotask_rank(piofs)
     call getcompdof(ldof, elem, 1)
     call PIO_initDecomp(piofs,pio_double,(/ncols/),ldof, iodesc2d)
     deallocate(ldof)
@@ -430,7 +430,7 @@ contains
     deallocate(dimnames, dimsize, varrequired, vardims, otype)
 
     outfile=>ncdf(1)
-    iorank=piofs%io_rank
+    iorank=pio_iotask_rank(piofs)
     
     if (hybrid%par%masterproc) print *,'copying attributes'
     call copy_attributes(infile, outfile)
@@ -578,8 +578,8 @@ contains
                 do n=1,ntimes
                    if(par%masterproc) print *, 'interpolating for timelevel ',n,'/',ntimes
                    if(infile%vars%timedependent(i)) then
-                      call pio_setframe(infile%vars%vardesc(i),int(n,kind=PIO_Offset))
-                      call pio_setframe(infile%vars%vardesc(iv),int(n,kind=PIO_Offset))
+                      call pio_setframe(infile%FileID, infile%vars%vardesc(i),int(n,kind=PIO_OFFSET_KIND))
+                      call pio_setframe(infile%FileID, infile%vars%vardesc(iv),int(n,kind=PIO_OFFSET_KIND))
                    end if
                    allocate(fvarray(ncnt_in*lev,2))
                    fvarray=0.0d0
@@ -641,7 +641,7 @@ contains
                    do ie=1,nelemd
                       en=st+interpdata(ie)%n_interp-1
                       call interpolate_vector(interpdata(ie), elem(ie), &
-                           elem(ie)%state%V(:,:,:,1:lev,1),np, lev, varray(st:en,:,:), 0)
+                           elem(ie)%state%V(:,:,:,1:lev,1), lev, varray(st:en,:,:), 0)
                       st=st+interpdata(ie)%n_interp
                    end do
                    nd=2
@@ -683,7 +683,7 @@ contains
                 do n=1,ntimes
                    if(par%masterproc) print *, 'interpolating for timelevel ',n,'/',ntimes
                    if(infile%vars%timedependent(i)) then
-                      call pio_setframe(infile%vars%vardesc(i),int(n,kind=PIO_Offset))
+                      call pio_setframe(infile%FileID, infile%vars%vardesc(i),int(n,kind=PIO_OFFSET_KIND))
                    end if
                    allocate(farray(ncnt_in*lev))
                    farray = 1.0e-37
@@ -808,7 +808,7 @@ contains
     end do
 
     lcount = sum(interpdata(1:nelemd)%n_interp)
-    iorank = piofs%io_rank
+    iorank = pio_iotask_rank(piofs)
 
     ! Create the DOF arrays
     allocate(ldof2d(lcount))

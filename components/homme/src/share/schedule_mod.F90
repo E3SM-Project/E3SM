@@ -133,6 +133,7 @@ contains
     LSchedule%MoveCycle(1)%ptrP = 0
     LSchedule%MoveCycle(1)%ptrS = 0
     LSchedule%MoveCycle(1)%lengthP = 0
+    LSchedule%MoveCycle(1)%lengthS = 0
     if(Debug) write(iulog,*)'genEdgeSched: point #6'
 
     !==================================================================
