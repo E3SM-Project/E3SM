@@ -38,4 +38,5 @@ my @groups = qw(cice_model
                 am_timeseriesstatsdaily
                 am_timeseriesstatsmonthly
                 am_timeseriesstatsclimatology
+                am_timeseriesstatscustom
                 );

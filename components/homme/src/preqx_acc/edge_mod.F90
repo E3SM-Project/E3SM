@@ -11,7 +11,6 @@ module edge_mod
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges, nelemd, np
   use perf_mod, only: t_startf, t_stopf, t_adj_detailf ! _EXTERNAL
-  use thread_mod, only: nthreadshoriz, omp_get_num_threads, omp_get_thread_num
   use coordinate_systems_mod, only : cartesian3D_t
   use schedtype_mod, only : cycle_t, schedule_t, schedule
   use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t, &

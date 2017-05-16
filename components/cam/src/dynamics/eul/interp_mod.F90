@@ -1,9 +1,14 @@
 module interp_mod
-  use shr_kind_mod, only : r8=>shr_kind_r8
+  use shr_kind_mod,   only : r8=>shr_kind_r8
   use cam_abortutils, only : endrun
+
   implicit none
-  public get_interp_lat, get_interp_lon, setup_history_interpolation, write_interpolated
-  public var_is_vector_uvar, var_is_vector_vvar, latlon_interpolation, add_interp_attributes
+  private
+  save
+
+  public :: setup_history_interpolation
+  public :: set_interp_hfile
+  public :: write_interpolated
 
   interface write_interpolated
      module procedure write_interpolated_scalar
@@ -12,29 +17,27 @@ module interp_mod
   integer, parameter :: nlat=0, nlon=0
 contains
 
-  subroutine add_interp_attributes(file)
-    use pio, only : file_desc_t
-    type(file_desc_t) :: file
+  subroutine setup_history_interpolation(interp_ok, mtapes, interp_output,    &
+       interp_info)
+    use cam_history_support, only: interp_info_t
 
-    call endrun('This routine is a stub, you shouldnt get here')
-    
-  end subroutine add_interp_attributes
+    ! Dummy arguments
+    logical,             intent(inout) :: interp_ok
+    integer,             intent(in)    :: mtapes
+    logical,             intent(in)    :: interp_output(:)
+    type(interp_info_t), intent(inout) :: interp_info(:)
 
-
-  subroutine setup_history_interpolation(mtapes)
-    integer, intent(in) :: mtapes
-    call endrun('This routine is a stub, you shouldnt get here')
+    interp_ok = .false.
 
   end subroutine setup_history_interpolation
 
-  function latlon_interpolation(t)
-    integer, intent(in) :: t
-    logical :: latlon_interpolation
+  subroutine set_interp_hfile(hfilenum, interp_info)
+    use cam_history_support, only: interp_info_t
 
-    latlon_interpolation = .false.
-  end function latlon_interpolation
-
-
+    ! Dummy arguments
+    integer,             intent(in)    :: hfilenum
+    type(interp_info_t), intent(inout) :: interp_info(:)
+  end subroutine set_interp_hfile
 
   subroutine write_interpolated_scalar(File, varid, fld, numlev, data_type, decomp_type) 
     use pio, only : file_desc_t, var_desc_t
@@ -48,9 +51,6 @@ contains
 
   end subroutine write_interpolated_scalar
 
-
-
-
   subroutine write_interpolated_vector(File, varidu, varidv, fldu, fldv, numlev, data_type, decomp_type) 
     use pio, only : file_desc_t, var_desc_t
     implicit none
@@ -61,30 +61,5 @@ contains
     call endrun('This routine is a stub, you shouldnt get here')
 
   end subroutine write_interpolated_vector
-
-  function var_is_vector_uvar(name)
-    character(len=*), intent(in) :: name
-    integer ::var_is_vector_uvar
-    var_is_vector_uvar=0
-  end function var_is_vector_uvar
-  function var_is_vector_vvar(name)
-    character(len=*), intent(in) :: name
-    integer ::var_is_vector_vvar
-    var_is_vector_vvar=0
-  end function var_is_vector_vvar
-
-  function get_interp_lat() result(thislat)
-    real(kind=r8) :: thislat(nlat)
-    call endrun('This routine is a stub, you shouldnt get here')
-
-    return
-  end function get_interp_lat
-  function get_interp_lon() result(thislon)
-    real(kind=r8) :: thislon(nlon)
-    call endrun('This routine is a stub, you shouldnt get here')
-
-    return
-  end function get_interp_lon
-
 
 end module interp_mod

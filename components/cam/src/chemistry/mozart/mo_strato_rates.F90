@@ -565,7 +565,7 @@ has_sadsulf : &
                      term1         = exp( -1374._r8*T_limiti )
                      Gamma_s       = 66.12_r8*H_cnt*M_hcl*term1
 		     if( pHCl_atm > 0._r8 ) then
-                        term1      = .612_r8*(Gamma_s*Gamma_b_hcl)* pCNT_atm/pHCl_atm
+                        term1      = .612_r8*(Gamma_s+Gamma_b_hcl)* pCNT_atm/pHCl_atm
                         Fhcl       = 1._r8/(1._r8 + term1)
 		     else
                         Fhcl       = 1._r8

@@ -10,7 +10,7 @@ module CanopyStateType
   use landunit_varcon , only : istsoil, istcrop
   use clm_varcon      , only : spval  
   use clm_varpar      , only : nlevcan
-  use clm_varctl      , only : iulog, use_cn
+  use clm_varctl      , only : iulog, use_cn, use_ed
   use LandunitType    , only : lun                
   use ColumnType      , only : col                
   use PatchType       , only : pft                
@@ -49,11 +49,11 @@ module CanopyStateType
      real(r8) , pointer :: altmax_lastyear_col      (:)   ! col prior year maximum annual depth of thaw 
      integer  , pointer :: altmax_indx_col          (:)   ! col maximum annual depth of thaw 
      integer  , pointer :: altmax_lastyear_indx_col (:)   ! col prior year maximum annual depth of thaw 
-
+     
      real(r8) , pointer :: dewmx_patch              (:)   ! patch maximum allowed dew [mm] 
 
-     real(r8) , pointer :: rscanopy_patch           (:)   ! patch canopy stomatal resistance (s/m) (ED specific)
-
+     real(r8) , pointer :: dleaf_patch              (:)   ! patch characteristic leaf width (diameter) [m]
+                                                          ! for non-ED/FATES this is the same as pftcon%dleaf()
      real(r8),  pointer :: lbl_rsc_h2o_patch        (:)   ! laminar boundary layer resistance for water over dry leaf (s/m)
    contains
 
@@ -133,8 +133,7 @@ contains
     allocate(this%altmax_lastyear_indx_col (begc:endc))           ; this%altmax_lastyear_indx_col (:)   = huge(1)
 
     allocate(this%dewmx_patch              (begp:endp))           ; this%dewmx_patch              (:)   = nan
-
-    allocate(this%rscanopy_patch           (begp:endp))           ; this%rscanopy_patch           (:)   = nan
+    allocate(this%dleaf_patch              (begp:endp))           ; this%dleaf_patch              (:)   = nan
     allocate(this%lbl_rsc_h2o_patch        (begp:endp))           ; this%lbl_rsc_h2o_patch        (:)   = nan
 
   end subroutine InitAllocate
@@ -181,7 +180,7 @@ contains
          avgflag='A', long_name='total projected stem area index', &
          ptr_patch=this%tsai_patch)
 
-    if (use_cn) then
+    if (use_cn .or. use_ed) then
        this%fsun_patch(begp:endp) = spval
        call hist_addfld1d (fname='FSUN', units='proportion', &
             avgflag='A', long_name='sunlit fraction of canopy', &
@@ -198,28 +197,28 @@ contains
          avgflag='A', long_name='shaded projected leaf area index', &
          ptr_patch=this%laisha_patch, set_urb=0._r8)
 
-    if (use_cn) then
+    if (use_cn .or. use_ed) then
        this%dewmx_patch(begp:endp) = spval
        call hist_addfld1d (fname='DEWMX', units='mm', &
             avgflag='A', long_name='Maximum allowed dew', &
             ptr_patch=this%dewmx_patch, default='inactive')
     end if
 
-    if (use_cn) then
+    if (use_cn .or. use_ed) then
        this%htop_patch(begp:endp) = spval
        call hist_addfld1d (fname='HTOP', units='m', &
             avgflag='A', long_name='canopy top', &
             ptr_patch=this%htop_patch)
     end if
 
-    if (use_cn) then
+    if (use_cn .or. use_ed) then
        this%hbot_patch(begp:endp) = spval
        call hist_addfld1d (fname='HBOT', units='m', &
             avgflag='A', long_name='canopy bottom', &
             ptr_patch=this%hbot_patch, default='inactive')
     end if
 
-    if (use_cn) then
+    if (use_cn .or. use_ed) then
        this%displa_patch(begp:endp) = spval
        call hist_addfld1d (fname='DISPLA', units='m', &
             avgflag='A', long_name='displacement height', &
@@ -273,11 +272,6 @@ contains
          avgflag='A', long_name='fraction sunlit (last 240hrs)', &
          ptr_patch=this%fsun240_patch, default='inactive')
 
-    ! Ed specific field
-    this%rscanopy_patch(begp:endp) = spval
-    call hist_addfld1d (fname='RSCANOPY', units=' s m-1',  &
-         avgflag='A', long_name='canopy resistance', &
-         ptr_patch=this%rscanopy_patch, set_lake=0._r8, set_urb=0._r8)
 
   end subroutine InitHistory
 
@@ -533,7 +527,7 @@ contains
        end do
     end if
 
-    if (use_cn) then
+    if (use_cn .or. use_ed) then
        call restartvar(ncid=ncid, flag=flag, varname='altmax', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%altmax_col) 

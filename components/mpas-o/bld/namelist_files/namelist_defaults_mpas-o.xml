@@ -47,11 +47,14 @@
 <config_dt ocn_grid="oQU240">'01:00:00'</config_dt>
 <config_dt ocn_grid="oQU240wLI">'02:00:00'</config_dt>
 <config_dt ocn_grid="oQU120">'00:30:00'</config_dt>
-<config_dt ocn_grid="oEC60to30">'00:15:00'</config_dt>
+<config_dt ocn_grid="oEC60to30">'00:30:00'</config_dt>
+<config_dt ocn_grid="oEC60to30v3">'00:30:00'</config_dt>
 <config_dt ocn_grid="oEC60to30wLI">'00:30:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10">'00:06:00'</config_dt>
+<config_dt ocn_grid="oRRS30to10v3">'00:10:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10wLI">'00:10:00'</config_dt>
 <config_dt ocn_grid="oRRS18to6">'00:06:00'</config_dt>
+<config_dt ocn_grid="oRRS18to6v3">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS15to5">'00:03:45'</config_dt>
 <config_time_integrator>'split_explicit'</config_time_integrator>
 
@@ -80,10 +83,13 @@
 <config_hmix_scaleWithMesh ocn_grid="oQU240wLI">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oQU120">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oEC60to30">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oEC60to30v3">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oEC60to30wLI">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS30to10">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oRRS30to10v3">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS30to10wLI">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS18to6">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oRRS18to6v3">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS15to5">.true.</config_hmix_scaleWithMesh>
 <config_maxMeshDensity>-1.0</config_maxMeshDensity>
 <config_apvm_scale_factor>0.0</config_apvm_scale_factor>
@@ -101,10 +107,13 @@
 <config_mom_del4 ocn_grid="oQU240wLI">2.0e14</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU120">2.6e13</config_mom_del4>
 <config_mom_del4 ocn_grid="oEC60to30">4.0e11</config_mom_del4>
+<config_mom_del4 ocn_grid="oEC60to30v3">4.0e11</config_mom_del4>
 <config_mom_del4 ocn_grid="oEC60to30wLI">4.0e11</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10">1.5e10</config_mom_del4>
+<config_mom_del4 ocn_grid="oRRS30to10v3">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10wLI">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS18to6">3.2e09</config_mom_del4>
+<config_mom_del4 ocn_grid="oRRS18to6v3">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS15to5">1.9e09</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
 <config_tracer_del4>0.0</config_tracer_del4>
@@ -120,10 +129,13 @@
 <config_use_standardGM ocn_grid="oQU240wLI">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oQU120">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oEC60to30">.true.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oEC60to30v3">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oEC60to30wLI">.true.</config_use_standardGM>
-<config_use_standardGM ocn_grid="oRRS30to10">.true.</config_use_standardGM>
-<config_use_standardGM ocn_grid="oRRS30to10wLI">.true.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oRRS30to10">.false.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oRRS30to10v3">.false.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oRRS30to10wLI">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS18to6">.false.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oRRS18to6v3">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS15to5">.false.</config_use_standardGM>
 <config_use_Redi_surface_layer_tapering>.false.</config_use_Redi_surface_layer_tapering>
 <config_Redi_surface_layer_tapering_extent>0.0</config_Redi_surface_layer_tapering_extent>
@@ -185,6 +197,7 @@
 <config_cvmix_convective_basedOnBVF>.true.</config_cvmix_convective_basedOnBVF>
 <config_cvmix_convective_triggerBVF>0.0</config_cvmix_convective_triggerBVF>
 <config_use_cvmix_shear>.true.</config_use_cvmix_shear>
+<config_cvmix_num_ri_smooth_loops>2</config_cvmix_num_ri_smooth_loops>
 <config_cvmix_shear_mixing_scheme>'KPP'</config_cvmix_shear_mixing_scheme>
 <config_cvmix_shear_PP_nu_zero>0.005</config_cvmix_shear_PP_nu_zero>
 <config_cvmix_shear_PP_alpha>5.0</config_cvmix_shear_PP_alpha>
@@ -213,6 +226,9 @@
 <config_use_bulk_thickness_flux>.true.</config_use_bulk_thickness_flux>
 <config_flux_attenuation_coefficient>0.001</config_flux_attenuation_coefficient>
 <config_flux_attenuation_coefficient_runoff>10.0</config_flux_attenuation_coefficient_runoff>
+
+<!-- coupling -->
+<config_ssh_grad_relax_timescale>86400.0</config_ssh_grad_relax_timescale>
 
 <!-- shortwaveRadiation -->
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>
@@ -299,10 +315,13 @@
 <config_btr_dt ocn_grid="oQU240wLI">'0000_00:03:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU120">'0000_00:01:30'</config_btr_dt>
 <config_btr_dt ocn_grid="oEC60to30">'0000_00:00:45'</config_btr_dt>
+<config_btr_dt ocn_grid="oEC60to30v3">'0000_00:00:45'</config_btr_dt>
 <config_btr_dt ocn_grid="oEC60to30wLI">'0000_00:00:45'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10">'0000_00:00:18'</config_btr_dt>
+<config_btr_dt ocn_grid="oRRS30to10v3">'0000_00:00:24'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10wLI">'0000_00:00:18'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS18to6">'0000_00:00:12'</config_btr_dt>
+<config_btr_dt ocn_grid="oRRS18to6v3">'0000_00:00:12'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS15to5">'0000_00:00:11.25'</config_btr_dt>
 <config_n_btr_cor_iter>2</config_n_btr_cor_iter>
 <config_vel_correction>.true.</config_vel_correction>
@@ -624,6 +643,10 @@
 <config_soma_density_difference_linear>0.05</config_soma_density_difference_linear>
 <config_soma_surface_temperature>20.0</config_soma_surface_temperature>
 <config_soma_surface_salinity>33.0</config_soma_surface_salinity>
+<config_soma_use_surface_temp_restoring>false</config_soma_use_surface_temp_restoring>
+<config_soma_surface_temp_restoring_at_center_latitude>7.5</config_soma_surface_temp_restoring_at_center_latitude>
+<config_soma_surface_temp_restoring_latitude_gradient>0.5</config_soma_surface_temp_restoring_latitude_gradient>
+<config_soma_restoring_temp_piston_vel>1.0e-5</config_soma_restoring_temp_piston_vel>
 
 <!-- ziso -->
 <config_ziso_vert_levels>100</config_ziso_vert_levels>
@@ -812,6 +835,7 @@
 
 <!-- AM_surfaceAreaWeightedAverages -->
 <config_AM_surfaceAreaWeightedAverages_enable>.true.</config_AM_surfaceAreaWeightedAverages_enable>
+<config_AM_surfaceAreaWeightedAverages_enable ocn_grid="oRRS18to6v3">.false.</config_AM_surfaceAreaWeightedAverages_enable>
 <config_AM_surfaceAreaWeightedAverages_compute_on_startup>.true.</config_AM_surfaceAreaWeightedAverages_compute_on_startup>
 <config_AM_surfaceAreaWeightedAverages_write_on_startup>.true.</config_AM_surfaceAreaWeightedAverages_write_on_startup>
 <config_AM_surfaceAreaWeightedAverages_compute_interval>'0000-00-00_01:00:00'</config_AM_surfaceAreaWeightedAverages_compute_interval>
@@ -861,6 +885,7 @@
 
 <!-- AM_meridionalHeatTransport -->
 <config_AM_meridionalHeatTransport_enable>.true.</config_AM_meridionalHeatTransport_enable>
+<config_AM_meridionalHeatTransport_enable ocn_grid="oRRS18to6v3">.false.</config_AM_meridionalHeatTransport_enable>
 <config_AM_meridionalHeatTransport_compute_interval>'0000-00-00_01:00:00'</config_AM_meridionalHeatTransport_compute_interval>
 <config_AM_meridionalHeatTransport_compute_on_startup>.true.</config_AM_meridionalHeatTransport_compute_on_startup>
 <config_AM_meridionalHeatTransport_write_on_startup>.true.</config_AM_meridionalHeatTransport_write_on_startup>
@@ -868,6 +893,7 @@
 <config_AM_meridionalHeatTransport_num_bins>180</config_AM_meridionalHeatTransport_num_bins>
 <config_AM_meridionalHeatTransport_min_bin>-1.0e34</config_AM_meridionalHeatTransport_min_bin>
 <config_AM_meridionalHeatTransport_max_bin>-1.0e34</config_AM_meridionalHeatTransport_max_bin>
+<config_AM_meridionalHeatTransport_region_group>''</config_AM_meridionalHeatTransport_region_group>
 
 <!-- AM_testComputeInterval -->
 <config_AM_testComputeInterval_enable>.false.</config_AM_testComputeInterval_enable>
@@ -877,11 +903,12 @@
 <config_AM_testComputeInterval_output_stream>'testComputeIntervalOutput'</config_AM_testComputeInterval_output_stream>
 
 <!-- AM_highFrequencyOutput -->
-<config_AM_highFrequencyOutput_enable>.false.</config_AM_highFrequencyOutput_enable>
+<config_AM_highFrequencyOutput_enable>.true.</config_AM_highFrequencyOutput_enable>
+<config_AM_highFrequencyOutput_enable ocn_grid="oRRS18to6v3">.false.</config_AM_highFrequencyOutput_enable>
 <config_AM_highFrequencyOutput_compute_interval>'output_interval'</config_AM_highFrequencyOutput_compute_interval>
 <config_AM_highFrequencyOutput_output_stream>'highFrequencyOutput'</config_AM_highFrequencyOutput_output_stream>
-<config_AM_highFrequencyOutput_compute_on_startup>.true.</config_AM_highFrequencyOutput_compute_on_startup>
-<config_AM_highFrequencyOutput_write_on_startup>.true.</config_AM_highFrequencyOutput_write_on_startup>
+<config_AM_highFrequencyOutput_compute_on_startup>.false.</config_AM_highFrequencyOutput_compute_on_startup>
+<config_AM_highFrequencyOutput_write_on_startup>.false.</config_AM_highFrequencyOutput_write_on_startup>
 
 <!-- AM_timeFilters -->
 <config_AM_timeFilters_enable>.false.</config_AM_timeFilters_enable>
@@ -923,6 +950,7 @@
 
 <!-- AM_mixedLayerDepths -->
 <config_AM_mixedLayerDepths_enable>.true.</config_AM_mixedLayerDepths_enable>
+<config_AM_mixedLayerDepths_enable ocn_grid="oRRS18to6v3">.false.</config_AM_mixedLayerDepths_enable>
 <config_AM_mixedLayerDepths_compute_interval>'0000-00-00_01:00:00'</config_AM_mixedLayerDepths_compute_interval>
 <config_AM_mixedLayerDepths_output_stream>'mixedLayerDepthsOutput'</config_AM_mixedLayerDepths_output_stream>
 <config_AM_mixedLayerDepths_write_on_startup>.true.</config_AM_mixedLayerDepths_write_on_startup>
@@ -1027,7 +1055,7 @@
 <!-- AM_timeSeriesStatsMonthly -->
 <config_AM_timeSeriesStatsMonthly_enable>.true.</config_AM_timeSeriesStatsMonthly_enable>
 <config_AM_timeSeriesStatsMonthly_compute_on_startup>.false.</config_AM_timeSeriesStatsMonthly_compute_on_startup>
-<config_AM_timeSeriesStatsMonthly_write_on_startup>.true.</config_AM_timeSeriesStatsMonthly_write_on_startup>
+<config_AM_timeSeriesStatsMonthly_write_on_startup>.false.</config_AM_timeSeriesStatsMonthly_write_on_startup>
 <config_AM_timeSeriesStatsMonthly_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsMonthly_compute_interval>
 <config_AM_timeSeriesStatsMonthly_output_stream>'timeSeriesStatsMonthlyOutput'</config_AM_timeSeriesStatsMonthly_output_stream>
 <config_AM_timeSeriesStatsMonthly_restart_stream>'timeSeriesStatsMonthlyRestart'</config_AM_timeSeriesStatsMonthly_restart_stream>

@@ -70,7 +70,7 @@ ifeq ($(SMP),$(null))
   SMP := FALSE
 endif
 
-CPPDEF += $(USER_CPPDEFS)
+CPPDEFS += $(USER_CPPDEFS) -D$(OS)
 
 # Set optimization on by default
 ifeq ($(OPT),$(null))
@@ -78,7 +78,7 @@ ifeq ($(OPT),$(null))
 endif
 
 ifeq ($(OPT),TRUE)
-  CPPDEF := -DOPT
+  CPPDEFS += -DOPT
 endif
 
 # Load dependency search path.

@@ -229,6 +229,22 @@ Valid values: 'none', 'file', 'constant', 'mismip'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_bmlt_float_flux" type="real"
+	category="thermal_solver" group="thermal_solver">
+Value of the constant heat flux applied to the base of floating ice (positive upward).
+
+Valid values: Any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_bmlt_float_xlimit" type="real"
+	category="thermal_solver" group="thermal_solver">
+x value defining region where bmlt_float_flux is applied; melt only where abs(x) > xlimit.
+
+Valid values: Any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- physical_parameters -->
 
@@ -556,6 +572,137 @@ Default: Defined in namelist_defaults.xml
 After velocity is calculated there are a few checks for appropriate values in certain geometric configurations.  Setting this option to .true. will cause detailed information about those adjustments to be printed.
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- subglacial_hydro -->
+
+<entry id="config_SGH" type="logical"
+	category="subglacial_hydro" group="subglacial_hydro">
+activate subglacial hydrology model
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_adaptive_timestep" type="logical"
+	category="subglacial_hydro" group="subglacial_hydro">
+Use adaptive timestepping for subglacial hydrology model
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_adaptive_timestep_fraction" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+fraction of limiting timestep to use
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_max_adaptive_timestep" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+The maximum allowable time step in seconds for the subglacial hydrology model.  If the CFL condition allows the time step to be longer than this, then the model uses this value instead.  Defaults to 100 years (in seconds).
+
+Valid values: Any non-negative real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_tangent_slope_calculation" type="char*1024"
+	category="subglacial_hydro" group="subglacial_hydro">
+Selection of the method for calculating the tangent component of slope at edges. 'from_vertex_barycentric' interpolates scalar values from cell centers to vertices using the barycentric interpolation routine in operators (mpas_cells_to_points_using_baryweights) and then calculates the slope between vertices.  It works for obtuse triangles, but will not work correctly across the edges of periodic meshes. 'from_vertex_barycentric_kiteareas' interpolates scalar values from cell centers to vertices using barycentric interpolation based on kiterea values and then calculates the slope between vertices.  It will work across the edges of periodic meshes, but will not work correctly for obtuse triangles. 'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration, but is the least accurate method.
+
+Valid values: 'from_vertex_barycentric', 'from_vertex_barycentric_kiteareas', 'from_normal_slope'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_pressure_calc" type="char*1024"
+	category="subglacial_hydro" group="subglacial_hydro">
+Selection of the method for calculating water pressure. 'cavity' closes the hydrology equations by assuming cavities are always completely full. 'overburden' assumes water pressure is always equal to ice overburden pressure.
+
+Valid values: 'cavity', 'overburden'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_alpha" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+power in flux formula
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_beta" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+power in flux formula
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_conduc_coeff" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+conductivity coefficient
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_till_drainage" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+background till drainage rate
+
+Valid values: positive real number.  Default value is 0.001 m/yr
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_advection" type="char*1024"
+	category="subglacial_hydro" group="subglacial_hydro">
+Advection method for SGH.  'fo'=First order upwind; 'fct'=Flux corrected transport.  FCT currently not enabled.
+
+Valid values: 'fo','fct'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_bed_roughness" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+cavitation coefficient
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_bed_roughness_max" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+bed roughness scale
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_creep_coefficient" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+creep closure coefficient
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_englacial_porosity" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+notional englacial porosity
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_till_max" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+maximum water thickness in till
+
+Valid values: positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 

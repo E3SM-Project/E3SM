@@ -55,7 +55,7 @@ system($sysmod) == 0 or die "ERROR cice.buildnml: $sysmod failed: $?\n";
 
 # update env_build.xml settings to reflect changes in the configuration
 # this will trigger whether an automatic build is set upon the job resubmission
-if ($CICE_AUTO_DECOMP eq 'true') {
+if ($CICE_AUTO_DECOMP eq 'TRUE') {
     my $ntasks = int($NTASKS_ICE / $NINST_ICE);
     my $hgrid = $ICE_GRID;
     if ($ICE_GRID eq 'ar9v2') {$hgrid = 'ar9v1';}

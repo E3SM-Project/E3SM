@@ -24,6 +24,7 @@ SET (ADD_Fortran_FLAGS "-traceback" CACHE STRING "")
 SET (FORCE_Fortran_FLAGS "-openmp -traceback -fp-model precise -ftz -g -O2" CACHE STRING "")
 
 SET (NETCDF_DIR /projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5 CACHE FILEPATH "")
+SET (PNETCDF_DIR /projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5 CACHE FILEPATH "")
 SET (HDF5_DIR /projects/ccsm/tpl/hdf5/1.8.11/intel/13.0.1/openmpi/1.6.5 CACHE FILEPATH "")
 
 SET (USE_QUEUING FALSE CACHE BOOL "")

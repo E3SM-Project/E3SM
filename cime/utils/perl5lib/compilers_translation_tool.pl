@@ -17,7 +17,7 @@ DESCRIPTION
     confirmed by running:
 
     xmllint -noout -schema \
-        \$CIME_ROOT/cime_config/xml_schemas/config_build.xsd OUTPUT_FILE
+        \$CIME_ROOT/config/xml_schemas/config_build.xsd OUTPUT_FILE
 EOF
 }
 

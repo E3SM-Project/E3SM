@@ -37,6 +37,7 @@ module ice_comp_mct
    use mpas_timekeeping
    use mpas_bootstrapping
    use mpas_dmpar
+   use mpas_log
 
    use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
    use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
@@ -89,11 +90,12 @@ module ice_comp_mct
    type(seq_infodata_type), pointer :: infodata   
    type (iosystem_desc_t), pointer :: io_system 
 
+   integer :: iceLogUnit ! unit number for ice log
+
    !! MPAS-CICE Datatypes
-   type (core_type), save, pointer :: corelist => null()
-   type (domain_type), save, pointer:: domain
+   type (core_type), pointer :: corelist => null()
+   type (domain_type), pointer :: domain
    integer :: itimestep, ice_cpl_dt
-   integer, save :: iceStdErrUnit, iceStdOutUnit
 
 !=======================================================================
 
@@ -126,8 +128,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    integer :: ICEID, mpicom_i, lsize, start_ymd, start_tod, start_year, start_day,   &
-       start_month, start_hour, iyear, mpas_i_cpl_dt, shrloglev, shrlogunit, stdout_shr, pio_iotype
+    integer :: ICEID !< task number
+    integer :: mpicom_i, lsize, start_ymd, start_tod, start_year, start_day,   &
+       start_month, start_hour, iyear, mpas_i_cpl_dt, pio_iotype
+    integer :: shrloglev, shrlogunit
+    integer :: icePossibleErrUnit !< unit number to reserve for if a err log needs to be opened
 
     type(mct_gsMap), pointer :: gsMap_i
 
@@ -236,7 +241,7 @@ contains
     call seq_cdata_setptrs(cdata_i, ID=ICEID, mpicom=mpicom_i, &
          gsMap=gsMap_i, dom=dom_i, infodata=infodata)
 
-    MPAS_CICE_MCT_ICEID =  ICEID
+    MPAS_CICE_MCT_ICEID =  ICEID  ! task number
     MPAS_CICE_MCT_gsMap_i => gsMap_i
     MPAS_CICE_MCT_dom_i   => dom_i
 
@@ -248,29 +253,6 @@ contains
     endif
 #endif
 
-    ! Determine coupling type
-    call seq_infodata_GetData(infodata, cpl_seq_option=cpl_seq_option)
-
-!-----------------------------------------------------------------------
-!
-!   initialize the model run 
-!
-!-----------------------------------------------------------------------
-
-    call mpas_cice_cpl_indices_set()
-    call seq_infodata_GetData( infodata, start_type=starttype)
-
-    if (     trim(starttype) == trim(seq_infodata_start_type_start)) then
-       runtype = "initial"
-    else if (trim(starttype) == trim(seq_infodata_start_type_cont) ) then
-       runtype = "continue"
-    else if (trim(starttype) == trim(seq_infodata_start_type_brnch)) then
-       runtype = "branch"
-    else
-       write(stderrUnit, *) 'Start type is:', trim(starttype)
-       call mpas_dmpar_global_abort(' ice_comp_mct ERROR: unknown starttype')
-    end if
-
 !-----------------------------------------------------------------------
 !
 !   first initializaiton phase of mpas-cice
@@ -279,7 +261,6 @@ contains
 !   call mpas-cice initialization routines
 !
 !-----------------------------------------------------------------------
-    inst_suffix = seq_comm_suffix(ICEID)
 
     call t_startf('mpas-cice_init')
 
@@ -288,44 +269,63 @@ contains
     pio_iotype = shr_pio_getiotype(iceid)
     call MPAS_io_set_iotype(domain % iocontext, pio_iotype)
 
-    stdout_shr = shr_file_getUnit()
-#ifndef MPAS_DEBUG
-    if ( iam /= 0 ) then
-       write (scratchFName,'(a,i9.9)') 'scratch_ice_',iam
-       open(stdout_shr, file=trim(scratchFName), iostat=ioerr)
-       if (ioerr /= 0) then
-          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',stdout_shr,',iostat=',ioerr
-          call mpas_dmpar_global_abort('ERROR in ice_init_mct open stdout_shr '//trim(ioerrstr))
-       endif
-    else
-       inquire(file='ice_modelio.nml'//trim(inst_suffix),exist=exists)
-       if(exists) then
-          call shr_file_setio('ice_modelio.nml'//trim(inst_suffix),stdout_shr)
-       endif
-    end if
-#else
-    inquire(file='ice_modelio.nml'//trim(inst_suffix),exist=exists)
-    if(exists) then
-       call shr_file_setio('ice_modelio.nml'//trim(inst_suffix),stdout_shr)
-    endif
-#endif
+    ! ----------------
+    ! Set up log file information
+    ! ----------------
+    inst_suffix = seq_comm_suffix(iceID) ! a suffix to append to log file name
+    iceLogUnit = shr_file_getUnit() ! reserve unit number for log unit
+    icePossibleErrUnit = shr_file_getUnit() ! reserve unit number for possible error log file
 
+    ! Note: In following code, a file ice_modelio.nml is queried to determine the log file name to use.
+    ! This file is generated when a case is created.  The default file name in there is currently ice.log.DATE-TIME.
+    if (iam==0) then
+       inquire(file='ice_modelio.nml'//trim(inst_suffix),exist=exists)
+       call shr_file_setio('ice_modelio.nml'//trim(inst_suffix), iceLogUnit)
+    endif
+
+    ! Store shr log unit and level so we can reassign them later when ICE control is complete
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (stdout_shr)
-    iceStdErrUnit = stdout_shr
-    iceStdOutUnit = stdout_shr
+    ! Set the shr log unit to be the iceLogUnit
+    !  (I believe this is so that shr routines called from the ICE driver write any messages to the ICE log file.)
+    call shr_file_setLogUnit(iceLogUnit)
 
-    ! Write to glcStdErrUnit here, because stderrUnit is not correctly set until
-    ! the mpas_framework_init_phase1 call
-    write(iceStdErrUnit,'(a,i6)') '=== Beginning ice_init_mct: rank=',iam
+    ! Write to iceLogUnit here, because the log module is not open yet.
+    if (iam==0) write(iceLogUnit,'(a,i6)') '=== Beginning ice_init_mct: rank=',iam
 
-    call mpas_framework_init_phase1(domain % dminfo, mpicom_i, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
+    call mpas_framework_init_phase1(domain % dminfo, mpicom_i)
 
     ! Setup function pointers for MPAS-CICE core and domain types
     call cice_setup_core(corelist)
     call cice_setup_domain(domain)
 
+    ! ===========
+    ! Initialize log manager
+    call mpas_log_init(domain % logInfo, domain, unitNumbers=(/iceLogUnit, icePossibleErrUnit/), err=ierr)
+    if ( ierr /= 0 ) then
+       write(iceLogUnit,*) 'ERROR: log init failed for core ' // trim(domain % core % coreName)
+       call mpas_dmpar_abort(domain % dminfo)
+    end if
+
+    ! Set core specific options here
+    ! Disable output from all but the master task for ACME!
+    ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
+    if (iam /= 0) then
+       domain % logInfo % outputLog % isActive = .false.
+    endif
+
+    ! After core has had a chance to modify log defaults, open the output log
+    call mpas_log_open(err=ierr)
+    if ( ierr /= 0 ) then
+       write(iceLogUnit,*) 'ERROR: log open failed for core ' // trim(domain % core % coreName)
+       call mpas_dmpar_abort(domain % dminfo)
+    end if
+    ! ===========
+
+
+    ! ----------
+    ! Process namelist and streams files
+    ! ----------
     ! Override the names of the stream and namelist files
     domain % namelist_filename = 'mpas-cice_in'
     domain % streams_filename = 'streams.cice'
@@ -333,7 +333,7 @@ contains
     ! Setup namelist variables, and read the namelist
     ierr = domain % core % setup_namelist(domain % configs, domain % namelist_filename, domain % dminfo)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Namelist setup failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Namelist setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     call mpas_framework_init_phase2(domain, io_system)
@@ -341,22 +341,35 @@ contains
     ! Define package variables
     ierr = domain % core % define_packages(domain % packages)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Package definition failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Package definition failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     ! Setup packages (i.e. determine if they should be on or off)
     ierr = domain % core % setup_packages(domain % configs, domain % packages, domain % iocontext)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Package setup failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Package setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     ! Setup decompositions available for dimensions
     ierr = domain % core % setup_decompositions(domain % decompositions)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Decomposition setup failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Decomposition setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
+
+    ! ----------
     ! Override namelist options based on start type
+    ! ----------
+    call seq_infodata_GetData( infodata, start_type=starttype)
+    if (     trim(starttype) == trim(seq_infodata_start_type_start)) then
+       runtype = "initial"
+    else if (trim(starttype) == trim(seq_infodata_start_type_cont) ) then
+       runtype = "continue"
+    else if (trim(starttype) == trim(seq_infodata_start_type_brnch)) then
+       runtype = "branch"
+    else
+       call mpas_log_write('ice_comp_mct ERROR: infodata provided unknown starttype: ' // trim(starttype), MPAS_LOG_CRIT)
+    end if
     if (runtype == "initial") then ! Start up run
 
         ! Turn off restart
@@ -390,14 +403,14 @@ contains
     ! Setup MPAS-CICE simulation clock
     ierr = domain % core % setup_clock(domain % clock, domain % configs)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Clock setup failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Clock setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
-    write(stderrUnit,*) 'Reading streams configuration from file '//trim(domain % streams_filename)
+    call mpas_log_write('Reading streams configuration from file '//trim(domain % streams_filename))
     inquire(file=trim(domain % streams_filename), exist=streamsExists)
 
     if ( .not. streamsExists ) then
-       call mpas_dmpar_global_abort('ERROR: Streams file '//trim(domain % streams_filename)//' does not exist.')
+       call mpas_log_write('Streams file '//trim(domain % streams_filename)//' does not exist.', MPAS_LOG_CRIT)
     end if
 
     !
@@ -406,7 +419,7 @@ contains
     !
     ierr = domain % core % get_mesh_stream(domain % configs, mesh_stream)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Failed to find mesh stream for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Failed to find mesh stream for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
 
@@ -417,7 +430,7 @@ contains
                                    c_mesh_filename_temp, c_ref_time_temp, &
                                    c_filename_interval_temp, c_iotype, c_ierr)
     if (c_ierr /= 0) then
-       call mpas_dmpar_abort(domain % dminfo)
+       call mpas_log_write('xml_stream_get_attributes failed.', MPAS_LOG_CRIT)
     end if
     call mpas_c_to_f_string(c_mesh_filename_temp, mesh_filename_temp)
     call mpas_c_to_f_string(c_ref_time_temp, ref_time_temp)
@@ -450,7 +463,7 @@ contains
     end if
 
     ! Bootstrap framework (1). Here data structures are setup, but dimensions and arrays are not finalized.
-    write(stderrUnit, *) ' ** Attempting to bootstrap MPAS framework using stream: ', trim(mesh_stream)
+    call mpas_log_write(' ** Attempting to bootstrap MPAS framework using stream: ' // trim(mesh_stream))
     call mpas_bootstrap_framework_phase1(domain, mesh_filename, mesh_iotype)
 
     !
@@ -464,14 +477,14 @@ contains
     ! Setup all immutable streams for the core
     ierr = domain % core % setup_immutable_streams(domain % streamManager)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Immutable streams setup failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Immutable streams setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     ! Parse / read all streams configuration
     mgr_p = c_loc(domain % streamManager)
     call xml_stream_parser(c_filename, mgr_p, c_comm, c_ierr)
     if (c_ierr /= 0) then
-       call mpas_dmpar_abort(domain % dminfo)
+       call mpas_log_write('xml_stream_parser failed.', MPAS_LOG_CRIT)
     end if
 
     my_task = domain % dminfo % my_proc_id
@@ -480,6 +493,9 @@ contains
     ! Finalize the setup of blocks and fields
     !
     call mpas_bootstrap_framework_phase2(domain)
+
+    ! Determine coupling type
+    call seq_infodata_GetData(infodata, cpl_seq_option=cpl_seq_option)
 
     ! Determine time of next atmospheric shortwave calculation
     block => domain % blocklist
@@ -491,7 +507,7 @@ contains
 
        ! Set dayOfNextShortwaveCalculation to -1 for continue and branch runs.
        if (trim(runtype) /= 'initial') dayOfNextShortwaveCalculation = -1
-       write(stderrUnit,*) 'dayOfNextShortwaveCalculation = ', dayOfNextShortwaveCalculation
+       call mpas_log_write('dayOfNextShortwaveCalculation = $r', realArgs=(/dayOfNextShortwaveCalculation/))
 
        block => block % next
     end do
@@ -499,7 +515,7 @@ contains
     ! Initialize the MPAS-CICE core
     ierr = domain % core % core_init(domain, timeStamp)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Core init failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Core init failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
 !-----------------------------------------------------------------------
@@ -526,14 +542,10 @@ contains
        call shr_cal_date2ymd(start_ymd,start_year,start_month,start_day)
 
        if (iyear0 /= start_year) then
-          write(shrlogunit, *) ' Iyear0 is: ', iyear0
-          write(shrlogunit,*) ' start_year is: ', start_year
-          call mpas_dmpar_global_abort(' iyear0 does not match start_year')
+          call mpas_log_write('iyear0=$i does not match start_year=$i', MPAS_LOG_CRIT, intArgs=(/iyear0, start_year/))
        end if
        if (imonth0 /= start_month) then
-          write(shrlogunit, *) ' Imonth0 is: ', imonth0
-          write(shrlogunit, *) ' start_month is: ', start_month
-          call mpas_dmpar_global_abort(' imonth0 does not match start_month')
+          call mpas_log_write('imonth0=$i does not match start_month=$i', MPAS_LOG_CRIT, intArgs=(/imonth0, start_month/))
        end if
     else if (runtype == 'continue' .or. runtype == 'branch') then
        call seq_timemgr_EClockGetData(EClock, ECurrTime=currTime % t)
@@ -548,6 +560,8 @@ contains
 !-----------------------------------------------------------------------
 
     call t_startf ('mpas-cice_mct_init')
+
+    call mpas_cice_cpl_indices_set()
 
     call ice_SetGSMap_mct( mpicom_i, ICEID, GSMap_i )
     lsize = mct_gsMap_lsize(gsMap_i, mpicom_i)
@@ -577,7 +591,7 @@ contains
     ! convert this dt to a time interval
     call mpas_set_timeInterval(alarmTimeStep, S=ice_cpl_dt, ierr=ierr)
     call mpas_get_timeInterval(alarmTimeStep, timeString=coupleTimeStamp, ierr=ierr)
-    write (stderrUnit,*) 'Applying ICE coupling dt (s) of: ', ice_cpl_dt
+    call mpas_log_write( 'Applying ICE coupling dt (s) of: $r', intArgs=(/ice_cpl_dt/))
 
     ! Verify the mpas time step fits into a coupling interval
     call mpas_pool_get_config(domain % configs, 'config_dt', tempRealConfig)
@@ -594,11 +608,11 @@ contains
     call mpas_dmpar_max_int(domain % dminfo, ierr_local, ierr)
 
     if ( ierr == 1 ) then
-       write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
-       write(stderrUnit, *) '        ICE Model time step is: ', tempRealConfig
+       call mpas_log_write('Coupling interval is: ' // trim(coupleTimeStamp), MPAS_LOG_ERR)
+       call mpas_log_write('ICE Model time step is: $r', MPAS_LOG_ERR, realArgs=(/tempRealConfig/))
 
-       write(stderrUnit, *) '        The model time step cannot be longer then the coupling interval'
-       call mpas_dmpar_global_abort('ERROR: Model is not properly configured for coupling interval.')
+       call mpas_log_write('The model time step cannot be longer then the coupling interval', MPAS_LOG_ERR)
+       call mpas_log_write('Model is not properly configured for coupling interval.', MPAS_LOG_CRIT)
     end if
 
     if ( remInterval > zeroInterval ) then
@@ -609,14 +623,11 @@ contains
     call mpas_dmpar_max_int(domain % dminfo, ierr_local, ierr)
 
     if ( ierr == 1 ) then
-       write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
-       write(stderrUnit, *) '        ICE Model time step is: ', tempRealConfig
-
-       write(stderrUnit, *) '        These are not synchronized, so time steps'
-       write(stderrUnit, *) '        will not match to coupling interval boundaries.'
-       write(stderrUnit, *) '        Please reconfigure either the coupling interval, '
-       write(stderrUnit, *) '        or the time step.'
-       call mpas_dmpar_global_abort('ERROR: Model is not properly configured for coupling interval.')
+       call mpas_log_write('Coupling interval is: ' // trim(coupleTimeStamp), MPAS_LOG_ERR)
+       call mpas_log_write('        ICE Model time step is: $r', MPAS_LOG_ERR, realArgs=(/tempRealConfig/))
+       call mpas_log_write('        These are not synchronized, so time steps will not match to coupling interval boundaries.', MPAS_LOG_ERR)
+       call mpas_log_write('        Please reconfigure either the coupling interval or the time step.', MPAS_LOG_ERR)
+       call mpas_log_write('Model is not properly configured for coupling interval.', MPAS_LOG_CRIT)
     end if
 
     ! set coupling alarm
@@ -636,7 +647,7 @@ contains
 
     call ice_export_mct(i2x_i, errorCode)  
     if (errorCode /= 0) then
-       call mpas_dmpar_global_abort('ERROR in ice_export_mct')
+       call mpas_log_write('Error in ice_export_mct', MPAS_LOG_CRIT)
     endif
 
     call t_stopf ('mpas-cice_mct_init')
@@ -651,12 +662,12 @@ contains
 
     call ice_import_mct(x2i_i, errorCode)  
     if (errorCode /= 0) then
-       call mpas_dmpar_global_abort('ERROR in ice_import_mct')
+       call mpas_log_write('Error in ice_import_mct', MPAS_LOG_CRIT)
     endif
 
     currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
     call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-    write(stderrUnit,*) 'Initial time ', trim(timeStamp)
+    call mpas_log_write('Initial time ' // trim(timeStamp))
 
     itimestep = 0
 
@@ -682,8 +693,7 @@ contains
         call memmon_reset_addr()
     endif
 #endif
-    write(iceStdErrUnit,'(a,i6)') '=== Completed ice_init_mct: rank=',iam
-    call shr_sys_flush(stderrUnit)
+    call mpas_log_write('=== Completed ice_init_mct ===', flushNow=.true.)
 
 !-----------------------------------------------------------------------
 !EOC
@@ -730,7 +740,7 @@ contains
       character(len=StrKIND) :: timeStamp, streamName
       type (MPAS_timeInterval_type) :: timeStep
       integer :: ierr, streamDirection, iam
-      logical :: streamActive
+      logical :: streamActive, debugOn
       logical, pointer :: config_write_output_on_startup
       logical, save :: first=.true.
       character (len=StrKIND), pointer :: config_restart_timestamp_name
@@ -739,15 +749,21 @@ contains
 
       iam = domain % dminfo % my_proc_id
 
-      call mpas_io_units_set_stdout(iceStdOutUnit)
-      call mpas_io_units_set_stderr(iceStdErrUnit)
+      debugOn = .false.
+#ifdef MPAS_DEBUG
+      debugOn = .true.
+#endif
+ 
+      ! Set MPAS Log module instance
+      mpas_log_info => domain % logInfo
+      if (debugOn) call mpas_log_write("=== Beginning ice_run_mct ===")
 
       call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
       ! Setup log information.
       call shr_file_getLogUnit (shrlogunit)
       call shr_file_getLogLevel(shrloglev)
-      call shr_file_setLogUnit (stdoutUnit)
+      call shr_file_setLogUnit (iceLogUnit)
 
       ! reinitialize fluxes
       call cice_column_reinitialize_fluxes(domain)
@@ -799,36 +815,33 @@ contains
 
         currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-        write(stderrUnit,*) 'Doing timestep ', trim(timeStamp)
+        ! write time stamp on every step
+        call mpas_log_write('Doing timestep ' // trim(timeStamp))
 
         ! pre-timestep analysis computation
-        if (iam==0) write(stderrUnit,*) '   Starting analysis precompute'
+        if (debugOn) call mpas_log_write('   Starting analysis precompute', masterOnly=.true.)
         call cice_analysis_precompute(domain, ierr)
-        if (iam==0) write(stderrUnit,*) '   Finished analysis precompute'
+        if (debugOn) call mpas_log_write('   Finished analysis precompute', masterOnly=.true.)
 
-        if (iam==0) write(stderrUnit,*) '   Starting forward update'
+        if (debugOn) call mpas_log_write('   Starting forward update', masterOnly=.true.)
         call mpas_timer_start("time integration", .false.)
         call cice_timestep(domain, domain % clock, itimestep)
         call mpas_timer_stop("time integration")
-        if (iam==0) write(stderrUnit,*) '   Finished forward update'
+        if (debugOn) call mpas_log_write('   Finished forward update', masterOnly=.true.)
 
         ! update analysis members
-        if (iam==0) write(stderrUnit,*) '   Starting AM compute'
+        if (debugOn) call mpas_log_write('   Starting AM compute', masterOnly=.true.)
         call cice_analysis_compute(domain, ierr)
-        if (iam==0) then
-           write(stderrUnit,*) '   Finished AM compute'
-           write(stderrUnit,*) '   Starting AM restart'
-        endif
+        if (debugOn) call mpas_log_write('   Finished AM compute', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Starting AM restart', masterOnly=.true.)
         call cice_analysis_restart(domain, ierr)
-        if (iam==0) then
-           write(stderrUnit,*) '   Finished AM restart'
-           write(stderrUnit,*) '   Starting AM write'
-        endif
+        if (debugOn) call mpas_log_write('   Finished AM restart', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Starting AM write', masterOnly=.true.)
         call cice_analysis_write(domain, ierr)
-        if (iam==0) write(stderrUnit,*) '   Finished AM write'
+        if (debugOn) call mpas_log_write('   Finished AM write', masterOnly=.true.)
 
         ! Reset the restart alarm to prevent restart files being written without the coupler requesting it.
-        if (iam==0) write(stderrUnit,*) '   Resetting restart stream alarms'
+        if (debugOn) call mpas_log_write('   Resetting restart stream alarms', masterOnly=.true.)
         call mpas_stream_mgr_begin_iteration(domain % streamManager)
         do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                    directionProperty=streamDirection, activeProperty=streamActive) )
@@ -836,31 +849,29 @@ contains
               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=streamName, ierr=ierr)
            end if
         end do
-        if (iam==0) then
-           write(stderrUnit,*) '   Resetting restart stream alarms complete'
-           write(stderrUnit,*) '   Writing output streams'
-        endif
+        if (debugOn) call mpas_log_write('   Resetting restart stream alarms complete', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('   Writing output streams', masterOnly=.true.)
         call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
         call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='output', ierr=ierr)
 
         call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
         call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
-        if (iam==0) write(stderrUnit,*) '   Finished writing output streams'
-        write(stderrUnit,*) 'Completed timestep ', trim(timeStamp)
+        if (debugOn) call mpas_log_write('   Finished writing output streams', masterOnly=.true.)
+        if (debugOn) call mpas_log_write('Completed timestep ' // trim(timeStamp))
      end do
 
       ! Check if coupler wants us to write a restart file.
       ! We only write restart files at the end of a coupling interval
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
          ! Write a restart file, because the coupler asked for it.
-         if (iam==0) write(stderrUnit,*) 'Writing restart streams'
+         if (debugOn) call mpas_log_write('Writing restart streams', masterOnly=.true.)
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
          do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                     directionProperty=streamDirection, activeProperty=streamActive) )
             if ( streamActive .and. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) then
-               if (iam==0) write(stderrUnit, *) '    Writing stream: ' // trim(streamName)
+               if (debugOn) call mpas_log_write('    Writing stream: ' // trim(streamName), masterOnly=.true.)
                call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true., streamID=streamName, iErr=iErr)
-               if (iam==0) write(stderrUnit, *) '    Finished Writing stream: ' // trim(streamName)
+               if (debugOn) call mpas_log_write('    Finished Writing stream: ' // trim(streamName), masterOnly=.true.)
             end if
          end do
 
@@ -869,16 +880,16 @@ contains
             write(22, *) trim(timeStamp)
             close(22)
          end if
-        if (iam==0) write(stderrUnit,*) 'Finished writing restart streams'
+         if (debugOn) call mpas_log_write('Finished writing restart streams', masterOnly=.true.)
       end if
 
       ! Export state to coupler
-      if (iam==0) write(stderrUnit,*) 'Exporting state'
+      if (debugOn) call mpas_log_write('Exporting state', masterOnly=.true.)
       call ice_export_mct(i2x_i, ierr)
-      if (iam==0) write(stderrUnit,*) 'Finished exporting state'
+      if (debugOn) call mpas_log_write('Finished exporting state', masterOnly=.true.)
 
       ! Check if clocks are in sync
-!TODO?      call check_clocks_sync(domain % clock, Eclock, stderrUnit, ierr)
+!TODO?      call check_clocks_sync(domain % clock, Eclock, ierr)
       ! Check if clocks are in sync
       currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
       call mpas_get_time(curr_time=currTime, YYYY=iyear, MM=imonth, DD=iday, H=ihour, M=iminute, S=isecond, ierr=ierr)
@@ -887,13 +898,14 @@ contains
       ymd = iyear * 10000 + imonth * 100 + iday
       tod = ihour * 3600 + iminute * 60 + isecond
       if (.not. seq_timemgr_EClockDateInSync( EClock, ymd, tod)) then
-         write(stderrUnit,*) 'MPAS ymd=',ymd,' MPAS tod=', tod
-         write(stderrUnit,*) 'sync ymd=',curr_ymd,' sync tod=', curr_tod
-         write(stderrUnit,*) 'Internal mpas clock not in sync with sync clock'
+         call mpas_log_write('MPAS ymd=$i MPAS tod=$i', MPAS_LOG_ERR, intArgs=(/ymd,tod/))
+         call mpas_log_write('sync ymd=$i sync tod=$i', MPAS_LOG_ERR, intArgs=(/curr_ymd, curr_tod/))
+         call mpas_log_write('Internal mpas clock not in sync with sync clock', MPAS_LOG_CRIT)
       end if
- 
+
+      call mpas_log_write('=== Completed coupling interval in ice_run_mct. ===', flushNow=.true.)
+
       ! Reset I/O logs
-      call shr_sys_flush(stderrUnit)
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
 
@@ -941,37 +953,34 @@ contains
 !-----------------------------------------------------------------------
     iam = domain % dminfo % my_proc_id
 
-    call mpas_io_units_set_stdout(iceStdOutUnit)
-    call mpas_io_units_set_stderr(iceStdErrUnit)
+    ! Set MPAS Log module instance
+    mpas_log_info => domain % logInfo
 
     ! Setup I/O logs
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (stdoutUnit)
+    call shr_file_setLogUnit (iceLogUnit)
 
     ! Finalize MPAS-CICE
     iErr = domain % core % core_finalize(domain)
     if ( iErr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Core finalize failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Core finalize failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     call mpas_timer_write()
     call MPAS_stream_mgr_finalize(domain % streamManager)
+
+    call mpas_log_finalize(iErr)
+    if ( iErr /= 0 ) then
+       write(iceLogUnit,*) 'ERROR: log finalize failed for core ' // trim(domain % core % coreName)
+       call mpas_dmpar_abort(domain % dminfo)
+    end if
+
     call mpas_framework_finalize(domain % dminfo, domain, io_system)
 
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
-
-#ifndef MPAS_DEBUG
-    if ( iam /= 0 ) then
-       close(iceStdErrUnit, status='DELETE', iostat=ioerr)
-       if (ioerr /= 0) then
-          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',iceStdErrUnit,',iostat=',ioerr
-          call mpas_dmpar_global_abort('ERROR in ice_final_mct close iceStdErrUnit '//trim(ioerrstr))
-       endif
-    end if
-#endif
 
   end subroutine ice_final_mct!}}}
 

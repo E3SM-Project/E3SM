@@ -461,6 +461,7 @@ add_default($nl, 'krdg_partic');
 add_default($nl, 'krdg_redist');
 add_default($nl, 'evp_damping');
 add_default($nl, 'advection');
+add_default($nl, 'fsnowoptics');
 
 ##################################
 # namelist group: tracer_nml     #

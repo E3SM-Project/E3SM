@@ -24,6 +24,8 @@ module lapack_wrap
     core_rknd, & ! Variable(s)
     dp
 
+  use cam_abortutils, only: endrun
+
   implicit none
 
   ! Simple routines
@@ -216,7 +218,11 @@ module lapack_wrap
 
     use clubb_precision, only: &
       core_rknd ! Variable(s)
-
+#ifndef NDEBUG
+#if defined(ARCH_MIC_KNL) && defined(CPRINTEL)
+    use, intrinsic :: ieee_exceptions
+#endif
+#endif
     implicit none
 
     ! External
@@ -266,8 +272,20 @@ module lapack_wrap
 !-----------------------------------------------------------------------
 
     if ( kind( diag(1) ) == dp ) then
-      call dgtsv( ndim, nrhs, subd(2:ndim), diag, supd(1:ndim-1),  & 
+#ifndef NDEBUG
+#if defined(ARCH_MIC_KNL) && defined(CPRINTEL)
+      ! when floating-point exceptions are turned on, this call was failing with a div-by-zero on KNL with Intel/MKL. Solution 
+      ! was to turn off exceptions only here at this call (and only for machine with ARCH_MIC_KNL defined) (github 1183)
+      call ieee_set_halting_mode(IEEE_DIVIDE_BY_ZERO, .false.) ! Turn off stopping on div-by-zero only
+#endif
+#endif
+      call dgtsv( ndim, nrhs, subd(2:ndim), diag, supd(1:ndim-1),  &
                   rhs, ndim, info )
+#ifndef NDEBUG
+#if defined(ARCH_MIC_KNL) && defined(CPRINTEL)
+      call ieee_set_halting_mode(IEEE_DIVIDE_BY_ZERO, .true.) ! Turn back on stopping on div-by-zero only
+#endif
+#endif
 
     else if ( kind( diag(1) ) == sp ) then
       call sgtsv( ndim, nrhs, subd(2:ndim), diag, supd(1:ndim-1),  & 
@@ -527,6 +545,7 @@ module lapack_wrap
         write(fstderr,*) trim( solve_type )// & 
           " band solver: singular matrix"
         err_code = clubb_singular_matrix
+        call endrun ('lapack_wrap.F90: Singular matrix detected in band_solvex')
       end if
 
     end select
@@ -692,6 +711,7 @@ module lapack_wrap
       err_code = clubb_singular_matrix
 
       solution = -999._core_rknd
+      call endrun ('lapack_wrap.F90: Singular matrix detected in band_solve')
 
     end select
 
