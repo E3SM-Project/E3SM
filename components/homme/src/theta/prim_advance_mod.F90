@@ -803,9 +803,9 @@ contains
   real (kind=real_kind) :: w_prime(np,np,nlev)
   real (kind=real_kind) :: u_prime(np,np,2,nlev)
 
+  !if(test_case .ne. 'dcmip2016_test3') call abortmp("dcmip16_mu is currently limited to dcmip16 test 3")
 
   call t_startf('advance_physical_vis')
-  if(test_case .ne. 'dcmip2016_test3') call abortmp("dcmip16_mu is currently limited to dcmip16 test 3")
   delz = 20000/nlev
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
