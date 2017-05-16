@@ -24,9 +24,6 @@ class Component(EntryID):
 
         EntryID.__init__(self, infile, schema=schema)
 
-
-
-
     def get_value(self, name, attribute=None, resolved=False, subgroup=None):
         expect(subgroup is None, "This class does not support subgroups")
         return EntryID.get_value(self, name, attribute, resolved)
