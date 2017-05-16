@@ -365,7 +365,8 @@ class SystemTestsCommon(object):
                 baselog = os.path.join(basecmp_dir, "cpl.log")
 
             if os.path.isfile(baselog) and len(memlist) > 3:
-                blmem = self._get_mem_usage(baselog)[-1][1]
+                blmem = self._get_mem_usage(baselog)
+                blmem = 0 if blmem == [] else blmem[-1][1]
                 curmem = memlist[-1][1]
                 if blmem != 0:
                     diff = (curmem - blmem) / blmem
