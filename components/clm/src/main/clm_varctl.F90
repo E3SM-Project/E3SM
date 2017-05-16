@@ -295,7 +295,7 @@ module clm_varctl
   logical, public :: use_vancouver       = .false.
   logical, public :: use_mexicocity      = .false.
   logical, public :: use_noio            = .false.
-  logical, public :: do_varsoil          = .false.      ! Added by MAB, 6/8/16
+  logical, public :: do_varsoil          = .false.
 
   !----------------------------------------------------------
   ! VSFM switches

@@ -159,8 +159,7 @@ contains
          fff(c) = 0.5_r8
          if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
            nlevbed = nlev2bed(c)
-           fff(c) = 0.5_r8 * col%zi(c,nlevsoi) / min(col%zi(c,nlevbed), col%zi(
-c,nlevsoi))
+           fff(c) = 0.5_r8 * col%zi(c,nlevsoi) / min(col%zi(c,nlevbed), col%zi(c,nlevsoi))
         end if
          if (use_vichydro) then 
             top_moist(c) = 0._r8
@@ -1056,7 +1055,7 @@ c,nlevsoi))
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
           if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)             ! Added by MAB, 5/13/16
+       	    nlevbed = nlev2bed(c)
           else
             nlevbed = nlevsoi
           end if
@@ -1077,7 +1076,7 @@ c,nlevsoi))
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
           if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)             ! Added by MAB, 5/13/16
+       	    nlevbed = nlev2bed(c)
           else
             nlevbed = nlevsoi
           end if
@@ -1403,7 +1402,7 @@ c,nlevsoi))
        do fc = 1, num_hydrologyc
              c = filter_hydrologyc(fc)
           if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)             ! Added by MAB, 5/13/16
+       	    nlevbed = nlev2bed(c)
           else
             nlevbed = nlevsoi
           end if
@@ -1455,7 +1454,7 @@ c,nlevsoi))
        do fc = 1, num_hydrologyc
              c = filter_hydrologyc(fc)
           if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)             ! Added by MAB, 5/13/16
+       	    nlevbed = nlev2bed(c)
           else
             nlevbed = nlevsoi
           end if
@@ -1478,7 +1477,7 @@ c,nlevsoi))
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
           if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)             ! Added by MAB, 5/13/16
+       	    nlevbed = nlev2bed(c)
           else
             nlevbed = nlevsoi
           end if
