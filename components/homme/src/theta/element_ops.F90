@@ -739,17 +739,10 @@ contains
   where(zm .ge. ztop); f_d = 1.0d0; end where
   f_d = -f_d/tau
 
-  !print *,"f_d=",f_d(1,1,:)
-
   elem%derived%FM(:,:,1,:) = f_d * ( elem%state%v(:,:,1,:,n) - u0 )
   elem%derived%FM(:,:,2,:) = f_d * ( elem%state%v(:,:,2,:,n) - v0)
   elem%derived%FM(:,:,3,:) = f_d * ( elem%state%w(:,:,:,n)  )
 
-  do k=1,nlev
-    elem%derived%FM(:,:,1,k) = f_d(:,:,k) * ( elem%state%v(:,:,1,k,n) - u0(:,:,k) )
-    elem%derived%FM(:,:,2,k) = f_d(:,:,k) * ( elem%state%v(:,:,2,k,n) - v0(:,:,k) )
-    elem%derived%FM(:,:,3,k) = f_d(:,:,k) * ( elem%state%w(:,:,k,n)  )
-  enddo
   end subroutine 
 
   !_____________________________________________________________________
