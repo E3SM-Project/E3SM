@@ -580,8 +580,8 @@ class Case(object):
                    "Config file %s for component %s not found."%(comp_config_file, comp_name))
             compobj = Component(comp_config_file)
             desc = compobj.get_description(self._compsetname)
-            if desc is not None:
-                logger.info("%s component is %s"%(comp_class, desc))
+            expect(desc is not None,"No description found in file %s for component %s"%(comp_config_file, comp_name))
+            logger.info("%s component is %s"%(comp_class, desc))
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
 
