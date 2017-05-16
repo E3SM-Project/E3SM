@@ -16,24 +16,28 @@ from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 from acme_diags.driver import utils
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
-    """ Creates the mean, max, min, rmse, corr in a dictionary """
+    """Creates the mean, max, min, rmse, corr in a dictionary"""
 
     cdms2.setAutoBounds(1)
     lev = ref.getLevel()
-    lev.setBounds(None)
+    if lev is not None:
+        lev.setBounds(None)
 
     lev = test.getLevel()
-    lev.setBounds(None)
+    if lev is not None:
+        lev.setBounds(None)
 
     lev = test_regrid.getLevel()
-    lev.setBounds(None)
+    if lev is not None:
+        lev.setBounds(None)
 
     lev = ref_regrid.getLevel()
-    lev.setBounds(None)
+    if lev is not None:
+        lev.setBounds(None)
 
     lev = diff.getLevel()
-    lev.setBounds(None)
-
+    if lev is not None:
+        lev.setBounds(None)
 
     metrics_dict = {}
     metrics_dict['ref'] = {
