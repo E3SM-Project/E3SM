@@ -587,8 +587,7 @@ contains
         do c = begc,endc
          g = col%gridcell(c)
          l = col%landunit(c)
-         if(lun%urbpoi(l) .and. col%itype(c) /= icol_road_imperv .and. col%itype
-(c) /= icol_road_perv) then
+         if(lun%urbpoi(l) .and. col%itype(c) /= icol_road_imperv .and. col%itype(c) /= icol_road_perv) then
            col%nlev2bed(c) = nlevurb
           else if(lun%itype(l) == istdlak) then
            col%nlev2bed(c) = nlevlak
