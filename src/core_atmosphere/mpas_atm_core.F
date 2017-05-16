@@ -342,7 +342,9 @@ module atm_core
       call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
 
       allocate(ke_vertex(nVertLevels,nVertices+1))  ! ke_vertex is a module variable defined in mpas_atm_time_integration.F
+      ke_vertex(:,nVertices+1) = 0.0_RKIND
       allocate(ke_edge(nVertLevels,nEdges+1))       ! ke_edge is a module variable defined in mpas_atm_time_integration.F
+      ke_edge(:,nEdges+1) = 0.0_RKIND
 
       call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
 
