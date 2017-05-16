@@ -17,7 +17,7 @@ from acme_diags.driver import utils
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     """Creates the mean, max, min, rmse, corr in a dictionary"""
-
+    orig_bounds = cdms2.getAutoBounds()
     cdms2.setAutoBounds(1)
     lev = ref.getLevel()
     if lev is not None:
@@ -38,6 +38,7 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     lev = diff.getLevel()
     if lev is not None:
         lev.setBounds(None)
+    cdms2.setAutoBounds(orig_bounds)
 
     metrics_dict = {}
     metrics_dict['ref'] = {
