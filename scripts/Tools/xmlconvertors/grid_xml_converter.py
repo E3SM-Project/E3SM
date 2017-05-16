@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """
-grid_xml_converter.py -- convert (or verify) grid xml from CIME2 format to CIME5
+grid_xml_converter.py -- convert (or verify) grid elements from CIME2 format to CIME5
+This tool will compare the two versions and suggest updates
+to the CIME5 file.
+
 The location of these files are needed by the script:
     CIME2: cime/scripts/Tools/config_grid.xml
     CIME5: config/acme/config_grids.xml
@@ -30,14 +33,10 @@ def parse_command_line(args):
     CIME.utils.setup_standard_logging_options(parser)
 
     # Set command line options
-    parser.add_argument("-cime2file", "--cime2file", help="location of config_grid.xml file in CIME2 repository")
-    parser.add_argument("-cime5file", "--cime5file", help="location of config_grids.xml file in CIME5 repository")
+    parser.add_argument("-cime2file", "--cime2file", help="location of config_grid.xml file in CIME2 format", required=True)
+    parser.add_argument("-cime5file", "--cime5file", help="location of config_grids.xml file in CIME5 format", required=True)
 
-    CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
-
-    if args.cime2file is None or args.cime5file is None:
-        parser.print_help()
-        exit()
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     return args.cime2file, args.cime5file
 
@@ -256,19 +255,17 @@ class Cime5DomainNode(DomainNode):
 class DataTree(object):
     def __init__(self, xmlfilename):
         self.xmlfilename = xmlfilename
-        self.doc = ET.parse(xmlfilename)
+
+        if hasattr(xmlfilename, 'read') or os.access(xmlfilename, os.R_OK):
+            self.doc = ET.parse(xmlfilename)
+        else:
+            self.doc = ET.ElementTree()
+        
         self.root = self.doc.getroot()
         self.index = 0
         self.n = 0
         self.nodes = []
         self.populate()
-
-    def populate(self,expression,classname):
-        xmlnodes = self.root.findall(expression)
-        for xmlnode in xmlnodes:
-            datanode = classname(self.root)
-            datanode.set_data(xmlnode)
-            self.nodes.append(datanode)
 
     def next(self):
         if self.index >= len(self.nodes):
@@ -296,6 +293,8 @@ class DataTree(object):
 
 class GridTree(DataTree):
     def populate(self):
+        if self.root is None:
+            return
         xmlnodes = self.root.findall('GRID')
         nodeclass=Cime2GridNode
         if len(xmlnodes) == 0:
@@ -326,6 +325,9 @@ class GridTree(DataTree):
 
 class DomainTree(DataTree):
     def populate(self):
+        if self.root is None:
+            return
+
         xmlnodes = self.root.findall('gridhorz')
         nodeclass=Cime2DomainNode
         if len(xmlnodes) == 0:
@@ -354,6 +356,8 @@ class DomainTree(DataTree):
 
 class GridmapTree(DataTree):
     def populate(self):
+        if self.root is None:
+            return
         xmlnodes = self.root.findall('gridmap')
         if len(xmlnodes) == 0:
             xmlnodes = self.root.findall('./gridmaps/gridmap')
