@@ -1049,7 +1049,7 @@ class Case(object):
                           "README.case", caseroot=self._caseroot)
             append_status("%s is %s"%(comp_grid,self.get_value(comp_grid)),
                           "README.case", caseroot=self._caseroot)
-            comp = self.get_value("COMP_%s"%component_class)
+            comp = str(self.get_value("COMP_%s"%component_class))
             user_mods = self.get_value("%s_USER_MODS"%(comp.upper()))
             if user_mods is not None:
                 note = "This component includes user_mods %s"%user_mods
@@ -1068,8 +1068,8 @@ class Case(object):
         for comp in self._component_classes:
             if comp == self._primary_component:
                 continue
-            component = self.get_value("COMP_%s"%comp)
-            comp_user_mods = self.get_value("%s_USER_MODS"%comp.upper())
+            component = str(self.get_value("COMP_%s"%comp))
+            comp_user_mods = self.get_value("%s_USER_MODS"%component.upper())
             if comp_user_mods is not None:
                 all_user_mods.append(comp_user_mods)
         # get the primary last so that it takes precidence over other components
