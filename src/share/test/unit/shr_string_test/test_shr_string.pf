@@ -13,12 +13,7 @@ module test_shr_string
 contains
 
   ! ------------------------------------------------------------------------
-  ! Tests of shr_string_leftAlign_
-  !
-  ! NOTE(wjs, 2017-05-15) There is more duplication in these tests than is warranted by
-  ! the simplicity of the subroutine. This is a historical artifact of when this routine
-  ! handled spaces and tabs separately. Some of these tests could probably be removed in
-  ! the future.
+  ! Tests of shr_string_leftAlign_and_convert_tabs
   ! ------------------------------------------------------------------------
 
   @Test
@@ -81,17 +76,6 @@ contains
     call shr_string_leftAlign_and_convert_tabs(str)
     @assertEqual('foo     ', str, whitespace=KEEP_ALL)
   end subroutine test_shr_string_leftAlign_initialSpacesAndTabs
-
-  @Test
-  subroutine test_shr_string_leftAlign_allSpacesAndTabs()
-    ! If string is just a mix of spaces and tabs, the resulting string should be all
-    ! spaces
-    character(len=6) :: str
-
-    str = ' ' // tab_char // ' ' // tab_char // '  '
-    call shr_string_leftAlign_and_convert_tabs(str)
-    @assertEqual('      ', str, whitespace=KEEP_ALL)
-  end subroutine test_shr_string_leftAlign_allSpacesAndTabs
 
   ! ------------------------------------------------------------------------
   ! Tests of shr_string_listDiff
