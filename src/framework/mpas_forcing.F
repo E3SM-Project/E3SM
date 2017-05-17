@@ -42,7 +42,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  mpas_forcing_init
+!  mpas_forcing_init_group
 !
 !> \brief Add a forcing group to the forcing group list
 !> \author Adrian K. Turner, LANL
@@ -59,10 +59,8 @@ contains
 !>  time of the forcing group clock. Specify 'none' for this if no forcing 
 !>  is desired. 'forcingCycleDuration' is the 
 !>  timestamp of duration of the forcing clock. 'restart' is true if the 
-!>  model is restarting. 'forcingRestartFile' is the filename of the file 
-!>  from which forcing clock time will be read when restarting. 
-!>  'forcingCycleStartInclusive' (default: true) is true if the start time 
-!>  of the forcing cycle is included in the cycle.
+!>  model is restarting. 'forcingCycleStartInclusive' (default: true) is
+!>  true if the start time of the forcing cycle is included in the cycle.
 !
 !-----------------------------------------------------------------------
 
@@ -74,7 +72,6 @@ contains
        forcingCycleStart, &
        forcingCycleDuration, &
        restart, &
-       forcingRestartFile, &
        forcingCycleStartInclusive)
 
     type(mpas_forcing_group_type), pointer :: &
@@ -87,10 +84,9 @@ contains
          domain !< Input: the domain to which data will be put
 
     character(len=*), intent(in) :: &
-         startTimeStr, &         !< Input: the forcing start time
-         forcingCycleStart, &    !< Input: the forcing cycle start time string
-         forcingCycleDuration, & !< Input: the forcing cycle duration time string
-         forcingRestartFile      !< Input: restart filename with forcing clock times
+         startTimeStr, &      !< Input: the forcing start time
+         forcingCycleStart, & !< Input: the forcing cycle start time string
+         forcingCycleDuration !< Input: the forcing cycle duration time string
 
     logical, intent(in) :: &
          restart !< Input: whether this is a restarted run
@@ -139,11 +135,14 @@ contains
     ! set the forcing group domain
     forcingGroupNew % domain_ptr => domain
 
+    ! add forcing group to restart counter
+    call add_forcing_group_to_restart_counter(forcingGroupNew)
+
     ! create the forcing clock
     call mpas_set_timeInterval(timeStep, dt=0.0_RKIND)
     call mpas_set_time(stopTime, dateTimeString="9999-12-31_23:59:59") ! shouldnt need to do this!
     if (restart) then
-       call read_restart_times(forcingGroupNew, forcingRestartFile, timeStep, stopTime)
+       call get_restart_times(forcingGroupNew, timeStep, stopTime)
     else
        call mpas_set_time(startTime, dateTimeString=startTimeStr)
        call mpas_create_clock(forcingGroupNew % forcingClock, startTime=startTime, timeStep=timeStep, stopTime=stopTime)
@@ -2467,77 +2466,87 @@ contains
 !
 !  mpas_forcing_write_restart_times
 !
-!> \brief write out forcing restart times
+!> \brief set forcing restart times registry variables
 !> \author Adrian K. Turner, LANL
 !> \date 9th December 2014
 !> \details
 !>  loop over the forcing groups in the forcing group object and write
-!>  out the forcing clock times to a restart file. 'forcingGroupHead'
-!>  is the forcing group object and 'forcingTimeRestartFilename' is the
-!>  filename of the file to write the restart times to.
+!>  out the forcing clock times to registry variables that are included
+!>  in the restart stream. 'forcingGroupHead' is the forcing group
+!>  object
 !
 !-----------------------------------------------------------------------
 
-  subroutine mpas_forcing_write_restart_times(forcingGroupHead, forcingTimeRestartFilename)!{{{
+  subroutine mpas_forcing_write_restart_times(forcingGroupHead)!{{{
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroupHead ! forcing group linked list head pointer
 
-    character(len=*), intent(in) :: &
-         forcingTimeRestartFilename ! name of the file containing the restart times
-
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! forcing group iterator
 
-    type(MPAS_time_type) :: forcingClockTime
+    type(MPAS_time_type) :: &
+         forcingClockTime
 
-    character(len=strKIND) :: forcingClockTimeStr
+    character(len=strKIND) :: &
+         forcingClockTimeStr
 
-    integer :: restartTimestampUnit
+    type(block_type), pointer :: &
+         block
 
-    ! open restart time file
-    forcingGroup => forcingGroupHead
-    do while (associated(forcingGroup))
+    type(mpas_pool_type), pointer :: &
+         forcingPool
 
-       if (forcingGroup % domain_ptr % dminfo % my_proc_id == IO_NODE) then
+    integer, pointer :: &
+         nForcingGroupCounter
 
-          call mpas_new_unit(restartTimestampUnit)
-          open(restartTimestampUnit,file=trim(forcingTimeRestartFilename), form='formatted', status='replace')
-          exit
-
-       endif
-
-       forcingGroup => forcingGroup % next
-    enddo
+    character(len=strKIND), dimension(:), pointer :: &
+         forcingGroupNames, &
+         forcingGroupRestartTimes
 
     ! loop over forcing groups
     forcingGroup => forcingGroupHead
     do while (associated(forcingGroup))
 
-       if (forcingGroup % domain_ptr % dminfo % my_proc_id == IO_NODE) then
+       block => forcingGroup % domain_ptr % blocklist
+       do while (associated(block))
 
-          ! get the forcing clock time
-          forcingClockTime = MPAS_get_clock_time(forcingGroup % forcingClock, MPAS_NOW)
+          call MPAS_pool_get_subpool(block % structs, "forcing", forcingPool)
 
-          call MPAS_get_time(forcingClockTime, dateTimeString=forcingClockTimeStr)
+          call MPAS_pool_get_array(forcingPool, "nForcingGroupCounter", nforcingGroupCounter)
 
-          ! write the forcing time to the restart file
-          write(restartTimestampUnit,*) trim(forcingGroup % forcingGroupName), " ", trim(forcingClockTimeStr)
+          nforcingGroupCounter = 0
 
-       endif
+          block => block % next
+       end do
 
        forcingGroup => forcingGroup % next
     end do
 
-    ! close the file
+    ! loop over forcing groups
     forcingGroup => forcingGroupHead
     do while (associated(forcingGroup))
 
-       if (forcingGroup % domain_ptr % dminfo % my_proc_id == IO_NODE) then
-          close(restartTimestampUnit)
-          call mpas_release_unit(restartTimestampUnit)
-          exit
-       endif
+       ! get the forcing clock time
+       forcingClockTime = MPAS_get_clock_time(forcingGroup % forcingClock, MPAS_NOW)
+
+       call MPAS_get_time(forcingClockTime, dateTimeString=forcingClockTimeStr)
+
+       block => forcingGroup % domain_ptr % blocklist
+       do while (associated(block))
+
+          call MPAS_pool_get_subpool(block % structs, "forcing", forcingPool)
+
+          call MPAS_pool_get_array(forcingPool, "nForcingGroupCounter",     nForcingGroupCounter)
+          call MPAS_pool_get_array(forcingPool, "forcingGroupNames",        forcingGroupNames)
+          call MPAS_pool_get_array(forcingPool, "forcingGroupRestartTimes", forcingGroupRestartTimes)
+
+          nForcingGroupCounter = nForcingGroupCounter + 1
+          forcingGroupNames       (nforcingGroupCounter) = trim(forcingGroup % forcingGroupName)
+          forcingGroupRestartTimes(nforcingGroupCounter) = trim(forcingClockTimeStr)
+
+          block => block % next
+       end do
 
        forcingGroup => forcingGroup % next
     end do
@@ -2546,28 +2555,78 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  read_restart_times
+!  add_forcing_group_to_restart_counter
 !
-!> \brief read in forcing restart times
+!> \brief checks number of forcing groups
 !> \author Adrian K. Turner, LANL
-!> \date 9th December 2014
+!> \date 16th May 2017
 !> \details
-!>  read in the forcing group restart times from an external file and
-!>  set the correct forcing group clock to this time
+!>  This routine checks that the number of forcing groups per domain
+!>  does not exceed the maximum allowed.
 !
 !-----------------------------------------------------------------------
 
-  subroutine read_restart_times(&!{{{
+  subroutine add_forcing_group_to_restart_counter(forcingGroup)
+
+    type(mpas_forcing_group_type), pointer :: &
+         forcingGroup ! forcing group
+
+    type(block_type), pointer :: &
+         block
+
+    integer, pointer :: &
+         nForcingGroupsMax, &
+         nforcingGroupCounter
+
+    type(mpas_pool_type), pointer :: &
+         forcingPool
+
+    block => forcingGroup % domain_ptr % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_dimension(block % dimensions, "nForcingGroupsMax", nForcingGroupsMax)
+
+       call MPAS_pool_get_subpool(block % structs, "forcing", forcingPool)
+
+       call MPAS_pool_get_array(forcingPool, "nForcingGroupCounter", nforcingGroupCounter)
+
+       nforcingGroupCounter = nforcingGroupCounter + 1
+
+       if (nforcingGroupCounter > nForcingGroupsMax) then
+
+          call mpas_log_write(&
+               "Init forcing group: "//trim(forcingGroup % forcingGroupName)//&
+               ", nForcingGroupsMax too small, nForcingGroupsMax: $i, nforcingGroupCounter: $i", &
+               MPAS_LOG_CRIT, &
+               intArgs=(/nForcingGroupsMax,nforcingGroupCounter/))
+
+       endif
+
+       block => block % next
+    end do
+
+  end subroutine add_forcing_group_to_restart_counter
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_restart_times
+!
+!> \brief get forcing restart times and create forcing clocks.
+!> \author Adrian K. Turner, LANL
+!> \date 9th December 2014
+!> \details
+!>  The forcing clock restart times have been read in from the restart
+!>  file. This routine sets the forcing group clock from those times.
+!
+!-----------------------------------------------------------------------
+
+  subroutine get_restart_times(&!{{{
        forcingGroup, &
-       forcingTimeRestartFilename, &
        timeStep, &
        stopTime)
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! forcing group to restart
-
-    character(len=*), intent(in) :: &
-         forcingTimeRestartFilename ! name of the file containing the restart times
 
     type(MPAS_TimeInterval_type), intent(in) :: &
          timeStep ! simulation time step
@@ -2575,46 +2634,43 @@ contains
     type(MPAS_Time_type), intent(in) :: &
          stopTime     ! stop time of forcing clock - !!!! SHOULDNT BE NEEDED
 
-    type(MPAS_time_type) :: forcingClockTime
+    type(MPAS_time_type) :: &
+         forcingClockTime
 
-    character(len=strKIND) :: &
-         forcingClockTimeStr, &
-         forcingGroupName
+    type(mpas_pool_type), pointer :: &
+         forcingPool
+
+    integer, pointer :: &
+         nForcingGroupsMax
 
     integer :: &
-         status
+         iForcingGroup
 
-    ! open restart time file
-    open(22,file=trim(forcingTimeRestartFilename), form='formatted', action='read')
+    character(len=strKIND), dimension(:), pointer :: &
+         forcingGroupNames, &
+         forcingGroupRestartTimes
 
-    ! loop over entries in restart file
-    do 
+    call mpas_pool_get_subpool(forcingGroup % domain_ptr % blocklist % structs, "forcing", forcingPool)
 
-       ! read restart entry
-       read(22,*,iostat=status) forcingGroupName, forcingClockTimeStr
+    call MPAS_pool_get_array(forcingPool, "forcingGroupNames",        forcingGroupNames)
+    call MPAS_pool_get_array(forcingPool, "forcingGroupRestartTimes", forcingGroupRestartTimes)
 
-       FORCING_DEBUG_WRITE('-- Forcing: read_restart_times: '//trim(forcingGroup % forcingGroupName)//' '//trim(forcingGroupName)//' '//trim(forcingClockTimeStr))
+    call mpas_pool_get_dimension(forcingGroup % domain_ptr % blocklist % dimensions, "nForcingGroupsMax", nForcingGroupsMax)
 
-       ! find the correct forcing group
-       if (trim(forcingGroup % forcingGroupName) == trim(forcingGroupName)) then
+    do iForcingGroup = 1, nForcingGroupsMax
+
+       if (trim(forcingGroup % forcingGroupName) == trim(forcingGroupNames(iForcingGroup)(1:ShortStrKind))) then
 
           ! set the forcing group time
-          FORCING_DEBUG_WRITE('-- Forcing: read_restart_times: set time' COMMA " " COMMA trim(forcingClockTimeStr))
-          call MPAS_set_time(forcingClockTime, dateTimeString=trim(forcingClockTimeStr))
-          FORCING_DEBUG_WRITE('-- Forcing: read_restart_times: create clock')
+          call MPAS_set_time(forcingClockTime, dateTimeString=trim(forcingGroupRestartTimes(iForcingGroup)(1:ShortStrKind)))
+
           call mpas_create_clock(forcingGroup % forcingClock, startTime=forcingClockTime, timeStep=timeStep, stopTime=stopTime)
-          
-          exit
+
        endif
 
-       ! stop reading if at end of file
-       if (status < 0) exit
+    enddo ! iForcingGroup
 
-    end do
-
-    close(22)
-
-  end subroutine read_restart_times!}}}
+  end subroutine get_restart_times!}}}
 
 !-----------------------------------------------------------------------
 
