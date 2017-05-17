@@ -371,7 +371,7 @@ contains
     !
     ! !USES:
     use landunit_varcon , only : max_lunit
-    use decompMod       , only : bounds_type
+    use decompMod       , only : bounds_type, BOUNDS_LEVEL_PROC
     use LandunitType    , only : lun
     use ColumnType      , only : col
     use UnstructuredGridType, only : ScatterDataG2L
