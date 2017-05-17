@@ -529,6 +529,7 @@ for mct, etc.
   <MPI_PATH></MPI_PATH>
 </compiler>
 
+<!-- Note that it is now referred to as Cray Linux Environment (CLE), but leaving as CNL for now -->
 <compiler OS="CNL">
   <SFC> ftn </SFC>
   <SCC> cc </SCC>
@@ -543,7 +544,6 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY  </GPTL_CPPDEFS>
-  <CMAKE_OPTS> -DCMAKE_SYSTEM_NAME=Catamount</CMAKE_OPTS>
 </compiler>
 
 
