@@ -810,7 +810,7 @@ contains
   !if(test_case .ne. 'dcmip2016_test3') call abortmp("dcmip16_mu is currently limited to dcmip16 test 3")
 
   call t_startf('advance_physical_vis')
-  delz = 20000.0/nlev
+  delz = 20d3/nlev
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute reference states
@@ -866,16 +866,16 @@ contains
         vtens(:,:,2,k,ie) = (vtens(:,:,2,k,ie)*elem(ie)%spheremp(:,:) + lap_v(:,:,2))
 
         stens(:,:,k,1,ie) = (stens(:,:,k,1,ie)*elem(ie)%spheremp(:,:) + &
-             laplace_sphere_wk(dp_prime,deriv,elem(ie),var_coef=.false.)  )
+             laplace_sphere_wk(dp_prime(:,:,k),deriv,elem(ie),var_coef=.false.)  )
 
         stens(:,:,k,2,ie) = (stens(:,:,k,2,ie)*elem(ie)%spheremp(:,:) + &
-             laplace_sphere_wk(theta_prime,deriv,elem(ie),var_coef=.false.)  )
+             laplace_sphere_wk(theta_prime(:,:,k),deriv,elem(ie),var_coef=.false.)  )
 
         stens(:,:,k,3,ie) = (stens(:,:,k,3,ie)*elem(ie)%spheremp(:,:) + &
-             laplace_sphere_wk(w_prime,deriv,elem(ie),var_coef=.false.) )
+             laplace_sphere_wk(w_prime(:,:,k),deriv,elem(ie),var_coef=.false.) )
 
         stens(:,:,k,4,ie) = (stens(:,:,k,4,ie)*elem(ie)%spheremp(:,:) + &
-             laplace_sphere_wk(phi_prime,deriv,elem(ie),var_coef=.false.) ) 
+             laplace_sphere_wk(phi_prime(:,:,k),deriv,elem(ie),var_coef=.false.) ) 
 
      enddo
 

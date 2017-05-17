@@ -811,7 +811,7 @@ real(real_kind), dimension(np,np,nlev) :: dp_ref, q_ref
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  hyper viscosity
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  delz=20000.0/nlev
+  delz=20d3/nlev
 
   do ie=nets,nete
 
@@ -826,7 +826,7 @@ real(real_kind), dimension(np,np,nlev) :: dp_ref, q_ref
         enddo
 
         dp_ref = ref_state%dp3d(:,:,:,1)
-        q_ref  = ref_state%Qdp(:,:,:,q,1)/dp_ref
+        q_ref  = dp0*ref_state%Qdp(:,:,:,q,1)/dp_ref
         Q_prime= Q_prime - q_ref
 
         ! compute vertical laplacian
@@ -834,7 +834,7 @@ real(real_kind), dimension(np,np,nlev) :: dp_ref, q_ref
         ! apply mass matrix and add in horiz laplacian (which has mass matrix built in)
         do k=1,nlev
            Qtens(:,:,k,q,ie) = (Qtens(:,:,k,q,ie)*elem(ie)%spheremp(:,:) + &
-                laplace_sphere_wk(Q_prime(:,:,:),deriv,elem(ie),var_coef=.false.) ) 
+                laplace_sphere_wk(Q_prime(:,:,k),deriv,elem(ie),var_coef=.false.) ) 
         
            ! timestep
            elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=elem(ie)%state%Qdp(:,:,k,q,nt_qdp)*elem(ie)%spheremp(:,:) &
