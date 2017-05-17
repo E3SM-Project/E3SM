@@ -450,11 +450,12 @@ class Case(object):
                     logger.info("Compset longname is %s"%(match))
                     logger.info("Compset specification file is %s" %(compsets_filename))
                     logger.info("Pes     specification file is %s" %(self._pesfile))
+                    if user_compset is True:
+                        logger.info("Found a compset match for longname %s in alias %s" %(compset_name, compset_alias))
+
                     return compset_alias, science_support
 
         if user_compset is True:
-            #Do not error out for user_compset
-            logger.warn("Could not find a compset match for either alias or longname in %s" %(compset_name))
             self._compsetname = compset_name
         else:
             expect(False,
