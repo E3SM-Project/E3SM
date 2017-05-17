@@ -133,90 +133,6 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
 
 end subroutine
 
-#if 0
-!_____________________________________________________________________
-subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
-
-  ! supercell storm test case
-
-  type(element_t),    intent(inout), target :: elem(:)                  ! element array
-  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
-  type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
-  integer,            intent(in)            :: nets,nete                ! start, end element index
-
-  integer,  parameter :: zcoords  = 0                                   ! 0 -> use p coords
-  integer,  parameter :: pert     = 1                                   ! 1 -> add thermal perturbation
-
-  integer :: i,j,k,ie                                                   ! loop indices
-  real(rl):: lon,lat                                                    ! pointwise coordiantes
-  real(rl):: p,dp, z,phis,u,v,w,T,thetav,phis_ps,ps,rho,rhom,q(qsize_d)            ! pointwise field values
-  real(rl):: p_i1,p_i2
-
-  if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 3: supercell storm'
-
-  ! initialize hydrostatic state
-  call supercell_init()
-
-  ! get evenly spaced z levels from 0 to 20km
-  call get_evenly_spaced_z(zi,zm, 0.0_rl, ztop3)                          ! get evenly spaced z levels
-
-  ! get eta levels matching z at equator
-  do k=1,nlevp
-    lon =0; lat = 0;
-    call supercell_z(lon, lat, zi(k), p, thetav, rho, q(1), pert)
-    hvcoord%etai(k) = p/p0
-    if (hybrid%masterthread) print *,"k=",k," z=",zi(k)," p=",p,"etai=",hvcoord%etai(k)
-  enddo
-  call set_hybrid_coefficients(hvcoord,hybrid,  hvcoord%etai(1), 1.0_rl)
-  call set_layer_locations(hvcoord, .true., hybrid%masterthread)
-
-  ! set initial conditions
-  do ie = nets,nete
-  if (hybrid%masterthread) write(*,"(A,I5,A)",advance="NO") " ie=",ie,achar(13)
-
-    do k=1,nlev
-
-      do j=1,np; do i=1,np
-        lon = elem(ie)%spherep(i,j)%lon
-        lat = elem(ie)%spherep(i,j)%lat
-
-        ! get surface pressure at lat, lon, z=0
-        z=0; call supercell_test(lon,lat,p,z,1,u,v,T,thetav,ps,rho,q(1),pert)
-
-        ! get hydrostatic pressure at level k
-        p  =  p0*hvcoord%hyam(k) + ps*hvcoord%hybm(k)
-        dp = pressure_thickness(ps,k,hvcoord)
-
-        call supercell_test(lon,lat,p,z,zcoords,u,v,T,thetav,ps,rhom,q(1),pert)
-
-        w    = 0 ! no vertical motion
-        phis = 0 ! no topography
-        q(2) = 0 ! no initial clouds
-        q(3) = 0 ! no initial rain
-        q(4) = 0 ! precip
-
-        call set_state(u,v,w,T,ps,phis,p,dp,z,g,i,j,k,elem(ie),1,nt)
-        call set_tracers(q,qsize_d, dp,i,j,k,lat,lon,elem(ie))
-      enddo; enddo
-    enddo
-
-    ! set density (dphi) to ensure hydrostatic balance
-    call tests_finalize(elem(ie),hvcoord,1,nt)
-
-  enddo
-
-  ! store initial velocity fields for use in sponge layer
-  allocate( u0(np,np,nlev,nelemd) )
-  allocate( v0(np,np,nlev,nelemd) )
-
-  do ie = nets,nete
-    u0(:,:,:,ie) = elem(ie)%state%v(:,:,1,:,1)
-    v0(:,:,:,ie) = elem(ie)%state%v(:,:,2,:,1)
-  enddo
-
-end subroutine
-#endif
-
 !_____________________________________________________________________
 subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
@@ -291,18 +207,9 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
     enddo
 
-    ! set density to ensure hydrostatic balance
-    call tests_finalize(elem(ie),hvcoord,1,nt)
+    ! set density to ensure hydrostatic balance and save initial state
+    call tests_finalize(elem(ie),hvcoord,1,nt,ie)
 
-  enddo
-
-  ! store initial velocity fields for use in sponge layer
-  allocate( u0(np,np,nlev,nelemd) )
-  allocate( v0(np,np,nlev,nelemd) )
-
-  do ie = nets,nete
-    u0(:,:,:,ie) = elem(ie)%state%v(:,:,1,:,1)
-    v0(:,:,:,ie) = elem(ie)%state%v(:,:,2,:,1)
   enddo
 
 end subroutine

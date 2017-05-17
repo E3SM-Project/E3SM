@@ -769,6 +769,8 @@ OMP_SIMD
   use dimensions_mod , only : np, nlev
   use hybrid_mod     , only : hybrid_t
   use element_mod    , only : element_t
+  use element_state  , only : elem_state_t
+  use element_ops    , only : get_initial_state
   use derivative_mod , only : derivative_t, laplace_z, laplace_sphere_wk
   use edge_mod       , only : edgevpack, edgevunpack
   use edgetype_mod   , only : EdgeBuffer_t
@@ -792,19 +794,31 @@ OMP_SIMD
   real (kind=real_kind), dimension(np,np,nlev                ) :: Q_prime
   real (kind=real_kind) :: delz
   integer :: k , i,j,ie,ic,q
+  type(elem_state_t) :: ref_state
+
+real(real_kind), dimension(np,np,nlev) :: dp_ref, q_ref
 
   !if(test_case .ne. 'dcmip2016_test3') call abortmp("dcmip16_mu is currently limited to dcmip16 test 3")
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  hyper viscosity
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  delz=20000/nlev
+  delz=20000.0/nlev
 
   do ie=nets,nete
+
+      ! get reference state
+      call get_initial_state(ref_state,ie)
+
      do q=1,qsize
         do k=1,nlev
            Q_prime(:,:,k)=hvcoord%dp0(k)*elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / elem(ie)%state%dp3d(:,:,k,nt)
         enddo
+
+        dp_ref = ref_state%dp3d(:,:,:,1)
+        q_ref  = ref_state%Qdp(:,:,:,q,1)/dp_ref
+        Q_prime= Q_prime - q_ref
+
         ! compute vertical laplacian
         call laplace_z(Q_prime(:,:,:),Qtens(:,:,:,q,ie),1,delz)
         ! apply mass matrix and add in horiz laplacian (which has mass matrix built in)

@@ -101,9 +101,6 @@ module control_mod
   real (kind=real_kind), public :: nu_p    = 0.0D5            ! default = 0    ps equ. viscosity
   real (kind=real_kind), public :: nu_top  = 0.0D5            ! top-of-the-model viscosity
 
-  real (kind=real_kind), public :: dcmip16_mu      = 0        ! additional uniform viscosity (momentum)
-  real (kind=real_kind), public :: dcmip16_mu_s    = 0        ! additional uniform viscosity (scalars)
-
   integer, public :: hypervis_subcycle=1                      ! number of subcycles for hyper viscsosity timestep
   integer, public :: hypervis_subcycle_q=1                    ! number of subcycles for hyper viscsosity timestep on TRACERS
   integer, public :: hypervis_order=0                         ! laplace**hypervis_order.  0=not used  1=regular viscosity, 2=grad**4
@@ -185,5 +182,9 @@ module control_mod
   ! for dcmip 2014 test 4:
   integer,         public :: dcmip4_moist     = 1
   real(real_kind), public :: dcmip4_X         = 1.0d0 
+
+  ! for dcmip 2016 test 3
+  real (kind=real_kind), public :: dcmip16_mu      = 0        ! additional uniform viscosity (momentum)
+  real (kind=real_kind), public :: dcmip16_mu_s    = 0        ! additional uniform viscosity (scalars)
 
 end module control_mod
