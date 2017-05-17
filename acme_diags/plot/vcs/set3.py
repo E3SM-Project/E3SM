@@ -7,38 +7,57 @@ from acme_diags.driver.utils import get_output_dir
 
 
 def plot(ref, test, diff, metrics_dict, parameters):
+    # Line options, see here: https://uvcdat.llnl.gov/documentation/vcs/vcs-10.html
+    ref_plot_linetype = 0
+    ref_plot_color = 1  # 1 to 256
+    ref_plot_width = 1  # 1 to 300
+    ref_plot_marker = 1
+    ref_plot_markersize = 1
+    ref_plot_markercolor = 1  # 1 to 256
+
+    test_plot_linetype = 0
+    test_plot_color = 250
+    test_plot_width = 1
+    test_plot_marker = 1
+    test_plot_markersize = 1
+    test_plot_markercolor = 250
+
+    # default ref breaks for now
+    ref = test + 50
+
     vcs_canvas = vcs.init()
     ref_test_template = vcs.createtemplate('ref_test_template')
     ref_test_template.blank(["mean", "max", "min", "zvalue", "dataname", "crtime", "ytic2", "xtic2", "xname", "yname", "legend"])
 
-    print test.getAxisList()
-    ax = test.getAxis(2)  # Order is T, Y, X
-    print dir(ax)
-    print ax.getData()
-    '''
-    ref_test_template.ylabel1.priority = 1
-    ref_test_template.ylabel2.priority = 1
-    ref_test_template.ymintic1.priority = 1
-    ref_test_template.ymintic2.priority = 1
-    ref_test_template.yname.priority = 1
-    ref_test_template.ytic1.priority = 1
-    ref_test_template.ytic2.priority = 1
-    ref_test_template.yunits.priority = 1
-    ref_test_template.yvalue.priority = 1
-    '''
+    ref_line = vcs_canvas.createxvsy('ref_plot')
+    ref_line.datawc_y1 = min(ref.min(), test.min())
+    ref_line.datawc_y2 = max(ref.max(), test.max())
 
-    graph1 = vcs_canvas.createxvsy('ref_test_plot')
+    test_line = vcs_canvas.createxvsy('test_plot')
+    test_line.datawc_y1 = min(ref.min(), test.min())
+    test_line.datawc_y2 = max(ref.max(), test.max())
 
-    #graph1.datawc_y1 = min(ax.getData())
-    #graph1.datawc_y2 = max(ax.getData())
-    graph1.datawc_y1 = test.min()
-    graph1.datawc_y2 = test.max()
-    #graph1.datawc_x1 = 1
+    ref_line.linetype = ref_plot_linetype
+    ref_line.linecolor = ref_plot_color
+    ref_line.linewidth = ref_plot_width
+    ref_line.marker = ref_plot_marker
+    ref_line.markersize = ref_plot_markersize
+    ref_line.markercolor = ref_plot_markercolor
 
-    blank_template = vcs.createtemplate()
+    test_line.linetype = test_plot_linetype
+    test_line.linecolor = test_plot_color
+    test_line.linewidth = test_plot_width
+    test_line.marker = test_plot_marker
+    test_line.markersize = test_plot_markersize
+    test_line.markercolor = test_plot_markercolor
+    #test_line.smooth = 1
+
+
+    blank_template = vcs_canvas.createtemplate('blank_template')
     blank_template.blank()
 
-    vcs_canvas.plot(test, graph1, ref_test_template)
+    vcs_canvas.plot(ref, ref_line, ref_test_template)
+    vcs_canvas.plot(test, test_line, blank_template)
     vcs_canvas.png('set3vcs.png')
 
 
