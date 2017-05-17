@@ -1067,9 +1067,9 @@ class Case(object):
         """
         all_user_mods = []
         for comp in self._component_classes:
-            if comp == self._primary_component:
-                continue
             component = str(self.get_value("COMP_%s"%comp))
+            if component == self._primary_component:
+                continue
             comp_user_mods = self.get_value("%s_USER_MODS"%component.upper())
             if comp_user_mods is not None:
                 all_user_mods.append(comp_user_mods)
