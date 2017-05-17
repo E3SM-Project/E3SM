@@ -79,6 +79,7 @@ module docn_comp_mod
   integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp  ! field indices
   integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
   integer(IN)   :: kh,kqbot
+  integer(IN)   :: index_lat, index_lon
 
   type(shr_strdata_type) :: SDOCN
   type(mct_rearr)        :: rearr
@@ -148,8 +149,6 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     integer(IN)   :: nunit       ! unit number
     integer(IN)   :: kmask       ! field reference
     integer(IN)   :: kfrac       ! field reference
-    integer(IN)   :: klat        ! field reference
-    integer(IN)   :: klon        ! field reference
     logical       :: ocn_present    ! flag
     logical       :: ocn_prognostic ! flag
     logical       :: ocnrof_prognostic  ! flag
@@ -360,7 +359,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
        ocnrof_prognostic = .true.
     endif
 
-    if (trim(ocn_mode) == 'SOM') then
+    if (trim(ocn_mode) == 'SOM' .or. trim(ocn_mode) == 'SOM_AQUAP') then
        ocn_prognostic = .true.
     endif
 
@@ -466,11 +465,11 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     kmask = mct_aVect_indexRA(ggrid%data,'mask')
     imask(:) = nint(ggrid%data%rAttr(kmask,:))
 
-    klon = mct_aVect_indexRA(ggrid%data,'lon')
-    xc(:) = ggrid%data%rAttr(klon,:)
+    index_lon = mct_aVect_indexRA(ggrid%data,'lon')
+    xc(:) = ggrid%data%rAttr(index_lon,:)
 
-    klat = mct_aVect_indexRA(ggrid%data,'lat')
-    yc(:) = ggrid%data%rAttr(klat,:)
+    index_lat = mct_aVect_indexRA(ggrid%data,'lat')
+    yc(:) = ggrid%data%rAttr(index_lat,:)
 
     call t_stopf('docn_initmctavs')
 
@@ -508,7 +507,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
           endif
        endif
        call shr_mpi_bcast(exists,mpicom,'exists')
-       if (trim(ocn_mode) == 'SOM') then
+       if (trim(ocn_mode) == 'SOM' .or. trim(ocn_mode) == 'SOM_AQUAP') then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
           call shr_pcdf_readwrite('read',iosystem,SDOCN%io_type,trim(rest_file),mpicom,gsmap,rf1=somtp,rf1n='somtp')
        endif
@@ -705,7 +704,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
          o2x%rAttr(kswp ,n) = swp
       enddo
 
-   case('SOM','SOM_AQUAP')
+   case('SOM')
       lsize = mct_avect_lsize(o2x)
       do n = 1,SDOCN%nstreams
          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,avifld,avofld,rearr)
@@ -743,6 +742,41 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
          enddo
       endif   ! firstcall
 
+   case('SOM_AQUAP')
+      lsize = mct_avect_lsize(o2x)
+      do n = 1,SDOCN%nstreams
+         call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,avifld,avofld,rearr)
+      enddo
+      if (firstcall) then
+         do n = 1,lsize
+            if (.not. read_restart) then
+               somtp(n) = o2x%rAttr(kt,n) + TkFrz
+            endif
+            o2x%rAttr(kt,n) = somtp(n)
+            o2x%rAttr(kq,n) = 0.0_R8
+         enddo
+      else   ! firstcall
+         tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
+         do n = 1,lsize
+            !--- pull out h from av for resuse below ---
+            hn = avstrm%rAttr(kh,n)
+            !--- compute new temp ---
+            o2x%rAttr(kt,n) = somtp(n) + &
+               (x2o%rAttr(kswnet,n) + &  ! shortwave 
+                x2o%rAttr(klwup ,n) + &  ! longwave
+                x2o%rAttr(klwdn ,n) + &  ! longwave
+                x2o%rAttr(ksen  ,n) + &  ! sensible
+                x2o%rAttr(klat  ,n) + &  ! latent
+                x2o%rAttr(kmelth,n) - &  ! ice melt
+                avstrm%rAttr(kqbot ,n) - &  ! flux at bottom
+                (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * &  ! latent by prec and roff
+                dt/(cpsw*rhosw*hn)
+             !--- compute ice formed or melt potential ---
+            o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
+            somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
+         enddo
+      endif   ! firstcall
+
    end select
 
    call t_stopf('docn_mode')
@@ -764,7 +798,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
          close(nu)
          call shr_file_freeUnit(nu)
       endif
-      if (trim(ocn_mode) == 'SOM') then
+      if (trim(ocn_mode) == 'SOM' .or. trim(ocn_mode) == 'SOM_AQUAP') then
          if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
          call shr_pcdf_readwrite('write',iosystem,SDOCN%io_type,trim(rest_file),mpicom,gsmap,clobber=.true., &
             rf1=somtp,rf1n='somtp')
@@ -878,8 +912,6 @@ subroutine prescribed_sst(xc, yc, lsize, sst_option, sst)
 
   rlon(:) = xc(:) * pio180
   rlat(:) = yc(:) * pio180
-
-  write(6,*)"DEBUG: sst_option is ",sst_option
 
   ! Control
 
