@@ -2135,8 +2135,8 @@ end subroutine cesm_init
       !----------------------------------------------------------
       ! Note that the glcrun_avg_alarm just controls what is passed to glc in terms
       ! of averaged fields - it does NOT control when glc is called currently -
-      ! glc will be called on the glcrun_alarm setting - but it might not be passed relevant 
-      ! info if the time averaging period to accumulate information passed to glc is greater 
+      ! glc will be called on the glcrun_alarm setting - but it might not be passed relevant
+      ! info if the time averaging period to accumulate information passed to glc is greater
       ! than the glcrun interval
 
       call seq_timemgr_clockAdvance( seq_SyncClock, force_stop, force_stop_ymd, force_stop_tod)
@@ -2173,7 +2173,7 @@ end subroutine cesm_init
          call shr_sys_abort(subname//' glcrun_avg_alarm is true, but glcrun_alarm is false')
       end if
 
-      
+
       ! this probably belongs in seq_timemgr somewhere using proper clocks
       t1hr_alarm = .false.
       t2hr_alarm = .false.
@@ -3016,7 +3016,7 @@ end subroutine cesm_init
             if (do_hist_r2x) then
                call t_drvstartf ('driver_rofpost_histaux', barrier=mpicom_CPLID)
                do eri = 1,num_inst_rof
-                  suffix =  component_get_suffix(rof(eri)) 
+                  suffix =  component_get_suffix(rof(eri))
                   call seq_hist_writeaux(infodata, EClock_d, rof(eri), flow='c2x', &
                        aname='r2x'//trim(suffix), dname='domrb', &
                        nx=rof_nx, ny=rof_ny, nt=1, write_now=t24hr_alarm)
@@ -3831,7 +3831,7 @@ end subroutine cesm_init
             call shr_mem_getusage(msize,mrss)
 
             write(logunit,105) ' memory_write: model date = ',ymd,tod, &
-                 ' memory = ',mrss,' MB (highwater)    ',msize,' MB (usage)', &
+                 ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
                  '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
          endif
       endif
@@ -3949,10 +3949,10 @@ end subroutine cesm_init
          SYPD = shr_const_cday*simDays/(days_per_year*(Time_end-Time_begin))
          write(logunit,FormatR) subname, '# simulated years / cmp-day = ', SYPD
       endif
-      write(logunit,FormatR) subname,' pes min memory highwater  (MB)  = ',mrss0
-      write(logunit,FormatR) subname,' pes max memory highwater  (MB)  = ',mrss1
-      write(logunit,FormatR) subname,' pes min memory last usage (MB)  = ',msize0
-      write(logunit,FormatR) subname,' pes max memory last usage (MB)  = ',msize1
+      write(logunit,FormatR) subname,' pes min memory highwater  (MB)  = ',msize0
+      write(logunit,FormatR) subname,' pes max memory highwater  (MB)  = ',msize1
+      write(logunit,FormatR) subname,' pes min memory last usage (MB)  = ',mrss0
+      write(logunit,FormatR) subname,' pes max memory last usage (MB)  = ',mrss1
       write(logunit,'(//)')
       close(logunit)
    endif
