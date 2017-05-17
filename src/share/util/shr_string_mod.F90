@@ -506,7 +506,6 @@ function shr_string_convert_tabs(str_input,rc) result(str_output)
          str_output(i:i) = str_input(i:i)
       end if
    end do
-   str_output(i+1:inlength) = ''
    
    if (present(rc)) rc = 0
 
