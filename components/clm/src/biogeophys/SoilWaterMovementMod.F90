@@ -369,6 +369,7 @@ contains
          bsw               =>    soilstate_vars%bsw_col             , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
          sucsat            =>    soilstate_vars%sucsat_col          , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
          eff_porosity      =>    soilstate_vars%eff_porosity_col    , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice         
+         rootr_col         =>    soilstate_vars%rootr_col           , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
          smp_l             =>    soilstate_vars%smp_l_col           , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]                      
          hk_l              =>    soilstate_vars%hk_l_col            , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity (mm/s)                   
          rootr_pft         =>    soilstate_vars%rootr_patch         , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
@@ -416,7 +417,6 @@ contains
       end do
 
 
-<<<<<<< HEAD
       temp(bounds%begc : bounds%endc) = 0._r8
 
       do fc = 1, num_hydrologyc
@@ -472,8 +472,6 @@ contains
             end if
          end do
       end do
-=======
->>>>>>> ab0efeb16ed8d8aa3799a3d0f8dd8a55d0e9fc4c
 
       !compute jwt index
       ! The layer index of the first unsaturated layer, i.e., the layer right above
@@ -949,7 +947,6 @@ contains
          enddo
       enddo
 
-<<<<<<< HEAD
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          if(do_varsoil) then
@@ -959,12 +956,10 @@ contains
          end if
          do j = 1, nlevbed
             c = filter_hydrologyc(fc)
-            qflx_rootsoi(c,j) = qflx_tran_veg_col(c) * rootr_col(c,j) * 1.e-3_r8       ![m H2O/s]
+            qflx_rootsoi(c,j) = qflx_tran_veg_col(c) * rootr_col(c,j) * 1.e-3_r8      ![m H2O/s]
          enddo
       enddo
 
-=======
->>>>>>> ab0efeb16ed8d8aa3799a3d0f8dd8a55d0e9fc4c
     end associate 
 
   end subroutine soilwater_zengdecker2009
