@@ -22,12 +22,8 @@ type, public :: hvcoord_t
   real(r8) hyam(plev)   ! ps0 component of hybrid coordinate - midpoints
   real(r8) hybi(plevp)  ! ps  component of hybrid coordinate - interfaces
   real(r8) hybm(plev)   ! ps  component of hybrid coordinate - midpoints
-  real(r8) hybd(plev)   ! difference in b (hybi) across layers
-  real(r8) prsfac       ! log pressure extrapolation factor (time, space independent)
   real(r8) etam(plev)   ! eta-levels at midpoints
   real(r8) etai(plevp)  ! eta-levels at interfaces
-  integer  nprlev       ! number of pure pressure levels at top  
-  integer  pad
 end type
 
 public :: hvcoord_init, set_layer_locations
@@ -175,22 +171,6 @@ end function
   ! Get eta-levels from A,B
   forall(k=1:plev)  hvcoord%etam(k)=hvcoord%hyam(k)+hvcoord%hybm(k)
   forall(k=1:plevp) hvcoord%etai(k)=hvcoord%hyai(k)+hvcoord%hybi(k)
-
-  ! Set nprlev to the lowest pure pressure interface
-  hvcoord%nprlev = 0
-  do k=1,plev; if(hvcoord%nprlev==0 .and. hvcoord%hybi(k).ne.0.0) hvcoord%nprlev = k - 1; enddo
-
-  ! Set nprlev if all interfaces are pure pressure
-  if (hvcoord%nprlev==0) hvcoord%nprlev = plev + 2
-
-  ! Set delta-sigma part of layer thickness pressures
-  forall(k=1:plev) hvcoord%hybd(k) = hvcoord%hybi(k+1)-hvcoord%hybi(k)
-
-  ! Calculate the log pressure extrapolation factor
-#if (PLEV>1)
-  hvcoord%prsfac = log( hvcoord%hyam(plev) + hvcoord%hybm(plev)) / &
-                   log((hvcoord%hyam(plev) + hvcoord%hybm(plev)) / (hvcoord%hyam(plev-1) + hvcoord%hybm(plev-1)))
-#endif
 
   ! ======================================================================
   ! Test that midpoint A,B is mean of interface A,B

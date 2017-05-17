@@ -560,11 +560,7 @@ contains
   enddo
 
   ! integrand(:,:) = dp(:,:,nlev)*Rgas*temperature(:,:,nlev)/p(:,:,nlev)
-  phi(:,:,nlev) = phis(:,:) + (&
-  kappa*theta_dp_cp(:,:,nlev)*p_i(:,:,nlev+1)**(kappa-1)*p0**(-kappa) )/2
-
-  phi(:,:,nlev) = phis(:,:) + (&
-  kappa_star(:,:,nlev)*theta_dp_cp(:,:,nlev)*p_i(:,:,nlev+1)**(kappa_star(:,:,nlev)-1)*p0**(-kappa_star(:,:,nlev)) )/2
+  phi(:,:,nlev) = phis(:,:) + ( kappa_star(:,:,nlev)*theta_dp_cp(:,:,nlev)*p_i(:,:,nlev+1)**(kappa_star(:,:,nlev)-1)*p0**(-kappa_star(:,:,nlev)) )/2
 
   do k=nlev,2,-1
      !  invert this equation at interfaces:
@@ -766,8 +762,6 @@ contains
   where(zm .ge. zc);   f_d = sin(dd_pi/2 *(zm - zc)/(ztop - zc))**2; end where
   where(zm .ge. ztop); f_d = 1.0d0; end where
   f_d = -f_d/tau
-
-  !print *,"f_d=",f_d(1,1,:)
 
   elem%derived%FM(:,:,1,:) = f_d * ( elem%state%v(:,:,1,:,n) - u0 )
   elem%derived%FM(:,:,2,:) = f_d * ( elem%state%v(:,:,2,:,n) - v0)
