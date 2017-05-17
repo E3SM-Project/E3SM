@@ -267,9 +267,8 @@ CONTAINS
     hvcoord%hybm=hybm
     hvcoord%hybi=hybi
     hvcoord%ps0=dyn_ps0  
-    do k=1,nlev
-       hvcoord%hybd(k) = hvcoord%hybi(k+1) - hvcoord%hybi(k)
-    end do
+    call set_layer_locations(hvcoord,.false.,par%masterproc)
+
     if(iam < par%nprocs) then
 
 #ifdef HORIZ_OPENMP

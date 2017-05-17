@@ -305,6 +305,8 @@ contains
 ! input:  dp3d, Qdp (if use_moisture), phi, phis, theta
 ! output:  pnh, dphn, exner, exner_i, pnh_i
 !
+! NOTE: Exner pressure is defined in terms of p0=1000mb.  Be sure to use global constant p0,
+! instead of hvcoord%ps0, which is set by CAM to ~1021mb
 !  
   type (hvcoord_t),     intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
   real (kind=real_kind), intent(in) :: theta_dp_cp(np,np,nlev)   

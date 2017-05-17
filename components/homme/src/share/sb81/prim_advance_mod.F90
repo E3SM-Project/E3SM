@@ -724,7 +724,7 @@ contains
 
   ! local
   real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
-  real (kind=real_kind) :: nu_scale_top,dpdn0
+  real (kind=real_kind) :: nu_scale_top
   integer :: k,kptr,i,j,ie,ic,nt
   real (kind=real_kind), dimension(np,np)      :: dpdn
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
@@ -883,9 +883,7 @@ contains
                  ! dp/dn = O(ps0)*O(delta_eta) = O(ps0)/O(nlev)
                  dpdn(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,nt)
-                 dpdn0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                      ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-                 ttens(:,:,k,ie) = ttens(:,:,k,ie) * dpdn0/dpdn(:,:)
+                 ttens(:,:,k,ie) = ttens(:,:,k,ie) * hvcoord%dp0(k)/dpdn(:,:)
                  dptens(:,:,k,ie) = 0
               endif
               

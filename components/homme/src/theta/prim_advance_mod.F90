@@ -493,7 +493,7 @@ contains
 
   real (kind=real_kind), dimension(np,np,4) :: lap_s  ! dp3d,theta,w,phi
   real (kind=real_kind), dimension(np,np,2) :: lap_v
-  real (kind=real_kind) :: exner0(nlev),dpdn0(nlev)
+  real (kind=real_kind) :: exner0(nlev)
   real (kind=real_kind) :: heating(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: p_i(np,np,nlevp)    ! pressure on interfaces
@@ -508,6 +508,11 @@ contains
 
 
   dt=dt2/hypervis_subcycle
+  
+  do k=1,nlev
+     exner0(k) = (hvcoord%etam(k)*hvcoord%ps0/p0 )**kappa
+  enddo
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! NOTE1:  Diffusion works best when applied to theta.
@@ -699,9 +704,6 @@ contains
 !$omp parallel do default(shared), private(k)
 #endif
         do k=1,nlev
-           dpdn0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-           exner0(k) = (( hvcoord%hyam(k) + hvcoord%hybm(k) )*hvcoord%ps0/p0 )**kappa
            
            ! p(:,:,k) = (p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)/2)
            exner(:,:,k)  = ( (p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)/2) /p0)**kappa
@@ -718,7 +720,7 @@ contains
            endif
            
            elem(ie)%state%theta_dp_cp(:,:,k,nt)=elem(ie)%state%theta_dp_cp(:,:,k,nt) &
-                +stens(:,:,k,2,ie)*dpdn0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt))&
+                +stens(:,:,k,2,ie)*hvcoord%dp0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt))&
                 -heating(:,:,k)
         enddo
         
