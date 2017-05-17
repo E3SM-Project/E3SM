@@ -140,13 +140,13 @@ class ERI(SystemTestsCommon):
         clone2.set_value("HIST_N",        hist_n)
         clone2.flush()
 
-        rundir = clone2.get_value("RUNDIR")
+        rundir2 = clone2.get_value("RUNDIR")
         dout_sr2 = clone2.get_value("DOUT_S_ROOT")
 
-        if not os.path.exists(rundir):
-            os.makedirs(rundir)
+        if not os.path.exists(rundir2):
+            os.makedirs(rundir2)
 
-        _helper(dout_sr1, refdate_2, refsec_2, rundir)
+        _helper(dout_sr1, refdate_2, refsec_2, rundir2)
 
         # run ref2 case (all component history files will go to short term archiving)
 
@@ -188,16 +188,14 @@ class ERI(SystemTestsCommon):
 
         _helper(dout_sr2, refdate_3, refsec_3, rundir)
 
-        # the following lines creates the initial component history files for the restart test
-        for item in glob.glob("%s/*/hist/*nc" % dout_sr2):
+        # link the hybrid history files from ref2 to the run dir for comparison
+        for item in glob.iglob("%s/*.hybrid"%rundir2):
             newfile = "%s" % item.replace(".ref2", "")
             newfile = os.path.basename(newfile)
             dst = os.path.join(rundir, newfile)
             if os.path.exists(dst):
                 os.remove(dst)
             os.symlink(item, dst)
-
-        self._component_compare_copy("hybrid")
 
         # run branch case (short term archiving is off)
         self.run_indv()
