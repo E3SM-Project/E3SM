@@ -19,7 +19,7 @@ module CLMFatesInterfaceMod
    ! and moreover they must be pushed/pulled from history IO for each individual 
    ! bounds_proc memory space as a unit.
    !
-   ! Therefore, the state variables in the clm_fates communicator is vectorized by
+   ! Therefore, the state variables in the alm_fates communicator is vectorized by
    ! threadcount, and the IO communication arrays are not.
    !
    !
@@ -311,7 +311,7 @@ contains
       call set_fates_ctrlparms('check_allset')
 
       if(DEBUG)then
-         write(iulog,*) 'clm_fates%init():  allocating for ',nclumps,' threads'
+         write(iulog,*) 'alm_fates%init():  allocating for ',nclumps,' threads'
       end if
 
       
@@ -346,7 +346,7 @@ contains
                collist(s) = c
                this%f2hmap(nc)%hsites(c) = s
                if(DEBUG)then
-                  write(iulog,*) 'clm_fates%init(): thread',nc,': found column',c,'with lu',l
+                  write(iulog,*) 'alm_fates%init(): thread',nc,': found column',c,'with lu',l
                   write(iulog,*) 'LU type:', lun%itype(l)
                end if
             endif
@@ -354,7 +354,7 @@ contains
          enddo
 
          if(DEBUG)then
-            write(iulog,*) 'clm_fates%init(): thread',nc,': allocated ',s,' sites'
+            write(iulog,*) 'alm_fates%init(): thread',nc,': allocated ',s,' sites'
          end if
 
          ! Allocate vectors that match FATES sites with HLM columns
@@ -819,7 +819,7 @@ contains
              ! Note that while we pass the following values at this point
              ! we have to send the same values after each time-step because
              ! the HLM keeps changing the value and re-setting, so we
-             ! re-send instead of re-set. See clm_fates%TransferZ0mDisp()
+             ! re-send instead of re-set. See alm_fates%TransferZ0mDisp()
              z0m(p)    = this%fates(nc)%bc_out(s)%z0m_pa(ifp)
              displa(p) = this%fates(nc)%bc_out(s)%displa_pa(ifp)
              dleaf_patch(p) = this%fates(nc)%bc_out(s)%dleaf_pa(ifp)
@@ -847,7 +847,7 @@ contains
       !
       ! Note: waterstate_inst and canopystate_inst are arguments only because following
       ! the reading of variables, it is necessary to update diagnostics of the canopy
-      ! throug the interface call clm_fates%wrap_update_hlmfates_dyn() which requires
+      ! throug the interface call alm_fates%wrap_update_hlmfates_dyn() which requires
       ! this information from the HLM.
       ! ---------------------------------------------------------------------------------
 
@@ -941,7 +941,7 @@ contains
                c = this%f2hmap(nc)%fcolumn(s)
                this%fates_restart%restart_map(nc)%site_index(s)   = c
                this%fates_restart%restart_map(nc)%cohort1_index(s) = &
-                    bounds_proc%begCohort + (c-bounds_proc%begc)*fates_maxElementsPerSite + 1
+                    bounds_proc%begCohort + (c-bounds_proc%begc)*fates_maxElementsPerSite
             end do
             
          end do

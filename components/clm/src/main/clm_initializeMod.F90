@@ -616,7 +616,7 @@ contains
                waterflux_vars, waterstate_vars,                                               &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
                betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
-               clm_fates)
+               alm_fates)
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
@@ -632,7 +632,7 @@ contains
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
-            clm_fates)
+            alm_fates)
 
     end if
        
@@ -678,7 +678,7 @@ contains
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
-            clm_fates)
+            alm_fates)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
@@ -694,7 +694,7 @@ contains
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
-            clm_fates)
+            alm_fates)
 
        ! Reset finidat to now be finidat_interp_dest 
        ! (to be compatible with routines still using finidat)
@@ -823,7 +823,7 @@ contains
     ! --------------------------------------------------------------
    
     if ( use_ed .and. .not.is_restart() .and. finidat == ' ') then
-       call clm_fates%init_coldstart(waterstate_vars,canopystate_vars, &
+       call alm_fates%init_coldstart(waterstate_vars,canopystate_vars, &
                                      soilstate_vars, frictionvel_vars)
     end if
 

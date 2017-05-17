@@ -172,7 +172,7 @@ contains
         nextsw_cday  , declinp1,       &
         aerosol_vars, canopystate_vars, waterstate_vars, &
         lakestate_vars, temperature_vars, surfalb_vars, &
-        clm_fates)
+        alm_fates)
     !
     ! !DESCRIPTION:
     ! Surface albedo and two-stream fluxes
@@ -220,7 +220,7 @@ contains
      type(lakestate_type)   , intent(in)    :: lakestate_vars
      type(temperature_type) , intent(in)    :: temperature_vars
      type(surfalb_type)     , intent(inout) :: surfalb_vars
-     type(hlm_fates_interface_type), intent(inout)  :: clm_fates
+     type(hlm_fates_interface_type), intent(inout)  :: alm_fates
     !
     ! !LOCAL VARIABLES:
      integer  :: i                                                                         ! index for layers [idx]
@@ -916,7 +916,7 @@ contains
     ! Only perform on vegetated pfts where coszen > 0
 
     if(use_ed)then
-       call clm_fates%wrap_canopy_radiation(bounds, &
+       call alm_fates%wrap_canopy_radiation(bounds, &
             num_vegsol, filter_vegsol, &
             coszen_patch(bounds%begp:bounds%endp), surfalb_vars)
     else

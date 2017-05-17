@@ -31,7 +31,7 @@ contains
          canopystate_vars, soilstate_vars, temperature_vars, &
          ch4_vars, nitrogenflux_vars, nitrogenstate_vars, &
          phosphorusstate_vars, phosphorusflux_vars, &
-         clm_fates)
+         alm_fates)
       
       use clm_varctl             , only : use_c13, use_c14, use_ed
       use decompMod              , only : bounds_type
@@ -79,7 +79,7 @@ contains
     type(nitrogenstate_type)  , intent(inout) :: nitrogenstate_vars
     type(phosphorusstate_type), intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
-    type(hlm_fates_interface_type),intent(inout) :: clm_fates
+    type(hlm_fates_interface_type),intent(inout) :: alm_fates
     
     !
     ! !LOCAL VARIABLES:
@@ -236,7 +236,7 @@ contains
     ! Pass in FATES boundary conditions, ie litter fluxes
     ! -------------------------------------------------------
     
-    call clm_fates%UpdateLitterFluxes(bounds,carbonflux_vars)
+    call alm_fates%UpdateLitterFluxes(bounds,carbonflux_vars)
 
     ! Update all prognostic carbon state variables (except for gap-phase mortality and fire fluxes)
 
@@ -278,7 +278,7 @@ contains
     ! calculate balance checks on entire carbon cycle (FATES + BGC)
     ! ----------------------------------------------
 
-    call clm_fates%wrap_bgc_summary( bounds, carbonflux_vars, carbonstate_vars)
+    call alm_fates%wrap_bgc_summary( bounds, carbonflux_vars, carbonstate_vars)
 
     call t_stopf('BGCsum')
 

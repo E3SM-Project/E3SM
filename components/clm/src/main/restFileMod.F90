@@ -100,7 +100,7 @@ contains
        waterflux_vars, waterstate_vars,                                               &
        phosphorusstate_vars, phosphorusflux_vars,                                     &
        betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
-       clm_fates,                                                                     &
+       alm_fates,                                                                     &
        rdate, noptr)
     !
     ! !DESCRIPTION:
@@ -138,7 +138,7 @@ contains
     type(BeTRTracer_Type)          , intent(in)    :: betrtracer_vars
     type(tracerflux_type)          , intent(inout) :: tracerflux_vars
     type(tracercoeff_type)         , intent(inout) :: tracercoeff_vars
-    type(hlm_fates_interface_type) , intent(inout) :: clm_fates
+    type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     character(len=*)               , intent(in), optional :: rdate     ! restart file time stamp for name
     logical                        , intent(in), optional :: noptr     ! if should NOT write to the restart pointer file
     !
@@ -249,7 +249,7 @@ contains
        end if
        call carbonflux_vars%restart(bounds, ncid, flag='define')
 
-       call clm_fates%restart(bounds, ncid, flag='define',  &
+       call alm_fates%restart(bounds, ncid, flag='define',  &
              waterstate_inst=waterstate_vars, &
              canopystate_inst=canopystate_vars, &
              frictionvel_inst=frictionvel_vars)
@@ -360,7 +360,7 @@ contains
        end if
        call carbonflux_vars%restart(bounds, ncid, flag='write')
 
-       call clm_fates%restart(bounds, ncid, flag='write',  &
+       call alm_fates%restart(bounds, ncid, flag='write',  &
              waterstate_inst=waterstate_vars, &
              canopystate_inst=canopystate_vars, &
              frictionvel_inst=frictionvel_vars)
@@ -409,7 +409,7 @@ contains
        waterflux_vars, waterstate_vars,                                               &
        phosphorusstate_vars,phosphorusflux_vars,                                      &
        betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
-       clm_fates)
+       alm_fates)
     !
     ! !DESCRIPTION:
     ! Read a CLM restart file.
@@ -451,7 +451,7 @@ contains
     type(BeTRTracer_Type)          , intent(in)    :: betrtracer_vars
     type(tracerflux_type)          , intent(inout) :: tracerflux_vars
     type(tracercoeff_type)         , intent(inout) :: tracercoeff_vars
-    type(hlm_fates_interface_type) , intent(inout) :: clm_fates
+    type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     !
     ! !LOCAL VARIABLES:
     type(file_desc_t) :: ncid ! netcdf id
@@ -548,7 +548,7 @@ contains
        end if
        call carbonflux_vars%restart(bounds, ncid, flag='read')
 
-       call clm_fates%restart(bounds, ncid, flag='read',  &
+       call alm_fates%restart(bounds, ncid, flag='read',  &
              waterstate_inst=waterstate_vars, &
              canopystate_inst=canopystate_vars, &
              frictionvel_inst=frictionvel_vars)

@@ -41,7 +41,7 @@ contains
        waterflux_vars, waterstate_vars, &
        soilhydrology_vars, aerosol_vars, &
        soil_water_retention_curve, betrtracer_vars, tracerflux_vars, tracerstate_vars, &
-       clm_fates)
+       alm_fates)
     !
     ! !DESCRIPTION:
     ! This is the main subroutine to execute the calculation of soil/snow
@@ -104,7 +104,7 @@ contains
     type(betrtracer_type)     , intent(in)    :: betrtracer_vars                    ! betr configuration information
     type(tracerflux_type)     , intent(inout) :: tracerflux_vars                    ! tracer flux
     type(tracerstate_type)    , intent(inout) :: tracerstate_vars                   ! tracer state variables data structure    
-    type(hlm_fates_interface_type) , intent(inout) :: clm_fates
+    type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,j,fc                    ! indices
@@ -218,7 +218,7 @@ contains
             filter_hydrologyc, soilstate_vars, waterflux_vars)
 
       ! If FATES plant hydraulics is turned on, over-ride default transpiration sink calculation
-      if( use_ed ) call clm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, &
+      if( use_ed ) call alm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, &
                                                       soilstate_vars, waterflux_vars)
 
       call SoilWater(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &

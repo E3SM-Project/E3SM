@@ -48,7 +48,7 @@ contains
        num_nolakec, filter_nolakec, num_nolakep, filter_nolakep, &
        atm2lnd_vars, canopystate_vars, soilstate_vars, frictionvel_vars, &
        waterstate_vars, waterflux_vars, energyflux_vars, temperature_vars, &
-       clm_fates)
+       alm_fates)
     !
     ! !DESCRIPTION:
     ! This is the main subroutine to execute the calculation of leaf temperature
@@ -93,7 +93,7 @@ contains
     type(waterflux_type)   , intent(inout) :: waterflux_vars
     type(energyflux_type)  , intent(inout) :: energyflux_vars
     type(temperature_type) , intent(inout) :: temperature_vars
-    type(hlm_fates_interface_type) , intent(inout) :: clm_fates
+    type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,p      ! indices
@@ -401,7 +401,7 @@ contains
       ! enabled simultaneously with FATES, we will 
       ! have to apply a filter here.
       if(use_ed) then
-         call clm_fates%TransferZ0mDisp(bounds,frictionvel_vars,canopystate_vars)
+         call alm_fates%TransferZ0mDisp(bounds,frictionvel_vars,canopystate_vars)
       end if
 
       do fp = 1,num_nolakep

@@ -829,10 +829,10 @@ sub setup_cmdl_betr_mode {
   $nl_flags->{'betr_mode'} = $val;
 
   if ( $physv->as_long() == $physv->as_long("clm4_0") || $nl_flags->{'crop'} eq "on" ) {
-#    if ( $nl_flags->{'ed_mode'} == 1 ) {
-#       # ED is not a clm4_0 option and should not be used with crop and not with clm4_0
-#       fatal_error("** Cannot turn betr mode on with crop or with clm4_0 physics.\n" );
-#    }
+      if ( $nl_flags->{$var} == 1 ) {
+	  # BeTR is not a clm4_0 option and should not be used with crop and not with clm4_0
+	  fatal_error("** Cannot turn betr mode on with crop or with clm4_0 physics.\n" );
+      }
   } else {
 
     $var = "use_betr";

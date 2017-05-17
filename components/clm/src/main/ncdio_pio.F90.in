@@ -661,6 +661,8 @@ contains
 
   end subroutine ncd_inqvdlen_byDesc
 
+
+  !-------------------------------------------------------------------------
   subroutine ncd_inqvdlen_byName(ncid,varname,dimnum,dlen,err_code)
     !
     ! !DESCRIPTION:

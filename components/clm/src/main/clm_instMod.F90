@@ -111,11 +111,11 @@ module clm_instMod
   type(phosphorusflux_type)                           :: phosphorusflux_vars
   type(clm_bgc_interface_data_type)                   :: clm_bgc_data
   type(chemstate_type)                                :: chemstate_vars
-  type(hlm_fates_interface_type)                      :: clm_fates
+  type(hlm_fates_interface_type)                      :: alm_fates
 
   public :: clm_inst_biogeochem
   public :: clm_inst_biogeophys
-  public :: clm_fates
+  public :: alm_fates
 
 contains
 
@@ -207,7 +207,7 @@ contains
     
     ! Initialize the Functionaly Assembled Terrestrial Ecosystem Simulator (FATES)
     if (use_ed) then
-       call clm_fates%Init(bounds_proc)
+       call alm_fates%Init(bounds_proc)
     end if
        
     call hist_printflds()
