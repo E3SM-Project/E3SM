@@ -207,15 +207,15 @@ contains
     this%dim3_name      = trim(default_data%dim3_name)
     this%dim4_name      = trim(default_data%dim4_name)
 
-    this%dim1_beg  = this%dim1_beg
-    this%dim2_beg  = this%dim2_beg
-    this%dim3_beg  = this%dim3_beg
-    this%dim4_beg  = this%dim4_beg
+    this%dim1_beg  = default_data%dim1_beg
+    this%dim2_beg  = default_data%dim2_beg
+    this%dim3_beg  = default_data%dim3_beg
+    this%dim4_beg  = default_data%dim4_beg
     
-    this%dim1_end  = this%dim1_end
-    this%dim2_end  = this%dim2_end
-    this%dim3_end  = this%dim3_end
-    this%dim4_end  = this%dim4_end
+    this%dim1_end  = default_data%dim1_end
+    this%dim2_end  = default_data%dim2_end
+    this%dim3_end  = default_data%dim3_end
+    this%dim4_end  = default_data%dim4_end
 
     if (associated(default_data%data_int_1d)) then
        call EMIDAllocateMemory_Int_1D(this)
@@ -1138,6 +1138,7 @@ contains
     use ExternalModelIntefaceDataDimensionMod, only : dimname_zero
     use ExternalModelIntefaceDataDimensionMod, only : dimname_one
     use ExternalModelIntefaceDataDimensionMod, only : dimname_two
+    use ExternalModelIntefaceDataDimensionMod, only : dimname_col_one_based_idx
 
     !
     implicit none
@@ -1763,8 +1764,8 @@ contains
        units_val     = '[-]'
        is_int_type   = .true.
        ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
+       dim1_beg_name = dimname_one
+       dim1_end_name = dimname_col_one_based_idx
 
     case (L2E_FILTER_NUM_HYDROLOGYC)
        id_val        = L2E_FILTER_NUM_HYDROLOGYC
@@ -1783,8 +1784,8 @@ contains
        units_val     = '[-]'
        is_int_type   = .true.
        ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
+       dim1_beg_name = dimname_one
+       dim1_end_name = dimname_col_one_based_idx
 
     case (L2E_FILTER_NUM_NOLAKEC)
        id_val        = L2E_FILTER_NUM_HYDROLOGYC
@@ -1803,8 +1804,8 @@ contains
        units_val     = '[-]'
        is_int_type   = .true.
        ndim          = 1
-       dim1_beg_name = dimname_begc
-       dim1_end_name = dimname_endc
+       dim1_beg_name = dimname_one
+       dim1_end_name = dimname_col_one_based_idx
 
     case (L2E_FILTER_NUM_NOLAKEC_AND_NOURBANC)
        id_val        = L2E_FILTER_NUM_NOLAKEC_AND_NOURBANC

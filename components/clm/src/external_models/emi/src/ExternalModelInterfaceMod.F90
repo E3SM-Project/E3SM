@@ -168,6 +168,10 @@ contains
     use ExternalModelBETRMod  , only : EM_BETR_Populate_L2E_List
     use ExternalModelBETRMod  , only : EM_BETR_Populate_E2L_List
     use decompMod             , only : get_clump_bounds
+    use ColumnType            , only : col
+    use LandunitType          , only : lun
+    use landunit_varcon       , only : istsoil, istcrop,istice
+    use column_varcon         , only : icol_road_perv
     !
     implicit none
     !
@@ -178,11 +182,14 @@ contains
     class(emi_data_list), pointer :: l2e_init_list(:)
     class(emi_data_list), pointer :: e2l_init_list(:)
     integer                       :: em_stage
-    integer                       :: ii
+    integer                       :: ii, c, l
     integer                       :: num_filter_col
     integer                       :: num_filter_lun
     integer, pointer              :: filter_col(:)
     integer, pointer              :: filter_lun(:)
+    integer                       :: num_e2l_filter_col
+    integer, pointer              :: e2l_filter_col(:)
+    integer, pointer              :: tmp_col(:)
     type(bounds_type)             :: bounds_clump
     integer                       :: iem
     integer                       :: clump_rank
@@ -320,15 +327,44 @@ contains
           ! Initialize the external model
           call em_vsfm%Init(l2e_init_list(clump_rank), e2l_init_list(clump_rank), iam)
 
+          ! Build a column level filter on which VSFM is active.
+          ! This new filter would be used during the initialization to
+          ! unpack data from the EM into ALM's data structure.
+          allocate(tmp_col(bounds_clump%begc:bounds_clump%endc))
+
+          tmp_col(bounds_clump%begc:bounds_clump%endc) = 0
+
+          num_e2l_filter_col = 0
+          do c = bounds_clump%begc,bounds_clump%endc
+             if (col%active(c)) then
+                l = col%landunit(c)
+                if (lun%itype(l) == istsoil .or. col%itype(c) == icol_road_perv .or. &
+                    lun%itype(l) == istcrop) then
+                   num_e2l_filter_col = num_e2l_filter_col + 1
+                   tmp_col(c) = 1
+                end if
+             end if
+          end do
+
+          allocate(e2l_filter_col(num_e2l_filter_col))
+
+          num_e2l_filter_col = 0
+          do c = bounds_clump%begc,bounds_clump%endc
+             if (tmp_col(c) == 1) then
+                num_e2l_filter_col = num_e2l_filter_col + 1
+                e2l_filter_col(num_e2l_filter_col) = c
+             endif
+          enddo
+
           ! Unpack all data sent from the external model
           call EMID_Unpack_SoilState_Vars_for_EM(e2l_init_list(clump_rank), em_stage, &
-               num_filter_col, filter_col, soilstate_vars)
+               num_e2l_filter_col, e2l_filter_col, soilstate_vars)
           call EMID_Unpack_WaterState_Vars_for_EM(e2l_init_list(clump_rank), em_stage, &
-               num_filter_col, filter_col, waterstate_vars)
+               num_e2l_filter_col, e2l_filter_col, waterstate_vars)
           call EMID_Unpack_WaterFlux_Vars_for_EM(e2l_init_list(clump_rank), em_stage, &
-               num_filter_col, filter_col, waterflux_vars)
+               num_e2l_filter_col, e2l_filter_col, waterflux_vars)
           call EMID_Unpack_SoilHydrology_Vars_for_EM(e2l_init_list(clump_rank), em_stage, &
-               num_filter_col, filter_col, soilhydrology_vars)
+               num_e2l_filter_col, e2l_filter_col, soilhydrology_vars)
 
           ! Ensure all data sent by external model is unpacked
           call EMID_Verify_All_Data_Is_Set(e2l_init_list(clump_rank), em_stage)
@@ -336,6 +372,9 @@ contains
           ! Clean up memory
           call l2e_init_list(clump_rank)%Destroy()
           call e2l_init_list(clump_rank)%Destroy()
+
+          deallocate(e2l_filter_col)
+          deallocate(tmp_col)
 
        enddo
        !$OMP END PARALLEL DO
