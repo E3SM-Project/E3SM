@@ -183,12 +183,14 @@ end function
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
      !hvcoord%dp0(k) = hvcoord%d_etam(k)*hvcoord%ps0
   enddo
-  hvcoord%d_etai(1)=hvcoord%etam(1)/2
-  hvcoord%d_etai(plev+1)=hvcoord%etam(plev)/2
   do k=2,plev
      ! same as (d_etam(k)+d_etam(k-1)/2
      hvcoord%d_etai(k)=hvcoord%etam(k)-hvcoord%etam(k-1)
   enddo
+  ! dont include the 1/2, to make for easier weigthed averaging of interface
+  ! quantities to midpoints
+  hvcoord%d_etai(1)=hvcoord%d_etam(1)         ! /2
+  hvcoord%d_etai(plev+1)=hvcoord%d_etam(plev) ! /2
 
   ! ======================================================================
   ! Test that midpoint A,B is mean of interface A,B
