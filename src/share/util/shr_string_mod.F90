@@ -41,7 +41,8 @@ module shr_string_mod
    public :: shr_string_getParentDir    ! For a pathname get the parent directory name
    public :: shr_string_lastIndex       ! Index of last substr in str
    public :: shr_string_endIndex        ! Index of end of substr in str
-   public :: shr_string_leftalign_and_convert_tabs ! remove leading white space
+   public :: shr_string_leftalign_and_convert_tabs ! remove leading white space and convert all tabs to spaces
+   public :: shr_string_convert_tabs    ! Convert all tabs to spaces
    public :: shr_string_alphanum        ! remove all non alpha-numeric characters
    public :: shr_string_betweenTags     ! get the substring between the two tags
    public :: shr_string_parseCFtunit    ! parse CF time units
@@ -409,11 +410,12 @@ end function shr_string_endIndex
 !===============================================================================
 !BOP ===========================================================================
 !
-! !IROUTINE: shr_string_leftalign_and_convert_tabs -- remove leading white space
+! !IROUTINE: shr_string_leftalign_and_convert_tabs -- remove leading white space and
+! convert tabs to spaces
 !
 ! !DESCRIPTION:
-!    Remove leading white space (spaces and tabs); if input str is entirely spaces and tabs,
-!    then the result has all tabs converted to spaces
+!    Remove leading white space (spaces and tabs) and convert tabs to spaces
+!    This even converts tabs in the middle or at the end of the string to spaces
 !     \newline
 !     call shr\_string\_leftalign_and_convert_tabs(string)
 !
@@ -465,10 +467,10 @@ end subroutine shr_string_leftalign_and_convert_tabs
 !===============================================================================
 !BOP ===========================================================================
 !
-! !IROUTINE: shr_string_remove_tabs -- remove all tabs from a string
+! !IROUTINE: shr_string_convert_tabs -- convert all tabs to spaces
 !
 ! !DESCRIPTION:
-!    Remove all tabs from a string
+!    Convert all tabs to spaces in the given string
 !
 ! !REVISION HISTORY:
 !     2017-May- - M. Vertenstein
