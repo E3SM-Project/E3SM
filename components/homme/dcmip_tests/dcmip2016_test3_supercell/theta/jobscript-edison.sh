@@ -18,7 +18,7 @@ date
 
 # 4dg resolution
 cp -f namelist-r400.nl input.nl
-srun -n $NCPU $EXEC < input.nl
+srun -n 384 $EXEC < input.nl
 mv -f movies/dcmip2016_test31.nc movies/dcmip2016_test3_r400.nc
 ncl plot_supercell_wvel.ncl
 

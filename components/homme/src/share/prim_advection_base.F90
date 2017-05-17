@@ -229,7 +229,7 @@ contains
 !    call extrae_user_function(0)
 
     ! physical viscosity for supercell test case
-    ! call advance_physical_vis(edgeadv,elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt,dcmip16_mu_s)
+    call advance_physical_vis(edgeadv,elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt,dcmip16_mu_s)
 
     call t_stopf('prim_advec_tracers_remap_rk2')
 
@@ -775,6 +775,8 @@ OMP_SIMD
   use dimensions_mod , only : np, nlev
   use hybrid_mod     , only : hybrid_t
   use element_mod    , only : element_t
+  use element_state  , only : elem_state_t
+  use element_ops    , only : get_initial_state
   use derivative_mod , only : derivative_t, laplace_z, laplace_sphere_wk
   use edge_mod       , only : edgevpack, edgevunpack
   use edgetype_mod   , only : EdgeBuffer_t
@@ -798,21 +800,33 @@ OMP_SIMD
   real (kind=real_kind), dimension(np,np,nlev                ) :: Q_prime
   real (kind=real_kind) :: dp0, delz
   integer :: k , i,j,ie,ic,q
+  type(elem_state_t) :: ref_state
+
+real(real_kind), dimension(np,np,nlev) :: dp_ref, q_ref
 
   !if(test_case .ne. 'dcmip2016_test3') call abortmp("dcmip16_mu is currently limited to dcmip16 test 3")
-print *,"physical vis"
+
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  hyper viscosity
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  delz=20000/nlev
+  delz=20000.0/nlev
 
   do ie=nets,nete
+
+      ! get reference state
+      call get_initial_state(ref_state,ie)
+
      do q=1,qsize
         do k=1,nlev
            dp0=( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + &
                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * hvcoord%ps0
            Q_prime(:,:,k)=dp0*elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / elem(ie)%state%dp3d(:,:,k,nt)
         enddo
+
+        dp_ref = ref_state%dp3d(:,:,:,1)
+        q_ref  = ref_state%Qdp(:,:,:,q,1)/dp_ref
+        Q_prime= Q_prime - q_ref
+
         ! compute vertical laplacian
         call laplace_z(Q_prime(:,:,:),Qtens(:,:,:,q,ie),1,delz)
         ! apply mass matrix and add in horiz laplacian (which has mass matrix built in)
@@ -821,8 +835,10 @@ print *,"physical vis"
                 laplace_sphere_wk(Q_prime(:,:,:),deriv,elem(ie),var_coef=.false.) ) 
         
            ! timestep
-           elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=elem(ie)%state%Qdp(:,:,k,q,nt_qdp)*elem(ie)%spheremp(:,:) &
-                - dt*mu*Qtens(:,:,k,q,ie)
+          ! elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=elem(ie)%state%Qdp(:,:,k,q,nt_qdp)*elem(ie)%spheremp(:,:) &
+          !      - dt*mu*Qtens(:,:,k,q,ie)
+elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=elem(ie)%state%Qdp(:,:,k,q,nt_qdp)*elem(ie)%spheremp(:,:) &
++ dt*mu*Qtens(:,:,k,q,ie)
         enddo
 
       enddo
