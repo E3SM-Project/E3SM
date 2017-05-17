@@ -19,7 +19,11 @@ for the CLM data in the CESM distribution
 <delt_mosart>3600</delt_mosart> 
 <ice_runoff>.true.</ice_runoff>
 <wrmflag>.false.</wrmflag>
+<inundflag>.false.</inundflag>
 <barrier_timers>.false.</barrier_timers>
+<RoutingMethod>1</RoutingMethod>
+<DLevelH2R>5</DLevelH2R>
+<DLevelR>3</DLevelR>
 
 <decomp_option>'roundrobin'</decomp_option> 
 <smat_option>'Xonly'</smat_option> 
@@ -44,5 +48,22 @@ for the CLM data in the CESM distribution
 <TotalDemandFlag>1</TotalDemandFlag>
 <GroundWaterFlag>0</GroundWaterFlag>
 
+<!-- inund -->
+
+<OPT_inund>1</OPT_inund>
+<OPT_trueDW>2</OPT_trueDW>
+<OPT_calcNr>1</OPT_calcNr>
+<nr_max>0.05</nr_max>
+<nr_min>0.03</nr_min>
+<nr_uniform>0.04</nr_uniform>
+<rdepth_max>50.0</rdepth_max>
+<rdepth_min>1.0</rdepth_min>
+<rwidth_max>5000.0</rwidth_max>
+<rwidth_min>20.0</rwidth_min>
+<rslp_assume>0.00001</rslp_assume>
+<minL_tribRouting>10.0</minL_tribRouting>
+<OPT_elevProf>2</OPT_elevProf>
+<npt_elevProf>12</npt_elevProf>
+<threshold_slpRatio>10.0</threshold_slpRatio>
 
 </namelist_defaults>

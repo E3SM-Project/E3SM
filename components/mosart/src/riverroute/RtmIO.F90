@@ -173,9 +173,10 @@ contains
     character(len=*),parameter :: subname='ncd_pio_openfile' ! subroutine name
     !-----------------------------------------------------------------------
 
-!NV
-    write(iulog,*) trim(subname),' NV opening ', trim(fname), file%fh
-    call shr_sys_flush(iulog)
+    if (masterproc) then
+       write(iulog,*) trim(subname),' opening ', trim(fname), file%fh
+       call shr_sys_flush(iulog)
+    endif
 
     ierr = pio_openfile(pio_subsystem, file, io_type, fname, mode)
 

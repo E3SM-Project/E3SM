@@ -34,7 +34,7 @@ if (-f "Filepath") {
     system($sysmod) == 0 or die "ERROR: mosart.buidexe $sysmod failed: $?\n";
 }
 
-my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=mosart COMPLIB=$LIBROOT/librof.a USER_CPPDEFS=\"-DINCLUDE_XXWRM -DINCLUDE_XXINUND\" -f $CASETOOLS/Makefile";
+my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=mosart COMPLIB=$LIBROOT/librof.a USER_CPPDEFS=\"-DINCLUDE_WRM -DINCLUDE_INUND\" -f $CASETOOLS/Makefile";
 system($sysmod) == 0 or die "ERROR: mosart.buildexe $sysmod failed: $?\n";
 
 exit(0);

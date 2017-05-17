@@ -66,6 +66,8 @@ module RunoffMod
      real(r8), pointer :: dvolrdtocn(:,:)  ! dvolrdt masked for ocn  (mm/s)
      real(r8), pointer :: volr(:,:)        ! RTM storage (m3)
      real(r8), pointer :: fthresh(:)       ! RTM water flood threshold
+     real(r8), pointer :: inundwf(:)       ! Inundation floodplain water volume (m3)
+     real(r8), pointer :: inundhf(:)       ! Inundation floodplain water depth (m)
 
      !    - restarts
      real(r8), pointer :: wh(:,:)          ! MOSART hillslope surface water storage (m)
@@ -141,39 +143,35 @@ module RunoffMod
      character(len=80), pointer :: out_name(:)  ! the name of the outlets  
      character(len=80) :: curOutlet    ! the name of the current outlet
    
-! --Inund. ---------------------------------------------------------------  
 #ifdef INCLUDE_INUND     
+     integer :: OPT_inund            ! Options for inundation, 0=inundation off, 1=inundation on
+     integer :: OPT_trueDW           ! Options for diffusion wave channel routing method:
+                                     !     1 -- True diffusion wave method for channel routing;
+                                     !     2 -- False diffusion wave method: use riverbed slope as the surrogate for water surface slope. ( This is 
+                                     !          a temporary treatment before the downstream-channel information can be retrieved. )
+     integer :: OPT_calcNr           ! Options to calculate channel Manning roughness coefficients : 
+                                     !     1 -- use channel depth (Luo et al. 2017 GMD); 
+                                     !     2 -- use channel depth and exponent of 1/3 (Getirana et al. 2012 JHM); 
+                                     !     3 -- use channel width (Decharme et al. 2010 JHM); 
+                                     !     4 -- use one uniform value. 
+                                     !     (Please see MOSARTinund_preProcs.F90 for references.)
+     real(r8) :: nr_max              ! Max Manning coefficient for channels (when OPT_calcNr = 1, 2, 3) ( s*m^(-1/3) ).
+     real(r8) :: nr_min              ! Min Manning coefficient for channels (when OPT_calcNr = 1, 2, 3) ( s*m^(-1/3) ).
+     real(r8) :: nr_uniform          ! The uniform Manning coefficient for all channels (when OPT_calcNr = 4) ( s*m^(-1/3) ).
+     real(r8) :: rdepth_max          ! Max channel depth (used when OPT_calcNr = 1, 2) (m).
+     real(r8) :: rdepth_min          ! Min channel depth (used when OPT_calcNr = 1, 2) (m). 
+     real(r8) :: rwidth_max          ! Max channel width (used when OPT_calcNr = 3) (m).
+     real(r8) :: rwidth_min          ! Min channel width (used when OPT_calcNr = 3) (m). 
+     real(r8) :: rslp_assume         ! Use this assumed riverbed slope when the input riverbed slope <= zero (dimensionless).
+     real(r8) :: minL_tribRouting    ! Min tributary channel length for using tributary routing (m).  
   
-    integer :: OPT_trueDW             ! Options for diffusion wave channel routing method:
-                                      !     1 -- True diffusion wave method for channel routing;
-                                      !     2 -- False diffusion wave method: use riverbed slope as the surrogate for water surface slope. ( This is 
-                                      !          a temporary treatment before the downstream-channel information can be retrieved. )
-    integer :: OPT_calcNr             ! Options to calculate channel Manning roughness coefficients : 
-                                      !     1 -- use channel depth (Luo et al. 2017 GMD); 
-                                      !     2 -- use channel depth and exponent of 1/3 (Getirana et al. 2012 JHM); 
-                                      !     3 -- use channel width (Decharme et al. 2010 JHM); 
-                                      !     4 -- use one uniform value. 
-                                      !     (Please see MOSARTinund_preProcs.F90 for references.)
-    real( r8 ) :: nr_max              ! Max Manning coefficient for channels (when OPT_calcNr = 1, 2, 3) ( s*m^(-1/3) ).
-    real( r8 ) :: nr_min              ! Min Manning coefficient for channels (when OPT_calcNr = 1, 2, 3) ( s*m^(-1/3) ).
-    real( r8 ) :: nr_uniform          ! The uniform Manning coefficient for all channels (when OPT_calcNr = 4) ( s*m^(-1/3) ).
-    real( r8 ) :: rdepth_max          ! Max channel depth (used when OPT_calcNr = 1, 2) (m).
-    real( r8 ) :: rdepth_min          ! Min channel depth (used when OPT_calcNr = 1, 2) (m). 
-    real( r8 ) :: rwidth_max          ! Max channel width (used when OPT_calcNr = 3) (m).
-    real( r8 ) :: rwidth_min          ! Min channel width (used when OPT_calcNr = 3) (m). 
-    real( r8 ) :: rslp_assume         ! Use this assumed riverbed slope when the input riverbed slope <= zero (dimensionless).
-    real( r8 ) :: inund_dt            ! Length of one time step (second). 
-    real( r8 ) :: minL_tribRouting    ! Min tributary channel length for using tributary routing (m).  
-  
-    ! --------------------------------- 
-    ! The following parameters are for the inundation scheme :
-    ! --------------------------------- 
-    integer :: OPT_inund              ! Switch of inundation scheme: 1 -- Turn on inundation scheme; 2 -- Turn off inundation scheme. 
-    integer :: OPT_elevProf           ! Options of elevation profile data: 1 -- Use real data; 2 -- Use hypothetical values.
-    integer :: npt_elevProf           ! Number of dividing points in the elevation profile.
-    real( r8 ) :: threshold_slpRatio  ! Threshold of the ratio of the lowest section's slope to the second lowest section's slope in 
-                                      ! the elevation profile (used to alleviate the effect of DEM pits on elevation profiles).
-   
+     ! --------------------------------- 
+     ! The following parameters are for the inundation scheme :
+     ! --------------------------------- 
+     integer :: OPT_elevProf         ! Options of elevation profile data: 1 -- Use real data; 2 -- Use hypothetical values.
+     integer :: npt_elevProf         ! Number of dividing points in the elevation profile.
+     real(r8) :: threshold_slpRatio  ! Threshold of the ratio of the lowest section's slope to the second lowest section's slope in 
+                                     ! the elevation profile (used to alleviate the effect of DEM pits on elevation profiles).
 #endif
    
   end type Tcontrol
@@ -192,7 +190,7 @@ module RunoffMod
      real(r8), pointer :: rlenTotal(:) ! length of all reaches, [m]
      real(r8), pointer :: Gxr(:)       ! drainage density within the cell, [1/m]
      real(r8), pointer :: frac(:)      ! fraction of cell included in the study area, [-]
-     logical , pointer :: euler_calc(:) ! flag for calculating tracers in euler
+     logical , pointer :: euler_calc(:)! flag for calculating tracers in euler
 
      ! hillslope properties
      real(r8), pointer :: nh(:)        ! manning's roughness of the hillslope (channel network excluded) 
@@ -226,42 +224,39 @@ module RunoffMod
      real(r8), pointer :: phi_r(:)     ! the indicator used to define numDT_r
      real(r8), pointer :: phi_t(:)     ! the indicator used to define numDT_t
    
-! --Inund. ---------------------------------------------------------------  
 #ifdef INCLUDE_INUND   
-
-    real( r8 ), pointer :: rlen_dstrm( : )      ! Length of downstream channel (m).
-    real( r8 ), pointer :: rslp_dstrm( : )      ! Bed slope of downstream channel (dimensionless).
-    real( r8 ), pointer :: wr_bf( : )           ! Water volume in the bankfull channel (i.e., channel storage capacity) (m^3).
+    real(r8), pointer :: rlen_dstrm(:)  ! Length of downstream channel (m).
+    real(r8), pointer :: rslp_dstrm(:)  ! Bed slope of downstream channel (dimensionless).
+    real(r8), pointer :: wr_bf(:)       ! Water volume in the bankfull channel (i.e., channel storage capacity) (m^3).
   
     ! --------------------------------- 
     ! Parameters related to elevation profiles : 
     ! --------------------------------- 
-    real( r8 ) :: e_eprof_std(12)               ! Elevations in the hypothetical elevation profile (m).
-    real( r8 ), pointer :: e_eprof_in2( :, : )  ! Absolute elevations in the input elevation profiles (m).
-    real( r8 ), pointer :: a_eprof( :, : )      ! Area fractions of computation unit (grid cell or subbasin) in the elevation profiles (dimensionless).
-    real( r8 ), pointer :: e_eprof( :, : )      ! Absolute elevations in the elevation profiles used in computation (m).
-    real( r8 ), pointer :: a_chnl( : )          ! = channel area / computation unit area (dimensionless).
-    real( r8 ), pointer :: e_chnl( : )          ! Channel banktop elevation (m).
-    integer, pointer :: ipt_bl_bktp( : )        ! The index of the point right below the banktop in the elevation profile.
+    real(r8) :: e_eprof_std(12)         ! Elevations in the hypothetical elevation profile (m).
+    real(r8), pointer :: e_eprof_in2(:,:)  ! Absolute elevations in the input elevation profiles (m).
+    real(r8), pointer :: a_eprof(:,:)   ! Area fractions of computation unit (grid cell or subbasin) in the elevation profiles (dimensionless).
+    real(r8), pointer :: e_eprof(:,:)   ! Absolute elevations in the elevation profiles used in computation (m).
+    real(r8), pointer :: a_chnl(:)      ! = channel area / computation unit area (dimensionless).
+    real(r8), pointer :: e_chnl(:)      ! Channel banktop elevation (m).
+    integer , pointer :: ipt_bl_bktp(:) ! The index of the point right below the banktop in the elevation profile.
     
     ! --------------------------------- 
     ! Parameters related to adjusted elevation profiles (where the section below banktop is replaced with level line) : 
     ! --------------------------------- 
-    real( r8 ), pointer :: a_eprof3( :, : )     ! Area fractions of computation unit (grid cell or subbasin) in adjusted elevation profiles (dimensionless).
-    real( r8 ), pointer :: e_eprof3( :, : )     ! Relative elevations in adjusted elevation profiles used in computation (m).
-    integer, pointer :: npt_eprof3( : )         ! Number of points in the adjusted elevation profile.
-    real( r8 ), pointer :: s_eprof3( :, : )     ! Total volume below the level through a point in the adjusted elevation profile (i.e., the
-                                                ! volume between channel banktop and an elevation of the adjusted elevation profile) (m^3).
+    real(r8), pointer :: a_eprof3(:,:)  ! Area fractions of computation unit (grid cell or subbasin) in adjusted elevation profiles (dimensionless).
+    real(r8), pointer :: e_eprof3(:,:)  ! Relative elevations in adjusted elevation profiles used in computation (m).
+    integer , pointer :: npt_eprof3(:)  ! Number of points in the adjusted elevation profile.
+    real(r8), pointer :: s_eprof3(:,:)  ! Total volume below the level through a point in the adjusted elevation profile (i.e., the
+                                        ! volume between channel banktop and an elevation of the adjusted elevation profile) (m^3).
 
     ! --------------------------------- 
     ! In the inundation calculation, a quadratic equation is solved to derive the water depth based on water volume. 
     ! The following coefficients are for the quadratic equation. 
     ! (Please find more information in "MOSARTinund_Core_MOD.F90".)
     ! --------------------------------- 
-    real( r8 ), pointer :: alfa3( :, : )        ! Coefficient (1/m).
-    real( r8 ), pointer :: p3( :, : )           ! Coefficient (m).
-    real( r8 ), pointer :: q3( :, : )           ! Coefficient (m^2).
-
+    real(r8), pointer :: alfa3(:,:)     ! Coefficient (1/m).
+    real(r8), pointer :: p3(:,:)        ! Coefficient (m).
+    real(r8), pointer :: q3(:,:)        ! Coefficient (m^2).
 #endif
 
   end type Tspatialunit
@@ -273,7 +268,7 @@ module RunoffMod
      !! states
      real(r8), pointer :: wh(:,:)      ! storage of surface water, [m]
      real(r8), pointer :: dwh(:,:)     ! change of water storage, [m/s]              ( Unit is "m" when the inundation scheme is on. --Inund. )
-     real(r8), pointer :: yh(:,:)      ! depth of surface water, [m]                      ( Not used when the inundation scheme is on; It is same as wh(:,:). --Inund. )
+     real(r8), pointer :: yh(:,:)      ! depth of surface water, [m]                  ( Not used when the inundation scheme is on; It is same as wh(:,:). --Inund. )
      real(r8), pointer :: wsat(:,:)    ! storage of surface water within saturated area at hillslope [m]
      real(r8), pointer :: wunsat(:,:)  ! storage of surface water within unsaturated area at hillslope [m]
      real(r8), pointer :: qhorton(:,:) ! Infiltration excess runoff generated from hillslope, [m/s]
@@ -340,27 +335,24 @@ module RunoffMod
      real(r8), pointer :: k3(:,:)
      real(r8), pointer :: k4(:,:)
    
-! --Inund. ---------------------------------------------------------------  
 #ifdef INCLUDE_INUND
-
-    !real( r8 ), pointer :: wr_ini( : )         ! Channel water volume at beginning of step (m^3).
-    !real( r8 ), pointer :: yr_ini( : )         ! Channel water depth at beginning of step (m).
-    real( r8 ), pointer :: wf_ini( : )          ! Floodplain water volume at beginning of step (m^3).
-    real( r8 ), pointer :: hf_ini( : )          ! Floodplain max water depth (i.e., elevation difference between water level and channel banktop) at beginning of step (m).
-    real( r8 ), pointer :: se_rf( : )           ! Amount of channel--floodplain exchange (positive: flow from channel to floodplain; vice versa ) (m^3).
-    real( r8 ), pointer :: ff_fp( : )           ! = area of inundated floodplain (not including channel area) divided by the computation-unit total area (dimensionless).
-    real( r8 ), pointer :: fa_fp( : )           ! Area of inundated floodplain (not including channel area) (m^2).    
-    real( r8 ), pointer :: wr_exchg( : )        ! Channel water volume after channel--floodplain exchange (m^3).
-    real( r8 ), pointer :: wr_exchg_dstrm( : )  ! Downstream-channel water volume after channel--floodplain exchange (to 
-                                                ! constrain large upward flow from downstream channel to current channel ) (m^3).
-    real( r8 ), pointer :: yr_exchg( : )        ! Channel water depth after channel--floodplain exchange (m).
-    real( r8 ), pointer :: yr_exchg_dstrm( : )  ! Downstream-channel water depth after channel--floodplain exchange (m).
-    real( r8 ), pointer :: wf_exchg( : )        ! Floodplain water volume after channel--floodplain exchange (m^3).
-    real( r8 ), pointer :: hf_exchg( : )        ! Floodplain max water depth after channel--floodplain exchange (m).     
-    !real( r8 ), pointer :: delta_wr( : )       ! Change of channel water volume during channel routing (m^3).
-    real( r8 ), pointer :: wr_rtg( : )          ! Channel water volume after channel routing (m^3).
-    real( r8 ), pointer :: yr_rtg( : )          ! Channel water depth after channel routing (m).
-   
+    !real(r8), pointer :: wr_ini(:)     ! Channel water volume at beginning of step (m^3).
+    !real(r8), pointer :: yr_ini(:)     ! Channel water depth at beginning of step (m).
+    real(r8), pointer :: wf_ini(:)      ! Floodplain water volume at beginning of step (m^3).
+    real(r8), pointer :: hf_ini(:)      ! Floodplain max water depth (i.e., elevation difference between water level and channel banktop) at beginning of step (m).
+    real(r8), pointer :: se_rf(:)       ! Amount of channel--floodplain exchange (positive: flow from channel to floodplain; vice versa ) (m^3).
+    real(r8), pointer :: ff_fp(:)       ! = area of inundated floodplain (not including channel area) divided by the computation-unit total area (dimensionless).
+    real(r8), pointer :: fa_fp(:)       ! Area of inundated floodplain (not including channel area) (m^2).    
+    real(r8), pointer :: wr_exchg(:)    ! Channel water volume after channel--floodplain exchange (m^3).
+    real(r8), pointer :: wr_exchg_dstrm(:)  ! Downstream-channel water volume after channel--floodplain exchange (to 
+                                            ! constrain large upward flow from downstream channel to current channel ) (m^3).
+    real(r8), pointer :: yr_exchg(:)    ! Channel water depth after channel--floodplain exchange (m).
+    real(r8), pointer :: yr_exchg_dstrm(:)  ! Downstream-channel water depth after channel--floodplain exchange (m).
+    real(r8), pointer :: wf_exchg(:)    ! Floodplain water volume after channel--floodplain exchange (m^3).
+    real(r8), pointer :: hf_exchg(:)    ! Floodplain max water depth after channel--floodplain exchange (m).     
+    !real(r8), pointer :: delta_wr(:)   ! Change of channel water volume during channel routing (m^3).
+    real(r8), pointer :: wr_rtg(:)      ! Channel water volume after channel routing (m^3).
+    real(r8), pointer :: yr_rtg(:)      ! Channel water depth after channel routing (m).
 #endif
    
   end type TstatusFlux
@@ -408,6 +400,8 @@ contains
              rtmCTL%rdsig(begr:endr),             &
              rtmCTL%outletg(begr:endr),           &
              rtmCTL%routletg(begr:endr),          &
+             rtmCTL%inundwf(begr:endr),           &
+             rtmCTL%inundhf(begr:endr),           &
              rtmCTL%runofflnd_nt1(begr:endr),     &
              rtmCTL%runofflnd_nt2(begr:endr),     &
              rtmCTL%runoffocn_nt1(begr:endr),     &
@@ -461,6 +455,8 @@ contains
     rtmCTL%volr(:,:)       = 0._r8
     rtmCTL%flood(:)        = 0._r8
     rtmCTL%direct(:,:)     = 0._r8
+    rtmCTL%inundwf(:)      = 0._r8
+    rtmCTL%inundhf(:)      = 0._r8
 
     rtmCTL%qsur(:,:)        = 0._r8
     rtmCTL%qsub(:,:)        = 0._r8

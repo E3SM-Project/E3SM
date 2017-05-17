@@ -47,7 +47,7 @@ MODULE MOSARTinund_Core_MOD
     ! Store flows from subnetwork to main channel (for budget analysis) :
     TRunoff%erlat_avg = 0._r8
     TRunoff%erlat_avg = TRunoff%erlat_avg - TRunoff%etout            ! Note: outflow is negative for TRunoff%etout .
-    
+
     if ( Tctl%OPT_inund .eq. 1 ) then
       ! Channel -- floodplain exchange computation :      
       call ChnlFPexchg ( )
@@ -121,14 +121,14 @@ MODULE MOSARTinund_Core_MOD
 
         ! Outflow per unit area (outflow = V * A; Negative values means outward flows; Unit: m/s).
         TRunoff%ehout( iu, 1 ) = - hsV * TRunoff%wh( iu, 1 ) * TUnit%Gxr( iu )        
-        
+
         ! If outflow is too high and water volume becomes negative :
-        if ( TRunoff%ehout(iu, 1) .lt. 0._r8 .and. TRunoff%wh(iu, 1) + (TRunoff%qsur(iu, 1) + TRunoff%ehout(iu, 1)) * Tctl%inund_dt .lt. 0._r8 ) then 
+        if ( TRunoff%ehout(iu, 1) .lt. 0._r8 .and. TRunoff%wh(iu, 1) + (TRunoff%qsur(iu, 1) + TRunoff%ehout(iu, 1)) * Tctl%DeltaT .lt. 0._r8 ) then 
           ! All water volume flows away :
-          TRunoff%ehout(iu, 1) = - TRunoff%qsur(iu, 1) - TRunoff%wh(iu, 1) / Tctl%inund_dt    
+          TRunoff%ehout(iu, 1) = - TRunoff%qsur(iu, 1) - TRunoff%wh(iu, 1) / Tctl%DeltaT    
           TRunoff%dwh(iu, 1) = - TRunoff%wh(iu, 1)
         else  
-          TRunoff%dwh(iu, 1) = (TRunoff%qsur(iu, 1) + TRunoff%ehout(iu, 1)) * Tctl%inund_dt   ! Added " * Tctl%inund_dt ".
+          TRunoff%dwh(iu, 1) = (TRunoff%qsur(iu, 1) + TRunoff%ehout(iu, 1)) * Tctl%DeltaT   ! Added " * Tctl%DeltaT ".
         end if
         
         ! Update water volume over hillslopes :
@@ -217,16 +217,16 @@ MODULE MOSARTinund_Core_MOD
           TRunoff%etout(iu, 1) = - TRunoff%vt(iu, 1) * TUnit%twidth( iu ) * TRunoff%yt( iu, 1 )     
           
           ! If outflow rate is too high and water volume becomes negative :
-          if ( TRunoff%wt(iu, 1) + (TRunoff%etin(iu, 1) + TRunoff%etout(iu, 1)) * Tctl%inund_dt .lt. 0._r8 ) then 
+          if ( TRunoff%wt(iu, 1) + (TRunoff%etin(iu, 1) + TRunoff%etout(iu, 1)) * Tctl%DeltaT .lt. 0._r8 ) then 
 
             ! All water volume flows away :
-            TRunoff%etout(iu, 1) = - TRunoff%etin(iu, 1) - TRunoff%wt(iu, 1) / Tctl%inund_dt        
+            TRunoff%etout(iu, 1) = - TRunoff%etin(iu, 1) - TRunoff%wt(iu, 1) / Tctl%DeltaT        
 
             ! Calculate flow velocity ( = flow rate / wet cross-sectional area ; Note: TRunoff%yt must be non-zero because the initial TRunoff%etout (based on TRunoff%yt) is not zero) :
             TRunoff%vt(iu, 1) = - TRunoff%etout(iu, 1) / TUnit%twidth( iu ) / TRunoff%yt( iu, 1 )
             TRunoff%dwt(iu, 1) = - TRunoff%wt(iu, 1)
           else  
-            TRunoff%dwt(iu, 1) = (TRunoff%etin(iu, 1) + TRunoff%etout(iu, 1)) * Tctl%inund_dt   ! Add " * Tctl%inund_dt ".
+            TRunoff%dwt(iu, 1) = (TRunoff%etin(iu, 1) + TRunoff%etout(iu, 1)) * Tctl%DeltaT   ! Add " * Tctl%DeltaT ".
           end if
         end if
     
@@ -507,7 +507,7 @@ MODULE MOSARTinund_Core_MOD
         if ( surfaceSlope .gt. 0._r8 ) then
 
           ! If water volume becomes negative because upward flow (from current channel to upstream channels) is too large :
-          if ( TRunoff%wr_exchg( iu ) + ( - TRunoff%etout( iu, 1 ) - TRunoff%eroutUp( iu, 1 ) ) * Tctl%inund_dt .lt. 0._r8 ) then
+          if ( TRunoff%wr_exchg( iu ) + ( - TRunoff%etout( iu, 1 ) - TRunoff%eroutUp( iu, 1 ) ) * Tctl%DeltaT .lt. 0._r8 ) then
             TRunoff%vr( iu, 1 ) = 0._r8
             TRunoff%erout( iu, 1 ) = 0._r8
             TRunoff%dwr( iu, 1 ) = - TRunoff%wr_exchg( iu )       
@@ -523,13 +523,13 @@ MODULE MOSARTinund_Core_MOD
             TRunoff%erout( iu, 1 ) = - TRunoff%vr( iu, 1 ) * TUnit%rwidth( iu ) * TRunoff%yr_exchg( iu )
           
             ! Water volume change :
-            TRunoff%dwr( iu, 1 ) = ( - TRunoff%eroutUp( iu, 1 ) - TRunoff%etout( iu, 1 ) + TRunoff%erout( iu, 1 ) ) * Tctl%inund_dt
+            TRunoff%dwr( iu, 1 ) = ( - TRunoff%eroutUp( iu, 1 ) - TRunoff%etout( iu, 1 ) + TRunoff%erout( iu, 1 ) ) * Tctl%DeltaT
           
             ! If water volume becomes negative because downward flow is too large :
             if ( TRunoff%erout( iu, 1 ) .lt. 0._r8 .and. TRunoff%wr_exchg( iu ) + TRunoff%dwr( iu, 1 ) .lt. 0._r8 ) then
             
               ! All the water flows away :
-              TRunoff%erout( iu, 1 ) = - ( - TRunoff%eroutUp( iu, 1 ) - TRunoff%etout( iu, 1 ) + TRunoff%wr_exchg( iu ) / Tctl%inund_dt )
+              TRunoff%erout( iu, 1 ) = - ( - TRunoff%eroutUp( iu, 1 ) - TRunoff%etout( iu, 1 ) + TRunoff%wr_exchg( iu ) / Tctl%DeltaT )
 
               if ( TRunoff%yr_exchg( iu ) .gt. 0._r8 ) then
                 TRunoff%vr( iu, 1 ) = - TRunoff%erout( iu, 1 ) / TUnit%rwidth( iu ) / TRunoff%yr_exchg( iu )
@@ -556,9 +556,9 @@ MODULE MOSARTinund_Core_MOD
           if ( TUnit%mask( iu ) .eq. 1 ) then
           
             ! If upward flow (from downstream channel to current channel) is too large, so that water volume becomes negative in downstream channel :
-            if ( TRunoff%wr_exchg_dstrm( iu ) - TRunoff%erout( iu, 1 ) * Tctl%inund_dt .lt. 0._r8 ) then
+            if ( TRunoff%wr_exchg_dstrm( iu ) - TRunoff%erout( iu, 1 ) * Tctl%DeltaT .lt. 0._r8 ) then
             
-              TRunoff%erout( iu, 1 ) = TRunoff%wr_exchg_dstrm( iu ) / Tctl%inund_dt
+              TRunoff%erout( iu, 1 ) = TRunoff%wr_exchg_dstrm( iu ) / Tctl%DeltaT
               if ( TRunoff%yr_exchg( iu ) .gt. 0._r8 ) then
                 TRunoff%vr( iu, 1 ) = - TRunoff%erout( iu, 1 ) / TUnit%rwidth( iu ) / TRunoff%yr_exchg( iu )
               else
@@ -571,20 +571,20 @@ MODULE MOSARTinund_Core_MOD
           end if
         
           ! Water volume change :
-          TRunoff%dwr( iu, 1 ) = ( - TRunoff%eroutUp( iu, 1 ) - TRunoff%etout( iu, 1 ) + TRunoff%erout( iu, 1 ) ) * Tctl%inund_dt
+          TRunoff%dwr( iu, 1 ) = ( - TRunoff%eroutUp( iu, 1 ) - TRunoff%etout( iu, 1 ) + TRunoff%erout( iu, 1 ) ) * Tctl%DeltaT
         
         ! If water surface slope (surfaceSlope) is zero :
         else
           TRunoff%vr( iu, 1 ) = 0._r8
           TRunoff%erout( iu, 1 ) = 0._r8
-          TRunoff%dwr( iu, 1 ) = ( - TRunoff%eroutUp( iu, 1 ) - TRunoff%etout( iu, 1 ) ) * Tctl%inund_dt
+          TRunoff%dwr( iu, 1 ) = ( - TRunoff%eroutUp( iu, 1 ) - TRunoff%etout( iu, 1 ) ) * Tctl%DeltaT
         end if
       
         ! Channel water volume after routing computation :
         TRunoff%wr_rtg( iu ) = TRunoff%wr_exchg( iu ) + TRunoff%dwr( iu, 1 )
 
         ! Account for TRunoff%qgwl(...) ( runoff from glacier, wetlands or lakes; unit: m/s ) :
-        wv_gwl = TRunoff%qgwl( iu, 1 ) * TUnit%area( iu ) * TUnit%frac( iu ) * Tctl%inund_dt
+        wv_gwl = TRunoff%qgwl( iu, 1 ) * TUnit%area( iu ) * TUnit%frac( iu ) * Tctl%DeltaT
 
         if ( TRunoff%wr_rtg( iu ) + wv_gwl .lt. 0._r8 ) then
           write( iulog, * ) trim( subname ) // ' WARNING: TRunoff%qgwl(...) is so negative that the channel water volume becomes negative ! Channel water volume is forced to be zero.'
@@ -638,11 +638,11 @@ MODULE MOSARTinund_Core_MOD
         TRunoff%erout( iu, 1 ) = - TRunoff%vr( iu, 1 ) * TUnit%rwidth( iu ) * TRunoff%yr_exchg( iu )      
       
         ! Water volume change :
-        TRunoff%dwr( iu, 1 ) = ( - TRunoff%eroutUp( iu, 1 ) - TRunoff%etout( iu, 1 ) + TRunoff%erout( iu, 1 ) ) * Tctl%inund_dt   
+        TRunoff%dwr( iu, 1 ) = ( - TRunoff%eroutUp( iu, 1 ) - TRunoff%etout( iu, 1 ) + TRunoff%erout( iu, 1 ) ) * Tctl%DeltaT   
       
         ! If water volume becomes negative because downward flow is too large :
         if ( TRunoff%erout( iu, 1 ) .lt. 0._r8 .and. TRunoff%wr_exchg( iu ) + TRunoff%dwr( iu, 1 ) .lt. 0._r8 ) then    
-          TRunoff%erout( iu, 1 ) = - ( - TRunoff%eroutUp( iu, 1 ) - TRunoff%etout( iu, 1 ) + TRunoff%wr_exchg( iu ) / Tctl%inund_dt )
+          TRunoff%erout( iu, 1 ) = - ( - TRunoff%eroutUp( iu, 1 ) - TRunoff%etout( iu, 1 ) + TRunoff%wr_exchg( iu ) / Tctl%DeltaT )
           if ( TRunoff%yr_exchg( iu ) .gt. 0._r8 ) then
             TRunoff%vr( iu, 1 ) = - TRunoff%erout( iu, 1 ) / TUnit%rwidth( iu ) / TRunoff%yr_exchg( iu )
           else
@@ -656,7 +656,7 @@ MODULE MOSARTinund_Core_MOD
         TRunoff%wr_rtg( iu ) = TRunoff%wr_exchg( iu ) + TRunoff%dwr( iu, 1 )    
 
         ! Account for TRunoff%qgwl(...) ( runoff from glacier, wetlands or lakes; unit: m/s ) :
-        wv_gwl = TRunoff%qgwl( iu, 1 ) * TUnit%area( iu ) * TUnit%frac( iu ) * Tctl%inund_dt
+        wv_gwl = TRunoff%qgwl( iu, 1 ) * TUnit%area( iu ) * TUnit%frac( iu ) * Tctl%DeltaT
 
         if ( TRunoff%wr_rtg( iu ) + wv_gwl .lt. 0._r8 ) then
           write( iulog, * ) trim( subname ) // ' WARNING: TRunoff%qgwl(...) is so negative that the channel water volume becomes negative ! Channel water volume is forced to be zero.'
@@ -687,7 +687,7 @@ MODULE MOSARTinund_Core_MOD
 
     ! Channel streamflow :
     !TRunoff%chnlQ_prev = TRunoff%chnlQ   
-    
+ 
     if ( Tctl%OPT_inund .eq. 1 ) then
       ! Floodplain water volume :
       TRunoff%wf_ini = TRunoff%wf_exchg     
