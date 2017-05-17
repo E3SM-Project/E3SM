@@ -204,9 +204,8 @@ def run_diag(parameter):
                         #mv = acme.process_derived_var(var, acme.derived_variables, f_in)
                         if ref_name == 'AIRS':
                             # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
-                            print mv.fill_value
                             # this is cdms2 for bad mask, denise's fix should fix
-                            mv = MV2.masked_where(mv == mv.fill_value, mv)
+                            mv = MV2.masked_where(mv > 1e+20, mv)
                         # Construct pressure level for interpolation
                         levels_orig = MV2.array(mv_plv[:])
                         levels_orig.setAxis(0, mv_plv)

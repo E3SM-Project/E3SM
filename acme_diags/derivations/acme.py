@@ -95,7 +95,7 @@ def convert_units(var, target_units):
         var = var / 9.8 / 100  # convert to hecto meter
         var.units = target_units
     elif var.units == 'Pa/s':
-         var = var /1000.0*24*3600
+         var = var /100.0*24*3600
          var.units = target_units
     elif var.units == 'mb/day':
          var = var 
@@ -362,12 +362,13 @@ derived_variables = {
     ]),
     'RELHUM': OrderedDict([
         (('RELHUM'), lambda relhum: convert_units(relhum, target_units="%"))
+#        (('RELHUM'), rename)
     ]),
     'OMEGA': OrderedDict([
         (('OMEGA'), lambda omega: convert_units(omega, target_units="mbar/day"))
     ]),
     'SHUM': OrderedDict([
-        (('Q'), rename),
+        (('Q'), lambda q: convert_units(rename(q), target_units="g/kg")),
         (('SHUM'), lambda shum: convert_units(shum, target_units="g/kg"))
     ])
 }

@@ -89,9 +89,9 @@ def run_diag(parameter):
                 # following should move to derived variable
             if ref_name == 'AIRS':
                 # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
-                print mv.fill_value
+                print mv2.fill_value
                 # this is cdms2 for bad mask, denise's fix should fix
-                mv2 = MV2.masked_where(mv2 == mv.fill_value, mv2)
+                mv2 = MV2.masked_where(mv2 >1e+20, mv2)
             if ref_name == 'WILLMOTT' or ref_name == 'CLOUDSAT':
                 print mv2.fill_value
                 # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)

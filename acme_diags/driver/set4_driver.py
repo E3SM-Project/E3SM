@@ -123,9 +123,9 @@ def run_diag(parameter):
                 # following should move to derived variable
             if ref_name == 'AIRS':
                 # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
-                print mv.fill_value
+                print mv2.fill_value
                 # this is cdms2 for bad mask, denise's fix should fix
-                mv2 = MV2.masked_where(mv2 == mv.fill_value, mv2)
+                mv2 = MV2.masked_where(mv2 > 1e+20, mv2)
             if ref_name == 'WILLMOTT' or ref_name == 'CLOUDSAT':
                 print mv2.fill_value
                 # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
@@ -183,24 +183,39 @@ def run_diag(parameter):
                     ' '.join([var, season]))
 
                 # Regrid towards lower resolution of two variables for
-                # calculafor_hsiyen/ting difference
+                # calculating difference
                 if len(mv1_p.getLatitude()) <= len(mv2_p.getLatitude()):
                     mv1_reg = mv1_p
                     lev_out = mv1_p.getLevel()
                     lat_out = mv1_p.getLatitude()
                     mv2_reg = mv2_p.crossSectionRegrid(lev_out, lat_out)
+                    #apply mask back, since crossSectionRegrid doesn't preserve mask
+                    mv2_reg = MV2.masked_where(
+                                mv2_reg == mv2_reg.fill_value, mv2_reg)
+                    print mv2_reg.fill_value
                 else:
                     mv2_reg = mv2_p
                     lev_out = mv2_p.getLevel()
                     lat_out = mv2_p.getLatitude()
                     mv1_reg = mv1_p.crossSectionRegrid(lev_out, lat_out)
+                    #apply mask back, since crossSectionRegrid doesn't preserve mask
+                    mv1_reg = MV2.masked_where(
+                                mv1_reg == mv1_reg.fill_value, mv1_reg)
 
                 #print mv1_p.shape,mv2_p.shape
                 #mv1_reg, mv2_reg = utils.sregrid_to_lower_res(
                 #    mv1_p, mv2_p, parameter.regrid_tool, parameter.regrid_method)
-                print mv1_reg.shape
-                print mv2_reg.shape
+                #reg_mask = MV2.logical_and(mv1_reg.mask, mv2_reg.mask)
+                #print 'reg_mask', reg_mask[:,-1]
+                #mv1_reg = MV2.masked_where(reg_mask,mv1_reg)
+                #mv2_reg = MV2.masked_where(reg_mask,mv2_reg)
+                #print mv1_reg.shape
+                #print mv2_reg.shape
+                #print mv1_p[:,-1].mask
+                #print mv2_p[:,-1].mask
 
+                #print mv1_reg[:,-1].mask
+                #print mv2_reg[:,-1].mask
                 # Plotting
                 diff = mv1_reg - mv2_reg
                 metrics_dict = create_metrics(
