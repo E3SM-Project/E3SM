@@ -41,7 +41,7 @@
     driver. The atmosphere/ocean fluxes are computed in the
     coupler. Therefore, the data ocean model does not compute fluxes like
     the data ice model. DOCN has two distinct modes of operation. It can
-    arun as a pure data model, reading in ocean SSTs (normally
+    run as a pure data model, reading in ocean SSTs (normally
     climatological) from input datasets, performing time/spatial
     interpolations, and passing these to the coupler. Alternatively,
     DOCN can compute updated SSTs by running as a slab ocean model where
@@ -50,18 +50,14 @@
     from the driver.
     --- A setting of prescribed assumes the only field in the input stream is SST.
     It also assumes the SST is in Celsius and must be converted to Kelvin.
-    All other fields are set to zero except for ocean salinity, which
-    is set to a constant reference salinity value.
-    Normally the ice fraction data is found in the same data files that
-    provide SST data to the data ocean model. They are normally found in
-    the same file because the SST and ice fraction data are derived from
-    the same observational data sets and are consistent with each other.
-    to the data ocean model. They are normally found in the same file
-    because the SST and ice fraction data are derived from the same
-    observational data sets and are consistent with each other.
-    --- A setting of som (slab ocean model) mode is a prognostic mode.  This mode
-    computes a prognostic sea surface temperature and a freeze/melt
-    potential (surface Q-flux) used by the sea ice model.  This
+    All other fields are set to zero except for ocean salinity, which is set to a 
+    constant reference salinity value. Normally the ice fraction data is found in 
+    the same data files that provide SST data to the data ocean model. They are 
+    normally found in the same file because the SST and ice fraction data are derived 
+    from the same observational data sets and are consistent with each other.
+    --- Settings of som (slab ocean model) or  som_aquap (aquaplanet slab ocean) are 
+    prognostic modes which compute a prognostic sea surface temperature and a 
+    freeze/melt potential (surface Q-flux) used by the sea ice model.  This
     calculation requires an external SOM forcing data file that includes
     ocean mixed layer depths and bottom-of-the-slab Q-fluxes.
     Scientifically appropriate bottom-of-the-slab Q-fluxes are normally
@@ -71,7 +67,14 @@
     appropriate and is provided for testing and development purposes only.
     Users must create scientifically appropriate data for their particular
     application.  A tool is available to derive valid SOM forcing.
-    Default is prescribed.</desc>
+    --- A setting of sst_aquapN (where “N” is an integer index value) is a 
+    type of prescribed SST mode used specifically for an aquaplanet setup in 
+    which global SSTs correspond to an analytic form set by the index value.  
+    Currently, indices for 10 SST profiles are supported [e.g., index 3 corresponds
+    to the “QOBS” profile of Neale and Hoskins (2001, Atmos. Sci. Lett.)]. 
+    With source code modifications, it is possible for users to create their own 
+    analytic SST distributions and match them to indices 11 or greater.  
+    </desc>
   </entry>
 
   <entry id="DOCN_SOM_FILENAME">
