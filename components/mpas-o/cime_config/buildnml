@@ -14,16 +14,16 @@ my $CASEBUILD		= `./xmlquery  CASEBUILD	-value`;
 my $SRCROOT		= `./xmlquery  SRCROOT		-value`;
 my $OBJROOT		= `./xmlquery  OBJROOT		-value`;
 my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE	-value`;
-my $DIN_LOC_ROOT	= `./xmlquery  DIN_LOC_ROOT     -value`;
+my $DIN_LOC_ROOT	= `./xmlquery  DIN_LOC_ROOT	-value`;
 my $OCN_GRID		= `./xmlquery  OCN_GRID		-value`;
 my $OCN_MASK		= `./xmlquery  MASK_GRID	-value`;
 my $OCN_FORCING		= `./xmlquery  MPASO_FORCING	-value`;
 my $NTASKS_OCN		= `./xmlquery  NTASKS_OCN	-value`;
 my $OCN_PIO_TYPENAME	= `./xmlquery  OCN_PIO_TYPENAME	-value`;
-#my $NINST_OCN		= `./xmlquery  NINST_OCN		-value`;
+#my $NINST_OCN		= `./xmlquery  NINST_OCN	-value`;
 my $NINST_OCN = 1; # Change if you want multiple instances... though this isn't coded yet.
 my $RUNDIR		= `./xmlquery  RUNDIR		-value`;
-my $STREAM_NAME     = 'streams.ocean';
+my $STREAM_NAME         = 'streams.ocean';
 
 my @dirs = ("$CIMEROOT/utils/perl5lib");
 unshift @INC, @dirs;
