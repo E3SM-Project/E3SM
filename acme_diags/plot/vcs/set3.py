@@ -8,24 +8,28 @@ from acme_diags.driver.utils import get_output_dir
 
 def plot(ref, test, diff, metrics_dict, parameters):
     # Line options, see here: https://uvcdat.llnl.gov/documentation/vcs/vcs-10.html
+    # Other options not in the above link: https://uvcdat.llnl.gov/docs/vcs/graphics/unified1D.html
     ref_plot_linetype = 0
-    ref_plot_color = 1  # 1 to 256
-    ref_plot_width = 1  # 1 to 300
+    ref_plot_color = 215  # 6 to 239
+    ref_plot_width = 5  # 1 to 100
     ref_plot_marker = 1
     ref_plot_markersize = 1
-    ref_plot_markercolor = 1  # 1 to 256
+    ref_plot_markercolor = 215
 
     test_plot_linetype = 0
-    test_plot_color = 250
-    test_plot_width = 1
+    test_plot_color = 1
+    test_plot_width = 5
     test_plot_marker = 1
     test_plot_markersize = 1
-    test_plot_markercolor = 250
+    test_plot_markercolor = 1
 
     # default ref breaks for now
     ref = test + 50
 
     vcs_canvas = vcs.init()
+    # use vcs_canvas.show('colormap') to view all colormaps
+    vcs_canvas.setcolormap('rainbow')  # 6 to 239 are purple to red in rainbow order
+
     ref_test_template = vcs.createtemplate('ref_test_template')
     ref_test_template.blank(["mean", "max", "min", "zvalue", "dataname", "crtime", "ytic2", "xtic2", "xname", "yname", "legend"])
 
@@ -37,21 +41,22 @@ def plot(ref, test, diff, metrics_dict, parameters):
     test_line.datawc_y1 = min(ref.min(), test.min())
     test_line.datawc_y2 = max(ref.max(), test.max())
 
-    ref_line.linetype = ref_plot_linetype
+    ref_line.line = ref_plot_linetype
+    # ref_line.linetype = ref_plot_linetype
     ref_line.linecolor = ref_plot_color
     ref_line.linewidth = ref_plot_width
     ref_line.marker = ref_plot_marker
     ref_line.markersize = ref_plot_markersize
     ref_line.markercolor = ref_plot_markercolor
 
-    test_line.linetype = test_plot_linetype
+    test_line.line = test_plot_linetype
+    # test_line.linetype = test_plot_linetype
     test_line.linecolor = test_plot_color
     test_line.linewidth = test_plot_width
     test_line.marker = test_plot_marker
     test_line.markersize = test_plot_markersize
     test_line.markercolor = test_plot_markercolor
-    #test_line.smooth = 1
-
+    # test_line.smooth = 1
 
     blank_template = vcs_canvas.createtemplate('blank_template')
     blank_template.blank()
@@ -59,6 +64,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
     vcs_canvas.plot(ref, ref_line, ref_test_template)
     vcs_canvas.plot(test, test_line, blank_template)
     vcs_canvas.png('set3vcs.png')
+    vcs_canvas.clear()
 
 
 def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
