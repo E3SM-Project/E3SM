@@ -382,7 +382,7 @@ contains
          qflx_infl         =>    waterflux_vars%qflx_infl_col       , & ! Input:  [real(r8) (:)   ]  infiltration (mm H2O /s)                          
          qflx_tran_veg_col =>    waterflux_vars%qflx_tran_veg_col   , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
          qflx_tran_veg_pft =>    waterflux_vars%qflx_tran_veg_patch , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
-         qflx_rootsoi      =>    waterflux_vars%qflx_rootsoi_col    , & ! Input: [real(r8) (:,:) ]  vegetation/soil water exchange (mm H2O/s) (+ = to atm)
+         qflx_rootsoi_col  =>    waterflux_vars%qflx_rootsoi_col    , & ! Input: [real(r8) (:,:) ]  vegetation/soil water exchange (mm H2O/s) (+ = to atm)
          t_soisno          =>    temperature_vars%t_soisno_col        & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
          )
 
@@ -958,7 +958,7 @@ contains
          end if
          do j = 1, nlevbed
             c = filter_hydrologyc(fc)
-            qflx_rootsoi(c,j) = qflx_tran_veg_col(c) * rootr_col(c,j) * 1.e-3_r8      ![m H2O/s]
+            qflx_rootsoi_col(c,j) = qflx_tran_veg_col(c) * rootr_col(c,j) * 1.e-3_r8      ![m H2O/s]
          enddo
       enddo
 
