@@ -10,28 +10,90 @@ def plot(ref, test, diff, metrics_dict, parameters):
     # Line options, see here: https://uvcdat.llnl.gov/documentation/vcs/vcs-10.html
     # Other options not in the above link: https://uvcdat.llnl.gov/docs/vcs/graphics/unified1D.html
     ref_plot_linetype = 0
-    ref_plot_color = 215  # 6 to 239
-    ref_plot_width = 5  # 1 to 100
+    ref_plot_color = 1  # 6 to 239
+    ref_plot_width = 3  # 1 to 100
     ref_plot_marker = 1
     ref_plot_markersize = 1
-    ref_plot_markercolor = 215
+    ref_plot_markercolor = 1
 
     test_plot_linetype = 0
-    test_plot_color = 1
-    test_plot_width = 5
+    test_plot_color = 215
+    test_plot_width = 3
     test_plot_marker = 1
     test_plot_markersize = 1
-    test_plot_markercolor = 1
+    test_plot_markercolor = 215
 
     # default ref breaks for now
     ref = test + 50
 
-    vcs_canvas = vcs.init()
+    vcs_canvas = vcs.init(geometry=(1628, 1212))
+    #vcs_canvas.geometry(1628, 1212)
+    #vcs_canvas.geometry(1212, 1628)
+
     # use vcs_canvas.show('colormap') to view all colormaps
     vcs_canvas.setcolormap('rainbow')  # 6 to 239 are purple to red in rainbow order
 
     ref_test_template = vcs.createtemplate('ref_test_template')
-    ref_test_template.blank(["mean", "max", "min", "zvalue", "dataname", "crtime", "ytic2", "xtic2", "xname", "yname", "legend"])
+    # make all of the elements listed have priority = 0
+    ref_test_template.blank(["mean", "max", "min", "zvalue", "dataname", "crtime","ytic2", "xtic2"])
+
+    # the actual box around the plot
+    ref_test_template.box1.x1 = 0.123
+    ref_test_template.box1.x2 = 0.86
+    ref_test_template.box1.y1 = 0.70167*(2.0/3.0)
+    ref_test_template.box1.y2 = 0.95
+
+    # data (the lines) need to be offset accordingly
+    ref_test_template.data.x1 = 0.123
+    ref_test_template.data.x2 = 0.86
+    ref_test_template.data.y1 = 0.70167*(2.0/3.0)
+    ref_test_template.data.y2 = 0.95
+
+    #ref_test_template.dataname.x = 0.123
+    #ref_test_template.dataname.y = 0.96
+
+    ref_test_template.legend.x1 = 0.88 # left line
+    ref_test_template.legend.x2 = 0.96
+    ref_test_template.legend.y1 = 0.90
+    ref_test_template.legend.y2 = 0.925
+    #print ref_test_template.legend.texttable
+    ref_test_template.legend.textorientation = 'defright'
+    #print '-'*20
+    #print ref_test_template.legend.texttable
+    
+    #help(ref_test_template.legend.textorientation.center)
+    #print(ref_test_template.legend.textorientation.center()) 
+    #quit()
+
+    ref_test_template.title.x = 0.415
+    ref_test_template.title.y = 0.97
+
+    ref_test_template.units.x = 0.855
+    ref_test_template.units.y = 0.97
+
+    # labels on xaxis
+    ref_test_template.xlabel1.y = (0.70167*(2.0/3.0)) - 0.02  # no xlabel1.x attribute
+
+    # actual ticks
+    ref_test_template.xtic1.y1 = (0.70167*(2.0/3.0) - 0.005) + 0.01
+    ref_test_template.xtic1.y2 = (0.70167*(2.0/3.0) - 0.005)
+
+    # name of xaxis
+    ref_test_template.xname.y += 0.21
+
+
+    # labels on yaxis
+    ref_test_template.ylabel1.x = 0.1108  # no ylabel1.y attribute
+
+    # actual ticks
+    ref_test_template.ytic1.x1 = (0.123 - 0.005) + 0.01
+    ref_test_template.ytic1.x2 = (0.123 - 0.005)
+
+    # name of yaxis
+    ref_test_template.yname.x += 0.07
+    ref_test_template.yname.y += 0.15
+
+
 
     ref_line = vcs_canvas.createxvsy('ref_plot')
     ref_line.datawc_y1 = min(ref.min(), test.min())
@@ -58,8 +120,11 @@ def plot(ref, test, diff, metrics_dict, parameters):
     test_line.markercolor = test_plot_markercolor
     # test_line.smooth = 1
 
-    blank_template = vcs_canvas.createtemplate('blank_template')
+    blank_template = vcs_canvas.createtemplate('blank_template', ref_test_template)
     blank_template.blank()
+    blank_template.legend.priority = 1
+    blank_template.legend.y1 -= 0.05
+    blank_template.legend.y2 -= 0.05
 
     vcs_canvas.plot(ref, ref_line, ref_test_template)
     vcs_canvas.plot(test, test_line, blank_template)
