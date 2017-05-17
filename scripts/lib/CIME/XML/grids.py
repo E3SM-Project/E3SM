@@ -401,6 +401,8 @@ class Grids(GenericXML):
                 gridname = grid[0]
                 other_gridname = other_grid[0]
                 gridvalue = component_grids[grid[1]]
+                if gridname == "atm_grid":
+                    atm_gridvalue = gridvalue
                 other_gridvalue = component_grids[other_grid[1]]
                 gridmap_nodes = self.get_nodes(nodename="gridmap",
                                                attributes={gridname:gridvalue, other_gridname:other_gridvalue})
@@ -428,7 +430,10 @@ class Grids(GenericXML):
                 if grid1_value != grid2_value and grid1_value != 'null' and grid2_value != 'null':
                     map_ = gridmaps[node.text]
                     if map_ == 'idmap':
-                        logger.warning("Warning: missing non-idmap %s for %s, %s and %s %s "
+                        if grid1_name == "ocn_grid" and grid1_value == atm_gridvalue:
+                            logger.debug('ocn_grid == atm_grid so this is not an idmap error')
+                        else:
+                            logger.warning("Warning: missing non-idmap %s for %s, %s and %s %s "
                                        %(node.text, grid1_name, grid1_value, grid2_name, grid2_value))
 
         return gridmaps

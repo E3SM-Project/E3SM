@@ -443,7 +443,7 @@ class Case(object):
                     user_mods_dir     = files.get_value("USER_MODS_DIR"     , {"component":component}, resolved=False)
                     self.set_lookup_value("COMPSETS_SPEC_FILE" ,
                                    files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
-                    self._primary_component = component.upper()
+                    self._primary_component = component
                     self.set_lookup_value("TESTS_SPEC_FILE"    , tests_filename)
                     self.set_lookup_value("TESTS_MODS_DIR"     , tests_mods_dir)
                     self.set_lookup_value("USER_MODS_DIR"      , user_mods_dir)
@@ -1031,13 +1031,9 @@ class Case(object):
         for newdir in newdirs:
             os.makedirs(newdir)
 
-        user_mods = self.get_value("%s_USER_MODS"%(self._primary_component))
-
         # Open a new README.case file in $self._caseroot
         append_status(" ".join(sys.argv), "README.case", caseroot=self._caseroot)
         compset_info = "Compset longname is %s"%(self.get_value("COMPSET"))
-        if user_mods is not None:
-            compset_info += " with user_mods directory %s"%(user_mods)
         append_status(compset_info,
                       "README.case", caseroot=self._caseroot)
         append_status("Compset specification file is %s" %
@@ -1054,11 +1050,12 @@ class Case(object):
                           "README.case", caseroot=self._caseroot)
             append_status("%s is %s"%(comp_grid,self.get_value(comp_grid)),
                           "README.case", caseroot=self._caseroot)
-
-        if user_mods is not None:
-            note = "This compset includes user_mods %s"%user_mods
-            append_status(note, "README.case", caseroot=self._caseroot)
-            logger.info(note)
+            comp = str(self.get_value("COMP_%s"%component_class))
+            user_mods = self.get_value("%s_USER_MODS"%(comp.upper()))
+            if user_mods is not None:
+                note = "This component includes user_mods %s"%user_mods
+                append_status(note, "README.case", caseroot=self._caseroot)
+                logger.info(note)
         if not clone:
             self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
@@ -1068,19 +1065,30 @@ class Case(object):
         User mods can be specified on the create_newcase command line (usually when called from create test)
         or they can be in the compset definition, or both.
         """
-
-        component_user_mods = self.get_value("%s_USER_MODS"%(self._primary_component))
+        all_user_mods = []
+        for comp in self._component_classes:
+            if comp == self._primary_component:
+                continue
+            component = str(self.get_value("COMP_%s"%comp))
+            comp_user_mods = self.get_value("%s_USER_MODS"%component.upper())
+            if comp_user_mods is not None:
+                all_user_mods.append(comp_user_mods)
+        # get the primary last so that it takes precidence over other components
+        comp_user_mods = self.get_value("%s_USER_MODS"%(self._primary_component.upper()))
+        if comp_user_mods is not None:
+            all_user_mods.append(comp_user_mods)
+        if user_mods_dir is not None:
+            all_user_mods.append(user_mods_dir)
 
         # This looping order will lead to the specified user_mods_dir taking
         # precedence over self._user_mods, if there are any conflicts.
-        for user_mods in (component_user_mods, user_mods_dir):
-            if user_mods is not None:
-                if os.path.isabs(user_mods):
-                    user_mods_path = user_mods
-                else:
-                    user_mods_path = self.get_value('USER_MODS_DIR')
-                    user_mods_path = os.path.join(user_mods_path, user_mods)
-                apply_user_mods(self._caseroot, user_mods_path)
+        for user_mods in all_user_mods:
+            if os.path.isabs(user_mods):
+                user_mods_path = user_mods
+            else:
+                user_mods_path = self.get_value('USER_MODS_DIR')
+                user_mods_path = os.path.join(user_mods_path, user_mods)
+            apply_user_mods(self._caseroot, user_mods_path)
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None):
         if cime_output_root is None:
