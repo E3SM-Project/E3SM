@@ -1054,12 +1054,12 @@ endif
 set machine = `lowercase $machine`
 
 ### Only specially authorized people can use the special_acme qos on Cori or Edison. Don't uncomment unless you're one.
-if ( `lowercase $debug_queue` == false && ( $machine == core || $machine == edison ) ) then
-  set update_run = ${case_run_exe}.updated
-  awk '/--account/{print; print "#SBATCH --qos=special_acme";next}1' ${case_run_exe} > ${update_run}
-  mv ${update_run} ${case_run_exe}
-  unset update_run
-endif
+#if ( `lowercase $debug_queue` == false && $machine == edison ) then
+#  set update_run = ${case_run_exe}.updated
+#  awk '/--account/{print; print "#SBATCH --qos=special_acme";next}1' ${case_run_exe} > ${update_run}
+#  mv ${update_run} ${case_run_exe}
+#  unset update_run
+#endif
 
 #============================================
 # SETUP SHORT AND LONG TERM ARCHIVING
