@@ -1,4 +1,36 @@
 ======================================================================
+
+Originator: Chris Fischer
+Date: 5-18-2017 
+Tag: cime5.3.0-alpha.17
+Answer Changes: None
+Tests: ERI.f09_g17.B1850.cheyenne_intel.allactive-defaultio
+       scripts_regression_test.py
+Dependencies:
+
+Brief Summary:
+    - Rearranges code for lookups a little in case.py.
+    - Undo recent change to land domain.
+    - Fix config pes converter.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+d33bc68 Merge pull request #1561 from jedwards4b/lookups_cleanup
+3cc8bac Merge pull request #1560 from jedwards4b/undo_land_domain_change
+c3458a8 Merge pull request #1557 from ESMCI/sarich/fix-config-pes-converter
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       scripts/Tools/xmlconvertors/config_pes_converter.py
+M       scripts/Tools/xmlconvertors/grid_xml_converter.py
+M       scripts/lib/CIME/case.py
+
+
+======================================================================
+
+======================================================================
 Originator: Chris Fischer 
 Date: 5-17-2017
 Tag: cime5.3.0-alpha.16
