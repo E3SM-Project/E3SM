@@ -10,6 +10,8 @@ from acme_diags.driver import utils
 def regrid_to_lower_res_1d( mv1, mv2 ):
     """Regrid 1-D transient variable toward lower resolution of two variables."""
     import numpy
+ 
+
     if mv1 is None or mv2 is None: return None
     missing = mv1.get_fill_value()
     axis1 = mv1.getAxisList()[0]
@@ -17,11 +19,14 @@ def regrid_to_lower_res_1d( mv1, mv2 ):
     if len(axis1)<=len(axis2):
         mv1_reg = mv1
         b0 = numpy.interp( axis1[:], axis2[:], mv2[:], left=missing, right=missing )
-        mv2_reg = cdms2.createVariable( b0, mask=[ True if bb==missing else False for bb in b0[:] ], axes=[axis1] )
+        b0_mask = numpy.interp( axis1[:], axis2[:], mv2.mask[:], left=missing, right=missing )
+        mv2_reg = cdms2.createVariable( b0, mask=[ True if bb==missing or bb_mask!=0.0 else False for (bb,bb_mask) in zip(b0[:],b0_mask[:]) ], axes=[axis1] )
     else:
         a0 = numpy.interp( axis2[:], axis1[:], mv1[:], left=missing, right=missing )
-        mv1_reg = cdms2.createVariable( a0, mask=[ True if aa==missing else False for aa in a0[:] ], axes=[axis2] )
+        a0_mask = numpy.interp( axis2[:], axis1[:], mv1.mask[:], left=missing, right=missing )
+        mv1_reg = cdms2.createVariable( a0, mask=[ True if aa==missing or aa_mask!=0.0 else False for (aa,aa_mask) in zip(a0[:],a0_mask[:]) ], axes=[axis2] )
         mv2_reg = mv2
+
     return mv1_reg, mv2_reg
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
@@ -172,6 +177,7 @@ def run_diag(parameter):
                         mv1_reg, mv2_reg = regrid_to_lower_res_1d(mv1_zonal,mv2_zonal)
 
                         diff = mv1_reg - mv2_reg
+                        print diff.mask
                         parameter.output_file = '-'.join(
                             [ref_name, var, str(int(plev[ilev])), season, region])
                         parameter.main_title = str(
@@ -219,6 +225,7 @@ def run_diag(parameter):
                     mv1_reg, mv2_reg = regrid_to_lower_res_1d(mv1_zonal,mv2_zonal)
 
                     diff = mv1_reg - mv2_reg
+                    print diff[:]
 
                     parameter.output_file = '-'.join(
                         [ref_name, var, season, region])
