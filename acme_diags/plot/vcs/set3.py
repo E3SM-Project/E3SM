@@ -7,6 +7,10 @@ from acme_diags.driver.utils import get_output_dir
 
 vcs_canvas = vcs.init()
 
+def set_units(ref_or_test, units):
+    if units != '':
+        ref_or_test.units = units
+
 def plot(ref, test, diff, metrics_dict, parameters):
     # Line options, see here: https://uvcdat.llnl.gov/documentation/vcs/vcs-10.html
     # Other options not in the above link: https://uvcdat.llnl.gov/docs/vcs/graphics/unified1D.html
@@ -31,11 +35,21 @@ def plot(ref, test, diff, metrics_dict, parameters):
     diff_plot_markersize = 1
     diff_plot_markercolor = 1
 
-    # default ref breaks for now
-    ref = test + 50
 
-    vcs_canvas.geometry(1212, 1628)
+    vcs_canvas.geometry(parameters.canvas_size_w, parameters.canvas_size_h)
     vcs_canvas.drawlogooff()
+
+    set_units(test, parameters.test_units)
+    set_units(ref, parameters.reference_units)
+    set_units(diff, parameters.diff_units)
+
+    test.long_name = parameters.test_title
+    ref.long_name = parameters.reference_title
+    diff.long_name = parameters.diff_title
+
+    #test.id = parameters.test_name
+    #ref.id = parameters.reference_name
+    #diff.id = parameters.diff_name
 
     # use vcs_canvas.show('colormap') to view all colormaps
     vcs_canvas.setcolormap('rainbow')  # 6 to 239 are purple to red in rainbow order
@@ -56,9 +70,6 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_test_template.data.y1 = 0.55
     ref_test_template.data.y2 = 0.90
 
-    #ref_test_template.dataname.x = 0.123
-    #ref_test_template.dataname.y = 0.96
-
     ref_test_template.legend.x1 = 0.88
     ref_test_template.legend.x2 = 0.98
     ref_test_template.legend.y1 = 0.86
@@ -74,19 +85,18 @@ def plot(ref, test, diff, metrics_dict, parameters):
     # labels on xaxis
     ref_test_template.xlabel1.y = (0.55) - 0.02  # no xlabel1.x attribute
 
-    # actual ticks
+    # actual ticks on xaxis
     ref_test_template.xtic1.y1 = (0.55 - 0.005) + 0.01
     ref_test_template.xtic1.y2 = (0.55 - 0.005)
 
     # name of xaxis
     ref_test_template.xname.y += 0.29
 
-
     # labels on yaxis
     ref_test_template.ylabel1.x = 0.1108  # no ylabel1.y attribute
 
-    # actual ticks
-    ref_test_template.ytic1.x1 = (0.123 - 0.005) + 0.01
+    # actual ticks on yaxis
+    ref_test_template. ytic1.x1 = (0.123 - 0.005) + 0.01
     ref_test_template.ytic1.x2 = (0.123 - 0.005)
 
     # name of yaxis
@@ -126,8 +136,8 @@ def plot(ref, test, diff, metrics_dict, parameters):
     test_line.datawc_y2 = max(ref.max(), test.max())
 
     diff_line = vcs_canvas.createxvsy('diff_plot')
-    diff_line.datawc_y1 = ref.min()
-    diff_line.datawc_y2 = ref.max()
+    diff_line.datawc_y1 = diff.min()
+    diff_line.datawc_y2 = diff.max()
 
 
     #ref_line.line = ref_plot_linetype
@@ -163,7 +173,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
 
     vcs_canvas.plot(ref, ref_line, ref_test_template)
     vcs_canvas.plot(test, test_line, blank_template)
-    vcs_canvas.plot(ref, diff_line, diff_template)
+    vcs_canvas.plot(diff, diff_line, diff_template)
 
     # Plot the main title
     # TODO make this use managetextcombined() later
@@ -175,71 +185,23 @@ def plot(ref, test, diff, metrics_dict, parameters):
     main_title.y = 0.97
     vcs_canvas.plot(main_title)
 
-    vcs_canvas.png('set3vcs.png')
+    ref_test_template.script('plot_set_3.json')
+    blank_template.script('plot_set_3.json')
+    diff_template.script('plot_set_3.json')
+    ref_line.script('plot_set_3.json')
+    test_line.script('plot_set_3.json')
+    diff_line.script('plot_set_3.json')
+    main_title.script('plot_set_3.json')
 
+    fnm = os.path.join(get_output_dir('3', parameters), parameters.output_file)
+    for f in parameters.output_format:
+        f = f.lower().split('.')[-1]
+        if f == 'png':
+            vcs_canvas.png(fnm)
+        elif f == 'pdf':
+            vcs_canvas.pdf(fnm)
+        elif f == 'svg':
+            vcs_canvas.svg(fnm)
 
-def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
-    """masks a variable var to be missing except where maskvar>=low_limit and maskvar<=high_limit. 
-    None means to omit the constrint, i.e. low_limit = -infinity or high_limit = infinity. var is changed and returned; we don't make a new variable.
-    var and maskvar: dimensioned the same variables.
-    low_limit and high_limit: scalars.
-    """
-    var = copy.deepcopy(input_var)
-    if low_limit is None and high_limit is None:
-        return var
-    if low_limit is None and high_limit is not None:
-        maskvarmask = maskvar > high_limit
-    elif low_limit is not None and high_limit is None:
-        maskvarmask = maskvar < low_limit
-    else:
-        maskvarmask = (maskvar < low_limit) | (maskvar > high_limit)
-    if var.mask is False:
-        newmask = maskvarmask
-    else:
-        newmask = var.mask | maskvarmask
-    var.mask = newmask
-    return var
-
-def convert_units(var, target_units):
-    ''' Converts units of var to target_units.
-    var is a cdms.TransientVariable. '''
-
-    if not hasattr(var, 'units') and var.id == 'SST':
-        var.units = target_units
-    elif not hasattr(var, 'units') and var.id =='ICEFRAC':
-        var.units = target_units
-        var = 100.0 * var
-    elif var.units == 'fraction':
-        var = 100.0 * var
-        var.units = target_units
-    elif var.units == 'mb':
-        var.units = target_units
-    elif var.units == 'gpm':  # geopotential meter
-        var = var / 9.8 / 100  # convert to hecto meter
-        var.units = target_units
-    else:
-        temp = udunits(1.0, var.units)
-        coeff, offset = temp.how(target_units)
-        var = coeff * var + offset
-        var.units = target_units
-
-    return var
-
-if __name__ == '__main__':
-    test_pth = '/Users/shaheen2/ACME_simulations/20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01_ANN_climo.nc'
-    ref_pth = '/Users/shaheen2/obs_for_diagnostics/CRU_ANN_climo.nc'
-
-    f = cdms2.open(ref_pth)
-    ref = f('TREFHT_LAND')
-    f.close()
-
-    f = cdms2.open(test_pth)
-    # TREFHT', 'LANDFRAC
-    trefht = f('TREFHT')
-    landfrac = f('LANDFRAC')
-    test = mask_by(convert_units(trefht, target_units="K"), landfrac, low_limit=0.65)
-    #test = convert_units(trefht, target_units="K")
-    f.close()
-
-    #diff = ref - test
-    plot(ref, test, ref, None, None) 
+        print('Plot saved in: ' + fnm + '.' + f)
+    vcs_canvas.clear()
