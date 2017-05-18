@@ -14,7 +14,7 @@ module load git/2.3.0
 module load cmake/3.0.2
 module load netcdf/4.3.3.1
 
-export MPISERIAL=/glade/p/work/katec/installs/intel_15.0.3
+export MPISERIAL=/glade/u/home/jedwards/mpi-serial/intel15.0.3/
 
 export CC=icc
 export FC=ifort

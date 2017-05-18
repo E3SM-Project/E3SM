@@ -58,7 +58,7 @@ class TestSuitesFromXML(unittest.TestCase):
     """Tests for the suites_from_xml function."""
 
     def check_spec_list(self, xml_str, names, directories,
-                        known_paths={}, labels=None):
+                        known_paths=None, labels=None):
         """Check that a spec list matches input names and directories.
 
         This is used by the following tests to do the dirty work of making
@@ -129,7 +129,6 @@ class TestSuitesFromXML(unittest.TestCase):
 
     def test_path_relative_to_known(self):
         """suites_from_xml handles a relative_to directory attribute."""
-        from os.path import abspath
 
         xml_str = """
 <root>
@@ -145,7 +144,6 @@ class TestSuitesFromXML(unittest.TestCase):
 
     def test_path_with_whitespace(self):
         """suites_from_xml handles a directory with whitespace added."""
-        from os.path import abspath
 
         xml_str = """
 <root>
@@ -160,7 +158,6 @@ class TestSuitesFromXML(unittest.TestCase):
 
     def test_path_with_label(self):
         """suites_from_xml handles a directory with a label correctly."""
-        from os.path import abspath
 
         xml_str = """
 <root>

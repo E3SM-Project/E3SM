@@ -97,6 +97,8 @@ int main(int argc, char **argv)
             ERR(ret);
         if (active)
             ERR(ERR_WRONG);
+        if ((ret = PIOc_iosystem_is_active(iosysid, NULL)))
+            ERR(ret);
 
         int numiotasks;
         if (PIOc_get_numiotasks(iosysid + TEST_VAL_42, &numiotasks) != PIO_EBADID)

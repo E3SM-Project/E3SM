@@ -129,7 +129,7 @@ CONTAINS
 
 
 
-    pio_tf_log_level_ = 0
+    pio_tf_log_level_ = 3
     pio_tf_num_aggregators_ = 0
     pio_tf_num_io_tasks_ = 0
     pio_tf_stride_ = 1

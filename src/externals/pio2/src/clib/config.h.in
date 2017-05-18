@@ -22,4 +22,7 @@
 /** Set to non-zero to turn on logging. Output may be large. */
 #define PIO_ENABLE_LOGGING @ENABLE_LOGGING@
 
+/** Size of MPI_Offset type. */
+#define SIZEOF_MPI_OFFSET @SIZEOF_MPI_OFFSET@
+
 #endif /* _PIO_CONFIG_ */
