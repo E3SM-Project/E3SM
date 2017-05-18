@@ -793,12 +793,7 @@ contains
   real (kind=real_kind), dimension(np,np,2) :: lap_v
   real (kind=real_kind) :: delz
 
-  real (kind=real_kind) :: ps_ref(np,np)
-  real (kind=real_kind) :: theta_ref(np,np,nlev,nets:nete)
-  real (kind=real_kind) :: phi_ref(np,np,nlev,nets:nete)
-  real (kind=real_kind) :: dp_ref(np,np,nlev,nets:nete)
-  real (kind=real_kind) :: w_ref(np,np,nlev,nets:nete)
-  real (kind=real_kind) :: u_ref(np,np,2,nlev,nets:nete)
+  real (kind=real_kind) :: theta_ref(np,np,nlev)
 
   real (kind=real_kind) :: theta_prime(np,np,nlev)
   real (kind=real_kind) :: phi_prime(np,np,nlev)
@@ -816,35 +811,16 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   do ie=nets,nete
 
-     w_ref(:,:,:,ie)     = state0(ie)%w(:,:,:,1)
-     u_ref(:,:,:,:,ie)   = state0(ie)%v(:,:,:,:,1)
-     phi_ref(:,:,:,ie)   = state0(ie)%phi(:,:,:,1)
-     dp_ref(:,:,:,ie)    = state0(ie)%dp3d(:,:,:,1)
-     theta_ref(:,:,:,ie) = state0(ie)%theta_dp_cp(:,:,:,1)/(cp*dp_ref(:,:,:,ie))
-     ps_ref(:,:)         = state0(ie)%ps_v(:,:,1)
-
-    ! ps_ref(:,:) = sum(elem(ie)%state%dp3d(:,:,:,nt),3)
-    ! do k=1,nlev
-    !    dp_ref(:,:,k,ie) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-    !         (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
-    ! enddo
-
-    ! call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,&
-    !      elem(ie)%state%theta_dp_cp(:,:,:,nt),elem(ie)%state%dp3d(:,:,:,nt),&
-    !      phi_ref(:,:,:,ie))
-
-     do k=1,nlev
-        ! convert theta_dp_cp -> theta
-        elem(ie)%state%theta_dp_cp(:,:,k,nt)=&
-             elem(ie)%state%theta_dp_cp(:,:,k,nt)/(Cp*elem(ie)%state%dp3d(:,:,k,nt))
-     enddo
+     theta_ref(:,:,:) = state0(ie)%theta_dp_cp(:,:,:,1)/(cp*state0(ie)%dp3d(:,:,:,1))
+     elem(ie)%state%theta_dp_cp(:,:,:,nt)=&
+             elem(ie)%state%theta_dp_cp(:,:,:,nt)/(Cp*elem(ie)%state%dp3d(:,:,:,nt))
 
      ! perturbation variables
-     u_prime(:,:,:,:)  = elem(ie)%state%v(:,:,:,:,nt)        -u_ref(:,:,:,:,ie)
-     w_prime(:,:,:)    = elem(ie)%state%w(:,:,:,nt)          -w_ref(:,:,:,ie)
-     dp_prime(:,:,:)   = elem(ie)%state%dp3d(:,:,:,nt)       -dp_ref(:,:,:,ie)
-     phi_prime(:,:,:)  = elem(ie)%state%phi(:,:,:,nt)        -phi_ref(:,:,:,ie)
-     theta_prime(:,:,:)= elem(ie)%state%theta_dp_cp(:,:,:,nt)-theta_ref(:,:,:,ie)
+     u_prime(:,:,:,:)  = elem(ie)%state%v(:,:,:,:,nt)        -state0(ie)%v(:,:,:,:,1)
+     w_prime(:,:,:)    = elem(ie)%state%w(:,:,:,nt)          -state0(ie)%w(:,:,:,1)
+     dp_prime(:,:,:)   = elem(ie)%state%dp3d(:,:,:,nt)       -state0(ie)%dp3d(:,:,:,1)
+     phi_prime(:,:,:)  = elem(ie)%state%phi(:,:,:,nt)        -state0(ie)%phi(:,:,:,1)
+     theta_prime(:,:,:)= elem(ie)%state%theta_dp_cp(:,:,:,nt)-theta_ref(:,:,:)
 
      ! vertical viscosity
      call laplace_z(u_prime,    vtens(:,:,:,:,ie),2,delz)
