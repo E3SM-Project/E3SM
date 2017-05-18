@@ -17,16 +17,16 @@ NCPU=640
 date
 
 # 4dg resolution
-cp -f namelist-r400.nl input.nl
-srun -n 384 $EXEC < input.nl
-mv -f movies/dcmip2016_test31.nc movies/dcmip2016_test3_r400.nc
-ncl plot_supercell_wvel.ncl
+#cp -f namelist-r400.nl input.nl
+#srun -n 384 $EXEC < input.nl
+#mv -f movies/dcmip2016_test31.nc movies/dcmip2016_test3_r400.nc
+#ncl plot_supercell_wvel.ncl
 
-mv HommeTime HommeTime_r400
-mv measurement_wmax.pdf wmax_r400.pdf
-mv measurement_wmax.txt measurement_wmax_r400.txt
-mv measurement_time.txt measurement_time_r400.txt
-mv measurement_prect_rate.txt measurement_prect_rate.txt_r400.txt
+#mv HommeTime HommeTime_r400
+#mv measurement_wmax.pdf wmax_r400.pdf
+#mv measurement_wmax.txt measurement_wmax_r400.txt
+#mv measurement_time.txt measurement_time_r400.txt
+#mv measurement_prect_rate.txt measurement_prect_rate.txt_r400.txt
 
 # 2dg resolution
 cp -f namelist-r200.nl input.nl

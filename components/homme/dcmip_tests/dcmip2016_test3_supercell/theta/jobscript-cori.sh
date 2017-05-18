@@ -16,24 +16,23 @@ EXEC=../../../test_execs/theta-nlev40/theta-nlev40
 NCPU=640
 
 # 4dg resolution
-cp -f namelist-r400.nl input.nl
-srun -n 384 $EXEC < input.nl
-mv -f movies/dcmip2016_test31.nc movies/dcmip2016_test3_r400.nc
-ncl plot_supercell_wvel.ncl
+#cp -f namelist-r400.nl input.nl
+#srun -n 384 $EXEC < input.nl
+#mv -f movies/dcmip2016_test31.nc movies/dcmip2016_test3_r400.nc
+#ncl plot_supercell_wvel.ncl
 
-mv HommeTime HommeTime_r400
-mv measurement_wmax.pdf wmax_r400.pdf
-mv measurement_wmax.txt measurement_wmax_r400.txt
-mv measurement_time.txt measurement_time_r400.txt
-mv measurement_prect_rate.txt measurement_prect_rate.txt_r400.txt
+#mv HommeTime HommeTime_r400
+#mv measurement_wmax.pdf wmax_r400.pdf
+#mv measurement_wmax.txt measurement_wmax_r400.txt
+#mv measurement_time.txt measurement_time_r400.txt
+#mv measurement_prect_rate.txt measurement_prect_rate.txt_r400.txt
 
 # 2dg resolution
 cp -f namelist-r200.nl input.nl
 srun -n $NCPU $EXEC < input.nl
-mv -f movies/dcmip2016_test31.nc movies/dcmip2016_test3_r200.nc
 ncl plot_supercell_wvel.ncl
-mv measurement_wmax.pdf wmax_r200.pdf
 
+mv movies/dcmip2016_test31.nc movies/dcmip2016_test3_r200.nc
 mv HommeTime HommeTime_r200
 mv measurement_wmax.pdf wmax_r200.pdf
 mv measurement_wmax.txt measurement_wmax_r200.txt
@@ -43,9 +42,9 @@ mv measurement_prect_rate.txt measurement_prect_rate.txt_r200.txt
 # 1dg resolution
 cp -f namelist-r100.nl input.nl
 srun -n $NCPU $EXEC < input.nl
-mv -f movies/dcmip2016_test31.nc movies/dcmip2016_test3_r100.nc
 ncl plot_supercell_wvel.ncl
 
+mv movies/dcmip2016_test31.nc movies/dcmip2016_test3_r100.nc
 mv HommeTime HommeTime_r100
 mv measurement_wmax.pdf wmax_r100.pdf
 mv measurement_wmax.txt measurement_wmax_r100.txt
