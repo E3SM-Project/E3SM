@@ -100,22 +100,23 @@ int create_decomposition(int ntasks, int my_rank, int iosysid, int dim1_len, int
     if (!(compdof = malloc(elements_per_pe * sizeof(PIO_Offset))))
         return PIO_ENOMEM;
 
-    /* Describe the decomposition. This is a 1-based array, so add 1! */
+    /* Describe the decomposition. The new init_decomp uses a 0-based
+     * array, so don't add 1! */
     for (int i = 0; i < elements_per_pe; i++)
-        compdof[i] = my_rank * elements_per_pe + i + 1;
+        compdof[i] = my_rank * elements_per_pe + i;
 
     /* These should fail. */
-    if (PIOc_InitDecomp(iosysid + TEST_VAL_42, PIO_FLOAT, NDIM1, dim_len, elements_per_pe,
-                        compdof, ioid, NULL, NULL, NULL) != PIO_EBADID)
+    if (PIOc_init_decomp(iosysid + TEST_VAL_42, PIO_FLOAT, NDIM1, dim_len, elements_per_pe,
+                         compdof, ioid, 0, NULL, NULL) != PIO_EBADID)
         ERR(ERR_WRONG);
-    if (PIOc_InitDecomp(iosysid, PIO_FLOAT, NDIM1, bad_dim_len, elements_per_pe,
-                        compdof, ioid, NULL, NULL, NULL) != PIO_EINVAL)
+    if (PIOc_init_decomp(iosysid, PIO_FLOAT, NDIM1, bad_dim_len, elements_per_pe,
+                         compdof, ioid, 0, NULL, NULL) != PIO_EINVAL)
         ERR(ERR_WRONG);
 
     /* Create the PIO decomposition for this test. */
     printf("%d Creating decomposition elements_per_pe = %lld\n", my_rank, elements_per_pe);
-    if ((ret = PIOc_InitDecomp(iosysid, PIO_FLOAT, NDIM1, dim_len, elements_per_pe,
-                               compdof, ioid, NULL, NULL, NULL)))
+    if ((ret = PIOc_init_decomp(iosysid, PIO_FLOAT, NDIM1, dim_len, elements_per_pe,
+                                compdof, ioid, 0, NULL, NULL)))
         ERR(ret);
 
     printf("%d decomposition initialized.\n", my_rank);
@@ -315,7 +316,7 @@ int check_var_name(int my_rank, int ncid, MPI_Comm test_comm)
  * @param flavor the iotype
  * @param test_comm the MPI communicator of the test.
  * @param async 1 if we are testing async, 0 otherwise.
- * @returns 0 for success, error code otherwise. 
+ * @returns 0 for success, error code otherwise.
  */
 int check_atts(int my_rank, int ncid, int flavor, MPI_Comm test_comm, int async)
 {
@@ -391,7 +392,7 @@ int check_atts(int my_rank, int ncid, int flavor, MPI_Comm test_comm, int async)
         ERR(ret);
     if (att_int_value2 != ATT_VAL)
         return ERR_WRONG;
-    
+
     /* Check second att. */
     if ((ret = PIOc_inq_att(ncid, NC_GLOBAL, ATT_NAME2, &att_type, &att_len)))
         return ret;
@@ -494,7 +495,7 @@ int test_iotypes(int my_rank)
     /* This is never present. */
     if (PIOc_iotype_available(1000))
         return ERR_WRONG;
-    
+
     /* NetCDF is always present. */
     if (!PIOc_iotype_available(PIO_IOTYPE_NETCDF))
         return ERR_WRONG;
@@ -740,26 +741,26 @@ int define_metadata(int ncid, int my_rank, int flavor)
         return ERR_WRONG;
     if (PIOc_def_var_fill(ncid, varid, NC_FILL, NULL) != PIO_EINVAL)
         return ERR_WRONG;
-    
+
     /* Set the fill value. */
     if ((ret = PIOc_def_var_fill(ncid, varid, NC_FILL, &int_fill)))
         return ret;
-    
+
     /* These should not work. */
     if (PIOc_inq_var_fill(ncid + TEST_VAL_42, varid, &fill_mode, &int_fill_in) != PIO_EBADID)
         return ERR_WRONG;
     if (PIOc_inq_var_fill(ncid, varid + TEST_VAL_42, &fill_mode, &int_fill_in) != PIO_ENOTVAR)
         return ERR_WRONG;
-    
+
     /* Check the fill value. */
     if ((ret = PIOc_inq_var_fill(ncid, varid, &fill_mode, &int_fill_in)))
         return ret;
     if (fill_mode != NC_FILL || int_fill_in != int_fill)
         ERR(ERR_WRONG);
-    
+
     /* These should also work. */
     int_fill_in = 0;
-    
+
     /* This does not work for pnetcdf, but probably should. */
     if (flavor != PIO_IOTYPE_PNETCDF)
     {
@@ -886,9 +887,13 @@ int test_names(int iosysid, int num_flavors, int *flavor, int my_rank,
             return ERR_WRONG;
         if (PIOc_setframe(ncid, -1, 0) != PIO_EINVAL)
             return ERR_WRONG;
+        if (PIOc_setframe(ncid, NC_MAX_VARS + 1, 0) != PIO_EINVAL)
+            return ERR_WRONG;
         if (PIOc_advanceframe(ncid + TEST_VAL_42, 0) != PIO_EBADID)
             return ERR_WRONG;
         if (PIOc_advanceframe(ncid, -1) != PIO_EINVAL)
+            return ERR_WRONG;
+        if (PIOc_advanceframe(ncid, NC_MAX_VARS + 1) != PIO_EINVAL)
             return ERR_WRONG;
 
         /* Check the dimension names. */
@@ -1398,6 +1403,171 @@ int test_nc4(int iosysid, int num_flavors, int *flavor, int my_rank)
     return PIO_NOERR;
 }
 
+/* This function is part of test_scalar(). It tests the contents of
+ * the scalar var. */
+int check_scalar_var(int ncid, int varid, int flavor)
+{
+    char var_name_in[PIO_MAX_NAME + 1];
+    int var_type_in;
+    int ndims_in;
+    int natts_in;
+    int val_in;
+    int ret;
+
+    /* Learn the var metadata. */
+    if ((ret = PIOc_inq_var(ncid, varid, var_name_in, &var_type_in, &ndims_in, NULL,
+                            &natts_in)))
+        return ret;
+
+    /* Is the metadata correct? */
+    if (strcmp(var_name_in, VAR_NAME) || var_type_in != PIO_INT || ndims_in != 0 || natts_in != 0)
+        return ERR_WRONG;
+
+    /* Get the value. */
+    if ((ret = PIOc_get_var_int(ncid, varid, &val_in)))
+        return ret;
+    printf("val_in = %d\n", val_in);
+
+    /* Is the value correct? */
+    if (val_in != TEST_VAL_42)
+        return ERR_WRONG;
+
+    return 0;
+}
+
+/* Test scalar vars. */
+int test_scalar(int iosysid, int num_flavors, int *flavor, int my_rank, int async,
+                MPI_Comm test_comm)
+{
+    int ncid;    /* The ncid of the netCDF file. */
+    int varid;   /* The ID of the netCDF varable. */
+    int ret;     /* Return code. */
+
+    /* Use netCDF classic to create a file with a scalar var, then set
+     * and read the value. */
+    if (my_rank == 0)
+    {
+        char test_file[] = "netcdf_test.nc";
+        int test_val = TEST_VAL_42;
+        int test_val_in;
+
+        if ((ret = nc_create(test_file, NC_CLOBBER, &ncid)))
+            return ret;
+        if ((ret = nc_def_var(ncid, VAR_NAME, NC_INT, 0, NULL, &varid)))
+            return ret;
+        if ((ret = nc_enddef(ncid)))
+            return ret;
+        if ((ret = nc_put_var(ncid, varid, &test_val)))
+            return ret;
+        if ((ret = nc_close(ncid)))
+            return ret;
+        if ((ret = nc_open(test_file, NC_NOWRITE, &ncid)))
+            return ret;
+        /* if ((ret = nc_get_var(ncid, varid, &test_val_in))) */
+        /*     return ret; */
+        /* if (test_val_in != test_val) */
+        /*     return ERR_WRONG; */
+        if ((ret = nc_get_vars(ncid, varid, NULL, NULL, NULL, &test_val_in)))
+            return ret;
+        if (test_val_in != test_val)
+            return ERR_WRONG;
+        if ((ret = nc_close(ncid)))
+            return ret;
+    }
+
+    /* Use pnetCDF to create a file with a scalar var, then set and
+     * read the value. */
+#ifdef _PNETCDF
+    {
+        char test_file[] = "pnetcdf_test.nc";
+        int test_val = TEST_VAL_42;
+        int test_val_in;
+
+        if ((ret = ncmpi_create(test_comm, test_file, NC_CLOBBER, MPI_INFO_NULL, &ncid)))
+            return ret;
+        if ((ret = ncmpi_def_var(ncid, VAR_NAME, NC_INT, 0, NULL, &varid)))
+            return ret;
+        if ((ret = ncmpi_enddef(ncid)))
+            return ret;
+        if ((ret = ncmpi_put_var_int_all(ncid, varid, &test_val)))
+            return ret;
+        if ((ret = ncmpi_close(ncid)))
+            return ret;
+        if ((ret = ncmpi_open(test_comm, test_file, NC_NOWRITE, MPI_INFO_NULL, &ncid)))
+            return ret;
+        /* Turn on independent access for pnetcdf file. */
+        if ((ret = ncmpi_begin_indep_data(ncid)))
+            return ret;
+        /* if ((ret = ncmpi_get_var_int(ncid, varid, &test_val_in))) */
+        /*     return ret; */
+        if ((ret = ncmpi_get_vars_int(ncid, varid, NULL, NULL, NULL, &test_val_in)))
+            return ret;
+        if ((ret = ncmpi_end_indep_data(ncid)))
+            return ret;
+        if (test_val_in != test_val)
+            return ERR_WRONG;
+        printf("ret = %d test_val_in = %d\n", ret, test_val_in);
+        if (test_val_in != test_val)
+            return ERR_WRONG;
+        if ((ret = ncmpi_close(ncid)))
+            return ret;
+    }
+#endif /* _PNETCDF */
+
+    /* Use PIO to create the example file in each of the four
+     * available ways. */
+    for (int fmt = 0; fmt < num_flavors; fmt++)
+    {
+        char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+        char iotype_name[PIO_MAX_NAME + 1];
+
+        /* Create a filename. */
+        if ((ret = get_iotype_name(flavor[fmt], iotype_name)))
+            return ret;
+        sprintf(filename, "%s_%s_scalar_async_%d.nc", TEST_NAME, iotype_name, async);
+
+        /* Create the netCDF output file. */
+        printf("%d Creating test file %s.\n", my_rank, filename);
+        if ((ret = PIOc_createfile(iosysid, &ncid, &(flavor[fmt]), filename, PIO_CLOBBER)))
+            ERR(ret);
+
+        /* Define a scalar variable. */
+        if ((ret = PIOc_def_var(ncid, VAR_NAME, PIO_INT, 0, NULL, &varid)))
+            ERR(ret);
+
+        /* End define mode. */
+        if ((ret = PIOc_enddef(ncid)))
+            ERR(ret);
+
+        /* Write a scalar value. */
+        int test_val = TEST_VAL_42;
+        if ((ret = PIOc_put_var_int(ncid, varid, &test_val)))
+            ERR(ret);
+
+        /* Check the scalar var. */
+        if ((ret = check_scalar_var(ncid, varid, flavor[fmt])))
+            ERR(ret);
+
+        /* Close the netCDF file. */
+        printf("%d Closing the sample data file...\n", my_rank);
+        if ((ret = PIOc_closefile(ncid)))
+            ERR(ret);
+
+        /* Reopen the file. */
+        if ((ret = PIOc_openfile(iosysid, &ncid, &(flavor[fmt]), filename, PIO_NOWRITE)))
+            ERR(ret);
+
+        /* Check the scalar var again. */
+        if ((ret = check_scalar_var(ncid, varid, flavor[fmt])))
+            ERR(ret);
+
+        /* Close the netCDF file. */
+        if ((ret = PIOc_closefile(ncid)))
+            ERR(ret);
+    }
+    return PIO_NOERR;
+}
+
 /** Test the malloc_iodesc() function.
  *
  * @param my_rank rank of this task.
@@ -1411,11 +1581,13 @@ int test_malloc_iodesc2(int iosysid, int my_rank)
 #else
     int num_types = NUM_CLASSIC_TYPES;
 #endif /* _NETCDF4 */
-    int test_type[NUM_NETCDF_TYPES] = {PIO_BYTE, PIO_CHAR, PIO_SHORT, PIO_INT, PIO_FLOAT, PIO_DOUBLE,
-                                       PIO_UBYTE, PIO_USHORT, PIO_UINT, PIO_INT64, PIO_UINT64, PIO_STRING};
-    int mpi_type[NUM_NETCDF_TYPES] = {MPI_BYTE, MPI_CHAR, MPI_SHORT, MPI_INT, MPI_FLOAT, MPI_DOUBLE,
-                                      MPI_UNSIGNED_CHAR, MPI_UNSIGNED_SHORT, MPI_UNSIGNED, MPI_LONG_LONG,
-                                      MPI_UNSIGNED_LONG_LONG, MPI_CHAR};
+    int test_type[NUM_NETCDF_TYPES] = {PIO_BYTE, PIO_CHAR, PIO_SHORT, PIO_INT,
+                                       PIO_FLOAT, PIO_DOUBLE, PIO_UBYTE, PIO_USHORT,
+                                       PIO_UINT, PIO_INT64, PIO_UINT64, PIO_STRING};
+    MPI_Datatype mpi_type[NUM_NETCDF_TYPES] = {MPI_BYTE, MPI_CHAR, MPI_SHORT, MPI_INT,
+                                               MPI_FLOAT, MPI_DOUBLE, MPI_UNSIGNED_CHAR,
+                                               MPI_UNSIGNED_SHORT, MPI_UNSIGNED, MPI_LONG_LONG,
+                                               MPI_UNSIGNED_LONG_LONG, MPI_CHAR};
     int ioid;
     iosystem_desc_t *ios;
     io_desc_t *iodesc;
@@ -1423,10 +1595,11 @@ int test_malloc_iodesc2(int iosysid, int my_rank)
 
     if (!(ios = pio_get_iosystem_from_id(iosysid)))
         return pio_err(NULL, NULL, PIO_EBADID, __FILE__, __LINE__);
-
+    printf("test_malloc_iodesc2 num_types %d\n",num_types);
     /* Test with each type. */
     for (int t = 0; t < num_types; t++)
     {
+
         if ((ret = malloc_iodesc(ios, test_type[t], 1, &iodesc)))
             return ret;
         if (iodesc->basetype != mpi_type[t])
@@ -1439,7 +1612,6 @@ int test_malloc_iodesc2(int iosysid, int my_rank)
         if ((ret = pio_delete_iodesc_from_list(ioid)))
             return ret;
     }
-
     return 0;
 }
 
@@ -1450,7 +1622,7 @@ int test_decomp_internal(int my_test_size, int my_rank, int iosysid, int dim_len
     int ioid;
     char filename[NC_MAX_NAME + 1];    /* Test decomp filename. */
     char nc_filename[NC_MAX_NAME + 1]; /* Test decomp filename (netcdf version). */
-    char too_long_name[PIO_MAX_NAME * 5 + 1];
+    iosystem_desc_t *ios; /* IO system info. */
     int ret;
 
     /* This will be our file name for writing out decompositions. */
@@ -1472,37 +1644,12 @@ int test_decomp_internal(int my_test_size, int my_rank, int iosysid, int dim_len
     int task_maplen[TARGET_NTASKS] = {1, 1, 1, 1};
     int map[TARGET_NTASKS][1] = {{0},{1},{2},{3}};
 
-    /* These should not work. */
-    memset(too_long_name, 74, PIO_MAX_NAME * 5);
-    too_long_name[PIO_MAX_NAME * 5] = 0;
-    if (pioc_write_nc_decomp_int(iosysid + TEST_VAL_42, nc_filename, 0, NDIM1, global_dimlen,
-                                 TARGET_NTASKS, task_maplen, (int *)map, title,
-                                 history, 0) != PIO_EBADID)
-        return ERR_WRONG;
-    if (pioc_write_nc_decomp_int(iosysid, NULL, 0, NDIM1, global_dimlen,
-                                 TARGET_NTASKS, task_maplen, (int *)map, title,
-                                 history, 0) != PIO_EINVAL)
-        return ERR_WRONG;
-    if (pioc_write_nc_decomp_int(iosysid, nc_filename, 0, NDIM1, NULL,
-                                 TARGET_NTASKS, task_maplen, (int *)map, title,
-                                 history, 0) != PIO_EINVAL)
-        return ERR_WRONG;
-    if (pioc_write_nc_decomp_int(iosysid, nc_filename, 0, NDIM1, global_dimlen,
-                                 TARGET_NTASKS, NULL, (int *)map, title,
-                                 history, 0) != PIO_EINVAL)
-        return ERR_WRONG;
-    if (pioc_write_nc_decomp_int(iosysid, nc_filename, 0, NDIM1, global_dimlen,
-                                 TARGET_NTASKS, task_maplen, (int *)map, too_long_name,
-                                 history, 0) != PIO_EINVAL)
-        return ERR_WRONG;
-    if (pioc_write_nc_decomp_int(iosysid, nc_filename, 0, NDIM1, global_dimlen,
-                                 TARGET_NTASKS, task_maplen, (int *)map, title,
-                                 too_long_name, 0) != PIO_EINVAL)
-        return ERR_WRONG;
-    
+    /* Get the IO system info. */
+    if (!(ios = pio_get_iosystem_from_id(iosysid)))
+        return pio_err(NULL, NULL, PIO_EBADID, __FILE__, __LINE__);
 
     /* Write the decomposition file. */
-    if ((ret = pioc_write_nc_decomp_int(iosysid, nc_filename, 0, NDIM1, global_dimlen,
+    if ((ret = pioc_write_nc_decomp_int(ios, nc_filename, 0, NDIM1, global_dimlen,
                                         TARGET_NTASKS, task_maplen, (int *)map, title,
                                         history, 0)))
         return ret;
@@ -1515,7 +1662,7 @@ int test_decomp_internal(int my_test_size, int my_rank, int iosysid, int dim_len
     char source_in[PIO_MAX_NAME + 1];
     char version_in[PIO_MAX_NAME + 1];
     char expected_source[] = "Decomposition file produced by PIO library.";
-    int *global_dimlen_in;    
+    int *global_dimlen_in;
     int *task_maplen_in;
     int *map_in;
     int fortran_order_in;
@@ -1540,6 +1687,7 @@ int test_decomp_internal(int my_test_size, int my_rank, int iosysid, int dim_len
                                        history_in, source_in, version_in, &fortran_order_in)))
         return ret;
 
+    
     /* Did we get the correct answers? */
     printf("source_in = %s\n", source_in);
     if (strcmp(title, title_in) || strcmp(history, history_in) ||
@@ -1650,7 +1798,6 @@ int test_decomp_internal(int my_test_size, int my_rank, int iosysid, int dim_len
     free(task_maplen_in);
     free(map_in);
 
-    
     /* Free the PIO decomposition. */
     if ((ret = PIOc_freedecomp(iosysid, ioid)))
         ERR(ret);
@@ -1665,7 +1812,7 @@ int test_decomp_public(int my_test_size, int my_rank, int iosysid, int dim_len,
     int ioid;
     char nc_filename[NC_MAX_NAME + 1]; /* Test decomp filename (netcdf version). */
     int ret;
-    
+
     /* This will be our file name for writing out decompositions. */
     sprintf(nc_filename, "nc_decomp_%s_rank_%d_async_%d.nc", TEST_NAME, my_rank, async);
 
@@ -1679,15 +1826,29 @@ int test_decomp_public(int my_test_size, int my_rank, int iosysid, int dim_len,
     char *history = "Added to PIO automatic testing by Ed in February 2017.";
 
     /* These should not work. */
-    if (PIOc_write_nc_decomp(iosysid + TEST_VAL_42, nc_filename, 0, ioid, test_comm, title, history, 0) != PIO_EBADID)
+    char too_long_name[PIO_MAX_NAME * 5 + 1];
+    memset(too_long_name, 74, PIO_MAX_NAME * 5);
+    too_long_name[PIO_MAX_NAME * 5] = 0;
+
+    if (PIOc_write_nc_decomp(iosysid + TEST_VAL_42, nc_filename, 0, ioid,
+                             title, history, 0) != PIO_EBADID)
         return ERR_WRONG;
-    if (PIOc_write_nc_decomp(iosysid, NULL, 0, ioid, test_comm, title, history, 0) != PIO_EINVAL)
+    if (PIOc_write_nc_decomp(iosysid, NULL, 0, ioid, title, history, 0) != PIO_EINVAL)
         return ERR_WRONG;
-    if (PIOc_write_nc_decomp(iosysid, nc_filename, 0, ioid + TEST_VAL_42, test_comm, title, history, 0) != PIO_EBADID)
+    if (PIOc_write_nc_decomp(iosysid, nc_filename, 0, ioid + TEST_VAL_42,
+                             title, history, 0) != PIO_EBADID)
+        return ERR_WRONG;
+
+    if (PIOc_write_nc_decomp(iosysid, nc_filename, 0, ioid,
+                             too_long_name, history, 0) != PIO_EINVAL)
+        return ERR_WRONG;
+    if (PIOc_write_nc_decomp(iosysid, nc_filename, 0, ioid,
+                             title, too_long_name, 0) != PIO_EINVAL)
         return ERR_WRONG;
 
     /* Write a netCDF decomp file for this iosystem. */
-    if ((ret = PIOc_write_nc_decomp(iosysid, nc_filename, 0, ioid, test_comm, title, history, 0)))
+    if ((ret = PIOc_write_nc_decomp(iosysid, nc_filename, 0, ioid, title,
+                                    history, 0)))
         return ret;
 
     int ioid_in;
@@ -1696,8 +1857,8 @@ int test_decomp_public(int my_test_size, int my_rank, int iosysid, int dim_len,
     int fortran_order_in;
 
     /* These should not work. */
-    if (PIOc_read_nc_decomp(iosysid + TEST_VAL_42, nc_filename, &ioid_in, test_comm, PIO_INT,
-                            title_in, history_in, &fortran_order_in) != PIO_EBADID)
+    if (PIOc_read_nc_decomp(iosysid + TEST_VAL_42, nc_filename, &ioid_in, test_comm,
+                            PIO_INT, title_in, history_in, &fortran_order_in) != PIO_EBADID)
         return ret;
     if (PIOc_read_nc_decomp(iosysid, NULL, &ioid_in, test_comm, PIO_INT, title_in,
                             history_in, &fortran_order_in) != PIO_EINVAL)
@@ -1705,7 +1866,7 @@ int test_decomp_public(int my_test_size, int my_rank, int iosysid, int dim_len,
     if (PIOc_read_nc_decomp(iosysid, nc_filename, NULL, test_comm, PIO_INT, title_in,
                             history_in, &fortran_order_in) != PIO_EINVAL)
         return ret;
-    
+
     /* Read it using the public read function. */
     if ((ret = PIOc_read_nc_decomp(iosysid, nc_filename, &ioid_in, test_comm, PIO_INT,
                                    title_in, history_in, &fortran_order_in)))
@@ -1780,9 +1941,88 @@ int test_decomp_public(int my_test_size, int my_rank, int iosysid, int dim_len,
     free(map_in);
 
     /* /\* These should also work. *\/ */
-    /* if ((ret = PIOc_write_nc_decomp(iosysid, nc_filename, 0, ioid, test_comm, title, history, 0))) */
+    /* if ((ret = PIOc_write_nc_decomp(iosysid, nc_filename, 0, ioid, title, history, 0))) */
     /*     return ret; */
+
+    /* Free the PIO decomposition. */
+    if ((ret = PIOc_freedecomp(iosysid, ioid)))
+        ERR(ret);
+
+    return 0;
+}
+
+/* Test some decomp public API functions. */
+int test_decomp_public_2(int my_test_size, int my_rank, int iosysid, int dim_len,
+                         MPI_Comm test_comm, int async)
+{
+    int ioid;
+    char nc_filename[NC_MAX_NAME + 1]; /* Test decomp filename (netcdf version). */
+    int ret;
+
+    /* This will be our file name for writing out decompositions. */
+    sprintf(nc_filename, "nc_decomp_%s_rank_%d_async_%d.nc", TEST_NAME, my_rank, async);
+
+    /* Decompose the data over the tasks. */
+    if ((ret = create_decomposition(my_test_size, my_rank, iosysid, dim_len, &ioid)))
+        return ret;
+
+    /* Write a netCDF decomp file for this iosystem. */
+    if ((ret = PIOc_write_nc_decomp(iosysid, nc_filename, 0, ioid, NULL, NULL, 0)))
+        return ret;
+
+    /* Free the PIO decomposition. */
+    if ((ret = PIOc_freedecomp(iosysid, ioid)))
+        ERR(ret);
+
+    return 0;
+}
+
+/* Test some decomp public API functions. */
+int test_decomp_2(int my_test_size, int my_rank, int iosysid, int dim_len,
+                  MPI_Comm test_comm, int async)
+{
+    int ioid;
+    char nc_filename[NC_MAX_NAME + 1]; /* Test decomp filename (netcdf version). */
+    int ret;
+
+    /* This will be our file name for writing out decompositions. */
+    sprintf(nc_filename, "nc_decomp_%s_rank_%d_async_%d.nc", TEST_NAME, my_rank, async);
+
+    /* Decompose the data over the tasks. */
+    if ((ret = create_decomposition(my_test_size, my_rank, iosysid, dim_len, &ioid)))
+        return ret;
+
+    /* Free the PIO decomposition. */
+    if ((ret = PIOc_freedecomp(iosysid, ioid)))
+        ERR(ret);
+
+    return 0;
+}
+
+/* Test some decomp public API functions with async. */
+int test_decomp_public_async(int my_test_size, int my_rank, int iosysid, MPI_Comm test_comm,
+                             int async)
+{
+#define ELEM1 1
+#define LEN3 3
+    int ioid;
+    int dim_len = LEN3;
+    PIO_Offset elements_per_pe = ELEM1;
+    PIO_Offset compdof[ELEM1] = {my_rank + 1};
+    char filename[PIO_MAX_NAME + 1];
+    int ret;
+
+    sprintf(filename, "async_decomp_%s_rank_%d_async_%d.nc", TEST_NAME, my_rank, async);
     
+    /* Create the PIO decomposition for this test. */
+    if ((ret = PIOc_init_decomp(iosysid, PIO_FLOAT, NDIM1, &dim_len, elements_per_pe,
+                                compdof, &ioid, PIO_REARR_BOX, NULL, NULL)))
+        ERR(ret);
+
+    /* Write the decomp file (on appropriate tasks). */
+    if ((ret = PIOc_write_nc_decomp(iosysid, filename, 0, ioid, NULL, NULL, 0)))
+        return ret;
+
     /* Free the PIO decomposition. */
     if ((ret = PIOc_freedecomp(iosysid, ioid)))
         ERR(ret);
@@ -1797,6 +2037,7 @@ int test_all(int iosysid, int num_flavors, int *flavor, int my_rank, MPI_Comm te
     int ioid;
     int my_test_size;
     char filename[NC_MAX_NAME + 1];
+    char nc_filename[NC_MAX_NAME + 1];
     int ret; /* Return code. */
 
     if ((ret = MPI_Comm_size(test_comm, &my_test_size)))
@@ -1804,7 +2045,14 @@ int test_all(int iosysid, int num_flavors, int *flavor, int my_rank, MPI_Comm te
 
     /* This will be our file name for writing out decompositions. */
     sprintf(filename, "decomp_%d.txt", my_rank);
+    sprintf(nc_filename, "decomp_%d.nc", my_rank);
 
+    /* This is a simple test that just creates the decomp with
+     * async. */
+    if (async)
+        if ((ret = test_decomp_public_async(my_test_size, my_rank, iosysid, test_comm, async)))
+            return ret;
+    
     /* Check iotypes. */
     printf("%d Testing iotypes. async = %d\n", my_rank, async);
     if ((ret = test_iotypes(my_rank)))
@@ -1828,25 +2076,25 @@ int test_all(int iosysid, int num_flavors, int *flavor, int my_rank, MPI_Comm te
     if (!async)
         if ((ret = test_decomp_internal(my_test_size, my_rank, iosysid, DIM_LEN, test_comm, async)))
             return ret;
-
     /* Test decomposition public API functions. */
     if (!async)
         if ((ret = test_decomp_public(my_test_size, my_rank, iosysid, DIM_LEN, test_comm, async)))
             return ret;
 
+    /* This is a simple test that just creates a decomp. */
+    /* if ((ret = test_decomp_2(my_test_size, my_rank, iosysid, DIM_LEN, test_comm, async))) */
+    /*     return ret; */
+
+    /* This is a simple test that just writes the decomp. */
     if (!async)
-    {
-        printf("%d Testing darray. async = %d\n", my_rank, async);
-        
-        /* Decompose the data over the tasks. */
-        if ((ret = create_decomposition(my_test_size, my_rank, iosysid, DIM_LEN, &ioid)))
+        if ((ret = test_decomp_public_2(my_test_size, my_rank, iosysid, DIM_LEN, test_comm, async)))
             return ret;
 
-        /* Write out an ASCII version of the decomp file. */
-        printf("%d Calling write_decomp. async = %d\n", my_rank, async);
-        if ((ret = PIOc_write_decomp(filename, iosysid, ioid, test_comm)))
+    /* Decompose the data over the tasks. */
+    if (!async)
+    {
+        if ((ret = create_decomposition(my_test_size, my_rank, iosysid, DIM_LEN, &ioid)))
             return ret;
-        printf("%d Called write_decomp. async = %d\n", my_rank, async);
 
         /* Run the darray tests. */
         for (int fv = 0; fv < 2; fv++)
@@ -1872,6 +2120,11 @@ int test_all(int iosysid, int num_flavors, int *flavor, int my_rank, MPI_Comm te
     printf("%d Testing nc4 functions. async = %d\n", my_rank, async);
     if ((ret = test_nc4(iosysid, num_flavors, flavor, my_rank)))
         return ret;
+    
+    /* Test scalar var. */
+    printf("%d Testing scalar var. async = %d\n", my_rank, async);
+    if ((ret = test_scalar(iosysid, num_flavors, flavor, my_rank, async, test_comm)))
+        return ret;
 
     return PIO_NOERR;
 }
@@ -1880,6 +2133,6 @@ int test_all(int iosysid, int num_flavors, int *flavor, int my_rank, MPI_Comm te
 int main(int argc, char **argv)
 {
     /* Change the 5th arg to 3 to turn on logging. */
-    return run_test_main(argc, argv, MIN_NTASKS, TARGET_NTASKS, 0,
+    return run_test_main(argc, argv, MIN_NTASKS, TARGET_NTASKS, 3,
                          TEST_NAME, dim_len, COMPONENT_COUNT, NUM_IO_PROCS);
 }

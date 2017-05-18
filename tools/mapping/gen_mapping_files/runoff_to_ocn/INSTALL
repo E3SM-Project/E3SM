@@ -5,9 +5,9 @@ HOW TO BUILD
 (1) $ cd src
 (2) $ ../../../../configure --macros-format Makefile --mpilib mpi-serial
 Bash users:
-(3) $ (. .env_mach_specific.sh ; gmake)
+(3) $ (. ./.env_mach_specific.sh ; gmake)
 csh users:
-(3) $ (source .env_mach_specific.csh ; gmake)
+(3) $ (source ./.env_mach_specific.csh ; gmake)
 
 Note: in the second step, you may need to include "--machine [machine name]",
 where [machine name] is the name of the machine you are building on. In most

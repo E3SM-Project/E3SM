@@ -245,6 +245,10 @@ def case_run(case):
            "Please submit your run using the submit script like so:"
            " ./case.submit")
 
+    # Forces user to use case.submit if they re-submit
+    if case.get_value("TESTCASE") is None:
+        case.set_value("RUN_WITH_SUBMIT", False)
+
     prerun_script = case.get_value("PRERUN_SCRIPT")
     postrun_script = case.get_value("POSTRUN_SCRIPT")
 

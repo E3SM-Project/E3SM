@@ -28,7 +28,7 @@ OR
     parser.add_argument("--case", "-case", required=True,
                         help="(required) Specify the case name. "
                         "If not a full pathname, then the case is created "
-			"under then current working directory ")
+                        "under then current working directory ")
 
     parser.add_argument("--compset", "-compset", required=True,
                         help="(required) Specify a compset. "
@@ -76,7 +76,7 @@ OR
     parser.add_argument("--pesfile",
                         help="Only used and required for --user-compset argument."
                         "Full pathname of the pes specification file"
-			"This argument is required if --user-compset is True")
+                        "This argument is required if --user-compset is True")
 
     parser.add_argument("--user-grid", action="store_true",
                         help="If set, then the -grid argument is treated as a user specified grid."
@@ -88,7 +88,7 @@ OR
                         help="Full pathname of config grid file to use"
                         "This should be a copy of config/config_grids.xml"
                         "with the new user grid changes added to it"
-			"This argument is required if --user-grid is True")
+                        "This argument is required if --user-grid is True")
 
     parser.add_argument("--srcroot", default=os.path.dirname(cimeroot),
                         help="Alternative path for source root directory. By default this is set to"
@@ -96,6 +96,9 @@ OR
 
     parser.add_argument("--output-root",
                         help="Alternative path for the directory where case output is written")
+
+    parser.add_argument("--script-root", dest="script_root", default=None,
+                        help="Alternative path for the directory where the cime scripts are written")
 
     if model == "cesm":
         parser.add_argument("--run-unsupported", action="store_true",
@@ -118,9 +121,10 @@ OR
                         help="Pre-answer what to do pre-existing bld/exe dirs. Valid answers are (a)bort (r)eplace or (u)se existing."
                         "This can be useful if you need to run create_newcase non-iteractively.")
 
-    args = parser.parse_args()
+    parser.add_argument("-i", "--input-dir",
+                        help="Use a non-default location for input files")
 
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if args.srcroot is not None:
         expect(os.path.isdir(args.srcroot),
@@ -150,24 +154,32 @@ OR
     expect(CIME.utils.check_name(args.case, fullpath=True),
            "Illegal case name argument provided")
 
+    if args.input_dir is not None:
+        args.input_dir = os.path.abspath(args.input_dir)
+
     return args.case, args.compset, args.res, args.machine, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.user_mods_dir, args.user_compset, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst, \
-        args.walltime, args.queue, args.output_root, run_unsupported, args.answer
+        args.walltime, args.queue, args.output_root, args.script_root, \
+        run_unsupported, args.answer, args.input_dir
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
     cimeroot  = os.path.abspath(CIME.utils.get_cime_root())
 
-    caseroot, compset, grid, machine, compiler, \
+    casename, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
         user_mods_dir, user_compset, pesfile, \
         user_grid, gridfile, srcroot, test, ninst, walltime, queue, \
-        output_root, run_unsupported, answer = parse_command_line(sys.argv, cimeroot, description)
+        output_root, script_root, run_unsupported, \
+        answer, input_dir = parse_command_line(sys.argv, cimeroot, description)
 
-    caseroot = os.path.abspath(caseroot)
+    if script_root is None:
+        caseroot = os.path.abspath(casename)
+    else:
+        caseroot = os.path.abspath(script_root)
 
     # create_test creates the caseroot before calling create_newcase
     # otherwise throw an error if this directory exists
@@ -176,7 +188,7 @@ def _main_func(description):
 
     with Case(caseroot, read_only=False) as case:
         # Set values for env_case.xml
-        case.set_lookup_value("CASE", os.path.basename(caseroot))
+        case.set_lookup_value("CASE", os.path.basename(casename))
         case.set_lookup_value("CASEROOT", caseroot)
         case.set_lookup_value("SRCROOT", srcroot)
 
@@ -186,7 +198,8 @@ def _main_func(description):
                        user_compset=user_compset, pesfile=pesfile,
                        user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
                        walltime=walltime, queue=queue, output_root=output_root,
-                       run_unsupported=run_unsupported, answer=answer)
+                       run_unsupported=run_unsupported, answer=answer,
+                       input_dir=input_dir)
 
         case.create_caseroot()
 
@@ -195,7 +208,7 @@ def _main_func(description):
         if user_mods_dir is not None:
             if os.path.isdir(user_mods_dir):
                 user_mods_dir = os.path.abspath(user_mods_dir)
-            case.apply_user_mods(user_mods_dir)
+        case.apply_user_mods(user_mods_dir)
 
     # Lock env_case.xml
     lock_file("env_case.xml", caseroot)

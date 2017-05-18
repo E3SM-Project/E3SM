@@ -58,7 +58,7 @@ class TestSuiteSpec(object):
         """
         return ( (l, d) for l, d in zip(self.labels, self.directories) )
 
-def suites_from_xml(xml_tree, known_paths={}):
+def suites_from_xml(xml_tree, known_paths=None):
     """Generate test suite descriptions from XML.
 
     Returns a TestSuiteSpec for each suite description in the XML input.
@@ -76,6 +76,9 @@ def suites_from_xml(xml_tree, known_paths={}):
     4. A directory tag may have a "relative_to" attribute, naming a key in
        the known_paths dict.
     """
+
+    if known_paths is None:
+        known_paths = {}
 
     elements = xml_tree.findall("suite")
 

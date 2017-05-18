@@ -12,6 +12,15 @@
 
 #include <pio.h>
 
+/* These are the sizes of types in netCDF files. Do not replace these
+ * constants with sizeof() calls for C types. They are not the
+ * same. Even on a system where sizeof(short) is 4, the size of a
+ * short in a netCDF file is 2 bytes. */
+#define NETCDF_CHAR_SIZE 1
+#define NETCDF_SHORT_SIZE 2
+#define NETCDF_INT_FLOAT_SIZE 4
+#define NETCDF_DOUBLE_INT64_SIZE 8
+
 /* It seems that some versions of openmpi fail to define
  * MPI_OFFSET. */
 #ifdef OMPI_OFFSET_DATATYPE
@@ -123,8 +132,8 @@ extern "C" {
     int check_netcdf2(iosystem_desc_t *ios, file_desc_t *file, int status,
                       const char *fname, int line);
 
-    /* Find the MPI type that matches a PIO type. */
-    int find_mpi_type(int pio_type, MPI_Datatype *mpi_type);
+    /* Given PIO type, find MPI type and type size. */
+    int find_mpi_type(int pio_type, MPI_Datatype *mpi_type, int *type_size);
 
     /* Check whether an IO type is valid for this build. */
     int iotype_is_valid(int iotype);
@@ -135,30 +144,59 @@ extern "C" {
     /* Assert that an expression is true. */
     void pioassert(bool exp, const char *msg, const char *fname, int line);
 
-    int CalcStartandCount(int basetype, int ndims, const int *gdims, int num_io_procs,
-                          int myiorank, PIO_Offset *start, PIO_Offset *kount);
+    /* Compute start and count values for each io task for a decomposition. */
+    int CalcStartandCount(int pio_type, int ndims, const int *gdims, int num_io_procs,
+                          int myiorank, PIO_Offset *start, PIO_Offset *count, int *num_aiotasks);
+
+    /* Completes the mapping for the box rearranger. */
+    int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc, const int *dest_ioproc,
+                       const PIO_Offset *dest_ioindex);
+
+    /* Create the MPI communicators needed by the subset rearranger. */
+    int default_subset_partition(iosystem_desc_t *ios, io_desc_t *iodesc);
 
     /* Check return from MPI function and print error message. */
     void CheckMPIReturn(int ierr, const char *file, int line);
 
     /* Like MPI_Alltoallw(), but with flow control. */
-    int pio_swapm(void *sndbuf, int *sndlths, int *sdispls, MPI_Datatype *stypes,
-                  void *rcvbuf, int *rcvlths, int *rdispls, MPI_Datatype *rtypes,
-                  MPI_Comm comm, bool handshake, bool isend, int max_requests);
+    int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendtypes,
+                  void *recvbuf, int *recvcounts, int *rdispls, MPI_Datatype *recvtypes,
+                  MPI_Comm comm, rearr_comm_fc_opt_t *fc);
 
     long long lgcd_array(int nain, long long* ain);
 
     void PIO_Offset_size(MPI_Datatype *dtype, int *tsize);
     PIO_Offset GCDblocksize(int arrlen, const PIO_Offset *arr_in);
 
-    /* Initialize the rearranger options. */
-    void init_rearr_opts(iosystem_desc_t *iosys);
+    /* Convert an index into dimension values. */
+    void idx_to_dim_list(int ndims, const int *gdims, PIO_Offset idx, PIO_Offset *dim_list);
+
+    /* Convert a global coordinate value into a local array index. */
+    PIO_Offset coord_to_lindex(int ndims, const PIO_Offset *lcoord, const PIO_Offset *count);
+
+    /* Determine whether fill values are needed. */
+    int determine_fill(iosystem_desc_t *ios, io_desc_t *iodesc, const int *gsize,
+                       const PIO_Offset *compmap);
+
+    /* Set start and count so that they describe the first region in map.*/
+    PIO_Offset find_region(int ndims, const int *gdims, int maplen, const PIO_Offset *map,
+                           PIO_Offset *start, PIO_Offset *count);
+
+    /* Calculate start and count regions for the subset rearranger. */
+    int get_regions(int ndims, const int *gdimlen, int maplen, const PIO_Offset *map,
+                    int *maxregions, io_region *firstregion);
+
+    /* Expand a region along dimension dim, by incrementing count[i] as
+     * much as possible, consistent with the map. */
+    void expand_region(int dim, const int *gdims, int maplen, const PIO_Offset *map,
+                       int region_size, int region_stride, const int *max_size,
+                       PIO_Offset *count);
 
     /* Compare sets of rearranger options. */
     bool cmp_rearr_opts(const rearr_opt_t *rearr_opts, const rearr_opt_t *exp_rearr_opts);
 
-    /* Reset rearranger opts in iosystem to valid values. */
-    void check_and_reset_rearr_opts(iosystem_desc_t *ios);
+    /* Check and reset, if needed, rearranger opts to default values. */
+    int check_and_reset_rearr_opts(rearr_opt_t *rearr_opt);
 
     /* Compare rearranger flow control options. */
     bool cmp_rearr_comm_fc_opts(const rearr_comm_fc_opt_t *opt,
@@ -178,15 +216,23 @@ extern "C" {
     int rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf, void *rbuf);
 
     /* Move data from compute tasks to IO tasks. */
-    int rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf, void *rbuf, int nvars);
+    int rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf, void *rbuf,
+                          int nvars);
 
     /* Allocate and initialize storage for decomposition information. */
     int malloc_iodesc(iosystem_desc_t *ios, int piotype, int ndims, io_desc_t **iodesc);
     void performance_tune_rearranger(iosystem_desc_t *ios, io_desc_t *iodesc);
 
+    /* Flush contents of multi-buffer to disk. */
     int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize);
+
+    /* Compute the size that the IO tasks will need to hold the data. */
     int compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc);
-    io_region *alloc_region(int ndims);
+
+    /* Allocation memory for a data region. */
+    int alloc_region2(iosystem_desc_t *ios, int ndims, io_region **region);
+
+    /* Delete an entry from the lost of open IO systems. */
     int pio_delete_iosystem_from_list(int piosysid);
 
     /* Find greatest commond divisor. */
@@ -211,7 +257,7 @@ extern "C" {
 
     /* Create the derived MPI datatypes used for comp2io and io2comp
      * transfers. */
-    int create_mpi_datatypes(MPI_Datatype basetype, int msgcnt, PIO_Offset dlen, const PIO_Offset *mindex,
+    int create_mpi_datatypes(MPI_Datatype basetype, int msgcnt, const PIO_Offset *mindex,
                              const int *mcount, int *mfrom, MPI_Datatype *mtype);
     int compare_offsets(const void *a, const void *b) ;
 
@@ -230,8 +276,9 @@ extern "C" {
 
     int compute_maxaggregate_bytes(iosystem_desc_t *ios, io_desc_t *iodesc);
 
-    /* Announce a memory error with bget memory, and die. */
-    void piomemerror(iosystem_desc_t *ios, size_t req, char *fname, int line);
+    /* Compute an element of start/count arrays. */
+    void compute_one_dim(int gdim, int ioprocs, int rank, PIO_Offset *start,
+                         PIO_Offset *count);
 
     /* Check the return code from an MPI function call. */
     int check_mpi(file_desc_t *file, int mpierr, const char *filename, int line);
@@ -249,10 +296,8 @@ extern "C" {
                                   const int *frame);
 
     /* Write aggregated arrays to file using serial I/O (netCDF-3/netCDF-4 serial) */
-    int pio_write_darray_multi_nc_serial(file_desc_t *file, int nvars, const int *vid, int iodesc_ndims,
-                                         MPI_Datatype basetype, int maxregions, io_region *firstregion,
-                                         PIO_Offset llen, int num_aiotasks, void *iobuf,
-                                         const int *frame);
+    int write_darray_multi_serial(file_desc_t *file, int nvars, const int *vid,
+                                  io_desc_t *iodesc, int fill, const int *frame);
 
     int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf);
     int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf);
@@ -269,13 +314,16 @@ extern "C" {
                          const PIO_Offset *stride, nc_type xtype, void *buf);
     int PIOc_get_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype,
                          void *buf);
+    int PIOc_get_var_tc(int ncid, int varid, nc_type xtype, void *buf);
+    
 
     /* Generalized put functions. */
     int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                          const PIO_Offset *stride, nc_type xtype, const void *buf);
     int PIOc_put_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype,
                          const void *op);
-
+    int PIOc_put_var_tc(int ncid, int varid, nc_type xtype, const void *op);
+    
     /* An internal replacement for a function pnetcdf does not
      * have. */
     int pioc_pnetcdf_inq_type(int ncid, nc_type xtype, char *name,
@@ -289,9 +337,9 @@ extern "C" {
     void pio_finalize_logging(void );
 
     /* Write a netCDF decomp file. */
-    int pioc_write_nc_decomp_int(int iosysid, const char *filename, int cmode, int ndims, int *global_dimlen,
-                                 int num_tasks, int *task_maplen, int *map, const char *title,
-                                 const char *history, int fortran_order);
+    int pioc_write_nc_decomp_int(iosystem_desc_t *ios, const char *filename, int cmode, int ndims,
+                                 int *global_dimlen, int num_tasks, int *task_maplen, int *map,
+                                 const char *title, const char *history, int fortran_order);
 
     /* Read a netCDF decomp file. */
     int pioc_read_nc_decomp_int(int iosysid, const char *filename, int *ndims, int **global_dimlen,

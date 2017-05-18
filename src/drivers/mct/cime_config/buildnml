@@ -16,7 +16,7 @@ from standard_script_setup import *
 from CIME.case import Case
 from CIME.nmlgen import NamelistGenerator
 from CIME.utils import expect
-from CIME.utils import run_cmd_no_fail, get_model
+from CIME.utils import run_cmd_no_fail, get_model, get_time_in_seconds
 from CIME.buildnml import create_namelist_infile, parse_input
 from CIME.XML.files import Files
 
@@ -93,6 +93,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
         expect(False, "basedt invalid overflow for NCPL_BASE_PERIOD %s " %ncpl_base_period)
 
     comps = case.get_values("COMP_CLASSES")
+    mindt = basedt
     for comp in comps:
         ncpl = case.get_value(comp.upper() + '_NCPL')
         if ncpl is not None:
@@ -100,7 +101,8 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
             totaldt = cpl_dt * int(ncpl)
             if totaldt != basedt:
                 expect(False, " %s ncpl doesn't divide base dt evenly" %comp)
-            nmlgen.set_value(comp.lower() + '_cpl_dt', value=cpl_dt)
+            nmlgen.add_default(comp.lower() + '_cpl_dt', value=cpl_dt)
+            mindt = min(mindt, cpl_dt)
 #        elif comp.lower() is not 'cpl':
 
     #--------------------------------
@@ -142,6 +144,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     # Set up the pause_component_list if pause is active
     pauseo = case.get_value('PAUSE_OPTION')
     if pauseo != 'never' and pauseo != 'none':
+        pausen = case.get_value('PAUSE_N')
         pcl = nmlgen.get_default('pause_component_list')
         nmlgen.add_default('pause_component_list', pcl)
         # Check to make sure pause_component_list is valid
@@ -154,6 +157,13 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
                        "Invalid PAUSE_COMPONENT_LIST, %s is not a valid component type"%comp)
             # End for
         # End if
+        # Set esp interval
+        if 'nstep' in pauseo:
+            esp_time = mindt
+        else:
+            esp_time = get_time_in_seconds(pausen, pauseo)
+
+        nmlgen.set_value('esp_cpl_dt', value=esp_time)
     # End if pause is active
 
     #--------------------------------

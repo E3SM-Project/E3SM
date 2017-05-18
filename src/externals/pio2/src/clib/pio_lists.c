@@ -115,8 +115,14 @@ int pio_delete_file_from_list(int ncid)
             if (current_file == cfile)
                 current_file = pfile;
 
+            /* Free any fill values that were allocated. */
+            for (int v = 0; v < PIO_MAX_VARS; v++)
+                if (cfile->varlist[v].fillvalue)
+                    free(cfile->varlist[v].fillvalue);
+
             /* Free the memory used for this file. */
             free(cfile);
+            
             return PIO_NOERR;
         }
         pfile = cfile;

@@ -18,7 +18,7 @@ else ()
     set (CTEST_DASHBOARD_ROOT "$ENV{HOME}/pio-dashboard")
 endif ()
 
-## -- Compiler ID 
+## -- Compiler ID
 if (DEFINED ENV{PIO_COMPILER_ID})
     set (compid "$ENV{PIO_COMPILER_ID}")
 else ()
@@ -49,7 +49,8 @@ if (HOSTNAME MATCHES "^yslogin" OR
     HOSTNAME MATCHES "^pronghorn")
     set (HOSTNAME_ID "nwsc")
 # New UCAR/NWSC SGI Machines
-elseif (HOSTNAME MATCHES "^laramie")
+elseif (HOSTNAME MATCHES "^laramie" OR
+        HOSTNAME MATCHES "^chadmin")
    set (HOSTNAME_ID "nwscla")
 # ALCF/Argonne Machines
 elseif (HOSTNAME MATCHES "^mira" OR
@@ -109,9 +110,9 @@ find_program (CTEST_GIT_COMMAND NAMES git)
 ## -- make command
 find_program (MAKE NAMES make)
 
-#-----------------------------------------------------------  
+#-----------------------------------------------------------
 #-- Generate build-specific information
-#-----------------------------------------------------------  
+#-----------------------------------------------------------
 
 ## -- CTest Site Name
 
@@ -124,25 +125,25 @@ set (CTEST_BUILD_NAME "${osname}-${osrel}-${cpu}-${compid}")
 ## -- SRC Dir (where this script exists)
 set (CTEST_SOURCE_DIRECTORY   "${CTEST_SCRIPT_DIRECTORY}")
 
-## -- BIN Dir 
+## -- BIN Dir
 set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}-${CTEST_BUILD_GROUP}")
 
 ## -- Add the CTest script directory to the module path
 set (CTEST_EXTRA_SCRIPT_PATH "${CTEST_SOURCE_DIRECTORY}/ctest")
 list (APPEND CMAKE_MODULE_PATH ${CTEST_EXTRA_SCRIPT_PATH})
 
-# -----------------------------------------------------------  
+# -----------------------------------------------------------
 # -- Store Build-Specific Info (environment variables)
-# -----------------------------------------------------------  
+# -----------------------------------------------------------
 
 set (ENV{PIO_DASHBOARD_SITE}        ${CTEST_SITE})
 set (ENV{PIO_DASHBOARD_BUILD_NAME}  ${CTEST_BUILD_NAME})
 set (ENV{PIO_DASHBOARD_SOURCE_DIR}  ${CTEST_SOURCE_DIRECTORY})
 set (ENV{PIO_DASHBOARD_BINARY_DIR}  ${CTEST_BINARY_DIRECTORY})
 
-# -----------------------------------------------------------  
+# -----------------------------------------------------------
 # -- Run CTest
-# -----------------------------------------------------------  
+# -----------------------------------------------------------
 
 ## -- Empty the binary directory
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
@@ -157,7 +158,7 @@ message (" -- Update source - ${CTEST_BUILD_NAME} --")
 set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 ctest_update ()
 
-## -- Configure 
+## -- Configure
 message (" -- Configure build - ${CTEST_BUILD_NAME} --")
 include (CTestEnvironment-${HOSTNAME_ID})
 set (CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} ${CTEST_CONFIGURE_OPTIONS} ${CTEST_SOURCE_DIRECTORY}")
@@ -179,9 +180,9 @@ message (" -- Submit to dashboard - ${CTEST_BUILD_NAME} --")
 message ("** -- PIO_DASHBOARD_SITE=$ENV{PIO_DASHBOARD_SITE}")
 ctest_submit ()
 
-# -----------------------------------------------------------  
+# -----------------------------------------------------------
 # -- Clear environment
-# -----------------------------------------------------------  
+# -----------------------------------------------------------
 
 unset (ENV{PIO_DASHBOARD_SITE})
 unset (ENV{PIO_DASHBOARD_BUILD_NAME})

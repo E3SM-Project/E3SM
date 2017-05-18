@@ -49,9 +49,7 @@ OR
                         help="Force generation to use baselines with this name. "
                         "Default will be to follow the case specification")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     return args.caseroot, args.compare, args.generate, args.compare_name, args.generate_name
 

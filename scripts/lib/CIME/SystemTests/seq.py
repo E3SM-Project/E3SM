@@ -3,7 +3,7 @@ CIME smoke test  This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.case_setup import case_setup, adjust_pio_layout
+from CIME.case_setup import case_setup
 from CIME.check_lockedfiles import *
 import shutil
 
@@ -90,7 +90,6 @@ class SEQ(SystemTestsCommon):
 
         # update the pelayout settings for this run
         self._case.read_xml()
-        adjust_pio_layout(self._case, self._case.get_value("PES_PER_NODE"))
 
         self.run_indv()
 
@@ -103,7 +102,6 @@ class SEQ(SystemTestsCommon):
         logger.info("doing a second %d %s test with rootpes set to zero" % (stop_n, stop_option))
         # update the pelayout settings for this run
         self._case.read_xml()
-        adjust_pio_layout(self._case, self._case.get_value("PES_PER_NODE"))
 
         self.run_indv(suffix="seq")
         self._component_compare_test("base", "seq")
