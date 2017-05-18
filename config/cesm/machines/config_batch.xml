@@ -383,7 +383,7 @@
    <batch_system MACH="cori-knl" type="slurm" >
      <batch_submit>sbatch</batch_submit>
      <directives>
-       <directive>-C knl </directive>
+       <directive>-C knl,quad,cache </directive>
      </directives>
      <queues>
        <queue walltimemax="02:00:00" jobmin="1" jobmax="45440">regular</queue>

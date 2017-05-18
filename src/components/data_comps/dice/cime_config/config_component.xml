@@ -21,7 +21,6 @@
       <value compset="DICE%SSMI">ssmi</value>
       <value compset="DICE%SIAF">ssmi_iaf</value>
       <value compset="DICE%PRES">prescribed</value>
-      <value compset="DICE%COPY">copyall</value>
       <value compset="DICE%NULL">null</value>
     </values>
     <group>run_component_dice</group>
@@ -48,7 +47,6 @@
     <desc compset="DICE%SSMI">dice mode is ssmi:</desc>
     <desc compset="DICE%SIAF">dice mode is ssmi_iaf:</desc>
     <desc compset="DICE%PRES">dice mode is prescribed:</desc>
-    <desc compset="DICE%COPY">dice mode is copy:</desc>
     <desc compset="DICE%NULL">dice mode is null:</desc>
   </description>
 

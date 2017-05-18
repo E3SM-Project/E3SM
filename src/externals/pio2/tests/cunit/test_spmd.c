@@ -1,5 +1,5 @@
 /*
- * This program tests some internal functions in the library.
+ * This program tests some internal functions in the PIO library.
  *
  * Jim Edwards
  * Ed Hartnett, 11/23/16
@@ -19,8 +19,6 @@
 
 /* Number of test cases in inner loop of test. */
 #define NUM_TEST_CASES 5
-
-#define TEST_MAX_GATHER_BLOCK_SIZE 32
 
 /* Test MPI_Alltoallw by having processor i send different amounts of
  * data to each processor.  The first test sends i items to processor
@@ -85,8 +83,9 @@ int run_spmd_tests(MPI_Comm test_comm)
 
         for (int itest = 0; itest < NUM_TEST_CASES; itest++)
         {
-            bool hs = false;
-            bool isend = false;
+            rearr_comm_fc_opt_t fc;            
+            fc.hs = false;
+            fc.isend = false;
 
             /* Wait for all tasks. */
             MPI_Barrier(test_comm);
@@ -99,28 +98,28 @@ int run_spmd_tests(MPI_Comm test_comm)
             /* Set the parameters different for each test case. */
             if (itest == 1)
             {
-                hs = true;
-                isend = true;
+                fc.hs = true;
+                fc.isend = true;
             }
             else if (itest == 2)
             {
-                hs = false;
-                isend = true;
+                fc.hs = false;
+                fc.isend = true;
             }
             else if (itest == 3)
             {
-                hs = false;
-                isend = false;
+                fc.hs = false;
+                fc.isend = false;
             }
             else if (itest == 4)
             {
-                hs = true;
-                isend = false;
+                fc.hs = true;
+                fc.isend = false;
             }
 
             /* Run the swapm function. */
             if ((ret = pio_swapm(sbuf, sendcounts, sdispls, sendtypes, rbuf, recvcounts,
-                                 rdispls, recvtypes, test_comm, hs, isend, msg_cnt)))
+                                 rdispls, recvtypes, test_comm, &fc)))
                 return ret;
 
             /* Print results. */
@@ -189,59 +188,19 @@ int run_sc_tests(MPI_Comm test_comm)
     if (gcd_array(SC_ARRAY_LEN, array4) != 1)
         return ERR_WRONG;
 
-    return 0;
-}
-
-/* This test code was recovered from main() in pioc_sc.c. */
-int test_CalcStartandCount()
-{
-    int ndims = 2;
-    int gdims[2] = {31, 777602};
-    int num_io_procs = 24;
-    bool converged = false;
-    PIO_Offset start[ndims], kount[ndims];
-    int iorank, numaiotasks = 0;
-    long int tpsize = 0;
-    long int psize;
-    long int pgdims = 1;
-    int scnt;
-
-    for (int i = 0; i < ndims; i++)
-        pgdims *= gdims[i];
-
-    while (!converged)
-    {
-        for (iorank = 0; iorank < num_io_procs; iorank++)
-        {
-            numaiotasks = CalcStartandCount(PIO_DOUBLE, ndims, gdims, num_io_procs, iorank,
-                                            start, kount);
-            if (iorank < numaiotasks)
-                printf("iorank %d start %lld %lld count %lld %lld\n", iorank, start[0],
-                       start[1], kount[0], kount[1]);
-
-            if (numaiotasks < 0)
-                return numaiotasks;
-
-            psize = 1;
-            scnt = 0;
-            for (int i = 0; i < ndims; i++)
-            {
-                psize *= kount[i];
-                scnt += kount[i];
-            }
-            tpsize += psize;
-        }
-
-        if (tpsize == pgdims)
-            converged = true;
-        else
-        {
-            printf("Failed to converge %ld %ld %d\n", tpsize, pgdims, num_io_procs);
-            tpsize = 0;
-            num_io_procs--;
-        }
-    }
-
+    /* Test compute_one_dim. */
+    PIO_Offset start, count;
+    compute_one_dim(4, 4, my_rank, &start, &count);
+    if (start != my_rank || count != 1)
+        return ERR_WRONG;
+    compute_one_dim(400, 4, my_rank, &start, &count);
+    if (start != my_rank * 100 || count != 100)
+        return ERR_WRONG;
+    /* Left over data will go to task 3. */
+    compute_one_dim(5, 4, my_rank, &start, &count);
+    if (start != my_rank || count != (my_rank == 3 ? 2 : 1))
+        return ERR_WRONG;
+    printf("my_rank = %d start = %lld count = %lld\n", my_rank, start, count);
     return 0;
 }
 
@@ -260,94 +219,6 @@ int test_lists()
     if (pio_get_file(42, NULL) != PIO_EINVAL)
         return ERR_WRONG;
     if (pio_get_file(42, &fdesc) != PIO_EBADID)
-        return ERR_WRONG;
-    return 0;
-}
-
-/* Test some of the rearranger utility functions. */
-int test_rearranger_opts1()
-{
-    rearr_comm_fc_opt_t *ro1;
-    rearr_comm_fc_opt_t *ro2;
-    rearr_comm_fc_opt_t *ro3;
-
-    if (!(ro1 = calloc(1, sizeof(rearr_comm_fc_opt_t))))
-        return ERR_AWFUL;
-    if (!(ro2 = calloc(1, sizeof(rearr_comm_fc_opt_t))))
-        return ERR_AWFUL;
-    if (!(ro3 = calloc(1, sizeof(rearr_comm_fc_opt_t))))
-        return ERR_AWFUL;
-
-    /* This should not work. */
-    if (PIOc_set_rearr_opts(42, 1, 1, 0, 0, 0, 0, 0, 0) != PIO_EBADID)
-        return ERR_WRONG;
-
-    /* ro1 and ro2 are the same. */
-    if (!cmp_rearr_comm_fc_opts(ro1, ro2))
-        return ERR_WRONG;
-
-    /* Make ro3 different. */
-    ro3->enable_hs = 1;
-    if (cmp_rearr_comm_fc_opts(ro1, ro3))
-        return ERR_WRONG;
-    ro3->enable_hs = 0;
-    ro3->enable_isend = 1;
-    if (cmp_rearr_comm_fc_opts(ro1, ro3))
-        return ERR_WRONG;
-    ro3->enable_isend = 0;
-    ro3->max_pend_req = 1;
-    if (cmp_rearr_comm_fc_opts(ro1, ro3))
-        return ERR_WRONG;
-
-    /* Free resourses. */
-    free(ro1);
-    free(ro2);
-    free(ro3);
-    
-    return 0;
-}
-
-/* Test some of the rearranger utility functions. */
-int test_rearranger_opts2()
-{
-    iosystem_desc_t my_ios;
-    iosystem_desc_t *ios = &my_ios;
-
-    /* I'm not sure what the point of this function is... */
-    check_and_reset_rearr_opts(ios);
-    
-    return 0;
-}
-
-/* Test the compare_offsets() function. */
-int test_compare_offsets()
-{
-    mapsort m1, m2, m3;
-
-    m1.rfrom = 0;
-    m1.soffset = 0;
-    m1.iomap = 0;
-    m2.rfrom = 0;
-    m2.soffset = 0;
-    m2.iomap = 0;
-    m3.rfrom = 0;
-    m3.soffset = 0;
-    m3.iomap = 1;
-
-    /* Return 0 if either or both parameters are null. */
-    if (compare_offsets(NULL, &m2))
-        return ERR_WRONG;
-    if (compare_offsets(&m1, NULL))
-        return ERR_WRONG;
-    if (compare_offsets(NULL, NULL))
-        return ERR_WRONG;
-
-    /* m1 and m2 are the same. */
-    if (compare_offsets(&m1, &m2))
-        return ERR_WRONG;
-
-    /* m1 and m3 are different. */
-    if (compare_offsets(&m1, &m3) != -1)
         return ERR_WRONG;
     return 0;
 }
@@ -382,72 +253,85 @@ int test_ceil2_pair()
 int test_find_mpi_type()
 {
     MPI_Datatype mpi_type;
+    int type_size;
     int ret;
 
     /* This should not work. */
-    if (find_mpi_type(PIO_BYTE + 42, &mpi_type) != PIO_EBADTYPE)
+    if (find_mpi_type(PIO_BYTE + 42, &mpi_type, &type_size) != PIO_EBADTYPE)
         return ERR_WRONG;
 
     /* Try every atomic type. */
-    if ((ret = find_mpi_type(PIO_BYTE, &mpi_type)))
+    if ((ret = find_mpi_type(PIO_BYTE, &mpi_type, &type_size)))
         return ret;
-    if (mpi_type != MPI_BYTE)
+    if (mpi_type != MPI_BYTE || type_size != 1)
         return ERR_WRONG;
 
-    if ((ret = find_mpi_type(PIO_CHAR, &mpi_type)))
+    if ((ret = find_mpi_type(PIO_CHAR, &mpi_type, &type_size)))
         return ret;
-    if (mpi_type != MPI_CHAR)
+    if (mpi_type != MPI_CHAR || type_size != 1)
         return ERR_WRONG;
 
-    if ((ret = find_mpi_type(PIO_SHORT, &mpi_type)))
+    if ((ret = find_mpi_type(PIO_SHORT, &mpi_type, &type_size)))
         return ret;
-    if (mpi_type != MPI_SHORT)
+    if (mpi_type != MPI_SHORT || type_size != 2)
         return ERR_WRONG;
 
-    if ((ret = find_mpi_type(PIO_INT, &mpi_type)))
+    if ((ret = find_mpi_type(PIO_INT, &mpi_type, &type_size)))
+        return ret;
+    if (mpi_type != MPI_INT || type_size != 4)
+        return ERR_WRONG;
+
+    if ((ret = find_mpi_type(PIO_FLOAT, &mpi_type, &type_size)))
+        return ret;
+    if (mpi_type != MPI_FLOAT || type_size != 4)
+        return ERR_WRONG;
+
+    if ((ret = find_mpi_type(PIO_DOUBLE, &mpi_type, &type_size)))
+        return ret;
+    if (mpi_type != MPI_DOUBLE || type_size != 8)
+        return ERR_WRONG;
+
+    /* These should also work. */
+    if ((ret = find_mpi_type(PIO_INT, &mpi_type, NULL)))
         return ret;
     if (mpi_type != MPI_INT)
         return ERR_WRONG;
-
-    if ((ret = find_mpi_type(PIO_FLOAT, &mpi_type)))
+    if ((ret = find_mpi_type(PIO_INT, NULL, &type_size)))
         return ret;
-    if (mpi_type != MPI_FLOAT)
+    if (type_size != 4)
         return ERR_WRONG;
-
-    if ((ret = find_mpi_type(PIO_DOUBLE, &mpi_type)))
+    if ((ret = find_mpi_type(PIO_INT, NULL, NULL)))
         return ret;
-    if (mpi_type != MPI_DOUBLE)
-        return ERR_WRONG;
 
 #ifdef _NETCDF4
-    if ((ret = find_mpi_type(PIO_UBYTE, &mpi_type)))
+    if ((ret = find_mpi_type(PIO_UBYTE, &mpi_type, &type_size)))
         return ret;
-    if (mpi_type != MPI_UNSIGNED_CHAR)
+    if (mpi_type != MPI_UNSIGNED_CHAR || type_size != 1)
         return ERR_WRONG;
 
-    if ((ret = find_mpi_type(PIO_USHORT, &mpi_type)))
+    if ((ret = find_mpi_type(PIO_USHORT, &mpi_type, &type_size)))
         return ret;
-    if (mpi_type != MPI_UNSIGNED_SHORT)
+    if (mpi_type != MPI_UNSIGNED_SHORT || type_size != 2)
         return ERR_WRONG;
 
-    if ((ret = find_mpi_type(PIO_UINT, &mpi_type)))
+    if ((ret = find_mpi_type(PIO_UINT, &mpi_type, &type_size)))
         return ret;
-    if (mpi_type != MPI_UNSIGNED)
+    if (mpi_type != MPI_UNSIGNED || type_size != 4)
         return ERR_WRONG;
 
-    if ((ret = find_mpi_type(PIO_INT64, &mpi_type)))
+    if ((ret = find_mpi_type(PIO_INT64, &mpi_type, &type_size)))
         return ret;
-    if (mpi_type != MPI_LONG_LONG)
+    if (mpi_type != MPI_LONG_LONG || type_size != 8)
         return ERR_WRONG;
 
-    if ((ret = find_mpi_type(PIO_UINT64, &mpi_type)))
+    if ((ret = find_mpi_type(PIO_UINT64, &mpi_type, &type_size)))
         return ret;
-    if (mpi_type != MPI_UNSIGNED_LONG_LONG)
+    if (mpi_type != MPI_UNSIGNED_LONG_LONG || type_size != 8)
         return ERR_WRONG;
 
-    if ((ret = find_mpi_type(PIO_STRING, &mpi_type)))
+    if ((ret = find_mpi_type(PIO_STRING, &mpi_type, &type_size)))
         return ret;
-    if (mpi_type != MPI_CHAR)
+    if (mpi_type != MPI_CHAR || type_size != 1)
         return ERR_WRONG;
 
 #endif /* _NETCDF4 */
@@ -461,6 +345,117 @@ int test_misc()
     /* This should not work. */
     if (flush_buffer(TEST_VAL_42, &wmb, 0) != PIO_EBADID)
         return ERR_WRONG;
+
+    return 0;
+}
+
+/* This test code was recovered from main() in pioc_sc.c. */
+int test_CalcStartandCount()
+{
+    int ndims = 2;
+    int gdims[2] = {31, 777602};
+    int num_io_procs = 24;
+    bool converged = false;
+    PIO_Offset start[ndims], kount[ndims];
+    int iorank, numaiotasks = 0;
+    long int tpsize = 0;
+    long int psize;
+    long int pgdims = 1;
+    int scnt;
+    int ret;
+
+    for (int i = 0; i < ndims; i++)
+        pgdims *= gdims[i];
+
+    while (!converged)
+    {
+        for (iorank = 0; iorank < num_io_procs; iorank++)
+        {
+            if ((ret = CalcStartandCount(PIO_DOUBLE, ndims, gdims, num_io_procs, iorank,
+                                         start, kount, &numaiotasks)))
+                return ret;
+            if (iorank < numaiotasks)
+                printf("iorank %d start %lld %lld count %lld %lld\n", iorank, start[0],
+                       start[1], kount[0], kount[1]);
+
+            if (numaiotasks < 0)
+                return numaiotasks;
+
+            psize = 1;
+            scnt = 0;
+            for (int i = 0; i < ndims; i++)
+            {
+                psize *= kount[i];
+                scnt += kount[i];
+            }
+            tpsize += psize;
+        }
+
+        if (tpsize == pgdims)
+            converged = true;
+        else
+        {
+            printf("Failed to converge %ld %ld %d\n", tpsize, pgdims, num_io_procs);
+            tpsize = 0;
+            num_io_procs--;
+        }
+    }
+
+    return 0;
+}
+
+/* Test the GDCblocksize() function. */
+int run_GDCblocksize_tests(MPI_Comm test_comm)
+{
+    {
+        int arrlen = 1;
+        PIO_Offset arr_in[1] = {0};
+        PIO_Offset blocksize;
+        
+        blocksize = GCDblocksize(arrlen, arr_in);
+        if (blocksize != 1)
+            return ERR_WRONG;
+    }
+
+    {
+        int arrlen = 4;
+        PIO_Offset arr_in[4] = {0, 1, 2, 3};
+        PIO_Offset blocksize;
+        
+        blocksize = GCDblocksize(arrlen, arr_in);
+        if (blocksize != 4)
+            return ERR_WRONG;
+    }
+    
+    {
+        int arrlen = 4;
+        PIO_Offset arr_in[4] = {0, 2, 3, 4};
+        PIO_Offset blocksize;
+
+        blocksize = GCDblocksize(arrlen, arr_in);
+        if (blocksize != 1)
+            return ERR_WRONG;
+    }
+    
+    {
+        int arrlen = 4;
+        PIO_Offset arr_in[4] = {0, 1, 3, 4};
+        PIO_Offset blocksize;
+
+        blocksize = GCDblocksize(arrlen, arr_in);
+        if (blocksize != 1)
+            return ERR_WRONG;
+    }
+    
+    {
+        int arrlen = 4;
+        PIO_Offset arr_in[4] = {0, 1, 2, 4};
+        PIO_Offset blocksize;
+
+        blocksize = GCDblocksize(arrlen, arr_in);
+        if (blocksize != 1)
+            return ERR_WRONG;
+    }
     
     return 0;
 }
@@ -482,8 +477,18 @@ int main(int argc, char **argv)
      * nothing. */
     if (my_rank < TARGET_NTASKS)
     {
+        /* I don't need this iosystem, but it's the only way to get
+         * the logs to write. */
+        int iosysid;
+        if ((ret = PIOc_Init_Intracomm(test_comm, TARGET_NTASKS, 1, 0, PIO_REARR_BOX, &iosysid)))
+            return ret;
+
         printf("%d running tests for functions in pioc_sc.c\n", my_rank);
         if ((ret = run_sc_tests(test_comm)))
+            return ret;
+
+        printf("%d running tests for GCDblocksize()\n", my_rank);
+        if ((ret = run_GDCblocksize_tests(test_comm)))
             return ret;
 
         printf("%d running spmd test code\n", my_rank);
@@ -498,18 +503,6 @@ int main(int argc, char **argv)
         if ((ret = test_lists()))
             return ret;
 
-        printf("%d running rearranger opts tests 1\n", my_rank);
-        if ((ret = test_rearranger_opts1()))
-            return ret;
-
-        printf("%d running rearranger opts tests 2\n", my_rank);
-        if ((ret = test_rearranger_opts2()))
-            return ret;
-
-        printf("%d running compare_offsets tests\n", my_rank);
-        if ((ret = test_compare_offsets()))
-            return ret;
-
         printf("%d running ceil2/pair tests\n", my_rank);
         if ((ret = test_ceil2_pair()))
             return ret;
@@ -520,6 +513,10 @@ int main(int argc, char **argv)
 
         printf("%d running misc tests\n", my_rank);
         if ((ret = test_misc()))
+            return ret;
+
+        /* Finalize PIO system. */
+        if ((ret = PIOc_finalize(iosysid)))
             return ret;
 
     } /* endif my_rank < TARGET_NTASKS */
