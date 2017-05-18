@@ -17,7 +17,7 @@ requirements:
     - setuptools
 
   run:
-    - cdp 2017.04.26
+    - cdp 2017.05.18
     - vcs
     - cdms2
     - cdutil

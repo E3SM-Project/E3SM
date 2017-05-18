@@ -91,15 +91,15 @@ def create_viewer(root_dir, parameters, ext):
                     ROW_INFO[set_num][parameter.case_id][row_name] = {}
                 # format fnm to support relative paths
                 ROW_INFO[set_num][parameter.case_id][row_name][season] = os.path.join('set{}'.format(set_num), parameter.case_id, fnm)
-    
+
     # add all of the files in from the case_id/ folder in ANN, DJF, MAM, JJA, SON order
     for set_num in ROW_INFO:
         viewer.set_page("Set-{}".format(set_num))
         for group in ROW_INFO[set_num]:
             viewer.set_group(group)
             for row_name in ROW_INFO[set_num][group]:
+                viewer.set_row(row_name)
                 for col_season in viewer.page.columns[1:]:  # [1:] is to ignore 'Description' col 
-                    viewer.set_row(row_name)
                     if col_season in ROW_INFO[set_num][group][row_name]:
                         fnm = ROW_INFO[set_num][group][row_name][col_season]
                         nc_files = [fnm + nc_ext for nc_ext in ['_test.nc', '_ref.nc', '_diff.nc']]
@@ -107,7 +107,8 @@ def create_viewer(root_dir, parameters, ext):
                         viewer.add_col(fnm + '.' + ext, is_file=True, title=col_season, other_files=formatted_files)
                     else:
                         # insert a blank value
-                        viewer.add_col('-----', is_file=True)  # is_file must be true, idk why this works.
+                        # is_file must be True, otherwise OutputViewer indexes incorrectly
+                        viewer.add_col('-----', is_file=True)
 
     viewer.generate_viewer(prompt_user=False)
 
