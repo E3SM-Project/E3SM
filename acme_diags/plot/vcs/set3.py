@@ -26,9 +26,9 @@ def plot(ref, test, diff, metrics_dict, parameters):
     # default ref breaks for now
     ref = test + 50
 
-    vcs_canvas = vcs.init(geometry=(1628, 1212))
-    #vcs_canvas.geometry(1628, 1212)
-    #vcs_canvas.geometry(1212, 1628)
+    vcs_canvas = vcs.init()
+    vcs_canvas.geometry(1212, 1628)
+    vcs_canvas.drawlogooff()
 
     # use vcs_canvas.show('colormap') to view all colormaps
     vcs_canvas.setcolormap('rainbow')  # 6 to 239 are purple to red in rainbow order
@@ -40,22 +40,22 @@ def plot(ref, test, diff, metrics_dict, parameters):
     # the actual box around the plot
     ref_test_template.box1.x1 = 0.123
     ref_test_template.box1.x2 = 0.86
-    ref_test_template.box1.y1 = 0.70167*(2.0/3.0)
-    ref_test_template.box1.y2 = 0.95
+    ref_test_template.box1.y1 = 0.55
+    ref_test_template.box1.y2 = 0.90
 
     # data (the lines) need to be offset accordingly
     ref_test_template.data.x1 = 0.123
     ref_test_template.data.x2 = 0.86
-    ref_test_template.data.y1 = 0.70167*(2.0/3.0)
-    ref_test_template.data.y2 = 0.95
+    ref_test_template.data.y1 = 0.55
+    ref_test_template.data.y2 = 0.90
 
     #ref_test_template.dataname.x = 0.123
     #ref_test_template.dataname.y = 0.96
 
-    ref_test_template.legend.x1 = 0.88 # left line
-    ref_test_template.legend.x2 = 0.96
-    ref_test_template.legend.y1 = 0.90
-    ref_test_template.legend.y2 = 0.925
+    ref_test_template.legend.x1 = 0.88
+    ref_test_template.legend.x2 = 0.98
+    ref_test_template.legend.y1 = 0.86
+    ref_test_template.legend.y2 = 0.88
     #print ref_test_template.legend.texttable
     ref_test_template.legend.textorientation = 'defright'
     #print '-'*20
@@ -65,21 +65,22 @@ def plot(ref, test, diff, metrics_dict, parameters):
     #print(ref_test_template.legend.textorientation.center()) 
     #quit()
 
-    ref_test_template.title.x = 0.415
-    ref_test_template.title.y = 0.97
+    ref_test_template.title.x = 0.5
+    ref_test_template.title.y = 0.92
+    ref_test_template.title.textorientation = 'defcenter'
 
     ref_test_template.units.x = 0.855
-    ref_test_template.units.y = 0.97
+    ref_test_template.units.y = 0.91
 
     # labels on xaxis
-    ref_test_template.xlabel1.y = (0.70167*(2.0/3.0)) - 0.02  # no xlabel1.x attribute
+    ref_test_template.xlabel1.y = (0.55) - 0.02  # no xlabel1.x attribute
 
     # actual ticks
-    ref_test_template.xtic1.y1 = (0.70167*(2.0/3.0) - 0.005) + 0.01
-    ref_test_template.xtic1.y2 = (0.70167*(2.0/3.0) - 0.005)
+    ref_test_template.xtic1.y1 = (0.55 - 0.005) + 0.01
+    ref_test_template.xtic1.y2 = (0.55 - 0.005)
 
     # name of xaxis
-    ref_test_template.xname.y += 0.21
+    ref_test_template.xname.y += 0.29
 
 
     # labels on yaxis
@@ -90,8 +91,8 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_test_template.ytic1.x2 = (0.123 - 0.005)
 
     # name of yaxis
-    ref_test_template.yname.x += 0.07
-    ref_test_template.yname.y += 0.15
+    ref_test_template.yname.x += 0.05
+    ref_test_template.yname.y += 0.17
 
 
 
