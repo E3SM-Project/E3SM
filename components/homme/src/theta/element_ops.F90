@@ -730,14 +730,6 @@ contains
 
   end subroutine
 
-  !_____________________________________________________________________
-  subroutine  get_initial_state(state, ie)
-
-    type(elem_state_t), intent(inout):: state
-    integer,            intent(in)   :: ie
-    state = state0(ie)
-
-  end subroutine
 
   !_____________________________________________________________________
   subroutine set_forcing_rayleigh_friction(elem, zm, ztop, zc, tau, u0,v0, n)

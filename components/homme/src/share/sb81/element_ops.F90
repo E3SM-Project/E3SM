@@ -25,7 +25,7 @@ module element_ops
 
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use element_mod,    only: element_t
-  use element_state,  only: timelevels
+  use element_state,  only: timelevels, elem_state_t
   use hybrid_mod,     only: hybrid_t
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
@@ -34,6 +34,8 @@ module element_ops
   use physical_constants, only : kappa, p0, Rgas, cp, g, dd_pi
 
   implicit none
+
+  type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
 
 contains
 
@@ -241,6 +243,22 @@ contains
 
   end subroutine get_state
 
+
+  !_____________________________________________________________________
+  subroutine save_initial_state(state,ie)
+
+    ! save the state at time=0 for use with some dcmip tests
+
+    type(elem_state_t), intent(inout):: state
+    integer,            intent(in)   :: ie     ! element index
+
+    if(.not. allocated(state0)) allocate( state0(nelemd) )
+    state0(ie) = state
+
+  end subroutine
+
+
+
   !_____________________________________________________________________
   subroutine set_forcing_rayleigh_friction(elem, zm, ztop, zc, tau, u0,v0, n)
   !
@@ -274,12 +292,13 @@ contains
   end subroutine 
 
   !____________________________________________________________________
-  subroutine tests_finalize(elem,hvcoord,ns,ne)
+  subroutine tests_finalize(elem,hvcoord,ns,ne,ie)
   implicit none
 
   type(hvcoord_t),     intent(in)  :: hvcoord
   type(element_t),  intent(inout)  :: elem
   integer,             intent(in)  :: ns,ne
+  integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
 
   !do nothing
   end subroutine tests_finalize
