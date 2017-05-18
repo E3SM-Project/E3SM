@@ -186,9 +186,9 @@ contains
     ! !USES:
     use ExternalModelConstants    , only : EM_PTM_TBASED_SOLVE_STAGE
     use ExternalModelConstants    , only : L2E_COLUMN_NUM_SNOW_LAYERS
-    use ExternalModelConstants    , only : L2E_COLUMN_ZI
-    use ExternalModelConstants    , only : L2E_COLUMN_DZ
-    use ExternalModelConstants    , only : L2E_COLUMN_Z
+    use ExternalModelConstants    , only : L2E_COLUMN_ZI_SNOW_AND_SOIL
+    use ExternalModelConstants    , only : L2E_COLUMN_DZ_SNOW_AND_SOIL
+    use ExternalModelConstants    , only : L2E_COLUMN_Z_SNOW_AND_SOIL
     use ExternalModelConstants    , only : L2E_COLUMN_ACTIVE
     use ExternalModelConstants    , only : L2E_COLUMN_LANDUNIT_INDEX
     use ExternalModelConstants    , only : L2E_STATE_FRAC_SNOW_EFFECTIVE
@@ -233,15 +233,15 @@ contains
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_col_num_snow_lyrs               = index
 
-    id                                             = L2E_COLUMN_ZI
+    id                                             = L2E_COLUMN_ZI_SNOW_AND_SOIL
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_col_zi                          = index
 
-    id                                             = L2E_COLUMN_DZ
+    id                                             = L2E_COLUMN_DZ_SNOW_AND_SOIL
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_col_dz                          = index
 
-    id                                             = L2E_COLUMN_Z
+    id                                             = L2E_COLUMN_Z_SNOW_AND_SOIL
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_col_z                           = index
 
