@@ -789,12 +789,9 @@ OMP_SIMD
   real (kind=real_kind), intent(in   )         :: mu
 
   ! local
-  real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: Qtens
   real (kind=real_kind), dimension(np,np,nlev                ) :: Q_prime,Qt
   real (kind=real_kind) :: dp0, delz
   integer :: k , i,j,ie,ic,q
-
-  real(real_kind), dimension(np,np,nlev) :: dp_ref, q_ref
 
   !if(test_case .ne. 'dcmip2016_test3') call abortmp("dcmip16_mu is currently limited to dcmip16 test 3")
 
@@ -808,21 +805,11 @@ OMP_SIMD
      do q=1,qsize
         do k=1,nlev
            Qt(:,:,k)   =hvcoord%dp0(k)*elem(ie)%state%Qdp(:,:,k,q,nt_qdp)/elem(ie)%state%dp3d(:,:,k,nt)
-           q_ref(:,:,k)=hvcoord%dp0(k)*state0(ie)%Qdp(:,:,k,q,1)          /state0(ie)%dp3d(:,:,k,1)
         enddo
-
-        Q_prime= Qt - q_ref
-
-        ! compute vertical laplacian
-        call laplace_z(Q_prime(:,:,:),Qtens(:,:,:,q,ie),1,delz)
-        ! apply mass matrix and add in horiz laplacian (which has mass matrix built in)
         do k=1,nlev
-           Qtens(:,:,k,q,ie) = (Qtens(:,:,k,q,ie)*elem(ie)%spheremp(:,:) + &
-                laplace_sphere_wk(Qt(:,:,k),deriv,elem(ie),var_coef=.false.) ) 
-        
            ! timestep
            elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=elem(ie)%state%Qdp(:,:,k,q,nt_qdp)*elem(ie)%spheremp(:,:) &
-                + dt*mu*Qtens(:,:,k,q,ie)
+                + mu*dt*laplace_sphere_wk(Qt(:,:,k),deriv,elem(ie),var_coef=.false.)  
         enddo
 
         if (limiter_option .ne. 0 ) then
@@ -843,7 +830,25 @@ OMP_SIMD
         do k=1,nlev
           elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,nt_qdp)
         enddo
-      enddo
+
+        ! apply vertical viscosity
+        do k=1,nlev
+           Q_prime(:,:,k)   =hvcoord%dp0(k)* ( &
+                elem(ie)%state%Qdp(:,:,k,q,nt_qdp)/elem(ie)%state%dp3d(:,:,k,nt) -  &
+                         state0(ie)%Qdp(:,:,k,q,1)/state0(ie)%dp3d(:,:,k,1) )
+        enddo
+        call laplace_z(Q_prime(:,:,:),Qt(:,:,:),1,delz)
+        ! apply mass matrix and add in horiz laplacian (which has mass matrix built in)
+        do k=1,nlev
+           elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=elem(ie)%state%Qdp(:,:,k,q,nt_qdp)  + mu*dt*Qt(:,:,k)
+           ! crude sign preserving limiter
+           where(elem(ie)%state%Qdp(:,:,k,q,nt_qdp) < 0 ) 
+              elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=0
+           end where
+        enddo
+
+
+      enddo ! q loop
     enddo ! ie loop
   end subroutine advance_physical_vis
 
