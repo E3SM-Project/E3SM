@@ -1669,8 +1669,10 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: p,c,fc,j                                              ! do loop indices
     integer  :: pi                                                    ! patch index
+    integer  :: nlevbed                                               ! number of layers to bedrock
     real(r8) :: temp(bounds%begc:bounds%endc)                         ! accumulator for rootr weighting
     associate(& 
+          nlev2bed            =>    col%nlev2bed                    , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
           qflx_rootsoi_col    => waterflux_vars%qflx_rootsoi_col    , & ! Output: [real(r8) (:,:) ]  
                                                                         ! vegetation/soil water exchange (m H2O/s) (+ = to atm)
           qflx_tran_veg_patch => waterflux_vars%qflx_tran_veg_patch , & ! Input:  [real(r8) (:)   ]  
