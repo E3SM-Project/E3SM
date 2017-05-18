@@ -860,22 +860,22 @@ contains
      ! multiply by mass matrix for DSS
      ! horiz viscosity already has mass matrix built in
      do k=1,nlev
-        lap_v = vlaplace_sphere_wk(u_prime(:,:,:,k),deriv,elem(ie),var_coef=.false.)
+        lap_v = vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
 
         vtens(:,:,1,k,ie) = (vtens(:,:,1,k,ie)*elem(ie)%spheremp(:,:) + lap_v(:,:,1))
         vtens(:,:,2,k,ie) = (vtens(:,:,2,k,ie)*elem(ie)%spheremp(:,:) + lap_v(:,:,2))
 
         stens(:,:,k,1,ie) = (stens(:,:,k,1,ie)*elem(ie)%spheremp(:,:) + &
-             laplace_sphere_wk(dp_prime(:,:,k),deriv,elem(ie),var_coef=.false.)  )
+             laplace_sphere_wk(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),var_coef=.false.)  )
 
         stens(:,:,k,2,ie) = (stens(:,:,k,2,ie)*elem(ie)%spheremp(:,:) + &
-             laplace_sphere_wk(theta_prime(:,:,k),deriv,elem(ie),var_coef=.false.)  )
+             laplace_sphere_wk(elem(ie)%state%theta_dp_cp(:,:,k,nt),deriv,elem(ie),var_coef=.false.)  )
 
         stens(:,:,k,3,ie) = (stens(:,:,k,3,ie)*elem(ie)%spheremp(:,:) + &
-             laplace_sphere_wk(w_prime(:,:,k),deriv,elem(ie),var_coef=.false.) )
+             laplace_sphere_wk(elem(ie)%state%w(:,:,k,nt),deriv,elem(ie),var_coef=.false.) )
 
         stens(:,:,k,4,ie) = (stens(:,:,k,4,ie)*elem(ie)%spheremp(:,:) + &
-             laplace_sphere_wk(phi_prime(:,:,k),deriv,elem(ie),var_coef=.false.) ) 
+             laplace_sphere_wk(elem(ie)%state%phi(:,:,k,nt),deriv,elem(ie),var_coef=.false.) ) 
 
      enddo
 
