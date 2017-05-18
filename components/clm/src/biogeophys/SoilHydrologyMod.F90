@@ -689,8 +689,12 @@ contains
           ! allow jwt to equal zero when zwt is in top layer
           do j = 1,nlevbed
              if(zwt(c) <= zi(c,j)) then
-                jwt(c) = j-1
-                exit
+                  if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil .and. zwt(c) == zi(c,nlevbed)) then
+                    exit
+                  else
+                    jwt(c) = j-1
+                    exit
+		  end if
              end if
           enddo
        end do
@@ -761,8 +765,12 @@ contains
              jwt(c) = nlevbed
              do j = 1,nlevbed
                 if(zwt(c) <= zi(c,j)) then
+                  if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil .and. zwt(c) == zi(c,nlevbed)) then
+                    exit
+                  else
                    jwt(c) = j-1
                    exit
+		  end if
                 end if
              enddo
           endif
@@ -926,7 +934,7 @@ contains
      real(r8) :: xsi(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer i (mm)
      real(r8) :: xsia(bounds%begc:bounds%endc)           ! available pore space at layer i (mm)
      real(r8) :: xs1(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer 1 (mm)
-     real(r8) :: smpfz(1:nlevsoi)                        ! matric potential of layer right above water table (mm)
+     real(r8) :: smpfz(1:nlevgrnd)                        ! matric potential of layer right above water table (mm)
      real(r8) :: wtsub                                   ! summation of hk*dzmm for layers below water table (mm**2/s)
      real(r8) :: rous                                    ! aquifer yield (-)
      real(r8) :: wh                                      ! smpfz(jwt)-z(jwt) (mm)
@@ -1063,8 +1071,12 @@ contains
           ! allow jwt to equal zero when zwt is in top layer
           do j = 1,nlevbed
              if(zwt(c) <= zi(c,j)) then
-                jwt(c) = j-1
+               if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil .and. zwt(c) == zi(c,nlevbed)) then
                 exit
+               else
+                 jwt(c) = j-1
+                exit
+	       end if
              end if
           enddo
        end do
@@ -1154,8 +1166,12 @@ contains
              jwt(c) = nlevbed
              do j = 1,nlevbed
                 if(zwt(c) <= zi(c,j)) then
+                  if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil .and. zwt(c) == zi(c,nlevbed)) then
+                    exit
+                  else
                    jwt(c) = j-1
                    exit
+                  end if
                 end if
              enddo
           else 
@@ -1238,7 +1254,7 @@ contains
              fff(c)         = 1._r8/ hkdepth(c)
              dzsum = 0._r8
              icefracsum = 0._r8
-             do j = max(jwt(c),1), nlevsoi
+             do j = max(jwt(c),1), nlevbed
                 dzsum  = dzsum + dzmm(c,j)
                 icefracsum = icefracsum + icefrac(c,j) * dzmm(c,j)
              end do
@@ -1383,8 +1399,12 @@ contains
                 jwt(c) = nlevbed
                 do j = 1,nlevbed
                    if(zwt(c) <= zi(c,j)) then
+                     if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil .and. zwt(c) == zi(c,nlevbed)) then
+                       exit
+                     else
                       jwt(c) = j-1
                       exit
+                     end if
                    end if
                 enddo
              end if! end of jwt if construct
@@ -1577,7 +1597,7 @@ contains
      real(r8) :: xsi(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer i (mm)
      real(r8) :: xsia(bounds%begc:bounds%endc)           ! available pore space at layer i (mm)
      real(r8) :: xs1(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer 1 (mm)
-     real(r8) :: smpfz(1:nlevsoi)                        ! matric potential of layer right above water table (mm)
+     real(r8) :: smpfz(1:nlevgrnd)                        ! matric potential of layer right above water table (mm)
      real(r8) :: wtsub                                   ! summation of hk*dzmm for layers below water table (mm**2/s)
      real(r8) :: rous                                    ! aquifer yield (-)
      real(r8) :: wh                                      ! smpfz(jwt)-z(jwt) (mm)
