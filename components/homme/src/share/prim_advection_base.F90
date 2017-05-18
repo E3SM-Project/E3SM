@@ -791,13 +791,8 @@ OMP_SIMD
 
   ! local
   real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: Qtens
-<<<<<<< HEAD
-  real (kind=real_kind), dimension(np,np,nlev                ) :: Q_prime
-  real (kind=real_kind) :: delz
-=======
   real (kind=real_kind), dimension(np,np,nlev                ) :: Q_prime,Qt
   real (kind=real_kind) :: dp0, delz
->>>>>>> fca73834807560c884c54883eaacee16285390ae
   integer :: k , i,j,ie,ic,q
   type(elem_state_t) :: ref_state
 
