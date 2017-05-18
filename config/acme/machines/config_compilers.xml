@@ -529,7 +529,6 @@ for mct, etc.
   <MPI_PATH></MPI_PATH>
 </compiler>
 
-<!-- Note that it is now referred to as Cray Linux Environment (CLE), but leaving as CNL for now -->
 <compiler OS="CNL">
   <SFC> ftn </SFC>
   <SCC> cc </SCC>
@@ -542,8 +541,9 @@ for mct, etc.
   <NETCDF_PATH>$(NETCDF_DIR)</NETCDF_PATH>
   <PNETCDF_PATH>$(PARALLEL_NETCDF_DIR)</PNETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_CPPDEFS> -DLINUX -DHAVE_SLASHPROC </ADD_CPPDEFS>
-  <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY  </GPTL_CPPDEFS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY  </GPTL_CPPDEFS>
+  <CMAKE_OPTS> -DCMAKE_SYSTEM_NAME=Catamount</CMAKE_OPTS>
 </compiler>
 
 
@@ -554,6 +554,9 @@ for mct, etc.
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
   <ADD_SLIBS> ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</ADD_SLIBS>
   <ADD_GPTL_CPPDEFS> -DHAVE_PAPI </ADD_GPTL_CPPDEFS>
+  <MPIFC> ftn </MPIFC>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
   <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
   <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos_09232015/Albany/build/install</ALBANY_PATH>
 </compiler>
@@ -583,12 +586,17 @@ for mct, etc.
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
   <ADD_SLIBS> -mkl -lpthread -lm </ADD_SLIBS>
   <ADD_GPTL_CPPDEFS> -DHAVE_PAPI </ADD_GPTL_CPPDEFS>
-
+  <ADD_CPPDEFS> -DHAVE_SLASHPROC </ADD_CPPDEFS>
+  <MPIFC> ftn </MPIFC>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <SFC> ifort </SFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-
   <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
 </compiler>
 
@@ -606,6 +614,13 @@ for mct, etc.
   <ADD_SLIBS> ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm </ADD_SLIBS>
   <!--ADD_SLIBS> -mkl -lpthread -lm </ADD_SLIBS-->
   <ADD_GPTL_CPPDEFS> -DHAVE_PAPI </ADD_GPTL_CPPDEFS>
+  <ADD_CPPDEFS> -DHAVE_SLASHPROC </ADD_CPPDEFS>
+  <MPIFC> ftn </MPIFC>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <SFC> ifort </SFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
   <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
 </compiler>
 
@@ -620,7 +635,13 @@ for mct, etc.
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
   <ADD_SLIBS> -mkl -lpthread -lm </ADD_SLIBS>
   <ADD_GPTL_CPPDEFS> -DHAVE_PAPI </ADD_GPTL_CPPDEFS>
-  <ADD_CPPDEFS> -DARCH_MIC_KNL </ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DARCH_MIC_KNL -DHAVE_SLASHPROC </ADD_CPPDEFS>
+  <MPIFC> ftn </MPIFC>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <SFC> ifort </SFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
   <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
 </compiler>
 
