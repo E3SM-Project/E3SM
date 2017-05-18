@@ -108,16 +108,23 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_test_template.ylabel1.x = 0.1108  # no ylabel1.y attribute
 
     # actual ticks on yaxis
-    ref_test_template. ytic1.x1 = (0.123 - 0.005) + 0.01
+    ref_test_template.ytic1.x1 = (0.123 - 0.005) + 0.01
     ref_test_template.ytic1.x2 = (0.123 - 0.005)
 
     # name of yaxis
+    ref_test_template.yname.priority = 1
+    ref_test_template.yname.x = ref_test_template.xname.x
+    ref_test_template.yname.y = ref_test_template.xname.y
+    
+    #ref_test_template.xname.y += 0.20
     # ref_test_template.yname.x += 0.05
     # ref_test_template.yname.y += 0.17
 
 
     diff_template = vcs.gettemplate('diff_template')
     diff_template.units.textorientation = 'defright'
+    diff_template.units.x += 0.01
+
     '''
     diff_template.box1.y1 -= 0.47
     diff_template.box1.y2 -= 0.47
@@ -190,11 +197,11 @@ def plot(ref, test, diff, metrics_dict, parameters):
 
     # Plot the main title
     main_title = managetextcombined('main_title', 'main_title')
-    main_title.string = 'Main Title'
-    main_title.height = 18
-    main_title.halign = 'center'
-    main_title.x = 0.5
-    main_title.y = 0.97
+    main_title.string = parameters.main_title
+    #main_title.height = 18
+    #main_title.halign = 'center'
+    #main_title.x = 0.5
+    #main_title.y = 0.97
     vcs_canvas.plot(main_title)
 
     #ref_test_template.script('plot_set_3.json')
