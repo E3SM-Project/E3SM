@@ -791,19 +791,24 @@ OMP_SIMD
 
   ! local
   real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: Qtens
+<<<<<<< HEAD
   real (kind=real_kind), dimension(np,np,nlev                ) :: Q_prime
   real (kind=real_kind) :: delz
+=======
+  real (kind=real_kind), dimension(np,np,nlev                ) :: Q_prime,Qt
+  real (kind=real_kind) :: dp0, delz
+>>>>>>> fca73834807560c884c54883eaacee16285390ae
   integer :: k , i,j,ie,ic,q
   type(elem_state_t) :: ref_state
 
-real(real_kind), dimension(np,np,nlev) :: dp_ref, q_ref
+  real(real_kind), dimension(np,np,nlev) :: dp_ref, q_ref
 
   !if(test_case .ne. 'dcmip2016_test3') call abortmp("dcmip16_mu is currently limited to dcmip16 test 3")
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  hyper viscosity
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  delz=20000.0/nlev
+  delz=20d3/nlev
 
   do ie=nets,nete
 
@@ -812,24 +817,28 @@ real(real_kind), dimension(np,np,nlev) :: dp_ref, q_ref
 
      do q=1,qsize
         do k=1,nlev
-           Q_prime(:,:,k)=hvcoord%dp0(k)*elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / elem(ie)%state%dp3d(:,:,k,nt)
+           Qt(:,:,k)   =hvcoord%dp0(k)*elem(ie)%state%Qdp(:,:,k,q,nt_qdp)/elem(ie)%state%dp3d(:,:,k,nt)
+           q_ref(:,:,k)=hvcoord%dp0(k)*ref_state%Qdp(:,:,k,q,1)          /ref_state%dp3d(:,:,k,1)
         enddo
 
-        dp_ref = ref_state%dp3d(:,:,:,1)
-        q_ref  = ref_state%Qdp(:,:,:,q,1)/dp_ref
-        Q_prime= Q_prime - q_ref
+        Q_prime= Qt - q_ref
 
         ! compute vertical laplacian
         call laplace_z(Q_prime(:,:,:),Qtens(:,:,:,q,ie),1,delz)
         ! apply mass matrix and add in horiz laplacian (which has mass matrix built in)
         do k=1,nlev
            Qtens(:,:,k,q,ie) = (Qtens(:,:,k,q,ie)*elem(ie)%spheremp(:,:) + &
-                laplace_sphere_wk(Q_prime(:,:,:),deriv,elem(ie),var_coef=.false.) ) 
+                laplace_sphere_wk(Qt(:,:,k),deriv,elem(ie),var_coef=.false.) ) 
         
            ! timestep
            elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=elem(ie)%state%Qdp(:,:,k,q,nt_qdp)*elem(ie)%spheremp(:,:) &
                 + dt*mu*Qtens(:,:,k,q,ie)
         enddo
+
+        if (limiter_option .ne. 0 ) then
+           ! smooth some of the negativities introduced by diffusion:
+           call limiter2d_zero( elem(ie)%state%Qdp(:,:,:,q,nt_qdp) )
+        endif
 
       enddo
       call edgeVpack  ( edgeAdv,elem(ie)%state%Qdp(:,:,:,:,nt_qdp),qsize*nlev,0,ie )
