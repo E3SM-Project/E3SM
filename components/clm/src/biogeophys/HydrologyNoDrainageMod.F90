@@ -116,7 +116,7 @@ contains
     real(r8) :: stsw                          ! volumetric soil water to 0.5 m at saturation
     real(r8) :: fracl                         ! fraction of soil layer contributing to 10cm total soil water
     real(r8) :: s_node                        ! soil wetness (-)
-    real(r8) :: icefrac(bounds%begc:bounds%endc,1:nlevsoi)
+    real(r8) :: icefrac(bounds%begc:bounds%endc,1:nlevgrnd)
     !-----------------------------------------------------------------------
     
     associate(                                                          & 

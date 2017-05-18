@@ -369,7 +369,6 @@ contains
          bsw               =>    soilstate_vars%bsw_col             , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
          sucsat            =>    soilstate_vars%sucsat_col          , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
          eff_porosity      =>    soilstate_vars%eff_porosity_col    , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice         
-         rootr_col         =>    soilstate_vars%rootr_col           , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
          smp_l             =>    soilstate_vars%smp_l_col           , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]                      
          hk_l              =>    soilstate_vars%hk_l_col            , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity (mm/s)                   
          rootr_pft         =>    soilstate_vars%rootr_patch         , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
@@ -380,8 +379,6 @@ contains
 
          qflx_deficit      =>    waterflux_vars%qflx_deficit_col    , & ! Input:  [real(r8) (:)   ]  water deficit to keep non-negative liquid water content
          qflx_infl         =>    waterflux_vars%qflx_infl_col       , & ! Input:  [real(r8) (:)   ]  infiltration (mm H2O /s)                          
-         qflx_tran_veg_col =>    waterflux_vars%qflx_tran_veg_col   , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
-         qflx_tran_veg_pft =>    waterflux_vars%qflx_tran_veg_patch , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
          qflx_rootsoi_col  =>    waterflux_vars%qflx_rootsoi_col    , & ! Input: [real(r8) (:,:) ]  vegetation/soil water exchange (mm H2O/s) (+ = to atm)
          t_soisno          =>    temperature_vars%t_soisno_col        & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
          )
@@ -419,61 +416,6 @@ contains
       end do
 
 
-      temp(bounds%begc : bounds%endc) = 0._r8
-
-      do fc = 1, num_hydrologyc
-        c = filter_hydrologyc(fc)
-        if(do_varsoil) then
-          nlevbed = nlev2bed(c)
-        else
-          nlevbed = nlevsoi
-        end if
-        do j = 1, nlevbed
-            rootr_col(c,j) = 0._r8
-         end do
-      end do
-
-      do pi = 1,max_patch_per_col
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
-            if(do_varsoil) then
-              nlevbed = nlev2bed(c)
-            else
-              nlevbed = nlevsoi
-            end if
-            do j = 1,nlevbed
-               if (pi <= col%npfts(c)) then
-                  p = col%pfti(c) + pi - 1
-                  if (pft%active(p)) then
-                     rootr_col(c,j) = rootr_col(c,j) + rootr_pft(p,j) * qflx_tran_veg_pft(p) * pft%wtcol(p)
-                  end if
-               end if
-            end do
-         end do
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
-            if (pi <= col%npfts(c)) then
-               p = col%pfti(c) + pi - 1
-               if (pft%active(p)) then
-                  temp(c) = temp(c) + qflx_tran_veg_pft(p) * pft%wtcol(p)
-               end if
-            end if
-         end do
-      end do
-
-      do fc = 1, num_hydrologyc
-         c = filter_hydrologyc(fc)
-         if(do_varsoil) then
-          nlevbed = nlev2bed(c)
-         else
-          nlevbed = nlevsoi
-         end if
-         do j = 1, nlevbed
-            if (temp(c) /= 0._r8) then
-               rootr_col(c,j) = rootr_col(c,j)/temp(c)
-            end if
-         end do
-      end do
 
       !compute jwt index
       ! The layer index of the first unsaturated layer, i.e., the layer right above
@@ -946,19 +888,6 @@ contains
             if(h2osoi_liq(c,j)<0._r8)then
                qflx_deficit(c) = qflx_deficit(c) - h2osoi_liq(c,j)
             endif
-         enddo
-      enddo
-
-      do fc = 1, num_hydrologyc
-         c = filter_hydrologyc(fc)
-         if(do_varsoil) then
-          nlevbed = nlev2bed(c)
-         else
-          nlevbed = nlevsoi
-         end if
-         do j = 1, nlevbed
-            c = filter_hydrologyc(fc)
-            qflx_rootsoi_col(c,j) = qflx_tran_veg_col(c) * rootr_col(c,j) * 1.e-3_r8      ![m H2O/s]
          enddo
       enddo
 
@@ -1721,6 +1650,7 @@ contains
     ! hydraulics.
     !
     !USES:
+    use clm_varctl       , only : do_varsoil
     use decompMod        , only : bounds_type
     use shr_kind_mod     , only : r8 => shr_kind_r8
     use clm_varpar       , only : nlevsoi, max_patch_per_col
@@ -1762,17 +1692,27 @@ contains
       
       temp(bounds%begc : bounds%endc) = 0._r8
       
-      do j = 1, nlevsoi
-         do fc = 1, num_filterc
+      do fc = 1, num_filterc
             c = filterc(fc)
+        if(do_varsoil) then
+          nlevbed = nlev2bed(c)
+        else
+          nlevbed = nlevsoi
+        end if
+        do j = 1, nlevbed
             rootr_col(c,j) = 0._r8
          end do
       end do
       
       do pi = 1,max_patch_per_col
-         do j = 1,nlevsoi
-            do fc = 1, num_filterc
-               c = filterc(fc)
+         do fc = 1, num_filterc
+            c = filterc(fc)
+            if(do_varsoil) then
+               nlevbed = nlev2bed(c)
+            else
+               nlevbed = nlevsoi
+            end if
+            do j = 1,nlevbed
                if (pi <= col%npfts(c)) then
                   p = col%pfti(c) + pi - 1
                   if (pft%active(p)) then
@@ -1793,9 +1733,14 @@ contains
          end do
       end do
       
-      do j = 1, nlevsoi
-         do fc = 1, num_filterc
-            c = filterc(fc)
+      do fc = 1, num_filterc
+         c = filterc(fc)
+         if(do_varsoil) then
+          nlevbed = nlev2bed(c)
+         else
+          nlevbed = nlevsoi
+         end if
+         do j = 1, nlevbed
             if (temp(c) /= 0._r8) then
                rootr_col(c,j) = rootr_col(c,j)/temp(c)
             end if
