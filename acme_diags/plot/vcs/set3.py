@@ -5,6 +5,7 @@ import cdms2
 from genutil import udunits
 from acme_diags.driver.utils import get_output_dir
 
+vcs_canvas = vcs.init()
 
 def plot(ref, test, diff, metrics_dict, parameters):
     # Line options, see here: https://uvcdat.llnl.gov/documentation/vcs/vcs-10.html
@@ -23,10 +24,16 @@ def plot(ref, test, diff, metrics_dict, parameters):
     test_plot_markersize = 1
     test_plot_markercolor = 215
 
+    diff_plot_linetype = 0
+    diff_plot_color = 1
+    diff_plot_width = 3
+    diff_plot_marker = 1
+    diff_plot_markersize = 1
+    diff_plot_markercolor = 1
+
     # default ref breaks for now
     ref = test + 50
 
-    vcs_canvas = vcs.init()
     vcs_canvas.geometry(1212, 1628)
     vcs_canvas.drawlogooff()
 
@@ -35,7 +42,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
 
     ref_test_template = vcs.createtemplate('ref_test_template')
     # make all of the elements listed have priority = 0
-    ref_test_template.blank(["mean", "max", "min", "zvalue", "dataname", "crtime","ytic2", "xtic2"])
+    ref_test_template.blank(["mean", "max", "min", "zvalue", "dataname", "crtime", "ytic2", "xtic2"])
 
     # the actual box around the plot
     ref_test_template.box1.x1 = 0.123
@@ -56,20 +63,12 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_test_template.legend.x2 = 0.98
     ref_test_template.legend.y1 = 0.86
     ref_test_template.legend.y2 = 0.88
-    #print ref_test_template.legend.texttable
     ref_test_template.legend.textorientation = 'defright'
-    #print '-'*20
-    #print ref_test_template.legend.texttable
-    
-    #help(ref_test_template.legend.textorientation.center)
-    #print(ref_test_template.legend.textorientation.center()) 
-    #quit()
 
     ref_test_template.title.x = 0.5
-    ref_test_template.title.y = 0.92
     ref_test_template.title.textorientation = 'defcenter'
 
-    ref_test_template.units.x = 0.855
+    ref_test_template.units.x = 0.85
     ref_test_template.units.y = 0.91
 
     # labels on xaxis
@@ -95,6 +94,28 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_test_template.yname.y += 0.17
 
 
+    diff_template = vcs.createtemplate('diff_template', ref_test_template)
+    diff_template.box1.y1 -= 0.47
+    diff_template.box1.y2 -= 0.47
+
+    diff_template.data.y1 -= 0.47
+    diff_template.data.y2 -= 0.47
+
+    diff_template.legend.y1 -= 0.47
+    diff_template.legend.y2 -= 0.47
+
+    diff_template.title.y -= 0.47
+    diff_template.units.y -= 0.47
+
+    diff_template.xlabel1.y -= 0.47
+
+    diff_template.xtic1.y1 -= 0.47
+    diff_template.xtic1.y2 -= 0.47
+
+    diff_template.xname.y -= 0.47
+    diff_template.yname.y -= 0.47
+
+
 
     ref_line = vcs_canvas.createxvsy('ref_plot')
     ref_line.datawc_y1 = min(ref.min(), test.min())
@@ -104,22 +125,35 @@ def plot(ref, test, diff, metrics_dict, parameters):
     test_line.datawc_y1 = min(ref.min(), test.min())
     test_line.datawc_y2 = max(ref.max(), test.max())
 
-    ref_line.line = ref_plot_linetype
-    # ref_line.linetype = ref_plot_linetype
+    diff_line = vcs_canvas.createxvsy('diff_plot')
+    diff_line.datawc_y1 = ref.min()
+    diff_line.datawc_y2 = ref.max()
+
+
+    #ref_line.line = ref_plot_linetype
+    ref_line.linetype = ref_plot_linetype
     ref_line.linecolor = ref_plot_color
     ref_line.linewidth = ref_plot_width
     ref_line.marker = ref_plot_marker
     ref_line.markersize = ref_plot_markersize
     ref_line.markercolor = ref_plot_markercolor
 
-    test_line.line = test_plot_linetype
-    # test_line.linetype = test_plot_linetype
+    #test_line.line = test_plot_linetype
+    test_line.linetype = test_plot_linetype
     test_line.linecolor = test_plot_color
     test_line.linewidth = test_plot_width
     test_line.marker = test_plot_marker
     test_line.markersize = test_plot_markersize
     test_line.markercolor = test_plot_markercolor
     # test_line.smooth = 1
+
+    #diff_line.line = diff_plot_linetype
+    diff_line.linetype = diff_plot_linetype
+    diff_line.linecolor = diff_plot_color
+    diff_line.linewidth = diff_plot_width
+    diff_line.marker = diff_plot_marker
+    diff_line.markersize = diff_plot_markersize
+    diff_line.markercolor = diff_plot_markercolor
 
     blank_template = vcs_canvas.createtemplate('blank_template', ref_test_template)
     blank_template.blank()
@@ -129,8 +163,19 @@ def plot(ref, test, diff, metrics_dict, parameters):
 
     vcs_canvas.plot(ref, ref_line, ref_test_template)
     vcs_canvas.plot(test, test_line, blank_template)
+    vcs_canvas.plot(ref, diff_line, diff_template)
+
+    # Plot the main title
+    # TODO make this use managetextcombined() later
+    main_title = vcs.createtextcombined('main_title')
+    main_title.string = 'Main Title'
+    main_title.height = 18
+    main_title.halign = 'center'
+    main_title.x = 0.5
+    main_title.y = 0.97
+    vcs_canvas.plot(main_title)
+
     vcs_canvas.png('set3vcs.png')
-    vcs_canvas.clear()
 
 
 def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
