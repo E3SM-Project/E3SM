@@ -24,6 +24,9 @@ type, public :: hvcoord_t
   real(r8) hybm(plev)   ! ps  component of hybrid coordinate - midpoints
   real(r8) etam(plev)   ! eta-levels at midpoints
   real(r8) etai(plevp)  ! eta-levels at interfaces
+  real(r8) d_etam(plev)   ! Delta eta at midpoints
+  real(r8) d_etai(plevp)  ! Delta eta at interfaces
+  real(r8) dp0(plev)      ! average layer thickness
 end type
 
 public :: hvcoord_init, set_layer_locations
@@ -171,6 +174,21 @@ end function
   ! Get eta-levels from A,B
   forall(k=1:plev)  hvcoord%etam(k)=hvcoord%hyam(k)+hvcoord%hybm(k)
   forall(k=1:plevp) hvcoord%etai(k)=hvcoord%hyai(k)+hvcoord%hybi(k)
+
+  ! get eta level deltas:
+  do k=1,plev
+     hvcoord%d_etam(k)=hvcoord%etai(k+1)-hvcoord%etai(k)
+     ! compute this way so it is BFB with older code:
+     hvcoord%dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
+     !hvcoord%dp0(k) = hvcoord%d_etam(k)*hvcoord%ps0
+  enddo
+  hvcoord%d_etai(1)=hvcoord%etam(1)/2
+  hvcoord%d_etai(plev+1)=hvcoord%etam(plev)/2
+  do k=2,plev
+     ! same as (d_etam(k)+d_etam(k-1)/2
+     hvcoord%d_etai(k)=hvcoord%etam(k)-hvcoord%etam(k-1)
+  enddo
 
   ! ======================================================================
   ! Test that midpoint A,B is mean of interface A,B

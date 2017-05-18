@@ -319,16 +319,10 @@ contains
   real(kind=real_kind), dimension(np,np  ,nlev                ) :: dp,dp_star
   real(kind=real_kind), dimension(np,np  ,nlev,qsize,nets:nete) :: Qtens_biharmonic
   real(kind=real_kind), pointer, dimension(:,:,:)               :: DSSvar
-  real(kind=real_kind) :: dp0(nlev)
   integer :: ie,q,i,j,k, kptr
   integer :: rhs_viss
 
 !  call t_barrierf('sync_euler_step', hybrid%par%comm)
-OMP_SIMD
-  do k = 1 , nlev
-    dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-  enddo
 !pw  call t_startf('euler_step')
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -415,7 +409,7 @@ OMP_SIMD
             do q = 1 , qsize
               ! NOTE: divide by dp0 since we multiply by dp0 below
               Qtens_biharmonic(:,:,k,q,ie)=Qtens_biharmonic(:,:,k,q,ie)&
-                *elem(ie)%derived%dpdiss_ave(:,:,k)/dp0(k)
+                *elem(ie)%derived%dpdiss_ave(:,:,k)/hvcoord%dp0(k)
             enddo
           enddo
         enddo ! ie loop
@@ -439,7 +433,7 @@ OMP_SIMD
           do k = 1 , nlev    !  Loop inversion (AAM)
             ! note: biharmonic_wk() output has mass matrix already applied. Un-apply since we apply again below:
             qtens_biharmonic(:,:,k,q,ie) = &
-                     -rhs_viss*dt*nu_q*dp0(k)*Qtens_biharmonic(:,:,k,q,ie) / elem(ie)%spheremp(:,:)
+                     -rhs_viss*dt*nu_q*hvcoord%dp0(k)*Qtens_biharmonic(:,:,k,q,ie) / elem(ie)%spheremp(:,:)
           enddo
         enddo
       enddo
@@ -651,7 +645,7 @@ OMP_SIMD
   ! local
   real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: Qtens
   real (kind=real_kind), dimension(np,np,nlev                ) :: dp
-  real (kind=real_kind) :: dt,dp0
+  real (kind=real_kind) :: dt
   integer :: k , i , j , ie , ic , q
 
   if ( nu_q           == 0 ) return
@@ -689,14 +683,12 @@ OMP_SIMD
 
       else
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k,dp0) collapse(2)
+!$omp parallel do private(q,k) collapse(2)
 #endif
         do q = 1 , qsize
           do k = 1 , nlev
             dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - dt2*elem(ie)%derived%divdp_proj(:,:,k)
-            dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + &
-                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * hvcoord%ps0
-            Qtens(:,:,k,q,ie) = dp0*elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / dp(:,:,k)
+            Qtens(:,:,k,q,ie) = hvcoord%dp0(k)*elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / dp(:,:,k)
           enddo
         enddo
       endif
@@ -799,19 +791,19 @@ OMP_SIMD
 
   ! local
   real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: Qtens
-  real (kind=real_kind), dimension(np,np,nlev                ) :: Q_prime
+  real (kind=real_kind), dimension(np,np,nlev                ) :: Q_prime,Qt
   real (kind=real_kind) :: dp0, delz
   integer :: k , i,j,ie,ic,q
   type(elem_state_t) :: ref_state
 
-real(real_kind), dimension(np,np,nlev) :: dp_ref, q_ref
+  real(real_kind), dimension(np,np,nlev) :: dp_ref, q_ref
 
   !if(test_case .ne. 'dcmip2016_test3') call abortmp("dcmip16_mu is currently limited to dcmip16 test 3")
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  hyper viscosity
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  delz=20000.0/nlev
+  delz=20d3/nlev
 
   do ie=nets,nete
 
@@ -820,26 +812,28 @@ real(real_kind), dimension(np,np,nlev) :: dp_ref, q_ref
 
      do q=1,qsize
         do k=1,nlev
-           dp0=( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + &
-                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * hvcoord%ps0
-           Q_prime(:,:,k)=dp0*elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / elem(ie)%state%dp3d(:,:,k,nt)
+           Qt(:,:,k)   =hvcoord%dp0(k)*elem(ie)%state%Qdp(:,:,k,q,nt_qdp)/elem(ie)%state%dp3d(:,:,k,nt)
+           q_ref(:,:,k)=hvcoord%dp0(k)*ref_state%Qdp(:,:,k,q,1)          /ref_state%dp3d(:,:,k,1)
         enddo
 
-        dp_ref = ref_state%dp3d(:,:,:,1)
-        q_ref  = ref_state%Qdp(:,:,:,q,1)/dp_ref
-        Q_prime= Q_prime - q_ref
+        Q_prime= Qt - q_ref
 
         ! compute vertical laplacian
         call laplace_z(Q_prime(:,:,:),Qtens(:,:,:,q,ie),1,delz)
         ! apply mass matrix and add in horiz laplacian (which has mass matrix built in)
         do k=1,nlev
            Qtens(:,:,k,q,ie) = (Qtens(:,:,k,q,ie)*elem(ie)%spheremp(:,:) + &
-                laplace_sphere_wk(Q_prime(:,:,:),deriv,elem(ie),var_coef=.false.) ) 
+                laplace_sphere_wk(Qt(:,:,k),deriv,elem(ie),var_coef=.false.) ) 
         
            ! timestep
            elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=elem(ie)%state%Qdp(:,:,k,q,nt_qdp)*elem(ie)%spheremp(:,:) &
                 + dt*mu*Qtens(:,:,k,q,ie)
         enddo
+
+        if (limiter_option .ne. 0 ) then
+           ! smooth some of the negativities introduced by diffusion:
+           call limiter2d_zero( elem(ie)%state%Qdp(:,:,:,q,nt_qdp) )
+        endif
 
       enddo
       call edgeVpack  ( edgeAdv,elem(ie)%state%Qdp(:,:,:,:,nt_qdp),qsize*nlev,0,ie )
