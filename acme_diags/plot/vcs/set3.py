@@ -58,9 +58,9 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref.long_name = parameters.reference_title
     diff.long_name = parameters.diff_title
 
-    #test.id = parameters.test_name
-    #ref.id = parameters.reference_name
-    #diff.id = parameters.diff_name
+    test.id = str(parameters.test_name)
+    ref.id = str(parameters.reference_name)
+    diff.id = str(parameters.diff_name)
 
     # use vcs_canvas.show('colormap') to view all colormaps
     vcs_canvas.setcolormap('rainbow')  # 6 to 239 are purple to red in rainbow order
@@ -68,7 +68,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_test_template = vcs.gettemplate('ref_test_template')
     # make all of the elements listed have priority = 0
     ref_test_template.blank(["mean", "max", "min", "zvalue", "dataname", "crtime", "ytic2", "xtic2"])
-
+    
     # the actual box around the plot
     ref_test_template.box1.x1 = 0.123
     ref_test_template.box1.x2 = 0.86
@@ -124,6 +124,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
     diff_template = vcs.gettemplate('diff_template')
     diff_template.units.textorientation = 'defright'
     diff_template.units.x += 0.01
+    diff_template.legend.priority = 0
 
     '''
     diff_template.box1.y1 -= 0.47
@@ -150,14 +151,30 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_line = vcs_canvas.getxvsy('ref_plot')
     ref_line.datawc_y1 = min(ref.min(), test.min())
     ref_line.datawc_y2 = max(ref.max(), test.max())
+    ref_line.datawc_x1 = -90
+    ref_line.datawc_x2 = 90
+    ref_line.xticlabels1 = {-90: "90S", -80: "80S", -60: "60S",
+                        -40: "40S", -20: "20S", 0: "Eq",
+                        20: "20N", 40: "40N", 60: "60N",
+                        80: "80N", 90: "90N"}
+
 
     test_line = vcs_canvas.getxvsy('test_plot')
     test_line.datawc_y1 = min(ref.min(), test.min())
     test_line.datawc_y2 = max(ref.max(), test.max())
+    test_line.datawc_x1 = -90
+    test_line.datawc_x2 = 90
 
     diff_line = vcs_canvas.getxvsy('diff_plot')
     diff_line.datawc_y1 = diff.min()
     diff_line.datawc_y2 = diff.max()
+    diff_line.datawc_x1 = -90
+    diff_line.datawc_x2 = 90
+    diff_line.xticlabels1 = {-90: "90S", -80: "80S", -60: "60S",
+                        -40: "40S", -20: "20S", 0: "Eq",
+                        20: "20N", 40: "40N", 60: "60N",
+                        80: "80N", 90: "90N"}
+
 
 
     #ref_line.line = ref_plot_linetype

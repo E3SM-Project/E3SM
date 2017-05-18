@@ -634,7 +634,7 @@
     "y": 0.899999976158
    }, 
    "source": {
-    "priority": 1, 
+    "priority": 0, 
     "textorientation": "default", 
     "texttable": "default", 
     "x": 0.0500000007451, 
@@ -1002,7 +1002,7 @@
     "y": 0.899999976158
    }, 
    "source": {
-    "priority": 1, 
+    "priority": 0, 
     "textorientation": "default", 
     "texttable": "default", 
     "x": 0.0500000007451, 
