@@ -27,10 +27,11 @@ begin
 ;     time:  arbitrary
 ;----------------------------------------------------------------------------
 
-  data_file = "~/Documents/tempestmodel/test/dcmip2016/outSupercellTest-Agri/outU0-prect_rate.txt"
+precip  = asciiread("./measurement_prect_rate.txt", -1, "double")
+time_s  = asciiread("./measurement_time.txt", -1, "double")
 
-  maxw = asciiread(data_file, (/25/), "double")
-  time_s = fspan(0.0, 7200.0, 25)
+; convert from m/s to mm/day
+precip = precip*(1000.0)*(24.0*3600)
 
 ;****************************************************************************
 ; DO NOT EDIT BELOW THIS LINE
@@ -39,7 +40,7 @@ begin
 ;------------------------------------------------
 ; Workspace
 ;------------------------------------------------
-  wks = gsn_open_wks("eps","plot_supercell_wvel")   
+  wks = gsn_open_wks("pdf","max_precip_rate")
 
 ;------------------------------------------------
 ; Plot resources [options]
@@ -52,7 +53,7 @@ begin
 
   res@vpKeepAspect        = True
   res@vpWidthF            = 0.6
-  res@vpHeightF           = 0.6
+  res@vpHeightF           = 0.4
   res@gsnMaximize         = True
   res@gsnPaperOrientation = "portrait"
 
@@ -65,8 +66,8 @@ begin
   res@tmXBMinorOn       = True
   res@tmYLMinorOn       = True
 
-  res@xyLineThicknessF  = 2.0
-  res@xyMarkLineMode    = "MarkLines"
+  res@xyLineThicknessF  = 3.0
+;res@xyMarkLineMode    = "MarkLines"
 
   resw = res
 
@@ -78,24 +79,24 @@ begin
   resw@tiXAxisString = "time (s)"
 
   resw@tiYAxisOn = True
-  resw@tiYAxisString = "maximum vertical velocity (m/s)"
+  resw@tiYAxisString = "max precipitation rate (mm/day)"
 
   resw@trXMinF = 0.0
   resw@trXMaxF = 7200.0
   
   resw@trYMinF = 0.0
-  resw@trYMaxF = 50.0
+  resw@trYMaxF = 7000.0
 
   resw@tmXBMode = "Manual"
   resw@tmXBTickStartF = 0.0
   resw@tmXBTickEndF = 7200.0
   resw@tmXBTickSpacingF = 1800.0
 
-  resw@tmYLMode = "Explicit"
-  resw@tmYLTickStartF = 0.0
-  resw@tmYLTickEndF = 50.0
+; resw@tmYLMode = "Explicit"
+;  resw@tmYLTickStartF = 0.0
+;  resw@tmYLTickEndF = 50.0
 
-  plot = gsn_csm_xy(wks, time_s, maxw, resw)
+  plot = gsn_csm_xy(wks, time_s, precip, resw)
 
 ;------------------------------------------------
 ; Panel plot

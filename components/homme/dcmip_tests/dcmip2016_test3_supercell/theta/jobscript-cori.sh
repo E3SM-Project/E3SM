@@ -31,24 +31,28 @@ NCPU=640
 cp -f namelist-r200.nl input.nl
 srun -n $NCPU $EXEC < input.nl
 ncl plot_supercell_wvel.ncl
+ncl plot_supercell_5km_xsec.ncl
 
 mv movies/dcmip2016_test31.nc movies/dcmip2016_test3_r200.nc
 mv HommeTime HommeTime_r200
 mv measurement_wmax.pdf wmax_r200.pdf
+mv 5km_xsec.pdf 5km_xsec_r200.pdf
 mv measurement_wmax.txt measurement_wmax_r200.txt
 mv measurement_time.txt measurement_time_r200.txt
-mv measurement_prect_rate.txt measurement_prect_rate.txt_r200.txt
+mv measurement_prect_rate.txt measurement_prect_rate_r200.txt
 
 # 1dg resolution
 cp -f namelist-r100.nl input.nl
 srun -n $NCPU $EXEC < input.nl
 ncl plot_supercell_wvel.ncl
+ncl plot_supercell_5km_xsec.ncl
 
 mv movies/dcmip2016_test31.nc movies/dcmip2016_test3_r100.nc
 mv HommeTime HommeTime_r100
 mv measurement_wmax.pdf wmax_r100.pdf
+mv 5km_xsec.pdf 5km_xsec_r100.pdf
 mv measurement_wmax.txt measurement_wmax_r100.txt
 mv measurement_time.txt measurement_time_r100.txt
-mv measurement_prect_rate.txt measurement_prect_rate.txt_r100.txt
+mv measurement_prect_rate.txt measurement_prect_rate_r100.txt
 
 date

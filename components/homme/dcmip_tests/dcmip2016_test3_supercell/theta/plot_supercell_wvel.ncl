@@ -87,7 +87,7 @@ print("time_s="+time_s)
   resw@trXMaxF = 7200.0 ; max(time_s)
   
   resw@trYMinF = 0.0
-  resw@trYMaxF = 50.0
+  resw@trYMaxF = 60.0
 
   resw@tmXBMode = "Manual"
   resw@tmXBTickStartF = 0.0

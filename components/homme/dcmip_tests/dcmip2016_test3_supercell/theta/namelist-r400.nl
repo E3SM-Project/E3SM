@@ -15,12 +15,14 @@
   tstep             = 1.0                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5
-  rsplit            = 1
-  qsplit            = 1
-  nu                = 3e10                      ! default= 1e15/(120)^3 *(ne30/ne8)**3.2 = 4e10
-  nu_s              = 3e10
-  nu_p              = 3e10
+  rsplit            = 0
+  qsplit            = 10
+  nu                = 1.5e10                    ! default= 1e15/(120)^3 *(ne30/ne8)**3.2 = 4e10
+  nu_s              = 1.5e10 
+  nu_p              = 0
+  nu_q              = 0
   nu_top            = 0                         ! 2.5e5/(120)^(1)
+  limiter_option    = 4
   dcmip16_mu        = 500.0d0
   dcmip16_mu_s      = 1500.0d0
   hypervis_order    = 2                         ! 2 = hyperviscosity
@@ -38,7 +40,7 @@
 &analysis_nl
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 3                         ! 0=timesteps, 1=days, 2=hours, 3=seconds
-  output_frequency  = 100                       ! 100 seconds
+  output_frequency  = 300                       ! 100 seconds
   output_varnames1  ='T','p','ps','pnh','geo','u','v','w','Th','Q','Q2','Q3','Q4'   ! variables to write to file
   interp_nlon       = 360
   interp_nlat       = 181
