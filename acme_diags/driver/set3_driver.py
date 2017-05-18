@@ -106,10 +106,6 @@ def run_diag(parameter):
                 # following should move to derived variable
             if ref_name == 'AIRS':
                 # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
-<<<<<<< HEAD
-=======
-                print mv2.fill_value
->>>>>>> f3481047b2a9b7d22c150225bcb19022ad14752c
                 # this is cdms2 for bad mask, denise's fix should fix
                 mv2 = MV2.masked_where(mv2 >1e+20, mv2)
             if ref_name == 'WILLMOTT' or ref_name == 'CLOUDSAT':
@@ -176,17 +172,10 @@ def run_diag(parameter):
                         mv1_reg, mv2_reg = regrid_to_lower_res_1d(mv1_zonal,mv2_zonal)
 
                         diff = mv1_reg - mv2_reg
-<<<<<<< HEAD
-=======
-
->>>>>>> f3481047b2a9b7d22c150225bcb19022ad14752c
                         parameter.output_file = '-'.join(
                             [ref_name, var, str(int(plev[ilev])), season, region])
                         parameter.main_title = str(
                             ' '.join([var, str(int(plev[ilev])), 'mb', season, region]))
-<<<<<<< HEAD
-    
-=======
 
                         parameter.var_region = region
                         plot('3', mv2_zonal, mv1_zonal, diff, {}, parameter)
@@ -206,11 +195,10 @@ def run_diag(parameter):
 #    
 #                        # Plotting
 #                        diff = mv1_reg - mv2_reg
->>>>>>> f3481047b2a9b7d22c150225bcb19022ad14752c
 #                        metrics_dict = create_metrics(
 #                            mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
 #
-                        parameter.var_region = region
+#                        parameter.var_region = region
 #                        plot('3', mv2_zonal, mv1_zonal, diff parameter)
 #                        utils.save_ncfiles('5', mv1_domain, mv2_domain, diff, parameter)
 
@@ -231,23 +219,14 @@ def run_diag(parameter):
                     mv1_reg, mv2_reg = regrid_to_lower_res_1d(mv1_zonal,mv2_zonal)
 
                     diff = mv1_reg - mv2_reg
-<<<<<<< HEAD
-                    print diff.getAxisList()
-                    
-    
-                    parameter.output_file = '-'.join(
-                        [ref_name, var, season, region])
-                    parameter.main_title = str(' '.join([var, season, region]))
-    
-                    parameter.var_region = region
-#                    plot('3', mv2_zonal, mv1_zonal, diff, parameter)
-=======
 
                     parameter.output_file = '-'.join(
                         [ref_name, var, season, region])
                     parameter.main_title = str(' '.join([var, season, region]))
 
                     parameter.var_region = region
+
+
                     plot('3', mv2_zonal, mv1_zonal, diff, {}, parameter)
                     utils.save_ncfiles('3', mv1_zonal, mv2_zonal, diff, parameter)
 
@@ -283,7 +262,6 @@ def run_diag(parameter):
 #                        mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
 #                    parameter.var_region = region
 #                    plot('5', mv2_domain, mv1_domain, diff, metrics_dict, parameter)
->>>>>>> f3481047b2a9b7d22c150225bcb19022ad14752c
 #                    utils.save_ncfiles('5', mv1_domain, mv2_domain, diff, parameter)
     
             
