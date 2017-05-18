@@ -403,6 +403,13 @@ class Case(object):
             logger.debug("Setting in lookups: item %s, value %s"%(item,value))
             self.lookups[item] = value
 
+    def clean_up_lookups(self, allow_undefined=False):
+        # put anything in the lookups table into existing env objects
+        for key,value in self.lookups.items():
+            logger.debug("lookup key %s value %s"%(key,value))
+            result = self.set_value(key,value, allow_undefined=allow_undefined)
+            if result is not None:
+                del self.lookups[key]
 
     def _set_compset_and_pesfile(self, compset_name, files, user_compset=False, pesfile=None):
         """
@@ -573,6 +580,7 @@ class Case(object):
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp_model_specific, attributes=attlist)
 
+        self.clean_up_lookups(allow_undefined=True)
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
         self.set_comp_classes(drv_comp.get_valid_model_components())
@@ -580,11 +588,6 @@ class Case(object):
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
 
-        # put anything in the lookups table into existing env objects
-        for key,value in self.lookups.items():
-            result = self.set_value(key,value, allow_undefined=True)
-            if result is not None:
-                del self.lookups[key]
 
         for i in xrange(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
@@ -610,12 +613,7 @@ class Case(object):
             logger.info("Pes specification file is %s" %(self._pesfile))
             self.set_lookup_value("PES_SPEC_FILE", self._pesfile)
 
-        # final cleanup of lookups table
-        for key,value in self.lookups.items():
-            result = self.set_value(key,value)
-            if result is not None:
-                del self.lookups[key]
-
+        self.clean_up_lookups()
 
     def _setup_mach_pes(self, pecount, ninst, machine_name, mpilib):
         #--------------------------------------------
@@ -891,6 +889,7 @@ class Case(object):
         if test:
             self.set_value("TEST",True)
 
+        self.clean_up_lookups()
         self.initialize_derived_attributes()
 
         # Make sure that parallel IO is not specified if total_tasks==1
@@ -910,7 +909,7 @@ class Case(object):
         for name, value in matches:
             if len(value) > 0:
                 logger.debug("Compset specific settings: name is %s and value is %s"%(name,value))
-                self.set_value(name, value)
+                self.set_lookup_value(name, value)
 
 
     def set_initial_test_values(self):
