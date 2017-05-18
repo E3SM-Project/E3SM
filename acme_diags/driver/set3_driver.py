@@ -177,7 +177,6 @@ def run_diag(parameter):
                         mv1_reg, mv2_reg = regrid_to_lower_res_1d(mv1_zonal,mv2_zonal)
 
                         diff = mv1_reg - mv2_reg
-                        print diff.mask
                         parameter.output_file = '-'.join(
                             [ref_name, var, str(int(plev[ilev])), season, region])
                         parameter.main_title = str(
@@ -225,7 +224,6 @@ def run_diag(parameter):
                     mv1_reg, mv2_reg = regrid_to_lower_res_1d(mv1_zonal,mv2_zonal)
 
                     diff = mv1_reg - mv2_reg
-                    print diff[:]
 
                     parameter.output_file = '-'.join(
                         [ref_name, var, season, region])

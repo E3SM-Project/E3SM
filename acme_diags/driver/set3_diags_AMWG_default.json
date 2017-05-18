@@ -2,7 +2,7 @@
 	"set5": [
         {
 			"sets": [3],
-			"case_id": "set5_CRU",
+			"case_id": "set3_CRU",
 			"variables": ["TREFHT_LAND"],
 			"ref_name": "CRU",
 			"reference_name": "IPCC/CRU climatology1961-90",
@@ -12,7 +12,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_SST_HadISST",
+			"case_id": "set3_SST_HadISST",
 			"variables": ["SST"],
 			"ref_name": "HadISST_CL",
 			"reference_name": "HadISST/OI.v2 (Climatology) 1982-2001",
@@ -22,7 +22,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_SST_HadISST",
+			"case_id": "set3_SST_HadISST",
 			"variables": ["SST"],
 			"ref_name": "HadISST_PI",
 			"reference_name": "HadISST/OI.v2 (Pre-Indust) 1870-1900",
@@ -32,7 +32,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_SST_HadISST",
+			"case_id": "set3_SST_HadISST",
 			"variables": ["SST"],
 			"ref_name": "HadISST_PD",
 			"reference_name": "HadISST/OI.v2 (Present Day) 1999-2008",
@@ -42,7 +42,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_LEGATES",
+			"case_id": "set3_LEGATES",
 			"variables": ["PRECT"],
 			"ref_name": "LEGATES",
 			"reference_name": "Legates & Willmott 1920-1980",
@@ -53,7 +53,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_LEGATES",
+			"case_id": "set3_LEGATES",
 			"variables": ["TREFHT"],
 			"ref_name": "LEGATES",
 			"reference_name": "Legates & Willmott 1920-1980",
@@ -63,7 +63,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_WILLMOTT",
+			"case_id": "set3_WILLMOTT",
 			"variables": ["TREFHT_LAND"],
 			"ref_name": "WILLMOTT",
 			"reference_name": "Willmott & Matsuura 1950-99",
@@ -73,7 +73,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_WILLMOTT",
+			"case_id": "set3_WILLMOTT",
 			"variables": ["PRECT_LAND"],
 			"ref_name": "WILLMOTT",
 			"reference_name": "Willmott & Matsuura 1950-99",
@@ -83,7 +83,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_NVAP",
+			"case_id": "set3_NVAP",
 			"variables": ["PREH2O"],
 			"ref_name": "NVAP",
 			"reference_name": "NVAP 1988-1999",
@@ -93,7 +93,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_WHOI",
+			"case_id": "set3_WHOI",
 			"variables": ["QFLX"],
 			"ref_name": "WHOI",
 			"reference_name": "Woods Hole OAFLUX 1958-2006",
@@ -103,7 +103,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_WHOI",
+			"case_id": "set3_WHOI",
 			"variables": ["LHFLX"],
 			"ref_name": "WHOI",
 			"reference_name": "Woods Hole OAFLUX 1958-2006",
@@ -113,7 +113,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_GPCP",
+			"case_id": "set3_GPCP",
 			"variables": ["PRECT"],
 			"ref_name": "GPCP",
 			"reference_name": "GPCP (yrs1979-2009)",
@@ -124,7 +124,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_XIEARKIN",
+			"case_id": "set3_XIEARKIN",
 			"variables": ["PRECT"],
 			"ref_name": "XIEARKIN",
 			"reference_name": "CMAP 1979-1998",
@@ -134,7 +134,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_PRECL",
+			"case_id": "set3_PRECL",
 			"variables": ["PRECT_LAND"],
 			"ref_name": "PRECL",
 			"reference_name": "PREC/L (CMAP) 1948-2001",
@@ -144,7 +144,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_UWisc_LWP",
+			"case_id": "set3_UWisc_LWP",
 			"variables": ["TGCLDLWP_OCN"],
 			"ref_name": "UWisc_LWP",
 			"reference_name": "UWisc 1988-2008",
@@ -154,7 +154,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_SSMI",
+			"case_id": "set3_SSMI",
 			"variables": ["PRECT_OCN"],
 			"ref_name": "SSMI",
 			"reference_name": "SSM/I (Wentz) 1987-2000",
@@ -164,7 +164,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_SSMI",
+			"case_id": "set3_SSMI",
 			"variables": ["PREH2O_OCN"],
 			"ref_name": "SSMI",
 			"reference_name": "SSM/I (Wentz) 1987-2000",
@@ -174,7 +174,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_SSMI",
+			"case_id": "set3_SSMI",
 			"variables": ["TGCLDLWP_OCN"],
 			"ref_name": "SSMI",
 			"reference_name": "SSM/I (Wentz) 1987-2000",
@@ -184,7 +184,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_TRMM",
+			"case_id": "set3_TRMM",
 			"variables": ["PRECT"],
 			"ref_name": "TRMM",
 			"reference_name": "TRMM (3B43) 1998-2009",
@@ -195,7 +195,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_LARYEA",
+			"case_id": "set3_LARYEA",
 			"variables": ["SHFLX"],
 			"ref_name": "LARYEA",
 			"reference_name": "Large-Yeager 1984-2004",
@@ -205,7 +205,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_LARYEA",
+			"case_id": "set3_LARYEA",
 			"variables": ["QFLX"],
 			"ref_name": "LARYEA",
 			"reference_name": "Large-Yeager 1984-2004",
@@ -215,7 +215,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_LARYEA",
+			"case_id": "set3_LARYEA",
 			"variables": ["FLNS"],
 			"ref_name": "LARYEA",
 			"reference_name": "Large-Yeager 1984-2004",
@@ -225,7 +225,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_LARYEA",
+			"case_id": "set3_LARYEA",
 			"variables": ["FSNS"],
 			"ref_name": "LARYEA",
 			"reference_name": "Large-Yeager 1984-2004",
@@ -235,7 +235,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_CERES-EBAF",
+			"case_id": "set3_CERES-EBAF",
 			"variables": ["ALBEDO"],
 			"ref_name": "CERES-EBAF",
 			"reference_name": "CERES-EBAF March 2000-Feb 2013",
@@ -245,7 +245,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_CERES-EBAF",
+			"case_id": "set3_CERES-EBAF",
 			"variables": ["ALBEDOC"],
 			"ref_name": "CERES-EBAF",
 			"reference_name": "CERES-EBAF March 2000-Feb 2013",
@@ -255,7 +255,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_CERES-EBAF",
+			"case_id": "set3_CERES-EBAF",
 			"variables": ["FLUT"],
 			"ref_name": "CERES-EBAF",
 			"reference_name": "CERES-EBAF March 2000-Feb 2013",
@@ -265,7 +265,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_CERES-EBAF",
+			"case_id": "set3_CERES-EBAF",
 			"variables": ["FLUTC"],
 			"ref_name": "CERES-EBAF",
 			"reference_name": "CERES-EBAF March 2000-Feb 2013",
@@ -275,7 +275,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_CERES-EBAF",
+			"case_id": "set3_CERES-EBAF",
 			"variables": ["FSNTOA"],
 			"ref_name": "CERES-EBAF",
 			"reference_name": "CERES-EBAF March 2000-Feb 2013",
@@ -285,7 +285,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_CERES-EBAF",
+			"case_id": "set3_CERES-EBAF",
 			"variables": ["FSNTOAC"],
 			"ref_name": "CERES-EBAF",
 			"reference_name": "CERES-EBAF March 2000-Feb 2013",
@@ -295,7 +295,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_CERES-EBAF",
+			"case_id": "set3_CERES-EBAF",
 			"variables": ["SWCF"],
 			"ref_name": "CERES-EBAF",
 			"reference_name": "CERES-EBAF March 2000-Feb 2013",
@@ -306,7 +306,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_CERES-EBAF",
+			"case_id": "set3_CERES-EBAF",
 			"variables": ["LWCF"],
 			"ref_name": "CERES-EBAF",
 			"reference_name": "CERES-EBAF March 2000-Feb 2013",
@@ -316,7 +316,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_CERES-EBAF",
+			"case_id": "set3_CERES-EBAF",
 			"variables": ["RESTOM"],
 			"ref_name": "CERES-EBAF",
 			"reference_name": "CERES-EBAF March 2000-Feb 2013",
@@ -324,7 +324,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERBE",
+			"case_id": "set3_ERBE",
 			"variables": ["FLUT"],
 			"ref_name": "ERBE",
 			"reference_name": "ERBE Feb1985-Apr1989",
@@ -334,7 +334,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERBE",
+			"case_id": "set3_ERBE",
 			"variables": ["FLUTC"],
 			"ref_name": "ERBE",
 			"reference_name": "ERBE Feb1985-Apr1989",
@@ -344,7 +344,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERBE",
+			"case_id": "set3_ERBE",
 			"variables": ["FSNTOA"],
 			"ref_name": "ERBE",
 			"reference_name": "ERBE Feb1985-Apr1989",
@@ -354,7 +354,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERBE",
+			"case_id": "set3_ERBE",
 			"variables": ["FSNTOAC"],
 			"ref_name": "ERBE",
 			"reference_name": "ERBE Feb1985-Apr1989",
@@ -364,7 +364,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERBE",
+			"case_id": "set3_ERBE",
 			"variables": ["SWCF"],
 			"ref_name": "ERBE",
 			"reference_name": "ERBE Feb1985-Apr1989",
@@ -375,7 +375,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERBE",
+			"case_id": "set3_ERBE",
 			"variables": ["LWCF"],
 			"ref_name": "ERBE",
 			"reference_name": "ERBE Feb1985-Apr1989",
@@ -385,7 +385,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERBE",
+			"case_id": "set3_ERBE",
 			"variables": ["RESTOM"],
 			"ref_name": "ERBE",
 			"reference_name": "ERBE Feb1985-Apr1989",
@@ -393,7 +393,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ISCCPFD",
+			"case_id": "set3_ISCCPFD",
 			"variables": ["FLDS"],
 			"ref_name": "ISCCPFD",
 			"reference_name": "ISCCP FD Jul1983-Dec2000",
@@ -401,7 +401,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ISCCPFD",
+			"case_id": "set3_ISCCPFD",
 			"variables": ["FLDS"],
 			"ref_name": "ISCCPFD",
 			"reference_name": "ISCCP FD Jul1983-Dec2000",
@@ -409,7 +409,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ISCCPFD",
+			"case_id": "set3_ISCCPFD",
 			"variables": ["FLDSC"],
 			"ref_name": "ISCCPFD",
 			"reference_name": "ISCCP FD Jul1983-Dec2000",
@@ -417,7 +417,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ISCCPFD",
+			"case_id": "set3_ISCCPFD",
 			"variables": ["FSDS"],
 			"ref_name": "ISCCPFD",
 			"reference_name": "ISCCP FD Jul1983-Dec2000",
@@ -425,7 +425,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ISCCPFD",
+			"case_id": "set3_ISCCPFD",
 			"variables": ["FSDSC"],
 			"ref_name": "ISCCPFD",
 			"reference_name": "ISCCP FD Jul1983-Dec2000",
@@ -433,7 +433,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ISCCPFD",
+			"case_id": "set3_ISCCPFD",
 			"variables": ["FLNS"],
 			"ref_name": "ISCCPFD",
 			"reference_name": "ISCCP FD Jul1983-Dec2000",
@@ -443,7 +443,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ISCCPFD",
+			"case_id": "set3_ISCCPFD",
 			"variables": ["FLNSC"],
 			"ref_name": "ISCCPFD",
 			"reference_name": "ISCCP FD Jul1983-Dec2000",
@@ -451,7 +451,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ISCCPFD",
+			"case_id": "set3_ISCCPFD",
 			"variables": ["FSNS"],
 			"ref_name": "ISCCPFD",
 			"reference_name": "ISCCP FD Jul1983-Dec2000",
@@ -461,7 +461,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ISCCPFD",
+			"case_id": "set3_ISCCPFD",
 			"variables": ["FSNSC"],
 			"ref_name": "ISCCPFD",
 			"reference_name": "ISCCP FD Jul1983-Dec2000",
@@ -469,7 +469,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ISCCPFD",
+			"case_id": "set3_ISCCPFD",
 			"variables": ["SWCFSRF"],
 			"ref_name": "ISCCPFD",
 			"reference_name": "ISCCP FD Jul1983-Dec2000",
@@ -480,7 +480,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ISCCPFD",
+			"case_id": "set3_ISCCPFD",
 			"variables": ["LWCFSRF"],
 			"contour_levels": [5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 95, 100, 105],
 			"diff_levels": [-35, -30, -15, -10, -6, -4, -2, 0, 2, 4, 6, 10, 15, 30, 35],
@@ -490,7 +490,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_WARREN",
+			"case_id": "set3_WARREN",
 			"variables": ["CLDTOT"],
 			"ref_name": "WARREN",
 			"reference_name": "Warren Cloud Surface OBS",
@@ -498,7 +498,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_WARREN",
+			"case_id": "set3_WARREN",
 			"variables": ["CLDLOW"],
 			"ref_name": "WARREN",
 			"reference_name": "Warren Cloud Surface OBS",
@@ -506,7 +506,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_CLOUDSAT",
+			"case_id": "set3_CLOUDSAT",
 			"variables": ["CLDHGH"],
 			"ref_name": "CLOUDSAT",
 			"reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
@@ -514,7 +514,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_CLOUDSAT",
+			"case_id": "set3_CLOUDSAT",
 			"variables": ["CLDLOW"],
 			"ref_name": "CLOUDSAT",
 			"reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
@@ -522,7 +522,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_CLOUDSAT",
+			"case_id": "set3_CLOUDSAT",
 			"variables": ["CLDMED"],
 			"ref_name": "CLOUDSAT",
 			"reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
@@ -530,7 +530,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_CLOUDSAT",
+			"case_id": "set3_CLOUDSAT",
 			"variables": ["CLDTOT"],
 			"ref_name": "CLOUDSAT",
 			"reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
@@ -538,7 +538,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_MERRA",
+			"case_id": "set3_MERRA",
 			"variables": ["T"],
 			"ref_name": "MERRA",
 			"reference_name": "MERRA Analysis 1979-2013 NASA",
@@ -547,7 +547,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_MERRA",
+			"case_id": "set3_MERRA",
 			"variables": ["U"],
 			"ref_name": "MERRA",
 			"reference_name": "MERRA Analysis 1979-2013 NASA",
@@ -556,7 +556,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_MERRA",
+			"case_id": "set3_MERRA",
 			"variables": ["Z3"],
 			"ref_name": "MERRA",
 			"reference_name": "MERRA Analysis 1979-2013 NASA",
@@ -565,7 +565,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_MERRA",
+			"case_id": "set3_MERRA",
 			"variables": ["PREH2O"],
 			"ref_name": "MERRA",
 			"reference_name": "MERRA Analysis 1979-2013 NASA",
@@ -575,7 +575,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_MERRA",
+			"case_id": "set3_MERRA",
 			"variables": ["PSL"],
 			"ref_name": "MERRA",
 			"reference_name": "MERRA Analysis 1979-2013 NASA",
@@ -583,7 +583,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERA40",
+			"case_id": "set3_ERA40",
 			"variables": ["LHFLX"],
 			"ref_name": "ERA40",
 			"reference_name": "ERA40 Reanalysis 1980-2001",
@@ -593,7 +593,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERA40",
+			"case_id": "set3_ERA40",
 			"variables": ["PREH2O"],
 			"ref_name": "ERA40",
 			"reference_name": "ERA40 Reanalysis 1980-2001",
@@ -603,7 +603,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERA40",
+			"case_id": "set3_ERA40",
 			"variables": ["U"],
 			"ref_name": "ERA40",
 			"reference_name": "ERA40 Reanalysis 1980-2001",
@@ -613,7 +613,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERA40",
+			"case_id": "set3_ERA40",
 			"variables": ["Z3"],
 			"ref_name": "ERA40",
 			"reference_name": "ERA40 Reanalysis 1980-2001",
@@ -623,7 +623,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERA40",
+			"case_id": "set3_ERA40",
 			"variables": ["T"],
 			"ref_name": "ERA40",
 			"reference_name": "ERA40 Reanalysis 1980-2001",
@@ -633,7 +633,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERAI",
+			"case_id": "set3_ERAI",
 			"variables": ["LHFLX"],
 			"ref_name": "ERAI",
 			"reference_name": "ERA-Interim Reanalysis 1989-2005",
@@ -643,7 +643,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERAI",
+			"case_id": "set3_ERAI",
 			"variables": ["PRECT"],
 			"ref_name": "ERAI",
 			"reference_name": "ERA-Interim Reanalysis 1989-2005",
@@ -653,7 +653,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERAI",
+			"case_id": "set3_ERAI",
 			"variables": ["PREH2O"],
 			"ref_name": "ERAI",
 			"reference_name": "ERA-Interim Reanalysis 1989-2005",
@@ -663,7 +663,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERAI",
+			"case_id": "set3_ERAI",
 			"variables": ["U"],
 			"ref_name": "ERAI",
 			"reference_name": "ERA-Interim Reanalysis 1989-2005",
@@ -672,7 +672,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERAI",
+			"case_id": "set3_ERAI",
 			"variables": ["Z3"],
 			"ref_name": "ERAI",
 			"reference_name": "ERA-Interim Reanalysis 1989-2005",
@@ -681,7 +681,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_ERAI",
+			"case_id": "set3_ERAI",
 			"variables": ["T"],
 			"ref_name": "ERAI",
 			"reference_name": "ERA-Interim Reanalysis 1989-2005",
@@ -690,7 +690,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_JRA25",
+			"case_id": "set3_JRA25",
 			"variables": ["LHFLX"],
 			"ref_name": "JRA25",
 			"reference_name": "JRA25 Reanalysis 1979-2004",
@@ -700,7 +700,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_JRA25",
+			"case_id": "set3_JRA25",
 			"variables": ["SHFLX"],
 			"ref_name": "JRA25",
 			"reference_name": "JRA25 Reanalysis 1979-2004",
@@ -708,7 +708,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_JRA25",
+			"case_id": "set3_JRA25",
 			"variables": ["TREFHT"],
 			"ref_name": "JRA25",
 			"reference_name": "JRA25 Reanalysis 1979-2004",
@@ -718,7 +718,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_JRA25",
+			"case_id": "set3_JRA25",
 			"variables": ["PREH2O"],
 			"ref_name": "JRA25",
 			"reference_name": "JRA25 Reanalysis 1979-2004",
@@ -728,7 +728,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_JRA25",
+			"case_id": "set3_JRA25",
 			"variables": ["TREFHT"],
 			"ref_name": "JRA25",
 			"reference_name": "JRA25 Reanalysis 1979-2004",
@@ -738,7 +738,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_JRA25",
+			"case_id": "set3_JRA25",
 			"variables": ["U"],
 			"ref_name": "JRA25",
 			"reference_name": "JRA25 Reanalysis 1979-2004",
@@ -747,7 +747,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_JRA25",
+			"case_id": "set3_JRA25",
 			"variables": ["Z3"],
 			"ref_name": "JRA25",
 			"reference_name": "JRA25 Reanalysis 1979-2004",
@@ -756,7 +756,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_JRA25",
+			"case_id": "set3_JRA25",
 			"variables": ["T"],
 			"ref_name": "JRA25",
 			"reference_name": "JRA25 Reanalysis 1979-2004",
@@ -765,7 +765,7 @@
 		},
 		{
 			"sets": [3],
-			"case_id": "set5_AIRS",
+			"case_id": "set3_AIRS",
 			"variables": ["T"],
 			"ref_name": "AIRS",
 			"reference_name": "AIRS IR Sounder 2002-06",
