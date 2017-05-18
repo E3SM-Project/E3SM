@@ -910,7 +910,7 @@ class Case(object):
         for name, value in matches:
             if len(value) > 0:
                 logger.debug("Compset specific settings: name is %s and value is %s"%(name,value))
-                self.set_lookup_value(name, value)
+                self.set_value(name, value)
 
 
     def set_initial_test_values(self):
