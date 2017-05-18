@@ -765,14 +765,13 @@ contains
   !
   !
   use control_mod,      only: test_case
-  use element_state,    only: elem_state_t
-  use element_ops,      only: get_initial_state
   use hybvcoord_mod,    only: hvcoord_t
   use derivative_mod,   only: derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, laplace_z
   use edge_mod,         only: edgevpack, edgevunpack, edgeDGVunpack
   use edgetype_mod,     only: EdgeBuffer_t, EdgeDescriptor_t
   use bndry_mod,        only: bndry_exchangev
   use viscosity_theta,  only: biharmonic_wk_theta
+  use element_ops,      only: state0
   use physical_constants, only: Cp,p0,kappa,g
   implicit none
 
@@ -807,8 +806,6 @@ contains
   real (kind=real_kind) :: w_prime(np,np,nlev)
   real (kind=real_kind) :: u_prime(np,np,2,nlev)
 
-  type(elem_state_t)    :: ref_state
-
   !if(test_case .ne. 'dcmip2016_test3') call abortmp("dcmip16_mu is currently limited to dcmip16 test 3")
 
   call t_startf('advance_physical_vis')
@@ -819,14 +816,12 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   do ie=nets,nete
 
-     ! get reference state for diffusion
-     call get_initial_state(ref_state,ie)
-     w_ref(:,:,:,ie)     = ref_state%w(:,:,:,1)
-     u_ref(:,:,:,:,ie)   = ref_state%v(:,:,:,:,1)
-     phi_ref(:,:,:,ie)   = ref_state%phi(:,:,:,1)
-     dp_ref(:,:,:,ie)    = ref_state%dp3d(:,:,:,1)
-     theta_ref(:,:,:,ie) = ref_state%theta_dp_cp(:,:,:,1)/(cp*dp_ref(:,:,:,ie))
-     ps_ref(:,:)         = ref_state%ps_v(:,:,1)
+     w_ref(:,:,:,ie)     = state0(ie)%w(:,:,:,1)
+     u_ref(:,:,:,:,ie)   = state0(ie)%v(:,:,:,:,1)
+     phi_ref(:,:,:,ie)   = state0(ie)%phi(:,:,:,1)
+     dp_ref(:,:,:,ie)    = state0(ie)%dp3d(:,:,:,1)
+     theta_ref(:,:,:,ie) = state0(ie)%theta_dp_cp(:,:,:,1)/(cp*dp_ref(:,:,:,ie))
+     ps_ref(:,:)         = state0(ie)%ps_v(:,:,1)
 
     ! ps_ref(:,:) = sum(elem(ie)%state%dp3d(:,:,:,nt),3)
     ! do k=1,nlev

@@ -769,8 +769,7 @@ OMP_SIMD
   use dimensions_mod , only : np, nlev
   use hybrid_mod     , only : hybrid_t
   use element_mod    , only : element_t
-  use element_state  , only : elem_state_t
-  use element_ops    , only : get_initial_state
+  use element_ops    , only : state0
   use derivative_mod , only : derivative_t, laplace_z, laplace_sphere_wk
   use edge_mod       , only : edgevpack, edgevunpack
   use edgetype_mod   , only : EdgeBuffer_t
@@ -794,7 +793,6 @@ OMP_SIMD
   real (kind=real_kind), dimension(np,np,nlev                ) :: Q_prime,Qt
   real (kind=real_kind) :: dp0, delz
   integer :: k , i,j,ie,ic,q
-  type(elem_state_t) :: ref_state
 
   real(real_kind), dimension(np,np,nlev) :: dp_ref, q_ref
 
@@ -807,13 +805,10 @@ OMP_SIMD
 
   do ie=nets,nete
 
-      ! get reference state
-      call get_initial_state(ref_state,ie)
-
      do q=1,qsize
         do k=1,nlev
            Qt(:,:,k)   =hvcoord%dp0(k)*elem(ie)%state%Qdp(:,:,k,q,nt_qdp)/elem(ie)%state%dp3d(:,:,k,nt)
-           q_ref(:,:,k)=hvcoord%dp0(k)*ref_state%Qdp(:,:,k,q,1)          /ref_state%dp3d(:,:,k,1)
+           q_ref(:,:,k)=hvcoord%dp0(k)*state0(ie)%Qdp(:,:,k,q,1)          /state0(ie)%dp3d(:,:,k,1)
         enddo
 
         Q_prime= Qt - q_ref
