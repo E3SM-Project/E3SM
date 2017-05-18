@@ -64,6 +64,9 @@ List of MPI calls supported
       mpi_abort
       mpi_error_string
       mpi_initialized
+      mpi_get_processor_name
+      mpi_get_library_version
+      mpi_wtime
 
     comm and group ops
       mpi_comm_free
@@ -74,17 +77,36 @@ List of MPI calls supported
       mpi_comm_split
       mpi_comm_group
       mpi_group_incl
+      mpi_group_range_incl
+      mpi_group_union
+      mpi_group_intersection
+      mpi_group_difference
+      mpi_group_translate_ranks
       mpi_group_free
+      mpi_cart_create
+      mpi_cart_coords
+      mpi_dims_create
 
     send/receive ops
       mpi_irecv
       mpi_recv
       mpi_test
+      mpi_testany
+      mpi_testall
+      mpi_testsome
       mpi_wait
       mpi_waitany
       mpi_waitall
+      mpi_waitsome
       mpi_isend
       mpi_send
+      mpi_ssend
+      mpi_rsend
+      mpi_irsend
+      mpi_sendrecv
+      mpi_iprobe
+      mpi_probe
+      mpi_request_free
 
     collective operations
       mpi_barrier
@@ -92,11 +114,27 @@ List of MPI calls supported
       mpi_gather
       mpi_gatherv
       mpi_allgather
+      mpi_scatter
       mpi_scatterv
       mpi_reduce
       mpi_allreduce
+      mpi_reduce_scatter
+      mpi_scan
+      mpi_alltoall
+      mpi_alltoallv
+      mpi_alltoallw
+      mpi_op_create
+      mpi_op_free
 
-
+    data types and info objects
+      mpi_get_count
+      mpi_get_elements
+      mpi_pack
+      mpi_pack_size
+      mpi_unpack
+      mpi_info_create
+      mpi_info_set
+      mpi_info_free
 
 -----
 EOF
