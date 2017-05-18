@@ -31,7 +31,11 @@ def _main_func():
         gmake     = case.get_value("GMAKE")
         gmake_j   = case.get_value("GMAKE_J")
         model     = case.get_value("MODEL")
+        num_esp   = case.get_value("NUM_COMP_INST_ESP")
         os.environ["PIO_VERSION"] = str(case.get_value("PIO_VERSION"))
+
+    expect((num_esp is None) or (int(num_esp) == 1), "ESP component restricted to one instance")
+        
 
     with open('Filepath', 'w') as out:
         out.write(os.path.join(caseroot, "SourceMods", "src.drv") + "\n")

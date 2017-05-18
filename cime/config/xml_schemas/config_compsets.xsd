@@ -11,6 +11,7 @@
   <xs:element name="alias" type="xs:NCName"/>
   <xs:element name="lname" type="xs:string"/>
   <xs:element name="science_support"/>
+  <xs:element name="user_mods" type="xs:string"/>
 
   <!-- complex elements -->
 
@@ -32,6 +33,7 @@
         <xs:element ref="alias"/>
         <xs:element ref="lname"/>
 	<xs:element ref="science_support" minOccurs="0" maxOccurs="unbounded"/>
+	<xs:element ref="user_mods" minOccurs="0" maxOccurs="1"/>
       </xs:sequence>
       <xs:attribute ref="grid"/>
     </xs:complexType>

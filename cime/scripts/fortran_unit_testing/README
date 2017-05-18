@@ -1,19 +1,9 @@
 -*- mode:org -*-
 #+startup: showall
 
-Quick guide to the CESM unit testing framework
+Quick guide to the CIME unit testing framework
 
 * Requirements
-
-  - Machines :: Basic compiler information is retrieved from
-                config_compilers.xml in Machines. Even if running on an
-                unsupported machine, it is necessary to have this file to
-                get some basic information about the compiler.
-
-                As of this writing, it is possible to run with Machines,
-                this directory, the CMake module directory, and the
-                directory that specifies tests. A full CESM checkout is
-                more convenient but not needed.
 
   - Python 2.6 or later :: Required for scripts. Python 3.2 is also known
        to work.
@@ -40,7 +30,7 @@ Quick guide to the CESM unit testing framework
 ** Quick start
 
   In the simplest case, you may want to run tests from a single directory.
-  In that case, there are just three pieces of information that you usually
+  In that case, there are just two pieces of information that you usually
   need to specify:
 
   1. The location of the directory where you want to build and run the
@@ -48,23 +38,11 @@ Quick guide to the CESM unit testing framework
 
   2. The location of the directory specifying the test via a
      CMakeLists.txt file ("TEST_SPEC_DIR").
-
-  3. The compiler vendor ("COMPILER").
+     (Optional: Defaults to the current directory)
 
   The following command can run the tests:
 
-    run_tests.py --build-dir=BUILD_DIR --test-spec-dir=TEST_SPEC_DIR \
-        --compiler=COMPILER
-
-  The current compiler options are:
-
-  - GNU
-  - IBM
-  - Intel
-  - NAG
-  - PGI
-
-  COMPILER defaults to GNU.
+    run_tests.py --build-dir=BUILD_DIR --test-spec-dir=TEST_SPEC_DIR
 
   If you change a source file, you can run the same command again, and
   run_tests.py will do the bare minimum of work necessary to re-run the
@@ -79,17 +57,8 @@ Quick guide to the CESM unit testing framework
 
    Some particularly useful options are as follows:
 
-   + --build-type :: Setting this option to "CESM" will build the tests
-                     with CESM compiler options (or the most similar
-                     pFUnit-compatible flags). Setting this option to
-                     "CESM_DEBUG" will build with CESM's DEBUG mode
-                     options.
-
    + --clean :: Cleans the directory and re-runs both CMake and make when
                   running the tests.
-
-   + -R :: This option allows you to specify a regular expression; only
-             tests with names matching that expression will run.
 
    + -v :: Verbose output, including the commands used to compile, any
            compiler warnings, and CTest output from tests that pass. To get
@@ -103,34 +72,41 @@ Quick guide to the CESM unit testing framework
 
 * Defining new tests using CMake
 
-  This README focuses on integration between the python scripts here, the
-  CMake modules, and CESM Machines. Further information, such as detailed
-  APIs, can be found in the documentation for pFUnit and the CMake modules
-  themselves.
+  This README focuses on integration between the python scripts here,
+  the CMake modules, and machine information. Further information, such
+  as detailed APIs, can be found in the documentation for pFUnit and the
+  CMake modules themselves.
 
   If you are new to this system, it is *highly* recommended that you look
   through the examples first.
 
-** CIME_utils - run_tests.py interface
+** CIME_initial_setup and CIME_utils - run_tests.py interface
 
-   The following CMake snippet will include the CESM utilities module. The
+   The following CMake snippet will include the CIME utilities module. The
    variable ${CIME_CMAKE_MODULE_DIRECTORY} is defined by run_tests.py, or
    by hand if you choose not to use run_tests.py and instead invoke cmake
    directly.
 
      list(APPEND CMAKE_MODULE_PATH ${CIME_CMAKE_MODULE_DIRECTORY})
+     include(CIME_initial_setup)
+     project(cime_tests Fortran C)
      include(CIME_utils)
+
+   The project name does not need to be 'cime_tests'. The key point of
+   the above snippet is that you need to include CIME_initial_setup
+   before the project line, and CIME_utils after the project line.
 
    CIME_utils processes a few options set by run_tests.py (e.g.
    "USE_COLOR"), and includes all of the following modules as well.
    Projects that do development without run_tests.py may choose to include
    only the modules below that they need.
 
-** Compilers - CESM compiler options
+** Compilers - CIME compiler options
 
    This module is also part of the run_tests.py interface; the primary
-   purpose is to read in flags generated from CESM's config_compilers.xml
-   file. However, it's also a catch-all for compiler-specific information.
+   purpose is to read in flags generated from the config_compilers.xml
+   file. However, it's also a catch-all for compiler-specific
+   information.
 
    The details of this module shouldn't be important to most users, most of
    the time, but it does provide one utility function that you may want to

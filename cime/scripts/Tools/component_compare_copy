@@ -36,9 +36,7 @@ OR
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
                         help="Case directory")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     return args.suffix, args.caseroot
 
