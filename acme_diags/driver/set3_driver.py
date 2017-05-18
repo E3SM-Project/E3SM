@@ -7,6 +7,22 @@ from acme_diags.derivations import acme
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 from acme_diags.driver import utils
 
+def regrid_to_lower_res_1d( mv1, mv2 ):
+    """Regrid 1-D transient variable toward lower resolution of two variables."""
+    import numpy
+    if mv1 is None or mv2 is None: return None
+    missing = mv1.get_fill_value()
+    axis1 = mv1.getAxisList()[0]
+    axis2 = mv2.getAxisList()[0]
+    if len(axis1)<=len(axis2):
+        mv1_reg = mv1
+        b0 = numpy.interp( axis1[:], axis2[:], mv2[:], left=missing, right=missing )
+        mv2_reg = cdms2.createVariable( b0, mask=[ True if bb==missing else False for bb in b0[:] ], axes=[axis1] )
+    else:
+        a0 = numpy.interp( axis2[:], axis1[:], mv1[:], left=missing, right=missing )
+        mv1_reg = cdms2.createVariable( a0, mask=[ True if aa==missing else False for aa in a0[:] ], axes=[axis2] )
+        mv2_reg = mv2
+    return mv1_reg, mv2_reg
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     """ Creates the mean, max, min, rmse, corr in a dictionary """
@@ -92,7 +108,7 @@ def run_diag(parameter):
                 # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
                 print mv.fill_value
                 # this is cdms2 for bad mask, denise's fix should fix
-                mv2 = MV2.masked_where(mv2 == mv.fill_value, mv2)
+                mv2 = MV2.masked_where(mv2 >1e+20, mv2)
             if ref_name == 'WILLMOTT' or ref_name == 'CLOUDSAT':
                 print mv2.fill_value
                 # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
@@ -148,9 +164,17 @@ def run_diag(parameter):
     
                     for region in regions:
                         print "selected region", region
+                        mv1_zonal=cdutil.averager(mv1,axis='x')
+                        mv2_zonal=cdutil.averager(mv2,axis='x')
+
+                        print mv1_zonal.shape,mv2_zonal.shape
+                        mv1_reg, mv2_reg = regrid_to_lower_res_1d(mv1_zonal,mv2_zonal)
+
+                        diff = mv1_reg - mv2_reg
+
                          
 
-#                        mv1_domain, mv2_domain = utils.select_region(region, mv1, mv2, land_frac,ocean_frac,parameter)
+V#                        mv1_domain, mv2_domain = utils.select_region(region, mv1, mv2, land_frac,ocean_frac,parameter)
 #    
 #                        parameter.output_file = '-'.join(
 #                            [ref_name, var, str(int(plev[ilev])), season, region])
@@ -171,7 +195,6 @@ def run_diag(parameter):
 #                        plot('5', mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 #                        utils.save_ncfiles('5', mv1_domain, mv2_domain, diff, parameter)
 
-                f_in.close()
 
             # for variables without z axis:
             elif mv1.getLevel() == None and mv2.getLevel() == None:
@@ -184,13 +207,23 @@ def run_diag(parameter):
                     print "selected region", region
                     mv1_zonal=cdutil.averager(mv1,axis='x')
                     mv2_zonal=cdutil.averager(mv2,axis='x')
+
                     print mv1_zonal.shape,mv2_zonal.shape
-                    import vcs
-                    x = vcs.init()
-                    line = x.createyxvsx()
-                    x.plot(mv1_zonal,line)
-                    x.plot(mv2_zonal,line)
+                    mv1_reg, mv2_reg = regrid_to_lower_res_1d(mv1_zonal,mv2_zonal)
+
+                    diff = mv1_reg - mv2_reg
                     
+#                    import vcs
+#                    x = vcs.init()
+#                    line = x.createyxvsx()
+#                    x.plot(mv1_zonal,line)
+#                    x.plot(mv2_zonal,line)
+#                    x1 = vcs.init()
+#                    x1.plot(mv1_reg-mv2_reg,line)
+#                    print mv1_zonal
+#                    print mv2_zonal
+#                    print mv1_reg-mv2_reg
+#                    
 
 #                    mv1_domain, mv2_domain = utils.select_region(region, mv1, mv2, land_frac,ocean_frac,parameter)
 #    
