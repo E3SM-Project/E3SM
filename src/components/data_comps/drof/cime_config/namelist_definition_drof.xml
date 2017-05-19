@@ -310,7 +310,7 @@
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>"nomask,srcmask,dstmask,bothmask"</valid_values>
+    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
     <desc>
       array (up to 30 elements) of masking algorithms for mapping input data
       associated with the array of streams.  valid options are map only from
@@ -327,7 +327,7 @@
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>"copy,bilinear,nn,nnoni,nnonj,spval"</valid_values>
+    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
     <desc>
       array (up to 30 elements) of fill algorithms associated with the array
       of streams.  valid options are copy by index, set to special value,
@@ -397,7 +397,7 @@
     <type>char(30)</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>"extend,cycle,limit"</valid_values>
+    <valid_values>extend,cycle,limit</valid_values>
     <desc>
       array of time axis modes associated with the array of streams for
       handling data outside the specified stream time axis.
@@ -434,7 +434,7 @@
       to turn off trapping, set the value to 1.0e30 or something similar.
     </desc>
     <values>
-      <value>1.5e0</value>
+      <value>3.0</value>
     </values>
   </entry>
 
