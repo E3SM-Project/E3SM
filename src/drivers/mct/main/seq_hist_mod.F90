@@ -130,7 +130,7 @@ contains
 subroutine seq_hist_write(infodata, EClock_d, &
      atm, lnd, ice, ocn, rof, glc, wav, &
      fractions_ax, fractions_lx, fractions_ix, fractions_ox, fractions_rx,  &
-     fractions_gx, fractions_wx)
+     fractions_gx, fractions_wx, tag)
 
    implicit none
    !
@@ -151,6 +151,7 @@ subroutine seq_hist_write(infodata, EClock_d, &
    type(mct_aVect)         , intent(inout) :: fractions_rx(:) ! Fractions on rof grid/decomp
    type(mct_aVect)         , intent(inout) :: fractions_gx(:) ! Fractions on glc grid/decomp
    type(mct_aVect)         , intent(inout) :: fractions_wx(:) ! Fractions on wav grid/decomp
+   character(len=*)        ,  intent(in) :: tag
    !
    ! Local Variables
    integer(IN)   :: curr_ymd     ! Current date YYYYMMDD
@@ -215,7 +216,7 @@ subroutine seq_hist_write(infodata, EClock_d, &
         calendar=calendar)
    call shr_cal_date2ymd(curr_ymd,yy,mm,dd)
    write(hist_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-      trim(case_name), '.cpl.hi.', yy,'-',mm,'-',dd,'-',curr_tod,'.nc'
+      trim(case_name), '.cpl'//tag//'.hi.', yy,'-',mm,'-',dd,'-',curr_tod,'.nc'
 
    time_units = 'days since ' &
         // seq_io_date2yyyymmdd(start_ymd) // ' ' // seq_io_sec2hms(start_tod)
@@ -389,7 +390,7 @@ end subroutine seq_hist_write
 !===============================================================================
 
 subroutine seq_hist_writeavg(infodata, EClock_d, &
-     atm, lnd, ice, ocn, rof, glc, wav, write_now)
+     atm, lnd, ice, ocn, rof, glc, wav, write_now, tag)
 
    implicit none
 
@@ -403,6 +404,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
    type (component_type)   ,  intent(in) :: glc(:)
    type (component_type)   ,  intent(in) :: wav(:)
    logical                 ,  intent(in) :: write_now  ! write or accumulate
+   character(len=*)        ,  intent(in) :: tag
 
    integer(IN)           :: curr_ymd     ! Current date YYYYMMDD
    integer(IN)           :: curr_tod     ! Current time-of-day (s)
@@ -764,19 +766,19 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
       if (seq_timemgr_histavg_type == seq_timemgr_type_nyear) then
          call shr_cal_date2ymd(prev_ymd, yy, mm, dd)
          write(hist_file, "(2a, i4.4, a)") &
-            trim(case_name),  '.cpl.ha.',  yy, '.nc'
+            trim(case_name),  '.cpl'//tag//'.ha.',  yy, '.nc'
       elseif (seq_timemgr_histavg_type == seq_timemgr_type_nmonth) then
          call shr_cal_date2ymd(prev_ymd, yy, mm, dd)
          write(hist_file, "(2a, i4.4, a, i2.2, a)") &
-            trim(case_name),  '.cpl.ha.',  yy, '-', mm, '.nc'
+            trim(case_name),  '.cpl'//tag//'.ha.',  yy, '-', mm, '.nc'
       elseif (seq_timemgr_histavg_type == seq_timemgr_type_nday) then
          call shr_cal_date2ymd(prev_ymd, yy, mm, dd)
          write(hist_file, "(2a, i4.4, a, i2.2, a, i2.2, a)") &
-            trim(case_name),  '.cpl.ha.',  yy, '-', mm, '-', dd, '.nc'
+            trim(case_name),  '.cpl'//tag//'.ha.',  yy, '-', mm, '-', dd, '.nc'
       else
          call shr_cal_date2ymd(curr_ymd, yy, mm, dd)
          write(hist_file, "(2a, i4.4, a, i2.2, a, i2.2, a, i5.5, a)") &
-            trim(case_name),  '.cpl.ha.',  yy, '-', mm, '-', dd, '-', curr_tod, '.nc'
+            trim(case_name),  '.cpl'//tag//'.ha.',  yy, '-', mm, '-', dd, '-', curr_tod, '.nc'
       endif
 
       time_units = 'days since ' &

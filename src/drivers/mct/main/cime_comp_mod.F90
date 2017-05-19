@@ -2059,7 +2059,7 @@ subroutine cime_init()
          call seq_hist_write(infodata, EClock_d, &
               atm, lnd, ice, ocn, rof, glc, wav, &
               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-              fractions_rx, fractions_gx, fractions_wx)
+              fractions_rx, fractions_gx, fractions_wx, trim(cpl_inst_tag))
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 
          call t_adj_detailf(-2)
@@ -3618,14 +3618,15 @@ end subroutine cime_init
             call seq_hist_write(infodata, EClock_d, &
                  atm, lnd, ice, ocn, rof, glc, wav, &
                  fractions_ax, fractions_lx, fractions_ix, fractions_ox,     &
-                 fractions_rx, fractions_gx, fractions_wx)
+                 fractions_rx, fractions_gx, fractions_wx, trim(cpl_inst_tag))
 
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
          endif
 
          if (do_histavg) then
             call seq_hist_writeavg(infodata, EClock_d, &
-                 atm, lnd, ice, ocn, rof, glc, wav, histavg_alarm)
+                 atm, lnd, ice, ocn, rof, glc, wav, histavg_alarm, &
+                 trim(cpl_inst_tag))
          endif
 
          if (do_hist_a2x) then
