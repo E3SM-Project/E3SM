@@ -405,6 +405,10 @@ class TestScheduler(object):
                     ninst = case_opt[1:]
                     create_newcase_cmd += " --ninst {}".format(ninst)
                     logger.debug (" NINST set to {}".format(ninst))
+                if case_opt.startswith('C'):
+                    ncpl = case_opt[1:]
+                    create_newcase_cmd += " --ncouplers {}" .format(ncpl)
+                    logger.debug (" NCPL set to {}" .format(ncpl))
                 if case_opt.startswith('P'):
                     pesize = case_opt[1:]
                     create_newcase_cmd += " --pecount {}".format(pesize)
@@ -522,6 +526,9 @@ class TestScheduler(object):
                     continue
 
                 elif opt.startswith('N'):
+                    # handled in create_newcase
+                    continue
+                elif opt.startswith('C'):
                     # handled in create_newcase
                     continue
                 elif opt.startswith('IOP'):

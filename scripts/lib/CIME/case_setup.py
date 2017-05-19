@@ -146,7 +146,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             unlock_file("env_build.xml")
 
             case.flush()
-            check_lockedfiles()
+            check_lockedfiles(case)
             env_mach_pes = case.get_env("mach_pes")
             pestot = env_mach_pes.get_total_tasks(models)
             logger.debug("at update TOTALPES = {}".format(pestot))

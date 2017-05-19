@@ -121,7 +121,7 @@ class EntryID(GenericXML):
                     max_score = score
                     mnode = node
             else:
-                expect(False, 
+                expect(False,
                        "match attribute can only have a value of 'last' or 'first', value is %s" %match_type)
 
         return mnode.text
@@ -400,20 +400,27 @@ class EntryID(GenericXML):
                 if f1val is not None:
                     f2val = other.get_value(vid, resolved=False)
                     if f1val != f2val:
+                        logger.info("HERE %s %s "%(f1val, f2val))
                         xmldiffs[vid] = [f1val, f2val]
                 else:
-                    f1val = ET.tostring(node, method="text")
-                    f2val = ET.tostring(f2match, method="text")
-                    if f2val != f1val:
-                        f1value_nodes = self.get_nodes("value", root=node)
-                        for valnode in f1value_nodes:
-                            f2valnodes = other.get_nodes("value", root=f2match, attributes=valnode.attrib)
-                            for f2valnode in f2valnodes:
-                                if valnode.attrib is None and f2valnode.attrib is None or \
-                                   f2valnode.attrib == valnode.attrib:
-                                    if other.get_resolved_value(f2valnode.text) != self.get_resolved_value(valnode.text):
-                                        xmldiffs["{}:{}".format(vid, valnode.attrib)] = [valnode.text, f2valnode.text]
-
+                    for comp in self.get_values("COMP_CLASSES"):
+                        f1val = self.get_value("{}_{}".format(vid,comp), resolved=False)
+                        if f1val is not None:
+                            f2val = other.get_value("{}_{}".format(vid,comp), resolved=False)
+                            if f1val != f2val:
+                                xmldiffs[vid] = [f1val, f2val]
+                        else:
+                            f1val = ET.tostring(node, method="text")
+                            f2val = ET.tostring(f2match, method="text")
+                            if f2val != f1val:
+                                f1value_nodes = self.get_nodes("value", root=node)
+                                for valnode in f1value_nodes:
+                                    f2valnodes = other.get_nodes("value", root=f2match, attributes=valnode.attrib)
+                                for f2valnode in f2valnodes:
+                                    if valnode.attrib is None and f2valnode.attrib is None or \
+                                       f2valnode.attrib == valnode.attrib:
+                                        if other.get_resolved_value(f2valnode.text) != self.get_resolved_value(valnode.text):
+                                            xmldiffs["{}:{}".format(vid, valnode.attrib)] = [valnode.text, f2valnode.text]
         return xmldiffs
 
     def __iter__(self):

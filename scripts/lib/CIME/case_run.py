@@ -28,7 +28,7 @@ def pre_run_check(case, lid, skip_pnl=False):
         shutil.copy(env_mach_pes,"{}.{}".format(env_mach_pes, lid))
 
     # check for locked files.
-    check_lockedfiles(case.get_value("CASEROOT"))
+    check_lockedfiles(case)
     logger.debug("check_lockedfiles OK")
 
     # check that build is done
