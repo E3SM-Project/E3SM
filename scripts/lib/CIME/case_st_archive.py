@@ -204,7 +204,7 @@ def get_histfiles_for_restarts(case, archive, archive_entry, restfile):
 
 ###############################################################################
 def _archive_restarts(case, archive, archive_entry,
-                      compclass, compname, datename, datename_is_last):
+                      compclass, compname, datename, datename_is_last, test=False):
 ###############################################################################
 
     # determine directory for archiving restarts based on datename
@@ -212,9 +212,7 @@ def _archive_restarts(case, archive, archive_entry,
     rundir = case.get_value("RUNDIR")
     casename = case.get_value("CASE")
     archive_restdir = join(dout_s_root, 'rest', datename)
-    testname = case.get_value("TEST")
-    if datename_is_last or case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES') \
-       or (testname is not None and testname == "ERI" or testname == "SSP"):
+    if datename_is_last or case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES') or test:
         if not os.path.exists(archive_restdir):
             os.makedirs(archive_restdir)
 
@@ -311,7 +309,7 @@ def _archive_restarts(case, archive, archive_entry,
     return histfiles_savein_rundir
 
 ###############################################################################
-def _archive_process(case, archive):
+def _archive_process(case, archive, test=False):
 ###############################################################################
     """
     Parse config_archive.xml and perform short term archiving
@@ -346,7 +344,7 @@ def _archive_process(case, archive):
             # archive restarts
             histfiles_savein_rundir = _archive_restarts(case, archive, archive_entry,
                                                         compclass, compname,
-                                                        datename, datename_is_last)
+                                                        datename, datename_is_last, test=test)
 
             # if the last datename for restart files, then archive history files
             # for this compname
@@ -374,7 +372,7 @@ def restore_from_archive(case):
         shutil.copy(item, rundir)
 
 ###############################################################################
-def case_st_archive(case, no_resubmit=False):
+def case_st_archive(case, no_resubmit=False, test=False):
 ###############################################################################
     """
     Create archive object and perform short term archiving
@@ -399,7 +397,7 @@ def case_st_archive(case, no_resubmit=False):
     logger.info("st_archive starting")
 
     archive = EnvArchive(infile=os.path.join(caseroot, 'env_archive.xml'))
-    functor = lambda: _archive_process(case, archive)
+    functor = lambda: _archive_process(case, archive, test=test)
     run_and_log_case_status(functor, "st_archive", caseroot=caseroot)
 
     logger.info("st_archive completed")
