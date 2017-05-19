@@ -298,7 +298,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     ocn_mode = trim(SDOCN%dataMode)
 
     ! Special logic for prescribed aquaplanet
-    if (ocn_mode(1:9) == 'SST_AQUAP') then
+    if (ocn_mode(1:9) == 'SST_AQUAP' .and. trim(ocn_mode) /= 'SST_AQUAPFILE') then
        ! First determine the prescribed aquaplanet option
        if (len_trim(ocn_mode) == 10) then
           read(ocn_mode(10:10),'(i1)') aquap_option
@@ -307,17 +307,18 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
        end if
        ! Now remove the index from the ocn_mode value, to have a generic setting
        ! for use below
-       ocn_mode = "SST_AQUAP"
+       ocn_mode = "SST_AQUAPANAL"
     end if
 
     ! check that we know how to handle the mode
 
-    if (trim(ocn_mode) == 'NULL'      .or. &
-        trim(ocn_mode) == 'SSTDATA'   .or. &
-        trim(ocn_mode) == 'SST_AQUAP' .or. &
-        trim(ocn_mode) == 'COPYALL'   .or. &
-        trim(ocn_mode) == 'IAF'       .or. &
-        trim(ocn_mode) == 'SOM'       .or. &
+    if (trim(ocn_mode) == 'NULL'          .or. &
+        trim(ocn_mode) == 'SSTDATA'       .or. &
+        trim(ocn_mode) == 'SST_AQUAPANAL' .or. &
+        trim(ocn_mode) == 'SST_AQUAPFILE' .or. &
+        trim(ocn_mode) == 'COPYALL'       .or. &
+        trim(ocn_mode) == 'IAF'           .or. &
+        trim(ocn_mode) == 'SOM'           .or. &
         trim(ocn_mode) == 'SOM_AQUAP') then
       if (my_task == master_task) then
          write(logunit,F00) ' ocn mode = ',trim(ocn_mode)
@@ -408,7 +409,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
 
     ! Special logic for either prescribed or som aquaplanet - overwrite and 
     ! set mask/frac to 1 
-    if (ocn_mode == 'SST_AQUAP' .or. ocn_mode == 'SOM_AQUAP') then
+    if (ocn_mode == 'SST_AQUAPANAL' .or. ocn_mode == 'SST_AQUAPFILE' .or. ocn_mode == 'SOM_AQUAP') then
        kmask = mct_aVect_indexRA(ggrid%data,'mask')
        ggrid%data%rattr(kmask,:) = 1
        kfrac = mct_aVect_indexRA(ggrid%data,'frac')
@@ -647,6 +648,9 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
          o2x%rAttr(kswp ,n) = swp
       enddo
 
+      ! NOTE: for SST_AQUAPANAL, the docn buildnml sets the stream to "null"
+      ! and thereby shr_strdata_advance does nothing
+
       !--- copy streams to o2x ---
       call t_startf('docn_strdata_advance')
       call shr_strdata_advance(SDOCN,currentYMD,currentTOD,mpicom,'docn')
@@ -681,7 +685,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
          o2x%rAttr(kswp ,n) = swp
       enddo
 
-   case('SST_AQUAP')
+   case('SST_AQUAPANAL')
       lsize = mct_avect_lsize(o2x)
       do n = 1,lsize
          o2x%rAttr(:,n) = 0.0_r8
@@ -689,6 +693,19 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
       call prescribed_sst(xc, yc, lsize, aquap_option, o2x%rAttr(kt,:))
       do n = 1,lsize
          o2x%rAttr(kt,n) = o2x%rAttr(kt,n) + TkFrz
+      enddo
+
+   case('SST_AQUAPFILE')
+      lsize = mct_avect_lsize(o2x)
+      do n = 1,lsize
+         o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
+         o2x%rAttr(ks   ,n) = ocnsalt
+         o2x%rAttr(ku   ,n) = 0.0_R8
+         o2x%rAttr(kv   ,n) = 0.0_R8
+         o2x%rAttr(kdhdx,n) = 0.0_R8
+         o2x%rAttr(kdhdy,n) = 0.0_R8
+         o2x%rAttr(kq   ,n) = 0.0_R8
+         o2x%rAttr(kswp ,n) = swp
       enddo
 
    case('IAF')
