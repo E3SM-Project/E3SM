@@ -15,7 +15,7 @@
 
   <entry id="DOCN_MODE">
     <type>char</type>
-    <valid_values>prescribed,sst_aquap1,sst_aquap2,sst_aquap3,sst_aquap4,sst_aquap5,sst_aquap6,sst_aquap7,sst_aquap8,sst_aquap9,sst_aquap10,sst_aquapfile,som,som_aquap,copyall,interannual,null</valid_values>
+    <valid_values>prescribed,sst_aquap1,sst_aquap2,sst_aquap3,sst_aquap4,sst_aquap5,sst_aquap6,sst_aquap7,sst_aquap8,sst_aquap9,sst_aquap10,sst_aquapfile,som,som_aquap,interannual,null</valid_values>
     <default_value>prescribed</default_value>
     <values>
       <value compset="_DOCN%NULL_">null</value>
@@ -34,7 +34,6 @@
       <value compset="_DOCN%AQP9_">sst_aquap9</value>
       <value compset="_DOCN%AQP10_">sst_aquap10</value>
       <value compset="_DOCN%AQPFILE_">sst_aquapfile</value>
-      <value compset="_DOCN%COPY_">copyall</value>
     </values>
     <group>run_component_docn</group>
     <file>env_run.xml</file>
@@ -89,7 +88,8 @@
     </values>
     <group>run_component_docn</group>
     <file>env_run.xml</file>
-    <desc>Sets SOM forcing filename</desc>
+    <desc>Sets SOM forcing filename. 
+    This is only used when DOCN_MODE=som.</desc>
   </entry>
 
   <entry id="DOCN_AQP_FILENAME">
@@ -101,7 +101,8 @@
     </values>
     <group>run_component_docn</group>
     <file>env_run.xml</file>
-    <desc>Sets aquaplanet forcing filename instead of using an analytic form</desc>
+    <desc>Sets aquaplanet forcing filename instead of using an analytic form.
+    This is only used when DOCN_MODE=sst_aqpfile.</desc>
   </entry>
 
   <entry id="SSTICE_STREAM">
@@ -111,7 +112,8 @@
     <group>run_component_docn</group>
     <file>env_run.xml</file>
     <desc>Prescribed SST and ice coverage stream name.
-    Sets SST and ice coverage stream name for prescribed runs.</desc>
+    Sets SST and ice coverage stream name.
+    This is only used when DOCN_MODE=prescribed.</desc>
   </entry>
 
   <entry id="SSTICE_DATA_FILENAME">
@@ -119,6 +121,7 @@
     <valid_values></valid_values>
     <default_value>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_clim_c101029.nc</default_value>
     <values>
+
       <value compset="DOCN%DOM" grid="a%T31.*_oi%T31"						>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_48x96_clim_c050526.nc</value>
       <value compset="DOCN%DOM" grid="a%1.9x2.5.*_oi%1.9x2.5"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_clim_c061031.nc</value>
       <value compset="DOCN%DOM" grid="a%0.9x1.25.*_oi%0.9x1.25"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
@@ -136,15 +139,15 @@
       <value compset="1850_" grid="a%0.9x1.25.*_oi%0.9x1.25"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_pi_c101028.nc</value>
       <value compset="1850_" grid="a%0.47x0.63.*_oi%0.47x0.63"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_clim_pi_c101028.nc</value>
       <value compset="1850_" grid="a%0.23x0.31.*_oi%0.23x0.31"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_pi_c101028.nc</value>
+
       <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
-      <value compset="DATM.*_SLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
       <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF"      grid="a%4x5.*_m%gx3v7"	        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_4x5_clim_c110526.nc</value>
-      <value compset="DATM.*_SLND.*_DICE.*_DOCN.*_DROF"      grid="a%4x5.*_m%gx3v7"	        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_4x5_clim_c110526.nc</value>
     </values>
     <group>run_component_docn</group>
     <file>env_run.xml</file>
     <desc>Prescribed SST and ice coverage data file name.
-    Sets SST and ice coverage data file name for DOCN prescribed runs.</desc>
+    Sets SST and ice coverage data file name.
+    This is only used when DOCN_MODE=prescribed.</desc>
   </entry>
 
   <entry id="SSTICE_GRID_FILENAME">
@@ -152,6 +155,7 @@
     <valid_values></valid_values>
     <default_value>$DIN_LOC_ROOT/ocn/docn7/domain.ocn.1x1.111007.nc</default_value>
     <values>
+
       <value compset="DOCN%DOM" grid="a%T31.*_oi%T31"						>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.48x96_gx3v7_100114.nc</value>
       <value compset="DOCN%DOM" grid="a%1.9x2.5.*_oi%1.9x2.5"					>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.1.9x2.5_gx1v6_090403.nc </value>
       <value compset="DOCN%DOM" grid="a%0.9x1.25.*_oi%0.9x1.25.*_m%gx1v6"			>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.9x1.25_gx1v6_090403.nc</value>
@@ -172,15 +176,15 @@
       <value compset="1850" grid="a%0.9x1.25.*_oi%0.9x1.25.*_m%gx1v7"				>$DIN_LOC_ROOT/share/domains/domain.ocn.fv0.9x1.25_gx1v7.151020.nc</value>
       <value compset="1850" grid="a%0.47x0.63.*_oi%0.47x0.63"					>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.47x0.63_gx1v6_090408.nc</value>
       <value compset="1850" grid="a%0.23x0.31.*_oi%0.23x0.31"					>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.23x0.31_gx1v6_101108.nc</value>
+
       <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF"                                         >$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.9x1.25_gx1v6_090403.nc</value>
-      <value compset="DATM.*_SLND.*_DICE.*_DOCN.*_DROF"                                         >$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.9x1.25_gx1v6_090403.nc</value>
       <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF" grid="a%4x5.*_m%gx3v7"                  >$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.4x5_gx3v7_100120.nc</value>
-      <value compset="DATM.*_SLND.*_DICE.*_DOCN.*_DROF" grid="a%4x5.*_m%gx3v7"                  >$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.4x5_gx3v7_100120.nc</value>
     </values>
     <group>run_component_cam_sstice</group>
     <file>env_run.xml</file>
     <desc>Prescribed SST and ice coverage grid file name.
-    Sets SST and ice coverage grid file name for prescribed runs.</desc>
+    Sets SST and ice coverage grid file name for prescribed runs.
+    This is only used when DOCN_MODE=prescribed.</desc>
   </entry>
 
   <entry id="SSTICE_YEAR_ALIGN">
@@ -201,7 +205,8 @@
     run after the prescribed data ends (as determined by SSTICE_YEAR_END), the
     default behavior is to assume that the data from SSTICE_YEAR_START to
     SSTICE_YEAR_END cyclically repeats. This behavior is controlled by the
-    &quot;taxmode&quot; stream option; see the data model documentation for more details.</desc>
+    &quot;taxmode&quot; stream option; see the data model documentation for more details.
+    This is only used when DOCN_MODE=prescribed.</desc>
   </entry>
 
   <entry id="SSTICE_YEAR_START">
@@ -216,7 +221,8 @@
     <desc>The first year of data to use from SSTICE_DATA_FILENAME.
     This is the first year of prescribed SST and ice coverage data to use. For
     example, if a data file has data for years 0-99, and SSTICE_YEAR_START is 10,
-    years 0-9 in the file will not be used.</desc>
+    years 0-9 in the file will not be used.
+    This is only used when DOCN_MODE=prescribed.</desc>
   </entry>
 
   <entry id="SSTICE_YEAR_END">
@@ -231,7 +237,8 @@
     <desc>The last year of data to use from SSTICE_DATA_FILENAME.
     This is the last year of prescribed SST and ice coverage data to use. For
     example, if a data file has data for years 0-99, and value is 49,
-    years 50-99 in the file will not be used.</desc>
+    years 50-99 in the file will not be used.
+    This is only used when DOCN_MODE=prescribed.</desc>
   </entry>
 
   <description>
@@ -241,16 +248,17 @@
     <desc compset="_DOCN%SOMAQP">docn aquaplanet slab ocean mode</desc>
     <desc compset="_DOCN%IAF" >docn interannual mode</desc>
     <desc compset="_DOCN%SST_AQUAP">docn aquaplanet mode:</desc>
-    <desc compset="_DOCN%AQP1">docn prescribed aquaplanet sst - option 1</desc>
-    <desc compset="_DOCN%AQP2">docn prescribed aquaplanet sst - option 2</desc>
-    <desc compset="_DOCN%AQP3">docn prescribed aquaplanet sst - option 3</desc>
-    <desc compset="_DOCN%AQP4">docn prescribed aquaplanet sst - option 4</desc>
-    <desc compset="_DOCN%AQP5">docn prescribed aquaplanet sst - option 5</desc>
-    <desc compset="_DOCN%AQP6">docn prescribed aquaplanet sst - option 6</desc>
-    <desc compset="_DOCN%AQP7">docn prescribed aquaplanet sst - option 7</desc>
-    <desc compset="_DOCN%AQP8">docn prescribed aquaplanet sst - option 8</desc>
-    <desc compset="_DOCN%AQP9">docn prescribed aquaplanet sst - option 9</desc>
-    <desc compset="_DOCN%AQP10">docn prescribed aquaplanet sst - option 10</desc>
+    <desc compset="_DOCN%AQP1">docn analytic aquaplanet sst - option 1</desc>
+    <desc compset="_DOCN%AQP2">docn analytic aquaplanet sst - option 2</desc>
+    <desc compset="_DOCN%AQP3">docn analytic aquaplanet sst - option 3</desc>
+    <desc compset="_DOCN%AQP4">docn analytic aquaplanet sst - option 4</desc>
+    <desc compset="_DOCN%AQP5">docn analytic aquaplanet sst - option 5</desc>
+    <desc compset="_DOCN%AQP6">docn analytic aquaplanet sst - option 6</desc>
+    <desc compset="_DOCN%AQP7">docn analytic aquaplanet sst - option 7</desc>
+    <desc compset="_DOCN%AQP8">docn analytic aquaplanet sst - option 8</desc>
+    <desc compset="_DOCN%AQP9">docn analytic aquaplanet sst - option 9</desc>
+    <desc compset="_DOCN%AQP10">docn analytic aquaplanet sst - option 10</desc>
+    <desc compset="_DOCN%AQPFILE">docn file input aquaplanet sst </desc>
   </description>
 
   <help>
