@@ -10,8 +10,8 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from acme_diags.metrics import rmse, corr
 from acme_diags.driver.utils import get_output_dir
 
-plotTitle = {'fontsize':11.5}
-plotSideTitle = {'fontsize':10.5}
+plotTitle = {'fontsize':12.5}
+plotSideTitle = {'fontsize':11.5}
 
 #panel = [(0.1691,0.4961,0.6465,0.2258),
 #         (0.1691,0.2112,0.6465,0.2258),
@@ -51,10 +51,12 @@ def plot(reference, test, diff, metrics_dict, parameter):
 #    ax.xaxis.set_major_formatter(lon_formatter)
     #ax.xaxis.set_major_formatter(lat_formatter)
     #ax1.xaxis.set_major_formatter(lat_formatter)
-    ax.tick_params(labelsize=10.0, direction='out', pad=-2, width=1)
-    ax1.tick_params(labelsize=10.0, direction='out', pad=-2, width=1)
+    ax.tick_params(labelsize=11.0, direction='out', pad=-2, width=1)
+    ax1.tick_params(labelsize=11.0, direction='out', pad=-2, width=1)
     ax.xaxis.set_ticks_position('bottom')
     ax1.xaxis.set_ticks_position('bottom')
+    ax.set_ylabel(test.long_name +' ('+ test.units+')')
+    ax1.set_ylabel(diff.long_name +' ('+ diff.units+')')
 #    ax.yaxis.set_ticks_position('left')
 #
     fig.suptitle(parameter.main_title, x=0.5, y=0.95, fontsize=18)
