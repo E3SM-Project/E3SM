@@ -212,14 +212,10 @@ def _archive_restarts(case, archive, archive_entry,
     rundir = case.get_value("RUNDIR")
     casename = case.get_value("CASE")
     archive_restdir = join(dout_s_root, 'rest', datename)
-    if not datename_is_last or case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES') \
+    if datename_is_last or case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES') \
        or case.get_value("TEST"):
         if not os.path.exists(archive_restdir):
             os.makedirs(archive_restdir)
-
-    # archive the rpointer file(s) for this datename and all possible ninst_strings
-    _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
-                            datename, datename_is_last)
 
     # determine ninst and ninst_string
     ninst, ninst_strings = _get_ninst_info(case, compclass)
@@ -306,6 +302,11 @@ def _archive_restarts(case, archive, archive_entry,
                                 logger.warn("unable to remove interim restart file %s" %srcfile)
                         else:
                             logger.warn("interim restart file %s does not exist" %srcfile)
+
+    # archive the rpointer file(s) for this datename and all possible ninst_strings
+    _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
+                            datename, datename_is_last)
+
 
     return histfiles_savein_rundir
 
