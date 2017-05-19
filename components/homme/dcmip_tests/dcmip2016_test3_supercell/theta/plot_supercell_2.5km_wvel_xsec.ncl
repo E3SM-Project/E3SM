@@ -25,11 +25,27 @@ begin
 ;     lat:   arbitrary
 ;----------------------------------------------------------------------------
 
-  data_file = "~/Documents/tempestmodel/test/dcmip2016/outSupercellTest-Agri/outU0.0000-01-01-2500m.nc"
+  data_file = "./movies/dcmip2016_test31.nc"
+  data      = addfile(data_file,"r")
+  zm        = data->geo(24,:,1,1)/9.80616
+  nlev      = dimsizes(zm)
 
-  data = addfile(data_file,"r")
+  time = data->time
+  nt = dimsizes(time)
+  print("nt="+nt)
+  min_per_day = 60*24
+  t1  = closest_val( 120.0/min_per_day, time)
+  t1 = where(t1 .gt. (nt-1), nt-1, t1)
 
-  w_2500m = data->W(24,0,:,:)
+  print("t1="+t1)
+
+  k = nlev-1 -closest_val(2500,zm(::-1))
+  print("k="+k)
+
+  print("height = "+zm(k))
+
+  w_2500m = data->w(t1,k,:,:)
+  w_2500m = lonFlip(w_2500m )
 
 ;****************************************************************************
 ; DO NOT EDIT BELOW THIS LINE
@@ -38,7 +54,7 @@ begin
 ;------------------------------------------------
 ; Workspace
 ;------------------------------------------------
-  wks = gsn_open_wks("eps","plot_supercell_2.5km_wvel_xsec")   
+  wks = gsn_open_wks("pdf","2.5km_wvel_xsec")
 
   gsn_merge_colormaps(wks,"temp_diff_18lev","sunshine_9lev")
 

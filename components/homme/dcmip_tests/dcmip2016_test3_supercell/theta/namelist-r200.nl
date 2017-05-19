@@ -17,8 +17,8 @@
   tstep_type        = 5
   rsplit            = 0
   qsplit            = 10
-  nu                = 2.5e9 !5.3e9                     ! default= 1e15/(120)^3 *(ne30/ne15)**3.2
-  nu_s              = 2.5e9 !5.3e9
+  nu                = 5.3e9                     ! default= 1e15/(120)^3 *(ne30/ne15)**3.2
+  nu_s              = 5.3e9
   nu_p              = 0
   nu_q              = 0
   nu_top            = 0                         ! 2.5e5/(120)^(1)

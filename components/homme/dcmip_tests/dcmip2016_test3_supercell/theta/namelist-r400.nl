@@ -9,7 +9,7 @@
   ne                = 8                         ! number of elements per cube face
   qsize             = 4                         ! num tracer fields: qv,qc,qr
   nmax              = 7200                      ! 7200s/tstep
-  statefreq         = 10                        ! number of steps between screen dumps
+  statefreq         = 100                       ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
   tstep             = 1.0                       ! largest timestep in seconds
@@ -46,7 +46,7 @@
   interp_nlat       = 181
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
-  num_io_procs      = 1
+  num_io_procs      = 16
 /
 &prof_inparm
   profile_outpe_num   = 100

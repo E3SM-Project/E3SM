@@ -42,7 +42,7 @@ print("time_s="+time_s)
 ;------------------------------------------------
 ; Workspace
 ;------------------------------------------------
-  wks = gsn_open_wks("pdf","measurement_wmax.pdf")
+  wks = gsn_open_wks("pdf","max_w")
 
 ;------------------------------------------------
 ; Plot resources [options]

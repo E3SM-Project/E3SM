@@ -40,7 +40,7 @@ precip = precip*(1000.0)*(24.0*3600)
 ;------------------------------------------------
 ; Workspace
 ;------------------------------------------------
-  wks = gsn_open_wks("pdf","max_precip_rate")
+  wks = gsn_open_wks("pdf","max_precip")
 
 ;------------------------------------------------
 ; Plot resources [options]

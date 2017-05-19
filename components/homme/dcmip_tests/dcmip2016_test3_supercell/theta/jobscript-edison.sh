@@ -17,44 +17,73 @@ NCPU=640
 date
 
 # 4dg resolution
-#cp -f namelist-r400.nl input.nl
-#srun -n 384 $EXEC < input.nl
-#mv -f movies/dcmip2016_test31.nc movies/dcmip2016_test3_r400.nc
-#ncl plot_supercell_wvel.ncl
+cp -f namelist-r400.nl input.nl
+srun -n 320 $EXEC < input.nl
+ncl plot_supercell_wvel.ncl
+ncl plot_supercell_5km_xsec.ncl
+ncl plot_supercell_prect.ncl
 
-#mv HommeTime HommeTime_r400
-#mv measurement_wmax.pdf wmax_r400.pdf
-#mv measurement_wmax.txt measurement_wmax_r400.txt
-#mv measurement_time.txt measurement_time_r400.txt
-#mv measurement_prect_rate.txt measurement_prect_rate.txt_r400.txt
+mv movies/dcmip2016_test31.nc movies/dcmip2016_test3_r400.nc
+mv HommeTime                  HommeTime_r400
+mv max_w                      max_w_r400.pdf
+mv max_precip                 max_precip_r400.pdf
+mv 5km_xsec.pdf               5km_xsec_r400.pdf
+mv measurement_wmax.txt       measurement_wmax_r400.txt
+mv measurement_time.txt       measurement_time_r400.txt
+mv measurement_prect_rate.txt measurement_prect_rate_r400.txt
+
+date
+
+# 4dg resolution
+cp -f namelist-r400.nl input.nl
+srun -n 320 $EXEC < input.nl
+ncl plot_supercell_wvel.ncl
+ncl plot_supercell_5km_xsec.ncl
+ncl plot_supercell_prect.ncl
+
+mv movies/dcmip2016_test31.nc movies/dcmip2016_test3_r400.nc
+mv HommeTime                  HommeTime_r400
+mv max_w.pdf                  max_w_r400.pdf
+mv max_precip.pdf             max_precip_r400.pdf
+mv 5km_xsec.pdf               5km_xsec_r400.pdf
+mv measurement_wmax.txt       measurement_wmax_r400.txt
+mv measurement_time.txt       measurement_time_r400.txt
+mv measurement_prect_rate.txt measurement_prect_rate_r400.txt
+
+date
 
 # 2dg resolution
 cp -f namelist-r200.nl input.nl
 srun -n $NCPU $EXEC < input.nl
 ncl plot_supercell_wvel.ncl
 ncl plot_supercell_5km_xsec.ncl
+ncl plot_supercell_prect.ncl
 
 mv movies/dcmip2016_test31.nc movies/dcmip2016_test3_r200.nc
-mv HommeTime HommeTime_r200
-mv measurement_wmax.pdf wmax_r200.pdf
-mv 5km_xsec.pdf 5km_xsec_r200.pdf
-mv measurement_wmax.txt measurement_wmax_r200.txt
-mv measurement_time.txt measurement_time_r200.txt
+mv HommeTime                  HommeTime_r200
+mv max_w.pdf                  max_w_r200.pdf
+mv max_precip.pdf             max_precip_r200.pdf
+mv 5km_xsec.pdf               5km_xsec_r200.pdf
+mv measurement_wmax.txt       measurement_wmax_r200.txt
+mv measurement_time.txt       measurement_time_r200.txt
 mv measurement_prect_rate.txt measurement_prect_rate_r200.txt
+
+date
 
 # 1dg resolution
 cp -f namelist-r100.nl input.nl
 srun -n $NCPU $EXEC < input.nl
 ncl plot_supercell_wvel.ncl
 ncl plot_supercell_5km_xsec.ncl
+ncl plot_supercell_prect.ncl
 
 mv movies/dcmip2016_test31.nc movies/dcmip2016_test3_r100.nc
-mv HommeTime HommeTime_r100
-mv measurement_wmax.pdf wmax_r100.pdf
-mv 5km_xsec.pdf 5km_xsec_r100.pdf
-mv measurement_wmax.txt measurement_wmax_r100.txt
-mv measurement_time.txt measurement_time_r100.txt
-mv measurement_prect_rate.txt measurement_prect_rate_r100.txtt
-
+mv HommeTime                  HommeTime_r100
+mv max_w.pdf                  max_w_r100.pdf
+mv max_precip.pdf             max_precip_r100.pdf
+mv 5km_xsec.pdf               5km_xsec_r100.pdf
+mv measurement_wmax.txt       measurement_wmax_r100.txt
+mv measurement_time.txt       measurement_time_r100.txt
+mv measurement_prect_rate.txt measurement_prect_rate_r100.txt
 
 date
