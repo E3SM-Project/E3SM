@@ -27,10 +27,9 @@ module ocn_tracer_surface_restoring
    use mpas_forcing
    use mpas_stream_manager
    use ocn_constants
+   use ocn_framework_forcing
 
    implicit none
-
-   type(MPAS_forcing_group_type),pointer :: surfaceSalinityForcingGroup
 
    private
    save
@@ -260,7 +259,7 @@ contains
            call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
            call MPAS_pool_get_config(domain % configs, 'config_forcing_restart_file', config_forcing_restart_file)
 
-           call MPAS_forcing_init_group( surfaceSalinityForcingGroup,  &
+           call MPAS_forcing_init_group( forcingGroupHead,  &
                 "surfaceSalinityMonthlyClimatology", &
                 domain, &
                 '0000-01-01_00:00:00', &
@@ -275,7 +274,7 @@ contains
            call mpas_pool_get_array(surfaceSalinityMonthlyForcing, 'surfaceSalinityMonthlyClimatologyValue',   &
                                                                     surfaceSalinityMonthlyClimatologyValue)
            call MPAS_forcing_init_field( domain % streamManager, &
-                surfaceSalinityForcingGroup, &
+                forcingGroupHead, &
                 'surfaceSalinityMonthlyClimatology', &  !  forcing group name
                 'surfaceSalinityMonthlyClimatologyValue', &  !  array name
                 'surface_salinity_monthly_data', &  !  stream name
@@ -285,7 +284,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-           call MPAS_forcing_init_field_data( surfaceSalinityForcingGroup, &
+           call MPAS_forcing_init_field_data( forcingGroupHead, &
                 'surfaceSalinityMonthlyClimatology', &
                 domain % streamManager)
 
@@ -305,7 +304,7 @@ contains
         call mpas_pool_get_array(surfaceSalinityMonthlyForcing, 'surfaceSalinityMonthlyClimatologyValue',   &
                                                                  surfaceSalinityMonthlyClimatologyValue)
 
-        call MPAS_forcing_get_forcing(surfaceSalinityForcingGroup, &
+        call MPAS_forcing_get_forcing(forcingGroupHead, &
              'surfaceSalinityMonthlyClimatology', streamManager, dt)
 
       sumAreaDeltaS = 0.0_RKIND
@@ -426,7 +425,7 @@ contains
 
       call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
 
-      call MPAS_forcing_write_restart_times(surfaceSalinityForcingGroup, config_forcing_restart_file)
+      call MPAS_forcing_write_restart_times(forcingGroupHead, config_forcing_restart_file)
 
     end subroutine ocn_salinity_restoring_forcing_write_restart!}}}
 

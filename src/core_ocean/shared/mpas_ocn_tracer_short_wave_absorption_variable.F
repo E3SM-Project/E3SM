@@ -19,9 +19,9 @@ module ocn_tracer_short_wave_absorption_variable
    use mpas_forcing
    use mpas_stream_manager
    use ocn_constants
+   use ocn_framework_forcing
 
    implicit none
-   type(MPAS_forcing_group_type),pointer :: shortwaveForcingGroup
 
    private
    save
@@ -269,7 +269,7 @@ contains
    forcingIntervalMonthly = "0000-01-00_00:00:00"
    forcingReferenceTimeMonthly = "0000-01-01_00:00:00"
 
-   call MPAS_forcing_init_group( shortwaveForcingGroup,  &
+   call MPAS_forcing_init_group( forcingGroupHead,  &
         "shortwave_monthly_observations", &
         domain, &
         '0000-01-01_00:00:00', &
@@ -279,7 +279,7 @@ contains
         config_forcing_restart_file)
 
    call MPAS_forcing_init_field( domain % streamManager, &
-        shortwaveForcingGroup, &
+        forcingGroupHead, &
         'shortwave_monthly_observations', &
         'chlorophyllData', &
         'shortwave_forcing_data', &
@@ -290,7 +290,7 @@ contains
         forcingIntervalMonthly)
 
    call MPAS_forcing_init_field( domain % streamManager, &
-        shortwaveForcingGroup, &
+        forcingGroupHead, &
         'shortwave_monthly_observations', &
         'clearSkyRadiation', &
         'shortwave_forcing_data', &
@@ -301,7 +301,7 @@ contains
         forcingIntervalMonthly)
 
    call MPAS_forcing_init_field( domain % streamManager, &
-        shortwaveForcingGroup, &
+        forcingGroupHead, &
         'shortwave_monthly_observations', &
         'zenithAngle', &
         'shortwave_forcing_data', &
@@ -311,7 +311,7 @@ contains
         forcingReferenceTimeMonthly,  &
         forcingIntervalMonthly)
 
-   call MPAS_forcing_init_field_data( shortwaveForcingGroup, &
+   call MPAS_forcing_init_field_data( forcingGroupHead, &
         'shortwave_monthly_observations', &
         domain % streamManager)
 
@@ -359,7 +359,7 @@ contains
         call mpas_get_timeInterval(timeStepSW,dt=dt)
 
         if(trim(config_sw_absorption_type) == 'ohlmann00' .and. config_use_activeTracers_surface_bulk_forcing) then
-             call MPAS_forcing_get_forcing(shortwaveForcingGroup, &
+             call MPAS_forcing_get_forcing(forcingGroupHead, &
                   'shortwave_monthly_observations', streamManager, dt)
         endif
 
@@ -500,7 +500,7 @@ contains
       if( trim(config_sw_absorption_type) == 'ohlmann00'  ) then
           call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
 
-          call MPAS_forcing_write_restart_times(shortwaveForcingGroup, config_forcing_restart_file)
+          call MPAS_forcing_write_restart_times(forcingGroupHead, config_forcing_restart_file)
       endif
 
     end subroutine ocn_shortwave_forcing_write_restart!}}}
