@@ -183,14 +183,14 @@ class EnvMachSpecific(EnvBase):
 
         return result
 
-    def _match_attribs(self, attribs, compiler, debug, mpilib):
-        if ("compiler" in attribs and
+    def _match_attribs(self, attribs, compiler=None, debug=None, mpilib=None):
+        if ("compiler" in attribs and compiler is not None and
             not self._match(compiler, attribs["compiler"])):
             return False
-        elif ("mpilib" in attribs and
+        elif ("mpilib" in attribs and mpilib is not None and
             not self._match(mpilib, attribs["mpilib"])):
             return False
-        elif ("debug" in attribs and
+        elif ("debug" in attribs and debug is not None and
             not self._match("TRUE" if debug else "FALSE", attribs["debug"].upper())):
             return False
         elif ("unit_testing" in attribs and
@@ -198,6 +198,11 @@ class EnvMachSpecific(EnvBase):
                               attribs["unit_testing"].upper())):
             return False
 
+        # check for matches with env-vars
+        for attrib in attribs:
+            if (attrib != "name" and attrib in os.environ and
+                  not self._match(os.environ[attrib], attribs[attrib])):
+                return False
         return True
 
     def _match(self, my_value, xml_value):
@@ -376,12 +381,13 @@ class EnvMachSpecific(EnvBase):
             if arg_node is not None:
                 arg_nodes = self.get_nodes("arg", root=arg_node)
                 for arg_node in arg_nodes:
-                    arg_value = transform_vars(arg_node.text,
-                                               case=case,
-                                               subgroup=job,
-                                               check_members=check_members,
-                                               default=arg_node.get("default"))
-                    args.append(arg_value)
+                    if (self._match_attribs(arg_node.attrib)):
+                        arg_value = transform_vars(arg_node.text,
+                                                   case=case,
+                                                   subgroup=job,
+                                                   check_members=check_members,
+                                                   default=arg_node.get("default"))
+                        args.append(arg_value)
 
         exec_node = self.get_node("executable", root=the_match)
         expect(exec_node is not None,"No executable found")
