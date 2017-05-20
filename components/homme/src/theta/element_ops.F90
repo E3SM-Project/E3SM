@@ -569,10 +569,11 @@ contains
   real (kind=real_kind), intent(in)   :: dp(np,np,nlev)
   real (kind=real_kind), intent(in)   :: phis(np,np)
   real (kind=real_kind), intent(in)   :: kappa_star(np,np,nlev)
+  real (kind=real_kind), intent(in)   :: kappa_star_i(np,np,nlevp)
   real (kind=real_kind), intent(out)  :: phi(np,np,nlev)
   
   real (kind=real_kind) :: p_i(np,np,nlev+1)
-  real (kind=real_kind) :: dp_theta_R(np,np,nlev)
+  real (kind=real_kind) :: rho_theta_R(np,np,nlev)
 
   integer :: k
 
@@ -586,20 +587,22 @@ contains
 
   do k=nlev,2,-1
 #ifdef EOS_AVEv1
-     dp_theta_R(:,:,k) = &
+     rho_theta_R(:,:,k) = &
           (theta_dp_cp(:,:,k)*kappa_star(:,:,k) + theta_dp_cp(:,:,k-1)*kappa_star(:,:,k))/2
      phi(:,:,k-1) = phi(:,:,k) +&
-          dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa_star(:,:,k) / p_i(:,:,k)
+          rho_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa_star(:,:,k) / p_i(:,:,k)
 #else
      !  invert this equation at interfaces:
-     !  p/exner = dp_theta_R / d(phi)    
-     !  d(phi)  = dp_theta_R*exer/p
-     dp_theta_R(:,:,k)=(theta_dp_cp(:,:,k)*kappa_star(:,:,k)/hvcoord%d_etam(k) + &
+     !  p/exner = rho_theta_R / d(phi)    
+     !  d(phi)  = rho_theta_R*exer/p
+     rho_theta_R(:,:,k)=(theta_dp_cp(:,:,k)*kappa_star(:,:,k)/hvcoord%d_etam(k) + &
           theta_dp_cp(:,:,k-1)*kappa_star(:,:,k-1)/hvcoord%d_etam(k-1))/2
 
-     ! (phi(:,:,k-1)-phi(:,:,k)) = dp_theta_R * exner/p
+     kappa_star_i(:,:,k) = (kappa_star(:,:,k)+kappa_star(:,:,k-1))/2
+
+     ! (phi(:,:,k-1)-phi(:,:,k)) = rho_theta_R * exner/p
      phi(:,:,k-1) = phi(:,:,k) + &
-          hvcoord%d_etai(k)*dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa_star(:,:,k)/p_i(:,:,k)
+          hvcoord%d_etai(k)*rho_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa_star_i(:,:,k)/p_i(:,:,k)
 #endif
   enddo
 
