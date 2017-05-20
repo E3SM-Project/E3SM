@@ -221,7 +221,7 @@ class SystemTestsCommon(object):
             self._component_compare_copy(suffix)
 
         if st_archive:
-            case_st_archive(self._case, test=True)
+            case_st_archive(self._case)
 
     def _coupler_log_indicates_run_complete(self):
         newestcpllogfile = self._get_latest_cpl_log()
