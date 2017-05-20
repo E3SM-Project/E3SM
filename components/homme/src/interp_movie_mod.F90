@@ -46,10 +46,11 @@ module interp_movie_mod
 #undef V_IS_LATLON
 #if defined(_PRIM)
 #define V_IS_LATLON
-  integer, parameter :: varcnt = 41 !45
+  integer, parameter :: varcnt = 42 !45
   integer, parameter :: maxdims =  5
   character*(*), parameter :: varnames(varcnt)=(/'ps       ', &
                                                  'geos     ', &
+                                                 'precl    ', &
                                                  'zeta     ', &
                                                  'dp3d     ', &
                                                  'p        ', &
@@ -89,7 +90,7 @@ module interp_movie_mod
                                                  'hyai     ', &
                                                  'hybi     ', &
                                                  'time     '/)
-  integer, parameter :: vartype(varcnt)=(/PIO_double,PIO_double,PIO_double,PIO_double,&
+  integer, parameter :: vartype(varcnt)=(/PIO_double,PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double, &
                                           PIO_double,PIO_double,PIO_double,PIO_double, PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
@@ -103,7 +104,7 @@ module interp_movie_mod
                                           PIO_double,PIO_double,&
                                           PIO_double,PIO_double,&
                                           PIO_double/)
-  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,&
+  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false., .false., .false., &
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
@@ -117,6 +118,7 @@ module interp_movie_mod
 
   integer, parameter :: vardims(maxdims,varcnt) =  reshape( (/ 1,2,5,0,0,  &
        1,2,0,0,0,  &   ! geos
+       1,2,5,0,0,  &   ! precl
        1,2,3,5,0,  &   ! zeta
        1,2,3,5,0,  &   ! dp3d
        1,2,3,5,0,  &   ! p
@@ -319,6 +321,7 @@ contains
 #if defined(_PRIM)
     call nf_variable_attributes(ncdf, 'geo',  'Geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'geos', 'Surface geopotential','m^2/s^2')
+    call nf_variable_attributes(ncdf, 'precl','Precipitation rate','meters of water/s')
     call nf_variable_attributes(ncdf, 'T',    'Temperature','degrees kelvin')
     call nf_variable_attributes(ncdf, 'dp3d', 'delta p','Pa')
     call nf_variable_attributes(ncdf, 'p',    'hydrostatic pressure','Pa')
@@ -427,7 +430,8 @@ contains
                               compute_div_c0,compute_div_c0_contra
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use time_mod   , only : TimeLevel_Qdp
-    ! ---------------------    
+    use dcmip16_wrapper, only: precl
+    ! ---------------------
     type (element_t),target    :: elem(:)
     type (parallel_t)     :: par
     type (TimeLevel_t)  :: tl
@@ -751,6 +755,22 @@ contains
                 deallocate(datall)
                 endif
              endif
+
+             if(nf_selectedvar('precl', output_varnames)) then
+                if (par%masterproc) print *,'writing precl...'
+                allocate (datall(ncnt,1))
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                        call interpolate_scalar(interpdata(ie),precl(:,:,ie), &
+                        np, datall(st:en,1))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall(:,1),start2d,count2d,name='precl')
+                deallocate(datall)
+             endif
+
+
 
              if(nf_selectedvar('T', output_varnames)) then
                 if (par%masterproc) print *,'writing T...'

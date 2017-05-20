@@ -6,5 +6,3 @@ file(GLOB M_FILES        "*.m")                                         # get ma
 
 # Copy test files to build
 install(PROGRAMS ${NCL_SCRIPTS} ${SHELL_SCRIPTS} ${NAMELISTS} ${PYTHON_SCRIPTS} ${M_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-
-add_subdirectory(publish)

@@ -58,8 +58,9 @@ begin
   g=9.80616 ; m/s
   print("levels="+geo(0,:,1,1)/g)
 
-  delete(w_5km@long_name)
+  ;delete(w_5km@long_name)
   delete(qr_5km@long_name)
+  delete(qr_5km@units)
 
   w_5km  = lonFlip(w_5km )
   qr_5km = lonFlip(qr_5km)
@@ -111,6 +112,9 @@ begin
 ; res@lbLabelBarOn = False
   res@tmYLLabelsOn = False
 
+  res@lbOrientation         = "Vertical"      ; ncl default is vertical
+  res@pmLabelBarSide        = "Right"          ; default is right
+
   resw = res
   resw@gsnSpreadColorStart = 8
   resw@gsnSpreadColorEnd = 19
@@ -135,7 +139,7 @@ begin
   resw@trXMaxF =  20.0
   plot(0) = gsn_csm_contour(wks, w_5km(0,:,:), resw)
 
-  resw@trXMinF = -20.0
+  resw@trXMinF = -19.99
   resw@trXMaxF =  20.0
   wplot(0) = gsn_csm_contour(wks, w_5km(1,:,:), resw)
 
@@ -157,7 +161,7 @@ begin
   resqr@trXMaxF =  20.0
   plot(1) = gsn_csm_contour(wks, qr_5km(0,:,:), resqr)
 
-  resqr@trXMinF = -20.0
+  resqr@trXMinF = -19.99
   resqr@trXMaxF =  20.0
   qrplot(0) = gsn_csm_contour(wks, qr_5km(1,:,:), resqr)
 

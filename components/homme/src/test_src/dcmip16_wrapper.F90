@@ -29,14 +29,15 @@ use time_mod,             only: time_at, TimeLevel_t
 
 implicit none
 
-real(rl), dimension(:,:,:,:), allocatable :: u0, v0                     ! storage for dcmip2-x sponge layer
+real(rl),dimension(:,:,:), allocatable :: precl ! storage for column precip
+
 real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
 real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
 real(rl):: tau
-real(rl), parameter :: ztop3  = 20000_rl !20000_rl                            ! top of model at 20km
+real(rl), parameter :: rh2o    = 461.5d0,            &                  ! Gas constant for water vapor (J/kg/K)
+                       Mvap    = (Rwater_vapor/Rgas) - 1.d0             ! Constant for virtual temp. calc. (~0.608)
 
-real(rl), parameter ::rh2o    = 461.5d0,            & ! Gas constant for water vapor (J/kg/K)
-                      Mvap    = (Rwater_vapor/Rgas) - 1.d0    ! Constant for virtual temp. calc. (~0.608)
+
 contains
 
 !_____________________________________________________________________
@@ -149,6 +150,8 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat                                                    ! pointwise coordiantes
 
+  real(rl), parameter :: ztop3  = 20000_rl                              ! top of model at 20km
+
   real(rl), dimension(np,np,nlev,qsize_d) :: q
   real(rl), dimension(np,np,nlev) :: p,dp,z,u,v,w,T,thetav,rho,rhom
   real(rl), dimension(np,np) :: phis, ps
@@ -156,6 +159,10 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
   real(rl) :: p1,thetav1,rho1,q1
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 3: supercell storm'
+
+  ! allocate storage for total precip, for output to file
+  allocate(precl(np,np,nelemd))
+  precl = 0
 
   ! initialize hydrostatic state
   call supercell_init()
@@ -288,7 +295,6 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
   real(rl):: lat
   real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,exner,exner_kess,p,dp,cp_star,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
-  real(rl), dimension(np,np)      :: precl
   real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
   real(rl) :: max_w, pmax_w, max_precl, pmax_precl
 
@@ -297,6 +303,8 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
 
   do ie = nets,nete
 
+    precl(:,:,ie) = ie
+
     ! get current element state
     call get_state(u,v,w,T,theta,exner,p,dp,cp_star,rho,z,g,i,j,elem(ie),hvcoord,nt,ntQ)
 
@@ -304,6 +312,11 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
     qv  = elem(ie)%state%Qdp(:,:,:,1,ntQ)/dp
     qc  = elem(ie)%state%Qdp(:,:,:,2,ntQ)/dp
     qr  = elem(ie)%state%Qdp(:,:,:,3,ntQ)/dp
+
+    ! ensure positivity
+    where(qv<0); qv=0; endwhere
+    where(qc<0); qc=0; endwhere
+    where(qr<0); qr=0; endwhere
 
     ! save un-forced prognostics
     T0=T; qv0=qv; qc0=qc; qr0=qr
@@ -334,7 +347,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
         dt,               &
         z_inv(i,j,:),     &
         nlev,             &
-        precl(i,j))
+        precl(i,j,ie))
 
     enddo; enddo;
 
@@ -358,14 +371,9 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
     elem(ie)%derived%FQ(:,:,:,2) = dp*(qc-qc0)/dt
     elem(ie)%derived%FQ(:,:,:,3) = dp*(qr-qr0)/dt
 
-    ! debug: set theta directly, instead of FT
-    ! elem(ie)%state%theta_dp_cp(:,:,:,nt) = theta*(Cp_star*dp)
-
-    !elem(ie)%state%Qdp(:,:,1,4,ntQ) = precl*dp(:,:,1) ! store precl in level 1 of tracer #4
-
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )
-    max_precl = max( max_precl, maxval(precl) )
+    max_precl = max( max_precl, maxval(precl(:,:,ie)) )
 
   enddo
 
