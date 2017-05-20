@@ -140,10 +140,6 @@ OR
         expect(os.path.isfile(args.pesfile),
                "Pes specification file %s cannot be found " %args.pesfile)
 
-    if args.user_compset:
-        expect(args.pesfile is not None,
-               "--pesfile is required if --user-compset is set")
-
     if args.user_grid:
         expect(args.gridfile is not None,
                "User grid specification file must be set if the user grid is requested")

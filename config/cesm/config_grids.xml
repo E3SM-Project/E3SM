@@ -1089,8 +1089,8 @@
 
     <domain name="gx1v7">
       <nx>320</nx>  <ny>384</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.ocn.gx1v7.151020.nc</file>
-      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.gx1v7.151020.nc</file>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.ocn.gx1v7.151008.nc</file>
+      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.gx1v7.151008.nc</file>
       <desc>gx1v7 is displaced Greenland pole 1-deg grid with Caspian as a land feature:</desc>
     </domain>
 

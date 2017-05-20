@@ -404,6 +404,64 @@ class J_TestCreateNewcase(unittest.TestCase):
 
         cls._do_teardown.append(testdir)
 
+    def test_h_primary_component(self):
+        cls = self.__class__
+
+        testdir = os.path.join(cls._testroot, 'testprimarycomponent')
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+
+        cls._testdirs.append(testdir)
+        run_cmd_assert_result(self, "%s/create_newcase --case CreateNewcaseTest --script-root %s --compset X --res f19_g16 --output-root %s --handle-preexisting-dirs u" % (SCRIPT_DIR, testdir, cls._testroot), from_dir=SCRIPT_DIR)
+        self.assertTrue(os.path.exists(testdir))
+        self.assertTrue(os.path.exists(os.path.join(testdir, "case.setup")))
+
+        with Case(testdir, read_only=True) as case:
+            case._compsetname = case.get_value("COMPSET")
+            case.set_comp_classes(case.get_values("COMP_CLASSES"))
+            primary = case._find_primary_component()
+            self.assertEqual(primary, "drv", msg="primary component test expected drv but got %s"%primary)
+            # now we are going to corrupt the case so that we can do more primary_component testing
+            case.set_valid_values("COMP_GLC","%s,fred"%case.get_value("COMP_GLC"))
+            case.set_value("COMP_GLC","fred")
+            primary = case._find_primary_component()
+            self.assertEqual(primary, "fred", msg="primary component test expected fred but got %s"%primary)
+            case.set_valid_values("COMP_ICE","%s,wilma"%case.get_value("COMP_ICE"))
+            case.set_value("COMP_ICE","wilma")
+            primary = case._find_primary_component()
+            self.assertEqual(primary, "wilma", msg="primary component test expected wilma but got %s"%primary)
+
+            case.set_valid_values("COMP_OCN","%s,bambam,docn"%case.get_value("COMP_OCN"))
+            case.set_value("COMP_OCN","bambam")
+            primary = case._find_primary_component()
+            self.assertEqual(primary, "bambam", msg="primary component test expected bambam but got %s"%primary)
+
+            case.set_valid_values("COMP_LND","%s,barney"%case.get_value("COMP_LND"))
+            case.set_value("COMP_LND","barney")
+            primary = case._find_primary_component()
+            # This is a "J" compset
+            self.assertEqual(primary, "allactive", msg="primary component test expected allactive but got %s"%primary)
+            case.set_value("COMP_OCN","docn")
+            case.set_valid_values("COMP_LND","%s,barney"%case.get_value("COMP_LND"))
+            case.set_value("COMP_LND","barney")
+            primary = case._find_primary_component()
+            self.assertEqual(primary, "barney", msg="primary component test expected barney but got %s"%primary)
+            case.set_valid_values("COMP_ATM","%s,wilma"%case.get_value("COMP_ATM"))
+            case.set_value("COMP_ATM","wilma")
+            primary = case._find_primary_component()
+            self.assertEqual(primary, "wilma", msg="primary component test expected wilma but got %s"%primary)
+            # this is a "E" compset
+            case._compsetname = case._compsetname.replace("XOCN","DOCN%SOM")
+            primary = case._find_primary_component()
+            self.assertEqual(primary, "allactive", msg="primary component test expected allactive but got %s"%primary)
+            # finally a "B" compset
+            case.set_value("COMP_OCN","bambam")
+            primary = case._find_primary_component()
+            self.assertEqual(primary, "allactive", msg="primary component test expected allactive but got %s"%primary)
+
+        cls._do_teardown.append(testdir)
+
+
     @classmethod
     def tearDownClass(cls):
         do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None)

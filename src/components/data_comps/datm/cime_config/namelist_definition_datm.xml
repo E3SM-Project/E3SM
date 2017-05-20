@@ -184,7 +184,7 @@
       <value>null</value>
       <value stream="CLM1PT.1x1">$DIN_LOC_ROOT/atm/datm7/domain.clm</value>
       <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_PATH</value>
-      <value stream="CPLHISTForcing">$DATM_CPLHIST_DIR</value>
+      <value stream="CPLHISTForcing">null</value>
       <value stream="CLM_QIAN">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CLMCRUNCEP\.">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMCRUNCEP_V5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
@@ -216,7 +216,7 @@
       <value stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</value>
       <value stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</value>
       <value stream="Anomaly">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="presaero.cplhist">$DATM_CPLHIST_DIR</value>
+      <value stream="presaero.cplhist">null</value>
       <value stream="presaero.clim_1850">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
       <value stream="presaero.clim_2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
       <value stream="presaero.trans_1850-2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
@@ -1890,11 +1890,11 @@
     <values>
       <value>1.5</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">1.e30</value>
-      <value stream="CPLHISTForcing.Solar">2.0</value>
-      <value stream="CPLHISTForcing.nonSolarFlux">2.0</value>
-      <value stream="CPLHISTForcing.State3hr">2.0</value>
-      <value stream="CPLHISTForcing.State1hr">2.0</value>
-      <value stream="presaero.cplhist">2.0</value>
+      <value stream="CPLHISTForcing.Solar">3.0</value>
+      <value stream="CPLHISTForcing.nonSolarFlux">3.0</value>
+      <value stream="CPLHISTForcing.State3hr">3.0</value>
+      <value stream="CPLHISTForcing.State1hr">3.0</value>
+      <value stream="presaero.cplhist">3.0</value>
     </values>
   </entry>
 
