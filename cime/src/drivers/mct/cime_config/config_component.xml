@@ -761,6 +761,15 @@
       If TRUE, the component libraries are always built with OpenMP capability.</desc>
   </entry>
 
+  <entry id="SMP_PRESENT">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies that at least one of the components is built threaded (DO NOT EDIT)</desc>
+  </entry>
+
   <entry id="USE_PETSC">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>

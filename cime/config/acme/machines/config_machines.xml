@@ -1055,10 +1055,10 @@
                <!-- Total MPI Tasks -->
                <arg name="num_tasks"> --np $TOTALPES</arg>
                <arg name="locargs"> --block $COBALT_PARTNAME $LOCARGS</arg>
-               <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
-	       <arg name="xl_bg_spreadlayout"> --envs XL_BG_SPREADLAYOUT=YES</arg>
-               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
-               <arg name="thread_count"> --envs OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
+               <arg SMP_PRESENT="TRUE" name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
+               <arg SMP_PRESENT="TRUE" name="xl_bg_spreadlayout"> --envs XL_BG_SPREADLAYOUT=YES</arg>
+               <arg SMP_PRESENT="TRUE" name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
+               <arg SMP_PRESENT="TRUE" name="thread_count"> --envs OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -1075,8 +1075,8 @@
     </module_system>
     <environment_variables>
       <env name="MPI_TYPE_MAX">10000</env>
-      <env name="OMP_DYNAMIC">FALSE</env>
-      <env name="OMP_STACKSIZE">64M</env>
+      <env SMP_PRESENT="TRUE" name="OMP_DYNAMIC">FALSE</env>
+      <env SMP_PRESENT="TRUE" name="OMP_STACKSIZE">64M</env>
     </environment_variables>
 </machine>
 
@@ -1154,10 +1154,10 @@
                <!-- Total MPI Tasks -->
                <arg name="num_tasks"> --np $TOTALPES</arg>
                <arg name="locargs"> --block $COBALT_PARTNAME $LOCARGS</arg>
-               <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
-	       <arg name="xl_bg_spreadlayout"> --envs XL_BG_SPREADLAYOUT=YES</arg>
-               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
-               <arg name="thread_count"> --envs OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
+               <arg SMP_PRESENT="TRUE" name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
+               <arg SMP_PRESENT="TRUE" name="xl_bg_spreadlayout"> --envs XL_BG_SPREADLAYOUT=YES</arg>
+               <arg SMP_PRESENT="TRUE" name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
+               <arg SMP_PRESENT="TRUE" name="thread_count"> --envs OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -1174,8 +1174,8 @@
     </module_system>
     <environment_variables>
       <env name="MPI_TYPE_MAX">10000</env>
-      <env name="OMP_DYNAMIC">FALSE</env>
-      <env name="OMP_STACKSIZE">64M</env>
+      <env SMP_PRESENT="TRUE" name="OMP_DYNAMIC">FALSE</env>
+      <env SMP_PRESENT="TRUE" name="OMP_STACKSIZE">64M</env>
     </environment_variables>
 </machine>
 
