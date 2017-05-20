@@ -41,6 +41,9 @@
       <grid name="wav"	  compset="SWAV"  >null</grid>
       <grid name="wav"	  compset="DWAV"  >ww3a</grid>
       <grid name="wav"	  compset="WW3"	  >ww3a</grid>
+      <grid name="rof"    compset="XROF"  >r05</grid>
+      <grid name="glc"    compset="XGLC"  >gland4</grid>
+      <grid name="wav"    compset="XWAV"  >ww3a</grid>
     </model_grid_defaults>
 
     <model_grid alias="g16_g16" compset="DATM.+DROF">
@@ -1154,7 +1157,7 @@
     </domain>
 
     <domain name="gland4">
-      <nx>376</nx> <ny>701</ny>
+      <nx>416</nx> <ny>704</ny>
       <desc>4-km Greenland grid, for use with the glissade dycore</desc>
     </domain>
 
