@@ -368,9 +368,21 @@ contains
   do k=2,nlev
      kappa_star_i(:,:,k) = (kappa_star(:,:,k)+kappa_star(:,:,k-1))/2
 
+#define EOS_AVEv1
+#ifdef EOS_AVEv1
      rho_R_theta(:,:,k) =0.5* (theta_dp_cp(:,:,k)*kappa_star(:,:,k)+ &
                           theta_dp_cp(:,:,k-1)*kappa_star(:,:,k-1))/&
                           (phi(:,:,k-1)-phi(:,:,k))
+#else
+     ! normally in HOMME we ignore the "deta" factor because it scales out
+     ! but here we mix k levels and need deta at interfaces, so add deta
+     ! factor back to theta_dp_cp, and use correct deta for d(phi)/d(eta):
+     rho_R_theta(:,:,k) =0.5*&
+          (theta_dp_cp(:,:,k)*kappa_star(:,:,k)/hvcoord%d_etam(k) + &
+           theta_dp_cp(:,:,k-1)*kappa_star(:,:,k-1)/hvcoord%d_etam(k-1))&
+           * hvcoord%d_etai(k) / ( phi(:,:,k-1)-phi(:,:,k) )
+#endif
+
 
      if (minval(rho_R_theta(:,:,k))<0) then
         print *,k,minval( (dp3d(:,:,k)+dp3d(:,:,k-1))/2)
@@ -393,9 +405,9 @@ contains
    pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0   ! hydrostatic ptop
    exner_i(:,:,1) = (hvcoord%hyai(1)*hvcoord%ps0/p0)**kappa_star(:,:,1) 
 
-
-   rho_R_theta(:,:,nlev) = theta_dp_cp(:,:,nlev)*kappa_star(:,:,nlev) / &
-        (  (phi(:,:,nlev) - phis(:,:))*2  )
+   ! d_eta at surface = d_eta(nlev), so d_eta scales out below:
+   rho_R_theta(:,:,nlev) = theta_dp_cp(:,:,nlev)*kappa_star(:,:,nlev) &
+        /  (  (phi(:,:,nlev) - phis(:,:))*2  )
    exner_i(:,:,nlev+1) = (rho_R_theta(:,:,nlev)/p0)**&
         ( kappa_star(:,:,nlev)/ ( 1-kappa_star(:,:,nlev)))
    pnh_i(:,:,nlev+1) = rho_R_theta(:,:,nlev)*exner_i(:,:,nlev+1)
@@ -406,9 +418,13 @@ contains
 #endif
   do k=1,nlev
      dpnh(:,:,k)=pnh_i(:,:,k+1)-pnh_i(:,:,k)
-     !pnh(:,:,k)=(pnh_i(:,:,k)+pnh_i(:,:,k+1))/2
-     !exner(:,:,k) = (pnh(:,:,k)/p0)**kappa_star(:,:,k)
+#define EOS_AVEv1
+#ifdef EOS_AVEv1
      exner(:,:,k) = (exner_i(:,:,k)+exner_i(:,:,k+1))/2
+#else
+     exner(:,:,k) = (hvcoord%d_etai(k)*exner_i(:,:,k)+hvcoord%d_etai(k+1)*exner_i(:,:,k+1))&
+          /(2*hvcoord%d_etam(k))
+#endif
      pnh(:,:,k) = p0*exner(:,:,k)**(1/kappa_star(:,:,k))
   enddo
 
@@ -517,24 +533,28 @@ contains
   do k=1,nlev
      p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
   enddo
-!  do k=1,nlev
-!     p(:,:,k) = (p_i(:,:,k) + p_i(:,:,k+1))/2
-!  enddo
 
 !  integrand(:,:) = dp(:,:,nlev)*Rgas*temperature(:,:,nlev)/p(:,:,nlev)
   phi(:,:,nlev) = phis(:,:) + (&
     kappa*theta_dp_cp(:,:,nlev)*p_i(:,:,nlev+1)**(kappa-1)*p0**(-kappa) )/2
 
   do k=nlev,2,-1
+#ifdef EOS_AVEv1
+     dp_theta_R(:,:,k) = &
+          (theta_dp_cp(:,:,k)*kappa + theta_dp_cp(:,:,k-1)*kappa)/2
+     phi(:,:,k-1) = phi(:,:,k) +&
+          dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa / p_i(:,:,k)
+#else
      !  invert this equation at interfaces:
      !  p/exner = dp_theta_R / d(phi)    
      ! d(phi) = dp_theta_R*exer/p
      dp_theta_R(:,:,k) = &
-          (theta_dp_cp(:,:,k)*kappa +&
-           theta_dp_cp(:,:,k-1)*kappa)/2
+          (theta_dp_cp(:,:,k)*kappa/hvcoord%d_etam(k) +&
+           theta_dp_cp(:,:,k-1)*kappa/hvcoord%d_etam(k-1))/2
      ! (phi(:,:,k-1)-phi(:,:,k)) = dp_theta_R * exner/p
      phi(:,:,k-1) = phi(:,:,k) +&
-          dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa / p_i(:,:,k)
+          hvcoord%d_etai(k)*dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa / p_i(:,:,k)
+#endif
   enddo
 
   end subroutine
@@ -565,13 +585,22 @@ contains
   phi(:,:,nlev) = phis(:,:) + ( kappa_star(:,:,nlev)*theta_dp_cp(:,:,nlev)*p_i(:,:,nlev+1)**(kappa_star(:,:,nlev)-1)*p0**(-kappa_star(:,:,nlev)) )/2
 
   do k=nlev,2,-1
+#ifdef EOS_AVEv1
+     dp_theta_R(:,:,k) = &
+          (theta_dp_cp(:,:,k)*kappa_star(:,:,k) + theta_dp_cp(:,:,k-1)*kappa_star(:,:,k))/2
+     phi(:,:,k-1) = phi(:,:,k) +&
+          dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa_star(:,:,k) / p_i(:,:,k)
+#else
      !  invert this equation at interfaces:
      !  p/exner = dp_theta_R / d(phi)    
      !  d(phi)  = dp_theta_R*exer/p
-     dp_theta_R(:,:,k)=(theta_dp_cp(:,:,k)*kappa_star(:,:,k) + theta_dp_cp(:,:,k-1)*kappa_star(:,:,k-1))/2
+     dp_theta_R(:,:,k)=(theta_dp_cp(:,:,k)*kappa_star(:,:,k)/hvcoord%d_etam(k) + &
+          theta_dp_cp(:,:,k-1)*kappa_star(:,:,k-1)/hvcoord%d_etam(k-1))/2
 
      ! (phi(:,:,k-1)-phi(:,:,k)) = dp_theta_R * exner/p
-     phi(:,:,k-1) = phi(:,:,k) + dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa_star(:,:,k)/p_i(:,:,k)
+     phi(:,:,k-1) = phi(:,:,k) + &
+          hvcoord%d_etai(k)*dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa_star(:,:,k)/p_i(:,:,k)
+#endif
   enddo
 
   end subroutine
