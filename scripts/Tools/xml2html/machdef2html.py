@@ -76,7 +76,7 @@ def commandline_options():
 def _main_func(options, work_dir):
 ###############################################################################
 
-    """Construct compsets html from an XML file."""
+    """Construct machines html from an XML file."""
         
     # Initialize a variables for the html template
     mach_dict = dict()

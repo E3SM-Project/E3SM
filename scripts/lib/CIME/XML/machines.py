@@ -328,11 +328,11 @@ class Machines(GenericXML):
             if max_tasks_per_node is not None:
                 max_tasks_pn = max_tasks_per_node.text
 
-            mach_dict[name] = { 'desc'               : desc.text, 
-                                'os'                 : os_.text,
-                                'compilers'          : compilers.text,
-                                'pes_per_node'       : ppn,
-                                'max_tasks_per_node' : max_tasks_pn }
+            mach_dict[name] = { 'description'    : desc.text, 
+                                'os'             : os_.text,
+                                'compilers'      : compilers.text,
+                                'pes/node'       : ppn,
+                                'max_tasks/node' : max_tasks_pn }
 
         return mach_dict
 
