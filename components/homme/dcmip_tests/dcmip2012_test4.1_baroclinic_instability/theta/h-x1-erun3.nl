@@ -56,7 +56,7 @@ profile_single_file             = .true.
  output_varnames1='ps','zeta','u','v','T'
  num_io_procs      = 16
  output_type = 'netcdf'
- output_prefix = 'hydro-X1-erun1-'
+ output_prefix = 'hydro-X1-erun3-'
 /
 
 
