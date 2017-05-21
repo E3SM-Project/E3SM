@@ -422,6 +422,7 @@ contains
 #if defined(_PRIM) 
     use element_ops, only : get_field
     use hybvcoord_mod, only :  hvcoord_t 
+    use dcmip16_wrapper, only: precl
 #endif
     use derivative_mod, only : derivinit, derivative_t, laplace_sphere_wk
     use hybrid_mod, only : hybrid_t
@@ -431,7 +432,6 @@ contains
                               compute_div_c0,compute_div_c0_contra
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use time_mod   , only : TimeLevel_Qdp
-    use dcmip16_wrapper, only: precl
     ! ---------------------
     type (element_t),target    :: elem(:)
     type (parallel_t)     :: par
