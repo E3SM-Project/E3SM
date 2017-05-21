@@ -31,9 +31,9 @@ def get_ax_size(fig,ax):
 
 def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
 
-    var_min = float(var.min())
-    var_max = float(var.max())
-    var_mean = cdutil.averager(var, axis='xy', weights='generate')
+#    var_min = float(var.min())
+#    var_max = float(var.max())
+#    var_mean = cdutil.averager(var, axis='xy', weights='generate')
     var = add_cyclic(var)
     lon = var.getLongitude()
     lat = var.getLatitude()
@@ -87,11 +87,12 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
         cbar.ax.tick_params(labelsize=9.0, pad=25, length=w-2)
 
     # Min, Mean, Max
-    fig.text(panel[n][0]+0.6635,panel[n][1]+0.2107,"Max\nMean\nMin",ha='left',fontdict=plotSideTitle)
-    fig.text(panel[n][0]+0.7635,panel[n][1]+0.2107,"%.2f\n%.2f\n%.2f" % (var_max,var_mean,var_min),ha='right',fontdict=plotSideTitle)
+    if len(stats) == 3:
+        fig.text(panel[n][0]+0.6635,panel[n][1]+0.2107,"Max\nMean\nMin",ha='left',fontdict=plotSideTitle)
+        fig.text(panel[n][0]+0.7635,panel[n][1]+0.2107,"%.2f\n%.2f\n%.2f" % stats,ha='right',fontdict=plotSideTitle)
 
     # RMSE, CORR
-    if stats != None:
+    if len(stats) == 2:
       fig.text(panel[n][0]+0.6635,panel[n][1]-0.0105,"RMSE\nCORR",ha='left',fontdict=plotSideTitle)
       fig.text(panel[n][0]+0.7635,panel[n][1]-0.0105,"%.2f\n%.2f" % stats,ha='right',fontdict=plotSideTitle)
 
@@ -102,8 +103,16 @@ def plot(reference, test, diff, metrics_dict, parameter):
     proj = ccrs.PlateCarree(central_longitude=180)
 
     # First two panels
-    plot_panel(0, fig, proj, test, parameter.contour_levels, 'viridis', (parameter.test_name,parameter.test_title,test.units))
-    plot_panel(1, fig, proj, reference, parameter.contour_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units))
+    min1  = metrics_dict['test']['min']
+    mean1 = metrics_dict['test']['mean']
+    max1  = metrics_dict['test']['max']
+
+    plot_panel(0, fig, proj, test, parameter.contour_levels, 'viridis', (parameter.test_name,parameter.test_title,test.units),stats=(min1,mean1,max1))
+
+    min2  = metrics_dict['ref']['min']
+    mean2 = metrics_dict['ref']['mean']
+    max2  = metrics_dict['ref']['max']
+    plot_panel(1, fig, proj, reference, parameter.contour_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units),stats=(min2,mean2,max2))
 
     # Third panel
     r = metrics_dict['misc']['rmse']
