@@ -107,12 +107,12 @@ def plot(reference, test, diff, metrics_dict, parameter):
     mean1 = metrics_dict['test']['mean']
     max1  = metrics_dict['test']['max']
 
-    plot_panel(0, fig, proj, test, parameter.contour_levels, 'viridis', (parameter.test_name,parameter.test_title,test.units),stats=(min1,mean1,max1))
+    plot_panel(0, fig, proj, test, parameter.contour_levels, 'viridis', (parameter.test_name,parameter.test_title,test.units),stats=(max1,mean1,min1))
 
     min2  = metrics_dict['ref']['min']
     mean2 = metrics_dict['ref']['mean']
     max2  = metrics_dict['ref']['max']
-    plot_panel(1, fig, proj, reference, parameter.contour_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units),stats=(min2,mean2,max2))
+    plot_panel(1, fig, proj, reference, parameter.contour_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units),stats=(max2,mean2,min2))
 
     # Third panel
     r = metrics_dict['misc']['rmse']
