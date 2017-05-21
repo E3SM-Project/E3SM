@@ -582,7 +582,8 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_map_qice_conservative_lnd2glc(egi, eli, fieldname, fractions_lx, mapper_Sl2g, mapper_Fg2l)
+  subroutine prep_glc_map_qice_conservative_lnd2glc(egi, eli, fieldname, fractions_lx, &
+       mapper_Sl2g, mapper_Fg2l)
 
     ! Maps the surface mass balance field (qice) from the land grid to the glc grid.
     !
@@ -606,9 +607,9 @@ contains
     ! Local Variables
     type(mct_aVect), pointer :: g2x_gx   ! glc export, glc grid
     type(mct_aVect), pointer :: x2l_lx   ! lnd import, lnd grid
-    type(mct_aVect), pointer :: g2x_lx   ! glc export, lnd grid
+    type(mct_aVect)          :: g2x_lx   ! glc export, lnd grid (not a pointer: created locally)
 
-    integer :: mpicom    ! mpi comm
+    integer :: mpicom
 
     logical :: iamroot
 
@@ -670,8 +671,6 @@ contains
     real(r8), pointer :: lfrac(:)         ! land fraction on land grid
     real(r8), pointer :: qice_g(:)        ! qice data on glc grid
 
-    ! temporary attribute vectors
-    type(mct_avect) :: Sg_icemask_g_av   ! temporary attribute vector holding Sg_icemask on the glc grid
     type(mct_avect) :: Sg_icemask_l_av   ! temporary attribute vector holding Sg_icemask on the land grid
 
     real(r8) :: effective_area  ! grid cell area multiplied by min(lfrac,Sg_icemask_l).
@@ -697,6 +696,8 @@ contains
     lsize_g = mct_aVect_lsize(l2x_gx(eli))
 
     ! allocate and fill area arrays on the land grid
+    ! (Note that we get domain information from instance 1, following what's done in
+    ! other parts of the coupler.)
     dom_l => component_get_dom_cx(lnd(1))
 
     allocate(aream_l(lsize_l))
@@ -704,6 +705,8 @@ contains
     aream_l(:) = dom_l%data%rAttr(km,:)
 
     ! allocate and fill area arrays on the glc grid
+    ! (Note that we get domain information from instance 1, following what's done in
+    ! other parts of the coupler.)
     dom_g => component_get_dom_cx(glc(1))
 
     allocate(aream_g(lsize_g))
@@ -722,23 +725,9 @@ contains
     ! This may not be necessary, if Sg_icemask_l has already been mapped from Sg_icemask_g.
     ! It is done here for two reasons:
     ! (1) The mapping will *not* have been done if we are running with dlnd (e.g., a TG case).
-    ! (2) Because of coupler lags, the current Sg_icemask_l might not be up to date with Sg_icemask_g.
-    !     Doing the mapping here ensures the mask is up to date.
-
-    ! Export Sg_icemask from g2x_gx to a local array
-    allocate(Sg_icemask_g(lsize_g))
-    call mct_aVect_exportRattr(g2x_gx, "Sg_icemask", Sg_icemask_g)
-
-    ! Make a temporary attribute vector holding Sg_icemask_g
-    call mct_aVect_init(Sg_icemask_g_av, rList = Sg_icemask_field, lsize = lsize_g)
-    call mct_aVect_importRattr(Sg_icemask_g_av, Sg_icemask_field, Sg_icemask_g)
-
-    ! Make a temporary attribute vector holding Sg_icemask_l
-    allocate(Sg_icemask_l(lsize_l))
-    Sg_icemask_l(:) = 0.0_r8
-    call mct_aVect_init(Sg_icemask_l_av, rList = Sg_icemask_field, lsize = lsize_l)
-
-    ! Map Sg_icemask from the glc grid to the land grid
+    ! (2) Because of coupler lags, the current Sg_icemask_l might not be up to date with
+    !     Sg_icemask_g. This probably isn't a problem in practice, but doing the mapping
+    !     here ensures the mask is up to date.
     !
     ! This mapping uses the same options as the standard glc -> lnd mapping done in
     ! prep_lnd_calc_g2x_lx. If that mapping ever changed (e.g., changing norm to
@@ -746,17 +735,18 @@ contains
     !
     ! BUG(wjs, 2017-05-11, #1516) I think we actually want norm = .false. here, but this
     ! requires some more thought
+    call mct_aVect_init(Sg_icemask_l_av, rList = Sg_icemask_field, lsize = lsize_l)
     call seq_map_map(mapper = mapper_Fg2l, &
-         av_s = Sg_icemask_g_av, &
+         av_s = g2x_gx, &
          av_d = Sg_icemask_l_av, &
          fldlist = Sg_icemask_field, &
          norm = .true.)
 
     ! Export Sg_icemask_l from the temporary attribute vector to a local array
+    allocate(Sg_icemask_l(lsize_l))
     call mct_aVect_exportRattr(Sg_icemask_l_av, Sg_icemask_field, Sg_icemask_l)
 
-    ! Clean the temporary attribute vectors
-    call mct_aVect_clean(Sg_icemask_g_av)
+    ! Clean the temporary attribute vector
     call mct_aVect_clean(Sg_icemask_l_av)
 
     ! Map Sg_ice_covered from the glc grid to the land grid.
@@ -764,7 +754,8 @@ contains
     ! These fields are needed to integrate the total SMB on the land grid, for conservation purposes.
     ! As above, the mapping may not be necessary, because Sg_ice_covered might already have been mapped.
     ! However, the mapping will not have been done in a TG case with dlnd, and it might not
-    ! be up to date because of coupler lags.
+    ! be up to date because of coupler lags (though the latter probably isn't a problem
+    ! in practice).
     !
     ! Note that, for a case with full two-way coupling, we will only conserve if the
     ! actual land cover used over the course of the year matches these currently-remapped
@@ -786,8 +777,6 @@ contains
     ! here differs from the integral that LND itself would compute.)
 
     ! Create an attribute vector g2x_lx to hold the mapped fields
-
-    allocate(g2x_lx)
     call mct_aVect_init(g2x_lx, rList=g2x_lx_fields, lsize=lsize_l)
 
     ! Map Sg_ice_covered and Sg_topo from glc to land
@@ -885,6 +874,11 @@ contains
     !       obtained from bilinear remapping.
     !    If Flgl_qice were changed to a state (and not included in seq_flds_x2g_fluxes),
     !     then we could skip this adjustment.
+    !
+    ! Note that we are free to do this or any other adjustments we want to qice at this
+    ! point in the remapping, because the conservation correction will ensure that we
+    ! still conserve globally despite these adjustments (and smb_renormalize = .false.
+    ! should only be used in cases where conservation doesn't matter anyway).
 
     do n = 1, lsize_g
        if (aream_g(n) > 0.0_r8) then
@@ -901,6 +895,10 @@ contains
     !        by the native CISM areas (area_g).
     !       If Flgl_qice were changed to a state (and not included in seq_flds_x2g_fluxes),
     !        then it would be appropriate to use the native CISM areas in this sum.
+
+    ! Export Sg_icemask from g2x_gx to a local array
+    allocate(Sg_icemask_g(lsize_g))
+    call mct_aVect_exportRattr(g2x_gx, Sg_icemask_field, Sg_icemask_g)
 
     local_accum_on_glc_grid = 0.0_r8
     local_ablat_on_glc_grid = 0.0_r8
@@ -966,6 +964,7 @@ contains
 
     deallocate(aream_l)
     deallocate(aream_g)
+    deallocate(area_g)
     deallocate(lfrac)
     deallocate(Sg_icemask_l)
     deallocate(Sg_icemask_g)
@@ -973,7 +972,6 @@ contains
     deallocate(qice_l)
     deallocate(frac_l)
     deallocate(qice_g)
-    deallocate(area_g)
 
   end subroutine prep_glc_map_qice_conservative_lnd2glc
 
