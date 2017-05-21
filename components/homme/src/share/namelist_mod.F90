@@ -51,6 +51,7 @@ module namelist_mod
     nu_top,        &
     dcmip16_mu,     &
     dcmip16_mu_s,   &
+    interp_lon0,    &
     hypervis_scaling,   &  ! use tensor HV instead of scalar coefficient
     disable_diagnostics, & ! use to disable diagnostics for timing reasons
     psurf_vis,    &
@@ -302,6 +303,7 @@ module namelist_mod
       output_varnames5,    &
       interp_nlat,         &
       interp_nlon,         &
+      interp_lon0,         &
       interp_gridtype,     &
       interp_type,         &
       interpolate_analysis
@@ -486,6 +488,7 @@ module namelist_mod
 #endif
        interp_nlat =  0
        interp_nlon = 0
+       interp_lon0 = 0
        interp_gridtype = 2
        interp_type = 0
        replace_vec_by_vordiv(:)=.false.
@@ -817,6 +820,7 @@ module namelist_mod
     call MPI_bcast(interpolate_analysis, 7,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(interp_nlat , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(interp_nlon , 1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(interp_lon0 , 1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(interp_gridtype , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(interp_type , 1,MPIinteger_t,par%root,par%comm,ierr)
 
@@ -987,6 +991,7 @@ module namelist_mod
        if(any(interpolate_analysis)) then
           write(iulog,*)" analysis interp nlat = ",interp_nlat
           write(iulog,*)" analysis interp nlon = ",interp_nlon
+          write(iulog,*)" analysis interp lon0 = ",interp_lon0
           write(iulog,*)" analysis interp gridtype = ",interp_gridtype
           write(iulog,*)" analysis interpolation type = ",interp_type
        end if

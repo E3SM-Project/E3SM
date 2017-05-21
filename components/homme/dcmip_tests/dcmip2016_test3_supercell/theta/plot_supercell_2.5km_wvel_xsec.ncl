@@ -27,25 +27,25 @@ begin
 
   data_file = "./movies/dcmip2016_test31.nc"
   data      = addfile(data_file,"r")
-  zm        = data->geo(24,:,1,1)/9.80616
-  nlev      = dimsizes(zm)
 
   time = data->time
   nt = dimsizes(time)
   print("nt="+nt)
-  min_per_day = 60*24
-  t1  = closest_val( 120.0/min_per_day, time)
+  min_per_day = 60.0*24
+  t1 = closest_val( 120.0/min_per_day, time)
   t1 = where(t1 .gt. (nt-1), nt-1, t1)
-
   print("t1="+t1)
 
-  k = nlev-1 -closest_val(2500,zm(::-1))
-  print("k="+k)
+  zm = data->geo(t1,::-1,:,:)/9.80616
+  w  = data->w  (t1,::-1,:,:)
 
-  print("height = "+zm(k))
+  w_interp = linint1_n_Wrap(zm,w, False,2500.0,0,0)
+  w_2500m  = w_interp(0,:,:)
 
-  w_2500m = data->w(t1,k,:,:)
-  w_2500m = lonFlip(w_2500m )
+  lon = data->lon
+  if(lon(0) .eq. 0) then
+    w_2500m  = lonFlip(w_2500m )
+  end if
 
 ;****************************************************************************
 ; DO NOT EDIT BELOW THIS LINE

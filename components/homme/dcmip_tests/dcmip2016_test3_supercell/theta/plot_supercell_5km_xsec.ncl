@@ -49,21 +49,25 @@ begin
   print(times)
   print(time(times)*min_per_day)
 
-  i_5km  =  29
-  w_5km  = data->w (times,i_5km,:,:)
-  qr_5km = data->Q3(times,i_5km,:,:)
-  qr_5km = qr_5km*1000
+  zm = data->geo(times,::-1,:,:)/9.80616
+  w  = data->w  (times,::-1,:,:)
+  qr = data->Q3 (times,::-1,:,:)
 
-  geo    = data->geo(times,:,:,:)
-  g=9.80616 ; m/s
-  print("levels="+geo(0,:,1,1)/g)
+  w_interp = linint1_n_Wrap(zm,w, False,5000.0,0,1)
+  w_5km    = w_interp(:,0,:,:)
 
-  ;delete(w_5km@long_name)
+  qr_interp= linint1_n_Wrap(zm,qr,False,5000.0,0,1)
+  qr_5km   = qr_interp(:,0,:,:)
+  qr_5km   = qr_5km*1000
+
   delete(qr_5km@long_name)
   delete(qr_5km@units)
 
-  w_5km  = lonFlip(w_5km )
-  qr_5km = lonFlip(qr_5km)
+  lon = data->lon
+  if(lon(0) .eq. 0) then
+    w_5km  = lonFlip(w_5km )
+    qr_5km = lonFlip(qr_5km)
+  end if
 
   ;------------------------------------------------
   ; Workspace

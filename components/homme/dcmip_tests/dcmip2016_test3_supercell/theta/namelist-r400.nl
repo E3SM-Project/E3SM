@@ -40,11 +40,12 @@
 &analysis_nl
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 3                         ! 0=timesteps, 1=days, 2=hours, 3=seconds
-  output_frequency  = 300                       ! 300 seconds
+  output_frequency  = 100 !300                       ! 300 seconds
   output_varnames1  ='T','p','ps','pnh','geo','u','v','w','Th','Q','Q2','Q3','precl'   ! variables to write to file
   interp_nlon       = 360
   interp_nlat       = 181
   interp_type       = 0                         ! 0=native grid, 1=bilinear
+  interp_lon0       = -180.0                    ! shift lon range to [-180,+180)
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16
 /

@@ -27,9 +27,11 @@ module interp_movie_mod
        nf_init_decomp, &
        get_varindex
 
+  use physical_constants, only : omega, g, rrearth, dd_pi, kappa, p0
+
   use control_mod, only : test_case, runtype, &
        restartfreq, &
-       integration, kmass, nu, qsplit
+       integration, kmass, nu, qsplit, interp_lon0
   use common_io_mod, only:  &
        output_start_time,   & 	
        output_end_time,     &
@@ -347,7 +349,7 @@ contains
     call nf_output_init_complete(ncdf)
     allocate(lon(nlon), lat(nlat), gw(nlat))
     allocate(lev(nlev), ilev(nlev+1))
-    lon = get_interp_lon()
+    lon = get_interp_lon() !+ interp_lon0
     lat = get_interp_lat()
 
 
@@ -421,7 +423,6 @@ contains
     use element_ops, only : get_field
     use hybvcoord_mod, only :  hvcoord_t 
 #endif
-    use physical_constants, only : omega, g, rrearth, dd_pi, kappa, p0
     use derivative_mod, only : derivinit, derivative_t, laplace_sphere_wk
     use hybrid_mod, only : hybrid_t
     use pio, only : pio_setdebuglevel, pio_syncfile ! _EXTERNAL

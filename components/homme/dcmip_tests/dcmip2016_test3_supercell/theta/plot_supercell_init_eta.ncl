@@ -68,15 +68,10 @@ begin
   geo   = datafile->geo(0,::-1,:,:)
   lat   = datafile->lat
 
-    theta = datafile->Th (0,::-1,:,:)
-    t     = datafile->T  (0,::-1,:,:)
-    u     = datafile->u  (0,::-1,:,:)
-    p     = datafile->pnh(0,::-1,:,:)
-
-;theta = datafile->Q2  (0,::-1,:,:)
-;  t     = datafile->Q3  (0,::-1,:,:)
-;  p     = datafile->Q4  (0,::-1,:,:)
-;  u     = datafile->Q5  (0,::-1,:,:)
+  theta = datafile->Th (0,::-1,:,:)
+  t     = datafile->T  (0,::-1,:,:)
+  u     = datafile->u  (0,::-1,:,:)
+  p     = datafile->pnh(0,::-1,:,:)
 
   p  = p/100.0  ; convert to hectopascals
   qv = qv*1000.0; convert to g/kg
@@ -86,12 +81,10 @@ begin
   delete(qv@long_name)
   delete(theta@long_name)
 
-
   nlat = dimsizes(theta(0,:,0))
   ilateq = nlat/2
 
   print("lat at equator = "+lat(ilateq)+" (should be zero)")
-
 
   ;_________________________________________________
   ; Interpolate fields from eta coord to z coord
