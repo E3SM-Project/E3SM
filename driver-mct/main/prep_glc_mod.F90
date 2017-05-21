@@ -230,7 +230,7 @@ contains
          strBase  = Sg_topo_field)
 
     strlen = len_trim(frac_fields) + len_trim(topo_fields) + extra_len_for_list_merge
-    allocate(g2x_lx_fields(len=strlen))
+    allocate(character(len=strlen) :: g2x_lx_fields)
     call shr_string_listMerge(frac_fields, topo_fields, g2x_lx_fields)
 
   end subroutine prep_glc_set_g2x_lx_fields
