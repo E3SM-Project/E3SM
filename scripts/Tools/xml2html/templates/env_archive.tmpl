@@ -32,7 +32,7 @@
       
       .detailsBtn { background-color: #E3E4E6; }
 
-      #variable { color:#66d; font-size: 1.2em; font-weight: bold; display: inline-block; margin-right: 30px; width: 350px; }
+      #variable { color:#66d; font-size: 1.2em; font-weight: bold; display: inline-block; margin-right: 30px; width: 550px; }
       #emphasis { color:#656565; font-weight: bold; display: inline-block; }
       #small { color:#9f9f9f; display: inline-block; }
 
@@ -135,28 +135,43 @@
 	<button class="detailsBtn" onclick="hideAll();">Hide Details</button>
 
 	<br/><br/>
+
 	<div class="accordionItem">
 	  <h2><span id="variable">env_archive.xml component schema definition</span></h2>
-	  <p>
-	    To validate the env_archive.xml file after manually modifying any XML entriesg xmllint, 
-	    run the following <b>xmllint</b> from the CASEROOT:
-	  </p>
-	  <pre>
-	    >xmllint -schema $SRCROOT/cime/config/xml_schemas/env_archive.xsd env_archive.xml
-	  </pre>
-          </br>
-	  <pre>
-   <comp_archive_spec compclass="atm" compname="cam">
-      <rest_file_extension>\.[ri]\..*</rest_file_extension>
-      <rest_file_extension>\.r[sh]\.*</rest_file_extension>
-      <hist_file_extension>\.h.*.nc$</hist_file_extension>
-      <rest_history_varname>nhfil</rest_history_varname>
-      <rpointer>
-        <rpointer_file>rpointer$NINST_STRING.atm</rpointer_file>
-        <rpointer_content>$CASE.cam$NINST_STRING.r.$DATENAME.nc </rpointer_content>
-      </rpointer>
-    </comp_archive_spec>
-	  </pre>
+	  <div>
+	    <p>
+	      To validate the env_archive.xml file after manually modifying any XML entriesg xmllint, 
+	      run the following <b>xmllint</b> from the CASEROOT:
+	    </p>
+	    <pre>
+xmllint -schema $SRCROOT/cime/config/xml_schemas/env_archive.xsd env_archive.xml
+	    </pre>
+	    <dl>
+	    <dt>comp_archive_spec compclass="atm" compname="cam"</dt>
+	      <dd>component class is atmosphere <b>atm</b><br/>
+		component name <b>cam</b></dd>
+	      <br/>
+	    <dt>rest_file_extension = \.[ri]\..*<br/>
+	      rest_file_extension \.r[sh]\.*</dt>
+	    <dd>restart file extensions pattern regular expression pattern matching</dd>
+	      <br/>
+	    <dt>hist_file_extension = \.h.*.nc$</dt>
+	      <dd>history file extensions pattern regular expression pattern matching</dd>
+	      <br/>
+	    <dt>rest_history_varname = nhfil</dt>
+	      <dd>restart history netcdf variable name pointing to required history file
+		required for restart.</dd>
+	      <br/>
+	    <dt>rpointers<br/>
+	        rpointer_file = rpointer$NINST_STRING.atm<br/>
+		rpointer_content = $CASE.cam$NINST_STRING.r.$DATENAME.nc</dt>
+	      <dd>
+		The DOUT_S_ROOT/CASENAME/rest/[date] directory contains complete restart sets
+		including rpointer files for each component and each instance of that
+		component. The rpointer specifications define which files need to 
+		be included in the rest directory.
+	      </dd>
+	    </div>		
 	</div>
 
 	{% for name, details in xml_dict|dictsort %}
@@ -166,7 +181,23 @@
 	      <dl>
 		{% for key, value in details.items()|sort %}
 		<dt>{{ key }}</dt>
-		<dd>{{ value }}</dd>
+		<dd>
+		{% if value is iterable and value is not string %}
+		  {% if key is equalto 'rpointers' %}
+		    {% for items in value %}
+		       {% for item in items %}
+		         {{ item }}<br/>
+		       {% endfor %}
+		    {% endfor %}
+		  {% else %}
+		    {% for item in value %}
+		      {{ item }}<br/>
+		    {% endfor %}
+		  {% endif %}
+		{% else %}
+		    {{ value }}
+		{% endif %}
+		</dd>
 		{% endfor %}
 	      </dl>
 	    </div>
