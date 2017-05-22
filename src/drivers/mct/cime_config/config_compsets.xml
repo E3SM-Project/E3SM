@@ -46,6 +46,26 @@
   </compset>
 
   <compset>
+    <alias>ADSOM</alias>
+    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST</lname>
+  </compset>
+
+  <compset grid="a%1.9x2.5|a%0.9x1.25">
+    <alias>ADSOMAQP</alias>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>ADAQP3</alias>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%AQP3_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>ADAQPFILE</alias>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>ADLND</alias>
     <lname>2000_SATM_DLND%SCPL_SICE_SOCN_SROF_SGLC_SWAV</lname>
   </compset>

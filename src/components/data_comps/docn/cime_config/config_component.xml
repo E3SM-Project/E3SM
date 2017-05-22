@@ -15,25 +15,25 @@
 
   <entry id="DOCN_MODE">
     <type>char</type>
-    <valid_values>prescribed,sst_aquap1,sst_aquap2,sst_aquap3,sst_aquap4,sst_aquap5,sst_aquap6,sst_aquap7,sst_aquap8,sst_aquap9,sst_aquap10,som,som_aquap,copyall,interannual,null</valid_values>
+    <valid_values>prescribed,sst_aquap1,sst_aquap2,sst_aquap3,sst_aquap4,sst_aquap5,sst_aquap6,sst_aquap7,sst_aquap8,sst_aquap9,sst_aquap10,sst_aquapfile,som,som_aquap,interannual,null</valid_values>
     <default_value>prescribed</default_value>
     <values>
-      <value compset="_DOCN%NULL">null</value>
-      <value compset="_DOCN%DOM" >prescribed</value>
-      <value compset="_DOCN%SOM" >som</value>
-      <value compset="_DOCN%SOMAQP">som_aquap</value>
-      <value compset="_DOCN%IAF">interannual</value>
-      <value compset="_DOCN%AQP1">sst_aquap1</value>
-      <value compset="_DOCN%AQP2">sst_aquap2</value>
-      <value compset="_DOCN%AQP3">sst_aquap3</value>
-      <value compset="_DOCN%AQP4">sst_aquap4</value>
-      <value compset="_DOCN%AQP5">sst_aquap5</value>
-      <value compset="_DOCN%AQP6">sst_aquap6</value>
-      <value compset="_DOCN%AQP7">sst_aquap7</value>
-      <value compset="_DOCN%AQP8">sst_aquap8</value>
-      <value compset="_DOCN%AQP9">sst_aquap9</value>
-      <value compset="_DOCN%AQP10">sst_aquap10</value>
-      <value compset="_DOCN%COPY">copyall</value>
+      <value compset="_DOCN%NULL_">null</value>
+      <value compset="_DOCN%DOM_" >prescribed</value>
+      <value compset="_DOCN%SOM_" >som</value>
+      <value compset="_DOCN%SOMAQP_">som_aquap</value>
+      <value compset="_DOCN%IAF_">interannual</value>
+      <value compset="_DOCN%AQP1_">sst_aquap1</value>
+      <value compset="_DOCN%AQP2_">sst_aquap2</value>
+      <value compset="_DOCN%AQP3_">sst_aquap3</value>
+      <value compset="_DOCN%AQP4_">sst_aquap4</value>
+      <value compset="_DOCN%AQP5_">sst_aquap5</value>
+      <value compset="_DOCN%AQP6_">sst_aquap6</value>
+      <value compset="_DOCN%AQP7_">sst_aquap7</value>
+      <value compset="_DOCN%AQP8_">sst_aquap8</value>
+      <value compset="_DOCN%AQP9_">sst_aquap9</value>
+      <value compset="_DOCN%AQP10_">sst_aquap10</value>
+      <value compset="_DOCN%AQPFILE_">sst_aquapfile</value>
     </values>
     <group>run_component_docn</group>
     <file>env_run.xml</file>
@@ -67,13 +67,13 @@
     appropriate and is provided for testing and development purposes only.
     Users must create scientifically appropriate data for their particular
     application.  A tool is available to derive valid SOM forcing.
-    --- A setting of sst_aquapN (where “N” is an integer index value) is a
-    type of prescribed SST mode used specifically for an aquaplanet setup in
-    which global SSTs correspond to an analytic form set by the index value.
+    --- A setting of sst_aquapN (where N is an integer index value) is a 
+    type of prescribed SST mode used specifically for an aquaplanet setup in 
+    which global SSTs correspond to an analytic form set by the index value.  
     Currently, indices for 10 SST profiles are supported [e.g., index 3 corresponds
-    to the “QOBS” profile of Neale and Hoskins (2001, Atmos. Sci. Lett.)].
-    With source code modifications, it is possible for users to create their own
-    analytic SST distributions and match them to indices 11 or greater.
+    to the QOBS profile of Neale and Hoskins (2001, Atmos. Sci. Lett.)]. 
+    With source code modifications, it is possible for users to create their own 
+    analytic SST distributions and match them to indices 11 or greater.  
     </desc>
   </entry>
 
@@ -88,7 +88,21 @@
     </values>
     <group>run_component_docn</group>
     <file>env_run.xml</file>
-    <desc>Sets SOM forcing data filename for pres runs, only used in D and E compset</desc>
+    <desc>Sets SOM forcing filename. 
+    This is only used when DOCN_MODE=som.</desc>
+  </entry>
+
+  <entry id="DOCN_AQP_FILENAME">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>UNSET</default_value>
+    <values>
+      <value compset="_DOCN%AQPFILE">sst_c4aquasom_0.9x1.25_clim.c170512.nc</value>
+    </values>
+    <group>run_component_docn</group>
+    <file>env_run.xml</file>
+    <desc>Sets aquaplanet forcing filename instead of using an analytic form.
+    This is only used when DOCN_MODE=sst_aqpfile.</desc>
   </entry>
 
   <entry id="SSTICE_STREAM">
@@ -98,7 +112,8 @@
     <group>run_component_docn</group>
     <file>env_run.xml</file>
     <desc>Prescribed SST and ice coverage stream name.
-    Sets SST and ice coverage stream name for prescribed runs.</desc>
+    Sets SST and ice coverage stream name.
+    This is only used when DOCN_MODE=prescribed.</desc>
   </entry>
 
   <entry id="SSTICE_DATA_FILENAME">
@@ -131,7 +146,8 @@
     <group>run_component_docn</group>
     <file>env_run.xml</file>
     <desc>Prescribed SST and ice coverage data file name.
-    Sets SST and ice coverage data file name for DOCN prescribed runs.</desc>
+    Sets SST and ice coverage data file name.
+    This is only used when DOCN_MODE=prescribed.</desc>
   </entry>
 
   <entry id="SSTICE_GRID_FILENAME">
@@ -167,7 +183,8 @@
     <group>run_component_cam_sstice</group>
     <file>env_run.xml</file>
     <desc>Prescribed SST and ice coverage grid file name.
-    Sets SST and ice coverage grid file name for prescribed runs.</desc>
+    Sets SST and ice coverage grid file name for prescribed runs.
+    This is only used when DOCN_MODE=prescribed.</desc>
   </entry>
 
   <entry id="SSTICE_YEAR_ALIGN">
@@ -188,7 +205,8 @@
     run after the prescribed data ends (as determined by SSTICE_YEAR_END), the
     default behavior is to assume that the data from SSTICE_YEAR_START to
     SSTICE_YEAR_END cyclically repeats. This behavior is controlled by the
-    &quot;taxmode&quot; stream option; see the data model documentation for more details.</desc>
+    &quot;taxmode&quot; stream option; see the data model documentation for more details.
+    This is only used when DOCN_MODE=prescribed.</desc>
   </entry>
 
   <entry id="SSTICE_YEAR_START">
@@ -203,7 +221,8 @@
     <desc>The first year of data to use from SSTICE_DATA_FILENAME.
     This is the first year of prescribed SST and ice coverage data to use. For
     example, if a data file has data for years 0-99, and SSTICE_YEAR_START is 10,
-    years 0-9 in the file will not be used.</desc>
+    years 0-9 in the file will not be used.
+    This is only used when DOCN_MODE=prescribed.</desc>
   </entry>
 
   <entry id="SSTICE_YEAR_END">
@@ -218,7 +237,8 @@
     <desc>The last year of data to use from SSTICE_DATA_FILENAME.
     This is the last year of prescribed SST and ice coverage data to use. For
     example, if a data file has data for years 0-99, and value is 49,
-    years 50-99 in the file will not be used.</desc>
+    years 50-99 in the file will not be used.
+    This is only used when DOCN_MODE=prescribed.</desc>
   </entry>
 
   <description>
@@ -228,16 +248,17 @@
     <desc compset="_DOCN%SOMAQP">docn aquaplanet slab ocean mode</desc>
     <desc compset="_DOCN%IAF" >docn interannual mode</desc>
     <desc compset="_DOCN%SST_AQUAP">docn aquaplanet mode:</desc>
-    <desc compset="_DOCN%AQP1">docn prescribed aquaplanet sst - option 1</desc>
-    <desc compset="_DOCN%AQP2">docn prescribed aquaplanet sst - option 2</desc>
-    <desc compset="_DOCN%AQP3">docn prescribed aquaplanet sst - option 3</desc>
-    <desc compset="_DOCN%AQP4">docn prescribed aquaplanet sst - option 4</desc>
-    <desc compset="_DOCN%AQP5">docn prescribed aquaplanet sst - option 5</desc>
-    <desc compset="_DOCN%AQP6">docn prescribed aquaplanet sst - option 6</desc>
-    <desc compset="_DOCN%AQP7">docn prescribed aquaplanet sst - option 7</desc>
-    <desc compset="_DOCN%AQP8">docn prescribed aquaplanet sst - option 8</desc>
-    <desc compset="_DOCN%AQP9">docn prescribed aquaplanet sst - option 9</desc>
-    <desc compset="_DOCN%AQP10">docn prescribed aquaplanet sst - option 10</desc>
+    <desc compset="_DOCN%AQP1">docn analytic aquaplanet sst - option 1</desc>
+    <desc compset="_DOCN%AQP2">docn analytic aquaplanet sst - option 2</desc>
+    <desc compset="_DOCN%AQP3">docn analytic aquaplanet sst - option 3</desc>
+    <desc compset="_DOCN%AQP4">docn analytic aquaplanet sst - option 4</desc>
+    <desc compset="_DOCN%AQP5">docn analytic aquaplanet sst - option 5</desc>
+    <desc compset="_DOCN%AQP6">docn analytic aquaplanet sst - option 6</desc>
+    <desc compset="_DOCN%AQP7">docn analytic aquaplanet sst - option 7</desc>
+    <desc compset="_DOCN%AQP8">docn analytic aquaplanet sst - option 8</desc>
+    <desc compset="_DOCN%AQP9">docn analytic aquaplanet sst - option 9</desc>
+    <desc compset="_DOCN%AQP10">docn analytic aquaplanet sst - option 10</desc>
+    <desc compset="_DOCN%AQPFILE">docn file input aquaplanet sst </desc>
   </description>
 
   <help>
