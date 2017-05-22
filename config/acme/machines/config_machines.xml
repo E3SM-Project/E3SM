@@ -626,11 +626,10 @@
       <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
 </machine>
-
+v
 <machine MACH="anlworkstation">
     <DESC>Linux workstation for ANL</DESC>
     <NODENAME_REGEX>compute.*mcs.anl.gov</NODENAME_REGEX>
-    <PROXY></PROXY>
     <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
