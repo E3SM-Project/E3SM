@@ -504,7 +504,7 @@ module mpas_log
 
       ierr = 0
 
-      flushLog = .false.
+      flushLog = .true.
 
       if (present(messageType)) then
          messageTypeHere = messageType
