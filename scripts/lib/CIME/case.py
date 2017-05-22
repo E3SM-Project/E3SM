@@ -1168,11 +1168,8 @@ class Case(object):
 
     def load_env(self):
         if not self._is_env_loaded:
-            compiler = self.get_value("COMPILER")
-            debug=self.get_value("DEBUG")
-            mpilib=self.get_value("MPILIB")
             env_module = self.get_env("mach_specific")
-            env_module.load_env(compiler=compiler,debug=debug, mpilib=mpilib)
+            env_module.load_env(self)
             self._is_env_loaded = True
 
     def get_build_threaded(self):
@@ -1182,7 +1179,6 @@ class Case(object):
         force_threaded = self.get_value("BUILD_THREADED")
         smp_present = bool(force_threaded) or self.thread_count > 1
         self.set_value("SMP_PRESENT", stringify_bool(smp_present))
-        os.environ["SMP_PRESENT"] = stringify_bool(smp_present)
         os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
         return smp_present
 
