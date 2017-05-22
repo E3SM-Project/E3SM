@@ -3,8 +3,17 @@ import glob
 from cdp.cdp_viewer import OutputViewer
 from acme_diags.driver.utils import get_output_dir
 
-# Dict of {set_num: {row_name: {season: filename}}}, follows the order
-# of pages in the viewer.
+# Dict of 
+# {
+#   set_num: {
+#       case_id: {
+#           row_name: {
+#               season: filename
+#           }
+#       }
+#   }
+# }
+# Order is page(set_num) -> group(case_id) -> row(row_name) -> col(season) -> filename
 # Used when actually inserting the cols into the viewer
 # needed so we can have a cols in order of ANN, DJF, MAM, JJA, SON
 ROW_INFO = {}
@@ -38,7 +47,10 @@ def create_viewer(root_dir, parameters, ext):
     for parameter in parameters:
         for set_num in parameter.sets:
             viewer.set_page("Set-{}".format(set_num))
-            viewer.add_group(parameter.case_id)
+            try:
+                viewer.set_group(parameter.case_id)
+            except RuntimeError:
+                viewer.add_group(parameter.case_id)
 
             # Add all of the files with extension ext from the case_id/ folder'
             pth = get_output_dir(set_num, parameter)
@@ -73,24 +85,30 @@ def create_viewer(root_dir, parameters, ext):
                     viewer.add_row(row_name)
                     viewer.add_col(var)  # the description
 
-                if row_name not in ROW_INFO[set_num]:
-                    ROW_INFO[set_num][row_name] = {}
+                if parameter.case_id not in ROW_INFO[set_num]:
+                    ROW_INFO[set_num][parameter.case_id] = {}
+                if row_name not in ROW_INFO[set_num][parameter.case_id]:
+                    ROW_INFO[set_num][parameter.case_id][row_name] = {}
                 # format fnm to support relative paths
-                ROW_INFO[set_num][row_name][season] = os.path.join('set{}'.format(set_num), parameter.case_id, fnm)
-    
+                ROW_INFO[set_num][parameter.case_id][row_name][season] = os.path.join('set{}'.format(set_num), parameter.case_id, fnm)
+
     # add all of the files in from the case_id/ folder in ANN, DJF, MAM, JJA, SON order
     for set_num in ROW_INFO:
         viewer.set_page("Set-{}".format(set_num))
-        for row_name in ROW_INFO[set_num]:
-            for col_season in viewer.page.columns[1:]:  # [1:] is to ignore 'Description' col 
+        for group in ROW_INFO[set_num]:
+            viewer.set_group(group)
+            for row_name in ROW_INFO[set_num][group]:
                 viewer.set_row(row_name)
-                if col_season in ROW_INFO[set_num][row_name]:
-                    fnm = ROW_INFO[set_num][row_name][col_season]
-                    nc_files = [fnm + nc_ext for nc_ext in ['_test.nc', '_ref.nc', '_diff.nc']]
-                    formatted_files = [{'url': f, 'title': f} for f in nc_files]
-                    viewer.add_col(fnm + '.' + ext, is_file=True, title=col_season, other_files=formatted_files)
-                else:
-                    # insert a blank value
-                    viewer.add_col('-----')
+                for col_season in viewer.page.columns[1:]:  # [1:] is to ignore 'Description' col 
+                    if col_season in ROW_INFO[set_num][group][row_name]:
+                        fnm = ROW_INFO[set_num][group][row_name][col_season]
+                        nc_files = [fnm + nc_ext for nc_ext in ['_test.nc', '_ref.nc', '_diff.nc']]
+                        formatted_files = [{'url': f, 'title': f} for f in nc_files]
+                        viewer.add_col(fnm + '.' + ext, is_file=True, title=col_season, other_files=formatted_files)
+                    else:
+                        # insert a blank value
+                        # is_file must be True, otherwise OutputViewer indexes incorrectly
+                        viewer.add_col('-----', is_file=True)
 
-    viewer.generate_viewer()
+    viewer.generate_viewer(prompt_user=False)
+
