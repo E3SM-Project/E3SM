@@ -210,7 +210,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.6
+set script_ver = 3.0.7
 
 #===========================================
 # DEFINE ALIASES
@@ -548,7 +548,7 @@ endif
 # DETERMINE THE OPTIONS FOR CREATE_NEWCASE
 #=============================================================
 
-set configure_options = "--case ${case_scripts_dir} --compset ${compset} --res ${resolution} --pecount ${std_proc_configuration} --handle-preexisting-dirs u"
+set configure_options = "--case ${case_name} --compset ${compset} --script-root ${case_scripts_dir} --res ${resolution} --pecount ${std_proc_configuration} --handle-preexisting-dirs u"
 
 if ( `lowercase $machine` != default ) then
   set configure_options = "${configure_options} --mach ${machine}"
@@ -593,12 +593,6 @@ cd ${case_scripts_dir}
 acme_newline
 acme_print '-------- Finished create_newcase --------'
 acme_newline
-
-#================================================
-# CORRECT THE CASE NAME FOR THE OUTPUT FILES
-#================================================
-
-${xmlchange_exe} --id CASE --val ${case_name}
 
 #================================================
 # UPDATE VARIABLES WHICH REQUIRE A CASE TO BE SET
@@ -1359,6 +1353,9 @@ acme_newline
 #                        use the new CIME option --handle-preexisting-dirs to avoid this potential error
 #                        Fix the usage of xmlchange for the customknl configuration
 #                        Set walltime to default to get more time on Edison (MD)
+# 3.0.7    2017-05-22    Fix for the new CIME 5.3; use the --script-root option instead of PJC's "hack"
+#                        Note that this breaks compatibility with older versions of CIME
+#                        Also add a fix to reenable using the special acme qos queue on Edison (MD)
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
 ### ---------- Desired features still to be implemented ------------
