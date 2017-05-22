@@ -6,8 +6,12 @@ import numpy.ma as ma
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import cartopy.crs as ccrs
+import matplotlib.path as mpath
 
 from acme_diags.metrics import rmse, corr
+from acme_diags.driver.utils import get_output_dir
+
+
 
 plotTitle = {'fontsize':11.5}
 plotSideTitle = {'fontsize':9.0}
@@ -30,9 +34,10 @@ def get_ax_size(fig,ax):
 
 def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, stats=None):
 
-    var_min = float(var.min())
-    var_max = float(var.max())
-    var_mean = cdutil.averager(var, axis='xy', weights='generate')
+#    var_min = float(var.min())
+#    var_max = float(var.max())
+#    var_mean = cdutil.averager(var, axis='xy', weights='generate')
+
     var = add_cyclic(var)
     lon = var.getLongitude()
     lat = var.getLatitude()
@@ -51,9 +56,10 @@ def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, stats=None):
 
     ax.gridlines()
     if pole == 'N':
-      ax.set_extent([-180, 180, 48, 90], crs=ccrs.PlateCarree())
+      ax.set_extent([-180, 180, 50, 90], crs=ccrs.PlateCarree())
     elif pole == 'S':
-      ax.set_extent([-180, 180, -48, -90], crs=ccrs.PlateCarree())
+      ax.set_extent([-180, 180, -55, -90], crs=ccrs.PlateCarree())
+
 
     p1 = ax.contourf(lon, lat, var,
                      transform=ccrs.PlateCarree(), 
@@ -64,6 +70,13 @@ def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, stats=None):
                      )
     ax.set_aspect('auto')
     ax.coastlines(lw=0.3)
+
+    theta = np.linspace(0, 2*np.pi, 100)
+    center, radius = [0.5, 0.5], 0.5
+    verts = np.vstack([np.sin(theta), np.cos(theta)]).T
+    circle = mpath.Path(verts * radius + center)
+    ax.set_boundary(circle, transform=ax.transAxes)
+
     if title[0] != None: ax.set_title(title[0], loc='left', fontdict=plotSideTitle)
     if title[1] != None: 
         t = ax.set_title(title[1], fontdict=plotTitle)
@@ -85,38 +98,56 @@ def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, stats=None):
         cbar.ax.tick_params(labelsize=9.0, pad=25, length=w-2)
 
     # Min, Mean, Max
-    fig.text(panel[n][0]+0.35,panel[n][1]+0.225,"Max\nMean\nMin",ha='left',fontdict=plotSideTitle)
-    fig.text(panel[n][0]+0.45,panel[n][1]+0.225,"%.2f\n%.2f\n%.2f" % (var_max,var_mean,var_min),ha='right',fontdict=plotSideTitle)
+    if len(stats) == 3:
+        fig.text(panel[n][0]+0.35,panel[n][1]+0.225,"Max\nMean\nMin",ha='left',fontdict=plotSideTitle)
+        fig.text(panel[n][0]+0.45,panel[n][1]+0.225,"%.2f\n%.2f\n%.2f" % stats,ha='right',fontdict=plotSideTitle)
 
     # RMSE, CORR
-    if stats != None:
+    if len(stats) == 2:
       fig.text(panel[n][0]+0.35,panel[n][1]+0.,"RMSE\nCORR",ha='left',fontdict=plotSideTitle)
       fig.text(panel[n][0]+0.45,panel[n][1]+0.,"%.2f\n%.2f" % stats,ha='right',fontdict=plotSideTitle)
 
-def plot(reference, test, reference_regrid, test_regrid, parameter, pole):
+def plot(reference, test, diff, metrics_dict, parameter):
 
     # Create figure, projection
     fig = plt.figure(figsize=[8.5, 11.0])
 
     # Create projection
-    if pole == 'N':
+    print parameter.var_region
+    if parameter.var_region.find('N') !=-1:
+        pole = 'N'
         proj = ccrs.NorthPolarStereo(central_longitude=0)
-    elif pole == 'S':
-       proj = ccrs.SouthPolarStereo(central_longitude=0)
+    elif parameter.var_region.find('S') !=-1:
+        pole = 'S'
+        proj = ccrs.SouthPolarStereo(central_longitude=0)
 
     # First two panels
-    plot_panel(0, fig, proj, pole, test, parameter.test_levels, 'viridis', (parameter.test_name,parameter.test_title,test.units))
-    plot_panel(1, fig, proj, pole, reference, parameter.reference_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units))
+    min1  = metrics_dict['test']['min']
+    mean1 = metrics_dict['test']['mean']
+    max1  = metrics_dict['test']['max']
+    if test.count() >1: 
+        plot_panel(0, fig, proj, pole, test, parameter.contour_levels, 'viridis', (parameter.test_name,parameter.test_title,test.units),stats=(max1,mean1,min1))
+
+    min2  = metrics_dict['ref']['min']
+    mean2 = metrics_dict['ref']['mean']
+    max2  = metrics_dict['ref']['max']
+
+    if reference.count() >1: 
+        plot_panel(1, fig, proj, pole, reference, parameter.contour_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units),stats=(max2,mean2,min2))
 
     # Third panel
-    r = rmse(reference_regrid, test_regrid)
-    c = corr(reference_regrid, test_regrid)
-    plot_panel(2, fig, proj, pole, test_regrid-reference_regrid, parameter.diff_levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(r,c))
+    r = metrics_dict['misc']['rmse']
+    c = metrics_dict['misc']['corr']
+
+    if diff.count() >1: 
+        plot_panel(2, fig, proj, pole, diff, parameter.diff_levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(r,c))
 
     # Figure title
     fig.suptitle(parameter.main_title, x=0.5, y=0.97, fontsize=18)
 
     # Save figure
-    for f in parameter.format:
-        fnm = os.path.join(get_output_dir('7', parameter), parameter.output_file + '_' + pole)
+    for f in parameter.output_format:
+        f = f.lower().split('.')[-1]
+        fnm = os.path.join(get_output_dir('7', parameter), parameter.output_file)
         plt.savefig(fnm + '.' + f)
+        print('Plot saved in: ' + fnm + '.' + f)

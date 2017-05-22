@@ -59,7 +59,10 @@ if __name__ == '__main__':
     for parameter in parameters:
         for pset in parameter.sets:
             pset = str(pset)
-            if pset == '3':
+
+            if pset == '4':
+                from acme_diags.driver.set4_driver import run_diag
+            elif pset == '3':
                 from acme_diags.driver.set3_driver import run_diag
             elif pset == '5':
                 from acme_diags.driver.set5_driver import run_diag
@@ -68,6 +71,7 @@ if __name__ == '__main__':
             else:
                 print('Plot set {} is not supported yet. Please give us time.'.format(pset))
                 quit()
+            print ('Start to run ACME diags')
             run_diag(parameter)
 
     create_viewer(original_parameter.results_dir, parameters, 'png')

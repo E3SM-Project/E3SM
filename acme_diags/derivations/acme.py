@@ -94,6 +94,12 @@ def convert_units(var, target_units):
     elif var.units == 'gpm':  # geopotential meter
         var = var / 9.8 / 100  # convert to hecto meter
         var.units = target_units
+    elif var.units == 'Pa/s':
+         var = var /100.0*24*3600
+         var.units = target_units
+    elif var.units == 'mb/day':
+         var = var 
+         var.units = target_units
     else:
         temp = udunits(1.0, var.units)
         coeff, offset = temp.how(target_units)
@@ -353,5 +359,16 @@ derived_variables = {
     ]),
     'ICEFRAC': OrderedDict([
         (('ICEFRAC'), lambda icefrac: convert_units(icefrac, target_units="%"))
+    ]),
+    'RELHUM': OrderedDict([
+        (('RELHUM'), lambda relhum: convert_units(relhum, target_units="%"))
+#        (('RELHUM'), rename)
+    ]),
+    'OMEGA': OrderedDict([
+        (('OMEGA'), lambda omega: convert_units(omega, target_units="mbar/day"))
+    ]),
+    'SHUM': OrderedDict([
+        (('Q'), lambda q: convert_units(rename(q), target_units="g/kg")),
+        (('SHUM'), lambda shum: convert_units(shum, target_units="g/kg"))
     ])
 }
