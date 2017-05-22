@@ -353,9 +353,10 @@ class SystemTestsCommon(object):
             success, comments = compare_baseline(self._case)
             append_testlog(comments)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
-            ts_comments = comments if "\n" not in comments else None
+            baseline_name = self._case.get_value("BASECMP_CASE")
+            ts_comments = comments if "\n" not in comments else os.path.dirname(baseline_name)
             self._test_status.set_status(BASELINE_PHASE, status, comments=ts_comments)
-            basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASECMP_CASE"))
+            basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), baseline_name)
 
             # compare memory usage to baseline
             newestcpllogfile = self._get_latest_cpl_log()
@@ -397,8 +398,9 @@ class SystemTestsCommon(object):
             success, comments = generate_baseline(self._case)
             append_testlog(comments)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
-            self._test_status.set_status("%s" % GENERATE_PHASE, status)
-            basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
+            baseline_name = self._case.get_value("BASEGEN_CASE")
+            self._test_status.set_status("%s" % GENERATE_PHASE, status, comments=os.path.dirname(baseline_name))
+            basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), baseline_name)
 
             # copy latest cpl log to baseline
             # drop the date so that the name is generic
