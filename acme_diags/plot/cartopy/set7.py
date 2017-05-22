@@ -125,18 +125,22 @@ def plot(reference, test, diff, metrics_dict, parameter):
     min1  = metrics_dict['test']['min']
     mean1 = metrics_dict['test']['mean']
     max1  = metrics_dict['test']['max']
-
-    plot_panel(0, fig, proj, pole, test, parameter.contour_levels, 'viridis', (parameter.test_name,parameter.test_title,test.units),stats=(max1,mean1,min1))
+    if test.count() >1: 
+        plot_panel(0, fig, proj, pole, test, parameter.contour_levels, 'viridis', (parameter.test_name,parameter.test_title,test.units),stats=(max1,mean1,min1))
 
     min2  = metrics_dict['ref']['min']
     mean2 = metrics_dict['ref']['mean']
     max2  = metrics_dict['ref']['max']
-    #plot_panel(1, fig, proj, pole, reference, parameter.contour_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units),stats=(max2,mean2,min2))
+
+    if reference.count() >1: 
+        plot_panel(1, fig, proj, pole, reference, parameter.contour_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units),stats=(max2,mean2,min2))
 
     # Third panel
     r = metrics_dict['misc']['rmse']
     c = metrics_dict['misc']['corr']
-#    plot_panel(2, fig, proj, pole, diff, parameter.diff_levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(r,c))
+
+    if diff.count() >1: 
+        plot_panel(2, fig, proj, pole, diff, parameter.diff_levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(r,c))
 
     # Figure title
     fig.suptitle(parameter.main_title, x=0.5, y=0.97, fontsize=18)
