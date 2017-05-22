@@ -53,34 +53,37 @@ class EnvMachSpecific(EnvBase):
                 for node in nodes:
                     self.add_child(node)
 
-    def _get_modules_for_case(self, compiler, debug, mpilib):
+    def _get_modules_for_case(self, compiler, debug, mpilib, case=None):
         module_nodes = self.get_nodes("modules")
         modules_to_load = None
         if module_nodes is not None:
-            modules_to_load = self._compute_module_actions(module_nodes, compiler, debug, mpilib)
+            modules_to_load = self._compute_module_actions(module_nodes, compiler, debug, mpilib, case=case)
 
         return modules_to_load
 
-    def _get_envs_for_case(self, compiler, debug, mpilib):
+    def _get_envs_for_case(self, compiler, debug, mpilib, case=None):
         env_nodes = self.get_nodes("environment_variables")
 
         envs_to_set = None
         if env_nodes is not None:
-            envs_to_set = self._compute_env_actions(env_nodes, compiler, debug, mpilib)
+            envs_to_set = self._compute_env_actions(env_nodes, compiler, debug, mpilib, case=case)
 
         return envs_to_set
 
-    def load_env(self, compiler, debug, mpilib):
+    def load_env(self, case):
         """
         Should only be called by case.load_env
         """
         # Do the modules so we can refer to env vars set by the modules
         # in the environment_variables block
-        modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)
+        compiler = case.get_value("COMPILER")
+        debug = case.get_value("DEBUG")
+        mpilib = case.get_value("MPILIB")
+        modules_to_load = self._get_modules_for_case(compiler, debug, mpilib, case=case)
         if (modules_to_load is not None):
             self.load_modules(modules_to_load)
 
-        envs_to_set = self._get_envs_for_case(compiler, debug, mpilib)
+        envs_to_set = self._get_envs_for_case(compiler, debug, mpilib, case=case)
         if (envs_to_set is not None):
             self.load_envs(envs_to_set)
 
@@ -130,9 +133,9 @@ class EnvMachSpecific(EnvBase):
             f.write(self.list_modules())
         run_cmd_no_fail("echo -e '\n' && env", arg_stdout=filename)
 
-    def make_env_mach_specific_file(self, compiler, debug, mpilib, shell):
-        modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)
-        envs_to_set = self._get_envs_for_case(compiler, debug, mpilib)
+    def make_env_mach_specific_file(self, compiler, debug, mpilib, shell, case=None):
+        modules_to_load = self._get_modules_for_case(compiler, debug, mpilib, case=case)
+        envs_to_set = self._get_envs_for_case(compiler, debug, mpilib, case=case)
         filename = ".env_mach_specific.%s" % shell
         lines = []
         if modules_to_load is not None:
@@ -156,20 +159,20 @@ class EnvMachSpecific(EnvBase):
 
     # Private API
 
-    def _compute_module_actions(self, module_nodes, compiler, debug, mpilib):
-        return self._compute_actions(module_nodes, "command", compiler, debug, mpilib)
+    def _compute_module_actions(self, module_nodes, compiler, debug, mpilib, case=None):
+        return self._compute_actions(module_nodes, "command", compiler, debug, mpilib, case=case)
 
-    def _compute_env_actions(self, env_nodes, compiler, debug, mpilib):
-        return self._compute_actions(env_nodes, "env", compiler, debug, mpilib)
+    def _compute_env_actions(self, env_nodes, compiler, debug, mpilib, case=None):
+        return self._compute_actions(env_nodes, "env", compiler, debug, mpilib, case=case)
 
-    def _compute_actions(self, nodes, child_tag, compiler, debug, mpilib):
+    def _compute_actions(self, nodes, child_tag, compiler, debug, mpilib, case=None):
         result = [] # list of tuples ("name", "argument")
 
         for node in nodes:
-            if (self._match_attribs(node.attrib, compiler, debug, mpilib)):
+            if (self._match_attribs(node.attrib, compiler, debug, mpilib, case=case)):
                 for child in node:
                     expect(child.tag == child_tag, "Expected %s element" % child_tag)
-                    if (self._match_attribs(child.attrib, compiler, debug, mpilib)):
+                    if (self._match_attribs(child.attrib, compiler, debug, mpilib, case=case)):
                         val = child.text
                         if val is not None:
                             # We allow a couple special substitutions for these fields
@@ -183,7 +186,7 @@ class EnvMachSpecific(EnvBase):
 
         return result
 
-    def _match_attribs(self, attribs, compiler=None, debug=None, mpilib=None):
+    def _match_attribs(self, attribs, compiler=None, debug=None, mpilib=None, case=None):
         if ("compiler" in attribs and compiler is not None and
             not self._match(compiler, attribs["compiler"])):
             return False
@@ -198,16 +201,20 @@ class EnvMachSpecific(EnvBase):
                               attribs["unit_testing"].upper())):
             return False
 
-        # check for matches with env-vars
+        # check for matches with case-vars
         for attrib in attribs:
-            if (attrib != "name" and attrib in os.environ and
-                  not self._match(os.environ[attrib], attribs[attrib])):
+            val = case.get_value(attrib) if case is not None else None
+            if (attrib != "name" and val is not None and
+                  not self._match(val, attribs[attrib])):
                 return False
         return True
 
     def _match(self, my_value, xml_value):
         if (xml_value.startswith("!")):
             result = my_value != xml_value[1:]
+        elif (type(True) == type(my_value)):
+            if my_value: result = xml_value == "TRUE"
+            else: result = xml_value == "FALSE"
         else:
             result = my_value == xml_value
         logger.debug("(env_mach_specific) _match %s %s %s"%(my_value, xml_value, result))
@@ -381,7 +388,7 @@ class EnvMachSpecific(EnvBase):
             if arg_node is not None:
                 arg_nodes = self.get_nodes("arg", root=arg_node)
                 for arg_node in arg_nodes:
-                    if (self._match_attribs(arg_node.attrib)):
+                    if (self._match_attribs(arg_node.attrib, case=case)):
                         arg_value = transform_vars(arg_node.text,
                                                    case=case,
                                                    subgroup=job,
