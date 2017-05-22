@@ -16,15 +16,16 @@
 
 module li_velocity_external
 
+   use, intrinsic :: iso_c_binding
+
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_timer
    use mpas_log
+   use mpas_constants, only: gravity
 
    use li_setup
-   use, intrinsic :: iso_c_binding
-   use mpas_constants, only: gravity
    use li_constants
    use li_mask
 
@@ -736,6 +737,9 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       endif
 
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
+      ! Capture Albany output
+      call interface_redirect_stdout(-1) ! time level of -1 prevents message of what time level this is
+
       ! ---
       ! Call C++ routine to calculate FEM mesh and write it out
       ! ---
@@ -821,6 +825,8 @@ subroutine li_velocity_external_write_albany_mesh(domain)
          observedSurfaceVelocityX, observedSurfaceVelocityY, observedSurfaceVelocityUncertainty, observedThicknessTendency)
 
       !----
+
+      call interface_reset_stdout()
 
       ! kill the model so we don't actually run the forward model
       call mpas_log_write("Write of Albany ASCII mesh complete. Terminating execution normally.", MPAS_LOG_CRIT)

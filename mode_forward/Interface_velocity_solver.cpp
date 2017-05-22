@@ -2018,8 +2018,6 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
 
     // TODO: add BMB?
 
-    // Call needed functions to process MPAS format
-//    import2DFields(bedTopography_F, lowerSurface_F, thickness_F, beta_F, smb_F,  minThickness);
 //    std::vector<double> regulThk(thicknessData);
 //    for (int index = 0; index < nVertices; index++)
 //      regulThk[index] = std::max(1e-4, thicknessData[index]);  //TODO Make limit a parameter
@@ -2043,24 +2041,94 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     std::ofstream outfile;
     outfile.open ("albany.msh", std::ios::out | std::ios::trunc);
     if (outfile.is_open()) {
-       // outfile << "PRINT STUFF";
+
+       int nVerticesBoundaryEdge = 0;
+       for (int index = 0; index < nVertices; index++) {
+          if (isBoundaryEdge[index]) nVerticesBoundaryEdge += 1;
+       }
+       std::vector<int> verticesOnBoundaryEdge;
+       verticesOnBoundaryEdge.resize(2 * nVerticesBoundaryEdge);
+       int iVerticesBoundaryEdge = 0;
+       for (int index = 0; index < nVertices; index++) {
+          if (isBoundaryEdge[index]) {
+             verticesOnBoundaryEdge[0 + 2 * iVerticesBoundaryEdge] = verticesOnEdge[0 + 2 * index];
+             verticesOnBoundaryEdge[1 + 2 * iVerticesBoundaryEdge] = verticesOnEdge[1 + 2 * index];
+             iVerticesBoundaryEdge += 1;
+          }
+       }
+       //std::cout<<"final count: "<<iVerticesBoundaryEdge << "  nVerticesBoundaryEdge="<<nVerticesBoundaryEdge<<std::endl;
+
+       outfile << "Triangle " << 3 << "\n";  // first line saying it is a mesh of triangles
+       outfile << nVertices << " " << nTriangles << " " << nVerticesBoundaryEdge << "\n";  // second line
+
+       for (int index = 0; index < nVertices; index++) { //coordinates lines
+          int iCell = vertexToFCell[index];
+          outfile << xCell_F[iCell] / unit_length << " " << yCell_F[iCell] / unit_length << " " << isVertexBoundary[index] << "\n"  ;
+       }
+
+       for (int index = 0; index < nTriangles; index++) //triangles lines
+        outfile << verticesOnTria[0 + 3 * index] << " " << verticesOnTria[1 + 3 * index]  << " " << verticesOnTria[2 + 3 * index]  << " " << 1 << "\n"; // last digit can be used to specify a 'material'.  Not used by FELIX, so giving dummy value
+
+       for (int index = 0; index < nVerticesBoundaryEdge; index++) // boundary edges lines
+       outfile <<  verticesOnBoundaryEdge[0 + 2 * index] << " " << verticesOnBoundaryEdge[1 + 2 * index]   << " " << 1 << "\n"; //last digit can be used to tell whether it's floating or not.. but let's worry about this later.
+
        outfile.close();
        }
     else {
        std::cout << "Failed to open mshfile!"<< std::endl;
     }
 
-    // individual fields
+    // individual field values
+    // Call needed functions to process MPAS fields to Albany units/format
+    import2DFields(bedTopography_F, lowerSurface_F, thickness_F, beta_F, smb_F,  minThickness);
+
     outfile.open ("thickness.ascii", std::ios::out | std::ios::trunc);
     if (outfile.is_open()) {
-       // outfile << "PRINT STUFF";
+       outfile << nVertices << "\n";  //number of vertices on first line
+       for(int i = 0; i<nVertices; ++i)
+         outfile << thicknessData[i]<<"\n";
+       outfile.close();
        outfile.close();
        }
     else {
        std::cout << "Failed to open thickness ascii file!"<< std::endl;
     }
 
-    // ... other fields ...
+    outfile.open ("surface_height.ascii", std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+       outfile << nVertices << "\n";  //number of vertices on first line
+       for(int i = 0; i<nVertices; ++i)
+         outfile << elevationData[i] <<"\n";
+       outfile.close();
+       outfile.close();
+       }
+    else {
+       std::cout << "Failed to open surface_height ascii file!"<< std::endl;
+    }
+
+    outfile.open ("surface_mass_balance.ascii", std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+       outfile << nVertices << "\n";  //number of vertices on first line
+       for(int i = 0; i<nVertices; ++i)
+         outfile << smbData[i]<<"\n";
+       outfile.close();
+       outfile.close();
+       }
+    else {
+       std::cout << "Failed to open surface_mass_balance ascii file!"<< std::endl;
+    }
+
+    outfile.open ("basal_friction.ascii", std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+       outfile << nVertices << "\n";  //number of vertices on first line
+       for(int i = 0; i<nVertices; ++i)
+         outfile << betaData[i]<<"\n";
+       outfile.close();
+       outfile.close();
+       }
+    else {
+       std::cout << "Failed to open basal_friction ascii file!"<< std::endl;
+    }
 
 
   }
