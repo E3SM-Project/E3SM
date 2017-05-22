@@ -59,8 +59,11 @@ if __name__ == '__main__':
     for parameter in parameters:
         for pset in parameter.sets:
             pset = str(pset)
+
             if pset == '4':
                 from acme_diags.driver.set4_driver import run_diag
+            elif pset == '3':
+                from acme_diags.driver.set3_driver import run_diag
             elif pset == '5':
                 from acme_diags.driver.set5_driver import run_diag
             elif pset == '7':

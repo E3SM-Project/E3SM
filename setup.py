@@ -2,10 +2,15 @@ import sys
 from setuptools import find_packages, setup
 
 data_files = [
+
     (sys.prefix + '/share/acme_diags/set4',
      ['acme_diags/driver/set4_diags_AMWG_default.json',
       'acme_diags/plot/vcs/plot_set_4_new.json',
       'acme_diags/plot/vcs/plot_set_4.json'
+     ]),
+    (sys.prefix + '/share/acme_diags/set3',
+     ['acme_diags/driver/set3_diags_AMWG_default.json',
+      'acme_diags/plot/vcs/plot_set_3.json'
      ]),
     (sys.prefix + '/share/acme_diags/set5',
      ['acme_diags/driver/set5_diags_AMWG_default.json',
