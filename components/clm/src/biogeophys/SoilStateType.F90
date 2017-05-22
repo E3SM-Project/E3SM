@@ -609,7 +609,7 @@ contains
                    sand = sand3d(g,nlevsoi)
                    om_frac = 0._r8
 		   if(do_varsoil .and. lev <= nlevbed) then
-		     om_frac = (organic3d(g,nlevbed)/organic_max)**2._r8
+		     om_frac = (organic3d(g,nlevsoi)/organic_max)**2._r8
                    end if
                 endif
              end if
