@@ -58,7 +58,7 @@ begin
 
   qr_interp= linint1_n_Wrap(zm,qr,False,5000.0,0,1)
   qr_5km   = qr_interp(:,0,:,:)
-  qr_5km   = qr_5km*1000
+  qr_5km = qr_5km*1000
 
   delete(qr_5km@long_name)
   delete(qr_5km@units)

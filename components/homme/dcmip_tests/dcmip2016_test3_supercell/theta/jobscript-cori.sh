@@ -17,8 +17,11 @@ NCPU=640
 
 date
 
+hydrostatic="false"
+#hydrostatic="true"
+
 # 4dg resolution
-cp -f namelist-r400.nl input.nl
+sed -e "s/theta_hydrostatic_mode.*/theta_hydrostatic_mode=.${hydrostatic}./g" namelist-r400.nl >& input.nl
 srun -n 320 $EXEC < input.nl
 ncl plot_supercell_wvel.ncl
 ncl plot_supercell_2.5km_wvel_xsec.ncl
@@ -38,7 +41,7 @@ mv measurement_prect_rate.txt measurement_prect_rate_r400.txt
 date
 
 # 2dg resolution
-cp -f namelist-r200.nl input.nl
+sed -e "s/theta_hydrostatic_mode.*/theta_hydrostatic_mode=.${hydrostatic}./g" namelist-r200.nl >& input.nl
 srun -n $NCPU $EXEC < input.nl
 ncl plot_supercell_wvel.ncl
 ncl plot_supercell_2.5km_wvel_xsec.ncl
@@ -58,7 +61,7 @@ mv measurement_prect_rate.txt measurement_prect_rate_r200.txt
 date
 
 # 1dg resolution
-cp -f namelist-r100.nl input.nl
+sed -e "s/theta_hydrostatic_mode.*/theta_hydrostatic_mode=.${hydrostatic}./g" namelist-r100.nl >& input.nl
 srun -n $NCPU $EXEC < input.nl
 ncl plot_supercell_wvel.ncl
 ncl plot_supercell_2.5km_wvel_xsec.ncl

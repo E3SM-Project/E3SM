@@ -928,50 +928,50 @@ contains
   !    qn0 = timelevel used to access Qdp() in order to compute virtual Temperature
   !
   ! ===================================
-  use kinds, only : real_kind
+
+  use kinds,          only : real_kind
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
   use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
-  use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
-  use edgetype_mod, only : edgedescriptor_t
-  use bndry_mod, only : bndry_exchangev
-  use control_mod, only : moisture, qsplit, use_cpstar, rsplit, swest
-  use hybvcoord_mod, only : hvcoord_t
-
+  use edge_mod,       only : edgevpack, edgevunpack, edgeDGVunpack
+  use edgetype_mod,   only : edgedescriptor_t
+  use bndry_mod,      only : bndry_exchangev
+  use control_mod,    only : moisture, qsplit, use_cpstar, rsplit, swest
+  use hybvcoord_mod,  only : hvcoord_t
+  use physics_mod,    only : virtual_specific_heat, virtual_temperature
+  use prim_si_mod,    only : preq_vertadv_v, preq_vertadv_upwind, preq_omega_ps, preq_hydrostatic_v2
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa, Rwater_vapor,p0, g
-  use physics_mod, only : virtual_specific_heat, virtual_temperature
-  use prim_si_mod, only : preq_vertadv_v, preq_vertadv_upwind, preq_omega_ps, preq_hydrostatic_v2
 
   implicit none
-  integer, intent(in) :: np1,nm1,n0,qn0,nets,nete
-  real*8, intent(in) :: dt2
-  logical, intent(in)  :: compute_diagnostics
+  integer,              intent(in) :: np1,nm1,n0,qn0,nets,nete
+  real*8,               intent(in) :: dt2
+  logical,              intent(in) :: compute_diagnostics
+  type (hvcoord_t),     intent(in) :: hvcoord
+  type (hybrid_t),      intent(in) :: hybrid
+  type (element_t),     intent(inout), target :: elem(:)
+  type (derivative_t),  intent(in) :: deriv
 
-  type (hvcoord_t)     , intent(in) :: hvcoord
-  type (hybrid_t)      , intent(in) :: hybrid
-  type (element_t)     , intent(inout), target :: elem(:)
-  type (derivative_t)  , intent(in) :: deriv
   real (kind=real_kind) :: eta_ave_w,scale1,scale2,scale3  ! weighting for eta_dot_dpdn mean flux, scale of unm1
 
   ! local
-  real (kind=real_kind), pointer, dimension(:,:,:)   :: phi
-  real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
-  real (kind=real_kind), pointer, dimension(:,:,:)   :: theta_dp_cp
+  real (kind=real_kind), pointer, dimension(:,:,:) :: phi
+  real (kind=real_kind), pointer, dimension(:,:,:) :: dp3d
+  real (kind=real_kind), pointer, dimension(:,:,:) :: theta_dp_cp
    
   real (kind=real_kind) :: kappa_star(np,np,nlev)
   real (kind=real_kind) :: theta_cp(np,np,nlev)
   real (kind=real_kind) :: theta_bar(np,np,nlevp)
   real (kind=real_kind) :: omega_p(np,np,nlev)
-  real (kind=real_kind) :: vort(np,np,nlev)      ! vorticity
+  real (kind=real_kind) :: vort(np,np,nlev)           ! vorticity
   real (kind=real_kind) :: divdp(np,np,nlev)     
-  real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
-  real (kind=real_kind) :: dpnh(np,np,nlev)    ! 
-  real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
-  real (kind=real_kind) :: dpnh_dp(np,np,nlev)   ! dpnh / dp3d  
+  real (kind=real_kind) :: pnh(np,np,nlev)            ! nh (nonydro) pressure
+  real (kind=real_kind) :: dpnh(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)          ! exner nh pressure
+  real (kind=real_kind) :: dpnh_dp(np,np,nlev)        ! dpnh / dp3d
   real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)  ! vertical velocity at interfaces
-  real (kind=real_kind) :: KE(np,np,nlev)           ! Kinetic energy
-  real (kind=real_kind) :: gradexner(np,np,2,nlev)  ! grad(p^kappa)   
+  real (kind=real_kind) :: KE(np,np,nlev)             ! Kinetic energy
+  real (kind=real_kind) :: gradexner(np,np,2,nlev)    ! grad(p^kappa)
   real (kind=real_kind) :: gradphi(np,np,2,nlev)     
-  real (kind=real_kind) :: gradKE(np,np,2,nlev)  ! grad(0.5 u^T u )
+  real (kind=real_kind) :: gradKE(np,np,2,nlev)       ! grad(0.5 u^T u )
   
   real (kind=real_kind) :: v_gradw(np,np,nlev)     
   real (kind=real_kind) :: v_gradtheta(np,np,nlev)     
@@ -983,19 +983,25 @@ contains
 
   real (kind=real_kind) :: vtens1(np,np,nlev)
   real (kind=real_kind) :: vtens2(np,np,nlev)
-  real (kind=real_kind) :: v_vadv(np,np,2,nlev)   ! velocity vertical advection
-  real (kind=real_kind) :: s_state(np,np,nlev,2)  ! scalars w,theta,phi
-  real (kind=real_kind) :: s_vadv(np,np,nlev,3)   ! scalar vertical advection 
+  real (kind=real_kind) :: v_vadv(np,np,2,nlev)       ! velocity vertical advection
+  real (kind=real_kind) :: s_state(np,np,nlev,2)      ! scalars w,theta,phi
+  real (kind=real_kind) :: s_vadv(np,np,nlev,3)       ! scalar vertical advection
   real (kind=real_kind) :: s_theta_dp_cpadv(np,np,nlev)
-  real (kind=real_kind) :: stens(np,np,nlev,3)    ! tendencies w,theta,phi
+  real (kind=real_kind) :: stens(np,np,nlev,3)        ! tendencies w,theta,phi
 
   real (kind=real_kind) ::  temp(np,np,nlev)
-  real (kind=real_kind), dimension(np,np)      :: sdot_sum   ! temporary field
-  real (kind=real_kind), dimension(np,np,2)    :: vtemp     ! generic gradient storage
+  real (kind=real_kind), dimension(np,np) :: sdot_sum ! temporary field
+  real (kind=real_kind), dimension(np,np,2) :: vtemp  ! generic gradient storage
   real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn
   integer :: i,j,k,kptr,ie
 
+  real (kind=real_kind), dimension(np,np) :: ps_v
+  real (kind=real_kind), dimension(np,np,nlev) :: p, vgrad_p
+  real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p
+
+
   call t_startf('compute_andor_apply_rhs')
+
   do ie=nets,nete
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
      theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,n0)
@@ -1006,7 +1012,6 @@ contains
 
      call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
              kappa_star,pnh,dpnh,exner)
-
 
      if (theta_hydrostatic_mode) then
         ! traditional Hydrostatic integral
@@ -1021,6 +1026,8 @@ contains
         ! d(p-nh) / d(p-hyrdostatic)
         dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
      endif
+
+     ps_v = hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3)
 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
@@ -1037,14 +1044,17 @@ contains
         divdp(:,:,k)=divergence_sphere(vdp(:,:,:,k),deriv,elem(ie))
         vort(:,:,k)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,n0),deriv,elem(ie))
 
+        ! get hydrostatic pressure flux to compute omega=dp/dt
+        p(:,:,k) = hvcoord%hyam(k)*p0 + hvcoord%hybm(k)*ps_v
+        grad_p(:,:,:,k) = gradient_sphere( p(:,:,k), deriv, elem(ie)%Dinv);
+        vgrad_p(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*grad_p(:,:,1,k) + elem(ie)%state%v(:,:,2,k,n0)*grad_p(:,:,2,k)
      enddo
 
-
      ! Compute omega_p according to CCM-3
-     !call preq_omega_ps(omega_p,hvcoord,p,vgrad_p,divdp)
-     ! how will we compute this?  omega_p = 1/p Dp/Dt
-     omega_p = 0
 
+     call preq_omega_ps(omega_p,hvcoord,p,vgrad_p,divdp)
+     ! how will we compute this?  omega_p = 1/p Dp/Dt
+     !omega_p = 0
 
      ! ==================================================
      ! zero partial sum for accumulating sum
@@ -1373,7 +1383,6 @@ contains
         elem(ie)%state%v(:,:,2,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
      end do
   end do
-
 
   call t_stopf('compute_andor_apply_rhs')
 

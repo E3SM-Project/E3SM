@@ -38,6 +38,7 @@ private
   public :: allocate_subcell_integration_matrix
 
   public :: derivinit
+  public :: get_deriv
 
   public :: gradient
   public :: gradient_wk

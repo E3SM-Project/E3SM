@@ -293,7 +293,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
 
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl):: lat
-  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,exner,exner_kess,p,dp,cp_star,rho,z,qv,qc,qr
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,exner,exner_kess,p,dp,cp_star,rho,z,qv,qc,qr, rho_kess
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
   real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
   real(rl) :: max_w, pmax_w, max_precl, pmax_precl
@@ -323,13 +323,14 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
 
     ! compute form of exner pressure expected by Kessler physics
     exner_kess = (p/p0)**(Rgas/Cp)
+    rho_kess   = p/(Rgas*T)
 
     ! invert columns (increasing z)
     theta_inv= theta(:,:,nlev:1:-1)
     qv_inv   = qv   (:,:,nlev:1:-1)
     qc_inv   = qc   (:,:,nlev:1:-1)
     qr_inv   = qr   (:,:,nlev:1:-1)
-    rho_inv  = rho  (:,:,nlev:1:-1)
+    rho_inv  = rho_kess  (:,:,nlev:1:-1)
     exner_inv= exner_kess(:,:,nlev:1:-1)
     z_inv    = z    (:,:,nlev:1:-1)
 

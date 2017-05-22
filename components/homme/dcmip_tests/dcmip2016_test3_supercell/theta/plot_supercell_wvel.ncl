@@ -30,6 +30,9 @@ begin
   maxw    = asciiread("./measurement_wmax.txt", -1, "double")
   time_s  = asciiread("./measurement_time.txt", -1, "double")
 
+ymax = max( (/60.0, max(maxw) /) )
+print("ymax="+ymax)
+
 print("maxw="+maxw)
 print("time_s="+time_s)
 
@@ -87,7 +90,7 @@ print("time_s="+time_s)
   resw@trXMaxF = 7200.0 ; max(time_s)
   
   resw@trYMinF = 0.0
-  resw@trYMaxF = 60.0
+  resw@trYMaxF = ymax
 
   resw@tmXBMode = "Manual"
   resw@tmXBTickStartF = 0.0

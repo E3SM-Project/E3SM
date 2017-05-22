@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#   Jobscript for launching dcmip2016 test 3 on the NERSC Cori machine
+#   Jobscript for launching dcmip2016 test 3 on the NERSC Edison machine
 #
 # usage: sbatch jobscript-...
 
@@ -10,7 +10,6 @@
 #SBATCH -p debug              # queue (partition) -- normal, development, etc.
 #SBATCH -t 00:30:00           # run time (hh:mm:ss)
 #SBATCH -A acme               # charge hours to account 1
-#SBATCH -C haswell            # use Haswell nodes
 
 EXEC=../../../test_execs/theta-nlev40/theta-nlev40
 NCPU=960
