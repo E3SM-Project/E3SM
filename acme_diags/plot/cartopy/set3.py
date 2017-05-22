@@ -56,7 +56,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     ax.xaxis.set_ticks_position('bottom')
     ax1.xaxis.set_ticks_position('bottom')
     ax.set_ylabel(test.long_name +' ('+ test.units+')')
-    ax1.set_ylabel(diff.long_name +' ('+ diff.units+')')
+    ax1.set_ylabel(test.long_name +' ('+ test.units+')')
 #    ax.yaxis.set_ticks_position('left')
 #
     fig.suptitle(parameter.main_title, x=0.5, y=0.95, fontsize=18)

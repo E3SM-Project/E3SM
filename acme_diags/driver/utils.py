@@ -10,8 +10,8 @@ def findfile(path_name, data_name, season):
     """Locate file name based on data_name and season."""
     dir_files = os.listdir(path_name)
     for filename in dir_files:
-        if filename.startswith(data_name) and season in filename:
-            return path_name+filename
+       if filename.startswith(data_name) and season in filename:
+           return path_name+filename
     raise IOError(
         "No file found based on given path_name and data_name")
        
