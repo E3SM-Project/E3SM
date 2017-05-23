@@ -87,7 +87,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_run_advection(domain, clock)
+  subroutine cice_run_advection(domain, clock, ierr)
 
     use cice_advection_upwind, only: &
          cice_run_advection_upwind
@@ -100,6 +100,9 @@ contains
 
     type (MPAS_Clock_type), intent(in) :: &
          clock !< Input:
+
+    integer, intent(inout) :: &
+         ierr  !< Input/Output:
 
     logical, pointer :: &
          config_use_advection
@@ -124,7 +127,7 @@ contains
           !           (Later, change volume to thickness throughout code?)
 
           call mpas_timer_start("advection incr remap")
-          call cice_run_advection_incremental_remap(domain, clock)
+          call cice_run_advection_incremental_remap(domain, clock, ierr)
           call mpas_timer_stop("advection incr remap")
 
           !TODO WHL - Convert ice/snow thickness to volume here

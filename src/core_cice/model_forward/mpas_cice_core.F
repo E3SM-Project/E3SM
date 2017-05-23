@@ -390,7 +390,7 @@ module cice_core
 
       use mpas_derived_types
       use cice_time_integration
-      use mpas_timer
+      use cice_error, only: cice_check_critical_error
 
       implicit none
 
@@ -398,7 +398,12 @@ module cice_core
       integer, intent(in) :: itimestep
       character(len=*), intent(in) :: timeStamp
 
-      call cice_timestep(domain, clock, itimestep)
+      integer :: ierr
+
+      ierr = 0
+      call cice_timestep(domain, clock, itimestep, ierr)
+
+      call cice_check_critical_error(domain, ierr)
 
    end subroutine mpas_timestep
 

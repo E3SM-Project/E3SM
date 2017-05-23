@@ -33,6 +33,8 @@ module cice_advection_incremental_remap
         cice_set_tracer_array_pointers, &
         cice_update_tracer_halo
 
+   use cice_error
+
    implicit none
    private
    save
@@ -2338,6 +2340,7 @@ contains
   subroutine cice_run_advection_incremental_remap(&
        domain,      &
        clock,       &
+       ierr,        &
        timeLevelIn, &
        updateHaloInitIn,  &
        updateHaloFinalIn)
@@ -2349,6 +2352,9 @@ contains
 
     type (MPAS_Clock_type), intent(in) :: &
          clock     !< Input: clock
+
+    integer, intent(inout) :: &
+         ierr      !< Input/Output: error code
 
     integer, intent(in), optional :: &
          timeLevelIn    !< Input: time level of input fields (1 or 2)
@@ -2513,12 +2519,15 @@ contains
             domain, &
             block, &
             dynamicsTimeStep, &
-            tracersHead)
+            tracersHead, &
+            ierr)
+       if (ierr > 0) exit
 
        block  => block % next
 
     enddo  ! associated(block)
     call mpas_timer_stop("incr remap blocks")
+    if (ierr > 0) return
 
     ! Optional check for conservation of mass and mass*tracer
     ! Note: This check must be done outside the block loop because it requires global sums
@@ -2529,8 +2538,9 @@ contains
        if (verboseRun) call mpas_log_write('Check conservation')
 
        call mpas_timer_start("incr remap tracer cons check")
-       call check_tracer_conservation(dminfo, tracersHead)
+       call check_tracer_conservation(dminfo, tracersHead, ierr)
        call mpas_timer_stop("incr remap tracer cons check")
+       if (ierr > 0) return
 
     endif
 
@@ -2544,8 +2554,9 @@ contains
        if (verboseRun) call mpas_log_write('Check monotonicity')
 
        call mpas_timer_start("incr remap tracer mono check")
-       call check_tracer_monotonicity(domain, tracersHead)
+       call check_tracer_monotonicity(domain, tracersHead, ierr)
        call mpas_timer_stop("incr remap tracer mono check")
+       if (ierr > 0) return
 
     endif
 
@@ -2692,6 +2703,7 @@ contains
        block,       &
        dt,          &
        tracersHead, &
+       ierr,        &
        timeLevelIn)
 
     ! in/out arguments
@@ -2703,6 +2715,9 @@ contains
 
     real(kind=RKIND), intent(in) :: &
          dt           !< Input: time step
+
+    integer, intent(inout) :: &
+         ierr         !< Input/Output: error code
 
     type(tracer_type), pointer :: &
          tracersHead  !< Input/output: pointer to first element of linked list of tracers
@@ -3122,8 +3137,13 @@ contains
          iCellTriangle,        &
          indexToCellID,        &
          indexToEdgeID,        &
-         block)
+         block,                &
+         ierr)
     call mpas_timer_stop("incr remap integrate fluxes")
+    if (ierr > 0) then
+       call cice_critical_error_write_block(domain, block)
+       return
+    endif
 
     if (verboseFluxes .and. etestOnProc .and. block % localBlockID == etestBlockID) then
        iEdge = etest
@@ -3227,8 +3247,13 @@ contains
          tracersHead,      &
          indexToCellID,    &
          indexToEdgeID,    &
-         block)
+         block, &
+         ierr)
     call mpas_timer_stop("incr remap update tracers")
+    if (ierr > 0) then
+       call cice_critical_error_write_block(domain, block)
+       return
+    endif
 
     !-------------------------------------------------------------------
     ! Compute final sums of mass*tracer over the locally owned cells
@@ -5212,9 +5237,6 @@ contains
        departurePoint,                      &
        on_a_sphere)
 
-    use cice_diagnostics, only: &
-         cice_warning_message
-
     type(domain_type), intent(in) :: &
          domain             !< Input: domain
 
@@ -5290,14 +5312,11 @@ contains
 
        if (trajectoryLength > minLengthEdgesOnVertex(iVertex)) then
           write(errorMessage,*) 'Potential CFL violation in IR advection, global vertex ID =', indexToVertexID(iVertex)
-          call mpas_log_write(trim(errorMessage), MPAS_LOG_WARN)
-          call cice_warning_message(domain, errorMessage)
+          call mpas_log_write(trim(errorMessage), MPAS_LOG_ERR) ! We will not trigger a critical error later
           write(errorMessage,*) 'Speed at vertex =', trajectoryLength/dt
-          call mpas_log_write(trim(errorMessage), MPAS_LOG_WARN)
-          call cice_warning_message(domain, errorMessage)
+          call mpas_log_write(trim(errorMessage), MPAS_LOG_ERR) ! We will not trigger a critical error later
           write(errorMessage,*) 'Maximum safe speed =', minLengthEdgesOnVertex(iVertex)/dt
-          call mpas_log_write(trim(errorMessage), MPAS_LOG_WARN)
-          call cice_warning_message(domain, errorMessage)
+          call mpas_log_write(trim(errorMessage), MPAS_LOG_ERR) ! We will not trigger a critical error later
        endif
 
     enddo
@@ -6628,7 +6647,8 @@ contains
        iCellTriangle,        &
        indexToCellID,        &
        indexToEdgeID,        &
-       block)
+       block,                &
+       ierr)
 
     type(tracer_type), pointer :: &
          tracersHead      !< Input/output: pointer to first element of linked list of tracers
@@ -6660,6 +6680,9 @@ contains
 
     type(block_type), intent(in) :: &
          block             !< Input: local block (diagnostic only)
+
+    integer, intent(inout) :: &
+         ierr              !< Input: error code
 
     ! local variables
 
@@ -6828,7 +6851,9 @@ contains
                                call mpas_log_write('center val: $r', MPAS_LOG_ERR, realArgs=(/thisTracer % center2D(iCat,iCell)/))
                                call mpas_log_write('x gradient: $r', MPAS_LOG_ERR, realArgs=(/thisTracer % xGrad2D(iCat,iCell)/))
                                call mpas_log_write('y gradient: $r', MPAS_LOG_ERR, realArgs=(/thisTracer % yGrad2D(iCat,iCell)/))
-                               call mpas_log_write('IR negative reconstructed ice area (nDims == 2)', MPAS_LOG_CRIT)
+                               call mpas_log_write('IR negative reconstructed ice area (nDims == 2)', MPAS_LOG_ERR)
+                               ierr = SEAICE_ERROR_IR_NEG_AREA
+                               return
                             endif  ! negative area
                          enddo   ! iCat
                       enddo   ! iqp
@@ -6930,7 +6955,9 @@ contains
                                   call mpas_log_write('y gradient: $r', messageType=MPAS_LOG_ERR, &
                                        realArgs=(/thisTracer % yGrad3D(iLayer,iCat,iCell)/))
                                   call mpas_log_write('MPAS-seaice: IR negative reconstructed ice area (nDims == 3)', &
-                                       messageType=MPAS_LOG_CRIT)
+                                       messageType=MPAS_LOG_ERR)
+                                  ierr = SEAICE_ERROR_IR_NEG_AREA
+                                  return
                                endif  ! negative area
                             enddo   ! iLayer
                          enddo   ! iCat
@@ -7126,7 +7153,8 @@ contains
        tracersHead,      &
        indexToCellID,    &
        indexToEdgeID,    &
-       block)
+       block,            &
+       ierr)
 
     integer, intent(in) :: &
          nCellsSolve       !< Input: number of locally owned cells to be updated
@@ -7151,6 +7179,9 @@ contains
 
     type(block_type), intent(in) :: &
          block             !< Input: local block (diagnostic only)
+
+    integer, intent(inout) :: &
+         ierr              !< Input/Output: error code
 
     ! local variables
 
@@ -7455,9 +7486,12 @@ contains
              do iCell = 1, nCellsSolve
                 do iCat = 1, nCategories
                    if (thisTracer % array2D(iCat,iCell) < 0.0_RKIND) then
-                      call mpas_log_write('IR: Negative mass in IR: iCat, iCell, value: $i $i $r', &
-                           messageType=MPAS_LOG_CRIT, &
-                           intArgs=(/iCat, iCell/), realArgs=(/thisTracer % array2D(iCat,iCell)/))
+                      call mpas_log_write('IR: Negative mass in IR: iCat, iCell, global iCell, value: $i $i $i $r', &
+                           messageType=MPAS_LOG_ERR, &
+                           intArgs=(/iCat, iCell, indexToCellID(iCell)/), &
+                           realArgs=(/thisTracer % array2D(iCat,iCell)/))
+                      ierr = SEAICE_ERROR_IR_NEG_MASS
+                      return
                    endif
                 enddo
              enddo
@@ -7468,9 +7502,12 @@ contains
                 do iCat = 1, nCategories
                    do iLayer = 1, nLayers
                       if (thisTracer % array3D(iLayer,iCat,iCell) < 0.0_RKIND) then
-                         call mpas_log_write('IR: Negative mass in IR: iLayer, iCat, iCell, value: $i $i $i $r', &
-                              messageType=MPAS_LOG_CRIT, &
-                              intArgs=(/iLayer, iCat, iCell/), realArgs=(/thisTracer % array3D(iLayer,iCat,iCell)/))
+                         call mpas_log_write('IR: Negative mass in IR: iLayer, iCat, iCell, global iCell, value: $i $i $i $i $r', &
+                              messageType=MPAS_LOG_ERR, &
+                              intArgs=(/iLayer, iCat, iCell, indexToCellID(iCell)/), &
+                              realArgs=(/thisTracer % array3D(iLayer,iCat,iCell)/))
+                         ierr = SEAICE_ERROR_IR_NEG_MASS
+                         return
                       endif
                    enddo
                 enddo
@@ -8097,13 +8134,17 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine check_tracer_conservation(dminfo, tracersHead)
+  subroutine check_tracer_conservation(dminfo, tracersHead, ierr)
 
     type (dm_info), intent(in) :: dminfo   !< Input: domain info
 
     type(tracer_type), pointer :: &
          tracersHead    !< Input/output: pointer to first element of linked list of tracers
                         ! The pointer stays attached to the first tracer, but tracer sums are updated
+
+    integer, intent(inout) :: &
+         ierr           !<Input/Output: error code
+
     ! local variables
     type(tracer_type), pointer :: thisTracer
 
@@ -8157,7 +8198,9 @@ contains
                         trim(thisTracer % tracerName)//" $i", MPAS_LOG_ERR, intArgs=(/iCat/))
                    call mpas_log_write('Init value, final value: $r $r', MPAS_LOG_ERR, &
                         realArgs=(/thisTracer % globalSumInit2D(iCat), thisTracer % globalSumFinal2D(iCat)/))
-                   call mpas_log_write('Difference, ratio: $r $r', MPAS_LOG_CRIT, realArgs=(/difference, ratio/))
+                   call mpas_log_write('Difference, ratio: $r $r', MPAS_LOG_ERR, realArgs=(/difference, ratio/))
+                   ierr = SEAICE_ERROR_IR_CONS
+                   return
                 endif
 
              endif
@@ -8201,8 +8244,10 @@ contains
                            trim(thisTracer % tracerName)//' $i $i', MPAS_LOG_ERR, intArgs=(/iCat, iLayer/))
                       call mpas_log_write('Init value, final value: $r $r', MPAS_LOG_ERR, &
                            realArgs=(/thisTracer % globalSumInit3D(iLayer,iCat), thisTracer % globalSumFinal3D(iLayer,iCat)/))
-                      call mpas_log_write('Difference, ratio: $r $r', MPAS_LOG_CRIT, &
+                      call mpas_log_write('Difference, ratio: $r $r', MPAS_LOG_ERR, &
                            realArgs=(/difference, ratio/))
+                      ierr = SEAICE_ERROR_IR_CONS
+                      return
                    endif
 
                 endif
@@ -8379,7 +8424,7 @@ contains
   !       Might not work to do so without the extended min/max, because local min/max
   !        will not be computed correctly for initially ice-free cells
 
-  subroutine check_tracer_monotonicity(domain, tracersHead)
+  subroutine check_tracer_monotonicity(domain, tracersHead, ierr)
 
     type (domain_type), intent(inout) :: &
          domain        !< Input: domain info
@@ -8387,6 +8432,9 @@ contains
     type(tracer_type), pointer :: &
          tracersHead   !< Input/output: pointer to first element of linked list of tracers
                        ! The pointer stays attached to the first tracer, but all tracer sums are updated
+
+    integer, intent(inout) :: &
+         ierr          !<Input/Output: error code
 
     ! local variables
 
@@ -8398,7 +8446,8 @@ contains
          nCellsSolve        ! number of locally owned cells on block
 
     integer, dimension(:), pointer :: &
-         nEdgesOnCell       ! number of edges for each cell
+         nEdgesOnCell, &    ! number of edges for each cell
+         indexToCellID      ! index to the global cell ID
 
     integer, dimension(:,:), pointer ::  &
          cellsOnCell        ! cell index for each edge neighbor of a given cell
@@ -8434,6 +8483,7 @@ contains
     call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
     call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
     call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+    call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
 
     ! loop over tracers
 
@@ -8522,29 +8572,37 @@ contains
 
                             call mpas_log_write(' ', MPAS_LOG_ERR)
                             call mpas_log_write('IR advection, monotonicity violation!', MPAS_LOG_ERR)
-                            call mpas_log_write('Tracer, iCat, iCell ='//trim(thisTracer % tracerName)//" $i $i", &
-                                 MPAS_LOG_ERR, intArgs=(/iCat, iCell/))
+                            call mpas_log_write(&
+                                 'Tracer, iCat, iCell, global iCell ='//trim(thisTracer % tracerName)//" $i $i $i", &
+                                 MPAS_LOG_ERR, intArgs=(/iCat, iCell, indexToCellID(iCell)/))
                             call mpas_log_write('Old min value in neighborhood = $f', &
                                  MPAS_LOG_ERR, realArgs=(/thisTracer % localMin2D(iCat,iCell)/))
                             call mpas_log_write('New value in cell = $r', &
                                  MPAS_LOG_ERR, realArgs=(/thisTracer % array2D(iCat,iCell)/))
                             call mpas_log_write('Tolerance, difference: $r $r', MPAS_LOG_ERR, &
                                  realArgs=(/toleranceMin, thisTracer % localMin2D(iCat,iCell) - thisTracer % array2D(iCat,iCell)/))
-                            call mpas_log_write('IR advection, monotonicity violation (min, nDims == 2)', MPAS_LOG_CRIT)
+                            call mpas_log_write('IR advection, monotonicity violation (min, nDims == 2)', MPAS_LOG_ERR)
+                            ierr = SEAICE_ERROR_IR_MONO
+                            call cice_critical_error_write_block(domain, block)
+                            return
 
                          elseif (thisTracer % array2D(iCat,iCell) > thisTracer % localMax2D(iCat,iCell) + toleranceMax) then
 
                             call mpas_log_write(' ', MPAS_LOG_ERR)
                             call mpas_log_write('IR advection, monotonicity violation!', MPAS_LOG_ERR)
-                            call mpas_log_write('Tracer, iCat, iCell = '//trim(thisTracer % tracerName)//' $i $i', &
-                                 MPAS_LOG_ERR, intArgs=(/iCat, iCell/))
+                            call mpas_log_write(&
+                                 'Tracer, iCat, iCell, global iCell = '//trim(thisTracer % tracerName)//' $i $i $i', &
+                                 MPAS_LOG_ERR, intArgs=(/iCat, iCell, indexToCellID(iCell)/))
                             call mpas_log_write('Old max value in neighborhood = $r', &
                                  MPAS_LOG_ERR, realArgs=(/thisTracer % localMax2D(iCat,iCell)/))
                             call mpas_log_write('New value in cell = $r', &
                                  MPAS_LOG_ERR, realArgs=(/thisTracer % array2D(iCat,iCell)/))
                             call mpas_log_write('Tolerance, difference: $r $r', MPAS_LOG_ERR, &
                                  realArgs=(/toleranceMax, thisTracer % array2D(iCat,iCell) - thisTracer % localMax2D(iCat,iCell)/))
-                            call mpas_log_write('IR advection, monotonicity violation (max, nDims == 2)', MPAS_LOG_CRIT)
+                            call mpas_log_write('IR advection, monotonicity violation (max, nDims == 2)', MPAS_LOG_ERR)
+                            ierr = SEAICE_ERROR_IR_MONO
+                            call cice_critical_error_write_block(domain, block)
+                            return
 
                          endif
 
@@ -8647,32 +8705,38 @@ contains
 
                                call mpas_log_write(' ', MPAS_LOG_ERR)
                                call mpas_log_write('IR advection, monotonicity violation!', MPAS_LOG_ERR)
-                               call mpas_log_write('Tracer, iLayer,iCat, iCell = '//&
-                                    trim(thisTracer % tracerName)//' $i $i $i', &
-                                    MPAS_LOG_ERR, intArgs=(/iLayer, iCat, iCell/))
+                               call mpas_log_write('Tracer, iLayer, iCat, iCell, global iCell = '//&
+                                    trim(thisTracer % tracerName)//' $i $i $i $i', &
+                                    MPAS_LOG_ERR, intArgs=(/iLayer, iCat, iCell, indexToCellID(iCell)/))
                                call mpas_log_write('Old min value in neighborhood = $r', MPAS_LOG_ERR, &
                                     realArgs=(/thisTracer % localMin3D(iLayer,iCat,iCell)/))
                                call mpas_log_write('New value in cell = $r', MPAS_LOG_ERR, &
                                     realArgs=(/thisTracer % array3D(iLayer,iCat,iCell)/))
                                call mpas_log_write('Tolerance, difference: $r $r', MPAS_LOG_ERR, &
                                     realArgs=(/toleranceMin, thisTracer % localMin3D(iLayer,iCat,iCell) - thisTracer % array3D(iLayer,iCat,iCell)/))
-                               call mpas_log_write('IR advection, monotonicity violation (min, nDims == 3)', MPAS_LOG_CRIT)
+                               call mpas_log_write('IR advection, monotonicity violation (min, nDims == 3)', MPAS_LOG_ERR)
+                               ierr = SEAICE_ERROR_IR_MONO
+                               call cice_critical_error_write_block(domain, block)
+                               return
 
                             elseif (thisTracer % array3D(iLayer,iCat,iCell) > &
                                     thisTracer % localMax3D(iLayer,iCat,iCell) + toleranceMax) then
 
                                call mpas_log_write(' ', MPAS_LOG_ERR)
                                call mpas_log_write('IR advection, monotonicity violation!', MPAS_LOG_ERR)
-                               call mpas_log_write('Tracer, iLayer,iCat, iCell = '//&
-                                    trim(thisTracer % tracerName)//' $i $i $i', &
-                                    MPAS_LOG_ERR, intArgs=(/iLayer, iCat, iCell/))
+                               call mpas_log_write('Tracer, iLayer, iCat, iCell, global iCell = '//&
+                                    trim(thisTracer % tracerName)//' $i $i $i $i', &
+                                    MPAS_LOG_ERR, intArgs=(/iLayer, iCat, iCell, indexToCellID(iCell)/))
                                call mpas_log_write('Old max value in neighborhood = $r', MPAS_LOG_ERR, &
                                     realArgs=(/thisTracer % localMax3D(iLayer,iCat,iCell)/))
                                call mpas_log_write('New value in cell = $r', MPAS_LOG_ERR, &
                                     realArgs=(/thisTracer % array3D(iLayer,iCat,iCell)/))
                                call mpas_log_write('Tolerance, difference: $r $r', MPAS_LOG_ERR, &
                                     realArgs=(/toleranceMax, thisTracer % array3D(iLayer,iCat,iCell) - thisTracer % localMax3D(iLayer,iCat,iCell)/))
-                               call mpas_log_write('IR advection, monotonicity violation (max, nDims == 3)', MPAS_LOG_CRIT)
+                               call mpas_log_write('IR advection, monotonicity violation (max, nDims == 3)', MPAS_LOG_ERR)
+                               ierr = SEAICE_ERROR_IR_MONO
+                               call cice_critical_error_write_block(domain, block)
+                               return
 
                             endif
 

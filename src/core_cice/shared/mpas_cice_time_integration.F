@@ -43,7 +43,8 @@ contains
   subroutine cice_timestep(&
        domain, &
        clock, &
-       itimestep)!{{{
+       itimestep, &
+       ierr)!{{{
 
     use mpas_timer
 
@@ -79,6 +80,9 @@ contains
 
     integer, intent(in) :: &
          itimestep !< Input:
+
+    integer, intent(inout) :: &
+         ierr !< Input
 
     type(block_type), pointer :: &
          block
@@ -125,7 +129,8 @@ contains
 
     ! pre dynamics column physics
     call mpas_timer_start("Column pre-dynamics")
-    call cice_column_predynamics_time_integration(domain, clock)
+    call cice_column_predynamics_time_integration(domain, clock, ierr)
+    if (ierr > 0) return
     call mpas_timer_stop("Column pre-dynamics")
 
     ! loop of dynamcis subcycle
@@ -145,13 +150,15 @@ contains
        ! advection
        call mpas_timer_start("Advection")
        if (config_use_advection) &
-            call cice_run_advection(domain, clock)
+            call cice_run_advection(domain, clock, ierr)
        call mpas_timer_stop("Advection")
+       if (ierr > 0) return
 
        ! ridging
        call mpas_timer_start("Column")
-       call cice_column_dynamics_time_integration(domain, clock)
+       call cice_column_dynamics_time_integration(domain, clock, ierr)
        call mpas_timer_stop("Column")
+       if (ierr > 0) return
 
     enddo ! iDynamicsSubcycle
 

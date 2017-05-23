@@ -50,6 +50,32 @@
                   filename_interval="none"
                   input_interval="none" />
 
+<stream name="abort_block"
+        type="output"
+        filename_template="abort_seaice_$Y-$M-$D_$h.$m.$s_block_$B.nc"
+        filename_interval="none"
+        clobber_mode="truncate"
+        output_interval="none" >
+
+	<stream name="mesh"/>
+	<stream name="abort_contents"/>
+	<var name="daysSinceStartOfSim"/>
+	<var name="xtime"/>
+</stream>
+
+<stream name="abort"
+        type="output"
+        filename_template="abort_seaice_$Y-$M-$D_$h.$m.$s.nc"
+        filename_interval="none"
+        clobber_mode="truncate"
+        output_interval="none" >
+
+	<stream name="mesh"/>
+	<stream name="abort_contents"/>
+	<var name="daysSinceStartOfSim"/>
+	<var name="xtime"/>
+</stream>
+
 <stream name="regionalStatisticsOutput"
         type="output"
         filename_template="analysis_members/regionalStatistics.nc"

@@ -12,6 +12,7 @@
     config_write_output_on_startup = false
     config_test_case_diag = false
     config_test_case_diag_type = 'none'
+    config_full_abort_write = true
 /
 &decomposition
     config_block_decomp_file_prefix = 'graphs/graph.info.part.'
