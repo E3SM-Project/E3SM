@@ -1243,7 +1243,7 @@ def _check_for_invalid_args(args):
         if arg.startswith("-") and len(arg) > 2:
 #       Uncomment these lines when we want to enforce --mulitchararg syntax
 #            if arg == "-value" or arg == "-noecho":
-                logger.warn("This argument is depricated, please use -%s"%arg)
+            logger.warn("This argument is depricated, please use -%s"%arg)
 #            else:
 #                expect(False, "Invalid argument %s\n  Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options"%arg)
 
