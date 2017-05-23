@@ -49,8 +49,9 @@ module prep_glc_mod
 
   private :: prep_glc_set_g2x_lx_fields
   private :: prep_glc_merge
-  private :: prep_glc_map_qice_conservative_lnd2glc
   private :: prep_glc_map_one_state_field_lnd2glc
+  private :: prep_glc_map_qice_conservative_lnd2glc
+  private :: prep_glc_renormalize_smb
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -488,7 +489,6 @@ contains
              ! The Fg2l mapper is needed to map some glc fields to the land grid
              !  for purposes of conservation.
              call prep_glc_map_qice_conservative_lnd2glc(egi=egi, eli=eli, &
-                  fieldname = fieldname, &
                   fractions_lx = fractions_lx(efi), &
                   mapper_Sl2g = mapper_Sl2g, &
                   mapper_Fg2l = mapper_Fg2l)
@@ -582,7 +582,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_map_qice_conservative_lnd2glc(egi, eli, fieldname, fractions_lx, &
+  subroutine prep_glc_map_qice_conservative_lnd2glc(egi, eli, fractions_lx, &
        mapper_Sl2g, mapper_Fg2l)
 
     ! Maps the surface mass balance field (qice) from the land grid to the glc grid.
@@ -594,22 +594,16 @@ contains
     ! https://docs.google.com/document/d/1H_SuK6SfCv1x6dK91q80dFInPbLYcOkUj_iAa6WRnqQ/edit
 
     use map_lnd2glc_mod, only : map_lnd2glc
-    use map_glc2lnd_mod, only : map_glc2lnd_ec
 
     ! Arguments
     integer, intent(in) :: egi  ! glc instance index
     integer, intent(in) :: eli  ! lnd instance index
-    character(len=*), intent(in) :: fieldname  ! base name of field to map (without elevation class suffix)
     type(mct_aVect) , intent(in) :: fractions_lx  ! fractions on the land grid, for this frac instance
     type(seq_map), intent(inout) :: mapper_Sl2g   ! state mapper from land to glc grid; non-conservative
     type(seq_map), intent(inout) :: mapper_Fg2l   ! flux mapper from glc to land grid; conservative
     !
     ! Local Variables
     type(mct_aVect), pointer :: g2x_gx   ! glc export, glc grid
-    type(mct_aVect), pointer :: x2l_lx   ! lnd import, lnd grid
-    type(mct_aVect)          :: g2x_lx   ! glc export, lnd grid (not a pointer: created locally)
-
-    integer :: mpicom
 
     logical :: iamroot
 
@@ -623,30 +617,166 @@ contains
     !       coupler value of aream*flux.  This assumes that the SMB field is contained in 
     !       seq_fields l2x_fluxes and seq_fields_x2g_fluxes.
 
-    real(r8), dimension(:), allocatable :: aream_l   ! cell areas on land grid, for mapping
     real(r8), dimension(:), allocatable :: aream_g   ! cell areas on glc grid, for mapping
     real(r8), dimension(:), allocatable :: area_g    ! cell areas on glc grid, according to glc model
 
-    type(mct_ggrid), pointer :: dom_l   ! land grid info
     type(mct_ggrid), pointer :: dom_g   ! glc grid info
 
-    integer :: lsize_l   ! number of points on land grid
     integer :: lsize_g   ! number of points on glc grid
 
-    integer :: nEC       ! number of elevation classes
-
-    integer :: n, ec
+    integer :: n
     integer :: km, ka
+
+    real(r8), pointer :: qice_g(:)        ! qice data on glc grid
+
+    !---------------------------------------------------------------
+
+    call seq_comm_getdata(CPLID, iamroot=iamroot)
+
+    if (iamroot) then
+       write(logunit,*) ' '
+       write(logunit,*) 'In prep_glc_map_qice_conservative_lnd2glc'
+       write(logunit,*) 'smb_renormalize = ', smb_renormalize
+    endif
+
+    ! Get attribute vector needed for mapping and conservation
+    g2x_gx => component_get_c2x_cx(glc(egi))
+
+    ! get grid size
+    lsize_g = mct_aVect_lsize(l2x_gx(eli))
+
+    ! allocate and fill area arrays on the glc grid
+    ! (Note that we get domain information from instance 1, following what's done in
+    ! other parts of the coupler.)
+    dom_g => component_get_dom_cx(glc(1))
+
+    allocate(aream_g(lsize_g))
+    km = mct_aVect_indexRa(dom_g%data, "aream" )
+    aream_g(:) = dom_g%data%rAttr(km,:)
+
+    allocate(area_g(lsize_g))
+    ka = mct_aVect_indexRa(dom_g%data, "area" )
+    area_g(:) = dom_g%data%rAttr(ka,:)
+
+    ! Map the SMB from the land grid to the glc grid, using a non-conservative state mapper.
+    call map_lnd2glc(l2x_l = l2gacc_lx(eli), &
+         landfrac_l = fractions_lx, &
+         g2x_g = g2x_gx, &
+         fieldname = qice_fieldname, &
+         mapper = mapper_Sl2g, &
+         l2x_g = l2x_gx(eli))
+
+    ! Export the remapped SMB to a local array
+    allocate(qice_g(lsize_g))
+    call mct_aVect_exportRattr(l2x_gx(eli), trim(qice_fieldname), qice_g)
+    
+    ! Make a preemptive adjustment to qice_g to account for area differences between CISM and the coupler.
+    !    In component_mod.F90, there is a call to mct_avect_vecmult, which multiplies the fluxes
+    !     by aream_g/area_g for conservation purposes. Where CISM areas are larger (area_g > aream_g), 
+    !     the fluxes are reduced, and where CISM areas are smaller, the fluxes are increased.
+    !    As a result, an SMB of 1 m/yr in CLM would be converted to an SMB ranging from
+    !     ~0.9 to 1.05 m/yr in CISM (with smaller values where CISM areas are larger, and larger
+    !     values where CISM areas are smaller).
+    !    Here, to keep CISM values close to the CLM values in the corresponding locations,
+    !      we anticipate the later correction and multiply qice_g by area_g/aream_g.
+    !     Then the later call to mct_avect_vecmult will bring qice back to the original values
+    !       obtained from bilinear remapping.
+    !    If Flgl_qice were changed to a state (and not included in seq_flds_x2g_fluxes),
+    !     then we could skip this adjustment.
+    !
+    ! Note that we are free to do this or any other adjustments we want to qice at this
+    ! point in the remapping, because the conservation correction will ensure that we
+    ! still conserve globally despite these adjustments (and smb_renormalize = .false.
+    ! should only be used in cases where conservation doesn't matter anyway).
+
+    do n = 1, lsize_g
+       if (aream_g(n) > 0.0_r8) then
+          qice_g(n) = qice_g(n) * area_g(n)/aream_g(n)
+       else
+          qice_g(n) = 0.0_r8
+       endif
+    enddo
+
+    if (smb_renormalize) then
+       call prep_glc_renormalize_smb( &
+            eli = eli, &
+            g2x_gx = g2x_gx, &
+            mapper_Fg2l = mapper_Fg2l, &
+            aream_g = aream_g, &
+            qice_g = qice_g)
+    end if
+
+    ! Put the adjusted SMB back into l2x_gx.
+    !
+    ! If we are doing renormalization, then this is the renormalized SMB. Whether or not
+    ! we are doing renormalization, this captures the preemptive adjustment to qice_g to
+    ! account for area differences between CISM and the coupler.
+    call mct_aVect_importRattr(l2x_gx(eli), qice_fieldname, qice_g)
+
+    ! clean up
+
+    deallocate(aream_g)
+    deallocate(area_g)
+    deallocate(qice_g)
+
+  end subroutine prep_glc_map_qice_conservative_lnd2glc
+
+  !================================================================================================
+
+  subroutine prep_glc_renormalize_smb(eli, g2x_gx, mapper_Fg2l, aream_g, qice_g)
+
+    ! Renormalizes surface mass balance (smb, here named qice_g) so that the global
+    ! integral on the glc grid is equal to the global integral on the land grid.
+    !
+    ! This is required for conservation - although conservation is only necessary if we
+    ! are running with a fully-interactive, two-way-coupled glc.
+    !
+    ! For high-level design, see:
+    ! https://docs.google.com/document/d/1H_SuK6SfCv1x6dK91q80dFInPbLYcOkUj_iAa6WRnqQ/edit
+
+    use map_glc2lnd_mod, only : map_glc2lnd_ec
+
+    ! Arguments
+    integer         , intent(in)    :: eli         ! lnd instance index
+    type(mct_aVect) , intent(in)    :: g2x_gx      ! glc export, glc grid
+    type(seq_map)   , intent(inout) :: mapper_Fg2l ! flux mapper from glc to land grid; conservative
+    real(r8)        , intent(in)    :: aream_g(:)  ! cell areas on glc grid, for mapping
+    real(r8)        , intent(inout) :: qice_g(:)   ! qice data on glc grid
+
+    !
+    ! Local Variables
+    integer :: mpicom
+    logical :: iamroot
+
+    type(mct_ggrid), pointer :: dom_l                ! land grid info
+
+    integer :: lsize_l                               ! number of points on land grid
+    integer :: lsize_g                               ! number of points on glc grid
+
+    real(r8), dimension(:), allocatable :: aream_l   ! cell areas on land grid, for mapping
 
     real(r8), pointer :: qice_l(:,:)      ! SMB (Flgl_qice) on land grid
     real(r8), pointer :: frac_l(:,:)      ! EC fractions (Sg_ice_covered) on land grid
     real(r8), pointer :: tmp_field_l(:)   ! temporary field on land grid
 
+    ! The following need to be pointers to satisfy the MCT interface
+    ! Note: Sg_icemask defines where the ice sheet model can receive a nonzero SMB from the land model.
+    real(r8), pointer :: Sg_icemask_g(:)  ! icemask on glc grid
+    real(r8), pointer :: Sg_icemask_l(:)  ! icemask on land grid
+    real(r8), pointer :: lfrac(:)         ! land fraction on land grid
+
+    type(mct_aVect) :: g2x_lx            ! glc export, lnd grid (not a pointer: created locally)
+    type(mct_avect) :: Sg_icemask_l_av   ! temporary attribute vector holding Sg_icemask on the land grid
+
+    integer :: nEC       ! number of elevation classes
+    integer :: n
+    integer :: ec
+    integer :: km
+
     ! various strings for building field names
     character(len=:), allocatable :: elevclass_as_string
     character(len=:), allocatable :: qice_field
     character(len=:), allocatable :: frac_field
-    character(len=:), allocatable :: topo_field
 
     ! local and global sums of accumulation and ablation; used to compute renormalization factors 
 
@@ -664,36 +794,18 @@ contains
     real(r8) :: accum_renorm_factor   ! ratio between global accumulation on the two grids
     real(r8) :: ablat_renorm_factor   ! ratio between global ablation on the two grids
 
-    ! The following need to be pointers to satisfy the MCT interface
-    ! Note: Sg_icemask defines where the ice sheet model can receive a nonzero SMB from the land model.
-    real(r8), pointer :: Sg_icemask_g(:)  ! icemask on glc grid
-    real(r8), pointer :: Sg_icemask_l(:)  ! icemask on land grid
-    real(r8), pointer :: lfrac(:)         ! land fraction on land grid
-    real(r8), pointer :: qice_g(:)        ! qice data on glc grid
-
-    type(mct_avect) :: Sg_icemask_l_av   ! temporary attribute vector holding Sg_icemask on the land grid
-
     real(r8) :: effective_area  ! grid cell area multiplied by min(lfrac,Sg_icemask_l).
                                 ! This is the area that can contribute SMB to the ice sheet model.
 
+
     !---------------------------------------------------------------
+
+    lsize_g = size(qice_g)
+    SHR_ASSERT_FL((size(aream_g) == lsize_g), __FILE__, __LINE__)
 
     call seq_comm_setptrs(CPLID, mpicom=mpicom)
     call seq_comm_getdata(CPLID, iamroot=iamroot)
-
-    if (iamroot) then
-       write(logunit,*) ' '
-       write(logunit,*) 'In prep_glc_map_qice_conservative_lnd2glc, fieldname =', trim(fieldname)
-    endif
-
-    ! Get some attribute vectors needed for mapping and conservation
-
-    g2x_gx => component_get_c2x_cx(glc(egi))
-    x2l_lx => component_get_x2c_cx(lnd(eli))
-
-    ! get grid sizes
     lsize_l = mct_aVect_lsize(l2gacc_lx(eli))
-    lsize_g = mct_aVect_lsize(l2x_gx(eli))
 
     ! allocate and fill area arrays on the land grid
     ! (Note that we get domain information from instance 1, following what's done in
@@ -704,23 +816,10 @@ contains
     km = mct_aVect_indexRa(dom_l%data, "aream" )
     aream_l(:) = dom_l%data%rAttr(km,:)
 
-    ! allocate and fill area arrays on the glc grid
-    ! (Note that we get domain information from instance 1, following what's done in
-    ! other parts of the coupler.)
-    dom_g => component_get_dom_cx(glc(1))
-
-    allocate(aream_g(lsize_g))
-    km = mct_aVect_indexRa(dom_g%data, "aream" )
-    aream_g(:) = dom_g%data%rAttr(km,:)
-
-    allocate(area_g(lsize_g))
-    ka = mct_aVect_indexRa(dom_g%data, "area" )
-    area_g(:) = dom_g%data%rAttr(ka,:)
-
     ! Export land fractions from fractions_lx to a local array
     allocate(lfrac(lsize_l))
     call mct_aVect_exportRattr(fractions_lx, "lfrac", lfrac)
-    
+
     ! Map Sg_icemask from the glc grid to the land grid.
     ! This may not be necessary, if Sg_icemask_l has already been mapped from Sg_icemask_g.
     ! It is done here for two reasons:
@@ -788,7 +887,7 @@ contains
          extra_fields = ' ', &   ! no extra fields
          mapper = mapper_Fg2l, &
          g2x_l = g2x_lx)
-    
+
     ! Export qice and Sg_ice_covered in each elevation class to local arrays.
     ! Note: qice comes from l2gacc_lx; frac comes from g2x_lx.
 
@@ -819,7 +918,7 @@ contains
     ! initialize qice sum
     local_accum_on_land_grid = 0.0_r8
     local_ablat_on_land_grid = 0.0_r8
-       
+
     do n = 1, lsize_l
 
        effective_area = min(lfrac(n),Sg_icemask_l(n)) * aream_l(n)
@@ -828,10 +927,10 @@ contains
 
           if (qice_l(n,ec) >= 0.0_r8) then
              local_accum_on_land_grid = local_accum_on_land_grid &
-                                      + effective_area * frac_l(n,ec) * qice_l(n,ec)
+                  + effective_area * frac_l(n,ec) * qice_l(n,ec)
           else
              local_ablat_on_land_grid = local_ablat_on_land_grid &
-                                      + effective_area * frac_l(n,ec) * qice_l(n,ec)
+                  + effective_area * frac_l(n,ec) * qice_l(n,ec)
           endif
 
        enddo  ! ec
@@ -839,54 +938,15 @@ contains
     enddo   ! n
 
     call shr_mpi_sum(local_accum_on_land_grid, &
-                     global_accum_on_land_grid, &
-                     mpicom, 'accum_l')
+         global_accum_on_land_grid, &
+         mpicom, 'accum_l')
 
     call shr_mpi_sum(local_ablat_on_land_grid, &
-                     global_ablat_on_land_grid, &
-                     mpicom, 'ablat_l')
+         global_ablat_on_land_grid, &
+         mpicom, 'ablat_l')
 
     call shr_mpi_bcast(global_accum_on_land_grid, mpicom)
     call shr_mpi_bcast(global_ablat_on_land_grid, mpicom)
-
-    ! Map the SMB from the land grid to the glc grid, using a non-conservative state mapper.
-    call map_lnd2glc(l2x_l = l2gacc_lx(eli), &
-         landfrac_l = fractions_lx, &
-         g2x_g = g2x_gx, &
-         fieldname = fieldname, &
-         mapper = mapper_Sl2g, &
-         l2x_g = l2x_gx(eli))
-
-    ! Export the remapped SMB to a local array
-    allocate(qice_g(lsize_g))
-    call mct_aVect_exportRattr(l2x_gx(eli), trim(fieldname), qice_g)
-    
-    ! Make a preemptive adjustment to qice_g to account for area differences between CISM and the coupler.
-    !    In component_mod.F90, there is a call to mct_avect_vecmult, which multiplies the fluxes
-    !     by aream_g/area_g for conservation purposes. Where CISM areas are larger (area_g > aream_g), 
-    !     the fluxes are reduced, and where CISM areas are smaller, the fluxes are increased.
-    !    As a result, an SMB of 1 m/yr in CLM would be converted to an SMB ranging from
-    !     ~0.9 to 1.05 m/yr in CISM (with smaller values where CISM areas are larger, and larger
-    !     values where CISM areas are smaller).
-    !    Here, to keep CISM values close to the CLM values in the corresponding locations,
-    !      we anticipate the later correction and multiply qice_g by area_g/aream_g.
-    !     Then the later call to mct_avect_vecmult will bring qice back to the original values
-    !       obtained from bilinear remapping.
-    !    If Flgl_qice were changed to a state (and not included in seq_flds_x2g_fluxes),
-    !     then we could skip this adjustment.
-    !
-    ! Note that we are free to do this or any other adjustments we want to qice at this
-    ! point in the remapping, because the conservation correction will ensure that we
-    ! still conserve globally despite these adjustments (and smb_renormalize = .false.
-    ! should only be used in cases where conservation doesn't matter anyway).
-
-    do n = 1, lsize_g
-       if (aream_g(n) > 0.0_r8) then
-          qice_g(n) = qice_g(n) * area_g(n)/aream_g(n)
-       else
-          qice_g(n) = 0.0_r8
-       endif
-    enddo
 
     ! Sum qice_g over local glc grid cells.
     ! Note: This sum uses the coupler areas (aream_g), which differ from the native CISM areas.
@@ -904,29 +964,29 @@ contains
     local_ablat_on_glc_grid = 0.0_r8
 
     do n = 1, lsize_g
-       
+
        if (qice_g(n) >= 0.0_r8) then
           local_accum_on_glc_grid = local_accum_on_glc_grid &
-                                  + Sg_icemask_g(n) * aream_g(n) * qice_g(n)
+               + Sg_icemask_g(n) * aream_g(n) * qice_g(n)
        else
           local_ablat_on_glc_grid = local_ablat_on_glc_grid &
-                                  + Sg_icemask_g(n) * aream_g(n) * qice_g(n)
+               + Sg_icemask_g(n) * aream_g(n) * qice_g(n)
        endif
 
     enddo   ! n
 
     call shr_mpi_sum(local_accum_on_glc_grid, &
-                     global_accum_on_glc_grid, &
-                     mpicom, 'accum_g')
+         global_accum_on_glc_grid, &
+         mpicom, 'accum_g')
 
     call shr_mpi_sum(local_ablat_on_glc_grid, &
-                     global_ablat_on_glc_grid, &
-                     mpicom, 'ablat_g')
+         global_ablat_on_glc_grid, &
+         mpicom, 'ablat_g')
 
     call shr_mpi_bcast(global_accum_on_glc_grid, mpicom)
     call shr_mpi_bcast(global_ablat_on_glc_grid, mpicom)
 
-    ! Renormalize for conservation
+    ! Renormalize
 
     if (global_accum_on_glc_grid > 0.0_r8) then
        accum_renorm_factor = global_accum_on_land_grid / global_accum_on_glc_grid
@@ -945,35 +1005,23 @@ contains
        write(logunit,*) 'ablat_renorm_factor = ', ablat_renorm_factor
     endif
 
-    if (smb_renormalize) then
-
-       do n = 1, lsize_g
-          if (qice_g(n) >= 0.0_r8) then
-             qice_g(n) = qice_g(n) * accum_renorm_factor
-          else
-             qice_g(n) = qice_g(n) * ablat_renorm_factor
-          endif
-       enddo
-
-       ! Put the renormalized SMB back into l2x_gx.
-       call mct_aVect_importRattr(l2x_gx(eli), qice_fieldname, qice_g)
-
-    endif  ! smb_renormalize
-
-    ! clean up
+    do n = 1, lsize_g
+       if (qice_g(n) >= 0.0_r8) then
+          qice_g(n) = qice_g(n) * accum_renorm_factor
+       else
+          qice_g(n) = qice_g(n) * ablat_renorm_factor
+       endif
+    enddo
 
     deallocate(aream_l)
-    deallocate(aream_g)
-    deallocate(area_g)
     deallocate(lfrac)
     deallocate(Sg_icemask_l)
     deallocate(Sg_icemask_g)
     deallocate(tmp_field_l)
     deallocate(qice_l)
     deallocate(frac_l)
-    deallocate(qice_g)
 
-  end subroutine prep_glc_map_qice_conservative_lnd2glc
+  end subroutine prep_glc_renormalize_smb
 
   !================================================================================================
 
