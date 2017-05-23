@@ -1121,6 +1121,8 @@ contains
         else
            do k=2,nlev  ! simple averaging
               theta_bar(:,:,k) = (theta_cp(:,:,k)+theta_cp(:,:,k-1))/2
+              !theta_bar(:,:,k) = (hvcoord%d_etam(k)*theta_cp(:,:,k)+&
+              !     hvcoord%d_etam(k-1)*theta_cp(:,:,k-1))/(2*hvcoord%d_etai(k))
            enddo
         endif
 
