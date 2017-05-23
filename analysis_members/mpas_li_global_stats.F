@@ -25,6 +25,7 @@ module li_global_stats
    use mpas_stream_manager
 
    use li_mask
+   use li_constants
 
    implicit none
    private
@@ -161,6 +162,7 @@ contains
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: globalStatsAM
       type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: velocityPool
 
       ! arrays, vars needed from other pools for calculations here
       real (kind=RKIND), pointer ::  config_ice_density
@@ -170,29 +172,32 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  sfcMassBal
       real (kind=RKIND), dimension(:), pointer ::  basalMassBal
       real (kind=RKIND), dimension(:), pointer ::  calvingThickness
+      real (kind=RKIND), dimension(:), pointer ::  surfaceSpeed
+      real (kind=RKIND), dimension(:), pointer ::  basalSpeed
 
       integer, dimension(:), pointer :: cellMask
       integer, pointer :: nCellsSolve
       integer :: k, iCell
 
-      ! scalars to be calculated here from global sums
+      ! scalars to be calculated here from global reductions
       real (kind=RKIND), pointer ::  totalIceArea, totalIceVolume
       real (kind=RKIND), pointer ::  groundedIceArea, groundedIceVolume
       real (kind=RKIND), pointer ::  floatingIceArea, floatingIceVolume
       real (kind=RKIND), pointer ::  iceThicknessMax, iceThicknessMin, iceThicknessMean
       real (kind=RKIND), pointer ::  totalSfcMassBal, totalBasalMassBal
       real (kind=RKIND), pointer ::  totalCalvingFlux
+      real (kind=RKIND), pointer ::  surfaceSpeedMax
+      real (kind=RKIND), pointer ::  basalSpeedMax
 
-      ! scalar sums over blocks
+      ! scalar reductions over all blocks on this processor
       real (kind=RKIND) ::  blockSumIceArea, blockSumIceVolume
       real (kind=RKIND) ::  blockSumGroundedIceArea, blockSumGroundedIceVolume
       real (kind=RKIND) ::  blockSumFloatingIceArea, blockSumFloatingIceVolume
       real (kind=RKIND) ::  blockThickMin, blockThickMax
       real (kind=RKIND) ::  blockSumSfcMassBal, blockSumBasalMassBal
       real (kind=RKIND) ::  blockSumCalvingFlux
-
-      ! local parameters
-      real (kind=RKIND), parameter :: scyr = 31536000.0_RKIND  ! seconds per 365-day year
+      real (kind=RKIND) ::  blockMaxSurfaceSpeed
+      real (kind=RKIND) ::  blockMaxBasalSpeed
 
       ! variables for processing stats
       integer, parameter :: kMaxVariables = 16 ! Increase if number of stats increase
@@ -214,9 +219,11 @@ contains
       blockSumBasalMassBal = 0.0_RKIND
       blockSumCalvingFlux = 0.0_RKIND
 
-      ! initialize max, min, mean values to 0
+      ! initialize max to 0, min to large number
       blockThickMin = 100000.0_RKIND
       blockThickMax = 0.0_RKIND
+      blockMaxSurfaceSpeed = 0.0_RKIND
+      blockMaxBasalSpeed = 0.0_RKIND
 
 
       ! loop over blocks
@@ -227,6 +234,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'globalStatsAM', globalStatsAMPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
 
          ! get values and arrays from standard pools
          call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
@@ -238,6 +246,8 @@ contains
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
          call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
+         call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
 
          ! loop over cells
          do iCell = 1,nCellsSolve
@@ -277,10 +287,19 @@ contains
             blockSumCalvingFlux = blockSumCalvingFlux + calvingThickness(iCell) * &
                areaCell(iCell) * config_ice_density / ( deltat / scyr )
 
+            ! max surface speed
+            if (surfaceSpeed(iCell) > blockMaxSurfaceSpeed) then
+               blockMaxSurfaceSpeed = surfaceSpeed(iCell)
+            endif
+
+            ! max basal speed
+            if (basalSpeed(iCell) > blockMaxBasalSpeed) then
+               blockMaxBasalSpeed = basalSpeed(iCell)
+            endif
+
          end do ! end loop over cells
 
          block => block % next
-
       end do    ! end loop over blocks
 
 
@@ -371,7 +390,9 @@ contains
       maxes = 0.0_RKIND
       reductions = 0.0_RKIND
       maxes(1) = blockThickMax
-      nVars = 1
+      maxes(2) = blockMaxSurfaceSpeed * scyr  ! convert units to match Registry
+      maxes(3) = blockMaxBasalSpeed * scyr  ! convert units to match Registry
+      nVars = 3
       call mpas_dmpar_max_real_array(dminfo, nVars, maxes(1:nVars), reductions(1:nVars))
 
       block => domain % blocklist
@@ -379,8 +400,12 @@ contains
          call mpas_pool_get_subpool(block % structs, 'globalStatsAM', globalStatsAMPool)
 
          call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMax', iceThicknessMax)
+         call mpas_pool_get_array(globalStatsAMPool, 'surfaceSpeedMax', surfaceSpeedMax)
+         call mpas_pool_get_array(globalStatsAMPool, 'basalSpeedMax', basalSpeedMax)
 
          iceThicknessMax = reductions(1)
+         surfaceSpeedMax = reductions(2)
+         basalSpeedMax = reductions(3)
 
          block => block % next
       end do
