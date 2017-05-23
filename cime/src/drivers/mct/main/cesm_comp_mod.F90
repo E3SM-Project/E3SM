@@ -3828,10 +3828,10 @@ end subroutine cesm_init
               ice(ens1)%iamroot_compid .or. &
               glc(ens1)%iamroot_compid .or. &
               wav(ens1)%iamroot_compid) then
-            call shr_mem_getusage(msize,mrss)
+            call shr_mem_getusage(msize,mrss,.true.)
 
             write(logunit,105) ' memory_write: model date = ',ymd,tod, &
-                 ' memory = ',mrss,' MB (highwater)    ',msize,' MB (usage)', &
+                 ' memory = ',mrss,' MB (usage)    ',msize,' MB (highwater)', &
                  '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
          endif
       endif
@@ -3949,10 +3949,10 @@ end subroutine cesm_init
          SYPD = shr_const_cday*simDays/(days_per_year*(Time_end-Time_begin))
          write(logunit,FormatR) subname, '# simulated years / cmp-day = ', SYPD
       endif
-      write(logunit,FormatR) subname,' pes min memory highwater  (MB)  = ',mrss0
-      write(logunit,FormatR) subname,' pes max memory highwater  (MB)  = ',mrss1
-      write(logunit,FormatR) subname,' pes min memory last usage (MB)  = ',msize0
-      write(logunit,FormatR) subname,' pes max memory last usage (MB)  = ',msize1
+      write(logunit,FormatR) subname,' pes min memory highwater  (MB)  = ',msize0
+      write(logunit,FormatR) subname,' pes max memory highwater  (MB)  = ',msize1
+      write(logunit,FormatR) subname,' pes min memory last usage (MB)  = ',mrss0
+      write(logunit,FormatR) subname,' pes max memory last usage (MB)  = ',mrss1
       write(logunit,'(//)')
       close(logunit)
    endif
