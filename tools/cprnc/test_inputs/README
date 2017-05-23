@@ -1,0 +1,135 @@
+This directory contains simple test inputs to test cprnc.
+
+All comparisons can be run by running the run_tests script in the
+parent directory. Suggestion: run this once from the baseline
+directory, then once from the new directory; compare against baselines
+with, e.g.:
+
+    baseline_out=/PATH/TO/BASELINE/OUTPUT
+    new_out=/PATH/TO/NEW/OUTPUT
+    for fl in $baseline_out/*; do echo $fl; diff -a $fl $new_out/`basename $fl`; done > diff_report
+
+The files here are:
+
+--- FILES COMPARED AGAINST control.nc ---
+
+- copy.nc: copy of control file (i.e., no diffs)
+
+- diffs_in_vals.nc: one variable has differences in values
+
+- diffs_in_fill.nc: one variable has differences in fill pattern
+
+- diffs_in_vals_and_diffs_in_fill.nc: one variable has differences in
+  values, another has differences in fill pattern
+
+- diffs_in_vals_and_fill.nc: a single variable has differences in both
+  values and fill pattern
+
+- lon_differs.nc: number of longitude points differs
+
+- vals_differ_by_1.1.nc: testvar has values equal to 1.1 times those
+  in the control file. This is useful for testing the relative
+  difference calculation.
+
+  True values are the following (note that relative difference is
+  defined using a denominator of max(v1,v2)):
+
+  - RMS diff: 0.6204837 (printed as 6.2e-1)
+  - avg rel diff: 0.0909091 (printed as 9.1e-2)
+  - avg decimal digits: 1.041393 (printed as 1.0)
+  - worst decimal digits: 1.041393 (printed as 1.0)
+
+- vals_differ_by_1.1_somewhere.nc: similar to vals_differ_by_1.1.nc,
+  but now only a single value differs by a factor of 1.1
+
+  True values are the following (note that relative difference is
+  defined using a denominator of max(v1,v2)):
+
+  - RMS diff: 0.3162278 (printed as 3.2e-1)
+  - avg rel diff: 0.009090909 (printed as 9.1e-3)
+  - avg decimal digits: 1.041393 (printed as 1.0) [note that the
+    average here ignores the indices with no difference]
+  - worst decimal digits: 1.041393 (printed as 1.0)
+
+- vals_differ_by_varying_amounts.nc: testvar has values equal to 1,
+  1.01, 1.02, ..., 1.09 times those in the control file. This is
+  useful for testing the relative difference calculation using more
+  complex differences.
+
+  True values are the following (note that relative difference is
+  defined using a denominator of max(v1,v2)):
+
+  - RMS diff: 0.4434862 (printed as 4.4e-1)
+  - avg rel diff: 0.04233828 (printed as 4.2e-2)
+  - avg decimal digits: 1.403306 (printed as 1.4) [note that the
+    average here normalizes by 9 rather than 10, since the first index
+    has a relative difference of 0]
+  - worst decimal digits: 1.083184 (printed as 1.1)
+
+- vals_differ_by_varying_amounts2.nc: First 8 values of testvar are
+  identical to control; 9th is control * (1-1e-3), 10th is control *
+  (1-1e-5). This is the same as the example given in ../README.
+
+  True values are the following:
+
+  - RMS diff: 0.002846226 (printed as 2.8e-3)
+  - avg rel diff: 0.000101 (printed as 1.0e-4)
+  - avg decimal digits: 4.0
+  - worst decimal digits: 3.0
+
+
+--- FILES COMPARED AGAINST control_multipleTimes_someTimeless.nc ---
+
+Note: This file has some variables with a time dimension, some
+without. The time dimension has multiple times, in order to make sure
+that the variables with vs. without the time dimension really are
+treated differently. Also, a variable without time appears first, in
+order to make sure that cprnc doesn't rely on there being a variable
+with time first.
+
+- multipleTimes_someTimeless_diffs_in_vals_and_fill.nc: one variable
+  with a time dimension has differences in both values and fill
+  pattern (in time 2); and one variable without a time dimension has
+  differences in both values and fill pattern. The differences are the
+  same for both variables (e.g., RMS errors should be the same for
+  both).
+
+--- FILES COMPARED AGAINST control_noTime.nc ---
+
+Note: This file has no time (unlimited) dimension.
+
+- noTime_diffs_in_vals_and_fill.nc: a single variable has differences
+  in both values and fill pattern
+
+--- FILES COMPARED AGAINST control_0d.nc ---
+
+Note: This file has two 0-d variables
+
+- diffs_0d.nc: diffs in both 0-d variables (int & real)
+
+
+--- FILES COMPARED AGAINST cpl.hi.subset.control.nc ---
+
+Note: This file is a subset of a standard cpl hist file (as of May, 2013).
+
+- cpl.hi.subset.test.nc: some variables are the same, some differ
+
+
+--- FILES COMPARED AGAINST clm2.h0.subset.control.nc ---
+
+Note: This file is a subset of a standard clm hist file (as of May, 2013).
+
+- clm2.h0.subset.test.nc: some variables are the same, some differ
+
+
+--- FILES COMPARED AGAINST clm2.h1.subset.control.nc ---
+
+Note: This file is a subset of a standard clm 1-d hist file
+(dov2xy=false) (as of May, 2013). Note that it also includes two
+times.
+
+- clm2.h1.subset.test.nc: some variables are the same, some
+  differ. Note that this includes identical & different integer
+  variables, identical & different real-valued variables, and
+  variables with different spatial dimensions (e.g., landunit, pft,
+  and lat x lon).

@@ -1,0 +1,6 @@
+
+#derivative_mod_base.o: derivative_mod_base.F90
+#	 $(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) -O1 $<
+
+shr_ncread_mod.o: shr_ncread_mod.F90
+	 $(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
