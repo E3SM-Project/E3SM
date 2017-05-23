@@ -1567,11 +1567,12 @@ contains
                 dz_1d(idx)             = col_z(c,j)*2.d0
                 num_snow_layer_1d(idx) = -col_snl(c)
 
+                ! Save data for internal SoE auxvars
+                snow_water_1d(idx)                         = l2e_h2osno(c)
+
                 if (col_snl(c) /= 0) then
                    ! Save data for boundary SoE auxvars
                    sabg_soil_1d((c-begc)*nlevgrnd + j) = l2e_frac_snow_eff(c)*l2e_sabg_lyr(c,j)
-                   ! Save data for internal SoE auxvars
-                   snow_water_1d(idx)                         = l2e_h2osno(c)
                 else
                    ! Save data for internal SoE auxvars
                    tsurf_tuning_factor_1d(idx) = col_dz(c,j) / &
@@ -1721,7 +1722,7 @@ contains
           l = col_landunit(c)
           if ((col_active(c)==1) .and. (lun_lakpoi(l) == 0) .and. (lun_urbpoi(l) == 0)) then
              if (j >= col_snl(c)+1) then
-                e2l_tsnow(c,j-1) = temperature_1d(idx)
+                e2l_tsnow(c,j) = temperature_1d(idx)
              endif
           endif
        enddo
