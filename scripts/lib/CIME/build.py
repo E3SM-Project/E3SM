@@ -102,7 +102,7 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
                    arg_stderr=subprocess.STDOUT)[0]
     f.close()
     analyze_build_log("%s exe"%cime_model, file_build, compiler)
-    expect(stat == 0, "ERROR: buildexe failed, cat %s" % file_build)
+    expect(stat == 0, "BUILD FAIL: buildexe failed, cat %s" % file_build)
 
     # Copy the just-built ${MODEL}.exe to ${MODEL}.exe.$LID
     shutil.copy("%s/%s.exe" % (exeroot, cime_model), "%s/%s.exe.%s" % (exeroot, cime_model, lid))
@@ -259,7 +259,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
                        from_dir=exeroot, combine_output=True, arg_stdout=file_build)[0]
 
         analyze_build_log(lib, file_build, compiler)
-        expect(stat == 0, "ERROR: buildlib.%s failed, cat %s" % (lib, file_build))
+        expect(stat == 0, "BUILD FAIL: buildlib.%s failed, cat %s" % (lib, file_build))
         logs.append(file_build)
         if lib == "pio":
             bldlog = open(file_build, "r")
@@ -309,7 +309,7 @@ def _build_model_thread(config_dir, compclass, caseroot, libroot, bldroot, incro
                        arg_stderr=subprocess.STDOUT)[0]
     analyze_build_log(compclass, file_build, compiler)
     if (stat != 0):
-        thread_bad_results.append("ERROR: %s.buildlib failed, cat %s" % (compclass, file_build))
+        thread_bad_results.append("BUILD FAIL: %s.buildlib failed, cat %s" % (compclass, file_build))
 
     for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
         shutil.copy(mod_file, incroot)
@@ -467,7 +467,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only):
     # This is a timestamp for the build , not the same as the testid,
     # and this case may not be a test anyway. For a production
     # experiment there may be many builds of the same case.
-    lid               = run_cmd_no_fail("date +%y%m%d-%H%M%S")
+    lid               = get_timestamp("%y%m%d-%H%M%S")
     os.environ["LID"] = lid
 
     # Set the overall USE_PETSC variable to TRUE if any of the
@@ -561,7 +561,7 @@ def post_build(case, logs):
     lock_file("env_build.xml")
 
     # must ensure there's an lid
-    lid = os.environ["LID"] if "LID" in os.environ else run_cmd_no_fail("date +%y%m%d-%H%M%S")
+    lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")
     save_build_provenance(case, lid=lid)
 
 ###############################################################################

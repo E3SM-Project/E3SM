@@ -90,7 +90,15 @@ class SystemTestsCommon(object):
                                      model_only=(phase_name==MODEL_BUILD_PHASE))
                 except:
                     success = False
-                    excmsg = "Exception during build:\n%s\n%s" % (sys.exc_info()[1], traceback.format_exc())
+                    msg = sys.exc_info()[1].message
+
+                    if "BUILD FAIL" in msg:
+                        # Don't want to print stacktrace for a model failure since that
+                        # is not a CIME/infrastructure problem.
+                        excmsg = msg
+                    else:
+                        excmsg = "Exception during build:\n%s\n%s" % (sys.exc_info()[1], traceback.format_exc())
+
                     logger.warning(excmsg)
                     append_testlog(excmsg)
 
@@ -532,7 +540,7 @@ class TESTBUILDFAIL(TESTRUNPASS):
             TESTRUNPASS.build_phase(self, sharedlib_only, model_only)
         else:
             if (not sharedlib_only):
-                expect(False, "Intentional fail for testing infrastructure")
+                expect(False, "BUILD FAIL: Intentional fail for testing infrastructure")
 
 class TESTBUILDFAILEXC(FakeTest):
 
