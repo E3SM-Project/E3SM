@@ -974,6 +974,8 @@
       <nx>144</nx>  <ny>96</ny>
       <file grid="atm|lnd" mask="gx1v6">domain.lnd.fv1.9x2.5_gx1v6.090206.nc</file>
       <file grid="ocnice"  mask="gx1v6">domain.ocn.1.9x2.5_gx1v6_090403.nc</file>
+      <file grid="atm|lnd" mask="gx1v7">domain.lnd.fv1.9x2.5_gx1v7.170518.nc</file>
+      <file grid="ocnice"  mask="gx1v7">domain.ocn.fv1.9x2.5_gx1v7.170518.nc</file>
       <file grid="ocnice"  mask="null">domain.aqua.fv1.9x2.5.nc</file>
       <desc>1.9x2.5 is FV 2-deg grid:</desc>
     </domain>
