@@ -46,8 +46,7 @@ module li_diagnostic_vars
    ! Public member functions
    !
    !--------------------------------------------------------------------
-   public :: li_calculate_diagnostic_vars, li_calculate_apparent_diffusivity, &
-             li_calculate_layerThickness
+   public :: li_calculate_diagnostic_vars, li_calculate_apparent_diffusivity
 
    !--------------------------------------------------------------------
    !
@@ -147,18 +146,6 @@ contains
 
       call mpas_timer_start("calc. diagnostic vars after vel")
 
-      block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-         ! Some diagnostic variables require velocity to compute
-         call diagnostic_solve_after_velocity(meshPool, geometryPool, velocityPool, err_tmp)
-         err = ior(err, err_tmp)
-
-         block => block % next
-      end do
-
       ! Calculate the heating terms needed by the thermal solver during the next time step.
       ! Note: The SIA heat dissipation could be computed before velocity, but for other approximations,
       !       heat dissipation generally must be computed after velocity.
@@ -184,11 +171,6 @@ contains
          err = ior(err, err_tmp)
 
       endif   ! temperature or enthalpy
-
-      ! Halo updates
-      call mpas_timer_start("halo updates")
-      call mpas_dmpar_field_halo_exch(domain, 'layerThicknessEdge')
-      call mpas_timer_stop("halo updates")
 
       call mpas_timer_stop("calc. diagnostic vars after vel")
 
@@ -749,134 +731,6 @@ contains
    end subroutine diagnostic_solve_before_velocity
 
 
-
-!***********************************************************************
-!
-!  subroutine diagnostic_solve_after_velocity
-!
-!> \brief   Computes diagnostic variables that require knowing velocity
-!> \author  Matt Hoffman
-!> \date    19 April 2012
-!> \details
-!> This routine computes the diagnostic variables that require knowing velocity for land ice
-!
-!-----------------------------------------------------------------------
-   subroutine diagnostic_solve_after_velocity(meshPool, geometryPool, velocityPool, err)
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
-
-      type (mpas_pool_type), intent(in) :: &
-         velocityPool          !< Input: velocity information
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(inout) :: &
-         geometryPool         !< Input/Output: geometry info
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-      real (kind=RKIND), dimension(:), pointer :: thickness
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, normalVelocity
-      integer, dimension(:,:), pointer :: cellsOnEdge
-      integer, pointer :: nEdges, nVertLevels
-      character (len=StrKIND), pointer :: config_thickness_advection
-      integer :: iEdge, cell1, cell2, k
-      real (kind=RKIND) :: VelSign
-
-      !WHL - debug
-!      integer, pointer :: nCells
-!      integer, dimension(:), pointer :: indexToCellID
-!      logical, pointer :: config_print_thickness_advection_info
-!      integer :: iCell
-
-      err = 0
-
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-
-      call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
-
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel = 1)
-      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
-      call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
-      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
-
-      !WHL - debug
-!      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-!      call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
-!      call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
-
-      ! Calculate h_edge.  This is used by both thickness and tracer advection on the following Forward Euler time step.
-      ! Note: FO-Upwind thickness advection does not explicitly use h_edge but a FO h_edge is implied.
-      ! Note: SIA velocity solver uses its own local calculation of h_edge that is always 2nd order.
-      ! Note: ocn_diagnostic_solve in mpas_ocn_tendency.F has 2, 3, & 4th order calculations for h_edge that can be used.
-      ! NOTE: This calculates FO upwind h edge
-
-      ! given thickness, compute layerThickness
-      call li_calculate_layerThickness(meshPool, thickness, layerThickness)
-
-      if (config_thickness_advection == 'fo') then
-
-         ! If using FO-Upwind then h_edge must be FO.
-         do iEdge=1,nEdges
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            do k=1, nVertLevels
-               ! Calculate h on edges using first order
-               VelSign = sign(1.0_RKIND, normalVelocity(k, iEdge))
-               layerThicknessEdge(k,iEdge) = max(VelSign * layerThickness(k, cell1), &
-                  VelSign * (-1.0_RKIND) * layerThickness(k, cell2))
-               ! + velocity goes from index 1 to 2 in the cellsOnEdge array.
-               !  Doug does the calculation as: h_edge = max(VelSign, 0.0) * h1 - min(VelSign, 0.0) * h2
-               !!! ! Calculate h on edges using second order
-               !!! layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k, cell1) + layerThickness(k, cell2))
-            end do
-            ! thickness_edge is not currently in registry and not currenly needed.  If it is, uncomment the next line
-            !h_edge = max(thickness(cell1), thickness(cell2))
-            !!!h_edge = (thickness(k) + thickness(k) ) / 2.0  ! 2nd order
-         end do
-      else
-          !call mpas_log_write('layerThicknessEdge not calculated!')
-      endif
-
-      ! Note: The outmost layerThicknessEdge may be wrong if its upwind cell is off this block -
-      !       halo update should be done if this variable will be used.
-      !       This halo update is done near the end of subroutine li_calculate_diagnostic_vars.
-
-      !WHL - debug - Commented out, but might be useful for future debugging
-!      if (config_print_thickness_advection_info) then
-!         call mpas_log_write(' ')
-!         call mpas_log_write('End of timestep: iCell (global), new thickness:'
-!         do iCell = 1, nCells
-!            if (thickness(iCell) > 0.0_RKIND) then
-!               call mpas_log_write('$i $r', intArgs=(/indexToCellID(iCell)/), realArgs=(/thickness(iCell)/))
-!            endif
-!         enddo
-!      endif
-
-   end subroutine diagnostic_solve_after_velocity
-
-
 !***********************************************************************
 !
 !  subroutine calculate_flowParamA
@@ -1046,78 +900,6 @@ contains
       err = ior(err, err_tmp)
 
    end subroutine calculate_flowParamA
-
-!***********************************************************************
-!
-!  subroutine li_calculate_layerThickness
-!
-!> \brief   Calculates the thickness of each layer, given the total thickness
-!> \author  William Lipscomb
-!> \date    16 Feb 2016
-!> \details
-!> This routine calculates layerThickness in each cell and column,
-!> given thickness in each cell. The calculation is very simple, but is
-!> packaged in a subroutine to ensure that it is done the same way
-!> in different parts of the code.
-!-----------------------------------------------------------------------
-
-   subroutine li_calculate_layerThickness(meshPool, thickness, layerThickness)
-
-     !-----------------------------------------------------------------
-     !
-     ! input variables
-     !
-     !-----------------------------------------------------------------
-
-     type (mpas_pool_type), intent(in) :: &
-          meshPool                                     !< Input: mesh object
-
-     real(kind=RKIND), dimension(:), intent(in) :: &
-          thickness                                    !< Input: ice thickness
-
-     !-----------------------------------------------------------------
-     !
-     ! input/output variables
-     !
-     !-----------------------------------------------------------------
-
-
-     !-----------------------------------------------------------------
-     !
-     ! output variables
-     !
-     !-----------------------------------------------------------------
-
-     real(kind=RKIND), dimension(:,:), intent(out) :: &
-          layerThickness                               !< Output: thickness of each layer
-
-     !-----------------------------------------------------------------
-     !
-     ! local variables
-     !
-     !-----------------------------------------------------------------
-
-     integer, pointer :: &
-          nCells,                    & ! number of cells
-          nVertLevels                  ! number of vertical layers
-
-     real (kind=RKIND), dimension(:), pointer :: &
-          layerThicknessFractions      ! fractional thickness in each layer
-
-     integer :: iCell, k
-
-     call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-     call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-
-     call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
-
-     do iCell = 1, nCells
-        do k = 1, nVertLevels
-           layerThickness(k,iCell) = thickness(iCell) * layerThicknessFractions(k)
-        enddo
-     enddo
-
-   end subroutine li_calculate_layerThickness
 
 
 end module li_diagnostic_vars

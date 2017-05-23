@@ -80,7 +80,7 @@ module li_advection
         err,                    &
         advectTracersIn)
 
-     use li_diagnostic_vars, only: li_calculate_layerThickness
+     use li_setup, only: li_calculate_layerThickness
 
       !-----------------------------------------------------------------
       !

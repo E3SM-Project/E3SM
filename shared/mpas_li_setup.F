@@ -50,7 +50,8 @@ module li_setup
              li_setup_sign_and_index_fields, &
              li_setup_wachspress_vertex_to_cell_weights, &
              li_interpolate_vertex_to_cell_2d, &
-             li_cells_to_vertices_1dfield_using_kiteAreas
+             li_cells_to_vertices_1dfield_using_kiteAreas, &
+             li_calculate_layerThickness
 
 
    !--------------------------------------------------------------------
@@ -517,6 +518,78 @@ contains
 
    end subroutine li_cells_to_vertices_1dfield_using_kiteAreas
 
+
+!***********************************************************************
+!
+!  subroutine li_calculate_layerThickness
+!
+!> \brief   Calculates the thickness of each layer, given the total thickness
+!> \author  William Lipscomb
+!> \date    16 Feb 2016
+!> \details
+!> This routine calculates layerThickness in each cell and column,
+!> given thickness in each cell. The calculation is very simple, but is
+!> packaged in a subroutine to ensure that it is done the same way
+!> in different parts of the code.
+!-----------------------------------------------------------------------
+
+   subroutine li_calculate_layerThickness(meshPool, thickness, layerThickness)
+
+     !-----------------------------------------------------------------
+     !
+     ! input variables
+     !
+     !-----------------------------------------------------------------
+
+     type (mpas_pool_type), intent(in) :: &
+          meshPool                                     !< Input: mesh object
+
+     real(kind=RKIND), dimension(:), intent(in) :: &
+          thickness                                    !< Input: ice thickness
+
+     !-----------------------------------------------------------------
+     !
+     ! input/output variables
+     !
+     !-----------------------------------------------------------------
+
+
+     !-----------------------------------------------------------------
+     !
+     ! output variables
+     !
+     !-----------------------------------------------------------------
+
+     real(kind=RKIND), dimension(:,:), intent(out) :: &
+          layerThickness                               !< Output: thickness of each layer
+
+     !-----------------------------------------------------------------
+     !
+     ! local variables
+     !
+     !-----------------------------------------------------------------
+
+     integer, pointer :: &
+          nCells,                    & ! number of cells
+          nVertLevels                  ! number of vertical layers
+
+     real (kind=RKIND), dimension(:), pointer :: &
+          layerThicknessFractions      ! fractional thickness in each layer
+
+     integer :: iCell, k
+
+     call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+     call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+     call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
+
+     do iCell = 1, nCells
+        do k = 1, nVertLevels
+           layerThickness(k,iCell) = thickness(iCell) * layerThicknessFractions(k)
+        enddo
+     enddo
+
+   end subroutine li_calculate_layerThickness
 
 
 !***********************************************************************
