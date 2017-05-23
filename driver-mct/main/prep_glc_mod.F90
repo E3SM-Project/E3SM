@@ -1,5 +1,6 @@
 module prep_glc_mod
 
+#include "shr_assert.h"
   use shr_kind_mod    , only: r8 => SHR_KIND_R8
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
@@ -700,6 +701,7 @@ contains
     if (smb_renormalize) then
        call prep_glc_renormalize_smb( &
             eli = eli, &
+            fractions_lx = fractions_lx, &
             g2x_gx = g2x_gx, &
             mapper_Fg2l = mapper_Fg2l, &
             aream_g = aream_g, &
@@ -723,7 +725,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_renormalize_smb(eli, g2x_gx, mapper_Fg2l, aream_g, qice_g)
+  subroutine prep_glc_renormalize_smb(eli, fractions_lx, g2x_gx, mapper_Fg2l, aream_g, qice_g)
 
     ! Renormalizes surface mass balance (smb, here named qice_g) so that the global
     ! integral on the glc grid is equal to the global integral on the land grid.
@@ -737,11 +739,12 @@ contains
     use map_glc2lnd_mod, only : map_glc2lnd_ec
 
     ! Arguments
-    integer         , intent(in)    :: eli         ! lnd instance index
-    type(mct_aVect) , intent(in)    :: g2x_gx      ! glc export, glc grid
-    type(seq_map)   , intent(inout) :: mapper_Fg2l ! flux mapper from glc to land grid; conservative
-    real(r8)        , intent(in)    :: aream_g(:)  ! cell areas on glc grid, for mapping
-    real(r8)        , intent(inout) :: qice_g(:)   ! qice data on glc grid
+    integer         , intent(in)    :: eli          ! lnd instance index
+    type(mct_aVect) , intent(in)    :: fractions_lx ! fractions on the land grid, for this frac instance
+    type(mct_aVect) , intent(in)    :: g2x_gx       ! glc export, glc grid
+    type(seq_map)   , intent(inout) :: mapper_Fg2l  ! flux mapper from glc to land grid; conservative
+    real(r8)        , intent(in)    :: aream_g(:)   ! cell areas on glc grid, for mapping
+    real(r8)        , intent(inout) :: qice_g(:)    ! qice data on glc grid
 
     !
     ! Local Variables
