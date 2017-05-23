@@ -470,7 +470,7 @@ contains
          testingSystemTestPool
 
     real(kind=RKIND), dimension(:), pointer :: &
-         testArrayReproducibility, &
+         testArrayRegression, &
          testArrayParallelism, &
          testArrayRestartability
 
@@ -505,7 +505,7 @@ contains
 
           call MPAS_pool_get_subpool(block % structs, "testing_system_test", testingSystemTestPool)
 
-          ! reproducibility
+          ! regression
           call random_seed(size=seedSize)
           allocate(seed(seedSize))
 
@@ -516,10 +516,10 @@ contains
 
           deallocate(seed)
 
-          call MPAS_pool_get_array(testingSystemTestPool, "testArrayReproducibility", testArrayReproducibility)
+          call MPAS_pool_get_array(testingSystemTestPool, "testArrayRegression", testArrayRegression)
 
           do iCell = 1, nCellsSolve
-             call random_number(testArrayReproducibility(iCell))
+             call random_number(testArrayRegression(iCell))
           enddo ! iCell
 
           ! parallelism
