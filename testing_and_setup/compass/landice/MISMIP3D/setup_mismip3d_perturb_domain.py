@@ -1,6 +1,11 @@
 #!/usr/bin/env python
-# This script sets up MISMIP3D P experiments.
-# see http://homepages.ulb.ac.be/~fpattyn/mismip3d/Mismip3Dv12.pdf
+'''
+This script sets up MISMIP3D PXXS experiment from the final state of a Stnd experiment
+
+This should be run from a subdirectory where you plan to run the PXXR experiment.
+
+see http://homepages.ulb.ac.be/~fpattyn/mismip3d/Mismip3Dv12.pdf
+'''
 
 
 GLbit = 256
@@ -8,6 +13,8 @@ GLbit = 256
 
 
 import sys
+import os
+import shutil
 from netCDF4 import Dataset
 import numpy as np
 
@@ -16,19 +23,59 @@ import numpy as np
 from optparse import OptionParser
 parser = OptionParser()
 parser.add_option("-f", "--file", dest="filename", type='string', help="file in which to setup MISMIP3D Perturbation experiment.  This should be a full width domain in which the Stnd experiment initial condition has already been applied..", metavar="FILE")
-parser.add_option("-s", "--stnd", dest="stndfilename", type='string', help="file containing output from the Stnd experiment from which to copy model state. This can be a minimal or full width domain.", metavar="FILE")
+parser.add_option("-o", "--outfile", dest="outfilename", type='string', help="final output file from MISMIP3D Stnd experiments.  This can be minimal width or full width.", metavar="FILE")
+parser.add_option("-r", "--restartfile", dest="restartfilename", type='string', help="final restart file from MISMIP3D Stnd experiments. This can be minimal width or full width.", metavar="FILE")
 parser.add_option("-p", "--perturb", dest="perturb", type='float', help="perturbation amount, presumably 75 or 10", metavar="P")
 options, args = parser.parse_args()
 if not options.filename:
-   print  'Filename to set up required.  Specify with -f'
-if not options.stndfilename:
-   print  'Stnd results filename required.  Specify with -s'
+   sys.exit('ERROR: Filename to set up required.  Specify with -f')
+if not options.outfilename:
+   sys.exit('ERROR: outfile required.')
+if not options.restartfilename:
+   print 'WARNING: No restart file specified.  So uReconstructX will not be written.'
 if not options.perturb:
-   print  'Perturbation amount required.  Specify with -p'
+   sys.exit('ERROR: Perturbation amount required.  Specify with -p')
+
+
+# make dir if it doesn't exist and move to it
+#directory='P75S'
+#if not os.path.exists(directory):
+#            os.makedirs(directory)
+#os.chdir(directory)
+
+# a file that has the final state from Stnd
+stndfilename = "stnd_final.nc"
+
+# create a new file that has the state from the final time slice of Stnd
+fout = Dataset(options.outfilename, 'r')
+ntOut = len(fout.dimensions['Time'])
+if ntOut > 1:
+   outIndex = -1
+elif ntOut == 1:
+   outIndex = 0
+else:
+   sys.exit("ERROR: The Stnd spinup output file has less than one time level!")
+fout.close()
+os.system("ncks -O -d Time,{} {} {}".format(outIndex, options.outfilename, stndfilename))
+
+# Optionally add in the x-velo from the ~final time to help solver on first velo solve
+if options.restartfilename:
+   frst = Dataset(options.restartfilename, 'r')
+   ntRst = len(frst.dimensions['Time'])
+   if ntRst > 1:
+      rstIndex = -1
+   elif ntRst == 1:
+      rstIndex = 0
+   else:
+      sys.exit("ERROR: The Stnd restart file has less than one time level!")
+   os.system("ncks -A -d Time,{} -v uReconstructX {} {}".format(rstIndex, options.restartfilename, stndfilename))
+   frst.close()
+
 
 # Open the Stnd output and get the needed info
-fstnd = Dataset(options.stndfilename, 'r')
-thicknessStnd = fstnd.variables['thickness'][-1,:]
+fstnd = Dataset(stndfilename, 'r')
+thicknessStnd = fstnd.variables['thickness'][0,:]  # we know this has 1 time level because we built it above
+haveVelo = False
 if 'uReconstructX' in fstnd.variables:
   haveVelo = True
   uXStnd = fstnd.variables['uReconstructX'][-1,:,:]
@@ -146,6 +193,8 @@ else:
            np.logical_and( 
               (edgeMaskStnd[:] & GLbit) / GLbit == 1,
               xEdgeStnd > 0.0) ) [0]
+   print "GL indices east:", GLindEast
+   print "at positions:", yEdgeStnd[GLindEast]
    if len(GLindEast) != 5:
        sys.exit("ERROR: East: There are not 5 unique yEdge GL values in the Stnd file but this appears to be a minimal width domain.")
    # Note that the topmost and bottommost edge positions are effectively outside the domain,
@@ -191,5 +240,6 @@ gridfile.variables['beta'][0,:] = Cboth
 gridfile.sync()
 gridfile.close()
 
+print " ======="
 print 'Successfully added MISMIP3D perturbation initial conditions to: ', options.filename
-
+print "Please set up graph.info, albany_input.xml, namelist, and streams files as desired!  namelist and streams are set up by test case here: full_width/Stnd/P75"

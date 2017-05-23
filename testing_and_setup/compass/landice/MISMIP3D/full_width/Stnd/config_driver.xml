@@ -12,5 +12,8 @@
         </case>
 
         <!-- Don't automatically generate the high-res meshes cause they are slow to create -->
+
+        <case name="P75">
+        </case>
 </driver_script>
 
