@@ -341,6 +341,7 @@ contains
     integer :: nEC           ! number of elevation classes
     integer :: lsize_g       ! number of cells on glc grid
     integer :: n, ec
+    integer :: strlen
 
     real(r8) :: elev_l, elev_u  ! lower and upper elevations in interpolation range
     real(r8) :: d_elev          ! elev_u - elev_l
@@ -353,6 +354,10 @@ contains
     real(r8), pointer :: tmp_field_g(:)  ! must be a pointer to satisfy the MCT interface
     real, pointer :: data_g_EC(:,:)    ! remapped field in each glc cell, in each EC
     real, pointer :: topo_g_EC(:,:)    ! remapped topo in each glc cell, in each EC
+
+    ! 1 is probably enough, but use 10 to be safe, in case the length of the delimiter
+    ! changes
+    integer, parameter :: extra_len_for_list_merge = 10
 
     character(len=*), parameter :: subname = 'map_ice_covered'
     !-----------------------------------------------------------------------
@@ -382,6 +387,8 @@ contains
     toponamelist = shr_string_listFromSuffixes( &
          suffixes = all_elevclass_strings, &
          strBase  = toponame)
+    strlen = len_trim(fieldnamelist) + len_trim(toponamelist) + extra_len_for_list_merge
+    allocate(character(len=strlen) :: totalfieldlist)
     call shr_string_listMerge(fieldnamelist, toponamelist, totalfieldlist )
     
     ! ------------------------------------------------------------------------
