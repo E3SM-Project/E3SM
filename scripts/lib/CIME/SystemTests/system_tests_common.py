@@ -354,7 +354,7 @@ class SystemTestsCommon(object):
             append_testlog(comments)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             baseline_name = self._case.get_value("BASECMP_CASE")
-            ts_comments = comments if "\n" not in comments else os.path.dirname(baseline_name)
+            ts_comments = (os.path.dirname(baseline_name) + ": " + comments) if "\n" not in comments else os.path.dirname(baseline_name)
             self._test_status.set_status(BASELINE_PHASE, status, comments=ts_comments)
             basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), baseline_name)
 
