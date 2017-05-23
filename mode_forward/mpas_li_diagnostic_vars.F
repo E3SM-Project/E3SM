@@ -77,8 +77,6 @@ contains
 
    subroutine li_calculate_diagnostic_vars(domain, solveVelo, err)
 
-      use li_thermal, only: li_heat_dissipation_sia, li_basal_friction
-
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -139,40 +137,6 @@ contains
       call li_velocity_solve(domain, solveVelo, err)    ! ****** Calculate Velocity ******
       err = ior(err, err_tmp)
 
-
-      ! ===
-      ! === Diagnostic solve of variables after velocity
-      ! ===
-
-      call mpas_timer_start("calc. diagnostic vars after vel")
-
-      ! Calculate the heating terms needed by the thermal solver during the next time step.
-      ! Note: The SIA heat dissipation could be computed before velocity, but for other approximations,
-      !       heat dissipation generally must be computed after velocity.
-      !TODO - Make sure the heatDissipation and basalFriction fields are computed for the FO solver.
-
-      call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
-      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
-
-      if (trim(config_thermal_solver) == 'temperature' .or. trim(config_thermal_solver) == 'enthalpy') then
-
-         if (trim(config_velocity_solver) == 'sia') then
-
-            ! Compute interior heat dissipation
-            call li_heat_dissipation_sia(domain, err_tmp)
-            err = ior(err, err_tmp)
-
-         endif   ! sia
-         ! (FO dissipation is calculated within dycore)
-
-         ! Compute heat flux due to basal friction
-         !   appropriate for SIA or FO dycore, assuming Taub=beta*ub
-         call li_basal_friction(domain, err_tmp)
-         err = ior(err, err_tmp)
-
-      endif   ! temperature or enthalpy
-
-      call mpas_timer_stop("calc. diagnostic vars after vel")
 
       ! === error check and exit
       if (err == 1) then
