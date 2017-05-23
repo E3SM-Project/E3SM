@@ -194,6 +194,11 @@ contains
       ! local parameters
       real (kind=RKIND), parameter :: scyr = 31536000.0_RKIND  ! seconds per 365-day year
 
+      ! variables for processing stats
+      integer, parameter :: kMaxVariables = 16 ! Increase if number of stats increase
+      integer :: nVars
+      real (kind=RKIND), dimension(kMaxVariables) :: reductions, sums, mins, maxes
+
       err = 0
 
       dminfo = domain % dminfo
@@ -212,6 +217,7 @@ contains
       ! initialize max, min, mean values to 0
       blockThickMin = 100000.0_RKIND
       blockThickMax = 0.0_RKIND
+
 
       ! loop over blocks
       block => domain % blocklist
@@ -232,20 +238,6 @@ contains
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
          call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-
-         ! get values from global stats pool
-         call mpas_pool_get_array(globalStatsAMPool, 'totalIceArea', totalIceArea)
-         call mpas_pool_get_array(globalStatsAMPool, 'totalIceVolume', totalIceVolume)
-         call mpas_pool_get_array(globalStatsAMPool, 'floatingIceArea', floatingIceArea)
-         call mpas_pool_get_array(globalStatsAMPool, 'floatingIceVolume', floatingIceVolume)
-         call mpas_pool_get_array(globalStatsAMPool, 'groundedIceArea', groundedIceArea)
-         call mpas_pool_get_array(globalStatsAMPool, 'groundedIceVolume', groundedIceVolume)
-         call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMax', iceThicknessMax)
-         call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMin', iceThicknessMin)
-         call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMean', iceThicknessMean)
-         call mpas_pool_get_array(globalStatsAMPool, 'totalSfcMassBal', totalSfcMassBal)
-         call mpas_pool_get_array(globalStatsAMPool, 'totalBasalMassBal', totalBasalMassBal)
-         call mpas_pool_get_array(globalStatsAMPool, 'totalCalvingFlux', totalCalvingFlux)
 
          ! loop over cells
          do iCell = 1,nCellsSolve
@@ -291,33 +283,109 @@ contains
 
       end do    ! end loop over blocks
 
-      ! compute sums over all procs
-      call mpas_dmpar_sum_real(dminfo, blockSumIceArea, totalIceArea)
-      call mpas_dmpar_sum_real(dminfo, blockSumIceVolume, totalIceVolume)
-      call mpas_dmpar_sum_real(dminfo, blockSumGroundedIceArea, groundedIceArea)
-      call mpas_dmpar_sum_real(dminfo, blockSumGroundedIceVolume, groundedIceVolume)
-      call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceArea, floatingIceArea)
-      call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceVolume, floatingIceVolume)
-      call mpas_dmpar_sum_real(dminfo, blockSumSfcMassBal, totalSfcMassBal)
-      call mpas_dmpar_sum_real(dminfo, blockSumBasalMassBal, totalBasalMassBal)
-      call mpas_dmpar_sum_real(dminfo, blockSumCalvingFlux, totalCalvingFlux)
 
-      ! find min, max, mean thickness over all procs
-      call mpas_dmpar_min_real(dminfo, blockThickMin, iceThicknessMin)
-      call mpas_dmpar_max_real(dminfo, blockThickMax, iceThicknessMax)
-      iceThicknessMean = totalIceVolume / totalIceArea
-
-      ! Even though some variables do not include an index that is decomposed amongst
+      ! --- Perform Reductions ---
+      ! For each type of reduction (sum, min, max), set up an array so we only need
+      ! a single reduction for each type, rather than a reduction for each variable
+      ! since these global communications can be expensive on many processors.
+      ! For now, the mapping of variable names to indices is handled manually,
+      ! but if the number of variables grows, we could consider using a pools (a dictionary)
+      ! or some other strategy for automating the relationships
+      ! Once the reduction is complete, stick the reduced value into the globalStats pool member.
+      ! Even though some (most?) variables do not include an index that is decomposed amongst
       ! domain partitions, we assign them within a block loop so that all blocks have the
       ! correct values for writing output.
+
+      ! ---------------------------
+      ! compute sums over all procs
+      ! ---------------------------
+      sums = 0.0_RKIND
+      reductions = 0.0_RKIND
+      sums(1) = blockSumIceArea
+      sums(2) = blockSumIceVolume
+      sums(3) = blockSumGroundedIceArea
+      sums(4) = blockSumGroundedIceVolume
+      sums(5) = blockSumFloatingIceArea
+      sums(6) = blockSumFloatingIceVolume
+      sums(7) = blockSumSfcMassBal
+      sums(8) = blockSumBasalMassBal
+      sums(9) = blockSumCalvingFlux
+      nVars = 9
+      call mpas_dmpar_sum_real_array(dminfo, nVars, sums(1:nVars), reductions(1:nVars))
+
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'globalStatsAM', globalStatsAMPool)
 
-         ! assignment of final globalStatsAM variables could occur here.
+         call mpas_pool_get_array(globalStatsAMPool, 'totalIceArea', totalIceArea)
+         call mpas_pool_get_array(globalStatsAMPool, 'totalIceVolume', totalIceVolume)
+         call mpas_pool_get_array(globalStatsAMPool, 'floatingIceArea', floatingIceArea)
+         call mpas_pool_get_array(globalStatsAMPool, 'floatingIceVolume', floatingIceVolume)
+         call mpas_pool_get_array(globalStatsAMPool, 'groundedIceArea', groundedIceArea)
+         call mpas_pool_get_array(globalStatsAMPool, 'groundedIceVolume', groundedIceVolume)
+         call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMax', iceThicknessMax)
+         call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMin', iceThicknessMin)
+         call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMean', iceThicknessMean)
+         call mpas_pool_get_array(globalStatsAMPool, 'totalSfcMassBal', totalSfcMassBal)
+         call mpas_pool_get_array(globalStatsAMPool, 'totalBasalMassBal', totalBasalMassBal)
+         call mpas_pool_get_array(globalStatsAMPool, 'totalCalvingFlux', totalCalvingFlux)
+
+         totalIceArea = reductions(1)
+         totalIceVolume = reductions(2)
+         groundedIceArea = reductions(3)
+         groundedIceVolume = reductions(4)
+         floatingIceArea = reductions(5)
+         floatingIceVolume = reductions(6)
+         totalSfcMassBal = reductions(7)
+         totalBasalMassBal = reductions(8)
+         totalCalvingFlux = reductions(9)
+
+         iceThicknessMean = totalIceVolume / totalIceArea
 
          block => block % next
       end do
+
+      ! ---------------------------
+      ! compute mins
+      ! ---------------------------
+      mins = 0.0_RKIND
+      reductions = 0.0_RKIND
+      mins(1) = blockThickMin
+      nVars = 1
+      call mpas_dmpar_min_real_array(dminfo, nVars, mins(1:nVars), reductions(1:nVars))
+
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'globalStatsAM', globalStatsAMPool)
+
+         call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMin', iceThicknessMin)
+
+         iceThicknessMin = reductions(1)
+
+         block => block % next
+      end do
+
+      ! ---------------------------
+      ! compute maxes
+      ! ---------------------------
+      maxes = 0.0_RKIND
+      reductions = 0.0_RKIND
+      maxes(1) = blockThickMax
+      nVars = 1
+      call mpas_dmpar_max_real_array(dminfo, nVars, maxes(1:nVars), reductions(1:nVars))
+
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'globalStatsAM', globalStatsAMPool)
+
+         call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMax', iceThicknessMax)
+
+         iceThicknessMax = reductions(1)
+
+         block => block % next
+      end do
+
+
 
    end subroutine li_compute_global_stats!}}}
 
