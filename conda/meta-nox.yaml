@@ -18,8 +18,7 @@ requirements:
 
   run:
     - cdp 2017.05.18
-    - vcs-nox
-    - vtk-cdat-nox >=7.1.0.2017.3
+    - vcs
     - cdms2
     - cdutil
     - genutil
@@ -27,8 +26,7 @@ requirements:
     - output_viewer
     - matplotlib 1.5.1
     - cartopy
-    - mesalib <8
-    - ffmpeg <3
+    - mesalib
 
 about:
     home: https://github.com/zshaheen/acme-diags

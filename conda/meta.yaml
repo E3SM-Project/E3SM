@@ -24,10 +24,8 @@ requirements:
     - genutil
     - numpy
     - output_viewer
-    - matplotlib 1.5.1
+    - matplotlib
     - cartopy
-    - mesalib <8
-    - ffmpeg <3
 
 about:
     home: https://github.com/zshaheen/acme-diags
