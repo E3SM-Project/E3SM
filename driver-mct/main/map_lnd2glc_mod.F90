@@ -21,7 +21,6 @@ module map_lnd2glc_mod
   use mct_mod
   use seq_map_type_mod, only : seq_map
   use seq_map_mod, only : seq_map_map
-  use shr_log_mod, only : errMsg => shr_log_errMsg
   use shr_sys_mod, only : shr_sys_abort
 
   implicit none
@@ -310,7 +309,7 @@ contains
     !
     ! !DESCRIPTION:
     ! Remaps the field of interest from the land grid (in multiple elevation classes)
-    !  to the glc grid
+    ! to the glc grid
     !
     ! Puts the output in data_g_ice_covered, which should already be allocated to have size
     ! equal to the number of GLC points that this processor is responsible for.
@@ -328,7 +327,7 @@ contains
     ! !LOCAL VARIABLES:
 
     character(len=*), parameter :: toponame = 'Sl_topo'  ! base name for topo fields in l2x_l;
-                                                         ! actual names will have elevation class suffice
+                                                         ! actual names will have elevation class suffix
 
     character(len=GLC_ELEVCLASS_STRLEN), allocatable :: all_elevclass_strings(:)
     character(len=:), allocatable :: elevclass_as_string
@@ -346,9 +345,6 @@ contains
     real(r8) :: elev_l, elev_u  ! lower and upper elevations in interpolation range
     real(r8) :: d_elev          ! elev_u - elev_l
 
-!    integer :: elevclass, n, BoundingECsFound, el, eu 
-!    real(r8) :: elev_EC_l, elev_EC_u  ! upper and lower EC bounds (m)
-    
     type(mct_aVect) :: l2x_g_temp  ! temporary attribute vector holding the remapped fields for this elevation class
 
     real(r8), pointer :: tmp_field_g(:)  ! must be a pointer to satisfy the MCT interface
@@ -362,9 +358,9 @@ contains
     character(len=*), parameter :: subname = 'map_ice_covered'
     !-----------------------------------------------------------------------
 
-    lsize_g = size(topo_g)
+    lsize_g = size(data_g_ice_covered)
     nEC = glc_get_num_elevation_classes()
-    SHR_ASSERT((size(topo_g) == lsize_g), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_FL((size(topo_g) == lsize_g), __FILE__, __LINE__)
     
     ! ------------------------------------------------------------------------
     ! Create temporary vectors
@@ -393,7 +389,8 @@ contains
     
     ! ------------------------------------------------------------------------
     ! Make a temporary attribute vector.
-    ! For each grid cell on the land grid, this attribute vector contains the field and topo values for all ECs.
+    ! For each grid cell on the land grid, this attribute vector contains the field and
+    ! topo values for all ECs.
     ! ------------------------------------------------------------------------
     call mct_aVect_init(l2x_g_temp, rList = totalfieldlist, lsize = lsize_g)
       
@@ -432,10 +429,12 @@ contains
     do n = 1, lsize_g
 
        ! For each ice sheet point, find bounding EC values...
-       if (topo_g(n) < topo_g_EC(n,1)) then           ! lower than lowest mean EC elevation value
+       if (topo_g(n) < topo_g_EC(n,1)) then
+          ! lower than lowest mean EC elevation value
           data_g_ice_covered(n) = data_g_EC(n,1)
 
-       elseif (topo_g(n) >= topo_g_EC(n,nEC)) then    ! higher than highest mean EC elevation value
+       else if (topo_g(n) >= topo_g_EC(n,nEC)) then
+          ! higher than highest mean EC elevation value
           data_g_ice_covered(n) = data_g_EC(n,nEC)
 
        else
