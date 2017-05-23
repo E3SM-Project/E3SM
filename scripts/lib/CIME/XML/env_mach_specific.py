@@ -152,7 +152,7 @@ class EnvMachSpecific(EnvBase):
 
     def load_envs(self, envs_to_set):
         for env_name, env_value in envs_to_set:
-            os.environ[env_name] = env_value
+            os.environ[env_name] = "" if env_value is None else env_value
 
     # Private API
 
