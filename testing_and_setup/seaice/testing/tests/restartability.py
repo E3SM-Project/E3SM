@@ -31,6 +31,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, check)
                      {"streamName":"output" , "attributeName":"output_interval", "newValue":"none"}]
 
     if (run_model("base", mpasDevelopmentDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile) != 0):
+        os.chdir("..")
         return 1
 
     # first restart run
@@ -44,6 +45,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, check)
                      {"streamName":"output" , "attributeName":"output_interval", "newValue":"none"}]
 
     if (run_model("restart", mpasDevelopmentDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile) != 0):
+        os.chdir("..")
         return 1
 
     # restart
@@ -57,6 +59,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, check)
     streamChanges = []
 
     if (restart_model("restart", nmlChanges, streamChanges, nProcs, logfile) != 0):
+        os.chdir("..")
         return 1
 
 

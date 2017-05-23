@@ -66,6 +66,7 @@
     config_unit_test_type = ''
     config_unit_test_subtype = ''
     config_use_test_ice_shelf = false
+    config_testing_system_test = false
 /
 &velocity_solver
     config_dynamics_subcycle_number = 1

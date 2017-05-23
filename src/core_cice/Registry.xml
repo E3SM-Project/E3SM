@@ -250,6 +250,7 @@
 		<nml_option name="config_unit_test_type"		type="character"	default_value=""/>
 		<nml_option name="config_unit_test_subtype"		type="character"	default_value=""/>
 		<nml_option name="config_use_test_ice_shelf"		type="logical"		default_value="false"/>
+		<nml_option name="config_testing_system_test"		type="logical"		default_value="false"/>
 	</nml_record>
 	<nml_record name="velocity_solver" in_defaults="true">
 		<nml_option name="config_dynamics_subcycle_number"	type="integer"		default_value="1"		possible_values="any positive integer"/>
@@ -657,6 +658,9 @@
 			<var name="mobileFraction"/>
 			<var name="newlyFormedIce"/>
 			<var name="maximumIcePresence"/>
+			<var name="testArrayRegression"/>
+			<var name="testArrayParallelism"/>
+			<var name="testArrayRestartability"/>
 		</stream>
 
 		<stream name="restart"
@@ -947,6 +951,9 @@
 
 		<!-- other column packages -->
 		<package name="pkgColumnFormDrag" description=""/>
+
+		<!-- testing system test -->
+		<package name="pkgTestingSystemTest" description=""/>
 
 	</packages>
 
@@ -2168,6 +2175,13 @@
 		<var name="iceAgeTendencyThermodynamics"	type="real"	dimensions="nCells Time"		name_in_code="iceAgeTendencyThermodynamics"/>
 		<var name="freezingMeltingPotentialInitial"	type="real"	dimensions="nCells Time"		name_in_code="freezingMeltingPotentialInitial"/>
 		<var name="timeAverageTestVariable"		type="real"	dimensions="Time"			name_in_code="timeAverageTestVariable"/>
+	</var_struct>
+
+	<!-- Testing of testing system -->
+	<var_struct name="testing_system_test" time_levs="1" packages="pkgTestingSystemTest">
+		<var name="testArrayRegression"		type="real"	dimensions="nCells Time"/>
+		<var name="testArrayParallelism"		type="real"	dimensions="nCells Time"/>
+		<var name="testArrayRestartability"		type="real"	dimensions="nCells Time"/>
 	</var_struct>
 
 	<!-- Point diagnostics -->

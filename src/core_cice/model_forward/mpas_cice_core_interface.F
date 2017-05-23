@@ -111,6 +111,9 @@ module cice_core_interface
       ! set up analysis member packages
       call cice_analysis_setup_packages(configPool, packagePool, iocontext, ierr)
 
+      ! testing system test
+      call setup_packages_testing_system_test(configPool, packagePool, ierr)
+
    end function cice_setup_packages!}}}
 
    !***********************************************************************
@@ -525,6 +528,45 @@ module cice_core_interface
      !pkgColumnFormDragActive = .true.
 
    end subroutine setup_packages_column_physics!}}}
+
+   !***********************************************************************
+   !
+   !  routine setup_packages_testing_system_test
+   !
+   !> \brief
+   !> \author  Adrian K. Turner
+   !> \date    9th Feburary 2015
+   !> \details
+   !>
+   !
+   !-----------------------------------------------------------------------
+
+   subroutine setup_packages_testing_system_test(configPool, packagePool, ierr)!{{{
+
+     type (mpas_pool_type), intent(in) :: configPool
+     type (mpas_pool_type), intent(in) :: packagePool
+     integer, intent(out) :: ierr
+
+     logical, pointer :: &
+          config_testing_system_test
+
+     logical, pointer :: &
+          pkgTestingSystemTestActive
+
+     !pkgTestingSystemTest
+
+     call MPAS_pool_get_config(configPool, "config_testing_system_test", config_testing_system_test)
+
+     call MPAS_pool_get_package(packagePool, "pkgTestingSystemTestActive", pkgTestingSystemTestActive)
+
+     ! see if we are testing the testing system
+     if (config_testing_system_test) then
+
+        pkgTestingSystemTestActive = .true.
+
+     endif
+
+   end subroutine setup_packages_testing_system_test!}}}
 
    !***********************************************************************
    !

@@ -57,6 +57,8 @@ contains
          cice_init_column_physics_package_parameters, &
          cice_init_column_physics_package_variables
     use cice_forcing, only: cice_forcing_init, cice_reset_coupler_fluxes
+    use cice_diagnostics, only: &
+         cice_set_testing_system_test_arrays
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -71,6 +73,9 @@ contains
          block
 
     call mpas_log_write("cice_init: Initialize sea-ice model")
+
+    ! init testing system test arrays
+    call cice_set_testing_system_test_arrays(domain)
 
     ! initialize junk values
     call init_junk_values(domain)

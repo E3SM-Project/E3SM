@@ -31,6 +31,7 @@ def parallelism(mpasDevelopmentDir, domainsDir, domain, configuration, check):
                      {"streamName":"output" , "attributeName":"output_interval", "newValue":"none"}]
 
     if (run_model("development1", mpasDevelopmentDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile) != 0):
+        os.chdir("..")
         return 1
 
     # base run
@@ -44,6 +45,7 @@ def parallelism(mpasDevelopmentDir, domainsDir, domain, configuration, check):
                      {"streamName":"output" , "attributeName":"output_interval", "newValue":"none"}]
 
     if (run_model("development2", mpasDevelopmentDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile) != 0):
+        os.chdir("..")
         return 1
 
 
