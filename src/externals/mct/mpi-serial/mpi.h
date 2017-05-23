@@ -1,4 +1,3 @@
-
 #ifndef _MPI_H_
 #define _MPI_H_
 
@@ -47,7 +46,6 @@ typedef int MPI_Group;
 #define MPI_PENDING        (-1)
 #define MPI_ERR_IN_STATUS  (-1)
 #define MPI_ERR_LASTCODE   (-1)
-
 
 /*
  * MPI_UNDEFINED
@@ -191,6 +189,14 @@ typedef struct                  /* Fortran: INTEGER status(MPI_STATUS_SIZE) */
 #define MPI_STATUSES_IGNORE  ((MPI_Status *)0)
 
 
+/*
+ * MPI Errhandling stubs (Not functional currently)
+ */
+typedef int MPI_Errhandler;
+
+#define MPI_ERRORS_ARE_FATAL ((MPI_Errhandler)0)
+#define MPI_ERRORS_RETURN    ((MPI_Errhandler)-1)
+
 
 /*
  * Collective operations
@@ -246,7 +252,8 @@ typedef int MPI_Info;         /* handle */
 extern int MPI_Intercomm_create(MPI_Comm local_comm, int local_leader,
                           MPI_Comm peer_comm, int remote_leader,
                           int tag, MPI_Comm *newintercomm);
-
+extern int MPI_Intercomm_merge(MPI_Comm intercomm, int high,
+			       MPI_Comm *newintercomm);
 extern int MPI_Cart_create(MPI_Comm comm_old, int ndims, int *dims,
                         int *periods, int reorder, MPI_Comm *comm_cart);
 extern int MPI_Cart_get(MPI_Comm comm, int maxdims, int *dims,
@@ -389,6 +396,9 @@ extern int MPI_Iprobe(int source, int tag, MPI_Comm comm,
 
 extern int MPI_Pack_size(int incount, MPI_Datatype type, MPI_Comm comm, MPI_Aint * size);
 
+/* Error handling stub, not currently functional */
+extern int MPI_Errhandler_set(MPI_Comm comm, MPI_Errhandler handle);
+
 /* new type functions */
 extern int MPI_Get_count(MPI_Status *status, MPI_Datatype datatype, int *count);
 extern int MPI_Get_elements(MPI_Status *status, MPI_Datatype datatype, int *count);
@@ -398,6 +408,9 @@ extern int MPI_Type_vector(int count, int blocklen, int stride, MPI_Datatype old
                            MPI_Datatype *newtype);
 
 extern int MPI_Type_hvector(int count, int blocklen, MPI_Aint stride,
+                            MPI_Datatype oldtype, MPI_Datatype *newtype);
+
+extern int MPI_Type_create_hvector(int count, int blocklen, MPI_Aint stride,
                             MPI_Datatype oldtype, MPI_Datatype *newtype);
 
 extern int MPI_Type_indexed(int count, int *blocklens, int *displacements,
