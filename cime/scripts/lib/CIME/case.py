@@ -8,7 +8,7 @@ from copy import deepcopy
 import glob, os, shutil, math, string
 from CIME.XML.standard_module_setup import *
 
-from CIME.utils                     import expect, get_cime_root, append_status
+from CIME.utils                     import expect, get_cime_root, append_status, stringify_bool
 from CIME.utils                     import convert_to_type, get_model, get_project
 from CIME.utils                     import get_current_commit
 from CIME.check_lockedfiles         import LOCKED_DIR, lock_file
@@ -1168,11 +1168,8 @@ class Case(object):
 
     def load_env(self):
         if not self._is_env_loaded:
-            compiler = self.get_value("COMPILER")
-            debug=self.get_value("DEBUG")
-            mpilib=self.get_value("MPILIB")
             env_module = self.get_env("mach_specific")
-            env_module.load_env(compiler=compiler,debug=debug, mpilib=mpilib)
+            env_module.load_env(self)
             self._is_env_loaded = True
 
     def get_build_threaded(self):
@@ -1180,7 +1177,10 @@ class Case(object):
         Returns True if current settings require a threaded build/run.
         """
         force_threaded = self.get_value("BUILD_THREADED")
-        return bool(force_threaded) or self.thread_count > 1
+        smp_present = bool(force_threaded) or self.thread_count > 1
+        self.set_value("SMP_PRESENT", stringify_bool(smp_present))
+        os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
+        return smp_present
 
     def _check_testlists(self, compset_alias, grid_name, files):
         """
