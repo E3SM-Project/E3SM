@@ -60,7 +60,6 @@ contains
     use initGridCellsMod , only: initGridCells
     use ch4varcon        , only: ch4conrd
     use UrbanParamsType  , only: UrbanInput
-    use CLMFatesParamInterfaceMod, only : FatesReadPFTs
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -182,14 +181,6 @@ contains
 
     call pftconrd()
     call soilorder_conrd()
-
-    ! Read in FATES parameter values early in the call sequence as well
-    ! The PFT file, specifically, will dictate how many pfts are used
-    ! in fates, and this will influence the amount of memory we
-    ! request from the model, which is relevant in set_fates_global_elements()
-    if (use_ed) then
-       call FatesReadPFTs()
-    end if
 
     ! Read surface dataset and set up subgrid weight arrays
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
@@ -495,13 +486,13 @@ contains
     ! Read in private parameters files, this should be preferred for mulitphysics
     ! implementation, jinyun Tang, Feb. 11, 2015
     ! ------------------------------------------------------------------------
-    if(use_cn .or. use_ed) then
+    if(use_cn) then
        call init_decomp_cascade_constants()
     endif
     !read bgc implementation specific parameters when needed
     call readPrivateParameters()
 
-    if (use_cn .or. use_ed) then
+    if (use_cn) then
        if (.not. is_active_betr_bgc)then
           if (use_century_decomp) then
            ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
@@ -615,8 +606,7 @@ contains
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
                waterflux_vars, waterstate_vars,                                               &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
-               betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
-               alm_fates)
+               betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars )
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
@@ -631,8 +621,7 @@ contains
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
-            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
-            alm_fates)
+            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
     end if
        
@@ -677,8 +666,7 @@ contains
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
-            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
-            alm_fates)
+           betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
@@ -693,8 +681,7 @@ contains
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
-            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
-            alm_fates)
+            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
        ! Reset finidat to now be finidat_interp_dest 
        ! (to be compatible with routines still using finidat)
@@ -819,12 +806,13 @@ contains
     deallocate(wt_nat_patch)
 
     ! --------------------------------------------------------------
-    ! Initialise the FATES model state structure cold-start
+    ! Initialise the FATES model state structure
     ! --------------------------------------------------------------
    
     if ( use_ed .and. .not.is_restart() .and. finidat == ' ') then
-       call alm_fates%init_coldstart(waterstate_vars,canopystate_vars, &
-                                     soilstate_vars, frictionvel_vars)
+!! (FATES-INTERF)
+       
+!!       call clm_fates%init_coldstart(waterstate_vars,canopystate_vars,soilstate_vars, frictionvel_vars)
     end if
 
     ! topo_glc_mec was allocated in initialize1, but needed to be kept around through

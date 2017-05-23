@@ -1,8 +1,8 @@
-module FatesBGCDynMod
+module EDBGCDynMod
    
    ! ==============================================================================================
    ! This module creates a pathway to call the belowground biogeochemistry 
-   ! code as driven by the FATES vegetation model but bypassing the aboveground 
+   ! code as driven by the ED vegetation model but bypassing the aboveground 
    ! CN vegetation code.  It is modeled after the CNDriverMod in its call sequence and 
    ! functionality.
    ! ==============================================================================================
@@ -14,7 +14,7 @@ module FatesBGCDynMod
    
    implicit none
 
-   public :: FatesBGCDyn
+   public :: EDBGCDyn
    
    character(len=*), parameter, private :: sourcefile = &
          __FILE__
@@ -23,15 +23,14 @@ contains
    
    
    !-----------------------------------------------------------------------
-   subroutine FatesBGCDyn(bounds,        &
+   subroutine EDBGCDyn(bounds,        &
          num_soilc, filter_soilc, num_soilp, filter_soilp, &
          carbonflux_vars, carbonstate_vars, cnstate_vars, &
          c13_carbonflux_vars, c13_carbonstate_vars,  &
          c14_carbonflux_vars, c14_carbonstate_vars,  &
          canopystate_vars, soilstate_vars, temperature_vars, &
          ch4_vars, nitrogenflux_vars, nitrogenstate_vars, &
-         phosphorusstate_vars, phosphorusflux_vars, &
-         alm_fates)
+         phosphorusstate_vars, phosphorusflux_vars)
       
       use clm_varctl             , only : use_c13, use_c14, use_ed
       use decompMod              , only : bounds_type
@@ -55,7 +54,6 @@ contains
       use PhosphorusStateType    , only : phosphorusstate_type
       use PhosphorusFluxType     , only : phosphorusflux_type
       use CNDecompCascadeConType , only : decomp_cascade_con
-      use CLMFatesInterfaceMod   , only : hlm_fates_interface_type
 
     !
     ! !ARGUMENTS:
@@ -79,8 +77,7 @@ contains
     type(nitrogenstate_type)  , intent(inout) :: nitrogenstate_vars
     type(phosphorusstate_type), intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
-    type(hlm_fates_interface_type),intent(inout) :: alm_fates
-    
+
     !
     ! !LOCAL VARIABLES:
     integer :: k,j,fc,c
@@ -209,18 +206,18 @@ contains
     !  call SoilBiogeochemDecomp() in CLM
     call t_startf('SoilBiogeochemDecomp')
 
-    do k = 1, ndecomp_cascade_transitions
-       do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             !
-             decomp_cascade_hr_vr(c,j,k) = rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(c,j,k)
-             !
-             decomp_cascade_ctransfer_vr(c,j,k) = (1._r8 - rf_decomp_cascade(c,j,k)) * p_decomp_cpool_loss(c,j,k)
-             !
-          end do
-       end do
-    end do
+         do k = 1, ndecomp_cascade_transitions
+         do j = 1,nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               !
+               decomp_cascade_hr_vr(c,j,k) = rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(c,j,k)
+               !
+               decomp_cascade_ctransfer_vr(c,j,k) = (1._r8 - rf_decomp_cascade(c,j,k)) * p_decomp_cpool_loss(c,j,k)
+               !
+            end do
+         end do
+      end do
       
     call t_stopf('SoilBiogeochemDecomp')
 
@@ -231,12 +228,11 @@ contains
 
     call t_startf('BNGCUpdate1')
 
-
-    ! -------------------------------------------------------
-    ! Pass in FATES boundary conditions, ie litter fluxes
-    ! -------------------------------------------------------
-    
-    call alm_fates%UpdateLitterFluxes(bounds,carbonflux_vars)
+    !! (FATES-INTERF)
+    !! call clm_fates%UpdateLitterFluxes(carbonflux_vars)
+    !! cf_soil%decomp_cpools_sourcesink_col(c,j,i_met_lit) = cf_soil%FATES_c_to_litr_lab_c_col(c,j) * dt
+    !! cf_soil%decomp_cpools_sourcesink_col(c,j,i_cel_lit) = cf_soil%FATES_c_to_litr_cel_c_col(c,j) * dt
+    !! cf_soil%decomp_cpools_sourcesink_col(c,j,i_lig_lit) = cf_soil%FATES_c_to_litr_lig_c_col(c,j) * dt
 
     ! Update all prognostic carbon state variables (except for gap-phase mortality and fire fluxes)
 
@@ -264,288 +260,45 @@ contains
     call t_startf('BGCsum')
     
     ! Set controls on very low values in critical state variables 
-    ! Added some new logical filters to prevent
+    ! (FATES-INTERF) Added some new logical filters to prevent
     ! above ground precision control calculations with use_ed, as well
     ! bypass on nitrogen calculations
     call CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
           carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars,       &
           nitrogenstate_vars,phosphorusstate_vars)
 
-    
-    call FatesBGCSummary(bounds, num_soilc, filter_soilc,carbonflux_vars, carbonstate_vars)
+    ! ----------------------------------------------
+    ! soilbiogeochem carbon/nitrogen state summary
+    ! ----------------------------------------------
+    call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
+    call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    if ( use_c13 ) then
+       call c13_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c13')
+       call c13_carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    end if
+    if ( use_c14 ) then
+       call c14_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c14')
+       call c14_carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    end if
 
+    !call nitrogenflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    !call nitrogenstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    
+    !call phosphorusflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    !call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    
     ! ----------------------------------------------
     ! calculate balance checks on entire carbon cycle (FATES + BGC)
     ! ----------------------------------------------
 
-    call alm_fates%wrap_bgc_summary( bounds, carbonflux_vars, carbonstate_vars)
+!!    call clm_fates%wrap_bgc_summary(nc, soilbiogeochem_carbonflux_inst, &
+!!                                        soilbiogeochem_carbonstate_inst)
 
     call t_stopf('BGCsum')
 
 
     end associate
 
-  end subroutine FatesBGCDyn
+  end subroutine EDBGCDyn
 
-  ! ======================================================================================
-
-  subroutine FatesBGCSummary(bounds, num_soilc, filter_soilc, carbonflux_vars, carbonstate_vars )
-
-    use decompMod              , only : bounds_type
-    use CNCarbonFluxType       , only : carbonflux_type
-    use CNCarbonStateType      , only : carbonstate_type
-    use clm_varcon             , only : dzsoi_decomp, zisoi
-    use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
-    use CNDecompCascadeConType , only : decomp_cascade_con
-    
-    type(bounds_type)         , intent(in)    :: bounds  
-    integer                   , intent(in)    :: num_soilc         ! number of soil columns in filter
-    integer                   , intent(in)    :: filter_soilc(:)   ! filter for soil columns
-    type(carbonflux_type)     , intent(inout) :: carbonflux_vars
-    type(carbonstate_type)    , intent(inout) :: carbonstate_vars
-
-    real(r8) :: maxdepth
-    integer  :: k,j,fc,c,l
-
-
-    ! ------------------------------------------------------------------------------------
-    !
-    ! Summarize Carbon Fluxes
-    !
-    ! ------------------------------------------------------------------------------------
-
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       carbonflux_vars%som_c_leached_col(c) = 0._r8
-    end do
-    
-    ! vertically integrate HR and decomposition cascade fluxes
-    do k = 1, ndecomp_cascade_transitions
-       do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             carbonflux_vars%decomp_cascade_hr_col(c,k) = &
-                  carbonflux_vars%decomp_cascade_hr_col(c,k) + &
-                  carbonflux_vars%decomp_cascade_hr_vr_col(c,j,k) * dzsoi_decomp(j) 
-             
-             carbonflux_vars%decomp_cascade_ctransfer_col(c,k) = &
-                  carbonflux_vars%decomp_cascade_ctransfer_col(c,k) + &
-                  carbonflux_vars%decomp_cascade_ctransfer_vr_col(c,j,k) * dzsoi_decomp(j) 
-          end do
-       end do
-    end do
-    
-    ! total heterotrophic respiration, vertically resolved (HR)
-    do j = 1,nlevdecomp
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          carbonflux_vars%hr_vr_col(c,j) = 0._r8
-       end do
-    end do
-    do k = 1, ndecomp_cascade_transitions
-       do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             carbonflux_vars%hr_vr_col(c,j) = &
-                  carbonflux_vars%hr_vr_col(c,j) + &
-                  carbonflux_vars%decomp_cascade_hr_vr_col(c,j,k)
-          end do
-       end do
-    end do
-
-    ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
-    do l = 1, ndecomp_pools
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          carbonflux_vars%decomp_cpools_leached_col(c,l) = 0._r8
-       end do
-       do j = 1, nlevdecomp
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             carbonflux_vars%decomp_cpools_leached_col(c,l) = carbonflux_vars%decomp_cpools_leached_col(c,l) + &
-                  carbonflux_vars%decomp_cpools_transport_tendency_col(c,j,l) * dzsoi_decomp(j)
-          end do
-       end do
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          carbonflux_vars%som_c_leached_col(c) = carbonflux_vars%som_c_leached_col(c) + &
-               carbonflux_vars%decomp_cpools_leached_col(c,l)
-       end do
-    end do
-
-    ! soil organic matter heterotrophic respiration 
-    associate(is_soil => decomp_cascade_con%is_soil) ! TRUE => pool is a soil pool  
-      do k = 1, ndecomp_cascade_transitions
-         if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               carbonflux_vars%somhr_col(c) = carbonflux_vars%somhr_col(c) + &
-                    carbonflux_vars%decomp_cascade_hr_col(c,k)
-            end do
-         end if
-      end do
-    end associate
-
-    ! litter heterotrophic respiration (LITHR)
-    associate(is_litter => decomp_cascade_con%is_litter) ! TRUE => pool is a litter pool
-      do k = 1, ndecomp_cascade_transitions
-         if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               carbonflux_vars%lithr_col(c) = carbonflux_vars%lithr_col(c) + &
-                    carbonflux_vars%decomp_cascade_hr_col(c,k)
-            end do
-         end if
-      end do
-    end associate
-
-    ! total heterotrophic respiration (HR)
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       
-          carbonflux_vars%hr_col(c) = &
-               carbonflux_vars%lithr_col(c) + &
-               carbonflux_vars%somhr_col(c)
-       
-    end do
-
-
-    ! ------------------------------------------------------------------------------------
-    !
-    ! Summarize Carbon States
-    !
-    ! ------------------------------------------------------------------------------------
-
-    ! vertically integrate each of the decomposing C pools
-    do l = 1, ndecomp_pools
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          carbonstate_vars%decomp_cpools_col(c,l) = 0._r8
-       end do
-    end do
-    do l = 1, ndecomp_pools
-       do j = 1, nlevdecomp
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             carbonstate_vars%decomp_cpools_col(c,l) = &
-                  carbonstate_vars%decomp_cpools_col(c,l) + &
-                  carbonstate_vars%decomp_cpools_vr_col(c,j,l) * dzsoi_decomp(j)
-          end do
-       end do
-    end do
-
-    if ( nlevdecomp > 1) then
-
-       ! vertically integrate each of the decomposing C pools to 1 meter
-       maxdepth = 1._r8
-       do l = 1, ndecomp_pools
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             carbonstate_vars%decomp_cpools_1m_col(c,l) = 0._r8
-          end do
-       end do
-       do l = 1, ndecomp_pools
-          do j = 1, nlevdecomp
-             if ( zisoi(j) <= maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   carbonstate_vars%decomp_cpools_1m_col(c,l) = &
-                        carbonstate_vars%decomp_cpools_1m_col(c,l) + &
-                        carbonstate_vars%decomp_cpools_vr_col(c,j,l) * dzsoi_decomp(j)
-                end do
-             elseif ( zisoi(j-1) < maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   carbonstate_vars%decomp_cpools_1m_col(c,l) = &
-                        carbonstate_vars%decomp_cpools_1m_col(c,l) + &
-                        carbonstate_vars%decomp_cpools_vr_col(c,j,l) * (maxdepth - zisoi(j-1))
-                end do
-             endif
-          end do
-       end do
-
-    endif
-
-    ! truncation carbon
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       carbonstate_vars%ctrunc_col(c) = 0._r8
-    end do
-    do j = 1, nlevdecomp
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          carbonstate_vars%ctrunc_col(c) = &
-               carbonstate_vars%ctrunc_col(c) + &
-               carbonstate_vars%ctrunc_vr_col(c,j) * dzsoi_decomp(j)
-       end do
-    end do
-
-    ! total litter carbon in the top meter (TOTLITC_1m)
-    if ( nlevdecomp > 1) then
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          carbonstate_vars%totlitc_1m_col(c) = 0._r8
-       end do
-       do l = 1, ndecomp_pools
-          if ( decomp_cascade_con%is_litter(l) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                carbonstate_vars%totlitc_1m_col(c) = carbonstate_vars%totlitc_1m_col(c) + &
-                     carbonstate_vars%decomp_cpools_1m_col(c,l)
-             end do
-          endif
-       end do
-    end if
-
-    ! total soil organic matter carbon in the top meter (TOTSOMC_1m)
-    if ( nlevdecomp > 1) then
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          carbonstate_vars%totsomc_1m_col(c) = 0._r8
-       end do
-       do l = 1, ndecomp_pools
-          if ( decomp_cascade_con%is_soil(l) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                carbonstate_vars%totsomc_1m_col(c) = carbonstate_vars%totsomc_1m_col(c) + &
-                     carbonstate_vars%decomp_cpools_1m_col(c,l)
-             end do
-          end if
-       end do
-    end if
-
-    ! total litter carbon (TOTLITC)
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       carbonstate_vars%totlitc_col(c) = 0._r8
-    end do
-    do l = 1, ndecomp_pools
-       if ( decomp_cascade_con%is_litter(l) ) then
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             carbonstate_vars%totlitc_col(c) = carbonstate_vars%totlitc_col(c) + &
-                  carbonstate_vars%decomp_cpools_col(c,l)
-          end do
-       endif
-    end do
-
-    ! total soil organic matter carbon (TOTSOMC)
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       carbonstate_vars%totsomc_col(c) = 0._r8
-    end do
-    do l = 1, ndecomp_pools
-       if ( decomp_cascade_con%is_soil(l) ) then
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             carbonstate_vars%totsomc_col(c) = carbonstate_vars%totsomc_col(c) + &
-                  carbonstate_vars%decomp_cpools_col(c,l)
-          end do
-       end if
-    end do
-    
-    return
-  end subroutine FatesBGCSummary
-
-
-end  module FatesBGCDynMod
+end  module EDBGCDynMod

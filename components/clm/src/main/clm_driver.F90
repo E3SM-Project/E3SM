@@ -65,7 +65,7 @@ module clm_driver
   use ch4Mod                 , only : ch4
   use DUSTMod                , only : DustDryDep, DustEmission
   use VOCEmissionMod         , only : VOCEmission
-  use FatesBGCDynMod         , only : FatesBGCDyn
+  use EDBGCDynMod            , only : EDBGCDyn
   !
   use filterMod              , only : setFilters
   !
@@ -114,7 +114,6 @@ module clm_driver
   use clm_instMod            , only : lnd2glc_vars
   use clm_instMod            , only : soil_water_retention_curve
   use clm_instMod            , only : chemstate_vars
-  use clm_instMod            , only : alm_fates
   use betr_initializeMod     , only : betrtracer_vars
   use betr_initializeMod     , only : tracercoeff_vars
   use betr_initializeMod     , only : tracerflux_vars
@@ -339,6 +338,8 @@ contains
           call t_stopf('begcnbal')
        end if
 
+       ! (FATES-INTERF) Initiate limited carbon balance on below ground C BGC?
+
     end do
     !$OMP END PARALLEL DO
 
@@ -475,7 +476,9 @@ contains
        ! over the patch index range defined by bounds_clump%begp:bounds_proc%endp
        
        if(use_ed) then
-          call alm_fates%wrap_sunfrac(bounds_clump,atm2lnd_vars, canopystate_vars)
+          ! (FATES-INTERF)
+          !           call clm_fates%wrap_sunfrac(nc,atm2lnd_inst, canopystate_inst)
+          call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
        else
           call CanopySunShadeFractions(filter(nc)%num_nourbanp, filter(nc)%nourbanp,    &
                                        atm2lnd_vars, surfalb_vars, canopystate_vars,    &
@@ -511,8 +514,7 @@ contains
             filter(nc)%num_nolakec, filter(nc)%nolakec,                       &
             filter(nc)%num_nolakep, filter(nc)%nolakep,                       &
             atm2lnd_vars, canopystate_vars, soilstate_vars, frictionvel_vars, &
-            waterstate_vars, waterflux_vars, energyflux_vars, temperature_vars, &
-            alm_fates)
+            waterstate_vars, waterflux_vars, energyflux_vars, temperature_vars)
        call t_stopf('bgp1')
 
        ! ============================================================================
@@ -541,8 +543,7 @@ contains
             atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars,               &
             frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars,               &
             temperature_vars, waterflux_vars, waterstate_vars, ch4_vars, photosyns_vars, &
-            soil_water_retention_curve, nitrogenstate_vars,phosphorusstate_vars,         &
-            alm_fates) 
+            soil_water_retention_curve, nitrogenstate_vars,phosphorusstate_vars) 
        call t_stopf('canflux')
 
        ! Fluxes for all urban landunits
@@ -654,8 +655,7 @@ contains
             filter(nc)%num_nosnowc, filter(nc)%nosnowc,                      &
             atm2lnd_vars, soilstate_vars, energyflux_vars, temperature_vars, &
             waterflux_vars, waterstate_vars, soilhydrology_vars, aerosol_vars, &
-            soil_water_retention_curve, betrtracer_vars, tracerflux_vars,    &
-            tracerstate_vars, alm_fates)
+            soil_water_retention_curve, betrtracer_vars, tracerflux_vars, tracerstate_vars)
 
        !  Calculate column-integrated aerosol masses, and
        !  mass concentrations for radiative calculations and output
@@ -926,9 +926,51 @@ contains
 
           end if  ! end of if-use_cn
 
+       else ! use_ed
+
+           ! (FATES-INTERF) put error call, flag for development
+           call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
+
+           
+           if ( is_beg_curr_day() ) then ! run ED at the start of each day
+              
+              if ( masterproc ) then
+                 write(iulog,*)  'clm: calling FATES model ', get_nstep()
+              end if
+              
+!!              call clm_fates%dynamics_driv( nc, bounds_clump,                        &
+!!                    atm2lnd_inst, soilstate_inst, temperature_inst,                   &
+!!                    waterstate_inst, canopystate_inst, soilbiogeochem_carbonflux_inst,&
+!!                    frictionvel_inst)
+              
+              ! TODO(wjs, 2016-04-01) I think this setFilters call should be replaced by a
+              ! call to reweight_wrapup, if it's needed at all.
+              ! (FATES-INTERF) Note that setFilters is commented out
+              !! call setFilters( bounds_clump, glc_behavior )
+              
+           end if
+           
         end if  ! end of if-use_ed
 
-    
+        ! ------------------------------------------------------------------------------
+        ! Perform reduced capacity soil-bgc only calculations when FATES/ED is on
+        ! ------------------------------------------------------------------------------
+        if ( use_ed ) then
+
+            ! (FATES-INTERF) put error call, flag for development
+            call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
+            
+            call EDBGCDyn(bounds_clump,                               &
+                  filter(nc)%num_soilc, filter(nc)%soilc,             &
+                  filter(nc)%num_soilp, filter(nc)%soilp,             &
+                  carbonflux_vars, carbonstate_vars, cnstate_vars,    &
+                  c13_carbonflux_vars, c13_carbonstate_vars,          &
+                  c14_carbonflux_vars, c14_carbonstate_vars,          &
+                  canopystate_vars, soilstate_vars, temperature_vars, &
+                  ch4_vars, nitrogenflux_vars, nitrogenstate_vars,    &
+                  phosphorusstate_vars, phosphorusflux_vars)
+
+         end if
 
          call t_stopf('ecosysdyn')
 
@@ -1022,44 +1064,6 @@ contains
                tracerstate_vars, tracerflux_vars,  betrtracer_vars)          
        endif          
 
-       ! Execute FATES dynamics
-       if ( use_ed ) then
-          if ( is_beg_curr_day() ) then ! run ED at the start of each day
-             
-             if ( masterproc ) then
-                write(iulog,*)  'clm: calling FATES model ', get_nstep()
-             end if
-             
-             call alm_fates%dynamics_driv( bounds_clump,               &
-                  atm2lnd_vars, soilstate_vars, temperature_vars,     &
-                  waterstate_vars, canopystate_vars, carbonflux_vars, &
-                  frictionvel_vars)
-
-             
-             ! TODO(wjs, 2016-04-01) I think this setFilters call should be replaced by a
-             ! call to reweight_wrapup, if it's needed at all.
-             ! (FATES-INTERF) Note that setFilters is commented out
-             !! call setFilters( bounds_clump, glc_behavior )
-             
-          end if
-
-          ! ------------------------------------------------------------------------------
-          ! Perform reduced capacity soil-bgc only calculations when FATES/ED is on
-          ! ------------------------------------------------------------------------------
-          
-          call FatesBGCDyn(bounds_clump,                           &
-               filter(nc)%num_soilc, filter(nc)%soilc,             &
-               filter(nc)%num_soilp, filter(nc)%soilp,             &
-               carbonflux_vars, carbonstate_vars, cnstate_vars,    &
-               c13_carbonflux_vars, c13_carbonstate_vars,          &
-               c14_carbonflux_vars, c14_carbonstate_vars,          &
-               canopystate_vars, soilstate_vars, temperature_vars, &
-               ch4_vars, nitrogenflux_vars, nitrogenstate_vars,    &
-               phosphorusstate_vars, phosphorusflux_vars,          &
-               alm_fates)
-          
-       end if
-       
        ! ============================================================================
        ! Check the energy and water balance, also carbon and nitrogen balance
        ! ============================================================================
@@ -1157,8 +1161,7 @@ contains
                filter_inactive_and_active(nc)%urbanp,           &
                nextsw_cday, declinp1,                           &
                aerosol_vars, canopystate_vars, waterstate_vars, &
-               lakestate_vars, temperature_vars, surfalb_vars,  &
-               alm_fates)
+               lakestate_vars, temperature_vars, surfalb_vars)
           call t_stopf('surfalb')
 
           ! Albedos for urban columns
@@ -1341,7 +1344,7 @@ contains
                waterflux_vars, waterstate_vars,                                               &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
                betrtracer_vars, tracerstate_vars, tracerflux_vars,                            &
-               tracercoeff_vars, alm_fates, rdate=rdate )
+               tracercoeff_vars, rdate=rdate )
 
           call t_stopf('clm_drv_io_wrest')
        end if

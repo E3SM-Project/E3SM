@@ -76,26 +76,25 @@ contains
   subroutine readPrivateParameters
     ! read CN and BGC shared parameters
     !
-    use CNAllocationBetrMod      , only : readCNAllocBetrParams
-    use CNAllocationMod          , only : readCNAllocParams    
-    use CNDecompMod              , only : readCNDecompParams
-    use CNDecompCascadeBGCMod    , only : readCNDecompBgcParams
-    use CNDecompCascadeCNMod     , only : readCNDecompCnParams
-    use CNPhenologyMod           , only : readCNPhenolParams
-    use CNMRespMod               , only : readCNMRespParams
-    use CNNDynamicsMod           , only : readCNNDynamicsParams
-    use CNGapMortalityMod        , only : readCNGapMortParams 
-    use CNNitrifDenitrifMod      , only : readCNNitrifDenitrifParams
-    use CNSoilLittVertTranspMod  , only : readCNSoilLittVertTranspParams
-    use ch4Mod                   , only : readCH4Params
-    use clm_varctl               , only : paramfile, iulog, use_betr
-    use spmdMod                  , only : masterproc
-    use fileutils                , only : getfil
-    use ncdio_pio                , only : ncd_pio_closefile, ncd_pio_openfile, &
-                                          file_desc_t, ncd_inqdid, ncd_inqdlen
-    use tracer_varcon            , only : is_active_betr_bgc                                         
-    use betr_initializeMod       , only : bgc_reaction, betrtracer_vars
-    use CLMFatesParamInterfaceMod, only : FatesReadParameters
+    use CNAllocationBetrMod     , only : readCNAllocBetrParams
+    use CNAllocationMod         , only : readCNAllocParams    
+    use CNDecompMod             , only : readCNDecompParams
+    use CNDecompCascadeBGCMod   , only : readCNDecompBgcParams
+    use CNDecompCascadeCNMod    , only : readCNDecompCnParams
+    use CNPhenologyMod          , only : readCNPhenolParams
+    use CNMRespMod              , only : readCNMRespParams
+    use CNNDynamicsMod          , only : readCNNDynamicsParams
+    use CNGapMortalityMod       , only : readCNGapMortParams 
+    use CNNitrifDenitrifMod     , only : readCNNitrifDenitrifParams
+    use CNSoilLittVertTranspMod , only : readCNSoilLittVertTranspParams
+    use ch4Mod                  , only : readCH4Params
+    use clm_varctl              , only : paramfile, iulog, use_betr
+    use spmdMod                 , only : masterproc
+    use fileutils               , only : getfil
+    use ncdio_pio               , only : ncd_pio_closefile, ncd_pio_openfile, &
+                                         file_desc_t, ncd_inqdid, ncd_inqdlen
+    use tracer_varcon           , only : is_active_betr_bgc                                         
+    use betr_initializeMod      , only : bgc_reaction, betrtracer_vars
     
     !
     ! !ARGUMENTS:
@@ -140,6 +139,7 @@ contains
           call readCNDecompCnParams(ncid)
        end if
        
+       
        if (use_nitrif_denitrif) then
           call readCNNitrifDenitrifParams(ncid)
        end if
@@ -151,7 +151,10 @@ contains
        end if
     end if
 
-    
+    if (use_ed) then
+       !! (FATES-INTERF)
+       !!       call FatesReadParameters()
+    end if
     
     if (use_cn) then
        call readCNPhenolParams(ncid)
@@ -164,12 +167,6 @@ contains
     ! close CN params file
     !
     call ncd_pio_closefile(ncid)
-
-    ! FATES has its own file, therefore we close the exiting file
-    ! before continuing
-    if (use_ed) then
-       call FatesReadParameters()
-    end if
 
  end subroutine readPrivateParameters
 end module readParamsMod
