@@ -62,6 +62,7 @@ std::vector<int> indexToVertexID, vertexToFCell, triangleToFVertex, indexToEdgeI
 std::vector<double> temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices, velocityOnCells,
     elevationData, thicknessData, betaData, bedTopographyData, smbData, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
+std::vector<double> observedVeloXData, observedVeloYData, observedDHDtData; // only needed for creating ASCII mesh
 ;
 int numBoundaryEdges;
 double radius;
@@ -1523,6 +1524,72 @@ void import2DFields(double const* bedTopography_F, double const * lowerSurface_F
 
 }
 
+void import2DFieldsObservations(double const * lowerSurface_F, double const * thickness_F,
+            double const* observedSurfaceVelocityX_F, double const * observedSurfaceVelocityY_F,
+            double const * observedThicknessTendency_F) {
+  observedVeloXData.assign(nVertices, 1e10);
+  observedVeloYData.assign(nVertices, 1e10);
+  observedDHDtData.assign(nVertices, 1e10);
+
+  std::map<int, int> bdExtensionMap;
+
+  //import fields
+  for (int index = 0; index < nVertices; index++) {
+    int iCell = vertexToFCell[index];
+    observedVeloXData[index] = observedSurfaceVelocityX_F[iCell] * secondsInAYear;
+    observedVeloYData[index] = observedSurfaceVelocityY_F[iCell] * secondsInAYear;
+    observedDHDtData[index] = observedThicknessTendency_F[iCell] / unit_length * secondsInAYear;
+  }
+
+  //extend to the border for floating vertices (copy of logic in previous function)
+  std::set<int>::const_iterator iter;
+
+  for (int iV = 0; iV < nVertices; iV++) {
+    int fCell = vertexToFCell[iV];
+    if (isVertexBoundary[iV] && !(cellsMask_F[fCell] & ice_present_bit_value)) {
+      int c;
+      int nEdg = nEdgesOnCells_F[fCell];
+      bool isFloating = false;
+      for (int j = 0; (j < nEdg)&&(!isFloating); j++) {
+        int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
+        isFloating = (floatingEdgesMask_F[fEdge] != 0);
+      }
+      if(!isFloating) continue;
+
+      double elevTemp =1e10;
+      for (int j = 0; j < nEdg; j++) {
+        int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
+        // bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & dynamic_ice_bit_value)
+        //     && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & dynamic_ice_bit_value);
+        // if (!keep)
+        //   continue;
+
+        int c0 = cellsOnEdge_F[2 * fEdge] - 1;
+        int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
+        c = (fCellToVertex[c0] == iV) ? c1 : c0;
+        if(!(cellsMask_F[c] & ice_present_bit_value)) continue;
+        double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
+
+        if (elevTemp > elev) {
+          elevTemp = elev;
+          bdExtensionMap[iV] = c;
+        }
+      }
+    }
+  }
+
+  for (std::map<int, int>::iterator it = bdExtensionMap.begin();
+      it != bdExtensionMap.end(); ++it) {
+    int iv = it->first;
+    int ic = it->second;
+    observedVeloXData[iv] = observedSurfaceVelocityX_F[ic] * secondsInAYear;
+    observedVeloYData[iv] = observedSurfaceVelocityY_F[ic] * secondsInAYear;
+    observedDHDtData[iv] = observedThicknessTendency_F[ic] / unit_length * secondsInAYear;
+  }
+
+}
+
+
 void importP0Temperature(double const * temperature_F) {
   int lElemColumnShift = (Ordering == 1) ? 3 : 3 * indexToTriangleID.size();
   int elemLayerShift = (Ordering == 0) ? 3 : 3 * nLayers;
@@ -2081,6 +2148,8 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     // individual field values
     // Call needed functions to process MPAS fields to Albany units/format
     import2DFields(bedTopography_F, lowerSurface_F, thickness_F, beta_F, smb_F,  minThickness);
+    import2DFieldsObservations(lowerSurface_F, thickness_F, 
+                    observedSurfaceVelocityX_F, observedSurfaceVelocityX_F, observedThicknessTendency_F);
 
     outfile.open ("thickness.ascii", std::ios::out | std::ios::trunc);
     if (outfile.is_open()) {
@@ -2088,8 +2157,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
        for(int i = 0; i<nVertices; ++i)
          outfile << thicknessData[i]<<"\n";
        outfile.close();
-       outfile.close();
-       }
+    }
     else {
        std::cout << "Failed to open thickness ascii file!"<< std::endl;
     }
@@ -2100,8 +2168,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
        for(int i = 0; i<nVertices; ++i)
          outfile << elevationData[i] <<"\n";
        outfile.close();
-       outfile.close();
-       }
+    }
     else {
        std::cout << "Failed to open surface_height ascii file!"<< std::endl;
     }
@@ -2112,8 +2179,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
        for(int i = 0; i<nVertices; ++i)
          outfile << smbData[i]<<"\n";
        outfile.close();
-       outfile.close();
-       }
+    }
     else {
        std::cout << "Failed to open surface_mass_balance ascii file!"<< std::endl;
     }
@@ -2124,11 +2190,36 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
        for(int i = 0; i<nVertices; ++i)
          outfile << betaData[i]<<"\n";
        outfile.close();
-       outfile.close();
-       }
+    }
     else {
        std::cout << "Failed to open basal_friction ascii file!"<< std::endl;
     }
+
+    outfile.open ("surface_velocity.ascii", std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+       outfile << nVertices << " " << 2 << "\n";  //number of vertices, number of components per vertex
+       for(int i = 0; i<nVertices; ++i) {
+         outfile << observedVeloXData[i] << "\n";
+         outfile << observedVeloYData[i] << "\n";
+       }
+       outfile.close();
+    }
+    else {
+       std::cout << "Failed to open surface velocity ascii file!"<< std::endl;
+    }
+
+
+    outfile.open ("dhdt.ascii", std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+       outfile << nVertices << "\n";  //number of vertices on first line
+       for(int i = 0; i<nVertices; ++i)
+         outfile << observedDHDtData[i]<<"\n";
+       outfile.close();
+    }
+    else {
+       std::cout << "Failed to open dhdt ascii file!"<< std::endl;
+    }
+
 
 
   }
