@@ -792,9 +792,6 @@
 
   ! ALLOCATE DATA STRUCTURES !
 
-  ! IF SENDING DATA
-  if(SendRout%nprocs > 0) then
-
      ! IF SENDING INTEGER DATA
      if(numi .ge. 1) then
 
@@ -825,17 +822,8 @@
 
 
      endif
-  else
-! the m_swap call needs these allocated even if
-! SendRout%nprocs = 0.
-     if (useswapm) then
-        if(numi .ge. 1)  allocate(ISendBuf(1),stat=ier)
-        if(numr .ge. 1)  allocate(RSendBuf(1),stat=ier)
-     endif
-  endif
 
   ! IF RECEVING DATA
-  if(RecvRout%nprocs > 0) then
 
      ! IF RECEIVING INTEGER DATA
      if(numi .ge. 1) then
@@ -867,15 +855,6 @@
 
 
      endif
-
-  else
-! the m_swap call needs these allocated even if
-! RecvRout%nprocs = 0.
-     if (useswapm) then
-        if(numi .ge. 1)  allocate(IRecvBuf(1),stat=ier)
-        if(numr .ge. 1)  allocate(RRecvBuf(1),stat=ier)
-     endif
-  endif
 
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -1346,29 +1325,11 @@ endif
 
   ! DEALLOCATE ALL STRUCTURES
 
-  if(SendRout%nprocs > 0) then
-
      if(numi .ge. 1) then
 
 	! Deallocate the send buffer
 	deallocate(ISendBuf,stat=ier)
 	if(ier/=0) call die(myname_,'deallocate(ISendBuf)',ier)
-
-     endif
-
-     if(numr .ge. 1) then
-
-	! Deallocate the send buffer
-	deallocate(RSendBuf,stat=ier)
-	if(ier/=0) call die(myname_,'deallocate(RSendBuf)',ier)
-
-     endif
-
-  endif
-
-  if(RecvRout%nprocs > 0) then
-
-     if(numi .ge. 1) then
 
 	! Deallocate the receive buffer
 	deallocate(IRecvBuf,stat=ier)
@@ -1378,13 +1339,15 @@ endif
 
      if(numr .ge. 1) then
 
+	! Deallocate the send buffer
+	deallocate(RSendBuf,stat=ier)
+	if(ier/=0) call die(myname_,'deallocate(RSendBuf)',ier)
+
 	! Deallocate the receive buffer
 	deallocate(RRecvBuf,stat=ier)
 	if(ier/=0) call die(myname_,'deallocate(RRecvBuf)',ier)
 
      endif
-
-  endif
 
   nullify(SendRout,RecvRout)
 
