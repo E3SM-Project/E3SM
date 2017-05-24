@@ -1,8 +1,37 @@
 ======================================================================
 Originator: Chris Fischer 
+Date: 5-24-2017 
+Tag: cime5.3.0-alpha.19
+Answer Changes: None
+Tests: scripts_regression_tests --fast 
+Dependencies:
+
+Brief Summary:
+    - Revert "Updated grid aliases in cesm/config_grids.xml"
+    - Build failures should not dump a full stacktracesince a code problem is
+      not the fault of CIME infrastructure.
+      Also, deprecate shell calls to date in favor of python interface to get
+      timestamp.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+0817502 Merge pull request #1596 from ESMCI/revert-1585-master
+0ee6cb7 Merge pull request #1595 from ESMCI/jgfouca/improve_build_fail_msg
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/build.py
+M       src/drivers/mct/cime_config/buildnml
+
+
+======================================================================
+Originator: Chris Fischer 
 Date: 5-23-2017
 Tag: cime5.3.0-alpha.18
-Answer Changes: [None, Round Off, Climate Changing]
+Answer Changes: None
 Tests: scripts_regression_tests.py, hand test xmlquery
        ERS.f19_g16.X.yellowstone_intel 
        1850_DATM%CPLHIST_SLND_CICE_POP2%ECO_DROF%CPLHIST_SGLC_WW3
