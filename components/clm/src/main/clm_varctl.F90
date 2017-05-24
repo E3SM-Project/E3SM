@@ -190,8 +190,7 @@ module clm_varctl
   !----------------------------------------------------------
 
   logical, public :: use_ed = .false.            ! true => use  ED
-  ! (FATES-INTERF) CHANGE TO USE_ED_SPITFIRE
-  logical, public :: use_ed_spit_fire = .false.  ! true => use spitfire model
+  logical, public :: use_ed_spitfire = .false.  ! true => use spitfire model
 
   !----------------------------------------------------------
   !  BeTR switches
@@ -277,6 +276,11 @@ module clm_varctl
   ! moved hist_wrtch4diag from histFileMod.F90 to here - caused compiler error with intel
   ! namelist: write CH4 extra diagnostic output
   logical, public :: hist_wrtch4diag = .false.         
+  
+  !----------------------------------------------------------
+  ! ED/FATES
+  !----------------------------------------------------------
+  character(len=fname_len), public :: fates_paramfile  = ' '
 
   !----------------------------------------------------------
   ! Migration of CPP variables
