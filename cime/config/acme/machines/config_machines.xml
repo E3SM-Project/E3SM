@@ -2333,6 +2333,7 @@
 <machine MACH="lawrencium-lr3">
   <DESC>Lawrencium LR3 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
   <OS>LINUX</OS>
+  <NODENAME_REGEX>n000*</NODENAME_REGEX>
   <COMPILERS>intel</COMPILERS>
   <MPILIBS>openmpi,mpi-serial</MPILIBS>
   <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
@@ -2396,6 +2397,7 @@
 <machine MACH="lawrencium-lr2">
   <DESC>Lawrencium LR2 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
   <OS>LINUX</OS>
+  <NODENAME_REGEX>n000*</NODENAME_REGEX>
   <COMPILERS>intel</COMPILERS>
   <MPILIBS>openmpi,mpi-serial</MPILIBS>
   <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
