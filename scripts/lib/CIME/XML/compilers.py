@@ -122,7 +122,7 @@ class Compilers(GenericXML):
         expect(subgroup is None, "This class does not support subgroups")
         value = None
 
-        node = self.get_optional_compiler_node(name)
+        node = self.get_optional_compiler_node(name, attributes=attribute)
         if node is not None:
             value = node.text
 
