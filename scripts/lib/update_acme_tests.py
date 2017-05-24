@@ -33,14 +33,14 @@ _TEST_SUITES = {
                     "TESTRUNFAILEXC_P1.f19_g16_rx1.A",
                     "TESTRUNPASS_P1.f19_g16_rx1.A",
                     "TESTTESTDIFF_P1.f19_g16_rx1.A",
-                    "TESTMEMLEAKFAIL_P1.f19_g16.X",
-                    "TESTMEMLEAKPASS_P1.f19_g16.X")
+                    "TESTMEMLEAKFAIL_P1.f09_g16.X",
+                    "TESTMEMLEAKPASS_P1.f09_g16.X")
                    ),
 
     "cime_developer" : (None, "0:10:00",
                             ("NCK_Ld3.f45_g37_rx1.A",
-                             "ERI.f45_g37.X",
-                             "ERIO.f45_g37.X",
+                             "ERI.f09_g16.X",
+                             "ERIO.f09_g16.X",
                              "SEQ_Ln9.f19_g16_rx1.A",
                              "ERS.ne30_g16_rx1.A",
                              "ERS_N2.f19_g16_rx1.A",

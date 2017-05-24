@@ -738,8 +738,8 @@ class O_TestTestScheduler(TestCreateTestCommon):
     ###########################################################################
         # exclude the MEMLEAK tests here.
         tests = update_acme_tests.get_full_test_names(["cime_test_only",
-                                                       "^TESTMEMLEAKFAIL_P1.f19_g16.X",
-                                                       "^TESTMEMLEAKPASS_P1.f19_g16.X",
+                                                       "^TESTMEMLEAKFAIL_P1.f09_g16.X",
+                                                       "^TESTMEMLEAKPASS_P1.f09_g16.X",
                                                        "^TESTTESTDIFF_P1.f19_g16_rx1.A",
                                                        "^TESTBUILDFAILEXC_P1.f19_g16_rx1.A",
                                                        "^TESTRUNFAILEXC_P1.f19_g16_rx1.A"],
@@ -1027,14 +1027,14 @@ class T_TestRunRestart(TestCreateTestCommon):
     ###########################################################################
     def test_run_restart(self):
     ###########################################################################
-        run_cmd_assert_result(self, "%s/create_test --test-root %s --output-root %s -t %s NODEFAIL_P1.f45_g37.X"
+        run_cmd_assert_result(self, "%s/create_test --test-root %s --output-root %s -t %s NODEFAIL_P1.f09_g16.X"
                               % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name))
         if self._hasbatch:
             run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
                                   from_dir=self._testroot)
 
         casedir = os.path.join(self._testroot,
-                               "%s.%s" % (CIME.utils.get_full_test_name("NODEFAIL_P1.f45_g37.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
+                               "%s.%s" % (CIME.utils.get_full_test_name("NODEFAIL_P1.f09_g16.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
 
         fail_sentinel = os.path.join(casedir, "run", "FAIL_SENTINEL")
         self.assertTrue(os.path.exists(fail_sentinel), msg="Missing %s" % fail_sentinel)
@@ -1045,7 +1045,7 @@ class T_TestRunRestart(TestCreateTestCommon):
     def test_run_restart_too_many_fails(self):
     ###########################################################################
         os.environ["NODEFAIL_NUM_FAILS"] = "5"
-        run_cmd_assert_result(self, "%s/create_test --test-root %s --output-root %s -t %s NODEFAIL_P1.f45_g37.X"
+        run_cmd_assert_result(self, "%s/create_test --test-root %s --output-root %s -t %s NODEFAIL_P1.f09_g16.X"
                               % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name),
                               expected_stat=(0 if self._hasbatch else CIME.utils.TESTS_FAILED_ERR_CODE))
         if self._hasbatch:
@@ -1053,7 +1053,7 @@ class T_TestRunRestart(TestCreateTestCommon):
                                   from_dir=self._testroot, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
 
         casedir = os.path.join(self._testroot,
-                               "%s.%s" % (CIME.utils.get_full_test_name("NODEFAIL_P1.f45_g37.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
+                               "%s.%s" % (CIME.utils.get_full_test_name("NODEFAIL_P1.f09_g16.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
 
         fail_sentinel = os.path.join(casedir, "run", "FAIL_SENTINEL")
         self.assertTrue(os.path.exists(fail_sentinel), msg="Missing %s" % fail_sentinel)

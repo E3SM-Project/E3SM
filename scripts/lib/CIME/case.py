@@ -755,6 +755,8 @@ class Case(object):
 
         self.get_compset_var_settings()
 
+        self.clean_up_lookups()
+
         #--------------------------------------------
         # machine
         #--------------------------------------------
@@ -889,7 +891,6 @@ class Case(object):
         if test:
             self.set_value("TEST",True)
 
-        self.clean_up_lookups()
         self.initialize_derived_attributes()
 
         # Make sure that parallel IO is not specified if total_tasks==1
