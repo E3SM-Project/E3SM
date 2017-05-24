@@ -100,7 +100,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
   logical :: abort=.false.
 
-  if (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
+  if (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2 .or. vert_remap_q_alg == 3) then
      call remap_Q_ppm(qdp,nx,qsize,dp1,dp2)
      return
   endif
@@ -594,6 +594,10 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
         enddo
         !Fill in ghost values. Ignored if vert_remap_q_alg == 2
         do k = 1 , gs
+          if (vert_remap_q_alg == 3) then
+          ao(1   -k) = ao(1)
+          ao(nlev+k) = ao(nlev)
+          elseif (vert_remap_q_alg == 2) then
           ao(1   -k) = ao(       k)
           ao(nlev+k) = ao(nlev+1-k)
         enddo
@@ -630,7 +634,7 @@ function compute_ppm_grids( dx )   result(rslt)
   integer :: indB, indE
 
   !Calculate grid-based coefficients for stage 1 of compute_ppm
-  if (vert_remap_q_alg == 2) then
+  if (vert_remap_q_alg == 2 .or. vert_remap_q_alg == 3) then
     indB = 2
     indE = nlev-1
   else
@@ -644,7 +648,7 @@ function compute_ppm_grids( dx )   result(rslt)
   enddo
 
   !Caculate grid-based coefficients for stage 2 of compute_ppm
-  if (vert_remap_q_alg == 2) then
+  if (vert_remap_q_alg == 2 .or. vert_remap_q_alg == 3) then
     indB = 2
     indE = nlev-2
   else
@@ -683,7 +687,7 @@ function compute_ppm( a , dx )    result(coefs)
   integer :: indB, indE
 
   ! Stage 1: Compute dma for each cell, allowing a 1-cell ghost stencil below and above the domain
-  if (vert_remap_q_alg == 2) then
+  if (vert_remap_q_alg == 2 .or. vert_remap_q_alg == 3) then
     indB = 2
     indE = nlev-1
   else
@@ -697,7 +701,7 @@ function compute_ppm( a , dx )    result(coefs)
   enddo
 
   ! Stage 2: Compute ai for each cell interface in the physical domain (dimension nlev+1)
-  if (vert_remap_q_alg == 2) then
+  if (vert_remap_q_alg == 2 .or. vert_remap_q_alg == 3) then
     indB = 2
     indE = nlev-2
   else
@@ -711,7 +715,7 @@ function compute_ppm( a , dx )    result(coefs)
 
   ! Stage 3: Compute limited PPM interpolant over each cell in the physical domain
   ! (dimension nlev) using ai on either side and ao within the cell.
-  if (vert_remap_q_alg == 2) then
+  if (vert_remap_q_alg == 2 .or. vert_remap_q_alg == 3) then
     indB = 3
     indE = nlev-2
   else
@@ -736,7 +740,7 @@ function compute_ppm( a , dx )    result(coefs)
   !If we're not using a mirrored boundary condition, then make the two cells bordering the top and bottom
   !material boundaries piecewise constant. Zeroing out the first and second moments, and setting the zeroth
   !moment to the cell mean is sufficient to maintain conservation.
-  if (vert_remap_q_alg == 2) then
+  if (vert_remap_q_alg == 2 .or. vert_remap_q_alg == 3) then
     coefs(0,1:2) = a(1:2)
     coefs(1:2,1:2) = 0.
     coefs(0,nlev-1:nlev) = a(nlev-1:nlev)
