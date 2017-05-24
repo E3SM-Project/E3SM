@@ -1,5 +1,5 @@
 import CIME.utils
-from CIME.utils import expect, convert_to_seconds
+from CIME.utils import expect, convert_to_seconds, parse_test_name
 from CIME.XML.machines import Machines
 
 # Here are the tests belonging to acme suites. Format is
@@ -209,6 +209,36 @@ def get_test_suite(suite, machine=None, compiler=None):
 def get_test_suites():
 ###############################################################################
     return _TEST_SUITES.keys()
+
+###############################################################################
+def infer_machine_name_from_tests(testargs):
+###############################################################################
+    """
+    >>> infer_machine_name_from_tests(["NCK.f19_g16_rx1.A.melvin_gnu"])
+    'melvin'
+    >>> infer_machine_name_from_tests(["NCK.f19_g16_rx1.A"])
+    >>> infer_machine_name_from_tests(["NCK.f19_g16_rx1.A", "NCK.f19_g16_rx1.A.melvin_gnu"])
+    'melvin'
+    >>> infer_machine_name_from_tests(["NCK.f19_g16_rx1.A.melvin_gnu", "NCK.f19_g16_rx1.A.melvin_gnu"])
+    'melvin'
+    """
+    acme_test_suites = get_test_suites()
+
+    machine = None
+    for testarg in testargs:
+        testarg = testarg.strip()
+        if testarg.startswith("^"):
+            testarg = testarg[1:]
+
+        if testarg not in acme_test_suites:
+            machine_for_this_test = parse_test_name(testarg)[4]
+            if machine_for_this_test is not None:
+                if machine is None:
+                    machine = machine_for_this_test
+                else:
+                    expect(machine == machine_for_this_test, "Must have consistent machine '%s' != '%s'" % (machine, machine_for_this_test))
+
+    return machine
 
 ###############################################################################
 def get_full_test_names(testargs, machine, compiler):
