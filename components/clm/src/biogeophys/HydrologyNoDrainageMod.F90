@@ -40,8 +40,7 @@ contains
        atm2lnd_vars, soilstate_vars, energyflux_vars, temperature_vars, &
        waterflux_vars, waterstate_vars, &
        soilhydrology_vars, aerosol_vars, &
-       soil_water_retention_curve, betrtracer_vars, tracerflux_vars, tracerstate_vars, &
-       alm_fates)
+       soil_water_retention_curve, betrtracer_vars, tracerflux_vars, tracerstate_vars)
     !
     ! !DESCRIPTION:
     ! This is the main subroutine to execute the calculation of soil/snow
@@ -62,7 +61,7 @@ contains
     use landunit_varcon      , only : istice, istwet, istsoil, istice_mec, istcrop, istdlak 
     use column_varcon        , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall
     use column_varcon        , only : icol_shadewall
-    use clm_varctl           , only : use_cn, use_betr, use_ed
+    use clm_varctl           , only : use_cn, use_betr
     use clm_varpar           , only : nlevgrnd, nlevsno, nlevsoi, nlevurb
     use clm_time_manager     , only : get_step_size, get_nstep
     use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers
@@ -78,7 +77,6 @@ contains
     use clm_varctl           , only : use_vsfm
     use SoilHydrologyMod     , only : DrainageVSFM
     use SoilWaterMovementMod, only : Compute_EffecRootFrac_And_VertTranSink_Default
-    use CLMFatesInterfaceMod  , only : hlm_fates_interface_type
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -104,7 +102,6 @@ contains
     type(betrtracer_type)     , intent(in)    :: betrtracer_vars                    ! betr configuration information
     type(tracerflux_type)     , intent(inout) :: tracerflux_vars                    ! tracer flux
     type(tracerstate_type)    , intent(inout) :: tracerstate_vars                   ! tracer state variables data structure    
-    type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,j,fc                    ! indices
@@ -218,8 +215,8 @@ contains
             filter_hydrologyc, soilstate_vars, waterflux_vars)
 
       ! If FATES plant hydraulics is turned on, over-ride default transpiration sink calculation
-      if( use_ed ) call alm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, &
-                                                      soilstate_vars, waterflux_vars)
+      ! (INTERF-FATES)
+      !if( use_ed ) call clm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, soilstate_inst, waterflux_inst)
 
       call SoilWater(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
             soilhydrology_vars, soilstate_vars, waterflux_vars, waterstate_vars, temperature_vars, &
@@ -410,7 +407,7 @@ contains
          end do
       end do
 
-      if (use_cn .or. use_ed) then
+      if (use_cn) then
          ! Update soilpsi.
          ! ZMS: Note this could be merged with the following loop updating smp_l in the future.
          do j = 1, nlevgrnd
@@ -436,7 +433,7 @@ contains
          end do
       end if
 
-      if (use_cn .or. use_ed) then
+      if (use_cn) then
          ! Available soil water up to a depth of 0.05 m.
          ! Potentially available soil water (=whc) up to a depth of 0.05 m.
          ! Water content as fraction of whc up to a depth of 0.05 m.

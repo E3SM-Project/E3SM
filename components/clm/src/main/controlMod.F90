@@ -214,7 +214,7 @@ contains
 
     namelist /clm_inparm / use_c13, use_c14
 
-    namelist /clm_inparm / fates_paramfile, use_ed, use_ed_spitfire
+    namelist /clm_inparm / use_ed, use_ed_spit_fire
     
     namelist /clm_inparm / use_betr
         
@@ -601,8 +601,7 @@ contains
     call mpi_bcast (use_c14, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     call mpi_bcast (use_ed, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (use_ed_spitfire, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (fates_paramfile, len(fates_paramfile) , MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (use_ed_spit_fire, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     call mpi_bcast (use_betr, 1, MPI_LOGICAL, 0, mpicom, ier)
 

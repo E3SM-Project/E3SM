@@ -237,7 +237,7 @@ contains
          end if
       end do ! end of columns loop
       
-      ! Consider adapting this check to be fates compliant (rgk 04-2017)
+      ! (FATES-INTERF) consider adapting this check to be fates compliant
       if (.not. use_ed) then
          if (err_found) then
             c = err_index

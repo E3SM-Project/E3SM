@@ -44,7 +44,6 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <!-- Supplmental Nitrogen mode -->
 <suplnitro use_cn=".true." >NONE</suplnitro>
-<suplnitro use_ed=".true." >NONE</suplnitro>
 
 <!-- Albedo for glaciers -->
 <albice glc_nec="0" >0.60,0.40</albice>
@@ -80,11 +79,9 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
      for the CLM2 data in the CESM distribution -->
 <!-- Plant function types (relative to {csmdata}) -->
 <paramfile                 >lnd/clm2/paramdata/clm_params_c160822.nc</paramfile>
+<paramfile use_ed=".true." >lnd/clm2/paramdata/clm_params.ED.c140115.nc</paramfile>
 <paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c160822.nc</paramfile>
 <paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.c160709.nc</paramfile>
-
-<fates_paramfile >lnd/clm2/paramdata/fates_params.c170331.nc</fates_paramfile>
-
 
 <!-- soil order related parameters (relative to {csmdata}) -->
 <fsoilordercon             >lnd/clm2/paramdata/CNP_parameters_c131108.nc</fsoilordercon> 
@@ -557,7 +554,6 @@ this mask will have smb calculated over the entire global land surface
 <ndepmapalgo use_cn=".true."   hgrid="1x1_asphaltjungleNJ" >nn</ndepmapalgo>
 <ndepmapalgo use_cn=".true."   hgrid="1x1_tropicAtl"       >nn</ndepmapalgo>
 <ndepmapalgo use_cn=".true."   hgrid="5x5_amazon"          >nn</ndepmapalgo>
-
 
 <!-- Phosphorus deposition streams namelist defaults -->
 <stream_year_first_pdep use_cn=".true."   sim_year="2000" >2000</stream_year_first_pdep>
@@ -1763,9 +1759,7 @@ this mask will have smb calculated over the entire global land surface
 <!-- =========================================  -->
 
 <fin_use_fsat use_cn=".true.">.true.</fin_use_fsat>
-<fin_use_fsat use_ed=".true.">.false.</fin_use_fsat>
 
-<use_aereoxid_prog use_ed=".true.">.true.</use_aereoxid_prog>
 <use_aereoxid_prog use_cn=".true.">.true.</use_aereoxid_prog>
 
 <!-- =========================================  -->
@@ -1773,12 +1767,5 @@ this mask will have smb calculated over the entire global land surface
 <!-- =========================================  -->
 <pflotran_inputdir>pflotran</pflotran_inputdir>
 <pflotran_prefix>pflotran_clm</pflotran_prefix>
-
-<use_ed_spitfire    use_ed=".true.">.false.</use_ed_spitfire>
-<use_vertsoilc       bgc_mode="ed"  >.true.</use_vertsoilc>
-<use_century_decomp  bgc_mode="ed"  >.true.</use_century_decomp>
-<use_lch4            bgc_mode="ed"  >.false.</use_lch4>
-<use_nitrif_denitrif bgc_mode="ed"  >.false.</use_nitrif_denitrif>
-
 
 </namelist_defaults>

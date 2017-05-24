@@ -172,6 +172,11 @@
   </compset>
 
   <compset>
+    <alias>I1850CLM45CNED</alias>
+    <lname>1850_DATM%QIA_CLM45%CN-ED_SICE_SOCN_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>I1850CLM45CNF</alias>
     <lname>1850_DATM%QIA_CLM45%CN_SICE_SOCN_RTM%FLOOD_SGLC_SWAV</lname>
   </compset>
@@ -549,6 +554,11 @@
   </compset>
 
   <compset>
+    <alias>ICLM45CNED</alias>
+    <lname>2000_DATM%QIA_CLM45%CN-ED_SICE_SOCN_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>ICLM45BGC</alias>
     <lname>2000_DATM%QIA_CLM45%BGC_SICE_SOCN_RTM_SGLC_SWAV</lname>
   </compset>
@@ -566,12 +576,12 @@
 
 
   <compset>
-    <alias>ICLM45ED</alias>
+    <alias>ICLM45BGCED</alias>
     <lname>2000_DATM%QIA_CLM45%BGC-ED_SICE_SOCN_RTM_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>I1850CLM45ED</alias>
+    <alias>I1850CLM45BGCED</alias>
     <lname>1850_DATM%QIA_CLM45%BGC-ED_SICE_SOCN_RTM_SGLC_SWAV</lname>
   </compset>
 
