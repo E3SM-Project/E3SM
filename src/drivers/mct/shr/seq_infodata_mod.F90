@@ -124,6 +124,7 @@ MODULE seq_infodata_mod
       logical                 :: flux_albav      ! T => no diurnal cycle in ocn albedos
       logical                 :: flux_diurnal    ! T => diurnal cycle in atm/ocn fluxes
       real(SHR_KIND_R8)       :: gust_fac        ! wind gustiness factor
+      character(SHR_KIND_CL)  :: glc_renormalize_smb ! Whether to renormalize smb sent from lnd -> glc
       real(SHR_KIND_R8)       :: wall_time_limit ! force stop time limit (hours)
       character(SHR_KIND_CS)  :: force_stop_at   ! when to force a stop (month, day, etc)
       character(SHR_KIND_CL)  :: atm_gnam        ! atm grid
@@ -205,6 +206,7 @@ MODULE seq_infodata_mod
       logical                 :: glcocn_present  ! does glc have ocean runoff on
       logical                 :: glcice_present  ! does glc have iceberg coupling on
       logical                 :: glc_prognostic  ! does component model need input data from driver
+      logical                 :: glc_coupled_fluxes ! does glc send fluxes to other components (only relevant if glc_present is .true.)
       logical                 :: wav_present     ! does component model exist
       logical                 :: wav_prognostic  ! does component model need input data from driver
       logical                 :: esp_present     ! does component model exist
@@ -355,6 +357,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
     logical                :: flux_albav         ! T => no diurnal cycle in ocn albedos
     logical                :: flux_diurnal       ! T => diurnal cycle in atm/ocn fluxes
     real(SHR_KIND_R8)      :: gust_fac           ! wind gustiness factor
+    character(SHR_KIND_CL) :: glc_renormalize_smb ! Whether to renormalize smb sent from lnd -> glc
     real(SHR_KIND_R8)      :: wall_time_limit    ! force stop time limit (hours)
     character(SHR_KIND_CS) :: force_stop_at      ! when to force a stop (month, day, etc)
     character(SHR_KIND_CL) :: atm_gnam           ! atm grid
@@ -424,7 +427,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
          orb_iyear, orb_obliq, orb_eccen, orb_mvelp,       &
          wv_sat_scheme, wv_sat_transition_start,           &
          wv_sat_use_tables, wv_sat_table_spacing,          &
-         tfreeze_option,                                      &
+         tfreeze_option, glc_renormalize_smb,              &
          ice_gnam, rof_gnam, glc_gnam, wav_gnam,           &
          atm_gnam, lnd_gnam, ocn_gnam, cpl_decomp,         &
          shr_map_dopole, vect_map, aoflux_grid, do_histinit,  &
@@ -495,6 +498,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        flux_albav            = .false.
        flux_diurnal          = .false.
        gust_fac              = huge(1.0_SHR_KIND_R8)
+       glc_renormalize_smb   = 'on_if_glc_coupled_fluxes'
        wall_time_limit       = -1.0
        force_stop_at         = 'month'
        atm_gnam              = 'undefined'
@@ -601,6 +605,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        infodata%flux_albav            = flux_albav
        infodata%flux_diurnal          = flux_diurnal
        infodata%gust_fac              = gust_fac
+       infodata%glc_renormalize_smb   = glc_renormalize_smb
        infodata%wall_time_limit       = wall_time_limit
        infodata%force_stop_at         = force_stop_at
        infodata%atm_gnam              = atm_gnam
@@ -680,6 +685,11 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        infodata%ocnrof_prognostic = .false.
        infodata%ice_prognostic = .false.
        infodata%glc_prognostic = .false.
+       ! It's safest to assume glc_coupled_fluxes = .true. if it's not set elsewhere,
+       ! because this is needed for conservation in some cases. Note that it is ignored
+       ! if glc_present is .false., so it's okay to just start out assuming it's .true.
+       ! in all cases.
+       infodata%glc_coupled_fluxes = .true.
        infodata%wav_prognostic = .false.
        infodata%iceberg_prognostic = .false.
        infodata%esp_prognostic = .false.
@@ -907,6 +917,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
            atm_present, atm_prognostic, lnd_present, lnd_prognostic, rof_prognostic, &
            rof_present, ocn_present, ocn_prognostic, ocnrof_prognostic,       &
            ice_present, ice_prognostic, glc_present, glc_prognostic,          &
+           glc_coupled_fluxes,                                                &
            flood_present, wav_present, wav_prognostic, rofice_present,        &
            glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
            esp_present, esp_prognostic,                                       &
@@ -927,7 +938,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
            cpl_cdf64, orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
            orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
            wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
-           tfreeze_option,                                                    &
+           tfreeze_option, glc_renormalize_smb,                               &
            glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
            wav_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,              &
            lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
@@ -986,6 +997,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
    logical,                optional, intent(OUT) :: flux_albav              ! T => no diurnal cycle in ocn albedos
    logical,                optional, intent(OUT) :: flux_diurnal            ! T => diurnal cycle in atm/ocn flux
    real(SHR_KIND_R8),      optional, intent(OUT) :: gust_fac                ! wind gustiness factor
+   character(len=*),       optional, intent(OUT) :: glc_renormalize_smb     ! Whether to renormalize smb sent from lnd -> glc
    real(SHR_KIND_R8),      optional, intent(OUT) :: wall_time_limit         ! force stop wall time (hours)
    character(len=*),       optional, intent(OUT) :: force_stop_at           ! force stop at next (month, day, etc)
    character(len=*),       optional, intent(OUT) :: atm_gnam                ! atm grid
@@ -1064,6 +1076,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
    logical,                optional, intent(OUT) :: glcocn_present
    logical,                optional, intent(OUT) :: glcice_present
    logical,                optional, intent(OUT) :: glc_prognostic
+   logical,                optional, intent(OUT) :: glc_coupled_fluxes
    logical,                optional, intent(OUT) :: wav_present
    logical,                optional, intent(OUT) :: wav_prognostic
    logical,                optional, intent(OUT) :: esp_present
@@ -1156,6 +1169,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
     if ( present(flux_albav)     ) flux_albav     = infodata%flux_albav
     if ( present(flux_diurnal)   ) flux_diurnal   = infodata%flux_diurnal
     if ( present(gust_fac)       ) gust_fac       = infodata%gust_fac
+    if ( present(glc_renormalize_smb)) glc_renormalize_smb = infodata%glc_renormalize_smb
     if ( present(wall_time_limit)) wall_time_limit= infodata%wall_time_limit
     if ( present(force_stop_at)  ) force_stop_at  = infodata%force_stop_at
     if ( present(atm_gnam)       ) atm_gnam       = infodata%atm_gnam
@@ -1234,6 +1248,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
     if ( present(glcocn_present) ) glcocn_present = infodata%glcocn_present
     if ( present(glcice_present) ) glcice_present = infodata%glcice_present
     if ( present(glc_prognostic) ) glc_prognostic = infodata%glc_prognostic
+    if ( present(glc_coupled_fluxes)) glc_coupled_fluxes = infodata%glc_coupled_fluxes
     if ( present(wav_present)    ) wav_present    = infodata%wav_present
     if ( present(wav_prognostic) ) wav_prognostic = infodata%wav_prognostic
     if ( present(esp_present)    ) esp_present    = infodata%esp_present
@@ -1467,6 +1482,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
            atm_present, atm_prognostic, lnd_present, lnd_prognostic, rof_prognostic, &
            rof_present, ocn_present, ocn_prognostic, ocnrof_prognostic,       &
            ice_present, ice_prognostic, glc_present, glc_prognostic,          &
+           glc_coupled_fluxes,                                                &
            flood_present, wav_present, wav_prognostic, rofice_present,        &
            glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
            esp_present, esp_prognostic,                                       &
@@ -1487,7 +1503,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
            cpl_cdf64, orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
            orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
            wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
-           tfreeze_option, &
+           tfreeze_option, glc_renormalize_smb, &
            glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
            wav_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,              &
            lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
@@ -1546,6 +1562,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
    logical,                optional, intent(IN)    :: flux_albav              ! T => no diurnal cycle in ocn albedos
    logical,                optional, intent(IN)    :: flux_diurnal            ! T => diurnal cycle in atm/ocn flux
    real(SHR_KIND_R8),      optional, intent(IN)    :: gust_fac                ! wind gustiness factor
+   character(len=*),       optional, intent(IN)    :: glc_renormalize_smb     ! Whether to renormalize smb sent from lnd -> glc
    real(SHR_KIND_R8),      optional, intent(IN)    :: wall_time_limit         ! force stop wall time (hours)
    character(len=*),       optional, intent(IN)    :: force_stop_at           ! force a stop at next (month, day, etc)
    character(len=*),       optional, intent(IN)    :: atm_gnam                ! atm grid
@@ -1624,6 +1641,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
    logical,                optional, intent(IN)    :: glcocn_present
    logical,                optional, intent(IN)    :: glcice_present
    logical,                optional, intent(IN)    :: glc_prognostic
+   logical,                optional, intent(IN)    :: glc_coupled_fluxes
    logical,                optional, intent(IN)    :: wav_present
    logical,                optional, intent(IN)    :: wav_prognostic
    logical,                optional, intent(IN)    :: esp_present
@@ -1715,6 +1733,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
     if ( present(flux_albav)     ) infodata%flux_albav     = flux_albav
     if ( present(flux_diurnal)   ) infodata%flux_diurnal   = flux_diurnal
     if ( present(gust_fac)       ) infodata%gust_fac       = gust_fac
+    if ( present(glc_renormalize_smb)) infodata%glc_renormalize_smb = glc_renormalize_smb
     if ( present(wall_time_limit)) infodata%wall_time_limit= wall_time_limit
     if ( present(force_stop_at)  ) infodata%force_stop_at  = force_stop_at
     if ( present(atm_gnam)       ) infodata%atm_gnam       = atm_gnam
@@ -1793,6 +1812,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
     if ( present(glcocn_present) ) infodata%glcocn_present = glcocn_present
     if ( present(glcice_present) ) infodata%glcice_present = glcice_present
     if ( present(glc_prognostic) ) infodata%glc_prognostic = glc_prognostic
+    if ( present(glc_coupled_fluxes)) infodata%glc_coupled_fluxes = glc_coupled_fluxes
     if ( present(wav_present)    ) infodata%wav_present    = wav_present
     if ( present(wav_prognostic) ) infodata%wav_prognostic = wav_prognostic
     if ( present(esp_present)    ) infodata%esp_present    = esp_present
@@ -2133,6 +2153,7 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%flux_albav,              mpicom)
     call shr_mpi_bcast(infodata%flux_diurnal,            mpicom)
     call shr_mpi_bcast(infodata%gust_fac,                mpicom)
+    call shr_mpi_bcast(infodata%glc_renormalize_smb,     mpicom)
     call shr_mpi_bcast(infodata%wall_time_limit,         mpicom)
     call shr_mpi_bcast(infodata%force_stop_at,           mpicom)
     call shr_mpi_bcast(infodata%atm_gnam,                mpicom)
@@ -2211,6 +2232,7 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%glcocn_present,          mpicom)
     call shr_mpi_bcast(infodata%glcice_present,          mpicom)
     call shr_mpi_bcast(infodata%glc_prognostic,          mpicom)
+    call shr_mpi_bcast(infodata%glc_coupled_fluxes,      mpicom)
     call shr_mpi_bcast(infodata%wav_present,             mpicom)
     call shr_mpi_bcast(infodata%wav_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%esp_present,             mpicom)
@@ -2498,6 +2520,7 @@ subroutine seq_infodata_Exchange(infodata,ID,type)
     call shr_mpi_bcast(infodata%glcocn_present,     mpicom, pebcast=cmppe)
     call shr_mpi_bcast(infodata%glcice_present,     mpicom, pebcast=cmppe)
     call shr_mpi_bcast(infodata%glc_prognostic,     mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%glc_coupled_fluxes, mpicom, pebcast=cmppe)
     call shr_mpi_bcast(infodata%glc_nx,             mpicom, pebcast=cmppe)
     call shr_mpi_bcast(infodata%glc_ny,             mpicom, pebcast=cmppe)
     ! dead_comps is true if it's ever set to true
@@ -2543,6 +2566,7 @@ subroutine seq_infodata_Exchange(infodata,ID,type)
     call shr_mpi_bcast(infodata%glcocn_present,     mpicom, pebcast=cplpe)
     call shr_mpi_bcast(infodata%glcice_present,     mpicom, pebcast=cplpe)
     call shr_mpi_bcast(infodata%glc_prognostic,     mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%glc_coupled_fluxes, mpicom, pebcast=cplpe)
     call shr_mpi_bcast(infodata%wav_present,        mpicom, pebcast=cplpe)
     call shr_mpi_bcast(infodata%wav_prognostic,     mpicom, pebcast=cplpe)
     call shr_mpi_bcast(infodata%esp_present,        mpicom, pebcast=cplpe)
@@ -2797,6 +2821,7 @@ SUBROUTINE seq_infodata_print( infodata )
        write(logunit,F0L) subname,'flux_albav               = ', infodata%flux_albav
        write(logunit,F0L) subname,'flux_diurnal             = ', infodata%flux_diurnal
        write(logunit,F0R) subname,'gust_fac                 = ', infodata%gust_fac
+       write(logunit,F0A) subname,'glc_renormalize_smb      = ', trim(infodata%glc_renormalize_smb)
        write(logunit,F0R) subname,'wall_time_limit          = ', infodata%wall_time_limit
        write(logunit,F0A) subname,'force_stop_at            = ', trim(infodata%force_stop_at)
        write(logunit,F0A) subname,'atm_gridname             = ', trim(infodata%atm_gnam)
@@ -2879,6 +2904,7 @@ SUBROUTINE seq_infodata_print( infodata )
        write(logunit,F0L) subname,'glcocn_present           = ', infodata%glcocn_present
        write(logunit,F0L) subname,'glcice_present           = ', infodata%glcice_present
        write(logunit,F0L) subname,'glc_prognostic           = ', infodata%glc_prognostic
+       write(logunit,F0L) subname,'glc_coupled_fluxes       = ', infodata%glc_coupled_fluxes
        write(logunit,F0L) subname,'wav_present              = ', infodata%wav_present
        write(logunit,F0L) subname,'wav_prognostic           = ', infodata%wav_prognostic
        write(logunit,F0L) subname,'esp_present              = ', infodata%esp_present
