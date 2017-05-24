@@ -48,6 +48,7 @@ module prep_glc_mod
   ! Private interfaces
   !--------------------------------------------------------------------------
 
+  private :: prep_glc_do_renormalize_smb
   private :: prep_glc_set_g2x_lx_fields
   private :: prep_glc_merge
   private :: prep_glc_map_one_state_field_lnd2glc
@@ -75,10 +76,8 @@ module prep_glc_mod
 
   ! Whether to renormalize the SMB for conservation.
   ! Should be set to true for 2-way coupled runs with evolving ice sheets.
-  ! Probably does not need to be true for 1-way coupling.
-  !
-  ! TODO(wjs, 2017-05-10) Make this a namelist variable
-  logical :: smb_renormalize = .true.
+  ! Does not need to be true for 1-way coupling.
+  logical :: smb_renormalize
 
   ! Name of flux field giving surface mass balance
   character(len=*), parameter :: qice_fieldname = 'Flgl_qice'
@@ -133,6 +132,8 @@ contains
     allocate(mapper_Sl2g)
     allocate(mapper_Fl2g)
     allocate(mapper_Fg2l)
+
+    smb_renormalize = prep_glc_do_renormalize_smb(infodata)
 
     if (glc_present .and. lnd_c2_glc) then
 
@@ -195,6 +196,50 @@ contains
     end if
 
   end subroutine prep_glc_init
+
+  !================================================================================================
+
+  function prep_glc_do_renormalize_smb(infodata) result(do_renormalize_smb)
+    ! Returns a logical saying whether we should do the smb renormalization
+    logical :: do_renormalize_smb  ! function return value
+
+    ! Local variables
+    character(len=cl) :: glc_renormalize_smb  ! namelist option saying whether to do smb renormalization
+    logical           :: glc_coupled_fluxes   ! does glc send fluxes to other components?
+    logical           :: lnd_prognostic       ! is lnd a prognostic component?
+
+    character(len=*), parameter :: subname = '(prep_glc_do_renormalize_smb)'
+    !---------------------------------------------------------------
+
+    call seq_infodata_getdata(infodata, &
+         glc_renormalize_smb = glc_renormalize_smb, &
+         glc_coupled_fluxes  = glc_coupled_fluxes, &
+         lnd_prognostic      = lnd_prognostic)
+
+    select case (glc_renormalize_smb)
+    case ('on')
+       do_renormalize_smb = .true.
+    case ('off')
+       do_renormalize_smb = .false.
+    case ('on_if_glc_coupled_fluxes')
+       if (.not. lnd_prognostic) then
+          ! Do not renormalize if we're running glc with dlnd (T compsets): In this case
+          ! there is no feedback from glc to lnd, and conservation is not important
+          do_renormalize_smb = .false.
+       else if (.not. glc_coupled_fluxes) then
+          ! Do not renormalize if glc isn't sending fluxes to other components: In this
+          ! case conservation is not important
+          do_renormalize_smb = .false.
+       else
+          ! lnd_prognostic is true and glc_coupled_fluxes is true
+          do_renormalize_smb = .true.
+       end if
+    case default
+       write(logunit,*) subname,' ERROR: unknown value for glc_renormalize_smb: ', &
+            trim(glc_renormalize_smb)
+       call shr_sys_abort(subname//' ERROR: unknown value for glc_renormalize_smb')
+    end select
+  end function prep_glc_do_renormalize_smb
 
   !================================================================================================
 
