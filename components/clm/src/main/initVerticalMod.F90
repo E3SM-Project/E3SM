@@ -174,10 +174,10 @@ contains
     end if
 
 
-    ! (FATES-ITERF)  Move this call to inside alm_fates%init()
-    ! if(use_ed) then
-    !    call ed_hist_scpfmaps()
-    ! end if
+!    ! (FATES-INTERF)  Move this call to inside alm_fates%init()
+!    if(use_ed) then
+!       call ed_hist_scpfmaps()
+!    end if
 
     ! Column level initialization for urban wall and roof layers and interfaces
     do l = bounds%begl,bounds%endl

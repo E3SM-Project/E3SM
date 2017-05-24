@@ -17,7 +17,8 @@ module CanopyTemperatureMod
   use decompMod            , only : bounds_type
   use abortutils           , only : endrun
   use clm_varctl           , only : iulog, use_ed
-  use PhotosynthesisMod    , only : Photosynthesis, PhotosynthesisTotal, Fractionation
+  use PhotosynthesisMod    , only : Photosynthesis, PhotosynthesisTotal, Fractionation 
+  use CLMFatesInterfaceMod , only : hlm_fates_interface_type
   use SurfaceResistanceMod , only : calc_soilevap_stress
   use EcophysConType       , only : ecophyscon
   use atm2lndType          , only : atm2lnd_type
@@ -46,7 +47,8 @@ contains
   subroutine CanopyTemperature(bounds, &
        num_nolakec, filter_nolakec, num_nolakep, filter_nolakep, &
        atm2lnd_vars, canopystate_vars, soilstate_vars, frictionvel_vars, &
-       waterstate_vars, waterflux_vars, energyflux_vars, temperature_vars)
+       waterstate_vars, waterflux_vars, energyflux_vars, temperature_vars, &
+       clm_fates)
     !
     ! !DESCRIPTION:
     ! This is the main subroutine to execute the calculation of leaf temperature
@@ -91,6 +93,7 @@ contains
     type(waterflux_type)   , intent(inout) :: waterflux_vars
     type(energyflux_type)  , intent(inout) :: energyflux_vars
     type(temperature_type) , intent(inout) :: temperature_vars
+    type(hlm_fates_interface_type) , intent(inout) :: clm_fates
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,p      ! indices
@@ -398,8 +401,7 @@ contains
       ! enabled simultaneously with FATES, we will 
       ! have to apply a filter here.
       if(use_ed) then
-         ! (FATES-INTERF)
-         ! call clm_fates%TransferZ0mDisp(bounds,frictionvel_inst,canopystate_inst)
+         call clm_fates%TransferZ0mDisp(bounds,frictionvel_vars,canopystate_vars)
       end if
 
       do fp = 1,num_nolakep

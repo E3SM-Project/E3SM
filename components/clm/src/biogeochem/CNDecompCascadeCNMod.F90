@@ -888,7 +888,7 @@ contains
           deallocate(fr)
 
        else
-
+          
           ! calculate rate constant scalar for soil temperature
           ! assuming that the base rate constants are assigned for non-moisture
           ! limiting conditions at 25 C. 
@@ -1047,9 +1047,11 @@ contains
              if ( decomp_cascade_con%spinup_factor(i_litr2) > 1._r8) decomp_k(c,j,i_litr2) = decomp_k(c,j,i_litr2)  &
 	       / cnstate_vars%scalaravg_col(c)
              if ( decomp_cascade_con%spinup_factor(i_litr3) > 1._r8) decomp_k(c,j,i_litr3) = decomp_k(c,j,i_litr3)  &
-	       / cnstate_vars%scalaravg_col(c)
-             if ( decomp_cascade_con%spinup_factor(i_cwd)   > 1._r8) decomp_k(c,j,i_cwd)   = decomp_k(c,j,i_cwd)    &
-	       / cnstate_vars%scalaravg_col(c)
+                  / cnstate_vars%scalaravg_col(c)
+             if ( .not. use_ed ) then
+                if ( decomp_cascade_con%spinup_factor(i_cwd)   > 1._r8) decomp_k(c,j,i_cwd)   = decomp_k(c,j,i_cwd)    &
+                     / cnstate_vars%scalaravg_col(c)
+             endif
              if ( decomp_cascade_con%spinup_factor(i_soil1) > 1._r8) decomp_k(c,j,i_soil1) = decomp_k(c,j,i_soil1)  &
 	       / cnstate_vars%scalaravg_col(c)
              if ( decomp_cascade_con%spinup_factor(i_soil2) > 1._r8) decomp_k(c,j,i_soil2) = decomp_k(c,j,i_soil2)  &

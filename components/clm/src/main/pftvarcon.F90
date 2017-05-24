@@ -484,9 +484,6 @@ contains
     allocate( mbbopt             (0:mxpft) )
     allocate( nstor              (0:mxpft) )
 
-    ! (FATES-INTERF) check .not.use_ed logic after converting to new fates parameter system
-    ! these logic checks should probably be removed
-  
     ! Set specific vegetation type values
 
     if (masterproc) then
@@ -869,7 +866,7 @@ contains
 
        ! (FATES-INTERF) Later, depending on how the team plans to structure the crop model
        ! or other modules that co-exist while FATES is on, we may want to preserve these pft definitions
-       ! on non-fates columns.  For now, they are incompatible (rgk 04-2017)
+       ! on non-fates columns.  For now, they are incompatible, and this check is warranted (rgk 04-2017)
        if(.not. use_ed)then
           if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
              write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &
@@ -913,8 +910,6 @@ contains
        fcur(:) = fcurdv(:)
     end if
 
-    ! (FATES-INTERF) FATES will not change mxpft, it has its own pft list and maximums
-    ! so this logic should not be necessary. Leaving it for now.  (rgk 04-2017)
     if( .not. use_ed ) then
        if ( npcropmax /= mxpft )then
           call endrun(msg=' ERROR: npcropmax is NOT the last value'//errMsg(__FILE__, __LINE__))
