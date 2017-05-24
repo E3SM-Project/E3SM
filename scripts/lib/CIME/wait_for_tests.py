@@ -30,7 +30,7 @@ def get_test_time(test_path):
     ts = TestStatus(test_dir=test_path)
     comment = ts.get_comment(RUN_PHASE)
     if comment is None or "time=" not in comment:
-        logging.warning("No run-phase time data found in {}".format(test_path))
+        logging.warning("No run-phase time data found in %s" % test_path)
         return 0
     else:
         time_data = [token for token in comment.split() if token.startswith("time=")][0]
@@ -43,7 +43,7 @@ def get_test_output(test_path):
     if (os.path.exists(output_file)):
         return open(output_file, 'r').read()
     else:
-        logging.warning("File '{}' not found".format(output_file))
+        logging.warning("File '%s' not found" % output_file)
         return ""
 
 ###############################################################################
@@ -56,16 +56,16 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
     site_elem = xmlet.Element("Site")
 
     if ("JENKINS_START_TIME" in os.environ):
-        time_info_str = "Total testing time: {:d} seconds".format(current_time - int(os.environ["JENKINS_START_TIME"]))
+        time_info_str = "Total testing time: %d seconds" % (current_time - int(os.environ["JENKINS_START_TIME"]))
     else:
         time_info_str = ""
 
     site_elem.attrib["BuildName"] = cdash_build_name
-    site_elem.attrib["BuildStamp"] = "{}-{}".format(utc_time, cdash_build_group)
+    site_elem.attrib["BuildStamp"] = "%s-%s" % (utc_time, cdash_build_group)
     site_elem.attrib["Name"] = hostname
     site_elem.attrib["OSName"] = "Linux"
     site_elem.attrib["Hostname"] = hostname
-    site_elem.attrib["OSVersion"] = "Commit: {}{}".format(git_commit, time_info_str)
+    site_elem.attrib["OSVersion"] = "Commit: %s%s" % (git_commit, time_info_str)
 
     testing_elem = xmlet.SubElement(site_elem, "Testing")
 
@@ -142,7 +142,7 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
     data_rel_path = os.path.join("Testing", utc_time)
 
     try:
-        log_dir = "{}_logs".format(cdash_build_name)
+        log_dir = "%s_logs" % cdash_build_name
 
         need_to_upload = False
 
@@ -169,26 +169,26 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
 
         if (need_to_upload):
 
-            tarball = "{}.tar.gz".format(log_dir)
+            tarball = "%s.tar.gz" % log_dir
             if (os.path.exists(tarball)):
                 os.remove(tarball)
 
-            CIME.utils.run_cmd_no_fail("tar -cf - {} | gzip -c".format(log_dir, arg_stdout=tarball))
-            base64 = CIME.utils.run_cmd_no_fail("base64 {}".format(tarball))
+            CIME.utils.run_cmd_no_fail("tar -cf - %s | gzip -c" % log_dir, arg_stdout=tarball)
+            base64 = CIME.utils.run_cmd_no_fail("base64 %s" % tarball)
 
             xml_text = \
 r"""<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="Dart/Source/Server/XSL/Build.xsl <file:///Dart/Source/Server/XSL/Build.xsl> "?>
-<Site BuildName="{}" BuildStamp="{}-{}" Name="{}" Generator="ctest3.0.0">
+<Site BuildName="%s" BuildStamp="%s-%s" Name="%s" Generator="ctest3.0.0">
 <Upload>
-<File filename="{}">
+<File filename="%s">
 <Content encoding="base64">
-{}
+%s
 </Content>
 </File>
 </Upload>
 </Site>
-""".format(cdash_build_name, utc_time, cdash_build_group, hostname, os.path.abspath(tarball), base64)
+""" % (cdash_build_name, utc_time, cdash_build_group, hostname, os.path.abspath(tarball), base64)
 
             with open(os.path.join(data_rel_path, "Upload.xml"), "w") as fd:
                 fd.write(xml_text)
@@ -213,37 +213,36 @@ def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group
     hostname = Machines().get_machine_name()
     if (hostname is None):
         hostname = socket.gethostname().split(".")[0]
-        logging.warning("Could not convert hostname '{}' into an ACME machine name".format(hostname))
+        logging.warning("Could not convert hostname '%s' into an ACME machine name" % (hostname))
 
     dart_config = \
 """
-SourceDirectory: {}
-BuildDirectory: {}
+SourceDirectory: %s
+BuildDirectory: %s
 
 # Site is something like machine.domain, i.e. pragmatic.crd
-Site: {}
+Site: %s
 
 # Build name is osname-revision-compiler, i.e. Linux-2.4.2-2smp-c++
-BuildName: {}
+BuildName: %s
 
 # Submission information
 IsCDash: TRUE
 CDashVersion:
 QueryCDashVersion:
 DropSite: my.cdash.org
-DropLocation: /submit.php?project={}
+DropLocation: /submit.php?project=%s
 DropSiteUser:
 DropSitePassword:
 DropSiteMode:
 DropMethod: http
 TriggerSite:
-ScpCommand: {}
+ScpCommand: %s
 
 # Dashboard start time
-NightlyStartTime: {} UTC
-""".format(os.getcwd(), os.getcwd(), hostname,
-           cdash_build_name, cdash_project,
-           distutils.spawn.find_executable("scp"), cdash_timestamp)
+NightlyStartTime: %s UTC
+""" % (os.getcwd(), os.getcwd(), hostname,
+       cdash_build_name, cdash_project, distutils.spawn.find_executable("scp"), cdash_timestamp)
 
     with open("DartConfiguration.tcl", "w") as dart_fd:
         dart_fd.write(dart_config)
@@ -253,7 +252,7 @@ NightlyStartTime: {} UTC
 
     # Make tag file
     with open("Testing/TAG", "w") as tag_fd:
-        tag_fd.write("{}\n{}\n".format(utc_time, cdash_build_group))
+        tag_fd.write("%s\n%s\n" % (utc_time, cdash_build_group))
 
     create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname)
 
@@ -269,7 +268,7 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
     else:
         test_status_filepath = test_path
 
-    logging.debug("Watching file: '{}'".format(test_status_filepath))
+    logging.debug("Watching file: '%s'" % test_status_filepath)
 
     while (True):
         if (os.path.exists(test_status_filepath)):
@@ -289,11 +288,11 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
 
         else:
             if (wait and not SIGNAL_RECEIVED):
-                logging.debug("File '{}' does not yet exist".format(test_status_filepath))
+                logging.debug("File '%s' does not yet exist" % test_status_filepath)
                 time.sleep(SLEEP_INTERVAL_SEC)
             else:
                 test_name = os.path.abspath(test_status_filepath).split("/")[-2]
-                results.put( (test_name, test_path, "File '{}' doesn't exist".format(test_status_filepath) ))
+                results.put( (test_name, test_path, "File '%s' doesn't exist" % test_status_filepath) )
                 break
 
 ###############################################################################
@@ -316,15 +315,17 @@ def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check
         if (test_name in test_results):
             prior_path, prior_status = test_results[test_name]
             if (test_status == prior_status):
-                logging.warning("Test name '{}' was found in both '{}' and '{}'".format(test_name, test_path, prior_path))
+                logging.warning("Test name '%s' was found in both '%s' and '%s'" %
+                        (test_name, test_path, prior_path))
             else:
-                raise SystemExit("Test name '{}' was found in both '{}' and '{}' with different results".format(test_name, test_path, prior_path))
+                raise SystemExit("Test name '%s' was found in both '%s' and '%s' with different results" %
+                                 (test_name, test_path, prior_path))
 
         test_results[test_name] = (test_path, test_status)
         completed_test_paths.append(test_path)
 
     expect(set(test_paths) == set(completed_test_paths),
-           "Missing results for test paths: {}".format(set(test_paths) - set(completed_test_paths)) )
+           "Missing results for test paths: %s" % (set(test_paths) - set(completed_test_paths)) )
 
     return test_results
 
@@ -348,8 +349,8 @@ def wait_for_tests(test_paths,
     all_pass = True
     for test_name, test_data in sorted(test_results.iteritems()):
         test_path, test_status = test_data
-        logging.info("Test '{}' finished with status '{}'".format(test_name, test_status))
-        logging.info("    Path: {}".format(test_path))
+        logging.info("Test '%s' finished with status '%s'" % (test_name, test_status))
+        logging.info("    Path: %s" % test_path)
         all_pass &= test_status == TEST_PASS_STATUS
 
     if (cdash_build_name):
