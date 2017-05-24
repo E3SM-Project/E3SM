@@ -1,0 +1,18 @@
+============
+HOW TO BUILD
+============
+
+Prior to building, you must make sure $CIMEROOT is set.
+
+(1) $ cd src
+(2) $ $CIMEROOT/tools/configure macros-format Makefile
+(3) Bash users:
+    $ . .env_mach_specific.sh
+    csh users:
+    $ source .env_mach_specific.csh
+(4) $ gmake
+
+Note: in the second step, replace [machine name] with the machine you are
+building on. Also, some machines have dedicated build nodes, so you might need
+to SSH to another node before the 'gmake' step.
+

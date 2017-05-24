@@ -1,0 +1,985 @@
+module test_map_glc2lnd
+
+  ! Tests of map_glc2lnd_mod
+
+  use pfunit_mod
+  use map_glc2lnd_mod
+  use glc_elevclass_mod, only : glc_elevclass_init, glc_elevclass_clean, &
+       glc_mean_elevation_virtual, glc_elevclass_as_string
+  use mct_mod, only : mct_aVect, mct_aVect_clean, mct_aVect_lsize
+  use seq_map_type_mod, only : seq_map
+  use mct_wrapper_mod, only : mct_init, mct_clean
+  use avect_wrapper_mod
+  use simple_map_mod
+  use create_mapper_mod
+  use shr_kind_mod, only : r8 => shr_kind_r8
+
+  implicit none
+
+  real(r8), parameter :: tol = 1.e-11_r8
+
+  integer, parameter :: n_elev_classes = 3
+
+  ! Assume 3 elevation classes, with boundaries of:
+  ! (1) 0 - 100 m
+  ! (2) 100 - 200 m
+  ! (3) 200 - 1000 m
+  real(r8), parameter :: elev_class_boundaries(0:n_elev_classes) = &
+       [0._r8, 100._r8, 200._r8, 1000._r8]
+
+  ! This type holds data for a single field in a single land grid cell
+  type :: lnd_field_type
+     ! Index 0 is bare land
+     real(r8) :: data(0:n_elev_classes)
+  end type lnd_field_type
+
+  @TestCase
+  type, extends(TestCase) :: TestMapGlc2lnd
+     type(seq_map) :: mapper
+     type(mct_aVect) :: data_g  ! data on the GLC (source) grid
+     type(mct_aVect) :: data_l  ! data on the LND (destination) GRID
+   contains
+     procedure :: setUp
+     procedure :: tearDown
+     procedure :: setup_inputs
+     procedure :: setup_inputs_lnd_fully_outside_static_glc_domain
+     procedure :: setup_inputs_lnd_partially_outside_static_glc_domain
+     procedure :: setup_inputs_lnd_fully_outside_dynamic_glc_domain
+     procedure :: setup_inputs_lnd_partially_outside_dynamic_glc_domain
+     procedure :: run_map_glc2lnd_ec
+     procedure :: verify_data_l_field
+  end type TestMapGlc2lnd
+
+contains
+
+  ! ========================================================================
+  ! Utility routines
+  ! ========================================================================
+
+  subroutine setUp(this)
+    class(TestMapGlc2lnd), intent(inout) :: this
+
+    call mct_init()
+
+  end subroutine setUp
+
+  subroutine tearDown(this)
+    class(TestMapGlc2lnd), intent(inout) :: this
+
+    call clean_mapper(this%mapper)
+    call mct_aVect_clean(this%data_l)
+    call mct_aVect_clean(this%data_g)
+    call glc_elevclass_clean()
+    call mct_clean()
+  end subroutine tearDown
+
+  subroutine setup_inputs(this, frac_glc, topo_glc, my_map, data_glc, icemask_glc)
+    ! This utility function sets up inputs that are needed for the map_glc2lnd_ec call
+    class(TestMapGlc2lnd), intent(inout) :: this
+    real(r8), intent(in) :: frac_glc(:)  ! ice fraction in each glc cell
+    real(r8), intent(in) :: topo_glc(:)  ! ice topographic height in each glc cell
+    type(simple_map_type), intent(in) :: my_map  ! mapping information from glc to land
+
+    ! Optional extra data field on the glc grid, put in field named 'data' (if not
+    ! present, the 'data' field is filled with all 0's).
+    real(r8), intent(in), optional :: data_glc(:)
+
+    ! Optional ice mask on the glc grid. If not present, it is filled with all 1's
+    real(r8), intent(in), optional :: icemask_glc(:)
+
+    real(r8), allocatable :: l_data_glc(:)    ! local version of data_glc
+    real(r8), allocatable :: l_icemask_glc(:) ! local version of icemask_glc
+    integer :: npts_glc
+    integer :: npts_lnd
+
+    ! ------------------------------------------------------------------------
+    ! Do some initial error-checking to make sure this routine is being called properly
+    ! ------------------------------------------------------------------------
+
+    npts_glc = size(frac_glc)
+    @assertEqual(npts_glc, size(topo_glc))
+    @assertEqual(npts_glc, my_map%get_n_source_points())
+    if (present(data_glc)) then
+       @assertEqual(npts_glc, size(data_glc))
+    end if
+
+    ! ------------------------------------------------------------------------
+    ! Set optional variables
+    ! ------------------------------------------------------------------------
+
+    if (present(data_glc)) then
+       l_data_glc = data_glc
+    else
+       allocate(l_data_glc(npts_glc))
+       l_data_glc(:) = 0._r8
+    end if
+
+    if (present(icemask_glc)) then
+       l_icemask_glc = icemask_glc
+    else
+       allocate(l_icemask_glc(npts_glc))
+       l_icemask_glc(:) = 1._r8
+    end if
+
+    ! ------------------------------------------------------------------------
+    ! Setup
+    ! ------------------------------------------------------------------------
+
+    call glc_elevclass_init(n_elev_classes, elev_class_boundaries)
+
+    call create_aVect_with_data_rows_are_points(this%data_g, &
+         attr_tags = ['Sg_ice_covered', 'Sg_topo       ', 'Sg_icemask    ', 'data          '], &
+         data = reshape([frac_glc, topo_glc, l_icemask_glc, l_data_glc], [npts_glc, 4]))
+
+    npts_lnd = my_map%get_n_dest_points()
+    ! The following assumes that n_elev_classes is 3:
+    call create_aVect_without_data(this%data_l, lsize = npts_lnd, &
+         attr_tags = ['Sg_ice_covered00', 'Sg_ice_covered01', 'Sg_ice_covered02', 'Sg_ice_covered03', &
+                      'Sg_topo00       ', 'Sg_topo01       ', 'Sg_topo02       ', 'Sg_topo03       ', &
+                      'data00          ', 'data01          ', 'data02          ', 'data03          '])
+
+    call create_mapper(this%mapper, my_map)
+
+  end subroutine setup_inputs
+
+  subroutine setup_inputs_lnd_fully_outside_static_glc_domain(this, frac_glc, topo_glc, data_glc)
+    ! Calls setup_inputs with a domain that has 2 lnd cells, 1 glc cell.
+    !
+    ! The lnd cell of interest (#1) is fully outside the static glc domain (i.e., there is
+    ! no overlap in the mapping weights). The intention is that lnd cell #2 will be
+    ! ignored in verification; it is only included so that we can set up a non-null map
+    ! (since simple_map_type won't let you include mapping weights of 0). (Lnd cell #2
+    ! can be ignored by setting first_lnd_index_to_verify=1, last_lnd_index_to_verify=1
+    ! in the call to verify_data_l_field.)
+    class(TestMapGlc2lnd), intent(inout) :: this
+    real(r8), intent(in) :: frac_glc  ! frac in the single glc cell
+    real(r8), intent(in) :: topo_glc  ! topo in the single glc cell
+    real(r8), intent(in), optional :: data_glc  ! data in the single glc cell
+
+    real(r8) :: l_data_glc  ! local version of data_glc
+    type(simple_map_type) :: my_map
+
+    l_data_glc = 0._r8
+    if (present(data_glc)) then
+       l_data_glc = data_glc
+    end if
+
+    my_map = simple_map_type( &
+         source_indices  = [1], &
+         dest_indices    = [2], &
+         overlap_weights = [1._r8])
+
+    call this%setup_inputs([frac_glc], [topo_glc], my_map, data_glc = [l_data_glc])
+  end subroutine setup_inputs_lnd_fully_outside_static_glc_domain
+
+  subroutine setup_inputs_lnd_partially_outside_static_glc_domain(this, frac_glc, &
+       topo_glc, data_glc)
+    ! Calls setup_inputs with a domain that has 1 lnd cell, 1 glc cell.
+    !
+    ! The lnd cell is partially outside the static glc domain, with an overlap of 0.25.
+    class(TestMapGlc2lnd), intent(inout) :: this
+    real(r8), intent(in) :: frac_glc  ! frac in the single glc cell
+    real(r8), intent(in) :: topo_glc  ! topo in the single glc cell
+    real(r8), intent(in), optional :: data_glc  ! data in the single glc cell
+
+    real(r8) :: l_data_glc  ! local version of data_glc
+    type(simple_map_type) :: my_map
+
+    l_data_glc = 0._r8
+    if (present(data_glc)) then
+       l_data_glc = data_glc
+    end if
+
+    my_map = simple_map_type( &
+         source_indices  = [1], &
+         dest_indices    = [1], &
+         overlap_weights = [0.25_r8])
+
+    call this%setup_inputs([frac_glc], [topo_glc], my_map, data_glc = [l_data_glc])
+  end subroutine setup_inputs_lnd_partially_outside_static_glc_domain
+
+  subroutine setup_inputs_lnd_fully_outside_dynamic_glc_domain(this, frac_glc, topo_glc, &
+       data_glc)
+    ! Calls setup_inputs with a domain that has 1 lnd cell, 1 glc cell.
+    !
+    ! The lnd cell is entirely within the static glc domain (defined by the mapping
+    ! file), but entirely outside the dynamic domain (defined by the icemask field).
+    class(TestMapGlc2lnd), intent(inout) :: this
+    real(r8), intent(in) :: frac_glc  ! frac in the single glc cell
+    real(r8), intent(in) :: topo_glc  ! topo in the single glc cell
+    real(r8), intent(in), optional :: data_glc  ! data in the single glc cell
+
+    real(r8) :: l_data_glc  ! local version of data_glc
+    type(simple_map_type) :: my_map
+
+    l_data_glc = 0._r8
+    if (present(data_glc)) then
+       l_data_glc = data_glc
+    end if
+
+    my_map = create_simple_map_with_one_source(ndest = 1)
+
+    call this%setup_inputs([frac_glc], [topo_glc], my_map, data_glc = [l_data_glc], &
+         icemask_glc = [0._r8])
+  end subroutine setup_inputs_lnd_fully_outside_dynamic_glc_domain
+
+  subroutine setup_inputs_lnd_partially_outside_dynamic_glc_domain(this, &
+       frac_glc_in_domain, frac_glc_outside_domain, &
+       topo_glc_in_domain, topo_glc_outside_domain, &
+       data_glc_in_domain, data_glc_outside_domain)
+    ! Calls setup_inputs with a domain that has 1 lnd cell, 2 glc cells.
+    !
+    ! The lnd cell is entirely within the static glc domain (defined by the mapping
+    ! file), but partially outside the dynamic domain (defined by the icemask field).
+    !
+    ! Specifically:
+    ! - glc cell 1 (arguments with '_in_domain' suffix) has icemask = 1, overlap = 0.75.
+    ! - glc cell 2 (arguments with '_outside_domain' suffix) has icemask = 0, overlap = 0.25.
+    class(TestMapGlc2lnd), intent(inout) :: this
+    real(r8), intent(in) :: frac_glc_in_domain  ! frac in the glc cell with icemask = 1
+    real(r8), intent(in) :: frac_glc_outside_domain  ! frac in the glc cell with icemask = 0
+    real(r8), intent(in) :: topo_glc_in_domain  ! topo in the glc cell with icemask = 1
+    real(r8), intent(in) :: topo_glc_outside_domain  ! topo in the glc cell with icemask = 0
+    real(r8), intent(in), optional :: data_glc_in_domain  ! data in the glc cell with icemask = 1
+    real(r8), intent(in), optional :: data_glc_outside_domain  ! data in the glc cell with icemask = 0
+
+    real(r8) :: l_data_glc_in_domain  ! local version of data_glc_in_domain
+    real(r8) :: l_data_glc_outside_domain  ! local version of data_glc_outside_domain
+    type(simple_map_type) :: my_map
+
+    l_data_glc_in_domain = 0._r8
+    if (present(data_glc_in_domain)) then
+       l_data_glc_in_domain = data_glc_in_domain
+    end if
+    l_data_glc_outside_domain = 0._r8
+    if (present(data_glc_outside_domain)) then
+       l_data_glc_outside_domain = data_glc_outside_domain
+    end if
+
+    my_map = simple_map_type( &
+         source_indices  = [1,       2], &
+         dest_indices    = [1,       1], &
+         overlap_weights = [0.75_r8, 0.25_r8])
+
+    call this%setup_inputs( &
+         [frac_glc_in_domain, frac_glc_outside_domain], &
+         [topo_glc_in_domain, topo_glc_outside_domain], &
+         my_map, &
+         data_glc = [l_data_glc_in_domain, l_data_glc_outside_domain], &
+         icemask_glc = [1._r8, 0._r8])
+  end subroutine setup_inputs_lnd_partially_outside_dynamic_glc_domain
+
+  subroutine run_map_glc2lnd_ec(this, extra_fields)
+    ! This utility function wraps the call to the map_glc2lnd_ec routine
+    class(TestMapGlc2lnd), intent(inout) :: this
+    character(len=*), intent(in), optional :: extra_fields  ! extra fields to map
+
+    character(len=:), allocatable :: l_extra_fields  ! local version of extra_fields
+
+    l_extra_fields = ' '
+    if (present(extra_fields)) then
+       l_extra_fields = extra_fields
+    end if
+
+    call map_glc2lnd_ec(g2x_g = this%data_g, &
+         frac_field = 'Sg_ice_covered', topo_field = 'Sg_topo', icemask_field = 'Sg_icemask', &
+         extra_fields = l_extra_fields, &
+         mapper = this%mapper, g2x_l = this%data_l)
+
+  end subroutine run_map_glc2lnd_ec
+
+  subroutine verify_data_l_field(this, fieldname, expected_lnd, message, &
+       first_lnd_index_to_verify, last_lnd_index_to_verify)
+    ! Verify one field on the land grid
+    class(TestMapGlc2lnd), intent(in) :: this
+    character(len=*), intent(in) :: fieldname  ! base name of field (no elev class suffix)
+    type(lnd_field_type), intent(in) :: expected_lnd(:)
+    character(len=*), intent(in) :: message
+
+    ! Specify the following if you only want to verify a subset of the total land points.
+    ! You must either specify both or neither of these.
+    ! If these are specified, then expected_lnd should be of size
+    ! (last_lnd_index_to_verify - first_lnd_index_to_verify + 1)
+    integer, intent(in), optional :: first_lnd_index_to_verify
+    integer, intent(in), optional :: last_lnd_index_to_verify
+
+    integer :: first, last
+    integer :: n
+    logical :: args_okay
+    character(len=:), allocatable :: ec_string
+    character(len=:), allocatable :: fieldname_ec
+    character(len=:), allocatable :: full_message
+    real(r8), allocatable :: actual_lnd_this_ec(:)
+
+    ! Handle optional arguments
+
+    args_okay = .false.
+    if (.not. present(first_lnd_index_to_verify) .and. &
+         .not. present(last_lnd_index_to_verify)) then
+       first = 1
+       last = mct_aVect_lsize(this%data_l)
+       @assertEqual(size(expected_lnd), last, message=message//': number of points')
+       args_okay = .true.
+    else if (present(first_lnd_index_to_verify) .and. &
+         present(last_lnd_index_to_verify)) then
+       first = first_lnd_index_to_verify
+       last = last_lnd_index_to_verify
+       @assertEqual(size(expected_lnd), last-first+1, message=message//': number of points')
+       args_okay = .true.
+    end if
+    @assertTrue(args_okay, message=message//': optional arguments')
+
+    ! Do the verification
+    do n = 0, n_elev_classes
+       ec_string = glc_elevclass_as_string(n)
+       fieldname_ec = fieldname // ec_string
+       actual_lnd_this_ec = aVect_exportRattr(this%data_l, fieldname_ec)
+       full_message = message//': elevation class ' // ec_string
+       @assertEqual(expected_lnd(:)%data(n), actual_lnd_this_ec(first:last), message=full_message, tolerance=tol)
+    end do
+  end subroutine verify_data_l_field
+
+  subroutine set_topo_to_mean_elevation_virtual(topo_data)
+    ! Sets topo_data to glc_mean_elevation_virtual for all grid cells and all elevation
+    ! classes
+    type(lnd_field_type), intent(out) :: topo_data(:)
+
+    integer :: n
+
+    do n = 0, n_elev_classes
+       topo_data(:)%data(n) = glc_mean_elevation_virtual(n)
+    end do
+  end subroutine set_topo_to_mean_elevation_virtual
+
+  ! ========================================================================
+  ! Actual tests
+  ! ========================================================================
+
+  ! ------------------------------------------------------------------------
+  ! Tests of mapped ice fraction
+  ! ------------------------------------------------------------------------
+
+  @Test
+  subroutine test_mapGlc2lndEC_frac_with_EC0(this)
+    ! Do a test of the map_glc2lnd_ec routine with only an elevation class 0 source
+    ! point. Check the mapped frac.
+    class(TestMapGlc2lnd), intent(inout) :: this
+    integer, parameter :: nlnd = 1
+    integer, parameter :: nglc = 1
+    real(r8) :: frac_glc(nglc)
+    real(r8) :: topo_glc(nglc)
+    type(lnd_field_type) :: frac_lnd_expected(nlnd)
+    type(simple_map_type) :: my_map
+    real(r8), parameter :: irrelevant_topo = 125._r8  ! irrelevant for this test
+
+    ! Setup
+
+    my_map = create_simple_map_with_one_source(ndest = nlnd)
+
+    frac_glc(1) = 0._r8
+    topo_glc(1) = irrelevant_topo
+
+    call this%setup_inputs(frac_glc, topo_glc, my_map)
+
+    ! Exercise
+
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+
+    frac_lnd_expected(1)%data(:) = 0._r8
+    frac_lnd_expected(1)%data(0) = 1._r8
+
+    call this%verify_data_l_field(fieldname='Sg_ice_covered', expected_lnd=frac_lnd_expected, &
+         message = 'test_mapGlc2lndEC_frac_with_EC0: Sg_ice_covered')
+  end subroutine test_mapGlc2lndEC_frac_with_EC0
+
+  @Test
+  subroutine test_mapGlc2lndEC_frac_with_EC2(this)
+    ! Do a test of the map_glc2lnd_ec routine with only an elevation class 2 source
+    ! point. Check the mapped frac.
+    class(TestMapGlc2lnd), intent(inout) :: this
+    integer, parameter :: nlnd = 1
+    integer, parameter :: nglc = 1
+    real(r8) :: frac_glc(nglc)
+    real(r8) :: topo_glc(nglc)
+    type(lnd_field_type) :: frac_lnd_expected(nlnd)
+    type(simple_map_type) :: my_map
+
+    ! Setup
+
+    my_map = create_simple_map_with_one_source(ndest = nlnd)
+
+    frac_glc(1) = 1._r8
+    topo_glc(1) = 125._r8
+
+    call this%setup_inputs(frac_glc, topo_glc, my_map)
+
+    ! Exercise
+
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+
+    frac_lnd_expected(1)%data(:) = 0._r8
+    frac_lnd_expected(1)%data(2) = 1._r8
+
+    call this%verify_data_l_field(fieldname='Sg_ice_covered', expected_lnd=frac_lnd_expected, &
+         message = 'test_mapGlc2lndEC_frac_with_EC2: Sg_ice_covered')
+  end subroutine test_mapGlc2lndEC_frac_with_EC2
+
+  @Test
+  subroutine test_mapGlc2lndEC_frac_with_allECs(this)
+    ! Do a test of the map_glc2lnd_ec routine with source points from each elevation
+    ! class. Check the mapped frac.
+    class(TestMapGlc2lnd), intent(inout) :: this
+    integer, parameter :: nlnd = 1
+    integer, parameter :: nglc = 4
+    real(r8) :: frac_glc(nglc)
+    real(r8) :: topo_glc(nglc)
+    type(lnd_field_type) :: frac_lnd_expected(nlnd)
+    type(simple_map_type) :: my_map
+    real(r8), parameter :: irrelevant_topo = 125._r8
+
+    ! Setup
+
+    frac_glc(:) = [1._r8,   1._r8,   1._r8,  0._r8]
+    topo_glc(:) = [225._r8, 125._r8, 25._r8, irrelevant_topo]
+
+    my_map = simple_map_type( &
+         source_indices  = [1,      2,      3,      4], &
+         dest_indices    = [1,      1,      1,      1], &
+         overlap_weights = [0.4_r8, 0.3_r8, 0.2_r8, 0.1_r8])
+
+    call this%setup_inputs(frac_glc, topo_glc, my_map)
+
+    ! Exercise
+
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+
+    frac_lnd_expected(1)%data(:) = [0.1_r8, 0.2_r8, 0.3_r8, 0.4_r8]
+
+    call this%verify_data_l_field(fieldname='Sg_ice_covered', expected_lnd=frac_lnd_expected, &
+         message = 'test_mapGlc2lndEC_frac_with_allECs: Sg_ice_covered')
+  end subroutine test_mapGlc2lndEC_frac_with_allECs
+
+  @Test
+  subroutine test_mapGlc2lndEC_frac_fully_outside_static_domain(this)
+    ! Test mapped fraction with a land cell that is fully outside the static GLC domain
+    ! (i.e., mapping weight is 0).
+    class(TestMapGlc2lnd), intent(inout) :: this
+    type(lnd_field_type) :: frac_lnd_expected(1)
+
+    ! Setup
+    call this%setup_inputs_lnd_fully_outside_static_glc_domain( &
+         frac_glc = 1._r8, topo_glc = 125._r8)
+
+    ! Exercise
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+    frac_lnd_expected(1)%data(:) = 0._r8
+    call this%verify_data_l_field(fieldname='Sg_ice_covered', expected_lnd=frac_lnd_expected, &
+         message = 'test_mapGlc2lndEC_frac_fully_outside_static_domain: Sg_ice_covered', &
+         first_lnd_index_to_verify = 1, last_lnd_index_to_verify = 1)
+  end subroutine test_mapGlc2lndEC_frac_fully_outside_static_domain
+
+  @Test
+  subroutine test_mapGlc2lndEC_frac_partially_outside_static_domain(this)
+    ! Test mapped fraction with a land cell that is partially outside the static GLC domain
+    ! (i.e., mapping weight is 0).
+    class(TestMapGlc2lnd), intent(inout) :: this
+    type(lnd_field_type) :: frac_lnd_expected(1)
+
+    ! Setup
+    call this%setup_inputs_lnd_partially_outside_static_glc_domain( &
+         frac_glc = 1._r8, topo_glc = 125._r8)
+
+    ! Exercise
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+    ! Note that we expect the land cell to end up fully covered with ice, despite being
+    ! partially outside the GLC domain. This is achieved by mapping with normalization.
+    frac_lnd_expected(1)%data(:) = [0._r8, 0._r8, 1._r8, 0._r8]
+    call this%verify_data_l_field(fieldname='Sg_ice_covered', expected_lnd=frac_lnd_expected, &
+         message = 'test_mapGlc2lndEC_frac_partially_outside_static_domain: Sg_ice_covered')
+  end subroutine test_mapGlc2lndEC_frac_partially_outside_static_domain
+
+  @Test
+  subroutine test_mapGlc2lndEC_frac_fully_outside_dynamic_domain(this)
+    ! Test mapped fraction with a land cell that is fully outside the dynamic GLC domain
+    ! (i.e., icemask is 0)
+    class(TestMapGlc2lnd), intent(inout) :: this
+    type(lnd_field_type) :: frac_lnd_expected(1)
+
+    ! Setup
+    call this%setup_inputs_lnd_fully_outside_dynamic_glc_domain( &
+         frac_glc = 1._r8, topo_glc = 125._r8)
+
+    ! Exercise
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+    frac_lnd_expected(1)%data(:) = 0._r8
+    call this%verify_data_l_field(fieldname='Sg_ice_covered', expected_lnd=frac_lnd_expected, &
+         message = 'test_mapGlc2lndEC_frac_fully_outside_dynamic_domain: Sg_ice_covered')
+  end subroutine test_mapGlc2lndEC_frac_fully_outside_dynamic_domain
+
+  @Test
+  subroutine test_mapGlc2lndEC_frac_partially_outside_dynamic_domain_diffECs(this)
+    ! Test mapped fraction with a land cell that is partially outside the dynamic GLC
+    ! domain, with two GLC points in different elevation classes
+    class(TestMapGlc2lnd), intent(inout) :: this
+    type(lnd_field_type) :: frac_lnd_expected(1)
+
+    ! Setup
+    call this%setup_inputs_lnd_partially_outside_dynamic_glc_domain( &
+         frac_glc_in_domain = 1._r8, frac_glc_outside_domain = 1._r8, &
+         topo_glc_in_domain = 125._r8, topo_glc_outside_domain = 25._r8)
+
+    ! Exercise
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+    frac_lnd_expected(1)%data(:) = [0._r8, 0._r8, 1._r8, 0._r8]
+    call this%verify_data_l_field(fieldname='Sg_ice_covered', expected_lnd=frac_lnd_expected, &
+         message = 'test_mapGlc2lndEC_frac_partially_outside_dynamic_domain_diffECs: Sg_ice_covered')
+  end subroutine test_mapGlc2lndEC_frac_partially_outside_dynamic_domain_diffECs
+
+  @Test
+  subroutine test_mapGlc2lndEC_frac_partially_outside_dynamic_domain_sameEC(this)
+    ! Test mapped fraction with a land cell that is partially outside the dynamic GLC
+    ! domain, with two GLC points in the same elevation class
+    class(TestMapGlc2lnd), intent(inout) :: this
+    type(lnd_field_type) :: frac_lnd_expected(1)
+
+    ! Setup
+    ! Note that we are specifying fracs that are between 0 and 1. This situation
+    ! currently won't arise in practice, but using a fraction of 1 for both glc cells
+    ! doesn't have much testing power for this case: we couldn't tell if the point
+    ! outside the mask is being ignored or not.
+    call this%setup_inputs_lnd_partially_outside_dynamic_glc_domain( &
+         frac_glc_in_domain = 0.6_r8, frac_glc_outside_domain = 0.4_r8, &
+         topo_glc_in_domain = 125._r8, topo_glc_outside_domain = 125._r8)
+
+    ! Exercise
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+    frac_lnd_expected(1)%data(:) = [0.4_r8, 0._r8, 0.6_r8, 0._r8]
+    call this%verify_data_l_field(fieldname='Sg_ice_covered', expected_lnd=frac_lnd_expected, &
+         message = 'test_mapGlc2lndEC_frac_partially_outside_dynamic_domain_sameEC: Sg_ice_covered')
+  end subroutine test_mapGlc2lndEC_frac_partially_outside_dynamic_domain_sameEC
+
+  ! ------------------------------------------------------------------------
+  ! Tests of mapped topo
+  ! ------------------------------------------------------------------------
+
+  @Test
+  subroutine test_mapGlc2lndEC_topo_with_EC0(this)
+    ! Do a test of the map_glc2lnd_ec routine with only an elevation class 0 source
+    ! point. Check the mapped topo.
+    class(TestMapGlc2lnd), intent(inout) :: this
+    integer, parameter :: nlnd = 1
+    integer, parameter :: nglc = 1
+    real(r8) :: frac_glc(nglc)
+    real(r8) :: topo_glc(nglc)
+    type(simple_map_type) :: my_map
+    real(r8) :: topo_expected_ec0(nlnd)
+    real(r8), allocatable :: topo_actual_ec0(:)
+
+    ! Setup
+
+    my_map = create_simple_map_with_one_source(ndest = nlnd)
+
+    frac_glc(1) = 0._r8
+    topo_glc(1) = 125._r8
+
+    call this%setup_inputs(frac_glc, topo_glc, my_map)
+
+    ! Exercise
+
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+
+    topo_expected_ec0(1) = topo_glc(1)
+    topo_actual_ec0 = aVect_exportRattr(this%data_l, 'Sg_topo00')
+    @assertEqual(topo_expected_ec0, topo_actual_ec0)
+  end subroutine test_mapGlc2lndEC_topo_with_EC0
+
+  @Test
+  subroutine test_mapGlc2lndEC_topo_with_EC2(this)
+    ! Do a test of the map_glc2lnd_ec routine with only an elevation class 2 source
+    ! point. Check the mapped topo.
+    class(TestMapGlc2lnd), intent(inout) :: this
+    integer, parameter :: nlnd = 1
+    integer, parameter :: nglc = 1
+    real(r8) :: frac_glc(nglc)
+    real(r8) :: topo_glc(nglc)
+    type(simple_map_type) :: my_map
+    real(r8) :: topo_expected_ec2(nlnd)
+    real(r8), allocatable :: topo_actual_ec2(:)
+
+    ! Setup
+
+    my_map = create_simple_map_with_one_source(ndest = nlnd)
+
+    frac_glc(1) = 1._r8
+    topo_glc(1) = 125._r8
+
+    call this%setup_inputs(frac_glc, topo_glc, my_map)
+
+    ! Exercise
+
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+
+    topo_expected_ec2(1) = topo_glc(1)
+    topo_actual_ec2 = aVect_exportRattr(this%data_l, 'Sg_topo02')
+    @assertEqual(topo_expected_ec2, topo_actual_ec2)
+  end subroutine test_mapGlc2lndEC_topo_with_EC2
+
+  @Test
+  subroutine test_mapGlc2lndEC_topo_virtual_elevation_class(this)
+    ! Do a test of the map_glc2lnd_ec routine, checking mapped topo for virtual elevation
+    ! classes.
+    class(TestMapGlc2lnd), intent(inout) :: this
+    integer, parameter :: nlnd = 1
+    integer, parameter :: nglc = 1
+    real(r8) :: frac_glc(nglc)
+    real(r8) :: topo_glc(nglc)
+    type(simple_map_type) :: my_map
+    type(lnd_field_type) :: topo_lnd_expected(nlnd)
+
+    ! Setup
+
+    my_map = create_simple_map_with_one_source(ndest = nlnd)
+
+    ! We have a non-virtual elevation class 2; all other elevation classes (including
+    ! bare land) are virtual.
+    frac_glc(1) = 1._r8
+    topo_glc(1) = 125._r8
+
+    call this%setup_inputs(frac_glc, topo_glc, my_map)
+
+    ! Exercise
+
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+
+    topo_lnd_expected(1)%data(0) = glc_mean_elevation_virtual(0)
+    topo_lnd_expected(1)%data(1) = glc_mean_elevation_virtual(1)
+    topo_lnd_expected(1)%data(2) = topo_glc(1)  ! non-virtual
+    topo_lnd_expected(1)%data(3) = glc_mean_elevation_virtual(3)
+    call this%verify_data_l_field(fieldname='Sg_topo', expected_lnd=topo_lnd_expected, &
+         message = 'test_mapGlc2lndEC_topo_virtual_elevation_class: Sg_topo')
+
+  end subroutine test_mapGlc2lndEC_topo_virtual_elevation_class
+
+  @Test
+  subroutine test_mapGlc2lndEC_topo_virtual_elevation_class_multiple_points(this)
+    ! Do a test of the map_glc2lnd_ec routine, checking mapped topo for virtual elevation
+    ! classes, with multiple points (to ensure that real points aren't getting assigned
+    ! the elevation from virtual elevation classes).
+    class(TestMapGlc2lnd), intent(inout) :: this
+    integer, parameter :: nlnd = 2
+    integer, parameter :: nglc = 2
+    real(r8) :: frac_glc(nglc)
+    real(r8) :: topo_glc(nglc)
+    type(simple_map_type) :: my_map
+    type(lnd_field_type) :: topo_lnd_expected(nlnd)
+    integer :: n
+
+    ! Setup
+
+    frac_glc(:) = [1._r8, 1._r8]
+    topo_glc(:) = [125._r8, 225._r8]
+
+    my_map = simple_map_type( &
+         source_indices  = [1,     2], &
+         dest_indices    = [1,     2], &
+         overlap_weights = [1._r8, 1._r8])
+
+    call this%setup_inputs(frac_glc, topo_glc, my_map)
+
+    ! Exercise
+
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+
+    call set_topo_to_mean_elevation_virtual(topo_lnd_expected)
+    ! But set non-virtual points:
+    topo_lnd_expected(1)%data(2) = 125._r8
+    topo_lnd_expected(2)%data(3) = 225._r8
+    call this%verify_data_l_field(fieldname='Sg_topo', expected_lnd=topo_lnd_expected, &
+         message = 'test_mapGlc2lndEC_topo_virtual_elevation_class_multiple_points: Sg_topo')
+
+  end subroutine test_mapGlc2lndEC_topo_virtual_elevation_class_multiple_points
+
+  @Test
+  subroutine test_mapGlc2lndEC_topo_fully_outside_static_domain(this)
+    ! Test mapped topo with a land cell that is fully outside the static GLC domain
+    ! (i.e., mapping weight is 0).
+    class(TestMapGlc2lnd), intent(inout) :: this
+    type(lnd_field_type) :: topo_lnd_expected(1)
+
+    ! Setup
+    call this%setup_inputs_lnd_fully_outside_static_glc_domain( &
+         frac_glc = 1._r8, topo_glc = 125._r8)
+
+    ! Exercise
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+    call set_topo_to_mean_elevation_virtual(topo_lnd_expected)
+    call this%verify_data_l_field(fieldname='Sg_topo', expected_lnd=topo_lnd_expected, &
+         message = 'test_mapGlc2lndEC_topo_fully_outside_static_domain: Sg_topo', &
+         first_lnd_index_to_verify = 1, last_lnd_index_to_verify = 1)
+  end subroutine test_mapGlc2lndEC_topo_fully_outside_static_domain
+
+  @Test
+  subroutine test_mapGlc2lndEC_topo_partially_outside_static_domain(this)
+    ! Test mapped topo with a land cell that is partially outside the static GLC domain
+    ! (i.e., mapping weight is 0).
+    !
+    ! Note: the logic is the same in this respect for topo and any other data field, so
+    ! this can also be considered to be a test for other data fields, when a land cell is
+    ! partially outside the static GLC domain.
+    class(TestMapGlc2lnd), intent(inout) :: this
+    type(lnd_field_type) :: topo_lnd_expected(1)
+
+    ! Setup
+    call this%setup_inputs_lnd_partially_outside_static_glc_domain( &
+         frac_glc = 1._r8, topo_glc = 125._r8)
+
+    ! Exercise
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+    call set_topo_to_mean_elevation_virtual(topo_lnd_expected)
+    topo_lnd_expected(1)%data(2) = 125._r8
+    call this%verify_data_l_field(fieldname='Sg_topo', expected_lnd=topo_lnd_expected, &
+         message = 'test_mapGlc2lndEC_topo_partially_outside_static_domain: Sg_topo')
+  end subroutine test_mapGlc2lndEC_topo_partially_outside_static_domain
+
+  @Test
+  subroutine test_mapGlc2lndEC_topo_fully_outside_dynamic_domain(this)
+    ! Test mapped topo with a land cell that is fully outside the dynamic GLC domain
+    ! (i.e., icemask is 0).
+    class(TestMapGlc2lnd), intent(inout) :: this
+    type(lnd_field_type) :: topo_lnd_expected(1)
+
+    ! Setup
+    call this%setup_inputs_lnd_fully_outside_dynamic_glc_domain( &
+         frac_glc = 1._r8, topo_glc = 125._r8)
+
+    ! Exercise
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+    call set_topo_to_mean_elevation_virtual(topo_lnd_expected)
+    call this%verify_data_l_field(fieldname='Sg_topo', expected_lnd=topo_lnd_expected, &
+         message = 'test_mapGlc2lndEC_topo_fully_outside_dynamic_domain: Sg_topo')
+  end subroutine test_mapGlc2lndEC_topo_fully_outside_dynamic_domain
+
+  @Test
+  subroutine test_mapGlc2lndEC_topo_partially_outside_dynamic_domain_sameEC(this)
+    ! Test mapped topo with a land cell that is partially outside the dynamic GLC
+    ! domain, with two GLC points in the same elevation class
+    !
+    ! Note: the logic is the same in this respect for topo and any other data field, so
+    ! this can also be considered to be a test for other data fields, when a land cell is
+    ! partially outside the dynamic GLC domain.
+    class(TestMapGlc2lnd), intent(inout) :: this
+    type(lnd_field_type) :: topo_lnd_expected(1)
+
+    ! Setup
+    call this%setup_inputs_lnd_partially_outside_dynamic_glc_domain( &
+         frac_glc_in_domain = 1._r8, frac_glc_outside_domain = 1._r8, &
+         topo_glc_in_domain = 125._r8, topo_glc_outside_domain = 175._r8)
+
+    ! Exercise
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+    call set_topo_to_mean_elevation_virtual(topo_lnd_expected)
+    topo_lnd_expected(1)%data(2) = 125._r8
+    call this%verify_data_l_field(fieldname='Sg_topo', expected_lnd=topo_lnd_expected, &
+         message = 'test_mapGlc2lndEC_topo_partially_outside_dynamic_domain_sameEC: Sg_topo')
+  end subroutine test_mapGlc2lndEC_topo_partially_outside_dynamic_domain_sameEC
+
+  @Test
+  subroutine test_mapGlc2lndEC_topo_partially_outside_dynamic_domain_diffECs(this)
+    ! Test mapped topo with a land cell that is partially outside the dynamic GLC
+    ! domain, with two GLC points in different elevation classes
+    class(TestMapGlc2lnd), intent(inout) :: this
+    type(lnd_field_type) :: topo_lnd_expected(1)
+
+    ! Setup
+    call this%setup_inputs_lnd_partially_outside_dynamic_glc_domain( &
+         frac_glc_in_domain = 1._r8, frac_glc_outside_domain = 1._r8, &
+         topo_glc_in_domain = 125._r8, topo_glc_outside_domain = 25._r8)
+
+    ! Exercise
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+    call set_topo_to_mean_elevation_virtual(topo_lnd_expected)
+    topo_lnd_expected(1)%data(2) = 125._r8
+    call this%verify_data_l_field(fieldname='Sg_topo', expected_lnd=topo_lnd_expected, &
+         message = 'test_mapGlc2lndEC_topo_partially_outside_dynamic_domain_diffECs: Sg_topo')
+  end subroutine test_mapGlc2lndEC_topo_partially_outside_dynamic_domain_diffECs
+
+  @Test
+  subroutine test_mapGlc2lndEC_topo_multiple_sources(this)
+    ! Test mapped topo with multiple source points, with a variety of ice masks and
+    ! elevation classes.
+    class(TestMapGlc2lnd), intent(inout) :: this
+    integer, parameter :: nglc = 6
+    real(r8) :: frac_glc(nglc)
+    real(r8) :: topo_glc(nglc)
+    real(r8) :: icemask(nglc)
+    real(r8) :: overlap(nglc)
+    type(simple_map_type) :: my_map
+    type(lnd_field_type) :: topo_lnd_expected(1)
+
+    ! Setup
+
+    !              EC2    , EC2-fractional, EC0    , MASK0-FRAC1, MASK0-FRAC0, EC3
+    icemask(:)  = [1._r8  , 1._r8         , 1._r8  , 0._r8      , 0._r8      , 1._r8]
+    frac_glc(:) = [1._r8  , 0.8_r8        , 0._r8  , 1._r8      , 0._r8      , 1._r8]
+    topo_glc(:) = [110._r8, 120._r8       , 130._r8, 140._r8    , 150._r8    , 210._r8]
+    overlap(:)  = [0.2_r8 , 0.2_r8        , 0.2_r8 , 0.2_r8     , 0.1_r8     , 0.1_r8]
+
+    my_map = simple_map_type( &
+         source_indices  = [1, 2, 3, 4, 5, 6], &
+         dest_indices    = [1, 1, 1, 1, 1, 1], &
+         overlap_weights = overlap)
+
+    call this%setup_inputs(frac_glc, topo_glc, my_map, icemask_glc = icemask)
+
+    ! Exercise
+
+    call this%run_map_glc2lnd_ec()
+
+    ! Verify
+
+    call set_topo_to_mean_elevation_virtual(topo_lnd_expected)
+    topo_lnd_expected(1)%data(0) = (130._r8 + 120._r8 * 0.2_r8) / 1.2_r8
+    topo_lnd_expected(1)%data(2) = (110._r8 + 120._r8 * 0.8_r8) / 1.8_r8
+    topo_lnd_expected(1)%data(3) = 210._r8
+    call this%verify_data_l_field(fieldname='Sg_topo', expected_lnd=topo_lnd_expected, &
+         message = 'test_mapGlc2lndEC_topo_multiple_sources: Sg_topo')
+  end subroutine test_mapGlc2lndEC_topo_multiple_sources
+
+  ! ------------------------------------------------------------------------
+  ! Tests of mapped data field
+  ! ------------------------------------------------------------------------
+
+  @Test
+  subroutine test_mapGlc2lndEC_data(this)
+    ! Do a test of the map_glc2lnd_ec routine with only an elevation class 2 source
+    ! point. Check the mapped data field. Point is to make sure that extra fields
+    ! (besides frac and topo) get mapped properly.
+    class(TestMapGlc2lnd), intent(inout) :: this
+    integer, parameter :: nlnd = 1
+    integer, parameter :: nglc = 1
+    real(r8) :: frac_glc(nglc)
+    real(r8) :: topo_glc(nglc)
+    real(r8) :: data_glc(nglc)
+    type(simple_map_type) :: my_map
+    real(r8) :: data_expected_ec2(nlnd)
+    real(r8), allocatable :: data_actual_ec2(:)
+
+    ! Setup
+
+    my_map = create_simple_map_with_one_source(ndest = nlnd)
+
+    frac_glc(1) = 1._r8
+    topo_glc(1) = 125._r8
+    data_glc(1) = 12345._r8
+
+    call this%setup_inputs(frac_glc, topo_glc, my_map, data_glc=data_glc)
+
+    ! Exercise
+
+    call this%run_map_glc2lnd_ec(extra_fields = 'data')
+
+    ! Verify
+
+    data_expected_ec2(1) = data_glc(1)
+    data_actual_ec2 = aVect_exportRattr(this%data_l, 'data02')
+    @assertEqual(data_expected_ec2, data_actual_ec2)
+  end subroutine test_mapGlc2lndEC_data
+
+  @Test
+  subroutine test_mapGlc2lndEC_data_fully_outside_static_domain(this)
+    ! Test mapped data with a land cell that is fully outside the static GLC domain
+    ! (i.e., mapping weight is 0).
+    class(TestMapGlc2lnd), intent(inout) :: this
+    type(lnd_field_type) :: data_lnd_expected(1)
+
+    ! Setup
+    call this%setup_inputs_lnd_fully_outside_static_glc_domain( &
+         frac_glc = 1._r8, topo_glc = 125._r8, data_glc = 12345._r8)
+
+    ! Exercise
+    call this%run_map_glc2lnd_ec(extra_fields = 'data')
+
+    ! Verify
+    data_lnd_expected(1)%data(:) = 0._r8
+    call this%verify_data_l_field(fieldname='data', expected_lnd=data_lnd_expected, &
+         message = 'test_mapGlc2lndEC_data_fully_outside_static_domain: data', &
+         first_lnd_index_to_verify = 1, last_lnd_index_to_verify = 1)
+  end subroutine test_mapGlc2lndEC_data_fully_outside_static_domain
+
+  @Test
+  subroutine test_mapGlc2lndEC_data_fully_outside_dynamic_domain(this)
+    ! Test mapped data with a land cell that is fully outside the dynamic GLC domain
+    ! (i.e., icemask is 0).
+    class(TestMapGlc2lnd), intent(inout) :: this
+    type(lnd_field_type) :: data_lnd_expected(1)
+
+    ! Setup
+    call this%setup_inputs_lnd_fully_outside_dynamic_glc_domain( &
+         frac_glc = 1._r8, topo_glc = 125._r8, data_glc = 12345._r8)
+
+    ! Exercise
+    call this%run_map_glc2lnd_ec(extra_fields = 'data')
+
+    ! Verify
+    data_lnd_expected(1)%data(:) = 0._r8
+    call this%verify_data_l_field(fieldname='data', expected_lnd=data_lnd_expected, &
+         message = 'test_mapGlc2lndEC_data_fully_outside_dynamic_domain: data')
+  end subroutine test_mapGlc2lndEC_data_fully_outside_dynamic_domain
+
+  @Test
+  subroutine test_mapGlc2lndEC_data_partially_outside_dynamic_domain_diffECs(this)
+    ! Test mapped data with a land cell that is partially outside the dynamic GLC
+    ! domain, with two GLC points in different elevation classes
+    class(TestMapGlc2lnd), intent(inout) :: this
+    type(lnd_field_type) :: data_lnd_expected(1)
+
+    ! Setup
+    call this%setup_inputs_lnd_partially_outside_dynamic_glc_domain( &
+         frac_glc_in_domain = 1._r8, frac_glc_outside_domain = 1._r8, &
+         topo_glc_in_domain = 125._r8, topo_glc_outside_domain = 25._r8, &
+         data_glc_in_domain = 12345._r8, data_glc_outside_domain = 6789._r8)
+
+    ! Exercise
+    call this%run_map_glc2lnd_ec(extra_fields = 'data')
+
+    ! Verify
+    data_lnd_expected(1)%data(:) = [0._r8, 0._r8, 12345._r8, 0._r8]
+    call this%verify_data_l_field(fieldname='data', expected_lnd=data_lnd_expected, &
+         message = 'test_mapGlc2lndEC_data_partially_outside_dynamic_domain_diffECs: data')
+  end subroutine test_mapGlc2lndEC_data_partially_outside_dynamic_domain_diffECs
+
+end module test_map_glc2lnd

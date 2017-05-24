@@ -1,0 +1,40 @@
+#
+PERFOBJS=\
+prim_advection_mod.o \
+edge_mod.o \
+derivative_mod.o \
+bndry_mod.o \
+prim_advance_mod.o 
+
+# CLM's SatellitePhenologyMod is compiled incorrectly with intel 15.0.0 at -O2
+REDUCED_OPT_OBJS=\
+SatellitePhenologyMod.o
+
+# shr_wv_sat_mod does not need to have better than ~0.1% precision, and benefits
+# enormously from a lower precision in the vector functions.
+REDUCED_PRECISION_OBJS=\
+shr_wv_sat_mod.o
+
+SHR_RANDNUM_FORT_OBJS=\
+kissvec_mod.o \
+mersennetwister_mod.o \
+dSFMT_interface.o \
+shr_RandNum_mod.o
+
+SHR_RANDNUM_C_OBJS=\
+dSFMT.o \
+dSFMT_utils.o \
+kissvec.o
+
+ifeq ($(DEBUG),FALSE)
+  $(PERFOBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div $<
+  $(REDUCED_OPT_OBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O1 $<
+  $(REDUCED_PRECISION_OBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -fimf-precision=low -fp-model fast $<
+  $(SHR_RANDNUM_FORT_OBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O3 -fp-model fast -no-prec-div -no-prec-sqrt -override-limits $<
+  $(SHR_RANDNUM_C_OBJS): %.o: %.c
+	  $(CC) -c $(INCLDIR) $(INCS) $(CFLAGS) -O3 -fp-model fast $<
+endif

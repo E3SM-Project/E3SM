@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+# Batch system directives
+{{ batchdirectives }}
+
+"""
+template to create a case short term archiving script. This should only ever be called
+by case.submit when on batch system. This script only exists as a way of providing
+batch directives. Use case.submit from the command line to run your case.
+"""
+
+import sys, os, time
+os.chdir( '{{ caseroot }}')
+
+_LIBDIR = os.path.join("{{ cimeroot }}", "scripts", "Tools")
+sys.path.append(_LIBDIR)
+
+from standard_script_setup          import *
+from CIME.case import Case
+from CIME.case_st_archive import case_st_archive
+
+logger = logging.getLogger(__name__)
+
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# case.run SMS\033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("--caseroot", default=os.getcwd(),
+                        help="Case directory to build")
+
+    args = parser.parse_args()
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    if args.caseroot is not None:
+        os.chdir(args.caseroot)
+
+    return args.caseroot
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    caseroot = parse_command_line(sys.argv, description)
+    with Case(caseroot, read_only=False) as case:
+        success = case_st_archive(case)
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func(__doc__)
