@@ -1,0 +1,19 @@
+
+Quick README
+Tony Craig, Feb, 2012
+
+This is a partial substitute for the ESMF Time Manager.  As of Feb, 2012,
+what exists is consist (in interfaces and datatypes) with ESMF 5.2.0rp1.
+The datatypes in this version are not interchangable with ESMF nor will the
+answers be exactly identical.
+
+This version supports the NOLEAP and GREGORIAN calendar.  It also supports
+use of the D and Dl interfaces in ESMF_TimeSet and ESMF_TimeGet.  The julian
+day reference is that day 1 is year 0, month 1, day 1 (0000-01-01 or Jan 1, 0000).
+It also supports positive or negative years.
+
+Several aspects of the ESMF interfaces are not supported.
+
+There is a unit tester that tests ESMF_Time and ESMF_TimeInterval actions
+for both gregorian and noleap calendar.
+
