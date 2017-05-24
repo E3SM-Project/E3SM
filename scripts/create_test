@@ -320,6 +320,9 @@ OR
 
         logger.info("Testnames: %s" % test_names)
     else:
+        if args.machine is None:
+            args.machine = update_acme_tests.infer_machine_name_from_tests(args.testargs)
+
         mach_obj = Machines(machine=args.machine)
         args.compiler = mach_obj.get_default_compiler() if args.compiler is None else args.compiler
 
