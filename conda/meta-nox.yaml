@@ -28,7 +28,7 @@ requirements:
     - output_viewer
     - matplotlib
     - cartopy
-    - mesalib <8
+    - mesalib >8
     - ffmpeg <3
     
 
