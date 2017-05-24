@@ -22,6 +22,7 @@ requirements:
     - cdms2 >=2.10
     - cdutil >=2.10
     - genutil >=2.10
+    - cdtime >=2.10
     - numpy
     - output_viewer
     - matplotlib
