@@ -878,8 +878,6 @@ class Case(object):
                     expect(response.startswith("u"), "Aborting by user request")
 
         # miscellaneous settings
-        import pdb
-        pdb.set_trace()
         if self.get_value("RUN_TYPE") == 'hybrid':
             self.set_value("GET_REFCASE", True)
 
