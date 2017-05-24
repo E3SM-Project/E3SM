@@ -44,7 +44,9 @@ mpas_li_time_integration_fe.o: mpas_li_advection.o \
 	                       mpas_li_calving.o \
                                mpas_li_thermal.o \
                                mpas_li_diagnostic_vars.o \
-                               mpas_li_setup.o
+                               mpas_li_setup.o \
+			       mpas_li_velocity.o \
+			       mpas_li_mask.o
 
 mpas_li_advection.o: mpas_li_thermal.o \
 	             mpas_li_diagnostic_vars.o \
@@ -55,14 +57,14 @@ mpas_li_advection.o: mpas_li_thermal.o \
 mpas_li_calving.o: mpas_li_mask.o \
 	           mpas_li_thermal.o \
                    mpas_li_setup.o \
-                   mpas_li_constants.o
+                   mpas_li_constants.o \
+		   mpas_li_advection.o
 
 mpas_li_thermal.o: mpas_li_mask.o \
                    mpas_li_setup.o \
                    mpas_li_constants.o
 
 mpas_li_diagnostic_vars.o: mpas_li_mask.o \
-                           mpas_li_velocity.o \
                            mpas_li_constants.o \
 			   mpas_li_thermal.o
 

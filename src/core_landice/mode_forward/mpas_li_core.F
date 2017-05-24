@@ -9,8 +9,12 @@ module li_core
 
    use mpas_framework
    use mpas_timekeeping
-   use li_analysis_driver
    use mpas_log
+
+   use li_analysis_driver
+   use li_velocity
+   use li_setup
+   use li_mask
 
    implicit none
    private
@@ -638,6 +642,7 @@ module li_core
       use li_diagnostic_vars
       use li_setup
       use li_statistics
+      use li_advection
       use mpas_io_streams, only: MPAS_STREAM_LATEST_BEFORE
 
       implicit none
@@ -667,7 +672,7 @@ module li_core
       !
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, velocityPool
       logical, pointer :: config_do_restart, config_write_output_on_startup, config_write_stats_on_startup
       character(len=StrKIND), pointer :: config_velocity_solver
       ! Variables needed for printing timestamps
@@ -715,7 +720,25 @@ module li_core
          solveVelo = .true.
       endif
 
-      call li_calculate_diagnostic_vars(domain, solveVelo=solveVelo, err=err_tmp)
+      ! Update mask and geometry
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         call li_update_geometry(geometryPool)
+
+         block => block % next
+      end do
+
+      ! Initial velocity solve
+      call li_velocity_solve(domain, solveVelo=solveVelo, err=err_tmp)
+      err = ior(err, err_tmp)
+
+      ! Calculate diagnostic vars
+      call li_calculate_diagnostic_vars(domain, err=err_tmp)
       err = ior(err, err_tmp)
 
       call mpas_timer_stop("initial state calculation")

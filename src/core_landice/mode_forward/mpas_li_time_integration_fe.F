@@ -78,6 +78,7 @@ module li_time_integration_fe
    subroutine li_time_integrator_forwardeuler(domain, err)
 
       use li_subglacial_hydro
+      use li_velocity
 
       !-----------------------------------------------------------------
       ! input variables
@@ -164,13 +165,20 @@ module li_time_integration_fe
 
       call mpas_timer_stop("calve_ice")
 
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'cellMask')
+      call mpas_dmpar_field_halo_exch(domain, 'edgeMask')
+      call mpas_dmpar_field_halo_exch(domain, 'vertexMask')
+      call mpas_timer_stop("halo updates")
+
+! === Solve Velocity =====================
+      ! During time-stepping, we always solveVelo
+      call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
+      err = ior(err, err_tmp)
+
 ! === Calculate diagnostic variables for new state =====================
 
-      ! Some velocity solvers require an initial guess.
-      ! If needed, that guess should be inserted into normalVelocity
-      ! in time level 2 before calling li_calculate_diagnostic_vars.
-
-      call li_calculate_diagnostic_vars(domain, solveVelo=.true., err=err_tmp)
+      call li_calculate_diagnostic_vars(domain, err=err_tmp)
       err = ior(err, err_tmp)
 
 
@@ -524,6 +532,7 @@ module li_time_integration_fe
    subroutine advection_solver(domain, err)
 
       use mpas_timekeeping
+      use li_mask
 
       !-----------------------------------------------------------------
       ! input variables
@@ -723,6 +732,20 @@ module li_time_integration_fe
       call mpas_dmpar_field_halo_exch(domain, 'enthalpy')
 
       call mpas_timer_stop("halo updates")
+
+      ! Update mask and geometry
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         call li_update_geometry(geometryPool)
+
+         block => block % next
+      end do
+
 
       ! === error check
       if (err > 0) then

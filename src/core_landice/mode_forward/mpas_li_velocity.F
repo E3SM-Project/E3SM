@@ -260,21 +260,28 @@ contains
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
       logical, pointer :: config_print_velocity_cleanup_details
       real (kind=RKIND), pointer :: config_dynamic_thickness
+      logical, pointer :: config_adaptive_timestep_include_DCFL
       integer, pointer :: nEdgesSolve
       integer, pointer :: nEdges
       integer, pointer :: nVertInterfaces
-      integer, dimension(:), pointer :: edgeMask, cellMask
+      integer, dimension(:), pointer :: edgeMask, cellMask, vertexMask, vertexMaskOld
+      integer, dimension(:,:), pointer :: dirichletVelocityMaskOld, dirichletVelocityMaskNew
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityInitial
       real (kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY, uReconstructZ, &
          uReconstructZonal, uReconstructMeridional
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: surfaceSpeed, basalSpeed
+      real (kind=RKIND), dimension(:), pointer :: normalSlopeEdge
+      real (kind=RKIND), dimension(:), pointer :: dcEdge
+      integer, dimension(:), pointer :: floatingEdges
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:,:), pointer :: cellsOnVertex
       integer, dimension(:,:), pointer :: verticesOnEdge
       real (kind=RKIND), dimension(:), pointer :: upperSurface
       integer, dimension(:), pointer :: indexToEdgeID
+      integer, pointer :: anyDynamicVertexMaskChanged
+      integer, pointer :: dirichletMaskChanged
       ! truly local variables
       integer :: cell1, cell2
       integer :: cell3, cell4, thisCell
@@ -286,6 +293,8 @@ contains
       integer :: k
       real (kind=RKIND) :: maxThicknessOnProc, maxThicknessAllProcs
       real (kind=RKIND) :: xVelEdge, yVelEdge
+      integer :: blockDynamicVertexMaskChanged, procDynamicVertexMaskChanged
+      integer :: blockDirichletMaskChanged, procDirichletMaskChanged
 
       call mpas_timer_start("velocity solve")
 
@@ -297,6 +306,7 @@ contains
          config_do_velocity_reconstruction_for_external_dycore)
       call mpas_pool_get_config(liConfigs, 'config_print_velocity_cleanup_details', config_print_velocity_cleanup_details)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
+          call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
 
       uphillMarginEdgesFixed = 0
 
@@ -305,21 +315,108 @@ contains
       ! velocity again, but we do want to calculate the diagnostic fields related to velocity.
       if (solveVelo) then
 
-      ! External solvers may not be able to cope with no ice in the domain, so determine if that is the case
-      ! Don't bother checking this with SIA because it requires an extra global reduce
-      if ( (trim(config_velocity_solver) == 'L1L2') .or. (trim(config_velocity_solver) == 'FO') .or. &
+
+      !   This first block for calculating normalSlopeEdge is also needed for the DCFL calculation
+      !   that could occur with any velocity solver
+      if ( (trim(config_velocity_solver) == 'sia') .or. (config_adaptive_timestep_include_DCFL) ) then
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            call mpas_pool_get_array(geometryPool, 'normalSlopeEdge', normalSlopeEdge)
+            call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+            call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+            call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+            call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+
+            ! Calculate normal slope
+            do iEdge = 1, nEdges
+               ! Only calculate slope for edges that have ice on at least one side.
+               if ( li_mask_is_dynamic_ice(edgeMask(iEdge)) ) then
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
+                  ! Calculate slope at edge
+                  normalSlopeEdge(iEdge) = (upperSurface(cell1) - upperSurface(cell2) ) / dcEdge(iEdge)
+               else
+                  normalSlopeEdge(iEdge) = 0.0_RKIND
+               endif
+            end do  ! edges
+
+            block => block % next
+         end do
+      endif
+
+      if ( (trim(config_velocity_solver) == 'L1L2') .or. &
+           (trim(config_velocity_solver) == 'FO') .or. &
            (trim(config_velocity_solver) == 'Stokes') ) then
-         maxThicknessOnProc = 0.0_RKIND  ! initialize to 0
+
+         ! External solvers may not be able to cope with no ice in the domain, so determine if that is the case
+         ! Don't bother checking this with SIA because it requires an extra global reduce
+         maxThicknessOnProc = 0.0_RKIND  ! initialize to
+         procDynamicVertexMaskChanged = 0
+         procDirichletMaskChanged = 0
+ 
          block => domain % blocklist
          do while (associated(block))
             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
             call mpas_pool_get_array(geometryPool, 'thickness', thickness)
             maxThicknessOnProc = max(maxThicknessOnProc, maxval(thickness))
 
+            ! The interface expects an array where 1's are floating edges and 0's are non-floating edges.
+            call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
+            floatingEdges = li_mask_is_floating_ice_int(edgeMask)
+            call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=1)
+            call li_calculate_extrapolate_floating_edgemask(meshPool, vertexMask, floatingEdges)
+
+            ! Determine if the vertex mask changed during this time step for this block (needed for external dycores)
+            ! TODO:  There may be some aspects of the mask that are ok change for external dycores,
+            !        but for now just check the whole thing.
+            call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMaskOld, timeLevel=2)
+            if ( sum(li_mask_is_dynamic_ice_int(vertexMask) - li_mask_is_dynamic_ice_int(vertexMaskOld)) /= 0 ) then
+                blockDynamicVertexMaskChanged = 1
+            else
+                blockDynamicVertexMaskChanged = 0
+            endif
+            !print *, 'blockVertexMaskChanged ', blockVertexMaskChanged
+            ! Determine if any blocks on this processor had a change to the vertex mask
+            procDynamicVertexMaskChanged = max(procDynamicVertexMaskChanged, blockDynamicVertexMaskChanged)
+            !print *,'procVertexMaskChanged', procVertexMaskChanged
+
+            ! Also check to see if the Dirichlet b.c. mask has changed
+            call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMaskOld, timeLevel=2)
+            call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMaskNew, timeLevel=1)
+            if ( sum(dirichletVelocityMaskNew - dirichletVelocityMaskOld) /= 0 ) then
+                blockDirichletMaskChanged = 1
+            else
+                blockDirichletMaskChanged = 0
+            endif
+            ! Determine if any blocks on this processor had a change to the vertex mask
+            procDirichletMaskChanged = max(procDirichletMaskChanged, blockDirichletMaskChanged)
+
             block => block % next
          end do
 
+         ! check for thickness on any proc
          call mpas_dmpar_max_real(domain % dminfo, maxThicknessOnProc, maxThicknessAllProcs)
+         ! Update halos on mask - the outermost cells/edges/vertices may be wrong for
+         ! mask components that need neighbor information
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_field_halo_exch(domain, 'floatingEdges')
+         call mpas_timer_stop("halo updates")
+ 
+         ! Determine if the vertex mask has changed on any processor and store the value for later use
+         ! (need to exit the block loop to do so)
+         ! TODO Update all blocks with result (if ever support multiple blocks)
+         call mpas_pool_get_array(velocityPool, 'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged)
+         call mpas_dmpar_max_int(domain % dminfo, procDynamicVertexMaskChanged, anyDynamicVertexMaskChanged)
+         !print *,'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged
+         ! Do the same for the Dirichlet b.c. mask
+         call mpas_pool_get_array(velocityPool, 'dirichletMaskChanged', dirichletMaskChanged)
+         call mpas_dmpar_max_int(domain % dminfo, procDirichletMaskChanged, dirichletMaskChanged)
+         !print *,'dirichletMaskChanged', dirichletMaskChanged
+
       endif
 
 
@@ -353,7 +450,7 @@ contains
 
          case ('sia')
 
-             call li_sia_solve(meshPool, geometryPool, velocityPool, err_tmp)
+             call li_sia_solve(meshPool, geometryPool, thermalPool, velocityPool, err_tmp)
 
          case ('L1L2', 'FO', 'Stokes')
 
