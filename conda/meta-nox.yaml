@@ -29,7 +29,6 @@ requirements:
     - matplotlib
     - cartopy
     - mesalib >8
-    - ffmpeg <3
     
 
 about:
