@@ -17,7 +17,7 @@ module output_aerocom_aie
    use ppgrid,       only: pcols, pver, begchunk, endchunk
    use cam_history,      only: addfld, add_default, horiz_only,  outfld
    use cam_history_support,   only : fillvalue
-   use abortutils,    only: endrun
+   use cam_abortutils,    only: endrun
 
    implicit none
 
