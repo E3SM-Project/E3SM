@@ -102,7 +102,7 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
                    arg_stderr=subprocess.STDOUT)[0]
     f.close()
     analyze_build_log("{} exe".format(cime_model), file_build, compiler)
-    expect(stat == 0, "BUILD FAIL: buildexe failed, cat {}".format(file_build)
+    expect(stat == 0, "BUILD FAIL: buildexe failed, cat {}".format(file_build))
 
     # Copy the just-built ${MODEL}.exe to ${MODEL}.exe.$LID
     shutil.copy("{}/{}.exe".format(exeroot, cime_model), "{}/{}.exe.{}".format(exeroot, cime_model, lid))
