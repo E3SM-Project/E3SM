@@ -755,6 +755,8 @@ class Case(object):
 
         self.get_compset_var_settings()
 
+        self.clean_up_lookups()
+
         #--------------------------------------------
         # machine
         #--------------------------------------------
@@ -876,6 +878,8 @@ class Case(object):
                     expect(response.startswith("u"), "Aborting by user request")
 
         # miscellaneous settings
+        import pdb
+        pdb.set_trace()
         if self.get_value("RUN_TYPE") == 'hybrid':
             self.set_value("GET_REFCASE", True)
 
@@ -889,7 +893,6 @@ class Case(object):
         if test:
             self.set_value("TEST",True)
 
-        self.clean_up_lookups()
         self.initialize_derived_attributes()
 
         # Make sure that parallel IO is not specified if total_tasks==1
