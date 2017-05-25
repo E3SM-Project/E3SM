@@ -6,7 +6,7 @@ import genutil
 import cdms2
 from acme_diags.derivations.default_regions import regions_specs
 
-def findfile(path_name, data_name, season):
+def _findfile(path_name, data_name, season):
     """Locate file name based on data_name and season."""
     dir_files = os.listdir(path_name)
     for filename in dir_files:
@@ -22,7 +22,7 @@ def get_test_filename(parameters, season):
         if not os.path.exists(fnm):
             raise IOError('File not found: {}'.format(fnm))
     else:
-        fnm = findfile(parameters.test_data_path, parameters.test_name, season)
+        fnm = _findfile(parameters.test_data_path, parameters.test_name, season)
     return fnm
 
 def get_ref_filename(parameters, season):
@@ -33,7 +33,7 @@ def get_ref_filename(parameters, season):
         if not os.path.exists(fnm):
             raise IOError('File not found: {}'.format(fnm))
     else:
-        fnm = findfile(parameters.reference_data_path, parameters.ref_name, season)
+        fnm = _findfile(parameters.reference_data_path, parameters.ref_name, season)
     return fnm
 
 def hybrid_to_plevs(var, hyam, hybm, ps, plev):

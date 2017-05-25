@@ -11,7 +11,6 @@ from acme_diags.driver import utils
 def regrid_to_lower_res_1d( mv1, mv2 ):
     """Regrid 1-D transient variable toward lower resolution of two variables."""
     import numpy
- 
 
     if mv1 is None or mv2 is None: return None
     missing = mv1.get_fill_value()
@@ -31,7 +30,7 @@ def regrid_to_lower_res_1d( mv1, mv2 ):
     return mv1_reg, mv2_reg
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
-    """ Creates the mean, max, min, rmse, corr in a dictionary """
+    """Creates the mean, max, min, rmse, corr in a dictionary"""
     metrics_dict = {}
     metrics_dict['ref'] = {
         'min': min_cdms(ref),
@@ -63,7 +62,6 @@ def run_diag(parameter):
     variables = parameter.variables
     seasons = parameter.seasons
     ref_name = parameter.ref_name
-    test_name = parameter.test_name
     regions = parameter.regions
 
     for season in seasons:
