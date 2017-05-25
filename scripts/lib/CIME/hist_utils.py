@@ -178,6 +178,7 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
         expect(suffix1 != suffix2, "Comparing files to themselves?")
 
     testcase = case.get_value("CASE")
+    casedir = case.get_value("CASEROOT")
     all_success = True
     num_compared = 0
     comments = "Comparing hists for case '%s' dir1='%s', suffix1='%s',  dir2='%s' suffix2='%s'\n" % \
@@ -212,6 +213,7 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
             else:
                 comments += "    %s did NOT match %s\n" % (hist1, hist2)
                 comments += "    cat " + cprnc_log_file + "\n"
+                shutil.copy(cprnc_log_file, casedir)
                 all_success = False
 
     if num_compared == 0:
