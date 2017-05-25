@@ -301,6 +301,7 @@ contains
       integer :: err_tmp
 
       err = 0
+      err_tmp = 0
 
       ! Set needed variables and pointers
       call mpas_pool_get_dimension(meshPool, 'nVertInterfaces', nVertInterfaces)
@@ -333,6 +334,7 @@ contains
 
       ! Calculate flowA
       call li_calculate_flowParamA(meshPool, temperature(:,:), thickness, flowParamA, err_tmp)
+      if (err_tmp > 0) call mpas_log_write('li_calculate_flowParamA returned an error', MPAS_LOG_ERR)
       err = ior(err, err_tmp)
 
       call mpas_pool_get_config(liConfigs, 'config_sia_tangent_slope_calculation', config_sia_tangent_slope_calculation)
@@ -350,6 +352,7 @@ contains
       case ('from_vertex_barycentric')
          call mpas_cells_to_points_using_baryweights(meshPool, baryCellsOnVertex(:, 1:nVertices), &
             baryWeightsOnVertex(:, 1:nVertices), upperSurface, upperSurfaceVertex(1:nVertices), err_tmp)
+         if (err_tmp > 0) call mpas_log_write('mpas_cells_to_points_using_baryweights returned an error', MPAS_LOG_ERR)
          err = ior(err, err_tmp)
       case ('from_vertex_barycentric_kiteareas')
          call li_cells_to_vertices_1dfield_using_kiteAreas(meshPool, upperSurface, upperSurfaceVertex)

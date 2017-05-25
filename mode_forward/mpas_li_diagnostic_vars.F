@@ -391,7 +391,7 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      integer, intent(inout) :: err
+      integer, intent(out) :: err
 
       !-----------------------------------------------------------------
       !
@@ -418,6 +418,7 @@ contains
       real (kind=RKIND) :: A0, Q, pressureMeltPointSlope
       real (kind=RKIND) :: temperatureCorrected, transitionTemperatureCorrected
 
+      err = 0
       err_tmp = 0
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
