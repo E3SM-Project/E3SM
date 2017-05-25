@@ -126,7 +126,7 @@ class EntryID(GenericXML):
         return self._get_type_info(node)
 
     # pylint: disable=unused-argument
-    def check_if_comp_var(self, vid, comp=None):
+    def check_if_comp_var(self, vid, attribute=None):
         # handled in classes
         return vid, None, False
 
@@ -249,7 +249,7 @@ class EntryID(GenericXML):
                 type_str = self._get_type_info(node)
                 results.append( convert_to_type(result, type_str, vid))
         return results
-
+    #pylint: disable=arguments-differ
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
         """
         Get a value for entry with id attribute vid.

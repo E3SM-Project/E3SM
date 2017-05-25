@@ -114,6 +114,7 @@ class Compilers(GenericXML):
             self.os       = os_
             self.mpilib   = mpilib
 
+    #pylint: disable=arguments-differ
     def get_value(self, name, attribute=None, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_compilers.xml file

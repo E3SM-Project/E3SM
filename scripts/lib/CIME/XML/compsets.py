@@ -35,8 +35,8 @@ class Compsets(GenericXML):
             lname = self.get_element_text("lname",root=node)
             if alias == name or lname == name:
                 science_support_nodes = self.get_nodes("science_support", root=node)
-                for node in science_support_nodes:
-                    science_support.append(node.get("grid"))
+                for snode in science_support_nodes:
+                    science_support.append(snode.get("grid"))
                 logger.debug("Found node match with alias: {} and lname: {}".format(alias, lname))
                 return (lname, alias, science_support)
         return (None, None, [False])
@@ -56,6 +56,7 @@ class Compsets(GenericXML):
                 result.append((node.get("id"), value))
         return result
 
+    #pylint: disable=arguments-differ
     def get_value(self, name, attribute=None, resolved=False, subgroup=None):
         expect(subgroup is None, "This class does not support subgroups")
         if name == "help":
