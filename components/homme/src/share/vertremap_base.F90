@@ -502,8 +502,8 @@ end subroutine remap1_nofilter
 !This uses the exact same model and reference grids and data as remap_Q, but it interpolates
 !using PPM instead of splines.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! vert_remap_q_alg == 1  means piecewise constant in 2 cells near boundaries (don't use ghost cells)
-!! vert_remap_q_alg == 2  means mirrored values in ghost cells (i.e., no flux)
+!! vert_remap_q_alg == 1  means mirrored values in ghost cells (i.e., no flux)
+!! vert_remap_q_alg == 2  means piecewise constant in 2 cells near boundaries (don't use ghost cells)
 !! vert_remap_q_alg == 3  means UKMO splines ghost cells (copy last value into all ghost cells)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
@@ -598,7 +598,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
           masso(k+1) = masso(k) + ao(k) !Accumulate the old mass. This will simplify the remapping
           ao(k) = ao(k) / dpo(k)        !Divide out the old grid spacing because we want the tracer mixing ratio, not mass.
         enddo
-        !Fill in ghost values. Ignored if vert_remap_q_alg == 1
+        !Fill in ghost values. Ignored if vert_remap_q_alg == 2
         do k = 1 , gs
           if (vert_remap_q_alg == 3) then
              ao(1   -k) = ao(1)
@@ -708,8 +708,8 @@ function compute_ppm( a , dx )    result(coefs)
     coefs(2,j) = -6. * a(j) + 3. * ( al + ar )
   enddo
 
-  !If vert_remap_q_alg == 1, use piecewise constant in the boundaries, and don't use ghost cells.
-  if (vert_remap_q_alg == 1) then
+  !If vert_remap_q_alg == 2, use piecewise constant in the boundaries, and don't use ghost cells.
+  if (vert_remap_q_alg == 2) then
     coefs(0,1:2) = a(1:2)
     coefs(1:2,1:2) = 0.
     coefs(0,nlev-1:nlev) = a(nlev-1:nlev)
