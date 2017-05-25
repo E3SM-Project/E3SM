@@ -878,7 +878,7 @@
 	<command name="load">  tool/parallel-netcdf/1.7.0/intel/mvapich2  </command>
       </modules>
       <modules compiler="pgi">
-	<command name="load">compiler/pgi/15.1</command>
+	<command name="load">compiler/pgi/17.04</command>
       </modules>
       <modules  compiler="pgi" mpilib="mvapich2">
 	  <command name="load">  tool/parallel-netcdf/1.6.1/pgi/mvapich2  </command>
