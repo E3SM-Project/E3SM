@@ -171,7 +171,7 @@ MODULE WRM_subw_IO_mod
 
      call ncd_pio_openfile(ncid, trim(ctlSubwWRM%paraFile), 0)
      call shr_sys_flush(iulog)
-     ier = pio_inq_varid   (ncid, name='DamID_Spatial', vardesc=vardesc)
+     ier = pio_inq_varid   (ncid, name='DamInd_2d', vardesc=vardesc)
      ier = pio_inq_vardimid(ncid, vardesc, dids)
      ier = pio_inq_dimlen  (ncid, dids(1),dsizes(1))
      ier = pio_inq_dimlen  (ncid, dids(2),dsizes(2))
@@ -214,9 +214,9 @@ MODULE WRM_subw_IO_mod
 
      allocate (WRMUnit%isDam(begr:endr))
      WRMUnit%isDam = 0
-     ier = pio_inq_varid (ncid, name='DamID_Spatial', vardesc=vardesc)
+     ier = pio_inq_varid (ncid, name='DamInd_2d', vardesc=vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_int_grd2grd , WRMUnit%isDam, ier)
-     if (masterproc) write(iulog,FORMI) trim(subname),' read DamID_Spatial',minval(WRMUnit%isDam),maxval(WRMUnit%isDam)
+     if (masterproc) write(iulog,FORMI) trim(subname),' read DamInd_2d',minval(WRMUnit%isDam),maxval(WRMUnit%isDam)
      call shr_sys_flush(iulog)
 
      !-------------------
@@ -292,10 +292,11 @@ MODULE WRM_subw_IO_mod
 
      allocate (WRMUnit%dam_Ndepend(ctlSubwWRM%localNumDam))
      WRMUnit%dam_Ndepend = 0
-     ier = pio_inq_varid (ncid, name='numGrid_from_Dam', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam , WRMUnit%dam_Ndepend, ier)
-     write(iulog,FORMI) trim(subname),' read numGrid_from_Dam',iam,minval(WRMUnit%dam_Ndepend),maxval(WRMUnit%dam_Ndepend)
-     call shr_sys_flush(iulog)
+! tcraig, not on dataset anymore, compute on the fly below
+!     ier = pio_inq_varid (ncid, name='numGrid_from_Dam', vardesc=vardesc)
+!     call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam , WRMUnit%dam_Ndepend, ier)
+!     write(iulog,FORMI) trim(subname),' read numGrid_from_Dam',iam,minval(WRMUnit%dam_Ndepend),maxval(WRMUnit%dam_Ndepend)
+!     call shr_sys_flush(iulog)
 
      !--- read in entire gridID_from_Dam field on all pes
      allocate(temp_gridID_from_Dam(ctlSubwWRM%NDam, maxNumDependentGrid))
@@ -352,12 +353,13 @@ MODULE WRM_subw_IO_mod
               ntotal = ntotal + 1
            endif
         enddo
-        ! check that Ndepend and dam_depend are consistent
-        ! sometimes in the dependency data, the basin outlet is included for a dam as its dependent grid
-        if (ntotal > WRMUnit%dam_Ndepend(idam) .or. ntotal < WRMUnit%dam_Ndepend(idam)-1) then
-           write(iulog,"(a,3i8)"), subname//"ERROR: Ndepend/gridID_from_Dam inconsistency1",idam,ntotal,WRMUnit%dam_Ndepend(idam)
-           call shr_sys_abort(subname//' ERROR: numGrid_from_Dam not consistent with gridID_from_Dam list')
-        end if
+! tcraig, dam_Ndepend not longer read in independently, just compute, no check
+!        ! check that Ndepend and dam_depend are consistent
+!        ! sometimes in the dependency data, the basin outlet is included for a dam as its dependent grid
+!        if (ntotal > WRMUnit%dam_Ndepend(idam) .or. ntotal < WRMUnit%dam_Ndepend(idam)-1) then
+!           write(iulog,"(a,3i8)"), subname//"ERROR: Ndepend/gridID_from_Dam inconsistency1",idam,ntotal,WRMUnit%dam_Ndepend(idam)
+!           call shr_sys_abort(subname//' ERROR: numGrid_from_Dam not consistent with gridID_from_Dam list')
+!        end if
         WRMUnit%dam_Ndepend(idam) = ntotal
         cntw = cntw + ntotal
      enddo
@@ -856,27 +858,37 @@ MODULE WRM_subw_IO_mod
      type(var_desc_t) :: vardesc    ! netCDF variable description
      character(len=*),parameter :: subname='(WRM_readDemand)'
 
-     call get_curr_date(yr, mon, day, tod)
-     write(iulog,'(2a,4i6)') subname,'at ',yr,mon,day,tod
+     if (ctlSubwWRM%ExtractionFlag > 0) then
+
+        call get_curr_date(yr, mon, day, tod)
+        write(iulog,'(2a,4i6)') subname,'at ',yr,mon,day,tod
     
-     write(strYear,'(I4.4)') yr
-     write(strMonth,'(I2.2)') mon
-     fname = trim(ctlSubwWRM%demandPath)// strYear//'_'//strMonth//'.nc'
+        write(strYear,'(I4.4)') yr
+        write(strMonth,'(I2.2)') mon
+        fname = trim(ctlSubwWRM%demandPath)// strYear//'_'//strMonth//'.nc'
 
-     write(iulog,*) subname, ' reading ',trim(fname)
+        write(iulog,*) subname, ' reading ',trim(fname)
 
-     call ncd_pio_openfile(ncid, trim(fname), 0)
-     ier = pio_inq_varid (ncid, name='totalDemand', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2grd , StorWater%demand0, ier)
-     call ncd_pio_closefile(ncid)
+        call ncd_pio_openfile(ncid, trim(fname), 0)
+        ier = pio_inq_varid (ncid, name='totalDemand', vardesc=vardesc)
+        call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2grd , StorWater%demand0, ier)
+        call ncd_pio_closefile(ncid)
 
-     do nr=rtmCTL%begr,rtmCTL%endr
-        if (StorWater%demand0(nr).lt.0._r8) then
+        do nr=rtmCTL%begr,rtmCTL%endr
+           if (StorWater%demand0(nr).lt.0._r8) then
+              StorWater%demand0(nr) = 0._r8
+           end if
+        end do
+        write(iulog,FORMR2) trim(subname),' read totalDemand',iam,minval(StorWater%demand0),maxval(StorWater%demand0)
+        call shr_sys_flush(iulog)
+
+     else
+        do nr=rtmCTL%begr,rtmCTL%endr
            StorWater%demand0(nr) = 0._r8
-        end if
-     end do
-     write(iulog,FORMR2) trim(subname),' read totalDemand',iam,minval(StorWater%demand0),maxval(StorWater%demand0)
-     call shr_sys_flush(iulog)
+        end do
+        write(iulog,FORMR2) trim(subname),' zero totalDemand',iam,minval(StorWater%demand0),maxval(StorWater%demand0)
+        call shr_sys_flush(iulog)
+     endif
 
   end subroutine WRM_readDemand
 
