@@ -595,11 +595,12 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
         !Fill in ghost values. Ignored if vert_remap_q_alg == 2
         do k = 1 , gs
           if (vert_remap_q_alg == 3) then
-          ao(1   -k) = ao(1)
-          ao(nlev+k) = ao(nlev)
-          elseif (vert_remap_q_alg == 2) then
-          ao(1   -k) = ao(       k)
-          ao(nlev+k) = ao(nlev+1-k)
+             ao(1   -k) = ao(1)
+             ao(nlev+k) = ao(nlev)
+          else
+             ao(1   -k) = ao(       k)
+             ao(nlev+k) = ao(nlev+1-k)
+          endif
         enddo
         !Compute monotonic and conservative PPM reconstruction over every cell
         coefs(:,:) = compute_ppm( ao , ppmdx )
