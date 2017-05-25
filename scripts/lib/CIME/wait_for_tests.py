@@ -152,14 +152,17 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
             if (test_status not in [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]):
                 ts = TestStatus(os.path.dirname(test_path))
 
-                build_status = ts.get_status(MODEL_BUILD_PHASE)
-                run_status   = ts.get_status(RUN_PHASE)
-                if ( build_status == TEST_FAIL_STATUS or run_status == TEST_FAIL_STATUS ):
+                build_status    = ts.get_status(MODEL_BUILD_PHASE)
+                run_status      = ts.get_status(RUN_PHASE)
+                baseline_status = ts.get_status(BASELINE_PHASE)
+                if ( build_status == TEST_FAIL_STATUS or run_status == TEST_FAIL_STATUS or baseline_status == TEST_FAIL_STATUS):
                     param = "EXEROOT" if build_status == TEST_FAIL_STATUS else "RUNDIR"
-                    src_dir = CIME.utils.run_cmd_no_fail("./xmlquery %s -value" % param, from_dir=os.path.dirname(test_path))
+                    log_src_dir = CIME.utils.run_cmd_no_fail("./xmlquery %s -value" % param, from_dir=os.path.dirname(test_path))
                     log_dst_dir = os.path.join(log_dir, "%s_%s_logs" % (test_name, param))
                     os.makedirs(log_dst_dir)
-                    for log_file in glob.glob(os.path.join(src_dir, "*log*")):
+                    for log_file in glob.glob(os.path.join(log_src_dir, "*log*")):
+                        shutil.copy(log_file, log_dst_dir)
+                    for log_file in glob.glob(os.path.join(log_src_dir, "*.cprnc.out*")):
                         shutil.copy(log_file, log_dst_dir)
 
                     need_to_upload = True
