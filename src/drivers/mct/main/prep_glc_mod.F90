@@ -202,6 +202,9 @@ contains
   function prep_glc_do_renormalize_smb(infodata) result(do_renormalize_smb)
     ! Returns a logical saying whether we should do the smb renormalization
     logical :: do_renormalize_smb  ! function return value
+    !
+    ! Arguments
+    type (seq_infodata_type) , intent(in) :: infodata
 
     ! Local variables
     character(len=cl) :: glc_renormalize_smb  ! namelist option saying whether to do smb renormalization
