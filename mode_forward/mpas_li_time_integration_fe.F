@@ -582,6 +582,7 @@ module li_time_integration_fe
       integer :: err_tmp
 
       err = 0
+      err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
       call mpas_pool_get_config(liConfigs, 'config_tracer_advection', config_tracer_advection)
@@ -610,7 +611,7 @@ module li_time_integration_fe
             call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
 
-            call calculate_layerThicknessEdge(meshPool, geometryPool, velocityPool, err)
+            call calculate_layerThicknessEdge(meshPool, geometryPool, velocityPool, err_tmp)
             err = ior(err,err_tmp)
 
             block => block % next
@@ -676,6 +677,7 @@ module li_time_integration_fe
                  err_tmp,                &
                  advectTracersIn = .false.)
 
+                 !call mpas_log_write("errtmp=$i",intArgs=(/err_tmp/))
             err = ior(err,err_tmp)
 
          endif
