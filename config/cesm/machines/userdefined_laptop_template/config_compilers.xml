@@ -9,7 +9,7 @@
 	<append>-DFORTRANUNDERSCORE -DNO_R16</append>
       </CPPDEFS>
       <LDFLAGS>
-	<append compile_threaded="true"> -L /usr/local/Cellar/gcc/4.9.2/lib/gcc/x86_64-apple-darwin14.0.0/4.9.2 -fopenmp </append>
+	<append compile_threaded="true"> -fopenmp </append>
       </LDFLAGS>
       <CMAKE_OPTS>
 	<append MODEL="cism"> -D CISM_GNU=ON </append>
@@ -27,7 +27,6 @@
       <SLIBS>
 	<append>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -framework Accelerate</append>
       </SLIBS>
-      <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{HOME}/local/pfunit/pfunit-sf.git.ae92605e8e</PFUNIT_PATH>
 
    </compiler>
 
