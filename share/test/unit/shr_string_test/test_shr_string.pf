@@ -8,8 +8,54 @@ module test_shr_string
   implicit none
 
   integer, parameter :: list_len = 256
+  character, parameter :: tab_char = char(9)
 
 contains
+
+  ! ------------------------------------------------------------------------
+  ! Tests of shr_string_leftAlign_and_convert_tabs
+  ! ------------------------------------------------------------------------
+
+  @Test
+  subroutine test_shr_string_leftAlign_noInitialSpaces()
+    ! With no initial spaces, should have no effect
+    character(len=6) :: str
+
+    str = 'foo   '
+    call shr_string_leftAlign_and_convert_tabs(str)
+    @assertEqual('foo   ', str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_noInitialSpaces
+
+  @Test
+  subroutine test_shr_string_leftAlign_initialSpacesAndTabs()
+    ! Should remove an initial mix of spaces and tabs
+    character(len=8) :: str
+
+    str = ' ' // tab_char // ' ' // tab_char // ' ' // 'foo'
+    call shr_string_leftAlign_and_convert_tabs(str)
+    @assertEqual('foo     ', str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_initialSpacesAndTabs
+
+  @Test
+  subroutine test_shr_string_leftAlign_interiorSpaces()
+    ! Should NOT remove interior spaces
+    character(len=6) :: str
+
+    str = 'f oo  '
+    call shr_string_leftAlign_and_convert_tabs(str)
+    @assertEqual('f oo  ', str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_interiorSpaces
+
+  @Test
+  subroutine test_shr_string_leftAlign_interiorTabs()
+    ! Convert interior tabs to spaces
+    character(len=6) :: str, expected
+
+    str = 'f' // tab_char // 'oo  '
+    expected = 'f oo '
+    call shr_string_leftAlign_and_convert_tabs(str)
+    @assertEqual(expected, str, whitespace=KEEP_ALL)
+  end subroutine test_shr_string_leftAlign_interiorTabs
 
   ! ------------------------------------------------------------------------
   ! Tests of shr_string_listDiff
