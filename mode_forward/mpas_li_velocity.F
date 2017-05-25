@@ -326,6 +326,7 @@ contains
             call mpas_pool_get_array(geometryPool, 'normalSlopeEdge', normalSlopeEdge)
             call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
             call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+            call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
             call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
             call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 

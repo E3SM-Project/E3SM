@@ -318,6 +318,7 @@ contains
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'slopeEdge', slopeEdge)
       call mpas_pool_get_array(geometryPool, 'normalSlopeEdge', normalSlopeEdge)
+      call mpas_pool_get_array(thermalPool, 'temperature', temperature)
 
 
       ! Get parameters specified in the namelist
@@ -329,8 +330,6 @@ contains
       ! First prepare some necessary fields
       ! -----------
 
-      call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
-      call mpas_pool_get_array(thermalPool, 'temperature', temperature)
 
       ! Calculate flowA
       call li_calculate_flowParamA(meshPool, temperature(:,:), thickness, flowParamA, err_tmp)
