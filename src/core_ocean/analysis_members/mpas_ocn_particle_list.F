@@ -905,6 +905,9 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
               LIGHT_DEBUG_WRITE('indexToParticleIDNew =' COMMA indexToParticleIDNew)
               LIGHT_DEBUG_WRITE('ordering vector=' COMMA orderingVector)
 
+        allocate(Array1DRealPointer(count_particlelist(particlelist)))
+        allocate(Array1DIntPointer(count_particlelist(particlelist)))
+
         ! iterate over contents of pool and transfer
         call mpas_pool_begin_iteration(lagrPartTrackPool)
         do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
@@ -920,19 +923,15 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
               LIGHT_DEBUG_WRITE('memory arraysize= ' COMMA  size(field1DRealPointer % array))
               LIGHT_DEBUG_WRITE(trim(dimItr % memberName) COMMA ' = ' COMMA field1DRealPointer % array)
               !}}}
-              allocate(Array1DRealPointer(count_particlelist(particlelist)))
               call get_halo_data_from_particle_list_array(particlelist, dimItr % memberName, Array1DRealPointer)
               ! reorder
               field1DRealPointer % array = Array1DRealPointer(orderingVector)
-              deallocate(Array1DRealPointer)
             elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
               ! get data and place it in appropriate array
               call mpas_pool_get_field(lagrPartTrackPool, dimItr % memberName, field1DIntPointer)
-              allocate(Array1DIntPointer(count_particlelist(particlelist)))
               call get_halo_data_from_particle_list_array(particlelist, dimItr % memberName, Array1DIntPointer)
               ! reorder
               field1DIntPointer % array = Array1DIntPointer(orderingVector)
-              deallocate(Array1DIntPointer)
             else
               LIGHT_DEBUG_ALL_WRITE("Different field type than implemented in nonHalo write!")
             end if
@@ -948,6 +947,8 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
         ! free memory for the next loop
         deallocate(indexToParticleIDNew)
         deallocate(orderingVector)
+        deallocate(Array1DRealPointer)
+        deallocate(Array1DIntPointer)
 
         block => block % next
       end do
