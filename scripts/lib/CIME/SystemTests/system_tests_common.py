@@ -35,6 +35,9 @@ class SystemTestsCommon(object):
         self._init_environment(caseroot)
         self._init_locked_files(caseroot, expected)
 
+    def __del__(self):
+        self._case.set_value("RUN_WITH_SUBMIT", False)
+
     def _init_environment(self, caseroot):
         """
         Do initializations of environment variables that are needed in __init__
@@ -53,14 +56,14 @@ class SystemTestsCommon(object):
         elif os.path.isfile(os.path.join(caseroot, "env_run.xml")):
             lock_file("env_run.xml", caseroot=caseroot, newname="env_run.orig.xml")
 
-    def _resetup_case(self, phase):
+    def _resetup_case(self, phase, reset=False):
         """
         Re-setup this case. This is necessary if user is re-running an already-run
         phase.
         """
         # We never want to re-setup if we're doing the resubmitted run
         phase_status = self._test_status.get_status(phase)
-        if self._case.get_value("IS_FIRST_RUN") and phase_status != TEST_PEND_STATUS:
+        if reset or (self._case.get_value("IS_FIRST_RUN") and phase_status != TEST_PEND_STATUS):
 
             logging.warning("Resetting case due to detected re-run of phase %s" % phase)
             self._case.set_initial_test_values()
@@ -87,7 +90,15 @@ class SystemTestsCommon(object):
                                      model_only=(phase_name==MODEL_BUILD_PHASE))
                 except:
                     success = False
-                    excmsg = "Exception during build:\n%s\n%s" % (sys.exc_info()[1], traceback.format_exc())
+                    msg = sys.exc_info()[1].message
+
+                    if "BUILD FAIL" in msg:
+                        # Don't want to print stacktrace for a model failure since that
+                        # is not a CIME/infrastructure problem.
+                        excmsg = msg
+                    else:
+                        excmsg = "Exception during build:\n%s\n%s" % (sys.exc_info()[1], traceback.format_exc())
+
                     logger.warning(excmsg)
                     append_testlog(excmsg)
 
@@ -312,9 +323,12 @@ class SystemTestsCommon(object):
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_FAIL_STATUS, comments=comment)
 
     def compare_env_run(self, expected=None):
-        # JGF implement in check_lockedfiles?
-        f1obj = EnvRun(self._caseroot, "env_run.xml")
-        f2obj = EnvRun(self._caseroot, os.path.join(LOCKED_DIR, "env_run.orig.xml"))
+        """
+        Compare env_run file to original and warn about differences
+        """
+        components = self._case.get_values("COMP_CLASSES")
+        f1obj = EnvRun(self._caseroot, "env_run.xml", components=components)
+        f2obj = EnvRun(self._caseroot, os.path.join(LOCKED_DIR, "env_run.orig.xml"), components=components)
         diffs = f1obj.compare_xml(f2obj)
         for key in diffs.keys():
             if expected is not None and key in expected:
@@ -347,9 +361,10 @@ class SystemTestsCommon(object):
             success, comments = compare_baseline(self._case)
             append_testlog(comments)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
-            ts_comments = comments if "\n" not in comments else None
+            baseline_name = self._case.get_value("BASECMP_CASE")
+            ts_comments = (os.path.dirname(baseline_name) + ": " + comments) if "\n" not in comments else os.path.dirname(baseline_name)
             self._test_status.set_status(BASELINE_PHASE, status, comments=ts_comments)
-            basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASECMP_CASE"))
+            basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), baseline_name)
 
             # compare memory usage to baseline
             newestcpllogfile = self._get_latest_cpl_log()
@@ -391,8 +406,9 @@ class SystemTestsCommon(object):
             success, comments = generate_baseline(self._case)
             append_testlog(comments)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
-            self._test_status.set_status("%s" % GENERATE_PHASE, status)
-            basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
+            baseline_name = self._case.get_value("BASEGEN_CASE")
+            self._test_status.set_status("%s" % GENERATE_PHASE, status, comments=os.path.dirname(baseline_name))
+            basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), baseline_name)
 
             # copy latest cpl log to baseline
             # drop the date so that the name is generic
@@ -524,7 +540,7 @@ class TESTBUILDFAIL(TESTRUNPASS):
             TESTRUNPASS.build_phase(self, sharedlib_only, model_only)
         else:
             if (not sharedlib_only):
-                expect(False, "Intentional fail for testing infrastructure")
+                expect(False, "BUILD FAIL: Intentional fail for testing infrastructure")
 
 class TESTBUILDFAILEXC(FakeTest):
 

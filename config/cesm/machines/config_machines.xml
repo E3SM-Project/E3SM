@@ -216,7 +216,7 @@
 	<arg name="anum_tasks"> -np $TOTALPES</arg>
 	<arg name="labelstdout">-p "%g:"</arg>
 	<!-- the omplace argument needs to be last -->
-	<arg name="zthreadplacement"> omplace </arg>
+	<arg name="zthreadplacement"> omplace -tm open64 </arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="default" unit_testing="true">
@@ -259,7 +259,7 @@
 	<command name="load">gnu/6.3.0</command>
       </modules>
       <modules>
-	<command name="load">mpt/2.15</command>
+	<command name="load">mpt/2.15f</command>
 	<command name="load">ncarcompilers/0.3.5</command>
       </modules>
       <modules mpilib="mpi-serial">
@@ -878,7 +878,7 @@
 	<command name="load">  tool/parallel-netcdf/1.7.0/intel/mvapich2  </command>
       </modules>
       <modules compiler="pgi">
-	<command name="load">compiler/pgi/15.1</command>
+	<command name="load">compiler/pgi/17.04</command>
       </modules>
       <modules  compiler="pgi" mpilib="mvapich2">
 	  <command name="load">  tool/parallel-netcdf/1.6.1/pgi/mvapich2  </command>

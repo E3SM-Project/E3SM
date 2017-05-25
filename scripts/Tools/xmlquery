@@ -147,10 +147,11 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
                 groups = ['none']
 
         if xmlfile:
-            value =  case.get_value(var, resolved=resolved)
-            results['none'] = {}
-            results['none'][var] = {}
-            results['none'][var]['value']  = value
+            if not groups:
+                value =  case.get_value(var, resolved=resolved)
+                results['none'] = {}
+                results['none'][var] = {}
+                results['none'][var]['value']  = value
         else:
             expect(groups, " No results found for variable %s"%var)
         for group in groups:

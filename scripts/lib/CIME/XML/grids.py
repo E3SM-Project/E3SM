@@ -70,6 +70,7 @@ class Grids(GenericXML):
 
         # determine domains given component_grids
         domains  = self._get_domains(component_grids, atmlevregex, lndlevregex)
+
         gridinfo.update(domains)
 
         # determine gridmaps given component_grids
@@ -142,17 +143,19 @@ class Grids(GenericXML):
 
         model_gridnodes = self.get_nodes("model_grid")
         model_gridnode = None
+        foundalias = False
         for node in model_gridnodes:
-            found = False
             alias = node.get("alias")
             if alias == name:
+                foundalias = True
+                foundcompset = False
                 compset_attrib = node.get("compset")
                 not_compset_attrib = node.get("not_compset")
                 if compset_attrib and not_compset_attrib:
                     compset_match = re.search(compset_attrib, compset)
                     not_compset_match = re.search(not_compset_attrib, compset)
                     if compset_match is not None and not_compset_match is not None:
-                        found = True
+                        foundcompset = True
                         model_gridnode = node
                         logger.debug("Found match for %s with compset_match %s and not_compset_match %s"
                                      % (alias, compset_attrib, not_compset_attrib))
@@ -160,7 +163,7 @@ class Grids(GenericXML):
                 elif compset_attrib:
                     compset_match = re.search(compset_attrib, compset)
                     if compset_match is not None:
-                        found = True
+                        foundcompset = True
                         model_gridnode = node
                         logger.debug("Found match for %s with compset_match %s"
                                      % (alias, compset_attrib))
@@ -168,19 +171,19 @@ class Grids(GenericXML):
                 elif not_compset_attrib:
                     not_compset_match = re.search(not_compset_attrib, compset)
                     if not_compset_match is None:
-                        found = True
+                        foundcompset = True
                         model_gridnode = node
                         logger.debug("Found match for %s with not_compset_match %s"
                                      % (alias, not_compset_attrib))
                         break
                 else:
-                    found = True
+                    foundcompset = True
                     model_gridnode = node
                     logger.debug("Found match for %s" %(alias))
                     break
-
+        expect(foundalias, "no alias %s defined" %name)
         # if no match is found in config_grids.xml - exit
-        expect(found, "ERROR: no alias was found for %s " %name)
+        expect(foundcompset, "grid alias %s not valid for compset %s" %(name, compset))
 
         # for the match - find all of the component grid settings
         grid_nodes = self.get_nodes("grid", root=model_gridnode)
@@ -248,11 +251,13 @@ class Grids(GenericXML):
             domain_node = self.get_optional_node(nodename="domain", attributes={"name":grid_name_nonlev})
             if domain_node is not None:
                 comp_name = grid[0].upper()
-                domains[comp_name + "_NX"] = int(self.get_element_text("nx", root=domain_node))
-                domains[comp_name + "_NY"] = int(self.get_element_text("ny", root=domain_node))
+                if not comp_name == "MASK":
+                    domains[comp_name + "_NX"] = int(self.get_element_text("nx", root=domain_node))
+                    domains[comp_name + "_NY"] = int(self.get_element_text("ny", root=domain_node))
+
+                    file_name = comp_name + "_DOMAIN_FILE"
+                    path_name = comp_name + "_DOMAIN_PATH"
                 domains[comp_name + "_GRID"] = grid_name
-                file_name = comp_name + "_DOMAIN_FILE"
-                path_name = comp_name + "_DOMAIN_PATH"
                 file_nodes = self.get_nodes(nodename="file", root=domain_node)
                 for file_node in file_nodes:
                     grid_attrib = file_node.get("grid")
@@ -337,7 +342,7 @@ class Grids(GenericXML):
                 if mask_name is not None:
                     file_ = self.get_element_text("file", attributes={mask_name:mask}, root=root)
                     path  = self.get_element_text("path", attributes={mask_name:mask}, root=root)
-                    if file_ is not None:
+                    if file_ is not None and grid[0] != "MASK":
                         domains[file_name] = file_
                     if path is not None:
                         domains[path_name] = path
@@ -396,10 +401,14 @@ class Grids(GenericXML):
                 gridname = grid[0]
                 other_gridname = other_grid[0]
                 gridvalue = component_grids[grid[1]]
+                if gridname == "atm_grid":
+                    atm_gridvalue = gridvalue
                 other_gridvalue = component_grids[other_grid[1]]
                 gridmap_nodes = self.get_nodes(nodename="gridmap",
                                                attributes={gridname:gridvalue, other_gridname:other_gridvalue})
                 for gridmap_node in gridmap_nodes:
+                    expect(len(gridmap_node.attrib) == 2,
+                           " Bad attribute count in gridmap node %s"%gridmap_node.attrib)
                     map_nodes = self.get_nodes(nodename="map",root=gridmap_node)
                     for map_node in map_nodes:
                         name = map_node.get("name")
@@ -421,7 +430,10 @@ class Grids(GenericXML):
                 if grid1_value != grid2_value and grid1_value != 'null' and grid2_value != 'null':
                     map_ = gridmaps[node.text]
                     if map_ == 'idmap':
-                        logger.warning("Warning: missing non-idmap %s for %s, %s and %s %s "
+                        if grid1_name == "ocn_grid" and grid1_value == atm_gridvalue:
+                            logger.debug('ocn_grid == atm_grid so this is not an idmap error')
+                        else:
+                            logger.warning("Warning: missing non-idmap %s for %s, %s and %s %s "
                                        %(node.text, grid1_name, grid1_value, grid2_name, grid2_value))
 
         return gridmaps

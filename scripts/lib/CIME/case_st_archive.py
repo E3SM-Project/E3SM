@@ -212,8 +212,9 @@ def _archive_restarts(case, archive, archive_entry,
     rundir = case.get_value("RUNDIR")
     casename = case.get_value("CASE")
     archive_restdir = join(dout_s_root, 'rest', datename)
-    if not os.path.exists(archive_restdir):
-        os.makedirs(archive_restdir)
+    if datename_is_last or case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'):
+        if not os.path.exists(archive_restdir):
+            os.makedirs(archive_restdir)
 
     # archive the rpointer file(s) for this datename and all possible ninst_strings
     _archive_rpointer_files(case, archive, archive_entry, archive_restdir,

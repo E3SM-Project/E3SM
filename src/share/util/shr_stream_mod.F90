@@ -1,7 +1,4 @@
 !===============================================================================
-! SVN $Id: shr_stream_mod.F90 65656 2014-11-21 18:33:26Z santos@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_150116/shr/shr_stream_mod.F90 $
-!===============================================================================
 !BOP ===========================================================================
 !
 ! !MODULE: shr_stream_mod -- Data type and methods to manage input data streams.
@@ -262,7 +259,7 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
 
    !--- read data ---
    read(nUnit,'(a)',END=999) str
-   call shr_string_leftAlign(str)
+   call shr_string_leftalign_and_convert_tabs(str)
    strm%dataSource = str
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  * format = ', trim(strm%dataSource)
 
@@ -288,7 +285,7 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
    n=0
    do while (.true.)
       read(nUnit,'(a)',END=999) str
-      call shr_string_leftAlign(str)
+      call shr_string_leftalign_and_convert_tabs(str)
       n=n+1
       if (str(1:len_trim(endTag)) == trim(endTag)) exit
       fldNameFile  = ""
@@ -385,7 +382,7 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
 
    !--- read data ---
    read(nUnit,'(a)',END=999) str
-   call shr_string_leftAlign(str)
+   call shr_string_leftalign_and_convert_tabs(str)
    n = len_trim(str)
    if (n>0 .and. str(n:n) /= '/') str(n+1:n+2) = "/ " ! must have trailing slash
    if (n==0) str = "./ "                              ! null path => ./
@@ -418,7 +415,7 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
    !--- read data ---
    do while (.true.)
       read(nUnit,'(a)',END=999) str
-      call shr_string_leftAlign(str)
+      call shr_string_leftalign_and_convert_tabs(str)
       if (str(1:len_trim(endTag)) == trim(endTag)) exit
       tempFile%name = str
       call fileVec%push_back(tempFile)
@@ -461,7 +458,7 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
    n=0
    do while (.true.)
       read(nUnit,'(a)',END=999) str
-      call shr_string_leftAlign(str)
+      call shr_string_leftalign_and_convert_tabs(str)
       n=n+1
       if (str(1:len_trim(endTag)) == trim(endTag)) exit
       fldNameFile  = ""
@@ -580,7 +577,7 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
 
    !--- read data ---
    read(nUnit,'(a)',END=999) str
-   call shr_string_leftAlign(str)
+   call shr_string_leftalign_and_convert_tabs(str)
    n = len_trim(str)
    if (n>0 .and. str(n:n) /= '/') str(n+1:n+2) = "/ " ! must have trailing slash
    if (n==0) str = "./ "                              ! null path => ./
@@ -611,7 +608,7 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
 
    !--- read data ---
    read(nUnit,'(a)',END=999) str
-   call shr_string_leftAlign(str)
+   call shr_string_leftalign_and_convert_tabs(str)
    strm%domFileName = str
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  * ',trim(strm%domFileName)
 
@@ -1540,8 +1537,8 @@ subroutine shr_stream_readTCoord(strm,k,rc)
    if (ichar(units(n:n)) == 0 ) units(n:n) = ' '
    n = len_trim(calendar)
    if (ichar(calendar(n:n)) == 0 ) calendar(n:n) = ' '
-   call shr_string_leftalign(units)
-   call shr_string_leftalign(calendar)
+   call shr_string_leftalign_and_convert_tabs(units)
+   call shr_string_leftalign_and_convert_tabs(calendar)
    call shr_string_parseCFtunit(units,bunits,bdate,bsec)
    strm%calendar = trim(shr_cal_calendarName(trim(calendar)))
 
@@ -2008,7 +2005,7 @@ subroutine shr_stream_getCalendar(strm,k,calendar)
    endif
    n = len_trim(lcal)
    if (ichar(lcal(n:n)) == 0 ) lcal(n:n) = ' '
-   call shr_string_leftalign(lcal)
+   call shr_string_leftalign_and_convert_tabs(lcal)
    calendar = trim(shr_cal_calendarName(trim(lcal)))
    rCode = nf90_close(fid)
    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_close')
