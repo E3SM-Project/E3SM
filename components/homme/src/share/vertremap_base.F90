@@ -603,7 +603,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
           if (vert_remap_q_alg == 3) then
              ao(1   -k) = ao(1)
              ao(nlev+k) = ao(nlev)
-          elseif (vert_remap_q_alg == 2 .or. vert_remap_q_alg == 1) then   !Ignored if vert_remap_q_alg == 1
+          elseif (vert_remap_q_alg == 2 .or. vert_remap_q_alg == 1) then   !Ignored if vert_remap_q_alg == 2
              ao(1   -k) = ao(       k)
              ao(nlev+k) = ao(nlev+1-k)
           endif
