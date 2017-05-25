@@ -60,7 +60,7 @@ class PRE(SystemTestsCompareTwo):
         self._case.set_value("PAUSE_N", pausen)
         comps = [ x.lower() for x in self._case.get_values("COMP_CLASSES") ]
         pcl = self._case.get_value("PAUSE_COMPONENT_LIST")
-        expect(pcl == "all" or set(pcl.split(':')).issubset(comps), 
+        expect(pcl == "all" or set(pcl.split(':')).issubset(comps),
                "PRE ERROR: Invalid PAUSE_COMPONENT_LIST, '%s'"%pcl)
 
         self._case.flush()
@@ -101,7 +101,7 @@ class PRE(SystemTestsCompareTwo):
             expect((len(restart_files_2) == 1),
                    "Missing case2 restart file, %s", glob_str)
             rfile2 = restart_files_2[0]
-            ok, out = cprnc(comp, rfile1, rfile2, self._case, rundir2) # pylint: disable=unused-variable
+            ok = cprnc(comp, rfile1, rfile2, self._case, rundir2)[0]
             logger.warning("CPRNC result for %s: %s"%(os.path.basename(rfile1), "PASS" if (ok == should_match) else "FAIL"))
             compare_ok = compare_ok and (should_match == ok)
 
