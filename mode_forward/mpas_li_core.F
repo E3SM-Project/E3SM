@@ -345,7 +345,7 @@ module li_core
       ! Solve initial state before beginning time stepping
       ! ===
       err_tmp = li_core_initial_solve(domain)
-      err = ior(err,err_tmp)  ! li_core_finalize would abort if there was an error, but being safe.
+      err = ior(err,err_tmp)  ! li_core_initial_solve would abort if there was an error, but being safe.
 
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
@@ -791,7 +791,7 @@ module li_core
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
-          call mpas_log_write("An error has occurred in li_core_initial_solve. Aborting...", MPAS_LOG_ERR)
+          call mpas_log_write("An error has occurred in li_core_initial_solve. Aborting...", MPAS_LOG_CRIT)
       endif
 
 
