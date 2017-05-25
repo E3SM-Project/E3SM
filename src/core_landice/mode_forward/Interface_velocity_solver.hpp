@@ -27,6 +27,7 @@
 //! Includes
 // ===================================================
 //#include <boost/program_options.hpp>
+#include <cstring>
 #include <vector>
 #include <mpi.h>
 #include <list>
