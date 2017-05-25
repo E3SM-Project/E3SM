@@ -268,6 +268,7 @@ contains
     character(len=*), parameter :: subname = '(prep_glc_set_g2x_lx_fields)'
     !---------------------------------------------------------------
 
+    allocate(all_elevclass_strings(0:glc_get_num_elevation_classes()))
     all_elevclass_strings = glc_all_elevclass_strings(include_zero = .true.)
     frac_fields = shr_string_listFromSuffixes( &
          suffixes = all_elevclass_strings, &

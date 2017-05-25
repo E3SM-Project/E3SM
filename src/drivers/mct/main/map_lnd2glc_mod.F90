@@ -376,6 +376,7 @@ contains
     !    'Flgl_qice01:Flgl_qice02: ... :Flgl_qice10:Sl_topo01:Sl_topo02: ... :Sltopo10'
     ! ------------------------------------------------------------------------
 
+    allocate(all_elevclass_strings(1:glc_get_num_elevation_classes()))
     all_elevclass_strings = glc_all_elevclass_strings(include_zero = .false.)
     fieldnamelist = shr_string_listFromSuffixes( &
          suffixes = all_elevclass_strings, &
