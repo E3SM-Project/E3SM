@@ -40,31 +40,19 @@ def run_diag(parameter):
     variables = parameter.variables
     seasons = parameter.seasons
     ref_name = parameter.ref_name
-    test_name = parameter.test_name
     regions = parameter.regions
 
     for season in seasons:
-        if hasattr(parameter, 'test_path'):
-            filename1 = parameter.test_path
-            print filename1
-        else:
-            try:
-                filename1 = utils.findfile(test_data_path, test_name, season)
-                print filename1
-            except IOError:
-                print('No file found for {} and {}'.format(test_name, season))
-                continue
+        try:
+            filename1 = utils.get_test_filename(parameter, season)
+            filename2 = utils.get_ref_filename(parameter, season)
+        except IOError as e:
+            print e
+            # the file for the current parameters wasn't found, move to next parameters
+            continue
 
-        if hasattr(parameter, 'reference_path'):
-            filename2 = parameter.reference_path
-            print filename2
-        else:
-            try:
-                filename2 = utils.findfile(reference_data_path, ref_name, season)
-                print filename2
-            except IOError:
-                print('No file found for {} and {}'.format(ref_name, season))
-                continue
+        print('test file: {}'.format(filename1))
+        print('reference file: {}'.format(filename2))
 
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
