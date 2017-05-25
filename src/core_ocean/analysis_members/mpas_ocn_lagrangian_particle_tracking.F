@@ -123,7 +123,7 @@ contains
       err = 0
 
       LIGHT_DEBUG_WRITE('starting ocn_init_lagrangian_particle_tracking')
-      call mpas_timer_start("totalLPT")
+      !call mpas_timer_start("totalLPT")
       call mpas_timer_start("initLPT")
 
       ! resets likely are unnecessary
@@ -191,7 +191,7 @@ contains
       LIGHT_DEBUG_WRITE('finished ocn_init_lagrangian_particle_tracking')
       call mpas_timer_stop("initLPT")
 
-      call mpas_timer_stop("totalLPT")
+      !call mpas_timer_stop("totalLPT")
 
    end subroutine ocn_init_lagrangian_particle_tracking!}}}
 
@@ -308,7 +308,7 @@ contains
       dminfo = domain % dminfo
 
       LIGHT_DEBUG_WRITE('Computing Lagrangian Particle Tracking...')
-      call mpas_timer_start("totalLPT")
+      !call mpas_timer_start("totalLPT")
       call mpas_timer_start("computeLPT")
 
       call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_filter_number', filterNum)
@@ -824,7 +824,7 @@ contains
       end if
 
       call mpas_timer_stop("computeLPT")
-      call mpas_timer_stop("totalLPT")
+      !call mpas_timer_stop("totalLPT")
 
       LIGHT_DEBUG_WRITE('finished computing Lagrangian Particle Tracking')
 
@@ -875,7 +875,7 @@ contains
 
       err = 0
 
-      call mpas_timer_start("totalLPT")
+      !call mpas_timer_start("totalLPT")
 
       ! do restart if this is a restart step
       if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='lagrPartTrackRestart', &
@@ -885,9 +885,13 @@ contains
         LIGHT_DEBUG_WRITE('start ocn_restart_lagrangian_particle_tracking')
         ! transfer particles to their appropriate blocks (ioBlock) via MPI
         ! note, don't necessarily need to have g_ionSend and g_ionRecv comeout
+        call mpas_timer_start("build_halos_LPT")
         call mpas_particle_list_build_halos(domain, err, 'ioBlock', g_ioProcNeighs)
+        call mpas_timer_stop("build_halos_LPT")
+        call mpas_timer_start("transfer_particles_LPT")
         call mpas_particle_list_transfer_particles_from_block_to_named_block(domain, err, .True., .True., 'ioBlock', &
           g_ioProcNeighs)
+        call mpas_timer_stop("transfer_particles_LPT")
         deallocate(g_ioProcNeighs)
 
         ! write out all the data, sorting to make sure that shuffled particles
@@ -895,18 +899,22 @@ contains
         ! pulled out as an optimization)
         ! write halo data out, but don't need nonhalo data because it is
         ! computed for output (diagnostic, not prognostic)
+        call mpas_timer_start("write_halo_LPT")
         call mpas_particle_list_write_halo_data(domain, err)
+        call mpas_timer_stop("write_halo_LPT")
         !call mpas_particle_list_write_nonhalo_data(domain, err)
 
         ! need to now remove the io particles (remove particles that don't have the
         ! correct currentBlock)
+        call mpas_timer_start("remove_block_particles_LPT")
         call mpas_particle_list_remove_particles_not_on_current_block(domain,err)
+        call mpas_timer_stop("remove_block_particles_LPT")
 
         LIGHT_DEBUG_WRITE('end ocn_restart_lagrangian_particle_tracking')
         call mpas_timer_stop("restartLPT")
       end if
 
-      call mpas_timer_stop("totalLPT")
+      !call mpas_timer_stop("totalLPT")
 
    end subroutine ocn_restart_lagrangian_particle_tracking!}}}
 
@@ -955,7 +963,7 @@ contains
       err = 0
 
       LIGHT_DEBUG_WRITE('start write_lagrangian_particle_tracking')
-      call mpas_timer_start("totalLPT")
+      !call mpas_timer_start("totalLPT")
       call mpas_timer_start("writeLPT")
 
       !call mpas_particle_list_test_num_current_particlelist(domain)
@@ -995,7 +1003,7 @@ contains
 #endif
       LIGHT_DEBUG_WRITE('end write_lagrangian_particle_tracking')
       call mpas_timer_stop("writeLPT")
-      call mpas_timer_stop("totalLPT")
+      !call mpas_timer_stop("totalLPT")
 
 
    end subroutine write_lagrangian_particle_tracking!}}}
@@ -1046,7 +1054,7 @@ contains
       type (block_type), pointer :: block
       integer :: timeLev
 
-      call mpas_timer_start("totalLPT")
+      !call mpas_timer_start("totalLPT")
       call mpas_timer_start("finalizeLPT")
       err = 0
 
@@ -1061,7 +1069,7 @@ contains
 
       LIGHT_DEBUG_WRITE('end ocn_finalize_lagrangian_particle_tracking')
       call mpas_timer_stop("finalizeLPT")
-      call mpas_timer_stop("totalLPT")
+      !call mpas_timer_stop("totalLPT")
 
    end subroutine ocn_finalize_lagrangian_particle_tracking!}}}
 
