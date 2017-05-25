@@ -210,7 +210,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.7
+set script_ver = 3.0.8
 
 #===========================================
 # DEFINE ALIASES
@@ -1356,17 +1356,17 @@ acme_newline
 # 3.0.7    2017-05-22    Fix for the new CIME 5.3; use the --script-root option instead of PJC's "hack"
 #                        Note that this breaks compatibility with older versions of CIME
 #                        Also add a fix to reenable using the special acme qos queue on Edison (MD)
+# 3.0.8    2017-05-24    Fixed minor bug when $machine contained a capital letter. Bug was introduced recently. (PJC)
+#
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
 ### ---------- Desired features still to be implemented ------------
 # +) fetch_code = update   (pull in latest updates to branch)    (PJC)
 # +) A way to run the testsuite.? (PJC)
-# +) Reorder options at top to match workflow. (PJC)
 # +) make the handling of lowercase consistent.  $machine may need to be special. (PJC)
 # +) generalize xxdiff commands (for fixing known bugs) to work for other people  (PJC)
 # +) Add a 'default' option, for which REST_OPTION='$STOP_OPTION' and REST_N='$STOP_N'.
 #    This is important if the user subsequently edits STOP_OPTION or STOP_N.      (PJC)
-# +) Add defaults for Edison. (PJC)
 # +) triggering on $acme_tag = master_detached doesn't make sense.  Fix logic. (PJC)
 
 ###Example sed commands
