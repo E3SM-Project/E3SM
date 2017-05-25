@@ -989,7 +989,19 @@ endif
 # NOTE: This also modifies the short-term and long-term archiving scripts.
 # NOTE: We want the batch job log to go into a sub-directory of case_scripts (to avoid it getting clogged up)
 
+# NOTE: we are currently not modifying the archiving scripts to run in debug queue when $debug_queue=true
+#       under the assumption that if you're debugging you shouldn't be archiving.
+
+# NOTE: there was 1 space between MSUB or PBS and the commands before cime and there are 2 spaces
+#       in post-cime versions. This is fixed by " \( \)*" in the lines below. The "*" here means
+#       "match zero or more of the expression before". The expression before is a single whitespace.
+#       The "\(" and "\)" bit indicate to sed that the whitespace in between is the expression we
+#       care about. The space before "\(" makes sure there is at least one whitespace after #MSUB.
+#       Taken all together, this stuff matches lines of the form #MSUB<one or more whitespaces>-<stuff>.
+
 mkdir -p batch_output      ### Make directory that stdout and stderr will go into.
+
+set machine = `lowercase $machine`   # Change to lowercase, just to make the following easier to read. 
 
 if ( $machine == hopper ) then
     sed -i /"#PBS \( \)*-N"/c"#PBS  -N ${job_name}"                                ${case_run_exe}
@@ -1031,21 +1043,9 @@ endif
 #============================================
 # Edit the default queue and batch job lengths.
 
-#HINT: To change queue after run submitted, the following works on most machines:
-#      qalter -lwalltime=00:29:00 <run_descriptor>
-#      qalter -W queue=debug <run_descriptor>
-
-#NOTE: we are currently not modifying the archiving scripts to run in debug queue when $debug_queue=true
-#      under the assumption that if you're debugging you shouldn't be archiving.
-
-#NOTE: there was 1 space btwn MSUB or PBS and the commands before cime and there are 2 spaces
-#      in post-cime versions. This is fixed by " \( \)*" in the lines below. The "*" here means
-#      "match zero or more of the expression before". The expression before is a single whitespace.
-#      The "\(" and "\)" bit indicate to sed that the whitespace in between is the expression we
-#      care about. The space before "\(" makes sure there is at least one whitespace after #MSUB.
-#      Taken all together, this stuff matches lines of the form #MSUB<one or more whitespaces>-<stuff>.
-
-set machine = `lowercase $machine`
+# HINT: To change queue after run submitted, the following works on most machines:
+#       qalter -lwalltime=00:29:00 <run_descriptor>
+#       qalter -W queue=debug <run_descriptor>
 
 ### Only specially authorized people can use the special_acme qos on Cori or Edison. Don't uncomment unless you're one.
 #if ( `lowercase $debug_queue` == false && $machine == edison ) then
