@@ -12,9 +12,30 @@ def findfile(path_name, data_name, season):
     for filename in dir_files:
        if filename.startswith(data_name) and season in filename:
            return path_name+filename
-    raise IOError(
-        "No file found based on given path_name and data_name")
-       
+    raise IOError("No file found for {} and {}".format(data_name, season))
+
+def get_test_filename(parameters, season):
+    """Return the test file name based on
+    the season and other parameters"""
+    if hasattr(parameters, 'test_file'):
+        fnm = parameters.test_data_path + parameters.test_file
+        if not os.path.exists(fnm):
+            raise IOError('File not found: {}'.format(fnm))
+    else:
+        fnm = findfile(parameters.test_data_path, parameters.test_name, season)
+    return fnm
+
+def get_ref_filename(parameters, season):
+    """Return the reference file name based on
+    the season and other parameters"""
+    if hasattr(parameters, 'ref_file'):
+        fnm = parameters.reference_data_path + parameters.ref_file
+        if not os.path.exists(fnm):
+            raise IOError('File not found: {}'.format(fnm))
+    else:
+        fnm = findfile(parameters.reference_data_path, parameters.ref_name, season)
+    return fnm
+
 def hybrid_to_plevs(var, hyam, hybm, ps, plev):
     """Convert from hybrid pressure coordinate to desired pressure level(s)."""
     p0 = 1000. # mb

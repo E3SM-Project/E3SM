@@ -67,36 +67,20 @@ def run_diag(parameter):
     regions = parameter.regions
 
     for season in seasons:
-        if hasattr(parameter, 'test_file'):
-            filename1 = test_data_path + parameter.test_file
-            if not os.path.exists(filename1):
-	        print('File not found: {}'.format(filename1))
-		continue
-	else:
-            try:
-                filename1 = utils.findfile(test_data_path, test_name, season)
-            except IOError:
-                print('No file found for {} and {}'.format(test_name, season))
-                continue
+        try:
+            filename1 = utils.get_test_filename(parameter, season)
+            filename2 = utils.get_ref_filename(parameter, season)
+        except IOError as e:
+            print e
+            # the file for the current parameters wasn't found, move to next parameters
+            continue
 
-        if hasattr(parameter, 'ref_file'):
-            filename2 = reference_data_path + parameter.ref_file
-            if not os.path.exists(filename2):
-	        print('File not found: {}'.format(filename2))
-		continue
-	else:
-            try:
-                filename2 = utils.findfile(reference_data_path, ref_name, season)
-            except IOError:
-                print('No file found for {} and {}'.format(ref_name, season))
-                continue
-
-	print('test file: {}'.format(filename1))
-	print('reference file: {}'.format(filename2))
+        print('test file: {}'.format(filename1))
+        print('reference file: {}'.format(filename2))
 
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
-        #save land/ocean fraction for masking
+        # save land/ocean fraction for masking
         land_frac = f_mod('LANDFRAC')
         ocean_frac = f_mod('OCNFRAC')
 
