@@ -181,13 +181,31 @@ def get_testreporter_xml(testroot, testid, tagname, testtype):
                 if line[0:4] == "FAIL":
                     test_status['COMMENT']+="Hybrid fail! "
                     break
+            if "COMPARE_base_multiinst" in line:
+                test_status['STATUS']=line[0:4]
+                if line[0:4] == "FAIL":
+                    test_status['COMMENT']+="Multi instance fail! "
+                    break
+            if "COMPARE_base_test" in line:
+                test_status['STATUS']=line[0:4]
+                if line[0:4] == "FAIL":
+                    test_status['COMMENT']+="Base test fail! "
+                    break
+            if "COMPARE_base_single_thread" in line:
+                test_status['STATUS']=line[0:4]
+                if line[0:4] == "FAIL":
+                    test_status['COMMENT']+="Thread test fail! "
+                    break
 
             #
             #  Do not include time comments.  Just a preference to have cleaner comments in the test database
             #
             try:
-                if 'time=' not in line:
-                    test_status['COMMENT']+=line.split(' ',3)[3]+' '
+                if 'time=' not in line and 'GENERATE' not in line:
+                    if 'BASELINE' not in line:
+                        test_status['COMMENT']+=line.split(' ',3)[3]+' '
+                    else:
+                        test_status['COMMENT']+=line.split(' ',4)[4]+' '
             except:
                 pass
 
