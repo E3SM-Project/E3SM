@@ -102,6 +102,8 @@ class TestScheduler(object):
 
         self._machobj = Machines(machine=machine_name)
 
+        self._model_build_cost = 4
+
         # If user is forcing procs or threads, re-write test names to reflect this.
         if force_procs or force_threads:
             test_names = _translate_test_names_for_new_pecount(test_names, force_procs, force_threads)
@@ -538,6 +540,11 @@ class TestScheduler(object):
             case.set_value("TEST", True)
             case.set_value("SAVE_TIMING", self._save_timing)
 
+            # Scale back build parallelism on systems with few cores
+            if self._model_build_cost > self._proc_pool:
+                case.set_value("GMAKE_J", self._proc_pool)
+                self._model_build_cost = self._proc_pool
+
         return True, ""
 
     ###########################################################################
@@ -606,10 +613,10 @@ class TestScheduler(object):
             return max_cores
 
         elif (phase == SHAREDLIB_BUILD_PHASE):
-            # Will force serialization of sharedlib builds
-            # TODO - instead of serializing, compute all library configs needed and build
-            # them all in parallel
             if get_model() == "cesm":
+                # Will force serialization of sharedlib builds
+                # TODO - instead of serializing, compute all library configs needed and build
+                # them all in parallel
                 for _, _, running_phase in threads_in_flight.values():
                     if (running_phase == SHAREDLIB_BUILD_PHASE):
                         return self._proc_pool + 1
@@ -617,7 +624,7 @@ class TestScheduler(object):
             return 1
         elif (phase == MODEL_BUILD_PHASE):
             # Model builds now happen in parallel
-            return 4
+            return self._model_build_cost
         else:
             return 1
 
