@@ -12,16 +12,19 @@
   statefreq         = 10                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
-  tstep             = 0.5                       ! largest timestep in seconds
+  tstep             = 100                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
-  tstep_type        = 5                         ! 1 => default method
-  rsplit            = 1
+  tstep_type        = 7
+  rsplit            = 0
   qsplit            = 1
-  nu                = 1e13
-  nu_s              = 1e13
-  nu_p              = 1e13
+  nu                = 1e15                      ! default= 1e15*(ne30/ne30)**3.2 = 1e15
+  nu_s              = 1e15
+  nu_p              = 1e15
+  nu_top            = 0                         ! 2.5e5/(120)^(1)
+  limiter_option    = 4
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
+  moisture          = 'wet'
   theta_hydrostatic_mode = .false.
 /
 &vert_nl
@@ -31,8 +34,8 @@
 /
 &analysis_nl
   output_dir        = "./movies/"               ! destination dir for netcdf file
-  output_timeunits  = 2,                   ! 0=timesteps, 1=days, 2=hours, 3=seconds
-  output_frequency  = 1 !4
+  output_timeunits  = 2,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
+  output_frequency  = 3                         ! every 3 hours
   output_varnames1  ='T','p','ps','pnh','geo','u','v','w','Th','Q','Q2','Q3','Q4'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf

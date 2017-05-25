@@ -694,18 +694,19 @@ contains
   end subroutine set_elem_state
 
   !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,Cp_star,rho,zm,g,i,j,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,ps,Rstar,rho,zm,g,i,j,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
     ! used by idealized tests to compute idealized physics forcing terms
 
-    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,cp_star,zm,rho
+    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,Rstar,zm,rho
+    real(real_kind), dimension(np,np),      intent(inout) :: ps
     real(real_kind), intent(in)    :: g
     integer,         intent(in)    :: i,j,nt,ntQ
     type(element_t), intent(inout) :: elem
     type (hvcoord_t),intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
 
-    real(real_kind) , dimension(np,np,nlev) :: phi,dpnh,kappa_star,Rstar
+    real(real_kind) , dimension(np,np,nlev) :: phi,dpnh,kappa_star,cp_star
     real(real_kind) , dimension(np,np) :: phis
 
     integer :: k
@@ -715,6 +716,7 @@ contains
     v   = elem%state%v   (:,:,2,:,nt)
     w   = elem%state%w   (:,:,  :,nt)
     phi = elem%state%phi (:,:,  :,nt)
+    ps  = elem%state%ps_v(:,:,    nt)
     phis= elem%state%phis(:,:)
     zm  = phi/g
 

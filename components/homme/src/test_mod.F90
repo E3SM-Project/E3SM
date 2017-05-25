@@ -22,7 +22,7 @@ use baroclinic_inst_mod,  only: binst_init_state, jw_baroclinic
 use dcmip12_wrapper,      only: dcmip2012_test1_1, dcmip2012_test1_2, dcmip2012_test1_3,&
                                 dcmip2012_test2_0, dcmip2012_test2_x, dcmip2012_test3,  &
                                 dcmip2012_test4_init, mtest_init
-use dcmip16_wrapper,      only: dcmip2016_test1, dcmip2016_test2, dcmip2016_test3, dcmip2016_forcing
+use dcmip16_wrapper,      only: dcmip2016_test1, dcmip2016_test2, dcmip2016_test3, dcmip2016_forcing, dcmip2016_test3_forcing
 use held_suarez_mod,      only: hs0_init_state
 
 implicit none
@@ -144,6 +144,7 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
     case('dcmip2016_test1');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl,1)
     case('dcmip2016_test2');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl,2)
     case('dcmip2016_test3');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl,3)
+!    case('dcmip2016_test3');    call dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     case('held_suarez0');
        do ie=nets,nete

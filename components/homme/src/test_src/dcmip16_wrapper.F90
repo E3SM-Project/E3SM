@@ -24,7 +24,7 @@ use kinds,                only: rl=>real_kind, iulog
 use parallel_mod,         only: abortmp
 use element_ops,          only: set_state, set_elem_state, get_state, tests_finalize, set_forcing_rayleigh_friction, set_thermostate
 use physical_constants,   only: p0, g, Rgas, kappa, Cp, Rwater_vapor
-use reduction_mod,        only: parallelmax
+use reduction_mod,        only: parallelmax, parallelmin
 use time_mod,             only: time_at, TimeLevel_t
 
 implicit none
@@ -37,6 +37,7 @@ real(rl):: tau
 real(rl), parameter :: rh2o    = 461.5d0,            &                  ! Gas constant for water vapor (J/kg/K)
                        Mvap    = (Rwater_vapor/Rgas) - 1.d0             ! Constant for virtual temp. calc. (~0.608)
 
+real(rl) :: sample_period  = 60.0_rl
 
 contains
 
@@ -104,6 +105,10 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 2: tropical cyclone'
   !use vertical levels specificed in cam30 file
 
+  ! allocate storage for total precip, for output to file
+  allocate(precl(np,np,nelemd))
+  precl = 0
+
   ! set initial conditions
   do ie = nets,nete
      do k=1,nlev; do j=1,np; do i=1,np
@@ -131,6 +136,8 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
 
     call tests_finalize(elem(ie),hvcoord,1,nt)
   enddo
+
+  sample_period = 600.0 ! sec
 
 end subroutine
 
@@ -219,20 +226,21 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   enddo
 
+  sample_period = 60.0 ! sec
 end subroutine
 
 !_______________________________________________________________________
-subroutine dcmip2016_append_measurements(max_w,max_precl,tl,hybrid)
-  real(rl),           intent(in) :: max_w, max_precl
+subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
+  real(rl),           intent(in) :: max_w, max_precl, min_ps
   type(TimeLevel_t),  intent(in) :: tl
   type(hybrid_t),     intent(in) :: hybrid                   ! hybrid parallel structure
 
-  real(rl),         parameter :: sample_period  = 60.0_rl
   character(len=*), parameter :: w_filename     = "measurement_wmax.txt"
   character(len=*), parameter :: precl_filename = "measurement_prect_rate.txt"
   character(len=*), parameter :: time_filename  = "measurement_time.txt"
+  character(len=*), parameter :: ps_filename    = "measurement_psmin.txt"
 
-  real(rl) :: pmax_w, pmax_precl, time
+  real(rl) :: pmax_w, pmax_precl, pmin_ps, time
   real(rl) :: next_sample_time = 0.0
 
   time = time_at(tl%nstep)
@@ -248,6 +256,8 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,tl,hybrid)
     open(unit=12,file=time_filename, form="formatted",status="replace")
     close(12)
 
+    open(unit=12,file=ps_filename, form="formatted",status="replace")
+    close(13)
   endif
 
   ! append measurements at regular intervals
@@ -256,9 +266,10 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,tl,hybrid)
     next_sample_time = next_sample_time + sample_period
     pmax_w     = parallelMax(max_w,    hybrid)
     pmax_precl = parallelMax(max_precl,hybrid)
+    pmin_ps    = parallelMin(min_ps,   hybrid)
 
     if (hybrid%masterthread) then
-      print *,"time=",time_at(tl%nstep)," pmax_w=",pmax_w," pmax_precl=",pmax_precl
+      print *,"time=",time_at(tl%nstep)," pmax_w (m/s)=",pmax_w," pmax_precl (mm/day)=",pmax_precl*(1000.0)*(24.0*3600)," pmin_ps (Pa)=",pmin_ps
 
       open(unit=10,file=w_filename,form="formatted",position="append")
         write(10,'(99E24.15)') pmax_w
@@ -271,6 +282,11 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,tl,hybrid)
       open(unit=12,file=time_filename,form="formatted",position="append")
         write(12,'(99E24.15)') time
       close(12)
+
+      open(unit=13,file=ps_filename,form="formatted",position="append")
+        write(13,'(99E24.15)') pmin_ps
+      close(13)
+
     endif
   endif
 
@@ -288,25 +304,130 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
   type(TimeLevel_t),  intent(in)            :: tl                       ! time level structure
   integer,            intent(in)            :: test                     ! dcmip2016 test number
 
-  real(rl), parameter :: zc   = 15000_rl                                ! sponge layer cutoff at 13km
-  real(rl), parameter :: tau  = 120_rl                                  ! rayleigh damping time-scale (s)
-
   integer :: i,j,k,ie                                                     ! loop indices
-  real(rl):: lat
-  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,exner,exner_kess,p,dp,cp_star,rho,z,qv,qc,qr, rho_kess
-  real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
-  real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
-  real(rl) :: max_w, pmax_w, max_precl, pmax_precl
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,exner,exner_kess,p,dp,Rstar,rho,z,qv,qc,qr, rho_dry, theta_star
+  real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0
+  real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
+  real(rl) :: max_w, max_precl, min_ps
+  real(rl) :: lat, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
+
+  integer :: pbl_type  = 1
+  integer :: prec_type = 0
+
+  if(test==3) prec_type=0
 
   max_w     = -huge(rl)
   max_precl = -huge(rl)
+  min_ps    = +huge(rl)
 
   do ie = nets,nete
 
-    precl(:,:,ie) = ie
+    precl(:,:,ie) = -1.0d0
 
     ! get current element state
-    call get_state(u,v,w,T,theta,exner,p,dp,cp_star,rho,z,g,i,j,elem(ie),hvcoord,nt,ntQ)
+    call get_state(u,v,w,T,theta,exner,p,dp,ps,Rstar,rho,z,g,i,j,elem(ie),hvcoord,nt,ntQ)
+
+    ! get mixing ratios
+    qv  = elem(ie)%state%Qdp(:,:,:,1,ntQ)/dp
+    qc  = elem(ie)%state%Qdp(:,:,:,2,ntQ)/dp
+    qr  = elem(ie)%state%Qdp(:,:,:,3,ntQ)/dp
+
+    ! ensure positivity
+    where(qv<0); qv=0; endwhere
+    where(qc<0); qc=0; endwhere
+    where(qr<0); qr=0; endwhere
+
+    ! save un-forced prognostics
+    u0=u; v0=v; T0=T; qv0=qv; qc0=qc; qr0=qr
+
+    ! get zi from z
+    zi(:,:,nlevp) = 0 ! phis=0
+    zi(:,:,2:nlev)= (z(:,:,2:nlev)+z(:,:,1:nlev-1))/2.0d0
+    dz_top        = dp(:,:,1)/(rho(:,:,1)*g)
+    zi(:,:,1)     = zi(:,:,2)+dz_top
+
+    ! apply forcing to columns
+    do j=1,np; do i=1,np
+
+      ! invert column
+      u_c  = u  (i,j,nlev:1:-1)
+      v_c  = v  (i,j,nlev:1:-1)
+      qv_c = qv (i,j,nlev:1:-1)
+      qc_c = qc (i,j,nlev:1:-1)
+      qr_c = qr (i,j,nlev:1:-1)
+      p_c  = p  (i,j,nlev:1:-1)
+      rho_c= rho(i,j,nlev:1:-1)
+      z_c  = z  (i,j,nlev:1:-1)
+      zi_c = zi (i,j,nlevp:1:-1)
+      th_c = theta(i,j,nlev:1:-1)
+
+      ! get forced versions of u,v,p,qv,qc,qr. rho is constant
+      call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, precl(i,j,ie), pbl_type, prec_type)
+
+      ! revert column
+      u(i,j,:)  = u_c(nlev:1:-1)
+      v(i,j,:)  = v_c(nlev:1:-1)
+      p(i,j,:)  = p_c(nlev:1:-1)
+      qv(i,j,:) = qv_c(nlev:1:-1)
+      qc(i,j,:) = qc_c(nlev:1:-1)
+      qr(i,j,:) = qr_c(nlev:1:-1)
+      theta(i,j,:) = th_c(nlev:1:-1)
+
+    enddo; enddo;
+
+    ! get temperature from new pressure
+    T = theta*exner
+
+    ! set dynamics forcing
+    elem(ie)%derived%FM(:,:,1,:) = (u - u0)/dt
+    elem(ie)%derived%FM(:,:,2,:) = (v - v0)/dt
+    elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
+
+    ! set tracer-mass forcing
+    elem(ie)%derived%FQ(:,:,:,1) = dp*(qv-qv0)/dt
+    elem(ie)%derived%FQ(:,:,:,2) = dp*(qc-qc0)/dt
+    elem(ie)%derived%FQ(:,:,:,3) = dp*(qr-qr0)/dt
+
+    ! perform measurements of max w, and max prect
+    max_w     = max( max_w    , maxval(w    ) )
+    max_precl = max( max_precl, maxval(precl(:,:,ie)) )
+    min_ps    = min( min_ps,    minval(ps) )
+
+  enddo
+
+  call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
+
+end subroutine
+
+!_______________________________________________________________________
+subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+
+  type(element_t),    intent(inout), target :: elem(:)                  ! element array
+  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
+  type(hvcoord_t),    intent(in)            :: hvcoord                  ! hybrid vertical coordinates
+  integer,            intent(in)            :: nets,nete                ! start, end element index
+  integer,            intent(in)            :: nt, ntQ                  ! time level index
+  real(rl),           intent(in)            :: dt                       ! time-step size
+  type(TimeLevel_t),  intent(in)            :: tl                       ! time level structure
+
+  integer :: i,j,k,ie                                                     ! loop indices
+  real(rl):: lat
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,exner,exner_kess,p,dp,Rstar,rho,z,qv,qc,qr
+  real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
+  real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
+  real(rl), dimension(np,np)      :: ps
+  real(rl) :: max_w, max_precl, min_ps
+
+  max_w     = -huge(rl)
+  max_precl = -huge(rl)
+  min_ps    = +huge(rl)
+
+  do ie = nets,nete
+
+    precl(:,:,ie) = 0
+
+    ! get current element state
+    call get_state(u,v,w,T,theta,exner,p,dp,ps,Rstar,rho,z,g,i,j,elem(ie),hvcoord,nt,ntQ)
 
     ! get mixing ratios
     qv  = elem(ie)%state%Qdp(:,:,:,1,ntQ)/dp
@@ -323,14 +444,13 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
 
     ! compute form of exner pressure expected by Kessler physics
     exner_kess = (p/p0)**(Rgas/Cp)
-    rho_kess   = p/(Rgas*T)
 
     ! invert columns (increasing z)
     theta_inv= theta(:,:,nlev:1:-1)
     qv_inv   = qv   (:,:,nlev:1:-1)
     qc_inv   = qc   (:,:,nlev:1:-1)
     qr_inv   = qr   (:,:,nlev:1:-1)
-    rho_inv  = rho_kess  (:,:,nlev:1:-1)
+    rho_inv  = rho  (:,:,nlev:1:-1)
     exner_inv= exner_kess(:,:,nlev:1:-1)
     z_inv    = z    (:,:,nlev:1:-1)
 
@@ -359,9 +479,6 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
     qr    = qr_inv   (:,:,nlev:1:-1)
     T     = theta*exner
 
-    ! add sponge layer at top of model?
-    ! call set_forcing_rayleigh_friction(elem(ie),z,ztop,zc,tau,u0(:,:,:,ie),v0(:,:,:,ie),nt)
-
     ! set dynamics forcing
     elem(ie)%derived%FM(:,:,1,:) = 0
     elem(ie)%derived%FM(:,:,2,:) = 0
@@ -375,12 +492,12 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )
     max_precl = max( max_precl, maxval(precl(:,:,ie)) )
+    min_ps    = min( min_ps,    minval(ps) )
 
   enddo
 
-  call dcmip2016_append_measurements(max_w,max_precl,tl,hybrid)
+  call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
 
 end subroutine
-
 end module dcmip16_wrapper
 #endif

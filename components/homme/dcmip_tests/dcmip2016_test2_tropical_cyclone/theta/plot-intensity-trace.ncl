@@ -16,7 +16,7 @@ top_to_bottom=True     ; is data top to bottom? (false for bottom to top)
 model="CAM-SE"
 
 ; needs to be a catted file ordered time, lev, lat, lon (or time, lat, lon for PS)
-filename="/glade/u/home/zarzycki/scratch/cam5_work/dcmip2/ne120_kessler_bryan/dcmip2.cam.h1.2000-01-01-00000.nc.nc"
+filename="./movies/dcmip2016_test21.nc"
 
 ;=======================================================================================
 
@@ -35,14 +35,14 @@ else
 end if
 
 if (whichVar .eq. "PS") then
-  PS=a->PS(:,{minLat:maxLat},:)              ; just take out NH since we know storm is there
+  PS=a->ps(:,{minLat:maxLat},:)              ; just take out NH since we know storm is there
   PS=PS/100.                                 ; convert from Pa to hPa/mb
   PS@long_name="Surface pressure"
   PS@units="hPa"
   var_vtime = dim_min_n_Wrap(PS,(/1,2/))     ; for now, just find min over lat/lon domain at each time
 else if (whichVar .eq. "WIND") then
-  UBOT=a->U(:,sfcLev,{minLat:maxLat},:)
-  VBOT=a->V(:,sfcLev,{minLat:maxLat},:)
+  UBOT=a->u(:,sfcLev,{minLat:maxLat},:)
+  VBOT=a->v(:,sfcLev,{minLat:maxLat},:)
   WIND=UBOT
   WIND=sqrt(UBOT^2+VBOT^2)
   WIND@long_name="Lowest level wind"

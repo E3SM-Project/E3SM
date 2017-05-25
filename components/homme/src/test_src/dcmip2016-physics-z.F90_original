@@ -51,7 +51,7 @@
 !
 !=======================================================================
 
-SUBROUTINE DCMIP2016_PHYSICS(test, u, v, p, theta, qv, qc, qr, rho, &
+SUBROUTINE DCMIP2016_PHYSICS(test, u, v, p, qv, qc, qr, rho, &
                              dt, z, zi, lat, nz, precl, pbl_type, prec_type)
 
   use physical_constants,   only:  g, Rgas, Cp,Rwater_vapor, rearth0, omega0,dd_pi
@@ -69,7 +69,6 @@ SUBROUTINE DCMIP2016_PHYSICS(test, u, v, p, theta, qv, qc, qr, rho, &
             u       ,  & ! Zonal velocity on model levels (m/s)
             v       ,  & ! Meridional velocity on model levels (m/s)
             p       ,  & ! Pressure on model levels (Pa)
-            theta   ,  & ! Potential temperature on model levels
             qv      ,  & ! Water vapor mixing ratio (kg/kg)
             qc      ,  & ! Cloud water mixing ratio (kg/kg)
             qr           ! Rain water mixing ratio (kg/kg)
@@ -189,7 +188,7 @@ REAL(8), PARAMETER ::         &
     rhom,                     & ! Moist density on model levels
     qsv,                      & ! Specific humidity (kg/kg)
     t,                        & ! Temperature (K)
-!    theta,                    & ! Potential temperature on model levels
+    theta,                    & ! Potential temperature on model levels
     exner,                    & ! Exner function (p/p0)**(R/cp)
     CEm,                      & ! Matrix coefficients for PBL scheme
     CEE,                      & ! Matrix coefficients for PBL scheme
@@ -248,10 +247,7 @@ REAL(8), PARAMETER ::         &
   do k = 1, nz
     rhom(k) = rho(k) * (1.0 + qv(k))
     qsv(k) = qv(k) * rho(k) / rhom(k)
-
-   !t(k) = p(k) / (rhom(k) * rair * (one + zvir * qv(k)))
-    exner(k) = (p(k) / p0)**(rair/cpair)
-    t(k) = theta(k)*exner(k)
+    t(k) = p(k) / (rhom(k) * rair * (one + zvir * qv(k)))
   enddo
 
   !------------------------------------------------
@@ -280,10 +276,10 @@ REAL(8), PARAMETER ::         &
   ! Large-scale precipitation (Kessler)
   !------------------------------------------------
   elseif (prec_type .eq. 0) then
-    !do k=1,nz
-    !  exner(k) = (p(k) / p0)**(rair/cpair)
-    !  theta(k) = t(k) / exner(k)
-    !enddo
+    do k=1,nz
+      exner(k) = (p(k) / p0)**(rair/cpair)
+      theta(k) = t(k) / exner(k)
+    enddo
 
     CALL KESSLER(   &
       theta,        &
@@ -301,6 +297,7 @@ REAL(8), PARAMETER ::         &
     do k = 1,nz
       qsv(k) = qv(k) / (one + qv(k))
       rhom(k) = rho(k) / (one - qsv(k))
+
       thetav = theta(k) * (one + zvir * qv(k))
       p(k) = p0 * (rhom(k) * rair * thetav / p0)**(cpair/(cpair-rair))
       t(k) = p(k) / (rhom(k) * rair * (one + zvir * qv(k)))
@@ -344,9 +341,7 @@ REAL(8), PARAMETER ::         &
 
   ! Bryan Planetary Boundary Layer
   elseif (pbl_type .eq. 1) then
-
     do k = 1, nz+1
-
       if (zi(k) .le. zpbltop) then
         Km(k) = kappa * sqrt(Cd) * wind * zi(k) &
               * (one - zi(k)/zpbltop) * (one - zi(k)/zpbltop)
@@ -449,6 +444,7 @@ REAL(8), PARAMETER ::         &
   do k = 1,nz
     qv(k) = qsv(k) / (one - qsv(k))
     rhom(k) = rho(k) / (one - qsv(k))
+
     thetav = theta(k) * (one + zvir * qv(k))
     p(k) = p0 * (rhom(k) * rair * thetav / p0)**(cpair/(cpair-rair))
   enddo

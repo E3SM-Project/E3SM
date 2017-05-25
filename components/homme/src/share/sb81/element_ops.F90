@@ -204,7 +204,7 @@ contains
   end subroutine set_elem_state
 
   !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,cp_star,rho,zm,g,i,j,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,ps,cp_star,rho,zm,g,i,j,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
     ! used by tests to compute idealized physics forcing terms
@@ -224,6 +224,7 @@ contains
     v   = elem%state%v   (:,:,2,:,nt)
     w   = 0                             ! todo: w = -omega/(rho g)
     T   = elem%state%T   (:,:,:,nt)
+    ps  = elem%state%ps_v(:,:,    nt)
     zm  = elem%derived%phi(:,:,:)/g
 
     do k=1,nlev
