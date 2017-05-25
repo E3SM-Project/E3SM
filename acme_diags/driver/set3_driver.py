@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import cdms2
 import MV2
 import cdutil
@@ -66,27 +67,32 @@ def run_diag(parameter):
     regions = parameter.regions
 
     for season in seasons:
-        if hasattr(parameter, 'test_path'):
-            filename1 = parameter.test_path
-            print filename1
-        else:
+        if hasattr(parameter, 'test_file'):
+            filename1 = test_data_path + parameter.test_file
+            if not os.path.exists(filename1):
+	        print('File not found: {}'.format(filename1))
+		continue
+	else:
             try:
                 filename1 = utils.findfile(test_data_path, test_name, season)
-                print filename1
             except IOError:
                 print('No file found for {} and {}'.format(test_name, season))
                 continue
 
-        if hasattr(parameter, 'reference_path'):
-            filename2 = parameter.reference_path
-            print filename2
-        else:
+        if hasattr(parameter, 'ref_file'):
+            filename2 = reference_data_path + parameter.ref_file
+            if not os.path.exists(filename2):
+	        print('File not found: {}'.format(filename2))
+		continue
+	else:
             try:
                 filename2 = utils.findfile(reference_data_path, ref_name, season)
-                print filename2
             except IOError:
                 print('No file found for {} and {}'.format(ref_name, season))
                 continue
+
+	print('test file: {}'.format(filename1))
+	print('reference file: {}'.format(filename2))
 
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
