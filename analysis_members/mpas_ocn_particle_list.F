@@ -34,6 +34,7 @@ module ocn_particle_list
   use mpas_dmpar
   use mpas_block_decomp
   use mpas_pool_routines
+  use mpas_timer
 
   ! blanket statments to restrict implicit module's scope
   implicit none
@@ -801,9 +802,12 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
      ! communicate data (assumes that each processor has knowledge about construction of the pool lagrPartTrackPoolHalo,
      ! from the registry.  If this changes, this will break this member...  It also assumes the code is deterministic
      ! and that pools are built and computed the exact same way on each processor.
+     call mpas_timer_start("communicate_data_halo_LPT")
      call communicate_particle_halo_data(domain, procNeighs, nPartSend, nPartRecv, listPLSend, listPLRecv)
+     call mpas_timer_stop("communicate_data_halo_LPT")
      LIGHT_DEBUG_WRITE('finished communicate_particle_halo_data')
 
+     call mpas_timer_start("communicate_data_nonhalo_LPT")
      if(haloOnly) then
        ! need to also allocate the nonHalo data somehow, it just needs initialized so that it can be "filled in" when
        ! necessary for output
@@ -812,6 +816,7 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
      else
        call communicate_particle_nonhalo_data(domain, procNeighs, nPartSend, nPartRecv, listPLSend, listPLRecv)
      end if
+     call mpas_timer_stop("communicate_data_nonhalo_LPT")
 
      ! now there should be the complete particles on listPLRecv.  These, however, need moved to the blocks of the processor
      ! for use in calculations
