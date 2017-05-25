@@ -6,7 +6,7 @@
 
 cd $CASEROOT # CASEROOT is always assumed to be an environment variable
 
-set CIMEROOT	= `./xmlquery  CIMEROOT -value `
+set CIMEROOT	= `./xmlquery  CIMEROOT --value `
 set GMAKE	= `./xmlquery  GMAKE	--value `
 
 # NOTE- (mv, 2015-01-02) SHAREDPATH is an environment variable set in

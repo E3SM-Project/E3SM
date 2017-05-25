@@ -17,4 +17,10 @@
     <desc compset="_XWAV">Dead wave component</desc>
   </description>
 
+  <help>
+    =========================================
+    XWAV naming conventions in compset name
+    =========================================
+  </help>
+
 </entry_id>

@@ -44,7 +44,7 @@ class EnvBatch(EnvBase):
                 elif value.count(":") == 2:
                     t_spec = "%H:%M:%S"
                 else:
-                    expect(False, "could not interpret format for wallclock time %s"%value)
+                    expect(False, "could not interpret format for wallclock time {}".format(value))
                 value = format_time(walltime_format, t_spec, value)
 
         # allow the user to set item for all jobs if subgroup is not provided
@@ -91,7 +91,7 @@ class EnvBatch(EnvBase):
                 type_info = new_type_info
             else:
                 expect( type_info == new_type_info,
-                        "Inconsistent type_info for entry id=%s %s %s" % (vid, new_type_info, type_info))
+                        "Inconsistent type_info for entry id={} {} {}".format(vid, new_type_info, type_info))
         return type_info
 
     def get_jobs(self):
@@ -153,7 +153,7 @@ class EnvBatch(EnvBase):
             self.root.append(deepcopy(batchobj.machine_node))
 
     def make_batch_script(self, input_template, job, case, total_tasks, tasks_per_node, num_nodes, thread_count):
-        expect(os.path.exists(input_template), "input file '%s' does not exist" % input_template)
+        expect(os.path.exists(input_template), "input file '{}' does not exist".format(input_template))
 
         self.tasks_per_node = tasks_per_node
         self.num_tasks = total_tasks
@@ -198,7 +198,8 @@ class EnvBatch(EnvBase):
 
             if force_queue:
                 if not self.queue_meets_spec(force_queue, task_count, walltime=walltime, job=job):
-                    logger.warning("WARNING: User-requested queue '%s' does not meet requirements for job '%s'" % (force_queue, job))
+                    logger.warning("WARNING: User-requested queue '{}' does not meet requirements for job '{}'".format(force_queue, job))
+                queue = force_queue
             else:
                 queue = self.select_best_queue(task_count, walltime=walltime, job=job)
                 if queue is None and walltime is not None:
@@ -208,9 +209,9 @@ class EnvBatch(EnvBase):
                         # It was, override the walltime if a test, otherwise just warn the user
                         new_walltime = self.get_queue_specs(queue)[3]
                         expect(new_walltime is not None, "Should never make it here")
-                        logger.warning("WARNING: Requested walltime '%s' could not be matched by any queue" % walltime)
+                        logger.warning("WARNING: Requested walltime '{}' could not be matched by any queue".format(walltime))
                         if allow_walltime_override:
-                            logger.warning("  Using walltime '%s' instead" % new_walltime)
+                            logger.warning("  Using walltime '{}' instead".format(new_walltime))
                             walltime = new_walltime
                         else:
                             logger.warning("  Continuing with suspect walltime, batch submission may fail")
@@ -221,12 +222,20 @@ class EnvBatch(EnvBase):
                     queue = default_queue_node.text
                     walltime = self.get_queue_specs(queue)[3]
 
-            walltime = self.get_queue_specs(queue)[3] if walltime is None else walltime
-            walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
+            if walltime is None:
+                # Figure out walltime
+                specs = self.get_queue_specs(queue)
+                if specs is None:
+                    # Queue is unknown, use specs from default queue
+                    walltime = self.get_default_queue().get("walltimemax")
+                else:
+                    walltime = specs[3]
+
+                walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
 
             self.set_value("JOB_QUEUE", queue, subgroup=job)
             self.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
-            logger.debug("Job %s queue %s walltime %s" % (job, queue, walltime))
+            logger.debug("Job {} queue {} walltime {}".format(job, queue, walltime))
 
     def get_batch_directives(self, case, job, raw=False):
         """
@@ -246,7 +255,7 @@ class EnvBatch(EnvBase):
                         directive = transform_vars(directive, case=case, subgroup=job, default=default, check_members=self)
                     elif default is not None:
                         directive = transform_vars(directive, default=default)
-                    result.append("%s %s" % (directive_prefix, directive))
+                    result.append("{} {}".format(directive_prefix, directive))
 
         return "\n".join(result)
 
@@ -269,7 +278,7 @@ class EnvBatch(EnvBase):
                     continue
 
             if name is None:
-                submitargs+=" %s"%flag
+                submitargs+=" {}".format(flag)
             else:
                 if name.startswith("$"):
                     name = name[1:]
@@ -293,23 +302,23 @@ class EnvBatch(EnvBase):
 
                     if flag.rfind("=", len(flag)-1, len(flag)) >= 0 or\
                        flag.rfind(":", len(flag)-1, len(flag)) >= 0:
-                        submitargs+=" %s%s"%(flag,str(rval).strip())
+                        submitargs+=" {}{}".format(flag,str(rval).strip())
                     else:
-                        submitargs+=" %s %s"%(flag,str(rval).strip())
+                        submitargs+=" {} {}".format(flag,str(rval).strip())
 
         return submitargs
 
-    def submit_jobs(self, case, no_batch=False, job=None, batch_args=None, dry_run=False):
+    def submit_jobs(self, case, no_batch=False, job=None, skip_pnl=False, batch_args=None, dry_run=False):
         alljobs = self.get_jobs()
         startindex = 0
         jobs = []
         firstjob = job
         if job is not None:
-            expect(job in alljobs, "Do not know about batch job %s"%job)
+            expect(job in alljobs, "Do not know about batch job {}".format(job))
             startindex = alljobs.index(job)
 
         for index, job in enumerate(alljobs):
-            logger.debug( "Index %d job %s startindex %d" % (index, job, startindex))
+            logger.debug( "Index {:d} job {} startindex {:d}".format(index, job, startindex))
             if index < startindex:
                 continue
             try:
@@ -320,8 +329,7 @@ class EnvBatch(EnvBase):
                     prereq = case.get_resolved_value(prereq)
                     prereq = eval(prereq)
             except:
-                expect(False,"Unable to evaluate prereq expression '%s' for job '%s'"%(self.get_value('prereq',subgroup=job), job))
-
+                expect(False,"Unable to evaluate prereq expression '{}' for job '{}'".format(self.get_value('prereq',subgroup=job), job))
             if prereq:
                 jobs.append((job, self.get_value('dependency', subgroup=job)))
 
@@ -353,8 +361,8 @@ class EnvBatch(EnvBase):
             if slen == 0:
                 jobid = None
 
-            logger.warn("job is %s" % job)
-            result = self._submit_single_job(case, job, jobid, no_batch=no_batch, batch_args=batch_args, dry_run=dry_run)
+            logger.warn("job is {}".format(job))
+            result = self._submit_single_job(case, job, jobid, no_batch=no_batch, skip_pnl=skip_pnl, batch_args=batch_args, dry_run=dry_run)
             batch_job_id = str(alljobs.index(job)) if dry_run else result
             depid[job] = batch_job_id
             jobcmds.append( (job, result) )
@@ -366,8 +374,8 @@ class EnvBatch(EnvBase):
         else:
             return sorted(list(depid.values()))
 
-    def _submit_single_job(self, case, job, depid=None, no_batch=False, batch_args=None, dry_run=False):
-        logger.warn("Submit job %s"%job)
+    def _submit_single_job(self, case, job, depid=None, no_batch=False, skip_pnl=False, batch_args=None, dry_run=False):
+        logger.warn("Submit job {}".format(job))
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
         if batch_system is None or batch_system == "none" or no_batch:
             # Import here to avoid circular include
@@ -375,7 +383,7 @@ class EnvBatch(EnvBase):
             from CIME.case_run        import case_run # pylint: disable=unused-variable
             from CIME.case_st_archive import case_st_archive # pylint: disable=unused-variable
 
-            logger.info("Starting job script %s" % job)
+            logger.info("Starting job script {}".format(job))
 
             function_name = job.replace(".", "_")
             if not dry_run:
@@ -405,13 +413,16 @@ class EnvBatch(EnvBase):
             if  string is not None:
                 submitcmd += string + " "
 
+        if job == 'case.run' and skip_pnl:
+            submitcmd += " --skip-preview-namelist"
+
         if dry_run:
             return submitcmd
         else:
-            logger.info("Submitting job script %s"%submitcmd)
+            logger.info("Submitting job script {}".format(submitcmd))
             output = run_cmd_no_fail(submitcmd, combine_output=True)
             jobid = self.get_job_id(output)
-            logger.info("Submitted job id is %s"%jobid)
+            logger.info("Submitted job id is {}".format(jobid))
             return jobid
 
     def get_batch_system_type(self):
@@ -430,12 +441,17 @@ class EnvBatch(EnvBase):
         expect(jobid_pattern is not None, "Could not find jobid_pattern in env_batch.xml")
         search_match = re.search(jobid_pattern, output)
         expect(search_match is not None,
-               "Couldn't match jobid_pattern '%s' within submit output:\n '%s'" % (jobid_pattern, output))
+               "Couldn't match jobid_pattern '{}' within submit output:\n '{}'".format(jobid_pattern, output))
         jobid = search_match.group(1)
         return jobid
 
     def queue_meets_spec(self, queue, num_pes, walltime=None, job=None):
-        jobmin, jobmax, jobname, walltimemax, strict = self.get_queue_specs(queue)
+        specs = self.get_queue_specs(queue)
+        if specs is None:
+            logger.warning("WARNING: queue '%s' is unknown to this system" % queue)
+            return True
+
+        jobmin, jobmax, jobname, walltimemax, strict = specs
 
         # A job name match automatically meets spec
         if job is not None and jobname is not None:
@@ -484,7 +500,7 @@ class EnvBatch(EnvBase):
 
                 return jobmin, jobmax, jobname, walltimemax, strict
 
-        expect(False, "Queue '%s' is unknown to this system" % queue)
+        return None
 
     def get_default_queue(self):
         node = self.get_optional_node("queue", attributes={"default" : "true"})

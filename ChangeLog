@@ -1,5 +1,195 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 5-10-2017
+Tag: cime5.3.0-alpha.13
+Answer Changes:  Round Off
+Tests: aux_glc test suite
+Dependencies:
+
+Brief Summary:
+    - New CISM mapping files.
+    - Fix pylint issues.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+67c14ca Merge pull request #1478 from billsacks/cism_new_mapping_files
+affab50 fix pylint issue
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       scripts/lib/CIME/case.py
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 5-9-2017
+Tag: cime5.3.0-alpha.12
+Answer Changes: None
+Tests: scripts_regression_tests.py
+       hand test of xmlquery
+       ERR.f09_g16.B1850
+       code_checker
+       create_test cime_developer
+       SMS.ne30z60_ne30.F1850
+       ERS2 test
+       SMS_Mmpi-serial.f19_g17.X.hobart_intel
+Dependencies:
+
+Brief Summary:
+    - Fixes building when certain path variables have a trailing /
+    - xmlquery options --file and --listall were not working together, now
+      they are.
+    - Fix for SOM bug introduced in PR #1451
+    - Add new grid aliases for gx3v7 and usgs masks.
+    - Improve ERR by removing rundir files and recopying from sta rest
+      directory.
+    - Change allows the user to specify a file in either the config_pes.xml
+      or the env_mach_pes.xml format.
+    - Add skip-preview-namelist to case.submit and case_run.
+    - Simplify settings in CCSM_CO2_PPMV in config_components_cesm.xml.
+    - Fix force queue.
+    - Fix pylint errors. 
+    - Fix bug where file drv_flds_in wasn't being closed after being opened.
+    - Add missing term for NET WATER BUDGET tables.
+    - Add some major NCAR contributors to cime.
+    - Fixes for zlev problem.
+    - Renamed manage_case to query_config.
+    - Make alternative implementation for ERS.
+    - Remove empty mpi-serial settings from config_machines.xml.
+    - Only warning for single dash.
+    - Additional fields needed for environment_variables.
+    - Template files were not correctly upgraded to the new argument oarsing.
+    - Fix ACME config_machines.xml format.
+    - Add new runoff -> gx1v6 maps.
+    - Removed old ncl utilities. Changed the random pertlim generator to allow
+      more (and flexible) number of ensemble members. Added the capability to
+      generate 9 time step ensembles for UF-CAM-ECT.
+
+User interface changes: 
+    - xmlquery --file and --listall can now be used together.
+    - --pesfile argument in create_newcase
+    - Added --skip-preview-namelist to case.build and
+      template.case.run
+    - manage_case -> query_config
+      --compset -> --compsets
+      --machine -> --machines
+      added 'all' option for --compsets
+      added 'current' and to --machines
+    - New ERS2 test type.
+    - Print a warning to stdout if single dash used with multi-char arg.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+56f5df26 Merge pull request #1495 from ESMCI/mfdeakin-sandia/fix_build_paths
+e234bc6e Merge pull request #1504 from jedwards4b/xmlquery_again
+10fbc430 Merge pull request #1501 from ESMCI/mvertens/somfix
+3beac4ab Merge pull request #1500 from ESMCI/fischer/grid_mask
+1ca58a07 Merge pull request #1499 from jedwards4b/err_test_improvement1
+18112d92 Merge pull request #1494 from jedwards4b/pesfile_usage
+cdcb096b Merge pull request #1471 from ESMCI/erichlf/case_submit/skip_pnl
+5684406d Merge pull request #1487 from ESMCI/mvertens/fix_ccsm_co2_ppmv
+99f1f5ba Merge pull request #1496 from ESMCI/jgfouca/fix_force_queue
+93a452a9 Merge pull request #1490 from ESMCI/jgfouca/fix_pylint_errs
+cf204753 Merge pull request #1491 from ESMCI/fischer/readnl_close
+0847f8df Merge pull request #1427 from jtruesdal/water_budget
+893a6135 Merge pull request #1458 from billsacks/ncar_credits
+653dd297 Merge pull request #1469 from ESMCI/mvertens/fixzlev
+68f4b5d7 Merge pull request #1388 from ESMCI/erichlf/manage_case
+b661f5bd Merge branch 'jgfouca/alternative_impl_for_ers' (PR #1482)
+ef7d0fe9 Merge pull request #1482 from ESMCI/jgfouca/alternative_impl_for_ers
+7aadd49b Merge pull request #1454 from jedwards4b/mpi-serial-cleanup
+4d4281f2 Merge pull request #1474 from jedwards4b/no_error_warning
+34d00048 Minor hotfix for ACME config_machines.xml
+71064281 Merge pull request #1477 from jedwards4b/env_vars_attributes
+9c463bf9 Merge pull request #1476 from ESMCI/jgfouca/fix_acme_template_files
+25ce0223 Merge pull request #1475 from
+ESMCI/jgfouca/fix_acme_config_mach_xml_format
+baaa2cc3 Merge pull request #1472 from mnlevy1981/mapping/runoff_to_gx1v6
+00c22c0c Merge pull request #1457 from allibco/master
+
+
+Modified files: git diff --name-status [previous_tag]
+M	README.md
+M	config/acme/machines/config_machines.xml
+M	config/acme/machines/template.case.run
+M	config/acme/machines/template.case.test
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.case.run
+M	config/config_tests.xml
+M	config/xml_schemas/env_mach_specific.xsd
+M	scripts/Tools/case.submit
+M	scripts/Tools/xmlquery
+M	scripts/create_newcase
+M	scripts/create_test
+M	scripts/lib/CIME/SystemTests/err.py
+A	scripts/lib/CIME/SystemTests/ers2.py
+M	scripts/lib/CIME/XML/component.py
+M	scripts/lib/CIME/XML/compsets.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_pes.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/grids.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_run.py
+M	scripts/lib/CIME/case_submit.py
+M	scripts/lib/CIME/code_checker.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/utils.py
+D	scripts/manage_case
+A	scripts/query_config
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.gptl
+M	src/components/data_comps/docn/cime_config/config_component.xml
+M	src/components/data_comps/docn/docn_comp_mod.F90
+M	src/components/stub_comps/satm/cime_config/config_component.xml
+M	src/components/stub_comps/sesp/cime_config/config_component.xml
+M	src/components/stub_comps/sglc/cime_config/config_component.xml
+M	src/components/stub_comps/sice/cime_config/config_component.xml
+M	src/components/stub_comps/slnd/cime_config/config_component.xml
+M	src/components/stub_comps/socn/cime_config/config_component.xml
+M	src/components/stub_comps/srof/cime_config/config_component.xml
+M	src/components/stub_comps/swav/cime_config/config_component.xml
+M	src/components/xcpl_comps/xatm/cime_config/config_component.xml
+M	src/components/xcpl_comps/xglc/cime_config/config_component.xml
+M	src/components/xcpl_comps/xice/cime_config/config_component.xml
+M	src/components/xcpl_comps/xlnd/cime_config/config_component.xml
+M	src/components/xcpl_comps/xocn/cime_config/config_component.xml
+M	src/components/xcpl_comps/xrof/cime_config/config_component.xml
+M	src/components/xcpl_comps/xwav/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/main/seq_diag_mct.F90
+M	src/drivers/mct/shr/seq_drydep_mod.F90
+M	src/drivers/mct/shr/shr_ndep_mod.F90
+M	tools/Readme.configure
+M	tools/configure
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_r05_to_gx1v6_nnsm_e1000r300.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_rx1_to_gx1v6_nnsm_e1000r300.nml
+A	tools/statistical_ensemble_test/README
+M	tools/statistical_ensemble_test/ensemble.sh
+D	tools/statistical_ensemble_test/ncl_library/Zscore.ncl
+D	tools/statistical_ensemble_test/ncl_library/area_avg.ncl
+D	tools/statistical_ensemble_test/ncl_library/create_ensemble.ncl
+D	tools/statistical_ensemble_test/ncl_library/global.ncl
+D	tools/statistical_ensemble_test/ncl_library/plot_rmsz.ncl
+D	tools/statistical_ensemble_test/ncl_library/print.ncl
+D	tools/statistical_ensemble_test/ncl_library/rmsz.ncl
+D	tools/statistical_ensemble_test/ncl_library/vinterp.ncl
+M	tools/statistical_ensemble_test/single_run.sh
+D	tools/statistical_ensemble_test/test_run_against_ensemble.ncl
+D	tools/statistical_ensemble_test/validation_test.sh
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer
 Date: 5-3-2017
 Tag: cime5.3.0-alpha.11

@@ -17,4 +17,10 @@
     <desc compset="_SGLC">Stub glc component</desc>
   </description>
 
+  <help>
+    =========================================
+    SGLC naming conventions in compset name
+    =========================================
+  </help>
+
 </entry_id>

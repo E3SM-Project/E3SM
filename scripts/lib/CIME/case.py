@@ -415,6 +415,9 @@ class Case(object):
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are %s" % components)
 
+        if pesfile is not None:
+            self._pesfile = pesfile
+
         # Loop through all of the files listed in COMPSETS_SPEC_FILE and find the file
         # that has a match for either the alias or the longname in that order
         for component in components:
@@ -426,9 +429,11 @@ class Case(object):
             if (os.path.isfile(compsets_filename)):
                 compsets = Compsets(compsets_filename)
                 match, compset_alias, science_support, self._user_mods = compsets.get_compset_match(name=compset_name)
-                pesfile = files.get_value("PES_SPEC_FILE"     , {"component":component})
                 if match is not None:
-                    self._pesfile = pesfile
+                    if pesfile is None:
+                        self._pesfile = files.get_value("PES_SPEC_FILE"     , {"component":component})
+                        self.set_lookup_value("PES_SPEC_FILE"      ,
+                                              files.get_value("PES_SPEC_FILE"     , {"component":component}, resolved=False))
                     self._compsetsfile = compsets_filename
                     self._compsetname = match
                     tests_filename    = files.get_value("TESTS_SPEC_FILE"   , {"component":component}, resolved=False)
@@ -439,8 +444,6 @@ class Case(object):
                     self.set_lookup_value("TESTS_SPEC_FILE"    , tests_filename)
                     self.set_lookup_value("TESTS_MODS_DIR"     , tests_mods_dir)
                     self.set_lookup_value("USER_MODS_DIR"      , user_mods_dir)
-                    self.set_lookup_value("PES_SPEC_FILE"      ,
-                                   files.get_value("PES_SPEC_FILE"     , {"component":component}, resolved=False))
                     compset_info = "Compset longname is %s"%(match)
                     if self._user_mods is not None:
                         compset_info += " with user_mods directory %s"%(self._user_mods)
@@ -453,7 +456,7 @@ class Case(object):
             #Do not error out for user_compset
             logger.warn("Could not find a compset match for either alias or longname in %s" %(compset_name))
             self._compsetname = compset_name
-            self._pesfile = pesfile
+            logger.info("Pes     specification file is %s" %(pesfile))
             self.set_lookup_value("PES_SPEC_FILE", pesfile)
         else:
             expect(False,
@@ -552,6 +555,111 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
+    def _setup_mach_pes(self, pecount, ninst, machine_name, mpilib):
+        #--------------------------------------------
+        # pe layout
+        #--------------------------------------------
+        mach_pes_obj = None
+        # self._pesfile may already be env_mach_pes.xml if so we can just return
+        gfile = GenericXML(infile=self._pesfile)
+        ftype = gfile.get_id()
+        expect(ftype == "env_mach_pes.xml" or ftype == "config_pes", " Do not recognize %s as a valid CIME pes file %s"%(self._pesfile, ftype))
+        if ftype == "env_mach_pes.xml":
+            new_mach_pes_obj = EnvMachPes(infile=self._pesfile, components=self._components)
+            self.update_env(new_mach_pes_obj, "mach_pes")
+            return new_mach_pes_obj.get_value("TOTALPES")
+        pesobj = Pes(self._pesfile)
+
+        match1 = re.match('(.+)x([0-9]+)', "" if pecount is None else pecount)
+        match2 = re.match('([0-9]+)', "" if pecount is None else pecount)
+
+        pes_ntasks = {}
+        pes_nthrds = {}
+        pes_rootpe = {}
+        other      = {}
+
+        force_tasks = None
+        force_thrds = None
+
+        if match1:
+            opti_tasks = match1.group(1)
+            if opti_tasks.isdigit():
+                force_tasks = int(opti_tasks)
+            else:
+                pes_ntasks = pesobj.find_pes_layout(self._gridname, self._compsetname, machine_name,
+                                                    pesize_opts=opti_tasks, mpilib=mpilib)[0]
+            force_thrds = int(match1.group(2))
+        elif match2:
+            force_tasks = int(match2.group(1))
+            pes_nthrds = pesobj.find_pes_layout(self._gridname, self._compsetname, machine_name, mpilib=mpilib)[1]
+        else:
+            pes_ntasks, pes_nthrds, pes_rootpe, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
+                                                                               machine_name, pesize_opts=pecount, mpilib=mpilib)
+
+        if match1 or match2:
+            for component_class in self._component_classes:
+                if force_tasks is not None:
+                    string_ = "NTASKS_" + component_class
+                    pes_ntasks[string_] = force_tasks
+
+                if force_thrds is not None:
+                    string_ = "NTHRDS_" + component_class
+                    pes_nthrds[string_] = force_thrds
+
+                # Always default to zero rootpe if user forced procs and or threads
+                string_ = "ROOTPE_" + component_class
+                pes_rootpe[string_] = 0
+
+        mach_pes_obj = self.get_env("mach_pes")
+
+        if other is not None:
+            for key, value in other.items():
+                self.set_value(key, value)
+
+        totaltasks = []
+        for comp_class in self._component_classes:
+            ntasks_str, nthrds_str, rootpe_str = "NTASKS_%s" % comp_class, "NTHRDS_%s" % comp_class, "ROOTPE_%s" % comp_class
+
+            ntasks = pes_ntasks[ntasks_str] if ntasks_str in pes_ntasks else 1
+            nthrds = pes_nthrds[nthrds_str] if nthrds_str in pes_nthrds else 1
+            rootpe = pes_rootpe[rootpe_str] if rootpe_str in pes_rootpe else 0
+
+            totaltasks.append( (ntasks + rootpe) * nthrds )
+
+            mach_pes_obj.set_value(ntasks_str, ntasks)
+            mach_pes_obj.set_value(nthrds_str, nthrds)
+            mach_pes_obj.set_value(rootpe_str, rootpe)
+
+        pesize = 1
+        pes_per_node = self.get_value("PES_PER_NODE")
+        for val in totaltasks:
+            if val < 0:
+                val = -1*val*pes_per_node
+            if val > pesize:
+                pesize = val
+
+        # Make sure that every component has been accounted for
+        # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
+        for compclass in self._component_classes:
+            if compclass == "CPL":
+                continue
+            key = "NINST_%s"%compclass
+            # ESP models are currently limited to 1 instance
+            if compclass == "ESP":
+                mach_pes_obj.set_value(key, 1)
+            else:
+                mach_pes_obj.set_value(key, ninst)
+
+            key = "NTASKS_%s"%compclass
+            if key not in pes_ntasks.keys():
+                mach_pes_obj.set_value(key,1)
+            key = "NTHRDS_%s"%compclass
+            if compclass not in pes_nthrds.keys():
+                mach_pes_obj.set_value(compclass,1)
+
+        return pesize
+
+
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
@@ -638,97 +746,7 @@ class Case(object):
         env_mach_specific_obj.populate(machobj)
         self.schedule_rewrite(env_mach_specific_obj)
 
-        #--------------------------------------------
-        # pe layout
-        #--------------------------------------------
-        match1 = re.match('(.+)x([0-9]+)', "" if pecount is None else pecount)
-        match2 = re.match('([0-9]+)', "" if pecount is None else pecount)
-
-        pes_ntasks = {}
-        pes_nthrds = {}
-        pes_rootpe = {}
-        other      = {}
-
-        pesobj = Pes(self._pesfile)
-
-        force_tasks = None
-        force_thrds = None
-
-        if match1:
-            opti_tasks = match1.group(1)
-            if opti_tasks.isdigit():
-                force_tasks = int(opti_tasks)
-            else:
-                pes_ntasks = pesobj.find_pes_layout(self._gridname, self._compsetname, machine_name,
-                                                    pesize_opts=opti_tasks, mpilib=mpilib)[0]
-            force_thrds = int(match1.group(2))
-        elif match2:
-            force_tasks = int(match2.group(1))
-            pes_nthrds = pesobj.find_pes_layout(self._gridname, self._compsetname, machine_name, mpilib=mpilib)[1]
-        else:
-            pes_ntasks, pes_nthrds, pes_rootpe, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
-                                                                               machine_name, pesize_opts=pecount, mpilib=mpilib)
-
-        if match1 or match2:
-            for component_class in self._component_classes:
-                if force_tasks is not None:
-                    string_ = "NTASKS_" + component_class
-                    pes_ntasks[string_] = force_tasks
-
-                if force_thrds is not None:
-                    string_ = "NTHRDS_" + component_class
-                    pes_nthrds[string_] = force_thrds
-
-                # Always default to zero rootpe if user forced procs and or threads
-                string_ = "ROOTPE_" + component_class
-                pes_rootpe[string_] = 0
-
-        mach_pes_obj = self.get_env("mach_pes")
-
-        if other is not None:
-            for key, value in other.items():
-                self.set_value(key, value)
-
-        totaltasks = []
-        for comp_class in self._component_classes:
-            ntasks_str, nthrds_str, rootpe_str = "NTASKS_%s" % comp_class, "NTHRDS_%s" % comp_class, "ROOTPE_%s" % comp_class
-
-            ntasks = pes_ntasks[ntasks_str] if ntasks_str in pes_ntasks else 1
-            nthrds = pes_nthrds[nthrds_str] if nthrds_str in pes_nthrds else 1
-            rootpe = pes_rootpe[rootpe_str] if rootpe_str in pes_rootpe else 0
-
-            totaltasks.append( (ntasks + rootpe) * nthrds )
-
-            mach_pes_obj.set_value(ntasks_str, ntasks)
-            mach_pes_obj.set_value(nthrds_str, nthrds)
-            mach_pes_obj.set_value(rootpe_str, rootpe)
-
-        maxval = 1
-        pes_per_node = self.get_value("PES_PER_NODE")
-        for val in totaltasks:
-            if val < 0:
-                val = -1*val*pes_per_node
-            if val > maxval:
-                maxval = val
-
-        # Make sure that every component has been accounted for
-        # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
-        for compclass in self._component_classes:
-            if compclass == "CPL":
-                continue
-            key = "NINST_%s"%compclass
-            # ESP models are currently limited to 1 instance
-            if compclass == "ESP":
-                mach_pes_obj.set_value(key, 1)
-            else:
-                mach_pes_obj.set_value(key, ninst)
-
-            key = "NTASKS_%s"%compclass
-            if key not in pes_ntasks.keys():
-                mach_pes_obj.set_value(key,1)
-            key = "NTHRDS_%s"%compclass
-            if compclass not in pes_nthrds.keys():
-                mach_pes_obj.set_value(compclass,1)
+        pesize = self._setup_mach_pes(pecount, ninst, machine_name, mpilib)
 
         #--------------------------------------------
         # batch system
@@ -741,7 +759,7 @@ class Case(object):
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
-        env_batch.set_job_defaults(bjobs, pesize=maxval, walltime=walltime, force_queue=queue, allow_walltime_override=test)
+        env_batch.set_job_defaults(bjobs, pesize=pesize, walltime=walltime, force_queue=queue, allow_walltime_override=test)
         self.schedule_rewrite(env_batch)
 
         #--------------------------------------------
@@ -1103,9 +1121,9 @@ class Case(object):
 
         return newcase
 
-    def submit_jobs(self, no_batch=False, job=None, batch_args=None, dry_run=False):
+    def submit_jobs(self, no_batch=False, job=None, skip_pnl=False, batch_args=None, dry_run=False):
         env_batch = self.get_env('batch')
-        return env_batch.submit_jobs(self, no_batch=no_batch, job=job, batch_args=batch_args, dry_run=dry_run)
+        return env_batch.submit_jobs(self, no_batch=no_batch, job=job, skip_pnl=skip_pnl, batch_args=batch_args, dry_run=dry_run)
 
     def get_mpirun_cmd(self, job="case.run"):
         env_mach_specific = self.get_env('mach_specific')
@@ -1208,19 +1226,19 @@ class Case(object):
 
         gfile = GenericXML(infile=xmlfile)
         ftype = gfile.get_id()
-
+        components = self.get_value("COMP_CLASSES")
         logger.warn("setting case file to %s"%xmlfile)
         new_env_file = None
         for env_file in self._env_entryid_files:
             if os.path.basename(env_file.filename) == ftype:
                 if ftype == "env_run.xml":
-                    new_env_file = EnvRun(infile=xmlfile)
+                    new_env_file = EnvRun(infile=xmlfile, components=components)
                 elif ftype == "env_build.xml":
-                    new_env_file = EnvBuild(infile=xmlfile)
+                    new_env_file = EnvBuild(infile=xmlfile, components=components)
                 elif ftype == "env_case.xml":
-                    new_env_file = EnvCase(infile=xmlfile)
+                    new_env_file = EnvCase(infile=xmlfile, components=components)
                 elif ftype == "env_mach_pes.xml":
-                    new_env_file = EnvMachPes(infile=xmlfile)
+                    new_env_file = EnvMachPes(infile=xmlfile, components=components)
                 elif ftype == "env_batch.xml":
                     new_env_file = EnvBatch(infile=xmlfile)
                 elif ftype == "env_test.xml":
@@ -1246,3 +1264,21 @@ class Case(object):
                     break
 
         self._files = self._env_entryid_files + self._env_generic_files
+
+    def update_env(self, new_object, env_file):
+        """
+        Replace a case env object file
+        """
+        old_object = self.get_env(env_file)
+        new_object.filename = old_object.filename
+        if old_object in self._env_entryid_files:
+            self._env_entryid_files.remove(old_object)
+            self._env_entryid_files.append(new_object)
+        elif old_object in self._env_generic_files:
+            self._env_generic_files.remove(old_object)
+            self._env_generic_files.append(new_object)
+        if old_object in self._env_files_that_need_rewrite:
+            self._env_files_that_need_rewrite.remove(old_object)
+        self._files.remove(old_object)
+        self._files.append(new_object)
+        self.schedule_rewrite(new_object)

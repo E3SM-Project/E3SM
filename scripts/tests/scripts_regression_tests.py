@@ -262,26 +262,6 @@ class J_TestCreateNewcase(unittest.TestCase):
 
         cls._do_teardown.append(testdir)
 
-    def test_f_createnewcase_with_user_compset(self):
-        cls = self.__class__
-
-        testdir = os.path.join(cls._testroot, 'testcreatenewcase_with_user_compset')
-        if os.path.exists(testdir):
-            shutil.rmtree(testdir)
-
-        cls._testdirs.append(testdir)
-
-        pesfile = os.path.join("..","src","drivers","mct","cime_config","config_pes.xml")
-        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --user-compset --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
-        if CIME.utils.get_model() == "cesm":
-            args += " --run-unsupported"
-
-        run_cmd_assert_result(self, "%s/create_newcase %s"%(SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
-        run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
-        run_cmd_assert_result(self, "./case.build", from_dir=testdir)
-
-        cls._do_teardown.append(testdir)
-
     def test_b_user_mods(self):
         cls = self.__class__
 
@@ -380,6 +360,49 @@ class J_TestCreateNewcase(unittest.TestCase):
             run_cmd_no_fail(cmd, from_dir=casedir)
 
         cls._do_teardown.append(cls._testroot)
+
+    def test_f_createnewcase_with_user_compset(self):
+        cls = self.__class__
+
+        testdir = os.path.join(cls._testroot, 'testcreatenewcase_with_user_compset')
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+
+        cls._testdirs.append(testdir)
+
+        pesfile = os.path.join("..","src","drivers","mct","cime_config","config_pes.xml")
+        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --user-compset --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
+        if CIME.utils.get_model() == "cesm":
+            args += " --run-unsupported"
+
+        run_cmd_assert_result(self, "%s/create_newcase %s"%(SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
+        run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
+        run_cmd_assert_result(self, "./case.build", from_dir=testdir)
+
+        cls._do_teardown.append(testdir)
+
+    def test_g_createnewcase_with_user_compset_and_env_mach_pes(self):
+        cls = self.__class__
+
+        testdir = os.path.join(cls._testroot, 'testcreatenewcase_with_user_compset_and_env_mach_pes')
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        previous_testdir = cls._testdirs[-1]
+        cls._testdirs.append(testdir)
+
+        pesfile = os.path.join(previous_testdir,"env_mach_pes.xml")
+        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --user-compset --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
+        if CIME.utils.get_model() == "cesm":
+            args += " --run-unsupported"
+
+        run_cmd_assert_result(self, "%s/create_newcase %s"%(SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
+        run_cmd_assert_result(self, "diff env_mach_pes.xml %s"%(previous_testdir), from_dir=testdir)
+        # this line should cause the diff to fail (I assume no machine is going to default to 17 tasks)
+        run_cmd_assert_result(self, "./xmlchange NTASKS=17", from_dir=testdir)
+        run_cmd_assert_result(self, "diff env_mach_pes.xml %s"%(previous_testdir), from_dir=testdir,
+                              expected_stat=1)
+
+        cls._do_teardown.append(testdir)
 
     @classmethod
     def tearDownClass(cls):
@@ -1485,6 +1508,27 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
         self.assertEqual(result, "shared")
+
+    ###########################################################################
+    def test_cime_case_test_walltime_mgmt_5(self):
+    ###########################################################################
+        if CIME.utils.get_model() != "acme":
+            self.skipTest("Skipping walltime test. Depends on ACME batch settings")
+
+        test_name = "ERS_P1.f19_g16_rx1.A"
+        machine, compiler = "blues", "gnu"
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --queue slartibartfast" %
+                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
+        self.assertEqual(result, "03:00:00")
+
+        result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
+        self.assertEqual(result, "slartibartfast")
 
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
