@@ -204,19 +204,21 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
         num_compared += len(match_ups)
 
         for hist1, hist2 in match_ups:
-            success, cprnc_comments = cprnc(model, hist1, hist2, case, from_dir1,
+            success, cprnc_log_file = cprnc(model, hist1, hist2, case, from_dir1,
                                             multiinst_cpl_compare = multiinst_cpl_compare,
                                             outfile_suffix = outfile_suffix)
             if success:
                 comments += "    %s matched %s\n" % (hist1, hist2)
             else:
                 comments += "    %s did NOT match %s\n" % (hist1, hist2)
-                comments += cprnc_comments + "\n"
+                comments += "    cat " + cprnc_log_file + "\n"
                 all_success = False
 
     if num_compared == 0:
         all_success = False
         comments += "Did not compare any hist files! Missing baselines?\n"
+
+    comments += "PASS" if all_success else "FAIL"
 
     return all_success, comments
 
@@ -245,7 +247,7 @@ def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False, outfil
     outfile_suffix - if non-blank, then the output file name ends with this
         suffix (with a '.' added before the given suffix)
 
-    returns True if the files matched
+    returns (True if the files matched, log_name)
     """
     cprnc_exe = case.get_value("CCSM_CPRNC")
     basename = os.path.basename(file1)
@@ -276,9 +278,9 @@ def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False, outfil
         # dimensions and so cprnc will indicate that the files seem to be DIFFERENT
         # in this case we only want to check that the fields we are able to compare
         # have no differences.
-        return (cpr_stat == 0 and " 0 had non-zero differences" in out, out)
+        return (cpr_stat == 0 and " 0 had non-zero differences" in out, output_filename)
     else:
-        return (cpr_stat == 0 and "files seem to be IDENTICAL" in out, out)
+        return (cpr_stat == 0 and "files seem to be IDENTICAL" in out, output_filename)
 
 def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
     """
