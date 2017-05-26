@@ -80,6 +80,7 @@ class Batch(GenericXML):
 
         return batch_system
 
+    #pylint: disable=arguments-differ
     def get_value(self, name, attribute=None, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_batch.xml file

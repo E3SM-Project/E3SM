@@ -24,6 +24,7 @@ class Component(EntryID):
 
         EntryID.__init__(self, infile, schema=schema)
 
+    #pylint: disable=arguments-differ
     def get_value(self, name, attribute=None, resolved=False, subgroup=None):
         expect(subgroup is None, "This class does not support subgroups")
         return EntryID.get_value(self, name, attribute, resolved)
@@ -92,6 +93,7 @@ class Component(EntryID):
 
         return match_value
 
+    #pylint: disable=arguments-differ
     def get_description(self, compsetname):
         rootnode = self.get_node("description")
         desc_nodes = self.get_nodes("desc", root=rootnode)

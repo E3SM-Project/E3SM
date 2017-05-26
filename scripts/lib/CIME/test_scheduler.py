@@ -36,6 +36,7 @@ PHASES = [TEST_START, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE,
 def _translate_test_names_for_new_pecount(test_names, force_procs, force_threads):
 ###############################################################################
     new_test_names = []
+    caseopts = []
     for test_name in test_names:
         testcase, caseopts, grid, compset, machine, compiler, testmod = parse_test_name(test_name)
         rewrote_caseopt = False
@@ -52,10 +53,7 @@ def _translate_test_names_for_new_pecount(test_names, force_procs, force_threads
                     new_thrds = force_threads if force_threads is not None else old_thrds
 
                     newcaseopt = ("P%s" % new_procs) if new_thrds is None else ("P%sx%s" % (new_procs, new_thrds))
-
-                    # No idea why pylint thinks this is unsubscriptable
-                    caseopts[idx] = newcaseopt # pylint: disable=unsubscriptable-object
-
+                    caseopts[idx] = newcaseopt 
                     rewrote_caseopt = True
                     break
 
@@ -474,14 +472,13 @@ class TestScheduler(object):
         config_test = Tests()
         testnode = config_test.get_test_node(test_case)
         envtest.add_test(testnode)
-
         # Determine the test_case from the test name
         test_case, case_opts = CIME.utils.parse_test_name(test)[:2]
 
         # Determine case_opts from the test_case
         if case_opts is not None:
             logger.debug("case_opts are %s " %case_opts)
-            for opt in case_opts:
+            for opt in case_opts: # pylint: disable=not-an-iterable
 
                 logger.debug("case_opt is %s" %opt)
                 if opt == 'D':

@@ -27,6 +27,7 @@ class EnvBatch(EnvBase):
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_batch.xsd")
         EnvBase.__init__(self, case_root, infile, schema=schema)
 
+    # pylint: disable=arguments-differ
     def set_value(self, item, value, subgroup=None, ignore_type=False):
         """
         Override the entry_id set_value function with some special cases for this class
@@ -62,6 +63,7 @@ class EnvBatch(EnvBase):
 
         return val
 
+    # pylint: disable=arguments-differ
     def get_value(self, item, attribute=None, resolved=True, subgroup="case.run"):
         """
         Must default subgroup to something in order to provide single return value

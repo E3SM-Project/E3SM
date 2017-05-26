@@ -142,8 +142,8 @@ class NamelistDefinition(EntryID):
         """This function is not implemented."""
         raise TypeError("NamelistDefinition does not support `set_value`.")
 
-    def get_value_match(self, item, attributes=None, exact_match=True, entry_node=None):
-        """Return the default value for the variable named `item`.
+    def get_value_match(self, vid, attributes=None, exact_match=True, entry_node=None):
+        """Return the default value for the variable named `vid`.
 
         The return value is a list of strings corresponding to the
         comma-separated list of entries for the value (length 1 for scalars). If
@@ -157,8 +157,8 @@ class NamelistDefinition(EntryID):
             all_attributes.update(attributes)
 
         if entry_node is None:
-            entry_node = self._nodes[item]
-        value = super(NamelistDefinition, self).get_value_match(item.lower(),attributes=all_attributes, exact_match=exact_match,
+            entry_node = self._nodes[vid]
+        value = super(NamelistDefinition, self).get_value_match(vid.lower(),attributes=all_attributes, exact_match=exact_match,
                                                                 entry_node=entry_node)
         if value is None:
             value = ''
@@ -398,6 +398,7 @@ class NamelistDefinition(EntryID):
             input_pathname = self._get_node_element_info(node, "input_pathname")
         return(input_pathname)
 
+    # pylint: disable=arguments-differ
     def get_default_value(self, item, attribute=None):
         """Return the default value for the variable named `item`.
 

@@ -33,8 +33,11 @@ def parse_command_line(args):
                         help="location of config_grids.xml file in CIME5 format",
                         required=True)
 
-    args = CIME.utils.parse_args_and_handle_standard_logging_options(args,
-                                                                     parser)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
+
+    if args.cime2file is None or args.cime5file is None:
+        parser.print_help()
+        exit()
 
     return args.cime2file, args.cime5file
 

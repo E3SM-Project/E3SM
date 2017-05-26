@@ -8,8 +8,8 @@ def list_tests_from():
     loader = unittest.TestLoader()
     suite = loader.discover(".", pattern="scripts_regression_tests.py")
     test_classes = []
-    for atest in suite:
-        tests = atest._tests
+    for alltests in suite:
+        tests = alltests._tests
         if len(tests):
             for atest in tests:
                 if DEBUG:
