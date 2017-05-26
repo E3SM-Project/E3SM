@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+<!-- attributes -->
+<xs:attribute name="version"  type="xs:decimal"/>
+<xs:attribute name="name"  type="xs:string"/>
+<xs:attribute name="pesize"  type="xs:NCName"/>
+<xs:attribute name="compset"  type="xs:string"/>
+
+<!-- simple elements -->
+<xs:element name="comment" type="xs:string"/>
+<xs:element name="PES_PER_NODE" type="xs:integer"/>
+<xs:element name="MAX_TASKS_PER_NODE" type="xs:integer"/>
+<xs:element name="ntasks_atm" type="xs:integer"/>
+<xs:element name="ntasks_lnd" type="xs:integer"/>
+<xs:element name="ntasks_rof" type="xs:integer"/>
+<xs:element name="ntasks_ice" type="xs:integer"/>
+<xs:element name="ntasks_cpl" type="xs:integer"/>
+<xs:element name="ntasks_glc" type="xs:integer"/>
+<xs:element name="ntasks_ocn" type="xs:integer"/>
+<xs:element name="ntasks_wav" type="xs:integer"/>
+<xs:element name="nthrds_atm" type="xs:integer"/>
+<xs:element name="nthrds_lnd" type="xs:integer"/>
+<xs:element name="nthrds_cpl" type="xs:integer"/>
+<xs:element name="nthrds_glc" type="xs:integer"/>
+<xs:element name="nthrds_ice" type="xs:integer"/>
+<xs:element name="nthrds_ocn" type="xs:integer"/>
+<xs:element name="nthrds_rof" type="xs:integer"/>
+<xs:element name="nthrds_wav" type="xs:integer"/>
+<xs:element name="rootpe_atm" type="xs:integer"/>
+<xs:element name="rootpe_lnd" type="xs:integer"/>
+<xs:element name="rootpe_cpl" type="xs:integer"/>
+<xs:element name="rootpe_glc" type="xs:integer"/>
+<xs:element name="rootpe_ice" type="xs:integer"/>
+<xs:element name="rootpe_ocn" type="xs:integer"/>
+<xs:element name="rootpe_rof" type="xs:integer"/>
+<xs:element name="rootpe_wav" type="xs:integer"/>
+
+<!-- complex elements -->
+
+  <xs:element name="config_pes">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="grid"/>
+        <xs:element ref="overrides" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute ref="version" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="overrides">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="grid"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="grid">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="mach"/>
+      </xs:sequence>
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="mach">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="pes"/>
+      </xs:sequence>
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="pes">
+    <xs:complexType>
+      <xs:choice maxOccurs="unbounded">
+        <xs:element minOccurs="0" ref="PES_PER_NODE"/>
+        <xs:element minOccurs="0" ref="MAX_TASKS_PER_NODE"/>
+        <xs:element minOccurs="0" ref="comment"/>
+        <xs:element minOccurs="0" ref="ntasks"/>
+        <xs:element minOccurs="0" ref="nthrds"/>
+        <xs:element minOccurs="0" ref="rootpe"/>
+      </xs:choice>
+      <xs:attribute ref="compset" use="required"/>
+      <xs:attribute ref="pesize" use="required" />
+    </xs:complexType>
+  </xs:element>
+
+
+  <xs:element name="ntasks">
+    <xs:complexType>
+      <xs:choice maxOccurs="unbounded">
+	<xs:element ref="ntasks_atm"/>
+	<xs:element ref="ntasks_lnd"/>
+	<xs:element ref="ntasks_rof"/>
+	<xs:element ref="ntasks_ice"/>
+	<xs:element ref="ntasks_cpl"/>
+	<xs:element ref="ntasks_glc"/>
+	<xs:element ref="ntasks_ocn"/>
+	<xs:element ref="ntasks_wav"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="nthrds">
+    <xs:complexType>
+      <xs:choice maxOccurs="unbounded">
+	<xs:element ref="nthrds_atm"/>
+	<xs:element ref="nthrds_lnd"/>
+	<xs:element ref="nthrds_cpl"/>
+	<xs:element ref="nthrds_glc"/>
+	<xs:element ref="nthrds_ice"/>
+	<xs:element ref="nthrds_ocn"/>
+	<xs:element ref="nthrds_rof"/>
+	<xs:element ref="nthrds_wav"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="rootpe">
+    <xs:complexType>
+      <xs:choice maxOccurs="unbounded">
+        <xs:element ref="rootpe_atm"/>
+        <xs:element ref="rootpe_lnd"/>
+	<xs:element ref="rootpe_cpl"/>
+	<xs:element ref="rootpe_glc"/>
+	<xs:element ref="rootpe_ice"/>
+	<xs:element ref="rootpe_ocn"/>
+	<xs:element ref="rootpe_rof"/>
+	<xs:element ref="rootpe_wav"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
