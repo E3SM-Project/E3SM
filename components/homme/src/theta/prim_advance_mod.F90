@@ -1386,6 +1386,7 @@ contains
      end do
   end do
 
+!if (theta_hydrostatic_mode) elem(ie)%state%phi(:,:,:,np1)  = phi
   call t_stopf('compute_andor_apply_rhs')
 
   end subroutine compute_andor_apply_rhs

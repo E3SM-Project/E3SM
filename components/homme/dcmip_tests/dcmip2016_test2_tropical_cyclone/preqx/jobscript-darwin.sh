@@ -6,5 +6,4 @@
 
 # launch the simulation
 EXEC=../../../test_execs/preqx-nlev30-interp/preqx-nlev30-interp        # set name of executable
-openmpiexec -n 6 $EXEC < ./namelist-lowres.nl                           # launch simulation
-#openmpiexec -n 1 $EXEC < ./namelist-lowres.nl                           # launch simulation
+openmpiexec -n 6 $EXEC < ./namelist-r400.nl                             # launch simulation

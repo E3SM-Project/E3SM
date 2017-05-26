@@ -10,7 +10,7 @@ module dcmip16_wrapper
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
 use dcmip12_wrapper,      only: pressure_thickness, set_tracers, get_evenly_spaced_z, set_hybrid_coefficients
-use control_mod,          only: test_case, dcmip4_moist, dcmip4_X
+use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type
 use baroclinic_wave,      only: baroclinic_wave_test
 use supercell,            only: supercell_init, supercell_test, supercell_z
 use tropical_cyclone,     only: tropical_cyclone_test
@@ -137,7 +137,7 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
     call tests_finalize(elem(ie),hvcoord,1,nt)
   enddo
 
-  sample_period = 600.0 ! sec
+  sample_period = 1800.0 ! sec
 
 end subroutine
 
@@ -311,10 +311,12 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
   real(rl) :: max_w, max_precl, min_ps
   real(rl) :: lat, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
 
-  integer :: pbl_type  = 1
-  integer :: prec_type = 0
+  integer :: pbl_type, prec_type
 
-  if(test==3) prec_type=0
+  prec_type = dcmip16_prec_type
+  pbl_type  = dcmip16_pbl_type
+
+  if(test==3) prec_type=0 ! kessler only for test 3
 
   max_w     = -huge(rl)
   max_precl = -huge(rl)

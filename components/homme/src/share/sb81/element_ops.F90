@@ -210,6 +210,7 @@ contains
     ! used by tests to compute idealized physics forcing terms
 
     real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,cp_star,zm,rho
+    real(real_kind), dimension(np,np),      intent(inout) :: ps
     real(real_kind), intent(in)    :: g
     integer,         intent(in)    :: i,j,nt,ntQ
     type(element_t), intent(inout) :: elem
@@ -224,7 +225,7 @@ contains
     v   = elem%state%v   (:,:,2,:,nt)
     w   = 0                             ! todo: w = -omega/(rho g)
     T   = elem%state%T   (:,:,:,nt)
-    ps  = elem%state%ps_v(:,:,    nt)
+    ps  = elem%state%ps_v(:,:,nt)
     zm  = elem%derived%phi(:,:,:)/g
 
     do k=1,nlev

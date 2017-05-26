@@ -18,13 +18,13 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"  
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"  
-load "radialAvg.ncl"
 
 begin
 
 ;=======================================================================================
 ; User options
 ;=======================================================================================
+
 filename="./movies/dcmip2016_test21.nc"
 f = addfile(filename,"r")
 
@@ -32,19 +32,21 @@ time = f->time
 nt = dimsizes(time)-1
 
 data_on_constant_Z=False     ; is data already on CONSTANT Z surfaces?
-convert_hybridP_to_Z=False    ; is data on hybrid pressure levels?
+convert_hybridP_to_Z=False   ; is data on hybrid pressure levels?
 hasTimeIx=True               ; does file have time index?
-timeStep=nt                  ; If yes, what time index do you want to plot?
-model="ACME-A"               ; used for mainStr, but also for model specific if statements
+timeStep=nt                   ; If yes, what time index do you want to plot?
+model="cam-se"              ; used for mainStr, but also for model specific if statements
 mainStr=model+" Day 8"       ; main string for plot titles
-;outType="x11"                ; output format, popular options are x11, png, pdf, eps
-outType="pdf"                ; output format, popular options are x11, png, pdf, eps
+;out_type="pdf"                ; output format, popular options are x11, png, pdf, eps
+out_type="x11"                ; output format, popular options are x11, png, pdf, eps
 
 Uname="u"                    ; Variable name of zonal wind (typically "U" or "ua")
 Vname="v"                    ; Variable name of meridional wind (typically "V" or "ua")
 PSname="ps"                  ; Variable name of surface pressure (typically "PS","PSL","ps",or "slp")
 Tname="T"                    ; Variable name of air temperature (typically "T" or "ta")
 Zname="z"                    ; Variable name of height (typically "Z" or "za")
+PRECTname="precl"            ; Variable name of height (typically "Z" or "za")
+
 ;=======================================================================================
 
 ;=======================================================================================
@@ -77,8 +79,6 @@ end if
 ;=======================================================================================
 print("Loading data from file...")
 
-
-
 lat = f->lat({minLat:maxLat:stride})
 lon = f->lon(::stride)
 lev = f->lev(:)
@@ -91,11 +91,13 @@ if (hasTimeIx) then
   V =  f->$Vname$(timeStep,:,{minLat:maxLat:stride},::stride)
   T =  f->$Tname$(timeStep,:,{minLat:maxLat:stride},::stride)
   PS = f->$PSname$(timeStep,{minLat:maxLat:stride},::stride)
+  PRECT = f->$PRECTname$(timeStep,{minLat:maxLat:stride},::stride)
 else
   U =  f->$Uname$(:,{minLat:maxLat:stride},::stride)
   V = f->$Vname$(:,{minLat:maxLat:stride},::stride)
   T = f->$Tname$(:,{minLat:maxLat:stride},::stride)
   PS = f->$PSname$({minLat:maxLat:stride},::stride)
+  PRECT = f->$PRECTname$({minLat:maxLat:stride},::stride)
 end if
 ; If U and V are not m/s, please convert here
 U@units="m/s"
@@ -146,7 +148,7 @@ if (.not. data_on_constant_Z) then
     hybm=f->hybm
     hyai=f->hyai
     hybi=f->hybi
-    ; P0=f->P0
+; P0=f->P0
     P0=100000
     Tconv = f->T(timeStep,:,{minLat:maxLat:stride},::stride)
     Qconv = f->Q(timeStep,:,{minLat:maxLat:stride},::stride)
@@ -162,121 +164,113 @@ if (.not. data_on_constant_Z) then
     Z@units="m"
 
     delete([/Tconv,Qconv,TV,PHIS/])
+
+  else
+    Z = f->geo(timeStep,:,{minLat:maxLat:stride},::stride)/9.81806
   end if
 
-  Z = f->geo(timeStep,:,{minLat:maxLat:stride},::stride)/9.81806
 
   ;=======================================================================================
-  ; Generate uniform Z levs to interpolate to
-  ; Extra density (half of pts) is specified in PBL, controlled by Zmidpt
+  ; If all else fails, try to load Z directly from file
   ;=======================================================================================
-  print("Generating constant Z levels to interpolate to")
-  ZlevPBL = fspan(zintmin,Zmidpt,nzint/2)
-  ZlevABL = fspan(Zmidpt,zintmax,nzint/2)
-
-  Zlev=new(nzint-1,"float")
-  Zlev(0:(nzint/2)-1)=ZlevPBL
-  Zlev((nzint/2)-1:nzint-2)=ZlevABL
-  Zlev@units = "m"
-  Zlev!0     = "lev"
-  Zlev&lev = Zlev
-  delete([/ZlevPBL,ZlevABL/])
-  print(Zlev)
-
+  if(.not. isdefined("Z")) then
+    if (isfilevar(f, Zname)) then
+      print("Found Z on file...")
+      Z = f->Z
+    else
+      print("FATAL: Z needs to be either loaded from a file or otherwise defined before continuing...")
+      exit
+    end if
+  end if
   ;=======================================================================================
 
-  ;=======================================================================================
-  ; Interpolate lat/lon variables to constant Z levels
-  ;=======================================================================================
-  print("Interpolating from Z model levels to constant Z surfaces")
-  U_Z     = int2p_n_Wrap(Z,U,Zlev,2,0)
-  V_Z     = int2p_n_Wrap(Z,V,Zlev,2,0)
-  Tanom_Z = int2p_n_Wrap(Z,Tanom,Zlev,2,0)
-  ;=======================================================================================
-else
-  print("Data already on Z surfaces, copying to new vars")
-  U_Z     = U
-  V_Z     = V
-  Tanom_Z = Tanom
 end if
 
 ;=======================================================================================
-; Calculate radial and tangential wind components on native grid 
+; Generate Z levels of interest
 ;=======================================================================================
-print("Separating winds into radial and tangential components given PS min loc...")
-vComps = calcWindComponents(U_Z,V_Z,lat,lon,psminlat,psminlon)
-v_rad = vComps[0]
-v_theta = vComps[1]
-delete(vComps)
+print("Generating constant Z levels to interpolate to")
+ZlevPBL = fspan(zintmin,Zmidpt,nzint/2)
+ZlevABL = fspan(Zmidpt,zintmax,nzint/2)
+
+Zlev=(/100.,1000.,1500.,2500.,5000.,10000.,15000./)
+Zlev@units = "m"
+Zlev!0     = "lev"
+Zlev&lev = Zlev
+
+;=======================================================================================
+; Interpolate lat/lon variables to constant Z levels
+;=======================================================================================
+print("Interpolating to Z surfaces")
+U_Z     = int2p_n_Wrap(Z,U,Zlev,2,0)
+V_Z     = int2p_n_Wrap(Z,V,Zlev,2,0)
+Tanom_Z = int2p_n_Wrap(Z,Tanom,Zlev,2,0)
 ;=======================================================================================
 
+WIND_Z = U_Z
+WIND_Z = sqrt(U_Z^2+V_Z^2)
+WIND_Z@long_name="Horizontal wind"
 
-;=======================================================================================
-; Perform radial integrations
-;=======================================================================================
-print("Do radial integrations...")
-rad_v_theta  = radialAvg3D(v_theta,lat,lon,v_theta&lev,psminlat,psminlon,600.,True)
-rad_v_rad    = radialAvg3D(v_rad  ,lat,lon,v_rad&lev  ,psminlat,psminlon,600.,True)
-rad_t_anom   = radialAvg3D(Tanom_Z,lat,lon,Tanom_Z&lev  ,psminlat,psminlon,600.,True)
-;=======================================================================================
-
-
+PRECT = PRECT*8.64e7   ; convert m/s to mm/day
+PRECT@long_name="Precipitation rate"
+PRECT@units="mm/d"
 
 print("Plotting...")
 
-res  = True
-res@gsnDraw = False
-res@gsnFrame = False
+wks   = gsn_open_wks (out_type,"x-sections")               ; send graphics to PNG file
+contour = new(4,"graphic")
+
+gsn_define_colormap(wks,"BlAqGrYeOrReVi200")
+
+res                 = True
+res@gsnDraw         = False
+res@gsnFrame         = False
 res@gsnSpreadColors  = True        ; Span full color map
 res@cnFillOn         = True        ; Turn on contour fill
 res@cnLinesOn        = False
 res@cnLineLabelsOn   = False
 res@cnInfoLabelOn    = False
-res@tiYAxisString    = "Height (m)"
-res@gsnYAxisIrregular2Linear = True
-res@gsnXAxisIrregular2Linear = True
+res@gsnAddCyclic = True
 
-wks   = gsn_open_wks (outType,"t_anom_"+model)
-gsn_define_colormap(wks,"matlab_jet")
-res_rad = res
-res_rad@cnLevelSelectionMode = "ExplicitLevels"
-res_rad@cnLevels = ispan(0,toint(tAnomMax),1)
-plot = gsn_csm_contour(wks,rad_t_anom,res_rad)
-draw(plot)
-frame(wks)
+latWidth = 10.0
+lonWidth = 10.0
+res@mpOutlineOn = False
+res@mpMaxLatF = psminlat + latWidth
+res@mpMinLatF = psminlat - latWidth
+res@mpMinLonF = psminlon - lonWidth
+res@mpMaxLonF = psminlon + lonWidth
 
-delete(plot)
-delete(wks)
-delete(res_rad)
+res@cnLevelSelectionMode = "ManualLevels"
+res@cnLevelSpacingF      =  5.0
+res@cnMinLevelValF       =  10.0
+res@cnMaxLevelValF       =  80.0
+res@tiMainString="1500m Horiz. Wind"
+contour(0) = gsn_csm_contour_map(wks,WIND_Z({1500.0},:,:),res)  ; create the plot
 
-wks   = gsn_open_wks (outType,"v_theta_"+model)
-gsn_define_colormap(wks,"BlAqGrYeOrReVi200")
-res_rad = res
-res_rad@tiMainString     = mainStr+" tangential wind"
-res_rad@cnLevelSelectionMode = "ExplicitLevels"
-res_rad@cnLevels = fspan(0.0,thetaWindMax,21)
-plot = gsn_csm_contour(wks,rad_v_theta,res_rad)
-draw(plot)
-frame(wks)
+res@cnLevelSelectionMode = "ManualLevels"
+res@cnLevelSpacingF      =  10.0
+res@cnMinLevelValF       =  -60.0
+res@cnMaxLevelValF       =  60.0
+res@tiMainString="100m U-Wind"
+contour(1) = gsn_csm_contour_map(wks,U_Z({100.0},:,:),res)  ; create the plot
 
-delete(plot)
-delete(wks)
-delete(res_rad)
+res@cnLevelSelectionMode = "ManualLevels"
+res@cnLevelSpacingF      =  1.0
+res@cnMinLevelValF       =  0.0
+res@cnMaxLevelValF       =  10.0
+res@tiMainString="5000m T anom."
+contour(2) = gsn_csm_contour_map(wks,Tanom_Z({5000.0},:,:),res)  ; create the plot
 
-wks   = gsn_open_wks (outType,"v_rad_"+model)
-gsn_define_colormap(wks,"hotcolr_19lev")
-res_rad = res
-res_rad@tiMainString     = mainStr+" radial wind"
-res_rad@cnLevelSelectionMode = "ExplicitLevels"
-res_rad@cnLevels = ispan(toint(-radMinMax),toint(radMinMax),1)
-plot = gsn_csm_contour(wks,rad_v_rad,res_rad)
-draw(plot)
-frame(wks)
+res@cnLevelSelectionMode = "ManualLevels"
+res@cnLevelSpacingF      =  200.0
+res@cnMinLevelValF       =  200.0
+res@cnMaxLevelValF       =  4000.0
+res@tiMainString="Precip. rate"
+contour(3) = gsn_csm_contour_map(wks,PRECT(:,:),res)  ; create the plot
 
-delete(plot)
-delete(wks)
-delete(res_rad)
+resP                     = True                ; modify the panel plot
+resP@gsnMaximize         = True
 
-
+gsn_panel(wks,contour,(/2,2/),resP)             ; now draw as one plot
 
 end

@@ -12,7 +12,7 @@
   statefreq         = 10                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
-  tstep             = 25                        ! largest timestep in seconds
+  tstep             = 50                        ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5
   rsplit            = 0
@@ -27,7 +27,7 @@
   moisture          = 'wet'
   theta_hydrostatic_mode = .true.
   dcmip16_prec_type = 0                         ! 0=kessler,     1= reed-jablonowski
-  dcmip16_pbl_type  = 1                         ! 0=basic pbl,   1= bryan pbl
+  dcmip16_pbl_type  = 0                         ! 0=basic pbl,   1= bryan pbl
 /
 &vert_nl
   vform         = "ccm"
