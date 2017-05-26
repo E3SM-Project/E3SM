@@ -58,11 +58,10 @@ parser.add_option("--parm_file", dest="parm_file", default="", \
                   help = 'parameter file to use')
 parser.add_option("--parm_vals", dest="parm_vals", default="", \
                   help = 'User specified parameter values')
+parser.add_option("--postproc_file", dest="postproc_file", default="postproc_vars", \
+                  help = 'File for ensemble post processing')
 parser.add_option("--nopftdyn", action="store_true", dest="nopftdyn", \
                       default=False, help='Do not use dynamic PFT file')
-parser.add_option("--regional", action="store_true", \
-                   dest="regional", default=False, \
-                   help="Flag for regional run (2x2 or greater)")
 parser.add_option("--np", dest="np", default=1, \
                   help = 'number of processors')
 parser.add_option("--tstep", dest="tstep", default=0.5, \
@@ -97,10 +96,6 @@ parser.add_option("--CH4", dest="CH4", default=False, \
                   help = 'To turn on CN with CLM4me', action="store_true")
 parser.add_option("--makemetdata", action="store_true", dest="makemet", default=False, \
                     help="generate site meteorology")
-parser.add_option("--xpts", dest="xpts", default=1, \
-                      help = 'for regional runs: xpts')
-parser.add_option("--ypts", dest="ypts", default=1, \
-                      help = 'for regional runs: ypts')
 parser.add_option("--cruncep", dest="cruncep", default=False, \
                   action="store_true", help = 'Use CRU-NCEP meteorology')
 parser.add_option("--surfdata_grid", dest="surfdata_grid", default=False, \
@@ -277,8 +272,7 @@ for row in AFdatareader:
         #print year_align, fsplen
         basecmd = 'python pointCLM.py --site '+site+' --ccsm_input '+ \
             os.path.abspath(ccsm_input)+' --rmold --no_submit --sitegroup ' + \
-            options.sitegroup+' --xpts '+str(options.xpts)+' --ypts '+str(options.ypts)+ \
-            ' --machine '+options.machine
+            options.sitegroup+' --machine '+options.machine
         if (srcmods != ''):
             srcmods    = os.path.abspath(srcmods)
             basecmd = basecmd+' --srcmods_loc '+srcmods
@@ -290,8 +284,6 @@ for row in AFdatareader:
             basecmd = basecmd+' --parm_vals '+options.parm_vals
         if (options.clean_build):
             basecmd = basecmd+' --clean_build '
-        if (options.regional):
-            basecmd = basecmd+' --regional --xpts 2 --ypts 1 '
         if (options.metdir !='none'):
             basecmd = basecmd+' --metdir '+options.metdir
         if (options.C13):
@@ -320,8 +312,6 @@ for row in AFdatareader:
             basecmd = basecmd+' --CH4'
         if (options.cruncep):
             basecmd = basecmd+' --cruncep'
-        if (options.nopointdata):
-            basecmd = basecmd+' --nopointdata'
         if (options.surfdata_grid):
             basecmd = basecmd+' --surfdata_grid'
         if (options.ensemble_file != ''):   
@@ -392,7 +382,7 @@ for row in AFdatareader:
             cmd_fnsp = basecmd+' --finidat_case '+basecase+'_ad_spinup '+ \
                        '--finidat_year '+str(int(ny_ad)+1)+' --run_units nyears --run_n '+ \
                        str(fsplen)+' --align_year '+str(year_align+1)+' --no_build' + \
-                       ' --exeroot '+ad_exeroot
+                       ' --exeroot '+ad_exeroot+' --nopointdata'
         if (int(options.hist_mfilt_spinup) == -999):
             cmd_fnsp = cmd_fnsp+' --hist_mfilt 1 --hist_nhtfrq -'+ \
             str((endyear-startyear+1)*8760)
@@ -406,7 +396,7 @@ for row in AFdatareader:
         if (options.spinup_vars):
 		cmd_fnsp = cmd_fnsp+' --spinup_vars'
         if (options.ensemble_file != '' and options.notrans):	
-                cmd_fnsp = cmd_fnsp + ' --postproc_file postproc_vars'
+                cmd_fnsp = cmd_fnsp + ' --postproc_file '+options.postproc_file
 
         #transient
         cmd_trns = basecmd+' --finidat_case '+basecase+ \
@@ -414,7 +404,7 @@ for row in AFdatareader:
             +' --run_n '+str(translen)+' --align_year '+ \
             str(year_align+1850)+' --hist_nhtfrq '+ \
             options.hist_nhtfrq+' --hist_mfilt '+options.hist_mfilt+' --no_build' + \
-            ' --exeroot '+ad_exeroot
+            ' --exeroot '+ad_exeroot+' --nopointdata'
         if (options.cpl_bypass):
             cmd_trns = cmd_trns+' --compset I20TRCLM45CB'+mybgc
         else:
@@ -424,7 +414,7 @@ for row in AFdatareader:
         if (options.trans_varlist != ''):
             cmd_trns = cmd_trns + ' --trans_varlist '+options.trans_varlist
         if (options.ensemble_file != ''):  #Transient post-processing
-            cmd_trns = cmd_trns + ' --postproc_file postproc_vars'
+            cmd_trns = cmd_trns + ' --postproc_file '+options.postproc_file
         if (options.diags):
             cmd_trns = cmd_trns + ' --diags'
         #transient phase 2 (CRU-NCEP only, without coupler bypass)
@@ -436,7 +426,7 @@ for row in AFdatareader:
                 +' --run_n '+str(thistranslen)+' --align_year 1921'+ \
                 ' --hist_nhtfrq '+options.hist_nhtfrq+' --hist_mfilt '+ \
                 options.hist_mfilt+' --no_build'+' --exeroot '+ad_exeroot + \
-                ' --compset I20TRCLM45'+mybgc
+                ' --compset I20TRCLM45'+mybgc+' --nopointdata'
             print(cmd_trns2)
 
 #---------------------------------------------------------------------------------
