@@ -130,8 +130,11 @@ parser.add_option("--walltime", dest="walltime", default=6, \
 
 #------------ define function for pbs submission
 def submit(fname, submit_type='qsub', job_depend=''):
+    job_depend_flag = ' -W depend=afterok:'
+    if (submit_type=='sbatch'):
+	job_depend_flag = ' --dependency=afterok:'
     if (job_depend != ''):
-        os.system(submit_type+' -W depend=afterok:'+job_depend+' '+fname+' > temp/jobinfo')
+        os.system(submit_type+job_depend_flag+job_depend+' '+fname+' > temp/jobinfo')
     else:
         os.system(submit_type+' '+fname+' > temp/jobinfo')
     myinput = open('temp/jobinfo')
