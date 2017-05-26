@@ -218,32 +218,31 @@ def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group
 
     dart_config = \
 """
-SourceDirectory: {}
-BuildDirectory: {}
+SourceDirectory: {0}
+BuildDirectory: {0}
 
 # Site is something like machine.domain, i.e. pragmatic.crd
-Site: {}
+Site: {1}
 
 # Build name is osname-revision-compiler, i.e. Linux-2.4.2-2smp-c++
-BuildName: {}
+BuildName: {2}
 
 # Submission information
 IsCDash: TRUE
 CDashVersion:
 QueryCDashVersion:
 DropSite: my.cdash.org
-DropLocation: /submit.php?project={}
+DropLocation: /submit.php?project={3}
 DropSiteUser:
 DropSitePassword:
 DropSiteMode:
 DropMethod: http
 TriggerSite:
-ScpCommand: {}
+ScpCommand: {4}
 
 # Dashboard start time
-NightlyStartTime: {} UTC
-""".format(os.getcwd(), os.getcwd(), hostname,
-           cdash_build_name, cdash_project,
+NightlyStartTime: {5} UTC
+""".format(os.getcwd(), hostname, cdash_build_name, cdash_project,
            distutils.spawn.find_executable("scp"), cdash_timestamp)
 
     with open("DartConfiguration.tcl", "w") as dart_fd:
