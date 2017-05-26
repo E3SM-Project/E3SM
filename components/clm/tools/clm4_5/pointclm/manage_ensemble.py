@@ -49,11 +49,14 @@ else:
 
 #Define function to perform ensemble member post-processing
 def postproc(myvars, myyear_start, myyear_end, myday_start, myday_end, \
-             myfactor, myoffset, thisjob, runroot, case, data):
+             myavg, myfactor, myoffset, thisjob, runroot, case, data, outnum):
     rundir = options.runroot+'/UQ/'+case+'/g'+str(100000+thisjob)[1:]+'/'
     index=0
+    outnum = 0
     ierr = 0
     for v in myvars:
+        ndays_total = 0
+        output = []
         n_years = myyear_end[index]-myyear_start[index]+1
         for y in range(myyear_start[index],myyear_end[index]+1):
             fname = rundir+case+'.clm2.h0.'+str(10000+y)[1:]+'-01-01-00000.nc'
@@ -64,13 +67,16 @@ def postproc(myvars, myyear_start, myyear_end, myday_start, myday_end, \
             #get output and average over days/years
             if ('20TR' in case):     #Transient assume daily ouput
                 n_days = myday_end[index]-myday_start[index]+1
-                output=0.0
+                ndays_total = ndays_total + n_days
                 for d in range(myday_start[index]-1,myday_end[index]):
-                    output = output+mydata[d][0]/n_days*myfactor[index] \
-                             +myoffset[index]
+                    output.append(mydata[d][0]*myfactor[index] \
+                             +myoffset[index])
             else:                    #Assume annual output (ignore days)
-                output = mydata*myfactor[index]+myoffset[index]
-        data[index,thisjob-1] = output
+                output.append(mydata*myfactor[index]+myoffset[index])
+        for i in range(0,ndays_total/myavg[index]):
+            print v, index, i
+	    data[outnum,thisjob-1] = sum(output[(i*myavg[index]):((i+1)*myavg[index])])/myavg[index]
+            outnum=outnum+1
         index = index+1
     return ierr
             
@@ -92,10 +98,11 @@ if (rank == 0):
         myyear_end=[]
         myday_start=[]
         myday_end=[]
+        myavg_pd=[]
         myfactor=[]
         myoffset=[]
         postproc_input = open(options.postproc_file,'r')
-        n_vars = 0
+        data_cols = 0
         for s in postproc_input:
             if (s[0:1] != '#'):
                 myvars.append(s.split()[0])
@@ -103,10 +110,13 @@ if (rank == 0):
                 myyear_end.append(int(s.split()[2]))
                 myday_start.append(int(s.split()[3]))
                 myday_end.append(int(s.split()[4]))
-                myfactor.append(float(s.split()[5]))
-                myoffset.append(float(s.split()[6]))
-                n_vars = n_vars+1
-        data=np.zeros([n_vars,options.n], np.float)-999
+                myavg_pd.append(int(s.split()[5]))
+                myfactor.append(float(s.split()[6]))
+                myoffset.append(float(s.split()[7]))
+                days_total = (int(s.split()[2]) - int(s.split()[1])+1)*(int(s.split()[4]) - int(s.split()[3])+1)        
+                data_cols = data_cols + days_total / int(s.split()[5])
+                print data_cols
+        data=np.zeros([data_cols,options.n], np.float)-999
         postproc_input.close()
 
     n_done=0
@@ -120,10 +130,12 @@ if (rank == 0):
         process = comm.recv(source=MPI.ANY_SOURCE, tag=3)
         thisjob = comm.recv(source=process, tag=4)
         n_done = n_done+1
+        outnum=0
         if (do_postproc):
             ierr = postproc(myvars, myyear_start, myyear_end, myday_start, \
-                     myday_end, myfactor, myoffset, thisjob, \
-                     options.runroot, options.casename, data)
+                     myday_end, myavg_pd, myfactor, myoffset, thisjob, \
+                     options.runroot, options.casename, data, outnum)
+        print outnum
         comm.send(n_job, dest=process, tag=1)
         comm.send(0,     dest=process, tag=2)
     #receive remaining messages and finalize
@@ -133,13 +145,15 @@ if (rank == 0):
         n_done = n_done+1
         if (do_postproc):
             ierr = postproc(myvars, myyear_start, myyear_end, myday_start, \
-                            myday_end, myfactor, myoffset, thisjob, \
-                            options.runroot, options.casename, data)
+                            myday_end, myavg_pd, myfactor, myoffset, thisjob, \
+                            options.runroot, options.casename, data, outnum)
             #Update post-processed output file
         comm.send(-1, dest=process, tag=1)
         comm.send(-1, dest=process, tag=2)
+    
     if (do_postproc):
-        np.savetxt(options.casename+'_postprocessed.txt', data.transpose())
+        data_out = data.transpose()
+        np.savetxt(options.casename+'_postprocessed.txt', data_out)
     MPI.Finalize()
 
 #Slave
