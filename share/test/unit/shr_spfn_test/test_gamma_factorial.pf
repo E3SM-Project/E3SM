@@ -1,0 +1,98 @@
+module test_gamma_factorial
+
+use pfunit_mod
+
+use shr_kind_mod, only: &
+     r8 => shr_kind_r8, &
+     i8 => shr_kind_i8
+
+use shr_spfn_mod, only: &
+     gamma => shr_spfn_gamma, &
+     igamma => shr_spfn_igamma
+
+implicit none
+save
+
+real(r8), parameter :: relative_error_tolerance = 1.e-12_r8
+
+@TestParameter
+type, extends(AbstractTestParameter) :: GammaTestInt
+   integer :: test_int
+ contains
+   procedure :: toString
+end type GammaTestInt
+
+@TestCase(testParameters={getParameters()}, constructor=new_TestGammaFac)
+type, extends(ParameterizedTestCase) :: TestGammaFac
+   real(r8) :: input_int
+   real(r8) :: test_factorial
+end type TestGammaFac
+
+contains
+
+function new_TestGammaFac(params) result(test)
+  type(GammaTestInt), intent(in) :: params
+  type(TestGammaFac) :: test
+
+  test%input_int = real(params%test_int,r8)
+
+  ! A curious fact; because the factorial contains so many powers of 2, 20!
+  ! is exactly representable in an 8 byte double even though it is bigger
+  ! than 1/epsilon.
+  test%test_factorial = real(factorial(params%test_int-1),r8)
+
+contains
+
+  function factorial(n)
+    integer, intent(in) :: n
+    integer(i8) :: factorial
+    integer(i8) :: i
+    factorial = product([( i, i = 1, n )])
+  end function factorial
+
+end function new_TestGammaFac
+
+function getParameters() result(params)
+  type(GammaTestInt), allocatable :: params(:)
+
+  integer :: i
+
+  params = [( GammaTestInt(i), i = 1, 21 )]
+
+end function getParameters
+
+function toString(this) result(string)
+  class(GammaTestInt), intent(in) :: this
+  character(:), allocatable :: string
+
+  character(len=80) :: buffer
+
+  write(buffer, *) "(n = ",this%test_int,")"
+
+  string = trim(buffer)
+
+end function toString
+
+@Test
+subroutine gamma_is_factorial(this)
+  class(TestGammaFac), intent(inout) :: this
+
+  real(r8) :: tol
+
+  tol = relative_error_tolerance * this%test_factorial
+
+  @assertEqual(this%test_factorial, gamma(this%input_int), tolerance=tol)
+end subroutine gamma_is_factorial
+
+@Test
+subroutine igamma_is_factorial(this)
+  class(TestGammaFac), intent(inout) :: this
+
+  real(r8) :: tol
+
+  tol = relative_error_tolerance * this%test_factorial
+
+  @assertEqual(this%test_factorial, igamma(this%input_int,0._r8), tolerance=tol)
+end subroutine igamma_is_factorial
+
+end module test_gamma_factorial
