@@ -1,4 +1,4 @@
-Building CESM on an UNSUPPORTED local machine
+Building CIME on an UNSUPPORTED local machine
 ---------------------------------------------
 
 These directions are for a Mac OS X 10.9 or 10.10 laptop using
@@ -54,9 +54,10 @@ Setup
 
     homebrew :
 
-        cd ${CESMROOT}/tools/cprnc
+        cd ${CIMEROOT}/tools/cprnc
+        ${CIMEROOT}/tools/configure --macros-format CMake
         mkdir build
-        cd build
+	cd build
         cmake \
             -DCMAKE_Fortran_COMPILER=/usr/local/bin/mpif90 \
             -DHDF5_DIR=/usr/local \
@@ -82,8 +83,8 @@ Setup
     NOTE: it is highly reccommend that you place ~/.cime under version
     control with your favorite tool.
 
-  - make your machine
-    is listed in config\_machines.xml, config\_compilers.xml,
+  - make sure your machine
+    is listed in config\_machines.xml, and optionally config\_compilers.xml,
     config\_pes.xml.
 
     - config_machines.xml must have a section for this machine and all
