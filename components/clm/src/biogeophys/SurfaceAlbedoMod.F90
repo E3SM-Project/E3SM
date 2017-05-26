@@ -171,7 +171,8 @@ contains
         num_urbanp   , filter_urbanp,  &
         nextsw_cday  , declinp1,       &
         aerosol_vars, canopystate_vars, waterstate_vars, &
-        lakestate_vars, temperature_vars, surfalb_vars)
+        lakestate_vars, temperature_vars, surfalb_vars, &
+        alm_fates)
     !
     ! !DESCRIPTION:
     ! Surface albedo and two-stream fluxes
@@ -198,7 +199,7 @@ contains
     use clm_time_manager   , only : get_nstep
     use abortutils         , only : endrun
     use clm_varctl         , only : iulog, subgridflag, use_snicar_frc, use_ed
-
+    use CLMFatesInterfaceMod, only : hlm_fates_interface_type
 
     !
     ! !ARGUMENTS:
@@ -219,6 +220,7 @@ contains
      type(lakestate_type)   , intent(in)    :: lakestate_vars
      type(temperature_type) , intent(in)    :: temperature_vars
      type(surfalb_type)     , intent(inout) :: surfalb_vars
+     type(hlm_fates_interface_type), intent(inout)  :: alm_fates
     !
     ! !LOCAL VARIABLES:
      integer  :: i                                                                         ! index for layers [idx]
@@ -914,9 +916,9 @@ contains
     ! Only perform on vegetated pfts where coszen > 0
 
     if(use_ed)then
-       ! (FATES-INTERF) put error call, flag for development
-       call endrun(msg='FATES inoperable'//errMsg(__FILE__, __LINE__))
-
+       call alm_fates%wrap_canopy_radiation(bounds, &
+            num_vegsol, filter_vegsol, &
+            coszen_patch(bounds%begp:bounds%endp), surfalb_vars)
     else
        
       call TwoStream (bounds, filter_vegsol, num_vegsol, &
