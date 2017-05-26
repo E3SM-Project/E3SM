@@ -289,10 +289,13 @@ class EnvBatch(EnvBase):
                     val = case.get_resolved_value(name)
 
                 if val is not None and len(str(val)) > 0 and val != "None":
-                    # Try to evaluate val
-                    try:
-                        rval = eval(val)
-                    except:
+                    # Try to evaluate val if it contains any whitespace
+                    if " " in val:
+                        try:
+                            rval = eval(val)
+                        except:
+                            rval = val
+                    else:
                         rval = val
                     # need a correction for tasks per node
                     if flag == "-n" and rval<= 0:
