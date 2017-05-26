@@ -157,7 +157,7 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
                 baseline_status = ts.get_status(BASELINE_PHASE)
                 if ( build_status == TEST_FAIL_STATUS or run_status == TEST_FAIL_STATUS or baseline_status == TEST_FAIL_STATUS):
                     param = "EXEROOT" if build_status == TEST_FAIL_STATUS else "RUNDIR"
-                    src_dir = CIME.utils.run_cmd_no_fail("./xmlquery {} --value".format(param, from_dir=os.path.dirname(test_path)))
+                    log_src_dir = CIME.utils.run_cmd_no_fail("./xmlquery {} --value".format(param, from_dir=os.path.dirname(test_path)))
 
                     log_dst_dir = os.path.join(log_dir, "{}_{}_logs".format(test_name, param))
                     os.makedirs(log_dst_dir)
