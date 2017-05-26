@@ -210,7 +210,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.7
+set script_ver = 3.0.8
 
 #===========================================
 # DEFINE ALIASES
@@ -989,7 +989,19 @@ endif
 # NOTE: This also modifies the short-term and long-term archiving scripts.
 # NOTE: We want the batch job log to go into a sub-directory of case_scripts (to avoid it getting clogged up)
 
+# NOTE: we are currently not modifying the archiving scripts to run in debug queue when $debug_queue=true
+#       under the assumption that if you're debugging you shouldn't be archiving.
+
+# NOTE: there was 1 space between MSUB or PBS and the commands before cime and there are 2 spaces
+#       in post-cime versions. This is fixed by " \( \)*" in the lines below. The "*" here means
+#       "match zero or more of the expression before". The expression before is a single whitespace.
+#       The "\(" and "\)" bit indicate to sed that the whitespace in between is the expression we
+#       care about. The space before "\(" makes sure there is at least one whitespace after #MSUB.
+#       Taken all together, this stuff matches lines of the form #MSUB<one or more whitespaces>-<stuff>.
+
 mkdir -p batch_output      ### Make directory that stdout and stderr will go into.
+
+set machine = `lowercase $machine`   # Change to lowercase, just to make the following easier to read. 
 
 if ( $machine == hopper ) then
     sed -i /"#PBS \( \)*-N"/c"#PBS  -N ${job_name}"                                ${case_run_exe}
@@ -1031,21 +1043,9 @@ endif
 #============================================
 # Edit the default queue and batch job lengths.
 
-#HINT: To change queue after run submitted, the following works on most machines:
-#      qalter -lwalltime=00:29:00 <run_descriptor>
-#      qalter -W queue=debug <run_descriptor>
-
-#NOTE: we are currently not modifying the archiving scripts to run in debug queue when $debug_queue=true
-#      under the assumption that if you're debugging you shouldn't be archiving.
-
-#NOTE: there was 1 space btwn MSUB or PBS and the commands before cime and there are 2 spaces
-#      in post-cime versions. This is fixed by " \( \)*" in the lines below. The "*" here means
-#      "match zero or more of the expression before". The expression before is a single whitespace.
-#      The "\(" and "\)" bit indicate to sed that the whitespace in between is the expression we
-#      care about. The space before "\(" makes sure there is at least one whitespace after #MSUB.
-#      Taken all together, this stuff matches lines of the form #MSUB<one or more whitespaces>-<stuff>.
-
-set machine = `lowercase $machine`
+# HINT: To change queue after run submitted, the following works on most machines:
+#       qalter -lwalltime=00:29:00 <run_descriptor>
+#       qalter -W queue=debug <run_descriptor>
 
 ### Only specially authorized people can use the special_acme qos on Cori or Edison. Don't uncomment unless you're one.
 #if ( `lowercase $debug_queue` == false && $machine == edison ) then
@@ -1356,17 +1356,17 @@ acme_newline
 # 3.0.7    2017-05-22    Fix for the new CIME 5.3; use the --script-root option instead of PJC's "hack"
 #                        Note that this breaks compatibility with older versions of CIME
 #                        Also add a fix to reenable using the special acme qos queue on Edison (MD)
+# 3.0.8    2017-05-24    Fixed minor bug when $machine contained a capital letter. Bug was introduced recently. (PJC)
+#
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
 ### ---------- Desired features still to be implemented ------------
 # +) fetch_code = update   (pull in latest updates to branch)    (PJC)
 # +) A way to run the testsuite.? (PJC)
-# +) Reorder options at top to match workflow. (PJC)
 # +) make the handling of lowercase consistent.  $machine may need to be special. (PJC)
 # +) generalize xxdiff commands (for fixing known bugs) to work for other people  (PJC)
 # +) Add a 'default' option, for which REST_OPTION='$STOP_OPTION' and REST_N='$STOP_N'.
 #    This is important if the user subsequently edits STOP_OPTION or STOP_N.      (PJC)
-# +) Add defaults for Edison. (PJC)
 # +) triggering on $acme_tag = master_detached doesn't make sense.  Fix logic. (PJC)
 
 ###Example sed commands
