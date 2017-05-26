@@ -260,7 +260,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
         # If command produced no errput, put output in the exception since we
         # have nothing else to go on.
         errput = output if not errput else errput
-        expect(False, "Command: '{}' failed with error '{}'{}".format(cmd, errput, "" if from_dir is None else " from dir '{}'".format(from_dir)))
+        expect(False, "Command: '{}' failed with error '{}' from dir '{}'".format(cmd, errput, os.getcwd() if from_dir is None else from_dir))
 
     return output
 
