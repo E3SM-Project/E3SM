@@ -998,7 +998,7 @@
     </mach>
   </grid>
   <grid name="any">
-    <mach name="redsky|skybridge">
+    <mach name="redsky|skybridge|chama">
       <pes compset="any" pesize="T">
         <comment>none</comment>
         <ntasks>
@@ -6526,7 +6526,7 @@
     </mach>
   </grid>
   <grid name="a%ne4np4_l%ne4np4_oi%oQU240_r%r05_m%oQU240_g%null_w%null">
-    <mach name="skybridge">
+    <mach name="skybridge|chama">
       <pes compset="any"  pesize="S">
         <comment>none</comment>
         <ntasks>
