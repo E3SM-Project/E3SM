@@ -1213,6 +1213,8 @@ class Case(object):
         gfile = GenericXML(infile=xmlfile)
         ftype = gfile.get_id()
 
+        self.flush(flushall=True)
+
         logger.warn("setting case file to %s"%xmlfile)
         new_env_file = None
         for env_file in self._env_entryid_files:
