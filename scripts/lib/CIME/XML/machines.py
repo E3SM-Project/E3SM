@@ -291,7 +291,7 @@ class Machines(GenericXML):
     def print_values(self):
         # write out machines
         machines = self.get_nodes(nodename="machine")
-        print  "Machines"
+        print( "Machines")
         for machine in machines:
             name = machine.get("MACH")
             desc = machine.find("DESC")
@@ -300,10 +300,10 @@ class Machines(GenericXML):
             max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
             pes_per_node = machine.find("PES_PER_NODE")
 
-            print  "  {} : {} ".format(name , desc.text)
-            print  "      os             ", os_.text
-            print  "      compilers      ",compilers.text
+            print( "  {} : {} ".format(name , desc.text))
+            print( "      os             ", os_.text)
+            print( "      compilers      ",compilers.text)
             if pes_per_node is not None:
-                print  "      pes/node       ",pes_per_node.text
+                print( "      pes/node       ",pes_per_node.text)
             if max_tasks_per_node is not None:
-                print  "      max_tasks/node ",max_tasks_per_node.text
+                print( "      max_tasks/node ",max_tasks_per_node.text)

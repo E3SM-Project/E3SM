@@ -355,12 +355,13 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
         # Verify
         expected_calls = [
             Call(METHOD_run_indv,
-                 {'suffix': run_one_suffix, 'CASE': casename}),
+                {'suffix': run_one_suffix, 'CASE': casename}),
             Call(METHOD_run_indv,
-                 {'suffix': run_two_suffix, 'CASE': '%s.%s'%(casename, run_two_suffix)}),
+                {'suffix': run_two_suffix, 'CASE': '{}.{}'.format(casename, run_two_suffix)}),
             Call(METHOD_link_to_case2_output, {}),
             Call(METHOD_component_compare_test,
-                 {'suffix1': run_one_suffix, 'suffix2': run_two_suffix})]
+                {'suffix1': run_one_suffix, 'suffix2': run_two_suffix})
+        ]
         self.assertEqual(expected_calls, mytest.log)
 
     def test_run1_fails(self):

@@ -76,7 +76,7 @@ class Batch(GenericXML):
                     self.machine = machine
                     self.machine_node = node
 
-            expect(self.batch_system_node is not None, "No batch system '%s' found" % batch_system)
+            expect(self.batch_system_node is not None, "No batch system '{}' found".format(batch_system))
 
         return batch_system
 

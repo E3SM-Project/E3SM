@@ -148,7 +148,7 @@ class GridmapNode(DataNode):
         return True
 
     def keyvalue(self):
-        return "%s:%s:%s:%s" % (self.keys[0], self.data[self.keys[0]],
+        return "{}:{}:{}:{}".format(self.keys[0], self.data[self.keys[0]],
                                self.keys[1], self.data[self.keys[1]])
 class DomainNode(DataNode):
     """
@@ -165,7 +165,7 @@ class DomainNode(DataNode):
         for fop in ['file', 'path']:
             if fop in self.data:
                 for comp, mask, filename in self.data[fop]:
-                    attribs = {'%s_mask' % comp:mask}
+                    attribs = {'{}_mask'.format(comp:mask)}
                     ET.SubElement(node, fop, attribs).text = filename
         return node
 
@@ -219,13 +219,12 @@ class Cime2DomainNode(DomainNode):
                 self.data[tag] = child.text
 
         # Find any griddom nodes that match this name
-        griddoms = self.xmlroot.findall('.griddom[@grid="%s"]'
-                                        % self.data['name'])
+        griddoms = self.xmlroot.findall('.griddom[@grid="{}"]'.format(self.data['name']))
         for gd in griddoms:
             mask = gd.get('mask')
             for comp in ['ATM', 'LND', 'OCN', 'ICE']:
                 for fop in ['FILE', 'PATH']:
-                    tag = '%s_DOMAIN_%s' % (comp, fop)
+                    tag = '{}_DOMAIN_{}'.format(comp, fop)
                     n = gd.find(tag)
                     if n is not None:
                         self.data[fop.lower()].append([comp.lower(), mask,
@@ -247,9 +246,9 @@ class Cime5DomainNode(DomainNode):
             if child is not None:
                 self.data[tag] = child.text
         for comp in ['lnd', 'atm', 'ocn', 'ice']:
-            masktag = '%s_mask' % comp
+            masktag = '{}_mask'.format(comp)
             for fop in ['file', 'path']:
-                fopnodes = xmlnode.findall('%s[@%s]' % (fop, masktag))
+                fopnodes = xmlnode.findall('{}[@{}]'.format(fop, masktag))
                 for n in fopnodes:
                     mask = n.get(masktag)
                     filename = n.text.strip()
@@ -287,7 +286,7 @@ class DataTree(object):
     def postprocess(self, fixlist, addlist, newxmlfile, currentxmlfile,
                     badxmlfile):
         if len(addlist) > 0:
-            logger.info("\n\nWriting suggested nodes to %s" % newxmlfile)
+            logger.info("\n\nWriting suggested nodes to {}".format(newxmlfile))
             logger.info("Copy 'grid' nodes into corresponding location in")
             logger.info(currentxmlfile)
             self.writexml(addlist, newxmlfile)
@@ -295,7 +294,7 @@ class DataTree(object):
             if len(fixlist) > 0:
                 logger.info("Some nodes should be removed from")
                 logger.info("config/acme/config_grids.xml. These nodes")
-                logger.info("have been written to %s" % badxmlfile)
+                logger.info("have been written to {}".format(badxmlfile))
 
 class GridTree(DataTree):
     def populate(self):
@@ -325,8 +324,8 @@ class GridTree(DataTree):
                 grids.append(a.to_cime5())
         xmllint = find_executable("xmllint")
         if xmllint is not None:
-            run_cmd_no_fail("%s --format --output %s -"%(xmllint, newfilename),
-                    input_str=ET.tostring(root))
+            run_cmd_no_fail("{} --format --output {} -".format(xmllint, newfilename),
+                            input_str=ET.tostring(root))
 
 
 class DomainTree(DataTree):
@@ -357,7 +356,7 @@ class DomainTree(DataTree):
                 domains.append(a.to_cime5())
         xmllint = find_executable("xmllint")
         if xmllint is not None:
-            run_cmd_no_fail("%s --format --output %s -" % (xmllint, newfilename),
+            run_cmd_no_fail("{} --format --output {} -".format(xmllint, newfilename),
                             input_str=ET.tostring(root))
 
 class GridmapTree(DataTree):
@@ -384,7 +383,7 @@ class GridmapTree(DataTree):
                 gridmaps.append(a.to_cime5())
         xmllint = find_executable("xmllint")
         if xmllint is not None:
-            run_cmd_no_fail("%s --format --output %s -" % (xmllint, newfilename),
+            run_cmd_no_fail("{} --format --output {} -".format(xmllint, newfilename),
                             input_str=ET.tostring(root))
 
 def diff_tree(atree, btree):
@@ -423,10 +422,10 @@ def diff_tree(atree, btree):
 
 
 
-    logger.info("Number of ok nodes: %d" % len(oklist))
-    logger.info("Number of wrong nodes: %d" % len(fixlist))
-    logger.info("Number of missing nodes: %d" % len(addlist))
-    logger.info("Number of duplicate nodes: %d" % len(duplist))
+    logger.info("Number of ok nodes: {:d}".format(len(oklist)))
+    logger.info("Number of wrong nodes: {:d}".format(len(fixlist)))
+    logger.info("Number of missing nodes: {:d}".format(len(addlist)))
+    logger.info("Number of duplicate nodes: {:d}".format(len(duplist)))
     for dup in duplist:
         logger.info(dup)
     return [oklist, fixlist, addlist]

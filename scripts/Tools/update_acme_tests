@@ -18,20 +18,20 @@ import sys, argparse, os
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-usage="""\n%s testlist.xml [<test category> <test category> ...] [--verbose]
+usage="""\n{0} testlist.xml [<test category> <test category> ...] [--verbose]
 OR
-%s --help
+{0} --help
 OR
-%s --test
+{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Update all acme test suites for all platforms \033[0m
-    > %s ../config/acme/allactive/testlist_allactive.xml
+    > {0} ../config/acme/allactive/testlist_allactive.xml
     \033[1;32m# Update acme_developer tests for all platforms \033[0m
-    > %s ../config/acme/allactive/testlist_allactive.xml acme_developer
+    > {0} ../config/acme/allactive/testlist_allactive.xml acme_developer
     \033[1;32m# Add acme_developer tests for a new platform \033[0m
-    > %s ../config/acme/allactive/testlist_allactive.xml acme_developer -p machine,compiler
-""" % ((os.path.basename(args[0]), ) * 6),
+    > {0} ../config/acme/allactive/testlist_allactive.xml acme_developer -p machine,compiler
+""".format(os.path.basename(args[0])),
 
 description=description,
 
@@ -43,7 +43,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("test_list_path", help="The path to test lists XML file")
 
     parser.add_argument("categories", nargs="*",
-                        help="The test categories to update. Default will update all. Test categories: %s" % (", ".join(get_test_suites())))
+                        help="The test categories to update. Default will update all. Test categories: {}".format(", ".join(get_test_suites())))
 
     parser.add_argument("-p", "--platform",
                         help="Only add tests for a specific platform, format=machine,compiler. Useful for adding new platforms.")
@@ -51,7 +51,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     expect(os.path.isfile(args.test_list_path),
-           "'%s' is not a valid file" % args.test_list_path)
+           "'{}' is not a valid file".format(args.test_list_path))
 
     expect(args.platform is None or len(args.platform.split(",")) == 2,
            "-p value must be in format: 'machine,compiler'")
@@ -65,7 +65,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def _main_func(description):
 ###############################################################################
     if ("--test" in sys.argv):
-        CIME.utils.run_cmd_no_fail("python -m doctest %s/update_acme_tests.py -v" % CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
+        CIME.utils.run_cmd_no_fail("python -m doctest {}/update_acme_tests.py -v".format(CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None))
         return
 
     categories, test_list_path, platform = parse_command_line(sys.argv, description)

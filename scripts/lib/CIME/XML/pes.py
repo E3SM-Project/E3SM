@@ -17,7 +17,7 @@ class Pes(GenericXML):
         if files is None:
             files = Files()
         schema = files.get_schema("PES_SPEC_FILE")
-        logger.debug("DEBUG: infile is %s"%infile)
+        logger.debug("DEBUG: infile is {}".format(infile))
         GenericXML.__init__(self, infile, schema=schema)
 
     def find_pes_layout(self, grid, compset, machine, pesize_opts='M', mpilib=None):
@@ -53,11 +53,11 @@ class Pes(GenericXML):
             for i in iter(pes_rootpe):
                 pes_rootpe[i] = 0
 
-        logger.info("Pes setting: grid          is %s " %grid)
-        logger.info("Pes setting: compset       is %s " %compset)
-        logger.info("Pes setting: tasks       is %s " %pes_ntasks)
+        logger.info("Pes setting: grid          is {} ".format(grid))
+        logger.info("Pes setting: compset       is {} ".format(compset))
+        logger.info("Pes setting: tasks       is {} ".format(pes_ntasks))
 
-        logger.info("Pes other settings: %s"%other_settings)
+        logger.info("Pes other settings: {}".format(other_settings))
         return pes_ntasks, pes_nthrds, pes_rootpe, other_settings
 
     def _find_matches(self, grid_nodes, grid, compset, machine, pesize_opts, override=False):
@@ -89,7 +89,7 @@ class Pes(GenericXML):
                                 if override and points > 0:
                                     for node in pes_node:
                                         vid = node.tag
-                                        logger.info("vid is %s"%vid)
+                                        logger.info("vid is {}".format(vid))
                                         if "ntasks" in vid:
                                             for child in node:
                                                 pes_ntasks[child.tag.upper()] = int(child.text)
@@ -112,16 +112,16 @@ class Pes(GenericXML):
                                         compset_choice = compset_match
                                         pesize_choice = pesize_match
                                     elif points == max_points:
-                                        logger.warn("mach_choice %s mach_match %s"%(mach_choice, mach_match))
-                                        logger.warn("grid_choice %s grid_match %s"%(grid_choice, grid_match))
-                                        logger.warn("compset_choice %s compset_match %s"%(compset_choice, compset_match))
-                                        logger.warn("pesize_choice %s pesize_match %s"%(pesize_choice, pesize_match))
-                                        logger.warn("points = %d"%points)
+                                        logger.warn("mach_choice {} mach_match {}".format(mach_choice, mach_match))
+                                        logger.warn("grid_choice {} grid_match {}".format(grid_choice, grid_match))
+                                        logger.warn("compset_choice {} compset_match {}".format(compset_choice, compset_match))
+                                        logger.warn("pesize_choice {} pesize_match {}".format(pesize_choice, pesize_match))
+                                        logger.warn("points = {:d}".format(points))
                                         expect(False, "More than one PE layout matches given PE specs")
         if not override:
             for node in pe_select:
                 vid = node.tag
-                logger.debug("vid is %s"%vid)
+                logger.debug("vid is {}".format(vid))
                 if "ntasks" in vid:
                     for child in node:
                         pes_ntasks[child.tag.upper()] = int(child.text)
@@ -135,12 +135,12 @@ class Pes(GenericXML):
                 elif vid == node.tag and vid != "comment":
                     other_settings[vid] = node.text
             if grid_choice != 'any' or logger.isEnabledFor(logging.DEBUG):
-                logger.info("Pes setting: grid match    is %s " %grid_choice )
+                logger.info("Pes setting: grid match    is {} ".format(grid_choice ))
             if mach_choice != 'any' or logger.isEnabledFor(logging.DEBUG):
-                logger.info("Pes setting: machine match is %s " %mach_choice)
+                logger.info("Pes setting: machine match is {} ".format(mach_choice))
             if compset_choice != 'any' or logger.isEnabledFor(logging.DEBUG):
-                logger.info("Pes setting: compset_match is %s " %compset_choice)
+                logger.info("Pes setting: compset_match is {} ".format(compset_choice))
             if pesize_choice != 'any' or logger.isEnabledFor(logging.DEBUG):
-                logger.info("Pes setting: pesize match  is %s " %pesize_choice)
+                logger.info("Pes setting: pesize match  is {} ".format(pesize_choice))
 
         return pes_ntasks, pes_nthrds, pes_rootpe, other_settings

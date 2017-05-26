@@ -29,7 +29,7 @@ class ERR(ERS):
             rundir = self._case.get_value("RUNDIR")
             case = self._case.get_value("CASE")
             # First remove restart, history and rpointer files from the run directory
-            for item in glob.iglob(os.path.join(rundir, "%s.*"%case)):
+            for item in glob.iglob(os.path.join(rundir, "{}.*".format(case))):
                 if not item.endswith("base"):
                     os.remove(item)
             for item in glob.iglob(os.path.join(rundir, "rpointer.*")):

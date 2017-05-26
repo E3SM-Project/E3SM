@@ -12,16 +12,16 @@ from CIME.test_status import *
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-usage="""\n%s <Glob of TestStatus> [<Path/Glob to TestStatus> ...]  [--verbose]
+usage="""\n{0} <Glob of TestStatus> [<Path/Glob to TestStatus> ...]  [--verbose]
 OR
-%s --help
+{0} --help
 OR
-%s --test
+{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Wait for all tests in a test area\033[0m
-    > %s path/to/testarea/*/TestStatus
-""" % ((os.path.basename(args[0]), ) * 4),
+    > {0} path/to/testarea/*/TestStatus
+""".format(os.path.basename(args[0])),
 
 description=description,
 

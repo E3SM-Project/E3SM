@@ -332,6 +332,7 @@ class EnvBatch(EnvBase):
                     prereq = eval(prereq)
             except:
                 expect(False,"Unable to evaluate prereq expression '{}' for job '{}'".format(self.get_value('prereq',subgroup=job), job))
+
             if prereq:
                 jobs.append((job, self.get_value('dependency', subgroup=job)))
 
@@ -450,7 +451,7 @@ class EnvBatch(EnvBase):
     def queue_meets_spec(self, queue, num_pes, walltime=None, job=None):
         specs = self.get_queue_specs(queue)
         if specs is None:
-            logger.warning("WARNING: queue '%s' is unknown to this system" % queue)
+            logger.warning("WARNING: queue '{}' is unknown to this system".format(queue))
             return True
 
         jobmin, jobmax, jobname, walltimemax, strict = specs
