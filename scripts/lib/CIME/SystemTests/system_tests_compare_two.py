@@ -155,9 +155,10 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             self._case2.set_value("BUILD_COMPLETE",True)
             self._case2.flush()
 
-    def run_phase(self):
+    def run_phase(self, success_change=False):
         """
         Runs both phases of the two-phase test and compares their results
+        If success_change is True, success requires some files to be different
         """
 
         # First run
@@ -176,7 +177,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         self._activate_case1()
         self._link_to_case2_output()
 
-        self._component_compare_test(self._run_one_suffix, self._run_two_suffix)
+        self._component_compare_test(self._run_one_suffix, self._run_two_suffix, success_change)
 
     # ========================================================================
     # Private methods
