@@ -449,9 +449,6 @@ using a fortran linker.
   <CPPDEFS>
     <append> -DSYSDARWIN </append>
   </CPPDEFS>
-  <LDFLAGS>
-    <append MODEL="driver"> -all_load </append>
-  </LDFLAGS>
 </compiler>
 
 <compiler OS="Darwin" COMPILER="intel">

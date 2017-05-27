@@ -11,12 +11,12 @@ modfile = re.compile(r"^([A-Za-z0-9_-]+)[.]mod$")
 
 def Usage ():
   thisFile = os.path.realpath(inspect.getfile(inspect.currentframe()))
-  print """
-Usage: %s <Depends file>
+  print(""")
+Usage: {} <Depends file>
 
   Looks for circular dependencies in CESM Depends file
 
-  """%(os.path.basename(thisFile))
+  """.format(os.path.basename(thisFile))
 # End Usage
 
 def keylen(key):
@@ -34,7 +34,7 @@ def findDependencies(dependDict, callTree, goodMods, badMods):
         while ((cds < len(callTree)) and (callTree[cds] != dep)):
           cds = cds + 1
         # End while
-        print "Circular dependency: "," <== ".join(callTree[cds:] + [ dep, ])
+        print("Circular dependency: "," <== ".join(callTree[cds:] + [ dep, ]))
         badMods.append(dep)
       elif ((dep not in goodMods) and (dep not in badMods)):
         newtree = list(callTree)
@@ -76,12 +76,12 @@ def findCircularDep(filename):
 def main(filename):
   DepFile = os.path.abspath(filename)
   if (not os.path.exists(DepFile)):
-    print "ERROR: File '%s', does not exist"%filename
+    print("ERROR: File '{}', does not exist".format(filename))
     return 1
   # End if
   cleanTree = findCircularDep(DepFile)
   if (cleanTree):
-    print "No circular dependencies found"
+    print("No circular dependencies found")
     return 0
   else:
     return -1

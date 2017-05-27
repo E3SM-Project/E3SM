@@ -53,18 +53,10 @@ class _TimingParser:
             if coff >= 0:
                 zoff = pstrlen + coff + int((datalen-clen)/2)
                 csp = offset - coff - int((datalen-clen)/2)
-                self.write(" {label:<{width1}}{cstr:<{width2}} "
-                           "{minv:8.3f}:{maxv:8.3f} \n".format(label=label,
-                                                               width1=zoff,
-                                                               cstr=cstr,
-                                                               width2=csp,
-                                                               minv=mind,
-                                                               maxv=maxd))
+                self.write(" {label:<{width1}}{cstr:<{width2}} {minv:8.3f}:{maxv:8.3f} \n".format(label=label, width1=zoff, cstr=cstr, width2=csp, minv=mind, maxv=maxd))
             else:
                 zoff = pstrlen + offset
-                self.write(" {label:<{width1}} {minv:8.3f}:{maxv:8.3f} \n"
-                           .format(label=label, width1=zoff,
-                                   minv=mind, maxv=maxd))
+                self.write(" {label:<{width1}} {minv:8.3f}:{maxv:8.3f} \n".format(label=label, width1=zoff, minv=mind, maxv=maxd))
 
     def gettime2(self, heading_padded):
         nprocs = 0
@@ -72,13 +64,13 @@ class _TimingParser:
 
         heading = '"' + heading_padded.strip() + '"'
         for line in self.finlines:
-            m = re.match(r'\s*%s\s*(\d+)\s*\d+\s*(\S+)'%heading, line)
+            m = re.match(r'\s*{}\s*(\d+)\s*\d+\s*(\S+)'.format(heading), line)
             if m:
                 nprocs = int(float(m.groups()[0]))
                 ncount = int(float(m.groups()[1]))
                 return (nprocs, ncount)
             else:
-                m = re.match(r'\s*%s\s+(\d+)\s'%heading, line)
+                m = re.match(r'\s*{}\s+(\d+)\s'.format(heading), line)
                 if m:
                     nprocs = 1
                     ncount = int(float(m.groups()[0]))
@@ -92,8 +84,7 @@ class _TimingParser:
         maxval = 0
 
         for line in self.finlines:
-            m = re.match(r'\s*%s\s*\d+\s*\d+\s*\S+\s*\S+\s*(\d*\.\d+)'
-                         r'\s*\(.*\)\s*(\d*\.\d+)\s*\(.*\)'%heading, line)
+            m = re.match(r'\s*{}\s*\d+\s*\d+\s*\S+\s*\S+\s*(\d*\.\d+)\s*\(.*\)\s*(\d*\.\d+)\s*\(.*\)'.format(heading), line)
             if m:
                 maxval = float(m.groups()[0])
                 minval = float(m.groups()[1])
@@ -148,9 +139,9 @@ class _TimingParser:
                     m.ninst = 1
                 else:
                     setattr(m, key.lower(),
-                            int(self.case.get_value("%s_%s" % (key, m.name))))
+                            int(self.case.get_value("{}_{}".format(key, m.name))))
 
-            m.comp = self.case.get_value("COMP_%s" % (m.name))
+            m.comp = self.case.get_value("COMP_{}".format(m.name))
             m.pemax = m.rootpe + m.ntasks * m.pstrid - 1
 
         now = datetime.datetime.ctime(datetime.datetime.now())
@@ -161,9 +152,9 @@ class _TimingParser:
 
         binfilename = os.path.join(rundir, "timing", "model_timing_stats")
         finfilename = os.path.join(self.caseroot, "timing",
-                                   "%s_timing_stats.%s" % (cime_model, self.lid))
+                                   "{}_timing_stats.{}".format(cime_model, self.lid))
         foutfilename = os.path.join(self.caseroot, "timing",
-                                    "%s_timing.%s.%s" % (cime_model, caseid, self.lid))
+                                    "{}_timing.{}.{}".format(cime_model, caseid, self.lid))
 
         timingDir = os.path.join(self.caseroot, "timing")
         if not os.path.isdir(timingDir):
@@ -173,10 +164,9 @@ class _TimingParser:
             shutil.copyfile(binfilename, finfilename)
         except Exception, e:
             if not os.path.isfile(binfilename):
-                logger.critical("File %s not found" % binfilename)
+                logger.critical("File {} not found".format(binfilename))
             else:
-                logger.critical("Unable to cp %s to %s" %
-                                (binfilename, finfilename))
+                logger.critical("Unable to cp {} to {}".format(binfilename, finfilename))
             raise e
 
         os.chdir(self.caseroot)
@@ -185,7 +175,7 @@ class _TimingParser:
             self.finlines = fin.readlines()
             fin.close()
         except Exception, e:
-            logger.critical("Unable to open file %s" % finfilename)
+            logger.critical("Unable to open file {}".format(finfilename))
             raise e
 
         tlen = 1.0
@@ -198,7 +188,7 @@ class _TimingParser:
         elif ncpl_base_period == "hour":
             tlen = 1.0/24.0
         else:
-            logger.warning("Unknown NCPL_BASE_PERIOD=%s" % ncpl_base_period)
+            logger.warning("Unknown NCPL_BASE_PERIOD={}".format(ncpl_base_period))
 
         nprocs, ncount = self.gettime2('CPL:CLOCK_ADVANCE ')
         nsteps = ncount / nprocs
@@ -222,29 +212,24 @@ class _TimingParser:
         try:
             self.fout = open(foutfilename, "w")
         except Exception, e:
-            logger.critical("Could not open file for writing: %s"
-                            % foutfilename)
+            logger.critical("Could not open file for writing: {}".format(foutfilename))
             raise e
 
         self.write("---------------- TIMING PROFILE ---------------------\n")
 
-        self.write("  Case        : %s\n" % caseid)
-        self.write("  LID         : %s\n" % self.lid)
-        self.write("  Machine     : %s\n" % mach)
-        self.write("  Caseroot    : %s\n" % self.caseroot)
-        self.write("  Timeroot    : %s/Tools\n" % self.caseroot)
-        self.write("  User        : %s\n" % user)
-        self.write("  Curr Date   : %s\n" % now)
+        self.write("  Case        : {}\n".format(caseid))
+        self.write("  LID         : {}\n".format(self.lid))
+        self.write("  Machine     : {}\n".format(mach))
+        self.write("  Caseroot    : {}\n".format(self.caseroot))
+        self.write("  Timeroot    : {}/Tools\n".format(self.caseroot))
+        self.write("  User        : {}\n".format(user))
+        self.write("  Curr Date   : {}\n".format(now))
 
-        self.write("  grid        : %s\n" % grid)
-        self.write("  compset     : %s\n" % compset)
-        self.write("  run_type    : %s, continue_run = %s "
-                   "(inittype = %s)\n" %
-                   (run_type, str(continue_run).upper(), inittype))
-        self.write("  stop_option : %s, stop_n = %s\n" %
-                   (stop_option, stop_n))
-        self.write("  run_length  : %s days (%s for ocean)\n\n" %
-                   (adays, odays))
+        self.write("  grid        : {}\n".format(grid))
+        self.write("  compset     : {}\n".format(compset))
+        self.write("  run_type    : {}, continue_run = {} (inittype = {})\n".format(run_type, str(continue_run).upper(), inittype))
+        self.write("  stop_option : {}, stop_n = {}\n".format(stop_option, stop_n))
+        self.write("  run_length  : {} days ({} for ocean)\n\n".format(adays, odays))
 
         self.write("  component       comp_pes    root_pe   tasks  "
                    "x threads"
@@ -254,10 +239,7 @@ class _TimingParser:
         maxthrds = 0
         for k in self.case.get_values("COMP_CLASSES"):
             m = self.models[k]
-            self.write("  %s = %-8s   %-6u      %-6u   %-6u x %-6u  "
-                       "%-6u (%-6u) \n"
-                       % (m.name.lower(), m.comp, (m.ntasks*m.nthrds *smt_factor), m.rootpe,
-                          m.ntasks, m.nthrds, m.ninst, m.pstrid))
+            self.write("  {} = {:<8s}   {:<6d}      {:<6d}   {:<6d} x {:<6d}  {:<6d} ({:<6d}) \n".format(m.name.lower(), m.comp, (m.ntasks*m.nthrds *smt_factor), m.rootpe, m.ntasks, m.nthrds, m.ninst, m.pstrid))
             if m.nthrds > maxthrds:
                 maxthrds = m.nthrds
         nmax  = self.gettime(' CPL:INIT ')[1]
@@ -267,7 +249,7 @@ class _TimingParser:
         for k in components:
             if k != "CPL":
                 m = self.models[k]
-            m.tmin, m.tmax, _ = self.gettime(' CPL:%s_RUN ' %  m.name)
+            m.tmin, m.tmax, _ = self.gettime(' CPL:{}_RUN '.format(m.name))
         otmin, otmax, _ = self.gettime(' CPL:OCNT_RUN ')
 
         # pick OCNT_RUN for tight coupling
@@ -302,31 +284,25 @@ class _TimingParser:
             tmaxr = adays*86400.0/(tmax*365.0)
 
         self.write("\n")
-        self.write("  total pes active           : %s \n" % (totalpes*maxthrds*smt_factor ))
-        self.write("  pes per node               : %s \n" % pes_per_node)
-        self.write("  pe count for cost estimate : %s \n" % pecost)
+        self.write("  total pes active           : {} \n".format(totalpes*maxthrds*smt_factor ))
+        self.write("  pes per node               : {} \n".format(pes_per_node))
+        self.write("  pe count for cost estimate : {} \n".format(pecost))
         self.write("\n")
 
         self.write("  Overall Metrics: \n")
-        self.write("    Model Cost:         %10.2f   pe-hrs/simulated_year \n"
-                   % ((tmax*365.0*pecost)/(3600.0*adays)))
-        self.write("    Model Throughput:   %10.2f   simulated_years/day \n"
-                   % ((86400.0*adays)/(tmax*365.0)))
+        self.write("    Model Cost:         {:10.2f}   pe-hrs/simulated_year \n".format((tmax*365.0*pecost)/(3600.0*adays)))
+        self.write("    Model Throughput:   {:10.2f}   simulated_years/day \n".format((86400.0*adays)/(tmax*365.0)) )
         self.write("\n")
 
-        self.write("    Init Time   :  %10.3f seconds \n" % nmax)
-        self.write("    Run Time    :  %10.3f seconds   %10.3f seconds/day \n"
-                   % (tmax, tmax/adays))
-        self.write("    Final Time  :  %10.3f seconds \n" % fmax)
+        self.write("    Init Time   :  {:10.3f} seconds \n".format(nmax))
+        self.write("    Run Time    :  {:10.3f} seconds   {:10.3f} seconds/day \n".format(tmax, tmax/adays))
+        self.write("    Final Time  :  {:10.3f} seconds \n".format(fmax))
 
         self.write("\n")
 
-        self.write("    Actual Ocn Init Wait Time     :  %10.3f seconds \n"
-                   % ocnwaittime)
-        self.write("    Estimated Ocn Init Run Time   :  %10.3f seconds \n"
-                   % ocnrunitime)
-        self.write("    Estimated Run Time Correction :  %10.3f seconds \n"
-                   % correction)
+        self.write("    Actual Ocn Init Wait Time     :  {:10.3f} seconds \n".format(ocnwaittime))
+        self.write("    Estimated Ocn Init Run Time   :  {:10.3f} seconds \n".format(ocnrunitime))
+        self.write("    Estimated Run Time Correction :  {:10.3f} seconds \n".format(correction))
         self.write("      (This correction has been applied to the ocean and"
                    " total run times) \n")
 
@@ -338,15 +314,11 @@ class _TimingParser:
                    "with other components \n")
         self.write("\n")
 
-        self.write("    TOT Run Time:  %10.3f seconds   %10.3f seconds/mday   "
-                   "%10.2f myears/wday \n" % (tmax, tmax/adays, tmaxr))
+        self.write("    TOT Run Time:  {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(tmax, tmax/adays, tmaxr))
         for k in self.case.get_values("COMP_CLASSES"):
             m = self.models[k]
-            self.write("    %s Run Time:  %10.3f seconds   "
-                       "%10.3f seconds/mday   %10.2f myears/wday \n"
-                       % (k, m.tmax, m.tmax/adays, m.tmaxr))
-        self.write("    CPL COMM Time: %10.3f seconds   %10.3f seconds/mday   "
-                   "%10.2f myears/wday \n" % (xmax, xmax/adays, xmaxr))
+            self.write("    {} Run Time:  {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(k, m.tmax, m.tmax/adays, m.tmaxr))
+        self.write("    CPL COMM Time: {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(xmax, xmax/adays, xmaxr))
 
         self.write("\n\n---------------- DRIVER TIMING FLOWCHART "
                    "--------------------- \n\n")
@@ -358,8 +330,7 @@ class _TimingParser:
         for k in ["CPL", "OCN", "LND", "ROF", "ICE", "ATM", "GLC", "WAV"]:
             m = self.models[k]
             xspace = (pstrlen+hoffset+m.offset) * ' '
-            self.write(" %s %s (pes %u to %u) \n"
-                       % (xspace, k, m.rootpe, m.pemax))
+            self.write(" {} {} (pes {:d} to {:d}) \n".format(xspace, k, m.rootpe, m.pemax))
         self.write("\n")
 
         self.prttime(' CPL:CLOCK_ADVANCE ')

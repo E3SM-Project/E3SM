@@ -33,8 +33,11 @@ def parse_command_line(args):
                         help="location of config_grids.xml file in CIME5 format",
                         required=True)
 
-    args = CIME.utils.parse_args_and_handle_standard_logging_options(args,
-                                                                     parser)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
+
+    if args.cime2file is None or args.cime5file is None:
+        parser.print_help()
+        exit()
 
     return args.cime2file, args.cime5file
 
@@ -55,7 +58,7 @@ class PesNode(grid_xml_converter.DataNode):
             node.set(tag, 'any')
 
     def keyvalue(self):
-        return "%s:%s:%s:%s" % (self.data['gridname'], self.data['machname'],
+        return "{}:{}:{}:{}".format(self.data['gridname'], self.data['machname'],
                                 self.data['pesize'], self.data['compset'])
 
 
@@ -220,7 +223,7 @@ class PesTree(grid_xml_converter.DataTree):
                 root.append(a.to_cime5())
         xmllint = find_executable("xmllint")
         if xmllint is not None:
-            run_cmd("%s --format --output %s -"%(xmllint, newfilename),
+            run_cmd("{} --format --output {} -".format(xmllint, newfilename),
                     input_str=ET.tostring(root))
 
 def diff_tree(atree, btree):
@@ -259,12 +262,12 @@ def diff_tree(atree, btree):
 
 
 
-    LOGGER.info("Number of ok nodes: %d" % len(oklist))
-    LOGGER.info("Number of wrong nodes: %d" % len(fixlist))
-    LOGGER.info("Number of missing nodes: %d" % len(addlist))
+    LOGGER.info("Number of ok nodes: {:d}".format(len(oklist)))
+    LOGGER.info("Number of wrong nodes: {:d}".format(len(fixlist)))
+    LOGGER.info("Number of missing nodes: {:d}".format(len(addlist)))
     for miss in addlist:
         LOGGER.debug(miss[0].keyvalue())
-    LOGGER.info("Number of duplicate nodes: %d" % len(duplist))
+    LOGGER.info("Number of duplicate nodes: {:d}".format(len(duplist)))
     for dup in duplist:
         LOGGER.info(dup)
     return [oklist, fixlist, addlist]

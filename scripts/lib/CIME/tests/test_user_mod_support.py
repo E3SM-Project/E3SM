@@ -59,8 +59,7 @@ class TestUserModSupport(unittest.TestCase):
         with open(os.path.join(mod_dir, "user_nl_cpl"), "w") as user_nl_cpl:
             user_nl_cpl.write(name + "\n")
         with open(os.path.join(mod_dir, "shell_commands"), "w") as shell_commands:
-            command = "echo %s >> %s/shell_commands_result\n"%(name,
-                                                               self._caseroot)
+            command = "echo {} >> {}/shell_commands_result\n".format(name, self._caseroot)
             shell_commands.write(command)
         with open(os.path.join(mod_dir_sourcemods, "myfile.F90"), "w") as f90_file:
             f90_file.write(name + "\n")

@@ -26,10 +26,10 @@ class EntryID(GenericXML):
             # Fall back to default value
             value = self.get_element_text("default_value", root=node)
         else:
-            logger.debug("node is %s value is %s" % (node.get("id"), value))
+            logger.debug("node is {} value is {}".format(node.get("id"), value))
 
         if value is None:
-            logger.debug("For vid %s value is none"%node.get("id"))
+            logger.debug("For vid {} value is none".format(node.get("id")))
             value = ""
 
         return value
@@ -60,7 +60,7 @@ class EntryID(GenericXML):
             value = None
             if node is not None:
                 value = self._get_value_match(node, attributes, exact_match)
-        logger.debug("(get_value_match) vid %s value %s"%(vid, value))
+        logger.debug("(get_value_match) vid {} value {}".format(vid, value))
         return value
 
     def _get_value_match(self, node, attributes=None, exact_match=False):
@@ -126,7 +126,7 @@ class EntryID(GenericXML):
         return self._get_type_info(node)
 
     # pylint: disable=unused-argument
-    def check_if_comp_var(self, vid, comp=None):
+    def check_if_comp_var(self, vid, attribute=None):
         # handled in classes
         return vid, None, False
 
@@ -179,15 +179,15 @@ class EntryID(GenericXML):
             vv_node = ET.Element("valid_values")
             vv_node.text = new_valid_values
             self.add_child(vv_node)
-            logger.debug("Adding valid_values %s for %s"%(new_valid_values, node.get("id")))
+            logger.debug("Adding valid_values {} for {}".format(new_valid_values, node.get("id")))
         else:
             vv_text = self.set_element_text("valid_values", new_valid_values, root=node)
-            logger.debug("Replacing valid_values %s with %s for %s"%(old_vv, vv_text, node.get("id")))
+            logger.debug("Replacing valid_values {} with {} for {}".format(old_vv, vv_text, node.get("id")))
 
         current_value = node.get("value")
         valid_values_list = self._get_valid_values(node)
         if current_value is not None and current_value not in valid_values_list:
-            logger.warn("WARNING: Current setting for %s not in new valid values. Updating setting to \"%s\""%(node.get("id"), valid_values_list[0]))
+            logger.warn("WARNING: Current setting for {} not in new valid values. Updating setting to \"{}\"".format(node.get("id"), valid_values_list[0]))
             self._set_value(node, valid_values_list[0])
         return new_valid_values
 
@@ -212,7 +212,7 @@ class EntryID(GenericXML):
         str_value = convert_to_string(value, type_str, vid)
 
         if valid_values is not None and not str_value.startswith('$'):
-            expect(str_value in valid_values, "Did not find %s in valid values for %s: %s" % (value, vid, valid_values))
+            expect(str_value in valid_values, "Did not find {} in valid values for {}: {}".format(value, vid, valid_values))
         return str_value
 
     def set_value(self, vid, value, subgroup=None, ignore_type=False):
@@ -249,7 +249,7 @@ class EntryID(GenericXML):
                 type_str = self._get_type_info(node)
                 results.append( convert_to_type(result, type_str, vid))
         return results
-
+    #pylint: disable=arguments-differ
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
         """
         Get a value for entry with id attribute vid.
@@ -275,13 +275,13 @@ class EntryID(GenericXML):
         """
         internal get_value, does not convert to type
         """
-        logger.debug("(_get_value) (%s, %s, %s)" % (attribute, resolved, subgroup))
+        logger.debug("(_get_value) ({}, {}, {})".format(attribute, resolved, subgroup))
         val = None
         if node is None:
             logger.debug("No node")
             return val
 
-        logger.debug("Found node %s with attributes %s" , node.tag , node.attrib)
+        logger.debug("Found node {} with attributes {}".format(node.tag , node.attrib))
         if attribute:
             val = self.get_element_text("value", attributes=attribute, root=node)
         elif node.get("value") is not None:
@@ -306,7 +306,7 @@ class EntryID(GenericXML):
         elements = []
         for node in nodes:
             content = self.get_element_text(childname, root=node)
-            expect(content is not None,"No childname %s for id %s"%(childname,node.get("id")))
+            expect(content is not None,"No childname {} for id {}".format(childname, node.get("id")))
             if content == childcontent:
                 elements.append(deepcopy(node))
 
@@ -334,8 +334,8 @@ class EntryID(GenericXML):
             gname = gnode.text
             if gname is None:
                 gname = "group_not_set"
-	    # If group with id=$gname does not exist in self.groups
-	    # then create the group node and add it to infile file
+            # If group with id=$gname does not exist in self.groups
+            # then create the group node and add it to infile file
             if gname not in self.groups.keys():
                 newgroup = ET.Element("group")
                 newgroup.set("id",gname)
@@ -346,10 +346,10 @@ class EntryID(GenericXML):
             # Remove {<group>, <file>, <values>} from the entry element
             node = self.cleanupnode(node)
 
-	    # Add the entry element to the group
+            # Add the entry element to the group
             self.groups[gname].append(node)
 
-	    # Set the default value, it may be determined by a regular
+            # Set the default value, it may be determined by a regular
             # expression match to a dictionary value in attributes matching a
             # value attribute in node
             value = srcobj.get_default_value(src_node, attributes)
@@ -363,7 +363,7 @@ class EntryID(GenericXML):
         """
         in env_base.py, not expected to get here
         """
-        expect(False, " Not expected to be here %s"%node.get("id"))
+        expect(False, " Not expected to be here {}".format(node.get("id")))
 
     def compare_xml(self, other):
         xmldiffs = {}
@@ -388,7 +388,7 @@ class EntryID(GenericXML):
                                 if valnode.attrib is None and f2valnode.attrib is None or \
                                    f2valnode.attrib == valnode.attrib:
                                     if other.get_resolved_value(f2valnode.text) != self.get_resolved_value(valnode.text):
-                                        xmldiffs["%s:%s"%(vid,valnode.attrib)] = [valnode.text, f2valnode.text]
+                                        xmldiffs["{}:{}".format(vid, valnode.attrib)] = [valnode.text, f2valnode.text]
 
         return xmldiffs
 

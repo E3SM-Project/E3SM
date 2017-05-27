@@ -232,7 +232,8 @@
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
     <queues>
-      <queue walltimemax="02:00:00" jobmin="1" jobmax="192" default="true">short</queue>
+      <queue walltimemax="02:00:00" jobmin="1" jobmax="192" >short</queue>
+      <queue walltimemax="06:00:00" jobmin="1" jobmax="192" default="true">medium</queue>
       <queue walltimemax="40:00:00" jobmin="1" jobmax="144" >long</queue>
     </queues>
   </batch_system>

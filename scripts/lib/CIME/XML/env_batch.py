@@ -27,6 +27,7 @@ class EnvBatch(EnvBase):
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_batch.xsd")
         EnvBase.__init__(self, case_root, infile, schema=schema)
 
+    # pylint: disable=arguments-differ
     def set_value(self, item, value, subgroup=None, ignore_type=False):
         """
         Override the entry_id set_value function with some special cases for this class
@@ -62,6 +63,7 @@ class EnvBatch(EnvBase):
 
         return val
 
+    # pylint: disable=arguments-differ
     def get_value(self, item, attribute=None, resolved=True, subgroup="case.run"):
         """
         Must default subgroup to something in order to provide single return value
@@ -287,10 +289,13 @@ class EnvBatch(EnvBase):
                     val = case.get_resolved_value(name)
 
                 if val is not None and len(str(val)) > 0 and val != "None":
-                    # Try to evaluate val
-                    try:
-                        rval = eval(val)
-                    except:
+                    # Try to evaluate val if it contains any whitespace
+                    if " " in val:
+                        try:
+                            rval = eval(val)
+                        except:
+                            rval = val
+                    else:
                         rval = val
                     # need a correction for tasks per node
                     if flag == "-n" and rval<= 0:
@@ -330,6 +335,7 @@ class EnvBatch(EnvBase):
                     prereq = eval(prereq)
             except:
                 expect(False,"Unable to evaluate prereq expression '{}' for job '{}'".format(self.get_value('prereq',subgroup=job), job))
+
             if prereq:
                 jobs.append((job, self.get_value('dependency', subgroup=job)))
 
@@ -448,7 +454,7 @@ class EnvBatch(EnvBase):
     def queue_meets_spec(self, queue, num_pes, walltime=None, job=None):
         specs = self.get_queue_specs(queue)
         if specs is None:
-            logger.warning("WARNING: queue '%s' is unknown to this system" % queue)
+            logger.warning("WARNING: queue '{}' is unknown to this system".format(queue))
             return True
 
         jobmin, jobmax, jobname, walltimemax, strict = specs

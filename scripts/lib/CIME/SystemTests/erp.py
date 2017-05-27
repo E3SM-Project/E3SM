@@ -58,19 +58,19 @@ class ERP(SystemTestsCommon):
         # For cases where ERP works, changing this decomposition will not affect answers, but it will
         # affect the executable that is used
         for bld in range(1,3):
-            logging.warn("Starting bld %s"%bld)
+            logging.warn("Starting bld {}".format(bld))
 
             if (bld == 2):
                 # halve the number of tasks and threads
                 for comp in self._case.get_values("COMP_CLASSES"):
-                    ntasks    = self._case.get_value("NTASKS_%s"%comp)
-                    nthreads  = self._case.get_value("NTHRDS_%s"%comp)
-                    rootpe    = self._case.get_value("ROOTPE_%s"%comp)
+                    ntasks    = self._case.get_value("NTASKS_{}".format(comp))
+                    nthreads  = self._case.get_value("NTHRDS_{}".format(comp))
+                    rootpe    = self._case.get_value("ROOTPE_{}".format(comp))
                     if ( nthreads > 1 ):
-                        self._case.set_value("NTHRDS_%s"%comp, nthreads/2)
+                        self._case.set_value("NTHRDS_{}".format(comp), nthreads/2)
                     if ( ntasks > 1 ):
-                        self._case.set_value("NTASKS_%s"%comp, ntasks/2)
-                        self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
+                        self._case.set_value("NTASKS_{}".format(comp), ntasks/2)
+                        self._case.set_value("ROOTPE_{}".format(comp), rootpe/2)
 
                 # Note, some components, like CESM-CICE, have
                 # decomposition information in env_build.xml
@@ -80,24 +80,24 @@ class ERP(SystemTestsCommon):
 
             # Now rebuild the system, given updated information in env_build.xml
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
-            shutil.move("%s/%s.exe"%(exeroot,cime_model),
-                        "%s/%s.ERP%s.exe"%(exeroot,cime_model,bld))
+            shutil.move("{}/{}.exe".format(exeroot,cime_model),
+                        "{}/{}.ERP{}.exe".format(exeroot,cime_model,bld))
 
             # Make copies of the new env_mach_pes.xml and the new
             # env_build.xml to be used in the run phase
-            lock_file("env_mach_pes.xml", newname="env_mach_pes.ERP%s.xml" % bld)
-            lock_file("env_build.xml", newname="env_build.ERP%s.xml" % bld)
+            lock_file("env_mach_pes.xml", newname="env_mach_pes.ERP{}.xml".format(bld))
+            lock_file("env_build.xml", newname="env_build.ERP{}.xml".format(bld))
 
     def run_phase(self):
         # run will have values 1,2
         for run in range(1,3):
 
-            expect(is_locked("env_mach_pes.ERP%d.xml" % run),
-                   "ERROR: LockedFiles/env_mach_pes.ERP%d.xml does not exist, run case.build" % run )
+            expect(is_locked("env_mach_pes.ERP{:d}.xml".format(run)),
+                   "ERROR: LockedFiles/env_mach_pes.ERP{:d}.xml does not exist, run case.build".format(run ))
 
             # Use the second env_mach_pes.xml and env_build.xml files
-            restore("env_mach_pes.ERP%d.xml" % run, newname="env_mach_pes.xml")
-            restore("env_build.ERP%d.xml" % run, newname="env_build.xml")
+            restore("env_mach_pes.ERP{:d}.xml".format(run, newname="env_mach_pes.xml"))
+            restore("env_build.ERP{:d}.xml".format(run, newname="env_build.xml"))
 
             # update the case to use the new values
             self._case.read_xml()
@@ -105,8 +105,8 @@ class ERP(SystemTestsCommon):
             # Use the second executable that was created
             exeroot = self._case.get_value("EXEROOT")
             cime_model = CIME.utils.get_model()
-            exefile  = os.path.join(exeroot,"%s.exe"%(cime_model))
-            exefile2 = os.path.join(exeroot,"%s.ERP%d.exe"%(cime_model,run))
+            exefile  = os.path.join(exeroot,"{}.exe".format(cime_model))
+            exefile2 = os.path.join(exeroot,"{}.ERP{:d}.exe".format(cime_model,run))
             if (os.path.isfile(exefile)):
                 os.remove(exefile)
             shutil.copy(exefile2, exefile)
@@ -116,7 +116,7 @@ class ERP(SystemTestsCommon):
             stop_option = self._case.get_value("STOP_OPTION")
 
             if run == 1:
-                expect(stop_n > 2, "ERROR: stop_n value %d too short"%stop_n)
+                expect(stop_n > 2, "ERROR: stop_n value {:d} too short".format(stop_n))
                 rest_n = stop_n/2 + 1
                 self._case.set_value("REST_N", rest_n)
                 self._case.set_value("REST_OPTION", stop_option)
@@ -127,7 +127,7 @@ class ERP(SystemTestsCommon):
             else:
                 rest_n = stop_n/2 + 1
                 stop_new = stop_n - rest_n
-                expect(stop_new > 0, "ERROR: stop_n value %d too short %d %d"%(stop_new,stop_n,rest_n))
+                expect(stop_new > 0, "ERROR: stop_n value {:d} too short {:d} {:d}".format(stop_new,stop_n,rest_n))
                 self._case.set_value("STOP_N", stop_new)
                 self._case.set_value("CONTINUE_RUN", True)
                 self._case.set_value("REST_OPTION","never")

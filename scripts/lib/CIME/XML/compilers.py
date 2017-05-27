@@ -114,6 +114,7 @@ class Compilers(GenericXML):
             self.os       = os_
             self.mpilib   = mpilib
 
+    #pylint: disable=arguments-differ
     def get_value(self, name, attribute=None, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_compilers.xml file
@@ -208,9 +209,9 @@ class Compilers(GenericXML):
                 if value_lists[var_name].depends <= vars_written
             ]
             expect(len(ready_variables) > 0,
-                   "The file %s has bad <var> references. "
+                   "The file {} has bad <var> references. "
                    "Check for circular references or variables that "
-                   "are in a <var> tag but not actually defined."%self.filename)
+                   "are in a <var> tag but not actually defined.".format(self.filename))
             big_normal_tree = None
             big_append_tree = None
             for var_name in ready_variables:
@@ -243,9 +244,9 @@ def _add_to_macros(node, macros):
             if name.startswith("ADD_"):
                 basename = name[4:]
                 if basename in macros:
-                    macros[basename] = "%s %s" % (macros[basename], value)
+                    macros[basename] = "{} {}".format(macros[basename], value)
                 elif name in macros:
-                    macros[name] = "%s %s" % (macros[name], value)
+                    macros[name] = "{} {}".format(macros[name], value)
                 else:
                     macros[name] = value
             else:
