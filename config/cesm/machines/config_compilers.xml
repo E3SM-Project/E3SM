@@ -112,9 +112,6 @@ using a fortran linker.
     <append DEBUG="TRUE"> -g -Wall -ffpe-trap=invalid,zero,overflow -fcheck=bounds </append>
     <append DEBUG="FALSE"> -O </append>
   </CFLAGS>
-  <CMAKE_OPTS>
-    <append MODEL="cism"> -D CISM_GNU=ON </append>
-  </CMAKE_OPTS>
   <CPPDEFS>
     <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU</append>
