@@ -36,7 +36,7 @@ module seq_io_mod
 
   use shr_kind_mod, only: r4 => shr_kind_r4, r8 => shr_kind_r8, in => shr_kind_in
   use shr_kind_mod, only: cl => shr_kind_cl, cs => shr_kind_cs
-  use shr_sys_mod       ! system calls
+  use shr_sys_mod,  only: shr_sys_abort
   use seq_comm_mct, only: logunit, CPLID, seq_comm_setptrs
   use seq_comm_mct, only: seq_comm_namelen, seq_comm_name
   use seq_flds_mod, only : seq_flds_lookup

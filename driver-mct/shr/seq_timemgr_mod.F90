@@ -744,7 +744,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
          (trim(pause_option) /= seq_timemgr_optNONE)  .and.                   &
          (trim(pause_option) /= seq_timemgr_optNever)) then
        do n = 1, max_clocks
-          if (pause_active(n)) then
+          if (pause_active(n) .and. (iam == 0)) then
              write(logunit, '(4a)') subname, ': Pause active for ',           &
                   trim(seq_timemgr_clocks(n)),' component'
           end if
