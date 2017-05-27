@@ -572,6 +572,39 @@
     </values>
   </entry>
 
+  <entry id="glc_renormalize_smb">
+    <type>char</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <valid_values>on,off,on_if_glc_coupled_fluxes</valid_values>
+    <desc>
+      Whether to renormalize the surface mass balance (smb) sent from lnd to glc so that the
+      global integral on the glc grid agrees with the global integral on the lnd grid.
+
+      Unlike most fluxes, smb is remapped with bilinear rather than conservative mapping weights,
+      so this option is needed for conservation. However, conservation is not required in many
+      cases, since we often run glc as a diagnostic (one-way-coupled) component.
+
+      Allowable values are:
+      'on': always do this renormalization
+      'off': never do this renormalization (see WARNING below)
+      'on_if_glc_coupled_fluxes': Determine at runtime whether to do this renormalization.
+         Does the renormalization if we're running a two-way-coupled glc that sends fluxes
+         to other components (which is the case where we need conservation).
+         Does NOT do the renormalization if we're running a one-way-coupled glc, or if
+         we're running a glc-only compset (T compsets).
+         (In these cases, conservation is not important.)
+
+      Only used if running with a prognostic GLC component.
+
+      WARNING: Setting this to 'off' will break conservation when running with an
+      evolving, two-way-coupled glc.
+    </desc>
+    <values>
+      <value>on_if_glc_coupled_fluxes</value>
+    </values>
+  </entry>
+
   <entry id="wall_time_limit">
     <type>real</type>
     <category>control</category>
