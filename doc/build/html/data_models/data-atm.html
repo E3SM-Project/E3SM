@@ -1,0 +1,707 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. Data Atmosphere (DATM) &#8212; CIME 5.3.0_alpha17 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '5.3.0_alpha17',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="6. Data Land (DLND)" href="data-lnd.html" />
+    <link rel="prev" title="4. Data Model Science" href="data-model-science.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="data-lnd.html" title="6. Data Land (DLND)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="data-model-science.html" title="4. Data Model Science"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">CIME Data Models</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. Data Atmosphere (DATM)</a><ul>
+<li><a class="reference internal" href="#xml-variables">5.1. xml variables</a></li>
+<li><a class="reference internal" href="#datamode-values">5.2. datamode values</a></li>
+<li><a class="reference internal" href="#datm-mode-datamode-and-streams">5.3. DATM_MODE, datamode and streams</a></li>
+<li><a class="reference internal" href="#namelists">5.4. Namelists</a></li>
+<li><a class="reference internal" href="#streams-independent-of-datm-mode-value">5.5. Streams independent of DATM_MODE value</a></li>
+<li><a class="reference internal" href="#datm-field-names">5.6. DATM Field names</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="data-model-science.html"
+                        title="previous chapter">4. Data Model Science</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="data-lnd.html"
+                        title="next chapter">6. Data Land (DLND)</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/data_models/data-atm.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="data-atmosphere-datm">
+<span id="data-atm"></span><h1>5. Data Atmosphere (DATM)<a class="headerlink" href="#data-atmosphere-datm" title="Permalink to this headline">¶</a></h1>
+<p>DATM is normally used to provide observational forcing data (or forcing data produced by a previous run using active components) to drive prognostic components.
+In the case of CESM, these would be: CLM (I compset), POP2 (C compset), and POP2/CICE (G compset).
+As a result, DATM variable settings are specific to the compset that will be targeted.
+As examples, CORE2_NYF (CORE2 normal year forcing) is the DATM mode used in C and G compsets.
+CLM_QIAN, CLMCRUNCEP, CLMGSWP3 and CLM1PT are DATM modes using observational data for forcing CLM in I compsets.</p>
+<div class="section" id="xml-variables">
+<span id="datm-xml-vars"></span><h2>5.1. xml variables<a class="headerlink" href="#xml-variables" title="Permalink to this headline">¶</a></h2>
+<p>The following are <code class="docutils literal"><span class="pre">$CASEROOT</span></code> xml variables that CIME supports for DATM.
+These variables are defined in <code class="docutils literal"><span class="pre">$CIMEROOT/src/components/data_comps/datm/cime_config/config_component.xml</span></code>.
+These variables will appear in <code class="docutils literal"><span class="pre">env_run.xml</span></code> and the resulting values are compset dependent.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">These xml variables are used by the the datm&#8217;s <strong>cime_config/buildnml</strong> script in conjunction with datm&#8217;s <strong>cime_config/namelist_definition_datm.xml</strong> file to generate the namelist file <code class="docutils literal"><span class="pre">datm_in</span></code>.</p>
+</div>
+<table border="1" class="colwidths-given docutils" id="id1">
+<caption><span class="caption-text">&#8220;DATM xml variables&#8221;</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="20%" />
+<col width="80%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">xml variable</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>DATM_MODE</td>
+<td>Mode for atmospheric component</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>Valid values are: CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>CLMCRUNCEP_V5,CLMGSWP3,WW3,CPLHISTForcing</td>
+</tr>
+<tr class="row-odd"><td>DATM_PRESAERO</td>
+<td>Prescribed aerosol forcing, if any</td>
+</tr>
+<tr class="row-even"><td>DATM_TOPO</td>
+<td>Surface topography</td>
+</tr>
+<tr class="row-odd"><td>DATM_CO2_TSERIES</td>
+<td>CO2 time series type</td>
+</tr>
+<tr class="row-even"><td>DATM_CPLHIST_CASE</td>
+<td>Coupler history data mode case name</td>
+</tr>
+<tr class="row-odd"><td>DATM_CPLHIST_DIR</td>
+<td>Coupler history data mode directory containing coupler history data</td>
+</tr>
+<tr class="row-even"><td>DATM_CPLHIST_YR_ALIGN</td>
+<td>Coupler history data model simulation year corresponding to data starting year</td>
+</tr>
+<tr class="row-odd"><td>DATM_CPLHIST_YR_START</td>
+<td>Coupler history data model starting year to loop data over</td>
+</tr>
+<tr class="row-even"><td>DATM_CPLHIST_YR_END</td>
+<td>Coupler history data model ending year to loop data over</td>
+</tr>
+<tr class="row-odd"><td>DATM_CLMNCEP_YR_ALIGN</td>
+<td>I compsets only - simulation year corresponding to data starting year</td>
+</tr>
+<tr class="row-even"><td>DATM_CPLHIST_YR_START</td>
+<td>I compsets only - data model starting year to loop data over</td>
+</tr>
+<tr class="row-odd"><td>DATM_CPLHIST_YR_END</td>
+<td>I compsets only - data model ending year to loop data over</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="datamode-values">
+<span id="datm-datamodes"></span><h2>5.2. datamode values<a class="headerlink" href="#datamode-values" title="Permalink to this headline">¶</a></h2>
+<p>The xml variable <code class="docutils literal"><span class="pre">DATM_MODE</span></code> sets the streams that are associated with DATM and also sets the namelist variable <code class="docutils literal"><span class="pre">datamode</span></code> that specifies what additional operations need to be done by DATM on the streams before returning to the driver.
+One of the variables in <code class="docutils literal"><span class="pre">shr_strdata_nml</span></code> is <code class="docutils literal"><span class="pre">datamode</span></code>, whose value is a character string.  Each data model has a unique set of <code class="docutils literal"><span class="pre">datamode</span></code> values that it supports.
+The valid values for <code class="docutils literal"><span class="pre">datamode</span></code> are set in the file <code class="docutils literal"><span class="pre">namelist_definition_datm.xml</span></code> using the xml variable <code class="docutils literal"><span class="pre">DATM_MODE</span></code> in the <code class="docutils literal"><span class="pre">config_component.xml</span></code> file for DATM.
+CIME will generate a value <code class="docutils literal"><span class="pre">datamode</span></code> that is compset dependent.</p>
+<p>The following are the supported DATM datamode values and their relationship to the <code class="docutils literal"><span class="pre">$DATM_MODE</span></code> xml variable value.</p>
+<table border="1" class="colwidths-given docutils" id="id2">
+<caption><span class="caption-text">&#8220;Valid values for datamode namelist variable&#8221;</span><a class="headerlink" href="#id2" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="20%" />
+<col width="80%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">datamode variable</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>NULL</td>
+<td>This mode turns off the data model as a provider of data to the coupler. The <code class="docutils literal"><span class="pre">atm_present</span></code> flag will be set to <code class="docutils literal"><span class="pre">false</span></code> and the coupler assumes no exchange of data to or from the data model.</td>
+</tr>
+<tr class="row-odd"><td>COPYALL</td>
+<td>The default science mode of the data model is the COPYALL mode. This mode will examine the fields found in all input data streams, if any input field names match the field names used internally, they are copied into the export array and passed directly to the coupler without any special user code.  Any required fields not found on an input stream will be set to zero except for aerosol deposition fields which will be set to a special value.</td>
+</tr>
+<tr class="row-even"><td>CPLHIST</td>
+<td>Uilize user-generated coupler history data to spin up prognostic component. Works exactly like COPYALL.</td>
+</tr>
+<tr class="row-odd"><td>CLMNCEP</td>
+<td>In conjunction with NCEP climatological atmosphere data, provides the atmosphere forcing favored by the Land Model Working Group when coupling an active land model with observed atmospheric forcing. This  mode replicates code previously found in CLM (circa 2005), before the LMWG started using the CCSM flux coupler and data models to do active-land-only simulations.</td>
+</tr>
+<tr class="row-even"><td>CORE2_NYF</td>
+<td>Coordinated Ocean-ice Reference Experiments (CORE) Version 2 Normal Year Forcing.</td>
+</tr>
+<tr class="row-odd"><td>CORE2_IAF</td>
+<td>In conjunction with with CORE Version 2 atmospheric forcing data, provides the atmosphere forcing favored by the Ocean Model Working Group when coupling an active ocean model with observed atmospheric forcing. This mode and associated data sets implement the CORE-IAF Version 2 forcing data, as developed by Large and Yeager (2008) at NCAR.  Note that CORE2_NYF and CORE2_IAF work exactly the same way.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="datm-mode-datamode-and-streams">
+<h2>5.3. DATM_MODE, datamode and streams<a class="headerlink" href="#datm-mode-datamode-and-streams" title="Permalink to this headline">¶</a></h2>
+<p>The following tabe describes the valid values of <code class="docutils literal"><span class="pre">DATM_MODE</span></code>, and how it relates to the associated input streams and the <code class="docutils literal"><span class="pre">datamode</span></code> namelist variable.</p>
+<table border="1" class="colwidths-given docutils" id="id3">
+<caption><span class="caption-text">&#8220;Relationship between DATM_MODE, datamode and streams&#8221;</span><a class="headerlink" href="#id3" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="15%" />
+<col width="85%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">DATM_MODE</th>
+<th class="head">description-streams-datamode</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>NULL</td>
+<td>null mode</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>streams: none</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>datamode: NULL</td>
+</tr>
+<tr class="row-odd"><td>CORE2_NYF</td>
+<td>CORE2 normal year forcing (C ang G compsets)</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>streams: CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>datamode: CORE2_NYF</td>
+</tr>
+<tr class="row-even"><td>CORE2_IAF</td>
+<td>CORE2 interannual year forcing (C ang G compsets)</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>streams: CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>datamode: CORE2_IAF</td>
+</tr>
+<tr class="row-odd"><td>CLM_QIAN_WISO</td>
+<td>QIAN atm input data with water isotopes (I compsets)</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>streams: CLM_QIAN_WISO.Solar,CLM_QIAN_WISO.Precip,CLM_QIAN_WISO.TPQW</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>datamode: CLMNCEP</td>
+</tr>
+<tr class="row-even"><td>CLM_QIAN</td>
+<td>QIAN atm input data (I compsets)</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>streams: CLM_QIAN.Solar,CLM_QIAN.Precip,CLM_QIAN.TPQW</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>datamode: CLMNCEP</td>
+</tr>
+<tr class="row-odd"><td>CLMCRUNCEP</td>
+<td>CRUNCEP atm input data (I compsets)</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>streams: CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>datamode: CLMNCEP</td>
+</tr>
+<tr class="row-even"><td>CLMCRUNCEP_V5</td>
+<td>CRUNCEP atm input data (I compsets)</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>streams: CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>datamode: CLMNCEP</td>
+</tr>
+<tr class="row-odd"><td>CLMGSWP3</td>
+<td>GSWP3 atm input data (I compsets)</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>streams: CLMGSWP3.Solar,CLMGSWP3.Precip,CLMGSWP3.TPQW</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>datamode: CLMNCEP</td>
+</tr>
+<tr class="row-even"><td>CLM1PT</td>
+<td>single point tower site atm input data</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>streams: CLM1PT.$ATM_GRID</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>datamode: CLMNCEP</td>
+</tr>
+<tr class="row-odd"><td>CPLHISTForcing</td>
+<td>user generated forcing data to spinup for I and G compsets</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>streams: CPLHISTForcingForOcnIce.Solar,CPLHISTForcingForOcnIce.nonSolarFlux,</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>CPLHISTForcingForOcnIce.State3hr,CPLHISTForcingForOcnIce.State1hr</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>datamode: CPLHIST</td>
+</tr>
+<tr class="row-odd"><td>WW3</td>
+<td>WW3 wave watch data from a short period of hi WW3 wave watch data from a short period of hi temporal frequency COREv2 data</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>streams: WW3</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>datamode: COPYALL</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="namelists">
+<h2>5.4. Namelists<a class="headerlink" href="#namelists" title="Permalink to this headline">¶</a></h2>
+<p>The DATM namelist file is <code class="docutils literal"><span class="pre">datm_in</span></code> (or <code class="docutils literal"><span class="pre">datm_in_NNN</span></code> for multiple instances). DATM namelists can be separated into two groups: <em>stream-independent</em> namelist variables that are specific to the DATM model and <em>stream-specific</em> namelist variables whose names are common to all the data models.</p>
+<p>Stream dependent input is in the namelist group <code class="docutils literal"><span class="pre">&quot;shr_strdata_nml</span></code> which is discussed in <a class="reference internal" href="input-streams.html#input-streams"><span class="std std-ref">input streams</span></a> and is the same for all data models.</p>
+<p id="datm-stream-independent-namelists">The stream-independent group is <code class="docutils literal"><span class="pre">datm_nml</span></code> and the DATM stream-independent namelist variables are:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="18%" />
+<col width="82%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">datm_nml vars</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>decomp</td>
+<td><p class="first">decomposition strategy (1d, root)</p>
+<p class="last">1d =&gt; vector decomposition, root =&gt; run on master task</p>
+</td>
+</tr>
+<tr class="row-odd"><td>restfilm</td>
+<td>master restart filename</td>
+</tr>
+<tr class="row-even"><td>restfils</td>
+<td>stream restart filename</td>
+</tr>
+<tr class="row-odd"><td>force_prognostic_true</td>
+<td>TRUE =&gt; force prognostic behavior</td>
+</tr>
+<tr class="row-even"><td>bias_correct</td>
+<td>if set, include bias correction streams in namelist</td>
+</tr>
+<tr class="row-odd"><td>anomaly_forcing</td>
+<td>if set, includ anomaly forcing streams in namelist</td>
+</tr>
+<tr class="row-even"><td>factorfn</td>
+<td>filename containing correction factors for use in CORE2 modes (CORE2_IAF and CORE2_NYF)</td>
+</tr>
+<tr class="row-odd"><td>presaero</td>
+<td>if true, prescribed aerosols are sent from datm</td>
+</tr>
+<tr class="row-even"><td>iradsw</td>
+<td>frequency to update radiation in number of time steps (of hours if negative)</td>
+</tr>
+<tr class="row-odd"><td>wiso_datm</td>
+<td>if true, turn on water isotopes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="streams-independent-of-datm-mode-value">
+<span id="datm-mode-independent-streams"></span><h2>5.5. Streams independent of DATM_MODE value<a class="headerlink" href="#streams-independent-of-datm-mode-value" title="Permalink to this headline">¶</a></h2>
+<p>In general, each <code class="docutils literal"><span class="pre">DATM_MODE</span></code> xml variable is identified with a unique set of streams.
+However, there are several streams in DATM that can accompany any <code class="docutils literal"><span class="pre">DATM_MODE</span></code> setting.
+Currently, these are streams associated with prescribed aerosols, co2 time series, topography, anomoly forcing and bias correction.
+These mode-independent streams are activated different, depending on the stream.</p>
+<ul>
+<li><p class="first"><code class="docutils literal"><span class="pre">prescribed</span> <span class="pre">aerosol</span> <span class="pre">stream:</span></code>
+To add this stream, set <code class="docutils literal"><span class="pre">$DATM_PRESAERO</span></code> to a supported value other than <code class="docutils literal"><span class="pre">none</span></code>.</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">co2</span> <span class="pre">time</span> <span class="pre">series</span> <span class="pre">stream</span></code>:
+To add this stream, set <code class="docutils literal"><span class="pre">$DATM_CO2_TSERIES</span></code> to a supported value other than <code class="docutils literal"><span class="pre">none</span></code>.</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">topo</span> <span class="pre">stream</span></code>:
+To add this stream, set <code class="docutils literal"><span class="pre">$DATM_TOPO</span></code> to a supported value other than <code class="docutils literal"><span class="pre">none</span></code>.</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">anomaly</span> <span class="pre">forcing</span> <span class="pre">stream:</span></code>
+To add this stream, you need to add any of the following keywword/value pair to the end of <code class="docutils literal"><span class="pre">user_nl_datm</span></code>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Anomaly</span><span class="o">.</span><span class="n">Forcing</span><span class="o">.</span><span class="n">Precip</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">filename</span><span class="o">&gt;</span>
+<span class="n">Anomaly</span><span class="o">.</span><span class="n">Forcing</span><span class="o">.</span><span class="n">Temperature</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">filename</span><span class="o">&gt;</span>
+<span class="n">Anomaly</span><span class="o">.</span><span class="n">Forcing</span><span class="o">.</span><span class="n">Pressure</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">filename</span><span class="o">&gt;</span>
+<span class="n">Anomaly</span><span class="o">.</span><span class="n">Forcing</span><span class="o">.</span><span class="n">Humidity</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">filename</span><span class="o">&gt;</span>
+<span class="n">Anomaly</span><span class="o">.</span><span class="n">Forcing</span><span class="o">.</span><span class="n">Uwind</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">filename</span><span class="o">&gt;</span>
+<span class="n">Anomaly</span><span class="o">.</span><span class="n">Forcing</span><span class="o">.</span><span class="n">Vwind</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">filename</span><span class="o">&gt;</span>
+<span class="n">Anomaly</span><span class="o">.</span><span class="n">Forcing</span><span class="o">.</span><span class="n">Shortwave</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">filename</span><span class="o">&gt;</span>
+<span class="n">Anomaly</span><span class="o">.</span><span class="n">Forcing</span><span class="o">.</span><span class="n">Longwave</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">filename</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">bias_correct</span> <span class="pre">stream:</span></code>
+To add this stream, you need to add any of the following keywword/value pair to the end of <code class="docutils literal"><span class="pre">user_nl_datm</span></code>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">BC</span><span class="o">.</span><span class="n">QIAN</span><span class="o">.</span><span class="n">CMAP</span><span class="o">.</span><span class="n">Precip</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">filename</span><span class="o">&gt;</span>
+<span class="n">BC</span><span class="o">.</span><span class="n">QIAN</span><span class="o">.</span><span class="n">GPCP</span><span class="o">.</span><span class="n">Precip</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">filename</span><span class="o">&gt;</span>
+<span class="n">BC</span><span class="o">.</span><span class="n">CRUNCEP</span><span class="o">.</span><span class="n">CMAP</span><span class="o">.</span><span class="n">Precip</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">filename</span><span class="o">&gt;</span>
+<span class="n">BC</span><span class="o">.</span><span class="n">CRUNCEP</span><span class="o">.</span><span class="n">GPCP</span><span class="o">.</span><span class="n">Precip</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">filename</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="datm-field-names">
+<span id="datm-fields"></span><h2>5.6. DATM Field names<a class="headerlink" href="#datm-field-names" title="Permalink to this headline">¶</a></h2>
+<p>DATM defines a set of pre-defined internal field names as well as mappings for how those field names map to the fields sent to the coupler.
+In general, the stream input file should translate the stream input variable names into the <code class="docutils literal"><span class="pre">datm_fld</span></code> names for use within the data atmosphere model.</p>
+<table border="1" class="colwidths-given docutils" id="id4">
+<caption><span class="caption-text">&#8220;DATM internal field names&#8221;</span><a class="headerlink" href="#id4" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">datm_fld (avifld)</th>
+<th class="head">driver_fld (avofld)</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>z</td>
+<td>Sa_z</td>
+</tr>
+<tr class="row-odd"><td>topo</td>
+<td>Sa_topo</td>
+</tr>
+<tr class="row-even"><td>u</td>
+<td>Sa_u</td>
+</tr>
+<tr class="row-odd"><td>v</td>
+<td>Sa_v</td>
+</tr>
+<tr class="row-even"><td>tbot</td>
+<td>Sa_tbot</td>
+</tr>
+<tr class="row-odd"><td>ptem</td>
+<td>Sa_ptem</td>
+</tr>
+<tr class="row-even"><td>shum</td>
+<td>Sa_shum</td>
+</tr>
+<tr class="row-odd"><td>dens</td>
+<td>Sa_dens</td>
+</tr>
+<tr class="row-even"><td>pbot</td>
+<td>Sa_pbot</td>
+</tr>
+<tr class="row-odd"><td>pslv</td>
+<td>Sa_pslv</td>
+</tr>
+<tr class="row-even"><td>lwdn</td>
+<td>Faxa_lwdn</td>
+</tr>
+<tr class="row-odd"><td>rainc</td>
+<td>Faxa_rainc</td>
+</tr>
+<tr class="row-even"><td>rainl</td>
+<td>Faxa_rainl</td>
+</tr>
+<tr class="row-odd"><td>snowc</td>
+<td>Faxa_snowc</td>
+</tr>
+<tr class="row-even"><td>snowl</td>
+<td>Faxa_snowl</td>
+</tr>
+<tr class="row-odd"><td>swndr</td>
+<td>Faxa_swndr</td>
+</tr>
+<tr class="row-even"><td>swvdr</td>
+<td>Faxa_swvdr</td>
+</tr>
+<tr class="row-odd"><td>swndf</td>
+<td>Faxa_swndf</td>
+</tr>
+<tr class="row-even"><td>swvdf</td>
+<td>Faxa_swvdf</td>
+</tr>
+<tr class="row-odd"><td>swnet</td>
+<td>Faxa_swnet</td>
+</tr>
+<tr class="row-even"><td>co2prog</td>
+<td>Sa_co2prog</td>
+</tr>
+<tr class="row-odd"><td>co2diag</td>
+<td>Sa_co2diag</td>
+</tr>
+<tr class="row-even"><td>bcphidry</td>
+<td>Faxa_bcphidry</td>
+</tr>
+<tr class="row-odd"><td>bcphodry</td>
+<td>Faxa_bcphodry</td>
+</tr>
+<tr class="row-even"><td>bcphiwet</td>
+<td>Faxa_bcphiwet</td>
+</tr>
+<tr class="row-odd"><td>ocphidry</td>
+<td>Faxa_ocphidry</td>
+</tr>
+<tr class="row-even"><td>ocphodry</td>
+<td>Faxa_ocphodry</td>
+</tr>
+<tr class="row-odd"><td>ocphiwet</td>
+<td>Faxa_ocphiwet</td>
+</tr>
+<tr class="row-even"><td>dstwet1</td>
+<td>Faxa_dstwet1</td>
+</tr>
+<tr class="row-odd"><td>dstwet2</td>
+<td>Faxa_dstwet2</td>
+</tr>
+<tr class="row-even"><td>dstwet3</td>
+<td>Faxa_dstwet3</td>
+</tr>
+<tr class="row-odd"><td>dstwet4</td>
+<td>Faxa_dstwet4</td>
+</tr>
+<tr class="row-even"><td>dstdry1</td>
+<td>Faxa_dstdry1</td>
+</tr>
+<tr class="row-odd"><td>dstdry2</td>
+<td>Faxa_dstdry2</td>
+</tr>
+<tr class="row-even"><td>dstdry3</td>
+<td>Faxa_dstdry3</td>
+</tr>
+<tr class="row-odd"><td>dstdry4</td>
+<td>Faxa_dstdry4</td>
+</tr>
+<tr class="row-even"><td>tref</td>
+<td>Sx_tref</td>
+</tr>
+<tr class="row-odd"><td>qref</td>
+<td>Sx_qref</td>
+</tr>
+<tr class="row-even"><td>avsdr</td>
+<td>Sx_avsdr</td>
+</tr>
+<tr class="row-odd"><td>anidr</td>
+<td>Sx_anidr</td>
+</tr>
+<tr class="row-even"><td>avsdf</td>
+<td>Sx_avsdf</td>
+</tr>
+<tr class="row-odd"><td>anidf</td>
+<td>Sx_anidf</td>
+</tr>
+<tr class="row-even"><td>ts</td>
+<td>Sx_t</td>
+</tr>
+<tr class="row-odd"><td>to</td>
+<td>So_t</td>
+</tr>
+<tr class="row-even"><td>snowhl</td>
+<td>Sl_snowh</td>
+</tr>
+<tr class="row-odd"><td>lfrac</td>
+<td>Sf_lfrac</td>
+</tr>
+<tr class="row-even"><td>ifrac</td>
+<td>Sf_ifrac</td>
+</tr>
+<tr class="row-odd"><td>ofrac</td>
+<td>Sf_ofrac</td>
+</tr>
+<tr class="row-even"><td>taux</td>
+<td>Faxx_taux</td>
+</tr>
+<tr class="row-odd"><td>tauy</td>
+<td>Faxx_tauy</td>
+</tr>
+<tr class="row-even"><td>lat</td>
+<td>Faxx_lat</td>
+</tr>
+<tr class="row-odd"><td>sen</td>
+<td>Faxx_sen</td>
+</tr>
+<tr class="row-even"><td>lwup</td>
+<td>Faxx_lwup</td>
+</tr>
+<tr class="row-odd"><td>evap</td>
+<td>Faxx_evap</td>
+</tr>
+<tr class="row-even"><td>co2lnd</td>
+<td>Fall_fco2_lnd</td>
+</tr>
+<tr class="row-odd"><td>co2ocn</td>
+<td>Faoo_fco2_ocn</td>
+</tr>
+<tr class="row-even"><td>dms</td>
+<td>Faoo_fdms_ocn</td>
+</tr>
+<tr class="row-odd"><td>precsf</td>
+<td>Sa_precsf</td>
+</tr>
+<tr class="row-even"><td>prec_af</td>
+<td>Sa_prec_af</td>
+</tr>
+<tr class="row-odd"><td>u_af</td>
+<td>Sa_u_af</td>
+</tr>
+<tr class="row-even"><td>v_af</td>
+<td>Sa_v_af</td>
+</tr>
+<tr class="row-odd"><td>tbot_af</td>
+<td>Sa_tbot_af</td>
+</tr>
+<tr class="row-even"><td>pbot_af</td>
+<td>Sa_pbot_af</td>
+</tr>
+<tr class="row-odd"><td>shum_af</td>
+<td>Sa_shum_af</td>
+</tr>
+<tr class="row-even"><td>swdn_af</td>
+<td>Sa_swdn_af</td>
+</tr>
+<tr class="row-odd"><td>lwdn_af</td>
+<td>Sa_lwdn_af</td>
+</tr>
+<tr class="row-even"><td>rainc_18O</td>
+<td>Faxa_rainc_18O</td>
+</tr>
+<tr class="row-odd"><td>rainc_HDO</td>
+<td>Faxa_rainc_HDO</td>
+</tr>
+<tr class="row-even"><td>rainl_18O</td>
+<td>Faxa_rainl_18O</td>
+</tr>
+<tr class="row-odd"><td>rainl_HDO</td>
+<td>Faxa_rainl_HDO</td>
+</tr>
+<tr class="row-even"><td>snowc_18O</td>
+<td>Faxa_snowc_18O</td>
+</tr>
+<tr class="row-odd"><td>snowc_HDO</td>
+<td>Faxa_snowc_HDO</td>
+</tr>
+<tr class="row-even"><td>snowl_18O</td>
+<td>Faxa_snowl_18O</td>
+</tr>
+<tr class="row-odd"><td>snowl_HDO</td>
+<td>Faxa_snowl_HDO</td>
+</tr>
+<tr class="row-even"><td>shum_16O</td>
+<td>Sa_shum_16O</td>
+</tr>
+<tr class="row-odd"><td>shum_18O</td>
+<td>Sa_shum_18O</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="data-lnd.html" title="6. Data Land (DLND)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="data-model-science.html" title="4. Data Model Science"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME Data Models</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,273 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1. Introduction &#8212; CIME 5.3.0_alpha17 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '5.3.0_alpha17',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="2. Input Streams" href="input-streams.html" />
+    <link rel="prev" title="CIME Data Models" href="index.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="input-streams.html" title="2. Input Streams"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="CIME Data Models"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">CIME Data Models</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">1. Introduction</a><ul>
+<li><a class="reference internal" href="#overview">1.1. Overview</a></li>
+<li><a class="reference internal" href="#design">1.2. Design</a></li>
+<li><a class="reference internal" href="#namelist-input">1.3. Namelist Input</a></li>
+<li><a class="reference internal" href="#next-sections">1.4. Next Sections</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">CIME Data Models</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="input-streams.html"
+                        title="next chapter">2. Input Streams</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/data_models/introduction.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="introduction">
+<span id="data-model-introduction"></span><h1>1. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview">
+<h2>1.1. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The CIME data models perform the basic function of reading external data files, modifying those data, and then sending the data to the driver via the CIME coupling interfaces.
+The fields sent to the driver are the same as those that would be sent by an active component.
+This takes advantage of the fact that the driver and other models have no fundamental knowledge of whether another component is fully active or just a data model.
+So, for example, the data atmosphere model (datm) sends the same fields as the prognostic Community Atmosphere Model (CAM).
+However, rather than determining these fields prognostically, most data models simply read prescribed data.</p>
+<p>The data models typically read gridded data from observations or reanalysis products.
+Out of the box, they often provide a few possible data sources and/or time periods that you can choose from when setting up a case.
+However, data models can also be configured to read output from a previous coupled run.
+For example, you can perform a fully-coupled run in which you ask for particular extra output streams; you can then use these saved &#8220;driver history&#8221; files as inputs to datm to run a later land-only spinup.</p>
+<p>In some cases, data models have prognostic functionality, that is, they also receive and use data sent by the driver.
+However, in most cases, the data models are not running prognostically and have no need to receive any data from the driver.</p>
+<p>The CIME data models have parallel capability and share significant amounts of source code.
+Methods for reading and interpolating data have been established and can easily be reused:
+The data model calls strdata (&#8220;stream data&#8221;) methods which then call stream methods.
+The stream methods are responsible for managing lists of input data files and their time axis.
+The information is then passed up to the strdata methods where the data is read and interpolated in space and time.
+The interpolated data is passed up to the data model where final fields are derived, packed, and returned to the driver.</p>
+</div>
+<div class="section" id="design">
+<h2>1.2. Design<a class="headerlink" href="#design" title="Permalink to this headline">¶</a></h2>
+<p>Data models function by reading in different streams of input data and interpolating those data both spatially and temporally to the appropriate final model grid and model time.</p>
+<ul>
+<li><p class="first"><strong>Each data model</strong></p>
+<ul class="simple">
+<li>communicates with the driver with fields on only the data model model grid.</li>
+<li>can be associated with multiple streams</li>
+<li>is associated with only one datamode value (specified in the <code class="docutils literal"><span class="pre">shr_strdata_nml</span></code> namelist group)</li>
+<li>has an xml variable in <code class="docutils literal"><span class="pre">env_run.xml</span></code> that specifies its mode. These are:
+<code class="docutils literal"><span class="pre">DATM_MODE</span></code>, <code class="docutils literal"><span class="pre">DICE_MODE</span></code>, <code class="docutils literal"><span class="pre">DLND_MODE</span></code>, <code class="docutils literal"><span class="pre">DOCN_MODE</span></code>, <code class="docutils literal"><span class="pre">DROF_MODE</span></code>, <code class="docutils literal"><span class="pre">DWAV_MODE</span></code>.</li>
+</ul>
+</li>
+<li><p class="first"><strong>Each ``DXXX_MODE`` xml variable variable specfies 2 things:</strong></p>
+<ul>
+<li><p class="first">the list of streams that are associated with the data model.</p>
+</li>
+<li><p class="first">a <code class="docutils literal"><span class="pre">datamode</span></code> namelist variable that is associated with each data model and that determines if additional operations need to be performed on on the input streams before returning to the driver.</p>
+<p>at a minimum, all data models support <code class="docutils literal"><span class="pre">datamode</span></code> values of <code class="docutils literal"><span class="pre">NULL</span></code> and <code class="docutils literal"><span class="pre">COPYALL</span></code>.</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">NULL</span></code> - turns off the data model as a provider of data to the coupler.</li>
+<li><code class="docutils literal"><span class="pre">COPYALL</span></code> - copies all fields directly from the input data streams. Any required fields not found on an input stream will be set to zero.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p class="first"><strong>Each data model stream</strong></p>
+<ul class="simple">
+<li>can be associated with multiple stream input files (specified in the <code class="docutils literal"><span class="pre">shr_strdata_nml</span></code> namelist group).</li>
+</ul>
+</li>
+<li><p class="first"><strong>Each stream input file</strong></p>
+<ul class="simple">
+<li>can contain data on a unique grid and unique temporal time stamps.</li>
+<li>is interpolated to a single model grid and the present model time.</li>
+</ul>
+</li>
+</ul>
+<p>More details of the data model design are covered in <a class="reference internal" href="design-details.html#design-details"><span class="std std-ref">design details</span></a>.</p>
+</div>
+<div class="section" id="namelist-input">
+<h2>1.3. Namelist Input<a class="headerlink" href="#namelist-input" title="Permalink to this headline">¶</a></h2>
+<p>Each data model has two namelist groups in its input namelist file: a <strong>stream-dependent</strong> and a <strong>stream-independent</strong> namelist group.</p>
+<p>The stream-dependent namelist group (<code class="docutils literal"><span class="pre">shr_strdata_nml</span></code>) specifies the data model mode, stream description text files, and interpolation options.
+The stream description files will be provided as separate input files and contain the files and fields that need to be read.
+The stream-independent namelist group (one of <code class="docutils literal"><span class="pre">[datm_nml,</span> <span class="pre">dice_nml,</span> <span class="pre">dlnd_nml,</span> <span class="pre">docn_nml,</span> <span class="pre">drof_nml,</span> <span class="pre">dwav_nml]</span></code>) contains namelist input such as the data model decomposition, etc.</p>
+<p>From a user perspective, for any data model, it is important to know what modes are supported and the internal field names in the data model.
+That information will be used in the strdata namelist and stream input files.</p>
+<p>Users will primarily setup different data model configurations through namelist settings.
+<strong>The strdata and stream input options and format are identical for all data models</strong>.
+The data model specific namelist has significant overlap between data models, but each data model has a slightly different set of input namelist variables and each model reads that namelist from a unique filename.
+The detailed namelist options for each data model will be described later, but each model will specify a filename or filenames for strdata namelist input and each strdata namelist will specify a set of stream input files.</p>
+<p>The following example illustrates the basic set of namelist inputs:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&amp;</span><span class="n">dlnd_nml</span>
+   <span class="n">decomp</span> <span class="o">=</span> <span class="s1">&#39;1d&#39;</span>
+<span class="o">/</span>
+<span class="o">&amp;</span><span class="n">shr_strdata_nml</span>
+  <span class="n">dataMode</span>   <span class="o">=</span> <span class="s1">&#39;CPLHIST&#39;</span>
+  <span class="n">domainFile</span> <span class="o">=</span> <span class="s1">&#39;grid.nc&#39;</span>
+  <span class="n">streams</span>    <span class="o">=</span> <span class="s1">&#39;streama&#39;</span><span class="p">,</span> <span class="s1">&#39;streamb&#39;</span><span class="p">,</span> <span class="s1">&#39;streamc&#39;</span>
+  <span class="n">mapalgo</span>    <span class="o">=</span> <span class="s1">&#39;interpa&#39;</span><span class="p">,</span> <span class="s1">&#39;interpb&#39;</span><span class="p">,</span> <span class="s1">&#39;interpc&#39;</span>
+<span class="o">/</span>
+</pre></div>
+</div>
+<p>As mentioned above, the <code class="docutils literal"><span class="pre">dataMode</span></code> namelist variable that is associated with each data model specifies if there is any additional operations that need to be performed on that data model&#8217;s input streams before return to the driver.
+At a minimum, all data models support <code class="docutils literal"><span class="pre">datamode</span></code> values of <code class="docutils literal"><span class="pre">NULL</span></code> and <code class="docutils literal"><span class="pre">COPYALL</span></code>.</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">NULL</span></code> - turns off the data model as a provider of data to the coupler.</li>
+<li><code class="docutils literal"><span class="pre">COPYALL</span></code> - copies all fields directly from the input data streams. Any required fields not found on an input stream will be set to zero.</li>
+</ul>
+<p>Three stream description files are then expected to be available, <code class="docutils literal"><span class="pre">streama</span></code>, <code class="docutils literal"><span class="pre">streamb</span></code> and <code class="docutils literal"><span class="pre">streamc</span></code>.
+Those files specify the input data filenames, input data grids, and input fields that are expected, among other things.
+The stream files are <strong>not</strong> Fortran namelist format.
+Their format and options will be described later.
+As an example, one of the stream description files might look like</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">stream</span><span class="o">&gt;</span>
+   <span class="o">&lt;</span><span class="n">dataSource</span><span class="o">&gt;</span>
+      <span class="n">GENERIC</span>
+   <span class="o">&lt;/</span><span class="n">dataSource</span><span class="o">&gt;</span>
+   <span class="o">&lt;</span><span class="n">fieldInfo</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="n">variableNames</span><span class="o">&gt;</span>
+         <span class="n">dn10</span>  <span class="n">dens</span>
+         <span class="n">slp_</span>  <span class="n">pslv</span>
+         <span class="n">q_10</span>  <span class="n">shum</span>
+         <span class="n">t_10</span>  <span class="n">tbot</span>
+         <span class="n">u_10</span>  <span class="n">u</span>
+         <span class="n">v_10</span>  <span class="n">v</span>
+      <span class="o">&lt;/</span><span class="n">variableNames</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="n">filePath</span><span class="o">&gt;</span>
+         <span class="o">/</span><span class="n">glade</span><span class="o">/</span><span class="n">proj3</span><span class="o">/</span><span class="n">cseg</span><span class="o">/</span><span class="n">inputdata</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">datm7</span><span class="o">/</span><span class="n">NYF</span>
+      <span class="o">&lt;/</span><span class="n">filePath</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="n">offset</span><span class="o">&gt;</span>
+         <span class="mi">0</span>
+      <span class="o">&lt;/</span><span class="n">offset</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="n">fileNames</span><span class="o">&gt;</span>
+         <span class="n">nyf</span><span class="o">.</span><span class="n">ncep</span><span class="o">.</span><span class="n">T62</span><span class="o">.</span><span class="mf">050923.</span><span class="n">nc</span>
+      <span class="o">&lt;/</span><span class="n">fileNames</span><span class="o">&gt;</span>
+   <span class="o">&lt;/</span><span class="n">fieldInfo</span><span class="o">&gt;</span>
+   <span class="o">&lt;</span><span class="n">domainInfo</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="n">variableNames</span><span class="o">&gt;</span>
+         <span class="n">time</span>   <span class="n">time</span>
+         <span class="n">lon</span>    <span class="n">lon</span>
+         <span class="n">lat</span>    <span class="n">lat</span>
+         <span class="n">area</span>   <span class="n">area</span>
+         <span class="n">mask</span>   <span class="n">mask</span>
+      <span class="o">&lt;/</span><span class="n">variableNames</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="n">filePath</span><span class="o">&gt;</span>
+         <span class="o">/</span><span class="n">glade</span><span class="o">/</span><span class="n">proj3</span><span class="o">/</span><span class="n">cseg</span><span class="o">/</span><span class="n">inputdata</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">datm7</span><span class="o">/</span><span class="n">NYF</span>
+      <span class="o">&lt;/</span><span class="n">filePath</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="n">fileNames</span><span class="o">&gt;</span>
+         <span class="n">nyf</span><span class="o">.</span><span class="n">ncep</span><span class="o">.</span><span class="n">T62</span><span class="o">.</span><span class="mf">050923.</span><span class="n">nc</span>
+      <span class="o">&lt;/</span><span class="n">fileNames</span><span class="o">&gt;</span>
+   <span class="o">&lt;/</span><span class="n">domainInfo</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">stream</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>In general, these examples of input files are not complete, but they do show the general hierarchy and feel of the data model input.</p>
+</div>
+<div class="section" id="next-sections">
+<h2>1.4. Next Sections<a class="headerlink" href="#next-sections" title="Permalink to this headline">¶</a></h2>
+<p>In the next sections, more details will be presented including a full description of the science modes and namelist settings for the data atmosphere, data land, data runoff, data ocean, and data ice models; namelist settings for the strdata namelist input; a description of the format and options for the stream description input files; and a list of internal field names for each of the data components.
+The internal data model field names are important because they are used to setup the stream description files and to map the input data fields to the internal data model field names.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="input-streams.html" title="2. Input Streams"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="CIME Data Models"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME Data Models</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
+    </div>
+  </body>
+</html>

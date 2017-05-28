@@ -1,0 +1,141 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Data Model Science &#8212; CIME 5.3.0_alpha17 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '5.3.0_alpha17',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="5. Data Atmosphere (DATM)" href="data-atm.html" />
+    <link rel="prev" title="3. Design Details" href="design-details.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="data-atm.html" title="5. Data Atmosphere (DATM)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="design-details.html" title="3. Design Details"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">CIME Data Models</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="design-details.html"
+                        title="previous chapter">3. Design Details</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="data-atm.html"
+                        title="next chapter">5. Data Atmosphere (DATM)</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/data_models/data-model-science.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="data-model-science">
+<span id="id1"></span><h1>4. Data Model Science<a class="headerlink" href="#data-model-science" title="Permalink to this headline">¶</a></h1>
+<p>When a given data models run, the user must specify which <em>science mode</em> it will run in.
+Each data model has a fixed set of fields that it must send to the coupler, but it is the choice of mode that specifies how that set of fields is to be computed.
+Each mode activates various assumptions about what input fields are available from the input data streams, what input fields are available from the the coupler, and how to use this input data to compute the output fields sent to the coupler.</p>
+<p>In general, a mode might specify...</p>
+<ul class="simple">
+<li>that fields be set to a time invariant constant (so that no input data is needed)</li>
+<li>that fields be taken directly from a input data files (the input streams)</li>
+<li>that fields be computed using data read in from input files</li>
+<li>that fields be computed using from data received from the coupler</li>
+<li>some combination of the above.</li>
+</ul>
+<p>If a science mode is chosen that is not consistent with the input data provided, the model may abort (perhaps with a &#8220;missing data&#8221; error message), or the model may send erroneous data to the coupler (for example, if a mode assumes an input stream has temperature in Kelvin on it, but it really has temperature in Celsius).
+Such an error is unlikely unless a user has edited the run scripts to specify either non-standard input data or a non-standard science mode.
+When editing the run scripts to use non-standard stream data or modes, users must be careful that the input data is consistent with the science mode and should verify that the data model is providing data to the coupler as expected.</p>
+<p>The data model mode is a character string that is set in the namelist variable <code class="docutils literal"><span class="pre">datamode</span></code> in the namelist group <code class="docutils literal"><span class="pre">shr_strdata_nml</span></code>. Although each data model,
+<code class="docutils literal"><span class="pre">datm</span></code>, <code class="docutils literal"><span class="pre">dlnd</span></code>, <code class="docutils literal"><span class="pre">drof</span></code>, <code class="docutils literal"><span class="pre">docn</span></code>, <code class="docutils literal"><span class="pre">dice</span></code> and <code class="docutils literal"><span class="pre">dwav</span></code> has its own set of valid datamode values, two modes are common to all data models: <code class="docutils literal"><span class="pre">COPYALL</span></code> and <code class="docutils literal"><span class="pre">NULL</span></code>.</p>
+<dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">dataMode</span> <span class="pre">=</span> <span class="pre">&quot;COPYALL&quot;</span></code></dt>
+<dd>The default mode is COPYALL &#8211; the model will assume <em>all</em> the data that must be sent to the coupler will be found in the input data streams, and that this data can be sent to the coupler, unaltered, except for spatial and temporal interpolation.</dd>
+<dt><code class="docutils literal"><span class="pre">dataMode</span> <span class="pre">=</span> <span class="pre">&quot;NULL&quot;</span></code></dt>
+<dd>NULL mode turns off the data model as a provider of data to the coupler. The model_present flag (eg. atm_present) will be set to false and the coupler will assume no exchange of data to or from the data model.</dd>
+</dl>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="data-atm.html" title="5. Data Atmosphere (DATM)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="design-details.html" title="3. Design Details"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME Data Models</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
+    </div>
+  </body>
+</html>

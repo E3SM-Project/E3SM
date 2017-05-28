@@ -1,0 +1,189 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6. Multi-instance component functionality &#8212; CIME 5.3.0_alpha17 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '5.3.0_alpha17',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="7. Adding new cases" href="adding-cases.html" />
+    <link rel="prev" title="5. Fortran Unit Testing" href="unit_testing.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="adding-cases.html" title="7. Adding new cases"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="unit_testing.html" title="5. Fortran Unit Testing"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">CIME User&#8217;s Guide Part 1: Basic Usage</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="unit_testing.html"
+                        title="previous chapter">5. Fortran Unit Testing</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="adding-cases.html"
+                        title="next chapter">7. Adding new cases</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/users_guide/multi-instance.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="multi-instance-component-functionality">
+<span id="multi-instance"></span><h1>6. Multi-instance component functionality<a class="headerlink" href="#multi-instance-component-functionality" title="Permalink to this headline">¶</a></h1>
+<p>The CIME coupling infrastructure has the capability to run multiple component instances under one model executable.
+The only caveat to this usage is that if N multiple instances of any one active component is used, then N multiple instances of ALL active components are required.
+More details are discussed below.
+The primary motivation for this development was to be able to run an ensemble Kalman-Filter for data assimilation and parameter estimation (e.g. UQ).
+However, it also provides you with the ability to run a set of experiments within a single model executable where each instance can have a different namelist, and have all the output go to one directory.</p>
+<p>In the following an F compset will be used as an illustration. Utilizing the multiple instance code involves the following steps:</p>
+<p>1. create the case</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">create_newcase</span> <span class="o">-</span><span class="n">case</span> <span class="n">Fmulti</span> <span class="o">-</span><span class="n">compset</span> <span class="n">F</span> <span class="o">-</span><span class="n">res</span> <span class="n">ne30_g16</span>
+<span class="o">&gt;</span> <span class="n">cd</span> <span class="n">Fmulti</span>
+</pre></div>
+</div>
+<p>2. Lets assume the following out of the box pe-layout</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">NTASKS</span><span class="p">(</span><span class="n">ATM</span><span class="p">)</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">NTHRDS</span><span class="p">(</span><span class="n">ATM</span><span class="p">)</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ROOTPE</span><span class="p">(</span><span class="n">ATM</span><span class="p">)</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">NINST</span><span class="p">(</span><span class="n">ATM</span><span class="p">)</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">NTASKS</span><span class="p">(</span><span class="n">LND</span><span class="p">)</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">NTHRDS</span><span class="p">(</span><span class="n">LND</span><span class="p">)</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ROOTPE</span><span class="p">(</span><span class="n">LND</span><span class="p">)</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">NINST</span><span class="p">(</span><span class="n">LND</span><span class="p">)</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">NTASKS</span><span class="p">(</span><span class="n">ICE</span><span class="p">)</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">NTHRDS</span><span class="p">(</span><span class="n">ICE</span><span class="p">)</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ROOTPE</span><span class="p">(</span><span class="n">ICE</span><span class="p">)</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">NINST</span><span class="p">(</span><span class="n">ICE</span><span class="p">)</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">NTASKS</span><span class="p">(</span><span class="n">OCN</span><span class="p">)</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">NTHRDS</span><span class="p">(</span><span class="n">OCN</span><span class="p">)</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ROOTPE</span><span class="p">(</span><span class="n">OCN</span><span class="p">)</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">NINST</span><span class="p">(</span><span class="n">OCN</span><span class="p">)</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">NTASKS</span><span class="p">(</span><span class="n">GLC</span><span class="p">)</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">NTHRDS</span><span class="p">(</span><span class="n">GLC</span><span class="p">)</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ROOTPE</span><span class="p">(</span><span class="n">GLC</span><span class="p">)</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">NINST</span><span class="p">(</span><span class="n">GLC</span><span class="p">)</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">NTASKS</span><span class="p">(</span><span class="n">WAV</span><span class="p">)</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">NTHRDS</span><span class="p">(</span><span class="n">WAV</span><span class="p">)</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ROOTPE</span><span class="p">(</span><span class="n">WAV</span><span class="p">)</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">NINST</span><span class="p">(</span><span class="n">WAV</span><span class="p">)</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">NTASKS</span><span class="p">(</span><span class="n">CPL</span><span class="p">)</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">NTHRDS</span><span class="p">(</span><span class="n">CPL</span><span class="p">)</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ROOTPE</span><span class="p">(</span><span class="n">CPL</span><span class="p">)</span><span class="o">=</span><span class="mi">0</span>
+</pre></div>
+</div>
+<p>In this F compset, the atm, lnd, rof are active components, the ocn is a prescribed data component, cice is a mixed prescribed/active component (ice-coverage is prescribed) and glc and wav are stub components.
+Lets say we want to run 2 instances of CAM in this experiment.
+The current implementation of multi-instances will also require you to run 2 instances of CLM, CICE and RTM.
+However, you have the flexibility to run either 1 or 2 instances of DOCN (we can ignore glc and wav since they do not do anything in this compset).
+To run 2 instances of CAM, CLM, CICE, RTM and DOCN, all you need to do is to invoke the following command in your <code class="docutils literal"><span class="pre">$CASEROOT</span></code>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">xmlchange</span> <span class="n">NINST_ATM</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">xmlchange</span> <span class="n">NINST_LND</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">xmlchange</span> <span class="n">NINST_ICE</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">xmlchange</span> <span class="n">NINST_ROF</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">xmlchange</span> <span class="n">NINST_OCN</span><span class="o">=</span><span class="mi">2</span>
+</pre></div>
+</div>
+<p>As a result of this, you will have 2 instances of CAM, CLM and CICE (prescribed), RTM, and DOCN,  each running concurrently on 64 MPI tasks  <strong>TODO: put in reference to xmlchange&#8221;.</strong></p>
+<p>3. Setup the case</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="o">./</span><span class="n">case</span><span class="o">.</span><span class="n">setup</span>
+</pre></div>
+</div>
+<p>New user_nl_xxx_NNNN file (where NNNN is the number of the component instances) will be generated when <strong>case.setup</strong> is called.
+In particular, calling <strong>case.setup</strong> with the above <code class="docutils literal"><span class="pre">env_mach_pes.xml</span></code> file will result in the following <code class="docutils literal"><span class="pre">user_nl_*</span></code> files in <code class="docutils literal"><span class="pre">$CASEROOT</span></code></p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">user_nl_cam_0001</span><span class="p">,</span>  <span class="n">user_nl_cam_0002</span>
+<span class="n">user_nl_cice_0001</span><span class="p">,</span> <span class="n">user_nl_cice_0002</span>
+<span class="n">user_nl_clm_0001</span><span class="p">,</span>  <span class="n">user_nl_clm_0002</span>
+<span class="n">user_nl_rtm_0001</span><span class="p">,</span>  <span class="n">user_nl_rtm_0002</span>
+<span class="n">user_nl_docn_0001</span><span class="p">,</span> <span class="n">user_nl_docn_0002</span>
+<span class="n">user_nl_cpl</span>
+</pre></div>
+</div>
+<p>and the following <code class="docutils literal"><span class="pre">*_in_*</span></code> files and <code class="docutils literal"><span class="pre">*txt*</span></code> files in $CASEROOT/CaseDocs:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">atm_in_0001</span><span class="p">,</span> <span class="n">atm_in_0002</span>
+<span class="n">docn</span><span class="o">.</span><span class="n">streams</span><span class="o">.</span><span class="n">txt</span><span class="o">.</span><span class="n">prescribed_0001</span><span class="p">,</span> <span class="n">docn</span><span class="o">.</span><span class="n">streams</span><span class="o">.</span><span class="n">txt</span><span class="o">.</span><span class="n">prescribed_0002</span>
+<span class="n">docn_in_0001</span><span class="p">,</span> <span class="n">docn_in_0002</span>
+<span class="n">docn_ocn_in_0001</span><span class="p">,</span> <span class="n">docn_ocn_in_0002</span>
+<span class="n">drv_flds_in</span><span class="p">,</span> <span class="n">drv_in</span>
+<span class="n">ice_in_0001</span><span class="p">,</span> <span class="n">ice_in_0002</span>
+<span class="n">lnd_in_0001</span><span class="p">,</span> <span class="n">lnd_in_0002</span>
+<span class="n">rof_in_0001</span><span class="p">,</span> <span class="n">rof_in_0002</span>
+</pre></div>
+</div>
+<p>The namelist for each component instance can be modified by changing the corresponding user_nl_xxx_NNNN file for that component instance.
+Modifying the user_nl_cam_0002 will result in the namelist changes you put in to be active ONLY for instance 2 of CAM.
+To change the DOCN stream txt file instance 0002, you should place a copy of <code class="docutils literal"><span class="pre">docn.streams.txt.prescribed_0002</span></code> in <code class="docutils literal"><span class="pre">$CASEROOT</span></code> with the name <code class="docutils literal"><span class="pre">user_docn.streams.txt.prescribed_0002</span></code> and modify it accordlingly.</p>
+<p>It is also important to stress the following points:</p>
+<ol class="arabic simple">
+<li><strong>Different component instances can ONLY differ by differences in namelist settings - they are ALL using the same model executable.</strong></li>
+<li>Only 1 coupler component is supported currently in multiple instance implementation.</li>
+<li><code class="docutils literal"><span class="pre">user_nl_xxx_NN</span></code> files once they are created by <strong>case.setup</strong> <em>ARE NOT</em> removed by calling <strong>case.setup -clean</strong>.</li>
+<li>In general, you should run multiple instances concurrently (the default setting in <code class="docutils literal"><span class="pre">env_mach_pes.xml</span></code>).
+The serial setting is only for EXPERT USERS in upcoming development code implementations.</li>
+</ol>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="adding-cases.html" title="7. Adding new cases"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="unit_testing.html" title="5. Fortran Unit Testing"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME User&#8217;s Guide Part 1: Basic Usage</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
+    </div>
+  </body>
+</html>

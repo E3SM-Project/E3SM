@@ -1,0 +1,591 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>8. Data Ocean (DOCN) &#8212; CIME 5.3.0_alpha17 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '5.3.0_alpha17',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="9. Data River (DROF)" href="data-river.html" />
+    <link rel="prev" title="7. Data Ice (DICE)" href="data-seaice.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="data-river.html" title="9. Data River (DROF)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="data-seaice.html" title="7. Data Ice (DICE)"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">CIME Data Models</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">8. Data Ocean (DOCN)</a><ul>
+<li><a class="reference internal" href="#xml-variables">8.1. xml variables</a></li>
+<li><a class="reference internal" href="#datamode-values">8.2. datamode values</a></li>
+<li><a class="reference internal" href="#docn-mode-datamode-and-streams">8.3. DOCN_MODE, datamode and streams</a></li>
+<li><a class="reference internal" href="#namelists">8.4. Namelists</a></li>
+<li><a class="reference internal" href="#datamode-independent-streams">8.5. Datamode independent streams</a></li>
+<li><a class="reference internal" href="#field-names">8.6. Field names</a></li>
+<li><a class="reference internal" href="#creating-sstdata-mode-input-from-a-fully-prognostic-run-cesm-only">8.7. Creating SSTDATA mode input from a fully prognostic run (CESM only)</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="data-seaice.html"
+                        title="previous chapter">7. Data Ice (DICE)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="data-river.html"
+                        title="next chapter">9. Data River (DROF)</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/data_models/data-ocean.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="data-ocean-docn">
+<span id="data-ocean"></span><h1>8. Data Ocean (DOCN)<a class="headerlink" href="#data-ocean-docn" title="Permalink to this headline">¶</a></h1>
+<p>Data ocean can be run both as a prescribed component, simply reading in SST data from a stream, or as a prognostic slab ocean model component.</p>
+<p>The data ocean component (DOCN) always returns SSTs to the driver.
+The atmosphere/ocean fluxes are computed in the coupler.
+Therefore, the data ocean model does not compute fluxes like the data ice (DICE) model.
+DOCN has two distinct modes of operation.
+DOCN can run as a pure data model, reading in ocean SSTs (normally climatological) from input datasets, performing time/spatial  interpolations, and passing these to the coupler.
+Alternatively, DOCN can compute updated SSTs by running as a slab ocean model where bottom ocean heat flux convergence and boundary layer depths are read in and used with the atmosphere/ocean and ice/ocean fluxes obtained from the driver.</p>
+<p>DOCN running in prescribed mode assumes that the only field in the input stream is SST and also that SST is in Celsius and must be converted to Kelvin.
+All other fields are set to zero except for ocean salinity, which is set to a constant reference salinity value.
+Normally the ice fraction data (used for prescribed CICE) is found in the same data files that provide SST data to the data ocean model since SST and ice fraction data are derived from the same observational data sets and are consistent with each other.
+For DOCN prescribed mode, default yearly climatological datasets are provided for various model resolutions.</p>
+<p>DOCN running as a slab ocean model is used in conjunction with active ice mode running in full prognostic mode (e.g. CICE for CESM).
+This mode computes a prognostic sea surface temperature and a freeze/melt potential (surface Q-flux) used by the sea ice model.
+This calculation requires an external SOM forcing data file that includes ocean mixed layer depths and bottom-of-the-slab Q-fluxes.
+Scientifically appropriate bottom-of-the-slab Q-fluxes are normally ocean resolution dependent and are derived from the ocean model output of a fully coupled CCSM run.
+Note that this mode no longer runs out of the box, the default testing SOM forcing file is not scientifically appropriate and is provided for testing and development purposes only.
+Users must create scientifically appropriate data for their particular application or use one of the standard SOM forcing files from the full prognostic control runs.
+For CESM, some of these are available in the <a class="reference external" href="https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/ocn/docn7/SOM/">inputdata repository</a>.
+The user then modifies the <code class="docutils literal"><span class="pre">$DOCN_SOM_FILENAME</span></code> variable in env_run.xml to point to the appropriate SOM forcing dataset.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">A tool is available to derive valid <a class="reference external" href="http://www.cesm.ucar.edu/models/ccsm1.1/data8/SOM.pdf">SOM forcing</a> and more information on creating the SOM forcing is also available.</p>
+</div>
+<div class="section" id="xml-variables">
+<span id="docn-xml-vars"></span><h2>8.1. xml variables<a class="headerlink" href="#xml-variables" title="Permalink to this headline">¶</a></h2>
+<p>The following are xml variables that CIME supports for DOCN.
+These variables are defined in <code class="docutils literal"><span class="pre">$CIMEROOT/src/components/data_comps/docn/cime_config/config_component.xml</span></code>.
+These variables will appear in <code class="docutils literal"><span class="pre">env_run.xml</span></code> and are used by the DOCN <code class="docutils literal"><span class="pre">cime_config/buildnml</span></code> script to generate the DOCN namelist file <code class="docutils literal"><span class="pre">docn_in</span></code> and the required associated stream files for the case.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">These xml variables are used by the the docn&#8217;s <strong>cime_config/buildnml</strong> script in conjunction with docn&#8217;s <strong>cime_config/namelist_definition_docn.xml</strong> file to generate the namelist file <code class="docutils literal"><span class="pre">docn_in</span></code>.</p>
+</div>
+<table border="1" class="colwidths-given docutils" id="id1">
+<caption><span class="caption-text">&#8220;DOCN xml variables&#8221;</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="15%" />
+<col width="85%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">xml variable</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>DOCN_MODE</td>
+<td>Data mode</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>Valid values are: null, prescribed, som, interannual, ww3</td>
+</tr>
+<tr class="row-even"><td>DOCN_SOM_FILENAME</td>
+<td>Sets SOM forcing data filename for pres runs, only used in D and E compset</td>
+</tr>
+<tr class="row-odd"><td>SSTICE_STREAM</td>
+<td>Prescribed SST and ice coverage stream name.</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>Sets SST and ice coverage stream name for prescribed runs.</td>
+</tr>
+<tr class="row-odd"><td>SSTICE_DATA_FILENAME</td>
+<td>Prescribed SST and ice coverage data file name.</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>Sets SST and ice coverage data file name for DOCN prescribed runs.</td>
+</tr>
+<tr class="row-odd"><td>SSTICE_YEAR_ALIGN</td>
+<td>The model year that corresponds to SSTICE_YEAR_START on the data file.</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>Prescribed SST and ice coverage data will be aligned so that the first year of</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>data corresponds to SSTICE_YEAR_ALIGN in the model. For instance, if the first</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>year of prescribed data is the same as the first year of the model run, this</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>should be set to the year given in RUN_STARTDATE.</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>If SSTICE_YEAR_ALIGN is later than the model&#8217;s starting year, or if the model is</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>run after the prescribed data ends (as determined by SSTICE_YEAR_END), the</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>default behavior is to assume that the data from SSTICE_YEAR_START to SSTICE_YEAR_END</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>cyclically repeats. This behavior is controlled by the <em>taxmode</em> stream option</td>
+</tr>
+<tr class="row-even"><td>SSTICE_YEAR_START</td>
+<td>The first year of data to use from SSTICE_DATA_FILENAME.</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>This is the first year of prescribed SST and ice coverage data to use. For</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>example, if a data file has data for years 0-99, and SSTICE_YEAR_START is 10,</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>years 0-9 in the file will not be used.</td>
+</tr>
+<tr class="row-even"><td>SSTICE_YEAR_END</td>
+<td>The last year of data to use from SSTICE_DATA_FILENAME.</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>This is the last year of prescribed SST and ice coverage data to use. For</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>example, if a data file has data for years 0-99, and value is 49,</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>years 50-99 in the file will not be used.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For multi-year runs requiring AMIP datasets of sst/ice_cov fields, you need to set the xml variables for <code class="docutils literal"><span class="pre">DOCN_SSTDATA_FILENAME</span></code>, <code class="docutils literal"><span class="pre">DOCN_SSTDATA_YEAR_START</span></code>, and <code class="docutils literal"><span class="pre">DOCN_SSTDATA_YEAR_END</span></code>. CICE in prescribed mode also uses these values.</p>
+</div>
+</div>
+<div class="section" id="datamode-values">
+<span id="docn-datamodes"></span><h2>8.2. datamode values<a class="headerlink" href="#datamode-values" title="Permalink to this headline">¶</a></h2>
+<p>The xml variable <code class="docutils literal"><span class="pre">DOCN_MODE</span></code> sets the streams that are associated with DOCN and also sets the namelist variable <code class="docutils literal"><span class="pre">datamode</span></code> that specifies what additional operations need to be done by DOCN on the streams before returning to the driver.
+One of the variables in <code class="docutils literal"><span class="pre">shr_strdata_nml</span></code> is <code class="docutils literal"><span class="pre">datamode</span></code>, whose value is a character string.  Each data model has a unique set of <code class="docutils literal"><span class="pre">datamode</span></code> values that it supports.
+The valid values for <code class="docutils literal"><span class="pre">datamode</span></code> are set in the file <code class="docutils literal"><span class="pre">namelist_definition_docn.xml</span></code> using the xml variable <code class="docutils literal"><span class="pre">DOCN_MODE</span></code> in the <code class="docutils literal"><span class="pre">config_component.xml</span></code> file for DOCN.
+CIME will generate a value <code class="docutils literal"><span class="pre">datamode</span></code> that is compset dependent.</p>
+<p>The following are the supported DOCN datamode values and their relationship to the <code class="docutils literal"><span class="pre">DOCN_MODE</span></code> xml variable value.</p>
+<table border="1" class="colwidths-given docutils" id="id2">
+<caption><span class="caption-text">&#8220;Valid values for datamode namelist variable&#8221;</span><a class="headerlink" href="#id2" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="20%" />
+<col width="80%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">datamode variable</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>NULL</td>
+<td>Turns off the data model as a provider of data to the coupler.  The ocn_present flag will be set to false and the coupler will assume no exchange of data to or from the data model.</td>
+</tr>
+<tr class="row-odd"><td>COPYALL</td>
+<td>The default science mode of the data model is the COPYALL mode. This mode will examine the fields found in all input data streams, if any input field names match the field names used internally, they are copied into the export array and passed directly to the coupler without any special user code.  Any required fields not found on an input stream will be set to zero.</td>
+</tr>
+<tr class="row-even"><td>SSTDATA</td>
+<td>assumes the only field in the input stream is SST. It also assumes the SST is in Celsius and must be converted to Kelvin.  All other fields are set to zero except for ocean salinity, which is set to a constant reference salinity value. Normally the ice fraction data is found in the same data files that provide SST data to the data ocean model. They are normally found in the same file because the SST and ice fraction data are derived from the same observational data sets and are consistent with each other. They are normally found in the same file because the SST and ice fraction data are derived from the same observational data sets and are consistent with each other.</td>
+</tr>
+<tr class="row-odd"><td>IAF</td>
+<td>is the interannually varying version of SSTDATA</td>
+</tr>
+<tr class="row-even"><td>SOM</td>
+<td>(slab ocean model) mode is a prognostic mode.  This mode computes a prognostic sea surface temperature and a freeze/melt potential (surface Q-flux) used by the sea ice model.  This calculation requires an external SOM forcing data file that includes ocean mixed layer depths and bottom-of-the-slab Q-fluxes. Scientifically appropriate bottom-of-the-slab Q-fluxes are normally ocean resolution dependent and are derived from the ocean model output of a fully coupled CCSM run.  Note that while this mode runs out of the box, the default SOM forcing file is not scientifically appropriate and is provided for testing and development purposes only. Users must create scientifically appropriate data for their particular application.  A tool is available to derive valid SOM forcing.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="docn-mode-datamode-and-streams">
+<h2>8.3. DOCN_MODE, datamode and streams<a class="headerlink" href="#docn-mode-datamode-and-streams" title="Permalink to this headline">¶</a></h2>
+<p>The following tabe describes the valid values of <code class="docutils literal"><span class="pre">DOCN_MODE</span></code>, and how it relates to the associated input streams and the <code class="docutils literal"><span class="pre">datamode</span></code> namelist variable.</p>
+<table border="1" class="colwidths-given docutils" id="id3">
+<caption><span class="caption-text">&#8220;Relationship between DOCN_MODE, datamode and streams&#8221;</span><a class="headerlink" href="#id3" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="20%" />
+<col width="80%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">DOCN_MODE, description-streams-datamode&#8221;</th>
+<th class="head">&nbsp;</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>null</td>
+<td>null mode</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>streams: none</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>datamode: null</td>
+</tr>
+<tr class="row-odd"><td>prescribed</td>
+<td>run with prescribed climatological SST and ice-coverage</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>streams:  prescribed</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>datamode: SSTDATA</td>
+</tr>
+<tr class="row-even"><td>interannual</td>
+<td>run with interannual SST and ice-coverage</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>streams:  prescribed</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>datamode: SSTDATA</td>
+</tr>
+<tr class="row-odd"><td>som</td>
+<td>run in slab ocean mode</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>streams:  som</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>datamode: SOM</td>
+</tr>
+<tr class="row-even"><td>ww3</td>
+<td>ww3 mode</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>streams: ww3</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>datamode: COPYALL</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="namelists">
+<span id="docn-namelists"></span><h2>8.4. Namelists<a class="headerlink" href="#namelists" title="Permalink to this headline">¶</a></h2>
+<p>As is the case for all data models, DOCN namelists can be separated into two groups, stream-independent and stream-dependent.</p>
+<p>The namelist file for DOCN is <code class="docutils literal"><span class="pre">docn_in</span></code> (or <code class="docutils literal"><span class="pre">docn_in_NNN</span></code> for multiple instances).</p>
+<p>The stream dependent group is <a class="reference internal" href="input-streams.html#input-streams"><span class="std std-ref">shr_strdata_nml</span></a> .</p>
+<p>As part of the stream dependent namelist input, DOCN supports two science modes, <code class="docutils literal"><span class="pre">SSTDATA</span></code> (prescribed mode) and <code class="docutils literal"><span class="pre">SOM</span></code> (slab ocean mode).</p>
+<p id="docn-stream-independent-namelists">The stream-independent group is <code class="docutils literal"><span class="pre">docn_nml</span></code> and the DOCN stream-independent namelist variables are:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="28%" />
+<col width="72%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>decomp</td>
+<td><p class="first">decomposition strategy (1d, root)</p>
+<p class="last">1d =&gt; vector decomposition, root =&gt; run on master task</p>
+</td>
+</tr>
+<tr class="row-even"><td>restfilm</td>
+<td>master restart filename</td>
+</tr>
+<tr class="row-odd"><td>restfils</td>
+<td>stream restart filename</td>
+</tr>
+<tr class="row-even"><td>force_prognostic_true</td>
+<td>TRUE =&gt; force prognostic behavior</td>
+</tr>
+</tbody>
+</table>
+<p>To change the namelist settings in docn_in, edit the file user_nl_docn.</p>
+</div>
+<div class="section" id="datamode-independent-streams">
+<span id="docn-mode-independent-streams"></span><h2>8.5. Datamode independent streams<a class="headerlink" href="#datamode-independent-streams" title="Permalink to this headline">¶</a></h2>
+<p>There are no datamode independent streams for DOCN.</p>
+</div>
+<div class="section" id="field-names">
+<span id="docn-fields"></span><h2>8.6. Field names<a class="headerlink" href="#field-names" title="Permalink to this headline">¶</a></h2>
+<p>DOCN defines a set of pre-defined internal field names as well as mappings for how those field names map to the fields sent to the coupler.
+In general, the stream input file should translate the stream input variable names into the <code class="docutils literal"><span class="pre">docn_fld</span></code> names below for use within the data ocn model.</p>
+<table border="1" class="colwidths-given docutils" id="id4">
+<caption><span class="caption-text">&#8220;DOCN internal field names&#8221;</span><a class="headerlink" href="#id4" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">docn_fld (avifld)</th>
+<th class="head">driver_fld (avofld)</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>ifrac</td>
+<td>Si_ifrac</td>
+</tr>
+<tr class="row-odd"><td>pslv</td>
+<td>Sa_pslv</td>
+</tr>
+<tr class="row-even"><td>duu10n</td>
+<td>So_duu10n</td>
+</tr>
+<tr class="row-odd"><td>taux</td>
+<td>Foxx_taux</td>
+</tr>
+<tr class="row-even"><td>tauy</td>
+<td>Foxx_tauy</td>
+</tr>
+<tr class="row-odd"><td>swnet</td>
+<td>Foxx_swnet</td>
+</tr>
+<tr class="row-even"><td>lat</td>
+<td>Foxx_lat</td>
+</tr>
+<tr class="row-odd"><td>sen</td>
+<td>Foxx_sen</td>
+</tr>
+<tr class="row-even"><td>lwup</td>
+<td>Foxx_lwup</td>
+</tr>
+<tr class="row-odd"><td>lwdn</td>
+<td>Faxa_lwdn</td>
+</tr>
+<tr class="row-even"><td>melth</td>
+<td>Fioi_melth</td>
+</tr>
+<tr class="row-odd"><td>salt</td>
+<td>Fioi_salt</td>
+</tr>
+<tr class="row-even"><td>prec</td>
+<td>Faxa_prec</td>
+</tr>
+<tr class="row-odd"><td>snow</td>
+<td>Faxa_snow</td>
+</tr>
+<tr class="row-even"><td>rain</td>
+<td>Faxa_rain</td>
+</tr>
+<tr class="row-odd"><td>evap</td>
+<td>Foxx_evap</td>
+</tr>
+<tr class="row-even"><td>meltw</td>
+<td>Fioi_meltw</td>
+</tr>
+<tr class="row-odd"><td>rofl</td>
+<td>Foxx_rofl</td>
+</tr>
+<tr class="row-even"><td>rofi</td>
+<td>Foxx_rofi</td>
+</tr>
+<tr class="row-odd"><td>t</td>
+<td>So_t</td>
+</tr>
+<tr class="row-even"><td>u</td>
+<td>So_u</td>
+</tr>
+<tr class="row-odd"><td>v</td>
+<td>So_v</td>
+</tr>
+<tr class="row-even"><td>dhdx</td>
+<td>So_dhdx</td>
+</tr>
+<tr class="row-odd"><td>dhdy</td>
+<td>So_dhdy</td>
+</tr>
+<tr class="row-even"><td>s</td>
+<td>So_s</td>
+</tr>
+<tr class="row-odd"><td>q</td>
+<td>Fioo_q</td>
+</tr>
+<tr class="row-even"><td>h</td>
+<td>strm_h</td>
+</tr>
+<tr class="row-odd"><td>qbot</td>
+<td>strm_qbot</td>
+</tr>
+<tr class="row-even"><td>fswpen</td>
+<td>So_fswpen</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="creating-sstdata-mode-input-from-a-fully-prognostic-run-cesm-only">
+<span id="creating-sstdata-input-from-prognostic-run"></span><h2>8.7. Creating SSTDATA mode input from a fully prognostic run (CESM only)<a class="headerlink" href="#creating-sstdata-mode-input-from-a-fully-prognostic-run-cesm-only" title="Permalink to this headline">¶</a></h2>
+<p>The following outlines the steps you would take to create monthly averages of SST and ice coverage from a previous fully prognostic run that can then be read as as stream data by DOCN.</p>
+<p>As an example, the following uses an f09_g16 CESM B-configuration simulation using CAM5 physics and with cosp enabled. The procedure to create the SST/ICE file is as follows:</p>
+<ol class="arabic">
+<li><p class="first">Save monthly averaged &#8216;aice&#8217; information from cice code (this is the default).</p>
+</li>
+<li><p class="first">Save monthly averaged SST information from pop2. To do this, copy $SRCROOT/pop2/input_templates/gx1v6_tavg_contents to $CASEROOT/SourceMods/src.pop2 and change the 2 in front of SST to 1 for monthly frequency.</p>
+</li>
+<li><p class="first">Extract (using ncrcat) SST from monthly pop2 history files and form a single netcdf file containing just SST; change SST to SST_cpl.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">ncrcat</span> <span class="o">-</span><span class="n">v</span> <span class="n">SST</span> <span class="n">case</span><span class="o">.</span><span class="n">pop</span><span class="o">.</span><span class="n">h</span><span class="o">.*.</span><span class="n">nc</span> <span class="n">temp</span><span class="o">.</span><span class="n">nc</span>
+<span class="o">&gt;</span> <span class="n">ncrename</span> <span class="o">-</span><span class="n">v</span> <span class="n">SST</span><span class="p">,</span><span class="n">SST_cpl</span> <span class="n">temp</span><span class="o">.</span><span class="n">nc</span> <span class="n">sst_cpl</span><span class="o">.</span><span class="n">nc</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Extract aice from monthly cice history files and form a single netcdf file containing aice; change aice to ice_cov; divide values by 100 (to convert from percent to fraction).</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">ncrcat</span> <span class="o">-</span><span class="n">v</span> <span class="n">aice</span> <span class="n">case</span><span class="o">.</span><span class="n">cice</span><span class="o">.</span><span class="n">h</span><span class="o">.*.</span><span class="n">nc</span> <span class="n">temp</span><span class="o">.</span><span class="n">nc</span>
+<span class="o">&gt;</span> <span class="n">ncrename</span> <span class="o">-</span><span class="n">v</span> <span class="n">aice</span><span class="p">,</span><span class="n">ice_cov</span> <span class="n">temp</span><span class="o">.</span><span class="n">nc</span> <span class="n">temp2</span><span class="o">.</span><span class="n">nc</span>
+<span class="o">&gt;</span> <span class="n">ncap2</span> <span class="o">-</span><span class="n">s</span> <span class="s1">&#39;ice_cov=ice_cov/100.&#39;</span> <span class="n">temp2</span><span class="o">.</span><span class="n">nc</span> <span class="n">ice_cov</span><span class="o">.</span><span class="n">nc</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Modify fill values in the sst_cpl file (which are over land points) to have value -1.8 and remove fill and missing value designators; change coordinate lengths and names: to accomplish this, first run ncdump, then replace _ with -1.8 in SST_cpl, then remove lines with _FillValue and missing_value.
+(Note: although it might be possible to merely change the fill value to -1.8, this is conforming to other SST/ICE files, which have SST_cpl explicitly set to -1.8 over land.)
+To change coordinate lengths and names, replace nlon by lon, nlat by lat, TLONG by lon, TLAT by lat.
+The last step is to run ncgen. Note: when using ncdump followed by ncgen, precision will be lost; however, one can specify -d 9,17 to maximize precision - as in the following example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">ncdump</span> <span class="o">-</span><span class="n">d</span> <span class="mi">9</span><span class="p">,</span><span class="mi">17</span> <span class="n">old</span><span class="o">.</span><span class="n">nc</span> <span class="o">&gt;</span> <span class="n">old</span>
+<span class="o">&gt;</span> <span class="n">ncgen</span> <span class="o">-</span><span class="n">o</span> <span class="n">new</span><span class="o">.</span><span class="n">nc</span> <span class="n">new</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Modify fill values in the ice_cov file (which are over land points) to have value 1 and remove fill and missing value designators; change coordinate lengths and names; patch longitude and latitude to replace missing values.
+To accomplish this, first run ncdump, then replace _ with 1 in ice_cov, then remove lines with _FillValue and missing_value.
+To change coordinate lengths and names, replace ni by lon, nj by lat, TLON by lon, TLAT by lat.
+To patch longitude and latitude arrays, replace values of those arrays with those in sst_cpl file.
+The last step is to run ncgen.
+(Note: the replacement of longitude and latitude missing values by actual values should not be necessary but is safer.)</p>
+</li>
+<li><p class="first">Combine (using ncks) the two netcdf files.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">ncks</span> <span class="o">-</span><span class="n">v</span> <span class="n">ice_cov</span> <span class="n">ice_cov</span><span class="o">.</span><span class="n">nc</span> <span class="n">sst_cpl</span><span class="o">.</span><span class="n">nc</span>
+</pre></div>
+</div>
+<p>Rename the file to ssticetemp.nc.
+The time variable will refer to the number of days at the end of each month, counting from year 0, whereas the actual simulation began at year 1.
+However, we want time values to be in the middle of each month, referenced to the first year of the simulation (first time value equals 15.5).
+Extract (using ncks) time variable from existing amip sst file (for correct number of months - 132 in this example) into working netcdf file.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">ncks</span> <span class="o">-</span><span class="n">d</span> <span class="n">time</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">131</span> <span class="o">-</span><span class="n">v</span> <span class="n">time</span> <span class="n">amipsst</span><span class="o">.</span><span class="n">nc</span> <span class="n">ssticetemp</span><span class="o">.</span><span class="n">nc</span>
+</pre></div>
+</div>
+<p>Add date variable: ncdump date variable from existing amip sst file; modify first year to be year 0 instead of 1949 (do not including leading zeroes or it will interpret as octal) and use correct number of months; ncgen to new netcdf file; extract date (using ncks) and place in working netcdf file.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">ncks</span> <span class="o">-</span><span class="n">v</span> <span class="n">date</span> <span class="n">datefile</span><span class="o">.</span><span class="n">nc</span> <span class="n">ssticetemp</span><span class="o">.</span><span class="n">nc</span>
+</pre></div>
+</div>
+<p>Add datesec variable: extract (using ncks) datesec (correct number of months) from existing amip sst file and place in working netcdf file.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">ncks</span> <span class="o">-</span><span class="n">d</span> <span class="n">time</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">131</span> <span class="o">-</span><span class="n">v</span> <span class="n">datesec</span> <span class="n">amipsst</span><span class="o">.</span><span class="n">nc</span> <span class="n">ssticetemp</span><span class="o">.</span><span class="n">nc</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">At this point, you have an SST/ICE file in the correct format.</p>
+</li>
+<li><p class="first">Due to CAM&#8217;s linear interpolation between mid-month values, you need to apply a procedure to assure that the computed monthly means are consistent with the input data.
+To do this, invoke <code class="docutils literal"><span class="pre">$SRCROOT/components/cam/tools/icesst/bcgen</span></code> and following the following steps:</p>
+<ol class="loweralpha">
+<li><p class="first">Rename SST_cpl to SST, and ice_cov to ICEFRAC in the current SST/ICE file:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">ncrename</span> <span class="o">-</span><span class="n">v</span> <span class="n">SST_cpl</span><span class="p">,</span><span class="n">SST</span> <span class="o">-</span><span class="n">v</span> <span class="n">ice_cov</span><span class="p">,</span><span class="n">ICEFRAC</span> <span class="n">ssticetemp</span><span class="o">.</span><span class="n">nc</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">In driver.f90, sufficiently expand the lengths of variables prev_history and history (16384 should be sufficient); also comment out the test that the climate year be between 1982 and 2001 (lines 152-158).</p>
+</li>
+<li><p class="first">In bcgen.f90 and setup_outfile.f90, change the dimensions of xlon and ???TODO xlat to (nlon,nlat); this is to accommodate use of non-cartesian ocean grid.</p>
+</li>
+<li><p class="first">In setup_outfile.f90, modify the 4th and 5th ???TODO arguments in the calls to wrap_nf_def_var for <em>lon</em> and <em>lat</em> to be <em>2</em> and <em>dimids</em>; this is to accommodate use of non-cartesian ocean grid.</p>
+</li>
+<li><p class="first">Adjust Makefile to have proper path for LIB_NETCDF and INC_NETCDF.</p>
+</li>
+<li><p class="first">Modify namelist accordingly.</p>
+</li>
+<li><p class="first">Make bcgen and execute per instructions. The resulting sstice_ts.nc file is the desired ICE/SST file.</p>
+</li>
+</ol>
+</li>
+</ol>
+<ol class="arabic simple" start="9">
+<li>Place the new SST/ICE file in desired location and modify <code class="docutils literal"><span class="pre">env_run.xml</span></code> to have :<ol class="loweralpha">
+<li><code class="docutils literal"><span class="pre">SSTICE_DATA_FILENAME</span></code> point to the complete path of your SST/ICE file.</li>
+<li><code class="docutils literal"><span class="pre">SSTICE_GRID_FILENAME</span></code> correspond to full path of (in this case) gx1v6 grid file.</li>
+<li><code class="docutils literal"><span class="pre">SSTICE_YEAR_START</span></code> set to 0</li>
+<li><code class="docutils literal"><span class="pre">SSTICE_YEAR_END</span></code> to one less than the total number of years</li>
+<li><code class="docutils literal"><span class="pre">SSTICE_YEAR_ALIGN</span></code> to 1 (for CESM, since CESM starts counting at year 1).</li>
+</ol>
+</li>
+</ol>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="data-river.html" title="9. Data River (DROF)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="data-seaice.html" title="7. Data Ice (DICE)"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME Data Models</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
+    </div>
+  </body>
+</html>

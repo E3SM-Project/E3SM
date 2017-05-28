@@ -1,0 +1,390 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2. Porting and Validating CIME on a new Platform &#8212; CIME 5.3.0_alpha17 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '5.3.0_alpha17',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="3. Optimizing Processor Layout" href="optimizing-processor-layout.html" />
+    <link rel="prev" title="1. CIME internals" href="cime-internals.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="optimizing-processor-layout.html" title="3. Optimizing Processor Layout"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="cime-internals.html" title="1. CIME internals"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">CIME User&#8217;s Guide Part 1: Basic Usage</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2. Porting and Validating CIME on a new Platform</a><ul>
+<li><a class="reference internal" href="#required-libraries-packages">2.1. Required libraries/packages</a></li>
+<li><a class="reference internal" href="#steps-for-porting">2.2. Steps for porting</a></li>
+<li><a class="reference internal" href="#config-machines-xml-machine-specific-file">2.3. config_machines.xml - machine specific file</a></li>
+<li><a class="reference internal" href="#config-compilers-xml-compiler-paths-and-options">2.4. config_compilers.xml - compiler paths and options</a></li>
+<li><a class="reference internal" href="#config-batch-xml-batch-directives">2.5. config_batch.xml - batch directives</a></li>
+<li><a class="reference internal" href="#validating-your-port">2.6. Validating your port</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="cime-internals.html"
+                        title="previous chapter">1. CIME internals</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="optimizing-processor-layout.html"
+                        title="next chapter">3. Optimizing Processor Layout</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/users_guide/porting-cime.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="porting-and-validating-cime-on-a-new-platform">
+<span id="porting"></span><h1>2. Porting and Validating CIME on a new Platform<a class="headerlink" href="#porting-and-validating-cime-on-a-new-platform" title="Permalink to this headline">¶</a></h1>
+<p>One of the first steps many users will have to address is getting CIME based models running on their local machine.
+This section will describe that process.</p>
+<div class="section" id="required-libraries-packages">
+<h2>2.1. Required libraries/packages<a class="headerlink" href="#required-libraries-packages" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>A functioning MPI environment (this is not required if you are only going to run on one core with the CIME mpi-serial library)</li>
+<li>Build tools gmake and cmake</li>
+<li>A netcdf library version 4.3 or newer built with the same compiler you will use for CIME</li>
+<li>Optionally a pnetcdf library.</li>
+</ul>
+<p>If you are using MPI, is usually very helpful to assure that you can run a basic mpi parallel program on your machine prior to attempting a CIME port.
+A simple example for assuring this functionality is in <a class="reference internal" href="faq/basics-mpi-example.html#mpi-example"><span class="std std-ref">MPI example</span></a>.</p>
+</div>
+<div class="section" id="steps-for-porting">
+<h2>2.2. Steps for porting<a class="headerlink" href="#steps-for-porting" title="Permalink to this headline">¶</a></h2>
+<p>The crux of porting CIME is for you to create <strong>at a minimum</strong> the xml file, <strong>config_machines.xml</strong> and place these files in your <strong>$HOME/.cime</strong> directory.
+In addition, if you have a batch system, you will also need to add a <strong>config_batch.xml</strong> file to your <strong>$HOME/.cime</strong> directory.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All files in <strong>$HOME/.cime/</strong> are appended to the xml objects read into memory from the <strong>$CIME/config/[model]</strong>, , where <strong>[model]</strong> can currently be either <code class="docutils literal"><span class="pre">acme</span></code> or <code class="docutils literal"><span class="pre">cesm</span></code>.</p>
+</div>
+<p>A more detailed discussion of creating these files follows.</p>
+<p>The following steps should be followed:</p>
+<ol class="arabic">
+<li><p class="first">Create a <strong>$HOME/.cime</strong> directory</p>
+</li>
+<li><p class="first">Create a <strong>$HOME/.cime/config</strong> file. At a minumum this should contain the following two lines:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">main</span><span class="p">]</span>
+<span class="n">CIME_MODEL</span><span class="o">=</span><span class="n">cesm</span>
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">main</span><span class="p">]</span>
+<span class="n">CIME_MODEL</span><span class="o">=</span><span class="n">acme</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Create a <strong>$HOME/.cime/config_machines.xml</strong> file.</p>
+<p>This file contains all the information that a user needs to set in order to configure a new machine to be CIME complaint.</p>
+<p>We provide several level of templates that you can use to create this file.</p>
+<ul class="simple">
+<li>If you are on a MAC and have the libraries installed with either MacPorts or HomeBrew, copy
+<strong>$CIME/config/cesm/machines/userdefined_laptop_template/config_machines.xml</strong> to
+<strong>$HOME/.cime/config_machines.xml</strong>.</li>
+<li>Otherwise, copy the template file
+<strong>$CIME/config/xml_schemas/config_machines_template.xml</strong> to
+<strong>$HOME/.cime/config_machines.xml</strong>.</li>
+</ul>
+<p>Fill in the contents of <strong>$HOME/.cime/config_machines.xml</strong> that are specific to your machine.</p>
+<p>For more details see <a class="reference internal" href="#customizing-machine-file"><span class="std std-ref">customize the config_machines.xml file</span></a>.</p>
+<p>Check that your <strong>config_machines.xml</strong> file conforms to the CIME schema definition by doing the following:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>xmllint --noout --schema $CIME/config/xml_schemas/config_machines.xsd $HOME/.cime/config_machines.xml
+</pre></div>
+</div>
+</li>
+<li><p class="first">Optionally, create a <strong>$HOME/.cime/config_compilers.xml</strong> file, if you have compiler settings that are specific to your machine.</p>
+<p>The default compiler settings are set in <strong>$CIME/config/[model]/machines/config_compilers.xml</strong>, where <strong>[model]</strong> can currently be either <code class="docutils literal"><span class="pre">acme</span></code> or <code class="docutils literal"><span class="pre">cesm</span></code>.</p>
+<p>There is no template for <strong>config_compilers.xml</strong>.</p>
+</li>
+<li><p class="first">Optionally, create a <strong>$HOME/.cime/config_batch.xml</strong> file if you have a batch system.</p>
+<p>Out of the box batch settings are set in <strong>$CIME/config/[model]/machines/config_batch.xml</strong>, where <strong>[model]</strong> can currently be either <code class="docutils literal"><span class="pre">acme</span></code> or <code class="docutils literal"><span class="pre">cesm</span></code>.</p>
+</li>
+<li><p class="first">Once you have a basic configuration for your machine defined in your <strong>$HOME/.cime</strong> XML files, you should interactively run <strong>scripts_regression_test.py</strong> from the directory <strong>$CIME/scripts/tests</strong>.
+This script will run a number of basic unit tests starting from the simplest tests and working toward more complicated ones.</p>
+</li>
+<li><p class="first">Finally when all the previous steps have run correctly, you are ready to try a case at your target compset and resolution.
+Once you have successfully created the required xml files in your .cime directory and are satisfied with the results you can merge them into the default files in the <strong>config/$CIME_MODEL/machines</strong> directory.
+If you would like to make this machine definition available generally you may then issue a pull request to add your changes to the git repository.</p>
+</li>
+</ol>
+</div>
+<div class="section" id="config-machines-xml-machine-specific-file">
+<span id="customizing-machine-file"></span><h2>2.3. config_machines.xml - machine specific file<a class="headerlink" href="#config-machines-xml-machine-specific-file" title="Permalink to this headline">¶</a></h2>
+<p>The machine specific files is defined in the model-specific <a class="reference internal" href="cime-internals.html#defining-machines"><span class="std std-ref">config_machines.xml</span></a>.</p>
+<p>The first step a user must take to make their machine CIME-compatible is to add the appropriate entries for their machine in <strong>config_machines.xml</strong>.</p>
+<p>Each <code class="docutils literal"><span class="pre">&lt;machine&gt;</span></code> tag requires the following input:</p>
+<ul>
+<li><p class="first"><code class="docutils literal"><span class="pre">DESC</span></code>: a text description of the machine, this field is current not used</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">NODENAME_REGEX</span></code>: a regular expression used to identify this machine it must work on compute nodes as well as login nodes, use machine option to create_test or create_newcase if this flag is not available</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">OS</span></code>: the operating system of this machine.</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">PROXY</span></code>: optional http proxy for access to the internet</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">COMPILERS</span></code>: compilers supported on this machine, comma seperated list, first is default</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">MPILIBS</span></code>: mpilibs supported on this machine, comma seperated list, first is default</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">PROJECT</span></code>: A project or account number used for batch jobs can be overridden in environment or $HOME/.cime/config</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">SAVE_TIMING_DIR</span></code>: (Acme only) directory to write timing output to</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">CIME_OUTPUT_ROOT</span></code>: Base directory for case output, the bld and run directories are written below here</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">DIN_LOC_ROOT</span></code>: location of the inputdata directory</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">DIN_LOC_ROOT_CLMFORC</span></code>: optional input location for clm forcing data</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">DOUT_S_ROOT</span></code>: root directory of short term archive files</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">DOUT_L_MSROOT</span></code>: root directory on mass store system of long term archive files</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">BASELINE_ROOT</span></code>:  Root directory for system test baseline files</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">CCSM_CPRNC</span></code>: location of the cprnc tool, compares model output in testing</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">GMAKE</span></code>: gnu compatible make tool, default is &#8216;gmake&#8217;</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">GMAKE_J</span></code>: optional number of threads to pass to the gmake flag</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">TESTS</span></code>: (acme only) list of tests to run on this machine</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">BATCH_SYSTEM</span></code>: batch system used on this machine (none is okay)</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">SUPPORTED_BY</span></code>: contact information for support for this system</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">MAX_TASKS_PER_NODE</span></code>: maximum number of threads*tasks per shared memory node on this machine</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">PES_PER_NODE</span></code>: number of physical PES per shared node on this machine, in practice the MPI tasks per node will not exceed this value</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">PROJECT_REQUIRED</span></code>: Does this machine require a project to be specified to the batch system?</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">mpirun</span></code>: The mpi exec to start a job on this machine.
+This is itself an element that has sub elements that must be filled:</p>
+<ul class="simple">
+<li>Must have a required <code class="docutils literal"><span class="pre">&lt;executable&gt;</span></code> element</li>
+<li>May have optional attributes of <code class="docutils literal"><span class="pre">compiler</span></code>, <code class="docutils literal"><span class="pre">mpilib</span></code> and/or <code class="docutils literal"><span class="pre">threaded</span></code></li>
+<li>May have an optional <code class="docutils literal"><span class="pre">&lt;arguments&gt;</span></code> element which in turn contain one or more <code class="docutils literal"><span class="pre">&lt;arg&gt;</span></code> elements.
+These specify the arguments to the mpi executable and as a result are dependent on your mpi library implementation.</li>
+</ul>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">module_system</span></code>: How and what modules to load on this system. Module systems allow you to easily load multiple compiler environments on a given machine. CIME provides support for two types of module tools: <a class="reference external" href="http://www.tacc.utexas.edu/tacc-projects/mclay/lmod">module</a> and <a class="reference external" href="http://www.mcs.anl.gov/hs/software/systems/softenv/softenv-intro.html">soft</a>.   If neither of these are available on your machine, the simply set <code class="docutils literal"><span class="pre">&lt;module_system</span> <span class="pre">type=&quot;none&quot;\&gt;</span></code>.</p>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal"><span class="pre">environment_variables</span></code>: environment_variables to set on this system.</dt>
+<dd><p class="first">This contains sub elements, <code class="docutils literal"><span class="pre">&lt;env&gt;</span></code> with the <code class="docutils literal"><span class="pre">name</span></code> attribute specifying the environment variable name, and the element value specifying the corresponding environment variable value. If the element value is not set, then the corresponding environment variable will be unset in your shell.</p>
+<p>As an example, the following sets the environment variable <code class="docutils literal"><span class="pre">OMP_STACKSIZE</span></code> to 256M.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">env</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;OMP_STACKSIZE&quot;</span><span class="o">&gt;</span><span class="mi">256</span><span class="n">M</span><span class="o">&lt;/</span><span class="n">env</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>and the following unsets this environment variable in the shell:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">env</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;OMP_STACKSIZE&quot;</span><span class="o">&gt;&lt;/</span><span class="n">env</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="last admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">These changes are <strong>ONLY</strong> activated for the CIME build and run environment, <strong>BUT NOT</strong> for your login shell. To activate them for your login shell, you would source either <strong>$CASEROOT/.env_mach_specific.sh</strong> or <strong>$CASEROOT/.env_mach_specific.csh</strong>, depending on your shell.</p>
+</div>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="config-compilers-xml-compiler-paths-and-options">
+<span id="customizing-compiler-file"></span><h2>2.4. config_compilers.xml - compiler paths and options<a class="headerlink" href="#config-compilers-xml-compiler-paths-and-options" title="Permalink to this headline">¶</a></h2>
+<p>The <strong>config_compilers.xml</strong> file defines compiler flags for building CIME (and also CESM and ACME prognostic CIME-driven components).
+There is a heirarchy that is intrinsic to this file.</p>
+<p>.# General compiler flags (e.g. for the gnu compiler) that are machine and component independent are listed first.</p>
+<p>.# Compiler flags specific to a particular operating systems are listed next.</p>
+<p>.# Compiler flags that are specific to particular machines are listed next.</p>
+<p>.# Compiler flags that are specific to particular CIME-driven components are listed last.</p>
+<p>The order of listing is a convention and not a requirement.</p>
+<p>The possible elements and attributes that can exist in this file are documented in <strong>$CIME/config/xml_schemas/config_compilers_v2.xsd</strong>.</p>
+<p>Its useful to clarify several conventions:</p>
+<ul>
+<li><p class="first">the <code class="docutils literal"><span class="pre">&lt;append&gt;</span></code> element implies that any previous defintion of that element&#8217;s parent will be appended with the new element value.
+As an example, the following entry in <strong>config_compilers.xml</strong>, would append the value of <code class="docutils literal"><span class="pre">CPPDEFS</span></code> with <code class="docutils literal"><span class="pre">-D</span> <span class="pre">$OS</span></code>
+where <code class="docutils literal"><span class="pre">$OS</span></code> is the environment value of <code class="docutils literal"><span class="pre">OS</span></code>.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">compiler</span><span class="o">&gt;</span>
+   <span class="o">&lt;</span><span class="n">CPPDEFS</span><span class="o">&gt;</span>
+       <span class="o">&lt;</span><span class="n">append</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">D</span><span class="o">&lt;</span><span class="n">env</span><span class="o">&gt;</span><span class="n">OS</span><span class="o">&lt;/</span><span class="n">env</span><span class="o">&gt;</span> <span class="o">&lt;/</span><span class="n">append</span><span class="o">&gt;</span>
+   <span class="o">&lt;/</span><span class="n">CPPDEFS</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">compiler</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">the <code class="docutils literal"><span class="pre">&lt;base&gt;</span></code> element overwrites its parent element&#8217;s value with its element text.
+As an example, the following entry would overwrite the <code class="docutils literal"><span class="pre">CONFIG_ARGS</span></code> for machine <code class="docutils literal"><span class="pre">melvin</span></code> with a <code class="docutils literal"><span class="pre">gnu</span></code> compiler to be <code class="docutils literal"><span class="pre">--host=Linux</span></code>.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">compiler</span> <span class="n">MACH</span><span class="o">=</span><span class="s2">&quot;melvin&quot;</span> <span class="n">COMPILER</span><span class="o">=</span><span class="s2">&quot;gnu&quot;</span><span class="o">&gt;</span>
+   <span class="o">&lt;</span><span class="n">CONFIG_ARGS</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="n">base</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">host</span><span class="o">=</span><span class="n">Linux</span> <span class="o">&lt;/</span><span class="n">base</span><span class="o">&gt;</span>
+   <span class="o">&lt;/</span><span class="n">CONFIG_ARGS</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">compiler</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="config-batch-xml-batch-directives">
+<span id="customizing-batch-file"></span><h2>2.5. config_batch.xml - batch directives<a class="headerlink" href="#config-batch-xml-batch-directives" title="Permalink to this headline">¶</a></h2>
+<p>The <strong>config_batch.xml</strong> schema is defined in <strong>$CIMEROOT/config/xml_schemas/config_batch.xsd</strong>.</p>
+<p>CIME currently supports the following batch systems: pbs, cobalt, lsf and slurm.</p>
+<p>As is the case for <strong>config_compilers.xml</strong>, the entries in <strong>config_batch.xml</strong> are heirarchical.</p>
+<p>.# General configurations for each system are provided at the top of the file.</p>
+<p>.# Specific modifications for a given machine are provided below.  In particular each machine should define its own queues.</p>
+<p>.# Following is a machine specific queue section.  This section details the parameters for each queue on the target machine.</p>
+<p>.# The last section describes several things:</p>
+<blockquote>
+<div><ul class="simple">
+<li>each job that will be submitted to the queue for a CIME workflow</li>
+<li>the template file that will be used to generate that job</li>
+<li>the prerequisets that must be met before the job is submitted</li>
+<li>the dependancies that must be satisfied before that job is run</li>
+</ul>
+</div></blockquote>
+<p>By default the CIME workflow consists of two jobs (<strong>case.run</strong>, <strong>case.st_archive</strong>).</p>
+<p>In addition, there is <strong>case.test</strong> job that is used by the CIME system test workflow.</p>
+</div>
+<div class="section" id="validating-your-port">
+<h2>2.6. Validating your port<a class="headerlink" href="#validating-your-port" title="Permalink to this headline">¶</a></h2>
+<p>The following port validation is recommended for any new machine.
+Carrying out these steps does not guarantee the model is running properly in all cases nor that the model is scientifically valid on the new machine.
+In addition to these tests, detailed validation should be carried out for any new production run.
+That means verifying that model restarts are bit-for-bit identical with a baseline run, that the model is bit-for-bit reproducible when identical cases are run for several months, and that production cases are monitored very carefully as they integrate forward to identify any potential problems as early as possible.
+These are recommended steps for validating a port and are largely functional tests.
+Users are responsible for their own validation process, especially with respect to science validation.</p>
+<p>1. Verify functionality by performing these <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">functionality tests</a>.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ERS_D</span><span class="o">.</span><span class="n">f19_g16</span><span class="o">.</span><span class="n">X</span>
+<span class="n">ERS_D</span><span class="o">.</span><span class="n">T31_g37</span><span class="o">.</span><span class="n">A</span>
+<span class="n">ERS_D</span><span class="o">.</span><span class="n">f19_g16</span><span class="o">.</span><span class="n">B1850CN</span>
+<span class="n">ERI</span><span class="o">.</span><span class="n">ne30_g16</span><span class="o">.</span><span class="n">X</span>
+<span class="n">ERI</span><span class="o">.</span><span class="n">T31_g37</span><span class="o">.</span><span class="n">A</span>
+<span class="n">ERI</span><span class="o">.</span><span class="n">f19_g16</span><span class="o">.</span><span class="n">B1850CN</span>
+<span class="n">ERS</span><span class="o">.</span><span class="n">ne30_ne30</span><span class="o">.</span><span class="n">F</span>
+<span class="n">ERS</span><span class="o">.</span><span class="n">f19_g16</span><span class="o">.</span><span class="n">I</span>
+<span class="n">ERS</span><span class="o">.</span><span class="n">T62_g16</span><span class="o">.</span><span class="n">C</span>
+<span class="n">ERS</span><span class="o">.</span><span class="n">T62_g16</span><span class="o">.</span><span class="n">DTEST</span>
+<span class="n">ERT</span><span class="o">.</span><span class="n">ne30_g16</span><span class="o">.</span><span class="n">B1850CN</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li>Verify performance and scaling analysis.<ol class="loweralpha">
+<li>Create one or two <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">load-balanced</a> configurations to check into <code class="docutils literal"><span class="pre">Machines/config_pes.xml</span></code> for the new machine.</li>
+<li>Verify that performance and scaling are reasonable.</li>
+<li>Review timing summaries in <code class="docutils literal"><span class="pre">$CASEROOT</span></code> for load balance and throughput.</li>
+<li>Review coupler &#8220;daily&#8221; timing output for timing inconsistencies.
+As has been mentioned in the section on <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">load balancing a case</a>, useful timing information is contained in cpl.log.$date file that is produced for every run.
+The cpl.log file contains the run time for each model day during the model run.
+This diagnostic is output as the model runs.
+You can search for tStamp in this file to see this information.
+This timing information is useful for tracking down temporal variability in model cost either due to inherent model variability cost (I/O, spin-up, seasonal, etc) or possibly due to variability due to hardware.
+The model daily cost is generally pretty constant unless I/O is written intermittently such as at the end of the month.</li>
+</ol>
+</li>
+<li>Perform validation (both functional and scientific):<ol class="loweralpha">
+<li>Perform a new CIME validation test (<strong>TODO: fill this in</strong>)</li>
+<li>Follow the <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">CCSM4.0 CICE port-validation procedure</a>.</li>
+<li>Follow the <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">CCSM4.0 POP2 port-validation procedure</a>.</li>
+</ol>
+</li>
+<li>Perform two, one-year runs (using the expected load-balanced configuration) as separate job submissions and verify that atmosphere history files are bfb for the last month.
+Do this after some performance testing is complete; you may also combine this with the production test by running the first year as a single run and the second year as a multi-submission production run.
+This will test reproducibility, exact restart over the one-year timescale, and production capability all in one test.</li>
+<li>Carry out a 20-30 year 1.9x2.5_gx1v6 resolution, B_1850_CN compset simulation and compare the results with the diagnostics plots for the 1.9x2.5_gx1v6 Pre-Industrial Control (see the <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">CCSM4.0 diagnostics</a>).
+Model output data for these runs will be available on the <a class="reference external" href="http://www.cesm.ucar.edu/models/cesm2.0/external-link-here">Earth System Grid (ESG)</a> as well.</li>
+</ol>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="optimizing-processor-layout.html" title="3. Optimizing Processor Layout"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="cime-internals.html" title="1. CIME internals"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME User&#8217;s Guide Part 1: Basic Usage</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
+    </div>
+  </body>
+</html>
