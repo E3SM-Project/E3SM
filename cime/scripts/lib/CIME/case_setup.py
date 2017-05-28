@@ -212,8 +212,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
         # Record env information
         env_module = case.get_env("mach_specific")
-        env_module.make_env_mach_specific_file("sh", case)
-        env_module.make_env_mach_specific_file("csh", case)
+        env_module.make_env_mach_specific_file(compiler, debug, mpilib, "sh")
+        env_module.make_env_mach_specific_file(compiler, debug, mpilib, "csh")
         env_module.save_all_env_info("software_environment.txt")
 
 ###############################################################################
