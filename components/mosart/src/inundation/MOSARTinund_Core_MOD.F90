@@ -15,7 +15,8 @@ MODULE MOSARTinund_Core_MOD
 
   use shr_kind_mod, only: r8 => shr_kind_r8
   use shr_sys_mod, only: shr_sys_abort
-  use RunoffMod, only: rtmCTL, Tctl, TUnit, TRunoff, SMatP_eroutUp, avsrc_eroutUp, avdst_eroutUp
+  use RunoffMod, only: rtmCTL, Tctl, TUnit, TRunoff, &
+      SMatP_upstrm, avsrc_upstrm, avdst_upstrm, SMatP_dnstrm
   use MOSARTinund_PreProcs_MOD, only: con1Em3
   use RtmVar, only: barrier_timers, iulog
   use RtmSpmd, only: mpicom_rof
@@ -36,7 +37,8 @@ MODULE MOSARTinund_Core_MOD
     ! ... ... ...
     
     implicit none
-    integer :: ier
+    integer :: ier, nr, cnt
+    type(mct_aVect) :: avsrc,avdst
     
     ! Hillslope routing computation :
     call inund_hillslopeRouting ( )
@@ -78,7 +80,30 @@ MODULE MOSARTinund_Core_MOD
       ! --------------------------------- 
       ! Need code to retrieve values of TRunoff%yr_exchg_dstrm(:) and TRunoff%wr_exchg_dstrm(:) .
       ! --------------------------------- 
-    
+
+      call mct_aVect_init(avsrc,rList='yr:wr',lsize=rtmCTL%lnumr)
+      call mct_aVect_init(avdst,rList='yr:wr',lsize=rtmCTL%lnumr)
+      call mct_aVect_zero(avsrc)
+      call mct_aVect_zero(avdst)
+      cnt = 0
+      do nr = rtmCTL%begr,rtmCTL%endr
+         cnt = cnt + 1
+         avsrc%rAttr(1,cnt) = TRunoff%yr_exchg(nr)
+         avsrc%rAttr(1,cnt) = TRunoff%wr_exchg(nr)
+      enddo
+
+      call mct_sMat_avMult(avsrc, sMatP_dnstrm, avdst)
+
+      cnt = 0
+      do nr = rtmCTL%begr,rtmCTL%endr
+         cnt = cnt + 1
+         TRunoff%yr_exchg_dstrm(nr) = avdst%rAttr(1,cnt)
+         TRunoff%wr_exchg_dstrm(nr) = avdst%rAttr(2,cnt)
+      enddo
+
+      call mct_aVect_clean(avsrc)
+      call mct_aVect_clean(avdst)
+
       call inund_Routing_DW ( )       
       
     ! Kinematic wave method :
@@ -411,23 +436,23 @@ MODULE MOSARTinund_Core_MOD
       end if  
     end do
 #else
-    !--- copy erout into avsrc_eroutUp ---
-    call mct_avect_zero( avsrc_eroutUp )
+    !--- copy erout into avsrc_upstrm ---
+    call mct_avect_zero( avsrc_upstrm )
     cnt = 0
     do iu = rtmCTL%begr, rtmCTL%endr
       cnt = cnt + 1     
-      avsrc_eroutUp%rAttr(1, cnt) = TRunoff%erout(iu, 1)
+      avsrc_upstrm%rAttr(1, cnt) = TRunoff%erout(iu, 1)
     enddo
     
-    call mct_avect_zero( avdst_eroutUp )
+    call mct_avect_zero( avdst_upstrm )
 
-    call mct_sMat_avMult(avsrc_eroutUp, sMatP_eroutUp, avdst_eroutUp)
+    call mct_sMat_avMult(avsrc_upstrm, sMatP_upstrm, avdst_upstrm)
 
     !--- add mapped eroutUp to TRunoff ---
     cnt = 0
     do iu = rtmCTL%begr, rtmCTL%endr
       cnt = cnt + 1     
-      TRunoff%eroutUp(iu, 1) = avdst_eroutUp%rAttr(1, cnt)
+      TRunoff%eroutUp(iu, 1) = avdst_upstrm%rAttr(1, cnt)
     enddo
 #endif    
 

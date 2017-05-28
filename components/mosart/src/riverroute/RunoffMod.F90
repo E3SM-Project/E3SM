@@ -20,17 +20,20 @@ module RunoffMod
 
   type(mct_gsmap),public :: gsmap_r       ! gsmap for mosart decomposition
 
-  type(mct_sMatP),public :: sMatP_dnstrm  ! sparse matrix plus for downstream advection
-  type(mct_avect),public :: avsrc_dnstrm  ! src avect for SM mult downstream advection
-  type(mct_avect),public :: avdst_dnstrm  ! dst avect for SM mult downstream advection
+  ! sum of upstream data, dst gets sum of values from upstream
+  type(mct_sMatP),public :: sMatP_upstrm  ! sparse matrix plus for downstream communication
+  type(mct_avect),public :: avsrc_upstrm  ! src avect for SM mult downstream communication
+  type(mct_avect),public :: avdst_upstrm  ! dst avect for SM mult downstream communication
 
+  ! copy of downstream data, dst gets single value from downstream
+  type(mct_sMatP),public :: sMatP_dnstrm  ! sparse matrix plus for upstream communication
+  type(mct_avect),public :: avsrc_dnstrm  ! src avect for SM mult upstream communication
+  type(mct_avect),public :: avdst_dnstrm  ! dst avect for SM mult upstream communication
+
+  ! communication to ocean outlet, dst get direct values from upstream
   type(mct_sMatP),public :: sMatP_direct  ! sparse matrix plus for direct to outlet flow
   type(mct_avect),public :: avsrc_direct  ! src avect for SM mult direct to outlet flow
   type(mct_avect),public :: avdst_direct  ! dst avect for SM mult direct to outlet flow
-
-  type(mct_sMatP),public :: sMatP_eroutUp ! sparse matrix plus for eroutUp calc
-  type(mct_avect),public :: avsrc_eroutUp ! src avect for SM mult eroutUp calc
-  type(mct_avect),public :: avdst_eroutUp ! dst avect for SM mult eroutUp calc
 
   public :: runoff_flow
   type runoff_flow
@@ -225,38 +228,38 @@ module RunoffMod
      real(r8), pointer :: phi_t(:)     ! the indicator used to define numDT_t
    
 #ifdef INCLUDE_INUND   
-    real(r8), pointer :: rlen_dstrm(:)  ! Length of downstream channel (m).
-    real(r8), pointer :: rslp_dstrm(:)  ! Bed slope of downstream channel (dimensionless).
-    real(r8), pointer :: wr_bf(:)       ! Water volume in the bankfull channel (i.e., channel storage capacity) (m^3).
+     real(r8), pointer :: rlen_dstrm(:)  ! Length of downstream channel (m).
+     real(r8), pointer :: rslp_dstrm(:)  ! Bed slope of downstream channel (dimensionless).
+     real(r8), pointer :: wr_bf(:)       ! Water volume in the bankfull channel (i.e., channel storage capacity) (m^3).
   
-    ! --------------------------------- 
-    ! Parameters related to elevation profiles : 
-    ! --------------------------------- 
-    real(r8) :: e_eprof_std(12)         ! Elevations in the hypothetical elevation profile (m).
-    real(r8), pointer :: e_eprof_in2(:,:)  ! Absolute elevations in the input elevation profiles (m).
-    real(r8), pointer :: a_eprof(:,:)   ! Area fractions of computation unit (grid cell or subbasin) in the elevation profiles (dimensionless).
-    real(r8), pointer :: e_eprof(:,:)   ! Absolute elevations in the elevation profiles used in computation (m).
-    real(r8), pointer :: a_chnl(:)      ! = channel area / computation unit area (dimensionless).
-    real(r8), pointer :: e_chnl(:)      ! Channel banktop elevation (m).
-    integer , pointer :: ipt_bl_bktp(:) ! The index of the point right below the banktop in the elevation profile.
+     ! --------------------------------- 
+     ! Parameters related to elevation profiles : 
+     ! --------------------------------- 
+     real(r8) :: e_eprof_std(12)         ! Elevations in the hypothetical elevation profile (m).
+     real(r8), pointer :: e_eprof_in2(:,:)  ! Absolute elevations in the input elevation profiles (m).
+     real(r8), pointer :: a_eprof(:,:)   ! Area fractions of computation unit (grid cell or subbasin) in the elevation profiles (dimensionless).
+     real(r8), pointer :: e_eprof(:,:)   ! Absolute elevations in the elevation profiles used in computation (m).
+     real(r8), pointer :: a_chnl(:)      ! = channel area / computation unit area (dimensionless).
+     real(r8), pointer :: e_chnl(:)      ! Channel banktop elevation (m).
+     integer , pointer :: ipt_bl_bktp(:) ! The index of the point right below the banktop in the elevation profile.
     
-    ! --------------------------------- 
-    ! Parameters related to adjusted elevation profiles (where the section below banktop is replaced with level line) : 
-    ! --------------------------------- 
-    real(r8), pointer :: a_eprof3(:,:)  ! Area fractions of computation unit (grid cell or subbasin) in adjusted elevation profiles (dimensionless).
-    real(r8), pointer :: e_eprof3(:,:)  ! Relative elevations in adjusted elevation profiles used in computation (m).
-    integer , pointer :: npt_eprof3(:)  ! Number of points in the adjusted elevation profile.
-    real(r8), pointer :: s_eprof3(:,:)  ! Total volume below the level through a point in the adjusted elevation profile (i.e., the
-                                        ! volume between channel banktop and an elevation of the adjusted elevation profile) (m^3).
+     ! --------------------------------- 
+     ! Parameters related to adjusted elevation profiles (where the section below banktop is replaced with level line) : 
+     ! --------------------------------- 
+     real(r8), pointer :: a_eprof3(:,:)  ! Area fractions of computation unit (grid cell or subbasin) in adjusted elevation profiles (dimensionless).
+     real(r8), pointer :: e_eprof3(:,:)  ! Relative elevations in adjusted elevation profiles used in computation (m).
+     integer , pointer :: npt_eprof3(:)  ! Number of points in the adjusted elevation profile.
+     real(r8), pointer :: s_eprof3(:,:)  ! Total volume below the level through a point in the adjusted elevation profile (i.e., the
+                                         ! volume between channel banktop and an elevation of the adjusted elevation profile) (m^3).
 
-    ! --------------------------------- 
-    ! In the inundation calculation, a quadratic equation is solved to derive the water depth based on water volume. 
-    ! The following coefficients are for the quadratic equation. 
-    ! (Please find more information in "MOSARTinund_Core_MOD.F90".)
-    ! --------------------------------- 
-    real(r8), pointer :: alfa3(:,:)     ! Coefficient (1/m).
-    real(r8), pointer :: p3(:,:)        ! Coefficient (m).
-    real(r8), pointer :: q3(:,:)        ! Coefficient (m^2).
+     ! --------------------------------- 
+     ! In the inundation calculation, a quadratic equation is solved to derive the water depth based on water volume. 
+     ! The following coefficients are for the quadratic equation. 
+     ! (Please find more information in "MOSARTinund_Core_MOD.F90".)
+     ! --------------------------------- 
+     real(r8), pointer :: alfa3(:,:)     ! Coefficient (1/m).
+     real(r8), pointer :: p3(:,:)        ! Coefficient (m).
+     real(r8), pointer :: q3(:,:)        ! Coefficient (m^2).
 #endif
 
   end type Tspatialunit

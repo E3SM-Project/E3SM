@@ -34,8 +34,8 @@ module RtmMod
   use RunoffMod       , only : RunoffInit, rtmCTL, Tctl, Tunit, TRunoff, Tpara, &
                                gsmap_r, &
                                SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm, &
-                               SMatP_direct, avsrc_direct, avdst_direct, &
-                               SMatP_eroutUp, avsrc_eroutUp, avdst_eroutUp
+                               SMatP_upstrm, avsrc_upstrm, avdst_upstrm, &
+                               SMatP_direct, avsrc_direct, avdst_direct
   use MOSART_physics_mod, only : Euler
   use MOSART_physics_mod, only : updatestate_hillslope, updatestate_subnetwork, &
                                  updatestate_mainchannel
@@ -1240,6 +1240,18 @@ contains
           endif
        enddo
 
+       call mct_sMatP_Init(sMatP_upstrm, sMat, gsMap_r, gsMap_r, 0, mpicom_rof, ROFID)
+
+       cnt = 0
+       do nr = rtmCTL%begr,rtmCTL%endr
+          if (rtmCTL%dsig(nr) > 0) then
+             cnt = cnt + 1
+             sMat%data%iAttr(igcol,cnt) = rtmCTL%dsig(nr)
+             sMat%data%iAttr(igrow,cnt) = rtmCTL%gindex(nr)
+             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
+          endif
+       enddo
+
        call mct_sMatP_Init(sMatP_dnstrm, sMat, gsMap_r, gsMap_r, 0, mpicom_rof, ROFID)
 
     elseif (smat_option == 'Xonly' .or. smat_option == 'Yonly') then
@@ -1255,6 +1267,8 @@ contains
           avtmp%rAttr(2,cnt) = rtmCTL%dsig(nr)
        enddo
        call mct_avect_gather(avtmp,avtmpG,gsmap_r,mastertask,mpicom_rof)
+       call mct_avect_clean(avtmp)
+
        if (masterproc) then
           cnt = 0
           do n = 1,rtmlon*rtmlat
@@ -1277,11 +1291,24 @@ contains
                 sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
              endif
           enddo
-          call mct_avect_clean(avtmpG)
        else
           call mct_sMat_init(sMat,1,1,1)
        endif
-       call mct_avect_clean(avtmp)
+
+       call mct_sMatP_Init(sMatP_upstrm, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
+
+       if (masterproc) then
+          cnt = 0
+          do n = 1,rtmlon*rtmlat
+             if (avtmpG%rAttr(2,n) > 0) then
+                cnt = cnt + 1
+                sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(2,n)
+                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(1,n)
+                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
+             endif
+          enddo
+          call mct_avect_clean(avtmpG)
+       endif
 
        call mct_sMatP_Init(sMatP_dnstrm, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
 
@@ -1298,11 +1325,17 @@ contains
        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
     enddo
     if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
+    call mct_aVect_init(avsrc_upstrm,rList=rList,lsize=rtmCTL%lnumr)
+    call mct_aVect_init(avdst_upstrm,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avsrc_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avdst_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
+!    write(iulog,*) subname,' avsrc_upstrm lsize = ',iam,mct_aVect_lsize(avsrc_upstrm)
+!    write(iulog,*) subname,' avdst_upstrm lsize = ',iam,mct_aVect_lsize(avdst_upstrm)
 !    write(iulog,*) subname,' avsrc_dnstrm lsize = ',iam,mct_aVect_lsize(avsrc_dnstrm)
 !    write(iulog,*) subname,' avdst_dnstrm lsize = ',iam,mct_aVect_lsize(avdst_dnstrm)
 
+    lsize = mct_smat_gNumEl(sMatP_upstrm%Matrix,mpicom_rof)
+    if (masterproc) write(iulog,*) subname," Done initializing SmatP_upstrm, nElements = ",lsize
     lsize = mct_smat_gNumEl(sMatP_dnstrm%Matrix,mpicom_rof)
     if (masterproc) write(iulog,*) subname," Done initializing SmatP_dnstrm, nElements = ",lsize
 
@@ -1576,10 +1609,10 @@ contains
        call RtmHistHtapesBuild()
     end if
     call RtmHistFldsSet()
+    delt_save = 0.0
 
     if (masterproc) write(iulog,*) subname,' done'
     if (masterproc) call shr_sys_flush(iulog)
-    delt_save = 0.0
 
     call t_stopf('mosarti_histinit')
 
@@ -2003,17 +2036,17 @@ contains
 !
 !       call t_startf('mosartr_SMdnstrm')
 !
-!       !--- copy fluxout into avsrc_dnstrm ---
+!       !--- copy fluxout into avsrc_upstrm ---
 !       cnt = 0
 !       do n = rtmCTL%begr,rtmCTL%endr
 !          cnt = cnt + 1
 !          do nt = 1,nt_rtm
-!             avsrc_dnstrm%rAttr(nt,cnt) = fluxout(n,nt)
+!             avsrc_upstrm%rAttr(nt,cnt) = fluxout(n,nt)
 !          enddo
 !       enddo
-!       call mct_avect_zero(avdst_dnstrm)
+!       call mct_avect_zero(avdst_upstrm)
 !
-!       call mct_sMat_avMult(avsrc_dnstrm, sMatP_dnstrm, avdst_dnstrm)
+!       call mct_sMat_avMult(avsrc_upstrm, sMatP_upstrm, avdst_upstrm)
 !
 !       !--- add mapped fluxout to sfluxin ---
 !       cnt = 0
@@ -2021,7 +2054,7 @@ contains
 !       do n = rtmCTL%begr,rtmCTL%endr
 !          cnt = cnt + 1
 !          do nt = 1,nt_rtm
-!             sfluxin(n,nt) = sfluxin(n,nt) + avdst_dnstrm%rAttr(nt,cnt)
+!             sfluxin(n,nt) = sfluxin(n,nt) + avdst_upstrm%rAttr(nt,cnt)
 !          enddo
 !       enddo
 !       call t_stopf('mosartr_SMdnstrm')
@@ -2467,7 +2500,8 @@ contains
   integer :: numDT_r, numDT_t
   integer :: lsize, gsize
   integer :: igrow, igcol, iwgt
-  type(mct_avect) :: avtmp, avtmpG ! temporary avects
+  type(mct_aVect) :: avtmp, avtmpG ! temporary avects
+  type(mct_aVect) :: avsrc, avdst  ! temporary
   type(mct_sMat)  :: sMat          ! temporary sparse matrix, needed for sMatP
   real(r8):: areatot_prev, areatot_tmp, areatot_new
   real(r8):: hlen_max, rlen_min
@@ -2698,18 +2732,42 @@ contains
      TUnit%indexDown = 0
    
 #ifdef INCLUDE_INUND
-    if (inundflag) then
+     if (inundflag) then
        if ( Tctl%RoutingMethod == 4 ) then       ! Use diffusion wave method in channel routing computation.
           allocate (TUnit%rlen_dstrm(begr:endr))
-          TUnit%rlen_dstrm = 0.0_r8
-
           allocate (TUnit%rslp_dstrm(begr:endr))
-          TUnit%rslp_dstrm = 0.0_r8  
 
           ! --------------------------------- 
           ! Need code to retrieve values of TUnit%rlen_dstrm(:) and TUnit%rslp_dstrm(:) .
           ! --------------------------------- 
 
+          call mct_aVect_init(avsrc,rList='rlen:rslp',lsize=rtmCTL%lnumr)
+          call mct_aVect_init(avdst,rList='rlen:rslp',lsize=rtmCTL%lnumr)
+          call mct_aVect_zero(avsrc)
+          call mct_aVect_zero(avdst)
+          cnt = 0
+          do nr = rtmCTL%begr,rtmCTL%endr
+             cnt = cnt + 1
+             avsrc%rAttr(1,cnt) = TUnit%rlen(nr)
+             avsrc%rAttr(2,cnt) = TUnit%rslp(nr)
+          enddo
+
+          call mct_sMat_avMult(avsrc, sMatP_dnstrm, avdst)
+
+          cnt = 0
+          do nr = rtmCTL%begr,rtmCTL%endr
+             cnt = cnt + 1
+             TUnit%rlen_dstrm(nr) = avdst%rAttr(1,cnt)
+             TUnit%rslp_dstrm(nr) = avdst%rAttr(2,cnt)
+          enddo
+
+          call mct_aVect_clean(avsrc)
+          call mct_aVect_clean(avdst)
+
+          if (masterproc) write(iulog,FORMR) trim(subname),' set rlen_dstrm ',minval(Tunit%rlen_dstrm),maxval(Tunit%rlen_dstrm)
+          call shr_sys_flush(iulog)
+          if (masterproc) write(iulog,FORMR) trim(subname),' set rslp_dstrm ',minval(Tunit%rslp_dstrm),maxval(Tunit%rslp_dstrm)
+          call shr_sys_flush(iulog)
        end if
 
        if (Tctl%OPT_inund == 1) then
@@ -2761,7 +2819,7 @@ contains
           call preprocess_elevProf ( )
        endif
 
-    end if
+     end if  ! inundflag
 #endif
   
      ! initialize water states and fluxes
@@ -3026,100 +3084,6 @@ contains
         TUnit%tslpsqrt(iunit) = sqrt(Tunit%tslp(iunit))
         TUnit%hslpsqrt(iunit) = sqrt(Tunit%hslp(iunit))
      end do
-
-     lsize = rtmCTL%lnumr
-     gsize = rtmlon*rtmlat
-
-     if (smat_option == 'opt') then
-        ! distributed smat initialization
-        ! mct_sMat_init must be given the number of rows and columns that
-        ! would be in the full matrix.  Nrows= size of output vector=nb.
-        ! Ncols = size of input vector = na.
-
-        cnt = 0
-        do iunit=rtmCTL%begr,rtmCTL%endr
-           if(TUnit%dnID(iunit) > 0) cnt = cnt + 1
-        enddo
-
-        call mct_sMat_init(sMat, gsize, gsize, cnt)
-        igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
-        igrow = mct_sMat_indexIA(sMat,'grow')
-        iwgt  = mct_sMat_indexRA(sMat,'weight')
-        cnt = 0
-        do iunit = rtmCTL%begr,rtmCTL%endr
-           if (TUnit%dnID(iunit) > 0) then
-              cnt = cnt + 1
-              sMat%data%iAttr(igcol,cnt) = TUnit%ID0(iunit)
-              sMat%data%iAttr(igrow,cnt) = TUnit%dnID(iunit)
-              sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-           endif
-        enddo
-
-        call mct_sMatP_Init(sMatP_eroutUp, sMat, gsMap_r, gsMap_r, 0, mpicom_rof, ROFID)
-
-     elseif (smat_option == 'Xonly' .or. smat_option == 'Yonly') then
-        ! root initialization
-        call mct_aVect_init(avtmp,rList='f1:f2',lsize=lsize)
-        call mct_aVect_zero(avtmp)
-        cnt = 0
-        do iunit = rtmCTL%begr,rtmCTL%endr
-           cnt = cnt + 1
-           avtmp%rAttr(1,cnt) = TUnit%ID0(iunit)
-           avtmp%rAttr(2,cnt) = TUnit%dnID(iunit)
-        enddo
-        call mct_avect_gather(avtmp,avtmpG,gsmap_r,mastertask,mpicom_rof)
-        if (masterproc) then
-           cnt = 0
-           do n = 1,rtmlon*rtmlat
-              if (avtmpG%rAttr(2,n) > 0) then
-                 cnt = cnt + 1
-              endif
-           enddo
-
-           call mct_sMat_init(sMat, gsize, gsize, cnt)
-           igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
-           igrow = mct_sMat_indexIA(sMat,'grow')
-           iwgt  = mct_sMat_indexRA(sMat,'weight')
-
-           cnt = 0
-           do n = 1,rtmlon*rtmlat
-              if (avtmpG%rAttr(2,n) > 0) then
-                 cnt = cnt + 1
-                 sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
-                 sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
-                 sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-              endif
-           enddo
-           call mct_avect_clean(avtmpG)
-        else
-           call mct_sMat_init(sMat,1,1,1)
-        endif
-        call mct_avect_clean(avtmp)
-
-        call mct_sMatP_Init(sMatP_eroutUp, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
-
-     else
-
-        write(iulog,*) trim(subname),' MOSART ERROR: invalid smat_option '//trim(smat_option)
-        call shr_sys_abort(trim(subname)//' ERROR invald smat option')
-
-     endif
-
-     ! initialize the AVs to go with sMatP
-     write(rList,'(a,i3.3)') 'tr',1
-     do nt = 2,nt_rtm
-        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
-     enddo
-     if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
-     call mct_aVect_init(avsrc_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
-     call mct_aVect_init(avdst_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
-
-     lsize = mct_smat_gNumEl(sMatP_eroutUp%Matrix,mpicom_rof)
-     if (masterproc) write(iulog,*) subname," Done initializing SmatP_eroutUp, nElements = ",lsize
-
-     ! keep only sMatP
-     call mct_sMat_clean(sMat)
-
   end if  ! endr >= begr
 
   !--- compute areatot from area using dnID ---
@@ -3131,11 +3095,11 @@ contains
 
   ! initialize avdst to local area and add that to areatotal2
   cnt = 0
-  call mct_avect_zero(avdst_eroutUp)
+  call mct_avect_zero(avdst_upstrm)
   do nr = rtmCTL%begr,rtmCTL%endr
      cnt = cnt + 1
-     avdst_eroutUp%rAttr(1,cnt) = rtmCTL%area(nr)
-     Tunit%areatotal2(nr) = avdst_eroutUp%rAttr(1,cnt)
+     avdst_upstrm%rAttr(1,cnt) = rtmCTL%area(nr)
+     Tunit%areatotal2(nr) = avdst_upstrm%rAttr(1,cnt)
   enddo
 
   tcnt = 0
@@ -3147,15 +3111,15 @@ contains
 
      ! copy avdst to avsrc for next downstream step
      cnt = 0
-     call mct_avect_zero(avsrc_eroutUp)
+     call mct_avect_zero(avsrc_upstrm)
      do nr = rtmCTL%begr,rtmCTL%endr
         cnt = cnt + 1
-        avsrc_eroutUp%rAttr(1,cnt) = avdst_eroutUp%rAttr(1,cnt)
+        avsrc_upstrm%rAttr(1,cnt) = avdst_upstrm%rAttr(1,cnt)
      enddo
 
-     call mct_avect_zero(avdst_eroutUp)
+     call mct_avect_zero(avdst_upstrm)
 
-     call mct_sMat_avMult(avsrc_eroutUp, sMatP_eroutUp, avdst_eroutUp)
+     call mct_sMat_avMult(avsrc_upstrm, sMatP_upstrm, avdst_upstrm)
 
      ! add avdst to areatot and compute new global sum
      cnt = 0
@@ -3163,7 +3127,7 @@ contains
      areatot_tmp = 0._r8
      do nr = rtmCTL%begr,rtmCTL%endr
         cnt = cnt + 1
-        Tunit%areatotal2(nr) = Tunit%areatotal2(nr) + avdst_eroutUp%rAttr(1,cnt)
+        Tunit%areatotal2(nr) = Tunit%areatotal2(nr) + avdst_upstrm%rAttr(1,cnt)
         areatot_tmp = areatot_tmp + Tunit%areatotal2(nr)
      enddo
      call shr_mpi_sum(areatot_tmp, areatot_new, mpicom_rof, 'areatot_new', all=.true.)

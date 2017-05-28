@@ -15,7 +15,7 @@ MODULE MOSART_physics_mod
   use shr_sys_mod   , only : shr_sys_abort
   use RtmVar        , only : iulog, barrier_timers, wrmflag
   use RunoffMod     , only : Tctl, TUnit, TRunoff, TPara, rtmCTL, &
-                             SMatP_eroutUp, avsrc_eroutUp, avdst_eroutUp
+                             SMatP_upstrm, avsrc_upstrm, avdst_upstrm
   use RtmSpmd       , only : masterproc, mpicom_rof, iam
   use RtmTimeManager, only : get_curr_date, is_new_month
 #ifdef INCLUDE_WRM
@@ -196,25 +196,25 @@ MODULE MOSART_physics_mod
        end do
        end do
 #else
-       !--- copy erout into avsrc_eroutUp ---
-       call mct_avect_zero(avsrc_eroutUp)
+       !--- copy erout into avsrc_upstrm ---
+       call mct_avect_zero(avsrc_upstrm)
        cnt = 0
        do iunit = rtmCTL%begr,rtmCTL%endr
           cnt = cnt + 1
           do nt = 1,nt_rtm
-             avsrc_eroutUp%rAttr(nt,cnt) = TRunoff%erout(iunit,nt)
+             avsrc_upstrm%rAttr(nt,cnt) = TRunoff%erout(iunit,nt)
           enddo
        enddo
-       call mct_avect_zero(avdst_eroutUp)
+       call mct_avect_zero(avdst_upstrm)
 
-       call mct_sMat_avMult(avsrc_eroutUp, sMatP_eroutUp, avdst_eroutUp)
+       call mct_sMat_avMult(avsrc_upstrm, sMatP_upstrm, avdst_upstrm)
 
        !--- add mapped eroutUp to TRunoff ---
        cnt = 0
        do iunit = rtmCTL%begr,rtmCTL%endr
           cnt = cnt + 1
           do nt = 1,nt_rtm
-             TRunoff%eroutUp(iunit,nt) = avdst_eroutUp%rAttr(nt,cnt)
+             TRunoff%eroutUp(iunit,nt) = avdst_upstrm%rAttr(nt,cnt)
           enddo
        enddo
 #endif
