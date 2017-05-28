@@ -117,7 +117,7 @@ class CompilerBlock(object):
         output = elem.text
         if output is None:
             output = ""
-        logger.debug("Initial output=%s"%output)
+        logger.debug("Initial output={}".format(output))
         reference_re = re.compile(r'\${?(\w+)}?')
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
         shell_ref_re = re.compile(r'\$SHELL\{([^}]+)\}')
@@ -132,19 +132,19 @@ class CompilerBlock(object):
                 output = output.replace(m.group(), writer.variable_string(var_name))
                 depends.add(var_name)
 
-        logger.debug("preenv pass output=%s"%output)
+        logger.debug("preenv pass output={}".format(output))
 
         for m in env_ref_re.finditer(output):
-            logger.debug("look for %s in env %s" % (output,writer.environment_variable_string(m.groups()[0])))
+            logger.debug("look for {} in env {}".format(output,writer.environment_variable_string(m.groups()[0])))
             output = output.replace(m.group(),
                                     writer.environment_variable_string(m.groups()[0]))
-            logger.debug("and output %s"%output)
+            logger.debug("and output {}".format(output))
 
-        logger.debug("postenv pass output=%s"%output)
+        logger.debug("postenv pass output={}".format(output))
 
         for s in shell_ref_re.finditer(output):
             command = s.groups()[0]
-            logger.debug("execute %s in shell, command %s" % (output, command))
+            logger.debug("execute {} in shell, command {}".format(output, command))
             new_set_up, inline, new_tear_down = \
                 writer.shell_command_strings(command)
             output = output.replace(s.group(), inline)
@@ -152,9 +152,9 @@ class CompilerBlock(object):
                 set_up.append(new_set_up)
             if new_tear_down is not None:
                 tear_down.append(new_tear_down)
-            logger.debug("set_up %s inline %s tear_down %s"%(new_set_up,inline,new_tear_down))
+            logger.debug("set_up {} inline {} tear_down {}".format(new_set_up,inline,new_tear_down))
 
-        logger.debug("First pass output=%s"%output)
+        logger.debug("First pass output={}".format(output))
 
         for child in elem:
             if child.tag == "env":
@@ -171,7 +171,7 @@ class CompilerBlock(object):
                     set_up.append(new_set_up)
                 if new_tear_down is not None:
                     tear_down.append(new_tear_down)
-                logger.debug("set_up %s inline %s tear_down %s"%(new_set_up,inline,new_tear_down))
+                logger.debug("set_up {} inline {} tear_down {}".format(new_set_up,inline,new_tear_down))
             elif child.tag == "var":
                 # <var> commands also need expansion by the writer, and can
                 # add dependencies.
@@ -186,7 +186,7 @@ class CompilerBlock(object):
             if child.tail is not None:
                 output += child.tail
 
-        logger.debug("Second pass output=%s"%output)
+        logger.debug("Second pass output={}".format(output))
 
         return output
 

@@ -1,0 +1,293 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>10. Data Wave (DWAV) &#8212; CIME 5.3.0_alpha17 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '5.3.0_alpha17',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="CIME Driver/Coupler" href="../driver_cpl/index.html" />
+    <link rel="prev" title="9. Data River (DROF)" href="data-river.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../driver_cpl/index.html" title="CIME Driver/Coupler"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="data-river.html" title="9. Data River (DROF)"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">CIME Data Models</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">10. Data Wave (DWAV)</a><ul>
+<li><a class="reference internal" href="#xml-variables">10.1. xml variables</a></li>
+<li><a class="reference internal" href="#dwav-datamode-values">10.2. DWAV datamode values</a></li>
+<li><a class="reference internal" href="#namelists">10.3. Namelists</a></li>
+<li><a class="reference internal" href="#drof-mode-datamode-and-streams">10.4. DROF_MODE, datamode and streams</a></li>
+<li><a class="reference internal" href="#streams-independent-of-dwav-mode-value">10.5. Streams independent of DWAV_MODE value</a></li>
+<li><a class="reference internal" href="#field-names">10.6. Field names</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="data-river.html"
+                        title="previous chapter">9. Data River (DROF)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../driver_cpl/index.html"
+                        title="next chapter">CIME Driver/Coupler</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/data_models/data-wave.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="data-wave-dwav">
+<span id="data-wave"></span><h1>10. Data Wave (DWAV)<a class="headerlink" href="#data-wave-dwav" title="Permalink to this headline">¶</a></h1>
+<p>The data wave model (DWAV) provides data wave forcing primarily to be used by the prognostic ocean component.
+Currently, this data is climatological.</p>
+<div class="section" id="xml-variables">
+<span id="dwav-xml-vars"></span><h2>10.1. xml variables<a class="headerlink" href="#xml-variables" title="Permalink to this headline">¶</a></h2>
+<p>The following are XML variables that CIME supports for DWAV.
+These variables will appear in <code class="docutils literal"><span class="pre">env_run.xml</span></code> and are used by the DWAV <code class="docutils literal"><span class="pre">cime_config/buildnml</span></code> script to generate the DWAV namelist file <code class="docutils literal"><span class="pre">dwav_in</span></code> and the required associated stream files for the case.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">These XML variables are used by the the DWAV <strong>cime_config/buildnml</strong> script in conjunction with the DWAV <strong>cime_config/namelist_definition_dwav.xml</strong> file to generate the namelist file <code class="docutils literal"><span class="pre">dwav_in</span></code>.</p>
+</div>
+<table border="1" class="colwidths-given docutils" id="id1">
+<caption><span class="caption-text">&#8220;DROF xml variables&#8221;</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="15%" />
+<col width="85%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">xml variable</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>DWAV_MODE</td>
+<td>Data mode</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>Valid values are: NULL, CLIMO</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="dwav-datamode-values">
+<span id="dwav-datamodes"></span><h2>10.2. DWAV datamode values<a class="headerlink" href="#dwav-datamode-values" title="Permalink to this headline">¶</a></h2>
+<p>One of the variables in <code class="docutils literal"><span class="pre">shr_strdata_nml</span></code> is <code class="docutils literal"><span class="pre">datamode</span></code>, whose value is a character string.
+Each data model has a unique set of <code class="docutils literal"><span class="pre">datamode</span></code> values that it supports.</p>
+<p>The valid values for <code class="docutils literal"><span class="pre">datamode</span></code> are set by the XML variable <code class="docutils literal"><span class="pre">DWAV_MODE</span></code> in the <code class="docutils literal"><span class="pre">config_component.xml</span></code> file for DWAV.
+CIME will generate a value <code class="docutils literal"><span class="pre">datamode</span></code> that is compset dependent.</p>
+<p>The following are the supported DWAV datamode values and their relationship to the <code class="docutils literal"><span class="pre">DWAV_MODE</span></code> xml variable value.</p>
+<table border="1" class="colwidths-given docutils" id="id2">
+<caption><span class="caption-text">Relationship between <code class="docutils literal"><span class="pre">DWAV_MODE</span></code> xml variables and <code class="docutils literal"><span class="pre">datamode</span></code> namelist variables</span><a class="headerlink" href="#id2" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="14%" />
+<col width="86%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">DWAV_MODE (xml)</th>
+<th class="head">datamode (namelist)</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>NULL</td>
+<td>NULL</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>This mode turns off the data model as a provider of data to the coupler.</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>The <code class="docutils literal"><span class="pre">wav_present</span></code> flag will be set to <code class="docutils literal"><span class="pre">false</span></code> and the coupler assumes no exchange of data to or from the data model.</td>
+</tr>
+<tr class="row-odd"><td>CLIMO</td>
+<td>COPYALL</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>Examines the fields found in all input data streams and if any input field names match the field names used internally,</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>they  are copied into the export array and passed directly to the coupler  without any special user code.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="namelists">
+<span id="dwav-namelists"></span><h2>10.3. Namelists<a class="headerlink" href="#namelists" title="Permalink to this headline">¶</a></h2>
+<p>The data wave model (DWAV) provides data wave input to prognostic components such as the ocean.</p>
+<p>The namelist file for DWAV is <code class="docutils literal"><span class="pre">dwav_in</span></code>.</p>
+<p>As is the case for all data models, DWAV namelists can be separated into two groups, stream-independent and stream-dependent.
+The stream dependent group is <a class="reference internal" href="input-streams.html#input-streams"><span class="std std-ref">shr_strdata_nml</span></a>.
+The stream-independent group is <code class="docutils literal"><span class="pre">dwav_nml</span></code> and the DWAV stream-independent namelist variables are:</p>
+<table border="1" class="docutils" id="dwav-stream-independent-namelists">
+<colgroup>
+<col width="28%" />
+<col width="72%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>decomp</td>
+<td><p class="first">decomposition strategy (1d, root)</p>
+<p class="last">1d =&gt; vector decomposition, root =&gt; run on master task</p>
+</td>
+</tr>
+<tr class="row-even"><td>restfilm</td>
+<td>master restart filename</td>
+</tr>
+<tr class="row-odd"><td>restfils</td>
+<td>stream restart filename</td>
+</tr>
+<tr class="row-even"><td>force_prognostic_true</td>
+<td>TRUE =&gt; force prognostic behavior</td>
+</tr>
+</tbody>
+</table>
+<p>To change the namelist settings in <code class="docutils literal"><span class="pre">dwav_in</span></code>, edit the file <code class="docutils literal"><span class="pre">user_nl_dwav</span></code> in your case directory.</p>
+</div>
+<div class="section" id="drof-mode-datamode-and-streams">
+<h2>10.4. DROF_MODE, datamode and streams<a class="headerlink" href="#drof-mode-datamode-and-streams" title="Permalink to this headline">¶</a></h2>
+<p>The following tabe describes the valid values of <code class="docutils literal"><span class="pre">DWAV_MODE</span></code>, and how it relates to the associated input streams and the <code class="docutils literal"><span class="pre">datamode</span></code> namelist variable.</p>
+<table border="1" class="colwidths-given docutils" id="id3">
+<caption><span class="caption-text">&#8220;Relationship between DWAV_MODE, datamode and streams&#8221;</span><a class="headerlink" href="#id3" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="15%" />
+<col width="85%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">DWAV_MODE</th>
+<th class="head">description-streams-datamode</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>NULL</td>
+<td>null mode</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>streams: none</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>datamode: NULL</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="streams-independent-of-dwav-mode-value">
+<span id="dwav-mode-independent-streams"></span><h2>10.5. Streams independent of DWAV_MODE value<a class="headerlink" href="#streams-independent-of-dwav-mode-value" title="Permalink to this headline">¶</a></h2>
+<p>There are no datamode independent streams for DWAV.</p>
+</div>
+<div class="section" id="field-names">
+<span id="dwav-fields"></span><h2>10.6. Field names<a class="headerlink" href="#field-names" title="Permalink to this headline">¶</a></h2>
+<p>DWAV defines a set of pre-defined internal field names as well as mappings for how those field names map to the fields sent to the coupler.
+In general, the stream input file should translate the stream input variable names into the <code class="docutils literal"><span class="pre">dwav_fld</span></code> names below for use within the data wave model.</p>
+<table border="1" class="colwidths-given docutils" id="id4">
+<caption><span class="caption-text">&#8220;DWAV internal field names&#8221;</span><a class="headerlink" href="#id4" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">dwav_fld (avifld)</th>
+<th class="head">driver_fld (avofld)</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>lamult</td>
+<td>Sw_lamult</td>
+</tr>
+<tr class="row-odd"><td>ustokes</td>
+<td>Sw_ustokes</td>
+</tr>
+<tr class="row-even"><td>vstokes</td>
+<td>Sw_vstokes</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../driver_cpl/index.html" title="CIME Driver/Coupler"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="data-river.html" title="9. Data River (DROF)"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME Data Models</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
+    </div>
+  </body>
+</html>

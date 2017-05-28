@@ -26,16 +26,16 @@ def parse_command_line(args, description):
 ###############################################################################
 
     parser = argparse.ArgumentParser(
-        usage="""\n%s [--verbose]
+        usage="""\n{0} [--verbose]
 OR
-%s --help
+{0} --help
 OR
-%s --test
+{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# case.run SMS\033[0m
-    > %s
-""" % ((os.path.basename(args[0]), ) * 4),
+    > {0}
+""".format(os.path.basename(args[0])),
 
 description=description,
 

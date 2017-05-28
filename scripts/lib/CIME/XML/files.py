@@ -20,7 +20,7 @@ class Files(EntryID):
         """
         cimeroot = get_cime_root()
         infile = os.path.join(cimeroot, "config", get_model(), "config_files.xml")
-        expect(os.path.isfile(infile), "Could not find or open file %s"%infile)
+        expect(os.path.isfile(infile), "Could not find or open file {}".format(infile))
         schema = os.path.join(cimeroot, "config", "xml_schemas", "entry_id.xsd")
         EntryID.__init__(self, infile, schema=schema)
 
@@ -28,7 +28,7 @@ class Files(EntryID):
         node = self.get_optional_node("entry", {"id":nodename})
         schemanode = self.get_optional_node("schema", root=node)
         if schemanode is not None:
-            logger.debug("Found schema for %s"%(nodename))
+            logger.debug("Found schema for {}".format(nodename))
             return self.get_resolved_value(schemanode.text)
         return None
 

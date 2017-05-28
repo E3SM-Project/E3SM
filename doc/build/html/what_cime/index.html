@@ -1,0 +1,199 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>What is CIME? &#8212; CIME 5.3.0_alpha17 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '5.3.0_alpha17',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="CIME User’s Guide Part 1: Basic Usage" href="../users_guide/index.html" />
+    <link rel="prev" title="Welcome to the CIME documentation!" href="../index.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../users_guide/index.html" title="CIME User’s Guide Part 1: Basic Usage"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../index.html" title="Welcome to the CIME documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">What is CIME?</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#where-is-cime-developed">Where is CIME developed?</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../index.html"
+                        title="previous chapter">Welcome to the CIME documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../users_guide/index.html"
+                        title="next chapter">CIME User&#8217;s Guide Part 1: Basic Usage</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/what_cime/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="what-cime"></span><div class="section" id="what-is-cime">
+<h1>What is CIME?<a class="headerlink" href="#what-is-cime" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<p>CIME contains the support scripts (configure, build, run, test), data models, essential utility libraries,
+a “main” and other tools that are needed to build a single-executable coupled Earth System Model.
+CIME is available in a stand-alone package that
+can be compiled and tested without active prognostic components but is typically included in the source of
+a climate model. CIME does not contain: any active components, any intra-component coupling capability (such as atmosphere physics-dynamics coupling).</p>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>CIME is comprised of:</p>
+<ol class="arabic">
+<li><p class="first">A default coupled model architecture:</p>
+<blockquote>
+<div><ol class="lowerroman simple">
+<li>A programmer interface and libraries to implement a hub-and-spoke inter-component coupling architecture.</li>
+<li>An implementation of a “hub” that needs 7 components (atm, ocn, lnd, sea-ice, land-ice, river, wave). a.k.a. “the driver”.</li>
+<li>The ability to allow active and data components to be mixed in any combination as long as each component implements the coupling programmer interface.</li>
+</ol>
+</div></blockquote>
+</li>
+<li><p class="first">Non-active Data and Stub components:</p>
+<blockquote>
+<div><ol class="lowerroman simple">
+<li>“Data-only” versions of 6 of the 7 components that can replace active components at build-time.</li>
+<li>“Stub” versions of all 7 components for building a complete system.</li>
+</ol>
+</div></blockquote>
+</li>
+<li><dl class="first docutils">
+<dt>Additional libraries useful in scientific applications in general and climate models in particular.</dt>
+<dd><ol class="first last lowerroman simple">
+<li>Parallel I/O library.</li>
+<li>The Model Coupling Toolkit.</li>
+<li>Timing library.</li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><p class="first">A system of scripts (python) to support case configuration, executable compilation, workflow, system testing and unit testing infrastructure:</p>
+<blockquote>
+<div><ol class="lowerroman simple">
+<li>Scripts to enable simple generation of model executables and associated input files for different scientific cases, component resolutions and combinations of full, data and stub components with a handful of commands.</li>
+<li>Testing utilities to run defined system tests and report results for different configurations of the coupled system.</li>
+</ol>
+</div></blockquote>
+</li>
+<li><p class="first">Additional stand-alone tools:</p>
+<blockquote>
+<div><ol class="lowerroman simple">
+<li>Parallel regridding weight generation program</li>
+<li>Scripts to automate off-line load-balancing.</li>
+<li>Scripts to conduct ensemble-based statistical consistency tests.</li>
+<li>Netcdf file comparison program (for bit-for-bit).</li>
+</ol>
+</div></blockquote>
+</li>
+</ol>
+</div>
+<div class="section" id="where-is-cime-developed">
+<h2>Where is CIME developed?<a class="headerlink" href="#where-is-cime-developed" title="Permalink to this headline">¶</a></h2>
+<p>At <a class="reference external" href="http://github.com/ESMCI/cime">http://github.com/ESMCI/cime</a></p>
+<div class="section" id="indices-and-tables">
+<h3>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><a class="reference internal" href="../genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="../py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="../search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../users_guide/index.html" title="CIME User’s Guide Part 1: Basic Usage"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../index.html" title="Welcome to the CIME documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
+    </div>
+  </body>
+</html>

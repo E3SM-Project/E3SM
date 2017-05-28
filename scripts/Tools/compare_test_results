@@ -34,24 +34,24 @@ _MACHINE = Machines()
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-usage="""\n%s [-r <TESTROOT>] [-b <BRANCH> -c <COMPILER>] [-t <TESTID>] [<TEST> <TEST> ...] [--verbose]
+usage="""\n{0} [-r <TESTROOT>] [-b <BRANCH> -c <COMPILER>] [-t <TESTID>] [<TEST> <TEST> ...] [--verbose]
 OR
-%s --help
+{0} --help
 OR
-%s --test
+{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# From most recent run, compare all changes \033[0m
-    > %s
+    > {0}
     \033[1;32m# From most recent run, compare only changes for test foo and bar only \033[0m
-    > %s foo bar
+    > {0} foo bar
     \033[1;32m# For an old run where you know test-id, compare only changes for test foo and bar only \033[0m
-    > %s foo bar -t mytestid
+    > {0} foo bar -t mytestid
     \033[1;32m# From most recent run of jenkins, compare history changes for next \033[0m
-    > %s -r /home/jenkins/acme/scratch/jenkins -b next
+    > {0} -r /home/jenkins/acme/scratch/jenkins -b next
     \033[1;32m# For typical CESM workflow, where baselines are named with tags \033[0m
-    > %s -t TESTID -b BASELINE_TAG
-""" % ((os.path.basename(args[0]), ) * 8),
+    > {0} -t TESTID -b BASELINE_TAG
+""".format(os.path.basename(args[0])),
 
 description=description,
 

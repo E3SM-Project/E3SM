@@ -35,12 +35,15 @@
       <grid name="rof"    compset="MOSART">r05</grid>
       <grid name="rof"    compset="DROF"  >rx1</grid>
       <grid name="rof"    compset="DROF%CPLHIST">r05</grid>
+      <grid name="rof"    compset="XROF"  >r05</grid>
       <grid name="glc"	  compset="SGLC"  >null</grid>
       <grid name="glc"	  compset="CISM1" >gland5UM</grid>
       <grid name="glc"	  compset="CISM2" >gland4</grid>
+      <grid name="glc"    compset="XGLC"  >gland4</grid>
       <grid name="wav"	  compset="SWAV"  >null</grid>
       <grid name="wav"	  compset="DWAV"  >ww3a</grid>
       <grid name="wav"	  compset="WW3"	  >ww3a</grid>
+      <grid name="wav"    compset="XWAV"  >ww3a</grid>
     </model_grid_defaults>
 
     <model_grid alias="g16_g16" compset="DATM.+DROF">
@@ -971,6 +974,8 @@
       <nx>144</nx>  <ny>96</ny>
       <file grid="atm|lnd" mask="gx1v6">domain.lnd.fv1.9x2.5_gx1v6.090206.nc</file>
       <file grid="ocnice"  mask="gx1v6">domain.ocn.1.9x2.5_gx1v6_090403.nc</file>
+      <file grid="atm|lnd" mask="gx1v7">domain.lnd.fv1.9x2.5_gx1v7.170518.nc</file>
+      <file grid="ocnice"  mask="gx1v7">domain.ocn.fv1.9x2.5_gx1v7.170518.nc</file>
       <file grid="ocnice"  mask="null">domain.aqua.fv1.9x2.5.nc</file>
       <desc>1.9x2.5 is FV 2-deg grid:</desc>
     </domain>
@@ -1154,7 +1159,7 @@
     </domain>
 
     <domain name="gland4">
-      <nx>376</nx> <ny>701</ny>
+      <nx>416</nx> <ny>704</ny>
       <desc>4-km Greenland grid, for use with the glissade dycore</desc>
     </domain>
 
@@ -1263,6 +1268,13 @@
       <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gx1v6_patc.130322.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_TO_fv1.9x2.5_aave.130322.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_TO_fv1.9x2.5_aave.130322.nc</map>
+    </gridmap>
+    <gridmap atm_grid="1.9x2.5" ocn_grid="gx1v7">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gx1v7_aave.170518.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gx1v7_blin.170518.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gx1v7_patc.170518.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_fv1.9x2.5_aave.170518.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_fv1.9x2.5_aave.170518.nc</map>
     </gridmap>
     <gridmap atm_grid="1.9x2.5" ocn_grid="tx1v1">
       <map name="ATM2OCN_FMAPNAME">cpl/cpl6/map_fv1.9x2.5_to_tx1v1_aave_da_090710.nc</map>
@@ -1474,6 +1486,12 @@
       <map name="WAV2OCN_SMAPNAME">cpl/gridmaps/ww3a/map_ww3a_TO_gx1v7_splice_170214.nc</map>
       <map name="OCN2WAV_SMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_ww3a_splice_170214.nc</map>
       <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_ww3a_splice_170214.nc</map>
+    </gridmap>
+
+    <gridmap ocn_grid="tx1v1" wav_grid="ww3a">
+      <map name="WAV2OCN_SMAPNAME">cpl/gridmaps/ww3a/map_ww3a_TO_tx1v1_blin.170523.nc</map>
+      <map name="OCN2WAV_SMAPNAME">cpl/gridmaps/tx1v1/map_tx1v1_TO_ww3a_blin.170523.nc</map>
+      <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/tx1v1/map_tx1v1_TO_ww3a_blin.170523.nc</map>
     </gridmap>
 
     <gridmap atm_grid="48x96" wav_grid="ww3a">

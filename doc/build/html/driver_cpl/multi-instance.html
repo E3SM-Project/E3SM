@@ -1,0 +1,132 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3.8. Multi-instance Functionality &#8212; CIME 5.3.0_alpha17 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '5.3.0_alpha17',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="3.9. More on Driver Namelists" href="namelist-overview.html" />
+    <link rel="prev" title="3.7. Mass and Heat Budgets" href="budgets.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="namelist-overview.html" title="3.9. More on Driver Namelists"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="budgets.html" title="3.7. Mass and Heat Budgets"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME Driver/Coupler</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="implementation.html" accesskey="U">3. Implementation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="budgets.html"
+                        title="previous chapter">3.7. Mass and Heat Budgets</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="namelist-overview.html"
+                        title="next chapter">3.9. More on Driver Namelists</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/driver_cpl/multi-instance.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="multi-instance-functionality">
+<h1>3.8. Multi-instance Functionality<a class="headerlink" href="#multi-instance-functionality" title="Permalink to this headline">¶</a></h1>
+<p>The multi-instance feature allows multiple instances of a given component to run in a single CESM run.
+This might be useful for data assimilation or to average results from multiple instances to force another model.</p>
+<p>The multi-instance implementation is fairly basic at this point.
+It does not do any averaging or other statistics between multiple instances, and it requires that all prognostic components must run the same multiple instances to ensure correct coupling.
+The multi-instance feature is set via the <code class="docutils literal"><span class="pre">$CASEROOT/env_mach_pes.xml</span></code> variables that have an <code class="docutils literal"><span class="pre">NINST_</span></code> prefix.
+The tasks and threads that are specified in multi-instance cases are distributed evenly between the multiple instances.
+In other words, if 16 tasks are requested for each of two atmosphere instances, each instance will run on 8 of those tasks.
+The <code class="docutils literal"><span class="pre">NINST_*_LAYOUT</span></code> value should always be set to <em>concurrent</em> at this time.
+Sequential running on multiple instances is still not a robust feature.
+Multiple instances is a build time setting in env_mach_pes.xml.
+Multiple instance capabilities are expected to be extended in the future.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="namelist-overview.html" title="3.9. More on Driver Namelists"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="budgets.html" title="3.7. Mass and Heat Budgets"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME Driver/Coupler</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="implementation.html" >3. Implementation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
+    </div>
+  </body>
+</html>

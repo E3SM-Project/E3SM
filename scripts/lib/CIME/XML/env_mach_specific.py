@@ -97,7 +97,7 @@ class EnvMachSpecific(EnvBase):
         elif (module_system == "none"):
             self._load_none_modules(modules_to_load)
         else:
-            expect(False, "Unhandled module system '%s'" % module_system)
+            expect(False, "Unhandled module system '{}'".format(module_system))
 
     def list_modules(self):
         module_system = self.get_module_system_type()
@@ -107,21 +107,21 @@ class EnvMachSpecific(EnvBase):
         # setup script if it exists.
         init_path = self.get_module_system_init_path("sh")
         if init_path:
-            source_cmd = "source %s && " % init_path
+            source_cmd = "source {} && ".format(init_path)
         else:
             source_cmd = ""
 
         if (module_system == "module"):
-            return run_cmd_no_fail("%smodule list" % source_cmd, combine_output=True)
+            return run_cmd_no_fail("{}module list".format(source_cmd), combine_output=True)
         elif (module_system == "soft"):
             # Does soft really not provide this capability?
             return ""
         elif (module_system == "dotkit"):
-            return run_cmd_no_fail("%suse -lv" % source_cmd)
+            return run_cmd_no_fail("{}use -lv".format(source_cmd))
         elif (module_system == "none"):
             return ""
         else:
-            expect(False, "Unhandled module system '%s'" % module_system)
+            expect(False, "Unhandled module system '{}'".format(module_system))
 
     def save_all_env_info(self, filename):
         """
@@ -135,7 +135,7 @@ class EnvMachSpecific(EnvBase):
     def make_env_mach_specific_file(self, compiler, debug, mpilib, shell):
         modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)
         envs_to_set = self._get_envs_for_case(compiler, debug, mpilib)
-        filename = ".env_mach_specific.%s" % shell
+        filename = ".env_mach_specific.{}".format(shell)
         lines = []
         if modules_to_load is not None:
             lines.extend(self._get_module_commands(modules_to_load, shell))
@@ -143,11 +143,11 @@ class EnvMachSpecific(EnvBase):
         if envs_to_set is not None:
             for env_name, env_value in envs_to_set:
                 if shell == "sh":
-                    lines.append("export %s=%s" % (env_name, env_value))
+                    lines.append("export {}={}".format(env_name, env_value))
                 elif shell == "csh":
-                    lines.append("setenv %s %s" % (env_name, env_value))
+                    lines.append("setenv {} {}".format(env_name, env_value))
                 else:
-                    expect(False, "Unknown shell type: '%s'" % shell)
+                    expect(False, "Unknown shell type: '{}'".format(shell))
 
         with open(filename, "w") as fd:
             fd.write("\n".join(lines))
@@ -170,7 +170,7 @@ class EnvMachSpecific(EnvBase):
         for node in nodes:
             if (self._match_attribs(node.attrib, compiler, debug, mpilib)):
                 for child in node:
-                    expect(child.tag == child_tag, "Expected %s element" % child_tag)
+                    expect(child.tag == child_tag, "Expected {} element".format(child_tag))
                     if (self._match_attribs(child.attrib, compiler, debug, mpilib)):
                         val = child.text
                         if val is not None:
@@ -179,7 +179,7 @@ class EnvMachSpecific(EnvBase):
                                 val = val.replace(repl_this, repl_with)
 
                             val = self.get_resolved_value(val)
-                            expect("$" not in val, "Not safe to leave unresolved items in env var value: '%s'" % val)
+                            expect("$" not in val, "Not safe to leave unresolved items in env var value: '{}'".format(val))
                         # intentional unindent, result is appended even if val is None
                         result.append( (child.get("name"), val) )
 
@@ -207,7 +207,7 @@ class EnvMachSpecific(EnvBase):
             result = my_value != xml_value[1:]
         else:
             result = my_value == xml_value
-        logger.debug("(env_mach_specific) _match %s %s %s"%(my_value, xml_value, result))
+        logger.debug("(env_mach_specific) _match {} {} {}".format(my_value, xml_value, result))
         return result
 
 
@@ -218,15 +218,15 @@ class EnvMachSpecific(EnvBase):
         for action, argument in modules_to_load:
             if argument is None:
                 argument = ""
-            cmds.append("%s %s %s" % (mod_cmd, action, argument))
+            cmds.append("{} {} {}".format(mod_cmd, action, argument))
         return cmds
 
     def _load_module_modules(self, modules_to_load):
         for cmd in self._get_module_commands(modules_to_load, "python"):
-            logger.debug("module command is %s"%cmd)
+            logger.debug("module command is {}".format(cmd))
             stat, py_module_code, errout = run_cmd(cmd)
             expect(stat==0 and len(errout) == 0,
-                   "module command %s failed with message:\n%s"%(cmd,errout))
+                   "module command {} failed with message:\n{}".format(cmd, errout))
             exec(py_module_code)
 
     def _load_soft_modules(self, modules_to_load):
@@ -242,7 +242,7 @@ class EnvMachSpecific(EnvBase):
         # which may or may not have unresolved variables such as
         # PATH=/soft/com/packages/intel/16/initial/bin:${PATH}
 
-        cmd = "source %s" % sh_init_cmd
+        cmd = "source {}".format(sh_init_cmd)
 
         if os.environ.has_key("SOFTENV_ALIASES"):
             cmd += " && source $SOFTENV_ALIASES"
@@ -250,7 +250,7 @@ class EnvMachSpecific(EnvBase):
             cmd += " && source $SOFTENV_LOAD"
 
         for action,argument in modules_to_load:
-            cmd += " && %s %s %s" % (sh_mod_cmd, action, argument)
+            cmd += " && {} {} {}".format(sh_mod_cmd, action, argument)
 
         cmd += " && env"
         output = run_cmd_no_fail(cmd)
@@ -279,7 +279,7 @@ class EnvMachSpecific(EnvBase):
                 valunresolved = m.groups()[1]
                 val = string.Template(valunresolved).safe_substitute(newenv)
                 expect(val is not None,
-                       'string value %s unable to be resolved' % valunresolved)
+                       'string value {} unable to be resolved'.format(valunresolved))
                 newenv[key] = val
 
         # Set environment with new or updated values
@@ -304,14 +304,14 @@ class EnvMachSpecific(EnvBase):
         write a shell module file for this case.
         '''
         header = '''
-#!/usr/bin/env %s
+#!/usr/bin/env {}
 #===============================================================================
-# Automatically generated module settings for $self->{machine}
+# Automatically generated module settings for $self->{{machine}}
 # DO NOT EDIT THIS FILE DIRECTLY!  Please edit env_mach_specific.xml
 # in your CASEROOT. This file is overwritten every time modules are loaded!
 #===============================================================================
-'''%shell
-        header += "source %s"%self.get_module_system_init_path(shell)
+'''.format(shell)
+        header += "source {}".format(self.get_module_system_init_path(shell))
         return header
 
     def get_module_system_type(self):
@@ -346,7 +346,7 @@ class EnvMachSpecific(EnvBase):
             is_default = False
 
             for key, value in attribs.iteritems():
-                expect(key in self._allowed_mpi_attributes, "Unexpected key %s in mpirun attributes"%key)
+                expect(key in self._allowed_mpi_attributes, "Unexpected key {} in mpirun attributes".format(key))
                 if key in xml_attribs:
                     if xml_attribs[key].lower() == "false":
                         xml_attrib = False
@@ -363,8 +363,6 @@ class EnvMachSpecific(EnvBase):
                         all_match = False
                         break
 
-
-
             if all_match:
                 if is_default:
                     if matches > best_num_matched_default:
@@ -380,7 +378,7 @@ class EnvMachSpecific(EnvBase):
             return "",[]
 
         expect(best_match is not None or default_match is not None,
-               "Could not find a matching MPI for attributes: %s" % attribs)
+               "Could not find a matching MPI for attributes: {}".format(attribs))
 
         the_match = best_match if best_match is not None else default_match
 

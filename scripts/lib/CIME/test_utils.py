@@ -36,7 +36,7 @@ def get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, xml
     for testlistfile in testlistfiles:
         thistestlistfile = Testlist(testlistfile)
         logger.debug("Testlist file is "+testlistfile)
-        logger.debug("xml_machine %s xml_category %s xml_compiler %s"%(xml_machine, xml_category, xml_compiler))
+        logger.debug("xml_machine {} xml_category {} xml_compiler {}".format(xml_machine, xml_category, xml_compiler))
         newtests =  thistestlistfile.get_tests(xml_machine, xml_category, xml_compiler)
         for test in newtests:
             if(machine is None):
@@ -46,9 +46,9 @@ def get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, xml
             test["name"] = CIME.utils.get_full_test_name(test["testname"], grid=test["grid"], compset=test["compset"],
                                                          machine=thismach, compiler=thiscompiler,
                                                          testmod=None if "testmods" not in test else test["testmods"])
-            logger.debug("Adding test %s with compiler %s"%(test["name"], test["compiler"]))
+            logger.debug("Adding test {} with compiler {}".format(test["name"], test["compiler"]))
         listoftests += newtests
-        logger.debug("Found %d tests"% len(listoftests))
+        logger.debug("Found {:d} tests".format(len(listoftests)))
 
     return listoftests
 
@@ -84,9 +84,9 @@ def test_to_string(test, category_field_width=0, test_field_width=0, show_option
         myopts = test['options'].copy()
         comment = myopts.pop('comment', None)
         if comment:
-            mystr += " # %s"%(comment)
+            mystr += " # {}".format(comment)
         if show_options:
             for one_opt in sorted(myopts):
-                mystr += "  # %s: %s"%(one_opt, myopts[one_opt])
+                mystr += "  # {}: {}".format(one_opt, myopts[one_opt])
 
     return mystr

@@ -1,0 +1,314 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Testing with create_test &#8212; CIME 5.3.0_alpha17 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '5.3.0_alpha17',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="5. Fortran Unit Testing" href="unit_testing.html" />
+    <link rel="prev" title="3. Optimizing Processor Layout" href="optimizing-processor-layout.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="unit_testing.html" title="5. Fortran Unit Testing"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="optimizing-processor-layout.html" title="3. Optimizing Processor Layout"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">CIME User&#8217;s Guide Part 1: Basic Usage</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. Testing with create_test</a><ul>
+<li><a class="reference internal" href="#using-create-test-acme">4.1. Using create_test (ACME)</a></li>
+<li><a class="reference internal" href="#managing-baselines">4.2. Managing baselines</a></li>
+<li><a class="reference internal" href="#manage-testlists">4.3. manage_testlists</a></li>
+<li><a class="reference internal" href="#adding-tests">4.4. Adding tests</a></li>
+<li><a class="reference internal" href="#scripts-regression-tests">4.5. Scripts regression tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="optimizing-processor-layout.html"
+                        title="previous chapter">3. Optimizing Processor Layout</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="unit_testing.html"
+                        title="next chapter">5. Fortran Unit Testing</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/users_guide/testing.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="testing-with-create-test">
+<span id="testing"></span><h1>4. Testing with create_test<a class="headerlink" href="#testing-with-create-test" title="Permalink to this headline">¶</a></h1>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">add list and descriptions on functionality tests (ERS, ERI, ect)</p>
+</div>
+<p>create_test is the tool we use to test cime-driven models. It can be used as a easy way to
+run a single basic test or can be used to run an entire suite of tests. It has parallelism
+built-in on many levels to make full use of the underlying system. create_test is the driver
+behind the automated nightly testing of cime-driven models.</p>
+<p>Tests come in form:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">TESTTYPE</span><span class="o">.</span><span class="n">GRID</span><span class="o">.</span><span class="n">COMPSET</span><span class="p">[</span><span class="o">.</span><span class="n">MACHINE_COMPILER</span><span class="p">[</span><span class="o">.</span><span class="n">TESTMODS</span><span class="p">]]</span>
+</pre></div>
+</div>
+<p>Where TESTTYPE is how you want to do the test. Options for this value are listed in config_tests.xml.
+A common test type would be ERS which stands for exact restart, which means you want to test the
+grid and compset to see if they reproduce the same result upon restart as they would if no restart
+took place. GRID and COMPSET are self-explanatory. MACHINE_COMPILER is optional; create_test will probe
+the underlying machine and use the default compiler for that machine if this value is not
+supplied. TESTMODS is also optional and can be used to make some env XML changes prior to doing
+the test.</p>
+<p>Each test run by create test will be put through the following mandatory phases:</p>
+<ul class="simple">
+<li>CREATE_NEWCASE: creating the create</li>
+<li>XML: xml changes to case based on test settings</li>
+<li>SETUP: setup case (case.setup)</li>
+<li>SHAREDLIB_BUILD: build sharedlibs</li>
+<li>MODEL_BUILD: build module (case.build)</li>
+<li>SUBMIT: submit test (case.submit)</li>
+<li>RUN: run test test</li>
+</ul>
+<p>And the following optional phases:</p>
+<ul class="simple">
+<li>NLCOMP: Compare case namelists against baselines</li>
+<li>THROUGHPUT: Compare throughput against baseline throughput</li>
+<li>MEMCOMP: Compare memory usage against baseline memory usage</li>
+<li>MEMLEAK: Check for memleak</li>
+<li>COMPARE: Used to track test-specific comparions, for example, an ERS test would have a COMPARE_base_rest phase representing the check that the base result matched the restart result.</li>
+<li>GENERATE: Generate baseline results</li>
+<li>BASELINE: Compare results against baselines</li>
+</ul>
+<p>Each test may be in one of the following states:</p>
+<ul class="simple">
+<li>PASS: The phase was executed successfully</li>
+<li>FAIL: We attempted to execute this phase, but it failed. If this phase is mandatory, no further progress will be made on this test. A detailed explanation of the failure should be in TestStatus.log.</li>
+<li>PEND: This phase will be run or is currently running but not complete</li>
+</ul>
+<p>The current state of a test is represented in the file $CASEROOT/TestStatus</p>
+<p>All output from the CIME infrastructure regarding this test will be put in the file $CASEROOT/TestStatus.log</p>
+<p>A cs.status.$testid script will be put in the test root. This script will allow you to see the
+current status of all your tests.</p>
+<div class="section" id="using-create-test-acme">
+<h2>4.1. Using create_test (ACME)<a class="headerlink" href="#using-create-test-acme" title="Permalink to this headline">¶</a></h2>
+<p>Usage will differ slightly depending on if you&#8217;re using ACME or CESM.</p>
+<p>Using examples to illustrate common use cases</p>
+<p>To run a test:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">create_test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span>
+</pre></div>
+</div>
+<p>To run a test with a non-default compiler:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">create_test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span> <span class="o">--</span><span class="n">compiler</span> <span class="n">intel</span>
+</pre></div>
+</div>
+<p>To run a test with baseline comparisons against baseline name &#8216;master&#8217;:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">create_test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span> <span class="o">-</span><span class="n">c</span> <span class="o">-</span><span class="n">b</span> <span class="n">master</span>
+</pre></div>
+</div>
+<p>To run a test and update baselines with baseline name &#8216;master&#8217;:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">create_test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span> <span class="o">-</span><span class="n">g</span> <span class="o">-</span><span class="n">b</span> <span class="n">master</span>
+</pre></div>
+</div>
+<p>To run a test with a non-default test-id:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">create_test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span> <span class="o">-</span><span class="n">t</span> <span class="n">my_test_id</span>
+</pre></div>
+</div>
+<p>To run a test and use a non-default test-root for your case dir:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>./create_test SMS.f19_f19.A -t $test_root
+</pre></div>
+</div>
+<p>To run a test and use and put case, build, and run dirs all in the same root:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>./create_test SMS.f19_f19.A --output-root $output_root
+</pre></div>
+</div>
+<p>To run a test and force it to go into a certain batch queue:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">create_test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span> <span class="o">-</span><span class="n">q</span> <span class="n">myqueue</span>
+</pre></div>
+</div>
+<p>To run a test and use a non-default project (can impact things like directory paths and acct for batch system):</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">create_test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span> <span class="o">-</span><span class="n">p</span> <span class="n">myproj</span>
+</pre></div>
+</div>
+<p>To run two tests:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">create_test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">B</span>
+</pre></div>
+</div>
+<p>To run a test suite:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">create_test</span> <span class="n">acme_developer</span>
+</pre></div>
+</div>
+<p>To run a test suite excluding a specific test:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">create_test</span> <span class="n">acme_developer</span> <span class="o">^</span><span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span>
+</pre></div>
+</div>
+<p>See create_test -h for the full list of options</p>
+<p>Interpreting test output is pretty easy, looking at an example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">%</span> <span class="o">./</span><span class="n">create_test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span>
+
+<span class="n">Creating</span> <span class="n">test</span> <span class="n">directory</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">jgfouca</span><span class="o">/</span><span class="n">acme</span><span class="o">/</span><span class="n">scratch</span><span class="o">/</span><span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span><span class="o">.</span><span class="mi">20170504</span><span class="n">_163152_31aahy</span>
+<span class="n">RUNNING</span> <span class="n">TESTS</span><span class="p">:</span>
+  <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span>
+<span class="n">Starting</span> <span class="n">CREATE_NEWCASE</span> <span class="k">for</span> <span class="n">test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span> <span class="k">with</span> <span class="mi">1</span> <span class="n">procs</span>
+<span class="n">Finished</span> <span class="n">CREATE_NEWCASE</span> <span class="k">for</span> <span class="n">test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span> <span class="ow">in</span> <span class="mf">4.170537</span> <span class="n">seconds</span> <span class="p">(</span><span class="n">PASS</span><span class="p">)</span>
+<span class="n">Starting</span> <span class="n">XML</span> <span class="k">for</span> <span class="n">test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span> <span class="k">with</span> <span class="mi">1</span> <span class="n">procs</span>
+<span class="n">Finished</span> <span class="n">XML</span> <span class="k">for</span> <span class="n">test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span> <span class="ow">in</span> <span class="mf">0.735993</span> <span class="n">seconds</span> <span class="p">(</span><span class="n">PASS</span><span class="p">)</span>
+<span class="n">Starting</span> <span class="n">SETUP</span> <span class="k">for</span> <span class="n">test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span> <span class="k">with</span> <span class="mi">1</span> <span class="n">procs</span>
+<span class="n">Finished</span> <span class="n">SETUP</span> <span class="k">for</span> <span class="n">test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span> <span class="ow">in</span> <span class="mf">11.544286</span> <span class="n">seconds</span> <span class="p">(</span><span class="n">PASS</span><span class="p">)</span>
+<span class="n">Starting</span> <span class="n">SHAREDLIB_BUILD</span> <span class="k">for</span> <span class="n">test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span> <span class="k">with</span> <span class="mi">1</span> <span class="n">procs</span>
+<span class="n">Finished</span> <span class="n">SHAREDLIB_BUILD</span> <span class="k">for</span> <span class="n">test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span> <span class="ow">in</span> <span class="mf">82.670667</span> <span class="n">seconds</span> <span class="p">(</span><span class="n">PASS</span><span class="p">)</span>
+<span class="n">Starting</span> <span class="n">MODEL_BUILD</span> <span class="k">for</span> <span class="n">test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span> <span class="k">with</span> <span class="mi">4</span> <span class="n">procs</span>
+<span class="n">Finished</span> <span class="n">MODEL_BUILD</span> <span class="k">for</span> <span class="n">test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span> <span class="ow">in</span> <span class="mf">18.613263</span> <span class="n">seconds</span> <span class="p">(</span><span class="n">PASS</span><span class="p">)</span>
+<span class="n">Starting</span> <span class="n">RUN</span> <span class="k">for</span> <span class="n">test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span> <span class="k">with</span> <span class="mi">64</span> <span class="n">procs</span>
+<span class="n">Finished</span> <span class="n">RUN</span> <span class="k">for</span> <span class="n">test</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span> <span class="ow">in</span> <span class="mf">35.068546</span> <span class="n">seconds</span> <span class="p">(</span><span class="n">PASS</span><span class="p">)</span><span class="o">.</span> <span class="p">[</span><span class="n">COMPLETED</span> <span class="mi">1</span> <span class="n">of</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">At</span> <span class="n">test</span><span class="o">-</span><span class="n">scheduler</span> <span class="n">close</span><span class="p">,</span> <span class="n">state</span> <span class="ow">is</span><span class="p">:</span>
+<span class="n">PASS</span> <span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span> <span class="n">RUN</span>
+  <span class="n">Case</span> <span class="nb">dir</span><span class="p">:</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">jgfouca</span><span class="o">/</span><span class="n">acme</span><span class="o">/</span><span class="n">scratch</span><span class="o">/</span><span class="n">SMS</span><span class="o">.</span><span class="n">f19_f19</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">melvin_gnu</span><span class="o">.</span><span class="mi">20170504</span><span class="n">_163152_31aahy</span>
+<span class="n">test</span><span class="o">-</span><span class="n">scheduler</span> <span class="n">took</span> <span class="mf">154.780044079</span> <span class="n">seconds</span>
+</pre></div>
+</div>
+<p>You can see that create_test informs the user of the case directory and of the progress and duration
+of the various test phases.</p>
+</div>
+<div class="section" id="managing-baselines">
+<h2>4.2. Managing baselines<a class="headerlink" href="#managing-baselines" title="Permalink to this headline">¶</a></h2>
+<p>A big part of testing is managing your baselines (sometimes called gold results). We have provided
+tools to help the user do this without having to repeat full runs of test cases with create_test.</p>
+<p>bless_test_results: Takes a batch of cases of tests that have already been run and copy their
+results to a baseline area.</p>
+<p>compare_test_results: Takes a batch of cases of tests that have already been run and compare their
+results to a baseline area.</p>
+<p>Take a batch of results for the jenkins user for the testid &#8216;mytest&#8217; and copy the results to
+baselines for &#8216;master&#8217;:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">bless_test_results</span> <span class="o">-</span><span class="n">r</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">jenkins</span><span class="o">/</span><span class="n">acme</span><span class="o">/</span><span class="n">scratch</span><span class="o">/</span><span class="n">jenkins</span><span class="o">/</span> <span class="o">-</span><span class="n">t</span> <span class="n">mytest</span> <span class="o">-</span><span class="n">b</span> <span class="n">master</span>
+</pre></div>
+</div>
+<p>Take a batch of results for the jenkins user for the testid &#8216;mytest&#8217; and compare the results to
+baselines for &#8216;master&#8217;:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">compare_test_results</span> <span class="o">-</span><span class="n">r</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">jenkins</span><span class="o">/</span><span class="n">acme</span><span class="o">/</span><span class="n">scratch</span><span class="o">/</span><span class="n">jenkins</span><span class="o">/</span> <span class="o">-</span><span class="n">t</span> <span class="n">mytest</span> <span class="o">-</span><span class="n">b</span> <span class="n">master</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="manage-testlists">
+<h2>4.3. manage_testlists<a class="headerlink" href="#manage-testlists" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="adding-tests">
+<h2>4.4. Adding tests<a class="headerlink" href="#adding-tests" title="Permalink to this headline">¶</a></h2>
+<p>Open the update_acme_tests.py file, you&#8217;ll see a python dict at the top
+of the file called TEST_SUITES, find the test category you want to
+change in this dict and add your testcase to the list.  Note the
+comment at the top of this file indicating that you add a test with
+this format: test&gt;.&lt;grid&gt;.&lt;compset&gt;, and then there is a second
+argument for mods.</p>
+</div>
+<div class="section" id="scripts-regression-tests">
+<h2>4.5. Scripts regression tests<a class="headerlink" href="#scripts-regression-tests" title="Permalink to this headline">¶</a></h2>
+<p>cime/scripts/tests/scripts_regression_tests.py is the suite of internal tests we run
+for CIME. With no arguments, it will run the full suite. You can limit testing to a specific
+test class or even a specific test within a test class.</p>
+<p>Run full suite:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">scripts_regression_tests</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>Run a test class:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">scripts_regression_tests</span><span class="o">.</span><span class="n">py</span> <span class="n">K_TestCimeCase</span>
+</pre></div>
+</div>
+<p>Run a specific test:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">scripts_regression_tests</span><span class="o">.</span><span class="n">py</span> <span class="n">K_TestCimeCase</span><span class="o">.</span><span class="n">test_cime_case</span>
+</pre></div>
+</div>
+<p>If a test fails, the unittest module that drives scripts_regression_tests wil note the failure, but
+won&#8217;t print the output of the test until testing has completed. When there are failures for a
+test, the case directories for that test will not be cleaned up so that the user can do a post-mortem
+analysis. The user will be notified of the specific directories that will be left for them to
+examine.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="unit_testing.html" title="5. Fortran Unit Testing"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="optimizing-processor-layout.html" title="3. Optimizing Processor Layout"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME User&#8217;s Guide Part 1: Basic Usage</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
+    </div>
+  </body>
+</html>

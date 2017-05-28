@@ -23,20 +23,20 @@ _MACHINE = Machines()
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-usage="""\n%s [-g] [-d] [--verbose]
+usage="""\n{0} [-g] [-d] [--verbose]
 OR
-%s --help
+{0} --help
 OR
-%s --test
+{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run the tests and compare baselines \033[0m
-    > %s
+    > {0}
     \033[1;32m# Run the tests, compare baselines, and update dashboard \033[0m
-    > %s -d
+    > {0} -d
     \033[1;32m# Run the tests, generating a full set of baselines (useful for first run on a machine) \033[0m
-    > %s -g
-""" % ((os.path.basename(args[0]), ) * 6),
+    > {0} -g
+""".format(os.path.basename(args[0])),
 
 description=description,
 

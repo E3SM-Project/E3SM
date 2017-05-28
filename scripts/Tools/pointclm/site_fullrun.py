@@ -124,19 +124,19 @@ for row in AFdatareader:
 
         if (translen == -1):
           translen = endyear-1850+1        #length of transient run
-	  if (options.cpl_bypass):
- 	    translen = min(site_endyear,2010)-1850+1
+      if (options.cpl_bypass):
+        translen = min(site_endyear,2010)-1850+1
 
         #use site parameter file if it exists
         if (options.siteparms):
             if (os.path.exists(PTCLMfiledir+'/parms_'+site)):
-                print ('Using parameter file PTCLM_Files/parms_'+site)
+                print('Using parameter file PTCLM_Files/parms_'+site)
                 options.parm_file = PTCLMfiledir+'/parms_'+site
             else:
                 options.parm_file = ''
 
         fsplen = int(options.nyears_final_spinup)
- 
+
         #get align_year
         year_align = (endyear-1850+1) % ncycle
 
@@ -183,7 +183,7 @@ for row in AFdatareader:
         if (options.CH4):
             basecmd = basecmd+' --CH4'
         if (options.MICROBE):
-	    basecmd = basecmd+' --MICROBE'
+        basecmd = basecmd+' --MICROBE'
         if (options.cruncep):
             basecmd = basecmd+' --cruncep'
         if (options.surfdata_grid):
@@ -216,7 +216,7 @@ for row in AFdatareader:
             cmd_exsp = basecmd+' --exit_spinup --compset I1850CN '+ \
                 '--finidat_case '+ad_case+' --finidat_year '+str(options.ny_ad)+ \
                 ' --run_units nyears --run_n 1 --nyears_ad_spinup '+str(options.ny_ad)
-	    if (options.spinup_vars):
+        if (options.spinup_vars):
                cmd_exsp = cmd_exsp + ' --spinup_vars'
         #final spinup
         if mycaseid !='':
@@ -226,7 +226,7 @@ for row in AFdatareader:
             else:
                 if (options.cpl_bypass):
                   basecase = basecase+'_I1850CLM45CBCN'
-                else: 
+                else:
                   basecase = basecase+'_I1850CLM45CN'
         else:
             if (options.clm40):
@@ -251,7 +251,7 @@ for row in AFdatareader:
         elif (options.cpl_bypass):
             cmd_fnsp = cmd_fnsp+' --compset I1850CLM45CBCN'
         if (options.spinup_vars):
-		cmd_fnsp = cmd_fnsp+' --spinup_vars'
+        cmd_fnsp = cmd_fnsp+' --spinup_vars'
         #transient
         cmd_trns = basecmd+' --finidat_case '+basecase+ \
             ' --finidat_year '+str(fsplen+1)+' --run_units nyears' \
@@ -303,7 +303,7 @@ for row in AFdatareader:
         if (options.cruncep and not options.cpl_bypass):
              print('\nSetting up transient case phase 2\n')
              os.system(cmd_trns2)
-        
+
         output = open('./temp/site_fullrun.pbs','w')
         #make site-specific pbs script
 
@@ -318,7 +318,7 @@ for row in AFdatareader:
                 output.write(s)
         input.close()
         output.write("\n")
-        
+
         if (options.cpl_bypass):
           modelst = 'CLM45CBCN'
         else:

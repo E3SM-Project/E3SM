@@ -34,28 +34,28 @@ class NCR(SystemTestsCommon):
         # second halves the number of tasks and runs two instances for each component
         # Lay all of the components out concurrently
         for bld in range(1,3):
-            logging.warn("Starting bld %s"%bld)
-            machpes = "env_mach_pes.NCR%s.xml" % bld
+            logging.warn("Starting bld {}".format(bld))
+            machpes = "env_mach_pes.NCR{}.xml".format(bld)
             ntasks_sum = 0
             for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
-                self._case.set_value("NINST_%s"%comp,str(bld))
-                ntasks      = self._case.get_value("NTASKS_%s"%comp)
+                self._case.set_value("NINST_{}".format(comp), str(bld))
+                ntasks      = self._case.get_value("NTASKS_{}".format(comp))
                 if(bld == 1):
-                    self._case.set_value("ROOTPE_%s"%comp, 0)
+                    self._case.set_value("ROOTPE_{}".format(comp), 0)
                     if ( ntasks > 1 ):
-                        self._case.set_value("NTASKS_%s"%comp, ntasks/2)
+                        self._case.set_value("NTASKS_{}".format(comp), ntasks/2)
                 else:
-                    self._case.set_value("ROOTPE_%s"%comp, ntasks_sum)
+                    self._case.set_value("ROOTPE_{}".format(comp), ntasks_sum)
                     ntasks_sum += ntasks*2
-                    self._case.set_value("NTASKS_%s"%comp, ntasks*2)
+                    self._case.set_value("NTASKS_{}".format(comp), ntasks*2)
             self._case.flush()
 
             case_setup(self._case, test_mode=True, reset=True)
             self.clean_build()
             self.build_indv(sharedlib_only, model_only)
-            shutil.move("%s/%s.exe"%(exeroot,cime_model),
-                        "%s/%s.exe.NCR%s"%(exeroot,cime_model,bld))
-            lock_file("env_build.xml", newname="env_build.NCR%s.xml" % bld)
+            shutil.move("{}/{}.exe".format(exeroot,cime_model),
+                        "{}/{}.exe.NCR{}".format(exeroot,cime_model,bld))
+            lock_file("env_build.xml", newname="env_build.NCR{}.xml".format(bld))
             lock_file("env_mach_pes.xml", newname=machpes)
 
         # Because mira/cetus interprets its run script differently than
@@ -75,8 +75,8 @@ class NCR(SystemTestsCommon):
 
         restore("env_mach_pes.NCR1.xml", newname="env_mach_pes.xml")
         restore("env_build.NCR1.xml", newname="env_build.xml")
-        shutil.copy("%s/%s.exe.NCR1" % (exeroot, cime_model),
-                    "%s/%s.exe" % (exeroot, cime_model))
+        shutil.copy("{}/{}.exe.NCR1".format(exeroot, cime_model),
+                    "{}/{}.exe".format(exeroot, cime_model))
 
 
         stop_n      = self._case.get_value("STOP_N")
@@ -91,7 +91,7 @@ class NCR(SystemTestsCommon):
         #======================================================================
         # do an initial run test with NINST 1
         #======================================================================
-        logger.info("default: doing a %s %s with NINST1" % (stop_n, stop_option))
+        logger.info("default: doing a {} {} with NINST1".format(stop_n, stop_option))
         self.run_indv()
 
         #======================================================================
@@ -99,12 +99,12 @@ class NCR(SystemTestsCommon):
         # want to run on same pe counts per instance and same cpl pe count
         #======================================================================
 
-        os.remove("%s/%s.exe" % (exeroot, cime_model))
-        shutil.copy("%s/%s.exe.NCR2" % (exeroot, cime_model),
-                    "%s/%s.exe" % (exeroot, cime_model))
+        os.remove("{}/{}.exe".format(exeroot, cime_model))
+        shutil.copy("{}/{}.exe.NCR2".format(exeroot, cime_model),
+                    "{}/{}.exe".format(exeroot, cime_model))
         restore("env_build.NCR2.xml", "env_build.xml")
 
-        logger.info("default: doing a %s %s with NINST2" % (stop_n, stop_option))
+        logger.info("default: doing a {} {} with NINST2".format(stop_n, stop_option))
         self.run_indv(suffix="multiinst")
 
         # Compare

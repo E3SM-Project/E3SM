@@ -1,0 +1,132 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3.9. More on Driver Namelists &#8212; CIME 5.3.0_alpha17 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '5.3.0_alpha17',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Building a Coupled Model with CIME" href="../build_cpl/index.html" />
+    <link rel="prev" title="3.8. Multi-instance Functionality" href="multi-instance.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../build_cpl/index.html" title="Building a Coupled Model with CIME"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="multi-instance.html" title="3.8. Multi-instance Functionality"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME Driver/Coupler</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="implementation.html" accesskey="U">3. Implementation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="multi-instance.html"
+                        title="previous chapter">3.8. Multi-instance Functionality</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../build_cpl/index.html"
+                        title="next chapter">Building a Coupled Model with CIME</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/driver_cpl/namelist-overview.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="more-on-driver-namelists">
+<h1>3.9. More on Driver Namelists<a class="headerlink" href="#more-on-driver-namelists" title="Permalink to this headline">¶</a></h1>
+<p>There are a series of driver/coupler namelist input files created by the driver namelist generator <code class="docutils literal"><span class="pre">$CIMEROOT/driver_cpl/cime_config/buildnml</span></code>. These are</p>
+<ul class="simple">
+<li>drv_in</li>
+<li>drv_flds_in</li>
+<li>cpl_modelio.nml, atm_modelio.nml, esp_modelio.nml, glc_modelio.nml, ice_modelio.nml, lnd_modelio.nmlo, ocn_modelio.nml, rof_modelio.nml, wav_modelio.nml</li>
+<li>seq_maps.rc</li>
+</ul>
+<p>The <code class="docutils literal"><span class="pre">*_modelio.nml</span></code> files set the filename for the primary standard output file and also provide settings for the parallel IO library, PIO.
+The drv_in namelist file contains several different namelist groups associated with general options, time manager options, pe layout, timing output, and parallel IO settings.
+The seq_maps.rc file specifies the mapping files for the configuration.
+Note that seq_maps.rc is NOT a Fortran namelist file but the format should be relatively clear from the default settings.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../build_cpl/index.html" title="Building a Coupled Model with CIME"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="multi-instance.html" title="3.8. Multi-instance Functionality"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CIME 5.3.0_alpha17 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >CIME Driver/Coupler</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="implementation.html" >3. Implementation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.2.
+    </div>
+  </body>
+</html>

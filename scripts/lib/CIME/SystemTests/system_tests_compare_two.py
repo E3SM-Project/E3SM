@@ -144,10 +144,10 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         else:
             self._activate_case1()
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
-            # pio_typename may be changed during the build if the default is not a 
+            # pio_typename may be changed during the build if the default is not a
             # valid value for this build, update case2 to reflect this change
             for comp in self._case1.get_values("COMP_CLASSES"):
-                comp_pio_typename = "%s_PIO_TYPENAME"%comp
+                comp_pio_typename = "{}_PIO_TYPENAME".format(comp)
                 self._case2.set_value(comp_pio_typename, self._case1.get_value(comp_pio_typename))
 
             # The following is needed when _case_two_setup has a case_setup call
@@ -192,7 +192,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         casename1 = self._case1.get_value("CASE")
         caseroot1 = self._case1.get_value("CASEROOT")
 
-        casename2 = "%s.%s"%(casename1, self._run_two_suffix)
+        casename2 = "{}.{}".format(casename1, self._run_two_suffix)
 
         # Nest the case directory for case2 inside the case directory for case1
         caseroot2 = os.path.join(caseroot1, casename2)
@@ -346,7 +346,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         rundir2 = self._case2.get_value("RUNDIR")
         run2suffix = self._run_two_suffix
 
-        pattern = '%s*.nc.%s'%(casename2, run2suffix)
+        pattern = '{}*.nc.{}'.format(casename2, run2suffix)
         case2_files = glob.glob(os.path.join(rundir2, pattern))
         for one_file in case2_files:
             file_basename = os.path.basename(one_file)

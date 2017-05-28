@@ -1,4 +1,154 @@
 ======================================================================
+Originator: Chris Fischer 
+Date: 5-24-2017
+Tag: cime5.3.0-alpha.21
+Answer Changes: None
+Tests: scripts_regression_tests.py 
+Dependencies:
+
+Brief Summary:
+    - Fixed issue with GET_REFCASE not being set correctly.
+    - Don't ignore attributes for Compilers.get_value.
+    - Add ability for create_test to infer non-default machine from tests.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+25a7f27 Merge pull request #1604 from jedwards4b/refcase_fix
+56fd28c Merge pull request #1598 from ESMCI/jgfouca/compiler_use_attribute
+7003fe2 Merge pull request #1597 from ESMCI/jgfouca/infer_machine_from_tests
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/create_test
+M       scripts/lib/CIME/XML/compilers.py
+M       scripts/lib/CIME/case.py
+M       scripts/lib/update_acme_tests.py
+M       scripts/tests/scripts_regression_tests.py
+
+
+======================================================================
+Originator: Chris Fischer
+Date: 5-24-2017
+Tag: cime5.3.0-alpha.20
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:
+    - Add the f19_g17 maps, as wall as the ww3 <-> tx1v1 maps.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+0e9a1e0 Merge pull request #1594 from mnlevy1981/maps/update_ocean_maps
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+
+======================================================================
+Originator: Chris Fischer 
+Date: 5-24-2017 
+Tag: cime5.3.0-alpha.19
+Answer Changes: None
+Tests: scripts_regression_tests --fast 
+Dependencies:
+
+Brief Summary:
+    - Revert "Updated grid aliases in cesm/config_grids.xml"
+    - Build failures should not dump a full stacktracesince a code problem is
+      not the fault of CIME infrastructure.
+      Also, deprecate shell calls to date in favor of python interface to get
+      timestamp.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+0817502 Merge pull request #1596 from ESMCI/revert-1585-master
+0ee6cb7 Merge pull request #1595 from ESMCI/jgfouca/improve_build_fail_msg
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/build.py
+M       src/drivers/mct/cime_config/buildnml
+
+
+======================================================================
+Originator: Chris Fischer 
+Date: 5-23-2017
+Tag: cime5.3.0-alpha.18
+Answer Changes: None
+Tests: scripts_regression_tests.py, hand test xmlquery
+       ERS.f19_g16.X.yellowstone_intel 
+       1850_DATM%CPLHIST_SLND_CICE_POP2%ECO_DROF%CPLHIST_SGLC_WW3
+       SMS_D_Mmpi-serial_Ld1.T42_T42.FSCM5A97.hobart_nag
+
+Dependencies:
+
+Brief Summary:
+    - Updated grid aliases in cesm/config_grids.xml.
+    - Fix logic in st_archive wrt DOUT_S_SAVE_INTERIM_RESTART_FILES.
+    - Improve comment for BASELINE status in TestStatus.
+    - Fix an issue with xmlquery when the --file and --listall flags are used
+      together.
+    - Remove grid attribute from compset elements.
+    - Update cime to support full X configuration.
+    - Remove empty <Proxy> tag from anlworkstation.
+    - DOCN aquaplanet from file and new A compsets with DOCN modes.
+    - Use %CPLHIST for DATM coupler hist forcing.
+    - Point to gx1v7 domain files that exist.
+    - Merged recent changes from MCSclimate/mpi-serial into CIME.  
+      Includes new hvector functions.
+
+User interface changes: 
+    - TestStatus changes
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+e9a944c Merge pull request #1585 from alperaltuntas/master
+568938d Merge pull request #1573 from jedwards4b/sta_fix
+a4352db Merge pull request #1591 from ESMCI/jgfouca/improve_baseline_teststatus_comment
+b4182ec Merge pull request #1593 from jedwards4b/xmlquery_and_config_compset
+3189a86 Merge pull request #1592 from billsacks/compset_no_grid_attribute
+7f6004f Merge pull request #1586 from apcraig/xcase
+1ee8025 Merge pull request #1590 from ESMCI/sarich/anlworkstation-remove-proxy-tag
+09c5136 Merge pull request #1582 from ESMCI/mvertens/docnmods
+8657a18 Merge pull request #1578 from ESMCI/mvertens/datm_cplhist_mod
+f109d77 Merge pull request #1567 from mnlevy1981/grids/fix_gx1v7_domain_datestamps
+a8cc1a2 Merge pull request #1568 from gold2718/mpi-serial-import
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/acme/machines/config_machines.xml
+M       config/cesm/config_grids.xml
+M       config/cesm/machines/config_machines.xml
+M       config/xml_schemas/config_compsets.xsd
+M       scripts/Tools/xmlquery
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/case_st_archive.py
+M       src/components/data_comps/datm/cime_config/config_component.xml
+M       src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M       src/components/data_comps/docn/cime_config/config_component.xml
+M       src/components/data_comps/docn/cime_config/namelist_definition_docn.xml
+M       src/components/data_comps/docn/docn_comp_mod.F90
+M       src/components/data_comps/drof/cime_config/namelist_definition_drof.xml
+M       src/components/xcpl_comps/xshare/dead_mct_mod.F90
+M       src/drivers/mct/cime_config/config_component_cesm.xml
+M       src/drivers/mct/cime_config/config_compsets.xml
+A       src/drivers/mct/cime_config/testdefs/testmods_dirs/drv/default/shell_commands
+M       src/externals/mct/mpi-serial/Makefile
+M       src/externals/mct/mpi-serial/README
+M       src/externals/mct/mpi-serial/collective.c
+A       src/externals/mct/mpi-serial/error.c
+A       src/externals/mct/mpi-serial/ic_merge.c
+M       src/externals/mct/mpi-serial/mpi.h
+M       src/externals/mct/mpi-serial/mpif.h
+M       src/externals/mct/mpi-serial/tests/ftest_old.F90
+M       src/externals/mct/mpi-serial/type.c
+
+
+======================================================================
+
 
 Originator: Chris Fischer
 Date: 5-18-2017 
