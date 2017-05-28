@@ -24,10 +24,12 @@ if SRCROOT is None:
 os.environ['SRCROOT'] = SRCROOT
 
 from standard_script_setup import *
-from CIME.utils import expect
-from CIME.XML.entry_id import GenericXML
-from CIME.XML.files    import Files
-from CIME.XML.compsets import Compsets
+from CIME.utils            import expect, get_model, get_cime_root
+from CIME.XML.entry_id     import GenericXML
+from CIME.XML.files        import Files
+from CIME.XML.component    import Component
+from CIME.XML.compsets     import Compsets
+from CIME.case             import Case
 
 # check for  dependency module
 try:
@@ -45,7 +47,7 @@ logger = logging.getLogger(__name__)
 def commandline_options():
 ###############################################################################
 
-    """ Process the command line arguments.                                                                                                                                    
+    """ Process the command line arguments.
     """
     parser = argparse.ArgumentParser(
         description='Read all the config_compset.xml files and generate a corresponding HTML file.')
@@ -70,11 +72,16 @@ def _main_func(options, work_dir):
 
     """Construct compsets html from an XML file."""
         
-    # Initialize a variables for the html template
+    # Initialize variables
     all_compsets = dict()
+    desc = dict()
     ordered_compsets = collections.OrderedDict()
     html_dict = dict()
     model_version = options.version[0]
+    cimeroot = os.environ['CIMEROOT']
+    model = get_model()
+    srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
+    model_config_file = 'config_component_{0}.xml'.format(model)
 
     # read in all the component config_compsets.xml files
     files = Files()
@@ -86,7 +93,7 @@ def _main_func(options, work_dir):
         config_file = files.get_value("COMPSETS_SPEC_FILE", {"component":component})
 
         expect((config_file),
-               "Cannot find any config_component.xml file for %s" %component)
+               "Cannot find any config_compsets.xml file for %s" %component)
 
         # Check that file exists on disk
         if (os.path.isfile(config_file)):
@@ -96,8 +103,27 @@ def _main_func(options, work_dir):
             # get the all_compsets sorted
             ordered_compsets = collections.OrderedDict(sorted(all_compsets.items(), key=lambda t: t[0]))
 
-            # load up the html_dict 
-            html_dict[component] = (help_text, ordered_compsets)
+            # get the config_component.xml files for descriptions
+            if 'allactive' in component or 'drv' in component:
+                desc_file = os.path.join(cimeroot, 'src/drivers/mct/cime_config', model_config_file)
+            else:
+                desc_file = os.path.join(srcroot, 'components', component, 'cime_config/config_component.xml')
+
+            expect((desc_file),
+               "Cannot find config_component.xml file for %s" %component)
+
+            for alias, compset in ordered_compsets.iteritems():
+                # get the mode descriptions for each compset
+                compobj = Component(desc_file)
+                desc[alias] = compobj.get_description(compset).replace(':','<br/>')
+                desc[alias] = desc[alias].replace('-----------------------------WARNING ------------------------------------------------',
+                                                  '-----------------------------WARNING ------------------------------------------------<br/>')
+                desc[alias] = desc[alias].replace('-------------------------------------------------------------------------------------',
+                                                 '<br/>-------------------------------------------------------------------------------------')
+
+            # load up the html_dict
+            html_dict[component] = { 'compsets'     : ordered_compsets,
+                                     'desc'         : desc }
 
     # load up jinja template
     templateLoader = jinja2.FileSystemLoader( searchpath='{0}/templates'.format(work_dir) )
@@ -106,9 +132,10 @@ def _main_func(options, work_dir):
     # TODO - get the cesm_version for the CIME root
     tmplFile = 'compdef2html.tmpl'
     template = templateEnv.get_template( tmplFile )
-    templateVars = { 'html_dict'    : html_dict,
-                     'today'        : _now,
-                     'model_version' : model_version }
+    templateVars = { 'html_dict'     : html_dict,
+                     'today'         : _now,
+                     'model_version' : model_version,
+                     'help'          : help_text }
         
     # render the template
     comp_tmpl = template.render( templateVars )

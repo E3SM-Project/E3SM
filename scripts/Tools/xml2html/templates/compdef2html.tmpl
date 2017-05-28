@@ -35,7 +35,6 @@
       #variable { color:#66d; font-size: 1.2em; font-weight: bold; display: inline-block; margin-right: 30px; width: 350px; }
       #emphasis { color:#656565; font-weight: bold; display: inline-block; }
       #small { color:#9f9f9f; display: inline-block; }
-
     </style>
 
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
@@ -126,27 +125,40 @@
 	<button class="detailsBtn" onclick="hideAll();">Hide Details</button>
 
 	<br/><br/>
+	<div class="accordionItem">
+	  <h2> <span id="variable">Compset Naming Convention</span></h2>
+	    <div>
+	      <pre>{{ help }}</pre>
+	    </div>
+	</div>
+
 	{% for component, comp_dict in html_dict|dictsort %}
 	<div class="accordionItem">
 	  <h2>Component: <span id="variable">{{ component|e }}</span></h2>
-	    <div>
-	      <pre>{{ comp_dict.0 }}</pre>
-	        <hr>
-		  <table>
-		    <tr>
-		      <th>Alias</th>
-		      <th>Long Name</th>
-		    <tr/>
-		  {% for alias, long_name in comp_dict.1.iteritems()  %}
-		    <tr>
-		      <td>{{ alias|e }}</td>
-		      <td>{{ long_name|e }}</td>
-		    </tr>
-	          {% endfor %}
-		  </table>
+	  <div>
+	    <table>
+	      <tr>
+		<th>Alias</th>
+		<th>Long Name</th>
+	      <tr/>
+	      {% for alias, long_name in comp_dict.compsets.iteritems()  %}
+	      <tr>
+		<td>{{ alias|e }}</td>
+		<td>{{ long_name|e }}</td>
+	      </tr>
+	      <tr>
+		<td></td>
+		<td> {{ comp_dict.desc[alias] }}</td>
+	      </tr>
+	      <tr>
+		<td></td>
+		<td>_____________________________________________________________________________________________</td>
+	      </tr>
+	      {% endfor %}
+	      </table>
 	    </div>
+	  </div>
+	  {% endfor %}
 	</div>
-	{% endfor %}
-    </div>
-  </body>
+   </body>
 </html>
