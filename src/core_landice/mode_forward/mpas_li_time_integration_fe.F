@@ -621,8 +621,6 @@ module li_time_integration_fe
          call mpas_timer_start("halo updates")
          call mpas_dmpar_field_halo_exch(domain, 'layerThicknessEdge')
          call mpas_timer_stop("halo updates")
-      else
-         call mpas_log_write("Don't know how to calculate layerThicknessEdge", MPAS_LOG_CRIT)
       endif ! fo advection option
 
 
