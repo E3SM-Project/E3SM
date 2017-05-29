@@ -291,11 +291,11 @@ my $testcase_begin = <<'END_BEGIN';
     unset IOP_ON
 
     # Reset all previous settings: obtain copy of original env_run.xml file
-    if ( -e env_run.orig )  then
-       cp env_run.orig env_run.xml
-    else
-       cp env_run.xml env_run.orig
-    endif
+#    if ( -e env_run.orig )  then
+#      cp env_run.orig env_run.xml
+#    else
+#       cp env_run.xml env_run.orig
+#    endif
 
     if ( $?IOP_ON ) then
        set add_iop = "-add_iop $IOP_TYPE"
@@ -330,11 +330,11 @@ my $testcase_iop = <<'END_IOP';
     #-------------------------------------------------------------
 
     # Reset all previous settings: obtain copy of original env_run.xml file
-    if ( -e env_run.orig )  then
-	cp env_run.orig env_run.xml
-	else
-	cp env_run.xml env_run.orig
-    endif
+#    if ( -e env_run.orig )  then
+#	cp env_run.orig env_run.xml
+#	else
+#	cp env_run.xml env_run.orig
+#    endif
     # ********turn on IOP case***************
     set IOP_ON
     ./xmlchange -file env_run.xml -id PIO_TYPENAME -val $IOP_TYPE

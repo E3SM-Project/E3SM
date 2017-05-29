@@ -1367,7 +1367,11 @@ contains
 !          TRunoff%wr(nr,nt) = rtmCTL%area(nr) * river_depth_minimum * 10._r8
 !       enddo
 !       enddo
-       call WRM_computeRelease()
+#ifdef INCLUDE_WRM
+       if (wrmflag) then
+          call WRM_computeRelease()
+       endif
+#endif
     endif
 
     do nt = 1,nt_rtm
