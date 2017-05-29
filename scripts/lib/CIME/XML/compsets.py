@@ -5,6 +5,7 @@ Common interface to XML files which follow the compsets format,
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.entry_id import EntryID
+from CIME.XML.component import Component
 from CIME.XML.files import Files
 
 
@@ -18,6 +19,7 @@ class Compsets(GenericXML):
         schema = files.get_schema("COMPSETS_SPEC_FILE")
         GenericXML.__init__(self, infile, schema=schema)
         self.groups={}
+        self.infile=infile
 
     def get_compset_match(self, name):
         """
@@ -42,18 +44,22 @@ class Compsets(GenericXML):
         return (None, None, [False])
 
     def get_compset_var_settings(self, compset, grid):
+        '''Variables can be set in config_compsets.xml in entry id settings
+        with compset and grid attributes find and return id value pairs here.
+        For now, need to instantiate a component object since matches can be done via 'first' and 'last' 
+        match attributes and for backwards compatibility it is always last. 
+        An entryID object has a matching algorithm where the first match is always picked in if more than
+        one match is found - and until this is generalized a component object must be instantiated here.
         '''
-        Variables can be set in config_compsets.xml in entry id settings with compset and grid attributes
-        find and return id value pairs here
-        '''
-        nodes = self.get_nodes("entry")
-        # Get an empty entryid obj to use
-        entryidobj = EntryID()
         result = []
-        for node in nodes:
-            value = entryidobj.get_default_value(node, {"grid":grid, "compset":compset})
-            if value is not None:
-                result.append((node.get("id"), value))
+        nodes = self.get_nodes("entry")
+        if nodes:
+            logger.info("Parsing entry nodes in compset definition file")
+            componentobj = Component(self.infile)
+            for node in nodes:
+                value = componentobj.get_default_value(node, {"grid":grid, "compset":compset})
+                if value is not None:
+                    result.append((node.get("id"), value))
         return result
 
     #pylint: disable=arguments-differ

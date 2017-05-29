@@ -4,6 +4,35 @@
 
 <entry_id>
 
+  <!-- NOTE that the description block determines what DATM% values can appear in the compset name 
+       For DATM this is determined by the DATM_MODE values in combination with the TIME prefix -->
+  <description>
+    <desc compset="^1850_DATM%QIA"	>QIAN atm input data for 1948-1972:</desc>
+    <desc compset="^2000_DATM%WISOQIA"	>QIAN atm input data with water isotopes for 2000-2004:</desc>
+    <desc compset="^2000_DATM%QIA"	>QIAN atm input data for 1972-2004:</desc>
+    <desc compset="^2003_DATM%QIA"	>QIAN atm input data for 2002-2003:</desc>
+    <desc compset="^HIST_DATM%QIA"	>QIAN atm input data for 1948-1972:</desc>
+    <desc compset="^20TR_DATM%QIA"	>QIAN atm input data for 1948-1972:</desc>
+    <desc compset="^4804_DATM%QIA"	>QIAN atm input data for 1948-2004:</desc>
+    <desc compset="^RCP[2468]_DATM%QIA"	>QIAN atm input data for 1972-2004:</desc>
+    <desc compset="^1850_DATM%CRU"	>CRUNCEP atm input data for 1901-1920:</desc>
+    <desc compset="^2000_DATM%CRU"	>CRUNCEP atm input data for 1991-2010:</desc>
+    <desc compset="^2003_DATM%CRU"	>CRUNCEP atm input data for 2002-2003:</desc>
+    <desc compset="^HIST_DATM%CRU"	>CRUNCEP atm input data for 1901-1920:</desc>
+    <desc compset="^20TR_DATM%CRU"	>CRUNCEP atm input data for 1901-1920:</desc>
+    <desc compset="^RCP[2468]_DATM%CRU"	>CRUNCEP atm input data for 1991-2010:</desc>
+    <desc compset="^1850_DATM%GSW"	>GSWP3 atm input data for 1901-1920:</desc>
+    <desc compset="^2000_DATM%GSW"	>GSWP3 atm input data for 1991-2010:</desc>
+    <desc compset="^2003_DATM%GSW"	>GSWP3 atm input data for 2002-2003:</desc>
+    <desc compset="^HIST_DATM%GSW"	>GSWP3 atm input data for 1901-1920:</desc>
+    <desc compset="^20TR_DATM%GSW"	>GSWP3 atm input data for 1901-1920:</desc>
+    <desc compset="^RCP[2468]_DATM%GSW"	>GSWP3 atm input data for 1991-2010:</desc>
+    <desc compset="^1850_DATM%PCLHIST"	>CPL history input data:</desc>
+    <desc compset="^2000_DATM%1PT"	>single point tower site atm input data:</desc>
+    <desc compset="_DATM%NYF"		>COREv2 datm normal year forcing: (requires additional user-supplied data)</desc>
+    <desc compset="_DATM%IAF"		>COREv2 datm interannual year forcing: (requires additional user-supplied data)</desc>
+  </description>
+
   <entry id="COMP_ATM">
     <type>char</type>
     <valid_values>datm</valid_values>
@@ -22,7 +51,7 @@
     <desc>Mode for data atmosphere component.
       CORE2_NYF (CORE2 normal year forcing) is the DATM mode used in C and G compsets. 
       CLM_QIAN, CLMCRUNCEP, CLMGSWP3 and CLM1PT are modes using observational data for I compsets.</desc>
-    <values>
+    <values match="last">
       <value compset="%NYF">CORE2_NYF</value>
       <value compset="%IAF">CORE2_IAF</value>
       <value compset="%WISOQIA">CLM_QIAN_WISO</value>
@@ -38,7 +67,7 @@
     <type>char</type>
     <valid_values>none,clim_1850,clim_2000,trans_1850-2000,rcp2.6,rcp4.5,rcp6.0,rcp8.5,cplhist</valid_values>
     <default_value>none</default_value>
-    <values>
+    <values match="last">
       <value compset="^1850_">clim_1850</value>
       <value compset="^2000_">clim_2000</value>
       <value compset="^2003_">clim_2000</value>
@@ -61,14 +90,14 @@
   </entry>
 
   <entry id="DATM_TOPO">
-     <type>char</type>
-     <valid_values>none,observed</valid_values>
-     <default_value>observed</default_value>
-     <values>
-        <!-- Only needed for compsets with active land; for other compsets, turn it off -->
-        <value compset="_SLND">none</value>
-        <value compset="_DLND">none</value>
-     </values>
+    <type>char</type>
+    <valid_values>none,observed</valid_values>
+    <default_value>observed</default_value>
+    <values match="last">
+      <!-- Only needed for compsets with active land; for other compsets, turn it off -->
+      <value compset="_SLND">none</value>
+      <value compset="_DLND">none</value>
+    </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
     <desc>DATM surface topography forcing</desc>
@@ -78,7 +107,7 @@
     <type>char</type>
     <valid_values>none,20tr,rcp2.6,rcp4.5,rcp6.0,rcp8.5</valid_values>
     <default_value>none</default_value>
-    <values>
+    <values match="last">
       <value compset="^RCP8">rcp8.5</value>
       <value compset="^RCP6">rcp6.0</value>
       <value compset="^RCP4">rcp4.5</value>
@@ -104,7 +133,7 @@
     <type>char</type>
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
-    <values>
+    <values match="last">
       <value compset="1850_DATM%CPLHIST">b40.1850.track1.1deg.006a</value>
     </values>
     <group>run_component_datm</group>
@@ -116,7 +145,7 @@
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>1</default_value>
-    <values>
+    <values match="last">
       <value compset="1850_DATM%PCLHIST">1</value>
     </values>
     <group>run_component_datm</group>
@@ -128,7 +157,7 @@
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>-999</default_value>
-    <values>
+    <values match="last">
       <value compset="1850_DATM%PCLHIST">960</value>
     </values>
     <group>run_component_datm</group>
@@ -140,7 +169,7 @@
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>-999</default_value>
-    <values>
+    <values match="last">
       <value compset="1850_DATM%PCLHIST">1030</value>
     </values>
     <group>run_component_datm</group>
@@ -152,7 +181,7 @@
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>1</default_value>
-    <values>
+    <values match="last">
       <value compset="2000.*_DATM%1PT">1</value>
       <value compset="1850.*_DATM%QIA">1</value>
       <value compset="1850.*_DATM%CRU">1</value>
@@ -185,7 +214,7 @@
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>2004</default_value>
-    <values>
+    <values match="last">
       <value compset="2000.*_DATM%1PT">1972</value>
       <value compset="1850.*_DATM%QIA">1948</value>
       <value compset="1850.*_DATM%CRU">1901</value>
@@ -219,7 +248,7 @@
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>2004</default_value>
-    <values>
+    <values match="last">
       <value   compset="2000.*_DATM%1PT">2004</value> 
       <value   compset="1850.*_DATM%QIA">1972</value> 
       <value   compset="1850.*_DATM%CRU">1920</value> 
@@ -248,33 +277,6 @@
     <file>env_run.xml</file>
     <desc>ending year to loop data over</desc>
   </entry>
-
-  <description>
-    <desc compset="^1850_DATM%QIA"	>QIAN atm input data for 1948-1972:</desc>
-    <desc compset="^2000_DATM%WISOQIA"	>QIAN atm input data with water isotopes for 2000-2004:</desc>
-    <desc compset="^2000_DATM%QIA"	>QIAN atm input data for 1972-2004:</desc>
-    <desc compset="^2003_DATM%QIA"	>QIAN atm input data for 2002-2003:</desc>
-    <desc compset="^HIST_DATM%QIA"	>QIAN atm input data for 1948-1972:</desc>
-    <desc compset="^20TR_DATM%QIA"	>QIAN atm input data for 1948-1972:</desc>
-    <desc compset="^4804_DATM%QIA"	>QIAN atm input data for 1948-2004:</desc>
-    <desc compset="^RCP[2468]_DATM%QIA"	>QIAN atm input data for 1972-2004:</desc>
-    <desc compset="^1850_DATM%CRU"	>CRUNCEP atm input data for 1901-1920:</desc>
-    <desc compset="^2000_DATM%CRU"	>CRUNCEP atm input data for 1991-2010:</desc>
-    <desc compset="^2003_DATM%CRU"	>CRUNCEP atm input data for 2002-2003:</desc>
-    <desc compset="^HIST_DATM%CRU"	>CRUNCEP atm input data for 1901-1920:</desc>
-    <desc compset="^20TR_DATM%CRU"	>CRUNCEP atm input data for 1901-1920:</desc>
-    <desc compset="^RCP[2468]_DATM%CRU"	>CRUNCEP atm input data for 1991-2010:</desc>
-    <desc compset="^1850_DATM%GSW"	>GSWP3 atm input data for 1901-1920:</desc>
-    <desc compset="^2000_DATM%GSW"	>GSWP3 atm input data for 1991-2010:</desc>
-    <desc compset="^2003_DATM%GSW"	>GSWP3 atm input data for 2002-2003:</desc>
-    <desc compset="^HIST_DATM%GSW"	>GSWP3 atm input data for 1901-1920:</desc>
-    <desc compset="^20TR_DATM%GSW"	>GSWP3 atm input data for 1901-1920:</desc>
-    <desc compset="^RCP[2468]_DATM%GSW"	>GSWP3 atm input data for 1991-2010:</desc>
-    <desc compset="^1850_DATM%PCLHIST"	>CPL history input data:</desc>
-    <desc compset="^2000_DATM%1PT"	>single point tower site atm input data:</desc>
-    <desc compset="_DATM%NYF"		>COREv2 datm normal year forcing: (requires additional user-supplied data)</desc>
-    <desc compset="_DATM%IAF"		>COREv2 datm interannual year forcing: (requires additional user-supplied data)</desc>
-  </description>
 
   <help>
     =========================================

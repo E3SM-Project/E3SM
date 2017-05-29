@@ -41,6 +41,12 @@ class Component(EntryID):
         return components
 
     def _get_value_match(self, node, attributes=None, exact_match=False):
+        """
+        return the best match for the node <values> entries
+        Note that a component object uses a different matching algorithm than an entryid object
+        For a component object the _get_value_match used is below  and is not the one in entry_id.py
+        """
+
         match_value = None
         match_max = 0
         match_count = 0
@@ -50,6 +56,11 @@ class Component(EntryID):
         values = self.get_optional_node("values", root=node)
         if values is None:
             return
+
+        # determine match_type if there is a tie 
+        # ASSUME a default of "last" if "match" attribute is not there
+        match_type = values.get("match", default="last")
+
         # use the default_value if present
         val_node = self.get_optional_node("default_value", root=node)
         if val_node is None:
@@ -58,6 +69,7 @@ class Component(EntryID):
         value = val_node.text
         if value is not None and len(value) > 0 and value != "UNSET":
             match_values.append(value)
+
         for valnode in self.get_nodes("value", root=node):
             # loop through all the keys in valnode (value nodes) attributes
             for key,value in valnode.attrib.iteritems():
@@ -70,6 +82,8 @@ class Component(EntryID):
                     else:
                         match_count = 0
                         break
+
+            # a match is found
             if match_count > 0:
                 # append the current result
                 if values.get("modifier") == "additive":
@@ -82,11 +96,21 @@ class Component(EntryID):
                         del match_values[:]
                     match_values.append(valnode.text)
 
-                # take the *last* best match
-                elif match_count >= match_max:
-                    del match_values[:]
-                    match_max = match_count
-                    match_value = valnode.text
+                else: 
+                    if match_type == "last":
+                        # take the *last* best match
+                        if match_count >= match_max:
+                            del match_values[:]
+                            match_max = match_count
+                            match_value = valnode.text
+                    elif match_type == "first":
+                        # take the *first* best match
+                        if match_count > match_max:
+                            del match_values[:]
+                            match_max = match_count
+                            match_value = valnode.text
+                    else:
+                        expect(False, "match attribute can only have a value of 'last' or 'first'")
 
         if len(match_values) > 0:
             match_value = " ".join(match_values)

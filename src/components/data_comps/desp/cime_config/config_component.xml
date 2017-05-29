@@ -4,6 +4,13 @@
 
 <entry_id>
 
+  <!-- NOTE that the description block determines what DESP% values can appear in the compset name 
+       For DESP this is determined by the DESP_MODE values -->
+  <description>
+    <desc compset="_DESP%NOOP">no modification of any model data</desc>
+    <desc compset="_DESP%TEST">test modification of any model data</desc>
+  </description>
+
   <entry id="COMP_ESP">
     <type>char</type>
     <valid_values>desp</valid_values>
@@ -21,14 +28,11 @@
     <file>env_run.xml</file>
     <desc>Mode for external system processing component.
       The default is NOOP, do not modify any model data.</desc>
-    <values>
+    <values match="last">
       <value compset="%NOOP"  >NOCHANGE</value>
       <value compset="%TEST"  >DATATEST</value>
     </values>
   </entry>
-
-  <description>
-  </description>
 
   <help>
     =========================================
