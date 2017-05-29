@@ -360,12 +360,13 @@ contains
          block => domain % blocklist
          do while (associated(block))
             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+            call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+
             call mpas_pool_get_array(geometryPool, 'thickness', thickness)
             maxThicknessOnProc = max(maxThicknessOnProc, maxval(thickness))
 
             ! The interface expects an array where 1's are floating edges and 0's are non-floating edges.
-            call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
             call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
             floatingEdges = li_mask_is_floating_ice_int(edgeMask)
             call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=1)
