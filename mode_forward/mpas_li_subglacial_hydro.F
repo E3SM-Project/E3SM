@@ -682,7 +682,7 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: alpha, beta
       real (kind=RKIND), pointer :: conduc_coeff
       character (len=StrKIND), pointer :: config_SGH_tangent_slope_calculation
-      integer, pointer :: nEdgesSolve
+      integer, pointer :: nEdges
       integer, pointer :: nCells
       integer, pointer :: nVertices
       integer :: iEdge, cell1, cell2
@@ -699,7 +699,7 @@ module li_subglacial_hydro
       call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
 
-      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
 
@@ -731,7 +731,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
 
 
-      do iEdge = 1, nEdgesSolve
+      do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
 
@@ -771,7 +771,7 @@ module li_subglacial_hydro
          call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
          call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
          call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
-         do iEdge = 1, nEdgesSolve
+         do iEdge = 1, nEdges
             ! Only calculate slope for edges that have ice on at least one side.
             if ( li_mask_is_ice(edgeMask(iEdge)) ) then
                hydropotentialBaseSlopeTangent(iEdge) = ( hydropotentialBaseVertex(verticesOnEdge(1,iEdge)) -  &
@@ -803,7 +803,7 @@ module li_subglacial_hydro
       ! calculate diffusivity on edges
       diffusivity(:) = rho_water * gravity * effectiveConducEdge(:) * waterThicknessEdge(:)
 
-      do iEdge = 1, nEdgesSolve
+      do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
          waterVelocity(iEdge) = -1.0_RKIND * effectiveConducEdge(iEdge) * hydropotentialBaseSlopeNormal(iEdge)
