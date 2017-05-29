@@ -384,7 +384,7 @@
   <entry id="PAUSE_COMPONENT_LIST">
     <type>char</type>
     <default_value>none</default_value>
-    <values>
+    <values match="last">
       <value compset="_DESP">cpl</value>
     </values>
     <group>run_begin_stop_restart</group>
@@ -1906,7 +1906,7 @@
 
   <entry id="NTASKS">
     <type>integer</type>
-    <values>
+    <values match="last">
       <value component="ATM"> 0</value>
       <value component="CPL"> 0</value>
       <value component="OCN"> 0</value>
@@ -1924,7 +1924,7 @@
 
   <entry id="NTHRDS">
     <type>integer</type>
-    <values>
+    <values match="last">
       <value component="ATM">1</value>
       <value component="CPL">1</value>
       <value component="OCN">1</value>
@@ -1942,7 +1942,7 @@
 
   <entry id="ROOTPE">
     <type>integer</type>
-    <values>
+    <values match="last">
       <value component="ATM">0</value>
       <value component="CPL">0</value>
       <value component="OCN">0</value>
@@ -1960,7 +1960,7 @@
 
   <entry id="NINST">
     <type>integer</type>
-    <values>
+    <values match="last">
       <value component="ATM">1</value>
       <value component="OCN">1</value>
       <value component="WAV">1</value>
@@ -1978,7 +1978,7 @@
   <entry id="NINST_LAYOUT">
     <type>char</type>
     <valid_values>sequential,concurrent</valid_values>
-    <values>
+    <values match="last">
       <value component="ATM">concurrent</value>
       <value component="OCN">concurrent</value>
       <value component="WAV">concurrent</value>
@@ -1995,7 +1995,7 @@
 
   <entry id="PSTRID">
     <type>integer</type>
-    <values>
+    <values match="last">
       <value component="ATM">1</value>
       <value component="CPL">1</value>
       <value component="OCN">1</value>
@@ -2170,7 +2170,7 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
-    <values>
+    <values match="last">
       <value component="ATM">default</value>
       <value component="CPL">default</value>
       <value component="OCN">default</value>
@@ -2191,7 +2191,7 @@
      stride in compute comm of io tasks for each component, if this value is -99 it will
      be computed based on PIO_NUMTASKS and number of compute tasks
     </desc>
-    <values>
+    <values match="last">
       <value component="ATM"></value>
       <value component="CPL"></value>
       <value component="OCN"></value>
@@ -2210,7 +2210,7 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
-    <values>
+    <values match="last">
       <value>$PIO_VERSION</value>
       <value component="ATM"></value>
       <value component="CPL"></value>
@@ -2229,7 +2229,7 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio root processor relative to component root</desc>
-    <values>
+    <values match="last">
       <value component="ATM">1</value>
       <value component="CPL">1</value>
       <value component="OCN">1</value>
@@ -2250,7 +2250,7 @@
       pio number of io tasks, if this value is -99 it will be computed based on PIO_STRIDE and
       number of tasks
     </desc>
-    <values>
+    <values match="last">
       <value component="ATM">-99</value>
       <value component="CPL">-99</value>
       <value component="OCN">-99</value>
