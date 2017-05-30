@@ -1,4 +1,207 @@
 ======================================================================
+
+Originator: Chris Fischer
+Date: 5-28-2017
+Tag: cime5.3.0-alpha.22
+Answer Changes: Climate Changing for active two-way coupled GLC
+Tests: Ran gnu TG smoke tests
+       aux_clm45 yellowstone_gnu
+       create_test cime_developer --queue long
+       scripts_regression_tests.py --fast
+       code_checker and scripts_regressions_tests.pr
+       CECO.hobart_pgi build
+        
+Dependencies:
+
+Brief Summary:
+    - Remove no-longer-needed CISM_GNU setting.
+    - Add more error-checking with gnu in debug mode.
+    - Map SMB from lnd to glc using bilinear mapping with a conservation
+      correction.
+    - Do not eval words - only strings with whitespace.
+    - Change all python2 style strings to python3 style strings.
+    - Update the user_defined template.
+    - Update testreporter and change hobart queue to medium.
+    - Improve handling of hist comparisons in TestStatus.log.
+    - Update PGI compiler to 17.04 on hobart.
+    - Downscale build parellism on small machines.
+
+User interface changes: 
+    - New drv_in namelist variable: 'glc_renormalize_smb'
+    - Contents of TestStatus.log.
+    - Automatic downscale of builds.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+2f6e683 Merge pull request #1620 from billsacks/remove_cism_gnu
+4f08bb0 Merge pull request #1618 from billsacks/gnu_debug_flags
+7a5242d Merge pull request #1609 from billsacks/lnd2glc_bilinear
+21f2a20 Merge pull request #1614 from jedwards4b/eval_fix
+2890518 Merge pull request #1608 from ESMCI/erichlf/3strings
+fb3f533 Merge pull request #1611 from jedwards4b/update_user_defined
+162ba85 Merge pull request #1610 from ESMCI/fischer/testreporter_fix
+a9cc09c Merge pull request #1606 from ESMCI/jgfouca/improve_logs_for_compares
+2deb949 Merge pull request #1602 from mnlevy1981/machines/hobart_pgi_ver
+0b55ea3 Merge pull request #1605 from ESMCI/jgfouca/downscale_builds_on_small_machs
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/machines/template.st_archive
+M	config/cesm/machines/Makefile
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.st_archive
+M	config/cesm/machines/userdefined_laptop_template/README.md
+M	config/cesm/machines/userdefined_laptop_template/config_compilers.xml
+M	config/cesm/machines/userdefined_laptop_template/config_machines.xml
+M	scripts/Tools/acme_check_env
+M	scripts/Tools/bless_test_results
+M	scripts/Tools/case.build
+M	scripts/Tools/case.cmpgen_namelists
+M	scripts/Tools/case.setup
+M	scripts/Tools/case_diff
+M	scripts/Tools/check_case
+M	scripts/Tools/check_input_data
+M	scripts/Tools/check_lockedfiles
+M	scripts/Tools/cime_bisect
+M	scripts/Tools/code_checker
+M	scripts/Tools/compare_namelists
+M	scripts/Tools/compare_test_results
+M	scripts/Tools/component_compare_baseline
+M	scripts/Tools/component_compare_copy
+M	scripts/Tools/component_compare_test
+M	scripts/Tools/component_generate_baseline
+M	scripts/Tools/cs.status
+M	scripts/Tools/jenkins_generic_job
+M	scripts/Tools/list_acme_tests
+M	scripts/Tools/normalize_cases
+M	scripts/Tools/pelayout
+M	scripts/Tools/pointclm/makepointdata.py
+M	scripts/Tools/pointclm/post_process.py
+M	scripts/Tools/pointclm/site_fullrun.py
+M	scripts/Tools/preview_run
+M	scripts/Tools/save_provenance
+M	scripts/Tools/simple_compare
+M	scripts/Tools/testreporter.py
+M	scripts/Tools/update_acme_tests
+M	scripts/Tools/xmlconvertors/config_pes_converter.py
+M	scripts/Tools/xmlconvertors/grid_xml_converter.py
+M	scripts/create_newcase
+M	scripts/fortran_unit_testing/python/printer.py
+M	scripts/fortran_unit_testing/run_tests.py
+M	scripts/lib/CIME/BuildTools/configure.py
+M	scripts/lib/CIME/BuildTools/macrowriterbase.py
+M	scripts/lib/CIME/SystemTests/dae.py
+M	scripts/lib/CIME/SystemTests/eri.py
+M	scripts/lib/CIME/SystemTests/erio.py
+M	scripts/lib/CIME/SystemTests/erp.py
+M	scripts/lib/CIME/SystemTests/err.py
+M	scripts/lib/CIME/SystemTests/ers.py
+M	scripts/lib/CIME/SystemTests/ers2.py
+M	scripts/lib/CIME/SystemTests/homme.py
+M	scripts/lib/CIME/SystemTests/nck.py
+M	scripts/lib/CIME/SystemTests/ncr.py
+M	scripts/lib/CIME/SystemTests/nodefail.py
+M	scripts/lib/CIME/SystemTests/pea.py
+M	scripts/lib/CIME/SystemTests/pem.py
+M	scripts/lib/CIME/SystemTests/pet.py
+M	scripts/lib/CIME/SystemTests/pre.py
+M	scripts/lib/CIME/SystemTests/seq.py
+M	scripts/lib/CIME/SystemTests/ssp.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/archive.py
+M	scripts/lib/CIME/XML/batch.py
+M	scripts/lib/CIME/XML/compilerblock.py
+M	scripts/lib/CIME/XML/compilers.py
+M	scripts/lib/CIME/XML/component.py
+M	scripts/lib/CIME/XML/compsets.py
+M	scripts/lib/CIME/XML/entry_id.py
+M	scripts/lib/CIME/XML/env_archive.py
+M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_pes.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/env_test.py
+M	scripts/lib/CIME/XML/files.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/grids.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/XML/namelist_definition.py
+M	scripts/lib/CIME/XML/pes.py
+M	scripts/lib/CIME/XML/test_reporter.py
+M	scripts/lib/CIME/XML/testlist.py
+M	scripts/lib/CIME/XML/tests.py
+M	scripts/lib/CIME/XML/testspec.py
+M	scripts/lib/CIME/aprun.py
+M	scripts/lib/CIME/bless_test_results.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/buildlib.py
+M	scripts/lib/CIME/buildnml.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_cmpgen_namelists.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/case_st_archive.py
+M	scripts/lib/CIME/case_test.py
+M	scripts/lib/CIME/check_input_data.py
+M	scripts/lib/CIME/check_lockedfiles.py
+M	scripts/lib/CIME/compare_namelists.py
+M	scripts/lib/CIME/compare_test_results.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/namelist.py
+M	scripts/lib/CIME/nmlgen.py
+M	scripts/lib/CIME/preview_namelists.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/simple_compare.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/test_status.py
+M	scripts/lib/CIME/test_utils.py
+M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two_link_to_case2_output.py
+M	scripts/lib/CIME/tests/test_user_mod_support.py
+M	scripts/lib/CIME/user_mod_support.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/lib/update_acme_tests.py
+M	scripts/tests/list_tests
+M	scripts/tests/scripts_regression_tests.py
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/main/CMakeLists.txt
+M	src/drivers/mct/main/map_lnd2glc_mod.F90
+M	src/drivers/mct/main/prep_glc_mod.F90
+M	src/drivers/mct/main/prep_lnd_mod.F90
+D	src/drivers/mct/main/vertical_gradient_calculator_2nd_order.F90
+D	src/drivers/mct/main/vertical_gradient_calculator_base.F90
+D	src/drivers/mct/main/vertical_gradient_calculator_factory.F90
+M	src/drivers/mct/shr/glc_elevclass_mod.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+M	src/drivers/mct/unit_test/CMakeLists.txt
+M	src/drivers/mct/unit_test/glc_elevclass_test/test_glc_elevclass.pf
+D	src/drivers/mct/unit_test/map_lnd2glc_test/CMakeLists.txt
+D	src/drivers/mct/unit_test/map_lnd2glc_test/test_map_lnd2glc.pf
+M	src/drivers/mct/unit_test/stubs/CMakeLists.txt
+D	src/drivers/mct/unit_test/stubs/vertical_gradient_calculator_constant.F90
+D	src/drivers/mct/unit_test/vertical_gradient_calculator_test/CMakeLists.txt
+D	src/drivers/mct/unit_test/vertical_gradient_calculator_test/README
+D	src/drivers/mct/unit_test/vertical_gradient_calculator_test/gradient_example.txt
+D	src/drivers/mct/unit_test/vertical_gradient_calculator_test/plot_gradient
+D	src/drivers/mct/unit_test/vertical_gradient_calculator_test/test_vertical_gradient_calculator_2nd_order.pf
+D	src/drivers/mct/unit_test/vertical_gradient_calculator_test/test_vertical_gradient_calculator_factory.pf
+M	src/share/test/unit/shr_string_test/test_shr_string.pf
+M	src/share/util/shr_string_mod.F90
+M	tools/load_balancing_tool/code/merge.py
+M	tools/load_balancing_tool/code/neos.py
+M	tools/statistical_ensemble_test/pyCECT/pyCECT.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsLib.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsSum.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsSumPop.py
+M	tools/utils/find_circular_dependency.py
+
+======================================================================
+
+======================================================================
 Originator: Chris Fischer 
 Date: 5-24-2017
 Tag: cime5.3.0-alpha.21
