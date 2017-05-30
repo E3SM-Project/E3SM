@@ -8,7 +8,7 @@ from copy import deepcopy
 import glob, os, shutil, math, string
 from CIME.XML.standard_module_setup import *
 
-from CIME.utils                     import expect, get_cime_root, append_status, stringify_bool
+from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
 from CIME.utils                     import get_current_commit
 from CIME.check_lockedfiles         import LOCKED_DIR, lock_file
@@ -183,11 +183,7 @@ class Case(object):
 
     def read_xml(self):
         if self._env_files_that_need_rewrite:
-            files = ""
-            for env_file in self._env_files_that_need_rewrite:
-                files += " " + env_file.filename
-
-            expect(False, "Object(s) %s seem to have newer data than the corresponding case file" % files)
+            expect(False, "Object(s) %s seem to have newer data than the corresponding case file" % " ".join(self._env_files_that_need_rewrite))
 
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
