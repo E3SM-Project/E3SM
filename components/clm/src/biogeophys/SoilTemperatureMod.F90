@@ -100,14 +100,35 @@ module SoilTemperatureMod
   public :: SetMatrix_StandingSurfaceWater      ! Set up the matrix entries corresponding to standing surface water
   public :: SetMatrix_StandingSurfaceWater_Soil ! Set up the matrix entries corresponding to standing surface water-soil interaction
   public :: SetMatrix_Soil_StandingSurfaceWater ! Set up the matrix entries corresponding to soil-standing surface water interction
+  public :: init_soil_temperature               ! Initializes soil tempreature model
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: SoilThermProp      ! Set therm conduct. and heat cap of snow/soil layers
   private :: PhaseChangeH2osfc  ! When surface water freezes move ice to bottom snow layer
   private :: PhaseChange_beta   ! Calculation of the phase change within snow and soil layers
+  integer, parameter :: default_thermal_model  = 0
+  integer, parameter :: petsc_thermal_model    = 1
+  integer            :: thermal_model
   !-----------------------------------------------------------------------
 
 contains
+
+  !-----------------------------------------------------------------------
+  subroutine init_soil_temperature()
+    !
+    !DESCRIPTION
+    !  Initializes the soil tempreature model
+    !
+    use clm_varctl, only : use_petsc_thermal_model
+    ! !ARGUMENTS:
+
+    if (.not.use_petsc_thermal_model) then
+       thermal_model = default_thermal_model
+    else
+       thermal_model = petsc_thermal_model
+    endif
+
+  end subroutine init_soil_temperature
 
   !-----------------------------------------------------------------------
   subroutine SoilTemperature(bounds, num_urbanl, filter_urbanl, num_nolakec, filter_nolakec, &
@@ -134,14 +155,17 @@ contains
     !   results in a tridiagonal system equation.
     !
     ! !USES:
-    use clm_time_manager , only : get_step_size
-    use clm_varpar       , only : nlevsno, nlevgrnd, nlevurb
-    use clm_varctl       , only : iulog
-    use clm_varcon       , only : cnfac, cpice, cpliq, denh2o
-    use landunit_varcon  , only : istice, istice_mec, istsoil, istcrop
-    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
-    use landunit_varcon  , only : istwet, istice, istice_mec, istsoil, istcrop
-    use BandDiagonalMod  , only : BandDiagonal
+    use clm_time_manager         , only : get_step_size
+    use clm_varpar               , only : nlevsno, nlevgrnd, nlevurb
+    use clm_varctl               , only : iulog
+    use clm_varcon               , only : cnfac, cpice, cpliq, denh2o
+    use landunit_varcon          , only : istice, istice_mec, istsoil, istcrop
+    use column_varcon            , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
+    use landunit_varcon          , only : istwet, istice, istice_mec, istsoil, istcrop
+    use BandDiagonalMod          , only : BandDiagonal
+    use ExternalModelConstants   , only : EM_ID_PTM
+    use ExternalModelConstants   , only : EM_PTM_TBASED_SOLVE_STAGE
+    use ExternalModelInterfaceMod, only : EMI_Driver
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds                     
@@ -160,34 +184,40 @@ contains
     type(temperature_type) , intent(inout) :: temperature_vars
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,c,l,g,pi                                               !  indices
-    integer  :: fc                                                       ! lake filtered column indices
-    integer  :: fl                                                       ! urban filtered landunit indices
-    integer  :: jtop(bounds%begc:bounds%endc)                            ! top level at each column
-    real(r8) :: dtime                                                    ! land model time step (sec)
-    real(r8) :: cv (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)         ! heat capacity [J/(m2 K)]
-    real(r8) :: tk (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)         ! thermal conductivity [W/(m K)]
-    real(r8) :: fn (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)         ! heat diffusion through the layer interface [W/m2]
-    real(r8) :: fn1(bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)         ! heat diffusion through the layer interface [W/m2]
-    real(r8) :: dzm                                                      ! used in computing tridiagonal matrix
-    real(r8) :: dzp                                                      ! used in computing tridiagonal matrix
-    real(r8) :: sabg_lyr_col(bounds%begc:bounds%endc,-nlevsno+1:1)       ! absorbed solar radiation (col,lyr) [W/m2]
-    real(r8) :: eflx_gnet_top                                            ! net energy flux into surface layer, pft-level [W/m2]
-    real(r8) :: hs_top(bounds%begc:bounds%endc)                          ! net energy flux into surface layer (col) [W/m2]
-    logical  :: cool_on(bounds%begl:bounds%endl)                         ! is urban air conditioning on?
-    logical  :: heat_on(bounds%begl:bounds%endl)                         ! is urban heating on?
-    real(r8) :: fn_h2osfc(bounds%begc:bounds%endc)                       ! heat diffusion through standing-water/soil interface [W/m2]
-    real(r8) :: dz_h2osfc(bounds%begc:bounds%endc)                       ! height of standing surface water [m]
-    integer, parameter :: nband=5
-    real(r8) :: bmatrix(bounds%begc:bounds%endc,nband,-nlevsno:nlevgrnd) ! banded matrix for numerical solution of temperature
-    real(r8) :: tvector(bounds%begc:bounds%endc,-nlevsno:nlevgrnd)       ! initial temperature solution [Kelvin]
-    real(r8) :: rvector(bounds%begc:bounds%endc,-nlevsno:nlevgrnd)       ! RHS vector for numerical solution of temperature
-    real(r8) :: tk_h2osfc(bounds%begc:bounds%endc)                       ! thermal conductivity of h2osfc [W/(m K)] [col]
-    real(r8) :: dhsdT(bounds%begc:bounds%endc)                           ! temperature derivative of "hs" [col]
-    real(r8) :: hs_soil(bounds%begc:bounds%endc)                         ! heat flux on soil [W/m2]
-    real(r8) :: hs_top_snow(bounds%begc:bounds%endc)                     ! heat flux on top snow layer [W/m2]
-    real(r8) :: hs_h2osfc(bounds%begc:bounds%endc)                       ! heat flux on standing water [W/m2]
-    integer  :: jbot(bounds%begc:bounds%endc)                            ! bottom level at each column
+    integer  :: j,c,l,g,pi                                                  ! indices
+    integer  :: fc                                                          ! lake filtered column indices
+    integer  :: fl                                                          ! urban filtered landunit indices
+    integer  :: jtop(bounds%begc:bounds%endc)                               ! top level at each column
+    real(r8) :: dtime                                                       ! land model time step (sec)
+    real(r8) :: cv (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)            ! heat capacity [J/(m2 K)]
+    real(r8) :: tk (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)            ! thermal conductivity [W/(m K)]
+    real(r8) :: fn (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)            ! heat diffusion through the layer interface [W/m2]
+    real(r8) :: fn1(bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)            ! heat diffusion through the layer interface [W/m2]
+    real(r8) :: dzm                                                         ! used in computing tridiagonal matrix
+    real(r8) :: dzp                                                         ! used in computing tridiagonal matrix
+    real(r8) :: sabg_lyr_col(bounds%begc:bounds%endc,-nlevsno+1:1)          ! absorbed solar radiation (col,lyr) [W/m2]
+    real(r8) :: eflx_gnet_top                                               ! net energy flux into surface layer, pft-level [W/m2]
+    real(r8) :: hs_top(bounds%begc:bounds%endc)                             ! net energy flux into surface layer (col) [W/m2]
+    logical  :: cool_on(bounds%begl:bounds%endl)                            ! is urban air conditioning on?
+    logical  :: heat_on(bounds%begl:bounds%endl)                            ! is urban heating on?
+    real(r8) :: fn_h2osfc(bounds%begc:bounds%endc)                          ! heat diffusion through standing-water/soil interface [W/m2]
+    real(r8) :: dz_h2osfc(bounds%begc:bounds%endc)                          ! height of standing surface water [m]
+    real(r8) :: tvector_nourbanc(bounds%begc:bounds%endc,-nlevsno:nlevgrnd) ! initial temperature solution for non-urban columns [Kelvin]
+    real(r8) :: tvector_urbanc(bounds%begc:bounds%endc,-nlevsno:nlevgrnd)   ! initial temperature solution for urban columns [Kelvin]
+    real(r8) :: tk_h2osfc(bounds%begc:bounds%endc)                          ! thermal conductivity of h2osfc [W/(m K)] [col]
+    real(r8) :: dhsdT(bounds%begc:bounds%endc)                              ! temperature derivative of "hs" [col]
+    real(r8) :: hs_soil(bounds%begc:bounds%endc)                            ! heat flux on soil [W/m2]
+    real(r8) :: hs_top_snow(bounds%begc:bounds%endc)                        ! heat flux on top snow layer [W/m2]
+    real(r8) :: hs_h2osfc(bounds%begc:bounds%endc)                          ! heat flux on standing water [W/m2]
+    integer  :: jbot(bounds%begc:bounds%endc)                               ! bottom level at each column
+    integer  :: num_nolakec_and_nourbanc
+    integer  :: num_nolakec_and_urbanc
+    integer  :: num_filter_lun
+    integer, pointer :: filter_nolakec_and_nourbanc(:)
+    integer, pointer :: filter_nolakec_and_urbanc(:)
+    integer, pointer :: filter_lun(:)
+    logical  :: urban_column
+    logical  :: update_temperature
     !-----------------------------------------------------------------------
 
     associate(                                                                   & 
@@ -300,6 +330,46 @@ contains
          endif
       end do
 
+      !
+      ! Setup two new filters:
+      ! - filter_nolakec_and_nourbanc: No Lakes + No Urban columns
+      ! - filter_nolakec_and_urbanc  : No Lakes + Urban columns
+      !
+      num_nolakec_and_nourbanc = 0
+      num_nolakec_and_urbanc   = 0
+      do fc = 1,num_nolakec
+         c = filter_nolakec(fc)
+         l = col%landunit(c)
+         if (lun%urbpoi(l)) then
+            num_nolakec_and_urbanc = num_nolakec_and_urbanc + 1
+         else
+            num_nolakec_and_nourbanc = num_nolakec_and_nourbanc + 1
+         endif
+      enddo
+
+      allocate(filter_nolakec_and_nourbanc(num_nolakec_and_nourbanc))
+      allocate(filter_nolakec_and_urbanc(  num_nolakec_and_urbanc  ))
+
+      num_nolakec_and_nourbanc = 0
+      num_nolakec_and_urbanc   = 0
+      do fc = 1,num_nolakec
+         c = filter_nolakec(fc)
+         l = col%landunit(c)
+         if (lun%urbpoi(l)) then
+            num_nolakec_and_urbanc = num_nolakec_and_urbanc + 1
+            filter_nolakec_and_urbanc(num_nolakec_and_urbanc) = c
+         else
+            num_nolakec_and_nourbanc = num_nolakec_and_nourbanc + 1
+            filter_nolakec_and_nourbanc(num_nolakec_and_nourbanc) = c
+         endif
+      end do
+
+      num_filter_lun = bounds%endl - bounds%begl + 1
+      allocate(filter_lun(num_filter_lun))
+      do fc = 1, num_filter_lun
+         filter_lun(fc) = bounds%begl + fc - 1
+      enddo
+
       !------------------------------------------------------
       ! Compute ground surface and soil temperatures
       !------------------------------------------------------
@@ -347,81 +417,149 @@ contains
          c_h2osfc(c)  = cpliq*denh2o*dz_h2osfc(c) !"areametric" heat capacity [J/K/m^2]
       enddo
 
-
-      ! Set up vector r and vectors a, b, c that define tridiagonal
-
-      call SetRHSVec(bounds, num_nolakec, filter_nolakec, &
-           dtime,                                         &
-           hs_h2osfc( begc:endc ),                        &
-           hs_top_snow( begc:endc ),                      &
-           hs_soil( begc:endc ),                          &
-           hs_top( begc:endc ),                           &
-           dhsdT( begc:endc ),                            &
-           sabg_lyr_col (begc:endc, -nlevsno+1: ),        &
-           tk( begc:endc, -nlevsno+1: ),                  &
-           tk_h2osfc( begc:endc ),                        &
-           fact( begc:endc, -nlevsno+1: ),                &
-           fn( begc:endc, -nlevsno+1: ),                  &
-           c_h2osfc( begc:endc ),                         &
-           dz_h2osfc( begc:endc ),                        &
-           temperature_vars,                              &
-           waterstate_vars,                               &
-           rvector( begc:endc, -nlevsno: ))
-
-      ! Set up the banded diagonal matrix
-
-      call SetMatrix(bounds, num_nolakec, filter_nolakec, &
-           dtime,                                         &
-           nband,                                         &
-           dhsdT( begc:endc ),                            &
-           tk( begc:endc, -nlevsno+1: ),                  &
-           tk_h2osfc( begc:endc ),                        &
-           fact( begc:endc, -nlevsno+1: ),                &
-           c_h2osfc( begc:endc ),                         &
-           dz_h2osfc( begc:endc ),                        &
-           waterstate_vars,                               &
-           bmatrix( begc:endc, 1:, -nlevsno: ))
-
       ! initialize initial temperature vector
 
-      tvector(begc:endc, :) = nan
+      tvector_nourbanc(begc:endc, :) = nan
+      tvector_urbanc(  begc:endc, :) = nan
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          do j = snl(c)+1, 0
-            tvector(c,j-1) = t_soisno(c,j)
+            tvector_nourbanc(c,j-1) = t_soisno(c,j)
+            tvector_urbanc(  c,j-1) = t_soisno(c,j)
          end do
-
          ! surface water layer has two coefficients
-         tvector(c,0) = t_h2osfc(c)
+         tvector_nourbanc(c,0) = t_h2osfc(c)
+         tvector_urbanc(  c,0) = t_h2osfc(c)
 
          ! soil layers; top layer will have one offset and one extra coefficient
-         tvector(c,1:nlevgrnd) = t_soisno(c,1:nlevgrnd)
-
+         tvector_nourbanc(c,1:nlevgrnd) = t_soisno(c,1:nlevgrnd)
+         tvector_urbanc(c,1:nlevgrnd)   = t_soisno(c,1:nlevgrnd)
       enddo
 
-      call t_startf( 'SoilTempBandDiag')
 
-      ! Solve the system
+      !
+      ! Solve temperature for non-lake + non-urban columns
+      !
 
-      call BandDiagonal(bounds, -nlevsno, nlevgrnd, jtop(begc:endc), jbot(begc:endc), &
-           num_nolakec, filter_nolakec, nband, bmatrix(begc:endc, :, :), &
-           rvector(begc:endc, :), tvector(begc:endc, :))
-      call t_stopf( 'SoilTempBandDiag')
+      update_temperature = .true.
+      select case(thermal_model)
+      case (default_thermal_model)
+
+         urban_column = .false.
+         call SolveTemperature(bounds,                &
+              num_nolakec_and_nourbanc,               &
+              filter_nolakec_and_nourbanc,            &
+              dtime,                                  &
+              hs_h2osfc( begc:endc ),                 &
+              hs_top_snow( begc:endc ),               &
+              hs_soil( begc:endc ),                   &
+              hs_top( begc:endc ),                    &
+              dhsdT( begc:endc ),                     &
+              sabg_lyr_col (begc:endc, -nlevsno+1: ), &
+              tk( begc:endc, -nlevsno+1: ),           &
+              tk_h2osfc( begc:endc ),                 &
+              fact( begc:endc, -nlevsno+1: ),         &
+              fn( begc:endc, -nlevsno+1: ),           &
+              c_h2osfc( begc:endc ),                  &
+              dz_h2osfc( begc:endc ),                 &
+              jtop( begc:endc ),                      &
+              jbot( begc:endc ),                      &
+              temperature_vars,                       &
+              waterstate_vars,                        &
+              urban_column,                           &
+              tvector_nourbanc( begc:endc, -nlevsno: ))
+
+      case (petsc_thermal_model)
+#ifdef USE_PETSC_LIB
+         update_temperature = .false.
+         call Prepare_Data_for_EM_PTM_Driver(bounds, &
+              num_nolakec_and_nourbanc,              &
+              filter_nolakec_and_nourbanc,           &
+              sabg_lyr_col(begc:endc, -nlevsno+1:),  &
+              dhsdT( begc:endc ),                    &
+              hs_soil( begc:endc ),                  &
+              hs_top_snow( begc:endc ),              &
+              hs_h2osfc( begc:endc ),                &
+              energyflux_vars                        &
+              )
+
+         call EMI_Driver(EM_ID_PTM,                                      &
+              EM_PTM_TBASED_SOLVE_STAGE,                                 &
+              dt = get_step_size()*1.0_r8,                               &
+              clump_rank  = bounds%clump_index,                          &
+              num_nolakec_and_nourbanc = num_nolakec_and_nourbanc,       &
+              filter_nolakec_and_nourbanc = filter_nolakec_and_nourbanc, &
+              num_filter_lun = num_filter_lun,                           &
+              filter_lun = filter_lun,                                   &
+              waterstate_vars = waterstate_vars,                         &
+              energyflux_vars = energyflux_vars,                         &
+              temperature_vars = temperature_vars)
+#endif
+      end select
+
+      !
+      ! Solve temperature for lake + urban column
+      !
+
+      urban_column = .true.
+      call SolveTemperature(bounds,                &
+           num_nolakec_and_urbanc,                 &
+           filter_nolakec_and_urbanc,              &
+           dtime,                                  &
+           hs_h2osfc( begc:endc ),                 &
+           hs_top_snow( begc:endc ),               &
+           hs_soil( begc:endc ),                   &
+           hs_top( begc:endc ),                    &
+           dhsdT( begc:endc ),                     &
+           sabg_lyr_col (begc:endc, -nlevsno+1: ), &
+           tk( begc:endc, -nlevsno+1: ),           &
+           tk_h2osfc( begc:endc ),                 &
+           fact( begc:endc, -nlevsno+1: ),         &
+           fn( begc:endc, -nlevsno+1: ),           &
+           c_h2osfc( begc:endc ),                  &
+           dz_h2osfc( begc:endc ),                 &
+           jtop( begc:endc ),                      &
+           jbot( begc:endc ),                      &
+           temperature_vars,                       &
+           waterstate_vars,                        &
+           urban_column,                           &
+           tvector_urbanc( begc:endc, -nlevsno: ))
 
       ! return temperatures to original array
 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
-         do j = snl(c)+1, 0
-            t_soisno(c,j) = tvector(c,j-1) !snow layers
-         end do
-         t_soisno(c,1:nlevgrnd)   = tvector(c,1:nlevgrnd)  !soil layers
+         l = col%landunit(c)
 
-         if (frac_h2osfc(c) == 0._r8) then
-            t_h2osfc(c)=t_soisno(c,1)
+         if (lun%urbpoi(l)) then
+            do j = snl(c)+1, 0
+               t_soisno(c,j)       = tvector_urbanc(c,j-1)        !snow layers
+            end do
+            t_soisno(c,1:nlevgrnd) = tvector_urbanc(c,1:nlevgrnd) !soil layers
+            
+            if (frac_h2osfc(c) == 0._r8) then
+               t_h2osfc(c)         = t_soisno(c,1)
+            else
+               t_h2osfc(c)         = tvector_urbanc(c,0)          !surface water
+            endif
+
          else
-            t_h2osfc(c)              = tvector(c,0)           !surface water
+
+            if (update_temperature) then
+               do j = snl(c)+1, 0
+                  t_soisno(c,j)       = tvector_nourbanc(c,j-1)        !snow layers
+               end do
+               t_soisno(c,1:nlevgrnd) = tvector_nourbanc(c,1:nlevgrnd) !soil layers
+
+               if (frac_h2osfc(c) == 0._r8) then
+                  t_h2osfc(c)         = t_soisno(c,1)
+               else
+                  t_h2osfc(c)         = tvector_nourbanc(c,0)          !surface water
+               endif
+            endif
+
          endif
+
       enddo
 
       ! Melting or Freezing
@@ -555,9 +693,132 @@ contains
          end do
       end do
 
+
+      ! Free up memory
+      deallocate(filter_nolakec_and_nourbanc)
+      deallocate(filter_nolakec_and_urbanc  )
+
     end associate
 
   end subroutine SoilTemperature
+
+
+  !-----------------------------------------------------------------------
+
+  subroutine SolveTemperature(bounds, num_filter, filter, dtime, &
+       hs_h2osfc, hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, tk, &
+       tk_h2osfc, fact, fn, c_h2osfc, dz_h2osfc, jtop, jbot, &
+       temperature_vars, waterstate_vars, urban_column, tvector)
+    !
+    ! !DESCRIPTION:
+    !  Assembles and solves the banded penta-diagonal system of equations
+    !
+    ! !USES:
+    use clm_varpar       , only : nlevsno, nlevgrnd, nlevurb
+    use clm_varctl       , only : iulog
+    use clm_varcon       , only : cnfac, cpice, cpliq, denh2o
+    use landunit_varcon  , only : istice, istice_mec, istsoil, istcrop
+    use landunit_varcon  , only : istwet, istice, istice_mec, istsoil, istcrop
+    use BandDiagonalMod  , only : BandDiagonal
+    !
+    ! !ARGUMENTS:
+    implicit none
+    !
+    type(bounds_type)      , intent(in)  :: bounds                                     ! bounds
+    integer                , intent(in)  :: num_filter                                 ! number of columns in the filter
+    integer                , intent(in)  :: filter(:)                                  ! column filter
+    real(r8)               , intent(in)  :: dtime                                      ! land model time step (sec)
+    real(r8)               , intent(in)  :: hs_h2osfc( bounds%begc: )                  ! heat flux on standing water [W/m2]
+    real(r8)               , intent(in)  :: hs_top_snow( bounds%begc: )                ! heat flux on top snow layer [W/m2]
+    real(r8)               , intent(in)  :: hs_soil( bounds%begc: )                    ! heat flux on soil [W/m2]
+    real(r8)               , intent(in)  :: hs_top( bounds%begc: )                     ! net energy flux into surface layer (col) [W/m2]
+    real(r8)               , intent(in)  :: dhsdT( bounds%begc: )                      ! temperature derivative of "hs" [col]
+    real(r8)               , intent(in)  :: sabg_lyr_col( bounds%begc: , -nlevsno+1: ) ! absorbed solar radiation (col,lyr) [W/m2]
+    real(r8)               , intent(in)  :: tk( bounds%begc: , -nlevsno+1: )           ! thermal conductivity [W/(m K)]
+    real(r8)               , intent(in)  :: tk_h2osfc( bounds%begc: )                  ! thermal conductivity of h2osfc [W/(m K)] [col]
+    real(r8)               , intent(in)  :: fact( bounds%begc: , -nlevsno+1: )         ! used in computing tridiagonal matrix [col, lev]
+    real(r8)               , intent(in)  :: fn( bounds%begc: , -nlevsno+1: )           ! heat diffusion through the layer interface [W/m2]
+    real(r8)               , intent(in)  :: c_h2osfc( bounds%begc: )                   ! heat capacity of surface water [col]
+    real(r8)               , intent(in)  :: dz_h2osfc( bounds%begc: )                  ! Thickness of standing water [m]
+    integer                , intent(in)  :: jtop(bounds%begc: )                        ! top level at each column
+    integer                , intent(in)  :: jbot(bounds%begc: )                        ! bottom level at each column
+    type(temperature_type) , intent(in)  :: temperature_vars                           !
+    type(waterstate_type)  , intent(in)  :: waterstate_vars                            !
+    logical                , intent(in)  :: urban_column                               ! Is true if solving temperature for urban column, otherwise false
+    real(r8)               , intent(out) :: tvector( bounds%begc: , -nlevsno: )        ! Numerical solution of temperature
+    !
+    ! !LOCAL VARIABLES:
+    integer            :: c, fc, j
+    integer, parameter :: nband=5
+    real(r8)           :: bmatrix(bounds%begc:bounds%endc,nband,-nlevsno:nlevgrnd) ! banded matrix for numerical solution of temperature
+    real(r8)           :: rvector(bounds%begc:bounds%endc,-nlevsno:nlevgrnd)       ! RHS vector for numerical solution of temperature
+    !-----------------------------------------------------------------------
+
+    associate(                                                             & 
+         begc                    => bounds%begc                          , &
+         endc                    => bounds%endc                            &
+         )
+
+      ! Enforce expected array sizes
+      SHR_ASSERT_ALL((ubound(hs_h2osfc)    == (/bounds%endc/)),           errMsg(__FILE__, __LINE__))
+      SHR_ASSERT_ALL((ubound(hs_top_snow)  == (/bounds%endc/)),           errMsg(__FILE__, __LINE__))
+      SHR_ASSERT_ALL((ubound(hs_soil)      == (/bounds%endc/)),           errMsg(__FILE__, __LINE__))
+      SHR_ASSERT_ALL((ubound(hs_top)       == (/bounds%endc/)),           errMsg(__FILE__, __LINE__))
+      SHR_ASSERT_ALL((ubound(dhsdT)        == (/bounds%endc/)),           errMsg(__FILE__, __LINE__))
+      SHR_ASSERT_ALL((ubound(sabg_lyr_col) == (/bounds%endc, 1/)),        errMsg(__FILE__, __LINE__))
+      SHR_ASSERT_ALL((ubound(tk)           == (/bounds%endc, nlevgrnd/)), errMsg(__FILE__, __LINE__))
+      SHR_ASSERT_ALL((ubound(tk_h2osfc)    == (/bounds%endc/)),           errMsg(__FILE__, __LINE__))
+      SHR_ASSERT_ALL((ubound(fact)         == (/bounds%endc, nlevgrnd/)), errMsg(__FILE__, __LINE__))
+      SHR_ASSERT_ALL((ubound(fn)           == (/bounds%endc, nlevgrnd/)), errMsg(__FILE__, __LINE__))
+      SHR_ASSERT_ALL((ubound(c_h2osfc)     == (/bounds%endc/)),           errMsg(__FILE__, __LINE__))
+      SHR_ASSERT_ALL((ubound(dz_h2osfc)    == (/bounds%endc/)),           errMsg(__FILE__, __LINE__))
+      SHR_ASSERT_ALL((ubound(jbot)         == (/bounds%endc/)),           errMsg(__FILE__, __LINE__))
+      SHR_ASSERT_ALL((ubound(tvector)      == (/bounds%endc, nlevgrnd/)), errMsg(__FILE__, __LINE__))
+
+    call SetRHSVec(bounds, num_filter, filter,   &
+         dtime,                                  &
+         hs_h2osfc( begc:endc ),                 &
+         hs_top_snow( begc:endc ),               &
+         hs_soil( begc:endc ),                   &
+         hs_top( begc:endc ),                    &
+         dhsdT( begc:endc ),                     &
+         sabg_lyr_col (begc:endc, -nlevsno+1: ), &
+         tk( begc:endc, -nlevsno+1: ),           &
+         tk_h2osfc( begc:endc ),                 &
+         fact( begc:endc, -nlevsno+1: ),         &
+         fn( begc:endc, -nlevsno+1: ),           &
+         c_h2osfc( begc:endc ),                  &
+         dz_h2osfc( begc:endc ),                 &
+         temperature_vars,                       &
+         waterstate_vars,                        &
+         urban_column,                           &
+         rvector( begc:endc, -nlevsno: ))
+
+    ! Set up the banded diagonal matrix
+
+    call SetMatrix(bounds, num_filter, filter,   &
+         dtime,                                  &
+         nband,                                  &
+         dhsdT( begc:endc ),                     &
+         tk( begc:endc, -nlevsno+1: ),           &
+         tk_h2osfc( begc:endc ),                 &
+         fact( begc:endc, -nlevsno+1: ),         &
+         c_h2osfc( begc:endc ),                  &
+         dz_h2osfc( begc:endc ),                 &
+         waterstate_vars,                        &
+         urban_column,                           &
+         bmatrix( begc:endc, 1:, -nlevsno: ))
+
+    ! Solve the system
+    call t_startf( 'SoilTempBandDiag')
+    call BandDiagonal(bounds, -nlevsno, nlevgrnd, jtop(begc:endc), jbot(begc:endc), &
+         num_filter, filter, nband, bmatrix(begc:endc, :, :), &
+         rvector(begc:endc, :), tvector(begc:endc, :))
+    call t_stopf( 'SoilTempBandDiag')
+
+  end associate
+
+end subroutine SolveTemperature
 
   !-----------------------------------------------------------------------
   subroutine SoilThermProp (bounds,  num_nolakec, filter_nolakec, &
@@ -1726,10 +1987,10 @@ contains
   end subroutine ComputeHeatDiffFluxAndFactor
 
   !-----------------------------------------------------------------------
-  subroutine SetRHSVec(bounds, num_nolakec, filter_nolakec, dtime, &
+  subroutine SetRHSVec(bounds, num_filter, filter, dtime, &
        hs_h2osfc, hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, tk, &
        tk_h2osfc, fact, fn, c_h2osfc, dz_h2osfc, &
-       temperature_vars, waterstate_vars, rvector)
+       temperature_vars, waterstate_vars, urban_column, rvector)
 
     !
     ! !DESCRIPTION:
@@ -1752,8 +2013,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type) , intent(in)  :: bounds                            ! bounds
-    integer  , intent(in)  :: num_nolakec                                ! number of column non-lake points in column filter
-    integer  , intent(in)  :: filter_nolakec(:)                          ! column filter for non-lake points
+    integer  , intent(in)  :: num_filter                                 ! number of column the in filter
+    integer  , intent(in)  :: filter(:)                                  ! column filter
     real(r8) , intent(in)  :: dtime                                      ! land model time step (sec)
     real(r8) , intent(in)  :: hs_h2osfc( bounds%begc: )                  ! heat flux on standing water [W/m2]
     real(r8) , intent(in)  :: hs_top_snow( bounds%begc: )                ! heat flux on top snow layer [W/m2]
@@ -1770,6 +2031,7 @@ contains
     real(r8) , intent(out) :: rvector( bounds%begc: , -nlevsno: )        ! RHS vector used in numerical solution of temperature
     type(temperature_type) , intent(in) :: temperature_vars
     type(waterstate_type)  , intent(in) :: waterstate_vars
+    logical                , intent(in)  :: urban_column                 ! Is true if solving temperature for urban column, otherwise false
     !
     ! !LOCAL VARIABLES:
     integer  :: j,c                                                     ! indices
@@ -1809,7 +2071,7 @@ contains
       rvector(begc:endc, :) = nan
 
       ! Set entries in RHS vector for snow layers
-      call SetRHSVec_Snow(bounds, num_nolakec, filter_nolakec, &
+      call SetRHSVec_Snow(bounds, num_filter, filter, &
            hs_top_snow( begc:endc ),                           &
            hs_top( begc:endc ),                                &
            dhsdT( begc:endc ),                                 &
@@ -1818,10 +2080,11 @@ contains
            fn( begc:endc, -nlevsno+1: ),                       &
            t_soisno ( begc:endc, -nlevsno+1: ),                & 
            t_h2osfc ( begc:endc ),                             & 
+           urban_column,                                       &
            rt_snow( begc:endc, -nlevsno:))
 
       ! Set entries in RHS vector for surface water layer
-      call SetRHSVec_StandingSurfaceWater(bounds, num_nolakec, filter_nolakec, &
+      call SetRHSVec_StandingSurfaceWater(bounds, num_filter, filter, &
            dtime,                                                              &
            hs_h2osfc( begc:endc ),                                             &
            dhsdT( begc:endc ),                                                 &
@@ -1834,7 +2097,7 @@ contains
            rt_ssw( begc:endc, 1:1))
 
       ! Set entries in RHS vector for soil layers
-      call SetRHSVec_Soil(bounds, num_nolakec, filter_nolakec, &
+      call SetRHSVec_Soil(bounds, num_filter, filter, &
            hs_top_snow( begc:endc ),                           &
            hs_soil( begc:endc ),                               &
            hs_top( begc:endc ),                                &
@@ -1847,11 +2110,12 @@ contains
            frac_h2osfc ( begc:endc),                           &
            frac_sno_eff( begc:endc),                           &
            t_soisno ( begc:endc, -nlevsno+1: ),                & 
+           urban_column,                                       &
            rt_soil( begc:endc, 1: ))
 
       ! Combine the RHS vector
-      do fc = 1,num_nolakec
-         c = filter_nolakec(fc)
+      do fc = 1,num_filter
+         c = filter(fc)
          rvector(c, -nlevsno:-1) = rt_snow(c, -nlevsno:-1)
          rvector(c, 0         )  = rt_ssw(c, 1          )
          rvector(c, 1:nlevgrnd)  = rt_soil(c, 1:nlevgrnd )
@@ -1862,9 +2126,9 @@ contains
   end subroutine SetRHSVec
 
   !-----------------------------------------------------------------------
-  subroutine SetRHSVec_Snow(bounds, num_nolakec, filter_nolakec, &
+  subroutine SetRHSVec_Snow(bounds, num_filter, filter, &
        hs_top_snow, hs_top, dhsdT, sabg_lyr_col, &
-       fact, fn, t_soisno, t_h2osfc, rt)
+       fact, fn, t_soisno, t_h2osfc, urban_column, rt)
     !
     ! !DESCRIPTION:
     ! Sets up RHS vector corresponding to snow layers.
@@ -1875,8 +2139,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                             ! bounds
-    integer , intent(in)  :: num_nolakec                                ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                          ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                 ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                  ! column filter
     real(r8), intent(in)  :: hs_top_snow( bounds%begc: )                ! heat flux on top snow layer [W/m2]
     real(r8), intent(in)  :: hs_top( bounds%begc: )                     ! net energy flux into surface layer (col) [W/m2]
     real(r8), intent(in)  :: dhsdT( bounds%begc: )                      ! temperature derivative of "hs" [col]
@@ -1885,6 +2149,7 @@ contains
     real(r8), intent(in)  :: fn (bounds%begc: , -nlevsno+1: )           ! heat diffusion through the layer interface [W/m2]
     real(r8), intent(in)  :: t_soisno(bounds%begc:, -nlevsno+1:)        ! soil temperature (Kelvin) 
     real(r8), intent(in)  :: t_h2osfc(bounds%begc:)                     ! surface water temperature (Kelvin) 
+    logical , intent(in)  :: urban_column                               ! Is true if solving temperature for urban column, otherwise false
     real(r8), intent(out) :: rt(bounds%begc: , -nlevsno: )              ! rhs vector entries
     !-----------------------------------------------------------------------
 
@@ -1907,33 +2172,36 @@ contains
       ! Initialize
       rt(begc:endc, : ) = nan
 
-      call SetRHSVec_SnowUrban(bounds, num_nolakec, filter_nolakec, &
-           hs_top_snow( begc:endc ),                                &
-           hs_top( begc:endc ),                                     &
-           dhsdT( begc:endc ),                                      &
-           sabg_lyr_col (begc:endc, -nlevsno+1: ),                  &
-           fact( begc:endc, -nlevsno+1: ),                          &
-           fn( begc:endc, -nlevsno+1: ),                            &
-           t_soisno ( begc:endc, -nlevsno+1: ),                     & 
-           t_h2osfc ( begc:endc ),                                  & 
-           rt( begc:endc, -nlevsno:))
+      if (urban_column) then
+         call SetRHSVec_SnowUrban(bounds, num_filter, filter, &
+              hs_top_snow( begc:endc ),                                &
+              hs_top( begc:endc ),                                     &
+              dhsdT( begc:endc ),                                      &
+              sabg_lyr_col (begc:endc, -nlevsno+1: ),                  &
+              fact( begc:endc, -nlevsno+1: ),                          &
+              fn( begc:endc, -nlevsno+1: ),                            &
+              t_soisno ( begc:endc, -nlevsno+1: ),                     & 
+              t_h2osfc ( begc:endc ),                                  & 
+              rt( begc:endc, -nlevsno:))
 
-      call SetRHSVec_SnowNonUrban(bounds, num_nolakec, filter_nolakec, &
-           hs_top_snow( begc:endc ),                                   &
-           hs_top( begc:endc ),                                        &
-           dhsdT( begc:endc ),                                         &
-           sabg_lyr_col (begc:endc, -nlevsno+1: ),                     &
-           fact( begc:endc, -nlevsno+1: ),                             &
-           fn( begc:endc, -nlevsno+1: ),                               &
-           t_soisno ( begc:endc, -nlevsno+1: ),                        & 
-           rt( begc:endc, -nlevsno:))
+      else
+         call SetRHSVec_SnowNonUrban(bounds, num_filter, filter, &
+              hs_top_snow( begc:endc ),                                   &
+              hs_top( begc:endc ),                                        &
+              dhsdT( begc:endc ),                                         &
+              sabg_lyr_col (begc:endc, -nlevsno+1: ),                     &
+              fact( begc:endc, -nlevsno+1: ),                             &
+              fn( begc:endc, -nlevsno+1: ),                               &
+              t_soisno ( begc:endc, -nlevsno+1: ),                        & 
+              rt( begc:endc, -nlevsno:))
+      endif
 
     end associate
 
   end subroutine SetRHSVec_Snow
 
   !-----------------------------------------------------------------------
-  subroutine SetRHSVec_SnowUrban(bounds, num_nolakec, filter_nolakec, &
+  subroutine SetRHSVec_SnowUrban(bounds, num_filter, filter, &
        hs_top_snow, hs_top, dhsdT, sabg_lyr_col, &
        fact, fn, t_soisno, t_h2osfc, rt)
     !
@@ -1948,8 +2216,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                             ! bounds
-    integer , intent(in)  :: num_nolakec                                ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                          ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                 ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                  ! column filter
     real(r8), intent(in)  :: hs_top_snow( bounds%begc: )                ! heat flux on top snow layer [W/m2]
     real(r8), intent(in)  :: hs_top( bounds%begc: )                     ! net energy flux into surface layer (col) [W/m2]
     real(r8), intent(in)  :: dhsdT( bounds%begc: )                      ! temperature derivative of "hs" [col]
@@ -1982,7 +2250,7 @@ contains
          endc => bounds%endc  & ! Input:  [integer        ] ending column index
          )
 
-      call SetRHSVec_SnowUrbanNonRoad(bounds, num_nolakec, filter_nolakec, &
+      call SetRHSVec_SnowUrbanNonRoad(bounds, num_filter, filter, &
            hs_top_snow( begc:endc ),                                       &
            hs_top( begc:endc ),                                            &
            dhsdT( begc:endc ),                                             &
@@ -1992,7 +2260,7 @@ contains
            t_soisno( begc:endc, -nlevsno+1: ),                             &
            rt( begc:endc, -nlevsno:))
 
-      call SetRHSVec_SnowUrbanRoad(bounds, num_nolakec, filter_nolakec, &
+      call SetRHSVec_SnowUrbanRoad(bounds, num_filter, filter, &
            hs_top_snow( begc:endc ),                                    &
            hs_top( begc:endc ),                                         &
            dhsdT( begc:endc ),                                          &
@@ -2008,7 +2276,7 @@ contains
   end subroutine SetRHSVec_SnowUrban
 
   !-----------------------------------------------------------------------
-  subroutine SetRHSVec_SnowUrbanNonRoad(bounds, num_nolakec, filter_nolakec, &
+  subroutine SetRHSVec_SnowUrbanNonRoad(bounds, num_filter, filter, &
        hs_top_snow, hs_top, dhsdT, sabg_lyr_col, &
        fact, fn, t_soisno, rt)
     !
@@ -2023,8 +2291,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type) , intent(in)    :: bounds                                     ! bounds
-    integer           , intent(in)    :: num_nolakec                                ! number of column non-lake points in column filter
-    integer           , intent(in)    :: filter_nolakec(:)                          ! column filter for non-lake points
+    integer           , intent(in)    :: num_filter                                 ! number of column the in filter
+    integer           , intent(in)    :: filter(:)                                  ! column filter
     real(r8)          , intent(in)    :: hs_top_snow( bounds%begc: )                ! heat flux on top snow layer [W/m2]
     real(r8)          , intent(in)    :: hs_top( bounds%begc: )                     ! net energy flux into surface layer (col) [W/m2]
     real(r8)          , intent(in)    :: dhsdT( bounds%begc: )                      ! temperature derivative of "hs" [col]
@@ -2061,8 +2329,8 @@ contains
       ! urban columns ------------------------------------------------------------------
       !
       do j = -nlevsno+1,0
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
@@ -2089,7 +2357,7 @@ contains
   end subroutine SetRHSVec_SnowUrbanNonRoad
 
   !-----------------------------------------------------------------------
-  subroutine SetRHSVec_SnowUrbanRoad(bounds, num_nolakec, filter_nolakec, &
+  subroutine SetRHSVec_SnowUrbanRoad(bounds, num_filter, filter, &
        hs_top_snow, hs_top, dhsdT, sabg_lyr_col, &
        fact, fn, t_soisno, t_h2osfc, rt)
     !
@@ -2105,8 +2373,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                             ! bounds
-    integer , intent(in)  :: num_nolakec                                ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                          ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                 ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                  ! column filter
     real(r8), intent(in)  :: hs_top_snow( bounds%begc: )                ! heat flux on top snow layer [W/m2]
     real(r8), intent(in)  :: hs_top( bounds%begc: )                     ! net energy flux into surface layer (col) [W/m2]
     real(r8), intent(in)  :: dhsdT( bounds%begc: )                      ! temperature derivative of "hs" [col]
@@ -2145,8 +2413,8 @@ contains
       ! urban road columns -------------------------------------------------------------
       !
       do j = -nlevsno+1,0
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv) then
@@ -2174,7 +2442,7 @@ contains
   end subroutine SetRHSVec_SnowUrbanRoad
 
   !-----------------------------------------------------------------------
-  subroutine SetRHSVec_SnowNonUrban(bounds, num_nolakec, filter_nolakec, &
+  subroutine SetRHSVec_SnowNonUrban(bounds, num_filter, filter, &
        hs_top_snow, hs_top, dhsdT, sabg_lyr_col, &
        fact, fn, t_soisno, rt)
 
@@ -2190,8 +2458,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                             ! bounds
-    integer , intent(in)  :: num_nolakec                                ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                          ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                 ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                  ! column filter
     real(r8), intent(in)  :: hs_top_snow( bounds%begc: )                ! heat flux on top snow layer [W/m2]
     real(r8), intent(in)  :: hs_top( bounds%begc: )                     ! net energy flux into surface layer (col) [W/m2]
     real(r8), intent(in)  :: dhsdT( bounds%begc: )                      ! temperature derivative of "hs" [col]
@@ -2226,8 +2494,8 @@ contains
       ! non-urban columns --------------------------------------------------------------
       !
       do j = -nlevsno+1,0
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (.not. lun%urbpoi(l)) then
                if (j >= col%snl(c)+1) then
@@ -2254,7 +2522,7 @@ contains
   end subroutine SetRHSVec_SnowNonUrban
 
   !-----------------------------------------------------------------------
-  subroutine SetRHSVec_StandingSurfaceWater(bounds, num_nolakec, filter_nolakec, dtime, &
+  subroutine SetRHSVec_StandingSurfaceWater(bounds, num_filter, filter, dtime, &
        hs_h2osfc, dhsdT, tk_h2osfc, c_h2osfc, dz_h2osfc, fn_h2osfc, &
        t_soisno, t_h2osfc, rt)
     !
@@ -2269,8 +2537,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                      ! bounds
-    integer , intent(in)  :: num_nolakec                         ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                   ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                          ! number of column the in filter
+    integer , intent(in)  :: filter(:)                           ! column filter
     real(r8), intent(in)  :: dtime                               ! land model time step (sec)
     real(r8), intent(in)  :: hs_h2osfc(bounds%begc: )            !
     real(r8), intent(in)  :: dhsdT(bounds%begc: )                ! temperature derivative of "hs" [col]
@@ -2305,8 +2573,8 @@ contains
     !
     ! surface water ------------------------------------------------------------------
     !
-    do fc = 1,num_nolakec
-       c = filter_nolakec(fc)
+    do fc = 1,num_filter
+       c = filter(fc)
 
        ! surface water layer has two coefficients
        dzm=(0.5*dz_h2osfc(c)+col%z(c,1))
@@ -2320,9 +2588,9 @@ contains
   end subroutine SetRHSVec_StandingSurfaceWater
 
   !-----------------------------------------------------------------------
-  subroutine SetRHSVec_Soil(bounds, num_nolakec, filter_nolakec, &
+  subroutine SetRHSVec_Soil(bounds, num_filter, filter, &
        hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, fact, fn, fn_h2osfc, c_h2osfc, &
-       frac_h2osfc, frac_sno_eff, t_soisno, rt)
+       frac_h2osfc, frac_sno_eff, t_soisno, urban_column, rt)
     !
     ! !DESCRIPTION:
     ! Sets up RHS vector corresponding to soil layers
@@ -2335,8 +2603,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                                     ! bounds
-    integer , intent(in)  :: num_nolakec                                        ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                                  ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                         ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                          ! column filter
     real(r8), intent(in)  :: hs_top_snow(bounds%begc: )                         ! heat flux on top snow layer [W/m2]
     real(r8), intent(in)  :: hs_soil(bounds%begc: )                             ! heat flux on soil [W/m2]
     real(r8), intent(in)  :: hs_top(bounds%begc: )                              ! net energy flux into surface layer (col) [W/m2]
@@ -2349,6 +2617,7 @@ contains
     real(r8), intent(in)  :: frac_h2osfc(bounds%begc: )                         ! fractional area with surface water greater than zero
     real(r8), intent(in)  :: frac_sno_eff(bounds%begc: )                        ! fraction of ground covered by snow (0 to 1)
     real(r8), intent(in)  :: t_soisno(bounds%begc:, -nlevsno+1:)                ! soil temperature (Kelvin) 
+    logical , intent(in)  :: urban_column                                       ! Is true if solving temperature for urban column, otherwise false
     real(r8), intent(out) :: rt(bounds%begc: ,1: )                              ! rhs vector entries
     !-----------------------------------------------------------------------
 
@@ -2373,35 +2642,38 @@ contains
       ! Initialize
       rt(begc:endc, : ) = nan
 
-      call SetRHSVec_SoilUrban(bounds, num_nolakec, filter_nolakec, &
-           hs_top_snow( begc:endc ),                                &
-           hs_soil( begc:endc ),                                    &
-           hs_top( begc:endc ),                                     &
-           dhsdT( begc:endc ),                                      &
-           sabg_lyr_col (begc:endc, -nlevsno+1: ),                  &
-           fact( begc:endc, -nlevsno+1: ),                          &
-           fn( begc:endc, -nlevsno+1: ),                            &
-           fn_h2osfc( begc:endc ),                                  &
-           c_h2osfc( begc:endc ),                                   &
-           frac_sno_eff( begc:endc ),                               &
-           t_soisno( begc:endc, -nlevsno+1: ),                      &
-           rt( begc:endc, 1: ))
+      if (urban_column) then
+         call SetRHSVec_SoilUrban(bounds, num_filter, filter, &
+              hs_top_snow( begc:endc ),                                &
+              hs_soil( begc:endc ),                                    &
+              hs_top( begc:endc ),                                     &
+              dhsdT( begc:endc ),                                      &
+              sabg_lyr_col (begc:endc, -nlevsno+1: ),                  &
+              fact( begc:endc, -nlevsno+1: ),                          &
+              fn( begc:endc, -nlevsno+1: ),                            &
+              fn_h2osfc( begc:endc ),                                  &
+              c_h2osfc( begc:endc ),                                   &
+              frac_sno_eff( begc:endc ),                               &
+              t_soisno( begc:endc, -nlevsno+1: ),                      &
+              rt( begc:endc, 1: ))
 
-      call SetRHSVec_SoilNonUrban(bounds, num_nolakec, filter_nolakec, &
-           hs_top_snow( begc:endc ),                                   &
-           hs_soil( begc:endc ),                                       &
-           hs_top( begc:endc ),                                        &
-           dhsdT( begc:endc ),                                         &
-           sabg_lyr_col (begc:endc, -nlevsno+1: ),                     &
-           fact( begc:endc, -nlevsno+1: ),                             &
-           fn( begc:endc, -nlevsno+1: ),                               &
-           fn_h2osfc( begc:endc ),                                     &
-           c_h2osfc( begc:endc ),                                      &
-           frac_sno_eff(begc:endc),                                    &
-           t_soisno( begc:endc, -nlevsno+1: ),                         &
-           rt( begc:endc, 1: ))
+      else
+         call SetRHSVec_SoilNonUrban(bounds, num_filter, filter, &
+              hs_top_snow( begc:endc ),                                   &
+              hs_soil( begc:endc ),                                       &
+              hs_top( begc:endc ),                                        &
+              dhsdT( begc:endc ),                                         &
+              sabg_lyr_col (begc:endc, -nlevsno+1: ),                     &
+              fact( begc:endc, -nlevsno+1: ),                             &
+              fn( begc:endc, -nlevsno+1: ),                               &
+              fn_h2osfc( begc:endc ),                                     &
+              c_h2osfc( begc:endc ),                                      &
+              frac_sno_eff(begc:endc),                                    &
+              t_soisno( begc:endc, -nlevsno+1: ),                         &
+              rt( begc:endc, 1: ))
+      endif
 
-      call SetRHSVec_Soil_StandingSurfaceWater(bounds, num_nolakec, filter_nolakec, &
+      call SetRHSVec_Soil_StandingSurfaceWater(bounds, num_filter, filter, &
            hs_top_snow( begc:endc ),                                                &
            hs_soil( begc:endc ),                                                    &
            hs_top( begc:endc ),                                                     &
@@ -2420,7 +2692,7 @@ contains
   end subroutine SetRHSVec_Soil
 
   !-----------------------------------------------------------------------
-  subroutine SetRHSVec_SoilUrban(bounds, num_nolakec, filter_nolakec, &
+  subroutine SetRHSVec_SoilUrban(bounds, num_filter, filter, &
        hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, fact, fn, fn_h2osfc, c_h2osfc, &
        frac_sno_eff, t_soisno, rt)
     !
@@ -2435,8 +2707,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                                     ! bounds
-    integer , intent(in)  :: num_nolakec                                        ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                                  ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                         ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                          ! column filter
     real(r8), intent(in)  :: hs_top_snow(bounds%begc: )                         ! heat flux on top snow layer [W/m2]
     real(r8), intent(in)  :: hs_soil(bounds%begc: )                             ! heat flux on soil [W/m2]
     real(r8), intent(in)  :: hs_top(bounds%begc: )                              ! net energy flux into surface layer (col) [W/m2]
@@ -2472,7 +2744,7 @@ contains
          endc =>    bounds%endc                     & ! Input:  [integer ] ending column index
          )
 
-      call SetRHSVec_SoilUrbanNonRoad(bounds, num_nolakec, filter_nolakec, &
+      call SetRHSVec_SoilUrbanNonRoad(bounds, num_filter, filter, &
            hs_top_snow( begc:endc ),                                       &
            hs_soil( begc:endc ),                                           &
            hs_top( begc:endc ),                                            &
@@ -2485,7 +2757,7 @@ contains
            t_soisno( begc:endc, -nlevsno+1: ),                             &
            rt( begc:endc, 1: ))
 
-      call SetRHSVec_SoilUrbanRoad(bounds, num_nolakec, filter_nolakec, &
+      call SetRHSVec_SoilUrbanRoad(bounds, num_filter, filter, &
            hs_top_snow( begc:endc ),                                    &
            hs_soil( begc:endc ),                                        &
            hs_top( begc:endc ),                                         &
@@ -2504,7 +2776,7 @@ contains
   end subroutine SetRHSVec_SoilUrban
 
   !-----------------------------------------------------------------------
-  subroutine SetRHSVec_SoilUrbanNonRoad(bounds, num_nolakec, filter_nolakec, &
+  subroutine SetRHSVec_SoilUrbanNonRoad(bounds, num_filter, filter, &
        hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, fact, fn, fn_h2osfc, c_h2osfc, &
        t_soisno, rt)
     !
@@ -2519,8 +2791,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                                     ! bounds
-    integer , intent(in)  :: num_nolakec                                        ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                                  ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                         ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                          ! column filter
     real(r8), intent(in)  :: hs_top_snow(bounds%begc: )                         ! heat flux on top snow layer [W/m2]
     real(r8), intent(in)  :: hs_soil(bounds%begc: )                             ! heat flux on soil [W/m2]
     real(r8), intent(in)  :: hs_top(bounds%begc: )                              ! net energy flux into surface layer (col) [W/m2]
@@ -2557,8 +2829,8 @@ contains
       ! urban columns ------------------------------------------------------------------
       !
       do j = 1,nlevurb
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
@@ -2594,7 +2866,7 @@ contains
   end subroutine SetRHSVec_SoilUrbanNonRoad
 
   !-----------------------------------------------------------------------
-  subroutine SetRHSVec_SoilUrbanRoad(bounds, num_nolakec, filter_nolakec, &
+  subroutine SetRHSVec_SoilUrbanRoad(bounds, num_filter, filter, &
        hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, fact, fn, fn_h2osfc, c_h2osfc, &
        frac_sno_eff, t_soisno, rt)
     !
@@ -2610,8 +2882,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                                     ! bounds
-    integer , intent(in)  :: num_nolakec                                        ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                                  ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                         ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                          ! column filter
     real(r8), intent(in)  :: hs_top_snow(bounds%begc: )                         ! heat flux on top snow layer [W/m2]
     real(r8), intent(in)  :: hs_soil(bounds%begc: )                             ! heat flux on soil [W/m2]
     real(r8), intent(in)  :: hs_top(bounds%begc: )                              ! net energy flux into surface layer (col) [W/m2]
@@ -2650,8 +2922,8 @@ contains
       ! urban road columns -------------------------------------------------------------
       !
       do j = 1,nlevgrnd
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv) then
@@ -2682,7 +2954,7 @@ contains
   end subroutine SetRHSVec_SoilUrbanRoad
 
   !-----------------------------------------------------------------------
-  subroutine SetRHSVec_SoilNonUrban(bounds, num_nolakec, filter_nolakec, &
+  subroutine SetRHSVec_SoilNonUrban(bounds, num_filter, filter, &
        hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, fact, fn, fn_h2osfc, c_h2osfc, &
        frac_sno_eff, t_soisno, rt)
     !
@@ -2697,8 +2969,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                                     ! bounds
-    integer , intent(in)  :: num_nolakec                                        ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                                  ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                         ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                          ! column filter
     real(r8), intent(in)  :: hs_top_snow(bounds%begc: )                         ! heat flux on top snow layer [W/m2]
     real(r8), intent(in)  :: hs_soil(bounds%begc: )                             ! heat flux on soil [W/m2]
     real(r8), intent(in)  :: hs_top(bounds%begc: )                              ! net energy flux into surface layer (col) [W/m2]
@@ -2737,8 +3009,8 @@ contains
       ! non-urban columns --------------------------------------------------------------
       !
       do j = 1,nlevgrnd
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (.not. lun%urbpoi(l)) then
                if (j == col%snl(c)+1) then
@@ -2767,7 +3039,7 @@ contains
   end subroutine SetRHSVec_SoilNonUrban
 
   !-----------------------------------------------------------------------
-  subroutine SetRHSVec_Soil_StandingSurfaceWater(bounds, num_nolakec, filter_nolakec, &
+  subroutine SetRHSVec_Soil_StandingSurfaceWater(bounds, num_filter, filter, &
        hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, fact, fn, fn_h2osfc, c_h2osfc, &
        frac_h2osfc, t_soisno, rt)
     !
@@ -2782,8 +3054,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                                     ! bounds
-    integer , intent(in)  :: num_nolakec                                        ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                                  ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                         ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                          ! column filter
     real(r8), intent(in)  :: hs_top_snow(bounds%begc: )                         ! heat flux on top snow layer [W/m2]
     real(r8), intent(in)  :: hs_soil(bounds%begc: )                             ! heat flux on soil [W/m2]
     real(r8), intent(in)  :: hs_top(bounds%begc: )                              ! net energy flux into surface layer (col) [W/m2]
@@ -2817,8 +3089,8 @@ contains
     !
     ! surface water  -----------------------------------------------------------------
     !
-    do fc = 1,num_nolakec
-       c = filter_nolakec(fc)
+    do fc = 1,num_filter
+       c = filter(fc)
        if ( frac_h2osfc(c) /= 0.0_r8 )then
           rt(c,1)=rt(c,1) &
                -frac_h2osfc(c)*fact(c,1)*((hs_soil(c) - dhsdT(c)*t_soisno(c,1)) &
@@ -2829,8 +3101,9 @@ contains
   end subroutine SetRHSVec_Soil_StandingSurfaceWater
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix(bounds, num_nolakec, filter_nolakec, dtime, nband, &
-       dhsdT, tk, tk_h2osfc, fact, c_h2osfc, dz_h2osfc, waterstate_vars, bmatrix)
+  subroutine SetMatrix(bounds, num_filter, filter, dtime, nband, &
+       dhsdT, tk, tk_h2osfc, fact, c_h2osfc, dz_h2osfc, waterstate_vars, urban_column, &
+       bmatrix)
     !
     ! !DESCRIPTION:
     ! Setup the matrix for the numerical solution of temperature for snow,
@@ -2855,8 +3128,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                                    ! bounds
-    integer , intent(in)  :: num_nolakec                                       ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                                 ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                        ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                         ! column filter
     real(r8), intent(in)  :: dtime                                             ! land model time step (sec)
     integer , intent(in)  :: nband                                             ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: dhsdT(bounds%begc: )                              ! temperature derivative of "hs" [col]
@@ -2867,6 +3140,7 @@ contains
     real(r8), intent(in)  :: dz_h2osfc(bounds%begc: )                          ! Thickness of standing water [m]
     real(r8), intent(out) :: bmatrix(bounds%begc: , 1:,-nlevsno: )             ! matrix for numerical solution of temperature
     type(waterstate_type), intent(in) :: waterstate_vars
+    logical, intent(in)    :: urban_column                                     ! Is true if solving temperature for urban column, otherwise false
     !
     ! !LOCAL VARIABLES:
     integer  :: j,c                                                            ! indices
@@ -2904,19 +3178,21 @@ contains
 
       ! Assemble smaller matrices
 
-      call SetMatrix_Snow(bounds, num_nolakec, filter_nolakec, nband, &
+      call SetMatrix_Snow(bounds, num_filter, filter, nband, &
            dhsdT( begc:endc ),                                        &
            tk( begc:endc, -nlevsno+1: ),                              &
            fact( begc:endc, -nlevsno+1: ),                            &
            frac_sno_eff(begc:endc),                                   &
+           urban_column,                                              &
            bmatrix_snow( begc:endc, 1:, -nlevsno: ))
 
-      call SetMatrix_Snow_Soil(bounds, num_nolakec, filter_nolakec, nband, &
+      call SetMatrix_Snow_Soil(bounds, num_filter, filter, nband, &
            tk( begc:endc, -nlevsno+1: ),                                   &
            fact( begc:endc, -nlevsno+1: ),                                 &
+           urban_column,                                                   &
            bmatrix_snow_soil( begc:endc, 1:, -1: ))
 
-      call SetMatrix_Soil(bounds, num_nolakec, filter_nolakec, nband, &
+      call SetMatrix_Soil(bounds, num_filter, filter, nband, &
            dhsdT( begc:endc ),                                        &
            tk( begc:endc, -nlevsno+1: ),                              &
            tk_h2osfc( begc:endc ),                                    &
@@ -2924,15 +3200,17 @@ contains
            fact( begc:endc, -nlevsno+1: ),                            &
            frac_h2osfc(begc:endc),                                    &
            frac_sno_eff(begc:endc),                                   &
+           urban_column,                                              &
            bmatrix_soil( begc:endc, 1:, 1: ))
 
-      call SetMatrix_Soil_Snow(bounds, num_nolakec, filter_nolakec, nband, &
+      call SetMatrix_Soil_Snow(bounds, num_filter, filter, nband, &
            tk( begc:endc, -nlevsno+1: ),                                   &
            fact( begc:endc, -nlevsno+1: ),                                 &
            frac_sno_eff(begc:endc),                                        &
+           urban_column,                                                   &
            bmatrix_soil_snow( begc:endc, 1:, 1: ))
 
-      call SetMatrix_StandingSurfaceWater(bounds, num_nolakec, filter_nolakec, dtime, nband, &
+      call SetMatrix_StandingSurfaceWater(bounds, num_filter, filter, dtime, nband, &
            dhsdT( begc:endc ),                                                               &
            tk( begc:endc, -nlevsno+1: ),                                                     &
            tk_h2osfc( begc:endc ),                                                           &
@@ -2941,7 +3219,7 @@ contains
            dz_h2osfc( begc:endc ),                                                           &
            bmatrix_ssw( begc:endc, 1:, 0: ))
 
-      call SetMatrix_StandingSurfaceWater_Soil(bounds, num_nolakec, filter_nolakec, dtime, nband, &
+      call SetMatrix_StandingSurfaceWater_Soil(bounds, num_filter, filter, dtime, nband, &
            tk( begc:endc, -nlevsno+1: ),                                                          &
            tk_h2osfc( begc:endc ),                                                                &
            fact( begc:endc, -nlevsno+1: ),                                                        &
@@ -2949,14 +3227,14 @@ contains
            dz_h2osfc( begc:endc ),                                                                &
            bmatrix_ssw_soil( begc:endc, 1:, 0: ))
 
-      call SetMatrix_Soil_StandingSurfaceWater(bounds, num_nolakec, filter_nolakec, nband, &
+      call SetMatrix_Soil_StandingSurfaceWater(bounds, num_filter, filter, nband, &
            tk_h2osfc( begc:endc ),                                                         &
            fact( begc:endc, -nlevsno+1: ),                                                 &
            dz_h2osfc( begc:endc ),                                                         &
            frac_h2osfc(begc:endc),                                                         &
            bmatrix_soil_ssw( begc:endc, 1:, 1: ))
 
-      call AssembleMatrixFromSubmatrices(bounds, num_nolakec, filter_nolakec, nband, &
+      call AssembleMatrixFromSubmatrices(bounds, num_filter, filter, nband, &
            bmatrix_snow( begc:endc, 1:, -nlevsno: ),                                 &
            bmatrix_ssw( begc:endc, 1:, 0: ),                                         &
            bmatrix_soil( begc:endc, 1:, 1: ),                                        &
@@ -2971,7 +3249,7 @@ contains
   end subroutine SetMatrix
 
   !-----------------------------------------------------------------------
-  subroutine AssembleMatrixFromSubmatrices(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine AssembleMatrixFromSubmatrices(bounds, num_filter, filter, nband, &
        bmatrix_snow, bmatrix_ssw, bmatrix_soil, bmatrix_snow_soil, &
        bmatrix_ssw_soil, bmatrix_soil_snow, bmatrix_soil_ssw, bmatrix)
 
@@ -3025,8 +3303,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                                                 ! bounds
-    integer , intent(in)  :: num_nolakec                                                    ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                                              ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                                     ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                                      ! column filter
     integer , intent(in)  :: nband                                                          ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: bmatrix_snow(bounds%begc:bounds%endc,nband,-nlevsno:-1      )  ! block-diagonal matrix for snow layers
     real(r8), intent(in)  :: bmatrix_ssw(bounds%begc:bounds%endc,nband,       0:0       )   ! block-diagonal matrix for standing surface water
@@ -3055,8 +3333,8 @@ contains
     ! Assemble the full matrix
 
     bmatrix(bounds%begc:bounds%endc, :, :) = 0.0_r8
-    do fc = 1,num_nolakec
-       c = filter_nolakec(fc)
+    do fc = 1,num_filter
+       c = filter(fc)
 
        ! Snow
        bmatrix(c,2:3,-5   ) = bmatrix_snow(c,2:3,-5   )
@@ -3088,8 +3366,8 @@ contains
   end subroutine AssembleMatrixFromSubmatrices
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_Snow(bounds, num_nolakec, filter_nolakec, nband, &
-       dhsdT, tk, fact, frac_sno_eff, bmatrix_snow)
+  subroutine SetMatrix_Snow(bounds, num_filter, filter, nband, &
+       dhsdT, tk, fact, frac_sno_eff, urban_column, bmatrix_snow)
     !
     ! !DESCRIPTION:
     ! Setup the matrix entries corresponding to internal snow layers
@@ -3102,13 +3380,14 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                               ! bounds
-    integer , intent(in)  :: num_nolakec                                  ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                            ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                   ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                    ! column filter
     integer , intent(in)  :: nband                                        ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: dhsdT(bounds%begc: )                         ! temperature derivative of "hs" [col]
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )               ! thermal conductivity [W/(m K)]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )           ! used in computing tridiagonal matrix [col, lev]
-    real(r8), intent(in)  :: frac_sno_eff(bounds%begc: )          ! fraction of ground covered by snow (0 to 1)
+    real(r8), intent(in)  :: frac_sno_eff(bounds%begc: )                  ! fraction of ground covered by snow (0 to 1)
+    logical , intent(in)  :: urban_column                                 ! Is true if solving temperature for urban column, otherwise false
     real(r8), intent(out) :: bmatrix_snow(bounds%begc: , 1:, -nlevsno: )  ! matrix enteries
     !-----------------------------------------------------------------------
 
@@ -3127,24 +3406,26 @@ contains
       ! Initialize
       bmatrix_snow(begc:endc, :, :) = 0.0_r8
 
-      call SetMatrix_SnowUrban(bounds, num_nolakec, filter_nolakec, nband, &
-           dhsdT( begc:endc ),                                             &
-           tk( begc:endc, -nlevsno+1: ),                                   &
-           fact( begc:endc, -nlevsno+1: ),                                 &
-           bmatrix_snow( begc:endc, 1:, -nlevsno: ))
-
-      call SetMatrix_SnowNonUrban(bounds, num_nolakec, filter_nolakec, nband, &
-           dhsdT( begc:endc ),                                                &
-           tk( begc:endc, -nlevsno+1: ),                                      &
-           fact( begc:endc, -nlevsno+1: ),                                    &
-           bmatrix_snow( begc:endc, 1:, -nlevsno: ))
+      if (urban_column) then
+         call SetMatrix_SnowUrban(bounds, num_filter, filter, nband, &
+              dhsdT( begc:endc ),                                             &
+              tk( begc:endc, -nlevsno+1: ),                                   &
+              fact( begc:endc, -nlevsno+1: ),                                 &
+              bmatrix_snow( begc:endc, 1:, -nlevsno: ))
+      else
+         call SetMatrix_SnowNonUrban(bounds, num_filter, filter, nband, &
+              dhsdT( begc:endc ),                                                &
+              tk( begc:endc, -nlevsno+1: ),                                      &
+              fact( begc:endc, -nlevsno+1: ),                                    &
+              bmatrix_snow( begc:endc, 1:, -nlevsno: ))
+      endif
 
     end associate
 
   end subroutine SetMatrix_Snow
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_SnowUrban(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_SnowUrban(bounds, num_filter, filter, nband, &
        dhsdT, tk, fact, bmatrix_snow)
 
     !
@@ -3160,8 +3441,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                                 ! bounds
-    integer , intent(in)  :: num_nolakec                                    ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                              ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                     ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                      ! column filter
     integer , intent(in)  :: nband                                          ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: dhsdT(bounds%begc: )                           ! temperature derivative of "hs" [col]
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )                 ! thermal conductivity [W/(m K)]
@@ -3180,13 +3461,13 @@ contains
          endc =>    bounds%endc                     & ! Input:  [integer ] ending column index
          )
 
-      call SetMatrix_SnowUrbanNonRoad(bounds, num_nolakec, filter_nolakec, nband, &
+      call SetMatrix_SnowUrbanNonRoad(bounds, num_filter, filter, nband, &
            dhsdT( begc:endc ),                                                    &
            tk( begc:endc, -nlevsno+1: ),                                          &
            fact( begc:endc, -nlevsno+1: ),                                        &
            bmatrix_snow( begc:endc, 1:, -nlevsno: ))
 
-      call SetMatrix_SnowUrbanRoad(bounds, num_nolakec, filter_nolakec, nband, &
+      call SetMatrix_SnowUrbanRoad(bounds, num_filter, filter, nband, &
            dhsdT( begc:endc ),                                                 &
            tk( begc:endc, -nlevsno+1: ),                                       &
            fact( begc:endc, -nlevsno+1: ),                                     &
@@ -3197,7 +3478,7 @@ contains
   end subroutine SetMatrix_SnowUrban
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_SnowUrbanNonRoad(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_SnowUrbanNonRoad(bounds, num_filter, filter, nband, &
        dhsdT, tk, fact, bmatrix_snow)
 
     !
@@ -3213,8 +3494,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                                 ! bounds
-    integer , intent(in)  :: num_nolakec                                    ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                              ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                     ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                      ! column filter
     integer , intent(in)  :: nband                                          ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: dhsdT(bounds%begc: )                           ! temperature derivative of "hs" [col]
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )                 ! thermal conductivity [W/(m K)]
@@ -3242,8 +3523,8 @@ contains
       ! urban non-road columns ---------------------------------------------------------
       !
       do j = -nlevsno+1,0
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
@@ -3276,7 +3557,7 @@ contains
   end subroutine SetMatrix_SnowUrbanNonRoad
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_SnowUrbanRoad(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_SnowUrbanRoad(bounds, num_filter, filter, nband, &
        dhsdT, tk, fact, bmatrix_snow)
 
     !
@@ -3292,8 +3573,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                                 ! bounds
-    integer , intent(in)  :: num_nolakec                                    ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                              ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                     ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                      ! column filter
     integer , intent(in)  :: nband                                          ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: dhsdT(bounds%begc: )                           ! temperature derivative of "hs" [col]
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )                 ! thermal conductivity [W/(m K)]
@@ -3321,8 +3602,8 @@ contains
       ! urban road columns -------------------------------------------------------------
       !
       do j = -nlevsno+1,0
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv) then
@@ -3354,7 +3635,7 @@ contains
   end subroutine SetMatrix_SnowUrbanRoad
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_SnowNonUrban(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_SnowNonUrban(bounds, num_filter, filter, nband, &
        dhsdT, tk, fact, bmatrix_snow)
 
     !
@@ -3369,8 +3650,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                                 ! bounds
-    integer , intent(in)  :: num_nolakec                                    ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                              ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                     ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                      ! column filter
     integer , intent(in)  :: nband                                          ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: dhsdT(bounds%begc: )                           ! temperature derivative of "hs" [col]
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )                 ! thermal conductivity [W/(m K)]
@@ -3398,8 +3679,8 @@ contains
       ! non-urban landunits ------------------------------------------------------------
       !
       do j = -nlevsno+1,0
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (.not. lun%urbpoi(l)) then
                if (j >= col%snl(c)+1) then
@@ -3429,8 +3710,8 @@ contains
   end subroutine SetMatrix_SnowNonUrban
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_Snow_Soil(bounds, num_nolakec, filter_nolakec, nband, &
-       tk, fact, bmatrix_snow_soil)
+  subroutine SetMatrix_Snow_Soil(bounds, num_filter, filter, nband, &
+       tk, fact, urban_column, bmatrix_snow_soil)
 
     !
     ! !DESCRIPTION:
@@ -3443,11 +3724,12 @@ contains
 
     implicit none
     type(bounds_type), intent(in) :: bounds                               ! bounds
-    integer , intent(in)  :: num_nolakec                                  ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                            ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                   ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                    ! column filter
     integer , intent(in)  :: nband                                        ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )               ! thermal conductivity [W/(m K)]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )           ! used in computing tridiagonal matrix [col, lev]
+    logical , intent(in)  :: urban_column                                 ! Is true if solving temperature for urban column, otherwise false
     real(r8), intent(out) :: bmatrix_snow_soil(bounds%begc: , 1:,-1: )    ! matrix enteries
     !-----------------------------------------------------------------------
 
@@ -3464,22 +3746,24 @@ contains
       ! Initialize
       bmatrix_snow_soil(begc:endc, :, :) = 0.0_r8
 
-      call SetMatrix_Snow_SoilUrban(bounds, num_nolakec, filter_nolakec, nband, &
-           tk( begc:endc, -nlevsno+1: ),                                        &
-           fact( begc:endc, -nlevsno+1: ),                                      &
-           bmatrix_snow_soil( begc:endc, 1:, -1: ))
-
-      call SetMatrix_Snow_SoilNonUrban(bounds, num_nolakec, filter_nolakec, nband, &
-           tk( begc:endc, -nlevsno+1: ),                                           &
-           fact( begc:endc, -nlevsno+1: ),                                         &
-           bmatrix_snow_soil( begc:endc, 1:, -1: ))
+      if (urban_column) then
+         call SetMatrix_Snow_SoilUrban(bounds, num_filter, filter, nband, &
+              tk( begc:endc, -nlevsno+1: ),                                        &
+              fact( begc:endc, -nlevsno+1: ),                                      &
+              bmatrix_snow_soil( begc:endc, 1:, -1: ))
+      else
+         call SetMatrix_Snow_SoilNonUrban(bounds, num_filter, filter, nband, &
+              tk( begc:endc, -nlevsno+1: ),                                           &
+              fact( begc:endc, -nlevsno+1: ),                                         &
+              bmatrix_snow_soil( begc:endc, 1:, -1: ))
+      endif
 
     end associate
 
   end subroutine SetMatrix_Snow_Soil
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_Snow_SoilUrban(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_Snow_SoilUrban(bounds, num_filter, filter, nband, &
        tk, fact, bmatrix_snow_soil)
     !
     ! !DESCRIPTION:
@@ -3493,8 +3777,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                               ! bounds
-    integer , intent(in)  :: num_nolakec                                  ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                            ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                   ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                    ! column filter
     integer , intent(in)  :: nband                                        ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )               ! thermal conductivity [W/(m K)]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )           ! used in computing tridiagonal matrix [col, lev]
@@ -3511,12 +3795,12 @@ contains
          endc => bounds%endc                     & ! Input:  [integer ] ending column index
          )
 
-      call SetMatrix_Snow_SoilUrbanNonRoad(bounds, num_nolakec, filter_nolakec, nband, &
+      call SetMatrix_Snow_SoilUrbanNonRoad(bounds, num_filter, filter, nband, &
            tk( begc:endc, -nlevsno+1: ),                                               &
            fact( begc:endc, -nlevsno+1: ),                                             &
            bmatrix_snow_soil( begc:endc, 1:, -1: ))
 
-      call SetMatrix_Snow_SoilUrbanRoad(bounds, num_nolakec, filter_nolakec, nband, &
+      call SetMatrix_Snow_SoilUrbanRoad(bounds, num_filter, filter, nband, &
            tk( begc:endc, -nlevsno+1: ),                                            &
            fact( begc:endc, -nlevsno+1: ),                                          &
            bmatrix_snow_soil( begc:endc, 1:, -1: ))
@@ -3526,7 +3810,7 @@ contains
   end subroutine SetMatrix_Snow_SoilUrban
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_Snow_SoilUrbanNonRoad(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_Snow_SoilUrbanNonRoad(bounds, num_filter, filter, nband, &
        tk, fact, bmatrix_snow_soil)
     !
     ! !DESCRIPTION:
@@ -3541,8 +3825,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                               ! bounds
-    integer , intent(in)  :: num_nolakec                                  ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                            ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                   ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                    ! column filter
     integer , intent(in)  :: nband                                        ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )               ! thermal conductivity [W/(m K)]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )           ! used in computing tridiagonal matrix [col, lev]
@@ -3567,8 +3851,8 @@ contains
       ! urban non-road columns ---------------------------------------------------------
       !
       do j = 0,0
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
@@ -3593,7 +3877,7 @@ contains
   end subroutine SetMatrix_Snow_SoilUrbanNonRoad
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_Snow_SoilUrbanRoad(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_Snow_SoilUrbanRoad(bounds, num_filter, filter, nband, &
        tk, fact, bmatrix_snow_soil)
     !
     ! !DESCRIPTION:
@@ -3608,8 +3892,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                               ! bounds
-    integer , intent(in)  :: num_nolakec                                  ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                            ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                   ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                    ! column filter
     integer , intent(in)  :: nband                                        ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )               ! thermal conductivity [W/(m K)]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )           ! used in computing tridiagonal matrix [col, lev]
@@ -3635,8 +3919,8 @@ contains
       ! urban road columns -------------------------------------------------------------
       !
       do j = 0,0
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv) then
@@ -3660,7 +3944,7 @@ contains
   end subroutine SetMatrix_Snow_SoilUrbanRoad
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_Snow_SoilNonUrban(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_Snow_SoilNonUrban(bounds, num_filter, filter, nband, &
        tk, fact, bmatrix_snow_soil)
     !
     ! !DESCRIPTION:
@@ -3675,8 +3959,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                               ! bounds
-    integer , intent(in)  :: num_nolakec                                  ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                            ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                   ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                    ! column filter
     integer , intent(in)  :: nband                                        ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )               ! thermal conductivity [W/(m K)]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )           ! used in computing tridiagonal matrix [col, lev]
@@ -3702,8 +3986,8 @@ contains
       ! non-urban columns --------------------------------------------------------------
       !
       do j = 0,0
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (.not. lun%urbpoi(l)) then
                if (j >= col%snl(c)+1) then
@@ -3725,8 +4009,9 @@ contains
   end subroutine SetMatrix_Snow_SoilNonUrban
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_Soil(bounds, num_nolakec, filter_nolakec, nband, &
-       dhsdT, tk, tk_h2osfc, dz_h2osfc, fact, frac_h2osfc, frac_sno_eff,  bmatrix_soil)
+  subroutine SetMatrix_Soil(bounds, num_filter, filter, nband, &
+       dhsdT, tk, tk_h2osfc, dz_h2osfc, fact, frac_h2osfc, frac_sno_eff,  urban_column, &
+       bmatrix_soil)
     !
     ! !DESCRIPTION:
     ! Setup the matrix entries corresponding to internal soil layers.
@@ -3739,8 +4024,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                       ! bounds
-    integer , intent(in)  :: num_nolakec                          ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                    ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                           ! number of column the in filter
+    integer , intent(in)  :: filter(:)                            ! column filter
     integer , intent(in)  :: nband                                ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: dhsdT(bounds%begc: )                 ! temperature derivative of "hs" [col]
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )       ! thermal conductivity [W/(m K)]
@@ -3749,6 +4034,7 @@ contains
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )   ! used in computing tridiagonal matrix [col, lev]
     real(r8), intent(in)  :: frac_h2osfc(bounds%begc: )           ! fractional area with surface water greater than zero
     real(r8), intent(in)  :: frac_sno_eff(bounds%begc: )          ! fraction of ground covered by snow (0 to 1)
+    logical , intent(in)  :: urban_column                         ! Is true if solving temperature for urban column, otherwise false
     real(r8), intent(out) :: bmatrix_soil(bounds%begc: , 1:, 1: ) ! matrix enteries
                                                                   !
     ! !LOCAL VARIABLES:
@@ -3776,28 +4062,32 @@ contains
       ! Initialize
       bmatrix_soil(begc:endc, :, :) = 0.0_r8
 
-      call SetMatrix_SoilUrban(bounds, num_nolakec, filter_nolakec, nband, &
-           dhsdT( begc:endc ),                                             &
-           tk( begc:endc, -nlevsno+1: ),                                   &
-           tk_h2osfc( begc:endc ),                                         &
-           dz_h2osfc( begc:endc ),                                         &
-           fact( begc:endc, -nlevsno+1: ),                                 &
-           frac_sno_eff(begc:endc),                                        &     
-           bmatrix_soil( begc:endc, 1:, 1: ))
+      if (urban_column) then
+         call SetMatrix_SoilUrban(bounds, num_filter, filter, nband, &
+              dhsdT( begc:endc ),                                             &
+              tk( begc:endc, -nlevsno+1: ),                                   &
+              tk_h2osfc( begc:endc ),                                         &
+              dz_h2osfc( begc:endc ),                                         &
+              fact( begc:endc, -nlevsno+1: ),                                 &
+              frac_sno_eff(begc:endc),                                        &     
+              bmatrix_soil( begc:endc, 1:, 1: ))
 
-      call SetMatrix_SoilNonUrban(bounds, num_nolakec, filter_nolakec, nband, &
-           dhsdT( begc:endc ),                                                &
-           tk( begc:endc, -nlevsno+1: ),                                      &
-           tk_h2osfc( begc:endc ),                                            &
-           dz_h2osfc( begc:endc ),                                            &
-           fact( begc:endc, -nlevsno+1: ),                                    &
-           frac_sno_eff(begc:endc),                                           &     
-           bmatrix_soil( begc:endc, 1:, 1: ))
+      else
+         
+         call SetMatrix_SoilNonUrban(bounds, num_filter, filter, nband, &
+              dhsdT( begc:endc ),                                                &
+              tk( begc:endc, -nlevsno+1: ),                                      &
+              tk_h2osfc( begc:endc ),                                            &
+              dz_h2osfc( begc:endc ),                                            &
+              fact( begc:endc, -nlevsno+1: ),                                    &
+              frac_sno_eff(begc:endc),                                           &     
+              bmatrix_soil( begc:endc, 1:, 1: ))
+      endif
 
       ! the solution will be organized as (snow:h2osfc:soil) to minimize
       !     bandwidth; this requires a 5-element band instead of 3
-      do fc = 1,num_nolakec
-         c = filter_nolakec(fc)
+      do fc = 1,num_filter
+         c = filter(fc)
 
          ! surface water layer has two coefficients
          dzm=(0.5*dz_h2osfc(c)+col%z(c,1))
@@ -3815,7 +4105,7 @@ contains
   end subroutine SetMatrix_Soil
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_SoilUrban(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_SoilUrban(bounds, num_filter, filter, nband, &
        dhsdT, tk, tk_h2osfc, dz_h2osfc, fact, frac_sno_eff, bmatrix_soil)
     !
     ! !DESCRIPTION:
@@ -3830,8 +4120,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                          ! bounds
-    integer , intent(in)  :: num_nolakec                             ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                       ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                              ! number of column the in filter
+    integer , intent(in)  :: filter(:)                               ! column filter
     integer , intent(in)  :: nband                                   ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: dhsdT(bounds%begc: )                    ! temperature derivative of "hs" [col]
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )          ! thermal conductivity [W/(m K)]
@@ -3856,7 +4146,7 @@ contains
          endc =>    bounds%endc                     & ! Input:  [integer ] ending column index
          )
 
-      call SetMatrix_SoilUrbanNonRoad(bounds, num_nolakec, filter_nolakec, nband, &
+      call SetMatrix_SoilUrbanNonRoad(bounds, num_filter, filter, nband, &
            dhsdT( begc:endc ),                                                    &
            tk( begc:endc, -nlevsno+1: ),                                          &
            tk_h2osfc( begc:endc ),                                                &
@@ -3864,7 +4154,7 @@ contains
            fact( begc:endc, -nlevsno+1: ),                                        &
            bmatrix_soil( begc:endc, 1:, 1: ))
 
-      call SetMatrix_SoilUrbanRoad(bounds, num_nolakec, filter_nolakec, nband, &
+      call SetMatrix_SoilUrbanRoad(bounds, num_filter, filter, nband, &
            dhsdT( begc:endc ),                                                 &
            tk( begc:endc, -nlevsno+1: ),                                       &
            tk_h2osfc( begc:endc ),                                             &
@@ -3878,7 +4168,7 @@ contains
   end subroutine SetMatrix_SoilUrban
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_SoilUrbanNonRoad(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_SoilUrbanNonRoad(bounds, num_filter, filter, nband, &
        dhsdT, tk, tk_h2osfc, dz_h2osfc, fact, bmatrix_soil)
     !
     ! !DESCRIPTION:
@@ -3893,8 +4183,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                          ! bounds
-    integer , intent(in)  :: num_nolakec                             ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                       ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                              ! number of column the in filter
+    integer , intent(in)  :: filter(:)                               ! column filter
     integer , intent(in)  :: nband                                   ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: dhsdT(bounds%begc: )                    ! temperature derivative of "hs" [col]
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )          ! thermal conductivity [W/(m K)]
@@ -3927,8 +4217,8 @@ contains
       ! urban non-road columns ---------------------------------------------------------
       !
       do j = 1,nlevurb
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
@@ -3970,7 +4260,7 @@ contains
   end subroutine SetMatrix_SoilUrbanNonRoad
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_SoilUrbanRoad(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_SoilUrbanRoad(bounds, num_filter, filter, nband, &
        dhsdT, tk, tk_h2osfc, dz_h2osfc, fact, frac_sno_eff, bmatrix_soil)
     !
     ! !DESCRIPTION:
@@ -3985,8 +4275,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                          ! bounds
-    integer , intent(in)  :: num_nolakec                             ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                       ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                              ! number of column the in filter
+    integer , intent(in)  :: filter(:)                               ! column filter
     integer , intent(in)  :: nband                                   ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: dhsdT(bounds%begc: )                    ! temperature derivative of "hs" [col]
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )          ! thermal conductivity [W/(m K)]
@@ -4020,8 +4310,8 @@ contains
       ! urban road columns -------------------------------------------------------------
       !
       do j = 1,nlevgrnd
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv) then
@@ -4068,7 +4358,7 @@ contains
   end subroutine SetMatrix_SoilUrbanRoad
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_SoilNonUrban(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_SoilNonUrban(bounds, num_filter, filter, nband, &
        dhsdT, tk, tk_h2osfc, dz_h2osfc, fact, frac_sno_eff, bmatrix_soil)
     !
     ! !DESCRIPTION:
@@ -4082,8 +4372,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                          ! bounds
-    integer , intent(in)  :: num_nolakec                             ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                       ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                              ! number of column the in filter
+    integer , intent(in)  :: filter(:)                               ! column filter
     integer , intent(in)  :: nband                                   ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: dhsdT(bounds%begc: )                    ! temperature derivative of "hs" [col]
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )          ! thermal conductivity [W/(m K)]
@@ -4117,8 +4407,8 @@ contains
       ! non-urban columns --------------------------------------------------------------
       !
       do j = 1,nlevgrnd
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (.not. lun%urbpoi(l)) then
                if (j >= col%snl(c)+1) then
@@ -4164,8 +4454,8 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_Soil_Snow(bounds, num_nolakec, filter_nolakec, nband, &
-       tk, fact, frac_sno_eff, bmatrix_soil_snow)
+  subroutine SetMatrix_Soil_Snow(bounds, num_filter, filter, nband, &
+       tk, fact, frac_sno_eff, urban_column, bmatrix_soil_snow)
     !
     ! !DESCRIPTION:
     ! Setup the matrix entries corresponding to soil-snow interaction
@@ -4178,12 +4468,13 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                            ! bounds
-    integer , intent(in)  :: num_nolakec                               ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                         ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                 ! column filter
     integer , intent(in)  :: nband                                     ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )            ! thermal conductivity [W/(m K)]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )        ! used in computing tridiagonal matrix [col, lev]
     real(r8), intent(in)  :: frac_sno_eff(bounds%begc: )               ! fraction of ground covered by snow (0 to 1)
+    logical , intent(in)  :: urban_column                              ! Is true if solving temperature for urban column, otherwise false
     real(r8), intent(out) :: bmatrix_soil_snow(bounds%begc: , 1: ,1: ) ! matrix enteries
     !------------------------------------------------------------------------------
 
@@ -4201,24 +4492,26 @@ contains
       ! Initialize
       bmatrix_soil_snow(begc:endc, :, :) = 0.0_r8
 
-      call SetMatrix_Soil_SnowUrban(bounds, num_nolakec, filter_nolakec, nband, &
-           tk( begc:endc, -nlevsno+1: ),                                        &
-           fact( begc:endc, -nlevsno+1: ),                                      &
-           frac_sno_eff(begc:endc),                                                &
-           bmatrix_soil_snow( begc:endc, 1:, 1: ))
-
-      call SetMatrix_Soil_SnowNonUrban(bounds, num_nolakec, filter_nolakec, nband, &
-           tk( begc:endc, -nlevsno+1: ),                                           &
-           fact( begc:endc, -nlevsno+1: ),                                         &
-           frac_sno_eff(begc:endc),                                                &
-           bmatrix_soil_snow( begc:endc, 1:, 1: ))
+      if (urban_column) then
+         call SetMatrix_Soil_SnowUrban(bounds, num_filter, filter, nband, &
+              tk( begc:endc, -nlevsno+1: ),                                        &
+              fact( begc:endc, -nlevsno+1: ),                                      &
+              frac_sno_eff(begc:endc),                                                &
+              bmatrix_soil_snow( begc:endc, 1:, 1: ))
+      else
+         call SetMatrix_Soil_SnowNonUrban(bounds, num_filter, filter, nband, &
+              tk( begc:endc, -nlevsno+1: ),                                           &
+              fact( begc:endc, -nlevsno+1: ),                                         &
+              frac_sno_eff(begc:endc),                                                &
+              bmatrix_soil_snow( begc:endc, 1:, 1: ))
+      endif
 
     end associate
 
   end subroutine SetMatrix_Soil_Snow
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_Soil_SnowUrban(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_Soil_SnowUrban(bounds, num_filter, filter, nband, &
        tk, fact, frac_sno_eff, bmatrix_soil_snow)
     !
     ! !DESCRIPTION:
@@ -4233,8 +4526,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                               ! bounds
-    integer , intent(in)  :: num_nolakec                                  ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                            ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                   ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                    ! column filter
     integer , intent(in)  :: nband                                        ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )               ! thermal conductivity [W/(m K)]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )           ! used in computing tridiagonal matrix [col, lev]
@@ -4253,12 +4546,12 @@ contains
          endc =>    bounds%endc   & ! Input:  [integer ] ending column index
          )
 
-      call SetMatrix_Soil_SnowUrbanNonRoad(bounds, num_nolakec, filter_nolakec, nband, &
+      call SetMatrix_Soil_SnowUrbanNonRoad(bounds, num_filter, filter, nband, &
            tk( begc:endc, -nlevsno+1: ),                                               &
            fact( begc:endc, -nlevsno+1: ),                                             &
            bmatrix_soil_snow( begc:endc, 1:, 1: ))
 
-      call SetMatrix_Soil_SnowUrbanRoad(bounds, num_nolakec, filter_nolakec, nband, &
+      call SetMatrix_Soil_SnowUrbanRoad(bounds, num_filter, filter, nband, &
            tk( begc:endc, -nlevsno+1: ),                                            &
            fact( begc:endc, -nlevsno+1: ),                                          &
            frac_sno_eff(begc:endc),                                                 &
@@ -4269,7 +4562,7 @@ contains
   endsubroutine SetMatrix_Soil_SnowUrban
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_Soil_SnowUrbanNonRoad(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_Soil_SnowUrbanNonRoad(bounds, num_filter, filter, nband, &
        tk, fact, bmatrix_soil_snow)
     !
     ! !DESCRIPTION:
@@ -4284,8 +4577,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                               ! bounds
-    integer , intent(in)  :: num_nolakec                                  ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                            ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                   ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                    ! column filter
     integer , intent(in)  :: nband                                        ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )               ! thermal conductivity [W/(m K)]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )           ! used in computing tridiagonal matrix [col, lev]
@@ -4309,8 +4602,8 @@ contains
       !
       !
       do j = 1,1
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
@@ -4335,7 +4628,7 @@ contains
   end subroutine SetMatrix_Soil_SnowUrbanNonRoad
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_Soil_SnowUrbanRoad(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_Soil_SnowUrbanRoad(bounds, num_filter, filter, nband, &
        tk, fact, frac_sno_eff, bmatrix_soil_snow)
     !
     ! !DESCRIPTION:
@@ -4350,8 +4643,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                               ! bounds
-    integer , intent(in)  :: num_nolakec                                  ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                            ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                   ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                    ! column filter
     integer , intent(in)  :: nband                                        ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )               ! thermal conductivity [W/(m K)]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )           ! used in computing tridiagonal matrix [col, lev]
@@ -4379,8 +4672,8 @@ contains
       ! urban road columns -------------------------------------------------------------
       !
       do j = 1,1
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (lun%urbpoi(l)) then
                if (col%itype(c) == icol_road_imperv .or. col%itype(c) == icol_road_perv) then
@@ -4407,7 +4700,7 @@ contains
   end subroutine SetMatrix_Soil_SnowUrbanRoad
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_Soil_SnowNonUrban(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_Soil_SnowNonUrban(bounds, num_filter, filter, nband, &
        tk, fact, frac_sno_eff, bmatrix_soil_snow)
     !
     ! !DESCRIPTION:
@@ -4422,8 +4715,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                               ! bounds
-    integer , intent(in)  :: num_nolakec                                  ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                            ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                   ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                    ! column filter
     integer , intent(in)  :: nband                                        ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )               ! thermal conductivity [W/(m K)]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )           ! used in computing tridiagonal matrix [col, lev]
@@ -4451,8 +4744,8 @@ contains
       ! non-urban columns --------------------------------------------------------------
       !
       do j = 1,1
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
+         do fc = 1,num_filter
+            c = filter(fc)
             l = col%landunit(c)
             if (.not. lun%urbpoi(l)) then
                if (j >= col%snl(c)+1) then
@@ -4477,7 +4770,7 @@ contains
   end subroutine SetMatrix_Soil_SnowNonUrban
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_StandingSurfaceWater(bounds, num_nolakec, filter_nolakec, dtime, nband, &
+  subroutine SetMatrix_StandingSurfaceWater(bounds, num_filter, filter, dtime, nband, &
        dhsdT, tk, tk_h2osfc, fact, c_h2osfc, dz_h2osfc, bmatrix_ssw)
     !
     ! !DESCRIPTION:
@@ -4491,8 +4784,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                        ! bounds
-    integer , intent(in)  :: num_nolakec                           ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                     ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                            ! number of column the in filter
+    integer , intent(in)  :: filter(:)                             ! column filter
     real(r8), intent(in)  :: dtime                                 ! land model time step (sec)
     integer , intent(in)  :: nband                                 ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: dhsdT(bounds%begc: )                  ! temperature derivative of "hs" [col]
@@ -4521,8 +4814,8 @@ contains
     ! Initialize
     bmatrix_ssw(bounds%begc:bounds%endc, :, :) = 0.0_r8
 
-    do fc = 1,num_nolakec
-       c = filter_nolakec(fc)
+    do fc = 1,num_filter
+       c = filter(fc)
 
        ! surface water layer has two coefficients
        dzm=(0.5*dz_h2osfc(c)+col%z(c,1))
@@ -4535,7 +4828,7 @@ contains
   end subroutine SetMatrix_StandingSurfaceWater
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_StandingSurfaceWater_Soil(bounds, num_nolakec, filter_nolakec, dtime, nband, &
+  subroutine SetMatrix_StandingSurfaceWater_Soil(bounds, num_filter, filter, dtime, nband, &
        tk, tk_h2osfc, fact, c_h2osfc, dz_h2osfc, bmatrix_ssw_soil)
     !
     ! !DESCRIPTION:
@@ -4549,8 +4842,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                             ! bounds
-    integer , intent(in)  :: num_nolakec                                ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                          ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                 ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                  ! column filter
     real(r8), intent(in)  :: dtime                                      ! land model time step (sec)
     integer , intent(in)  :: nband                                      ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )             ! thermal conductivity [W/(m K)]
@@ -4577,8 +4870,8 @@ contains
     ! Initialize
     bmatrix_ssw_soil(bounds%begc:bounds%endc, :, :) = 0.0_r8
 
-    do fc = 1,num_nolakec
-       c = filter_nolakec(fc)
+    do fc = 1,num_filter
+       c = filter(fc)
 
        ! surface water layer has two coefficients
        dzm=(0.5*dz_h2osfc(c)+col%z(c,1))
@@ -4590,7 +4883,7 @@ contains
   end subroutine SetMatrix_StandingSurfaceWater_Soil
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_Soil_StandingSurfaceWater(bounds, num_nolakec, filter_nolakec, nband, &
+  subroutine SetMatrix_Soil_StandingSurfaceWater(bounds, num_filter, filter, nband, &
        tk_h2osfc, fact, dz_h2osfc, frac_h2osfc, bmatrix_soil_ssw)
     !
     ! !DESCRIPTION:
@@ -4604,8 +4897,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds                             ! bounds
-    integer , intent(in)  :: num_nolakec                                ! number of column non-lake points in column filter
-    integer , intent(in)  :: filter_nolakec(:)                          ! column filter for non-lake points
+    integer , intent(in)  :: num_filter                                 ! number of column the in filter
+    integer , intent(in)  :: filter(:)                                  ! column filter
     integer , intent(in)  :: nband                                      ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: tk_h2osfc(bounds%begc: )                   ! thermal conductivity [W/(m K)]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )         ! used in computing tridiagonal matrix [col, lev]
@@ -4629,8 +4922,8 @@ contains
     ! Initialize
     bmatrix_soil_ssw(bounds%begc:bounds%endc, :, :) = 0.0_r8
 
-    do fc = 1,num_nolakec
-       c = filter_nolakec(fc)
+    do fc = 1,num_filter 
+       c = filter(fc)
 
        ! surface water layer has two coefficients
        dzm=(0.5*dz_h2osfc(c)+col%z(c,1))
@@ -4643,6 +4936,59 @@ contains
     enddo
 
   end subroutine SetMatrix_Soil_StandingSurfaceWater
+
+  !-----------------------------------------------------------------------
+  subroutine Prepare_Data_for_EM_PTM_Driver(bounds, num_filter, filter, &
+       sabg_lyr, dhsdT, hs_soil, hs_top_snow, hs_h2osfc, &
+       energyflux_vars)
+    !
+    ! !DESCRIPTION:
+    ! Prepare data needed for the external model, PETSc-based Thermal
+    ! Model (PTM).
+    !
+    ! !USES:
+    use shr_kind_mod    , only : r8 => shr_kind_r8
+    use TemperatureType , only : temperature_type
+    use clm_varpar      , only : nlevsno
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)      , intent(in)    :: bounds
+    integer                , intent(in)    :: num_filter                                         ! number of columns in the filter
+    integer                , intent(in)    :: filter(:)                                          ! column filter
+    real(r8)               , intent(in)    :: sabg_lyr(bounds%begc:bounds%endc,-nlevsno+1:1)     ! absorbed solar radiation (col,lyr) [W/m2]
+    real(r8)               , intent(in)    :: dhsdT(bounds%begc:bounds%endc)                     ! temperature derivative of "hs" [col]
+    real(r8)               , intent(in)    :: hs_soil(bounds%begc:bounds%endc)                   ! heat flux on soil [W/m2]
+    real(r8)               , intent(in)    :: hs_top_snow(bounds%begc:bounds%endc)               ! heat flux on top snow layer [W/m2]
+    real(r8)               , intent(in)    :: hs_h2osfc(bounds%begc:bounds%endc)                 ! heat flux on standing water [W/m2]
+    type(energyflux_type)  , intent(inout) :: energyflux_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer                                :: c, j
+
+    associate(                                                      &
+         eflx_sabg_lyr    => energyflux_vars%eflx_sabg_lyr_col,     &
+         eflx_dhsdT       => energyflux_vars%eflx_dhsdT_col ,       &
+         eflx_hs_soil     => energyflux_vars%eflx_hs_soil_col ,     &
+         eflx_hs_top_snow => energyflux_vars%eflx_hs_top_snow_col , &
+         eflx_hs_h2osfc   => energyflux_vars%eflx_hs_h2osfc_col     &
+         )
+
+      do c = bounds%begc, bounds%endc
+         do j = -nlevsno+1, 1
+            eflx_sabg_lyr(c,j)  = sabg_lyr(c,j)
+         enddo
+
+         eflx_dhsdT(c)       = dhsdT(c)
+         eflx_hs_soil(c)     = hs_soil(c)
+         eflx_hs_top_snow(c) = hs_top_snow(c)
+         eflx_hs_h2osfc(c)   = hs_h2osfc(c)
+      enddo
+
+    end associate
+
+  end subroutine Prepare_Data_for_EM_PTM_Driver
 
 end module SoilTemperatureMod
 

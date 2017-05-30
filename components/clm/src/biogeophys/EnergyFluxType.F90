@@ -60,6 +60,10 @@ module EnergyFluxType
      real(r8), pointer :: eflx_traffic_lun        (:)   ! lun traffic sensible heat flux (W/m**2)
      real(r8), pointer :: eflx_wasteheat_lun      (:)   ! lun sensible heat flux from domestic heating/cooling sources of waste heat (W/m**2)
      real(r8), pointer :: eflx_heat_from_ac_lun   (:)   ! lun sensible heat flux to be put back into canyon due to removal by AC (W/m**2)
+     real(r8), pointer :: eflx_hs_h2osfc_col      (:)   ! heat flux on standing water [W/m2]
+     real(r8), pointer :: eflx_hs_top_snow_col    (:)   ! heat flux on top snow layer [W/m2]
+     real(r8), pointer :: eflx_hs_soil_col        (:)   ! heat flux on soil [W/m2
+     real(r8), pointer :: eflx_sabg_lyr_col       (:,:) ! absorbed solar radiation (col,lyr) [W/m2]
 
      ! Derivatives of energy fluxes
      real(r8), pointer :: dgnetdT_patch           (:)   ! patch derivative of net ground heat flux wrt soil temp  (W/m**2 K)
@@ -67,6 +71,7 @@ module EnergyFluxType
      real(r8), pointer :: cgrnd_patch             (:)   ! col deriv. of soil energy flux wrt to soil temp [W/m2/k]
      real(r8), pointer :: cgrndl_patch            (:)   ! col deriv. of soil latent heat flux wrt soil temp  [W/m**2/k]
      real(r8), pointer :: cgrnds_patch            (:)   ! col deriv. of soil sensible heat flux wrt soil temp [W/m2/k]
+     real(r8), pointer :: eflx_dhsdT_col          (:)   ! col deriv. of energy flux into surface layer wrt temp [W/m2/K]
 
      ! Canopy radiation
      real(r8), pointer :: dlrad_patch             (:)   ! col downward longwave radiation below the canopy [W/m2]
@@ -195,6 +200,12 @@ contains
     allocate( this%eflx_traffic_lun        (begl:endl))             ; this%eflx_traffic_lun        (:)   = nan
     allocate( this%eflx_wasteheat_lun      (begl:endl))             ; this%eflx_wasteheat_lun      (:)   = nan
     allocate( this%eflx_anthro_patch       (begp:endp))             ; this%eflx_anthro_patch       (:)   = nan
+
+    allocate( this%eflx_hs_top_snow_col    (begc:endc))             ; this%eflx_hs_top_snow_col    (:)   = nan
+    allocate( this%eflx_hs_h2osfc_col      (begc:endc))             ; this%eflx_hs_h2osfc_col      (:)   = nan
+    allocate( this%eflx_hs_soil_col        (begc:endc))             ; this%eflx_hs_soil_col        (:)   = nan
+    allocate( this%eflx_sabg_lyr_col       (begc:endc,-nlevsno+1:1)); this%eflx_sabg_lyr_col       (:,:) = nan
+    allocate( this%eflx_dhsdT_col          (begc:endc))             ; this%eflx_dhsdT_col          (:)   = nan
 
     allocate( this%dgnetdT_patch           (begp:endp))             ; this%dgnetdT_patch           (:)   = nan
     allocate( this%cgrnd_patch             (begp:endp))             ; this%cgrnd_patch             (:)   = nan

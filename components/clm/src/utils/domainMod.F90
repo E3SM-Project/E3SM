@@ -31,6 +31,8 @@ module domainMod
      real(r8),pointer :: topo(:)    ! topography
      real(r8),pointer :: latc(:)    ! latitude of grid cell (deg)
      real(r8),pointer :: lonc(:)    ! longitude of grid cell (deg)
+     real(r8),pointer :: xCell(:)   ! x-position of grid cell (m)
+     real(r8),pointer :: yCell(:)   ! y-position of grid cell (m)
      real(r8),pointer :: area(:)    ! grid cell area (km**2)
      integer ,pointer :: pftm(:)    ! pft mask: 1=real, 0=fake, -1=notset
      integer ,pointer :: glcmask(:) ! glc mask: 1=sfc mass balance required by GLC component
@@ -107,7 +109,8 @@ contains
     endif
     allocate(domain%mask(nb:ne),domain%frac(nb:ne),domain%latc(nb:ne), &
              domain%pftm(nb:ne),domain%area(nb:ne),domain%lonc(nb:ne), &
-             domain%topo(nb:ne),domain%glcmask(nb:ne),stat=ier)
+             domain%topo(nb:ne),domain%glcmask(nb:ne), &
+             domain%xCell(nb:ne),domain%yCell(nb:ne),stat=ier)
     if (ier /= 0) then
        call shr_sys_abort('domain_init ERROR: allocate mask, frac, lat, lon, area ')
     endif
@@ -127,6 +130,8 @@ contains
     domain%topo     = 0._r8
     domain%latc     = nan
     domain%lonc     = nan
+    domain%xCell    = nan
+    domain%yCell    = nan
     domain%area     = nan
 
     domain%set      = set
@@ -225,6 +230,8 @@ end subroutine domain_clean
     write(iulog,*) '  domain_check nbeg,nend = ',domain%nbeg,domain%nend
     write(iulog,*) '  domain_check lonc      = ',minval(domain%lonc),maxval(domain%lonc)
     write(iulog,*) '  domain_check latc      = ',minval(domain%latc),maxval(domain%latc)
+    write(iulog,*) '  domain_check xCell     = ',minval(domain%xCell),maxval(domain%xCell)
+    write(iulog,*) '  domain_check yCell     = ',minval(domain%yCell),maxval(domain%yCell)
     write(iulog,*) '  domain_check mask      = ',minval(domain%mask),maxval(domain%mask)
     write(iulog,*) '  domain_check frac      = ',minval(domain%frac),maxval(domain%frac)
     write(iulog,*) '  domain_check topo      = ',minval(domain%topo),maxval(domain%topo)

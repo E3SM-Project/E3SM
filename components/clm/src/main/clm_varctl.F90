@@ -305,8 +305,15 @@ module clm_varctl
   ! VSFM switches
   !----------------------------------------------------------
   logical          , public :: use_vsfm                    = .false.
-  character(len=32), public :: vsfm_satfunc_type           = 'smooth_brooks_corey_bz3'
   logical          , public :: vsfm_use_dynamic_linesearch = .false.
+  logical          , public :: vsfm_include_seepage_bc     = .false.
+  character(len=32), public :: vsfm_satfunc_type           = 'smooth_brooks_corey_bz3'
+  character(len=32), public :: vsfm_lateral_model_type     = 'none'
+
+  !----------------------------------------------------------
+  ! PETSc-based thermal model switches
+  !----------------------------------------------------------
+  logical, public :: use_petsc_thermal_model = .false.
 
   !----------------------------------------------------------
   ! To retrieve namelist
@@ -319,6 +326,12 @@ module clm_varctl
  !-----------------------------------------------------------------------
  ! nutrient competition (nu_com), default is relative demand approach (RD)
  character(len=15), public :: nu_com = 'RD'
+
+  !-----------------------------------------------------------------------
+  ! Lateral grid connectivity
+  !-----------------------------------------------------------------------
+  logical, public            :: lateral_connectivity  = .false.
+  character(len=256), public :: domain_decomp_type    = 'round_robin'
 
   !-----------------------------------------------------------------------
   ! bgc & pflotran interface
