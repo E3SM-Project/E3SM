@@ -153,8 +153,8 @@ def run_diag(parameter):
                             mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
 
                         parameter.var_region = region
-                        plot('5', mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                        utils.save_ncfiles('5', mv1_domain, mv2_domain, diff, parameter)
+                        plot('7', mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+                        utils.save_ncfiles('7', mv1_domain, mv2_domain, diff, parameter)
 
                 f_in.close()
 
