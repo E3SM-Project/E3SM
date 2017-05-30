@@ -78,6 +78,8 @@ module li_calving
 
    subroutine li_calve_ice(domain, err)
 
+      use li_advection
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -263,7 +265,7 @@ module li_calving
 
          if (trim(config_calving) == 'none') then
 
-            ! do nothing
+            return ! do nothing
 
          elseif (trim(config_calving) == 'thickness_threshold') then
 
@@ -513,6 +515,18 @@ module li_calving
          block => block % next
       enddo
 
+      ! Update mask and geometry
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         call li_update_geometry(geometryPool)
+
+         block => block % next
+      end do
 
       ! === error check
       if (err > 0) then

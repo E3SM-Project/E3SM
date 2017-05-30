@@ -205,6 +205,7 @@ module li_subglacial_hydro
 !-----------------------------------------------------------------------
    subroutine li_SGH_solve(domain, err)
       use mpas_vector_reconstruction
+      use li_diagnostic_vars
 
       !-----------------------------------------------------------------
       ! input variables
@@ -230,6 +231,10 @@ module li_subglacial_hydro
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: hydroPool
       type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: thermalPool
+      type (mpas_pool_type), pointer :: velocityPool
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:,:), pointer :: temperature, flowParamA
       real (kind=RKIND), dimension(:), pointer :: Wtill, WtillOld
       real (kind=RKIND), dimension(:), pointer :: basalMeltInput
       real (kind=RKIND), dimension(:), pointer :: externalWaterInput
@@ -279,6 +284,21 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_max', tillMax)
 
 
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+         call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+
+         call li_calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err_tmp)
+         err = ior(err, err_tmp)
+
+         block => block % next
+      end do
 
       ! initialize while loop
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)  ! can get from any block
@@ -662,7 +682,7 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: alpha, beta
       real (kind=RKIND), pointer :: conduc_coeff
       character (len=StrKIND), pointer :: config_SGH_tangent_slope_calculation
-      integer, pointer :: nEdgesSolve
+      integer, pointer :: nEdges
       integer, pointer :: nCells
       integer, pointer :: nVertices
       integer :: iEdge, cell1, cell2
@@ -679,7 +699,7 @@ module li_subglacial_hydro
       call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
 
-      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
 
@@ -711,7 +731,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
 
 
-      do iEdge = 1, nEdgesSolve
+      do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
 
@@ -751,7 +771,7 @@ module li_subglacial_hydro
          call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
          call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
          call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
-         do iEdge = 1, nEdgesSolve
+         do iEdge = 1, nEdges
             ! Only calculate slope for edges that have ice on at least one side.
             if ( li_mask_is_ice(edgeMask(iEdge)) ) then
                hydropotentialBaseSlopeTangent(iEdge) = ( hydropotentialBaseVertex(verticesOnEdge(1,iEdge)) -  &
@@ -783,7 +803,7 @@ module li_subglacial_hydro
       ! calculate diffusivity on edges
       diffusivity(:) = rho_water * gravity * effectiveConducEdge(:) * waterThicknessEdge(:)
 
-      do iEdge = 1, nEdgesSolve
+      do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
          waterVelocity(iEdge) = -1.0_RKIND * effectiveConducEdge(iEdge) * hydropotentialBaseSlopeNormal(iEdge)

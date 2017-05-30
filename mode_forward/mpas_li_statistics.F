@@ -73,8 +73,6 @@ module li_statistics
 
    subroutine li_compute_statistics(domain, itimestep)
 
-     use li_diagnostic_vars, only: li_calculate_layerThickness
-
      implicit none
 
      ! Input/output arguments

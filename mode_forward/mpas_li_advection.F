@@ -43,7 +43,9 @@ module li_advection
    ! Public member functions
    !
    !--------------------------------------------------------------------
-   public :: li_advection_thickness_tracers, li_layer_normal_velocity
+   public :: li_advection_thickness_tracers, &
+             li_layer_normal_velocity, &
+             li_update_geometry
 
    !--------------------------------------------------------------------
    !
@@ -80,7 +82,7 @@ module li_advection
         err,                    &
         advectTracersIn)
 
-     use li_diagnostic_vars, only: li_calculate_layerThickness
+     use li_setup, only: li_calculate_layerThickness
 
       !-----------------------------------------------------------------
       !
@@ -509,6 +511,82 @@ module li_advection
 
    !--------------------------------------------------------------------
     end subroutine li_advection_thickness_tracers
+
+    
+!***********************************************************************
+!
+!  subroutine li_update_geometry
+!
+!> \brief   Calculates the lower and upper surface
+!> \author  Matt Hoffman
+!> \date    23 May 2017
+!> \details
+!>   This routine calculates lowerSurface and upperSurface from thickness
+!>   cellMask, and bedTopography.  It is a standalone routine so it can be called
+!>   consistently from multiple places as needed.
+!-----------------------------------------------------------------------
+
+   subroutine li_update_geometry(geometryPool)
+
+     !-----------------------------------------------------------------
+     ! input variables
+     !-----------------------------------------------------------------
+
+     !-----------------------------------------------------------------
+     ! input/output variables
+     !-----------------------------------------------------------------
+     type (mpas_pool_type), intent(inout) :: geometryPool !< Input/Output: geometry object
+
+     !-----------------------------------------------------------------
+     ! output variables
+     !-----------------------------------------------------------------
+
+
+     !-----------------------------------------------------------------
+     ! local variables
+     !-----------------------------------------------------------------
+     real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
+     real (kind=RKIND), dimension(:), pointer :: thickness, upperSurface, &
+        lowerSurface, bedTopography
+     integer, dimension(:), pointer :: cellMask
+     integer, pointer :: nCells
+     integer :: iCell
+
+     call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+     call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+     call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
+
+     call mpas_pool_get_dimension(geometryPool, 'nCells', nCells)
+
+     call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+     call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+     call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+     call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
+     call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+
+
+     ! Lower surface is based on floatation for floating ice.  
+     ! For grounded ice (and non-ice areas) it is the bed.
+     where ( li_mask_is_floating_ice(cellMask) )
+        lowerSurface = config_sea_level - thickness * (config_ice_density / config_ocean_density)
+     elsewhere
+        lowerSurface = bedTopography
+     end where
+     ! Make sure lowerSurface calculation is reasonable.  This check could be deleted once this has been throroughly tested.
+     !do iCell = 1, nCells
+     !   if (lowerSurface(iCell) < bedTopography(iCell)) then
+     !      call mpas_log_write('lowerSurface less than bedTopography at cell:i $i', intArgs=(/iCell/))
+     !      err = 1
+     !   endif
+     !end do
+
+     ! Upper surface is the lower surface plus the thickness
+     upperSurface(:) = lowerSurface(:) + thickness(:)
+     
+   !--------------------------------------------------------------------
+   end subroutine li_update_geometry
+
+
 
 !***********************************************************************
 ! Private subroutines:
