@@ -1,0 +1,31 @@
+&io_nml
+  casename    = 'b09:pnc:box:stride=2:agg=4'
+ nx_global = 5017
+ ny_global = 1151
+  nz_global   = 8
+  iofmt       = 'pnc'
+  rearr       = 'box'
+  nprocsIO    = -1
+  stride      = 2
+  base        = 0
+  maxiter     = 10
+  dir         = './none/'
+  num_aggregator = 4
+  DebugLevel  = 0
+  compdof_input = 'namelist'
+  compdof_output = 'none'
+/
+&compdof_nml
+  nblksppe = 1
+  grdorder = 'xyz'
+  grddecomp = 'xy'
+  gdx = 0
+  gdy = 0
+  gdz = 0
+  blkorder = 'xyz'
+  blkdecomp1 = 'xy'
+  blkdecomp2 = ''
+  bdx = 0
+  bdy = 0
+  bdz = 0
+/

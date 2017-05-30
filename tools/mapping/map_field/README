@@ -1,0 +1,65 @@
+===============
+ABOUT THIS TOOL
+===============
+
+The src/ directory here contains an F90 file and a Makefile to produce the
+map_fields executable, which reads in a mapping file and input field and
+maps that field to an output file.
+
+============
+HOW TO BUILD
+============
+
+See INSTALL file in this directory
+
+==========
+HOW TO RUN
+==========
+
+$ map_field -m <filemap>
+            -if <input_file>
+            -iv <input_varname>
+            -of <output_file>
+            -ov <output_varname>
+           [-c <user comment map_field.nml>]
+
+where:
+    filemap = input mapping file name  (character string)
+    input_file = input file name
+    input_varname = input variable name
+    output_file = output file name
+    output_varname = output variable name
+    usercomment = optional, netcdf global attribute (character string)
+
+The following files are read
+  filemap
+  input_file
+The following files are created
+  output_file
+
+=======
+EXAMPLE
+=======
+
+To build:
+
+> cd src
+> setenv CIMEROOT ~/cime
+> setenv CIME_MODEL cesm
+> $CIMEROOT/toolsq/configure --machine yellowstone --macros-format Makefile
+> source ./.env_mach_specific.sh
+> gmake
+> cd ../
+
+To run:
+
+> ./map_field -m "/glade/p/cesm/cseg/inputdata/cpl/cpl6/map_ar9v4_to_wr50a_aave_da_110107.nc" -if "/glade/u/home/tcraig/racm_masks_121108.nc" -iv POP_MASK -of x1.nc -ov atm_pop_frac
+
+=====
+NOTES
+=====
+
+(a) The output file is ALWAYS CLOBBERED in the current implementation.
+
+(b) There is limited error checking at this time.
+
