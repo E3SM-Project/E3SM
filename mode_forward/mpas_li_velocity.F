@@ -368,6 +368,7 @@ contains
 
             ! The interface expects an array where 1's are floating edges and 0's are non-floating edges.
             call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
+            call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
             floatingEdges = li_mask_is_floating_ice_int(edgeMask)
             call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=1)
             call li_calculate_extrapolate_floating_edgemask(meshPool, vertexMask, floatingEdges)
@@ -396,6 +397,12 @@ contains
             endif
             ! Determine if any blocks on this processor had a change to the vertex mask
             procDirichletMaskChanged = max(procDirichletMaskChanged, blockDirichletMaskChanged)
+
+            ! Set beta for solver to use
+            ! (this could potentially be applied to an SIA solver, so it is calculated in this module)
+            call calculate_beta(velocityPool, err_tmp)
+            err = ior(err, err_tmp)
+
 
             block => block % next
          end do
@@ -690,6 +697,62 @@ contains
 
    !--------------------------------------------------------------------
    end subroutine li_velocity_finalize
+
+
+
+!***********************************************************************
+!  private subroutines
+!***********************************************************************
+
+
+!***********************************************************************
+!
+!  routine calculate_beta
+!
+!> \brief  Calulates the beta field to be used by velocity solver
+!> \author Matt Hoffman
+!> \date   3 October 2013
+!> \details
+!>  This routine calculates the beta field to be used by the velocity solver.
+!>  The resulting field to be used is stored as 'betaSolve'.
+!>  Additional methods for calculating beta can be added as they are developed.
+!
+!-----------------------------------------------------------------------
+
+   subroutine calculate_beta(velocityPool, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), pointer :: velocityPool
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(:), pointer :: betaSolve, beta
+
+      err = 0
+
+      call mpas_pool_get_array(velocityPool, 'betaSolve', betaSolve)
+      call mpas_pool_get_array(velocityPool, 'beta', beta)
+
+      betaSolve = beta
+
+
+   !--------------------------------------------------------------------
+   end subroutine calculate_beta
+
 
 
 
