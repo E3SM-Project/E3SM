@@ -17,8 +17,9 @@ begin
   f       = addfile(filename,"r")
   ntimes  = dimsizes(f->time)
   lev     = f->lev
+  lon     = f->lon
 
-do time=0,ntimes-1,5
+do time=0,ntimes-1,1
 
   print("time="+time+" of "+ (ntimes-1))
 
@@ -26,9 +27,13 @@ do time=0,ntimes-1,5
   var  = f->w (time,::-1,:,:)
   var0 = f->w (0   ,::-1,:,:)
 
-  geo  = lonFlip(geo )
-  var  = lonFlip(var)
-  var0 = lonFlip(var0)
+  if(lon(0) .eq. 0) then
+
+    geo  = lonFlip(geo )
+    var  = lonFlip(var)
+    var0 = lonFlip(var0)
+
+  end if
 
   ;_________________________________________________
   ; Interpolate fields from eta coord to z coord

@@ -10,7 +10,8 @@ hydrostatic="${1:-false}"
 echo "theta_hydrostatic_mode=.${hydrostatic}."
 # 4dg resolution
 EXEC=../../../test_execs/theta-nlev40/theta-nlev40
-sed -e "s/theta_hydrostatic_mode.*/theta_hydrostatic_mode=.${hydrostatic}./g" namelist-r400.nl >& input.nl
+#sed -e "s/theta_hydrostatic_mode.*/theta_hydrostatic_mode=.${hydrostatic}./g" namelist-r400.nl >& input.nl
+sed -e "s/theta_hydrostatic_mode.*/theta_hydrostatic_mode=.${hydrostatic}./g" namelist-animation.nl >& input.nl
 
 openmpiexec -n 6 $EXEC < ./input.nl
 ncl plot_supercell_wvel.ncl
