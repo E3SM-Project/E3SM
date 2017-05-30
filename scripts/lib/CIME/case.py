@@ -177,11 +177,14 @@ class Case(object):
         self._env_files_that_need_rewrite.add(env_file)
 
     def read_xml(self):
-        if(len(self._env_files_that_need_rewrite)>0):
+        logger.info("JGF read_xml")
+
+        if self._env_files_that_need_rewrite:
             files = ""
             for env_file in self._env_files_that_need_rewrite:
-                files += " "+env_file.filename
-            expect(False,"Object(s) %s seem to have newer data than the corresponding case file"%files)
+                files += " " + env_file.filename
+
+            expect(False, "Object(s) %s seem to have newer data than the corresponding case file" % files)
 
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
@@ -370,6 +373,7 @@ class Case(object):
         then that value will be set in the file object and the file
         name is returned
         """
+        logger.info("JGF setting '%s' to '%s'" % (item, value))
         if item == "CASEROOT":
             self._caseroot = value
         result = None
