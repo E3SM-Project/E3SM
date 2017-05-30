@@ -30,7 +30,6 @@ from CIME.XML.files        import Files
 from CIME.XML.component    import Component
 from CIME.XML.compsets     import Compsets
 from CIME.case             import Case
-import xml.etree.ElementTree as etree
 
 # check for  dependency module
 try:
@@ -68,20 +67,6 @@ def commandline_options():
     CIME.utils.parse_args_and_handle_standard_logging_options(options)
 
     return options
-
-###############################################################################
-def get_desc(compset, desc_file):
-###############################################################################
-
-    xml_tree = etree.ElementTree()
-    xml_tree.parse(desc_file)
-    descrips = xml_tree.findall("descriptions/desc")
-
-    for descrip in descrips:
-        compset_attr = descrip.get("compset")
-        if compset_attr in compset:
-## start here return the compset_attr and the element value            
-
 
 ###############################################################################
 def _main_func(options, work_dir):
@@ -139,15 +124,10 @@ def _main_func(options, work_dir):
     # get the mode descriptions for every compset and every corresponding config_component.xml file
     for alias, compset in ordered_compsets.iteritems():
         description = ''
-        parts = compset.split('_')
         for comp, desc_file in desc_files.iteritems():
-            if comp.upper() in parts:
+            if comp.upper() in compset:
                 expect((desc_file),
                        "Cannot find config_component.xml file for %s" %component)
-                description += get_desc(compset, desc_file)
-
-
-
 
                 compobj = Component(desc_file)
                 description += compobj.get_description(compset).replace(':','<br/>')
