@@ -96,7 +96,7 @@ my $cppdefs = "$cppdefs -DBLCKX=$CICE_BLCKX -DBLCKY=$CICE_BLCKY -DMXBLCKS=$CICE_
 # this will determine if need to rebuild at runtime - force user to call $CASE.buildexe
 
 chdir "$CASEROOT";
-my $sysmod  = "./xmlchange -noecho -id CICE_CPPDEFS -file env_build.xml -val=\'$cppdefs\'";
+my $sysmod  = "./xmlchange --noecho --id CICE_CPPDEFS --val=\'$cppdefs\'";
 system($sysmod) == 0 or die "ERROR cice.buildnml: $sysmod failed: $?\n";
 chdir "$CASEROOT/Buildconf/ciceconf";
 

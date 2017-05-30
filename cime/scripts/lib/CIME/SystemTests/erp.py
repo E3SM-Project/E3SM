@@ -132,6 +132,8 @@ class ERP(SystemTestsCommon):
                 self._case.set_value("CONTINUE_RUN", True)
                 self._case.set_value("REST_OPTION","never")
                 suffix = "rest"
+
             self.run_indv(suffix=suffix)
+            self._case.flush()
 
         self._component_compare_test("base", "rest")
