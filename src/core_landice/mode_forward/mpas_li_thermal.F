@@ -51,7 +51,6 @@ module li_thermal
 
    public :: li_thermal_init, li_thermal_solver, &
              li_init_linear_temperature_in_column,  &
-             li_heat_dissipation_sia, li_basal_friction,  &
              li_temperature_to_enthalpy, li_enthalpy_to_temperature, &
              li_compute_pressure_melting_point_fields, &
              li_basal_melt_floating_ice
@@ -660,6 +659,8 @@ module li_thermal
       character(len=StrKIND), pointer :: &
            config_thermal_solver       ! option for thermal solver
 
+      character (len=StrKIND), pointer :: config_velocity_solver
+
       real(kind=RKIND), pointer :: &
            config_thermal_thickness, & ! minimum thickness (m) for temperature calculations
            config_sea_level            ! sea level (m) relative to z = 0
@@ -749,6 +750,7 @@ module li_thermal
       call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
+      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
       if (config_print_thermal_info) then
          call mpas_log_write('Solving for temperature, config_thermal_solver = ' // trim(config_thermal_solver))
@@ -832,7 +834,6 @@ module li_thermal
          err = ior(err, err_tmp)
 
          ! calculate a mask to identify ice that is thick enough to be thermally active
-
          do iCell = 1, nCellsSolve
             if (thickness(iCell) > config_thermal_thickness) then
                thermalCellMask(iCell) = 1
@@ -842,12 +843,28 @@ module li_thermal
          enddo
 
 
-         select case(config_thermal_solver)
+         ! === Calculate mechanical heating terms ===
 
-         !WHL - added case 'none', in which case we skip the vertical thermo calculation and move on to basal melting
+         if (trim(config_velocity_solver) == 'sia') then
+            ! Compute interior heat dissipation
+            call heat_dissipation_sia(domain, err_tmp)
+            err = ior(err, err_tmp)
+         endif   ! sia
+         ! (FO dissipation is calculated within dycore)
+
+         ! Compute heat flux due to basal friction
+         !   appropriate for SIA or FO dycore, assuming Taub=beta*ub
+         call basal_friction(domain, err_tmp)
+         err = ior(err, err_tmp)
+
+
+         ! ================================
+         select case(config_thermal_solver)
+         ! ================================
+
          case ('none')
 
-            ! do nothing
+            ! do nothing - handled above
 
          case ('temperature', 'enthalpy')
 
@@ -1513,7 +1530,7 @@ module li_thermal
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  !  routine li_heat_dissipation_sia
+!  !  routine heat_dissipation_sia
 !
 !> \brief MPAS land ice heat dissipation for SIA velocity solver
 !> \author William Lipscomb
@@ -1523,7 +1540,7 @@ module li_thermal
 !>  in the ice interior, based on the shallow-ice approximation.
 !-----------------------------------------------------------------------
 
-  subroutine li_heat_dissipation_sia(domain, err)
+  subroutine heat_dissipation_sia(domain, err)
 
      !-----------------------------------------------------------------
      ! input/output variables
@@ -1769,11 +1786,12 @@ module li_thermal
         block => block % next
      enddo  ! associated(block)
 
-   end subroutine li_heat_dissipation_sia
+   end subroutine heat_dissipation_sia
+
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  !  routine li_basal_friction
+!  !  routine basal_friction
 !
 !> \brief MPAS heat flux due to basal friction for SIA dynamics
 !> \author William Lipscomb
@@ -1783,7 +1801,7 @@ module li_thermal
 !>  base of the ice, based on the shallow-ice approximation.
 !-----------------------------------------------------------------------
 
-   subroutine li_basal_friction(domain, err)
+   subroutine basal_friction(domain, err)
 
      !-----------------------------------------------------------------
      ! input/output variables
@@ -1890,7 +1908,7 @@ module li_thermal
         block => block % next
      enddo  ! associated(block)
 
-  end subroutine li_basal_friction
+  end subroutine basal_friction
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

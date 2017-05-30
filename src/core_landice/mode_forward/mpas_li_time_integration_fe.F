@@ -78,6 +78,7 @@ module li_time_integration_fe
    subroutine li_time_integrator_forwardeuler(domain, err)
 
       use li_subglacial_hydro
+      use li_velocity
 
       !-----------------------------------------------------------------
       ! input variables
@@ -164,13 +165,20 @@ module li_time_integration_fe
 
       call mpas_timer_stop("calve_ice")
 
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'cellMask')
+      call mpas_dmpar_field_halo_exch(domain, 'edgeMask')
+      call mpas_dmpar_field_halo_exch(domain, 'vertexMask')
+      call mpas_timer_stop("halo updates")
+
+! === Solve Velocity =====================
+      ! During time-stepping, we always solveVelo
+      call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
+      err = ior(err, err_tmp)
+
 ! === Calculate diagnostic variables for new state =====================
 
-      ! Some velocity solvers require an initial guess.
-      ! If needed, that guess should be inserted into normalVelocity
-      ! in time level 2 before calling li_calculate_diagnostic_vars.
-
-      call li_calculate_diagnostic_vars(domain, solveVelo=.true., err=err_tmp)
+      call li_calculate_diagnostic_vars(domain, err=err_tmp)
       err = ior(err, err_tmp)
 
 
@@ -524,6 +532,7 @@ module li_time_integration_fe
    subroutine advection_solver(domain, err)
 
       use mpas_timekeeping
+      use li_mask
 
       !-----------------------------------------------------------------
       ! input variables
@@ -573,6 +582,7 @@ module li_time_integration_fe
       integer :: err_tmp
 
       err = 0
+      err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
       call mpas_pool_get_config(liConfigs, 'config_tracer_advection', config_tracer_advection)
@@ -582,14 +592,38 @@ module li_time_integration_fe
 
       ! Halo updates
       ! Note: The layer thickness and tracers must be up to date in halos before calling the advection subroutines.
-      !       Currently, layerThicknessEdge is updated at the end of subroutine li_calculate_diagnostic_vars.
-      !       The thermal tracers (temperature, waterfrac, enthalpy) are updated at the end of li_thermal_solver.
-      !       But thickness (which is used by subroutine li_advection_thickness_tracers) needs an update here.
-      !        We use timeLevel=2 to get the value from the previous timestep.
+      !   The thermal tracers (temperature, waterfrac, enthalpy) are updated at the end of li_thermal_solver.
+      !   But thickness (which is used by subroutine li_advection_thickness_tracers) needs an update here. TODO: confirm this
 
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'thickness')
       call mpas_timer_stop("halo updates")
+
+
+      ! ===
+      ! === Calculate layerThicknessEdge, which is needed for advection
+      ! ===
+      if (trim(config_thickness_advection) == 'fo' .or. trim(config_tracer_advection) == 'fo') then
+         block => domain % blocklist
+         do while (associated(block))
+
+            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+            call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
+            call calculate_layerThicknessEdge(meshPool, geometryPool, velocityPool, err_tmp)
+            err = ior(err,err_tmp)
+
+            block => block % next
+         end do
+
+         ! Halo update layerThicknessEdge - outer halo may be wrong due to requiring velocity
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_field_halo_exch(domain, 'layerThicknessEdge')
+         call mpas_timer_stop("halo updates")
+      endif ! fo advection option
+
+
 
       ! ===
       ! === Advect thickness and tracers
@@ -641,6 +675,7 @@ module li_time_integration_fe
                  err_tmp,                &
                  advectTracersIn = .false.)
 
+                 !call mpas_log_write("errtmp=$i",intArgs=(/err_tmp/))
             err = ior(err,err_tmp)
 
          endif
@@ -697,6 +732,20 @@ module li_time_integration_fe
       call mpas_dmpar_field_halo_exch(domain, 'enthalpy')
 
       call mpas_timer_stop("halo updates")
+
+      ! Update mask and geometry
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         call li_update_geometry(geometryPool)
+
+         block => block % next
+      end do
+
 
       ! === error check
       if (err > 0) then
@@ -798,7 +847,94 @@ module li_time_integration_fe
    end subroutine set_timestep
 
 
+!***********************************************************************
+!
+!  routine calculate_layerThicknessEdge
+!
+!> \brief   Calculates layerThicknessEdge
+!> \author  Matthew Hoffman
+!> \date    23 May 2017
+!> \details
+!>  This routine calculates FO upwind thickness on 3d layer edges.
+!
+!-----------------------------------------------------------------------
+   subroutine calculate_layerThicknessEdge(meshPool, geometryPool, velocityPool, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), pointer, intent(inout) :: meshPool !< Input/Output: mesh pool
+      type (mpas_pool_type), pointer, intent(inout) :: geometryPool !< Input/Output: geometryPool
+      type (mpas_pool_type), pointer, intent(inout) :: velocityPool !< Input/Output: velocityPool
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, normalVelocity
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, pointer :: nEdges, nVertLevels
+      integer :: iEdge, cell1, cell2, k
+      real (kind=RKIND) :: VelSign
+
+      err = 0
+
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel = 1)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
+      call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
+      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+
+      ! Note: SIA velocity solver uses its own local calculation of h_edge that is always 2nd order.
+      ! Note: ocn_diagnostic_solve in mpas_ocn_tendency.F has 2, 3, & 4th order calculations for h_edge that can be used.
+
+      ! given thickness, compute layerThickness
+      call li_calculate_layerThickness(meshPool, thickness, layerThickness)
+
+      ! If using FO-Upwind then h_edge must be FO.
+      do iEdge=1,nEdges
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+         do k=1, nVertLevels
+            ! Calculate h on edges using first order
+            VelSign = sign(1.0_RKIND, normalVelocity(k, iEdge))
+            layerThicknessEdge(k,iEdge) = max(VelSign * layerThickness(k, cell1), &
+               VelSign * (-1.0_RKIND) * layerThickness(k, cell2))
+            ! + velocity goes from index 1 to 2 in the cellsOnEdge array.
+            !  Doug does the calculation as: h_edge = max(VelSign, 0.0) * h1 - min(VelSign, 0.0) * h2
+            !!! ! Calculate h on edges using second order
+            !!! layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k, cell1) + layerThickness(k, cell2))
+         end do
+      end do
+
+      ! Note: The outmost layerThicknessEdge may be wrong if its upwind cell is off this block -
+      !       halo update should be done if this variable will be used.
+
+      !WHL - debug - Commented out, but might be useful for future debugging
+!      if (config_print_thickness_advection_info) then
+!         call mpas_log_write(' ')
+!         call mpas_log_write('End of timestep: iCell (global), new thickness:'
+!         do iCell = 1, nCells
+!            if (thickness(iCell) > 0.0_RKIND) then
+!               call mpas_log_write('$i $r', intArgs=(/indexToCellID(iCell)/), realArgs=(/thickness(iCell)/))
+!            endif
+!         enddo
+!      endif
+
+   !--------------------------------------------------------------------
+   end subroutine calculate_layerThicknessEdge
+
 
 end module li_time_integration_fe
-
 
