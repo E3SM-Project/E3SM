@@ -142,12 +142,17 @@ class Case(object):
         threads_per_core = 1 if (threads_per_node <= pes_per_node) else smt_factor
         self.cores_per_task = self.thread_count / threads_per_core
 
+        build_threaded = self.get_build_threaded()
+
         mpi_attribs = {
             "compiler" : self.get_value("COMPILER"),
             "mpilib"   : self.get_value("MPILIB"),
-            "threaded" : self.get_build_threaded(),
+            "threaded" : build_threaded,
             "unit_testing" : False
             }
+
+        self.set_value("SMP_PRESENT", build_threaded)
+        os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
 
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
         if executable is not None and "aprun" in executable:
@@ -177,8 +182,6 @@ class Case(object):
         self._env_files_that_need_rewrite.add(env_file)
 
     def read_xml(self):
-        logger.info("JGF read_xml")
-
         if self._env_files_that_need_rewrite:
             files = ""
             for env_file in self._env_files_that_need_rewrite:
@@ -373,7 +376,6 @@ class Case(object):
         then that value will be set in the file object and the file
         name is returned
         """
-        logger.info("JGF setting '%s' to '%s'" % (item, value))
         if item == "CASEROOT":
             self._caseroot = value
         result = None
@@ -1182,8 +1184,6 @@ class Case(object):
         """
         force_threaded = self.get_value("BUILD_THREADED")
         smp_present = bool(force_threaded) or self.thread_count > 1
-        self.set_value("SMP_PRESENT", stringify_bool(smp_present))
-        os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
         return smp_present
 
     def _check_testlists(self, compset_alias, grid_name, files):
