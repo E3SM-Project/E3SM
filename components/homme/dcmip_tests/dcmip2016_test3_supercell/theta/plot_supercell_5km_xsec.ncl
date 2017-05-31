@@ -46,7 +46,7 @@ begin
 
   times  = (/t1,t2,t3,t4/)
   times = where(times .gt. (nt-1), 0*times+(nt-1), times)
-  print(times)
+  print("times="+times)
   print(time(times)*min_per_day)
 
   zm = data->geo(times,::-1,:,:)/9.80616

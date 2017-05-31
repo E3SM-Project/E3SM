@@ -694,18 +694,18 @@ contains
   end subroutine set_elem_state
 
   !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,Cp_star,rho,zm,g,i,j,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,pnh,dp,Cp_star,rho,zm,g,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
     ! used by idealized tests to compute idealized physics forcing terms
 
-    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,cp_star,zm,rho
+    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,pnh,dp,cp_star,zm,rho
     real(real_kind), intent(in)    :: g
-    integer,         intent(in)    :: i,j,nt,ntQ
+    integer,         intent(in)    :: nt,ntQ
     type(element_t), intent(inout) :: elem
     type (hvcoord_t),intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
 
-    real(real_kind) , dimension(np,np,nlev) :: phi,dpnh,kappa_star,Rstar
+    real(real_kind) , dimension(np,np,nlev) :: phi,dpnh,kappa_star,exner
     real(real_kind) , dimension(np,np) :: phis
 
     integer :: k
@@ -728,10 +728,8 @@ contains
     call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
     call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,phi,phis,kappa_star,pnh,dpnh,exner)
 
-    Rstar = kappa_star*cp_star
-    theta = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star*dp)
-    T     = theta*exner
-    rho   = pnh/(Rstar*T)
+    T     = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star*dp)*exner
+    rho   = pnh/(kappa_star*cp_star*T)
 
     if(theta_hydrostatic_mode) then
       w = -(elem%derived%omega_p*pnh)/(rho*g)

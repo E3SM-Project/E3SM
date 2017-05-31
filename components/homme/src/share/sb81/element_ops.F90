@@ -204,14 +204,14 @@ contains
   end subroutine set_elem_state
 
   !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,cp_star,rho,zm,g,i,j,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,pnh,dp,cp_star,rho,zm,g,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
     ! used by tests to compute idealized physics forcing terms
 
-    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,cp_star,zm,rho
+    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,pnh,dp,cp_star,zm,rho
     real(real_kind), intent(in)    :: g
-    integer,         intent(in)    :: i,j,nt,ntQ
+    integer,         intent(in)    :: nt,ntQ
     type(element_t), intent(inout) :: elem
     type (hvcoord_t),intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
 
@@ -227,7 +227,7 @@ contains
     zm  = elem%derived%phi(:,:,:)/g
 
     do k=1,nlev
-       p (:,:,k)= hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*elem%state%ps_v(:,:,nt)
+       p (:,:,k)= hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
        dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
     enddo
 
@@ -237,8 +237,6 @@ contains
     rstar     = kappa_star*cp_star
 
     pnh       = p
-    exner     = (p/p0)**(kappa_star)
-    theta     = T/exner
     rho       = p/(Rstar*T)
 
   end subroutine get_state

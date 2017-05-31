@@ -293,7 +293,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
 
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl):: lat
-  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,exner,exner_kess,p,dp,cp_star,rho,z,qv,qc,qr, rho_kess
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,exner_kess,p,dp,cp_star,rho,z,qv,qc,qr, rho_kess, theta_kess
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
   real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
   real(rl) :: max_w, pmax_w, max_precl, pmax_precl
@@ -306,7 +306,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
     precl(:,:,ie) = ie
 
     ! get current element state
-    call get_state(u,v,w,T,theta,exner,p,dp,cp_star,rho,z,g,i,j,elem(ie),hvcoord,nt,ntQ)
+    call get_state(u,v,w,T,p,dp,cp_star,rho,z,g,elem(ie),hvcoord,nt,ntQ)
 
     ! get mixing ratios
     qv  = elem(ie)%state%Qdp(:,:,:,1,ntQ)/dp
@@ -324,9 +324,11 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
     ! compute form of exner pressure expected by Kessler physics
     exner_kess = (p/p0)**(Rgas/Cp)
     rho_kess   = p/(Rgas*T)
+    theta_kess = T/exner_kess
 
     ! invert columns (increasing z)
-    theta_inv= theta(:,:,nlev:1:-1)
+    !theta_inv= theta(:,:,nlev:1:-1)
+    theta_inv = theta_kess(:,:,nlev:1:-1)
     qv_inv   = qv   (:,:,nlev:1:-1)
     qc_inv   = qc   (:,:,nlev:1:-1)
     qr_inv   = qr   (:,:,nlev:1:-1)
@@ -353,11 +355,11 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
     enddo; enddo;
 
     ! revert columns (increasing eta)
-    theta = theta_inv(:,:,nlev:1:-1)
+    theta_kess = theta_inv(:,:,nlev:1:-1)
     qv    = qv_inv   (:,:,nlev:1:-1)
     qc    = qc_inv   (:,:,nlev:1:-1)
     qr    = qr_inv   (:,:,nlev:1:-1)
-    T     = theta*exner
+    T     = theta_kess*exner_kess
 
     ! add sponge layer at top of model?
     ! call set_forcing_rayleigh_friction(elem(ie),z,ztop,zc,tau,u0(:,:,:,ie),v0(:,:,:,ie),nt)
