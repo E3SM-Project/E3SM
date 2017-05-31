@@ -60,7 +60,7 @@ std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
 std::vector<int> indexToVertexID, vertexToFCell, triangleToFVertex, indexToEdgeID, edgeToFEdge,
     mask, fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
 std::vector<double> temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices, velocityOnCells,
-    elevationData, thicknessData, betaData, bedTopographyData, smbData, thicknessOnCells;
+    elevationData, thicknessData, betaData, bedTopographyData, temperatureData, smbData, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
 std::vector<double> observedVeloXData, observedVeloYData, observedDHDtData; // only needed for creating ASCII mesh
 ;
@@ -368,13 +368,13 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
 
 
 
-    import2DFields(bedTopography_F, lowerSurface_F, thickness_F, beta_F, smb_F,  minThickness);
+    import2DFields(bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
       regulThk[index] = std::max(1e-4, thicknessData[index]);
 
-    importP0Temperature(temperature_F);
+    importP0Temperature();
 
     dissipationHeatOnTetra.resize(3 * nLayers * indexToTriangleID.size());
 
@@ -1419,12 +1419,14 @@ void extendMaskByOneLayer(int const* verticesMask_F,
 }
 
 void import2DFields(double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
-    double const * beta_F, double const * smb_F, double eps) {
+    double const * beta_F, double const * temperature_F, double const * smb_F, double eps) {
   elevationData.assign(nVertices, 1e10);
   thicknessData.assign(nVertices, 1e10);
   bedTopographyData.assign(nVertices, 1e10);
   if (beta_F != 0)
     betaData.assign(nVertices, 1e10);
+  if(temperature_F != 0)
+    temperatureData.assign(nLayers * nTriangles, 1e10);
   if (smb_F != 0)
     smbData.assign(nVertices, 1e10);
 
@@ -1441,6 +1443,30 @@ void import2DFields(double const* bedTopography_F, double const * lowerSurface_F
     if (smb_F != 0)
       smbData[index] = smb_F[iCell] / unit_length * secondsInAYear/rho_ice;
   }
+
+  if(temperature_F != 0) {
+    for (int index = 0; index < nTriangles; index++) {
+      for (int il = 0; il < nLayers; il++) {
+        double temperature = 0;
+        int ilReversed = nLayers - il - 1;
+        int nPoints = 0;
+        for (int iVertex = 0; iVertex < 3; iVertex++) {
+      int v = verticesOnTria[iVertex + 3 * index];
+      int iCell = vertexToFCell[v];
+          //compute temperature by averaging tmeperature values of triangles vertices where ice is present
+      if (cellsMask_F[iCell] & ice_present_bit_value) { 
+        temperature += temperature_F[iCell * nLayers + ilReversed];
+        nPoints++;
+         }
+        }
+        if (nPoints == 0)  //if triangle is in an ice-free area, set the temperature to T0
+      temperatureData[index+il*nTriangles] = T0;
+        else
+      temperatureData[index+il*nTriangles] = temperature / nPoints;
+      }
+    }
+  }
+
 
   //extend thickness elevation and basal friction data to the border for floating vertices
   std::set<int>::const_iterator iter;
@@ -1589,34 +1615,17 @@ void import2DFieldsObservations(double const * lowerSurface_F, double const * th
 
 }
 
-
-void importP0Temperature(double const * temperature_F) {
+void importP0Temperature() {
   int lElemColumnShift = (Ordering == 1) ? 3 : 3 * indexToTriangleID.size();
   int elemLayerShift = (Ordering == 0) ? 3 : 3 * nLayers;
   temperatureOnTetra.resize(3 * nLayers * indexToTriangleID.size());
   for (int index = 0; index < nTriangles; index++) {
     for (int il = 0; il < nLayers; il++) {
-      double temperature = 0;
-      int ilReversed = nLayers - il - 1;
-      int nPoints = 0;
-      for (int iVertex = 0; iVertex < 3; iVertex++) {
-        int v = verticesOnTria[iVertex + 3 * index];
-        int iCell = vertexToFCell[v];
-        if (cellsMask_F[iCell] & ice_present_bit_value) {
-          temperature += temperature_F[iCell * nLayers + ilReversed];
-          nPoints++;
-        }
-      }
-      if (nPoints == 0)
-        temperature = T0;
-      else
-        temperature = temperature / nPoints;
       for (int k = 0; k < 3; k++)
         temperatureOnTetra[index * elemLayerShift + il * lElemColumnShift + k] =
-            temperature;
+            temperatureData[index+il*nTriangles];
     }
   }
-
 }
 
 void exportDissipationHeat(double * dissipationHeat_F) {
@@ -2147,7 +2156,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
 
     // individual field values
     // Call needed functions to process MPAS fields to Albany units/format
-    import2DFields(bedTopography_F, lowerSurface_F, thickness_F, beta_F, smb_F,  minThickness);
+    import2DFields(bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F,  minThickness);
     import2DFieldsObservations(lowerSurface_F, thickness_F, 
                     observedSurfaceVelocityX_F, observedSurfaceVelocityX_F, observedThicknessTendency_F);
 
@@ -2160,6 +2169,26 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     }
     else {
        std::cout << "Failed to open thickness ascii file!"<< std::endl;
+    }
+
+    outfile.open ("temperature.ascii", std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+       outfile << nTriangles << " " << nLayers << "\n";  //number of triangles and number of layers on first line
+       
+       double midLayer = 0;
+       for (int il = 0; il < nLayers; il++) { //sigma coordinates for temperature
+         midLayer += layersRatio[il]/2.0;
+         outfile << midLayer << "\n";
+         midLayer += layersRatio[il]/2.0;
+       }    
+
+       for(int i = 0; i<nTriangles; ++i)  //temperature values layer by layer
+         for(int il = 0; il<nLayers; ++il)
+           outfile << temperatureData[i + il * nLayers ]<<"\n";
+       outfile.close();
+       }
+    else {
+       std::cout << "Failed to open tempertature ascii file!"<< std::endl;
     }
 
     outfile.open ("surface_height.ascii", std::ios::out | std::ios::trunc);
