@@ -102,9 +102,6 @@
   integer, parameter :: max_gas = nsoag + 1
   ! the +3 in max_aer are dst, ncl, so4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
-#elif ( defined MODAL_AERO_4MODE_VBS )
-  integer, parameter :: max_gas = nsoag + 1
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 3
 #elif ( defined MODAL_AERO_4MODE_MOM )
   integer, parameter :: max_gas = nsoag + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
@@ -5696,7 +5693,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       naer = 0
 
 ! soa aerosol and condensing gas species
-#if ( defined MODAL_AERO_4MODE_VBS )
+#if ( defined MAM_SOA_VBS )
       soa_mech_type = soa_mech_type_vbs
       soa_mech_optaa = 1
       if      (nsoa == 1 .and. nsoag == 7) then
@@ -6170,8 +6167,8 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
            'nsoag, nsoa, npoa, nbc', &
             nsoag, nsoa, npoa, nbc
          write(iulog,'(/a56,10i5)') &
-           'igas_soa, igas_h2so4, igas_nh3, igas_hno3, igas_hcl', &
-            igas_soa, igas_h2so4, igas_nh3, igas_hno3, igas_hcl
+           'igas_soag, igas_h2so4, igas_nh3, igas_hno3, igas_hcl', &
+            igas_soag, igas_h2so4, igas_nh3, igas_hno3, igas_hcl
          write(iulog,'(/a56,10i5)') &
            'iaer_soa, iaer_so4, iaer_nh4, iaer_no3, iaer_cl', &
             iaer_soa, iaer_so4, iaer_nh4, iaer_no3, iaer_cl
