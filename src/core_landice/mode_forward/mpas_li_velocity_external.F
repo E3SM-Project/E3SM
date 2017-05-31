@@ -53,14 +53,15 @@ module li_velocity_external
       ! For now, just trying it with this new routine.
       subroutine velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, &
          config_default_flowParamA, config_enhancementFactor, &
-         config_flowLawExponent, config_dynamic_thickness, li_mask_ValueDynamicIce, li_mask_ValueIce) &
+         config_flowLawExponent, config_dynamic_thickness, config_use_glp, li_mask_ValueDynamicIce, li_mask_ValueIce) &
          bind(C, name="velocity_solver_set_parameters")
 
-         use iso_c_binding, only: C_INT, C_DOUBLE
+         use iso_c_binding, only: C_INT, C_DOUBLE, C_BOOL
 
          INTEGER(C_INT) :: li_mask_ValueDynamicIce, li_mask_ValueIce
          REAL(C_DOUBLE) :: config_ice_density, config_ocean_density, config_sea_level, config_default_flowParamA, &
                            config_enhancementFactor, config_flowLawExponent, config_dynamic_thickness, gravity
+         LOGICAL(C_BOOL) :: config_use_glp
       end subroutine velocity_solver_set_parameters
 
    end interface
@@ -249,6 +250,7 @@ contains
       type (field1DInteger), pointer :: indexToCellIDField, indexToEdgeIDField, indexToVertexIDField
       real (kind=RKIND), pointer :: config_ice_density, config_ocean_density,  config_sea_level, config_default_flowParamA, &
                                     config_enhancementFactor, config_flowLawExponent, config_dynamic_thickness
+      logical, pointer :: config_use_glp
 
       ! halo exchange arrays
       integer, dimension(:), pointer :: sendCellsArray, &
@@ -340,10 +342,12 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_enhancementFactor', config_enhancementFactor)
       call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_use_glp', config_use_glp)
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
       call velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, &
          config_default_flowParamA, config_enhancementFactor, &
-         config_flowLawExponent, config_dynamic_thickness, li_mask_ValueAlbanyActive, li_mask_ValueIce)
+         config_flowLawExponent, config_dynamic_thickness, logical(config_use_glp, KIND=1), &
+         li_mask_ValueAlbanyActive, li_mask_ValueIce)
 
       call interface_reset_stdout()
 #endif

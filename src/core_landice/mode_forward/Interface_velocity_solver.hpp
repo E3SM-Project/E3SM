@@ -92,7 +92,7 @@ int velocity_solver_init_mpi(int* fComm);
 void velocity_solver_finalize();
 
 void velocity_solver_set_parameters(double const* gravity_F, double const* ice_density_F, double const* ocean_density_F, double const* sea_level_F, double const* flowParamA_F, 
-                        double const* enhancementFactor_F, double const* flowLawExponent_F, double const* dynamic_thickness_F, int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce);
+                        double const* enhancementFactor_F, double const* flowLawExponent_F, double const* dynamic_thickness_F, bool const* use_GLP_F, int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce);
 
 void velocity_solver_init_l1l2(double const* levelsRatio);
 
