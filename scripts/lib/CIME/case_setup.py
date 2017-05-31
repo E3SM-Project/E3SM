@@ -141,6 +141,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
             case.initialize_derived_attributes()
 
+            case.set_value("SMP_PRESENT", case.get_build_threaded())
+
             # Set TOTAL_CORES
             case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
         else:
@@ -162,6 +164,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
 
             case.initialize_derived_attributes()
+
+            case.set_value("SMP_PRESENT", case.get_build_threaded())
 
             # create batch files
             logger.info("Creating batch script case.run")
