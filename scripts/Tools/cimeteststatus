@@ -1,0 +1,600 @@
+#!/usr/bin/env python
+"""
+CIME test status reporting script.
+Purpose:  Give basic and detailed summaries of CIME(CESM) tests,
+and send the test results back to the test database.
+Authors: Jay Shollenberger and Ben Andre
+"""
+
+from __future__ import print_function
+import sys
+if sys.hexversion < 0x02070000:
+    print(70 * "*")
+    print("ERROR: {0} requires python >= 2.7.x. ".format(sys.argv[0]))
+    print("It appears that you are running python {0}".format(
+        ".".join(str(x) for x in sys.version_info[0:3])))
+    print(70 * "*")
+    sys.exit(1)
+import xml.etree.ElementTree as etree
+import argparse
+import os, glob, re
+import urllib
+import urllib2
+import pprint
+import getpass
+
+testdburl = "https://csegweb.cgd.ucar.edu/testdb/cgi-bin/processXMLtest.cgi"
+
+class CimeTestStatus():
+    # create an enum for the line type
+    LINE_TYPE_SEPERATOR = 0
+    LINE_TYPE_STATUS = 1
+    LINE_TYPE_TIME = 2
+
+    def __init__(self):
+        self._status_buffer = None
+        self._test_status = {}
+        self._current_section = None
+        self._raw_status = None
+        self.fullname = None
+    def __repr__(self):
+        return pprint.pformat(self._test_status)
+
+    def parse(self, filename):
+        """Parse the TestStatus file and turn it and save data into the object
+        so it can be serialized
+        """
+        self._buffer_file(filename)
+        if self._status_buffer:
+            self._extract_test_name()
+            self._parse_teststatus()
+
+
+    def _buffer_file(self, filename):
+        """Read the TestStatus file into a buffer
+        """
+        with open(filename, 'r') as status:
+            self._status_buffer = status.readlines()
+        self._raw_status = "".join(self._status_buffer)
+
+    def _parse_teststatus(self):
+        """Parse TestStatus files, extracting useful information and saving in
+        a dict.
+        """
+        for line in self._status_buffer:
+            line_type = self._determine_line_type(line)
+            if line_type is self.LINE_TYPE_SEPERATOR:
+                self._parse_seperator(line)
+            elif line_type is self.LINE_TYPE_STATUS:
+                self._parse_status_line(line)
+            elif line_type is self.LINE_TYPE_TIME:
+                self._parse_test_time(line)
+            else:
+                message = ("Unhandled line_type while parsing test status "
+                           "file: {0}".format(line_type))
+                raise RuntimeError(message)
+
+    def _determine_line_type(self, line):
+        """Determine if we are on a test status line or a seperator
+        line. Note, the total run time is output on a seperate line....
+        """
+        line_type = None
+        seperator_re = re.compile(r"^[\s]*---")
+        if seperator_re.match(line):
+            if "seconds" in line:
+                line_type = self.LINE_TYPE_TIME
+            else:
+                line_type = self.LINE_TYPE_SEPERATOR
+        else:
+            line_type = self.LINE_TYPE_STATUS
+
+        if line_type is None:
+            message = ("Correct line type could not be determined. "
+                       "line:\n{0}".format(line))
+            raise RuntimeError(message)
+
+        return line_type
+    # --------------------------------------------------------------------------
+    def _extract_test_name(self):
+        """Extract the test name from the buffer. We are assuming that the
+        first line of the file will always contain something we can
+        use....
+        """
+        line = self._status_buffer[0]
+        self.fullname = line
+        name = line.split(' ')[1]
+        if len(name.split('.')) > 5:
+            name = name.split('.')
+            name = name[0:5]
+            name = '.'.join(name)
+        self._test_status['name'] = name
+
+    # --------------------------------------------------------------------------
+    def _parse_seperator(self, line):
+        """parse a section seperator to extract the current section name.
+        """
+        #section_re = re.compile("\s*---([\w\s\W*]+)---")
+        section_re = re.compile(r"\s*---([\w\s]+)\W*---")
+        match = section_re.search(line)
+        if match:
+            self._current_section = match.group(1).strip()
+            self._current_section = self._current_section.lower()
+            self._test_status[self._current_section] = {}
+
+    # --------------------------------------------------------------------------
+    def _parse_test_time(self, line):
+        """parse a test time line.
+        Note: one of these lines resets the section!
+        """
+        self._current_section = None
+        result = self._extract_test_time(line)
+        self._add_result_to_test_status('wall time', result)
+
+    # --------------------------------------------------------------------------
+    def _extract_test_time(self, line):
+        """Extract the test time and units
+        """
+        test_time = {}
+        time_re = re.compile(r"Test time is ([\d]+) ([\w]+)")
+        match = time_re.search(line)
+        if match:
+            test_time['time'] = match.group(1)
+            test_time['units'] = match.group(2)
+        else:
+            message = ("Coul not extract test time from a time status line:"
+                       "\n{0}".format(line))
+            raise RuntimeError(message)
+        return test_time
+
+    # --------------------------------------------------------------------------
+    def _parse_status_line(self, line):
+        """parse a status line to extract the useful information.
+        Parsing rules:
+        1) split on ':'
+           the first group is the status, the second (if present) is the comment.
+        2) in the first group, split on space ' ':
+           the first group is the status, the second is a name field
+        """
+        split_line = line.split(':')
+        status_and_name = split_line[0]
+        comment = None
+        if len(split_line) > 1:
+            comment = split_line[1].strip()
+
+        split_status_and_name = status_and_name.split(' ')
+        status = split_status_and_name[0]
+        name = None
+        if len(split_status_and_name) > 1:
+            name = split_status_and_name[1]
+        else:
+            print(status_and_name)
+
+        test_re = re.compile('test')
+        component = None
+        section = None
+        if comment:
+            split_comment = comment.split(' ')
+            if ('compare' in comment or 'generate' in comment):
+                component = split_comment[2]
+            elif test_re.match(comment):
+                component = split_comment[2]
+            elif 'successful' in comment:
+                component = 'status'
+        else:
+            # we need to extract something from the name field...
+            if 'memcomp' in name:
+                component = 'memcomp'
+            elif 'tputcomp' in name:
+                component = 'tputcomp'
+            elif 'nlcomp' in name:
+                component = 'nlcomp'
+                section = "baseline comparison"
+            elif 'memleak' in name:
+                component = 'memleak'
+            else:
+                component = 'status'
+        if component:
+            self._add_result_to_test_status(component, status, section)
+
+    # --------------------------------------------------------------------------
+    def _add_result_to_test_status(self, key, value, section=None):
+        """ Set up the test status dictionaries with the appropriate test results
+            and sections.
+        """
+        use_section = None
+        if self._current_section:
+            use_section = self._current_section
+        elif section:
+            use_section = section
+
+        if use_section:
+            if use_section not in self._test_status:
+                self._test_status[use_section] = {}
+            self._test_status[use_section][key] = value
+        else:
+            self._test_status[key] = value
+
+    # --------------------------------------------------------------------------
+    def as_xml(self):
+        """Serialize the test status information as xml
+        """
+        root = etree.Element('test')
+        root.set('name', self._test_status['name'])
+        root.set('status', self._test_status['status'])
+        for name, section in self._test_status.items():
+            if isinstance(section, dict):
+                elem = etree.Element('section')
+                elem.set('name', name)
+                for key, value in section.items():
+                    child = etree.Element("{0}".format('key'))
+                    child.set('name', key)
+                    child.text = value
+                    elem.append(child)
+                root.append(elem)
+        return root
+
+    def rawteststatus(self):
+        """ Return the read-in output of $Test/TestStatus so
+            we can print out the status of all the tests.
+        """
+        return self._raw_status
+
+    def overallstatus(self):
+        """ Return the test's overall status
+        """
+        return self._test_status['status']
+
+    def histcomparestatus(self):
+        """ Return the history file comparison summary
+        """
+
+        if 'test functionality' in self._test_status:
+            if 'summary' in self._test_status['test functionality']:
+                return self._test_status['test functionality']['summary']
+            else:
+                return None
+        else:
+            return None
+    def baselinecomparestatus(self):
+        """ Return the Baseline comparison status
+        """
+        if 'baseline comparison' in self._test_status:
+            if 'summary' in self._test_status['baseline comparison']:
+                return self._test_status['baseline comparison']['summary']
+            else:
+                return None
+        else:
+            return None
+    def name(self):
+        """ Simply return the name
+        """
+        self._test_status['name'] = self._test_status['name'].rstrip("\n")
+        return self._test_status['name']
+
+    def histcompareline(self):
+        """ Get the status of the history comparison plus the name
+        """
+        return self._test_status['test functionality']['summary'] + " " + self._test_status['name']
+
+    def baselinecompareline(self):
+        """ get the status of the baseline comparison plus the name
+        """
+        return self._test_status['baseline comparison']['summary'] + " " + self._test_status['name']
+
+    def histcomparefail(self):
+        """ get the failing history files as a string
+            disregard the summary, only print the fields that failed.
+        """
+        histcomparefails = (self._test_status['name'] + "\n")
+        testfunc = self._test_status['test functionality']
+        for key in testfunc:
+            if key != 'summary' and testfunc[key] == 'FAIL':
+                histcomparefails += ( key + " : " )
+                histcomparefails += (testfunc[key] + "\n")
+        if len(histcomparefails) > 0:
+            return histcomparefails
+        else:
+            return None
+
+    def baselinecomparefail(self):
+        """ Return the baseline comparison failures.
+            Disregard the status, and get the files that failed
+        """
+        blcomparefail = (self._test_status['name'] + "\n")
+        testfunc = self._test_status['baseline comparison']
+        for key in testfunc:
+            if key != 'summary' and testfunc[key] == 'FAIL':
+                blcomparefail += (key + " : " )
+                blcomparefail += (testfunc[key] + "\n")
+        if len(blcomparefail) > 0:
+            return blcomparefail
+        else:
+            return None
+
+def findSpecs(args):
+    testspecfiles = []
+    if(args.testid):
+        specfile = "testspec." + args.testid + ".xml"
+        testspecfiles.append(specfile)
+    else:
+        testspecfiles = glob.glob("testspec*xml")
+
+    for file_ in testspecfiles:
+        if not os.path.isfile(file_):
+            print("could not find test spec file " + file_ + ", aborting")
+            sys.exit(1)
+
+
+    return testspecfiles
+
+
+def getSuiteInfo(specfile):
+    """ Read the test spec, get relevant test info
+    """
+
+    tree = etree.parse(specfile)
+    root = tree.getroot()
+    suiteinfo = {}
+    testlist = []
+
+    for tr in root.findall('testroot'):
+        suiteinfo['testroot'] = tr.text
+
+    for cr in root.findall('cimeroot'):
+        suiteinfo['cimeroot'] = cr.text
+
+    for bltag in root.findall('baselinetag'):
+        suiteinfo['baselinetag'] = bltag.text
+
+    for compiler in root.findall("./testlist/compiler"):
+        suiteinfo['compiler'] = compiler.text
+
+    for mpilib in root.findall('mpilib'):
+        suiteinfo['mpilib'] = mpilib.text
+
+    for t in root.findall('test'):
+        testlist.append(t.get('case'))
+        if 'machine' not in suiteinfo.keys():
+            machnodelist = t.findall('mach')
+            suiteinfo['machine'] = machnodelist[0].text
+        if 'compiler' not in suiteinfo.keys():
+            compnodelist = t.findall('compiler')
+            suiteinfo['compiler'] = compnodelist[0].text
+
+    suiteinfo['testlist'] = testlist
+    return suiteinfo
+
+def getTestStatuses(suiteinfo):
+    """Get the status of each test
+    """
+    cimetests = []
+    for test in suiteinfo['testlist']:
+        statusfilename = test + "/TestStatus"
+        cimeteststatus = CimeTestStatus()
+        cimeteststatus.parse(statusfilename)
+        cimetests.append(cimeteststatus)
+    return cimetests
+
+def printStatus(cimetests):
+    """ Print TestStatus output for each test, just like cs.status used to
+    """
+    for test in cimetests:
+        print(test.rawteststatus())
+
+
+def printSummary(suiteinfo, cimetests):
+    """ Print a detailed test suite summary.  Note the
+        count of test failures, print the tests sorted by status.
+        If history or baseline comparison failures are noted, the
+        failing history files will be printed.
+    """
+    banner = '=' * 80
+
+
+    # Get the count of tests by status.
+    passpattern = re.compile('PASS|DONE')
+    passes = [t for t in cimetests if passpattern.match(t.overallstatus())]
+    cfails = [t for t in cimetests if t.overallstatus() == 'CFAIL']
+    sfails = [t for t in cimetests if t.overallstatus() == 'SFAIL']
+    runs =   [t for t in cimetests if t.overallstatus() == 'RUN' ]
+    pends =   [t for t in cimetests if t.overallstatus() == 'PEND' ]
+    gens =   [t for t in cimetests if t.overallstatus() == 'GEN' ]
+    tfails =   [t for t in cimetests if t.overallstatus() == 'TFAIL' ]
+    builds =   [t for t in cimetests if t.overallstatus() == 'BUILD' ]
+    testcomparefails = [t for t in cimetests if t.histcomparestatus() == 'FAIL']
+    baselinecomparefails = [t for t in cimetests if t.baselinecomparestatus() == 'FAIL']
+
+    # Print the test counts by status
+    print(banner)
+    print("Test summary for " + suiteinfo['machine'] + " " + suiteinfo['compiler'])
+    if passes:
+        print(len(passes), "   Tests passed")
+    if testcomparefails:
+        print(len(testcomparefails) , "   Tests failed the history file comparison")
+    if baselinecomparefails:
+        print(len(baselinecomparefails) , "   Tests failed the baseline comparison")
+
+    if sfails:
+        print(len(sfails), " Tests had script errors")
+    if cfails:
+        print(len(cfails), " Tests had compile fails")
+    if runs:
+        print(len(runs), " Tests failed to finish running")
+    if pends:
+        print(len(pends), " Tests are pending")
+    if gens:
+        print(len(gens), " Tests are generated")
+    if tfails:
+        print(len(gens), " Tests are test fail (TFAIL) ")
+    print(banner)
+
+    if testcomparefails:
+        print(banner)
+        print("The following tests failed the history file comparison:")
+        print(banner)
+        for t in testcomparefails:
+            print(t.histcomparefail())
+        print(banner)
+
+    if baselinecomparefails:
+        print(banner)
+        print("The following tests failed the baseline comparison:")
+        for t in baselinecomparefails:
+            print(t.baselinecomparefail())
+        print(banner)
+
+    if passes:
+        print(banner)
+        print("These tests passed ")
+        print(banner)
+        for p in passes:
+            print(p.name())
+    if pends:
+        print(banner)
+        print("These tests are pending")
+        print(banner)
+        for p in pends:
+            print(p.name())
+
+    if gens:
+        print(banner)
+        print("These tests are generated ")
+        print(banner)
+        for g in gens:
+            print(g.name())
+    if tfails:
+        print(banner)
+        print("These tests are generated ")
+        print(banner)
+        for t in tfails:
+            print(t.name())
+    if builds:
+        print(banner)
+        print("These tests have built but have not been submitted")
+        print(banner)
+        for b in builds:
+            print(b.name())
+    if runs:
+        print(banner)
+        print("These tests failed to finish running")
+        print(banner)
+        for r in runs:
+            print(r.name())
+
+    if sfails:
+        print(banner)
+        print("These tests had script errors")
+        print(banner)
+        for s in sfails:
+            print(s.name())
+
+    if cfails:
+        print(banner)
+        print("These tests failed to compile")
+        print(banner)
+        for c in cfails:
+            print(c.name())
+
+def sendTestReport(args, suiteinfo, cimetests, auth):
+    """ Send the test report to the test database web app
+        pack everything up in an xml representation, and
+        POST away..
+    """
+
+    # add the suite info, test type, and tag name to the
+    # xml data.
+    testrecord = etree.Element('testrecord')
+    mach = etree.SubElement(testrecord, 'mach')
+    mach.text = suiteinfo['machine']
+    compiler = etree.SubElement(testrecord, 'compiler')
+    compiler.text = suiteinfo['compiler']
+    mpilib = etree.SubElement(testrecord, 'mpilib')
+    mpilib.text = suiteinfo['mpilib']
+    testroot = etree.SubElement(testrecord, 'testroot')
+    testroot.text = suiteinfo['testroot']
+    testtype = etree.SubElement(testrecord, 'testtype')
+    testtype.text = args.testtype
+    tagname = etree.SubElement(testrecord, 'tagname')
+    tagname.text = args.tagname
+    baselinetag = etree.SubElement(testrecord, 'baselinetag')
+    baselinetag.text = suiteinfo['baselinetag']
+
+    # add the test xml to each test.
+    for test in cimetests:
+        testelement = test.as_xml()
+        testrecord.append(testelement)
+
+    # Get the testdb username/password, and POST
+    # the data.
+    print("sending test report for " + suiteinfo['machine'] + " " + suiteinfo['compiler'])
+    data = urllib.urlencode({'username':auth['username'],
+                             'password':auth['password'],
+                             'testXML':testrecord})
+    req = urllib2.Request(testdburl, data)
+    try:
+        urllib2.urlopen(req)
+    except urllib2.URLError as e:
+        print("Error when posting data: " + e.reason)
+
+    if(args.debug):
+        from xml.dom import minidom
+        doc = minidom.parseString(etree.tostring(testrecord))
+        with open('cimeteststatus.dump.xml', 'w') as xmlout:
+            doc.writexml(xmlout, addindent='  ', newl='\n')
+
+def authenticate():
+    """ Get the authentication information from the command line
+    """
+    auth = {}
+    print("enter TestDB username:")
+    auth['username'] = sys.stdin.readline()
+    auth['username'] = auth['username'].rstrip('\n')
+    auth['password'] = getpass.getpass("enter TestDB password:")
+    return auth
+
+def main():
+    """ Parse the arguments, get the suite information from the test spec,
+    get the test statuses, then print a raw status, test summary, or send the
+    test report.
+    """
+    parser = argparse.ArgumentParser(description='cs.status options')
+    parser.add_argument('-i', '--testid', help='test id of the particular test suite, if not specified, all tests with associated testspec files will be reported', required=False)
+    parser.add_argument('-s', '--summary', action='store_true', help='Generate summary', required=False)
+    parser.add_argument('-d', '--debug', action='store_true', help='Debug options', required=False)
+
+    tgroup = parser.add_argument_group('testreport', 'Test Report specific options')
+    tgroup.add_argument('-t', '--testreport', action='store_true', help='Send the test report to CSEG\'s Test Database', required=False)
+    tgroup.add_argument( '-tn', '--tagname', help='The tag name being sent to the CSEG test database', required=False)
+    tgroup.add_argument( '-tt', '--testtype', help='The test type being sent to the CSEG test database', required=False)
+
+    args = parser.parse_args()
+
+    testspecfiles = findSpecs(args)
+    suiteinfolist = []
+
+    # For each test spec file, get the suite info,
+    # then either send the test report,
+    # print the summary, or print the status output
+
+    for specfile in testspecfiles:
+        suiteinfolist.append(getSuiteInfo(specfile))
+    auth = {}
+    if(args.testreport==True):
+        if(not args.testtype and not args.tagname):
+            print("testtype and tagname must be defined to send test reports")
+            sys.exit(1)
+        else:
+            auth = authenticate()
+    for suiteinfo in suiteinfolist:
+        cimetests = getTestStatuses(suiteinfo)
+        if(args.testreport==True):
+            sendTestReport(args, suiteinfo, cimetests, auth)
+        elif(args.summary==True):
+            printSummary(suiteinfo, cimetests)
+        else:
+            printStatus(cimetests)
+
+
+if __name__ == "__main__":
+    main()
+
