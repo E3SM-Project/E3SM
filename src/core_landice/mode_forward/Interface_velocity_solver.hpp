@@ -258,14 +258,14 @@ double signedTriangleArea(const double* x, const double* y, const double* z);
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id);
 
 void import2DFields(double const* bedTopography_F, double const* lowerSurface_F, double const* thickness_F,
-    double const* beta_F = 0, double const* smb_F = 0, double eps = 0);
+    double const* beta_F = 0, double const* temperature_F = 0, double const* smb_F = 0, double eps = 0);
 
 std::vector<int> extendMaskByOneLayer(int const* verticesMask_F);
 
 void extendMaskByOneLayer(int const* verticesMask_F,
     std::vector<int>& extendedFVerticesMask);
 
-void importP0Temperature(double const* temperature_F);
+void importP0Temperature();
 
 void exportDissipationHeat(double * dissipationHeat_F);
 
