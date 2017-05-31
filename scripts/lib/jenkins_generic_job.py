@@ -51,7 +51,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     # Update submodules (Jenkins is struggling with this at the moment)
     #
 
-    CIME.utils.run_cmd_no_fail("git submodule update --init", from_dir=CIME.utils.get_cime_root())
+    CIME.utils.run_cmd_no_fail("git submodule update -f --init", from_dir=CIME.utils.get_cime_root())
 
     if (not os.path.isdir(scratch_root)):
         os.makedirs(scratch_root)
