@@ -93,7 +93,9 @@ int velocity_solver_init_mpi(int* fComm) {
 
 
 void velocity_solver_set_parameters(double const* gravity_F, double const* ice_density_F, double const* ocean_density_F, double const* sea_level_F, double const* flowParamA_F, double const* enhancementFactor_F, 
-                         double const* flowLawExponent_F, double const* dynamic_thickness_F, int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce) {
+                         double const* flowLawExponent_F, double const* dynamic_thickness_F, 
+                         bool const* use_GLP_F, 
+                         int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce) {
   // This function sets parameter values used by MPAS on the C/C++ side
   rho_ice = *ice_density_F;
   dynamic_ice_bit_value = *li_mask_ValueDynamicIce;

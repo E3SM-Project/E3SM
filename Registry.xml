@@ -81,6 +81,10 @@
 		            description="Selection of the type of simple velocity field computed at initialization when config_velocity_solver = 'simple'"
 		            possible_values="'uniform', 'radial'"
 		/>
+		<nml_option name="config_use_glp" type="logical" default_value=".true." units="unitless"
+		            description="If true, then apply Albany's grounding line parameterization"
+		            possible_values=".true. or .false."
+		/>
 	</nml_record>
 
 

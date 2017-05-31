@@ -400,7 +400,7 @@ contains
 
             ! Set beta for solver to use
             ! (this could potentially be applied to an SIA solver, so it is calculated in this module)
-            call calculate_beta(velocityPool, err_tmp)
+            call calculate_beta(velocityPool, geometryPool, err_tmp)
             err = ior(err, err_tmp)
 
 
@@ -719,13 +719,16 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine calculate_beta(velocityPool, err)
+   subroutine calculate_beta(velocityPool, geometryPool, err)
+
+      use li_mask
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), pointer :: velocityPool
+      type (mpas_pool_type), pointer :: geometryPool
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -741,13 +744,27 @@ contains
       ! local variables
       !-----------------------------------------------------------------
       real (kind=RKIND), dimension(:), pointer :: betaSolve, beta
+      integer, dimension(:), pointer :: cellMask
+      logical, pointer :: config_use_glp
 
       err = 0
 
+      call mpas_pool_get_config(liConfigs, 'config_use_glp', config_use_glp)
+
       call mpas_pool_get_array(velocityPool, 'betaSolve', betaSolve)
       call mpas_pool_get_array(velocityPool, 'beta', beta)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
-      betaSolve = beta
+
+      if (config_use_glp) then
+         betaSolve = beta
+      else
+         where (li_mask_is_floating_ice(cellMask))
+            betaSolve = 0.0_RKIND
+         elsewhere
+            betaSolve = beta
+         end where
+      endif
 
 
    !--------------------------------------------------------------------
