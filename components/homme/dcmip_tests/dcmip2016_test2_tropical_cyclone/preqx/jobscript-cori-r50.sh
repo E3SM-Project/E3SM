@@ -18,11 +18,8 @@ NCPU=640
 
 date
 
-hydrostatic="false"
-#hydrostatic="true"
-
 # 1/2 dg resolution
-sed -e "s/theta_hydrostatic_mode.*/theta_hydrostatic_mode=.${hydrostatic}./g" namelist-r50.nl >& input.nl
+cp namelist-r50.nl input.nl
 srun -n $NCPU $EXEC < input.nl
 
 mv movies/dcmip2016_test21.nc movies/dcmip2016_test2_r50.nc

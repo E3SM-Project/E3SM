@@ -25,9 +25,8 @@
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'wet'
-  theta_hydrostatic_mode = .false.
   dcmip16_prec_type = 0                         ! 0=kessler,     1= reed-jablonowski
-  dcmip16_pbl_type  = 1                         ! 0=basic pbl,   1= bryan pbl
+  dcmip16_pbl_type  = 0                         ! 0=basic pbl,   1= bryan pbl
 /
 &vert_nl
   vform         = "ccm"
@@ -38,7 +37,7 @@
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 2,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
   output_frequency  = 3                         ! every 3 hours
-output_varnames1  ='T','ps','pnh','geo','u','v','w','omega','Th','Q','Q2','Q3','precl','zeta'   ! variables to write to file
+  output_varnames1  ='T','ps','pnh','geo','u','v','w','omega','Th','Q','Q2','Q3','precl','zeta'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16

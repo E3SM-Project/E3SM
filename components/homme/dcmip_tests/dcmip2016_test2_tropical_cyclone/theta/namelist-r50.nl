@@ -6,28 +6,28 @@
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2016_test2"         ! test identifier
-  ne                = 60                         ! number of elements per cube face
+  ne                = 60                        ! number of elements per cube face
   qsize             = 4                         ! num tracer fields
   ndays             = 10
   statefreq         = 10                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
-  tstep             = 25                        ! largest timestep in seconds
+  tstep             = 50                        ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5
   rsplit            = 0
   qsplit            = 1
-  nu                = 1.1e14 !1.1e14                    ! default= 1e15*(ne30/ne60)**3.2 = 1.1e14
-  nu_s              = 1.1e14 !1.1e14
-  nu_p              = 1.1e14 !1.1e14
-  nu_top            = 0                         ! 2.5e5/(120)^(1)
+  nu                = 1.1e14                    ! default= 1e15*(ne30/ne60)**3.2 = 1.1e14
+  nu_s              = 1.1e14
+  nu_p              = 1.1e14 
+  nu_top            = 2.5e5                     ! default = 2.5e5
   limiter_option    = 4
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'wet'
   theta_hydrostatic_mode = .true.
   dcmip16_prec_type = 0                         ! 0=kessler,     1= reed-jablonowski
-  dcmip16_pbl_type  = 1                         ! 0=basic pbl,   1= bryan pbl
+  dcmip16_pbl_type  = 0                         ! 0=basic pbl,   1= bryan pbl
 /
 &vert_nl
   vform         = "ccm"

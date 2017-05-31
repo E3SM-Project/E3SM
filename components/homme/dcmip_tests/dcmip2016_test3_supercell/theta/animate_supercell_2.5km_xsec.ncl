@@ -155,11 +155,11 @@ delete(qc_slice@units)
   resqc@tiYAxisString         = "latitude"
   resqc@gsnCenterString       = "cloud water (g/kg) "+sprintf("%3.0f", minutes)+" min"
 
-  resqc@cnFillPalette         ="WhiteBlue"
-  resqc@cnMaxLevelValF        = 2
+;resqc@cnFillPalette         ="WhiteBlue"
+;  resqc@cnMaxLevelValF        = 2
 
-  ;resqc@cnFillPalette         ="radar"
-  ;resqc@cnMaxLevelValF        = 5
+  resqc@cnFillPalette         ="radar"
+  resqc@cnMaxLevelValF        = 5
 
   ;------------------------------------------------
   ; Vertical velocity plot

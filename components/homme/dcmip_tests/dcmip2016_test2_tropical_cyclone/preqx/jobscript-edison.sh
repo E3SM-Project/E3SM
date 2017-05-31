@@ -9,18 +9,15 @@
 #SBATCH -n 640                # total number of mpi tasks requested
 #SBATCH -p debug              # queue (partition) -- normal, development, etc.
 #SBATCH -t 00:30:00           # run time (hh:mm:ss)
-#SBATCH -A acme               # charge hours to account 1
+#SBATCH -A acme               # charge account 
 
 EXEC=../../../test_execs/preqx-nlev30-interp/preqx-nlev30-interp        # set name of executable
 NCPU=640
 
 date
 
-hydrostatic="false"
-#hydrostatic="true"
-
 # 1dg resolution
-sed -e "s/theta_hydrostatic_mode.*/theta_hydrostatic_mode=.${hydrostatic}./g" namelist-r100.nl >& input.nl
+cp namelist-r100.nl input.nl
 srun -n $NCPU $EXEC < input.nl
 
 mv movies/dcmip2016_test21.nc movies/dcmip2016_test2_r100.nc

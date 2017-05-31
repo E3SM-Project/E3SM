@@ -23,6 +23,7 @@
 !
 module element_ops
 
+  use control_mod,    only: use_moisture, use_cpstar
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use element_mod,    only: element_t
   use element_state,  only: timelevels, elem_state_t
@@ -31,7 +32,7 @@ module element_ops
   use kinds,          only: real_kind, iulog
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp
-  use physical_constants, only : kappa, p0, Rgas, cp, g, dd_pi
+  use physical_constants, only : kappa, p0, Rgas, cp, g, dd_pi, Rwater_vapor, Cpwater_vapor
 
   implicit none
 
@@ -216,7 +217,7 @@ contains
     type(element_t), intent(inout) :: elem
     type (hvcoord_t),intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
 
-    real(real_kind) , dimension(np,np,nlev) :: phi,p,kappa_star, Rstar
+    real(real_kind) , dimension(np,np,nlev) :: phi,p,kappa_star, Rstar, Qv
 
     integer :: k
 
@@ -229,14 +230,23 @@ contains
     zm  = elem%derived%phi(:,:,:)/g
 
     do k=1,nlev
-       p (:,:,k)= hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*elem%state%ps_v(:,:,nt)
+       p (:,:,k)= hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
        dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
     enddo
 
-    ! todo: get moist kappa_star, cp_star, etc
-    cp_star   = cp
-    kappa_star= kappa
-    rstar     = kappa_star*cp_star
+    ! get kappa_star
+    Qv = elem%state%Qdp(:,:,:,1,ntQ)
+    if (use_moisture .and. use_cpstar==1) then
+      Rstar   = (Rgas+(Rwater_vapor -Rgas)*Qv/dp)
+      Cp_star = (Cp  +(Cpwater_vapor-Cp  )*Qv/dp)
+    else if (use_moisture .and. use_cpstar==0) then
+      Rstar   = (Rgas+(Rwater_vapor -Rgas)*Qv/dp)
+      Cp_star = cp
+    else
+      Rstar   = Rgas
+      Cp_star = cp
+    endif
+    kappa_star= Rstar/Cp_star
 
     pnh       = p
     exner     = (p/p0)**(kappa_star)

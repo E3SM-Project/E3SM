@@ -9,7 +9,7 @@
   ne                = 8                         ! number of elements per cube face
   qsize             = 4                         ! num tracer fields
   ndays             = 10
-  statefreq         = 10                     ! number of steps between screen dumps
+  statefreq         = 10                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
   tstep             = 400.0                     ! largest timestep in seconds
@@ -17,15 +17,15 @@
   tstep_type        = 5
   rsplit            = 0
   qsplit            = 1
-  nu                = 4e16 !6.9e16              ! default= 1e15*(ne30/ne8)**3.2 = 6.9e16
-  nu_s              = 4e16 !6.9e16
-  nu_p              = 4e16 !6.9e16
+  nu                = 4e16                      ! default= 1e15*(ne30/ne8)**3.2 = 6.9e16
+  nu_s              = 4e16
+  nu_p              = 4e16
   nu_top            = 2.5e5
   limiter_option    = 4
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'wet'
-  dcmip16_prec_type = 1                         ! 0=kessler,     1= reed-jablonowski
+  dcmip16_prec_type = 0                         ! 0=kessler,     1= reed-jablonowski
   dcmip16_pbl_type  = 0                         ! 0=basic pbl,   1= bryan pbl
 /
 &vert_nl
