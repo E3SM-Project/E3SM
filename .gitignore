@@ -4,3 +4,9 @@ buildnmlc
 
 # Ignore emacs backup files
 *~
+
+# Ignore doc/build/doctrees
+##doc/build/doctrees 
+# ignore for the merge to master and orphaning of the gh-pages branch
+doc/build
+
