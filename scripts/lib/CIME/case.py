@@ -142,16 +142,13 @@ class Case(object):
         threads_per_core = 1 if (threads_per_node <= pes_per_node) else smt_factor
         self.cores_per_task = self.thread_count / threads_per_core
 
-        build_threaded = self.get_build_threaded()
-
         mpi_attribs = {
             "compiler" : self.get_value("COMPILER"),
             "mpilib"   : self.get_value("MPILIB"),
-            "threaded" : build_threaded,
+            "threaded" : self.get_build_threaded(),
             "unit_testing" : False
             }
 
-        self.set_value("SMP_PRESENT", build_threaded)
         os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
 
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
@@ -183,7 +180,7 @@ class Case(object):
 
     def read_xml(self):
         if self._env_files_that_need_rewrite:
-            expect(False, "Object(s) %s seem to have newer data than the corresponding case file" % " ".join(self._env_files_that_need_rewrite))
+            expect(False, "Object(s) %s seem to have newer data than the corresponding case file" % " ".join([env_file.filename for env_file in self._env_files_that_need_rewrite]))
 
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvCase(self._caseroot, components=None))

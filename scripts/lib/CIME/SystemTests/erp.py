@@ -31,7 +31,6 @@ class ERP(SystemTestsCommon):
         and tasks. This test will fail for components (e.g. pop) that do not reproduce exactly
         with different numbers of mpi tasks.
         """
-        self._case.set_value("BUILD_THREADED",True)
         if sharedlib_only:
             return self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
@@ -51,6 +50,8 @@ class ERP(SystemTestsCommon):
 
         if is_locked(envbuild1):
             restore(envbuild1, newname="env_build.xml")
+
+        self._case.read_xml()
 
         # Build two executables, one using the original tasks and threads (ERP1) and
         # one using the modified tasks and threads (ERP2)
