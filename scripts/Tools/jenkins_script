@@ -14,16 +14,3 @@ export JENKINS_START_TIME=$(date "+%s")
 umask 002
 
 $SCRIPT_DIR/jenkins_generic_job --submit-to-cdash "$@" >& JENKINS_$DATE_STAMP
-rv=$?
-
-cd $SCRIPT_DIR
-
-for SUB in $(git submodule status | awk '{print $2}'); do
-    git submodule deinit ${SUB}
-done
-
-git config --remove-section submodule.mpas-o
-git config --remove-section submodule.mpas-cice
-git config --remove-section submodule.mpas-li
-
-exit $rv
