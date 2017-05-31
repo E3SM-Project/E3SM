@@ -23,6 +23,7 @@ module prim_advance_mod
   use time_mod,       only: timelevel_t
   use test_mod,       only: set_prescribed_wind
   use hevi_mod,       only: state_save,state_read,backsubstitution,mgs,elemstate_add
+  use FortranVector
 
   implicit none
   private
@@ -110,6 +111,7 @@ contains
     real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
     real (kind=real_kind) ::  itertol,statesave(nets:nete,np,np,nlev,6)
     real (kind=real_kind) ::  gamma,delta
+    type (Fvec) :: Amat
 
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
     integer :: n,i,j,maxiter
@@ -138,6 +140,7 @@ contains
 !   tstep_type=7  ARS232 ARK-IMEX method with 3 explicit stages and 2 implicit stages, 2nd order 
 !                 accurate with stage order 1
 !   
+!   tstep_type=8  Arkode with interfacing code
 
 ! default weights for computing mean dynamics fluxes
     eta_ave_w = 1d0/qsplit
@@ -302,6 +305,16 @@ contains
 
       call t_stopf("ARS232_timestep")
 !=========================================================================================
+    else if (tstep_type==8) then ! use arkode
+
+      Amat%u=1.d0
+      Amat%v=0.d0
+      Amat%w=0.d0
+      print *, 'hey it works'
+      call FNVExtPrint(Amat)
+      print *, 'keep going'
+      call compute_andor_apply_rhs(np1,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,.false.,1.d0,1.d0,1.d0,1.d0)
     else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
