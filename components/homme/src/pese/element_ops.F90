@@ -24,6 +24,8 @@ module element_ops
 
   implicit none
 
+  type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
+
 contains
 
   !_____________________________________________________________________
