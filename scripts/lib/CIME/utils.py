@@ -247,7 +247,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
     >>> run_cmd_no_fail('echo THE ERROR >&2; false')
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: Command: 'echo THE ERROR >&2; false' failed with error 'THE ERROR'
+    SystemExit: ERROR: Command: 'echo THE ERROR >&2; false' failed with error 'THE ERROR' from dir '/home/jgfouca/cime_yetanother/scripts/lib/CIME'
 
     >>> run_cmd_no_fail('grep foo', input_str='foo')
     'foo'

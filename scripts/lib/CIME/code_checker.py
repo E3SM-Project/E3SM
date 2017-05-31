@@ -54,9 +54,9 @@ def _matches(file_path, file_ends):
 def _should_pylint_skip(filepath):
 ###############################################################################
     # TODO - get rid of this
-    list_of_directories_to_ignore = ("xmlconvertors", "pointclm", "point_clm", "tools", "machines", "apidocs")
+    list_of_directories_to_ignore = ("xmlconvertors", "pointclm", "point_clm", "tools", "machines", "apidocs", "doc")
     for dir_to_skip in list_of_directories_to_ignore:
-        if dir_to_skip in filepath:
+        if dir_to_skip + "/" in filepath:
             return True
 
     return False
