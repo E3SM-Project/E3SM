@@ -230,8 +230,6 @@ end subroutine domain_clean
     write(iulog,*) '  domain_check nbeg,nend = ',domain%nbeg,domain%nend
     write(iulog,*) '  domain_check lonc      = ',minval(domain%lonc),maxval(domain%lonc)
     write(iulog,*) '  domain_check latc      = ',minval(domain%latc),maxval(domain%latc)
-    write(iulog,*) '  domain_check xCell     = ',minval(domain%xCell),maxval(domain%xCell)
-    write(iulog,*) '  domain_check yCell     = ',minval(domain%yCell),maxval(domain%yCell)
     write(iulog,*) '  domain_check mask      = ',minval(domain%mask),maxval(domain%mask)
     write(iulog,*) '  domain_check frac      = ',minval(domain%frac),maxval(domain%frac)
     write(iulog,*) '  domain_check topo      = ',minval(domain%topo),maxval(domain%topo)
