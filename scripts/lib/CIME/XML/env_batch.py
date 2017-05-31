@@ -256,8 +256,10 @@ class EnvBatch(EnvBase):
         submitargs = " "
         bs_nodes = self.get_nodes("batch_system")
         submit_arg_nodes = []
+
         for node in bs_nodes:
             submit_arg_nodes += self.get_nodes("arg",root=node)
+
         for arg in submit_arg_nodes:
             flag = arg.get("flag")
             name = arg.get("name")
@@ -272,9 +274,13 @@ class EnvBatch(EnvBase):
             else:
                 if name.startswith("$"):
                     name = name[1:]
-                val = case.get_value(name, subgroup=job)
-                if val is None:
+
+                if '$' in name:
+                    # We have a complex expression and must rely on get_resolved_value.
+                    # Hopefully, none of the values require subgroup
                     val = case.get_resolved_value(name)
+                else:
+                    val = case.get_value(name, subgroup=job)
 
                 if val is not None and len(str(val)) > 0 and val != "None":
                     # Try to evaluate val
