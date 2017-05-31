@@ -71,7 +71,7 @@ def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, stats=None):
     ax.set_aspect('auto')
     ax.coastlines(lw=0.3)
 
-    theta = np.linspace(0, 2*np.pi, 50)
+    theta = np.linspace(0, 2*np.pi, 100)
     center, radius = [0.5, 0.5], 0.5
     verts = np.vstack([np.sin(theta), np.cos(theta)]).T
     circle = mpath.Path(verts * radius + center)
