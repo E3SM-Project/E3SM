@@ -89,13 +89,13 @@ def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, stats=None):
     w,h = get_ax_size(fig,cbax)
 
     if levels == None:
-        cbar.ax.tick_params(labelsize=9.0, length=w-2)
+        cbar.ax.tick_params(labelsize=9.0, length=0)
 
     else:
         cbar.set_ticks(levels[1:-1])
         labels = ["%4.1f" % l for l in levels[1:-1]]
         cbar.ax.set_yticklabels(labels,ha='right')
-        cbar.ax.tick_params(labelsize=9.0, pad=25, length=w-2)
+        cbar.ax.tick_params(labelsize=9.0, pad=25, length=0)
 
     # Min, Mean, Max
     if len(stats) == 3:
