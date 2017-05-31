@@ -38,7 +38,7 @@ class Machines(GenericXML):
         # Append the contents of $HOME/.cime/config_machines.xml if it exists
         # This could cause problems if node matchs are repeated when only one is expected
         local_infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
-        logger.debug("Infile: {}" , local_infile)
+        logger.debug("Infile: {}".format(local_infile))
         if os.path.exists(local_infile):
             GenericXML.read(self, local_infile, schema)
 
@@ -211,7 +211,7 @@ class Machines(GenericXML):
 
         expect(supported_values is not None,
                "No list found for " + listname + " on machine " + self.machine)
-        supported_values = supported_values.split(",")
+        supported_values = supported_values.split(",") #pylint: disable=no-member
 
         if reqval is None or reqval == "UNSET":
             return supported_values[0]
