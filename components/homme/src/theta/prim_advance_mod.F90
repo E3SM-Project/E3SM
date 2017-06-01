@@ -10,7 +10,7 @@ module prim_advance_mod
 
   use control_mod,    only: qsplit,rsplit, use_moisture, theta_hydrostatic_mode
   use derivative_mod, only: derivative_t
-  use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
+  use dimensions_mod, only: np, nlev, nlevp, nelem, nelemd, qsize, max_corner_elem
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
   use element_mod,    only: element_t
   use element_ops,    only: get_pnh_and_exner, set_hydrostatic_phi, get_kappa_star,&
@@ -29,11 +29,19 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2
+       applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2,compute_andor_apply_rhs
 
 !  type (EdgeBuffer_t) :: edge5
   type (EdgeBuffer_t) :: edge6
   real (kind=real_kind), allocatable :: ur_weights(:)
+
+  type, public :: arkode_pars
+    integer             :: nets,nete,qn0
+    type (hybrid_t)     :: hybrid
+    type (hvcoord_t)    :: hvcoord
+    type (derivative_t) :: deriv
+  end type arkode_pars
+
 
 contains
 
@@ -111,7 +119,6 @@ contains
     real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
     real (kind=real_kind) ::  itertol,statesave(nets:nete,np,np,nlev,6)
     real (kind=real_kind) ::  gamma,delta
-    type (Fvec) :: Amat
 
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
     integer :: n,i,j,maxiter
@@ -307,12 +314,10 @@ contains
 !=========================================================================================
     else if (tstep_type==8) then ! use arkode
 
-      Amat%u=1.d0
-      Amat%v=0.d0
-      Amat%w=0.d0
       print *, 'hey it works'
-      call FNVExtPrint(Amat)
+      call FNVExtPrint(elem)
       print *, 'keep going'
+      print *, 'size of elem', size(elem), 'nelem', nelem, 'nets-nete', nets-nete
       call compute_andor_apply_rhs(np1,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,1.d0,1.d0,1.d0,1.d0)
     else

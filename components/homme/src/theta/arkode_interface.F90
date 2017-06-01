@@ -189,32 +189,62 @@ subroutine farkifun(t, y, fy, ipar, rpar, ierr)
   !======= Inclusions ===========
   use FortranVector
   use iso_c_binding
+  use prim_advance_mod, only: arkode_pars,compute_andor_apply_rhs
+  use element_mod,    only: element_t
+  use hybrid_mod,     only: hybrid_t
+  use derivative_mod, only: derivative_t
+  use hybvcoord_mod,    only: hvcoord_t
 
   !======= Declarations =========
   implicit none
 
   ! calling variables
-  real*8,          intent(in)    :: t
-  type(FVec),      intent(in)    :: y
-  type(FVec),      intent(inout) :: fy
-  integer(C_LONG), intent(in)    :: ipar(1)
-  real*8,          intent(in)    :: rpar(1)
-  integer(C_INT),  intent(out)   :: ierr
+  real*8,          intent(in)            :: t
+  type(FVec),      intent(in),    target :: y(:)
+  type(FVec),      intent(inout), target :: fy(:)
+  integer(C_LONG), intent(in)            :: ipar(1)
+  type(arkode_pars), intent(in)          :: rpar
+  integer(C_INT),  intent(out)           :: ierr
+ 
+ 
 
   ! local variables
-  real*8 :: a, b, ep
-
+  type (element_t), allocatable :: elem(:)
+  integer :: ie,nets,nete,qn0
   !======= Internals ============
+  type (hvcoord_t)    :: hvcoord
+  type (hybrid_t)     :: hybrid
+  type (derivative_t) :: deriv
 
   ! set constants, extract solution components
-  a  = 1.2d0
-  b  = 2.5d0
-  ep = 1.d-5
-
   ! fill implicit portion of RHS
-  fy%u = 0.d0
-  fy%v = 0.d0
-  fy%w = (b-y%w)/ep
+   nets=rpar%nets
+   nete=rpar%nete
+   allocate(elem(nets-nete+1))
+   qn0=rpar%qn0
+   do ie=nets,nete
+     elem(ie)%state%v(:,:,1,:,1)         = y(ie-nets+1)%v(:,:,1,:)
+     elem(ie)%state%v(:,:,2,:,1)         = y(ie-nets+1)%v(:,:,2,:)
+     elem(ie)%state%w(:,:,:,1)           = y(ie-nets+1)%w(:,:,:)
+     elem(ie)%state%phi(:,:,:,1)         = y(ie-nets+1)%phi(:,:,:)
+     elem(ie)%state%theta_dp_cp(:,:,:,1) = y(ie-nets+1)%theta_dp_cp(:,:,:)
+     elem(ie)%state%dp3d(:,:,:,1)        = y(ie-nets+1)%dp3d(:,:,:)
+   end do 
+
+   call compute_andor_apply_rhs(1,1,1,qn0,1.d0,elem,hvcoord,hybrid,&
+       deriv,nets,nete,.false.,1.d0,0.d0,1.d0,0.d0)
+
+   do ie=nets,nete
+     fy(ie-nets+1)%v(:,:,1,:)         = elem(ie)%state%v(:,:,1,:,1)
+     fy(ie-nets+1)%v(:,:,2,:)         = elem(ie)%state%v(:,:,2,:,1)
+     fy(ie-nets+1)%w(:,:,:)           = elem(ie)%state%w(:,:,:,1)
+     fy(ie-nets+1)%phi(:,:,:)         = elem(ie)%state%phi(:,:,:,1)
+     fy(ie-nets+1)%theta_dp_cp(:,:,:) = elem(ie)%state%theta_dp_cp(:,:,:,1)
+     fy(ie-nets+1)%dp3d(:,:,:)        = elem(ie)%state%dp3d(:,:,:,1)
+   end do
+
+
+
   ierr = 0
 
   return
@@ -240,35 +270,64 @@ subroutine farkefun(t, y, fy, ipar, rpar, ierr)
   !    ierr - (int, output) return flag: 0=>success, 
   !            1=>recoverable error, -1=>non-recoverable error
   !-----------------------------------------------------------------
-  !======= Inclusions ===========
   use FortranVector
   use iso_c_binding
+  use prim_advance_mod, only: arkode_pars,compute_andor_apply_rhs
+  use element_mod,    only: element_t
+  use hybrid_mod,     only: hybrid_t
+  use derivative_mod, only: derivative_t
+  use hybvcoord_mod,    only: hvcoord_t
 
   !======= Declarations =========
   implicit none
 
   ! calling variables
-  real*8,          intent(in)    :: t
-  type(FVec),      intent(in)    :: y
-  type(FVec),      intent(inout) :: fy
-  integer(C_LONG), intent(in)    :: ipar(1)
-  real*8,          intent(in)    :: rpar(1)
-  integer(C_INT),  intent(out)   :: ierr
+  real*8,          intent(in)            :: t
+  type(FVec),      intent(in),    target :: y(:)
+  type(FVec),      intent(inout), target :: fy(:)
+  integer(C_LONG), intent(in)            :: ipar(1)
+  type(arkode_pars), intent(in)          :: rpar
+  integer(C_INT),  intent(out)           :: ierr
+ 
+ 
 
   ! local variables
-  real*8 :: a, b, ep
-
+  type (element_t), allocatable :: elem(:)
+  integer :: ie,nets,nete,qn0
   !======= Internals ============
+  type (hvcoord_t)    :: hvcoord
+  type (hybrid_t)     :: hybrid
+  type (derivative_t) :: deriv
 
   ! set constants, extract solution components
-  a  = 1.2d0
-  b  = 2.5d0
-  ep = 1.d-5
+  ! fill implicit portion of RHS
+   nets=rpar%nets
+   nete=rpar%nete
+   allocate(elem(nets-nete+1))
+   qn0=rpar%qn0
+   do ie=nets,nete
+     elem(ie)%state%v(:,:,1,:,1)         = y(ie-nets+1)%v(:,:,1,:)
+     elem(ie)%state%v(:,:,2,:,1)         = y(ie-nets+1)%v(:,:,2,:)
+     elem(ie)%state%w(:,:,:,1)           = y(ie-nets+1)%w(:,:,:)
+     elem(ie)%state%phi(:,:,:,1)         = y(ie-nets+1)%phi(:,:,:)
+     elem(ie)%state%theta_dp_cp(:,:,:,1) = y(ie-nets+1)%theta_dp_cp(:,:,:)
+     elem(ie)%state%dp3d(:,:,:,1)        = y(ie-nets+1)%dp3d(:,:,:)
+   end do 
 
-  ! fill explicit portion of RHS
-  fy%u = a  -  (y%w + 1.d0) * y%u  +  y%v * y%u * y%u
-  fy%v = y%w * y%u  -  y%v * y%u * y%u
-  fy%w = -y%w * y%u
+   call compute_andor_apply_rhs(1,1,1,qn0,1.d0,elem,hvcoord,hybrid,&
+       deriv,nets,nete,.false.,1.d0,1.d0,0d0,0.d0)
+
+   do ie=nets,nete
+     fy(ie-nets+1)%v(:,:,1,:)         = elem(ie)%state%v(:,:,1,:,1)
+     fy(ie-nets+1)%v(:,:,2,:)         = elem(ie)%state%v(:,:,2,:,1)
+     fy(ie-nets+1)%w(:,:,:)           = elem(ie)%state%w(:,:,:,1)
+     fy(ie-nets+1)%phi(:,:,:)         = elem(ie)%state%phi(:,:,:,1)
+     fy(ie-nets+1)%theta_dp_cp(:,:,:) = elem(ie)%state%theta_dp_cp(:,:,:,1)
+     fy(ie-nets+1)%dp3d(:,:,:)        = elem(ie)%state%dp3d(:,:,:,1)
+   end do
+
+
+
   ierr = 0
 
   return
@@ -276,7 +335,7 @@ end subroutine farkefun
 !=================================================================
 
 
-
+! ============= should this include hybrid,deriv, and hvcoord as inputs?
 
 subroutine farkjtimes(v, Jv, t, y, fy, h, ipar, rpar, v1, ierr)
   !-----------------------------------------------------------------
