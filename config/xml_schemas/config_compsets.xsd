@@ -5,6 +5,7 @@
   <xs:attribute name="id" type="xs:NCName"/>
   <xs:attribute name="compset" type="xs:string"/>
   <xs:attribute name="grid" type="xs:string"/>
+  <xs:attribute name="match" type="xs:string"/>
 
   <!-- simple elements -->
   <xs:element name="help" type="xs:string"/>
@@ -59,6 +60,7 @@
       <xs:sequence>
         <xs:element maxOccurs="unbounded" ref="value"/>
       </xs:sequence>
+      <xs:attribute ref="match"/>
     </xs:complexType>
   </xs:element>
 

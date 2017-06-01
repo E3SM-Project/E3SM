@@ -21,7 +21,6 @@ class Component(EntryID):
         cimeroot = get_cime_root()
         if  cimeroot in os.path.abspath(infile):
             schema = files.get_schema("CONFIG_CPL_FILE")
-
         EntryID.__init__(self, infile, schema=schema)
 
     #pylint: disable=arguments-differ
@@ -40,13 +39,12 @@ class Component(EntryID):
         components = comps.split(',')
         return components
 
-    def _get_value_match(self, node, attributes=None, exact_match=False):
+    def _get_value_match(self, node, attributes=None, exact_match=False, match_type=None):
         """
         return the best match for the node <values> entries
         Note that a component object uses a different matching algorithm than an entryid object
         For a component object the _get_value_match used is below  and is not the one in entry_id.py
         """
-
         match_value = None
         match_max = 0
         match_count = 0
@@ -59,6 +57,12 @@ class Component(EntryID):
 
         # determine match_type if there is a tie 
         # ASSUME a default of "last" if "match" attribute is not there
+        # ***NOTE:*** regardless of the value of the input argument match_type - it is OVERWRITTEN here
+        # with the match attribute from the <values> element if it is present - and by default
+        # it is "last" if the match attribute is not present
+        # The argument match_type is ignored since this is an overloaded method that can be called for
+        # by the entry_id object when the object is a Component - and this needs to be cleaned up in a unified way
+
         match_type = values.get("match", default="last")
 
         # use the default_value if present

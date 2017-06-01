@@ -21,7 +21,17 @@ class EntryID(GenericXML):
         """
         Set the value of an entry to the default value for that entry
         """
-        value = self._get_value_match(node, attributes)
+        # If there is a <values> node with a match attribute - then set the
+        # match_type to that attribute - otherwise set the default value of match_type
+        # to "first" for backwards compatibility
+
+        values_node = self.get_optional_node("values", root=node)
+        if values_node is not None:
+            match_type = values_node.get("match", default="first")
+        else:
+            match_type = "first"
+
+        value = self._get_value_match(node, attributes, match_type=match_type)
         if value is None:
             # Fall back to default value
             value = self.get_element_text("default_value", root=node)
@@ -53,20 +63,38 @@ class EntryID(GenericXML):
         #  </values>
         # </entry>
 
+        # Note that here the default value of match_type is "first"
+        # Note that in components.py the default value of match_type is "last"
         if entry_node is not None:
-            value = self._get_value_match(entry_node, attributes, exact_match)
+            values_node = self.get_optional_node("values", root=entry_node)
+            # if there is not a <values> child node for the <entry> node, then set the match attribute to "first"
+            if values_node is not None:
+                match_type = values_node.get("match", default="first")
+            else:
+                match_type = "first"
+            value = self._get_value_match(entry_node, attributes=attributes, exact_match=exact_match, match_type=match_type)
         else:
             node = self.get_optional_node("entry", {"id":vid})
+            # if there is not a <values> child node for the <entry> node , then set the match attribute to "first"
+            values_node = self.get_optional_node("values", root=node)
+            if values_node is not None:
+                match_type = values_node.get("match", default="first")
+            else:
+                match_type = "first"
             value = None
             if node is not None:
-                value = self._get_value_match(node, attributes, exact_match)
+                value = self._get_value_match(node, attributes=attributes, exact_match=exact_match, match_type=match_type)
         logger.debug("(get_value_match) vid {} value {}".format(vid, value))
         return value
 
-    def _get_value_match(self, node, attributes=None, exact_match=False):
+    def _get_value_match(self, node, attributes=None, exact_match=False, match_type=None):
         '''
         Note that the component class has a specific version of this function
         '''
+        # By default the match_type is "first:
+        if match_type is None:
+            match_type = "first"
+
         # Store nodes that match the attributes and their scores.
         matches = []
         nodes = self.get_nodes("value", root=node)
@@ -97,8 +125,23 @@ class EntryID(GenericXML):
         if not matches:
             return None
 
-        # Get maximum score using custom `key` function, extract the node.
-        _, mnode = max(matches, key=lambda x: x[0])
+        # Get maximum score using either a "last" or "first" match in case of a tie
+        max_score = -1
+        mnode = None
+        for score,node in matches:
+            if match_type == "last":
+                # take the *last* best match
+                if score >= max_score:
+                    max_score = score
+                    mnode = node
+            elif match_type == "first":
+                # take the *first* best match
+                if score > max_score:
+                    max_score = score
+                    mnode = node
+            else:
+                expect(False, 
+                       "match attribute can only have a value of 'last' or 'first', value is %s" %match_type)
 
         return mnode.text
 
