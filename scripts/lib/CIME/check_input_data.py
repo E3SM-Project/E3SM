@@ -129,8 +129,8 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
     expect(err == 0,
 """
 Could not connect to svn repo '%s'
-This is most likely either a proxy issue or credential issue.
-To store your credential run 'svn ls %s' and permanently store your password""" % (svn_loc, svn_loc))
+This is most likely either a credential, proxy, or network issue .
+To check connection and store your credential run 'svn ls %s' and permanently store your password""" % (svn_loc, svn_loc))
 
     input_data_root = case.get_value("DIN_LOC_ROOT") if input_data_root is None else input_data_root
 
