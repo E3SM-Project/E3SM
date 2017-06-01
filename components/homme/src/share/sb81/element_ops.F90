@@ -205,19 +205,19 @@ contains
   end subroutine set_elem_state
 
   !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,ps,cp_star,rho,zm,g,i,j,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,pnh,dp,ps,rho,zm,g,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
     ! used by tests to compute idealized physics forcing terms
 
-    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,cp_star,zm,rho
+    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,pnh,dp,zm,rho
     real(real_kind), dimension(np,np),      intent(inout) :: ps
     real(real_kind), intent(in)    :: g
-    integer,         intent(in)    :: i,j,nt,ntQ
+    integer,         intent(in)    :: nt,ntQ
     type(element_t), intent(inout) :: elem
     type (hvcoord_t),intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
 
-    real(real_kind) , dimension(np,np,nlev) :: phi,p,kappa_star, Rstar, Qv
+    real(real_kind) , dimension(np,np,nlev) :: phi,p,kappa_star, Rstar
 
     integer :: k
 
@@ -234,24 +234,11 @@ contains
        dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
     enddo
 
-    ! get kappa_star
-    Qv = elem%state%Qdp(:,:,:,1,ntQ)
-    if (use_moisture .and. use_cpstar==1) then
-      Rstar   = (Rgas+(Rwater_vapor -Rgas)*Qv/dp)
-      Cp_star = (Cp  +(Cpwater_vapor-Cp  )*Qv/dp)
-    else if (use_moisture .and. use_cpstar==0) then
-      Rstar   = (Rgas+(Rwater_vapor -Rgas)*Qv/dp)
-      Cp_star = cp
-    else
-      Rstar   = Rgas
-      Cp_star = cp
-    endif
-    kappa_star= Rstar/Cp_star
+    Rstar = Rgas
+    if (use_moisture) Rstar = (Rgas+(Rwater_vapor -Rgas)*elem%state%Qdp(:,:,:,1,ntQ)/dp)
 
-    pnh       = p
-    exner     = (p/p0)**(kappa_star)
-    theta     = T/exner
-    rho       = p/(Rstar*T)
+    pnh = p
+    rho = p/(Rstar*T)
 
   end subroutine get_state
 

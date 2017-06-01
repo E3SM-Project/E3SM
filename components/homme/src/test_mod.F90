@@ -143,8 +143,8 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
 
     case('dcmip2016_test1');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl,1)
     case('dcmip2016_test2');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl,2)
-    case('dcmip2016_test3');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl,3)
-!    case('dcmip2016_test3');    call dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+!    case('dcmip2016_test3');    call dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl,3)
+    case('dcmip2016_test3');    call dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     case('held_suarez0');
        do ie=nets,nete

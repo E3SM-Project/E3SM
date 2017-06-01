@@ -19,9 +19,9 @@
   qsplit            = 1
   nu                = 1.1e14                    ! default= 1e15*(ne30/ne60)**3.2 = 1.1e14
   nu_s              = 1.1e14
-  nu_p              = 1.1e14 
+  nu_p              = 0 !1.1e14
   nu_top            = 0                         ! 2.5e5/(120)^(1)
-  limiter_option    = 4
+  limiter_option    = 8
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'wet'

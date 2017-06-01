@@ -1067,7 +1067,7 @@ contains
   real (kind=real_kind) ::  cp2,cp_ratio,E,de,Qt,v1,v2
   real (kind=real_kind) ::  glnps1,glnps2,gpterm
   integer :: i,j,k,kptr,ie
-  real (kind=real_kind) ::  u_m_umet, v_m_vmet, t_m_tmet 
+  real (kind=real_kind) ::  u_m_umet, v_m_vmet, t_m_tmet
 
 !JMD  call t_barrierf('sync_compute_and_apply_rhs', hybrid%par%comm)
 

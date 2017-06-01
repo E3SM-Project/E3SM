@@ -694,19 +694,19 @@ contains
   end subroutine set_elem_state
 
   !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,theta,exner,pnh,dp,ps,Rstar,rho,zm,g,i,j,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,pnh,dp,ps,rho,zm,g,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
     ! used by idealized tests to compute idealized physics forcing terms
 
-    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,theta,exner,pnh,dp,Rstar,zm,rho
+    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,pnh,dp,zm,rho
     real(real_kind), dimension(np,np),      intent(inout) :: ps
     real(real_kind), intent(in)    :: g
-    integer,         intent(in)    :: i,j,nt,ntQ
+    integer,         intent(in)    :: nt,ntQ
     type(element_t), intent(inout) :: elem
     type (hvcoord_t),intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
 
-    real(real_kind) , dimension(np,np,nlev) :: phi,dpnh,kappa_star,cp_star
+    real(real_kind) , dimension(np,np,nlev) :: phi,dpnh,kappa_star,cp_star, Rstar, exner, theta
     real(real_kind) , dimension(np,np) :: phis
 
     integer :: k

@@ -134,7 +134,7 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
         call set_tracers(q,4,dp,i,j,k,lat,lon,elem(ie))
      enddo; enddo; enddo;
 
-    call tests_finalize(elem(ie),hvcoord,1,nt)
+    !call tests_finalize(elem(ie),hvcoord,1,nt)
   enddo
 
   sample_period = 1800.0 ! sec
@@ -305,7 +305,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
   integer,            intent(in)            :: test                     ! dcmip2016 test number
 
   integer :: i,j,k,ie                                                     ! loop indices
-  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,exner,exner_kess,p,dp,Rstar,rho,z,qv,qc,qr, rho_dry, theta_star
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,exner_kess,theta_kess,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
   real(rl) :: max_w, max_precl, min_ps
@@ -327,7 +327,11 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
     precl(:,:,ie) = -1.0d0
 
     ! get current element state
-    call get_state(u,v,w,T,theta,exner,p,dp,ps,Rstar,rho,z,g,i,j,elem(ie),hvcoord,nt,ntQ)
+    call get_state(u,v,w,T,p,dp,ps,rho,z,g,elem(ie),hvcoord,nt,ntQ)
+
+    ! compute form of exner pressure expected by Kessler physics
+    exner_kess = (p/p0)**(Rgas/Cp)
+    theta_kess = T/exner_kess
 
     ! get mixing ratios
     qv  = elem(ie)%state%Qdp(:,:,:,1,ntQ)/dp
@@ -361,7 +365,7 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
       rho_c= rho(i,j,nlev:1:-1)
       z_c  = z  (i,j,nlev:1:-1)
       zi_c = zi (i,j,nlevp:1:-1)
-      th_c = theta(i,j,nlev:1:-1)
+      th_c = theta_kess(i,j,nlev:1:-1)
 
       ! get forced versions of u,v,p,qv,qc,qr. rho is constant
       call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, precl(i,j,ie), pbl_type, prec_type)
@@ -373,12 +377,12 @@ subroutine dcmip2016_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)
       qv(i,j,:) = qv_c(nlev:1:-1)
       qc(i,j,:) = qc_c(nlev:1:-1)
       qr(i,j,:) = qr_c(nlev:1:-1)
-      theta(i,j,:) = th_c(nlev:1:-1)
+      theta_kess(i,j,:) = th_c(nlev:1:-1)
 
     enddo; enddo;
 
     ! get temperature from new pressure
-    T = theta*exner
+    T = theta_kess*exner_kess
 
     ! set dynamics forcing
     elem(ie)%derived%FM(:,:,1,:) = (u - u0)/dt
@@ -414,7 +418,7 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl):: lat
-  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta,exner,exner_kess,p,dp,Rstar,rho,z,qv,qc,qr
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta_kess,exner_kess,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
   real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
   real(rl), dimension(np,np)      :: ps
@@ -429,7 +433,7 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     precl(:,:,ie) = 0
 
     ! get current element state
-    call get_state(u,v,w,T,theta,exner,p,dp,ps,Rstar,rho,z,g,i,j,elem(ie),hvcoord,nt,ntQ)
+    call get_state(u,v,w,T,p,dp,ps,rho,z,g,elem(ie),hvcoord,nt,ntQ)
 
     ! get mixing ratios
     qv  = elem(ie)%state%Qdp(:,:,:,1,ntQ)/dp
@@ -446,9 +450,10 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     ! compute form of exner pressure expected by Kessler physics
     exner_kess = (p/p0)**(Rgas/Cp)
+    theta_kess = T/exner_kess
 
     ! invert columns (increasing z)
-    theta_inv= theta(:,:,nlev:1:-1)
+    theta_inv= theta_kess(:,:,nlev:1:-1)
     qv_inv   = qv   (:,:,nlev:1:-1)
     qc_inv   = qc   (:,:,nlev:1:-1)
     qr_inv   = qr   (:,:,nlev:1:-1)
@@ -475,11 +480,11 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     enddo; enddo;
 
     ! revert columns (increasing eta)
-    theta = theta_inv(:,:,nlev:1:-1)
+    theta_kess = theta_inv(:,:,nlev:1:-1)
     qv    = qv_inv   (:,:,nlev:1:-1)
     qc    = qc_inv   (:,:,nlev:1:-1)
     qr    = qr_inv   (:,:,nlev:1:-1)
-    T     = theta*exner
+    T     = theta_kess*exner_kess
 
     ! set dynamics forcing
     elem(ie)%derived%FM(:,:,1,:) = 0

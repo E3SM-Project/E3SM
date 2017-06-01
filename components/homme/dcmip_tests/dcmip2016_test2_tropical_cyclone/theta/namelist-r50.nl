@@ -15,13 +15,13 @@
   tstep             = 50                        ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5
-  rsplit            = 0
+  rsplit            = 3
   qsplit            = 1
   nu                = 1.1e14                    ! default= 1e15*(ne30/ne60)**3.2 = 1.1e14
   nu_s              = 1.1e14
-  nu_p              = 1.1e14 
+  nu_p              = 1.1e14
   nu_top            = 2.5e5                     ! default = 2.5e5
-  limiter_option    = 4
+  limiter_option    = 8
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'wet'
@@ -38,12 +38,12 @@
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 2,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
   output_frequency  = 3                         ! every 3 hours
-  output_varnames1  ='T','ps','pnh','geo','u','v','w','omega','Th','Q','Q2','Q3','precl','zeta'   ! variables to write to file
+  output_varnames1  ='T','ps','pnh','geo','u','v','w','omega','Th','Q','Q2','Q3','precl'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16
-  interp_nlon       = 360
-  interp_nlat       = 181
+  interp_nlon       = 720
+  interp_nlat       = 361
 /
 &prof_inparm
   profile_outpe_num   = 100
