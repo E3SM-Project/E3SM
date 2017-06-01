@@ -125,6 +125,13 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
     """
     # Fill in defaults as needed
     svn_loc = SVN_LOCS[get_model()] if svn_loc is None else svn_loc
+    err = run_cmd("svn --non-interactive --trust-server-cert ls %s" % svn_loc)[0]
+    expect(err == 0,
+"""
+Could not connect to svn repo '%s'
+This is most likely either a credential, proxy, or network issue .
+To check connection and store your credential run 'svn ls %s' and permanently store your password""" % (svn_loc, svn_loc))
+
     input_data_root = case.get_value("DIN_LOC_ROOT") if input_data_root is None else input_data_root
 
     expect(os.path.isdir(input_data_root), "Invalid input_data_root directory: '%s'" % input_data_root)
