@@ -232,7 +232,7 @@ class SystemTestsCommon(object):
             case_st_archive(self._case)
 
     def _coupler_log_indicates_run_complete(self):
-        newestcpllogfile = self._get_latest_cpl_log()
+        newestcpllogfile = self._case.get_latest_cpl_log()
         logger.debug("Latest Coupler log file is {}".format(newestcpllogfile))
         # Exception is raised if the file is not compressed
         try:
@@ -294,7 +294,7 @@ class SystemTestsCommon(object):
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
-        cpllog = self._get_latest_cpl_log()
+        cpllog = self._case.get_latest_cpl_log()
 
         memlist = self._get_mem_usage(cpllog)
 
@@ -339,18 +339,6 @@ class SystemTestsCommon(object):
                 return False
         return True
 
-    def _get_latest_cpl_log(self):
-        """
-        find and return the latest cpl log file in the run directory
-        """
-        coupler_log_path = self._case.get_value("RUNDIR")
-        cpllog = None
-        cpllogs = glob.glob(os.path.join(coupler_log_path, 'cpl.log.*'))
-        if cpllogs:
-            cpllog = max(cpllogs, key=os.path.getctime)
-
-        return cpllog
-
     def _compare_baseline(self):
         """
         compare the current test output to a baseline result
@@ -366,7 +354,7 @@ class SystemTestsCommon(object):
             basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), baseline_name)
 
             # compare memory usage to baseline
-            newestcpllogfile = self._get_latest_cpl_log()
+            newestcpllogfile = self._case.get_latest_cpl_log()
             memlist = self._get_mem_usage(newestcpllogfile)
             baselog = os.path.join(basecmp_dir, "cpl.log.gz")
             if not os.path.isfile(baselog):
@@ -407,13 +395,6 @@ class SystemTestsCommon(object):
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             baseline_name = self._case.get_value("BASEGEN_CASE")
             self._test_status.set_status("{}".format(GENERATE_PHASE), status, comments=os.path.dirname(baseline_name))
-            basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), baseline_name)
-
-            # copy latest cpl log to baseline
-            # drop the date so that the name is generic
-            newestcpllogfile = self._get_latest_cpl_log()
-            shutil.copyfile(newestcpllogfile,
-                            os.path.join(basegen_dir,"cpl.log.gz"))
 
 class FakeTest(SystemTestsCommon):
     """

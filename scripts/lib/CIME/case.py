@@ -1353,3 +1353,16 @@ class Case(object):
         self._files.remove(old_object)
         self._files.append(new_object)
         self.schedule_rewrite(new_object)
+
+    def get_latest_cpl_log(self):
+        """
+        find and return the latest cpl log file in the run directory
+        """
+        coupler_log_path = self.get_value("RUNDIR")
+        cpllog = None
+        cpllogs = glob.glob(os.path.join(coupler_log_path, 'cpl.log.*'))
+        if cpllogs:
+            cpllog = max(cpllogs, key=os.path.getctime)
+            return cpllog
+        else:
+            return None
