@@ -924,7 +924,9 @@ contains
   subroutine mpas_forcing_init_field_data(&!{{{
        forcingGroupHead, &
        forcingGroupName, &
-       streamManager)
+       streamManager, &
+       restart, &
+       interpolateAtInit)
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroupHead ! the forcing group linked list
@@ -934,6 +936,12 @@ contains
 
     type (MPAS_streamManager_type), intent(inout) :: &
          streamManager ! the stream manager
+
+    logical, intent(in) :: &
+         restart !< Input: whether this is a restarted run
+
+    logical, intent(in) :: &
+         interpolateAtInit !< Input: interpolate to forcing variables at time 0.
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! forcing group iterator
@@ -954,7 +962,9 @@ contains
              call get_initial_forcing_data(&
                   forcingGroup, &
                   forcingStream, &
-                  streamManager)
+                  streamManager, &
+                  restart, &
+                  interpolateAtInit)
 
              forcingStream => forcingStream % next
           end do
@@ -982,7 +992,9 @@ contains
   subroutine get_initial_forcing_data(&!{{{
        forcingGroup, &
        forcingStream, &
-       streamManager)
+       streamManager, &
+       restart, &
+       interpolateAtInit)
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! the forcing group object
@@ -993,8 +1005,15 @@ contains
     type (MPAS_streamManager_type), intent(inout) :: &
          streamManager ! stream manager
 
+    logical, intent(in) :: &
+         restart !< Input: whether this is a restarted run
+
+    logical, intent(in) :: &
+         interpolateAtInit !< Input: interpolate to forcing variables at time 0.
+
     type(MPAS_Time_type) :: &
-         forcingTimeCycle ! the forcing time after cycling
+         forcingTimeCycle, & ! the forcing time after cycling
+         currentForcingTime
 
     character(len=strKIND) :: &
          forcingTimeStr ! the timestamp of the forcing time        
@@ -1114,6 +1133,18 @@ contains
     enddo ! iTime
 
     FORCING_DEBUG_WRITE('-------------------------------------------')
+
+    if (interpolateAtInit .and. .not. restart) then
+
+       ! interpolate data
+       currentForcingTime = mpas_get_clock_time(forcingGroup % forcingClock, MPAS_NOW)
+
+       call forcing_data_interpolation(&
+            forcingGroup % domain_ptr, &
+            forcingStream, &
+            currentForcingTime)
+
+    endif
 
   end subroutine get_initial_forcing_data!}}}
 
