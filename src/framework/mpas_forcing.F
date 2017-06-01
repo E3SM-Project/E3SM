@@ -13,7 +13,6 @@
 module mpas_forcing
 
 #define COMMA ,
-#define FORCING_DEBUG_DO(M) !M
 #define FORCING_DEBUG_WRITE(M) !call mpas_log_write( M )
 #define FORCING_WARNING_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_WARN)
 #define FORCING_ERROR_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_ERR)
@@ -47,21 +46,21 @@ contains
 !> \brief Add a forcing group to the forcing group list
 !> \author Adrian K. Turner, LANL
 !> \date September 25th 2014
-!> \details 
-!>  Adds a forcing group to the forcing group list. Each forcing group 
-!>  contains a forcing clock that can be cycled and a list of associated 
-!>  forcing fields that use the forcing group clock. 'forcingGroupHead' 
-!>  is a pointer to the forcing group object. 'forcingGroupName' is the 
-!>  name of the forcing group to add to the forcing group list. 'domain' 
-!>  is the domain type instance that contains the fields that will be read 
-!>  into. 'startTimeStr' is the timestamp of the starting time of the 
-!>  forcing group clock. 'forcingCycleStart' is the timestamp of starting 
-!>  time of the forcing group clock. Specify 'none' for this if no forcing 
-!>  is desired. 'forcingCycleDuration' is the 
-!>  timestamp of duration of the forcing clock. 'restart' is true if the 
-!>  model is restarting. 'forcingRestartFile' is the filename of the file 
-!>  from which forcing clock time will be read when restarting. 
-!>  'forcingCycleStartInclusive' (default: true) is true if the start time 
+!> \details
+!>  Adds a forcing group to the forcing group list. Each forcing group
+!>  contains a forcing clock that can be cycled and a list of associated
+!>  forcing fields that use the forcing group clock. 'forcingGroupHead'
+!>  is a pointer to the forcing group object. 'forcingGroupName' is the
+!>  name of the forcing group to add to the forcing group list. 'domain'
+!>  is the domain type instance that contains the fields that will be read
+!>  into. 'startTimeStr' is the timestamp of the starting time of the
+!>  forcing group clock. 'forcingCycleStart' is the timestamp of starting
+!>  time of the forcing group clock. Specify 'none' for this if no forcing
+!>  is desired. 'forcingCycleDuration' is the
+!>  timestamp of duration of the forcing clock. 'restart' is true if the
+!>  model is restarting. 'forcingRestartFile' is the filename of the file
+!>  from which forcing clock time will be read when restarting.
+!>  'forcingCycleStartInclusive' (default: true) is true if the start time
 !>  of the forcing cycle is included in the cycle.
 !
 !-----------------------------------------------------------------------
@@ -165,9 +164,9 @@ contains
        ! set the forcing end time
        call MPAS_set_timeInterval(zeroDuration, DD=0)
 
-       if (forcingGroupNew % forcingCycleDuration .gt. zeroDuration) then 
+       if (forcingGroupNew % forcingCycleDuration .gt. zeroDuration) then
           forcingGroupNew % forcingCycleEnd = forcingGroupNew % forcingCycleStart + forcingGroupNew % forcingCycleDuration
-       else if (forcingGroupNew % forcingCycleDuration .le. zeroDuration) then 
+       else if (forcingGroupNew % forcingCycleDuration .le. zeroDuration) then
           ! no cycle so set before cycle start
           call MPAS_set_timeInterval(timeInterval, DD=1000)
           forcingGroupNew % forcingCycleEnd = forcingGroupNew % forcingCycleStart - timeInterval
@@ -194,15 +193,15 @@ contains
 !> \brief Add a field to the forcing group
 !> \author Adrian K. Turner, LANL
 !> \date September 25th 2014
-!> \details 
+!> \details
 !>  Add a individual forcing field to the forcing group. All the fields
 !>  in a forcing group use the same cycling forcing clock. 'streammanager'
 !>  is the streams manager object that will perform the IO. 'forcingGroupHead'
-!>  is the forcing group object that the field will be added to and 
+!>  is the forcing group object that the field will be added to and
 !>  'forcingGroupName' is the name of that forcing group. 'forcingName' is
 !>  an identifying string for the forcing field. 'forcingStreamID' is the
 !>  stream identifier associtiated with the field. In registry, the output
-!>  field is called 'fieldname' and is in the 'poolname' pool. The interpolation 
+!>  field is called 'fieldname' and is in the 'poolname' pool. The interpolation
 !>  for this field will use the 'interpolationType' interpolation type
 !>  (currently one of 'linear', 'constant' or 'four_point_polynomial').
 !>  'forcingReferenceTimeStr' gives a reference time for the forcing data times
@@ -210,8 +209,8 @@ contains
 !>  time interval between input data times. If 'forcingIntervalStr' is not
 !>  specified function pointers must be given that calculate a variable
 !>  interval. One is for the interval forward from a given forcing data time
-!>  ('variable_interval_forward') and the other is for backwards from that 
-!>  time ('variable_interval_backward'). 
+!>  ('variable_interval_forward') and the other is for backwards from that
+!>  time ('variable_interval_backward').
 !
 !-----------------------------------------------------------------------
 
@@ -235,7 +234,7 @@ contains
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroupHead !< Input: the forcing group linked list
-    
+
     character(len=*), intent(in) :: &
          forcingGroupName, &     !< Input: the identifying name of the forcing group
          forcingName, &          !< Input: the identifying name of the individual forcing
@@ -257,7 +256,7 @@ contains
          type(MPAS_TimeInterval_type) :: variableInterval
        end function variable_interval_forward
     end interface
-    
+
     ! backward variable interval function
     interface
        function variable_interval_backward(currentTime) result(variableInterval)
@@ -289,7 +288,7 @@ contains
        ! only get forcings for correct forcings
        if (trim(forcingGroup % forcingGroupName) == trim(forcingGroupName)) then
 
-          FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_init_forcing '//trim(trim(forcingGroupName)) COMMA associated(forcingGroup % stream))
+          FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_init_forcing '//trim(trim(forcingGroupName))//" $l" COMMA logicArgs=(/associated(forcingGroup % stream)/))
 
           ! loop through the stream linked list
           if (.not. associated(forcingGroup % stream)) then
@@ -356,7 +355,7 @@ contains
                forcingInitializationType, &
                variable_interval_forward, &
                variable_interval_backward)
-          
+
           call add_forcing_field_to_forcing_stream(&
                forcingStreamNew, &
                forcingGroup % domain_ptr, &
@@ -412,7 +411,7 @@ contains
 
     type (MPAS_streamManager_type), intent(inout) :: &
          streamManager ! the stream manager
-    
+
     character(len=*), intent(in) :: &
          forcingName, &          !< Input: the name of the forcing field
          forcingStreamID, &      !< Input: the stream ID attached to the forcing field
@@ -431,7 +430,7 @@ contains
          type(MPAS_TimeInterval_type) :: variableInterval
        end function variable_interval_forward
     end interface
-    
+
     ! backward variable interval function
     interface
        function variable_interval_backward(currentTime) result(variableInterval)
@@ -463,11 +462,11 @@ contains
 
     ! set the forcing stream ID
     forcingStreamNew % forcingStreamID = trim(forcingStreamID)
-    
+
     FORCING_DEBUG_WRITE('-- Forcing: create_new_forcing_stream interpolationType: '//trim(interpolationType))
 
     ! interpolation type
-    forcingStreamNew % interpolationType = trim(interpolationType) 
+    forcingStreamNew % interpolationType = trim(interpolationType)
     call interpolation_time_stencil_info(&
          trim(forcingStreamNew % interpolationType), &
          forcingStreamNew % nTimeStencil, &
@@ -548,7 +547,7 @@ contains
 !> \author Adrian K. Turner, LANL
 !> \date 24th November 2014
 !> \details add the details of a new forcing field to the linked list
-!>  contained within the forcing stream type 
+!>  contained within the forcing stream type
 !
 !-----------------------------------------------------------------------
 
@@ -574,7 +573,7 @@ contains
 
     type (MPAS_streamManager_type), intent(inout) :: &
          streamManager ! the stream manager
-    
+
     character(len=*), intent(in) :: &
          forcingName, &          !< Input: the identifying name of the individual forcing
          poolname, &             !< Input: the pool name with the output field
@@ -594,7 +593,7 @@ contains
          type(MPAS_TimeInterval_type) :: variableInterval
        end function variable_interval_forward
     end interface
-    
+
     ! backward variable interval function
     interface
        function variable_interval_backward(currentTime) result(variableInterval)
@@ -705,8 +704,8 @@ contains
     forcingFieldNew % forcingName = trim(forcingName)
 
     ! set the field names
-    forcingFieldNew % poolname  = trim(poolname) 
-    forcingFieldNew % fieldname = trim(fieldname) 
+    forcingFieldNew % poolname  = trim(poolname)
+    forcingFieldNew % fieldname = trim(fieldname)
 
     ! set up the input fields
     call setup_input_fields(&
@@ -725,7 +724,7 @@ contains
 !> \author Adrian K. Turner, LANL
 !> \date September 25th 2014
 !> \details
-!>  Given a forcing time this returns the forcing interval either 
+!>  Given a forcing time this returns the forcing interval either
 !>  forwards or backwards to the next forcing time.
 !
 !-----------------------------------------------------------------------
@@ -750,8 +749,6 @@ contains
     forward_use = .true.
     if (present(forward)) forward_use = forward
 
-    !FORCING_DEBUG_WRITE('-- Forcing: forcing_interval: '//trim(forcingStream % forcingStreamID) COMMA associated(forcingStream % variable_interval_forward_ptr))
-
     if (.not. associated(forcingStream % variable_interval_forward_ptr)) then
        ! use constant interval
        forcingInterval = forcingStream % forcingIntervalConstant
@@ -763,7 +760,7 @@ contains
           forcingInterval = forcingStream % variable_interval_backward_ptr(currentTime)
        endif
     end if
-    
+
   end function forcing_interval!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -775,8 +772,8 @@ contains
 !> \date September 25th 2014
 !> \details
 !>  Given the forcing reference time and interval determine the initial
-!>  forcing times given the current forcing clock time. This searches 
-!>  for the initial times so reference time is not restricted. 
+!>  forcing times given the current forcing clock time. This searches
+!>  for the initial times so reference time is not restricted.
 !
 !-----------------------------------------------------------------------
 
@@ -800,19 +797,19 @@ contains
 
     ! set the current forcing time
     currentTime = mpas_get_clock_time(forcingGroup % forcingClock, MPAS_NOW)
-    
+
     ! initialize the forcing data time
     forcingTime1 = forcingStream % forcingReferenceTime
     forcingTime2 = forcingStream % forcingReferenceTime + forcing_interval(forcingStream, forcingStream % forcingReferenceTime)
 
     if (currentTime .ge. forcingTime1 .and. &
         currentTime .lt. forcingTime2) then
-       ! current forcing clock time is in the current interval 
+       ! current forcing clock time is in the current interval
 
        call populate_forcing_times(forcingStream, forcingTime1, forcingStream % nTimeStencilLower)
 
     else if (currentTime .lt. forcingTime1) then
-       ! current forcing clock time earlier than the current interval 
+       ! current forcing clock time earlier than the current interval
 
        backward_search: do
 
@@ -828,7 +825,7 @@ contains
        end do backward_search
 
     else if (currentTime .ge. forcingTime2) then
-       ! current forcing clock time later than the current interval 
+       ! current forcing clock time later than the current interval
 
        forward_search: do
 
@@ -844,7 +841,7 @@ contains
        end do forward_search
 
     endif
-       
+
   end subroutine get_initial_forcing_times!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -893,7 +890,7 @@ contains
        forcingStream % forcingTimes(iTime) = forcingTime
 
     enddo ! iTime
-    
+
     ! fill out lower
     forcingTime = forcingTimeSlot
     do iTime = forcingSlot-1, 1, -1
@@ -915,7 +912,7 @@ contains
 !> \details
 !>  Once all the fields have been added to the forcing group object read
 !>  in all the data for all initial forcing times for all the fields in
-!>  the forcing group. 'forcingGroupHead' is the forcing group object, 
+!>  the forcing group. 'forcingGroupHead' is the forcing group object,
 !>  'forcingGroupName' is the name of the forcing group to read data into
 !>  and 'streamManager' is the stream manager that will perform the IO.
 !
@@ -938,7 +935,7 @@ contains
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! forcing group iterator
 
-    type(mpas_forcing_stream_type), pointer :: &    
+    type(mpas_forcing_stream_type), pointer :: &
          forcingStream ! forcing stream iterator
 
     ! loop over forcings linked list
@@ -960,7 +957,7 @@ contains
           end do
 
        endif
-       
+
        forcingGroup => forcingGroup % next
     end do
 
@@ -997,7 +994,7 @@ contains
          forcingTimeCycle ! the forcing time after cycling
 
     character(len=strKIND) :: &
-         forcingTimeStr ! the timestamp of the forcing time        
+         forcingTimeStr ! the timestamp of the forcing time
 
     integer :: &
          iTime, & ! index of the forcing time stops
@@ -1008,7 +1005,7 @@ contains
 
     ! loop over the forcing time slots
     do iTime = 1, forcingStream % nTimeStencil
-    
+
        ! get the forcing time of the slot
        forcingTimeCycle = forcingStream % forcingTimes(iTime)
 
@@ -1021,7 +1018,7 @@ contains
              ! cycle start time is inclusive to the cycle
 
              if (forcingTimeCycle .lt. forcingGroup % forcingCycleStart) then
-                do 
+                do
                    forcingTimeCycle = forcingTimeCycle + forcingGroup % forcingCycleDuration
                    if (forcingTimeCycle .ge. forcingGroup % forcingCycleStart .and. &
                         forcingTimeCycle .lt. forcingGroup % forcingCycleEnd) exit
@@ -1029,7 +1026,7 @@ contains
              endif
 
              if (forcingTimeCycle .ge. forcingGroup % forcingCycleEnd) then
-                do 
+                do
                    forcingTimeCycle = forcingTimeCycle - forcingGroup % forcingCycleDuration
                    if (forcingTimeCycle .ge. forcingGroup % forcingCycleStart .and. &
                         forcingTimeCycle .lt. forcingGroup % forcingCycleEnd) exit
@@ -1041,7 +1038,7 @@ contains
              ! cycle start time is not inclusive to the cycle
 
              if (forcingTimeCycle .le. forcingGroup % forcingCycleStart) then
-                do 
+                do
                    forcingTimeCycle = forcingTimeCycle + forcingGroup % forcingCycleDuration
                    if (forcingTimeCycle .gt. forcingGroup % forcingCycleStart .and. &
                         forcingTimeCycle .le. forcingGroup % forcingCycleEnd) exit
@@ -1049,7 +1046,7 @@ contains
              endif
 
              if (forcingTimeCycle .gt. forcingGroup % forcingCycleEnd) then
-                do 
+                do
                    forcingTimeCycle = forcingTimeCycle - forcingGroup % forcingCycleDuration
                    if (forcingTimeCycle .gt. forcingGroup % forcingCycleStart .and. &
                         forcingTimeCycle .le. forcingGroup % forcingCycleEnd) exit
@@ -1095,7 +1092,7 @@ contains
 
        ! load the data into the slot
        call mpas_get_time(forcingTimeCycle, dateTimeString=forcingTimeStr)
-       FORCING_DEBUG_WRITE('-- Forcing: get_initial_forcing_data: READ ATTEMPT: ' COMMA trim(forcingTimeStr))
+       FORCING_DEBUG_WRITE('-- Forcing: get_initial_forcing_data: READ ATTEMPT: '//trim(forcingTimeStr))
        call MPAS_stream_mgr_read(&
             streamManager, &
             forcingStream % forcingStreamID, &
@@ -1109,11 +1106,9 @@ contains
           call mpas_log_write('Forcing: get_initial_forcing_data: READ: $i', MPAS_LOG_CRIT, intArgs=(/ierr/))
        endif
 
-       FORCING_DEBUG_WRITE('-- Forcing: get_initial_forcing_data: ' COMMA iTime COMMA trim(forcingStream % forcingStreamID) COMMA " " COMMA trim(forcingTimeStr))
+       FORCING_DEBUG_WRITE('-- Forcing: get_initial_forcing_data: $i '//trim(forcingStream % forcingStreamID)//" "//trim(forcingTimeStr) COMMA intArgs=(/iTime/))
 
     enddo ! iTime
-
-    FORCING_DEBUG_WRITE('-------------------------------------------')
 
   end subroutine get_initial_forcing_data!}}}
 
@@ -1124,11 +1119,11 @@ contains
 !> \brief Get the forcing data and do interpolation for a forcing group
 !> \author Adrian K. Turner, LANL
 !> \date September 25th 2014
-!> \details 
-!>  Loop over all the individual forcing fields  in the forcing group 
-!>  and get the data and perform the time interpolation. 
-!>  'forcingGroupHead' is the forcing group object, 'forcingGroupName' 
-!>  is the name of the forcing group to read data into, 'streamManager' 
+!> \details
+!>  Loop over all the individual forcing fields  in the forcing group
+!>  and get the data and perform the time interpolation.
+!>  'forcingGroupHead' is the forcing group object, 'forcingGroupName'
+!>  is the name of the forcing group to read data into, 'streamManager'
 !>  is the stream manager that will perform the IO and 'dt' is the current
 !>  time step duration.
 !
@@ -1178,14 +1173,14 @@ contains
 
           ! loop over individual forcing fields
           forcingStream => forcingGroup % stream
-          do while (associated(forcingStream)) 
+          do while (associated(forcingStream))
 
              ! get the individual forcing
              call get_forcing(&
                   forcingGroup, &
                   forcingStream, &
                   streamManager)
-             
+
              forcingStream => forcingStream % next
           enddo
 
@@ -1219,7 +1214,7 @@ contains
   subroutine advance_forcing_clock(&!{{{
        forcingGroup, &
        dt)
-    
+
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! the forcing group object
 
@@ -1249,7 +1244,7 @@ contains
 
   subroutine cycle_forcing_clock(&!{{{
        forcingGroup)
-    
+
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! the forcing group object
 
@@ -1275,7 +1270,7 @@ contains
 
        ! if ringing cycle the forcing times
        forcingStream => forcingGroup % stream
-       do while (associated(forcingStream)) 
+       do while (associated(forcingStream))
 
           ! cycle all the current forcing times
           do iTime = 1, forcingStream % nTimeStencil
@@ -1297,9 +1292,9 @@ contains
 !> \author Adrian K. Turner, LANL
 !> \date 24th November 2014
 !> \details
-!>  Return the current forcing clock time for a forcing group. 
-!>  'forcingGroupHead' is the forcing group object, 'forcingGroupName' 
-!>  is the name of the forcing group to get the time for and 
+!>  Return the current forcing clock time for a forcing group.
+!>  'forcingGroupHead' is the forcing group object, 'forcingGroupName'
+!>  is the name of the forcing group to get the time for and
 !>  'forcingTime' is the output forcing group current clock time.
 !
 !-----------------------------------------------------------------------
@@ -1345,7 +1340,7 @@ contains
 !> \author Adrian K. Turner, LANL
 !> \date September 25th 2014
 !> \details
-!>  Get the data for the new forcing time and perform the time 
+!>  Get the data for the new forcing time and perform the time
 !>  interpolation for all the fields in a forcing stream
 !
 !-----------------------------------------------------------------------
@@ -1366,7 +1361,7 @@ contains
 
     type(MPAS_Time_type) :: &
          currentTime, & ! the current forcing time
-         forcingTimeNew ! the next forcing time 
+         forcingTimeNew ! the next forcing time
 
     character(len=strKIND) :: &
          forcingTimeCycleStr, & ! the cycled forcing time
@@ -1376,7 +1371,7 @@ contains
          iTime, & ! forcing times index
          ierr ! status of stream read
 
-    FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing' COMMA mpas_is_alarm_ringing(forcingGroup % forcingClock, forcingStream % forcingAlarmID))
+    FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: $l' COMMA logicArgs=(/mpas_is_alarm_ringing(forcingGroup % forcingClock, forcingStream % forcingAlarmID)/))
 
     ! get current forcing time
     currentTime = mpas_get_clock_time(forcingGroup % forcingClock, MPAS_NOW)
@@ -1394,16 +1389,16 @@ contains
        do iTime = 1, forcingStream % nTimeStencil-1
           forcingStream % forcingTimes(iTime) = forcingStream % forcingTimes(iTime+1)
        enddo ! iTime
-       
-       ! shift data 
+
+       ! shift data
        call forcing_shift_data(&
             forcingGroup % domain_ptr, &
             forcingStream)
-       
+
        ! determine new time to load data from
        forcingTimeNew = forcingStream % forcingTimes(forcingStream % nTimeStencil-1) + &
             forcing_interval(forcingStream, forcingStream % forcingTimes(forcingStream % nTimeStencil-1))
-  
+
        ! add the new time to the final time slot
        forcingStream % forcingTimes(forcingStream % nTimeStencil) = forcingTimeNew
 
@@ -1434,9 +1429,6 @@ contains
 
     endif ! forcingAlarmID ringing
 
-    FORCING_DEBUG_DO(call mpas_get_time(currentTime, dateTimeString=forcingTimeStr))
-    FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: FORCING: ' // trim(forcingStream % forcingStreamID) // " " // trim(forcingTimeStr) // " " // trim(forcingTimeStrAll))
-
     ! interpolate data
     call forcing_data_interpolation(&
          forcingGroup % domain_ptr, &
@@ -1458,7 +1450,7 @@ contains
 !> \date September 25th 2014
 !> \details
 !>  Given a particular interpolation type return the size of the time
-!>  stencil and the number of forcing times earlier and later than the 
+!>  stencil and the number of forcing times earlier and later than the
 !>  current forcing time
 !
 !-----------------------------------------------------------------------
@@ -1504,7 +1496,7 @@ contains
 !> \author Adrian K. Turner, LANL
 !> \date September 25th 2014
 !> \details
-!>  Given the current time and forcing times calculate the correct 
+!>  Given the current time and forcing times calculate the correct
 !>  interpolants given the interpolation type
 !
 !-----------------------------------------------------------------------
@@ -1541,7 +1533,7 @@ contains
 !> \author Adrian K. Turner, LANL
 !> \date September 25th 2014
 !> \details
-!>  Given the current time and forcing times calculate the correct 
+!>  Given the current time and forcing times calculate the correct
 !>  interpolants with linear interpolation
 !
 !-----------------------------------------------------------------------
@@ -1588,7 +1580,7 @@ contains
 !> \author Adrian K. Turner, LANL
 !> \date September 25th 2014
 !> \details
-!>  Given the current time and forcing times calculate the correct 
+!>  Given the current time and forcing times calculate the correct
 !>  interpolants with piecewise constant interpolation
 !
 !-----------------------------------------------------------------------
@@ -1629,7 +1621,7 @@ contains
 !> \author Adrian K. Turner, LANL
 !> \date September 25th 2014
 !> \details
-!>  Given the forcing times calculate the interpolation weights for 
+!>  Given the forcing times calculate the interpolation weights for
 !>  a four point Lagrange polynomial interpolation
 !
 !-----------------------------------------------------------------------
@@ -1656,7 +1648,7 @@ contains
     x2_interval = forcingStream % forcingTimes(2) - currentTime
     x3_interval = forcingStream % forcingTimes(3) - currentTime
     x4_interval = forcingStream % forcingTimes(4) - currentTime
-    
+
     call mpas_get_timeInterval(x0_interval, currentTime, dt=x0)
     call mpas_get_timeInterval(x1_interval, currentTime, dt=x1)
     call mpas_get_timeInterval(x2_interval, currentTime, dt=x2)
@@ -1682,7 +1674,7 @@ contains
 !> \author Adrian K. Turner, LANL
 !> \date October 9th, 2014
 !> \details
-!>  This duplicates the output field with the same number of time levels 
+!>  This duplicates the output field with the same number of time levels
 !>  as the time stencil. Data is read into here before interpolation.
 !
 !-----------------------------------------------------------------------
@@ -1722,7 +1714,7 @@ contains
     type(field3DReal), pointer :: field3DRealInput, field3DRealOutput, field3DRealInputPrev
     type(field4DReal), pointer :: field4DRealInput, field4DRealOutput, field4DRealInputPrev
     type(field5DReal), pointer :: field5DRealInput, field5DRealOutput, field5DRealInputPrev
-    
+
     type(field0DInteger), pointer :: field0DIntInput, field0DIntOutput, field0DIntInputPrev
     type(field1DInteger), pointer :: field1DIntInput, field1DIntOutput, field1DIntInputPrev
     type(field2DInteger), pointer :: field2DIntInput, field2DIntOutput, field2DIntInputPrev
@@ -1735,7 +1727,7 @@ contains
     type(field3DReal), dimension(:), pointer :: field3DRealArray
     type(field4DReal), dimension(:), pointer :: field4DRealArray
     type(field5DReal), dimension(:), pointer :: field5DRealArray
-    
+
     type(field0DInteger), dimension(:), pointer :: field0DIntArray
     type(field1DInteger), dimension(:), pointer :: field1DIntArray
     type(field2DInteger), dimension(:), pointer :: field2DIntArray
@@ -2089,7 +2081,7 @@ contains
              call MPAS_pool_add_field(forcingPoolInput, fieldnameInput, field3DIntArray)
              call MPAS_pool_add_field(block % allFields, fieldnameInput, field3DIntArray)
 
-             !call MPAS_pool_links_pools 
+             !call MPAS_pool_links_pools
 
           end select
 
@@ -2167,7 +2159,7 @@ contains
     real(kind=RKIND), dimension(:,:,:),     pointer :: field3DRealInput, field3DRealOutput
     real(kind=RKIND), dimension(:,:,:,:),   pointer :: field4DRealInput, field4DRealOutput
     real(kind=RKIND), dimension(:,:,:,:,:), pointer :: field5DRealInput, field5DRealOutput
-    
+
     integer,                   pointer :: field0DIntInput, field0DIntOutput
     integer, dimension(:),     pointer :: field1DIntInput, field1DIntOutput
     integer, dimension(:,:),   pointer :: field2DIntInput, field2DIntOutput
@@ -2185,7 +2177,7 @@ contains
 
     type(mpas_forcing_field_type), pointer :: &
          forcingField
-    
+
     ! get the interpolant weights
     allocate(interpolants(forcingStream % nTimeStencil))
     call get_interpolants(interpolants, forcingStream, currentTime)
@@ -2217,11 +2209,9 @@ contains
                 call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field0DRealOutput, 1)
                 call MPAS_pool_get_array(forcingPoolInput,  trim(fieldnameInput), field0DRealInput, 1)
                 field0DRealOutput = field0DRealInput * interpolants(1)
-                FORCING_DEBUG_WRITE('-- Forcing: forcing_data_interpolation iTime: ' COMMA 1 COMMA ': ' COMMA field0DRealInput COMMA interpolants(1))
                 do iTime = 2, forcingStream % nTimeStencil
                    call MPAS_pool_get_array(forcingPoolInput,  trim(fieldnameInput), field0DRealInput, iTime)
                    field0DRealOutput = field0DRealOutput + field0DRealInput * interpolants(iTime)
-                   FORCING_DEBUG_WRITE('-- Forcing: forcing_data_interpolation iTime: ' COMMA iTime COMMA ': ' COMMA field0DRealInput COMMA interpolants(iTime))
                 enddo ! iTime
 
              case (1)
@@ -2328,7 +2318,7 @@ contains
 
        forcingField => forcingField % next
     end do
-    
+
     deallocate(interpolants)
 
   end subroutine forcing_data_interpolation!}}}
@@ -2372,7 +2362,7 @@ contains
     type(field3DReal), pointer :: field3DRealInput1, field3DRealInput2
     type(field4DReal), pointer :: field4DRealInput1, field4DRealInput2
     type(field5DReal), pointer :: field5DRealInput1, field5DRealInput2
-    
+
     type(field0DInteger), pointer :: field0DIntInput1, field0DIntInput2
     type(field1DInteger), pointer :: field1DIntInput1, field1DIntInput2
     type(field2DInteger), pointer :: field2DIntInput1, field2DIntInput2
@@ -2398,9 +2388,9 @@ contains
        ! get input names
        poolnameInput  = trim(forcingField % poolname)//"_forcing_input"
        fieldnameInput = trim(forcingField % fieldname)//"_forcing_input"
-       
+
        FORCING_DEBUG_WRITE('-- Forcing: forcing_shift_data pool: '//trim(poolnameInput)//" field: "//trim(fieldnameInput))
-       
+
        ! loop over blocks
        block => domain % blocklist
        do while (associated(block))
@@ -2419,11 +2409,7 @@ contains
 
              select case (forcingFieldInput % contentsDims)
              case (0)
-                FORCING_DEBUG_WRITE('-- Forcing: forcing_shift_data: v1: ' COMMA forcingFieldInput % r0a(1) % scalar)
-                FORCING_DEBUG_WRITE('-- Forcing: forcing_shift_data: v2: ' COMMA forcingFieldInput % r0a(2) % scalar)
                 call mpas_shift_time_levs(forcingFieldInput % r0a)
-                FORCING_DEBUG_WRITE('-- Forcing: forcing_shift_data: v1: ' COMMA forcingFieldInput % r0a(1) % scalar)
-                FORCING_DEBUG_WRITE('-- Forcing: forcing_shift_data: v2: ' COMMA forcingFieldInput % r0a(2) % scalar)
              case (1)
                 call mpas_shift_time_levs(forcingFieldInput % r1a)
              case (2)
@@ -2588,7 +2574,7 @@ contains
     open(22,file=trim(forcingTimeRestartFilename), form='formatted', action='read')
 
     ! loop over entries in restart file
-    do 
+    do
 
        ! read restart entry
        read(22,*,iostat=status) forcingGroupName, forcingClockTimeStr
@@ -2599,11 +2585,11 @@ contains
        if (trim(forcingGroup % forcingGroupName) == trim(forcingGroupName)) then
 
           ! set the forcing group time
-          FORCING_DEBUG_WRITE('-- Forcing: read_restart_times: set time' COMMA " " COMMA trim(forcingClockTimeStr))
+          FORCING_DEBUG_WRITE('-- Forcing: read_restart_times: set time'//trim(forcingClockTimeStr))
           call MPAS_set_time(forcingClockTime, dateTimeString=trim(forcingClockTimeStr))
           FORCING_DEBUG_WRITE('-- Forcing: read_restart_times: create clock')
           call mpas_create_clock(forcingGroup % forcingClock, startTime=forcingClockTime, timeStep=timeStep, stopTime=stopTime)
-          
+
           exit
        endif
 
