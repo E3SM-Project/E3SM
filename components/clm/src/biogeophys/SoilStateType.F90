@@ -85,6 +85,7 @@ module SoilStateType
      procedure, private :: InitHistory  
      procedure, private :: InitCold    
      procedure, public  :: Restart
+     procedure, public  :: InitColdGhost
 
   end type soilstate_type
   !------------------------------------------------------------------------
@@ -117,11 +118,13 @@ contains
     integer :: begp, endp
     integer :: begc, endc
     integer :: begg, endg
+    integer :: begc_all, endc_all
     !------------------------------------------------------------------------
 
-    begp = bounds%begp; endp= bounds%endp
-    begc = bounds%begc; endc= bounds%endc
-    begg = bounds%begg; endg= bounds%endg
+    begp     = bounds%begp    ; endp     = bounds%endp
+    begc     = bounds%begc    ; endc     = bounds%endc
+    begg     = bounds%begg    ; endg     = bounds%endg
+    begc_all = bounds%begc_all; endc_all = bounds%endc_all
 
     allocate(this%mss_frc_cly_vld_col  (begc:endc))                     ; this%mss_frc_cly_vld_col  (:)   = nan
     allocate(this%sandfrac_patch       (begp:endp))                     ; this%sandfrac_patch       (:)   = nan
@@ -131,14 +134,14 @@ contains
     allocate(this%cellclay_col         (begc:endc,nlevsoi))             ; this%cellclay_col         (:,:) = nan 
     allocate(this%bd_col               (begc:endc,nlevgrnd))            ; this%bd_col               (:,:) = nan
 
-    allocate(this%hksat_col            (begc:endc,nlevgrnd))            ; this%hksat_col            (:,:) = spval
+    allocate(this%hksat_col            (begc_all:endc_all,nlevgrnd))    ; this%hksat_col            (:,:) = spval
     allocate(this%hksat_min_col        (begc:endc,nlevgrnd))            ; this%hksat_min_col        (:,:) = spval
     allocate(this%hk_l_col             (begc:endc,nlevgrnd))            ; this%hk_l_col             (:,:) = nan   
     allocate(this%smp_l_col            (begc:endc,nlevgrnd))            ; this%smp_l_col            (:,:) = nan   
     allocate(this%smpmin_col           (begc:endc))                     ; this%smpmin_col           (:)   = nan
 
-    allocate(this%bsw_col              (begc:endc,nlevgrnd))            ; this%bsw_col              (:,:) = nan
-    allocate(this%watsat_col           (begc:endc,nlevgrnd))            ; this%watsat_col           (:,:) = nan
+    allocate(this%bsw_col              (begc_all:endc_all,nlevgrnd))    ; this%bsw_col              (:,:) = nan
+    allocate(this%watsat_col           (begc_all:endc_all,nlevgrnd))    ; this%watsat_col           (:,:) = nan
     allocate(this%watdry_col           (begc:endc,nlevgrnd))            ; this%watdry_col           (:,:) = spval
     allocate(this%watopt_col           (begc:endc,nlevgrnd))            ; this%watopt_col           (:,:) = spval
     allocate(this%watfc_col            (begc:endc,nlevgrnd))            ; this%watfc_col            (:,:) = nan
@@ -854,5 +857,128 @@ if(use_dynroot) then
     end if
 end if
   end subroutine Restart
+
+
+  !------------------------------------------------------------------------
+#ifdef USE_PETSC_LIB
+  subroutine InitColdGhost(this, bounds_proc)
+    !
+    ! !DESCRIPTION:
+    ! Assign soil properties for ghost/halo columns
+    !
+    ! !USES:
+    use domainLateralMod       , only : ExchangeColumnLevelGhostData
+    use shr_infnan_mod         , only : shr_infnan_isnan
+    use shr_infnan_mod         , only : isnan => shr_infnan_isnan
+    use landunit_varcon        , only : max_lunit
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(soilstate_type)            :: this
+    type(bounds_type), intent(in)    :: bounds_proc
+    !
+    integer             :: c,j                     ! indices
+    integer             :: nvals_col               ! number of values per subgrid category
+    integer             :: beg_idx, end_idx        ! begin/end index for accessing values in data_send/data_recv
+    real(r8) , parameter:: FILL_VALUE = -999999.d0 ! temporary
+    real(r8) , pointer  :: data_send_col(:)        ! data sent by local mpi rank
+    real(r8) , pointer  :: data_recv_col(:)        ! data received by local mpi rank
+
+    ! Number of values per soil column
+    nvals_col = 4*nlevgrnd ! (watsat + hksat + bsw + sucsat) * nlevgrnd
+
+    ! Allocate value
+    allocate(data_send_col((bounds_proc%endc     - bounds_proc%begc     + 1)*nvals_col))
+    allocate(data_recv_col((bounds_proc%endc_all - bounds_proc%begc_all + 1)*nvals_col))
+
+    ! Assemble the data to send
+    do c = bounds_proc%begc, bounds_proc%endc
+
+       beg_idx = (c - bounds_proc%begc)*nvals_col
+
+       do j = 1, nlevgrnd
+
+          beg_idx = beg_idx + 1
+          if (.not. isnan(this%watsat_col(c,j)) .and. this%watsat_col(c,j) /= spval) then
+             data_send_col(beg_idx) = this%watsat_col(c,j)
+          else
+             data_send_col(beg_idx) = FILL_VALUE
+          endif
+
+          beg_idx = beg_idx + 1
+          if (.not. isnan(this%hksat_col(c,j)) .and. this%hksat_col(c,j) /= spval) then
+             data_send_col(beg_idx) = this%hksat_col(c,j)
+          else
+             data_send_col(beg_idx) = FILL_VALUE
+          endif
+
+          beg_idx = beg_idx + 1
+          if (.not. isnan(this%bsw_col(c,j)) .and. this%bsw_col(c,j) /= spval) then
+             data_send_col(beg_idx) = this%bsw_col(c,j)
+          else
+             data_send_col(beg_idx) = FILL_VALUE
+          endif
+
+          beg_idx = beg_idx + 1
+          if (.not. isnan(this%sucsat_col(c,j)) .and. this%sucsat_col(c,j) /= spval) then
+             data_send_col(beg_idx) = this%sucsat_col(c,j)
+          else
+             data_send_col(beg_idx) = FILL_VALUE
+          endif
+       enddo
+    enddo
+
+    ! Send the data
+    call ExchangeColumnLevelGhostData(bounds_proc, nvals_col, data_send_col, data_recv_col)
+
+    ! Assign data corresponding to ghost/halo soil columns
+    do c = bounds_proc%endc + 1, bounds_proc%endc_all
+       beg_idx = (c - bounds_proc%begc)*nvals_col
+       do j = 1, nlevgrnd
+          beg_idx = beg_idx + 1
+          this%watsat_col(c,j) = data_recv_col(beg_idx)
+
+          beg_idx = beg_idx + 1
+          this%hksat_col(c,j) = data_recv_col(beg_idx)
+
+          beg_idx = beg_idx + 1
+          this%bsw_col(c,j) = data_recv_col(beg_idx)
+
+          beg_idx = beg_idx + 1
+          this%sucsat_col(c,j) = data_recv_col(beg_idx)
+       enddo
+    enddo
+
+    ! Free up memory
+    deallocate(data_send_col)
+    deallocate(data_recv_col)
+
+  end subroutine InitColdGhost
+
+#else
+
+  !------------------------------------------------------------------------
+  subroutine InitColdGhost(this, bounds_proc)
+    !
+    ! !DESCRIPTION:
+    ! Assign soil properties for ghost/halo columns
+    !
+    ! !USES:
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(soilstate_type)            :: this
+    type(bounds_type), intent(in)    :: bounds_proc
+
+    character(len=*), parameter :: subname = 'InitColdGhost'
+
+    call endrun(msg='ERROR ' // trim(subname) //': Requires '//&
+         'PETSc, but the code was compiled without -DUSE_PETSC_LIB')
+
+  end subroutine InitColdGhost
+
+#endif
+  !------------------------------------------------------------------------
 
 end module SoilStateType

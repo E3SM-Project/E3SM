@@ -70,10 +70,19 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <glc_snow_persistence_max_days>7300</glc_snow_persistence_max_days>
 
-<!-- VSFM default -->
+<!-- ========================================================================================  -->
+<!-- VSFM default                                                                              -->
+<!-- ========================================================================================  -->
 <use_vsfm>.false.</use_vsfm>
+<vsfm_include_seepage_bc>.false.</vsfm_include_seepage_bc>
 <vsfm_satfunc_type>smooth_brooks_corey_bz3</vsfm_satfunc_type>
 <vsfm_use_dynamic_linesearch>.false.</vsfm_use_dynamic_linesearch>
+<vsfm_lateral_model_type>none</vsfm_lateral_model_type>
+
+<!-- ========================================================================================  -->
+<!-- PETSc-based thermal model default                                                         -->
+<!-- ========================================================================================  -->
+<use_petsc_thermal_model>.false.</use_petsc_thermal_model>
 
 <!-- ================================================================== -->
 <!-- The default filenames are given relative to the root directory
@@ -1767,6 +1776,12 @@ this mask will have smb calculated over the entire global land surface
 
 <use_aereoxid_prog use_ed=".true.">.true.</use_aereoxid_prog>
 <use_aereoxid_prog use_cn=".true.">.true.</use_aereoxid_prog>
+
+<!-- =========================================  -->
+<!-- Defaults for lateral grid connectivity     -->
+<!-- =========================================  -->
+<lateral_connectivity>.false.</lateral_connectivity>
+<domain_decomposition_method>round_robin</domain_decomposition_method>
 
 <!-- =========================================  -->
 <!-- Defaults for clm_pflotran_inparm interface -->

@@ -1554,6 +1554,19 @@ and pct_nat_pft read from the surface dataset.
 </entry>
 
 <!-- =========================================================================================  -->
+<!-- Namelist options related to lateral grid connectivity
+<!-- ========================================================================================  -->
+<entry id="lateral_connectivity" type="logical" category="clm_initialization"
+       group="clm_inparm" valid_values="" >
+If TRUE setup up lateral grid connectivity in CLM.
+</entry>
+
+<entry id="domain_decomp_type" type="char*256" category="clm_initialization"
+       group="clm_inparm" valid_values="round_robin,graph_partitioning" >
+Specifies the method for decomposing CLM grids across processors.
+</entry>
+
+<!-- =========================================================================================  -->
 <!-- Namelist options related to the bgc & pflotran interface
 <!-- ========================================================================================  -->
 
@@ -1604,6 +1617,29 @@ Type of saturation function used in VSFM.
 <entry id="vsfm_use_dynamic_linesearch"  type="logical" category="default_settings"
        group="clm_inparm" valid_values="">
 Runtime flag to dynamically modify PETSc SNES linesearch option when VSFM fails to converge before cutting the timestep.
+
+<entry id="vsfm_lateral_model_type" type="char*32" category="clm_physics"
+       group="clm_inparm"
+       valid_values="none,source_sink,three_dimensional" >
+Type of lateral flow formulation supported in VSFM.
+    none               = No lateral flow
+    source_sink        = 1D VSFM solution + Lateral flow modeled as source/sink term
+    three_dimensional  = 3D VSFM solution (only supported for serial run)
 </entry>
+
+<entry id=vsfm_include_seepage_bc" type="logical" category="default_settings"
+        group="clm_inparm" valid_values="">
+Runtime flag to add seepage boundary condition on the top soil layer to allow for exfiltration.
+</entry>
+
+<!-- ========================================================================================  -->
+<!-- Namelist options related to PETSc-based thermal model                                     -->
+<!-- ========================================================================================  -->
+
+<entry id="use_petsc_thermal_model" type="logical" category="default_settings"
+        group="clm_inparm" valid_values="">
+Runtime flag to turn on/off PETSc based thermal model.
+</entry>
+
 
 </namelist_definition>

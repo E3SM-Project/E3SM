@@ -30,6 +30,7 @@ module initGridCellsMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public initGridcells ! initialize sub-grid gridcell mapping 
+  public initGhostGridcells
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private set_landunit_veg_compete
@@ -516,5 +517,630 @@ contains
     end if
 
   end subroutine set_landunit_urban
+
+  !------------------------------------------------------------------------
+  subroutine initGhostGridcells()
+    !
+    ! !DESCRIPTION:
+    !   Initialize ghost/halo subgrid categroies.
+    !
+#ifdef USE_PETSC_LIB
+
+    call initGhostLandunits()
+    call initGhostColumns()
+    call initGhostPatch()
+
+    call CheckGhostSubgridHierarchy()
+#endif
+
+  end subroutine initGhostGridcells
+
+#ifdef USE_PETSC_LIB
+  !------------------------------------------------------------------------
+  subroutine initGhostLandunits()
+    !
+    ! !DESCRIPTION:
+    !   Initialize ghost/halo landunits
+    !
+#include <petsc/finclude/petsc.h>
+    !
+    ! !USES
+    use decompMod            , only : get_proc_bounds
+    use subgridWeightsMod    , only : compute_higher_order_weights
+    use domainLateralMod     , only : ldomain_lateral
+    use UnstructuredGridType , only : ScatterDataG2L
+    use landunit_varcon      , only : max_lunit
+    use spmdMod              , only : mpicom
+    use LandunitMod
+    use petscsys
+    !
+    implicit none
+    !
+    ! !LOCAL VARIABLES:
+    type(bounds_type)    :: bounds_proc             ! temporary
+    integer              :: l,g                     ! indicies
+    integer              :: lidx                    ! landunit index
+    integer              :: ltype                   ! landunit type
+    integer              :: ier                     ! error
+    integer              :: max_nlun_local          ! maximum number of landunits per grid cell for local mpi rank
+    integer              :: max_nlun_global         ! maximum number of landunits per grid cell across all mpi ranks
+    integer              :: nvals                   ! number of values per subgrid category
+    integer              :: nblocks                 ! number of values per grid cell
+    integer              :: ndata_send              ! number of data sent by local mpi rank
+    integer              :: ndata_recv              ! number of data received by local mpi rank
+    integer              :: count                   ! temporary
+    integer              :: beg_idx, end_idx        ! begin/end index for accessing values in data_send/data_recv
+    integer  , pointer   :: nlun(:)                 ! number of landunits in grid cell
+    real(r8) , parameter :: FILL_VALUE = -999999.d0 ! temporary
+    real(r8) , pointer   :: values(:)               ! data retrieved/saved for a subgrid category
+    real(r8) , pointer   :: data_send(:)            ! data sent by local mpi rank
+    real(r8) , pointer   :: data_recv(:)            ! data received by local mpi rank
+
+    call get_proc_bounds(bounds_proc)
+
+    ! Compute number of landunits for each grid cell
+    allocate(nlun(bounds_proc%begg:bounds_proc%endg))
+    nlun = 0
+
+    max_nlun_local = 0
+    do l = bounds_proc%begl, bounds_proc%endl
+       g       = lun%gridcell(l)
+       nlun(g) = nlun(g) + 1
+       if (nlun(g) > max_nlun_local) max_nlun_local = nlun(g)
+    enddo
+
+    ! Determine the maximum number of landunits for a grid cell
+    call mpi_allreduce(max_nlun_local, max_nlun_global, 1, MPI_INTEGER, MPI_MAX, mpicom, ier)
+
+    ! Determine the number of data per subgrid category
+    ! and allocate memory to hold the data
+    call NumValuesPerLandunit(nvals)
+    allocate(values(nvals))
+
+    ! Determine the number of data to be sent/received by
+    ! local mpi rank and allocate memory
+    nblocks = max_nlun_global * nvals
+
+    ndata_send = nblocks*ldomain_lateral%ugrid%ngrid_local
+    ndata_recv = nblocks*ldomain_lateral%ugrid%ngrid_ghosted
+
+    allocate(data_send(ndata_send))
+    allocate(data_recv(ndata_recv))
+
+    data_send(:) = FILL_VALUE
+
+    ! Aggregate the data to send
+    nlun = 0
+    do l = bounds_proc%begl, bounds_proc%endl
+
+       g       = lun%gridcell(l)
+       beg_idx = (g-bounds_proc%begg)*nblocks + nlun(g)*nvals + 1
+       end_idx = beg_idx + nvals - 1
+
+       values(:) = FILL_VALUE
+       call GetValuesForLandunit(l, values)
+
+       data_send(beg_idx:end_idx) = values(1:nvals)
+
+       nlun(g) = nlun(g) + 1
+    enddo
+    deallocate(nlun)
+
+    ! Scatter: Global-to-Local
+    call ScatterDataG2L(ldomain_lateral%ugrid, &
+         nblocks, ndata_send, data_send, ndata_recv, data_recv)
+
+    ! Save data for ghost subgrid category
+    l = bounds_proc%endl
+    do ltype = 1, max_lunit
+       do g = bounds_proc%endg + 1, bounds_proc%endg + ldomain_lateral%ugrid%ngrid_ghost
+
+          do lidx = 0, max_nlun_local-1
+
+             beg_idx = (g-bounds_proc%begg)*nblocks + lidx*nvals + 1
+             end_idx = beg_idx + nvals - 1
+
+             if (data_recv(beg_idx) /= FILL_VALUE) then
+                l = l + 1
+
+                values(1:nvals) = data_recv(beg_idx:end_idx)
+                call SetValuesForLandunit(l, values)
+
+                if (lun%itype(l) /= ltype) then
+                   l = l - 1
+                else
+
+                   ! Correct the local grid cell index
+                   lun%gridcell(l) = g
+
+                   ! Correct the indices of column associated with the landunit
+                   count       = lun%colf(l) - lun%coli(l)
+                   lun%coli(l) = lun%colf(l-1) + 1
+                   lun%colf(l) = lun%coli(l) + count
+
+                   ! Correct the indices of PFT associated with the landunit
+                   count       = lun%pftf(l) - lun%pfti(l)
+                   lun%pfti(l) = lun%pftf(l-1) + 1
+                   lun%pftf(l) = lun%pfti(l) + count
+                endif
+             endif
+
+          enddo
+       enddo
+    enddo
+
+    deallocate(values)
+    deallocate(data_send)
+    deallocate(data_recv)
+
+  end subroutine initGhostLandunits
+
+  !------------------------------------------------------------------------
+  subroutine initGhostColumns()
+    !
+    ! !DESCRIPTION:
+    !   Initialize ghost/halo columns
+    !
+#include <petsc/finclude/petsc.h>
+    !
+    ! !USES
+    use decompMod            , only : get_proc_bounds
+    use subgridWeightsMod    , only : compute_higher_order_weights
+    use domainLateralMod     , only : ldomain_lateral
+    use UnstructuredGridType , only : ScatterDataG2L
+    use landunit_varcon      , only : max_lunit
+    use spmdMod              , only : mpicom
+    use ColumnMod
+    use petscsys
+    !
+    implicit none
+    !
+    ! !LOCAL VARIABLES:
+    type(bounds_type)   :: bounds_proc             ! temporary
+    integer             :: c,g,l                   ! indices
+    integer             :: cidx, lidx              ! column/landunit index
+    integer             :: ltype                   ! landunit type
+    integer             :: col_ltype               ! landunit type of the column
+    integer             :: ier                     ! error
+    integer             :: ndata_send              ! number of data sent by local mpi rank
+    integer             :: ndata_recv              ! number of data received by local mpi rank
+    integer             :: max_ncol_local          ! maximum number of columns per grid cell for local mpi rank
+    integer             :: max_ncol_global         ! maximum number of columns per grid cell across all mpi ranks
+    integer             :: nblocks                 ! number of values per grid cell
+    integer             :: nvals_col               ! number of values per subgrid category
+    integer             :: nvals                   ! number of values per subgrid category + additional values
+    integer             :: count                   ! temporary
+    integer             :: beg_idx, end_idx        ! begin/end index for accessing values in data_send/data_recv
+    integer, pointer    :: ncol(:)                 ! number of columns in grid cell
+    integer, pointer    :: landunit_index(:,:)     ! index of the first landunit of a given landunit_itype within a grid cell
+    real(r8), pointer   :: values(:)               ! data retrieved/saved for a subgrid category
+    real(r8), parameter :: FILL_VALUE = -999999.d0 ! temporary
+    real(r8) , pointer  :: data_send(:)            ! data sent by local mpi rank
+    real(r8) , pointer  :: data_recv(:)            ! data received by local mpi rank
+    real(r8) , pointer  :: lun_rank(:)             ! rank of a landunit in a given grid cell for a given landunit type
+    real(r8) , pointer  :: grid_count(:)           ! temporary
+    integer             :: l_rank                  ! rank of landunit
+    integer             :: last_lun_type           ! temporary
+
+    call get_proc_bounds(bounds_proc)
+
+    ! Compute index of the first landunit for a given landunit_itype within a grid cell
+    allocate(landunit_index(bounds_proc%begg:bounds_proc%endg+ldomain_lateral%ugrid%ngrid_ghost,max_lunit))
+    landunit_index = 0
+
+    do lidx = bounds_proc%begl_all,  bounds_proc%endl_all
+       if (landunit_index(lun%gridcell(lidx),lun%itype(lidx)) == 0) then
+          landunit_index(lun%gridcell(lidx),lun%itype(lidx)) = lidx
+       endif
+    enddo
+
+    ! Compute number of columns for each grid cell
+    allocate(ncol(bounds_proc%begg:bounds_proc%endg))
+    ncol = 0
+
+    max_ncol_local = 0
+    do c = bounds_proc%begc, bounds_proc%endc
+       g       = col%gridcell(c)
+       ncol(g) = ncol(g) + 1
+       if (ncol(g) > max_ncol_local) max_ncol_local = ncol(g)
+    enddo
+
+    ! Determine the maximum number of columns for a grid cell
+    call mpi_allreduce(max_ncol_local, max_ncol_global, 1, MPI_INTEGER, MPI_MAX, mpicom, ier)
+
+    ! Determine the number of data per subgrid category
+    ! and allocate memory to hold the data
+    call NumValuesPerColumn(nvals_col)
+    allocate(values(nvals_col))
+
+    ! Determine the total number of data per subgrid category
+    nvals   = nvals_col + 2
+
+    ! Determine the number of data to be sent/received by
+    ! local mpi rank and allocate memory
+    nblocks = max_ncol_global * nvals
+
+    ndata_send = nblocks*ldomain_lateral%ugrid%ngrid_local
+    ndata_recv = nblocks*ldomain_lateral%ugrid%ngrid_ghosted
+
+    allocate(data_send(ndata_send))
+    allocate(data_recv(ndata_recv))
+
+    data_send(:) = FILL_VALUE
+
+    ! Determine the rank of first landunit for a given grid cell
+    ! and given landunit type
+    !
+    ! NOTE: Assumption is that for subgrid category are contigously allocated
+    !       for a given landunit type.
+    !
+    allocate(lun_rank  (bounds_proc%begl_all:bounds_proc%endl_all))
+    allocate(grid_count(bounds_proc%begg_all:bounds_proc%endg_all))
+
+    lun_rank(:)   = 0.d0
+    grid_count(:) = 0.d0
+    last_lun_type   = -1
+    do l = bounds_proc%begl_all, bounds_proc%endl_all
+       g             = lun%gridcell(l)
+       if (last_lun_type /= lun%itype(l)) then
+          grid_count(:) = 0.d0
+          last_lun_type = lun%itype(l)
+       endif
+       grid_count(g) = grid_count(g) + 1.d0
+       lun_rank(l)   = grid_count(g)
+    enddo
+
+    ! Aggregate the data to send
+    ncol = 0
+    do c = bounds_proc%begc, bounds_proc%endc
+
+       g = col%gridcell(c)
+       l = col%landunit(c)
+
+       beg_idx            = (g-bounds_proc%begg)*nblocks + ncol(g)*nvals + 1
+       data_send(beg_idx) = real(lun%itype(l))
+
+       beg_idx            = beg_idx + 1
+       data_send(beg_idx) = lun_rank(l)
+
+       beg_idx = beg_idx + 1
+       end_idx = beg_idx + nvals_col - 1
+
+       values(:) = FILL_VALUE
+
+       call GetValuesForColumn(c, values)
+       data_send(beg_idx:end_idx) = values(1:nvals_col)
+
+       ncol(g) = ncol(g) + 1
+    enddo
+    deallocate(ncol)
+
+    ! Scatter: Global-to-Local
+    call ScatterDataG2L(ldomain_lateral%ugrid, &
+         nblocks, ndata_send, data_send, ndata_recv, data_recv)
+
+    ! Save data for ghost subgrid category
+    c = bounds_proc%endc
+    do ltype = 1, max_lunit
+       do g = bounds_proc%endg + 1, bounds_proc%endg + ldomain_lateral%ugrid%ngrid_ghost
+
+          do cidx = 0, max_ncol_local-1
+
+             beg_idx = (g-bounds_proc%begg)*nblocks + cidx*nvals + 1
+
+             col_ltype = int(data_recv(beg_idx))
+
+             beg_idx  = beg_idx + 1
+             l_rank   = int(data_recv(beg_idx))
+
+             beg_idx = beg_idx + 1
+             end_idx = beg_idx + nvals_col - 1
+
+             if (data_recv(beg_idx) /= FILL_VALUE .and. col_ltype == ltype) then
+                c         = c + 1
+                values(1:nvals_col) = data_recv(beg_idx:end_idx)
+                call SetValuesForColumn(c, values)
+
+                col%landunit(c) = landunit_index(g,ltype) + l_rank - 1
+                col%gridcell(c) = g
+
+                ! Correct the indices of PFT associated with the landunit
+                count       = col%pftf(c) - col%pfti(c)
+                col%pfti(c) = col%pftf(c-1) + 1
+                col%pftf(c) = col%pfti(c) + count
+
+             endif
+          enddo
+       enddo
+    enddo
+
+    deallocate(values)
+    deallocate(data_send)
+    deallocate(data_recv)
+
+  end subroutine initGhostColumns
+
+  !------------------------------------------------------------------------
+  subroutine initGhostPatch()
+    !
+    ! !DESCRIPTION:
+    !   Initialize ghost/halo patch
+    !
+#include <petsc/finclude/petsc.h>
+    !
+    ! !USES
+    use petscsys
+    use decompMod            , only : get_proc_bounds
+    use subgridWeightsMod    , only : compute_higher_order_weights
+    use domainLateralMod     , only : ldomain_lateral
+    use UnstructuredGridType , only : ScatterDataG2L
+    use landunit_varcon      , only : max_lunit
+    use spmdMod              , only : mpicom
+    use PatchMod
+    use petscsys
+    !
+    implicit none
+    !
+    ! !LOCAL VARIABLES:
+    type(bounds_type)    :: bounds_proc             ! temporary
+    integer              :: p,c,l,g                 ! indices
+    integer              :: pidx, cidx, lidx        ! patch/column/landunit index
+    integer              :: ctype, ltype            ! column/landunit type
+    integer              :: ier                     ! error
+    integer , pointer    :: npft(:)                 ! number of pft in a grid cell
+    integer , pointer    :: landunit_index(:,:)     ! index of the first landunit of a given landunit_itype within a grid cell
+    integer              :: max_npft_local          ! maximum number of columns per grid cell for local mpi rank
+    integer              :: max_npft_global         ! maximum number of columns per grid cell across all mpi ranks
+    integer              :: nblocks                 ! number of values per grid cell
+    integer              :: nvals_pft               ! number of values per subgrid category
+    integer              :: nvals                   ! number of values per subgrid category + additional values
+    integer              :: ndata_send              ! number of data sent by local mpi rank
+    integer              :: ndata_recv              ! number of data received by local mpi rank
+    integer              :: c_rank, l_rank          ! column/landunit rank
+    integer              :: col_type, lun_type      ! column/landunit type
+    integer              :: last_lun_type           ! temporary
+    integer              :: count                   ! temporary
+    integer              :: beg_idx, end_idx        ! begin/end index for accessing values in data_send/data_recv
+    integer              :: col_ltype               ! landunit type of the column
+    real(r8) , pointer   :: values(:)               ! data retrieved/saved for a subgrid category
+    real(r8) , parameter :: FILL_VALUE = -999999.d0 ! temporary
+    real(r8) , pointer   :: data_send(:)            ! data sent by local mpi rank
+    real(r8) , pointer   :: data_recv(:)            ! data received by local mpi rank
+    real(r8) , pointer   :: col_rank(:)             ! rank of a column in a given grid cell for a given column type
+    real(r8) , pointer   :: lun_rank(:)             ! rank of a landunit in a given grid cell for a given landunit type
+    real(r8) , pointer   :: grid_count(:)           ! temporary
+
+    call get_proc_bounds(bounds_proc)
+
+    ! Compute index of the first landunit for a given landunit_itype within a grid cell
+    allocate(landunit_index(bounds_proc%begg:bounds_proc%endg+ldomain_lateral%ugrid%ngrid_ghost,max_lunit))
+    landunit_index = 0
+
+    do lidx = bounds_proc%begl_all,  bounds_proc%endl_all
+       if (landunit_index(lun%gridcell(lidx),lun%itype(lidx)) == 0) then
+          landunit_index(lun%gridcell(lidx),lun%itype(lidx)) = lidx
+       endif
+    enddo
+
+    ! Compute number of PFTs for each grid cell
+    allocate(npft(bounds_proc%begg:bounds_proc%endg))
+    npft = 0
+
+    max_npft_local = 0
+    do p = bounds_proc%begp, bounds_proc%endp
+       g       = pft%gridcell(p)
+       npft(g) = npft(g) + 1
+       if (npft(g) > max_npft_local) max_npft_local = npft(g)
+    enddo
+
+    ! Determine the maximum number of patchs for a grid cell
+    call mpi_allreduce(max_npft_local, max_npft_global, 1, MPI_INTEGER, MPI_MAX, mpicom, ier)
+
+    ! Determine the number of data per subgrid category
+    ! and allocate memory to hold the data
+    call NumValuesPerPatch(nvals_pft)
+    allocate(values(nvals_pft))
+
+    ! Determine the total number of data per subgrid category
+    nvals   = nvals_pft + 4
+
+    ! Determine the number of data to be sent/received by
+    ! local mpi rank and allocate memory
+    nblocks = max_npft_global*nvals
+
+    ndata_send = nblocks*ldomain_lateral%ugrid%ngrid_local
+    ndata_recv = nblocks*ldomain_lateral%ugrid%ngrid_ghosted
+
+    allocate(data_send(ndata_send))
+    allocate(data_recv(ndata_recv))
+
+    data_send(:) = FILL_VALUE
+
+    ! Determine the rank of first landunit/column for a given grid cell
+    ! and given landunit/column type
+    !
+    ! NOTE: Assumption is that for subgrid category are contigously allocated
+    !       for a given landunit type.
+    !
+    allocate(col_rank  (bounds_proc%begc_all:bounds_proc%endc_all))
+    allocate(lun_rank  (bounds_proc%begl_all:bounds_proc%endl_all))
+    allocate(grid_count(bounds_proc%begg_all:bounds_proc%endg_all))
+
+    lun_rank(:)   = 0.d0
+    grid_count(:) = 0.d0
+    last_lun_type   = -1
+    do l = bounds_proc%begl_all, bounds_proc%endl_all
+       g             = lun%gridcell(l)
+       if (last_lun_type /= lun%itype(l)) then
+          grid_count(:) = 0.d0
+          last_lun_type = lun%itype(l)
+       endif
+       grid_count(g) = grid_count(g) + 1.d0
+       lun_rank(l)   = grid_count(g)
+    enddo
+
+    col_rank(:)   = 0.d0
+    grid_count(:) = 0.d0
+    last_lun_type   = -1
+    do c = bounds_proc%begc_all, bounds_proc%endc_all
+       g             = col%gridcell(c)
+       if (last_lun_type /= lun%itype(col%landunit(c))) then
+          grid_count(:) = 0.d0
+          last_lun_type = lun%itype(col%landunit(c))
+       endif
+       grid_count(g) = grid_count(g) + 1.d0
+       col_rank(c)   = grid_count(g)
+    enddo
+
+    ! Aggregate the data to send
+    npft = 0
+    do p = bounds_proc%begp, bounds_proc%endp
+
+       g = pft%gridcell(p)
+       l = pft%landunit(p)
+       c = pft%column(p)
+
+       beg_idx            = (g-bounds_proc%begg)*nblocks + npft(g)*nvals + 1
+       ctype              = col%itype(pft%column(p))
+       data_send(beg_idx) = real(ctype)
+
+       beg_idx            = beg_idx + 1
+       ltype              = lun%itype(pft%landunit(p))
+       data_send(beg_idx) = real(ltype)
+
+       beg_idx            = beg_idx + 1
+       data_send(beg_idx) = col_rank(c)
+
+       beg_idx            = beg_idx + 1
+       data_send(beg_idx) = lun_rank(l)
+
+       beg_idx = beg_idx + 1
+       end_idx = beg_idx + nvals_pft - 1
+
+       values(:) = FILL_VALUE
+
+       call GetValuesForPatch(p, values)
+       data_send(beg_idx:end_idx) = values(1:nvals_pft)
+
+       npft(g) = npft(g) + 1
+
+    enddo
+
+    ! Scatter: Global-to-Local
+    call ScatterDataG2L(ldomain_lateral%ugrid, &
+         nblocks, ndata_send, data_send, ndata_recv, data_recv)
+
+    ! Save data for ghost subgrid category
+    p = bounds_proc%endp
+
+    do ltype = 1, max_lunit
+       do g = bounds_proc%endg + 1, bounds_proc%endg + ldomain_lateral%ugrid%ngrid_ghost
+
+          do pidx = 0, max_npft_local-1
+             beg_idx = (g-bounds_proc%begg)*nblocks  + pidx*nvals + 1
+             col_type = int(data_recv(beg_idx))
+
+             beg_idx  = beg_idx + 1
+             lun_type = int(data_recv(beg_idx))
+
+             beg_idx  = beg_idx + 1
+             c_rank   = int(data_recv(beg_idx))
+
+             beg_idx  = beg_idx + 1
+             l_rank   = int(data_recv(beg_idx))
+
+             beg_idx = beg_idx + 1
+             end_idx = beg_idx + nvals_pft - 1
+
+             if (data_recv(beg_idx) /= FILL_VALUE .and. lun_type == ltype) then
+
+                p = p + 1
+                values(1:nvals_pft) = data_recv(beg_idx:end_idx)
+                call SetValuesForPatch(p, values)
+
+                pft%gridcell(p) = g
+                pft%landunit(p) = landunit_index(g,ltype) + l_rank - 1
+                pft%column(p)   = lun%coli(pft%landunit(p)) + c_rank - 1
+
+             endif
+
+          enddo
+       enddo
+    enddo
+
+    ! Free up memory
+    deallocate(values)
+    deallocate(landunit_index)
+    deallocate(col_rank)
+    deallocate(lun_rank)
+    deallocate(npft)
+    deallocate(data_send)
+    deallocate(data_recv)
+
+  end subroutine initGhostPatch
+
+  !------------------------------------------------------------------------
+  subroutine CheckGhostSubgridHierarchy()
+    !
+    ! !DESCRIPTION:
+    !   Perform a check to ensure begin/end indices of subgrid hierarchy
+    !   are assigned correctly.
+    !
+    ! !USES
+    use decompMod         , only : get_proc_bounds
+    use clm_varcon, only : ispval
+    !
+    ! !LOCAL VARIABLES:
+    type(bounds_type) :: bounds_proc
+    integer           :: l,c,p
+    integer           :: curg, ltype
+
+    call get_proc_bounds(bounds_proc)
+
+    grc%landunit_indices(:,bounds_proc%endg + 1:bounds_proc%endg_all) = ispval
+
+    do l = bounds_proc%endl + 1 ,bounds_proc%endl_all
+       ltype = lun%itype(l)
+       curg  = lun%gridcell(l)
+       if (curg < bounds_proc%begg_all .or. curg > bounds_proc%endg_all) then
+          write(iulog,*) 'ERROR: landunit_indices ', l,curg,bounds_proc%begg_all,bounds_proc%endg_all
+          call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+       end if
+
+       if (grc%landunit_indices(ltype, curg) == ispval) then
+          grc%landunit_indices(ltype, curg) = l
+       else
+          write(iulog,*) 'CheckGhostSubgridHierarchy ERROR: This landunit type has already been set for this gridcell'
+          write(iulog,*) 'l, ltype, curg = ', l, ltype, curg
+          call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+       end if
+    end do
+
+    do l = bounds_proc%endl + 1, bounds_proc%endl_all
+
+       do c = lun%coli(l), lun%colf(l)
+          if (col%landunit(c) /= l) then
+             call endrun(msg="ERROR col%landunit(c) /= l "//errmsg(__FILE__, __LINE__))
+          endif
+       enddo
+
+       do p = lun%pfti(l), lun%pftf(l)
+          if (pft%landunit(p) /= l) then
+             call endrun(msg="ERROR pft%landunit(c) /= l "//errmsg(__FILE__, __LINE__))
+             stop
+          endif
+       enddo
+    enddo
+
+    do c = bounds_proc%endc + 1, bounds_proc%endc_all
+       do p = col%pfti(c), col%pftf(c)
+          if (pft%column(p) /= c) then
+             call endrun(msg="ERROR pft%column(c) /= c "//errmsg(__FILE__, __LINE__))
+          endif
+       enddo
+    enddo
+
+  end subroutine CheckGhostSubgridHierarchy
+#endif ! #ifdef USE_PETSC_LIB
 
 end module initGridCellsMod

@@ -12,3 +12,7 @@
 [submodule "components/clm/src/external_models/fates"]
 	path = components/clm/src/external_models/fates
 	url = git@github.com:ACME-Climate/fates.git
+[submodule "alm-mpp"]
+	path = components/clm/src/external_models/mpp
+	url = git@github.com:ACME-Climate/mpp.git
+	branch = alm/develop

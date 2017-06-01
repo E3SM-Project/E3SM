@@ -243,7 +243,14 @@ contains
     namelist /clm_inparm/ use_dynroot
 
     namelist /clm_inparm / &
-         use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch
+         use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch, &
+         vsfm_lateral_model_type, vsfm_include_seepage_bc
+
+    namelist /clm_inparm/ &
+       lateral_connectivity, domain_decomp_type
+
+    namelist /clm_inparm/ &
+         use_petsc_thermal_model
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -490,7 +497,7 @@ contains
        end if
     end if
 
-    ! Consistency settings for co2 type
+    ! Consistency settings for vsfm settings
     if (vsfm_satfunc_type /= 'brooks_corey'             .and. &
         vsfm_satfunc_type /= 'smooth_brooks_corey_bz2'  .and. &
         vsfm_satfunc_type /= 'smooth_brooks_corey_bz3'  .and. &
@@ -500,6 +507,29 @@ contains
             'smooth_brooks_corey_bz3 or van_genuchten'//&
             errMsg(__FILE__, __LINE__))
     end if
+
+    if (vsfm_lateral_model_type /= 'none'        .and. &
+        vsfm_lateral_model_type /= 'source_sink' .and. &
+        vsfm_lateral_model_type /= 'three_dimensional' ) then
+       write(iulog,*)'vsfm_lateral_model_type = ',trim(vsfm_lateral_model_type), ' is not supported'
+       call endrun(msg=' ERROR:: choices are source_sink or three_dimensional ' // &
+            errMsg(__FILE__, __LINE__))
+    endif
+
+    ! Lateral connectivity
+    if (.not.lateral_connectivity) then
+
+       if (vsfm_lateral_model_type /= 'none') then
+          call endrun(msg=' ERROR:: Lateral flow in VSFM requires lateral_connectivity to be true '// &
+               errMsg(__FILE__, __LINE__))
+       endif
+
+       if (trim(domain_decomp_type) == 'graph_partitioning') then
+          call endrun(msg=' ERROR: domain_decomp_type = graph_partitioning requires ' // &
+               'lateral_connectivity to be true.'                                     // &
+               errMsg(__FILE__, __LINE__))
+       endif
+    endif
 
     if (masterproc) then
        write(iulog,*) 'Successfully initialized run control settings'
@@ -699,6 +729,10 @@ contains
 
     call mpi_bcast (clump_pproc, 1, MPI_INTEGER, 0, mpicom, ier)
 
+    ! lateral connectivity
+    call mpi_bcast (lateral_connectivity, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (domain_decomp_type, len(domain_decomp_type), MPI_CHARACTER, 0, mpicom, ier)
+
     ! bgc & pflotran interface
     call mpi_bcast (use_bgc_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_clm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -714,9 +748,15 @@ contains
 
     ! VSFM variable
 
-    call mpi_bcast (use_vsfm, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (vsfm_satfunc_type, len(vsfm_satfunc_type), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (use_vsfm                   , 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (vsfm_use_dynamic_linesearch, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (vsfm_include_seepage_bc    , 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    call mpi_bcast (vsfm_satfunc_type      , len(vsfm_satfunc_type)      , MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (vsfm_lateral_model_type, len(vsfm_lateral_model_type), MPI_CHARACTER, 0, mpicom, ier)
+
+    ! PETSc-based thermal model
+    call mpi_bcast (use_petsc_thermal_model, 1, MPI_LOGICAL, 0, mpicom, ier)
 
   end subroutine control_spmd
 
@@ -931,6 +971,7 @@ contains
        write(iulog,*) 'VSFM Namelists:'
        write(iulog, *) '  vsfm_satfunc_type                                      : ', vsfm_satfunc_type
        write(iulog, *) '  vsfm_use_dynamic_linesearch                            : ', vsfm_use_dynamic_linesearch
+       write(iulog,*) '  vsfm_lateral_model_type                                 : ', vsfm_lateral_model_type
     endif
 
   end subroutine control_print
