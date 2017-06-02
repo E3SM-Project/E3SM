@@ -428,6 +428,8 @@ end function radiation_nextsw_cday
                                                                                  sampling_seq='rad_lwsw')
           call addfld('FSNTOAC'//diag(icall),  horiz_only,     'A', 'W/m2', 'Clearsky net solar flux at top of atmosphere', &
                                                                                  sampling_seq='rad_lwsw')
+          call addfld('FSUTOAC'//diag(icall),  horiz_only,     'A',  'W/m2', 'Clearsky upwelling solar flux at top of atmosphere', &
+                                                                                 sampling_seq='rad_lwsw')
           call addfld('FSN200'//diag(icall),  horiz_only,     'A',  'W/m2', 'Net shortwave flux at 200 mb', &
                                                                                  sampling_seq='rad_lwsw')
           call addfld('FSN200C'//diag(icall),  horiz_only,     'A', 'W/m2', 'Clearsky net shortwave flux at 200 mb', &
@@ -460,6 +462,7 @@ end function radiation_nextsw_cday
              call add_default('FSNTOA'//diag(icall),  1, ' ')
              call add_default('FSUTOA'//diag(icall),  1, ' ')
              call add_default('FSNTOAC'//diag(icall), 1, ' ')
+             call add_default('FSUTOAC'//diag(icall), 1, ' ')
              call add_default('FSNTC'//diag(icall),   1, ' ')
              call add_default('FSNSC'//diag(icall),   1, ' ')
              call add_default('FSDSC'//diag(icall),   1, ' ')
@@ -616,7 +619,7 @@ end function radiation_nextsw_cday
     !-----------------------------------------------------------------------
 
 
-    use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx
+    use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx, pbuf_get_index, pbuf_set_field
     
     use phys_grid,       only: get_rlat_all_p, get_rlon_all_p
     use physics_types,   only: physics_state, physics_ptend
@@ -648,6 +651,7 @@ end function radiation_nextsw_cday
     use radiation_data,   only: output_rad_data
     use rrtmg_state, only: rrtmg_state_create, rrtmg_state_update, rrtmg_state_destroy, rrtmg_state_t, num_rrtmg_levs
     use orbit,            only: zenith
+    use output_aerocom_aie , only: do_aerocom_ind3
 
     ! Arguments
     real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
@@ -821,6 +825,14 @@ end function radiation_nextsw_cday
 
     type(rrtmg_state_t), pointer :: r_state ! contains the atm concentratiosn in layers needed for RRTMG
 
+! AeroCOM IND3 output +++mhwang
+    real(r8) ::  aod400(pcols)        ! AOD at 400 nm 
+    real(r8) ::  aod700(pcols)        ! AOD at 700 nm
+    real(r8) ::  angstrm(pcols)       ! Angstrom coefficient
+    real(r8) ::  aerindex(pcols)      ! Aerosol index
+    integer aod400_idx, aod700_idx, cld_tau_idx
+
+
     character(*), parameter :: name = 'radiation_tend'
 !----------------------------------------------------------------------
 
@@ -848,7 +860,11 @@ end function radiation_nextsw_cday
       call pbuf_get_field(pbuf, lu_idx, lu)
       call pbuf_get_field(pbuf, ld_idx, ld)
     end if
-    
+ 
+    if (do_aerocom_ind3) then
+      cld_tau_idx = pbuf_get_index('cld_tau')
+    end if
+   
 !  For CRM, make cloud equal to input observations:
     if (single_column.and.scm_crm_mode.and.have_cld) then
        do k = 1,pver
@@ -962,6 +978,11 @@ end function radiation_nextsw_cday
              c_cld_tau_w_g(1:nbndsw,1:ncol,:)= cld_tau_w_g(:,1:ncol,:)
              c_cld_tau_w_f(1:nbndsw,1:ncol,:)= cld_tau_w_f(:,1:ncol,:)
           endif
+
+          if(do_aerocom_ind3) then
+             call pbuf_set_field(pbuf,cld_tau_idx,cld_tau(rrtmg_sw_cloudsim_band, :, :))                   
+          end if
+
        endif
 
        if (dolw) then
@@ -1076,6 +1097,41 @@ end function radiation_nextsw_cday
                   do i=1,ncol
                      swcf(i)=fsntoa(i) - fsntoac(i)
                   end do
+
+                  if(do_aerocom_ind3) then
+                    aerindex = 0.0
+                    angstrm = 0.0
+                    aod400 = 0.0
+                    aod700 = 0.0
+                    do i=1, ncol
+                       aod400(i) = sum(aer_tau(i, :, idx_sw_diag+1))
+                       aod700(i) = sum(aer_tau(i, :, idx_sw_diag-1))
+                       if(aod400(i).lt.1.0e4 .and. aod700(i).lt.1.e4  .and. &
+                          aod400(i).gt.1.0e-10 .and. aod700(i).gt.1.0e-10) then
+                          angstrm(i) = (log (aod400(i))-log(aod700(i)))/(log(0.700)-log(0.400))                               
+                       else
+                          angstrm(i) = fillvalue
+                       end if
+                       if(angstrm(i).ne.fillvalue) then 
+                          aerindex(i) = angstrm(i)*sum(aer_tau(i,:,idx_sw_diag))
+                       else 
+                          aerindex(i) = fillvalue
+                       end if
+                    end do 
+                    do i = 1, nnite
+                       angstrm(idxnite(i)) = fillvalue
+                       aod400(idxnite(i)) = fillvalue
+                       aod700(idxnite(i)) = fillvalue
+                       aerindex(idxnite(i)) = fillvalue
+                    end do
+                    if(icall.eq.0) then ! only for climatology run
+                       call outfld('angstrm', angstrm, pcols, lchnk)
+                       call outfld('aod400', aod400, pcols, lchnk)
+                       call outfld('aod700', aod700, pcols, lchnk)
+                       call outfld('aerindex', aerindex, pcols, lchnk)
+                    end if
+                  end if
+
                   ! Dump shortwave radiation information to history tape buffer (diagnostics)
                   ftem(:ncol,:pver) = qrs(:ncol,:pver)/cpair
                   call outfld('QRS'//diag(icall),ftem  ,pcols,lchnk)
@@ -1094,6 +1150,7 @@ end function radiation_nextsw_cday
                   call outfld('FSNTOA'//diag(icall),fsntoa,pcols,lchnk)
                   call outfld('FSUTOA'//diag(icall),fsutoa,pcols,lchnk)
                   call outfld('FSNTOAC'//diag(icall),fsntoac,pcols,lchnk)
+                  call outfld('FSUTOAC'//diag(icall),fsntoac,pcols,lchnk)
                   call outfld('SOLS'//diag(icall),cam_out%sols  ,pcols,lchnk)
                   call outfld('SOLL'//diag(icall),cam_out%soll  ,pcols,lchnk)
                   call outfld('SOLSD'//diag(icall),cam_out%solsd ,pcols,lchnk)
