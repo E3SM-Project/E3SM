@@ -2750,12 +2750,22 @@ subroutine cldprp(lchnk   , &
             if (mu(i,k) > 0._r8) then
                ql1 = 1._r8/mu(i,k)* (mu(i,k+1)*ql(i,k+1)- &
                      dz(i,k)*du(i,k)*ql(i,k+1)+dz(i,k)*cu(i,k))
-               ql(i,k) = ql1/ (1._r8+dz(i,k)*c0mask(i))
+               !only let ql1 = ql(k) + rprd(k)*dz(k)/mu(k) if ql > 0.0015 2017-06-01
+               if ((ql1/ (1._r8+dz(i,k)*c0mask(i))) > 0.0015_r8) then
+                  ql(i,k) = ql1/ (1._r8+dz(i,k)*c0mask(i))
+               else
+                  ql(i,k)=ql1
+               end if
             else
                ql(i,k) = 0._r8
             end if
             totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-du(i,k)*ql(i,k+1))
-            rprd(i,k) = c0mask(i)*mu(i,k)*ql(i,k)
+            !changes made here to put a threshold on liquid water 2017-06-01
+            if (ql(i,k) > 0.0015_r8) then
+               rprd(i,k) = c0mask(i)*mu(i,k)*ql(i,k)
+            else
+               rprd(i,k) = 0._r8
+            end if
          end if
       end do
    end do
