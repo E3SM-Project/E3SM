@@ -5,15 +5,12 @@ module clm_bgc_interface_data
 ! Created by wgs @ ORNL
 !
 ! date: 8/25/2015
+! update: 9/16/2016, 2/2/2017
 !!=================================================================================================
   !! USES:
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varpar            , only : nlevsno, nlevgrnd
-  use clm_varpar            , only : nlevdecomp_full, ndecomp_pools,  ndecomp_cascade_transitions
-  use clm_varcon            , only : spval
-  use decompMod             , only : bounds_type
 
   implicit none
 !  save
@@ -22,7 +19,7 @@ module clm_bgc_interface_data
   type, public :: clm_bgc_interface_data_type
 
      ! clm_varpar
-     integer                    :: nlevdecomp                               ! num of CLM soil layers that are mapped to/from PFLOTRAN
+     integer                    :: nlevdecomp_full                          ! num of CLM soil layers that are mapped to/from PFLOTRAN
      integer                    :: ndecomp_pools                            ! num of decomposition pools
 
      ! decomp_cascade_con
@@ -30,10 +27,11 @@ module clm_bgc_interface_data
      logical, pointer           :: floating_cp_ratio                (:)     ! TRUE => pool has fixed C:P ratio
      character(len=8), pointer  :: decomp_pool_name                 (:)     ! name of pool
      real(r8), pointer          :: initial_cn_ratio                 (:)     ! c:n ratio for initialization of pools
-     real(r8), pointer          :: initial_cp_ratio                 (:)     ! c:n ratio for initialization of pools
+     real(r8), pointer          :: initial_cp_ratio                 (:)     ! c:p ratio for initialization of pools
 
      ! col:
      real(r8), pointer :: z                                         (:,:)   ! layer depth (m) (-nlevsno+1:nlevgrnd)
+     real(r8), pointer :: zi                                        (:,:)   ! layer depth (m) (-nlevsno+1:nlevgrnd)
      real(r8), pointer :: dz                                        (:,:)   ! layer thickness (m)  (-nlevsno+1:nlevgrnd)
 
      ! soilstate_vars:
@@ -41,7 +39,9 @@ module clm_bgc_interface_data
      real(r8), pointer :: hksat_col                                 (:,:)   ! col hydraulic conductivity at saturation (mm H2O /s)
      real(r8), pointer :: bsw_col                                   (:,:)   ! col Clapp and Hornberger "b" (nlevgrnd)
      real(r8), pointer :: watsat_col                                (:,:)   ! col volumetric soil water at saturation (porosity)
+     real(r8), pointer :: watmin_col                                (:,:)   ! col minimum volumetric soil water (nlevsoi)
      real(r8), pointer :: sucsat_col                                (:,:)   ! col minimum soil suction (mm) (nlevgrnd)
+     real(r8), pointer :: sucmin_col                                (:,:)   ! col minimum allowable soil liquid suction pressure (mm) [Note: sucmin_col is a negative value, while sucsat_col is a positive quantity]
      real(r8), pointer :: watfc_col                                 (:,:)   ! col volumetric soil water at field capacity (nlevsoi)
      real(r8), pointer :: porosity_col                              (:,:)   ! col soil porisity (1-bulk_density/soil_density) (VIC)
      real(r8), pointer :: eff_porosity_col                          (:,:)   ! col effective porosity = porosity - vol_ice (nlevgrnd)
@@ -71,6 +71,10 @@ module clm_bgc_interface_data
      real(r8), pointer  :: conc_o2_unsat_col                        (:,:)   ! col O2 conc in each soil layer (mol/m3) (nlevsoi)
      real(r8), pointer  :: o2_decomp_depth_sat_col                  (:,:)   ! col O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
      real(r8), pointer  :: o2_decomp_depth_unsat_col                (:,:)   ! col O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
+
+     ! cnstate_vars:
+     real(r8) , pointer :: rf_decomp_cascade_col                    (:,:,:) ! col respired fraction in decomposition step (frac)
+     real(r8) , pointer :: pathfrac_decomp_cascade_col              (:,:,:) ! col what fraction of C leaving a given pool passes through a given 
 
      ! carbonstate_vars:
      real(r8), pointer :: decomp_cpools_vr_col                      (:,:,:) ! col (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
@@ -110,6 +114,10 @@ module clm_bgc_interface_data
      real(r8), pointer :: decomp_cascade_sminp_flux_vr_col          (:,:,:) ! col vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
      real(r8), pointer :: sminn_to_denit_decomp_cascade_vr_col      (:,:,:) ! col vertically-resolved denitrification along decomp cascade (gN/m3/s)
      real(r8), pointer :: decomp_cascade_hr_vr_col                  (:,:,:) ! vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+
+     real(r8), pointer :: o_scalar_col                              (:,:)   ! fraction by which decomposition is limited by anoxia
+     real(r8), pointer :: w_scalar_col                              (:,:)   ! fraction by which decomposition is limited by moisture availability
+     real(r8), pointer :: t_scalar_col                              (:,:)   ! fraction by which decomposition is limited by temperature
 
      ! mineralization / immobilization / uptake flux
      real(r8), pointer :: gross_nmin_vr_col                         (:,:)   ! col vertically-resolved gross rate of N mineralization (gN/m3/s)
@@ -184,14 +192,16 @@ module clm_bgc_interface_data
      real(r8), pointer :: externalc_to_decomp_cpools_col            (:,:,:) ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
      real(r8), pointer :: externaln_to_decomp_npools_col            (:,:,:) ! col (gN/m3/s) net N fluxes associated with litter/som-adding/removal to decomp pools
      real(r8), pointer :: externalp_to_decomp_ppools_col            (:,:,:) ! col (gP/m3/s) net P fluxes associated with litter/som-adding/removal to decomp pools
-
+     real(r8), pointer :: decomp_k_pools                            (:)     ! rate constant for each decomposition pool (1./sec)
+     real(r8), pointer :: sitefactor_kd_vr_col                      (:,:)   ! a site factor for adjusting rate constant of all decomposition pools (-) (c,j)
+     real(r8), pointer :: adfactor_kd_pools                         (:)     ! a speed-up factor for adjusting rate constant of individual decomposition pool (-) (k)
+     
      ! bgc rates/fluxes (previous time-step) to nh4 / no3
      real(r8), pointer :: externaln_to_nh4_col                      (:,:)   ! col (gN/m3/s) net N fluxes to nh4 pool: deposition + fertilization + supplement + nfix + soyfixn
      real(r8), pointer :: externaln_to_no3_col                      (:,:)   ! col (gN/m3/s) net N fluxes to no3 pool: deposition + fertilization + supplement
      real(r8), pointer :: externaln_to_sminn_col                    (:,:)   ! col (gN/m3/s) net N fluxes to sminn pool: deposition + fertilization + supplement + nfix + soyfixn
      real(r8), pointer :: smin_no3_leached_vr_col                   (:,:)   ! col vertically-resolved soil mineral NO3 loss to leaching (gN/m3/s)
      real(r8), pointer :: smin_no3_runoff_vr_col                    (:,:)   ! col vertically-resolved rate of mineral NO3 loss with runoff (gN/m3/s)
-     real(r8), pointer :: no3_net_transport_vr_col                  (:,:)   ! col net NO3 transport associated with runoff/leaching (gN/m3/s)
 
      ! bgc rates/fluxes (previous time-step) to mineral P
      real(r8), pointer :: externalp_to_primp_col                    (:,:)   ! pdep_to_sminp_col                         (:)     ! col atmospheric P deposition to soil mineral P (gP/m2/s)
@@ -204,6 +214,10 @@ module clm_bgc_interface_data
      real(r8), pointer :: f_ngas_decomp_vr_col                      (:,:)   ! col vertically-resolved N emission from excess mineral N pool due to mineralization (gN/m3/s)
      real(r8), pointer :: f_ngas_nitri_vr_col                       (:,:)   ! col vertically-resolved N emission from nitrification (gN/m3/s)
      real(r8), pointer :: f_ngas_denit_vr_col                       (:,:)   ! col vertically-resolved N emission from denitrification (gN/m3/s)
+
+     ! aq. phases:
+     real(r8), pointer :: no3_net_transport_vr_col                  (:,:)   ! col net NO3 transport associated with runoff/leaching (gN/m3/s) - also store PF's N transport inc. diffusion at current time-step
+     real(r8), pointer :: nh4_net_transport_vr_col                  (:,:)   ! col net NH4 transport associated with runoff/leaching (gN/m3/s) - also store PF's N transport inc. diffusion at current time-step
 
      ! waterflux_vars:
      real(r8), pointer :: qflx_top_soil_col                         (:)     ! col net water input into soil from top (mm/s)
@@ -242,6 +256,7 @@ contains
 
 !!-------------------------------------------------------------------------------------------------
   subroutine Init(this, bounds)
+     use decompMod               , only : bounds_type
      class(clm_bgc_interface_data_type) :: this
      type(bounds_type), intent(in)      :: bounds
 
@@ -253,12 +268,15 @@ contains
 
   subroutine InitAllocate(this, bounds)
     !! USES
-
+    use clm_varpar            , only : nlevsno, nlevgrnd
+    use clm_varpar            , only : nlevdecomp_full, ndecomp_pools,  ndecomp_cascade_transitions
+    use clm_varcon            , only : spval
+    use decompMod             , only : bounds_type
 
     !! ARGUMENTS:
     real(r8) :: ival  = 0.0_r8  ! initial value
-    class(clm_bgc_interface_data_type) :: this
-    type(bounds_type), intent(in) :: bounds
+    class(clm_bgc_interface_data_type)  :: this
+    type(bounds_type), intent(in)       :: bounds
 
     !! LOCAL VARIABLES:
     integer  :: begg, endg
@@ -278,13 +296,16 @@ contains
 
     ! col:
     allocate(this%z                     (begc:endc,-nlevsno+1:nlevgrnd))    ; this%z                    (:,:) = nan
+    allocate(this%zi                    (begc:endc,-nlevsno+0:nlevgrnd))    ; this%zi                   (:,:) = nan
     allocate(this%dz                    (begc:endc,-nlevsno+1:nlevgrnd))    ; this%dz                   (:,:) = nan
     ! soilstate_vars:
     allocate(this%bd_col                (begc:endc,nlevgrnd))               ; this%bd_col               (:,:) = nan
     allocate(this%hksat_col             (begc:endc,nlevgrnd))               ; this%hksat_col            (:,:) = spval
     allocate(this%bsw_col               (begc:endc,nlevgrnd))               ; this%bsw_col              (:,:) = nan
     allocate(this%watsat_col            (begc:endc,nlevgrnd))               ; this%watsat_col           (:,:) = nan
+    allocate(this%watmin_col            (begc:endc,nlevgrnd))               ; this%watmin_col           (:,:) = nan
     allocate(this%sucsat_col            (begc:endc,nlevgrnd))               ; this%sucsat_col           (:,:) = spval
+    allocate(this%sucmin_col            (begc:endc,nlevgrnd))               ; this%sucmin_col           (:,:) = spval
     allocate(this%watfc_col             (begc:endc,nlevgrnd))               ; this%watfc_col            (:,:) = nan
     allocate(this%porosity_col          (begc:endc,nlevgrnd))               ; this%porosity_col         (:,:) = spval
     allocate(this%eff_porosity_col      (begc:endc,nlevgrnd))               ; this%eff_porosity_col     (:,:) = spval
@@ -314,6 +335,13 @@ contains
     allocate(this%conc_o2_unsat_col             (begc:endc,1:nlevgrnd))     ; this%conc_o2_unsat_col            (:,:) = nan
     allocate(this%o2_decomp_depth_sat_col       (begc:endc,1:nlevgrnd))     ; this%o2_decomp_depth_sat_col      (:,:) = nan
     allocate(this%o2_decomp_depth_unsat_col     (begc:endc,1:nlevgrnd))     ; this%o2_decomp_depth_unsat_col    (:,:) = nan
+
+    ! cnstate_vars:
+    allocate(this%rf_decomp_cascade_col(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); 
+    this%rf_decomp_cascade_col(:,:,:) = nan
+
+    allocate(this%pathfrac_decomp_cascade_col(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions));     
+    this%pathfrac_decomp_cascade_col(:,:,:) = nan
 
     ! carbonstate_vars:
     allocate(this%decomp_cpools_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_pools));  this%decomp_cpools_vr_col(:,:,:)= ival
@@ -354,6 +382,11 @@ contains
     allocate(this%sminn_to_denit_decomp_cascade_vr_col (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions )); this%sminn_to_denit_decomp_cascade_vr_col (:,:,:) = ival
 
     allocate(this%decomp_cascade_hr_vr_col          (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_hr_vr_col         (:,:,:) = ival
+
+    allocate(this%t_scalar_col                      (begc:endc,1:nlevdecomp_full)); this%t_scalar_col (:,:)=spval
+    allocate(this%w_scalar_col                      (begc:endc,1:nlevdecomp_full)); this%w_scalar_col (:,:)=spval
+    allocate(this%o_scalar_col                      (begc:endc,1:nlevdecomp_full)); this%o_scalar_col (:,:)=spval
+
 
     ! mineralization / immobilization / uptake fluxes
     allocate(this%gross_nmin_vr_col         (begc:endc,1:nlevdecomp_full))  ; this%gross_nmin_vr_col            (:,:) = ival
@@ -427,6 +460,10 @@ contains
     allocate(this%externalc_to_decomp_cpools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%externalc_to_decomp_cpools_col(:,:,:) = spval
     allocate(this%externaln_to_decomp_npools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%externaln_to_decomp_npools_col(:,:,:) = spval
     allocate(this%externalp_to_decomp_ppools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%externalp_to_decomp_ppools_col(:,:,:) = spval
+    allocate(this%decomp_k_pools                (1:ndecomp_pools))                            ; this%decomp_k_pools                (:)     = spval
+    allocate(this%adfactor_kd_pools             (1:ndecomp_pools))                            ; this%adfactor_kd_pools             (:)     = spval
+
+    allocate(this%sitefactor_kd_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%sitefactor_kd_vr_col         (:,:) = spval
 
     ! bgc rates/fluxes to nh4 / no3
     allocate(this%externaln_to_nh4_col      (begc:endc,1:nlevdecomp_full))  ; this%externaln_to_nh4_col         (:,:) = spval
@@ -435,6 +472,7 @@ contains
     allocate(this%smin_no3_leached_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%smin_no3_leached_vr_col      (:,:) = ival
     allocate(this%smin_no3_runoff_vr_col    (begc:endc,1:nlevdecomp_full))  ; this%smin_no3_runoff_vr_col       (:,:) = ival
     allocate(this%no3_net_transport_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%no3_net_transport_vr_col     (:,:) = spval
+    allocate(this%nh4_net_transport_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%nh4_net_transport_vr_col     (:,:) = spval
 
     ! bgc rates/fluxes to mineral P
     allocate(this%externalp_to_primp_col    (begc:endc,1:nlevdecomp_full))  ; this%externalp_to_primp_col       (:,:) = spval

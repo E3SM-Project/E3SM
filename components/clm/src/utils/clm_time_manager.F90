@@ -112,7 +112,8 @@ module clm_time_manager
    private :: timemgr_spmdbcast
    private :: init_calendar
    private :: init_clock
-   private :: calc_nestep
+!    private :: calc_nestep
+   public  :: calc_nestep    !!pflotran
    private :: timemgr_print
    private :: TimeGetymd
 

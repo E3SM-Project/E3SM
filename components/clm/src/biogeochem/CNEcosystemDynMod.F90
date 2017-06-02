@@ -180,16 +180,16 @@ contains
              end if
        end if
        
-     !-----------------------------------------------------------------------
-     ! pflotran: when both 'pf-bgc' and 'pf-h' on, no need to call CLM-CN's N leaching module
-     if (.not. (pf_cmode .and. pf_hmode)) then
-       call CNNLeaching(bounds, num_soilc, filter_soilc, &
+       !-----------------------------------------------------------------------
+       ! pflotran: when both 'pf-bgc' and 'pf-h' on, no need to call CLM-CN's N leaching module
+       if (.not. (pf_cmode .and. pf_hmode)) then
+         call CNNLeaching(bounds, num_soilc, filter_soilc, &
             waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
 
-       call PLeaching(bounds, num_soilc, filter_soilc, &
+         call PLeaching(bounds, num_soilc, filter_soilc, &
             waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
-     end if !(.not. (pf_cmode .and. pf_hmode))
-     !-----------------------------------------------------------------------
+       end if !(.not. (pf_cmode .and. pf_hmode))
+       !-----------------------------------------------------------------------
 
        call t_startf('CNUpdate3')
 
@@ -430,14 +430,14 @@ contains
        call t_stopf('PDeposition')
 
 !!-------------------------------------------------------------------------------------------------
-!! 'decomp_rate_constants' is moved to CNDecompAlloc
-!       if (use_century_decomp) then
-!          call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
-!               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
-!       else
-!          call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
-!               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
-!       end if
+!! plfotran: 'decomp_rate_constants' must be calculated before entering "clm_bgc_interface"
+       if (use_century_decomp) then
+          call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
+               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
+       else
+          call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
+               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
+       end if
 
 !!-------------------------------------------------------------------------------------------------
 !! 'decomp_vertprofiles' (calc nfixation_prof) is moved from CNDecompAlloc:

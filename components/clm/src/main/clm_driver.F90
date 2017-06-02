@@ -144,8 +144,9 @@ module clm_driver
   use clm_varctl             , only : use_clm_bgc
   use clm_bgc_interfaceMod   , only : clm_bgc_run, update_bgc_data_clm2clm
   !! (2) pflotran
-  use clm_varctl             , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
-  use clm_bgc_interfaceMod   , only : update_bgc_data_pf2clm
+  use clm_time_manager            , only : nsstep, nestep
+  use clm_varctl                  , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
+  use clm_bgc_interfaceMod        , only : update_bgc_data_pf2clm
   use clm_pflotran_interfaceMod   , only : clm_pf_run, clm_pf_write_restart
 !  use clm_pflotran_interfaceMod   , only : clm_pf_finalize
   !!----------------------------------------------------------------------------
@@ -840,8 +841,7 @@ contains
                     !! STEP-2: (2) run pflotran
                     !! STEP-2: (3) update clm_bgc_data from pflotran
                     ! -------------------------------------------------------------------------
-                    call clm_pf_run(clm_bgc_data,bounds_clump,                  &
-                           filter(nc)%num_soilc, filter(nc)%soilc)
+                    call clm_pf_run(clm_bgc_data,bounds_clump, filter, nc)                
 
                     !! STEP-3: update CLM from clm_bgc_data
                     call update_bgc_data_pf2clm(clm_bgc_data,bounds_clump,      &
