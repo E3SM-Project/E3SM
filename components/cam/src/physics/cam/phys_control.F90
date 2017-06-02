@@ -176,7 +176,7 @@ subroutine phys_ctl_readnl(nlfile)
       conv_water_in_rad, history_clubb, do_clubb_sgs, do_tms, state_debug_checks, &
       use_mass_borrower, do_aerocom_ind3, &
       l_ieflx_fix, &
-      ieflx_opt 
+      ieflx_opt, &
       use_qqflx_fixer, & 
       print_fixer_message, & 
       use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
