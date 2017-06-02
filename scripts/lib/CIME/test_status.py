@@ -118,6 +118,8 @@ class TestStatus(object):
 
         if os.path.exists(self._filename):
             self._parse_test_status_file()
+            if not os.access(self._filename, os.W_OK):
+                self._no_io = True
         else:
             expect(test_name is not None, "Must provide test_name if TestStatus file doesn't exist")
 

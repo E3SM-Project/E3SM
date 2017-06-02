@@ -875,7 +875,7 @@ if(myProc==0)write(stdout,*) cplname, ":: Done with init of output vector"
   call zeit_co('COcnRouterInit')
 
 ! rml print router info
-  call MCT_Router_print(Atm2Cpl,CPL_World,90)
+  if(myProc==0)call MCT_Router_print(Atm2Cpl,CPL_World,90)
   close(90)
 
   call Router_test(Atm2Cpl,"CPL::Atm2Cpl",7000+myProc)
