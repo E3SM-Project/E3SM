@@ -5,26 +5,29 @@
 Introduction
 **************************
 
-The Common Infrastructure for Modeling the Earth (CIME) provides a UNIX command-line-based user interface for
+The Common Infrastructure for Modeling the Earth (CIME) provides a UNIX command-line-based interface for
 configuring, compiling and executing Earth system models. Part 1 of this guide explains the basic commands
-needed to get a model running.  
+that are needed to get a model running.  
 
 Prerequisites
 =============
 
-Familiarity with the basic climate modeling concepts.
+Part 1 of this guide assumes that CIME and the necessary input files have been installed on
+the computer you are using. If that is not the case, see Installing CIME.
 
-Familiarity with UNIX command line terminals and the UNIX development environment.
+Other prerequisites:
 
-CIME's commands are Python scripts and require a correct version of the Python interpreter to be installed.
+- Familiarity with basic climate modeling concepts.
 
-The Python version must be greater than 2.7 but less than 3.0. Determine which version you have by typing:
+- Familiarity with UNIX command line terminals and the UNIX development environment.
+
+- A correct version of the Python interpreter.
+
+CIME's commands are Python scripts and require a correct version of the Python interpreter to be installed. The Python version must be greater than 2.7 but less than 3.0. Determine which version you have by typing:
 ::
 
    > python --version
 
-**NOTE:**  Part 1 of this guide assumes that CIME and the necessary input files have been installed on 
-the computer you are using. If that is not the case, see Installing CIME.
 
 
 Terms and concepts
@@ -32,22 +35,22 @@ Terms and concepts
 
 The following terms and concepts are ingrained in CIME and are used frequently in this documentation.
 
-**active** vs **data** vs **stub** models:
-   Components of a model that solve a complex set of equations to describe the model's behavior are called 
+**active, data and stub models**
+   *active models*: Components of a model that solve a complex set of equations to describe the model's behavior are called 
    *active* models. Sometimes they are called *prognostic* or *full* models.
 
-   CIME recognizes 7 different active models of a climate model. They are:
+   CIME recognizes 7 different active models. They are:
 
        atmosphere, ocean, sea-ice, land surface, river, glacier, wave
 
    An external system processing (ESP) stub-only component is also allowed.
 
-   For some climate problems, it is necessary to reduce feedbacks within the system by replacing an active model with a
+   *data models*: For some climate problems, it is necessary to reduce feedbacks within the system by replacing an active model with a
    version that sends and receives the same variables to and from other models, but with the values read from files rather
    than computed from the equations. The values received are ignored. These active-model substitutes are called *data models*.
    CIME provides data models for each of the supported components.
 
-   For some configurations, no data model is needed, so CIME provides *stub* versions that simply occupy the
+   *stub models*: For some configurations, no data model is needed, so CIME provides *stub* versions that simply occupy the
    required place in the climate execution sequence and do not send or receive any data.
 
 **case**:
@@ -81,7 +84,7 @@ Before using any CIME commands, set the ``CIME_MODEL`` environment variable. In 
 **<model>** with the appropriate text, such as "acme" or "cesm."
 ::
 
-   setenv CIME_MODEL <model>
+   > setenv CIME_MODEL <model>
 
 
 Directory content
@@ -138,7 +141,7 @@ directory structure.
 Discovering available cases
 ==============================
 
-To identify which compsets, grids and machines your CIME-enabled model supports, use the **query_config** command found in **cime/scripts**.  Use the **---help** option for more information.
+To identify which compsets, grids and machines your CIME-enabled model supports, use the **query_config** command found in **cime/scripts**.  See the **help** text for more information.
 
 ::
 
@@ -147,7 +150,7 @@ To identify which compsets, grids and machines your CIME-enabled model supports,
 Quick start
 ==================
 
-To quickly see how a case is created, configured, built and run with CIME, execute the following commands for an example. (This assumes that CIME has been ported to your current machine).
+To see an example of how a case is created, configured, built and run with CIME, execute the following commands for an example. (This assumes that CIME has been ported to your current machine).
 ::
 
    > cd cime/scripts
@@ -159,10 +162,10 @@ To quickly see how a case is created, configured, built and run with CIME, execu
 
 The output from each command is explained in the following sections.
 
-You can follow the progress of your run by monitoring the **CaseStatus** file.
+After you submit the case, you can follow the progress of your run by monitoring the **CaseStatus** file.
 
 ::
 
    > tail CaseStatus
 
-Repeat the command until you see the message "case.run success"
+Repeat the command until you see the message ``case.run success``.

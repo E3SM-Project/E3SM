@@ -11,7 +11,7 @@ Generally, **create_newcase** errors are reported to the terminal and should pro
 If **create_newcase** fails on a relatively generic error, first check to make sure the command-line arguments match the interface's specification. See the help text to review usage.
 ::
 
-   create_newcase --help
+   > create_newcase --help
 
 Troubleshooting job submission
 -------------------------------
@@ -30,7 +30,7 @@ Troubleshooting runtime problems
 
 To see if a run completed successfully, check the last several lines of the **cpl.log** file for a string like ``SUCCESSFUL TERMINATION``. A successful job also usually copies the log files to the **$CASEROOT/logs** directory.
 
-**Note**: The first things to check when a job fails:
+Check these things first when a job fails:
 
 - Did the model time out?
  
@@ -42,7 +42,7 @@ To see if a run completed successfully, check the last several lines of the **cp
 
 If any of those things happened, take appropriate corrective action (see suggestions below) and resubmit the job.
 
-If it is not clear any of the above caused a case to fail, then there are several places to look for error messages.
+If it is not clear that any of the above caused a case to fail, there are several places to look for error messages.
 
 - Check component log files in your run directory (``$RUNDIR``).
   This directory is set in the **env_run.xml** file.
@@ -57,9 +57,8 @@ If it is not clear any of the above caused a case to fail, then there are severa
 
 - Check any automated email from the job about why a job failed. Some sites' batch schedulers send these.
 
-- Check the archive directory.
-  If a case failed, the log files or data may still have been archived.
-  The archiver is turned on if ``DOUT_S`` is set to TRUE in **env_run.xml**. The directory to check is **$DOUT_S_ROOT/$CASE**.
+- Check the archive directory: **$DOUT_S_ROOT/$CASE**.   If a case failed, the log files 
+  or data may still have been archived.
 
 **Common errors**
 
@@ -73,7 +72,7 @@ Another error that can cause a timeout is a slow or intermittently slow node.
 The **cpl.log** file normally outputs the time used for every model simulation day. To review that data, grep the **cpl.log** file for the string ``tStamp`` as shown here:
 ::
 
-   grep tStamp cpl.log.* | more
+     > grep tStamp cpl.log.* | more
 
 The output looks like this:
 ::
@@ -98,6 +97,6 @@ Sometimes when a job times out or overflows disk space, the restart files will g
 With the exception of the CAM and CLM history files, all the restart files have consistent sizes.
 
 Compare the restart files against the sizes of a previous restart. If they don't match, remove them and move the previous restart into place before resubmitting the job.
-See `restarting a run <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_.
+See `Restarting a run <http://esmci.github.io/cime/users_guide/running-a-case.html#restarting-a-run>`_.
 
 It is not uncommon for nodes to fail on HPC systems or for access to large file systems to hang. Before you file a bug report, make sure a case fails consistently in the same place.
