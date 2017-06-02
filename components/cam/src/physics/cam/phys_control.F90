@@ -173,11 +173,11 @@ subroutine phys_ctl_readnl(nlfile)
       use_subcol_microp, atm_dep_flux, history_amwg, history_vdiag, history_aerosol, history_aero_optics, &
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, &
       conv_water_in_rad, history_clubb, do_clubb_sgs, do_tms, state_debug_checks, &
-      use_mass_borrower, & 
+      use_mass_borrower, &
       l_ieflx_fix, &
-      ieflx_opt, & 
-      use_qqflx_fixer, & 
-      print_fixer_message, & 
+      ieflx_opt, &
+      use_qqflx_fixer, &
+      print_fixer_message, &
       use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
       cld_macmic_num_steps, micro_do_icesupersat, &
       fix_g1_err_ndrop, ssalt_tuning, resus_fix, convproc_do_aer, &
