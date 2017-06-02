@@ -522,7 +522,6 @@
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/sems-data-store/ACME/baselines</BASELINE_ROOT>
-    <SAVE_TIMING_DIR>/sems-data-store/ACME/timings</SAVE_TIMING_DIR>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
 <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
@@ -579,7 +578,6 @@
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/sems-data-store/ACME/baselines</BASELINE_ROOT>
-    <SAVE_TIMING_DIR>/sems-data-store/ACME/timings</SAVE_TIMING_DIR>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
 <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
@@ -643,7 +641,6 @@
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/home/climate1/acme/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/home/climate1/acme/cprnc/build/cprnc</CCSM_CPRNC>
-    <SAVE_TIMING_DIR>$CIME_OUTPUT_ROOT/timings</SAVE_TIMING_DIR>
     <BATCHQUERY></BATCHQUERY>
     <BATCHSUBMIT></BATCHSUBMIT>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
@@ -707,7 +704,6 @@
   <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
   <BASELINE_ROOT>/projects/ccsm/ccsm_baselines</BASELINE_ROOT>
   <CCSM_CPRNC>/projects/ccsm/cprnc/build/cprnc_wrap</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
-  <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
@@ -787,7 +783,6 @@
   <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
   <BASELINE_ROOT>/projects/ccsm/ccsm_baselines</BASELINE_ROOT>
   <CCSM_CPRNC>/projects/ccsm/cprnc/build/cprnc_wrap</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
-  <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
@@ -867,7 +862,6 @@
   <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
   <BASELINE_ROOT>/projects/ccsm/ccsm_baselines</BASELINE_ROOT>
   <CCSM_CPRNC>/projects/ccsm/cprnc/build/cprnc_wrap</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
-  <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
@@ -937,7 +931,6 @@
          <COMPILERS>gnu,pgi,intel,nag</COMPILERS>
          <MPILIBS>mvapich,mpich,openmpi,mpi-serial</MPILIBS>
          <CIME_OUTPUT_ROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CIME_OUTPUT_ROOT>
-	 <SAVE_TIMING_DIR>/lcrc/project/$PROJECT</SAVE_TIMING_DIR>
 	 <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
 	 <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
@@ -1181,7 +1174,6 @@
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 	 <PES_PER_NODE>16</PES_PER_NODE>
 	 <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
-	 <SAVE_TIMING_DIR>/usr/gdata/climdat/timing_performance</SAVE_TIMING_DIR>
 	 <mpirun mpilib="mpi-serial">
 	   <executable></executable>
 	 </mpirun>
@@ -1234,7 +1226,6 @@
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 	 <PES_PER_NODE>16</PES_PER_NODE>
 	 <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
-	 <SAVE_TIMING_DIR>/usr/gdata/climdat/timing_performance</SAVE_TIMING_DIR>
 	 <mpirun mpilib="mpi-serial">
 	   <executable></executable>
 	 </mpirun>
@@ -1434,7 +1425,6 @@
     <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <BASELINE_ROOT>/lustre/climate/acme_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/lustre/climate/acme_baselines/cprnc/cprnc</CCSM_CPRNC>
-    <SAVE_TIMING_DIR>/lustre/climate/timing_acme</SAVE_TIMING_DIR>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
@@ -1508,7 +1498,6 @@
     <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <CCSM_BASELINE>/dtemp/sing201/acme/acme_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/dtemp/sing201/acme/acme_baselines/cprnc/cprnc</CCSM_CPRNC>
-    <SAVE_TIMING_DIR>/dtemp/sing201/acme/timing_acme</SAVE_TIMING_DIR>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
@@ -1576,7 +1565,6 @@
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
          <BASELINE_ROOT>/pic/projects/climate/acme_baselines</BASELINE_ROOT>
          <CCSM_CPRNC>/pic/projects/climate/acme_baselines/cprnc/cprnc</CCSM_CPRNC>
-	 <SAVE_TIMING_DIR>/pic/projects/climate/csmdata/</SAVE_TIMING_DIR>
 	 <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
          <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
@@ -2079,7 +2067,6 @@
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
 	<BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</BASELINE_ROOT>
 	<CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CIME_OUTPUT_ROOT>
-	<SAVE_TIMING_DIR>$CASEROOT/timings</SAVE_TIMING_DIR>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<module_system type="module">
 		<init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
@@ -2172,7 +2159,6 @@
 	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
 	<BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</BASELINE_ROOT>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
-	<SAVE_TIMING_DIR>$CASEROOT/timings</SAVE_TIMING_DIR>
 	<mpirun mpilib="default">
 		<executable>mpirun</executable>
 		<arguments>
@@ -2431,7 +2417,6 @@
   <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
   <PES_PER_NODE>16</PES_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-  <SAVE_TIMING_DIR>/global/scratch/$ENV{USER}</SAVE_TIMING_DIR>
   <mpirun mpilib="mpi-serial">
     <executable>mpirun</executable>
     <arguments>
@@ -2495,7 +2480,6 @@
   <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
   <PES_PER_NODE>12</PES_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-  <SAVE_TIMING_DIR>/global/scratch/$ENV{USER}</SAVE_TIMING_DIR>
   <mpirun mpilib="mpi-serial">
     <executable>mpirun</executable>
     <arguments>
