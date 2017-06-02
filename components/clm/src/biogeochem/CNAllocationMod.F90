@@ -3926,22 +3926,22 @@ contains
       if (nu_com .eq. 'RD') then
 
         if(suplphos == suplpNon) then !!! No supplemental Phosphorus
-        call p2c(bounds,num_soilc,filter_soilc,         &
+          call p2c(bounds,num_soilc,filter_soilc,         &
                sminn_to_npool(bounds%begp:bounds%endp), &
                sminn_to_plant(bounds%begc:bounds%endc))
 
-        call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
-        do j = 1, nlevdecomp
+          call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
+          do j = 1, nlevdecomp
             do fc=1,num_soilc
                 c = filter_soilc(fc)
                 sminn_to_plant_vr(c,j) = sminn_to_plant(c) *  nuptake_prof(c,j)
             end do
-        end do
-      end if
+          end do
+        end if
 
-      !! Phosphorus
+        !! Phosphorus
 
-      if( .not. use_nitrif_denitrif) then
+        if( .not. use_nitrif_denitrif) then
 
           call p2c(bounds,num_soilc,filter_soilc,       &
               sminp_to_ppool(bounds%begp:bounds%endp), &
@@ -3955,23 +3955,25 @@ contains
               end do
           end do
 
-      else     ! use_nitrif_denitrif
+        else     ! use_nitrif_denitrif
   
-        if( .not.cnallocate_carbonphosphorus_only().and. .not.cnallocate_carbonnitrogen_only().and. .not.cnallocate_carbon_only() )then
+          if( .not.cnallocate_carbonphosphorus_only() .and. &
+              .not.cnallocate_carbonnitrogen_only().and.    &
+              .not.cnallocate_carbon_only() )then
 
-          temp_sminn_to_plant = sminn_to_plant
-          temp_sminp_to_plant = sminp_to_plant
+            temp_sminn_to_plant = sminn_to_plant
+            temp_sminp_to_plant = sminp_to_plant
 
-          call p2c(bounds,num_soilc,filter_soilc, &
+            call p2c(bounds,num_soilc,filter_soilc, &
                 sminn_to_npool(bounds%begp:bounds%endp), &
                 sminn_to_plant(bounds%begc:bounds%endc))
 
-          call p2c(bounds,num_soilc,filter_soilc, &
+            call p2c(bounds,num_soilc,filter_soilc, &
                 sminp_to_ppool(bounds%begp:bounds%endp), &
                 sminp_to_plant(bounds%begc:bounds%endc))
 
           
-          do j = 1, nlevdecomp
+            do j = 1, nlevdecomp
                do fc=1,num_soilc
                   c = filter_soilc(fc)
                   if ( temp_sminn_to_plant(c) > 0._r8) then 
@@ -3990,20 +3992,20 @@ contains
                      sminp_to_plant_vr(c,j) = 0._r8
                   endif 
                end do
-          end do             
+            end do
 
-        end if   ! carbonnitrogenphosphorus
+          end if   ! carbonnitrogenphosphorus
 
-        if( cnallocate_carbonnitrogen_only() )then
+          if( cnallocate_carbonnitrogen_only() )then
 
-          temp_sminp_to_plant = sminp_to_plant
+            temp_sminp_to_plant = sminp_to_plant
 
-          call p2c(bounds,num_soilc,filter_soilc, &
+            call p2c(bounds,num_soilc,filter_soilc, &
                 sminp_to_ppool(bounds%begp:bounds%endp), &
                 sminp_to_plant(bounds%begc:bounds%endc))
 
           
-          do j = 1, nlevdecomp
+            do j = 1, nlevdecomp
                do fc=1,num_soilc
                   c = filter_soilc(fc)
 
@@ -4013,11 +4015,13 @@ contains
                      sminp_to_plant_vr(c,j) = 0._r8
                   endif 
                end do
-          end do             
-        end if  ! carbonnitrogen 
+            end do
+          end if  ! carbonnitrogen
+
+        end if   ! use_nitrif_denitrif
+
       end if ! nu_com .eq. RD
          
-      end if   !  
 
       !----------------------------------------------------------------
 
@@ -4070,7 +4074,12 @@ contains
                else
                     sminn_vr_loc(c,j) = smin_no3_vr(c,j) + smin_nh4_vr(c,j)
                end if
-               sminn_tot(c) = sminn_tot(c) + sminn_vr_loc(c,j) * dzsoi_decomp(j) !!original: if (use_nitrif_denitrif): sminn_tot(c) = sminn_tot(c) + (smin_no3_vr(c,j) + smin_nh4_vr(c,j)) * dzsoi_decomp(j)
+               if(use_pflotran .and. pf_cmode) then
+                    sminn_tot(c) = sminn_tot(c) + sminn_vr_loc(c,j) * dzsoi_decomp(j) &
+                       *(nfixation_prof(c,j)*dzsoi_decomp(j))         ! weighted by froot fractions in annual max. active layers
+               else
+                    sminn_tot(c) = sminn_tot(c) + sminn_vr_loc(c,j) * dzsoi_decomp(j) !!original: if (use_nitrif_denitrif): sminn_tot(c) = sminn_tot(c) + (smin_no3_vr(c,j) + smin_nh4_vr(c,j)) * dzsoi_decomp(j)
+               end if
             end do
          end do
 
@@ -4078,10 +4087,15 @@ contains
             do fc=1,num_soilc
                c = filter_soilc(fc)
                if (sminn_tot(c)  >  0.) then
-                  nuptake_prof(c,j) = sminn_vr_loc(c,j) / sminn_tot(c)   !!original: if (use_nitrif_denitrif): nuptake_prof(c,j) = sminn_vr(c,j) / sminn_tot(c)
+                  if(use_pflotran .and. pf_cmode) then
+                     nuptake_prof(c,j) = sminn_vr_loc(c,j) / sminn_tot(c) &
+                        *(nfixation_prof(c,j)*dzsoi_decomp(j))         ! weighted by froot fractions in annual max. active layers
+                  else
+                     nuptake_prof(c,j) = sminn_vr_loc(c,j) / sminn_tot(c)   !!original: if (use_nitrif_denitrif): nuptake_prof(c,j) = sminn_vr(c,j) / sminn_tot(c)
+                  end if
                else
                   nuptake_prof(c,j) = nfixation_prof(c,j)
-               endif
+               end if
                !! sum_ndemand_vr will be calculated after calling calc_nuptake_prof
 !                sum_ndemand_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j) + potential_immob_vr(c,j)
             end do

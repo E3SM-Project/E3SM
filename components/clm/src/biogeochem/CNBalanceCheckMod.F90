@@ -186,7 +186,7 @@ contains
          
          gpp                     =>    carbonflux_vars%gpp_col                 , & ! Input:  [real(r8) (:) ]  (gC/m2/s) gross primary production      
          er                      =>    carbonflux_vars%er_col                  , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
-         col_fire_closs          =>    carbonflux_vars%fire_closs_col      , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total column-level fire C loss
+         col_fire_closs          =>    carbonflux_vars%fire_closs_col          , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total column-level fire C loss
          col_hrv_xsmrpool_to_atm =>    carbonflux_vars%hrv_xsmrpool_to_atm_col , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool harvest mortality 
          dwt_closs               =>    carbonflux_vars%dwt_closs_col           , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total carbon loss from product pools and conversion
          product_closs           =>    carbonflux_vars%product_closs_col       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total wood product carbon loss
@@ -254,6 +254,11 @@ contains
             write(iulog,*)'begcb       = ',col_begcb(c)
             write(iulog,*)'endcb       = ',col_endcb(c),carbonstate_vars%totsomc_col(c)
             write(iulog,*)'delta store = ',col_endcb(c)-col_begcb(c)
+
+            if (use_pflotran .and. pf_cmode) then
+               write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
+            end if
+
             call endrun(msg=errMsg(__FILE__, __LINE__))
          end if
       end if !use_ed
@@ -298,16 +303,15 @@ contains
          smin_no3_leached    =>    nitrogenflux_vars%smin_no3_leached_col    , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to leaching (gN/m2/s)
          smin_no3_runoff     =>    nitrogenflux_vars%smin_no3_runoff_col     , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to runoff (gN/m2/s)
          f_n2o_nit           =>    nitrogenflux_vars%f_n2o_nit_col           , & ! Input:  [real(r8) (:)]  flux of N2o from nitrification [gN/m^2/s]
-         col_fire_nloss      =>    nitrogenflux_vars%fire_nloss_col      , & ! Input:  [real(r8) (:)]  total column-level fire N loss (gN/m2/s)
+         col_fire_nloss      =>    nitrogenflux_vars%fire_nloss_col          , & ! Input:  [real(r8) (:)]  total column-level fire N loss (gN/m2/s)
          dwt_nloss           =>    nitrogenflux_vars%dwt_nloss_col           , & ! Input:  [real(r8) (:)]  (gN/m2/s) total nitrogen loss from product pools and conversion
          product_nloss       =>    nitrogenflux_vars%product_nloss_col       , & ! Input:  [real(r8) (:)]  (gN/m2/s) total wood product nitrogen loss
          som_n_leached       =>    nitrogenflux_vars%som_n_leached_col       , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
          ! pflotran:
-         col_decompn_delta   =>    nitrogenflux_vars%externaln_to_decomp_delta_col, & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column N i/o to decomposing pool bwtn time-step
-         col_no3_delta       =>    nitrogenflux_vars%no3_net_transport_delta_col  , & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column NO3 leaching bwtn time-step
+         col_decompn_delta   =>    nitrogenflux_vars%externaln_to_decomp_delta_col  , & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column N i/o to decomposing pool bwtn time-step
 
-         col_ninputs         =>    nitrogenflux_vars%ninputs_col         , & ! Output: [real(r8) (:)]  column-level N inputs (gN/m2/s)         
-         col_noutputs        =>    nitrogenflux_vars%noutputs_col        , & ! Output: [real(r8) (:)]  column-level N outputs (gN/m2/s)        
+         col_ninputs         =>    nitrogenflux_vars%ninputs_col             , & ! Output: [real(r8) (:)]  column-level N inputs (gN/m2/s)
+         col_noutputs        =>    nitrogenflux_vars%noutputs_col            , & ! Output: [real(r8) (:)]  column-level N outputs (gN/m2/s)
          col_begnb           =>    nitrogenstate_vars%begnb_col              , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
          col_endnb           =>    nitrogenstate_vars%endnb_col              , & ! Output: [real(r8) (:)]  nitrogen mass, end of time step (gN/m**2)
          col_errnb           =>    nitrogenstate_vars%errnb_col                & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
@@ -342,7 +346,15 @@ contains
            else
             col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
 
-            col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
+            if(use_pflotran .and. pf_cmode) then
+               ! inclusion of aq. NH4 transport by PFLOTRAN-bgc
+               col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
+            else
+
+               col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
+
+            endif
+
            end if
          endif
 
@@ -358,10 +370,6 @@ contains
          if (use_pflotran .and. pf_cmode) then
             col_errnb(c) = col_errnb(c) - col_decompn_delta(c)*dt
             ! here is '-' adjustment. It says that the adding to PF decomp n pools was less.
-
-            ! if not hydrology-coupled, NO3 leaching/runoff at previous time-step used as 'source' (out, -) to PFLOTRAN bgc
-            if (.not.pf_hmode) col_errnb(c) = col_errnb(c) + col_no3_delta(c)*dt
-            ! here is '+' adjustment. It says that the taking to PF no3 pools was more.
          end if
 
          if (abs(col_errnb(c)) > 1e-8_r8) then
@@ -394,7 +402,14 @@ contains
          write(iulog,*)'fire                  = ',col_fire_nloss(c)*dt
          write(iulog,*)'dwt                   = ',dwt_nloss(c)*dt 
          write(iulog,*)'prod                  = ',product_nloss(c)*dt
+
+         if (use_pflotran .and. pf_cmode) then
+            write(iulog,*)'pf_delta_decompn      = ',col_decompn_delta(c)*dt
+         end if
+
          call endrun(msg=errMsg(__FILE__, __LINE__))
+
+
       end if
 
     end associate
@@ -449,9 +464,9 @@ contains
          !X.YANG testing P Balance, from VEGP
          totpftp             =>    phosphorusstate_vars%totpftp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
          totsomp             =>    phosphorusstate_vars%totsomp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         cwdp             =>    phosphorusstate_vars%cwdp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         totlitp             =>    phosphorusstate_vars%totlitp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         sminp             =>    phosphorusstate_vars%sminp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         cwdp             =>    phosphorusstate_vars%cwdp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         totlitp             =>    phosphorusstate_vars%totlitp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         sminp             =>    phosphorusstate_vars%sminp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          leafp_to_litter       =>    phosphorusflux_vars%leafp_to_litter_patch       , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
          frootp_to_litter       =>   phosphorusflux_vars%frootp_to_litter_patch      , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
          sminp_to_plant         =>   phosphorusflux_vars%sminp_to_plant_col          ,&

@@ -214,13 +214,6 @@ contains
 
 !!-------------------------------------------------------------------------------------------------
       ! calculate decomposition rates (originally called in CNEcosystemDynNoLeaching1)
-      if (use_century_decomp) then
-          call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
-               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
-      else
-          call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
-               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
-      end if
 !!-------------------------------------------------------------------------------------------------
 
       ! set initial values for potential C and N fluxes
@@ -701,8 +694,11 @@ contains
 
 
          fpi_vr                           =>    cnstate_vars%fpi_vr_col                                , & ! Output:  [real(r8) (:,:)   ]  fraction of potential immobilization (no units)
+         fpi                              =>    cnstate_vars%fpi_col                                   , & ! Output: [real(r8) (:)   ]  fraction of potential immobilization (no units)
          potential_immob_vr               =>    nitrogenflux_vars%potential_immob_vr_col               , & ! Input:
          actual_immob_vr                  =>    nitrogenflux_vars%actual_immob_vr_col                  , & ! Input:
+         potential_immob                  =>    nitrogenflux_vars%potential_immob_col                  , & ! Output: [real(r8) (:)   ]
+         actual_immob                     =>    nitrogenflux_vars%actual_immob_col                     , & ! Output: [real(r8) (:)   ]
 
          fpg                              =>    cnstate_vars%fpg_col                                   , & ! Output: [real(r8) (:)   ]  fraction of potential gpp (no units)
          sminn_to_plant                   =>    nitrogenflux_vars%sminn_to_plant_col                   , & ! Output: [real(r8) (:)     ]  col N uptake (gN/m2/s)
@@ -759,15 +755,28 @@ contains
       ! fpi calculation
       do fc=1,num_soilc
          c = filter_soilc(fc)
+         potential_immob(c) = 0._r8
+         actual_immob(c)    = 0._r8
          do j = 1, nlevdecomp
             if (potential_immob_vr(c,j) > 0.0_r8) then
                 fpi_vr(c,j) = actual_immob_vr(c,j) / potential_immob_vr(c,j)
+                potential_immob(c) = potential_immob(c) + potential_immob_vr(c,j)*dzsoi_decomp(j)
+                actual_immob(c) = actual_immob(c) + actual_immob_vr(c,j)*dzsoi_decomp(j)
             else
                 fpi_vr(c,j) = 0.0_r8
             end if
          end do
-
       end do
+      do fc=1,num_soilc
+         c = filter_soilc(fc)
+         if (potential_immob(c) > 0.0_r8) then
+            fpi(c) = max(0._r8,actual_immob(c)) / potential_immob(c)
+            fpi(c) = min(1._r8, fpi(c))
+         else
+            fpi(c) = 1.0_r8
+         end if
+      end do
+
 
       if (use_lch4) then
          ! Add up potential hr for methane calculations
