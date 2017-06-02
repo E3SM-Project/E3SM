@@ -82,6 +82,17 @@ for mct, etc.
   <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
 </compiler>
 
+
+<!-- hacking of mach/compiler generated 'Macros.make' for coupling with pflotran -->
+<!-- ideally it should go with CLM configuration -->
+<compiler>
+  <ADD_FFLAGS MODEL="clm" CLM_PFLOTRAN_COUPLED="TRUE"> -I$(CLM_PFLOTRAN_SOURCE_DIR)</ADD_FFLAGS>
+  <ADD_CPPDEFS MODEL="clm" CLM_PFLOTRAN_COUPLED="TRUE"> -DCLM_PFLOTRAN </ADD_CPPDEFS>
+  <ADD_CPPDEFS MODEL="clm" CLM_PFLOTRAN_COUPLED="TRUE" CLM_PFLOTRAN_COLMODE="TRUE"> -DCOLUMN_MODE </ADD_CPPDEFS>
+  <ADD_LDFLAGS MODEL="driver" CLM_PFLOTRAN_COUPLED="TRUE"> -L$(CLM_PFLOTRAN_SOURCE_DIR) -lpflotran $(PETSC_LIB)</ADD_LDFLAGS>
+</compiler>
+<!-- end of hacking 'Macros.make' for coupling with pflotran -->
+
 <compiler COMPILER="ibm">
   <!-- http://publib.boulder.ibm.com/infocenter/comphelp/v7v91/index.jsp
  Notes:  (see xlf user's guide for the details)
@@ -655,6 +666,19 @@ for mct, etc.
   <MPICXX> CC </MPICXX>
 </compiler>
 
+<compiler MACH="mymac" COMPILER="gnu" >
+  <NETCDF_PATH> $(NETCDF_PATH)</NETCDF_PATH>
+  <ADD_LDFLAGS compile_threaded="true"> -L $(GCC_ROOT)/lib/gcc/x86_64-apple-darwin15.4.0/5.3.0 -fopenmp </ADD_LDFLAGS>
+  <ADD_LDFLAGS>-framework Accelerate</ADD_LDFLAGS>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -framework Accelerate</ADD_SLIBS>
+  <SFC>$(GCC_ROOT)/bin/gfortran</SFC>
+  <SCC>$(GCC_ROOT)/bin/gcc</SCC>
+  <SCXX>$(GCC_ROOT)/bin/g++</SCXX>
+  <MPICC>$(MPI_ROOT)/bin/mpicc</MPICC>
+  <MPICXX>$(MPI_ROOT)/bin/mpicxx</MPICXX>
+  <MPIFC>$(MPI_ROOT)/bin/mpif90</MPIFC>
+</compiler>
+
 <compiler COMPILER="gnu" MACH="mac">
   <NETCDF_PATH> $(NETCDF_PATH)</NETCDF_PATH>
   <ADD_LDFLAGS>-framework Accelerate</ADD_LDFLAGS>
@@ -857,13 +881,13 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="oic5" COMPILER="gnu">
-  <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>
+  <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.4.0-mpich32-gcc53/</NETCDF_PATH>
   <ADD_SLIBS>-L/user/lib64 -llapack -lblas -lnetcdff </ADD_SLIBS>
-  <SFC>/projects/cesm/devtools/gcc-4.8.1/bin/gfortran</SFC>
-  <SCC>/projects/cesm/devtools/gcc-4.8.1/bin/gcc</SCC>
-  <SCXX>/projects/cesm/devtools/gcc-4.8.1/bin/g++</SCXX>
-  <MPICC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpicc</MPICC>
-  <MPIFC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpif90</MPIFC>
+  <SFC>/projects/cesm/devtools/gcc-5.3.0/bin/gfortran</SFC>
+  <SCC>/projects/cesm/devtools/gcc-5.3.0/bin/gcc</SCC>
+  <SCXX>/projects/cesm/devtools/gcc-5.3.0/bin/gcpp</SCXX>
+  <MPICC>/projects/cesm/devtools/mpich-3.2-gcc53/bin/mpicc</MPICC>
+  <MPIFC>/projects/cesm/devtools/mpich-3.2-gcc53/bin/mpif90</MPIFC>
 </compiler>
 
 <compiler MACH="oic5" COMPILER="pgi">

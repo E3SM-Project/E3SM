@@ -1597,7 +1597,7 @@ Specifies the method for decomposing CLM grids across processors.
 
 <entry id="pflotran_prefix" type="char*256" category="clm_pflotran"
     group="clm_pflotran_inparm" valid_values="" >
-    pflotran file prefix.
+    pflotran input file prefix of *.in under pflotran_inputdir.
 </entry>
 
 <!-- ========================================================================================  -->
