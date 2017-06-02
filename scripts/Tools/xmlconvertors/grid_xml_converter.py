@@ -3,14 +3,14 @@
 grid_xml_converter.py -- convert (or verify) grid xml from CIME2 format to CIME5
 The location of these files are needed by the script:
     CIME2: cime/scripts/Tools/config_grid.xml
-    CIME5: cime_config/acme/config_grids.xml
+    CIME5: config/acme/config_grids.xml
 """
 
 # make sure cime2, cime roots are defined
 # use categories
 #  GRID CONFIGURATIONS   grid list   domain    grid maps
 #    CIME2: cime/scripts/Tools/config_grid.xml
-#    CIME5: cime_config/acme/config_grids.xml
+#    CIME5: config/acme/config_grids.xml
 #
 
 from standard_script_setup import *
@@ -33,9 +33,7 @@ def parse_command_line(args):
     parser.add_argument("-cime2file", "--cime2file", help="location of config_grid.xml file in CIME2 repository")
     parser.add_argument("-cime5file", "--cime5file", help="location of config_grids.xml file in CIME5 repository")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if args.cime2file is None or args.cime5file is None:
         parser.print_help()
@@ -293,7 +291,7 @@ class DataTree(object):
             self.writexml(fixlist,badxmlfile)
             if len(fixlist) > 0:
                 logger.info("Some nodes should be removed from")
-                logger.info("cime_config/acme/config_grids.xml. These nodes")
+                logger.info("config/acme/config_grids.xml. These nodes")
                 logger.info("have been written to %s" % badxmlfile)
 
 class GridTree(DataTree):
