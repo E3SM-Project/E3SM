@@ -40,7 +40,7 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
     >>> rootpes = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     >>> pstrids = [1, 1, 1, 1, 1, 1, 1, 1, 1]
     >>> _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids, max_tasks_per_node, pes_per_node, pio_numtasks, pio_async_interface, compiler, machine, run_exe)
-    ('aprun -S 8 -cc numa_node -n 64 -N 16 -d 1 acme.exe ', 4)
+    (' -S 8 -cc numa_node -n 64 -N 16 -d 1 acme.exe ', 4)
     """
     max_tasks_per_node = 1 if max_tasks_per_node < 1 else max_tasks_per_node
 
