@@ -37,7 +37,8 @@ module seq_io_mod
   use shr_kind_mod, only: r4 => shr_kind_r4, r8 => shr_kind_r8, in => shr_kind_in
   use shr_kind_mod, only: cl => shr_kind_cl, cs => shr_kind_cs
   use shr_sys_mod       ! system calls
-  use seq_comm_mct
+  use seq_comm_mct, only: logunit, CPLID, seq_comm_setptrs
+  use seq_comm_mct, only: seq_comm_namelen, seq_comm_name
   use seq_flds_mod, only : seq_flds_lookup
   use mct_mod           ! mct wrappers
   use pio
@@ -184,7 +185,9 @@ subroutine seq_io_wopen(filename,clobber,cdf64,file_ind)
        if (exists) then
           if (lclobber) then
              nmode = pio_clobber
-             if (lcdf64) nmode = ior(nmode,PIO_64BIT_OFFSET)
+             !lcdf64 only applies to classic NETCDF files.
+             if (lcdf64 .and. cpl_pio_iotype == PIO_IOTYPE_NETCDF) &
+                  nmode = ior(nmode,PIO_64BIT_OFFSET)
              rcode = pio_createfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), nmode)
              if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
              rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
@@ -203,7 +206,9 @@ subroutine seq_io_wopen(filename,clobber,cdf64,file_ind)
           endif
        else
           nmode = pio_noclobber
-          if (lcdf64) nmode = ior(nmode,PIO_64BIT_OFFSET)
+          !lcdf64 only applies to classic NETCDF files.
+          if (lcdf64 .and. cpl_pio_iotype == PIO_IOTYPE_NETCDF) &
+               nmode = ior(nmode,PIO_64BIT_OFFSET)
           rcode = pio_createfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), nmode)
           if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
           rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
@@ -1541,7 +1546,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
     implicit none
     character(len=*),intent(in) :: filename ! file
     type(mct_gsMap), intent(in) :: gsmap
-    type(mct_aVect) ,intent(inout):: AV     ! data to be written
+    type(mct_aVect) ,intent(inout):: AV     ! data to be read
     character(len=*),intent(in) :: dname    ! name of data
     character(len=*),intent(in),optional :: pre      ! prefix name
 
@@ -1667,7 +1672,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
     implicit none
     character(len=*),intent(in) :: filename ! file
     type(mct_gsMap), intent(in) :: gsmap
-    type(mct_aVect) ,intent(inout):: AVS(:) ! data to be written
+    type(mct_aVect) ,intent(inout):: AVS(:) ! data to be read
     character(len=*),intent(in) :: dname    ! name of data
     character(len=*),intent(in),optional :: pre      ! prefix name
 
