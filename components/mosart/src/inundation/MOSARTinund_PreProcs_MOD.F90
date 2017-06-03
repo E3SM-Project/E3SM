@@ -260,7 +260,6 @@ MODULE MOSARTinund_PreProcs_MOD
           TUnit%e_eprof3(iu, k) = TUnit%e_eprof(iu, j) - TUnit%e_chnl(iu)   
         enddo
       
-         write(iulog,*) 'tcxI2',iu,k,size(Tunit%a_eprof3,dim=2)
         if (k > size(Tunit%a_eprof3,dim=2)) write(iulog,*) 'tcxI2* out of bounds',k,size(TUnit%a_eprof3,dim=2)
         if (k+1 > size(Tunit%a_eprof3,dim=2)) write(iulog,*) 'tcxI3* out of bounds',k+1,size(TUnit%a_eprof3,dim=2)
         ! The upmost point (which is a virtual point) :
