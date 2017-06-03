@@ -25,20 +25,24 @@ begin
 ; User options
 ;=======================================================================================
 
-filename="./movies/dcmip2016_test21.nc"
+;out_type="x11"               ; output format, popular options are x11, png, pdf, eps
+out_type="pdf"              ; output format, popular options are x11, png, pdf, eps
+wks   = gsn_open_wks (out_type,"x-sections")               ; send graphics to PNG file
+
+filename="./movies/r50-prec0-pbl0-dcmip2016_test21.nc"
 f = addfile(filename,"r")
 
 time = f->time
-nt = dimsizes(time)-1
+nt  = dimsizes(time)-1
+
+do ti=1,nt-1,1
 
 data_on_constant_Z=False     ; is data already on CONSTANT Z surfaces?
 convert_hybridP_to_Z=False   ; is data on hybrid pressure levels?
 hasTimeIx=True               ; does file have time index?
-timeStep=nt                   ; If yes, what time index do you want to plot?
-model="cam-se"              ; used for mainStr, but also for model specific if statements
+timeStep=ti                  ; If yes, what time index do you want to plot?
+model="cam-se"               ; used for mainStr, but also for model specific if statements
 mainStr=model+" Day 8"       ; main string for plot titles
-;out_type="pdf"                ; output format, popular options are x11, png, pdf, eps
-out_type="x11"                ; output format, popular options are x11, png, pdf, eps
 
 Uname="u"                    ; Variable name of zonal wind (typically "U" or "ua")
 Vname="v"                    ; Variable name of meridional wind (typically "V" or "ua")
@@ -47,7 +51,7 @@ Tname="T"                    ; Variable name of air temperature (typically "T" o
 Zname="z"                    ; Variable name of height (typically "Z" or "za")
 PRECTname="precl"            ; Variable name of height (typically "Z" or "za")
 
-;=======================================================================================
+print("timeIndex = "+timeStep)
 
 ;=======================================================================================
 ; Other settings, required to remain constant for intercomparison
@@ -64,7 +68,6 @@ zintmin=20.0                   ; min height for z interpolation (m)
 zintmax=18000.0                ; max height for z interpolation (m)
 nzint=100                      ; num points for z interpolation
 Zmidpt=2500.0                  ; half of Z points BELOW this height, half ABOVE
-;=======================================================================================
 
 ;=======================================================================================
 ; Input data checks
@@ -79,12 +82,14 @@ end if
 ;=======================================================================================
 print("Loading data from file...")
 
-lat = f->lat({minLat:maxLat:stride})
-lon = f->lon(::stride)
-lev = f->lev(:)
+lat  = f->lat({minLat:maxLat:stride})
+lon  = f->lon(::stride)
+lev  = f->lev(:)
 nlat = dimsizes(lat)
 nlon = dimsizes(lon)
 nlev = dimsizes(lev)
+
+print("lon(0)="+lon(0))
 
 if (hasTimeIx) then
   U =  f->$Uname$(timeStep,:,{minLat:maxLat:stride},::stride)
@@ -92,19 +97,29 @@ if (hasTimeIx) then
   T =  f->$Tname$(timeStep,:,{minLat:maxLat:stride},::stride)
   PS = f->$PSname$(timeStep,{minLat:maxLat:stride},::stride)
   PRECT = f->$PRECTname$(timeStep,{minLat:maxLat:stride},::stride)
+
 else
-  U =  f->$Uname$(:,{minLat:maxLat:stride},::stride)
-  V = f->$Vname$(:,{minLat:maxLat:stride},::stride)
-  T = f->$Tname$(:,{minLat:maxLat:stride},::stride)
-  PS = f->$PSname$({minLat:maxLat:stride},::stride)
+  U     = f->$Uname$(:,{minLat:maxLat:stride},::stride)
+  V     = f->$Vname$(:,{minLat:maxLat:stride},::stride)
+  T     = f->$Tname$(:,{minLat:maxLat:stride},::stride)
+  PS    = f->$PSname$({minLat:maxLat:stride},::stride)
   PRECT = f->$PRECTname$({minLat:maxLat:stride},::stride)
 end if
+
+;if(lon(0) .eq. 0) then
+;  U = lonFlip(U )
+;  V = lonFlip(V )
+;  T = lonFlip(T )
+;  PS = lonFlip(PS )
+;  PRECT = lonFlip(PRECT )
+;  lon = lon -180.0
+;end if
+
 ; If U and V are not m/s, please convert here
 U@units="m/s"
 V@units="m/s"
 T@units="K"
 T@long_name="Temperature"
-;=======================================================================================
 
 ;=======================================================================================
 ; Find center of storm by minimizing PS
@@ -119,7 +134,6 @@ psminlat = lat(a_indices(0,0))
 psminlon = lon(a_indices(0,1))
 delete([/a,a1D,dsizes_a,a_indices/])
 print("... PS minimum found at lat: "+psminlat+" lon: "+psminlon)
-;=======================================================================================
 
 
 ;=======================================================================================
@@ -129,13 +143,12 @@ Tanom = T
 Tref = T(:,{psminlat+offAnomDist},{psminlon+offAnomDist})
 Tanom = T - conform(T,Tref,0)
 Tanom@long_name="Temperature anomaly"
-;=======================================================================================
-
 
 ;=======================================================================================
 ; Do Z calculations/interpolations if necessary
 ;=======================================================================================
 if (.not. data_on_constant_Z) then
+
   ;=======================================================================================
   ; Convert from hybrid levels to Z (CAM)
   ;=======================================================================================
@@ -148,7 +161,7 @@ if (.not. data_on_constant_Z) then
     hybm=f->hybm
     hyai=f->hyai
     hybi=f->hybi
-; P0=f->P0
+
     P0=100000
     Tconv = f->T(timeStep,:,{minLat:maxLat:stride},::stride)
     Qconv = f->Q(timeStep,:,{minLat:maxLat:stride},::stride)
@@ -217,28 +230,33 @@ PRECT@units="mm/d"
 
 print("Plotting...")
 
-wks   = gsn_open_wks (out_type,"x-sections")               ; send graphics to PNG file
 contour = new(4,"graphic")
 
 gsn_define_colormap(wks,"BlAqGrYeOrReVi200")
 
-res                 = True
-res@gsnDraw         = False
+res                  = True
+res@gsnDraw          = False
 res@gsnFrame         = False
 res@gsnSpreadColors  = True        ; Span full color map
 res@cnFillOn         = True        ; Turn on contour fill
 res@cnLinesOn        = False
 res@cnLineLabelsOn   = False
 res@cnInfoLabelOn    = False
-res@gsnAddCyclic = True
+res@gsnAddCyclic     = True
 
 latWidth = 10.0
 lonWidth = 10.0
 res@mpOutlineOn = False
 res@mpMaxLatF = psminlat + latWidth
 res@mpMinLatF = psminlat - latWidth
-res@mpMinLonF = psminlon - lonWidth
 res@mpMaxLonF = psminlon + lonWidth
+res@mpMinLonF = psminlon - lonWidth
+res@mpCenterLonF = psminlon
+
+print(res@mpMaxLatF)
+print(res@mpMinLatF)
+print(res@mpMaxLonF)
+print(res@mpMinLonF)
 
 res@cnLevelSelectionMode = "ManualLevels"
 res@cnLevelSpacingF      =  5.0
@@ -269,8 +287,9 @@ res@tiMainString="Precip. rate"
 contour(3) = gsn_csm_contour_map(wks,PRECT(:,:),res)  ; create the plot
 
 resP                     = True                ; modify the panel plot
-resP@gsnMaximize         = True
+resP@gsnMaximize         = False ;True
 
 gsn_panel(wks,contour,(/2,2/),resP)             ; now draw as one plot
+end do
 
 end

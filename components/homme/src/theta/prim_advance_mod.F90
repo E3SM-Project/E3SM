@@ -542,11 +542,11 @@ contains
      enddo
 
      call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
-!#if 0
-!     theta_ref(:,:,:,ie)=0
-!     phi_ref(:,:,:,ie)=0
+#if 0
+     theta_ref(:,:,:,ie)=0
+     phi_ref(:,:,:,ie)=0
      dp_ref(:,:,:,ie)=0
-!#endif
+#endif
   enddo
 
 
@@ -576,7 +576,7 @@ contains
         ! comptue mean flux
         if (nu_p>0) then
            elem(ie)%derived%dpdiss_ave(:,:,:)=elem(ie)%derived%dpdiss_ave(:,:,:)+&
-                eta_ave_w*elem(ie)%state%dp3d(:,:,:,nt)/hypervis_subcycle
+                (eta_ave_w*elem(ie)%state%dp3d(:,:,:,nt)+dp_ref(:,:,:,ie))/hypervis_subcycle
            elem(ie)%derived%dpdiss_biharmonic(:,:,:)=elem(ie)%derived%dpdiss_biharmonic(:,:,:)+&
                 eta_ave_w*stens(:,:,:,1,ie)/hypervis_subcycle
         endif
