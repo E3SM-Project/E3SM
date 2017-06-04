@@ -347,7 +347,7 @@ contains
     do ic = 1 , hypervis_subcycle_q
       !$omp barrier
       !$omp master
-      !$acc parallel loop gang vector collapse(4) present(elem(:),derived_divdp_proj,state_qdp,dp0,qtens_biharmonic,qtens)
+      !$acc parallel loop gang vector collapse(4) present(elem(:),derived_divdp_proj,state_qdp,hvcoord%dp0,qtens_biharmonic,qtens)
       do ie = 1 , nelemd
         ! Qtens = Q/dp   (apply hyperviscsoity to dp0 * Q, not Qdp)
         do k = 1 , nlev
@@ -605,7 +605,7 @@ contains
       if ( nu_p > 0 ) then
         !$omp barrier
         !$omp master
-        !$acc parallel loop gang vector collapse(4) present(elem(:),qtens_biharmonic,dp0)
+        !$acc parallel loop gang vector collapse(4) present(elem(:),qtens_biharmonic,hvcoord%dp0)
         do ie = 1 , nelemd
           do k = 1 , nlev    
             do j = 1 , np
@@ -626,7 +626,7 @@ contains
       call neighbor_minmax_openacc( elem , hybrid , edgeMinMax , 1 , nelemd , qmin , qmax )
       !$omp barrier
       !$omp master
-      !$acc parallel loop gang vector collapse(4) present(qtens_biharmonic,dp0,elem(:))
+      !$acc parallel loop gang vector collapse(4) present(qtens_biharmonic,hvcoord%dp0,elem(:))
       do ie = 1 , nelemd
         do k = 1 , nlev    !  Loop inversion (AAM)
           do j = 1 , np

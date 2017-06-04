@@ -26,7 +26,7 @@
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'wet'
   theta_hydrostatic_mode = .true.
-  dcmip16_prec_type = 1                         ! 0=kessler prec 1= reed prec
+  dcmip16_prec_type = 0                         ! 0=kessler prec 1= reed prec
   dcmip16_pbl_type  = 0                         ! 0=reed pbl     1= bryan pbl
 /
 &vert_nl

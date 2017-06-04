@@ -20,6 +20,7 @@ module derivative_mod
     gradient_sphere_wk_testcov,&
     gradient_wk,&
     laplace_sphere_wk,&
+    laplace_z,&
     limiter_optim_iter_full,&
     subcell_Laplace_fluxes,&
     subcell_div_fluxes,&

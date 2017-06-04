@@ -14,8 +14,7 @@ if ( ${?SLURM_NNODES} ) then   # redsky
     @ NCPU /= $OMP_NUM_THREADS
 endif
 
-EXEC=../../../test_execs/theta-nlev40/theta-nlev40
-NCPU=640
+set EXEC = ../../../test_execs/theta-nlev40/theta-nlev40
 
 date
 

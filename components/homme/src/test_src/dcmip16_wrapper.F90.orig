@@ -418,7 +418,11 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl):: lat
-  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta_kess,rho_kess,exner_kess,p,dp,rho,z,qv,qc,qr
+<<<<<<< HEAD
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,theta_kess,exner_kess,p,dp,rho,z,qv,qc,qr
+=======
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,exner_kess,p,dp,cp_star,rho,z,qv,qc,qr, rho_kess, theta_kess
+>>>>>>> refs/remotes/origin/nonhydro/homme/thetah+pese
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
   real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
   real(rl), dimension(np,np)      :: ps
@@ -433,7 +437,11 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     precl(:,:,ie) = 0
 
     ! get current element state
+<<<<<<< HEAD
     call get_state(u,v,w,T,p,dp,ps,rho,z,g,elem(ie),hvcoord,nt,ntQ)
+=======
+    call get_state(u,v,w,T,p,dp,cp_star,rho,z,g,elem(ie),hvcoord,nt,ntQ)
+>>>>>>> refs/remotes/origin/nonhydro/homme/thetah+pese
 
     ! get mixing ratios
     qv  = elem(ie)%state%Qdp(:,:,:,1,ntQ)/dp
@@ -450,15 +458,23 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     ! compute form of exner pressure expected by Kessler physics
     exner_kess = (p/p0)**(Rgas/Cp)
-    rho_kess   = p/(Rgas*T)
+<<<<<<< HEAD
     theta_kess = T/exner_kess
 
     ! invert columns (increasing z)
     theta_inv= theta_kess(:,:,nlev:1:-1)
+=======
+    rho_kess   = p/(Rgas*T)
+    theta_kess = T/exner_kess
+
+    ! invert columns (increasing z)
+    !theta_inv= theta(:,:,nlev:1:-1)
+    theta_inv = theta_kess(:,:,nlev:1:-1)
+>>>>>>> refs/remotes/origin/nonhydro/homme/thetah+pese
     qv_inv   = qv   (:,:,nlev:1:-1)
     qc_inv   = qc   (:,:,nlev:1:-1)
     qr_inv   = qr   (:,:,nlev:1:-1)
-    rho_inv  = rho_kess  (:,:,nlev:1:-1)
+    rho_inv  = rho  (:,:,nlev:1:-1)
     exner_inv= exner_kess(:,:,nlev:1:-1)
     z_inv    = z    (:,:,nlev:1:-1)
 
@@ -486,6 +502,12 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     qc    = qc_inv   (:,:,nlev:1:-1)
     qr    = qr_inv   (:,:,nlev:1:-1)
     T     = theta_kess*exner_kess
+<<<<<<< HEAD
+=======
+
+    ! add sponge layer at top of model?
+    ! call set_forcing_rayleigh_friction(elem(ie),z,ztop,zc,tau,u0(:,:,:,ie),v0(:,:,:,ie),nt)
+>>>>>>> refs/remotes/origin/nonhydro/homme/thetah+pese
 
     ! set dynamics forcing
     elem(ie)%derived%FM(:,:,1,:) = 0
