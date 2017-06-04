@@ -23,12 +23,25 @@
          position: relative;
       }
       
+      .sidebar {
+         overflow: auto;
+         overflow-y: auto;
+         width: 29%;
+         height: 100%;
+         position: fixed;
+         left: 69%;
+         top: 10px;
+         bottom: 10px;
+         border: 1px solid black;
+         padding: 1em;
+      }
+
       dt { color:#656565; font-weight: bold }
 
-      .accordionItem h2 { margin: 0; font-size: 1.1em; padding: 0.4em; color: #000; background-color: #E3E4E6; border-bottom: 1px solid #66d; width: 90%}
+      .accordionItem h2 { margin: 0; font-size: 1.1em; padding: 0.4em; color: #000; background-color: #E3E4E6; border-bottom: 1px solid #66d; width: 70%}
       .accordionItem h2:hover { cursor: pointer; }
-      .accordionItem div { margin: 0; padding: 1em 0.4em; background-color: #eef; border-bottom: 1px solid #66d; width: 90%}
-      .accordionItem.hide h2 { color: #000; background-color: #E3E4E6; width: 90%}
+      .accordionItem div { margin: 0; padding: 1em 0.4em; background-color: #eef; border-bottom: 1px solid #66d; width: 70%}
+      .accordionItem.hide h2 { color: #000; background-color: #E3E4E6; width: 70%}
       
       .detailsBtn { background-color: #E3E4E6; }
 
@@ -108,57 +121,72 @@
   </head>
   <body onload="init()">
     <div class="container">
-        <h1>Component Set Definitions (compsets)</h1>
-	<p style="font-size: 0.9em;">
-	  Model Version: {{ model_version }}<br>
-	  HTML created on: {{ today }}
-	</p>
-  	<p>
+      <h1>Component Set Definitions (compsets)</h1>
+      <p style="font-size: 0.9em;">
+	Model Version: {{ model_version }}<br/>
+	HTML created on: {{ today }}
+      </p>
+      <p>
 	This page contains the complete list of component sets aliases and long names.<br/>
 	They are grouped by model components designed to aid browsing.  <br/>
 	<br/>
 	Clicking on the name of a component will display additional descriptive information.<br/>  
 	Click on the "Show Details" button and then cntl+F key to search for specific strings in this file.
-	</p>
+      </p>
 
-	<button class="detailsBtn" onclick="showAll();">Show Details</button>
-	<button class="detailsBtn" onclick="hideAll();">Hide Details</button>
+      <button class="detailsBtn" onclick="showAll();">Show Details</button>
+      <button class="detailsBtn" onclick="hideAll();">Hide Details</button>
 
-	<br/><br/>
-	<div class="accordionItem">
-	  <h2> <span id="variable">Compset Naming Convention</span></h2>
-	    <div>
-	      <pre>{{ help }}</pre>
-	    </div>
+      <br/><br/>
+      <div class="accordionItem">
+	<h2> <span id="variable">Compset Naming Convention</span></h2>
+	<div>
+	  <pre>{{ help }}</pre>
 	</div>
+      </div>
 
-	{% for component, comp_dict in html_dict|dictsort %}
-	<div class="accordionItem">
-	  <h2>Component: <span id="variable">{{ component|e }}</span></h2>
-	  <div>
-	    <table>
-	      <tr>
-		<th>Alias</th>
-		<th>Long Name</th>
-	      <tr/>
-	      {% for alias, long_name in comp_dict.compsets.iteritems()  %}
-	      <tr>
-		<td>{{ alias|e }}</td>
-		<td>{{ long_name|e }}</td>
-	      </tr>
-	      <tr>
-		<td></td>
-		<td> {{ comp_dict.desc[alias] }}</td>
-	      </tr>
-	      <tr>
-		<td></td>
-		<td><hr/></td>
-	      </tr>
-	      {% endfor %}
-	      </table>
-	    </div>
+
+      {% for component, comp_dict in html_dict|dictsort %}
+      <div class="accordionItem">
+	<h2>Component: <span id="variable">{{ component|e }}</span></h2>
+	<div>
+	  <table>
+	    <tr>
+	      <th>Alias</th>
+	      <th>Long Name</th>
+	    <tr/>
+	    {% for alias, long_name in comp_dict.compsets.iteritems() %}
+	    <tr>
+	      <td><b>{{ alias|e }}</b></td>
+	      <td>{{ long_name|e }}</td>
+	    </tr>
+	    {% endfor %}
+	  </table>
+	</div>
+      </div>
+      {% endfor %}
+
+      <div class="sidebar">
+	<h2> <span id="variable">Compset Mode Descriptions</span></h2>
+	<div>
+	  <p>The modes define options for the different component models using
+	    a python regular expression syntax for matching when creating a new case.</p>
+	  <table>
+	    <tr>
+	      <th>Mode</th>
+	      <th>Description</th>
+	    <tr/>
+	    {% for mode, desc in all_descs|dictsort %}
+	    <tr>
+	      <td valign="top"><b>{{ mode|e }}</b></td>
+	      <td valign="top">{{ desc|e }}</td>
+	    </tr>
+	    {% endfor %}
+	    </table>
+	    <br/><br/>
 	  </div>
-	  {% endfor %}
 	</div>
-   </body>
+
+    </div>
+  </body>
 </html>

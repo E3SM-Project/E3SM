@@ -43,8 +43,8 @@ except:
 _now = datetime.datetime.now().strftime('%Y-%m-%d')
 logger = logging.getLogger(__name__)
 _cime_comps = {'data_comps' : ['datm','desp','dice','dlnd','docn','drof','dwav'],
-               'stub_comps' : ['satm','sesp','sice','slnd','socn','srof','swav'],
-               'xcpl_comps' : ['xamp','xexp','xice','xlnd','xocn','xrof','xwav'] }
+               'stub_comps' : ['satm','sesp','sglc','sice','slnd','socn','srof','swav'],
+               'xcpl_comps' : ['xatm','xglc','xice','xlnd','xocn','xrof','xwav'] }
 
 ###############################################################################
 def commandline_options():
@@ -70,18 +70,64 @@ def commandline_options():
     return options
 
 ###############################################################################
-def get_desc(compset, desc_file):
+def get_descs(desc_file):
 ###############################################################################
+
+    descs = dict()
+    ordered_descs = collections.OrderedDict()
+
+    # check that desc_file exists
+    expect(os.path.isfile(desc_file), "File %s does not exist"%desc_file)
 
     xml_tree = etree.ElementTree()
     xml_tree.parse(desc_file)
-    descrips = xml_tree.findall("descriptions/desc")
+    descrips = xml_tree.findall("description/desc")
 
     for descrip in descrips:
         compset_attr = descrip.get("compset")
-        if compset_attr in compset:
-## start here return the compset_attr and the element value            
+        descs[compset_attr] = descrip.text
+        
+        # parse out the warning texts
+        descs[compset_attr] = descs[compset_attr].replace('-----------------------------WARNING ------------------------------------------------',
+                                                                       ' -- WARNING -- ')
+        descs[compset_attr] = descs[compset_attr].replace('-------------------------------------------------------------------------------------',
+                                                                       '')
 
+    ordered_descs = collections.OrderedDict(sorted(descs.items(), key=lambda t: t[0]))
+
+    return ordered_descs
+
+###############################################################################
+def get_all_descs(components):
+###############################################################################
+
+    cimeroot = os.environ['CIMEROOT']
+    model = get_model()
+    srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
+    model_config_file = 'config_component_{0}.xml'.format(model)
+    desc_files = list()
+    all_descs = dict()
+
+    # load the desc_files list for CIME components (data, stub and xcpl)
+    for subdir, comps in _cime_comps.iteritems():
+        for component in comps:
+            desc_files.append(os.path.join(cimeroot, 'src/components', subdir, component, 'cime_config/config_component.xml'))
+
+    # need to add ww3 to desc_files because ww3 doesn't define compsets but contains descriptions
+    desc_files.append(os.path.join(srcroot, 'components/ww3/cime_config/config_component.xml'))
+
+    # add to the desc_files list for the active model or driver components which define compsets
+    for component in components:
+        if 'allactive' in component or 'drv' in component:
+            desc_files.append(os.path.join(cimeroot, 'src/drivers/mct/cime_config', model_config_file))
+        else:
+            desc_files.append(os.path.join(srcroot, 'components', component, 'cime_config/config_component.xml'))
+
+    # load all the descriptions into a dictionary
+    for path in desc_files:
+        all_descs.update(get_descs(path))
+    
+    return all_descs
 
 ###############################################################################
 def _main_func(options, work_dir):
@@ -95,16 +141,12 @@ def _main_func(options, work_dir):
     ordered_compsets = collections.OrderedDict()
     html_dict = dict()
     model_version = options.version[0]
-    cimeroot = os.environ['CIMEROOT']
-    model = get_model()
-    srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
-    model_config_file = 'config_component_{0}.xml'.format(model)
 
     # read in all the component config_compsets.xml files
     files = Files()
     components = files.get_components("COMPSETS_SPEC_FILE")   
 
-    # loop through the components and read in the config_compset.xml file
+    # loop through the components and read in the config_compset.xml file to get all the compsets
     for component in components:
         # Determine the compsets file for this component
         config_file = files.get_value("COMPSETS_SPEC_FILE", {"component":component})
@@ -123,39 +165,8 @@ def _main_func(options, work_dir):
             # load up the html_dict
             html_dict[component] = { 'compsets' : ordered_compsets }
 
-    # load the desc_files list
-    desc_files = dict()
-    for path, comps in _cime_comps.iteritems():
-        for comp in comps:
-            desc_files[comp] = os.path.join(cimeroot, 'src/components', path, comp)
-
-    # add to the desc_files list
-    for component in components:
-        if 'allactive' in component or 'drv' in component:
-            desc_files[component] = os.path.join(cimeroot, 'src/drivers/mct/cime_config', model_config_file)
-        else:
-            desc_files[component] = os.path.join(srcroot, 'components', component, 'cime_config/config_component.xml')
-
-    # get the mode descriptions for every compset and every corresponding config_component.xml file
-    for alias, compset in ordered_compsets.iteritems():
-        description = ''
-        parts = compset.split('_')
-        for comp, desc_file in desc_files.iteritems():
-            if comp.upper() in parts:
-                expect((desc_file),
-                       "Cannot find config_component.xml file for %s" %component)
-                description += get_desc(compset, desc_file)
-
-
-
-
-                compobj = Component(desc_file)
-                description += compobj.get_description(compset).replace(':','<br/>')
-                description = description.replace('-----------------------------WARNING ------------------------------------------------',
-                                                  '<b>- WARNING -<b/><br/>')
-                description = description.replace('-------------------------------------------------------------------------------------',
-                                                  '<br/>-----------<br/>')
-        html_dict[comp]['desc'] = { alias : description }
+    # get all the descriptions from all components
+    all_descs = get_all_descs(components)
 
     # load up jinja template
     templateLoader = jinja2.FileSystemLoader( searchpath='{0}/templates'.format(work_dir) )
@@ -165,6 +176,7 @@ def _main_func(options, work_dir):
     tmplFile = 'compdef2html.tmpl'
     template = templateEnv.get_template( tmplFile )
     templateVars = { 'html_dict'     : html_dict,
+                     'all_descs'     : all_descs,
                      'today'         : _now,
                      'model_version' : model_version,
                      'help'          : help_text }
