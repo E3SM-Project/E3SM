@@ -396,6 +396,13 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             shutil.copy(hist, baseline)
             comments += "    generating baseline '{}' from file {}\n".format(baseline, hist)
 
+    # copy latest cpl log to baseline
+    # drop the date so that the name is generic
+    newestcpllogfile = case.get_latest_cpl_log()
+    if newestcpllogfile:
+        shutil.copyfile(newestcpllogfile,
+                        os.path.join(basegen_dir, "cpl.log.gz"))
+
     expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(testcase))
     #make sure permissions are open in baseline directory
     for root, _, files in os.walk(basegen_dir):

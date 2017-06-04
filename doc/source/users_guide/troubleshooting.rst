@@ -70,7 +70,7 @@ If the model was running fine, but the wallclock limit was reached, either reduc
 If the model hangs and then times out, that usually indicates an MPI or file system problem or possibly a model problem. If you suspect an intermittent system problem, try resubmitting the job. Also send a help request to local site consultants to provide them with feedback about system problems and to get help.
 
 Another error that can cause a timeout is a slow or intermittently slow node.
-The **cpl.log** file normally outputs the time used for every model simulation day. To review that data, grep the **cpl.log** file for the string``tStamp`` as shown here:
+The **cpl.log** file normally outputs the time used for every model simulation day. To review that data, grep the **cpl.log** file for the string ``tStamp`` as shown here:
 ::
 
    grep tStamp cpl.log.* | more

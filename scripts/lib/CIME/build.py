@@ -61,16 +61,13 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
                   thread_bad_results, smp, compiler))
         t.start()
 
-        for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
-            shutil.copy(mod_file, incroot)
-
         logs.append(file_build)
 
     # Wait for threads to finish
     while(threading.active_count() > 1):
         time.sleep(1)
 
-    # aquap has a dependancy on atm so we build it after the threaded loop
+    # aquap has a dependency on atm so we build it after the threaded loop
 
     for model, comp, nthrds, _, config_dir in complist:
         smp = nthrds > 1 or build_threaded
@@ -81,6 +78,7 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
             _build_model_thread(config_dir, comp, caseroot, libroot, bldroot, incroot, file_build,
                                 thread_bad_results, smp, compiler)
             logs.append(file_build)
+
     expect(not thread_bad_results, "\n".join(thread_bad_results))
 
     #

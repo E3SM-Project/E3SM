@@ -867,7 +867,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
                 self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_FAIL_STATUS)
                 self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS)
             elif (test_name == test_diff_test):
-                self.assertEqual(ts.get_status("COMPARE_base_rest"), TEST_FAIL_STATUS)
+                self.assertEqual(ts.get_status("COMPARE_base_rest"), TEST_FAIL_STATUS, msg="Problem with %s" % test_diff_test)
                 self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS)
             else:
                 self.assertTrue(test_name in [pass_test, mem_pass_test])
