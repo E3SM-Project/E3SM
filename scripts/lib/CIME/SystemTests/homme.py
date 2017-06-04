@@ -36,7 +36,7 @@ class HOMME(SystemTestsCommon):
             cmake_cmd = "cmake -C {}/components/homme/cmake/machineFiles/{}.cmake -DUSE_NUM_PROCS={} {}/components/homme -DHOMME_BASELINE_DIR={}/{}".format(srcroot, mach, procs, srcroot, baseline, basename)
 
             run_cmd_no_fail(cmake_cmd, arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
-            run_cmd_no_fail("{} -j8".format(gmake, arg_stdout="homme.bldlog", combine_output=True), from_dir=exeroot)
+            run_cmd_no_fail("{} -j8".format(gmake), arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
 
             post_build(self._case, [os.path.join(exeroot, "homme.bldlog")])
 
@@ -56,7 +56,7 @@ class HOMME(SystemTestsCommon):
 
         if generate:
             full_baseline_dir = os.path.join(baseline, basegen, "tests", "baseline")
-            stat = run_cmd("{} -j 4 baseline".format(gmake, arg_stdout=log, combine_output=True), from_dir=exeroot)[0]
+            stat = run_cmd("{} -j 4 baseline".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
             if stat == 0:
                 if os.path.isdir(full_baseline_dir):
                     shutil.rmtree(full_baseline_dir)

@@ -96,8 +96,8 @@ class ERP(SystemTestsCommon):
                    "ERROR: LockedFiles/env_mach_pes.ERP{:d}.xml does not exist, run case.build".format(run ))
 
             # Use the second env_mach_pes.xml and env_build.xml files
-            restore("env_mach_pes.ERP{:d}.xml".format(run, newname="env_mach_pes.xml"))
-            restore("env_build.ERP{:d}.xml".format(run, newname="env_build.xml"))
+            restore("env_mach_pes.ERP{:d}.xml".format(run), newname="env_mach_pes.xml")
+            restore("env_build.ERP{:d}.xml".format(run), newname="env_build.xml")
 
             # update the case to use the new values
             self._case.read_xml()
