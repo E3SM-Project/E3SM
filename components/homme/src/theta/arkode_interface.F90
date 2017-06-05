@@ -66,7 +66,8 @@ subroutine arkode_init(t0, dt, y, rtol, atol, iout, rout, ierr)
   real*8,          intent(in)  :: dt
   type(FVec),      intent(in)  :: y
   real*8,          intent(in)  :: rtol
-  type(FVec),      intent(in)  :: atol
+!  type(FVec),      intent(in)  :: atol
+  real*8,          intent(in)  :: atol
   integer(C_LONG), intent(in)  :: iout(40)
   real*8,          intent(in)  :: rout(40)
   integer(C_INT),  intent(out) :: ierr
@@ -91,8 +92,8 @@ subroutine arkode_init(t0, dt, y, rtol, atol, iout, rout, ierr)
   endif
 
   !    ARKode dataspace
-  iatol = 2    ! specify type for atol: 1=scalar, 2=array
-  imex = 2     ! specify problem type: 0=implicit, 1=explicit, 2=imex
+  iatol = 1    ! specify type for atol: 1=scalar, 2=array
+  imex = 1     ! specify problem type: 0=implicit, 1=explicit, 2=imex
   call farkmalloc(t0, y, imex, iatol, rtol, atol, &
                   iout, rout, ipar, rpar, ierr)
   if (ierr /= 0) then
@@ -190,10 +191,11 @@ subroutine farkifun(t, y, fy, ipar, rpar, ierr)
   use FortranVector
   use iso_c_binding
   use prim_advance_mod, only: arkode_pars,compute_andor_apply_rhs
-  use element_mod,    only: element_t
-  use hybrid_mod,     only: hybrid_t
-  use derivative_mod, only: derivative_t
+  use element_mod,      only: element_t
+  use hybrid_mod,       only: hybrid_t
+  use derivative_mod,   only: derivative_t
   use hybvcoord_mod,    only: hvcoord_t
+  use dimensions_mod,   only: np,nlev
 
   !======= Declarations =========
   implicit none
@@ -207,45 +209,60 @@ subroutine farkifun(t, y, fy, ipar, rpar, ierr)
   integer(C_INT),  intent(out)           :: ierr
  
  
-
   ! local variables
   type (element_t), allocatable :: elem(:)
   integer :: ie,nets,nete,qn0
   !======= Internals ============
-  type (hvcoord_t)    :: hvcoord
-  type (hybrid_t)     :: hybrid
-  type (derivative_t) :: deriv
+  real*8, allocatable :: Fvectemp(:,:,:,:,:)
+  type (hvcoord_t)                   :: hvcoord
+  type (hybrid_t)                    :: hybrid
+  type (derivative_t)                :: deriv
+
+  allocate(Fvectemp(nete-nets+1,np,np,nlev,6))
 
   ! set constants, extract solution components
   ! fill implicit portion of RHS
    nets=rpar%nets
    nete=rpar%nete
-   allocate(elem(nets-nete+1))
+   allocate(elem(nete-nets+1))
    qn0=rpar%qn0
+
+   Fvectemp(:,:,:,:,1)=reshape(y(:)%u,(/nete-nets+1,np,np,nlev/))
+   Fvectemp(:,:,:,:,2)=reshape(y(:)%v,(/nete-nets+1,np,np,nlev/))
+   Fvectemp(:,:,:,:,3)=reshape(y(:)%w,(/nete-nets+1,np,np,nlev/))
+   Fvectemp(:,:,:,:,4)=reshape(y(:)%phi,(/nete-nets+1,np,np,nlev/))
+   Fvectemp(:,:,:,:,5)=reshape(y(:)%theta_dp_cp,(/nete-nets+1,np,np,nlev/))
+   Fvectemp(:,:,:,:,6)=reshape(y(:)%dp3d,(/nete-nets+1,np,np,nlev/))
+
    do ie=nets,nete
-     elem(ie)%state%v(:,:,1,:,1)         = y(ie-nets+1)%v(:,:,1,:)
-     elem(ie)%state%v(:,:,2,:,1)         = y(ie-nets+1)%v(:,:,2,:)
-     elem(ie)%state%w(:,:,:,1)           = y(ie-nets+1)%w(:,:,:)
-     elem(ie)%state%phi(:,:,:,1)         = y(ie-nets+1)%phi(:,:,:)
-     elem(ie)%state%theta_dp_cp(:,:,:,1) = y(ie-nets+1)%theta_dp_cp(:,:,:)
-     elem(ie)%state%dp3d(:,:,:,1)        = y(ie-nets+1)%dp3d(:,:,:)
+     elem(ie)%state%v(:,:,1,:,1)         = Fvectemp(nete-nets+ie,:,:,:,1)
+     elem(ie)%state%v(:,:,2,:,1)         = Fvectemp(nete-nets+ie,:,:,:,2)
+     elem(ie)%state%w(:,:,:,1)           = Fvectemp(nete-nets+ie,:,:,:,3)
+     elem(ie)%state%phi(:,:,:,1)         = Fvectemp(nete-nets+ie,:,:,:,4)
+     elem(ie)%state%theta_dp_cp(:,:,:,1) = Fvectemp(nete-nets+ie,:,:,:,5)
+     elem(ie)%state%dp3d(:,:,:,1)        = Fvectemp(nete-nets+ie,:,:,:,6)
    end do 
 
    call compute_andor_apply_rhs(1,1,1,qn0,1.d0,elem,hvcoord,hybrid,&
        deriv,nets,nete,.false.,1.d0,0.d0,1.d0,0.d0)
 
    do ie=nets,nete
-     fy(ie-nets+1)%v(:,:,1,:)         = elem(ie)%state%v(:,:,1,:,1)
-     fy(ie-nets+1)%v(:,:,2,:)         = elem(ie)%state%v(:,:,2,:,1)
-     fy(ie-nets+1)%w(:,:,:)           = elem(ie)%state%w(:,:,:,1)
-     fy(ie-nets+1)%phi(:,:,:)         = elem(ie)%state%phi(:,:,:,1)
-     fy(ie-nets+1)%theta_dp_cp(:,:,:) = elem(ie)%state%theta_dp_cp(:,:,:,1)
-     fy(ie-nets+1)%dp3d(:,:,:)        = elem(ie)%state%dp3d(:,:,:,1)
+     Fvectemp(nete-nets+ie,:,:,:,1) = elem(ie)%state%v(:,:,1,:,1)
+     Fvectemp(nete-nets+ie,:,:,:,2) = elem(ie)%state%v(:,:,2,:,1)
+     Fvectemp(nete-nets+ie,:,:,:,3) = elem(ie)%state%w(:,:,:,1)
+     Fvectemp(nete-nets+ie,:,:,:,4) = elem(ie)%state%phi(:,:,:,1)
+     Fvectemp(nete-nets+ie,:,:,:,5) = elem(ie)%state%theta_dp_cp(:,:,:,1)
+     Fvectemp(nete-nets+ie,:,:,:,6) = elem(ie)%state%dp3d(:,:,:,1)
    end do
-
-
-
-  ierr = 0
+ 
+   fy(:)%u           = reshape(Fvectemp(:,:,:,:,1),(/(nete-nets+1)*np*np*nlev/))
+   fy(:)%v           = reshape(Fvectemp(:,:,:,:,2),(/(nete-nets+1)*np*np*nlev/))
+   fy(:)%w           = reshape(Fvectemp(:,:,:,:,3),(/(nete-nets+1)*np*np*nlev/))
+   fy(:)%phi         = reshape(Fvectemp(:,:,:,:,4),(/(nete-nets+1)*np*np*nlev/))
+   fy(:)%theta_dp_cp = reshape(Fvectemp(:,:,:,:,5),(/(nete-nets+1)*np*np*nlev/))
+   fy(:)%dp3d        = reshape(Fvectemp(:,:,:,:,6),(/(nete-nets+1)*np*np*nlev/))
+    deallocate(Fvectemp,elem)
+   ierr = 0
 
   return
 end subroutine farkifun
@@ -273,10 +290,11 @@ subroutine farkefun(t, y, fy, ipar, rpar, ierr)
   use FortranVector
   use iso_c_binding
   use prim_advance_mod, only: arkode_pars,compute_andor_apply_rhs
-  use element_mod,    only: element_t
-  use hybrid_mod,     only: hybrid_t
-  use derivative_mod, only: derivative_t
+  use element_mod,      only: element_t
+  use hybrid_mod,       only: hybrid_t
+  use derivative_mod,   only: derivative_t
   use hybvcoord_mod,    only: hvcoord_t
+  use dimensions_mod,   only: np,nlev
 
   !======= Declarations =========
   implicit none
@@ -295,6 +313,7 @@ subroutine farkefun(t, y, fy, ipar, rpar, ierr)
   type (element_t), allocatable :: elem(:)
   integer :: ie,nets,nete,qn0
   !======= Internals ============
+  real*8, allocatable         :: Fvectemp(:,:,:,:,:)
   type (hvcoord_t)    :: hvcoord
   type (hybrid_t)     :: hybrid
   type (derivative_t) :: deriv
@@ -303,31 +322,37 @@ subroutine farkefun(t, y, fy, ipar, rpar, ierr)
   ! fill implicit portion of RHS
    nets=rpar%nets
    nete=rpar%nete
-   allocate(elem(nets-nete+1))
+   allocate(elem(nete-nets+1),Fvectemp(nete-nets+1,np,np,nlev,6))
    qn0=rpar%qn0
+
    do ie=nets,nete
-     elem(ie)%state%v(:,:,1,:,1)         = y(ie-nets+1)%v(:,:,1,:)
-     elem(ie)%state%v(:,:,2,:,1)         = y(ie-nets+1)%v(:,:,2,:)
-     elem(ie)%state%w(:,:,:,1)           = y(ie-nets+1)%w(:,:,:)
-     elem(ie)%state%phi(:,:,:,1)         = y(ie-nets+1)%phi(:,:,:)
-     elem(ie)%state%theta_dp_cp(:,:,:,1) = y(ie-nets+1)%theta_dp_cp(:,:,:)
-     elem(ie)%state%dp3d(:,:,:,1)        = y(ie-nets+1)%dp3d(:,:,:)
+     elem(ie)%state%v(:,:,1,:,1)         = Fvectemp(nete-nets+ie,:,:,:,1)
+     elem(ie)%state%v(:,:,2,:,1)         = Fvectemp(nete-nets+ie,:,:,:,2)
+     elem(ie)%state%w(:,:,:,1)           = Fvectemp(nete-nets+ie,:,:,:,3)
+     elem(ie)%state%phi(:,:,:,1)         = Fvectemp(nete-nets+ie,:,:,:,4)
+     elem(ie)%state%theta_dp_cp(:,:,:,1) = Fvectemp(nete-nets+ie,:,:,:,5)
+     elem(ie)%state%dp3d(:,:,:,1)        = Fvectemp(nete-nets+ie,:,:,:,6)
    end do 
 
    call compute_andor_apply_rhs(1,1,1,qn0,1.d0,elem,hvcoord,hybrid,&
        deriv,nets,nete,.false.,1.d0,1.d0,0d0,0.d0)
 
    do ie=nets,nete
-     fy(ie-nets+1)%v(:,:,1,:)         = elem(ie)%state%v(:,:,1,:,1)
-     fy(ie-nets+1)%v(:,:,2,:)         = elem(ie)%state%v(:,:,2,:,1)
-     fy(ie-nets+1)%w(:,:,:)           = elem(ie)%state%w(:,:,:,1)
-     fy(ie-nets+1)%phi(:,:,:)         = elem(ie)%state%phi(:,:,:,1)
-     fy(ie-nets+1)%theta_dp_cp(:,:,:) = elem(ie)%state%theta_dp_cp(:,:,:,1)
-     fy(ie-nets+1)%dp3d(:,:,:)        = elem(ie)%state%dp3d(:,:,:,1)
+     Fvectemp(nete-nets+ie,:,:,:,1) = elem(ie)%state%v(:,:,1,:,1)
+     Fvectemp(nete-nets+ie,:,:,:,2) = elem(ie)%state%v(:,:,2,:,1)
+     Fvectemp(nete-nets+ie,:,:,:,3) = elem(ie)%state%w(:,:,:,1)
+     Fvectemp(nete-nets+ie,:,:,:,4) = elem(ie)%state%phi(:,:,:,1)
+     Fvectemp(nete-nets+ie,:,:,:,5) = elem(ie)%state%theta_dp_cp(:,:,:,1)
+     Fvectemp(nete-nets+ie,:,:,:,6) = elem(ie)%state%dp3d(:,:,:,1)
    end do
 
-
-
+  fy(:)%u           = reshape(Fvectemp(:,:,:,:,1),(/(nete-nets+1)*np*np*nlev/))
+  fy(:)%v           = reshape(Fvectemp(:,:,:,:,2),(/(nete-nets+1)*np*np*nlev/))
+  fy(:)%w           = reshape(Fvectemp(:,:,:,:,3),(/(nete-nets+1)*np*np*nlev/))
+  fy(:)%phi         = reshape(Fvectemp(:,:,:,:,4),(/(nete-nets+1)*np*np*nlev/))
+  fy(:)%theta_dp_cp = reshape(Fvectemp(:,:,:,:,5),(/(nete-nets+1)*np*np*nlev/))
+  fy(:)%dp3d        = reshape(Fvectemp(:,:,:,:,6),(/(nete-nets+1)*np*np*nlev/))
+  deallocate(elem,Fvectemp)
   ierr = 0
 
   return
