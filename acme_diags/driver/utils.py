@@ -12,6 +12,10 @@ def _findfile(path_name, data_name, season):
     for filename in dir_files:
        if filename.startswith(data_name + '_' + season):
            return path_name+filename
+    # only ran on model data, because a shorter name is used
+    for filename in dir_files:
+       if filename.startswith(data_name) and season in filename:
+           return path_name+filename
     raise IOError("No file found for {} and {}".format(data_name, season))
 
 def get_test_filename(parameters, season):
