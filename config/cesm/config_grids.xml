@@ -164,11 +164,11 @@
       <mask>gx3v7</mask>
     </model_grid>
 
-    <model_grid alias="T42_T42" not_compset="_POP">
+    <model_grid alias="T42_T42_mg17" not_compset="_POP">
       <grid name="atm">T42</grid>
       <grid name="lnd">T42</grid>
       <grid name="ocnice">T42</grid>
-      <mask>usgs</mask>
+      <mask>gx1v7</mask>
     </model_grid>
 
     <model_grid alias="T42_T42_musgs" not_compset="_POP">

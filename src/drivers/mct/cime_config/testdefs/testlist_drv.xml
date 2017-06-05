@@ -507,6 +507,14 @@
       </machine>
     </machines>
   </test>
+  <test name="PRE" grid="f19_f19_mg17" compset="ADESP_TEST">
+    <machines>
+      <machine name="hobart" compiler="nag" category="prealpha"/>
+    </machines>
+    <options>
+      <option name="wallclock"> 00:20 </option>
+    </options>
+  </test>
   <test name="SEQ_IOP_Ld3" grid="f19_g16" compset="X">
     <machines>
       <machine name="hobart" compiler="pgi" category="prebeta">
