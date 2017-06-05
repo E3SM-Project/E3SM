@@ -15,12 +15,37 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef __bgq__
+#include <spi/include/kernel/memory.h>
+#endif
 
 static int nearest_powerof2 (const int);
 static int convert_to_mb = 1;   /* true */
 
 int GPTLprint_memusage (const char *str)
 {
+#ifdef __bgq__
+  uint64_t shared, persist, heapavail, stackavail, stack, heap, guard, mmap;
+
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_HEAP, &heap);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_SHARED, &shared);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_STACK, &stack);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_PERSIST, &persist);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_HEAPAVAIL, &heapavail);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_STACKAVAIL, &stackavail);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_GUARD, &guard);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_MMAP, &mmap);
+
+  printf("%s Memory(MB): heap-alloc: %.2f, heap-avail: %.2f,"
+         "stack-alloc: %.2f, stack-avail: %.2f,"
+         "shared: %.2f, persist: %.2f, guard: %.2f, mmap: %.2f\n", str,
+         (double)heap/(1024*1024),   (double)heapavail/(1024*1024),
+         (double)stack/(1024*1024),  (double)stackavail/(1024*1024),
+         (double)shared/(1024*1024), (double)persist/(1024*1024),
+         (double)guard/(1024*1024),  (double)mmap/(1024*1024));
+  return 0;
+
+#else
   int size, size2;                        /* process size (returned from OS) */
   int rss, rss2;                          /* resident set size (returned from OS) */
   int share, share2;                      /* shared data segment size (returned from OS) */
@@ -82,6 +107,7 @@ int GPTLprint_memusage (const char *str)
 #endif
 
   return 0;
+#endif
 }
 
 /*
