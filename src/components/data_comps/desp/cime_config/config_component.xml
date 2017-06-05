@@ -6,9 +6,10 @@
 
   <!-- NOTE that the description block determines what DESP% values can appear in the compset name 
        For DESP this is determined by the DESP_MODE values -->
-  <description>
-    <desc compset="_DESP%NOOP">no modification of any model data</desc>
-    <desc compset="_DESP%TEST">test modification of any model data</desc>
+
+  <description submodes="required">
+    <desc compset="DESP%NOOP">no modification of any model data</desc>
+    <desc compset="DESP%TEST">test modification of any model data</desc>
   </description>
 
   <entry id="COMP_ESP">

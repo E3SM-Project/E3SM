@@ -6,10 +6,11 @@
 
   <!-- NOTE that the description block determines what DLND% values can appear in the compset name 
        For DLND this is determined by the DLND_MODE values -->
-  <description>
-    <desc compset="_DLND%NULL">dlnd modes are DLND_MODE=NULL:</desc>
-    <desc compset="_DLND%SCPL">dlnd modes for coupler-hist snow coupling are DLND_MODE=GLC_CPLHIST:</desc>
-    <desc compset="_DLND%LCPL">dlnd modes for coupler-hist non-snow coupling are DLND_MODE=CPLHIST:</desc>
+
+  <description submodes="required">
+    <desc compset="DLND%NULL">dlnd modes are DLND_MODE=NULL:</desc>
+    <desc compset="DLND%SCPL">dlnd modes for coupler-hist snow coupling are DLND_MODE=GLC_CPLHIST:</desc>
+    <desc compset="DLND%LCPL">dlnd modes for coupler-hist non-snow coupling are DLND_MODE=CPLHIST:</desc>
   </description>
 
   <entry id="COMP_LND">
