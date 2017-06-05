@@ -52,7 +52,7 @@
     <type>char</type>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
     <default_value>never</default_value>
-    <values>
+    <values match="last">
       <value compset="_DATM.+_CLM">ndays</value>
     </values>
     <group>run_begin_stop_restart</group>
@@ -66,7 +66,7 @@
     <type>real</type>
     <valid_values></valid_values>
     <default_value>284.7</default_value>
-    <values>
+    <values match="last">
       <value compset="^2000">367.0</value>
       <value compset="^4804">367.0</value>
     </values>
@@ -82,7 +82,7 @@
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
-    <values>
+    <values match="last">
       <value compset="%WISO">TRUE</value>
       <value compset="%ISO">TRUE</value>
     </values>
@@ -152,7 +152,7 @@
     <type>char</type>
     <valid_values>CESM1_ORIG,CESM1_ORIG_TIGHT,CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
     <default_value>CESM1_MOD_TIGHT</default_value>
-    <values>
+    <values match="last">
       <value compset="_DATM.*_DOCN%SOM"          >CESM1_MOD</value>
       <value compset="_POP2"                     >CESM1_MOD</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN">CESM1_MOD</value>
@@ -186,7 +186,7 @@
     <type>char</type>
     <valid_values>none,CO2A,CO2B,CO2C,CO2_DMSA</valid_values>
     <default_value>none</default_value>
-    <values>
+    <values match="last">
       <value compset="_CAM\d+"     >CO2A</value>
       <value compset="_DATM"    >none</value>
       <value compset="_BGC%BPRP">CO2C</value>
@@ -209,7 +209,7 @@
     <group>run_coupling</group>
     <file>env_run.xml</file>
     <default_value>day</default_value>
-    <values>
+    <values match="last">
       <value compset="_DLND.*_CISM\d">year</value>
       <value compset="_DLND.*_MPASLI">year</value>
       <value compset="_SLND.*SOCN.*_MPASLI">day</value>
@@ -227,7 +227,7 @@
   <entry id="ATM_NCPL">
     <type>integer</type>
     <default_value>48</default_value>
-    <values>
+    <values match="last">
       <value compset="_SATM">48</value>
       <value compset="_XATM">48</value>
       <value compset="_CAM.*">48</value>
@@ -281,7 +281,7 @@
   <entry id="LND_NCPL">
     <type>integer</type>
     <default_value>$ATM_NCPL</default_value>
-    <values>
+    <values match="last">
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MPASLI">1</value>
       <value compset="_SLND.*SOCN.*_MPASLI">1</value>
@@ -301,7 +301,7 @@
   <entry id="ICE_NCPL">
     <type>integer</type>
     <default_value>$ATM_NCPL</default_value>
-    <values>
+    <values match="last">
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MPASLI">1</value>
       <value compset="_SLND.*SOCN.*_MPASLI">1</value>
@@ -321,7 +321,7 @@
   <entry id="OCN_NCPL">
     <type>integer</type>
     <default_value>$ATM_NCPL</default_value>
-    <values>
+    <values match="last">
       <value compset="_POP2">1</value>
       <value compset="_POP2" grid="oi%tx0.1v2">4</value>
       <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
@@ -351,7 +351,7 @@
   <entry id="GLC_NCPL">
     <type>integer</type>
     <default_value>1</default_value>
-    <values>
+    <values match="last">
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MPASLI">1</value>
       <value compset="_SLND.*SOCN.*_MPASLI">1</value>
@@ -386,7 +386,7 @@
   <entry id="ROF_NCPL">
     <type>integer</type>
     <default_value>8</default_value>
-    <values>
+    <values match="last">
       <value compset=".+" grid="a%ne4np4">6</value>
       <value compset=".+" grid="a%ne11np4">6</value>
       <value compset="_DATM.*_POP2.*_DROF">$ATM_NCPL</value>
@@ -428,7 +428,7 @@
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
-    <values>
+    <values match="last">
       <value compset="DATM.+POP\d">TRUE</value>
       <value compset="DATM.*_MPASO">TRUE</value>
       <value compset="DATM.+DOCN%IAF">TRUE</value>
@@ -455,7 +455,7 @@
     <type>char</type>
     <valid_values>off,ocn</valid_values>
     <default_value>off</default_value>
-    <values>
+    <values match="last">
       <value compset="DATM.+POP\d">ocn</value>
     </values>
     <group>run_component_cpl</group>
@@ -475,7 +475,7 @@
     <type>char</type>
     <valid_values></valid_values>
     <default_value>never</default_value>
-    <values>
+    <values match="last">
       <value compset="_DOCN%IAF">nmonths</value>
     </values>
     <group>run_drv_history</group>
@@ -487,7 +487,7 @@
     <type>char</type>
     <valid_values></valid_values>
     <default_value>-999</default_value>
-    <values>
+    <values match="last">
       <value compset="_DOCN%IAF">1</value>
     </values>
     <group>run_drv_history</group>
@@ -508,7 +508,7 @@
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
-    <values>
+    <values match="last">
       <value compset="DATM.*_POP\d"    >TRUE</value>
       <value compset="CAM.*_POP\d"     >TRUE</value>
       <value compset="CAM.*_DOCN%SOM">TRUE</value>
@@ -522,7 +522,7 @@
     <type>real</type>
     <valid_values></valid_values>
     <default_value>379.000</default_value>
-    <values>
+    <values match="last">
       <value compset="^1850"					>284.7</value>
       <value compset="^HIST.+BGC%BPRP"				>284.7</value>
       <value compset="^20TR.+BGC%BPRP"				>284.7</value>
@@ -596,7 +596,7 @@
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>0</default_value>
-    <values>
+    <values match="last">
       <!-- estimated cost (used only for development purposes) -->
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DROF.*_SGLC_SWAV"		>-3</value> <!-- A -->
       <value compset="_DATM.*_DICE.*_DOCN.*_WW3"				>-3</value> <!-- A_WAV -->
@@ -639,7 +639,7 @@
     <type>integer</type>
     <valid_values>0,1,3,5,10,36</valid_values>
     <default_value>10</default_value>
-    <values>
+    <values match="last">
       <value compset="_SGLC">0</value>
     </values>
     <group>run_glc</group>
@@ -652,7 +652,7 @@
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
-    <values>
+    <values match="last">
       <value compset="_CLM45.+CISM\d">TRUE</value>
       <value compset="_CLM45.*_MPASLI">TRUE</value>
       <value compset="_CLM50.+CISM\d">TRUE</value>

@@ -384,7 +384,7 @@
   <entry id="PAUSE_COMPONENT_LIST">
     <type>char</type>
     <default_value>none</default_value>
-    <values>
+    <values match="last">
       <value compset="_DESP">cpl</value>
     </values>
     <group>run_begin_stop_restart</group>

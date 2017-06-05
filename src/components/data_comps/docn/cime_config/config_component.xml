@@ -4,6 +4,28 @@
 
 <entry_id>
 
+  <!-- NOTE that the description block determines what DOCN% values can appear in the compset name 
+       For DOCN this is determined by the DOCN_MODE values -->
+  <description>
+    <desc compset="_DOCN%NULL">docn null mode</desc>
+    <desc compset="_DOCN%DOM">docn prescribed ocean mode</desc>
+    <desc compset="_DOCN%SOM">docn slab ocean mode</desc>
+    <desc compset="_DOCN%SOMAQP">docn aquaplanet slab ocean mode</desc>
+    <desc compset="_DOCN%IAF">docn interannual mode</desc>
+    <desc compset="_DOCN%SST_AQUAP">docn aquaplanet mode:</desc>
+    <desc compset="_DOCN%AQP1">docn analytic aquaplanet sst - option 1</desc>
+    <desc compset="_DOCN%AQP2">docn analytic aquaplanet sst - option 2</desc>
+    <desc compset="_DOCN%AQP3">docn analytic aquaplanet sst - option 3</desc>
+    <desc compset="_DOCN%AQP4">docn analytic aquaplanet sst - option 4</desc>
+    <desc compset="_DOCN%AQP5">docn analytic aquaplanet sst - option 5</desc>
+    <desc compset="_DOCN%AQP6">docn analytic aquaplanet sst - option 6</desc>
+    <desc compset="_DOCN%AQP7">docn analytic aquaplanet sst - option 7</desc>
+    <desc compset="_DOCN%AQP8">docn analytic aquaplanet sst - option 8</desc>
+    <desc compset="_DOCN%AQP9">docn analytic aquaplanet sst - option 9</desc>
+    <desc compset="_DOCN%AQP10">docn analytic aquaplanet sst - option 10</desc>
+    <desc compset="_DOCN%AQPFILE">docn file input aquaplanet sst </desc>
+  </description>
+
   <entry id="COMP_OCN">
     <type>char</type>
     <valid_values>docn</valid_values>
@@ -17,7 +39,7 @@
     <type>char</type>
     <valid_values>prescribed,sst_aquap1,sst_aquap2,sst_aquap3,sst_aquap4,sst_aquap5,sst_aquap6,sst_aquap7,sst_aquap8,sst_aquap9,sst_aquap10,sst_aquapfile,som,som_aquap,interannual,null</valid_values>
     <default_value>prescribed</default_value>
-    <values>
+    <values match="last">
       <value compset="_DOCN%NULL_">null</value>
       <value compset="_DOCN%DOM_" >prescribed</value>
       <value compset="_DOCN%SOM_" >som</value>
@@ -81,7 +103,7 @@
     <type>char</type>
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
-    <values>
+    <values match="last">
       <value compset="_DOCN%SOM.*_TEST">pop_frc.1x1d.090130.nc</value>
       <value compset="_DOCN%SOMAQP" grid="oi%1.9x2.5">default.som.forcing.aquaplanet.Qflux0_h30_sstQOBS.2degFV_c20170421.nc</value>
       <value compset="_DOCN%SOMAQP" grid="oi%0.9x1.25">default.som.forcing.aquaplanet.Qflux0_h30_sstQOBS.1degFV_c20170421.nc</value>
@@ -96,7 +118,7 @@
     <type>char</type>
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
-    <values>
+    <values match="last">
       <value compset="_DOCN%AQPFILE">sst_c4aquasom_0.9x1.25_clim.c170512.nc</value>
     </values>
     <group>run_component_docn</group>
@@ -120,7 +142,7 @@
     <type>char</type>
     <valid_values></valid_values>
     <default_value>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_clim_c101029.nc</default_value>
-    <values>
+    <values match="last">
       <value compset="DOCN%DOM" grid="a%T31.*_oi%T31"						>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_48x96_clim_c050526.nc</value>
       <value compset="DOCN%DOM" grid="a%1.9x2.5.*_oi%1.9x2.5"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_clim_c061031.nc</value>
       <value compset="DOCN%DOM" grid="a%0.9x1.25.*_oi%0.9x1.25"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
@@ -154,7 +176,7 @@
     <type>char</type>
     <valid_values></valid_values>
     <default_value>$DIN_LOC_ROOT/ocn/docn7/domain.ocn.1x1.111007.nc</default_value>
-    <values>
+    <values match="last">
       <value compset="DOCN%DOM" grid="a%T31.*_oi%T31"						>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.48x96_gx3v7_100114.nc</value>
       <value compset="DOCN%DOM" grid="a%1.9x2.5.*_oi%1.9x2.5"					>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.1.9x2.5_gx1v6_090403.nc </value>
       <value compset="DOCN%DOM" grid="a%0.9x1.25.*_oi%0.9x1.25.*_m%gx1v6"			>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.9x1.25_gx1v6_090403.nc</value>
@@ -191,7 +213,7 @@
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>1</default_value>
-    <values>
+    <values match="last">
       <value compset="(AMIP_|20TR_|HIST_|5505_|PIPD_|%TSCH)">1850</value>
     </values>
     <group>run_component_cam_sstice</group>
@@ -213,7 +235,7 @@
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>0</default_value>
-    <values>
+    <values match="last">
       <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)">1850</value>
     </values>
     <group>run_component_cam_sstice</group>
@@ -229,7 +251,7 @@
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>0</default_value>
-    <values>
+    <values match="last">
       <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)">2012</value>
     </values>
     <group>run_component_cam_sstice</group>
@@ -240,26 +262,6 @@
     years 50-99 in the file will not be used.
     This is only used when DOCN_MODE=prescribed.</desc>
   </entry>
-
-  <description>
-    <desc compset="_DOCN%NULL">docn null mode</desc>
-    <desc compset="_DOCN%DOM" >docn prescribed ocean mode</desc>
-    <desc compset="_DOCN%SOM" >docn slab ocean mode</desc>
-    <desc compset="_DOCN%SOMAQP">docn aquaplanet slab ocean mode</desc>
-    <desc compset="_DOCN%IAF" >docn interannual mode</desc>
-    <desc compset="_DOCN%SST_AQUAP">docn aquaplanet mode:</desc>
-    <desc compset="_DOCN%AQP1">docn analytic aquaplanet sst - option 1</desc>
-    <desc compset="_DOCN%AQP2">docn analytic aquaplanet sst - option 2</desc>
-    <desc compset="_DOCN%AQP3">docn analytic aquaplanet sst - option 3</desc>
-    <desc compset="_DOCN%AQP4">docn analytic aquaplanet sst - option 4</desc>
-    <desc compset="_DOCN%AQP5">docn analytic aquaplanet sst - option 5</desc>
-    <desc compset="_DOCN%AQP6">docn analytic aquaplanet sst - option 6</desc>
-    <desc compset="_DOCN%AQP7">docn analytic aquaplanet sst - option 7</desc>
-    <desc compset="_DOCN%AQP8">docn analytic aquaplanet sst - option 8</desc>
-    <desc compset="_DOCN%AQP9">docn analytic aquaplanet sst - option 9</desc>
-    <desc compset="_DOCN%AQP10">docn analytic aquaplanet sst - option 10</desc>
-    <desc compset="_DOCN%AQPFILE">docn file input aquaplanet sst </desc>
-  </description>
 
   <help>
     =========================================
