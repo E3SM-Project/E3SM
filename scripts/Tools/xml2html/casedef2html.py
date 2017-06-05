@@ -99,6 +99,10 @@ def parse_archive(env_file, xml_dict):
 def parse_batch(env_file, xml_dict):
 ###############################################################################
 
+    batch = EnvBatch(infile=env_file)
+    for batch_entry in batch.get_nodes:
+        
+
     return xml_dict
 
 ###############################################################################
@@ -162,31 +166,31 @@ def _main_func(options, work_dir):
         tmplFile = 'env_archive.tmpl'
 
     elif 'env_batch' in env_file:
-        xml_dict = parse_batch(env_file)
+        xml_dict = parse_batch(env_file, xml_dict)
         tmplFile = 'env_batch.tmpl'
 
     elif 'env_build' in env_file:
-        xml_dict = parse_build(env_file)
+        xml_dict = parse_build(env_file, xml_dict)
         tmplFile = 'env_build.tmpl'
 
     elif 'env_case' in env_file:
-        xml_dict = parse_case(env_file)
+        xml_dict = parse_case(env_file, xml_dict)
         tmplFile = 'env_case.tmpl'
 
     elif 'env_mach_pes' in env_file:
-        xml_dict = parse_mach_pes(env_file)
+        xml_dict = parse_mach_pes(env_file, xml_dict)
         tmplFile = 'env_mach_pes.tmpl'
 
     elif 'env_mach_specific' in env_file:
-        xml_dict = parse_mach_specific(env_file)
+        xml_dict = parse_mach_specific(env_file, xml_dict)
         tmplFile = 'env_mach_specific.tmpl'
 
     elif 'env_run' in env_file:
-        xml_dict = parse_run(env_file)
+        xml_dict = parse_run(env_file, xml_dict)
         tmplFile = 'env_run.tmpl'
 
     elif 'env_test' in env_file:
-        xml_dict = parse_test(env_file)
+        xml_dict = parse_test(env_file, xml_dict)
         tmplFile = 'env_test.tmpl'
 
     else:

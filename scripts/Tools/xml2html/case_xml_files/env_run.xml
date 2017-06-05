@@ -114,7 +114,7 @@
       If TRUE, then the refcase data is prestaged into the executable directory
     </desc>
     </entry>
-    <entry id="RUN_STARTDATE" value="0001-01-01">
+    <entry id="RUN_STARTDATE" value="1850-01-01">
       <type>char</type>
       <desc>
       Run start date (yyyy-mm-dd). Only used for startup or hybrid runs.
@@ -126,14 +126,14 @@
       Run start time-of-day
     </desc>
     </entry>
-    <entry id="STOP_OPTION" value="nmonths">
+    <entry id="STOP_OPTION" value="nyears">
       <type>char</type>
       <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
       <desc>
-      Sets the run length along with STOP_N and STOP_DATE (must be nyear(s) for _GLC compsets for restarts to work properly).
+      Sets the run length along with STOP_N and STOP_DATE
     </desc>
     </entry>
-    <entry id="STOP_N" value="3">
+    <entry id="STOP_N" value="2">
       <type>integer</type>
       <desc>
       Provides a numerical count for $STOP_OPTION.
@@ -150,11 +150,10 @@
       <type>char</type>
       <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
       <desc>
-      sets frequency of model restart writes (same options as STOP_OPTION) (must be nyear(s) for _GLC compsets)
-      (must be nyear(s) for _GLC compsets)
+      sets frequency of model restart writes (same options as STOP_OPTION)
     </desc>
     </entry>
-    <entry id="REST_N" value="1">
+    <entry id="REST_N" value="2">
       <type>integer</type>
       <desc>
       sets model restart writes with REST_OPTION and REST_DATE
@@ -171,7 +170,7 @@
       <type>char</type>
       <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear</valid_values>
       <desc>
-      Sets the pause frequency along with PAUSE_N (must be nyear(s) for _GLC compsets for restarts to resume properly).
+      Sets the pause frequency along with PAUSE_N
     </desc>
     </entry>
     <entry id="PAUSE_N" value="0">
@@ -199,6 +198,19 @@
       <desc>
       Alternative date in yyyymmdd format
       sets periodic model barriers with BARRIER_OPTION and BARRIER_N for synchronization
+    </desc>
+    </entry>
+    <entry id="ESP_RUN_ON_PAUSE" value="FALSE">
+      <type>logical</type>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>
+      ESP component runs after driver 'pause cycle'
+      If any component 'pauses' (see PAUSE_OPTION, PAUSE_N and
+      PAUSE_COMPONENT_LIST XML variables), the ESP component (if
+      present) will be run to process the component 'pause' (restart)
+      files and set any required 'resume' signals.
+      If true, esp_cpl_dt and esp_cpl_offset settings are ignored.
+      default: false
     </desc>
     </entry>
     <entry id="CONTINUE_RUN" value="TRUE">
@@ -234,7 +246,7 @@
       timing tests.
     </desc>
     </entry>
-    <entry id="RUN_WITH_SUBMIT" value="TRUE">
+    <entry id="RUN_WITH_SUBMIT" value="FALSE">
       <type>logical</type>
       <valid_values>TRUE,FALSE</valid_values>
       <desc>Logical to determine whether CESM run has been submitted with the submit script or not</desc>
@@ -254,7 +266,7 @@
       <desc>Logical to turn on short term archiving.
     If TRUE, short term archiving will be turned on.</desc>
     </entry>
-    <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES" value="FALSE">
+    <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES" value="TRUE">
       <type>logical</type>
       <valid_values>TRUE,FALSE</valid_values>
       <desc>Logical to archive all interim restart files, not just those at eor
@@ -265,44 +277,6 @@
     Interim restart files are created using the REST_N and REST_OPTION variables.
     This is for expert users ONLY and requires expert knowledge.
     We will not document this further in this guide.</desc>
-    </entry>
-    <entry id="DOUT_L_MS" value="FALSE">
-      <type>logical</type>
-      <valid_values>TRUE,FALSE</valid_values>
-      <desc>If TRUE, perform long-term archiving on the output data.
-      logical to turn on long term archiving (if DOUT_S is also TRUE)</desc>
-    </entry>
-    <entry id="DOUT_L_HPSS_ACCNT" value="00000000">
-      <type>char</type>
-      <desc/>
-    </entry>
-    <entry id="DOUT_L_MODE" value="copy_dirs_hsi">
-      <type>char</type>
-      <valid_values>copy_dirs_hsi, copy_dirs_ssh, copy_dirs_local</valid_values>
-      <desc>Copy mode to HPSS where copy_dirs_hsi recursively copies all directories and files
-    in the DOUT_S_ROOT location to DOUT_L_MSROOT; copy_dirs_ssh works the same as copy_dirs_hsi
-    but copies the files to a remote machine rather than HPSS; copy_dirs_local works
-    the same as copy_dirs_ssh but copies the files to another location on the
-    same local machine.</desc>
-    </entry>
-    <entry id="DOUT_L_DELETE_LOCAL_FILES" value="FALSE">
-      <type>logical</type>
-      <valid_values>TRUE,FALSE</valid_values>
-      <desc>Delete the local files in DOUT_S_ROOT location after
-    successful copy to HPSS.</desc>
-    </entry>
-    <entry id="DOUT_L_SSH_MACHINE" value="undefined">
-      <type>char</type>
-      <desc>Remote machine name to be used to store long term archive files rather than HPSS.
-    This option is used in conjunction with DOUT_L_MODE=copy_dirs_ssh.
-    NOTE: sshkeys to the remote login should be setup prior to running lt_archive.</desc>
-    </entry>
-    <entry id="DOUT_L_SSH_LOGINNAME" value="$USER">
-      <type>char</type>
-      <desc>Remote machine login name to be used to login to the machine where long term archive files
-    are copied rather than HPSS. This option is used in conjunction with DOUT_L_MODE=copy_dirs_ssh.
-    NOTE: sshkeys to the remote login should be setup prior to running lt_archive in mode 
-    DOUT_L_MODE=copy_dirs_ssh.</desc>
     </entry>
     <entry id="SYSLOG_N" value="900">
       <type>integer</type>
@@ -381,7 +355,7 @@
       <valid_values>ESMF_LOGKIND_SINGLE,ESMF_LOGKIND_MULTI,ESMF_LOGKIND_NONE</valid_values>
       <desc>
       Determines what ESMF log files (if any) are generated when
-          USE_ESMF_LIB is TRUE. 
+          USE_ESMF_LIB is TRUE.
       ESMF_LOGKIND_SINGLE: Use a single log file, combining messages from
           all of the PETs. Not supported on some platforms.
       ESMF_LOGKIND_MULTI: Use multiple log files -- one per PET.
@@ -410,7 +384,7 @@
       <type>real</type>
       <desc>Longitude to find nearest points for points mode (only used if PTS_MODE is TRUE)</desc>
     </entry>
-    <entry id="ATM_DOMAIN_FILE" value="domain.lnd.fv0.9x1.25_gx1v6.090309.nc">
+    <entry id="ATM_DOMAIN_FILE" value="domain.lnd.fv0.9x1.25_gx1v7.151020.nc">
       <type>char</type>
       <desc>atm domain file</desc>
     </entry>
@@ -418,7 +392,7 @@
       <type>char</type>
       <desc>path of atm domain file</desc>
     </entry>
-    <entry id="LND_DOMAIN_FILE" value="domain.lnd.fv0.9x1.25_gx1v6.090309.nc">
+    <entry id="LND_DOMAIN_FILE" value="domain.lnd.fv0.9x1.25_gx1v7.151020.nc">
       <type>char</type>
       <desc>lnd domain file</desc>
     </entry>
@@ -442,7 +416,7 @@
       <type>char</type>
       <desc>path of wav domain file</desc>
     </entry>
-    <entry id="ICE_DOMAIN_FILE" value="domain.ocn.gx1v6.090206.nc">
+    <entry id="ICE_DOMAIN_FILE" value="domain.ocn.gx1v7.151008.nc">
       <type>char</type>
       <desc>ice domain file</desc>
     </entry>
@@ -450,7 +424,7 @@
       <type>char</type>
       <desc>path of ice domain file</desc>
     </entry>
-    <entry id="OCN_DOMAIN_FILE" value="domain.ocn.gx1v6.090206.nc">
+    <entry id="OCN_DOMAIN_FILE" value="domain.ocn.gx1v7.151008.nc">
       <type>char</type>
       <desc>ocn domain file</desc>
     </entry>
@@ -466,7 +440,7 @@
       <type>char</type>
       <desc>path of glc domain file</desc>
     </entry>
-    <entry id="ATM2OCN_FMAPNAME" value="cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v6_aave.130322.nc">
+    <entry id="ATM2OCN_FMAPNAME" value="cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v7_aave.151008.nc">
       <type>char</type>
       <desc>atm2ocn flux mapping file</desc>
     </entry>
@@ -475,7 +449,7 @@
       <valid_values>X,Y</valid_values>
       <desc>atm2ocn flux mapping file decomp type</desc>
     </entry>
-    <entry id="ATM2OCN_SMAPNAME" value="cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v6_blin.130322.nc">
+    <entry id="ATM2OCN_SMAPNAME" value="cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v7_blin.151008.nc">
       <type>char</type>
       <desc>atm2ocn state mapping file</desc>
     </entry>
@@ -484,7 +458,7 @@
       <valid_values>X,Y</valid_values>
       <desc>atm2ocn state mapping file decomp type</desc>
     </entry>
-    <entry id="ATM2OCN_VMAPNAME" value="cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v6_patc.130322.nc">
+    <entry id="ATM2OCN_VMAPNAME" value="cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v7_patc.151008.nc">
       <type>char</type>
       <desc>atm2ocn vector mapping file</desc>
     </entry>
@@ -520,7 +494,7 @@
       <valid_values>X,Y</valid_values>
       <desc>atm2wav state mapping file decomp type</desc>
     </entry>
-    <entry id="OCN2ATM_FMAPNAME" value="cpl/gridmaps/gx1v6/map_gx1v6_TO_fv0.9x1.25_aave.130322.nc">
+    <entry id="OCN2ATM_FMAPNAME" value="cpl/gridmaps/gx1v7/map_gx1v7_TO_fv0.9x1.25_aave.151008.nc">
       <type>char</type>
       <desc>ocn2atm flux mapping file</desc>
     </entry>
@@ -529,7 +503,7 @@
       <valid_values>X,Y</valid_values>
       <desc>ocn2atm flux mapping file decomp type</desc>
     </entry>
-    <entry id="OCN2ATM_SMAPNAME" value="cpl/gridmaps/gx1v6/map_gx1v6_TO_fv0.9x1.25_aave.130322.nc">
+    <entry id="OCN2ATM_SMAPNAME" value="cpl/gridmaps/gx1v7/map_gx1v7_TO_fv0.9x1.25_aave.151008.nc">
       <type>char</type>
       <desc>ocn2atm state mapping file</desc>
     </entry>
@@ -556,7 +530,7 @@
       <valid_values>X,Y</valid_values>
       <desc>lnd2atm state mapping file decomp type</desc>
     </entry>
-    <entry id="LND2GLC_FMAPNAME" value="cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland4km_aave.161223.nc">
+    <entry id="LND2GLC_FMAPNAME" value="cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland4km_aave.170429.nc">
       <type>char</type>
       <desc>lnd2glc flux mapping file</desc>
     </entry>
@@ -565,7 +539,7 @@
       <valid_values>X,Y</valid_values>
       <desc>lnd2glc flux mapping file decomp type</desc>
     </entry>
-    <entry id="LND2GLC_SMAPNAME" value="cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland4km_blin.161223.nc">
+    <entry id="LND2GLC_SMAPNAME" value="cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland4km_blin.170429.nc">
       <type>char</type>
       <desc>lnd2glc state mapping file</desc>
     </entry>
@@ -592,7 +566,7 @@
       <valid_values>X,Y</valid_values>
       <desc>rof2lnd flux mapping file decomp type</desc>
     </entry>
-    <entry id="ROF2OCN_FMAPNAME" value="cpl/cpl6/map_r05_TO_g16_aave.120920.nc">
+    <entry id="ROF2OCN_FMAPNAME" value="cpl/gridmaps/r05/map_r05_TO_gx1v7_aave.161012.nc">
       <type>char</type>
       <desc>rof2ocn flux mapping file</desc>
     </entry>
@@ -601,7 +575,7 @@
       <valid_values>X,Y</valid_values>
       <desc>rof2ocn flux mapping file decomp type</desc>
     </entry>
-    <entry id="ROF2OCN_LIQ_RMAPNAME" value="cpl/gridmaps/r05/map_r05_to_gx1v6_nn_ac_161214.nc">
+    <entry id="ROF2OCN_LIQ_RMAPNAME" value="cpl/gridmaps/r05/map_r05_to_gx1v7_nn_open_ocean_nnsm_e1000r300_marginal_sea_170413.nc">
       <type>char</type>
       <desc>rof2ocn runoff mapping file</desc>
     </entry>
@@ -610,7 +584,7 @@
       <valid_values>X,Y</valid_values>
       <desc>rof2ocn runoff mapping file decomp type</desc>
     </entry>
-    <entry id="ROF2OCN_ICE_RMAPNAME" value="cpl/gridmaps/r05/map_r05_to_gx1v6_e1000r300_161212.nc">
+    <entry id="ROF2OCN_ICE_RMAPNAME" value="cpl/gridmaps/r05/map_r05_to_gx1v7_nnsm_e1000r300_170413.nc">
       <type>char</type>
       <desc>rof2ocn runoff mapping file</desc>
     </entry>
@@ -619,7 +593,7 @@
       <valid_values>X,Y</valid_values>
       <desc>rof2ocn runoff mapping file decomp type</desc>
     </entry>
-    <entry id="GLC2LND_FMAPNAME" value="cpl/gridmaps/gland4km/map_gland4km_TO_fv0.9x1.25_aave.161223.nc">
+    <entry id="GLC2LND_FMAPNAME" value="cpl/gridmaps/gland4km/map_gland4km_TO_fv0.9x1.25_aave.170429.nc">
       <type>char</type>
       <desc>glc2lnd flux mapping file</desc>
     </entry>
@@ -628,7 +602,7 @@
       <valid_values>X,Y</valid_values>
       <desc>glc2lnd flux mapping file decomp type</desc>
     </entry>
-    <entry id="GLC2LND_SMAPNAME" value="cpl/gridmaps/gland4km/map_gland4km_TO_fv0.9x1.25_aave.161223.nc">
+    <entry id="GLC2LND_SMAPNAME" value="cpl/gridmaps/gland4km/map_gland4km_TO_fv0.9x1.25_aave.170429.nc">
       <type>char</type>
       <desc>glc2lnd state mapping file</desc>
     </entry>
@@ -646,7 +620,7 @@
       <valid_values>X,Y</valid_values>
       <desc>glc2ice runoff mapping file decomp type</desc>
     </entry>
-    <entry id="GLC2OCN_RMAPNAME" value="cpl/gridmaps/gland4km/map_gland4km_to_gx1v6_nnsm_e1000r300_161227.nc">
+    <entry id="GLC2OCN_RMAPNAME" value="cpl/gridmaps/gland4km/map_gland4km_to_gx1v7_nnsm_e1000r300_170501.nc">
       <type>char</type>
       <desc>glc2ocn runoff mapping file</desc>
     </entry>
@@ -655,7 +629,7 @@
       <valid_values>X,Y</valid_values>
       <desc>glc2ocn runoff mapping file decomp type</desc>
     </entry>
-    <entry id="OCN2WAV_SMAPNAME" value="cpl/gridmaps/gx1v6/map_gx1v6_TO_ww3a_splice_150428.nc">
+    <entry id="OCN2WAV_SMAPNAME" value="cpl/gridmaps/gx1v7/map_gx1v7_TO_ww3a_splice_170214.nc">
       <type>char</type>
       <desc>ocn2wav state mapping file</desc>
     </entry>
@@ -664,7 +638,7 @@
       <valid_values>X,Y</valid_values>
       <desc>ocn2wav state mapping file decomp type</desc>
     </entry>
-    <entry id="ICE2WAV_SMAPNAME" value="cpl/gridmaps/gx1v6/map_gx1v6_TO_ww3a_splice_150428.nc">
+    <entry id="ICE2WAV_SMAPNAME" value="cpl/gridmaps/gx1v7/map_gx1v7_TO_ww3a_splice_170214.nc">
       <type>char</type>
       <desc>ice2wav state mapping file</desc>
     </entry>
@@ -673,7 +647,7 @@
       <valid_values>X,Y</valid_values>
       <desc>ice2wav state mapping file decomp type</desc>
     </entry>
-    <entry id="WAV2OCN_SMAPNAME" value="cpl/gridmaps/ww3a/map_ww3a_TO_gx1v6_splice_150428.nc">
+    <entry id="WAV2OCN_SMAPNAME" value="cpl/gridmaps/ww3a/map_ww3a_TO_gx1v7_splice_170214.nc">
       <type>char</type>
       <desc>wav2ocn state mapping file</desc>
     </entry>
@@ -717,7 +691,7 @@
     </entry>
   </group>
   <group id="run_din">
-    <entry id="NODENAME_REGEX" value=".*yellowstone">
+    <entry id="NODENAME_REGEX" value=".*.cheyenne.ucar.edu">
       <type>char</type>
       <desc>
       A regular expression to match machine node names to ACME machine.
@@ -751,7 +725,7 @@
       $CIMEROOT/machines/config_machines.xml
     </desc>
     </entry>
-    <entry id="DIN_LOC_ROOT_CLMFORC" value="$ENV{CESMROOT}/lmwg">
+    <entry id="DIN_LOC_ROOT_CLMFORC" value="$ENV{CESMDATAROOT}/lmwg">
       <type>char</type>
       <desc>CLM-specific root directory for CLM type input forcing data
     This directory will only be used for I (CLM/DATM) compsets and only
@@ -767,15 +741,11 @@
       <type>char</type>
       <desc>Root directory for short term archiving. This directory must be visible to compute nodes.</desc>
     </entry>
-    <entry id="DOUT_L_MSROOT" value="csm/$CASE">
-      <type>char</type>
-      <desc>Root directory on long term archiving store system for long-term data archives.</desc>
-    </entry>
   </group>
   <group id="run_mpi">
     <entry id="MPI_RUN_COMMAND" value="UNSET">
       <type>char</type>
-      <desc>mpi run command</desc>
+      <desc>override the mpi run command, do not include model executable</desc>
     </entry>
   </group>
   <group id="run_pio">
@@ -867,7 +837,7 @@
         <value component="ICE">$PES_PER_NODE</value>
         <value component="ROF">$PES_PER_NODE</value>
         <value component="LND">$PES_PER_NODE</value>
-        <value component="ESP">1</value>
+        <value component="ESP">$PES_PER_NODE</value>
       </values>
     </entry>
     <entry id="PIO_REARRANGER">
@@ -883,7 +853,7 @@
         <value component="GLC">$PIO_VERSION</value>
         <value component="ICE">$PIO_VERSION</value>
         <value component="ROF">$PIO_VERSION</value>
-        <value component="LND">1</value>
+        <value component="LND">$PIO_VERSION</value>
         <value component="ESP">$PIO_VERSION</value>
       </values>
     </entry>
@@ -917,7 +887,7 @@
         <value component="ICE">-99</value>
         <value component="ROF">-99</value>
         <value component="LND">-99</value>
-        <value component="ESP">1</value>
+        <value component="ESP">-99</value>
       </values>
     </entry>
   </group>
@@ -969,6 +939,23 @@
     <entry id="GLC_NCPL" value="1">
       <type>integer</type>
       <desc>Number of glc coupling intervals per NCPL_BASE_PERIOD.</desc>
+    </entry>
+    <entry id="GLC_AVG_PERIOD" value="yearly">
+      <type>char</type>
+      <valid_values>glc_coupling_period,yearly</valid_values>
+      <desc>Period at which coupler averages fields sent to GLC.
+    This supports doing the averaging to GLC less frequently than GLC is called
+    (i.e., separating the averaging frequency from the calling frequency).
+    This is useful because there are benefits to only averaging the GLC inputs
+    as frequently as they are really needed (yearly for CISM), but GLC needs to
+    still be called more frequently than that in order to support mid-year restarts.
+
+    Setting GLC_AVG_PERIOD to 'glc_coupling_period' means that the averaging is
+    done exactly when the GLC is called (governed by GLC_NCPL).
+
+    IMPORTANT: In order to restart mid-year when running with CISM, you MUST specify GLC_AVG_PERIOD = 'yearly'.
+    If using GLC_AVG_PERIOD = 'glc_coupling_period' with CISM, you can only restart on year boundaries.
+    </desc>
     </entry>
     <entry id="ROF_NCPL" value="8">
       <type>integer</type>
@@ -1105,15 +1092,10 @@
     <entry id="CCSM_CO2_PPMV" value="284.7">
       <type>real</type>
       <valid_values/>
-      <desc>This set the namelist values of CO2 ppmv for CAM and CLM. This variables is
-      introduced to coordinate this value among multiple components.</desc>
-    </entry>
-    <entry id="CO2_TYPE_COSTANT_VALUE" value="284.7">
-      <type>real</type>
-      <valid_values/>
       <desc>
-      Mechanism for setting the CO2 value in ppmv for CLM if
-      CLM_CO2_TYPE is constant POP if OCN_CO2_TYPE is constant.
+      Mechanism for setting the CO2 value in ppmv for 
+      CLM if CLM_CO2_TYPE is constant or for 
+      POP if OCN_CO2_TYPE is constant.
     </desc>
     </entry>
   </group>
@@ -1144,7 +1126,7 @@
     </entry>
   </group>
   <group id="run_component_cam">
-    <entry id="CAM_NML_USE_CASE" value="1850_cam6">
+    <entry id="CAM_NML_USE_CASE" value="hist_cam6">
       <type>char</type>
       <valid_values/>
       <desc>CAM namelist use_case.  Provides the use_case option for the
@@ -1176,7 +1158,7 @@
     </desc>
       <valid_values>clm4_0_default,clm5_0_cam5.5,clm5_0_GSW3P,clm4_5_CRUNCEP</valid_values>
     </entry>
-    <entry id="CLM_NML_USE_CASE" value="1850_glacierMEC_control">
+    <entry id="CLM_NML_USE_CASE" value="20thC_glacierMEC_transient">
       <type>char</type>
       <desc>CLM namelist use_case.
       Determines the use-case that will be sent to the CLM build-namelist utility.
@@ -1263,7 +1245,7 @@
       <valid_values>TRUE,FALSE</valid_values>
       <desc>TRUE turns off all horizontal motion in POP (single column)</desc>
     </entry>
-    <entry id="OCN_TRANSIENT" value="unset">
+    <entry id="OCN_TRANSIENT" value="1850-2000">
       <type>char</type>
       <valid_values>unset,1850-2000,rcp4.5,rcp8.5</valid_values>
       <desc>Determine settings for transient forcing datasets (e.g., atmospheric pCFC
@@ -1290,20 +1272,10 @@
     </entry>
   </group>
   <group id="run_component_mosart">
-    <entry id="MOSART_BLDNML_OPTS" value="-simyr 1850">
+    <entry id="MOSART_SIMYR" value="1850">
       <type>char</type>
       <valid_values/>
       <desc>MOSART build-namelist options</desc>
-    </entry>
-    <entry id="MOSART_NAMELIST_OPTS">
-      <type>char</type>
-      <valid_values/>
-      <desc>MOSART-specific namelist settings in the MOSART build-namelist.
-      MOSART_NAMELIST_OPTS is normally set as a compset variable
-      and in general should not be modified for supported compsets. 
-      It is recommended that if you want to modify this value for your experiment, 
-      you should use your own user-defined component sets via using create_newcase 
-      with a compset_file argument.</desc>
     </entry>
   </group>
   <group id="run_component_cism">
@@ -1327,11 +1299,6 @@
       that CISM should instead use the observed initial conditions that are
       generally used for startup runs. This variable is ignored for startup
       runs; for branch runs, it MUST BE FALSE.</desc>
-    </entry>
-    <entry id="GLC_SMB" value="true">
-      <type>logical</type>
-      <valid_values>true,false</valid_values>
-      <desc>true =&gt; do surface mass balance, false =&gt; PDD, nec_glc is set to 1</desc>
     </entry>
   </group>
 </file>

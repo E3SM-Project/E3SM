@@ -30,7 +30,7 @@
       <type>char</type>
       <desc>Scripts root utils directory location (setup automatically to $CIMEROOT/scripts/Tools - DO NOT EDIT)</desc>
     </entry>
-    <entry id="MODEL_VERSION" value="cesm2_0_alpha06g">
+    <entry id="MODEL_VERSION" value="cesm2_0_alpha06l">
       <type>char</type>
       <desc>Apparent version of the model used for this case</desc>
     </entry>
@@ -93,10 +93,6 @@
       <desc>file containing namelist_definitions for all components </desc>
       <schema>$CIMEROOT/config/xml_schemas/entry_id_namelist.xsd</schema>
     </entry>
-    <entry id="LTARCHIVE_SPEC_FILE" value="$CIMEROOT/config/$MODEL/machines/config_lt_archive.xml">
-      <type>char</type>
-      <desc>file containing all lt archive configuration variables (for documentation only - DO NOT EDIT)</desc>
-    </entry>
     <entry id="CONFIG_CPL_FILE" value="$CIMEROOT/src/drivers/mct/cime_config/config_component.xml">
       <type>char</type>
       <desc>file containing all non-component specific case configuration variables (for documentation only - DO NOT EDIT)</desc>
@@ -147,7 +143,7 @@
       <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
       <schema>$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
     </entry>
-    <entry id="COMPSET" value="1850_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD">
+    <entry id="COMPSET" value="HIST_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD">
       <type>char</type>
       <desc>Component set long name (for documentation only - DO NOT EDIT)</desc>
     </entry>
@@ -193,7 +189,7 @@
       <type>logical</type>
       <valid_values>TRUE,FALSE</valid_values>
       <desc>This component requires a clean build if the pelayout changes, if this variable is
-                not defined for a component it is assumed false
+                not defined for a component it is assumed FALSE
     </desc>
     </entry>
     <entry id="COMP_ROF" value="mosart">
@@ -223,19 +219,19 @@
       <desc> master configuration file that specifies all relevant filenames
     and directories to configure a case</desc>
     </entry>
-    <entry id="CASEROOT" value="/glade/p/work/aliceb/sandboxes/tests/b.e20.B1850.f09_g16.test.02">
+    <entry id="CASEROOT" value="/glade/p/work/aliceb/sandboxes/tests/b.e20.BHIST.f09_g17">
       <type>char</type>
       <desc>full pathname of case</desc>
     </entry>
-    <entry id="CIMEROOT" value="/glade/p/work/aliceb/sandboxes/dev/cesm2_0_alpha06g/cime">
+    <entry id="CIMEROOT" value="/glade/p/work/aliceb/sandboxes/dev/cesm2_0_alpha06/cime">
       <type>char</type>
       <desc>full pathname of CIME source root directory</desc>
     </entry>
-    <entry id="SRCROOT" value="/glade/p/work/aliceb/sandboxes/dev/cesm2_0_alpha06g">
+    <entry id="SRCROOT" value="/glade/p/work/aliceb/sandboxes/dev/cesm2_0_alpha06">
       <type>char</type>
       <desc>full pathname of source root directory</desc>
     </entry>
-    <entry id="CASE" value="b.e20.B1850.f09_g16.test.02">
+    <entry id="CASE" value="b.e20.BHIST.f09_g17">
       <type>char</type>
       <desc>case name</desc>
     </entry>
@@ -243,11 +239,11 @@
       <type>char</type>
       <desc>current machine name support contact</desc>
     </entry>
-    <entry id="MACH" value="yellowstone">
+    <entry id="MACH" value="cheyenne">
       <type>char</type>
       <desc>Machine name</desc>
     </entry>
-    <entry id="MACHDIR" value="/glade/p/work/aliceb/sandboxes/dev/cesm2_0_alpha06g/cime/config/cesm/machines">
+    <entry id="MACHDIR" value="/glade/p/work/aliceb/sandboxes/dev/cesm2_0_alpha06/cime/config/cesm/machines">
       <type>char</type>
       <desc>Machines directory location</desc>
     </entry>
@@ -280,6 +276,14 @@
     <entry id="USER_MODS_FULLPATH" value="UNSET">
       <type>char</type>
       <desc>path to user mods under TESTS_MODS_DIR or USER_MODS_DIR</desc>
+    </entry>
+  </group>
+  <group id="run_component_cam">
+    <entry id="CAM_USER_MODS">
+      <type>char</type>
+      <valid_values/>
+      <desc>User mods to apply to specific compset matches.   These usermods will be used only if
+                cam is the principle component in the compset (F or Q compsets) </desc>
     </entry>
   </group>
 </file>

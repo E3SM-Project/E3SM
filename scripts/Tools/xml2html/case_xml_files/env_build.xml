@@ -7,7 +7,7 @@
     this is done automatically by the scripts.
     </header>
   <group id="build_grid">
-    <entry id="GRID" value="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_g%gland4_w%ww3a_m%gx1v6">
+    <entry id="GRID" value="a%0.9x1.25_l%0.9x1.25_oi%gx1v7_r%r05_g%gland4_w%ww3a_m%gx1v7">
       <type>char</type>
       <desc>Model grid - DO NOT EDIT (for experts only)</desc>
     </entry>
@@ -35,7 +35,7 @@
       <type>integer</type>
       <desc>number of land cells in j direction - DO NOT EDIT (for experts only)</desc>
     </entry>
-    <entry id="OCN_GRID" value="gx1v6">
+    <entry id="OCN_GRID" value="gx1v7">
       <type>char</type>
       <desc>ocn grid - DO NOT EDIT (for experts only)</desc>
     </entry>
@@ -47,7 +47,7 @@
       <type>integer</type>
       <desc>number of ocn cells in j direction - DO NOT EDIT (for experts only)</desc>
     </entry>
-    <entry id="ICE_GRID" value="gx1v6">
+    <entry id="ICE_GRID" value="gx1v7">
       <type>char</type>
       <desc>ice grid (must equal ocn grid) - DO NOT EDIT (for experts only)</desc>
     </entry>
@@ -100,13 +100,13 @@
       <type>integer</type>
       <desc>number of wav cells in j direction - DO NOT EDIT (for experts only)</desc>
     </entry>
-    <entry id="MASK_GRID" value="gx1v6">
+    <entry id="MASK_GRID" value="gx1v7">
       <type>char</type>
       <desc>grid mask - DO NOT EDIT (for experts only)</desc>
     </entry>
   </group>
   <group id="build_derived">
-    <entry id="PERL5LIB" value="/glade/apps/opt/perlmods/lib64/perl5:/glade/apps/opt/perlmods/share/perl5">
+    <entry id="PERL5LIB">
       <type>char</type>
       <desc>Perl 5 library directory</desc>
     </entry>
@@ -182,7 +182,7 @@
       Important:: On IBM machines, floating point trapping is not activated for production
       runs (i.e., non-DEBUG), due to performance penalties associated with turning on these flags.</desc>
     </entry>
-    <entry id="BUILD_THREADED" value="TRUE">
+    <entry id="BUILD_THREADED" value="FALSE">
       <type>logical</type>
       <valid_values>TRUE,FALSE</valid_values>
       <desc>TRUE implies always build model for openmp capability
@@ -242,7 +242,7 @@
     Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
     Must be explicitly set in env_build.xml for userdefined machine.</desc>
     </entry>
-    <entry id="MPILIB" value="mpich2">
+    <entry id="MPILIB" value="mpt">
       <type>char</type>
       <valid_values/>
       <desc>mpi library (must match one of the supported libraries) -
@@ -266,12 +266,12 @@
       <valid_values>TRUE,FALSE</valid_values>
       <desc>Status output: if TRUE, models have been built successfully. (DO NOT EDIT)&gt;</desc>
     </entry>
-    <entry id="SMP_BUILD" value="c1a1l1i1o1r1g1w1e1">
+    <entry id="SMP_BUILD" value="c0a0l0i0o0r0g0w0e0">
       <type>char</type>
       <valid_values/>
       <desc>Status: smp status of previous build, coded string. (DO NOT EDIT)</desc>
     </entry>
-    <entry id="SMP_VALUE" value="c1a1l1i1o1r1g1w1e1">
+    <entry id="SMP_VALUE" value="c0a0l0i0o0r0g0w0e0">
       <type>char</type>
       <valid_values/>
       <desc>Status: smp status of current case, coded string (DO NOT EDIT)</desc>
@@ -390,7 +390,7 @@
       can manually set the values of CICE_BLCKX, CICE_BLCKY, CICE_MXBLCKS,
       CICE_DECOMPTYPE, and CICE_DECOMPSETTING".</desc>
     </entry>
-    <entry id="CICE_BLCKX" value="8">
+    <entry id="CICE_BLCKX" value="16">
       <type>integer</type>
       <valid_values/>
       <desc>Size of cice block in first horiz dimension
@@ -398,7 +398,7 @@
       This is for experts only - automatically set if CICE_AUTO_DECOMP
       is true to set this value, must first set CICE_AUTO_DECOMP to false.</desc>
     </entry>
-    <entry id="CICE_BLCKY" value="6">
+    <entry id="CICE_BLCKY" value="12">
       <type>integer</type>
       <valid_values/>
       <desc>Size of cice block in second horiz dimension
@@ -406,7 +406,7 @@
       This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
       to set this value, must first set CICE_AUTO_DECOMP to false.</desc>
     </entry>
-    <entry id="CICE_MXBLCKS" value="12">
+    <entry id="CICE_MXBLCKS" value="6">
       <type>integer</type>
       <valid_values/>
       <desc>Max number of cice blocks per processor (do not edit if CICE_AUTO_DECOMP is true)
@@ -427,14 +427,14 @@
       This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
       to set this value, must first set CICE_AUTO_DECOMP to false.</desc>
     </entry>
-    <entry id="CICE_CPPDEFS" value=" -DCCSMCOUPLED -Dncdf -DNUMIN=11 -DNUMAX=99  -DNICECAT=5 -DNXGLOB=320 -DNYGLOB=384 -DNTRAERO=3  -DNBGCLYR=3 -DNICELYR=8 -DNSNWLYR=3 -DTRAGE=1 -DTRFY=1 -DTRLVL=1 -DTRPND=1 -DTRBRI=0 -DTRBGCS=0 -DBLCKX=8 -DBLCKY=6 -DMXBLCKS=12">
+    <entry id="CICE_CPPDEFS" value=" -DCESMCOUPLED -Dncdf -DNUMIN=11 -DNUMAX=99  -DNICECAT=5 -DNXGLOB=320 -DNYGLOB=384 -DNTRAERO=3 -DNTRISO=0 -DNBGCLYR=3 -DNICELYR=8 -DNSNWLYR=3 -DTRAGE=1 -DTRFY=1 -DTRLVL=1 -DTRPND=1 -DTRBRI=0 -DTRBGCS=0 -DBLCKX=16 -DBLCKY=12 -DMXBLCKS=6">
       <type>char</type>
       <valid_values/>
       <desc>CICE cpp definitions (setup automatically - DO NOT EDIT)</desc>
     </entry>
   </group>
   <group id="build_component_pop">
-    <entry id="OCN_TRACER_MODULES" value="iage ecosys">
+    <entry id="OCN_TRACER_MODULES" value="iage cfc ecosys">
       <type>char</type>
       <valid_values/>
       <desc>Optional ocean tracers.  Valid values are Any combination of: iage cfc ecosys</desc>
@@ -449,42 +449,42 @@
       <valid_values>TRUE,FALSE</valid_values>
       <desc>If TRUE then time-averaged history files from POP will contain double precision output</desc>
     </entry>
-    <entry id="POP_AUTO_DECOMP" value="true">
+    <entry id="POP_AUTO_DECOMP" value="TRUE">
       <type>logical</type>
-      <valid_values>true,false</valid_values>
-      <desc>if false, user must set the POP decomp, otherwise cesm_setup script sets it</desc>
+      <valid_values>TRUE,FALSE</valid_values>
+      <desc>if FALSE, user must set the POP decomp, otherwise cesm_setup script sets it</desc>
     </entry>
-    <entry id="POP_BLCKX" value="32">
+    <entry id="POP_BLCKX" value="36">
       <type>integer</type>
       <valid_values/>
-      <desc>Size of pop block in first horiz dimension (do not edit if POP_AUTO_DECOMP is true)</desc>
+      <desc>Size of pop block in first horiz dimension (do not edit if POP_AUTO_DECOMP is TRUE)</desc>
     </entry>
-    <entry id="POP_BLCKY" value="22">
+    <entry id="POP_BLCKY" value="32">
       <type>integer</type>
       <valid_values/>
-      <desc>Size of pop block in second horiz dimension (do not edit if POP_AUTO_DECOMP is true)</desc>
+      <desc>Size of pop block in second horiz dimension (do not edit if POP_AUTO_DECOMP is TRUE)</desc>
     </entry>
-    <entry id="POP_NX_BLOCKS" value="10">
+    <entry id="POP_NX_BLOCKS" value="9">
       <type>integer</type>
       <valid_values/>
-      <desc>Number of pop blocks in first horiz dimension (do not edit if POP_AUTO_DECOMP is true)</desc>
+      <desc>Number of pop blocks in first horiz dimension (do not edit if POP_AUTO_DECOMP is TRUE)</desc>
     </entry>
-    <entry id="POP_NY_BLOCKS" value="18">
+    <entry id="POP_NY_BLOCKS" value="12">
       <type>integer</type>
       <valid_values/>
-      <desc>Number of pop blocks in second horiz dimension (do not edit if POP_AUTO_DECOMP is true)</desc>
+      <desc>Number of pop blocks in second horiz dimension (do not edit if POP_AUTO_DECOMP is TRUE)</desc>
     </entry>
-    <entry id="POP_MXBLCKS" value="2">
+    <entry id="POP_MXBLCKS" value="1">
       <type>integer</type>
       <valid_values/>
-      <desc>Max number of pop blocks per processor (do not edit if POP_AUTO_DECOMP is true</desc>
+      <desc>Max number of pop blocks per processor (do not edit if POP_AUTO_DECOMP is TRUE</desc>
     </entry>
     <entry id="POP_DECOMPTYPE" value="cartesian">
       <type>char</type>
       <valid_values/>
-      <desc>pop block distribution type (do not edit if POP_AUTO_DECOMP is true)</desc>
+      <desc>pop block distribution type (do not edit if POP_AUTO_DECOMP is TRUE)</desc>
     </entry>
-    <entry id="POP_CPPDEFS" value="-DCCSMCOUPLED -DMARBL_TIMING_OPT=CIME -DBLCKX=32 -DBLCKY=22 -DMXBLCKS=2 -DNT=30 -DECOSYS_NT=27 -DMARBL_NT=27 -DZOOPLANKTON_CNT=1 -DAUTOTROPH_CNT=3 -DGRAZER_PREY_CNT=3 -DIRF_NT=0 ">
+    <entry id="POP_CPPDEFS" value="-DCCSMCOUPLED -DMARBL_TIMING_OPT=CIME -DBLCKX=36 -DBLCKY=32 -DMXBLCKS=1 -DNT=32 -DECOSYS_NT=27 -DMARBL_NT=27 -DZOOPLANKTON_CNT=1 -DAUTOTROPH_CNT=3 -DGRAZER_PREY_CNT=3 -DIRF_NT=0 ">
       <type>char</type>
       <valid_values/>
       <desc>POP cpp definitions (for diagnostic use only, setup automatically, overwritten by configure_pop.py - DO NOT EDIT)</desc>

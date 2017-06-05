@@ -24,23 +24,19 @@
     overwritten by scripts: TOTALPES, MAX_TASKS_PER_NODE, PES_PER_NODE
     </header>
   <group id="mach_pes_last">
-    <entry id="COST_PES" value="736">
+    <entry id="COST_PES" value="684">
       <type>integer</type>
       <desc>pes or cores used relative to PES_PER_NODE for accounting (0 means TOTALPES is valid)</desc>
     </entry>
-    <entry id="TOTALPES" value="690">
+    <entry id="TOTALPES" value="684">
       <type>integer</type>
       <desc>total number of tasks and threads (setup automatically - DO NOT EDIT)</desc>
     </entry>
-    <entry id="TOTAL_CORES" value="690">
-      <type>integer</type>
-      <desc>total number of cores used (setup automatically - DO NOT EDIT)</desc>
-    </entry>
-    <entry id="MAX_TASKS_PER_NODE" value="30">
+    <entry id="MAX_TASKS_PER_NODE" value="36">
       <type>integer</type>
       <desc>maximum number of tasks/ threads allowed per node </desc>
     </entry>
-    <entry id="PES_PER_NODE" value="15">
+    <entry id="PES_PER_NODE" value="36">
       <type>integer</type>
       <desc>pes or cores per node for accounting purposes </desc>
     </entry>
@@ -53,14 +49,14 @@
     <entry id="NTASKS">
       <type>integer</type>
       <values>
-        <value component="ATM">-40</value>
-        <value component="CPL">-40</value>
-        <value component="OCN">-6</value>
-        <value component="WAV">-8</value>
-        <value component="GLC">-40</value>
-        <value component="ICE">-16</value>
-        <value component="ROF">-24</value>
-        <value component="LND">-24</value>
+        <value component="ATM">-16</value>
+        <value component="CPL">-16</value>
+        <value component="OCN">-3</value>
+        <value component="WAV">-1</value>
+        <value component="GLC">-16</value>
+        <value component="ICE">-3</value>
+        <value component="ROF">-12</value>
+        <value component="LND">-12</value>
         <value component="ESP">1</value>
       </values>
       <desc>number of tasks for each component</desc>
@@ -68,14 +64,14 @@
     <entry id="NTHRDS">
       <type>integer</type>
       <values>
-        <value component="ATM">2</value>
-        <value component="CPL">2</value>
-        <value component="OCN">2</value>
-        <value component="WAV">2</value>
-        <value component="GLC">2</value>
-        <value component="ICE">2</value>
-        <value component="ROF">2</value>
-        <value component="LND">2</value>
+        <value component="ATM">1</value>
+        <value component="CPL">1</value>
+        <value component="OCN">1</value>
+        <value component="WAV">1</value>
+        <value component="GLC">1</value>
+        <value component="ICE">1</value>
+        <value component="ROF">1</value>
+        <value component="LND">1</value>
         <value component="ESP">1</value>
       </values>
       <desc>number of threads for each task in each component</desc>
@@ -85,10 +81,10 @@
       <values>
         <value component="ATM">0</value>
         <value component="CPL">0</value>
-        <value component="OCN">-40</value>
-        <value component="WAV">0</value>
+        <value component="OCN">-16</value>
+        <value component="WAV">-15</value>
         <value component="GLC">0</value>
-        <value component="ICE">-24</value>
+        <value component="ICE">-12</value>
         <value component="ROF">0</value>
         <value component="LND">0</value>
         <value component="ESP">0</value>
