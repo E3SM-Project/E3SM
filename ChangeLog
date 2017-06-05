@@ -1,5 +1,112 @@
 ======================================================================
 
+Originator: Chris Fischer	 
+Date: 6-4-2017
+Tag: cime5.3.0-alpha.23
+Answer Changes: None
+Tests: scripts_regression_tests
+       pylint, unit-tests
+Dependencies:
+
+Brief Summary:
+    - Fixes a critical error for ERP tests.
+    - Change run_cmd_no_fail doctest to not match directory.
+    - Bring bless_test_results behavior into an exact match with create_test -g.
+    - Merge and update CIME users guide rst source.
+    - Fix a critical problem in code_checker that caused it to filter too many files.
+    - Copied doc dir into master in order to create a gh-pages orphan branch.
+    - Fix race condition with case XML files when using set_file and some other unrelated bugs.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+4525e19 Merge pull request #1639 from ESMCI/mvertens/python3string_fixes
+4775d9a Change run_cmd_no_fail doctest to not match directory
+4db9834 Merge pull request #1632 from ESMCI/jgfouca/generate_baseline_should_include_logs
+4ba0b44 Merge pull request #1631 from bjsmith2014/master
+37e4ed7 Merge pull request #1629 from ESMCI/jgfouca/pylint_fixes_and_more
+6a7ffc2 Merge pull request #1623 from bertinia/master
+65bd395 Merge pull request #1616 from ESMCI/jgfouca/fix_race
+
+
+Modified files: git diff --name-status [previous_tag]
+M	.gitignore
+A	.nojekyll
+M	LICENSE.TXT
+A	doc/Makefile
+A	doc/source/_static
+A	doc/source/build_cpl/index.rst
+A	doc/source/build_cpl/introduction.rst
+A	doc/source/conf.py
+A	doc/source/conf.py_old
+A	doc/source/data_models/data-atm.rst
+A	doc/source/data_models/data-lnd.rst
+A	doc/source/data_models/data-model-science.rst
+A	doc/source/data_models/data-ocean.rst
+A	doc/source/data_models/data-river.rst
+A	doc/source/data_models/data-seaice.rst
+A	doc/source/data_models/data-wave.rst
+A	doc/source/data_models/design-details.rst
+A	doc/source/data_models/index.rst
+A	doc/source/data_models/input-streams.rst
+A	doc/source/data_models/introduction.rst
+A	doc/source/driver_cpl/bit-for-bit-flag.rst
+A	doc/source/driver_cpl/budgets.rst
+A	doc/source/driver_cpl/cplug-02.1-figx1.jpg
+A	doc/source/driver_cpl/design.rst
+A	doc/source/driver_cpl/driver_threading_control.rst
+A	doc/source/driver_cpl/grids.rst
+A	doc/source/driver_cpl/history-and-restarts.rst
+A	doc/source/driver_cpl/implementation.rst
+A	doc/source/driver_cpl/index.rst
+A	doc/source/driver_cpl/initialization-and-restart.rst
+A	doc/source/driver_cpl/introduction.rst
+A	doc/source/driver_cpl/multi-instance.rst
+A	doc/source/driver_cpl/namelist-overview.rst
+A	doc/source/driver_cpl/time-management.rst
+A	doc/source/index.rst
+A	doc/source/misc_tools/index.rst
+A	doc/source/users_guide/adding-cases.rst
+A	doc/source/users_guide/building-a-case.rst
+A	doc/source/users_guide/case-basics.rst
+A	doc/source/users_guide/cime-internals.rst
+A	doc/source/users_guide/cloning-a-case.rst
+A	doc/source/users_guide/create-a-case.rst
+A	doc/source/users_guide/customizing-a-case.rst
+A	doc/source/users_guide/faq/basics-a-basic-example.rst
+A	doc/source/users_guide/faq/basics-mpi-example.rst
+A	doc/source/users_guide/faq/basics-setting-up-a-branch-or-hybrid-run.rst
+A	doc/source/users_guide/faq/faq.rst
+A	doc/source/users_guide/index.rst
+A	doc/source/users_guide/introduction-and-overview.rst
+A	doc/source/users_guide/multi-instance.rst
+A	doc/source/users_guide/optimizing-processor-layout.rst
+A	doc/source/users_guide/porting-cime.rst
+A	doc/source/users_guide/running-a-case.rst
+A	doc/source/users_guide/setting-up-a-case.rst
+A	doc/source/users_guide/testing.rst
+A	doc/source/users_guide/troubleshooting.rst
+A	doc/source/users_guide/unit_testing.rst
+A	doc/source/what_cime/index.rst
+A	index.html
+M	scripts/Tools/normalize_cases
+M	scripts/lib/CIME/SystemTests/erp.py
+M	scripts/lib/CIME/SystemTests/homme.py
+M	scripts/lib/CIME/SystemTests/ncr.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/code_checker.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/tests/scripts_regression_tests.py
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer
 Date: 5-28-2017
 Tag: cime5.3.0-alpha.22
