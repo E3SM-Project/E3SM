@@ -33,7 +33,7 @@ Here are two examples of how to invoke **xmlchange**:
    -- OR --
    xmlchange -id <entry id> -val <name> -file <filename>
    
-The ``-id`` argument identifies the variable to be changed, and ``-val`` is the intended value of that variable. See the **help** text for more usage information.:
+The ``-id`` argument identifies the variable to be changed, and ``-val`` is the intended value of that variable. See the **help** text for more usage information:
 ::
 
    xmlchange --help
@@ -45,7 +45,7 @@ The ``-id`` argument identifies the variable to be changed, and ``-val`` is the 
 Customizing the PE layout
 =================================================
 
-Settings in the ``env_mach_pes.xml`` file determine:
+Settings in the **env_mach_pes.xml** file determine:
 
 - the number of processors and OpenMP threads for each component.
 - the number of instances of each component.
@@ -58,7 +58,7 @@ The component processor layout is determined by three settings:
 
 - the number of MPI tasks.
 - the number of OpenMP threads per task.
-- the toot MPI processor number from the global set.
+- the total MPI processor number from the global set.
 
 The entries in **env_mach_pes.xml** have the following meanings:
 
@@ -92,7 +92,7 @@ The scientific sequencing is hardwired into the driver. Changing processor layou
 
 For a **fully active configuration**, the atmosphere component is hardwired in the driver to never run concurrently with the land or ice component. Performance improvements associated with processor layout concurrency therefore are constrained in this case such that there is never a performance reason not to overlap the atmosphere component with the land and ice components. Beyond that constraint, the land, ice, coupler and ocean models can run concurrently, and the ocean model can also run concurrently with the atmosphere model.
 
-An important but often misunderstood point: The root processor for any given component is set relative to the MPI global communicator, not the hardware processor counts. For instance, in the following example, the atmosphere and ocean will run concurrently, each on 64 processors with the atmosphere running on MPI tasks 0-15 and the ocean running on MPI tasks 16-79.:
+An important but often misunderstood point: The root processor for any given component is set relative to the MPI global communicator, not the hardware processor counts. For instance, in the following example, the atmosphere and ocean will run concurrently, each on 64 processors with the atmosphere running on MPI tasks 0-15 and the ocean running on MPI tasks 16-79.
 ::
 
    NTASKS(ATM)=6  NTHRRDS(ATM)=4  ROOTPE(ATM)=0
@@ -100,7 +100,7 @@ An important but often misunderstood point: The root processor for any given com
 
 The first 16 tasks are each threaded 4 ways for the atmosphere. CIME ensures that the batch submission script (**$CASE.run**) automatically requests 128 hardware processors, and the first 16 MPI tasks will be laid out on the first 64 hardware processors with a stride of 4. The next 64 MPI tasks are laid out on the second set of 64 hardware processors.
 
-If you had set ROOTPE_OCN=64 in this example, a total of 176 processors would be requested, the atmosphere would be laid out on the first 64 hardware processors in 16x4 fashion, and the ocean model would be laid out on hardware processors 113-176. Hardware processors 65-112 would be allocated but completely idle.
+If you had set ``ROOTPE_OCN`` to 64 in this example, a total of 176 processors would be requested, the atmosphere would be laid out on the first 64 hardware processors in 16x4 fashion, and the ocean model would be laid out on hardware processors 113-176. Hardware processors 65-112 would be allocated but completely idle.
 
 **Note**: **env_mach_pes.xml** *cannot* be modified after **case.setup** has been invoked without first running the following:
 ::
@@ -121,8 +121,9 @@ Driver namelist variables belong in two groups:
 
 All driver namelist variables are defined in the file **$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_drv.xml**.
 The variables that can be changed only by modifying xml variables appear with the *entry* attribute ``modify_via_xml="xml_variable_name"``.
+
 All other variables that appear in the **namelist_definition_drv.xml** file can be modified by adding a keyword value pair at the end of ``user_nl_cpl``.
-For example, to change the driver namelist value of ``eps_frac`` to ``1.0e-15``, add the following line to the end of the ``user_nl_cpl``
+For example, to change the driver namelist value of ``eps_frac`` to ``1.0e-15``, add the following line to the end of the ``user_nl_cpl``:
 ::
 
    eps_frac = 1.0e-15
@@ -139,31 +140,31 @@ Data Atmosphere (DATM)
 ------------------------
 
 DATM is discussed in detail in :ref:`data atmosphere overview <data-atm>`.
-DATM can be user-customized by changing either its namelist input or its stream files.
+DATM can be user-customized by changing either its  *namelist input files* or its *stream files*.
 The namelist file for DATM is **datm_in** (or **datm_in_NNN** for multiple instances).
 
-- To modify **datm_in**, add the appropriate keyword/value pair(s) for the namelist changes that you want at the end of the ``$CASEROOT`` file **user_nl_datm** or the **user_nl_datm_NNN** file.
+- To modify the contents of a DATM stream file, first run **preview_namelists** to list the *streams.txt* files in the **CaseDocs/** directory. Then, in the same directory:
 
-- To modify the contents of a DATM stream file, first use **preview_namelists** to obtain the contents of the stream txt files in the **CaseDocs/** directory. Then:
-
-  1. Place a *copy* of the file in ``$CASEROOT`` with the string *"user_"* prepended.
-  2. **Make sure you change the permissions of the file to be writeable.** (chmod 644)
-  3. Modify the **user_datm.streams.txt.*** file.
+  1. Make a *copy* of the file with the string *"user_"* prepended.
+        ``>  cp datm.streams.txt.[extension]  user_datm.streams.txt[extension.`` 
+  2. **Change the permissions of the file to be writeable.**
+        ``chmod 644 user_datm.streams.txt[extension``
+  3. Edit the **user_datm.streams.txt.*** file.
 
 **Example**
 
-If the stream txt file is **datm.streams.txt.CORE2_NYF.GISS**, the modified copy in ``$CASEROOT`` should be **user_datm.streams.txt.CORE2_NYF.GISS**.
-After calling **preview_namelists** again, you should see your new modifications appear in **CaseDocs/datm.streams.txt.CORE2_NYF.GISS**.
+If the stream txt file is **datm.streams.txt.CORE2_NYF.GISS**, the modified copy should be **user_datm.streams.txt.CORE2_NYF.GISS**.
+After calling **preview_namelists** again, your edits should appear in **CaseDocs/datm.streams.txt.CORE2_NYF.GISS**.
 
 ------------------------
 Data Ocean (DOCN)
 ------------------------
 
 DOCN is discussed in detail in :ref:`data ocean overview <data-ocean>`.
-DOCN can be user-customized in by either changing its namelist input or its stream files.
-The namelist file for DOCN is ``docn_in`` (or ``docn_in_NNN`` for multiple instances) and its values can be changed by editing the ``$CASEROOT`` file ``user_nl_docn`` (or ``user_nl_docn_NNN`` for multiple instances).
+DOCN can be user-customized by changing either its namelist input or its stream files.
+The namelist file for DOCN is **docn_in** (or **docn_in_NNN** for multiple instances).
 
-- To modify ``docn_in``, add the appropriate keyword/value pair(s) for the namelist changes you want at the end of the ``$CASEROOT`` file ``user_nl_docn`` (or ``user_nl_docn_NNN`` for multiple instances).
+- To modify **docn_in** or **docn_in_NNN**, add the appropriate keyword/value pair(s) for the namelist changes that you want at the end of the file in ``$CASEROOT``.
 
 - To modify the contents of a DOCN stream file, first use **preview_namelists** to obtain the contents of the stream txt files in ``CaseDocs/``. Then:
 
@@ -171,7 +172,7 @@ The namelist file for DOCN is ``docn_in`` (or ``docn_in_NNN`` for multiple insta
   2. **Make sure you change the permissions of the file to be writeable** (chmod 644)
   3. modify the ``user_docn.streams.txt.*`` file.
 
-As an example, if the stream text file in ``CaseDocs/`` is ``docn.stream.txt.prescribed``, the modified copy in ``$CASEROOT`` should be ``user_docn.streams.txt.prescribed``. 
+As an example, if the stream text file in ``CaseDocs/`` is ``docn.stream.txt.prescribed``, the modified copy in ``$CASEROOT`` should be ``user_docn.streams.txt.prescribed``.
 After changing this file and calling **preview_namelists** again, you should see your new modifications appear in ``CaseDocs/docn.streams.txt.prescribed``.
 
 ------------------------
