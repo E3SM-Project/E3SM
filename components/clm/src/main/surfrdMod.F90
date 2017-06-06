@@ -139,6 +139,7 @@ contains
     use clm_varcon, only : spval, re
     use domainMod , only : domain_type, domain_init, domain_clean, lon1d, lat1d
     use fileutils , only : getfil
+    use clm_varctl, only : use_pflotran
     !
     ! !ARGUMENTS:
     integer          ,intent(in)    :: begg, endg 

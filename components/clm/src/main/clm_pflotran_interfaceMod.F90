@@ -117,6 +117,7 @@ module clm_interface_pflotranMod
   private :: clm_pf_CBalanceCheck
   private :: clm_pf_NBalanceCheck
   !
+
   private :: get_clm_bcwflx
   private :: get_clm_bceflx
   private :: update_soil_temperature_pf2clm
@@ -1166,12 +1167,15 @@ contains
 
     ! (2) CLM thermal BC to PFLOTRAN-CLM interface
     if (pf_tmode) then
+
         call get_clm_bceflx(clm_interface_data, bounds, filters, ifilter)
         call pflotranModelUpdateSubsurfTCond( pflotran_m )   ! E-SrcSink and T bc
+
     end if
 
     ! (3) pass CLM water fluxes to PFLOTRAN-CLM interface
     if (pf_hmode) then      !if coupled 'H' mode between CLM45 and PFLOTRAN
+
         call get_clm_bcwflx(clm_interface_data, bounds, filters, ifilter)
 
         ! pass flux 'vecs' from CLM to pflotran
@@ -1221,6 +1225,7 @@ contains
     ! (6) update CLM variables from PFLOTRAN
 
     if (pf_hmode) then
+
         call pflotranModelGetSaturationFromPF( pflotran_m )   ! hydrological states
         call update_soil_moisture_pf2clm(clm_interface_data, bounds, filters, ifilter)
 
