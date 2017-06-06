@@ -480,7 +480,7 @@ class TESTTESTDIFF(FakeTest):
 """
 echo Insta pass
 echo SUCCESSFUL TERMINATION > {}/cpl.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc.base
+cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
 cp {}/scripts/tests/cpl.hi2.nc.test {}/{}.cpl.hi.0.nc.rest
 """.format(rundir, cimeroot, rundir, case, cimeroot, rundir, case)
         self._set_script(script)
