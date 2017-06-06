@@ -143,11 +143,13 @@ DATM is discussed in detail in :ref:`data atmosphere overview <data-atm>`.
 DATM can be user-customized by changing either its  *namelist input files* or its *stream files*.
 The namelist file for DATM is **datm_in** (or **datm_in_NNN** for multiple instances).
 
+- To modify **datm_in** or **datm_in_NNN**, add the appropriate keyword/value pair(s) for the namelist changes that you want at the end of the **user_nl_datm** file or the **user_nl_datm_NNN** file in ``$CASEROOT``.
+
 - To modify the contents of a DATM stream file, first run **preview_namelists** to list the *streams.txt* files in the **CaseDocs/** directory. Then, in the same directory:
 
   1. Make a *copy* of the file with the string *"user_"* prepended.
-        ``>  cp datm.streams.txt.[extension]  user_datm.streams.txt[extension.`` 
-  2. **Change the permissions of the file to be writeable.**
+        ``> cp datm.streams.txt.[extension] user_datm.streams.txt[extension.`` 
+  2. **Change the permissions of the file to be writeable.** (chmod 644)
         ``chmod 644 user_datm.streams.txt[extension``
   3. Edit the **user_datm.streams.txt.*** file.
 
@@ -166,62 +168,72 @@ The namelist file for DOCN is **docn_in** (or **docn_in_NNN** for multiple insta
 
 - To modify **docn_in** or **docn_in_NNN**, add the appropriate keyword/value pair(s) for the namelist changes that you want at the end of the file in ``$CASEROOT``.
 
-- To modify the contents of a DOCN stream file, first use **preview_namelists** to obtain the contents of the stream txt files in ``CaseDocs/``. Then:
+- To modify the contents of a DOCN stream file, first run **preview_namelists** to list the *streams.txt* files in the **CaseDocs/** directory. Then, in the same directory:
 
-  1. place a *copy* of this file in ``$CASEROOT`` with the string *"user_"* prepended
-  2. **Make sure you change the permissions of the file to be writeable** (chmod 644)
-  3. modify the ``user_docn.streams.txt.*`` file.
+  1. Make a *copy* of the file with the string *"user_"* prepended.
+        ``> cp docn.streams.txt.[extension] user_docn.streams.txt[extension.`` 
+  2. **Change the permissions of the file to be writeable.** (chmod 644)
+        ``chmod 644 user_docn.streams.txt[extension``
+  3. Edit the **user_docn.streams.txt.*** file.
 
-As an example, if the stream text file in ``CaseDocs/`` is ``docn.stream.txt.prescribed``, the modified copy in ``$CASEROOT`` should be ``user_docn.streams.txt.prescribed``.
-After changing this file and calling **preview_namelists** again, you should see your new modifications appear in ``CaseDocs/docn.streams.txt.prescribed``.
+**Example**
+
+As an example, if the stream text file is **docn.stream.txt.prescribed**, the modified copy should be **user_docn.streams.txt.prescribed**.
+After changing this file and calling **preview_namelists** again, your edits should appear in **CaseDocs/docn.streams.txt.prescribed**.
 
 ------------------------
 Data Sea-ice (DICE)
 ------------------------
 
 DICE is discussed in detail in :ref:`data sea-ice overview <data-seaice>`.
-DICE can be user-customized in by either changing its namelist input or its stream files.
+DICE can be user-customized by changing either its namelist input or its stream files.
 The namelist file for DICE is ``dice_in`` (or ``dice_in_NNN`` for multiple instances) and its values can be changed by editing the ``$CASEROOT`` file ``user_nl_dice`` (or ``user_nl_dice_NNN`` for multiple instances).
 
-- To modify ``dice_in``, add the appropriate keyword/value pair(s) for the namelist changes you want at the end of the ``$CASEROOT`` file ``user_nl_dice`` (or ``user_nl_dice_NNN`` for multiple instances).
+- To modify **dice_in** or **dice_in_NNN**, add the appropriate keyword/value pair(s) for the namelist changes that you want at the end of the file in ``$CASEROOT``.
 
-- To modify the contents of a DICE stream file, first use **preview_namelists** to obtain the contents of the stream txt files in ``CaseDocs/``. Then:
+- To modify the contents of a DICE stream file, first run **preview_namelists** to list the *streams.txt* files in the **CaseDocs/** directory. Then, in the same directory:
 
-  1. place a *copy* of this file in ``$CASEROOT`` with the string *"user_"* prepended
-  2. **Make sure you change the permissions of the file to be writeable** (chmod 644)
-  3. modify the ``user_dice.streams.txt.*`` file.
+  1. Make a *copy* of the file with the string *"user_"* prepended.
+        ``> cp dice.streams.txt.[extension] user_dice.streams.txt[extension.`` 
+  2. **Change the permissions of the file to be writeable.** (chmod 644)
+        ``chmod 644 user_dice.streams.txt[extension``
+  3. Edit the **user_dice.streams.txt.*** file.
 
 ------------------
 Data Land (DLND)
 ------------------
 
 DLND is discussed in detail in :ref:`data land overview <data-lnd>`.
-DLND can be user-customized in by either changing its namelist input or its stream files.
+DLND can be user-customized by changing either its namelist input or its stream files.
 The namelist file for DLND is ``dlnd_in`` (or ``dlnd_in_NNN`` for multiple instances) and its values can be changed by editing the ``$CASEROOT`` file ``user_nl_dlnd`` (or ``user_nl_dlnd_NNN`` for multiple instances).
 
-- To modify ``dlnd_in``, add the appropriate keyword/value pair(s) for the namelist changes you want at the end of the ``$CASEROOT`` file ``user_nl_dlnd`` (or ``user_nl_dlnd_NNN`` for multiple instances).
+- To modify **dlnd_in** or **dlnd_in_NNN**, add the appropriate keyword/value pair(s) for the namelist changes that you want at the end of the file in ``$CASEROOT``.
 
-- To modify the contents of a DLND stream file, first use **preview_namelists** to obtain the contents of the stream txt files in ``CaseDocs/``. Then:
+- To modify the contents of a DLND stream file, first run **preview_namelists** to list the *streams.txt* files in the **CaseDocs/** directory. Then, in the same directory:
 
-  1. place a *copy* of this file in ``$CASEROOT`` with the string *"user_"* prepended
-  2. **Make sure you change the permissions of the file to be writeable** (chmod 644)
-  3. modify the ``user_dlnd.streams.txt.*`` file.
+  1. Make a *copy* of the file with the string *"user_"* prepended.
+        ``> cp dlnd.streams.txt.[extension] user_dlnd.streams.txt[extension.`` 
+  2. **Change the permissions of the file to be writeable.** (chmod 644)
+        ``chmod 644 user_dlnd.streams.txt[extension``
+  3. Edit the **user_dlnd.streams.txt.*** file.
 
 ------------------
 Data River (DROF)
 ------------------
 
 DROF is discussed in detail in :ref:`data river overview <data-river>`.
-DROF can be user-customized in by either changing its namelist input or its stream files.
+DROF can be user-customized by changing either its namelist input or its stream files.
 The namelist file for DROF is ``drof_in`` (or ``drof_in_NNN`` for multiple instances) and its values can be changed by editing the ``$CASEROOT`` file ``user_nl_drof`` (or ``user_nl_drof_NNN`` for multiple instances).
 
-- To modify ``drof_in``, add the appropriate keyword/value pair(s) for the namelist changes you want at the end of the ``$CASEROOT`` file ``user_nl_drof`` (or ``user_nl_drof_NNN`` for multiple instances).
+- To modify **drof_in** or **drof_in_NNN**, add the appropriate keyword/value pair(s) for the namelist changes that you want at the end of the file in ``$CASEROOT``.
 
-- To modify the contents of a DROF stream file, first use **preview_namelists** to obtain the contents of the stream txt files in ``CaseDocs/``. Then:
+- To modify the contents of a DROF stream file, first run **preview_namelists** to list the *streams.txt* files in the **CaseDocs/** directory. Then, in the same directory:
 
-  1. place a *copy* of this file in ``$CASEROOT`` with the string *"user_"* prepended
-  2. **Make sure you change the permissions of the file to be writeable** (chmod 644)
-  3. modify the ``user_drof.streams.txt.*`` file.
+  1. Make a *copy* of the file with the string *"user_"* prepended.
+        ``> cp drof.streams.txt.[extension] user_drof.streams.txt[extension.`` 
+  2. **Change the permissions of the file to be writeable.** (chmod 644)
+        ``chmod 644 user_drof.streams.txt[extension``
+  3. Edit the **user_drof.streams.txt.*** file.
 
 =================================================================
 Customizing CESM active component-specific namelist settings
@@ -231,71 +243,88 @@ Customizing CESM active component-specific namelist settings
 CAM
 ---
 
-CAM's `configure <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ and `build-namelist <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ utilities are called by ``Buildconf/cam.buildnml.csh``. 
-`CAM_CONFIG_OPTS <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_, `CAM_NAMELIST_OPTS <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ and `CAM_NML_USECASE <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ are used to set compset variables (e.g., "-phys cam5" for CAM_CONFIG_OPTS) and in general should not be modified for supported compsets. 
-For a complete documentation of namelist settings, see `CAM namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_. 
-To modify CAM namelist settings, you should add the appropriate keyword/value pair at the end of the ``$CASEROOT/user_nl_cam`` file (see the documentation for each file at the top of that file). 
-For example, to change the solar constant to 1363.27, modify the ``user_nl_cam`` file to contain the following line at the end "solar_const=1363.27". 
-To see the result of adding this, call **preview_namelists** and verify that this new value appears in ``CaseDocs/atm_in``.
+CAM's `configure <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ and `build-namelist <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ utilities are called by ``Buildconf/cam.buildnml.csh``. The folllowing are used to set compset variables (for example, "-phys cam5" for CAM_CONFIG_OPTS) and in general should not be modified for supported compsets:
+::
+
+  `CAM_CONFIG_OPTS <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_
+  `CAM_NAMELIST_OPTS <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_
+  `CAM_NML_USECASE <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ 
+
+For complete documentation of namelist settings, see `CAM namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_.
+
+To modify CAM namelist settings, add the appropriate keyword/value pair at the end of the **$CASEROOT/user_nl_cam** file. (See the documentation for each file at the top of that file.)
+
+For example, to change the solar constant to 1363.27, modify **user_nl_cam** file to contain the following line at the end:
+::
+
+ solar_const=1363.27
+
+To see the result, call **preview_namelists** and verify that the new value appears in **CaseDocs/atm_in**.
 
 ---
 CLM
 ---
 
-CIME generates the CLM namelist variables by calling ``$SRCROOT/components/clm/cime_config/buildnml``.
-CLM-specific CIME xml variables are set in ``$SRCROOT/components/clm/cime_config/config_component.xml`` and are used by CLM's ``buildnml`` script to generate the namelist.
-For a complete documentation of namelist settings, see `CLM namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_. 
-To modify CLM namelist settings, you should add the appropriate keyword/value pair at the end of the ``$CASEROOT/user_nl_clm`` file 
-To see the result of your change, call **preview_namelists** and verify that the changes appear correctly in ``CaseDocs/lnd_in``.
+CIME calls **$SRCROOT/components/clm/cime_config/buildnml** to generate the CLM namelist variables.
+CLM-specific CIME xml variables are set in **$SRCROOT/components/clm/cime_config/config_component.xml** and are used by CLM's **buildnml** script to generate the namelist.
+
+For complete documentation of namelist settings, see `CLM namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_.
+
+To modify CLM namelist settings, add the appropriate keyword/value pair at the end of the **$CASEROOT/user_nl_clm** file. To see the result, call **preview_namelists** and verify that the changes appear correctly in **CaseDocs/lnd_in**.
 
 ---
 RTM
 ---
 
-CIME generates the RTM namelist variables by calling ``$SRCROOT/components/rtm/cime_config/buildnml``. 
-For a complete documentation of namelist settings, see RTM namelist variables. 
-To modify RTM namelist settings you should add the appropriate keyword/value pair at the end of the ``$CASEROOT/user_nl_rtm`` file.
-To see the result of your change, call **preview_namelists** and verify that the changes appear correctly in ``CaseDocs/rof_in``.
+CIME calls **$SRCROOT/components/rtm/cime_config/buildnml** to generate the RTM namelist variables.
+
+For complete documentation of namelist settings, see RTM namelist variables. //SHOULD THERE BE A LINK HERE?//
+
+To modify RTM namelist settings, add the appropriate keyword/value pair at the end of the **$CASEROOT/user_nl_rtm** file. To see the result of your change, call **preview_namelists** and verify that the changes appear correctly in **CaseDocs/rof_in**.
 
 ---
 CICE
 ---
 
-CICE's `configure <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ and `build-namelist <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ utilities are now called by ``Buildconf/cice.buildnml.csh``. Note that `CICE_CONFIG_OPTS <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_, and `CICE_NAMELIST_OPTS <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ are used to set compset specific variables and in general should not be modified for supported compsets. For a complete documentation of namelist settings, see `CICE namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_. To modify CICE namelist settings, you should add the appropriate keyword/value pair at the end of the ``$CASEROOT/user_nl_cice`` file (see the documentation for each file at the top of that file). To see the result of your change, call **preview_namelists** and verify that the changes appear correctly in ``CaseDocs/ice_in``.
+The CICE `configure <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ and `build-namelist <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ utilities are called by **Buildconf/cice.buildnml.csh**. Note that `CICE_CONFIG_OPTS <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ and `CICE_NAMELIST_OPTS <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ are used to set compset-specific variables and in general should not be modified for supported compsets.
 
-In addition, **case.setup** creates CICE's compile time `block decomposition variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ in ``env_build.xml`` as follows:
+For complete documentation of namelist settings, see `CICE namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_.
+
+To modify CICE namelist settings, add the appropriate keyword/value pair at the end of the **$CASEROOT/user_nl_cice** file. (See the documentation for each file at the top of that file.) To see the result of your change, call **preview_namelists** and verify that the changes appear correctly in **CaseDocs/ice_in**.
+
+In addition, **case.setup** creates CICE's compile time `block decomposition variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ in **env_build.xml** as follows:
 ::
 
    ./case.setup
-     ⇓
+     ?
    Buildconf/cice.buildnml.csh and $NTASKS_ICE and $NTHRDS_ICE
-     ⇓
-   env_build.xml variables CICE_BLCKX, CICE_BLCKY, CICE_MXBLCKS, CICE_DECOMPTYPE 
+     ?
+   env_build.xml variables CICE_BLCKX, CICE_BLCKY, CICE_MXBLCKS, CICE_DECOMPTYPE
    CPP variables in cice.buildexe.csh
-   
 
 ----
 POP2
 ----
-See `POP2 namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ for a complete description of the POP2 run-time namelist variables. Note that `OCN_COUPLING, OCN_ICE_FORCING, OCN_TRANSIENT <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ are normally utilized ONLY to set compset specific variables and should not be edited. For a complete documentation of namelist settings, see `CICE namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_. To modify POP2 namelist settings, you should add the appropriate keyword/value pair at the end of the ``$CASEROOT/user_nl_pop2`` file (see the documentation for each file at the top of that file). To see the result of your change, call **preview_namelists** and verify that the changes appear correctly in ``CaseDocs/ocn_in``.
+See `POP2 namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ for complete description of the POP2 runtime namelist variables. Note that `OCN_COUPLING, OCN_ICE_FORCING andOCN_TRANSIENT <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ are normally used ONLY to set compset-specific variables and should not be edited. For complete documentation of namelist settings, see `CICE namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_.
 
-In addition, **cesm_setup** also generates POP2's compile time compile time `block decomposition variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ in ``env_build.xml`` as follows:
+To modify POP2 namelist settings, add the appropriate keyword/value pair at the end of the **$CASEROOT/user_nl_pop2** file. (See the documentation for each file at the top of that file.) To see the result of your change, call **preview_namelists** and verify that the changes appear correctly in **CaseDocs/ocn_in**.
+
+In addition, **cesm_setup** generates POP2's compile-time `block decomposition variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ in **env_build.xml** as shown here:
 ::
 
-   ./cesm_setup  
-       ⇓
+   ./cesm_setup
+       ?
    Buildconf/pop2.buildnml.csh and $NTASKS_OCN and $NTHRDS_OCN
-       ⇓
-   env_build.xml variables POP2_BLCKX, POP2_BLCKY, POP2_MXBLCKS, POP2_DECOMPTYPE 
+       ?
+   env_build.xml variables POP2_BLCKX, POP2_BLCKY, POP2_MXBLCKS, POP2_DECOMPTYPE
    CPP variables in pop2.buildexe.csh
 
 CISM
 ----
-See `CISM namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ for a complete description of the CISM run-time namelist variables. This includes variables that appear both in ``cism_in`` and in ``cism.config``. To modify any of these settings, you should add the appropriate keyword/value pair at the end of the ``user_nl_cism`` file (see the documentation for each file at the top of that file). To see the result of your change, call **preview_namelists** and verify that the changes appear correctly in ``CaseDocs/cism_in`` and ``CaseDocs/cism.config``.
+See `CISM namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ for a complete description of the CISM runtime namelist variables. This includes variables that appear both in **cism_in** and in **cism.config**. 
 
-There are also some run-time settings set via ``env_run.xml``, as documented in `CISM run time variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ - in particular, the model resolution, set via ``CISM_GRID``. The value of ``CISM_GRID`` determines the default value of a number of other namelist parameters.
+To modify any of these settings, add the appropriate keyword/value pair at the end of the **user_nl_cism** file. (See the documentation for each file at the top of that file.) To see the result of your change, call **preview_namelists** and verify that the changes appear correctly in **CaseDocs/cism_in** and **CaseDocs/cism.config**.
 
-================================================================
-Customizing ACME active component-specific namelist settings
-================================================================
+Some CISM runtime settings are sets via **env_run.xml**, as documented in `CISM runtime variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_. The model resolution, for example, is set via ``CISM_GRID``. The value of ``CISM_GRID`` determines the default value of a number of other namelist parameters.
+
 

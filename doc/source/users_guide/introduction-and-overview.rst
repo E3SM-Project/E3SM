@@ -23,7 +23,7 @@ Other prerequisites:
 
 - A correct version of the Python interpreter.
 
-CIME's commands are Python scripts and require a correct version of the Python interpreter to be installed. The Python version must be greater than 2.7 but less than 3.0. Determine which version you have by typing:
+CIME's commands are Python scripts and require a correct version of the Python interpreter to be installed. The Python version must be greater than 2.7 but less than 3.0. Determine which version you have like this:
 ::
 
    > python --version
