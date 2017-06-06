@@ -64,6 +64,7 @@ def create_viewer(root_dir, parameters, ext):
                 # 2d vars, format is [ref_name, var, season, region]
                 # 3d vars, format is [ref_name, var, plev, season, region]
                 # ref_name and/or var can be something_like_this, so we always use negative indices
+                ref_name = keywords[0]
                 region = keywords[-1]
                 season = keywords[-2]
                 if keywords[-3].isdigit():  # for when we have a 3d variable, ex: keywords[-3] = 880
@@ -74,8 +75,10 @@ def create_viewer(root_dir, parameters, ext):
                     var = keywords[-3]
 
                 if plev is None:  # 2d variable
+                    #row_name = '%s %s %s' % (ref_name, var, region)
                     row_name = '%s %s' % (var, region)
                 else:  # 3d variable
+                    #row_name = '%s %s %s %s' % (ref_name, var, plev + ' mb ', region)
                     row_name = '%s %s %s' % (var, plev + ' mb ', region)
 
                 try:

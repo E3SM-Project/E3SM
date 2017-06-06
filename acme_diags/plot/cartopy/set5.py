@@ -88,14 +88,14 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
         cbar.ax.tick_params( labelsize=9.0,pad=25, length=0)
 
     # Min, Mean, Max
-    if len(stats) == 3:
-        fig.text(panel[n][0]+0.6635,panel[n][1]+0.2107,"Max\nMean\nMin",ha='left',fontdict=plotSideTitle)
-        fig.text(panel[n][0]+0.7635,panel[n][1]+0.2107,"%.2f\n%.2f\n%.2f" % stats,ha='right',fontdict=plotSideTitle)
+#    if len(stats) == 3:
+    fig.text(panel[n][0]+0.6635,panel[n][1]+0.2107,"Max\nMean\nMin",ha='left',fontdict=plotSideTitle)
+    fig.text(panel[n][0]+0.7635,panel[n][1]+0.2107,"%.2f\n%.2f\n%.2f" % stats[0:3],ha='right',fontdict=plotSideTitle)
 
     # RMSE, CORR
-    if len(stats) == 2:
+    if len(stats) == 5:
       fig.text(panel[n][0]+0.6635,panel[n][1]-0.0105,"RMSE\nCORR",ha='left',fontdict=plotSideTitle)
-      fig.text(panel[n][0]+0.7635,panel[n][1]-0.0105,"%.2f\n%.2f" % stats,ha='right',fontdict=plotSideTitle)
+      fig.text(panel[n][0]+0.7635,panel[n][1]-0.0105,"%.2f\n%.2f" % stats[3:5],ha='right',fontdict=plotSideTitle)
 
 def plot(reference, test, diff, metrics_dict, parameter):
 
@@ -116,9 +116,12 @@ def plot(reference, test, diff, metrics_dict, parameter):
     plot_panel(1, fig, proj, reference, parameter.contour_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units),stats=(max2,mean2,min2))
 
     # Third panel
+    min3  = metrics_dict['diff']['min']
+    mean3 = metrics_dict['diff']['mean']
+    max3  = metrics_dict['diff']['max']
     r = metrics_dict['misc']['rmse']
     c = metrics_dict['misc']['corr']
-    plot_panel(2, fig, proj, diff, parameter.diff_levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(r,c))
+    plot_panel(2, fig, proj, diff, parameter.diff_levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(max3,mean3,min3,r,c))
 
     # Figure title
     fig.suptitle(parameter.main_title, x=0.5, y=0.96, fontsize=18)
