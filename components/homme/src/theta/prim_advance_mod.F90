@@ -118,9 +118,17 @@ contains
     logical,               intent(in)            :: compute_diagnostics
 
     real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
-    real (kind=real_kind) ::  itertol,statesave(nets:nete,np,np,nlev,6)
+    real (kind=real_kind) ::  itertol
+    real (kind=real_kind) ::  statesave(nete-nets+1,np,np,nlev,6)
     real (kind=real_kind) ::  gamma,delta
-    real (kind=real_kind) :: Fvectemp(nete-nets+1,np,np,nlev,6)
+    real (kind=real_kind), pointer  ::  Fvectemp(:,:,:,:,:)
+    type (Fvec), allocatable :: reshapeFvectemp(:)
+    real (kind=real_kind), pointer :: upt(:,:,:),vpt(:,:,:),wpt(:,:,:)
+    real (kind=real_kind), pointer :: phipt(:,:,:),thetapt(:,:,:),dp3dpt(:,:,:)
+
+    type(Fvec), pointer :: y(:)
+
+
 
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
     integer :: n,i,j,maxiter
@@ -130,7 +138,6 @@ contains
     integer :: maxiters, diagfreq
     integer(C_INT) :: ierr, itask
     integer(C_LONG) :: iout(40)
-    type(FVec), allocatable :: y(:)
     real*8 :: atol
 
     call t_startf('prim_advance_exp')
@@ -170,48 +177,45 @@ contains
        return
     endif
 #endif
-    print *, 'hey'
+  
     ! initiate arkode if needed
     if (tstep_type==8) then
-      print *, 'Initializing ARKode solver...'
-      allocate(y((nete-nets+1)*np*np*nlev*6))
-    do ie=nets,nete
-      Fvectemp(nete-nets+ie,:,:,:,1) = elem(ie)%state%v(:,:,1,:,n0)
-      Fvectemp(nete-nets+ie,:,:,:,2) = elem(ie)%state%v(:,:,2,:,n0)
-      Fvectemp(nete-nets+ie,:,:,:,3) = elem(ie)%state%w(:,:,:,n0)
-      Fvectemp(nete-nets+ie,:,:,:,4) = elem(ie)%state%phi(:,:,:,n0)
-      Fvectemp(nete-nets+ie,:,:,:,5) = elem(ie)%state%theta_dp_cp(:,:,:,n0)
-      Fvectemp(nete-nets+ie,:,:,:,6) = elem(ie)%state%dp3d(:,:,:,n0)
-    end do
-
-    y(:)%u           = reshape(Fvectemp(:,:,:,:,1),(/(nete-nets+1)*np*np*nlev/))
-    y(:)%v           = reshape(Fvectemp(:,:,:,:,2),(/(nete-nets+1)*np*np*nlev/))
-    y(:)%w           = reshape(Fvectemp(:,:,:,:,3),(/(nete-nets+1)*np*np*nlev/))
-    y(:)%phi         = reshape(Fvectemp(:,:,:,:,4),(/(nete-nets+1)*np*np*nlev/))
-    y(:)%theta_dp_cp = reshape(Fvectemp(:,:,:,:,5),(/(nete-nets+1)*np*np*nlev/))
-    y(:)%dp3d        = reshape(Fvectemp(:,:,:,:,6),(/(nete-nets+1)*np*np*nlev/))
-
-!      allocate( atol((nete-nets+1)*np*np*nlev*6))
-      print *, ie-nets+1, nete-nets+1
-      print *, size(y)
-!      atol(:)%u           = 1d-1
-!      atol(:)%v           = 1d-1
-!      atol(:)%w           = 1d-1
-!      atol(:)%phi         = 1d-1
-!      atol(:)%theta_dp_cp = 1d-1
-!      atol(:)%dp3d        = 1d-1
-
+      allocate(Fvectemp(nete-nets+1,np,np,nlev,6))
+      do ie=nets,nete
+        upt => elem(ie)%state%v(:,:,1,:,n0)
+        Fvectemp(nete-nets+ie,:,:,:,1) = upt(:,:,:)
+        vpt => elem(ie)%state%v(:,:,2,:,n0)
+        Fvectemp(nete-nets+ie,:,:,:,2) = vpt(:,:,:)
+        wpt => elem(ie)%state%w(:,:,:,n0)
+        Fvectemp(nete-nets+ie,:,:,:,3) = wpt(:,:,:)
+        phipt => elem(ie)%state%v(:,:,1,:,n0)
+        Fvectemp(nete-nets+ie,:,:,:,4) = phipt(:,:,:)
+        thetapt => elem(ie)%state%theta_dp_cp(:,:,:,n0)
+        Fvectemp(nete-nets+ie,:,:,:,5) = thetapt(:,:,:)
+        dp3dpt => elem(ie)%state%dp3d(:,:,:,n0)
+        Fvectemp(nete-nets+ie,:,:,:,6) = dp3dpt(:,:,:)
+      end do
+      allocate(y((nete-nets+1)*np*np*nlev))
+      y(:)%u           = reshape(Fvectemp(:,:,:,:,1),(/(nete-nets+1)*np*np*nlev/))
+      y(:)%v           = reshape(Fvectemp(:,:,:,:,2),(/(nete-nets+1)*np*np*nlev/))
+      y(:)%w           = reshape(Fvectemp(:,:,:,:,3),(/(nete-nets+1)*np*np*nlev/))
+      y(:)%phi         = reshape(Fvectemp(:,:,:,:,4),(/(nete-nets+1)*np*np*nlev/))
+      y(:)%theta_dp_cp = reshape(Fvectemp(:,:,:,:,5),(/(nete-nets+1)*np*np*nlev/))
+      y(:)%dp3d        = reshape(Fvectemp(:,:,:,:,6),(/(nete-nets+1)*np*np*nlev/))
+      deallocate(Fvectemp)
       atol = 1d-1
       rtol = 1d-1
       iout = 0
       rout = 0.d0
       tcur = tstart
-      print *, 'hey2'
+      print *, 'Fvec structures initialized'
       call arkode_init(0.d0, dt, y, rtol, atol, iout, rout, ierr)
+      print *, 'ierr', ierr
       if (ierr /= 0) then
-        write(0,*) 'Error in arkode_init, ierr = ', ierr, '; halting'
+        print *,  'Error in arkode_init, ierr = ', ierr, '; halting'
         stop
       end if 
+     
       print *,'\nFinished initialization, starting time steps'
       print *, '   '
       print *, '      t           u           v           w'
@@ -219,7 +223,7 @@ contains
       print '(1x,4(es12.5,1x))', tcur
 
       deallocate(y)
-!      deallocate(atol)
+
 
     endif
 
@@ -384,13 +388,25 @@ contains
  !     call FNVExtPrint(elem)
  !     print *, 'keep going'
       print *, 'size of elem', size(elem), 'nelem', nelem, 'n0', n0
+      print *, 'size of y' , size(y)
  !     call compute_andor_apply_rhs(np1,n0,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
  !       deriv,nets,nete,.false.,1.d0,1.d0,1.d0,1.d0)
               
       ! call ARKode to perform a single step 
- !     itask = 2          ! use 'one-step' mode
- !     call farkode(tout, tcur, y, itask, ierr)
-  
+!       itask = 2          ! use 'one-step' mode
+!       print *, 'tout', tout
+!       print *, 'tcur', tcur
+!       print *, 'itask', itask
+!       print *, 'ierr', ierr
+
+       call arkode_init(0.d0, dt, y, rtol, atol, iout, rout, ierr)
+
+!       call farksetrin('FIXED_STEP', dt, ierr)
+!       if (ierr /= 0) then
+!         write(0,*) 'farksetrin failed, ierr = ', ierr
+!       endif
+!       call farkode(tcur+dt, tcur, y, itask, ierr)
+!       tcur=tcur+dt
  !     if (ierr /= 0) then
  !       write(0,*) 'farkode failed, ierr = ', ierr
  !     endif

@@ -99,6 +99,8 @@ subroutine arkode_init(t0, dt, y, rtol, atol, iout, rout, ierr)
   if (ierr /= 0) then
      write(0,*) ' arkode_init: farkmalloc failed'
   endif
+ print *, 'farkmalloc passed', ierr
+
 
   !    ARKode options
   print *, 'Setting ARKode options'
@@ -123,7 +125,7 @@ subroutine arkode_init(t0, dt, y, rtol, atol, iout, rout, ierr)
   !      call.  The argument specifies whether the linearly implicit problem
   !      changes as the problem evolves (1) or not (0)
   lidef = 0
-  call farksetiin('LINEAR', lidef, ierr)
+!  call farksetiin('LINEAR', lidef, ierr)
   if (ierr /= 0) then
      write(0,*) ' arkode_init: farksetiin failed'
   endif
@@ -335,7 +337,7 @@ subroutine farkefun(t, y, fy, ipar, rpar, ierr)
    end do 
 
    call compute_andor_apply_rhs(1,1,1,qn0,1.d0,elem,hvcoord,hybrid,&
-       deriv,nets,nete,.false.,1.d0,1.d0,0d0,0.d0)
+       deriv,nets,nete,.false.,1.d0,1.d0,1d0,0.d0)
 
    do ie=nets,nete
      Fvectemp(nete-nets+ie,:,:,:,1) = elem(ie)%state%v(:,:,1,:,1)
