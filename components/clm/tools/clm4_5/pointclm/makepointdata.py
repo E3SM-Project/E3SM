@@ -77,7 +77,7 @@ elif ('f09' in options.res):
     resx = 1.25
     resy = 0.9
 
-if (lat_bounds[0] >= -90 and lon_bounds[0] >= -180):
+if (lat_bounds[0] >= -100 and lon_bounds[0] >= -200):
     print( 'Creating regional datasets')
     if (lon_bounds[0] < 0):
         lon_bounds[0] = lon_bounds[0]+360.
@@ -130,12 +130,17 @@ for i in range(0,longxy.shape[1]):
         xgrid_max = i
     elif (longxy[0,i] <= lon_bounds[1]):
         xgrid_max = i
+if (lon_bounds[0] == 180 and lon_bounds[1] == 180):  #global
+    xgrid_min = 0
+    xgrid_max = longxy.shape[1]-1
+
 for i in range(0,latixy.shape[0]):
     if (latixy[i,0] >= lat_bounds[0] and ygrid_min == -1):
         ygrid_min = i
         ygrid_max = i
     elif (latixy[i,0] <= lat_bounds[1]):
         ygrid_max = i
+
 
 #---------------------Create domain data --------------------------------------------------
 

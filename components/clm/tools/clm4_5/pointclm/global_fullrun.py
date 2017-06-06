@@ -31,9 +31,9 @@ parser.add_option("--hist_nhtfrq_spinup", dest="hist_nhtfrq_spinup", default="-9
                   help = 'output file timestep (transient only)')
 parser.add_option("--hist_nhtfrq_trans", dest="hist_nhtfrq", default="0", \
                   help = 'output file timestep (transient only)')
-parser.add_option("--lat_bounds", dest="lat_bounds", default='-180,180', \
+parser.add_option("--lat_bounds", dest="lat_bounds", default='-90,90', \
                   help = 'latitude range for regional run')
-parser.add_option("--lon_bounds", dest="lon_bounds", default='-90,90', \
+parser.add_option("--lon_bounds", dest="lon_bounds", default='-180,180', \
                   help = 'longitude range for regional run')
 parser.add_option("--machine", dest="machine", default = 'oic2', \
                   help = "machine to use (default = oic2)")
@@ -143,7 +143,7 @@ def get_regional_bounds(myregion):
         bounds = [-80.25,-50.25,0.25,12.75]
     elif (myregion == 'shsa'):  #Southern hemisphere South America
         bounds = [-80.25,-40.25,-59.75,0.25]
-    elif (myreigon == 'euro'):  #Europe
+    elif (myregion == 'euro'):  #Europe
         bounds = [-10.25,30.25,35.25,70.25]
     elif (myregion == 'mide'):  #Middle East
         bounds = [-10.25,60.25,20.24,40.25]

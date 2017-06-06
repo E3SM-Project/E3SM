@@ -60,10 +60,7 @@ def postproc(myvars, myyear_start, myyear_end, myday_start, myday_end, \
         n_years = myyear_end[index]-myyear_start[index]+1
         for y in range(myyear_start[index],myyear_end[index]+1):
             fname = rundir+case+'.clm2.h0.'+str(10000+y)[1:]+'-01-01-00000.nc'
-            if (y == myyear_start[index]):
-                mydata = nffun.getvar(fname, v)/n_years
-            else:
-                mydata = mydata+nffun.getvar(fname,v)/n_years
+            mydata = nffun.getvar(fname,v)   
             #get output and average over days/years
             if ('20TR' in case):     #Transient assume daily ouput
                 n_days = myday_end[index]-myday_start[index]+1

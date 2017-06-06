@@ -858,7 +858,7 @@ for i in range(1,int(options.ninst)+1):
     elif ('20TR' in compset and (options.trans_varlist != '' or options.ilambvars)):
 	trans_varlist = options.trans_varlist.split(',')
         if (options.ilambvars):
-            trans_varlist = options.ilamb_vars
+            trans_varlist = ilamb_outputs
 	output.write(" hist_empty_htapes = .true.\n")
         h0varst = " hist_fincl1 = "
 	for v in trans_varlist:
