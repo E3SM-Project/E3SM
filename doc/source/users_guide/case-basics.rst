@@ -61,8 +61,8 @@ Here are the supported values for each element of the longname::
   The OPTIONAL %phys attributes specify sub-modes of the given system.
   For example, DOCN%DOM is the DOCN data ocean (rather than slab-ocean) mode.
   ALL the possible %phys choices for each component are listed by
-  calling manage_case with the -list compsets argument.
-  ALL data models have a %phys option that corresponds to the data model mode.
+  calling manage_case with the --list compsets argument.  ALL data models have 
+  a %phys option that corresponds to the data model mode.
 
 As an example, this actual CESM compset longname refers to running a pre-industrial control with active CESM components CAM, CLM, CICE, POP2, MOSART, CISM2 and WW3 in a BDRD BGC coupling scenario::
 
