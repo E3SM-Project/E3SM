@@ -67,6 +67,15 @@ class EntryID(GenericXML):
         '''
         Note that the component class has a specific version of this function
         '''
+        # if there is a <values> element - check to see if there is a match attribute
+        # if there is NOT a match attribute, then set the default to "first"
+        # this is different than the component class _get_value_match where the default is "last"
+        values_node = self.get_optional_node("values", root=node)
+        if values_node is not None:
+            match_type = values_node.get("match", default="first")
+        else:
+            match_type = "first"
+
         # Store nodes that match the attributes and their scores.
         matches = []
         nodes = self.get_nodes("value", root=node)
@@ -97,8 +106,23 @@ class EntryID(GenericXML):
         if not matches:
             return None
 
-        # Get maximum score using custom `key` function, extract the node.
-        _, mnode = max(matches, key=lambda x: x[0])
+        # Get maximum score using either a "last" or "first" match in case of a tie
+        max_score = -1
+        mnode = None
+        for score,node in matches:
+            if match_type == "last":
+                # take the *last* best match
+                if score >= max_score:
+                    max_score = score
+                    mnode = node
+            elif match_type == "first":
+                # take the *first* best match
+                if score > max_score:
+                    max_score = score
+                    mnode = node
+            else:
+                expect(False, 
+                       "match attribute can only have a value of 'last' or 'first', value is %s" %match_type)
 
         return mnode.text
 

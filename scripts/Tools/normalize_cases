@@ -76,7 +76,7 @@ def normalize_cases(case1, case2):
                     from_dir=case1)
 
         for case1_lid, case2_lid in zip(case1_lids, case2_lids):
-            files_needing_rename = run_cmd_no_fail('find -depth -name "*.{}"'.format(case1_lid, from_dir=case1).splitlines())
+            files_needing_rename = run_cmd_no_fail('find -depth -name "*.{}"'.format(case1_lid), from_dir=case1).splitlines()
             for file_needing_rename in files_needing_rename:
                 expect(file_needing_rename.endswith(case1_lid), "broken")
                 new_name = file_needing_rename.rstrip(case1_lid) + case2_lid

@@ -54,7 +54,7 @@ The file **$CIMEROOT/config/[cesm,acme]/config_files.xml** contains all model-sp
 Where are compsets defined?
 ---------------------------
 
-CIME looks at the xml element ``COMPSETS_SPEC_FILE`` in the **config_files.xml** file to determine where to find the list of supported compsets lists all model components that set compsets.
+CIME looks at the xml element ``COMPSETS_SPEC_FILE`` in the **config_files.xml** file to determine which xml file to read in order to satisfy the configuration specifications defined in the compset longname.
 
 In the case of CESM, this xml element has the contents shown here, where ``$SRCROOT`` is the root of your CESM sandbox and contains ``$CIMEROOT`` as a subdirectory:
 
@@ -78,8 +78,6 @@ In the case of CESM, this xml element has the contents shown here, where ``$SRCR
        <schema>$CIMEROOT/config/xml_schemas/config_compsets.xsd</schema>
      </entry>
 
-.. Note:: CIME searches each of the **config_compsets.xml** files in the ``<value>`` nodes to determine if there is a match for the compset longname. If a match is found,  the value of the *component* attribute is set for all other searches that appear below.
-
 .. _defining-component-specific-compset-settings:
 
 Where are component-specific settings defined for the target compset?
@@ -98,13 +96,13 @@ CIME first parses the following nodes to identify appropriate **config_component
       ...
       <default_value>$CIMEROOT/driver_cpl/cime_config/config_component.xml</default_value>
       ..
-           </entry>
+      </entry>
 
      <entry id="CONFIG_CPL_FILE_MODEL_SPECIFIC">
         <default_value>$CIMEROOT/driver_cpl/cime_config/config_component_$MODEL.xml</default_value>
      </entry>
 
-CIME then parses each of the nodes listed below, using using the value of the *component* attribute to determine which **config_component.xml** files to use for the requested compset longname.
+CIME then parses each of the nodes listed below, using using the value of the *component* attribute to determine which xml files to use for the requested compset longname.
 ::
 
      <entry id="CONFIG_ATM_FILE">
@@ -116,7 +114,7 @@ CIME then parses each of the nodes listed below, using using the value of the *c
      <entry id="CONFIG_ROF_FILE">
      <entry id="CONFIG_WAV_FILE">
 
-As an example, the possible atmosphere components for CESM have the following associated **config_component.xml** files.
+As an example, the possible atmosphere components for CESM have the following associated xml files.
 ::
 
      <entry id="CONFIG_ATM_FILE">
@@ -150,7 +148,7 @@ CIME looks at the xml element ``PES_SPEC_FILE`` in the **config_files.xml** file
 to find the supported out-of-the-box model grids for the target component.
 
 Each component that sets compsets has an associated **config_pes.xml** file that specifies an out-of-the-box pe-layout for those compsets.
-In addition, this pe-layout might also have dependencies on the model grid and the target machine.
+The pe-layout might also have dependencies on the model grid and the target machine.
 Finally, there might be more than one out-of-the-box pe-layout that could be used for a compset/grid/machine combination: one for a low processor setting and one for a high processor setting.
 
 A typical entry in **config_pes.xml** looks like this:
@@ -158,7 +156,7 @@ A typical entry in **config_pes.xml** looks like this:
 ::
 
   <grid name="a%T62">
-    <mach name="yellowstone|pronghorn">
+    <mach name="cheyenne">
       <pes pesize="any" compset="DATM%IAF">
       .......
       </pes>
@@ -171,7 +169,7 @@ Given the various dependencies, CIME uses an order of precedence to determine th
 
    CIME first searches the grid nodes for a grid match in **config_grids.xml**.
    The search is based on a regular expression match for the grid longname.
-   All nodes that have a grid match are used in the subsequent search. If there is no grid match,  all nodes that have ``<grid name="any">`` are used in the subsequent search.
+   All nodes that have a grid match are used in the subsequent search. If there is no grid match, all nodes that have ``<grid name="any">`` are used in the subsequent search.
 
 
 2. machine match

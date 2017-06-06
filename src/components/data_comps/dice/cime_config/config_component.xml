@@ -4,6 +4,15 @@
 
 <entry_id>
 
+  <!-- NOTE that the description block determines what DICE% values can appear in the compset name 
+       For DICE this is determined by the DICE_MODE values -->
+  <description>
+    <desc compset="DICE%SSMI">dice mode is ssmi:</desc>
+    <desc compset="DICE%SIAF">dice mode is ssmi_iaf:</desc>
+    <desc compset="DICE%PRES">dice mode is prescribed:</desc>
+    <desc compset="DICE%NULL">dice mode is null:</desc>
+  </description>
+
   <entry id="COMP_ICE">
     <type>char</type>
     <valid_values>dice</valid_values>
@@ -17,7 +26,7 @@
     <type>char</type>
     <valid_values>prescribed,ssmi,ssmi_iaf,copyall,null</valid_values>
     <default_value>ssmi</default_value>
-    <values>
+    <values match="last">
       <value compset="DICE%SSMI">ssmi</value>
       <value compset="DICE%SIAF">ssmi_iaf</value>
       <value compset="DICE%PRES">prescribed</value>
@@ -42,13 +51,6 @@
       in the same file because the SST and ice fraction data are derived from the
       same observational data sets and are consistent with each other.</desc>
   </entry>
-
-  <description>
-    <desc compset="DICE%SSMI">dice mode is ssmi:</desc>
-    <desc compset="DICE%SIAF">dice mode is ssmi_iaf:</desc>
-    <desc compset="DICE%PRES">dice mode is prescribed:</desc>
-    <desc compset="DICE%NULL">dice mode is null:</desc>
-  </description>
 
   <help>
     =========================================

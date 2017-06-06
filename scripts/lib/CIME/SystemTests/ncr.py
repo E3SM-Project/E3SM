@@ -102,7 +102,7 @@ class NCR(SystemTestsCommon):
         os.remove("{}/{}.exe".format(exeroot, cime_model))
         shutil.copy("{}/{}.exe.NCR2".format(exeroot, cime_model),
                     "{}/{}.exe".format(exeroot, cime_model))
-        restore("env_build.NCR2.xml", "env_build.xml")
+        restore("env_build.NCR2.xml", newname="env_build.xml")
 
         logger.info("default: doing a {} {} with NINST2".format(stop_n, stop_option))
         self.run_indv(suffix="multiinst")
