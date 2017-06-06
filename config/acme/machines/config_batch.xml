@@ -86,6 +86,7 @@
       <directive default="acme.stdout" > -o {{ output_error_path }}.%J  </directive>
       <directive default="acme.stderr" > -e {{ output_error_path }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
+      <directive                       > -u {{ mail_user }} </directive>
     </directives>
   </batch_system>
 
@@ -106,8 +107,9 @@
       <directive default="n"> -r {{ rerunnable }} </directive>
       <!-- <directive> -j oe {{ output_error_path }} </directive> -->
       <directive> -j oe </directive>
-      <directive default="ae"  > -m {{ mail_options }} </directive>
       <directive> -V </directive>
+      <directive> -M {{ mail_user }}</directive>
+      <directive default="ae"> -m {{ mail_type }}</directive>
     </directives>
   </batch_system>
 
@@ -126,7 +128,8 @@
       <directive> -N {{ job_id }}</directive>
       <directive> -j oe </directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
-      <directive default="ae"  > -m {{ mail_options }} </directive>
+      <directive> -M {{ mail_user }}</directive>
+      <directive default="ae"  > -m {{ mail_type }} </directive>
       <directive default="/bin/bash" > -S {{ shell }}</directive>
     </directives>
   </batch_system>
@@ -171,6 +174,8 @@
        <directive> --nodes={{ num_nodes }}</directive>
        <directive> --output={{ output_error_path }}.%j </directive>
        <directive> --exclusive                        </directive>
+       <directive> --mail-user={{ mail_user }}</directive>
+       <directive default="end,fail"> --mail-type={{ mail_type }}</directive>
      </directives>
    </batch_system>
 

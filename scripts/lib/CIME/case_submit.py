@@ -15,7 +15,8 @@ from CIME.test_status               import *
 
 logger = logging.getLogger(__name__)
 
-def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False, batch_args=None):
+def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False,
+            mail_user=None, mail_type='never', batch_args=None):
     caseroot = case.get_value("CASEROOT")
 
     if job is None:
@@ -27,7 +28,7 @@ def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False, batc
     if resubmit:
         resub = case.get_value("RESUBMIT")
         logger.info("Submitting job '{}', resubmit={:d}".format(job, resub))
-        case.set_value("RESUBMIT",resub-1)
+        case.set_value("RESUBMIT", resub-1)
         if case.get_value("RESUBMIT_SETS_CONTINUE_RUN"):
             case.set_value("CONTINUE_RUN", True)
     else:
@@ -35,7 +36,7 @@ def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False, batc
             check_case(case, caseroot)
             check_DA_settings(case)
             if case.get_value("MACH") == "mira":
-                with open(".original_host","w") as fd:
+                with open(".original_host", "w") as fd:
                     fd.write( socket.gethostname())
 
     # if case.submit is called with the no_batch flag then we assume that this
@@ -60,14 +61,17 @@ def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False, batc
     #Load Modules
     case.load_env()
 
-    case.set_value("RUN_WITH_SUBMIT",True)
+    case.set_value("RUN_WITH_SUBMIT", True)
     case.flush()
 
     logger.warn("submit_jobs {}".format(job))
-    job_ids = case.submit_jobs(no_batch=no_batch, job=job, skip_pnl=skip_pnl, batch_args=batch_args)
+    job_ids = case.submit_jobs(no_batch=no_batch, job=job, skip_pnl=skip_pnl,
+                               mail_user=mail_user, mail_type=mail_type,
+                               batch_args=batch_args)
     logger.info("Submitted job ids {}".format(job_ids))
 
-def submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False, batch_args=None):
+def submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False,
+           mail_user=None, mail_type='never', batch_args=None):
     if case.get_value("TEST"):
         caseroot = case.get_value("CASEROOT")
         casebaseid = case.get_value("CASEBASEID")
@@ -82,7 +86,8 @@ def submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False, batch
                 ts.set_status(SUBMIT_PHASE, TEST_PASS_STATUS)
 
     try:
-        functor = lambda: _submit(case, job, resubmit, no_batch, skip_pnl, batch_args)
+        functor = lambda: _submit(case, job, resubmit, no_batch, skip_pnl,
+                                  mail_user, mail_type, batch_args)
         run_and_log_case_status(functor, "case.submit", caseroot=case.get_value("CASEROOT"))
     except:
         # If something failed in the batch system, make sure to mark

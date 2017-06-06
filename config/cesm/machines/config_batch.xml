@@ -102,6 +102,7 @@
       <directive default="cesm.stdout" > -o {{ output_error_path }}.%J  </directive>
       <directive default="cesm.stderr" > -e {{ output_error_path }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
+      <directive                       > -u {{ mail_user }} </directive>
     </directives>
   </batch_system>
 
@@ -122,8 +123,9 @@
       <directive default="n"> -r {{ rerunnable }} </directive>
       <!-- <directive> -j oe {{ output_error_path }} </directive> -->
       <directive> -j oe </directive>
-      <directive default="ae"  > -m {{ mail_options }} </directive>
       <directive> -V </directive>
+      <directive> -M {{ mail_user }}</directive>
+      <directive default="ae"> -m {{ mail_type }}</directive>
     </directives>
   </batch_system>
 
@@ -144,6 +146,8 @@
        <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
        <directive> --output={{ output_error_path }}   </directive>
        <directive> --exclusive                        </directive>
+       <directive> --mail-user={{ mail_user }}</directive>
+       <directive default="end,fail"> --mail-type={{ mail_type }}</directive>
      </directives>
    </batch_system>
 
