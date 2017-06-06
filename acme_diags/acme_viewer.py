@@ -75,9 +75,11 @@ def create_viewer(root_dir, parameters, ext):
                     var = keywords[-3]
 
                 if plev is None:  # 2d variable
-                    row_name = '%s %s %s' % (ref_name, var, region)
+                    #row_name = '%s %s %s' % (ref_name, var, region)
+                    row_name = '%s %s' % (var, region)
                 else:  # 3d variable
-                    row_name = '%s %s %s %s' % (ref_name, var, plev + ' mb ', region)
+                    #row_name = '%s %s %s %s' % (ref_name, var, plev + ' mb ', region)
+                    row_name = '%s %s %s' % (var, plev + ' mb ', region)
 
                 try:
                     viewer.set_row(row_name)
