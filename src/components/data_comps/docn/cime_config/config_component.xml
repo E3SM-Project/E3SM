@@ -7,7 +7,7 @@
   <!-- NOTE that the description block determines what DOCN% values can appear in the compset name 
        For DOCN this is determined by the DOCN_MODE values -->
 
-  <description submodes="required">
+  <description mustmatch="DOCN%">
     <desc compset="DOCN%NULL">docn null mode</desc>
     <desc compset="DOCN%DOM">docn prescribed ocean mode</desc>
     <desc compset="DOCN%SOM">docn slab ocean mode</desc>

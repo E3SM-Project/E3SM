@@ -5,7 +5,7 @@
   <!-- NOTE that the description block determines what DWAV% values can appear in the compset name 
        For DWAV this is determined by the DWAV_MODE values -->
 
-  <description submodes="required">
+  <description mustmatch="DWAV%">
     <desc compset="DWAV%NULL">dwav null mode</desc>
     <desc compset="DWAV%CLIMO">dwav climatological mode</desc>
   </description>

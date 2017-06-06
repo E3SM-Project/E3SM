@@ -7,7 +7,7 @@
   <!-- NOTE that the description block determines what DATM% values can appear in the compset name 
        For DATM this is determined by the DATM_MODE values in combination with the TIME prefix -->
 
-  <description submodes="required">
+  <description mustmatch="DATM%">
     <desc compset="DATM%QIA">QIAN atm input data</desc>
     <desc compset="DATM%WISOQIA">QIAN atm input data with water isotopes</desc>
     <desc compset="DATM%CRU">CRUNCEP atm input data</desc>

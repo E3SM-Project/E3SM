@@ -7,7 +7,7 @@
   <!-- NOTE that the description block determines what DICE% values can appear in the compset name 
        For DICE this is determined by the DICE_MODE values -->
 
-  <description submodes="required">
+  <description mustmatch="DICE%">
     <desc compset="DICE%SSMI">dice mode is ssmi:</desc>
     <desc compset="DICE%SIAF">dice mode is ssmi_iaf:</desc>
     <desc compset="DICE%PRES">dice mode is prescribed:</desc>
