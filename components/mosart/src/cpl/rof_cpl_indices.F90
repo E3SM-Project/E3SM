@@ -28,6 +28,8 @@ module rof_cpl_indices
   integer, public :: index_x2r_Flrl_rofsub = 0  ! lnd->rof liquid subsurface runoff from land
   integer, public :: index_x2r_Flrl_rofdto = 0  ! lnd->rof liquid direct to ocean runoff
   integer, public :: index_x2r_Flrl_rofi  = 0   ! lnd->rof ice runoff forcing from land
+  integer, public :: index_x2r_Flrl_demand_unmet ! lnd->rof input unmet demand (<= 0)
+  integer, public :: index_x2r_Flrl_demand_total ! lnd->rof input total fluxes (<= 0)
 
   integer, public :: nflds_x2r = 0
 
@@ -85,6 +87,8 @@ contains
     index_x2r_Flrl_rofsub = mct_avect_indexra(avtmp,'Flrl_rofsub')
     index_x2r_Flrl_rofdto = mct_avect_indexra(avtmp,'Flrl_rofdto',perrwith='quiet')
     index_x2r_Flrl_rofi   = mct_avect_indexra(avtmp,'Flrl_rofi')
+    index_x2r_Flrl_demand_unmet = mct_avect_indexra(avtmp,'Flrl_demand_unmet')
+    index_x2r_Flrl_demand_total = mct_avect_indexra(avtmp,'Flrl_demand_total')
 
     nflds_x2r = mct_avect_nRattr(avtmp)
 

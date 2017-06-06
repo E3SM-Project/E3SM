@@ -83,7 +83,7 @@ contains
     integer*2 :: temp(1,200000)
     integer :: xtoget, ytoget, thisx, thisy, calday_start
     character(len=200) metsource_str, thisline
-    character(len=32), parameter :: sub = 'lnd_import_mct'
+    character(len=*), parameter :: sub = 'lnd_import_mct'
     integer :: av, v, n, nummetdims, g3, gtoget, ztoget, line, mystart, tod_start, thistimelen  
     character(len=20) aerovars(14), metvars(8)
     character(len=3) zst
@@ -1007,6 +1007,7 @@ contains
     integer  :: nstep ! time step index
     integer  :: dtime ! time step   
     integer  :: num   ! counter
+    character(len=*), parameter :: sub = 'lnd_export_mct'
     !---------------------------------------------------------------------------
 
     ! cesm sign convention is that fluxes are positive downward
@@ -1069,6 +1070,13 @@ contains
        l2x(index_l2x_Flrl_rofsur,i) = lnd2atm_vars%qflx_rofliq_qsur_grc(g)
        l2x(index_l2x_Flrl_rofsub,i) = lnd2atm_vars%qflx_rofliq_qsub_grc(g)
        l2x(index_l2x_Flrl_rofgwl,i) = lnd2atm_vars%qflx_rofliq_qgwl_grc(g)
+
+       l2x(index_l2x_Flrl_demand_unmet,i) =  0.0_r8   ! needs to be filled in
+       l2x(index_l2x_Flrl_demand_total,i) =  0.0_r8   ! needs to be filled in
+       if (l2x(index_l2x_Flrl_demand_unmet,i) > 0.0_r8 .or. &
+           l2x(index_l2x_Flrl_demand_total,i) > 0.0_r8) then
+          call endrun( sub//' ERROR: demand_unmet and demand_total must be <= 0.')
+       endif
 
        ! glc coupling
 

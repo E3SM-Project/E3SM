@@ -1479,6 +1479,7 @@ contains
     integer,parameter :: br_qsub   = 21 ! input qsub
     integer,parameter :: br_qgwl   = 22 ! input qgwl
     integer,parameter :: br_qdto   = 23 ! input qdto
+    integer,parameter :: br_dunm   = 24 ! input dunm
 
     ! Output TERMS (rates m3/s or volumes m3)
     integer,parameter :: br_ocnout = 40 ! runoff output to ocean
@@ -1504,7 +1505,7 @@ contains
     integer,parameter :: bv_naccum = 80 ! accumulated net budget
 
     !   volume = 2 - 1 + bv_dstor_f - bv_dstor_i
-    !   input  = br_qsur + br_qsub + br_qgwl + br_qdto
+    !   input  = br_qsur + br_qsub + br_qgwl + br_qdto + br_dunm
     !   output = br_ocnout + br_flood + br_direct + 42
     !   total  = volume - input + output
     !   erlag  = br_erolpn - br_erolcn
@@ -1573,6 +1574,7 @@ contains
           budget_terms(br_qsub,nt) = budget_terms(br_qsub,nt) + rtmCTL%qsub(nr,nt)*delt_coupling
           budget_terms(br_qgwl,nt) = budget_terms(br_qgwl,nt) + rtmCTL%qgwl(nr,nt)*delt_coupling
           budget_terms(br_qdto,nt) = budget_terms(br_qdto,nt) + rtmCTL%qdto(nr,nt)*delt_coupling
+          budget_terms(br_dunm,nt) = budget_terms(br_dunm,nt) + rtmCTL%dunm(nr,nt)*delt_coupling
        enddo
        enddo
 
@@ -1956,7 +1958,8 @@ contains
           budget_volume =  budget_terms(bv_volt_f,nt) - budget_terms(bv_volt_i,nt) + &
                            budget_terms(bv_dstor_f,nt) - budget_terms(bv_dstor_i,nt)
           budget_input  =  budget_terms(br_qsur,nt) + budget_terms(br_qsub,nt) + &
-                           budget_terms(br_qgwl,nt) + budget_terms(br_qdto,nt)
+                           budget_terms(br_qgwl,nt) + budget_terms(br_qdto,nt) + &
+                           budget_terms(br_dunm,nt)
           budget_output =  budget_terms(br_ocnout,nt) + budget_terms(br_flood,nt) + &
                            budget_terms(br_direct,nt) + &
                            budget_terms(bv_dsupp_f,nt) - budget_terms(bv_dsupp_i,nt)
@@ -1983,7 +1986,8 @@ contains
             budget_volume = (budget_global(bv_volt_f,nt) - budget_global(bv_volt_i,nt) + &
                              budget_global(bv_dstor_f,nt) - budget_global(bv_dstor_i,nt))
             budget_input  = (budget_global(br_qsur,nt) + budget_global(br_qsub,nt) + &
-                             budget_global(br_qgwl,nt) + budget_global(br_qdto,nt))
+                             budget_global(br_qgwl,nt) + budget_global(br_qdto,nt) + &
+                             budget_global(br_dunm,nt))
             budget_output = (budget_global(br_ocnout,nt) + budget_global(br_flood,nt) + &
                              budget_global(br_direct,nt) + &
                              budget_global(bv_dsupp_f,nt) - budget_global(bv_dsupp_i,nt))
@@ -2022,11 +2026,13 @@ contains
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input subsurf = ',nt,budget_global(br_qsub,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input gwl     = ',nt,budget_global(br_qgwl,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input dto     = ',nt,budget_global(br_qdto,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input dunmet  = ',nt,budget_global(br_dunm,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' * input total   = ',nt,budget_input
           if (output_all_budget_terms) then
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x input check   = ',nt,budget_input - &
                                                                              (budget_global(br_qsur,nt)+budget_global(br_qsub,nt)+ &
-                                                                              budget_global(br_qgwl,nt)+budget_global(br_qdto,nt)), &
+                                                                              budget_global(br_qgwl,nt)+budget_global(br_qdto,nt)+ &
+                                                                              budget_global(br_dunm,nt)), &
                                                                              ' (should be zero)'
           endif
             write(iulog,'(2a)') trim(subname),'----------------'

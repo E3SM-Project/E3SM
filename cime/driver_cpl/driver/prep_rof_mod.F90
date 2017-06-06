@@ -250,10 +250,14 @@ contains
     integer, save :: index_l2x_Flrl_rofgwl
     integer, save :: index_l2x_Flrl_rofsub
     integer, save :: index_l2x_Flrl_rofi
+    integer, save :: index_l2x_Flrl_demand_unmet
+    integer, save :: index_l2x_Flrl_demand_total
     integer, save :: index_x2r_Flrl_rofsur
     integer, save :: index_x2r_Flrl_rofgwl
     integer, save :: index_x2r_Flrl_rofsub
     integer, save :: index_x2r_Flrl_rofi
+    integer, save :: index_x2r_Flrl_demand_unmet
+    integer, save :: index_x2r_Flrl_demand_total
     integer, save :: index_lfrac
     logical, save :: first_time = .true.
     real(r8)      :: lfrac
@@ -281,10 +285,14 @@ contains
        index_l2x_Flrl_rofgwl = mct_aVect_indexRA(l2x_r,'Flrl_rofgwl' )
        index_l2x_Flrl_rofsub = mct_aVect_indexRA(l2x_r,'Flrl_rofsub' )
        index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
+       index_l2x_Flrl_demand_unmet = mct_aVect_indexRA(l2x_r,'Flrl_demand_unmet' )
+       index_l2x_Flrl_demand_total = mct_aVect_indexRA(l2x_r,'Flrl_demand_total' )
        index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur' )
        index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl' )
        index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
        index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
+       index_x2r_Flrl_demand_unmet = mct_aVect_indexRA(x2r_r,'Flrl_demand_unmet' )
+       index_x2r_Flrl_demand_total = mct_aVect_indexRA(x2r_r,'Flrl_demand_total' )
        index_lfrac = mct_aVect_indexRA(fractions_r,"lfrac")
 
        mrgstr(index_x2r_Flrl_rofsur) = trim(mrgstr(index_x2r_Flrl_rofsur))//' = '// &
@@ -295,6 +303,10 @@ contains
           'lfrac*l2x%Flrl_rofsub'
        mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
           'lfrac*l2x%Flrl_rofi'
+       mrgstr(index_x2r_Flrl_demand_unmet) = trim(mrgstr(index_x2r_Flrl_demand_unmet))//' = '// &
+          'lfrac*l2x%Flrl_demand_unmet'
+       mrgstr(index_x2r_Flrl_demand_total) = trim(mrgstr(index_x2r_Flrl_demand_total))//' = '// &
+          'lfrac*l2x%Flrl_demand_total'
     end if
 
     do i = 1,lsize
@@ -303,6 +315,8 @@ contains
        x2r_r%rAttr(index_x2r_Flrl_rofgwl,i) = l2x_r%rAttr(index_l2x_Flrl_rofgwl,i) * lfrac
        x2r_r%rAttr(index_x2r_Flrl_rofsub,i) = l2x_r%rAttr(index_l2x_Flrl_rofsub,i) * lfrac
        x2r_r%rAttr(index_x2r_Flrl_rofi,i) = l2x_r%rAttr(index_l2x_Flrl_rofi,i) * lfrac
+       x2r_r%rAttr(index_x2r_Flrl_demand_unmet,i) = l2x_r%rAttr(index_l2x_Flrl_demand_unmet,i) * lfrac
+       x2r_r%rAttr(index_x2r_Flrl_demand_total,i) = l2x_r%rAttr(index_l2x_Flrl_demand_total,i) * lfrac
     end do
 
     if (first_time) then

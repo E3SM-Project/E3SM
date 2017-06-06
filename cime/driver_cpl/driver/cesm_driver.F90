@@ -112,7 +112,7 @@ program cesm_driver
    !--------------------------------------------------------------------------
    ! Clean-up
    !--------------------------------------------------------------------------
-   call ESMF_Finalize( )
+!tcx   call ESMF_Finalize( )
 
 
 end program cesm_driver

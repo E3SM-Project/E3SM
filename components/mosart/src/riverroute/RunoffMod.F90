@@ -78,6 +78,8 @@ module RunoffMod
      real(r8), pointer :: qsub(:,:)        ! coupler subsurface forcing [m3/s]
      real(r8), pointer :: qgwl(:,:)        ! coupler glacier/wetland/lake forcing [m3/s]
      real(r8), pointer :: qdto(:,:)        ! coupler diret-to-ocean forcing [m3/s]
+     real(r8), pointer :: dunm(:,:)        ! coupler unmet demand forcing [m3/s]
+     real(r8), pointer :: dtot(:,:)        ! coupler total demand diagnostic [m3/s]
 
      !    - outputs
      real(r8), pointer :: flood(:)         ! coupler return flood water sent back to clm [m3/s]
@@ -107,6 +109,10 @@ module RunoffMod
      real(r8), pointer :: qgwl_nt2(:)
      real(r8), pointer :: qdto_nt1(:)
      real(r8), pointer :: qdto_nt2(:)
+     real(r8), pointer :: dunm_nt1(:)
+     real(r8), pointer :: dunm_nt2(:)
+     real(r8), pointer :: dtot_nt1(:)
+     real(r8), pointer :: dtot_nt2(:)
 
   end type runoff_flow
 
@@ -331,6 +337,10 @@ contains
              rtmCTL%qgwl_nt2(begr:endr),          &
              rtmCTL%qdto_nt1(begr:endr),          &
              rtmCTL%qdto_nt2(begr:endr),          &
+             rtmCTL%dunm_nt1(begr:endr),          &
+             rtmCTL%dunm_nt2(begr:endr),          &
+             rtmCTL%dtot_nt1(begr:endr),          &
+             rtmCTL%dtot_nt2(begr:endr),          &
              rtmCTL%mask(begr:endr),              &
              rtmCTL%rmask(begr:endr),             &
              rtmCTL%gindex(begr:endr),            &
@@ -346,6 +356,8 @@ contains
              rtmCTL%qsub(begr:endr,nt_rtm),       &
              rtmCTL%qgwl(begr:endr,nt_rtm),       &
              rtmCTL%qdto(begr:endr,nt_rtm),       &
+             rtmCTL%dunm(begr:endr,nt_rtm),       & 
+             rtmCTL%dtot(begr:endr,nt_rtm),       & 
              stat=ier)
     if (ier /= 0) then
        write(iulog,*)'Rtmini ERROR allocation of runoff local arrays'
@@ -367,6 +379,8 @@ contains
     rtmCTL%qsub(:,:)        = 0._r8
     rtmCTL%qgwl(:,:)        = 0._r8
     rtmCTL%qdto(:,:)        = 0._r8
+    rtmCTL%dunm(:,:)        = 0._r8
+    rtmCTL%dtot(:,:)        = 0._r8
 
   end subroutine RunoffInit
 

@@ -146,6 +146,22 @@ contains
          avgflag='A', long_name='MOSART input direct to ocean runoff: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%qdto_nt2, default='active')
 
+    call RtmHistAddfld (fname='DUNM'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+         avgflag='A', long_name='MOSART input surface runoff: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%dunm_nt1, default='active')
+
+    call RtmHistAddfld (fname='DUNM'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
+         avgflag='A', long_name='MOSART input surface runoff: '//trim(rtm_tracers(2)), &
+         ptr_rof=rtmCTL%dunm_nt2, default='active')
+
+    call RtmHistAddfld (fname='DTOT'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+         avgflag='A', long_name='MOSART input surface runoff: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%dtot_nt1, default='active')
+
+    call RtmHistAddfld (fname='DTOT'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
+         avgflag='A', long_name='MOSART input surface runoff: '//trim(rtm_tracers(2)), &
+         ptr_rof=rtmCTL%dtot_nt2, default='active')
+
 #ifdef INCLUDE_WRM
     if (wrmflag) then
 
@@ -228,6 +244,12 @@ contains
 
     rtmCTL%qdto_nt1(:)       = rtmCTL%qdto(:,1)
     rtmCTL%qdto_nt2(:)       = rtmCTL%qdto(:,2)
+
+    rtmCTL%dunm_nt1(:)       = rtmCTL%dunm(:,1)
+    rtmCTL%dunm_nt2(:)       = rtmCTL%dunm(:,2)
+
+    rtmCTL%dtot_nt1(:)       = rtmCTL%dtot(:,1)
+    rtmCTL%dtot_nt2(:)       = rtmCTL%dtot(:,2)
 
 #ifdef INCLUDE_WRM
     if (wrmflag) then
