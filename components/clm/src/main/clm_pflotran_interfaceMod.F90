@@ -3,7 +3,7 @@ module clm_interface_pflotranMod
 !#define CLM_PFLOTRAN
 ! the above #directive IS for explicit coupling CLM and PFLOTRAN (i.e. this interface)
 
-!#define COLUMN_MODE
+#define COLUMN_MODE
 ! the above #define IS for column-wised 1D grid CLM-PF coupling (i.e. 'VERTICAL_ONLY_FLOW/TRAN').
 !  (1) active columns ('filter(:)%soilc', i.e. only including both 'istsoil' and 'istcrop');
 !  (2) 'soilc' are arranged arbitrarily by 'clumps', following by orders in 'soilc', along X-direction;
@@ -374,8 +374,8 @@ contains
     ! !USES:
     use clm_varctl      , only : iulog
     use GridcellType    , only : grc
-    use LandunitType    , only : lun
-    use ColumnType      , only : col
+    use LandunitType    , only : lun_pp
+    use ColumnType      , only : col_pp
     use landunit_varcon , only : istsoil, istcrop
     use decompMod       , only : get_proc_global, get_proc_clumps, ldecomp
     use spmdMod         , only : mpicom, masterproc, iam, npes
@@ -447,13 +447,13 @@ contains
 
     associate( &
          ! Assign local pointers to derived subtypes components (landunit-level)
-         ltype      =>  lun%itype      , & !  [integer (:)]  landunit type index
-         lgridcell  =>  lun%gridcell   , & !  [integer (:)]  gridcell index of landunit
+         ltype      =>  lun_pp%itype      , & !  [integer (:)]  landunit type index
+         lgridcell  =>  lun_pp%gridcell   , & !  [integer (:)]  gridcell index of landunit
          ! Assign local pointer to derived subtypes components (column-level)
-         cgridcell  =>  col%gridcell   , & !  [integer (:)]  gridcell index of column
-         clandunit  =>  col%landunit   , & !  [integer (:)]  landunit index of column
-         cwtgcell   =>  col%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell)
-         cactive    =>  col%active       & !  [logic (:)]  column active or not
+         cgridcell  =>  col_pp%gridcell   , & !  [integer (:)]  gridcell index of column
+         clandunit  =>  col_pp%landunit   , & !  [integer (:)]  landunit index of column
+         cwtgcell   =>  col_pp%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell)
+         cactive    =>  col_pp%active       & !  [logic (:)]  column active or not
          )
 
 
@@ -1329,8 +1329,8 @@ contains
     !
     ! !USES:
     use GridcellType    , only : grc
-    use LandunitType    , only : lun
-    use ColumnType      , only : col
+    use LandunitType    , only : lun_pp
+    use ColumnType      , only : col_pp
 
     use clm_varpar      , only : nlevgrnd
     use domainMod       , only : ldomain
@@ -1405,14 +1405,14 @@ contains
          ! landunit
          ltype      =>  lun%itype      , & !  [integer (:)]  landunit type index
          ! Assign local pointer to derived subtypes components (column-level)
-         clandunit  =>  col%landunit   , & !  [integer (:)]  landunit index of column
-         cgridcell  =>  col%gridcell   , & !  [integer (:)]  gridcell index of column
-         cwtgcell   =>  col%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell)
-         cactive    =>  col%active     , & !  [logic (:)]  column active or not
+         clandunit  =>  col_pp%landunit   , & !  [integer (:)]  landunit index of column
+         cgridcell  =>  col_pp%gridcell   , & !  [integer (:)]  gridcell index of column
+         cwtgcell   =>  col_pp%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell)
+         cactive    =>  col_pp%active     , & !  [logic (:)]  column active or not
          !
-         z          =>  col%z          , & !  [real(r8) (:,:)]  layer depth (m) (sort of centroid from surface 0 )
-         zi         =>  col%zi         , & !  [real(r8) (:,:)]  layer interface depth (m)
-         dz         =>  col%dz           & !  [real(r8) (:,:)]  layer thickness (m)
+         z          =>  col_pp%z          , & !  [real(r8) (:,:)]  layer depth (m) (sort of centroid from surface 0 )
+         zi         =>  col_pp%zi         , & !  [real(r8) (:,:)]  layer interface depth (m)
+         dz         =>  col_pp%dz           & !  [real(r8) (:,:)]  layer thickness (m)
          )
 
 
@@ -1673,8 +1673,8 @@ contains
     ! get soil column physical properties to PFLOTRAN
     !
     ! !USES:
-    use LandunitType            , only : lun
-    use ColumnType              , only : col
+    use LandunitType            , only : lun_pp
+    use ColumnType              , only : col_pp
     use landunit_varcon         , only : istsoil, istcrop
 
     use clm_varpar              , only : nlevgrnd, ndecomp_pools, ndecomp_cascade_transitions
@@ -1735,15 +1735,15 @@ contains
 
     associate( &
          ! Assign local pointer to derived subtypes components (column-level)
-         ltype                    => lun%itype                                , & !  [integer (:)]  landunit type index
+         ltype                    => lun_pp%itype                                , & !  [integer (:)]  landunit type index
          ! Assign local pointer to derived subtypes components (column-level)
-         clandunit                => col%landunit                             , & !  [integer (:)]  landunit index of column
-         cgridcell                => col%gridcell                             , & !  [integer (:)]  gridcell index of column
-         cwtgcell                 => col%wtgcell                              , & !  [real(r8) (:)]  weight (relative to gridcell
-         cactive                  => col%active                               , & !
-         z                        => col%z                                    , & !  [real(r8) (:,:)]  layer depth (m)
-         dz                       => col%dz                                   , & !  [real(r8) (:,:)]  layer thickness depth (m)
-         zi                       => col%zi                                   , & !  [real(r8) (:,:)]  interface level below a "z" level (m)
+         clandunit                => col_pp%landunit                             , & !  [integer (:)]  landunit index of column
+         cgridcell                => col_pp%gridcell                             , & !  [integer (:)]  gridcell index of column
+         cwtgcell                 => col_pp%wtgcell                              , & !  [real(r8) (:)]  weight (relative to gridcell
+         cactive                  => col_pp%active                               , & !
+         z                        => col_pp%z                                    , & !  [real(r8) (:,:)]  layer depth (m)
+         dz                       => col_pp%dz                                   , & !  [real(r8) (:,:)]  layer thickness depth (m)
+         zi                       => col_pp%zi                                   , & !  [real(r8) (:,:)]  interface level below a "z" level (m)
          !
          bd                       => clm_interface_data%bd_col                      , & !
          bsw                      => clm_interface_data%bsw_col                     , & !  [real(r8) (:,:)]  Clapp and Hornberger "b" (nlevgrnd)
@@ -1839,7 +1839,7 @@ contains
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecGetArrayF90(clm_pf_idata%bulkdensity_dry_clmp,  bulkdensity_dry_clm_loc,  ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-
+ 
     call VecGetArrayF90(clm_pf_idata%tkwet_clmp, tkwet_clm_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecGetArrayF90(clm_pf_idata%tkdry_clmp, tkdry_clm_loc, ierr)
@@ -1988,7 +1988,7 @@ contains
   ! !USES:
     use clm_time_manager    , only : get_nstep, is_first_step, is_first_restart_step
     use shr_const_mod       , only : SHR_CONST_G
-    use ColumnType          , only : col
+    use ColumnType          , only : col_pp
     use clm_varctl          , only : iulog
     use clm_varcon          , only : denh2o, denice, tfrz
     use clm_varpar          , only : nlevgrnd
@@ -2031,8 +2031,8 @@ contains
   !EOP
   !-----------------------------------------------------------------------
     associate ( &
-      cgridcell       => col%gridcell               , & ! column's gridcell
-      dz              => col%dz                     , & ! layer thickness depth (m)
+      cgridcell       => col_pp%gridcell               , & ! column's gridcell
+      dz              => col_pp%dz                     , & ! layer thickness depth (m)
       !
       sucsat          => clm_interface_data%sucsat_col    , & ! minimum soil suction (mm) (nlevgrnd)
       bsw             => clm_interface_data%bsw_col       , & ! Clapp and Hornberger "b"
@@ -2191,7 +2191,7 @@ contains
   !  update soil effective porosity from CLM to PFLOTRAN if PF freezing mode is off
   !
   ! !USES:
-    use ColumnType          , only : col
+    use ColumnType          , only : col_pp
     use clm_varctl          , only : iulog
     use clm_varcon          , only : denice
     use clm_varpar          , only : nlevgrnd
@@ -2225,8 +2225,8 @@ contains
   !EOP
   !-----------------------------------------------------------------------
     associate ( &
-    cgridcell       => col%gridcell                           , & ! column's gridcell
-    dz              => col%dz                                 , & ! layer thickness depth (m)
+    cgridcell       => col_pp%gridcell                           , & ! column's gridcell
+    dz              => col_pp%dz                                 , & ! layer thickness depth (m)
     !
     watsat          => clm_interface_data%watsat_col          , & ! volumetric soil water at saturation (porosity) (nlevgrnd)
     h2osoi_ice      => clm_interface_data%th%h2osoi_ice_col     & ! ice lens (kg/m2)
@@ -2301,7 +2301,7 @@ contains
   !        that and others in 'Hydrology2Mod.F90' so that pflotran can be called out of 'hydrology2'.
   !
   ! !USES:
-    use ColumnType      , only : col
+    use ColumnType      , only : col_pp
     use clm_varcon      , only : tfrz, denh2o
     use clm_varpar      , only : nlevsoi, nlevgrnd
     use clm_time_manager, only : get_step_size, get_nstep
@@ -2364,9 +2364,9 @@ contains
   !EOP
   !-----------------------------------------------------------------------
     associate ( &
-    cgridcell         => col%gridcell                            , & ! column's gridcell
-    cwtgcell          => col%wtgcell                             , & ! weight (relative to gridcell)
-    dz                => col%dz                                  , & ! layer thickness depth (m)
+    cgridcell         => col_pp%gridcell                            , & ! column's gridcell
+    cwtgcell          => col_pp%wtgcell                             , & ! weight (relative to gridcell)
+    dz                => col_pp%dz                                  , & ! layer thickness depth (m)
     !
     bsw               => clm_interface_data%bsw_col                           , &! Clapp and Hornberger "b" (nlevgrnd)
     hksat             => clm_interface_data%hksat_col                         , &! hydraulic conductivity at saturation (mm H2O /s) (nlevgrnd)
@@ -3047,7 +3047,7 @@ contains
   !
   !
   ! !USES:
-    use ColumnType          , only : col
+    use ColumnType          , only : col_pp
     use clm_time_manager    , only : get_step_size, get_nstep,  is_first_step, is_first_restart_step
     use clm_varpar          , only : ndecomp_pools, nlevdecomp_full
     use clm_varctl          , only : iulog, pf_hmode
@@ -3091,7 +3091,7 @@ contains
     !---------------------------------------------------------------------------
     !
     associate ( &
-      cgridcell                         => col%gridcell               , & ! column's gridcell
+      cgridcell                         => col_pp%gridcell               , & ! column's gridcell
       !
       decomp_cpools_vr                  => clm_interface_data%bgc%decomp_cpools_vr_col            , &      ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
       decomp_npools_vr                  => clm_interface_data%bgc%decomp_npools_vr_col            , &      ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
@@ -3146,6 +3146,7 @@ contains
     ! operating via 'filters'
     gcount = -1
     do fc = 1,filters(ifilter)%num_soilc
+
       c = filters(ifilter)%soilc(fc)
       g = cgridcell(c)
 
@@ -3623,6 +3624,7 @@ contains
       qflx_surf(c) = qflx_top_soil(c)  - qflx_infl(c) - qflx_evap
       qflx_surf(c) = max(0._r8, qflx_surf(c))
 
+
       !'from PF: qflux_subbase_clm_loc: positive - in, negative - out)
       area = area_clm_loc((gcount+1)*clm_pf_idata%nzclm_mapped)                              ! note: this 'area_clm_loc' is in 3-D for all subsurface domain
       qflx_drain(c) = -qflux_subbase_clm_loc(gcount+1)  &
@@ -3645,9 +3647,6 @@ contains
 
   !
   !-----------------------------------------------------------------------------
-  !
-  !
-  !-----------------------------------------------------------------------------
   ! !ROUTINE: update_soil_bgc_pf2clm()
   !
   ! !INTERFACE:
@@ -3658,7 +3657,7 @@ contains
   !
   subroutine update_soil_bgc_pf2clm(clm_interface_data, bounds, filters, ifilter)
 !! TODO: add phosphorus vars
-    use ColumnType              , only : col
+    use ColumnType              , only : col_pp
     use clm_varctl              , only : iulog, use_ed
     use CNDecompCascadeConType  , only : decomp_cascade_con
     use clm_varpar              , only : ndecomp_pools, nlevdecomp_full
@@ -3710,7 +3709,7 @@ contains
 !------------------------------------------------------------------------------------
      !
      associate ( &
-     cgridcell                    => col%gridcell                                        , & !  [integer (:)]  gridcell index of column
+     cgridcell                    => col_pp%gridcell                                        , & !  [integer (:)]  gridcell index of column
      !
      initial_cn_ratio             => clm_interface_data%bgc%initial_cn_ratio             , &
      decomp_cpools_vr             => clm_interface_data%bgc%decomp_cpools_vr_col         , &
@@ -3967,7 +3966,7 @@ contains
   !
   subroutine update_bgc_gaslosses_pf2clm(clm_interface_data, bounds, filters, ifilter)
 
-     use ColumnType         , only : col
+     use ColumnType         , only : col_pp
      use clm_time_manager   , only : get_step_size, get_nstep
      use clm_varpar         , only : nlevdecomp_full
      use clm_varcon         , only : tfrz
@@ -4030,8 +4029,8 @@ contains
 
 !------------------------------------------------------------------------------------
      associate ( &
-     cgridcell                    => col%gridcell                      , & ! gridcell index of column
-     dz                           => col%dz                            , & ! soil layer thickness depth (m)
+     cgridcell                    => col_pp%gridcell                      , & ! gridcell index of column
+     dz                           => col_pp%dz                            , & ! soil layer thickness depth (m)
      !
      frac_sno_eff                 => clm_interface_data%th%frac_sno_eff_col            , & ! fraction of ground covered by snow (0 to 1)
      frac_h2osfc                  => clm_interface_data%th%frac_h2osfc_col             , & ! fraction of ground covered by surface water (0 to 1)
@@ -4326,7 +4325,7 @@ contains
   !
   subroutine update_bgc_bcflux_pf2clm(clm_interface_data, bounds, filters, ifilter)
 
-     use ColumnType         , only : col
+     use ColumnType         , only : col_pp
      use clm_time_manager   , only : get_step_size
      use clm_varpar         , only : nlevdecomp_full
 
@@ -4361,8 +4360,8 @@ contains
 
 !------------------------------------------------------------------------------------
     associate ( &
-     cgridcell                    => col%gridcell                                     , & ! gridcell index of column
-     dz                           => col%dz                                           , & ! soil layer thickness depth (m)
+     cgridcell                    => col_pp%gridcell                                     , & ! gridcell index of column
+     dz                           => col_pp%dz                                           , & ! soil layer thickness depth (m)
      !
      no3_net_transport_vr         => clm_interface_data%bgc%no3_net_transport_vr_col  , & ! output: [c,j] (gN/m3/s)
      nh4_net_transport_vr         => clm_interface_data%bgc%nh4_net_transport_vr_col    & ! output: [c,j] (gN/m3/s)
@@ -4471,6 +4470,7 @@ contains
     CHKERRQ(ierr)
 
   end subroutine clm_pf_checkerr
+
 
 !!--------------------------------------------------------------------------------------
   subroutine clm_pf_BeginCBalance(clm_interface_data, bounds, filters, ifilter)

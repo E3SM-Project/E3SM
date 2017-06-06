@@ -897,7 +897,7 @@ contains
         call clm_bgc_data%Init(bounds_proc)
         ! PFLOTRAN initialization
         if (use_pflotran) then
-            call clm_pf_interface_init(bounds_proc, filter)
+            call clm_pf_interface_init(bounds_proc)
         end if
     end if
     call t_stopf('init_clm_bgc_interface_data & pflotran')
