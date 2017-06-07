@@ -480,15 +480,12 @@ class TESTTESTDIFF(FakeTest):
 """
 echo Insta pass
 echo SUCCESSFUL TERMINATION > {}/cpl.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc.base
+cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
 cp {}/scripts/tests/cpl.hi2.nc.test {}/{}.cpl.hi.0.nc.rest
 """.format(rundir, cimeroot, rundir, case, cimeroot, rundir, case)
         self._set_script(script)
         super(TESTTESTDIFF, self).build_phase(sharedlib_only=sharedlib_only,
                                               model_only=model_only)
-
-    def run_indv(self, suffix=None, st_archive=False ):
-        super(TESTTESTDIFF,self).run_indv(suffix, st_archive)
 
     def run_phase(self):
         super(TESTTESTDIFF, self).run_phase()
