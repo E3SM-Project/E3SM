@@ -134,10 +134,10 @@ As an example, the possible atmosphere components for CESM have the following as
 
 If the compset's atm component attribute is ``datm``, the file ``$CIMEROOT/components/data_comps/datm/cime_config/config_component.xml`` specifies all possible component settings for ``DATM``.
 
-The schema for every **config_component.xml** file has a ``<description>`` node that specifies all possible values that can follow the ``%`` character in the compset name. To list the possible values, use the **manage_case** command with ``--query-component-name`` as shown in this example for CESM cam:
+The schema for every **config_component.xml** file has a ``<description>`` node that specifies all possible values that can follow the ``%`` character in the compset name. To list the possible values, use the **query_case** command with ``--components`` as shown in this example for CAM:
 ::
 
-  manage_case --query-component-name cam
+  query_case --components cam
 
 .. _defining-pes:
 

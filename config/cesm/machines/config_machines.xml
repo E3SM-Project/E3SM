@@ -535,8 +535,7 @@
       </modules>
       <modules compiler="intel">
 	<command name="load">PrgEnv-intel</command>
-	<command name="switch">intel intel/17.0.1.132</command>
-	<command name="rm">cray-libsci</command>
+	<command name="switch">intel intel/17.0.3.191</command>
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/cori</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" >
@@ -548,7 +547,7 @@
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.5.7</command>
+	<command name="switch">cce cce/8.5.8</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -557,11 +556,10 @@
       <modules>
 	<command name="load">cray-memkind</command>
 	<command name="load">craype-mic-knl</command>
-<!--	<command name="load">papi/5.4.3.2</command> -->
 	<command name="swap">craype craype/2.5.7</command>
       </modules>
-      <modules compiler="!intel">
-	<command name="switch">cray-libsci/16.09.1</command>
+      <modules>
+	<command name="switch">cray-libsci/16.11.1</command>
       </modules>
       <modules>
 	<command name="load">cray-mpich/7.4.4</command>

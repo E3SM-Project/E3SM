@@ -77,11 +77,14 @@ The following terms and concepts are ingrained in CIME and are used frequently i
    The *machine* is the computer you are using to run CIME and build and run the climate model. It could be a workstation 
    or a national supercomputer. The *machine* is typically the UNIX hostname but it could be any string.
 
+**out-of-the-box**:
+   Any case or capability available with a basic installation of a CIME-driven model.
+
 Setting defaults
 =================
 
 Before using any CIME commands, set the ``CIME_MODEL`` environment variable. In csh, use **setenv** as shown and replace 
-**<model>** with the appropriate text, such as "acme" or "cesm."
+**<model>** with the appropriate text. Current possibilities are "acme" or "cesm."
 ::
 
    > setenv CIME_MODEL <model>

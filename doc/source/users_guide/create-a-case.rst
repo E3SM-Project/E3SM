@@ -24,9 +24,9 @@ The only required arguments to **create_newcase** are shown here:
 
 CIME supports out-of-the-box *component sets*, *model grids* and *hardware platforms*. Compsets and grids were discussed in the :ref:`previous section <case-basics>`.
 
----------------------------------
-Result of calling create_newcase
----------------------------------
+======================================
+Results of calling **create_newcase**
+======================================
 
 Following is a simple example of using **create_newcase** with aliases for both compset and grid names.
 The complete example appears in the :ref:`basic example <faq-basic-example>`.
@@ -51,25 +51,24 @@ Running **create_newcase** creates various scripts, files and directories ``$CAS
 
 - ``user scripts``
 
-   =================     =====================================================================================================
+   ====================  =====================================================================================================
    case.setup            Script used to set up the case (create the case.run script, the Macros file and user_nl_xxx files).
    case.build            Script to build component and utility libraries and model executable.
    case.submit           Script to submit the case to run using the machine's batch queueing system.
-   case.st_archive       Script to perform short-term archiving of output data.
-   case.lt_archive       Script to perform long-term archiving of output data.
+   case.cmpgen_namelist  Script to perform namelist baseline operations (compare, generate, or both).
    xmlchange             Script to modify values in the xml files.
    xmlquery              Script to query values in the xml files.
    preview_namelists     Script for users to see their component namelists in ``$CASEROOT/CaseDocs`` before running the model.
-
-                         .. warning:: Users should not edit namelists that are generated in ``$CASEROOT/CaseDocs``. They are there only to document model behavior.
+   preview_run           Script for users to see batch submit and mpirun command.
    check_input_data      Script for checking for various input data sets and moving them into place.
+   check_case            Script to verify case is set up correctly
    pelayout              Script to query and modify the NTASKS, ROOTPE, and NTHRDS for each component model.  This a convenience script that can be used in place of xmlchange and xmlquery.
-
-   =================     =====================================================================================================
+   ====================  =====================================================================================================
 
 - ``XML files``
 
    =====================  ===============================================================================================================================
+   env_archive.xml        Defines patters of files to be sent to the short-term archive.
    env_mach_specific.xml  Sets a number of machine-specific environment variables for building and/or running.
 
                           You can edit this file at any time.
@@ -122,7 +121,7 @@ Running **create_newcase** creates various scripts, files and directories ``$CAS
    Tools/                 Work directory containing support utility scripts. You should never need to edit the contents of this directory.
    =====================  ===============================================================================================================================
 
-The ``$CASEROOT`` xml files are organized so that variables can be locked at certain points to prevent users from changing them after they have been resolved (used) in other parts of the scripts system.
+The ``$CASEROOT`` xml files are organized so that variables can be locked at certain points after they have been resolved (used) in other parts of the scripts system.
 
 CIME does the following:
 

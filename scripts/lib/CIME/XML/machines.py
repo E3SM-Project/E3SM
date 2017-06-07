@@ -163,7 +163,7 @@ class Machines(GenericXML):
             self.machine = machine
 
         return machine
-
+    #pylint: disable=arguments-differ
     def get_value(self, name, attributes=None, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_machines.xml file
