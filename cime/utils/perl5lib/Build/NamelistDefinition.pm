@@ -476,7 +476,7 @@ sub _initialize
 
     # Check for valid root node
     my $name = $root->get_name();
-    $name eq "namelist_definition" or die
+    ($name eq "namelist_definition") or ($name eq "entry_id")  or die
 	"ERROR: $definition_file is not a namelist definition file\n";
 
     # Each namelist variable is contained in an "entry" element.  Get all these elements.

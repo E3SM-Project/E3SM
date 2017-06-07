@@ -450,7 +450,7 @@ sub _initialize
 
     # Check for valid root node
     my $name = $root->get_name();
-    $name eq "namelist_defaults" or die
+    ($name eq "namelist_defaults") or ($name eq "entry_id")  or die
 	"ERROR: $defaults_file is not a namelist defaults file\n";
 
     # The children of the XML root object are xml elements, each of which contains a default
