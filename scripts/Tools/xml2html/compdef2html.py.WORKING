@@ -157,8 +157,7 @@ def _main_func(options, work_dir):
         # Check that file exists on disk
         if (os.path.isfile(config_file)):
             compsets = Compsets(config_file)
-            # TODO finish getting the test_compsets from the compsets module
-            help_text, all_compsets, science_compsets, test_compsets = compsets.return_all_values()
+            help_text, all_compsets = compsets.return_all_values()
 
             # get the all_compsets sorted
             ordered_compsets = collections.OrderedDict(sorted(all_compsets.items(), key=lambda t: t[0]))
@@ -169,11 +168,11 @@ def _main_func(options, work_dir):
     # get all the descriptions from all components
     all_descs = get_all_descs(components)
 
-    # loop through the compsets parts matching the descriptions
-
     # load up jinja template
     templateLoader = jinja2.FileSystemLoader( searchpath='{0}/templates'.format(work_dir) )
     templateEnv = jinja2.Environment( loader=templateLoader )
+
+    # TODO - get the cesm_version for the CIME root
     tmplFile = 'compdef2html.tmpl'
     template = templateEnv.get_template( tmplFile )
     templateVars = { 'html_dict'     : html_dict,
