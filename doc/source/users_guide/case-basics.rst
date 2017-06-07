@@ -12,9 +12,9 @@ Two concepts to understand before working with CIME are component sets and model
 
 Creating a CIME experiment or *case* requires, at a minimum, specifying a compset and a model grid.
 
-Out-of-the-box compsets and models grids each have two names: a *longname* and an *alias* name. Examples of both follow.
+Out-of-the-box compsets and model grids each have two names: a *longname* and an *alias* name. Examples of both follow.
 
-The CIME regression test system requires aliases, but aliases can also be used for convenience. *Compset aliases* are unique; each is associated with one and only one compset. *Grid aliases*, on the other hand, are overloaded; the same grid alias may result in a different grid depending on the associated compset. Always confirm that the *compset longname* and the *grid longname* are correct when using aliases to create a case.
+Aliases are used for convenience. *Compset aliases* are unique; each is associated with one and only one compset. *Grid aliases*, on the other hand, are overloaded; the same grid alias may result in a different grid depending on the associated compset. Always confirm that the *compset longname* and the *grid longname* are correct when using aliases to create a case.
 
 ================
  Component sets
@@ -24,7 +24,7 @@ A compset longname has this form::
 
   TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys]_ESP[_BGC%phys]
 
-Here are the supported values for each element of the longname::
+Supported values for each element of the longname::
 
   TIME = model time period (e.g. 1850, 2000, 20TR, RCP8...)
 
@@ -38,37 +38,21 @@ Here are the supported values for each element of the longname::
   WAV  = [SWAV, XWAV]
   ESP  = [SESP]
 
-  If CIME is run with CESM active components, the following additional values are permitted:
-  ATM  = [CAM40, CAM50, CAM55, CAM60]
-  LND  = [CLM45, CLM50]
-  ICE  = [CICE]
-  OCN  = [POP2, AQUAP]
-  ROF  = [RTM, MOSART]
-  GLC  = [CISM1, CISM2]
-  WAV  = [WW]
-  BGC  = optional BGC scenario
+A CIME-driven model may have other options available.  Use **query_config** to determine the available options.
 
-  If CIME is run with ACME active components, the following additional values are permitted:
-  ATM  = []
-  LND  = []
-  ICE  = []
-  OCN  = []
-  ROF  = []
-  GLC  = []
-  WAV  = []
-  BGC  = optional BGC scenario
-
-  The OPTIONAL %phys attributes specify sub-modes of the given system.
-  For example, DOCN%DOM is the DOCN data ocean (rather than slab-ocean) mode.
-  ALL the possible %phys choices for each component are listed by
-  calling manage_case with the --list compsets argument.  ALL data models have 
-  a %phys option that corresponds to the data model mode.
+The OPTIONAL %phys attributes specify sub-modes of the given system.
+For example, DOCN%DOM is the DOCN data ocean (rather than slab-ocean) mode.
+ALL the possible %phys choices for each component are listed by
+calling **query_case** with the --compsets all argument.  ALL data models have
+a %phys option that corresponds to the data model mode.
 
 As an example, this actual CESM compset longname refers to running a pre-industrial control with active CESM components CAM, CLM, CICE, POP2, MOSART, CISM2 and WW3 in a BDRD BGC coupling scenario::
 
    1850_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD
 
-The alias for this compset is B1850. Either a compset longname or a compset alias can be input to **create_newcase**. You can also create your own custom compset. See *How do I create my own compset?* in the FAQ.
+The alias for this compset is B1850.
+
+Either a compset longname or a compset alias can be input to **create_newcase**. You can also create your own custom compset. See *How do I create my own compset?* in the FAQ.
 
 ===============================
  Model Grids
@@ -85,23 +69,23 @@ For reference::
   oi% = ocean/sea-ice grid (must be the same)
   r%  = river grid
   m%  = ocean mask grid
-  g%  = internal land-ice (CISM) grid
+  g%  = internal land-ice grid
   w%  = wave component grid
 
-  The ocean mask grid determines land/ocean boundaries in the model.
-  On the ocean grid, a grid cell is assumed to be either all ocean or all land.
-  The land mask on the land grid is obtained by mapping the ocean mask
-  (using first-order conservative mapping) from the ocean grid to the land grid.
+The ocean mask grid determines land/ocean boundaries in the model.
+On the ocean grid, a grid cell is assumed to be either all ocean or all land.
+The land mask on the land grid is obtained by mapping the ocean mask
+(using first-order conservative mapping) from the ocean grid to the land grid.
 
-  From the point of view of model coupling, the glc (CISM) grid is assumed to
-  be identical to the land grid. The internal CISM grid can be different,
-  however, and is specified by the g% value.
+From the point of view of model coupling, the glc grid is assumed to
+be identical to the land grid. The internal land-ice grid can be different,
+however, and is specified by the g% value.
 
 As an example, examine this actual grid longname::
 
    a%ne30np4_l%ne30np4_oi%gx1v7_r%r05_m%gx1v7_g%null_w%null
 
-It refers to a model grid with a ne30np4 spectral element, 1-degree atmosphere and land grids, gx1v7 Greenland pole, 1-degree ocean and sea-ice grids, a 1/2 degree river routing grid, null wave and internal cism grids, and an gx1v7 ocean mask.
+It refers to a model grid with a ne30np4 spectral element (approximately 1-degree) atmosphere and land grids, gx1v7 Greenland pole, 1-degree ocean and sea-ice grids, a 1/2 degree river routing grid, null wave and internal cism grids, and an gx1v7 ocean mask.
 The alias for this grid is ne30_g16.
 
 CIME also permits users to introduce their own :ref:`user-defined grids <adding-a-grid>`.
@@ -116,9 +100,14 @@ Component grids are denoted by the following naming convention:
 
 - "pt1" is a single grid point.
 
-- "gx[D]v[n]" is a displaced pole grid where D is the approximate resolution in degrees and n is the grid version. The short name generally is g[D][n]. An example is gx1v7 or g17 for a grid of approximately 1-degree resolution.
+- "gx[D]v[n]" is a POP displaced pole grid where D is the approximate resolution in degrees and n is the grid version. The short name generally is g[D][n]. An example is gx1v7 or g17 for a grid of approximately 1-degree resolution.
 
-- "tx[D]v[n]" is a tripole grid where D is the approximate resolution in degrees and n is the grid version.
+- "tx[D]v[n]" is a POP tripole grid where D is the approximate resolution in degrees and n is the grid version.
+
+- "oRSS[x]to[y]" is an MPAS grid with grid spacing from x to y kilometers.
+
+- "oEC[x]to[y]" is an MPAS grid with grid spacing from x to y kilometers.
+
 
 ==============================================
 Querying CIME - calling **query_config**
@@ -134,7 +123,7 @@ Optional arguments include the following:
      --grids
      --machines
 
-If CIME is downloaded in standalone mode, only standalone CIME compsets can be queried. If CIME is part of a larger checkout that includes the prognostic components of a model, **query_config** will allow you to query all prognostic component compsets.
+If CIME is downloaded in standalone mode, only standalone CIME compsets can be queried. If CIME is part of CIME-driven model, **query_config** will allow you to query all prognostic component compsets.
 
 To see lists of available compsets, components, grids and machines, look at the **help** text:
   ::
