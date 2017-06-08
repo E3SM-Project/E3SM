@@ -88,8 +88,6 @@ ifeq ($(USE_ESMF_LIB), TRUE)
    CPPDEFS += -DUSE_ESMF_LIB
 endif
 
-COMP_INTERFACE := $(shell echo $(COMP_INTERFACE) | tr A-Z a-z)
-
 ifeq ($(strip $(MPILIB)),mpi-serial)
   CPPDEFS += -DNO_MPI2
 else

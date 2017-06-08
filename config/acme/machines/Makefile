@@ -346,7 +346,6 @@ else
   endif
 endif
 
-COMP_INTERFACE := $(shell echo $(COMP_INTERFACE) | tr A-Z a-z)
 #===============================================================================
 # Set include paths (needed after override for any model specific builds below)
 #===============================================================================

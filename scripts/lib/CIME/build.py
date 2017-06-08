@@ -189,12 +189,6 @@ ERROR env_build HAS CHANGED
     ./case.build --clean-all
 """)
 
-    expect(comp_interface != "ESMF" or use_esmf_lib,
-           """
-ERROR COMP_INTERFACE IS ESMF BUT USE_ESMF_LIB IS NOT TRUE
-  SET USE_ESMF_LIB to TRUE with:
-    ./xmlchange -file env_build.xml -id USE_ESMF_LIB -value TRUE
-""")
 
     expect(mpilib != "mpi-serial" or not use_esmf_lib,
            """
