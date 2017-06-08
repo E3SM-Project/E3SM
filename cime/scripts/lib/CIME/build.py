@@ -267,7 +267,6 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
                 if re.search("Current setting for", line):
                     logger.warn(line)
 
-
     # clm not a shared lib for ACME
     if get_model() != "acme":
         comp_lnd = case.get_value("COMP_LND")
@@ -520,7 +519,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only):
         logs.extend(_build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
                                 lid, caseroot, cimeroot, compiler))
 
-    if not sharedlib_only:
         # in case component build scripts updated the xml files, update the case object
         case.read_xml()
         post_build(case, logs)
