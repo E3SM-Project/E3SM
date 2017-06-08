@@ -2296,7 +2296,7 @@ module seq_flds_mod
      longname = 'New glacier ice flux'
      stdname  = 'ice_flux_out_of_glacier'
      units    = 'kg m-2 s-1'
-     attname  = 'Fgll_qice'
+     attname  = 'Flgl_qice'
      call set_glc_elevclass_field(name, attname, longname, stdname, units, l2x_fluxes)
      call set_glc_elevclass_field(name, attname, longname, stdname, units, l2x_fluxes_to_glc, &
           additional_list = .true.)
