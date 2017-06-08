@@ -149,6 +149,8 @@ class Case(object):
             "unit_testing" : False
             }
 
+        os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
+
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
         if executable is not None and "aprun" in executable:
             self.num_nodes = get_aprun_cmd_for_case(self, "acme.exe")[1]
@@ -177,11 +179,8 @@ class Case(object):
         self._env_files_that_need_rewrite.add(env_file)
 
     def read_xml(self):
-        if(len(self._env_files_that_need_rewrite)>0):
-            files = ""
-            for env_file in self._env_files_that_need_rewrite:
-                files += " "+env_file.filename
-            expect(False,"Object(s) %s seem to have newer data than the corresponding case file"%files)
+        if self._env_files_that_need_rewrite:
+            expect(False, "Object(s) %s seem to have newer data than the corresponding case file" % " ".join([env_file.filename for env_file in self._env_files_that_need_rewrite]))
 
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
@@ -1168,11 +1167,8 @@ class Case(object):
 
     def load_env(self):
         if not self._is_env_loaded:
-            compiler = self.get_value("COMPILER")
-            debug=self.get_value("DEBUG")
-            mpilib=self.get_value("MPILIB")
             env_module = self.get_env("mach_specific")
-            env_module.load_env(compiler=compiler,debug=debug, mpilib=mpilib)
+            env_module.load_env(self)
             self._is_env_loaded = True
 
     def get_build_threaded(self):
@@ -1180,7 +1176,8 @@ class Case(object):
         Returns True if current settings require a threaded build/run.
         """
         force_threaded = self.get_value("BUILD_THREADED")
-        return bool(force_threaded) or self.thread_count > 1
+        smp_present = bool(force_threaded) or self.thread_count > 1
+        return smp_present
 
     def _check_testlists(self, compset_alias, grid_name, files):
         """
@@ -1212,6 +1209,8 @@ class Case(object):
 
         gfile = GenericXML(infile=xmlfile)
         ftype = gfile.get_id()
+
+        self.flush(flushall=True)
 
         logger.warn("setting case file to %s"%xmlfile)
         new_env_file = None
