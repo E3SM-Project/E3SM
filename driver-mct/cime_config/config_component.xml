@@ -701,8 +701,8 @@
 
   <entry id="COMP_INTERFACE">
     <type>char</type>
-    <valid_values>MCT</valid_values>
-    <default_value>MCT</default_value>
+    <valid_values>mct</valid_values>
+    <default_value>mct</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>use MCT component interface</desc>
