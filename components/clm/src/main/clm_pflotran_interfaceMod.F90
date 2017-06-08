@@ -3,7 +3,7 @@ module clm_interface_pflotranMod
 !#define CLM_PFLOTRAN
 ! the above #directive IS for explicit coupling CLM and PFLOTRAN (i.e. this interface)
 
-#define COLUMN_MODE
+!#define COLUMN_MODE
 ! the above #define IS for column-wised 1D grid CLM-PF coupling (i.e. 'VERTICAL_ONLY_FLOW/TRAN').
 !  (1) active columns ('filter(:)%soilc', i.e. only including both 'istsoil' and 'istcrop');
 !  (2) 'soilc' are arranged arbitrarily by 'clumps', following by orders in 'soilc', along X-direction;
@@ -117,12 +117,12 @@ module clm_interface_pflotranMod
   private :: clm_pf_CBalanceCheck
   private :: clm_pf_NBalanceCheck
   !
-
   private :: get_clm_bcwflx
   private :: get_clm_bceflx
   private :: update_soil_temperature_pf2clm
   private :: update_soil_moisture_pf2clm
   private :: update_bcflow_pf2clm
+
 
 #endif
 
@@ -294,6 +294,7 @@ contains
     integer :: nstep
 
 #ifdef CLM_PFLOTRAN
+
     call clm_pf_BeginCBalance(clm_interface_data, bounds, filters, ifilter)
     call clm_pf_BeginNBalance(clm_interface_data, bounds, filters, ifilter)
 
@@ -305,6 +306,7 @@ contains
         call clm_pf_CBalanceCheck(clm_interface_data, bounds, filters, ifilter)
         call clm_pf_NBalanceCheck(clm_interface_data, bounds, filters, ifilter)
     end if
+
 #else
     call pflotran_not_available(subname)
 #endif
@@ -1165,6 +1167,7 @@ contains
 
     endif
 
+#ifdef PF_THMODE
     ! (2) CLM thermal BC to PFLOTRAN-CLM interface
     if (pf_tmode) then
 
@@ -1182,6 +1185,7 @@ contains
         call pflotranModelUpdateHSourceSink( pflotran_m )   ! H SrcSink
         call pflotranModelSetSoilHbcsFromCLM( pflotran_m )  ! H bc
     end if
+#endif
 
     ! (4)
     if (pf_cmode) then
@@ -1224,6 +1228,7 @@ contains
 
     ! (6) update CLM variables from PFLOTRAN
 
+#ifdef PF_THMODE
     if (pf_hmode) then
 
         call pflotranModelGetSaturationFromPF( pflotran_m )   ! hydrological states
@@ -1232,14 +1237,18 @@ contains
         ! the actual infiltration/runoff/drainage and solute flux with BC, if defined,
         ! are retrieving from PFLOTRAN using 'update_bcflow_pf2clm' subroutine
         call pflotranModelGetBCMassBalanceDeltaFromPF( pflotran_m )
+
         call update_bcflow_pf2clm(clm_interface_data, bounds, filters, ifilter)
 
     endif
 
     if (pf_tmode) then
         call pflotranModelGetTemperatureFromPF( pflotran_m )  ! thermal states
+
         call update_soil_temperature_pf2clm(clm_interface_data, bounds, filters, ifilter)
+
     endif
+#endif
 
     if (pf_cmode) then
         call pflotranModelGetBgcVariablesFromPF( pflotran_m)      ! bgc variables
@@ -1839,7 +1848,7 @@ contains
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecGetArrayF90(clm_pf_idata%bulkdensity_dry_clmp,  bulkdensity_dry_clm_loc,  ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
- 
+
     call VecGetArrayF90(clm_pf_idata%tkwet_clmp, tkwet_clm_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecGetArrayF90(clm_pf_idata%tkdry_clmp, tkdry_clm_loc, ierr)
@@ -2287,6 +2296,7 @@ contains
 
 !-----------------------------------------------------------------------------
   !BOP
+
   !
   ! !IROUTINE: get_clm_bcwflx
   !
@@ -2307,6 +2317,7 @@ contains
     use clm_time_manager, only : get_step_size, get_nstep
     use shr_infnan_mod  , only : shr_infnan_isnan
     use shr_const_mod   , only : SHR_CONST_G
+
 
     use clm_pflotran_interface_data
     use clm_varctl      , only : pf_clmnstep0
@@ -3092,6 +3103,7 @@ contains
     !
     associate ( &
       cgridcell                         => col_pp%gridcell               , & ! column's gridcell
+
       !
       decomp_cpools_vr                  => clm_interface_data%bgc%decomp_cpools_vr_col            , &      ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
       decomp_npools_vr                  => clm_interface_data%bgc%decomp_npools_vr_col            , &      ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
@@ -3645,6 +3657,10 @@ contains
     end associate
   end subroutine update_bcflow_pf2clm
 
+
+  !
+  !-----------------------------------------------------------------------------
+  !
   !
   !-----------------------------------------------------------------------------
   ! !ROUTINE: update_soil_bgc_pf2clm()
@@ -4042,6 +4058,7 @@ contains
      f_n2o_soil_vr                => clm_interface_data%bgc%f_n2o_soil_vr_col          , &
      f_n2_soil_vr                 => clm_interface_data%bgc%f_n2_soil_vr_col           , &
      f_ngas_decomp_vr             => clm_interface_data%bgc%f_ngas_decomp_vr_col       , &
+
      f_ngas_nitri_vr              => clm_interface_data%bgc%f_ngas_nitri_vr_col        , &
      f_ngas_denit_vr              => clm_interface_data%bgc%f_ngas_denit_vr_col          &
      )
@@ -4902,6 +4919,5 @@ contains
 ! Private interface subroutines, requiring explicit coupling between CLM and PFLOTRAN
 ! (END)
 !************************************************************************************!
-
 
 end module clm_interface_pflotranMod
