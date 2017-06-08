@@ -186,8 +186,8 @@
       <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_PATH</value>
       <value stream="CPLHISTForcing">null</value>
       <value stream="CLM_QIAN">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CLMCRUNCEP\.">$DIN_LOC_ROOT/share/domains/domain.clm</value>
-      <value stream="CLMCRUNCEPv7">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
+      <value stream="CLMCRUNCEPv7">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c140715</value>
+      <value stream="CLMCRUNCEP">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMGSWP3v1">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016</value>
       <value stream="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/NYF</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
@@ -239,7 +239,7 @@
       <value stream="CPLHISTForcing">null</value>
       <value stream="CLM_QIAN\.">domain.T62.050609.nc</value>
       <value stream="CLM_QIAN_WISO">domain.T62.050609.nc</value>
-      <value stream="CLMCRUNCEPv7">domain.cruncep.V5.c2013.0.5d.nc</value>
+      <value stream="CLMCRUNCEPv7">domain.lnd.360x720.130305.nc</value>
       <value stream="CLMCRUNCEP">domain.lnd.360x720.130305.nc</value>
       <value stream="CLMGSWP3v1">domain.GSWP3.c2014.0.5d.nc</value>
       <value stream="CORE2_NYF.GISS">nyf.giss.T62.051007.nc</value>
@@ -369,9 +369,9 @@
       <value stream="CLMCRUNCEP.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/Solar6Hrly</value>
       <value stream="CLMCRUNCEP.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/Precip6Hrly</value>
       <value stream="CLMCRUNCEP.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/TPHWL6Hrly</value>
-      <value stream="CLMCRUNCEPv7.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/Solar6Hrly</value>
-      <value stream="CLMCRUNCEPv7.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/Precip6Hrly</value>
-      <value stream="CLMCRUNCEPv7.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/TPHWL6Hrly</value>
+      <value stream="CLMCRUNCEPv7.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/Solar6Hrly</value>
+      <value stream="CLMCRUNCEPv7.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/Precip6Hrly</value>
+      <value stream="CLMCRUNCEPv7.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/TPHWL6Hrly</value>
       <value stream="CLMGSWP3v1.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016/Solar</value>
       <value stream="CLMGSWP3v1.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016/Precip</value>
       <value stream="CLMGSWP3v1.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016/TPHWL</value>
@@ -431,9 +431,9 @@
       <value  stream="CLMCRUNCEP.Solar">clmforc.cruncep.V4.c2011.0.5d.Solr.%ym.nc</value>
       <value  stream="CLMCRUNCEP.Precip">clmforc.cruncep.V4.c2011.0.5d.Prec.%ym.nc</value>
       <value  stream="CLMCRUNCEP.TPQW">clmforc.cruncep.V4.c2011.0.5d.TPQWL.%ym.nc</value>
-      <value  stream="CLMCRUNCEPv7.Solar">clmforc.cruncep.V5.c2014.0.5d.Solr.%ym.nc</value>
-      <value  stream="CLMCRUNCEPv7.Precip">clmforc.cruncep.V5.c2014.0.5d.Prec.%ym.nc</value>
-      <value  stream="CLMCRUNCEPv7.TPQW">clmforc.cruncep.V5.c2014.0.5d.TPQWL.%ym.nc</value>
+      <value  stream="CLMCRUNCEPv7.Solar">clmforc.cruncep.V7.c2016.0.5d.Solr.%ym.nc</value>
+      <value  stream="CLMCRUNCEPv7.Precip">clmforc.cruncep.V7.c2016.0.5d.Prec.%ym.nc</value>
+      <value  stream="CLMCRUNCEPv7.TPQW">clmforc.cruncep.V7.c2016.0.5d.TPQWL.%ym.nc</value>
       <value  stream="CLMGSWP3v1.Solar">clmforc.GSWP3.c2011.0.5x0.5.Solr.%ym.nc</value>
       <value  stream="CLMGSWP3v1.Precip">clmforc.GSWP3.c2011.0.5x0.5.Prec.%ym.nc</value>
       <value  stream="CLMGSWP3v1.TPQW">clmforc.GSWP3.c2011.0.5x0.5.TPQWL.%ym.nc</value>
