@@ -416,10 +416,15 @@ class Case(object):
         specifation file that matches either the input 'compset_name'.
         Note that the input compset name (i.e. compset_name) can be
         either a longname or an alias. This will set various compset-related
-        info and self._primary_component.
+        info.
+
+        Returns a tuple: (compset_alias, science_support, component_defining_compset)
+        (For a user-defined compset - i.e., a compset without an alias - these
+        return values will be None, [], None.)
         """
         science_support = []
         compset_alias = None
+        component_defining_compset = None
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}".format(components))
 
@@ -439,23 +444,22 @@ class Case(object):
                     self._compsetname = match
                     self.set_lookup_value("COMPSETS_SPEC_FILE" ,
                                    files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
-                    self._primary_component = component
+                    component_defining_compset = component
                     logger.info("Compset longname is {}".format(match))
                     logger.info("Compset specification file is {}".format(compsets_filename))
                     if user_compset is True:
                         logger.info("Found a compset match for longname {} in alias {}".format(compset_name, compset_alias))
 
-                    return compset_alias, science_support
+                    return compset_alias, science_support, component_defining_compset
 
         if user_compset is True:
             self._compsetname = compset_name
-            self._primary_component = self._find_primary_component()
         else:
             expect(False,
                    "Could not find a compset match for either alias or longname in {}\n".format(compset_name)
                    + "You may need the --user-compset argument.")
 
-        return None, science_support
+        return None, science_support, None
 
     def _find_primary_component(self):
         """
@@ -739,8 +743,8 @@ class Case(object):
         # compset, pesfile, and compset components
         #--------------------------------------------
         files = Files()
-        compset_alias, science_support = self._set_compset_and_primary_component(compset_name, files, user_compset=user_compset)
-        self._set_info_from_primary_component(files, pesfile=pesfile)
+        compset_alias, science_support, component_defining_compset = self._set_compset_and_primary_component(
+            compset_name, files, user_compset=user_compset)
 
         self._components = self.get_compset_components()
         #--------------------------------------------
@@ -761,6 +765,14 @@ class Case(object):
         # component config data
         #--------------------------------------------
         self._get_component_config_data(files)
+
+        if component_defining_compset is None:
+            # This needs to be called after self.set_comp_classes, which is called
+            # from self._get_component_config_data
+            self._primary_component = self._find_primary_component()
+        else:
+            self._primary_component = component_defining_compset
+        self._set_info_from_primary_component(files, pesfile=pesfile)
 
         self.get_compset_var_settings()
 
