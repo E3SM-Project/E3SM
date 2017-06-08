@@ -499,6 +499,7 @@ class Case(object):
                     compset_name = compset_name + "_"
                     if re.search(compset_match, compset_name):
                         desc = node.text
+                        print "DEBUG: desc is ",desc
                         break
                 if desc is None:
                     logger.info("ERROR: did not find a valid compset entry for {}, valid entries for {} are".format(comp_name, comp_name))
@@ -1407,3 +1408,43 @@ class Case(object):
             return cpllog
         else:
             return None
+
+    def get_compset_description(self, compset_name):
+
+        self._compsetname = compset_name
+        files = Files()
+        drv_config_file = files.get_value("CONFIG_CPL_FILE")
+        drv_comp = Component(drv_config_file)
+        comp_classes = drv_comp.get_valid_model_components()
+        components = self.get_compset_components()
+        if len(comp_classes) > len(components):
+            components.append('sesp')
+        for i in xrange(1,len(comp_classes)):
+            comp_class = comp_classes[i]
+            comp_name  = components[i-1]
+            node_name = 'CONFIG_' + comp_class + '_FILE'
+            comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=False)
+            comp_config_file = self.get_resolved_value(comp_config_file)
+            expect(comp_config_file is not None and os.path.isfile(comp_config_file),
+                   "Config file {} for component {} not found.".format(comp_config_file, comp_name))
+            compobj = Component(comp_config_file)
+            root_node = compobj.get_node("description")
+            expect(root_node is not None,
+                   "No description found in file {} for component {}".format(comp_config_file, comp_name))
+            desc = None
+            desc_nodes = compobj.get_nodes("desc", root=root_node)
+            for node in desc_nodes:
+                compset_match = node.get("compset")
+                compset_match = compset_match.replace("_","")
+                compset_match = "_" + compset_match + "_"
+                compset_name = compset_name + "_"
+                if re.search(compset_match, compset_name):
+                    desc = node.text
+                    logger.info("{:25} : {:50}".format(comp_name, node.text))
+                    break
+                # if desc is None:
+                #     logger.info("ERROR: did not find a valid compset entry for {}, valid entries for {} are".format(comp_name, comp_name))
+                #     for node in desc_nodes:
+                #         attribute = node.get("compset").replace("_","")
+                #         logger.info("{:25} : {:50}".format(attribute, node.text))
+                #     expect(False, "Exiting")
