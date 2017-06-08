@@ -410,21 +410,18 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
-    def _set_compset_and_pesfile(self, compset_name, files, user_compset=False, pesfile=None):
+    def _set_compset_and_primary_component(self, compset_name, files, user_compset=False):
         """
         Loop through all the compset files and find the compset
         specifation file that matches either the input 'compset_name'.
         Note that the input compset name (i.e. compset_name) can be
-        either a longname or an alias.  This will also set the
-        compsets and pes specfication files.
+        either a longname or an alias. This will set various compset-related
+        info and self._primary_component.
         """
         science_support = []
         compset_alias = None
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}".format(components))
-
-        if pesfile is not None:
-            self._pesfile = pesfile
 
         # Loop through all of the files listed in COMPSETS_SPEC_FILE and find the file
         # that has a match for either the alias or the longname in that order
@@ -438,24 +435,13 @@ class Case(object):
                 compsets = Compsets(compsets_filename)
                 match, compset_alias, science_support = compsets.get_compset_match(name=compset_name)
                 if match is not None:
-                    if self._pesfile is None:
-                        self._pesfile = files.get_value("PES_SPEC_FILE"     , {"component":component})
-                        self.set_lookup_value("PES_SPEC_FILE"      ,
-                                              files.get_value("PES_SPEC_FILE"     , {"component":component}, resolved=False))
                     self._compsetsfile = compsets_filename
                     self._compsetname = match
-                    tests_filename    = files.get_value("TESTS_SPEC_FILE"   , {"component":component}, resolved=False)
-                    tests_mods_dir    = files.get_value("TESTS_MODS_DIR"    , {"component":component}, resolved=False)
-                    user_mods_dir     = files.get_value("USER_MODS_DIR"     , {"component":component}, resolved=False)
                     self.set_lookup_value("COMPSETS_SPEC_FILE" ,
                                    files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
                     self._primary_component = component
-                    self.set_lookup_value("TESTS_SPEC_FILE"    , tests_filename)
-                    self.set_lookup_value("TESTS_MODS_DIR"     , tests_mods_dir)
-                    self.set_lookup_value("USER_MODS_DIR"      , user_mods_dir)
                     logger.info("Compset longname is {}".format(match))
                     logger.info("Compset specification file is {}".format(compsets_filename))
-                    logger.info("Pes     specification file is {}".format(self._pesfile))
                     if user_compset is True:
                         logger.info("Found a compset match for longname {} in alias {}".format(compset_name, compset_alias))
 
@@ -463,6 +449,7 @@ class Case(object):
 
         if user_compset is True:
             self._compsetname = compset_name
+            self._primary_component = self._find_primary_component()
         else:
             expect(False,
                    "Could not find a compset match for either alias or longname in {}\n".format(compset_name)
@@ -520,6 +507,33 @@ class Case(object):
             primary_component = "drv"
 
         return primary_component
+
+
+    def _set_info_from_primary_component(self, files, pesfile=None):
+        """
+        Sets file and directory paths that depend on the primary component of
+        this compset.
+
+        Assumes that self._primary_component has already been set.
+        """
+
+        component = self._primary_component
+
+        if pesfile is None:
+            self._pesfile = files.get_value("PES_SPEC_FILE", {"component":component})
+            pesfile_unresolved = files.get_value("PES_SPEC_FILE", {"component":component}, resolved=False)
+            logger.info("Pes     specification file is {}".format(self._pesfile))
+        else:
+            self._pesfile = pesfile
+            pesfile_unresolved = pesfile
+        self.set_lookup_value("PES_SPEC_FILE", pesfile_unresolved)
+
+        tests_filename = files.get_value("TESTS_SPEC_FILE", {"component":component}, resolved=False)
+        tests_mods_dir = files.get_value("TESTS_MODS_DIR" , {"component":component}, resolved=False)
+        user_mods_dir  = files.get_value("USER_MODS_DIR"  , {"component":component}, resolved=False)
+        self.set_lookup_value("TESTS_SPEC_FILE", tests_filename)
+        self.set_lookup_value("TESTS_MODS_DIR" , tests_mods_dir)
+        self.set_lookup_value("USER_MODS_DIR"  , user_mods_dir)
 
 
     def get_compset_components(self):
@@ -604,13 +618,6 @@ class Case(object):
             logger.info("{} component is {}".format(comp_class, self._component_description[comp_class]))
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
-
-        if self._primary_component is None:
-            self._primary_component = self._find_primary_component()
-            if self._pesfile is None:
-                self._pesfile = files.get_value("PES_SPEC_FILE"     , {"component":self._primary_component})
-            logger.info("Pes specification file is {}".format(self._pesfile))
-            self.set_lookup_value("PES_SPEC_FILE", self._pesfile)
 
         self.clean_up_lookups()
 
@@ -732,7 +739,8 @@ class Case(object):
         # compset, pesfile, and compset components
         #--------------------------------------------
         files = Files()
-        compset_alias, science_support = self._set_compset_and_pesfile(compset_name, files, user_compset=user_compset, pesfile=pesfile)
+        compset_alias, science_support = self._set_compset_and_primary_component(compset_name, files, user_compset=user_compset)
+        self._set_info_from_primary_component(files, pesfile=pesfile)
 
         self._components = self.get_compset_components()
         #--------------------------------------------
