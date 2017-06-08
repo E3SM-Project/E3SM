@@ -178,6 +178,10 @@ def _main_func(description):
     else:
         caseroot = os.path.abspath(script_root)
 
+    if user_mods_dir is not None:
+        if os.path.isdir(user_mods_dir):
+            user_mods_dir = os.path.abspath(user_mods_dir)
+
     # create_test creates the caseroot before calling create_newcase
     # otherwise throw an error if this directory exists
     expect(not (os.path.exists(caseroot) and not test),
@@ -202,9 +206,6 @@ def _main_func(description):
 
         # Write out the case files
         case.flush(flushall=True)
-        if user_mods_dir is not None:
-            if os.path.isdir(user_mods_dir):
-                user_mods_dir = os.path.abspath(user_mods_dir)
         case.apply_user_mods(user_mods_dir)
 
     # Lock env_case.xml
