@@ -39,8 +39,8 @@ $comp = "esmf" if ($COMP_INTERFACE eq "ESMF");
 my $useesmf = "noesmf";
 $useesmf = "esmf" if ($USE_ESMF_LIB eq "TRUE");
 
-my $libdir = "$sharedlibroot/${COMP_INTERFACE}/$useesmf/${NINST_VALUE}/csm_share";
-my $installdir = "$installroot/${COMP_INTERFACE}/$useesmf/${NINST_VALUE}";
+my $libdir = "$sharedlibroot/$comp/$useesmf/${NINST_VALUE}/csm_share";
+my $installdir = "$installroot/$comp/$useesmf/${NINST_VALUE}";
 mkpath($libdir) unless -d $libdir;
 chdir($libdir) or die "Could not cd to $libdir: $!\n";
 
@@ -106,5 +106,3 @@ if ( ! -d "$installdir/lib"){
 }
 system("cp -p -f libcsm_share.a $installdir/lib/");
 system("cp -p -f *.mod $installdir/include/");
-
-

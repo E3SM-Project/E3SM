@@ -1,5 +1,90 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 6-8-2017
+Tag: cime5.3.0-alpha.24
+Answer Changes: None
+Tests: scripts_regression_tests.py
+Dependencies:
+
+Brief Summary:
+    - Convert user_mods_dir to abspath earlier.
+    - Update gnu modules on cheyenne to use openmpi.
+    - Fix failing builds on CIME master.
+    - Update cime users guide.
+    - Cleanup and fixes addressing running scripts_regression_tests.py on a mac.
+    - Update contents after create_case.
+    - Define out-of-the-box.
+    - Update case-basics
+    - Replace manage_case with query_case.
+    - Updates modules for cori-knl in cesm.
+    - Update cime users guide.
+    - Add a grid alias and new test to mct driver testlist.
+    - Merge of bjsmith changes to cime users guide.
+    - New match attribute that can be 'last' or 'first' for values match in
+      component.py
+
+User interface changes: 
+    - New match attribute elements that are children of <entry> nodes.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+72198f2 Merge pull request #1657 from billsacks/usermods_relative_path
+9ae4f31 Merge pull request #1661 from ESMCI/fischer/gnu_cheyenne
+9a43e4b hot fix for issue 1656
+75c1967 Merge pull request #1652 from bjsmith2014/master
+86912da Merge pull request #1645 from jedwards4b/macport_issues
+8517405 Update contents after create_case
+435b426 Define out-of-the-box
+cb41c58 Update case-basics
+6e72a7b replace manage_case with query_case
+19a4641 Merge pull request #1649 from jedwards4b/cori_update
+543629e Merge pull request #1648 from bjsmith2014/master
+0ab580e Merge pull request #1646 from ESMCI/fischer/TestGridUpdate
+c26ec40 Merge pull request #1641 from bjsmith2014/master
+0d1bbd8 Merge pull request #1636 from ESMCI/mvertens/new_component_matches
+3b238a8 Merge pull request #1635 from bjsmith2014/master
+
+Modified files: git diff --name-status [previous_tag]
+M       config/acme/machines/Makefile
+M       config/cesm/config_grids.xml
+M       config/cesm/machines/Makefile
+M       config/cesm/machines/config_machines.xml
+M       config/xml_schemas/config_compsets.xsd
+M       doc/source/users_guide/building-a-case.rst
+M       doc/source/users_guide/case-basics.rst
+M       doc/source/users_guide/cime-internals.rst
+M       doc/source/users_guide/cloning-a-case.rst
+M       doc/source/users_guide/create-a-case.rst
+M       doc/source/users_guide/customizing-a-case.rst
+M       doc/source/users_guide/introduction-and-overview.rst
+M       doc/source/users_guide/optimizing-processor-layout.rst
+M       doc/source/users_guide/porting-cime.rst
+M       doc/source/users_guide/running-a-case.rst
+M       doc/source/users_guide/setting-up-a-case.rst
+M       doc/source/users_guide/troubleshooting.rst
+M       scripts/create_newcase
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/XML/component.py
+M       scripts/lib/CIME/XML/entry_id.py
+M       scripts/lib/CIME/XML/machines.py
+M       src/build_scripts/buildlib.csm_share
+M       src/components/data_comps/datm/cime_config/config_component.xml
+M       src/components/data_comps/desp/cime_config/config_component.xml
+M       src/components/data_comps/dice/cime_config/config_component.xml
+M       src/components/data_comps/dlnd/cime_config/config_component.xml
+M       src/components/data_comps/docn/cime_config/config_component.xml
+M       src/components/data_comps/drof/cime_config/config_component.xml
+M       src/components/data_comps/dwav/cime_config/config_component.xml
+M       src/drivers/mct/cime_config/config_component.xml
+M       src/drivers/mct/cime_config/config_component_acme.xml
+M       src/drivers/mct/cime_config/config_component_cesm.xml
+M       src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer	 
 Date: 6-4-2017
 Tag: cime5.3.0-alpha.23

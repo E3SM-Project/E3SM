@@ -65,7 +65,13 @@ OR
 
     parser.add_argument("--user-mods-dir", "-user_mods_dir",
                         help="Path to directory with user_nl_* files and xmlchange "
-                        "commands to utilize. This can also include SourceMods")
+                        "commands to utilize. This can also include SourceMods. "
+                        "This can be an absolute path, a path relative to the "
+                        "current directory, or a path relative to "
+                        "cime_config/usermods_dirs/ under the primary component "
+                        "for the given compset (for example, in an F compset "
+                        "whose primary component is cam, '--user-mods-dir foo' "
+                        "could be found in components/cam/cime_config/usermods_dirs/foo).")
 
     parser.add_argument("--user-compset", action="store_true",
                         help="If set, then the --compset argument is treated as a user specified compset."
@@ -178,6 +184,10 @@ def _main_func(description):
     else:
         caseroot = os.path.abspath(script_root)
 
+    if user_mods_dir is not None:
+        if os.path.isdir(user_mods_dir):
+            user_mods_dir = os.path.abspath(user_mods_dir)
+
     # create_test creates the caseroot before calling create_newcase
     # otherwise throw an error if this directory exists
     expect(not (os.path.exists(caseroot) and not test),
@@ -202,9 +212,6 @@ def _main_func(description):
 
         # Write out the case files
         case.flush(flushall=True)
-        if user_mods_dir is not None:
-            if os.path.isdir(user_mods_dir):
-                user_mods_dir = os.path.abspath(user_mods_dir)
         case.apply_user_mods(user_mods_dir)
 
     # Lock env_case.xml
