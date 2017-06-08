@@ -121,6 +121,7 @@ def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
     ninst_value  = case.get_value("NINST_VALUE")
     smp_build    = case.get_value("SMP_BUILD")
     build_status = case.get_value("BUILD_STATUS")
+    expect(comp_interface == "mct", "Only supporting mct comp_interface at this time")
 
     smpstr = ""
     inststr = ""
@@ -189,12 +190,6 @@ ERROR env_build HAS CHANGED
     ./case.build --clean-all
 """)
 
-    expect(comp_interface != "ESMF" or use_esmf_lib,
-           """
-ERROR COMP_INTERFACE IS ESMF BUT USE_ESMF_LIB IS NOT TRUE
-  SET USE_ESMF_LIB to TRUE with:
-    ./xmlchange -file env_build.xml -id USE_ESMF_LIB -value TRUE
-""")
 
     expect(mpilib != "mpi-serial" or not use_esmf_lib,
            """

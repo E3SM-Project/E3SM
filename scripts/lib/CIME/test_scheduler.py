@@ -484,9 +484,7 @@ class TestScheduler(object):
 
                 elif opt == 'E':
                     envtest.set_test_parameter("USE_ESMF_LIB", "TRUE")
-                    envtest.set_test_parameter("COMP_INTERFACE", "ESMF")
                     logger.debug (" USE_ESMF_LIB set to TRUE")
-                    logger.debug (" COMP_INTERFACE set to ESMF")
 
                 elif opt == 'CG':
                     envtest.set_test_parameter("CALENDAR", "GREGORIAN")
