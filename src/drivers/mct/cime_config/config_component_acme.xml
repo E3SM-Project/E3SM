@@ -197,9 +197,26 @@
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
-    <desc>Flag to turn on new fields in coupling.
-    If the value is not none, the coupler is compiled so that optional
-    BGC related fields are exchanged between component models.
+    <desc>Activates additional CO2-related fields to be exchanged between components. Possible values are:
+
+    CO2A: sets the driver namelist variable flds_co2a = .true.; this adds
+    prognostic CO2 and diagnostic CO2 at the lowest model level to be sent from
+    the atmosphere to the land and ocean.
+
+    CO2B: sets the driver namelist variable flds_co2b = .true.; this adds
+    prognostic CO2 and diagnostic CO2 at the lowest model level to be sent from
+    the atmosphere just to the land, and the surface upward flux of CO2 to be
+    sent from the land back to the atmosphere
+
+    CO2C: sets the driver namelist variable flds_co2c = .true.; this adds
+    prognostic CO2 and diagnostic CO2 at the lowest model level to be sent from
+    the atmosphere to the land and ocean, and the surface upward flux of CO2
+    to be sent from the land and the open ocean back to the atmosphere.
+
+    CO2_DMSA: sets the driver namelist variable flds_co2_dmsa = .true.
+
+    The namelist variables flds_co2a, flds_co2b, flds_co2c and flds_co2_dmsa are
+    in the namelist group cpl_flds_inparm.
     </desc>
   </entry>
 
