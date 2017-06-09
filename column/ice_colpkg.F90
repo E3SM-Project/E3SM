@@ -3793,7 +3793,10 @@
          vicen, & ! ice volume (m)
          Tsfc , & ! surface temperature (C)
          zqin1, & ! ice upper layer enthalpy
-         zSin1    ! ice upper layer salinity
+         zSin1, & ! ice upper layer salinity
+         alvl,  & ! level ice area tracer
+         vlvl     ! level ice volume tracer
+	 
 
       real (kind=dbl_kind), intent(inout) :: &
          fresh    , & ! fresh water flux to ocean (kg/m^2/s)
@@ -3828,9 +3831,7 @@
       real (kind=dbl_kind), dimension(ncat) :: &
          zTin,  & ! ice upper layer temperature (oC)
          hsn ,  & ! snow thickness (m)
-         hin ,  & ! ice thickness
-         alvl,  & ! level ice area tracer
-         vlvl     ! level ice volume tracer
+         hin      ! ice thickness
 
       real (kind=dbl_kind) :: &
          vsno,  & ! snow volume (m)
