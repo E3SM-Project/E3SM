@@ -1288,18 +1288,25 @@ class Case(object):
     def _check_testlists(self, compset_alias, grid_name, files):
         """
         CESM only: check the testlist file for tests of this compset grid combination
+
+        compset_alias should be None for a user-defined compset (i.e., a compset
+        without an alias)
         """
         if "TESTS_SPEC_FILE" in self.lookups:
             tests_spec_file = self.get_resolved_value(self.lookups["TESTS_SPEC_FILE"])
         else:
             tests_spec_file = self.get_value("TESTS_SPEC_FILE")
 
-        tests = Testlist(tests_spec_file, files)
-        testlist = tests.get_tests(compset=compset_alias, grid=grid_name)
         testcnt = 0
-        for test in testlist:
-            if test["category"] == "prealpha" or test["category"] == "prebeta" or "aux_" in test["category"]:
-                testcnt += 1
+        if compset_alias is not None:
+            # It's important that we not try to find matching tests if
+            # compset_alias is None, since compset=None tells get_tests to find
+            # tests of all compsets!
+            tests = Testlist(tests_spec_file, files)
+            testlist = tests.get_tests(compset=compset_alias, grid=grid_name)
+            for test in testlist:
+                if test["category"] == "prealpha" or test["category"] == "prebeta" or "aux_" in test["category"]:
+                    testcnt += 1
         if testcnt > 0:
             logger.info("\nThis compset and grid combination is not scientifically supported, however it is used in {:d} tests.\n".format(testcnt))
         else:
