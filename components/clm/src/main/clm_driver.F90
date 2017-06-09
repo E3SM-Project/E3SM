@@ -650,6 +650,7 @@ contains
        call HydrologyNoDrainage(bounds_clump,                                &
             filter(nc)%num_nolakec, filter(nc)%nolakec,                      &
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc,                &
+            filter(nc)%num_hydrononsoic, filter(nc)%hydrononsoic,            &
             filter(nc)%num_urbanc, filter(nc)%urbanc,                        &
             filter(nc)%num_snowc, filter(nc)%snowc,                          &
             filter(nc)%num_nosnowc, filter(nc)%nosnowc,                      &
@@ -990,13 +991,28 @@ contains
 
        call t_startf('hydro2 drainage')
 
-       call HydrologyDrainage(bounds_clump,                   &
+       if (use_clm_interface .and. (use_pflotran .and. pf_hmode)) then
+         ! pflotran only works on 'soilc' (already done above).
+         ! here for non-soil hydrology columns
+         call HydrologyDrainage(bounds_clump,                     &
+            filter(nc)%num_nolakec, filter(nc)%nolakec,           &
+            filter(nc)%num_hydrononsoic, filter(nc)%hydrononsoic, &
+            filter(nc)%num_urbanc, filter(nc)%urbanc,             &
+            filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,         &
+            atm2lnd_vars, glc2lnd_vars, temperature_vars,         &
+            soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars)
+
+       else
+
+         call HydrologyDrainage(bounds_clump,                 &
             filter(nc)%num_nolakec, filter(nc)%nolakec,       &
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
             filter(nc)%num_urbanc, filter(nc)%urbanc,         &                 
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,     &                
             atm2lnd_vars, glc2lnd_vars, temperature_vars,     &
             soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars)
+
+       end if
 
        call t_stopf('hydro2 drainage')     
 

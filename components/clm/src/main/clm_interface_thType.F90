@@ -62,8 +62,14 @@ module clm_interface_thType
      real(r8), pointer :: eflx_fgr0_soil_col                        (:)     ! col heat flux from near-surface air to first soil layer (W/m**2) [+ = into soil]
      real(r8), pointer :: eflx_rnet_soil_col                        (:)     ! net radiation flux between soil layer 1 and above-air, excluding SH and LE (i.e. radiation form only ) (W/m2) [+ = into soil]
 
+     ! soilhydrology_vars:
+     real(r8), pointer :: frost_table_col                           (:)     ! col frost table depth
+     real(r8), pointer :: zwt_col                                   (:)     ! col water table depth
+     real(r8), pointer :: zwt_perched_col                           (:)     ! col perched water table depth
+     real(r8), pointer :: qcharge_col                               (:)     ! col aquifer recharge rate (mm/s)
+
      ! atm2lnd:
-     real(r8), pointer :: forc_pbot_not_downscaled_grc              (:)     ! downscaled atm pressure (Pa)
+     real(r8), pointer :: forc_pbot_grc                             (:)     ! grid atm pressure (Pa)
 
   contains
      procedure , public  :: Init
@@ -119,6 +125,7 @@ contains
     ! temperature_vars:
     allocate(this%t_soisno_col          (begc:endc,-nlevsno+1:nlevgrnd))    ; this%t_soisno_col         (:,:) = nan
     allocate(this%t_grnd_col            (begc:endc))                        ; this%t_grnd_col           (:)   = nan
+    allocate(this%t_h2osfc_col          (begc:endc))                        ; this%t_h2osfc_col         (:)   = nan
     allocate(this%t_nearsurf_col        (begc:endc))                        ; this%t_nearsurf_col       (:)   = nan
 
     ! canopystate_vars:
@@ -151,7 +158,13 @@ contains
     allocate( this%eflx_rnet_soil_col   (begc:endc))                        ; this%eflx_rnet_soil_col   (:)   = ival
 
     ! atm2lnd:
-    allocate(this%forc_pbot_not_downscaled_grc  (begg:endg))                ; this%forc_pbot_not_downscaled_grc  (:)   = ival
+    allocate(this%forc_pbot_grc         (begg:endg))                        ; this%forc_pbot_grc        (:)   = ival
+
+    ! soilhydrology_vars:
+    allocate( this%frost_table_col      (begc:endc))                        ; this%frost_table_col      (:)   = ival
+    allocate( this%zwt_col              (begc:endc))                        ; this%zwt_col              (:)   = ival
+    allocate( this%zwt_perched_col      (begc:endc))                        ; this%zwt_perched_col      (:)   = ival
+    allocate( this%qcharge_col          (begc:endc))                        ; this%qcharge_col          (:)   = ival
 
   end subroutine InitAllocate
 !!-------------------------------------------------------------------------------------------------
