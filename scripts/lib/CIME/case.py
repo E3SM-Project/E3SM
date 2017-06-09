@@ -410,7 +410,7 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
-    def _set_compset_and_primary_component(self, compset_name, files, user_compset=False):
+    def _set_compset(self, compset_name, files, user_compset=False):
         """
         Loop through all the compset files and find the compset
         specifation file that matches either the input 'compset_name'.
@@ -743,7 +743,7 @@ class Case(object):
         # compset, pesfile, and compset components
         #--------------------------------------------
         files = Files()
-        compset_alias, science_support, component_defining_compset = self._set_compset_and_primary_component(
+        compset_alias, science_support, component_defining_compset = self._set_compset(
             compset_name, files, user_compset=user_compset)
 
         self._components = self.get_compset_components()
