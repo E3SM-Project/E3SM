@@ -416,11 +416,11 @@ class EntryID(GenericXML):
                                 f1value_nodes = self.get_nodes("value", root=node)
                                 for valnode in f1value_nodes:
                                     f2valnodes = other.get_nodes("value", root=f2match, attributes=valnode.attrib)
-                                for f2valnode in f2valnodes:
-                                    if valnode.attrib is None and f2valnode.attrib is None or \
-                                       f2valnode.attrib == valnode.attrib:
-                                        if other.get_resolved_value(f2valnode.text) != self.get_resolved_value(valnode.text):
-                                            xmldiffs["{}:{}".format(vid, valnode.attrib)] = [valnode.text, f2valnode.text]
+                                    for f2valnode in f2valnodes:
+                                        if valnode.attrib is None and f2valnode.attrib is None or \
+                                           f2valnode.attrib == valnode.attrib:
+                                            if other.get_resolved_value(f2valnode.text) != self.get_resolved_value(valnode.text):
+                                                xmldiffs["{}:{}".format(vid, valnode.attrib)] = [valnode.text, f2valnode.text]
         return xmldiffs
 
     def __iter__(self):
