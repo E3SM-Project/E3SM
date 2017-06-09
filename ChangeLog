@@ -1,5 +1,37 @@
 ======================================================================
 
+Originator: Chris Fischer	 
+Date: 6-8-2017
+Tag: cime5.3.0-alpha.25
+Answer Changes: None
+Tests:  scripts_regression_tests.py, SMS_D.f19_f19.F1850.cori-knl_intel 
+        create_test cime_developer 
+Dependencies:
+
+Brief Summary:
+    - Remove COMP_INTERFACE references to esmf and downcase the value.
+    - Make Flgl_qice attname consistent with name.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+aadee35 Merge pull request #1663 from jedwards4b/comp_interface_fix
+f8f6221 Merge pull request #1662 from billsacks/fix_flgl
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/acme/machines/Makefile
+M       config/cesm/machines/Makefile
+M       scripts/lib/CIME/build.py
+M       scripts/lib/CIME/test_scheduler.py
+M       src/drivers/mct/cime_config/config_component.xml
+M       src/drivers/mct/shr/seq_flds_mod.F90
+
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 6-8-2017
 Tag: cime5.3.0-alpha.24
