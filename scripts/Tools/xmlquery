@@ -60,25 +60,28 @@ epilog=textwrap.dedent(__doc__))
 
     # Set command line options
     parser.add_argument("variables", nargs="*"  ,
-                        help="variable name in env_*.xml file ( <entry_id id='variable_name'>value</entry_id> )")
+                        help="variable name in env_*.xml file ( <entry_id id='variable_name'>value</entry_id> ) ")
 
     parser.add_argument("-file" , "--file",
                         help="specify the file you want to query")
 
     parser.add_argument("-subgroup","--subgroup",
-                        help="apply to this subgroup only")
+                        help="Apply to this subgroup only. "
+                        " NOTE: currently only the file env_batch.xml has subgroups, and these subgroups "
+                        " correspond to the <batch_jobs> entries in the file "
+                        " $CIMEROOT/config/[acme,cesm]/machines/config_batch.xml ")
 
     parser.add_argument("-caseroot" , "--caseroot", default=os.getcwd(),
                         help="Case directory to reference")
 
     parser.add_argument("-listall", "--listall" , default=False , action="store_true" ,
-                        help="List all variables and their values")
+                        help="List all variables and their values ")
 
     parser.add_argument("-no-resolve", "--no-resolve", action="store_true",
                         help="Do not resolve variable values")
 
     parser.add_argument("-p", "--partial-match", action="store_true",
-                        help="Allow partial matches of variable names, treats args as regex.")
+                        help="Allow partial matches of variable names, treats args as regex. ")
 
     group = parser.add_mutually_exclusive_group()
 
@@ -86,10 +89,11 @@ epilog=textwrap.dedent(__doc__))
                         help="Print a full listing for a variable, or a list of variables ")
 
     group.add_argument("-fileonly", "--fileonly", default=False, action="store_true",
-                        help="Only print the filename that the field is defined in.")
+                        help="Only print the filename that the field is defined in. ")
 
     group.add_argument("-value", "--value", default=False, action="store_true",
-                        help="Only print one value without newline character. If more than one has been found print first value in list.")
+                        help="Only print one value without newline character. "
+                       " If more than one has been found print first value in list.")
 
     group.add_argument("--raw", default=False, action="store_true",
                         help="Print the complete raw record associated with this variable")
@@ -97,13 +101,13 @@ epilog=textwrap.dedent(__doc__))
                         help="Print the description associated with this variable")
 
     group.add_argument("--get-group", default=False, action="store_true",
-                        help="Print the group associated with this variable")
+                        help="Print the group associated with this variable ")
 
     group.add_argument("--type", default=False, action="store_true",
-                        help="Print the data type associated with this variable")
+                        help="Print the data type associated with this variable ")
 
     group.add_argument("--valid-values", default=False, action="store_true",
-                        help="Print the valid values associated with this variable if defined")
+                        help="Print the valid values associated with this variable if defined ")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
