@@ -96,7 +96,7 @@ epilog=textwrap.dedent(__doc__))
     group.add_argument("--description", default=False, action="store_true",
                         help="Print the description associated with this variable")
 
-    group.add_argument("--group", default=False, action="store_true",
+    group.add_argument("--get-group", default=False, action="store_true",
                         help="Print the group associated with this variable")
 
     group.add_argument("--type", default=False, action="store_true",
@@ -117,7 +117,7 @@ epilog=textwrap.dedent(__doc__))
         variables = args.variables
 
     return variables, args.subgroup, args.caseroot, args.listall, args.fileonly, \
-        args.value, args.no_resolve, args.raw, args.description, args.group, args.full, \
+        args.value, args.no_resolve, args.raw, args.description, args.get_group, args.full, \
         args.type, args.valid_values, args.partial_match, args.file
 
 def get_value_as_string(case, var, attribute=None, resolved=False, subgroup=None):
@@ -128,7 +128,7 @@ def get_value_as_string(case, var, attribute=None, resolved=False, subgroup=None
     return value
 
 def xmlquery(case, variables, subgroup=None, fileonly=False,
-             resolved=True, raw=False, description=False, group=False,
+             resolved=True, raw=False, description=False, get_group=False,
              full=False, dtype=False, valid_values=False, xmlfile=None):
     """
     Return list of attributes and their values, print formatted
@@ -138,6 +138,8 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
     comp_classes = case.get_values("COMP_CLASSES")
     if xmlfile:
         case.set_file(xmlfile)
+
+    # Loop over variables
     for var in variables:
         if subgroup is not None:
             groups = [subgroup]
@@ -154,6 +156,7 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
                 results['none'][var]['value']  = value
         else:
             expect(groups, " No results found for variable %s"%var)
+
         for group in groups:
             if not group in results:
                 results[group] = {}
@@ -161,6 +164,9 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
                 results[group][var] = {}
 
             expect(group, "No group found for var %s"% var)
+            if get_group:
+                results[group][var]['get_group'] = group
+
             value = get_value_as_string(case, var, resolved=resolved, subgroup=group)
             if value is None:
                 var, comp, iscompvar = case.check_if_comp_var(var)
@@ -205,7 +211,7 @@ def _main_func():
 
     # Initialize command line parser and get command line options
     variables, subgroup, caseroot, listall,  fileonly, \
-        value, no_resolve, raw, description, group, full, dtype, \
+        value, no_resolve, raw, description, get_group, full, dtype, \
         valid_values, partial_match, xmlfile = parse_command_line(sys.argv)
 
     # Initialize case ; read in all xml files from caseroot
@@ -242,7 +248,7 @@ def _main_func():
 
         expect(variables, "No variables found")
         results = xmlquery(case, variables, subgroup, fileonly, resolved=not no_resolve,
-                           raw=raw, description=description, group=group, full=full,
+                           raw=raw, description=description, get_group=get_group, full=full,
                            dtype=dtype, valid_values=valid_values, xmlfile=xmlfile)
 
     if full or description:
@@ -251,12 +257,14 @@ def _main_func():
         wrapper.fix_sentence_endings = True
 
     for group in sorted(iter(results)):
-        if len(variables) > 1 or len(results.keys()) > 1 or full:
+        if (len(variables) > 1 or len(results.keys()) > 1 or full) and not get_group:
             print "\nResults in group %s"%group
         for var in variables:
             if var in results[group]:
                 if raw:
                     print results[group][var]['raw']
+                elif get_group:
+                    print "\t%s: %s"%(var, results[group][var]['get_group'])
                 elif value:
                     sys.stdout.write("%s"%results[group][var]['value'])
                 elif description:
