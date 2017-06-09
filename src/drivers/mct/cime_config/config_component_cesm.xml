@@ -66,7 +66,7 @@
 
   <entry id="CCSM_BGC">
     <type>char</type>
-    <valid_values>none,CO2A,CO2B,CO2C,CO2_DMSA</valid_values>
+    <valid_values>none,CO2A,CO2B,CO2C</valid_values>
     <default_value>none</default_value>
     <values match="last">
       <value compset="_CAM">CO2A</value>
@@ -79,9 +79,21 @@
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
-    <desc>Flag to turn on new fields in coupling.
-    If the value is not none, the coupler is compiled so that optional
-    BGC related fields are exchanged between component models.
+    <desc>Activates additional CO2 related fields to be exchanged between components.
+       A value of CO2A sets the driver namelist variable flds_co2a = .true., this
+          adds prognostic CO2 and diagnostic CO2 at the lowest model level
+          to be sent from the atmosphere to be sent to the land and ocean.
+       A value of CO2B sets the driver namelist variable flds_co2b = .true., this
+          adds prognostic CO2 and diagnostic CO2 at the lowest model level to be
+          sent just to the land and the surface upward flux of CO2 to be sent from the land back
+          to the atmosphere
+       A value of CO2C sets the driver namelist variable flds_co2c = .true., this
+          adds prognostic CO2 and diagnostic CO2 at the lowest model level
+          to be sent from the atmosphere to be sent to the land and ocean and
+	  the surface upward flux of carbon dioxide from the land and the open ocean to be sent 
+          back to the atmosphere.
+      The namelist variables flds_co2a, flds_co2b and flds_co2c are in the namelist group
+      cpl_flds_inparm.
     </desc>
   </entry>
 
