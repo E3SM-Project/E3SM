@@ -148,9 +148,6 @@ contains
 
     type (quadrature_t)   :: gp
 
-    real(kind=real_kind), allocatable :: aratio(:,:)
-    real(kind=real_kind) :: area(1)
-
 #ifndef CAM
     logical :: repro_sum_use_ddpdd, repro_sum_recompute
     real(kind=real_kind) :: repro_sum_rel_diff_max
