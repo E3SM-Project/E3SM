@@ -1115,11 +1115,17 @@ class Case(object):
         Returns None if no value was found, or if the value is an empty string.
         """
         comp_user_mods = self.get_value("{}_USER_MODS".format(component.upper()))
-        if (comp_user_mods is None or comp_user_mods == "" or
-            (isinstance(comp_user_mods, basestring) and comp_user_mods.isspace())):
+        if comp_user_mods is None or comp_user_mods == "":
             return None
         else:
-            return comp_user_mods
+            try:
+                is_space = comp_user_mods.isspace()
+            except AttributeError:
+                is_space = False
+            if is_space:
+                return None
+            else:
+                return comp_user_mods
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None):
         if cime_output_root is None:
