@@ -88,6 +88,8 @@ module cube_mod
   public  :: rotation_init_atomic
   public  :: ref2sphere
 
+  public  :: set_area_correction_map0, set_area_correction_map2
+
   ! public interface to REFERECE element map
 #if HOMME_QUAD_PREC
   interface ref2sphere
@@ -2387,7 +2389,7 @@ contains
     else
        call abortmp('ref2sphere_double(): bad value of ref_map')
     endif
-  end function
+  end function ref2sphere_double
 
   function ref2sphere_longdouble(a,b, corners3D, ref_map, corners, facenum) result(sphere)
     real(kind=longdouble_kind)    :: a,b
@@ -2409,9 +2411,7 @@ contains
     else
        call abortmp('ref2sphere_double(): bad value of ref_map')
     endif
-  end function
-
-
+  end function ref2sphere_longdouble
 
 !
 ! map a point in the referece element to the sphere
@@ -2512,7 +2512,8 @@ contains
     q(1)=(1-a)*(1-b); q(2)=(1+a)*(1-b); q(3)=(1+a)*(1+b); q(4)=(1-a)*(1+b);
     q=q/4.0d0;
     sphere=ref2sphere_elementlocal_q(q,corners3D)
-  end function 
+  end function ref2sphere_elementlocal_double
+ 
   function ref2sphere_elementlocal_longdouble(a,b, corners3D) result(sphere)
     use element_mod, only : element_t
     implicit none
@@ -2524,7 +2525,7 @@ contains
     q(1)=(1-a)*(1-b); q(2)=(1+a)*(1-b); q(3)=(1+a)*(1+b); q(4)=(1-a)*(1+b);
     q=q/4.0d0;
     sphere=ref2sphere_elementlocal_q(q,corners3D)
-  end function 
+  end function ref2sphere_elementlocal_longdouble
 
   function ref2sphere_elementlocal_q(q, corners) result(sphere)
     implicit none
@@ -2556,11 +2557,146 @@ contains
 !XYZ coords of the point to lon/lat
     sphere=change_coordinates(cart)
 
-  end function 
+  end function ref2sphere_elementlocal_q
 
 
+! The routine sets epsilon bubble area correction for each element.
+! gp, repro_sum should be inited before this call
+  subroutine set_area_correction_map0(elem, nelemd, par, gp)
 
-end module cube_mod
+    use repro_sum_mod,      only: repro_sum
+    use quadrature_mod,   only: quadrature_t
+    use element_mod, only: element_t
+    use parallel_mod, only: parallel_t
+    use kinds, only: iulog
+    use control_mod, only: topology
+
+    implicit none
+
+    type (element_t),   pointer, intent(inout)     :: elem(:)
+    type (parallel_t),  intent(in)  :: par
+    integer, intent(in) :: nelemd
+    type (quadrature_t), intent(in)   :: gp
+
+    real(kind=real_kind), allocatable :: aratio(:,:)
+    real(kind=real_kind) :: area(1)
+    integer :: ie, i, j
+
+    allocate(aratio(nelemd,1))
+
+    if ( topology == "cube" ) then
+       area = 0.0d0
+       do ie=1,nelemd
+          ! Code that is bound with mass_matrix() call above
+          aratio(ie,1) = sum(elem(ie)%mp(:,:)*elem(ie)%metdet(:,:))
+          ! New code that can replace mass_matrix call in prim_driver_mod.
+          !aratio(ie,1) = 0.0d0
+          !do j = 1,np
+          !   do i = 1,np
+          !      aratio(ie,1) = aratio(ie,1) +
+          !      gp%weights(i)*gp%weights(j)*elem(ie)%metdet(i,j)
+          !   enddo
+          !enddo
+       enddo
+
+       call repro_sum(aratio, area, nelemd, nelemd, 1, commid=par%comm)
+       area(1) = 4*dd_pi/area(1)  ! ratio correction
+
+       if (par%masterproc) &
+          write(iulog,'(a,f20.17)') " re-initializing cube elements: alpha area correction=",&
+          area(1)
+
+       do ie=1,nelemd
+          call cube_init_atomic(elem(ie),gp%points,area(1))
+       enddo
+    endif ! end of topology == 'cube'
+    deallocate(aratio)
+
+  end subroutine set_area_correction_map0
+
+
+! The routine sets epsilon bubble area correction for each element.
+! gp, repro_sum should be inited before this call
+  subroutine set_area_correction_map2(elem, nelemd, par, gp)
+
+    use repro_sum_mod,      only: repro_sum
+    use quadrature_mod,   only: quadrature_t
+    use element_mod, only: element_t
+    use parallel_mod, only: parallel_t
+    use kinds, only: iulog
+    use control_mod, only: topology
+
+    implicit none
+
+    type (element_t),   pointer, intent(inout)     :: elem(:)
+    type (parallel_t),  intent(in)  :: par
+    integer, intent(in) :: nelemd
+    type (quadrature_t), intent(in)   :: gp
+
+    real(kind=real_kind), allocatable :: aratio(:,:)
+    real(kind=real_kind) :: area(1), area_sphere, area_num, area_dummy,sum_w, delta
+    integer :: ie, i, j
+    real(kind=real_kind) :: tol_local = 1e-15
+
+    allocate(aratio(nelemd,1))
+
+    if ( topology == "cube" ) then
+       do ie=1,nelemd
+          ! Obtain area of element = sum of areas of 2 triangles.
+          call sphere_tri_area(elem(ie)%corners3D(1), elem(ie)%corners3D(2),&
+                               elem(ie)%corners3D(3), area_sphere)
+          call sphere_tri_area(elem(ie)%corners3D(1), elem(ie)%corners3D(3),&
+                               elem(ie)%corners3D(4), area_dummy)
+          ! Store element's area in area_sphere.
+          area_sphere = area_sphere + area_dummy
+
+          ! Compute 'numerical area' of the element as sum of integration
+          ! weights.
+          area_num = 0.0d0
+          do j = 1,np
+             do i = 1,np
+                area_num = area_num + gp%weights(i)*gp%weights(j)*elem(ie)%metdet(i,j)
+             enddo
+          enddo
+
+          ! Compute sum of inner integration weights for correction.
+          sum_w = 0.0d0 ! or sum_w = sum(elem(ie)%mp(2:np-1,2:np-1)*elem(ie)%metdet(2:np-1,2:np-1))
+          do j = 2, np-1
+             do i = 2, np-1
+                sum_w = sum_w + gp%weights(i)*gp%weights(j)*elem(ie)%metdet(i,j)
+             enddo
+          enddo
+          ! Which tol is to use here?
+          if ( sum_w > tol_local ) then
+             delta = (area_sphere - area_num)/sum_w
+             call cube_init_atomic(elem(ie),gp%points,1.0d0 + delta)
+             else
+                ! Abort since the denominator in correction is too small.
+                call abortmp('Area correction based on eps. bubble cannot be done, sum_w is too small.')
+             endif
+!             call rotation_init_atomic(elem(ie),"contravariant")
+          enddo ! loop over elements
+          ! Temporary code for verification.
+          area = 0.0d0
+          do ie = 1,nelemd
+             aratio(ie,1) = 0.0
+             do j = 1,np
+                do i = 1,np
+                   aratio(ie,1) = aratio(ie,1) + gp%weights(i)*gp%weights(j)*elem(ie)%metdet(i,j)
+                enddo
+             enddo
+          enddo
+
+          call repro_sum(aratio, area, nelemd, nelemd, 1, commid=par%comm)
+          if (par%masterproc) &
+             write(iulog,'(a,f20.17)') "Epsilon bubble correction: Corrected area - 4\pi ",area(1) - 4.0d0*dd_pi
+
+       endif ! end of topology == 'cube'
+    deallocate(aratio)
+
+  end subroutine set_area_correction_map2
+
+  end module cube_mod
 
 
 
