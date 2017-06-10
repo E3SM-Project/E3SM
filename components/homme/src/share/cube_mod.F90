@@ -2561,7 +2561,7 @@ contains
 
 
 ! The routine sets epsilon bubble area correction for each element.
-! gp, repro_sum should be inited before this call
+! gp, repro_sum options should be inited before this call.
   subroutine set_area_correction_map0(elem, nelemd, par, gp)
 
     use repro_sum_mod,      only: repro_sum
@@ -2616,7 +2616,7 @@ contains
 
 
 ! The routine sets epsilon bubble area correction for each element.
-! gp, repro_sum should be inited before this call
+! gp, repro_sum options should be inited before this call.
   subroutine set_area_correction_map2(elem, nelemd, par, gp)
 
     use repro_sum_mod,      only: repro_sum

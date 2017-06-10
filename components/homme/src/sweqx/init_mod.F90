@@ -41,7 +41,7 @@ contains
                            MeshCubeElemCount, &
                            MeshCubeEdgeCount
     ! --------------------------------
-    use cube_mod, only : cube_init_atomic, rotation_init_atomic, set_corner_coordinates, &
+    use cube_mod, only : cube_init_atomic, set_corner_coordinates, &
          assign_node_numbers_to_elem, set_area_correction_map2
 
     ! --------------------------------
@@ -145,22 +145,12 @@ contains
     real(kind=real_kind) :: approx_elements_per_task
     type (quadrature_t)   :: gp                     ! element GLL points
 
-    real(kind=real_kind), allocatable :: aratio(:,:)
-    real(kind=real_kind) :: area(1), area_sphere, area_num, area_dummy, sum_w, delta
-
     ! =====================================
     ! Read in model control information
     ! =====================================
     call t_startf('init')
 
     call readnl(par)
-
-    ! =====================================
-    ! Set cube edge rotation type for model
-    ! =====================================
-
-!no test, no feature
-!    rot_type="contravariant"
 
     if (par%masterproc) then
 
@@ -323,17 +313,16 @@ contains
        endif
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points)
-
-! no test, no feature
-!          call rotation_init_atomic(elem(ie),rot_type)
        enddo
+    endif
 
-     endif
-
-     if(( cubed_sphere_map == 2 ).AND.( np > 2 )) then
+    ! This routine does not check whether gp is init-ed.
+    if(( cubed_sphere_map == 2 ).AND.( np > 2 )) then
        call set_area_correction_map2(elem, nelemd, par, gp)
-     endif
+    endif
 
+    deallocate(gp%points)
+    deallocate(gp%weights)
     ! =================================================================
     ! Run the checksum to verify communication schedule
     ! =================================================================
