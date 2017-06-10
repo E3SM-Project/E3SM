@@ -1,5 +1,40 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 6-10-2017
+Tag: cime5.3.0-alpha.26
+Answer Changes: None
+Tests:  scripts_regression_tests.py J_TestCreateNewcase
+        scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Provides better description of CCSM_BGC xml variable for both ACME and
+      CESM
+    - Add a test to scripts_regression_tests.py to assure that instantiating a
+      case does not invoke a flush command.
+    - User compset fixes.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+f8eb8b4 Merge pull request #1670 from ESMCI/mvertens/fix_ccsm_bgc_desc
+8ea2801 Merge pull request #1666 from jedwards4b/case_instantiate_test
+383c1f5 Merge pull request #1667 from billsacks/user_compset_fixes
+
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/create_newcase
+M       scripts/lib/CIME/case.py
+M       scripts/tests/scripts_regression_tests.py
+M       src/drivers/mct/cime_config/config_component_acme.xml
+M       src/drivers/mct/cime_config/config_component_cesm.xml
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer	 
 Date: 6-8-2017
 Tag: cime5.3.0-alpha.25
