@@ -78,7 +78,8 @@ CONTAINS
                   ' error condition for spmd_dyn_inparm' )
           end if
        end if
-       if (dyn_npes .lt. 1 .or. dyn_npes .gt. npes) then
+       if (dyn_npes .gt. npes) dyn_npes = npes
+       if (dyn_npes .lt. 1) then
           call endrun( subname//':: namelist read returns a'// &
                ' bad value for dyn_npes' )
        endif
