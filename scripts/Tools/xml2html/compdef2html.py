@@ -42,9 +42,6 @@ except:
 # global variables
 _now = datetime.datetime.now().strftime('%Y-%m-%d')
 logger = logging.getLogger(__name__)
-_cime_comps = {'data_comps' : ['datm','desp','dice','dlnd','docn','drof','dwav'],
-               'stub_comps' : ['satm','sesp','sglc','sice','slnd','socn','srof','swav'],
-               'xcpl_comps' : ['xatm','xglc','xice','xlnd','xocn','xrof','xwav'] }
 
 ###############################################################################
 def commandline_options():
@@ -98,46 +95,12 @@ def get_descs(desc_file):
     return ordered_descs
 
 ###############################################################################
-def get_all_descs(components):
-###############################################################################
-
-    cimeroot = os.environ['CIMEROOT']
-    model = get_model()
-    srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
-    model_config_file = 'config_component_{0}.xml'.format(model)
-    desc_files = list()
-    all_descs = dict()
-
-    # load the desc_files list for CIME components (data, stub and xcpl)
-    for subdir, comps in _cime_comps.iteritems():
-        for component in comps:
-            desc_files.append(os.path.join(cimeroot, 'src/components', subdir, component, 'cime_config/config_component.xml'))
-
-    # need to add ww3 to desc_files because ww3 doesn't define compsets but contains descriptions
-    desc_files.append(os.path.join(srcroot, 'components/ww3/cime_config/config_component.xml'))
-
-    # add to the desc_files list for the active model or driver components which define compsets
-    for component in components:
-        if 'allactive' in component or 'drv' in component:
-            desc_files.append(os.path.join(cimeroot, 'src/drivers/mct/cime_config', model_config_file))
-        else:
-            desc_files.append(os.path.join(srcroot, 'components', component, 'cime_config/config_component.xml'))
-
-    # load all the descriptions into a dictionary
-    for path in desc_files:
-        all_descs.update(get_descs(path))
-    
-    return all_descs
-
-###############################################################################
 def _main_func(options, work_dir):
 ###############################################################################
 
     """Construct compsets html from an XML file."""
         
     # Initialize variables
-    all_compsets = dict()
-    desc = dict()
     ordered_compsets = collections.OrderedDict()
     html_dict = dict()
     model_version = options.version[0]
@@ -166,10 +129,8 @@ def _main_func(options, work_dir):
             # load up the html_dict
             html_dict[component] = { 'compsets' : ordered_compsets }
 
-    # get all the descriptions from all components
-    all_descs = get_all_descs(components)
-
-    # loop through the compsets parts matching the descriptions
+    # loop through the compsets and get the matching the descriptions
+##    for compset in ordered_compsets:
 
     # load up jinja template
     templateLoader = jinja2.FileSystemLoader( searchpath='{0}/templates'.format(work_dir) )
