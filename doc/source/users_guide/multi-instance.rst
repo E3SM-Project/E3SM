@@ -86,7 +86,7 @@ Also keep these important points in mind:
 
 #. Multiple-instance implementation supports only one coupler component.
 
-#. Calling **case.setup -- clean** *DOES NOT* remove the **user_nl_xxx_NN** files created by **case.setup**.
+#. Calling **case.setup** with ``--clean`` *DOES NOT* remove the **user_nl_xxx_NN** files created by **case.setup**.
 
 #. Multiple instances generally should un concurrently, which is the default setting in **env_mach_pes.xml**. 
    The serial setting is only for EXPERT USERS in upcoming development code implementations.
