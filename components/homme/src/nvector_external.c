@@ -22,7 +22,6 @@
 #define ZERO   RCONST(0.0)
 
 
-
 /********************* Fortran Interface Functions ***************/
 
 /* define global N_Vector variables for Fortran interface */
@@ -150,7 +149,7 @@ N_Vector N_VNewEmpty_EXT()
 
 /* N_VMake_EXT (or nvmake) creates a EXT N_Vector with 'content' 
    pointing to user-provided structure */
-N_Vector N_VMake_EXT(void *v_data)
+N_Vector N_VMake_EXT(void* v_data)
 {
   /* initialize v to NULL */
   N_Vector v = NULL;
@@ -270,7 +269,7 @@ N_Vector N_VClone_EXT(N_Vector w)
   /* initialize pointers to NULL */
   v = NULL;
   wdata = NULL;
-  vdata = NULL;
+  vdata = (void **) malloc(sizeof(void *));
 
   /* Create vector */
   v = N_VCloneEmpty_EXT(w);
@@ -280,7 +279,7 @@ N_Vector N_VClone_EXT(N_Vector w)
   wdata = NV_DATA_EXT(w);
 
   /* Call Fortran routine to allocate data */
-  FNVEXT_CLONE(wdata, &vdata);
+  FNVEXT_CLONE(wdata, vdata);
 
   /* Fail gracefully if data is still NULL */
   if(vdata == NULL) { N_VDestroy_EXT(v); return(NULL); }
@@ -316,7 +315,7 @@ void N_VDestroy_EXT(N_Vector v)
    however this routine is not utilized by SUNDIALS unless the user asks a 
    particular integrator about its storage requirements.  As such, this is 
    essentially a dummy routine, and so we return zero for both arguments. */
-void N_VSpace_EXT(N_Vector v, long int *lrw, long int *liw)
+void N_VSpace_EXT(N_Vector v, long int* lrw, long int* liw)
 {
   *lrw = ZERO;
   *liw = 0;
@@ -345,10 +344,10 @@ realtype *N_VGetArrayPointer_EXT(N_Vector v)
    data component array v_data to the N_Vector v.  While the input 
    pointer is assumed to have 'realtype' type, this will just be
    re-cast from the actual Fortran pointer type. */
-void N_VSetArrayPointer_EXT(realtype *v_data, N_Vector v)
+void N_VSetArrayPointer_EXT(realtype* v_data, N_Vector v)
 {
-  /* if (v_data != NULL)  NV_DATA_EXT(v) = (void *) v_data; */
-  if (v_data != NULL)  NV_DATA_EXT(v) = v_data;
+  /* if (v_data != NULL)  NV_DATA_EXT(v) = v_data; */
+  if (v_data != NULL)  NV_DATA_EXT(v) = (void *) v_data;
 }
 
 
@@ -517,7 +516,7 @@ realtype N_VMaxNorm_EXT(N_Vector x)
 { 
   /* extract data array handles from N_Vectors */
   realtype maxval = ZERO;
-  realtype *xd  = NULL;
+  void *xd  = NULL;
   xd = NV_DATA_EXT(x);
 
   /* call fortran routine to do operation */

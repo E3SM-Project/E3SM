@@ -5,7 +5,6 @@
 ! Copyright 2017; all rights reserved
 !=======================================================================
 
-
 module FortranVector
   !-----------------------------------------------------------------------
   ! Description: simple Fortran user-defined type for example interface
@@ -34,6 +33,7 @@ module FortranVector
 end module FortranVector
 
 
+#ifdef UNUSED_EXAMPLE_CODE
 
 subroutine FNVExtPrint(x)
   !-----------------------------------------------------------------------
@@ -849,3 +849,5 @@ subroutine FNVExtMinQuotient(x, y, cval)
   return
 end subroutine FNVExtMinQuotient
 !=======================================================================
+
+#endif

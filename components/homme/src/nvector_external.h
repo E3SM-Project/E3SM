@@ -159,11 +159,11 @@ extern "C" {
  ****************************************************************/
 
 /* The FNVEXT implementation of the N_Vector 'content' structure 
-   contains the a void* pointer to the actual Fortran vector 
-   structure, and a flag indicating whether this vector was
-   allocated from SUNDIALS calls (versus by the user program) */
+   contains the a void** pointer to the actual Fortran vector 
+   structure memory location, and a flag indicating whether this 
+   vector was allocated from SUNDIALS calls (versus by the user program) */
 struct _N_VectorContent_EXT {
-  void *data;              /* ptr to Fortran vector structure */
+  void *data;              /* ptr to Fortran vector structure location */
   booleantype own_data;    /* flag for ownership of data */
 };
 typedef struct _N_VectorContent_EXT *N_VectorContent_EXT;
@@ -184,14 +184,14 @@ typedef struct _N_VectorContent_EXT *N_VectorContent_EXT;
  *
  * (2) NV_DATA_EXT
  *
- *     This macro gives access to the actual void* Fortran 
+ *     This macro gives access to the actual void** Fortran 
  *     vector object portion held in the 'content' structure.
  *
  *     The assignment v_data = NV_DATA_EXT(v) sets v_data to
- *     be a pointer to the void* data component from v.
+ *     be a pointer to the void** data component from v.
  *
  *     The assignment NV_DATA_EXT(v) = v_data sets the 
- *     void* data component in v by storing the pointer v_data.
+ *     void** data component in v by storing the pointer v_data.
  *
  * (3) NV_OWN_DATA_EXT
  *
@@ -222,7 +222,7 @@ N_Vector N_VNewEmpty_EXT();
 
 /* N_VMake_EXT */
 /* This function creates an EXT vector with user-provided content pointer */
-N_Vector N_VMake_EXT(void *FVec);
+N_Vector N_VMake_EXT(void* FVec);
 
 /* N_VPrint_EXT */
 /* This function prints the content of a EXT vector to stdout */
@@ -239,7 +239,7 @@ SUNDIALS_EXPORT N_Vector    N_VCloneEmpty_EXT(N_Vector);
 SUNDIALS_EXPORT N_Vector    N_VClone_EXT(N_Vector);
 SUNDIALS_EXPORT void        N_VDestroy_EXT(N_Vector);
 SUNDIALS_EXPORT void        N_VSpace_EXT(N_Vector, long int *, long int *);
-SUNDIALS_EXPORT realtype   *N_VGetArrayPointer_EXT(N_Vector);
+SUNDIALS_EXPORT realtype*   N_VGetArrayPointer_EXT(N_Vector);
 SUNDIALS_EXPORT void        N_VSetArrayPointer_EXT(realtype *, N_Vector);
 SUNDIALS_EXPORT void        N_VLinearSum_EXT(realtype, N_Vector, realtype, 
                                              N_Vector, N_Vector);
