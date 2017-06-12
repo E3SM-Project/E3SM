@@ -24,7 +24,8 @@ class Tests(GenericXML):
             if comp is None:
                 continue
             infile = files.get_value("CONFIG_TESTS_FILE", attribute={"component":comp})
-            self.read(infile)
+            if os.path.isfile(infile):
+                self.read(infile)
 
     def get_test_node(self, testname):
         logger.debug("Get settings for {}".format(testname))
