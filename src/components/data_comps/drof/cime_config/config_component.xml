@@ -6,11 +6,12 @@
 
   <!-- NOTE that the description block determines what DROF% values can appear in the compset name 
        For DROF this is determined by the DROF_MODE values -->
-  <description>
-    <desc compset="_DROF%NULL">NULL drof mode:</desc>
-    <desc compset="_DROF%NYF" >COREv2 drof normal year forcing:</desc>
-    <desc compset="_DROF%IAF" >COREv2 drof interannual year forcing:</desc>
-    <desc compset="_DROF%CPLHIST">CPLHIST mode:</desc>
+
+  <description mustmatch="DROF%">
+    <desc compset="DROF%NULL">NULL drof mode:</desc>
+    <desc compset="DROF%NYF" >COREv2 drof normal year forcing:</desc>
+    <desc compset="DROF%IAF" >COREv2 drof interannual year forcing:</desc>
+    <desc compset="DROF%CPLHIST">CPLHIST mode:</desc>
   </description>
 
   <entry id="COMP_ROF">

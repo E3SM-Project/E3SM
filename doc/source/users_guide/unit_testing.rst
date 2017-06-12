@@ -9,13 +9,13 @@ Introduction
 What is a unit test?
 ~~~~~~~~~~~~~~~~~~~~
 
-A unit test is a fast, self-verying test of a small piece of code.
-A single unit test typically covers 10s to 100s of lines of code (e.g., a single function or small module).
-It typically runs in just milliseconds, and produces a simple pass/fail result.
+A unit test is a fast, self-verifying test of a small piece of code.
+A single unit test typically covers 10s to 100s of lines of code; a single function or small module, for example.
+It typically runs in milliseconds and produces a simple pass/fail result.
 
 Unit tests:
 
-* Ensure that code remains correct as it is modified (in this respect, they complement the CIME system tests; the remaining bullet points are unique to unit tests).
+* Ensure that code remains correct as it is modified. In this respect, unit tests complement the CIME system tests.
 
 * Ensure that new code is correct.
 
@@ -33,9 +33,9 @@ These consist of:
 
 #. CMake tools to support building and running tests via CMake and CTest.
 
-#. A python script that provides a simple front-end to the CMake-based tests.
+#. A Python script that provides a simple front end for the CMake-based tests.
 
-The Fortran unit tests use `pFUnit <https://sourceforge.net/projects/pfunit/>`_, which is a Fortran unit testing framework that follows conventions of other xUnit frameworks (JUnit, etc.).
+The Fortran unit tests use `pFUnit <https://sourceforge.net/projects/pfunit/>`_, which is a Fortran testing framework that follows conventions of other xUnit frameworks.
 
 .. _running_unit_tests:
 
@@ -43,29 +43,29 @@ Running CIME's Fortran unit tests
 ---------------------------------
 
 These instructions assume that you are using a machine that already has pFUnit installed, along with the necessary support in CIME.
-If that is not the case, then see the section :ref:`adding_machine_support`.
+If that is not the case, see :ref:`adding_machine_support`.
 
-From the top-level cime directory, you can run all of CIME's Fortran unit tests simply by running:
+From the top-level CIME directory, you can run all of CIME's Fortran unit tests by running:
 
 .. code-block:: shell
 
    > scripts/fortran_unit_testing/run_tests.py --build-dir MY_BUILD_DIR
 
-where you can replace ``MY_BUILD_DIR`` with a path to the directory where you would like the unit test build files to be placed.
-If you would like to ensure a completely clean build, you can use:
+You can replace ``MY_BUILD_DIR`` with a path to the directory where you would like the unit test build files to be placed.
+To ensure a completely clean build, use:
 
 .. code-block:: shell
 
    > scripts/fortran_unit_testing/run_tests.py --build-dir `mktemp -d ./unit_tests.XXXXXXXX`
 
-Once you have built the unit tests once (whether the build was successful or not), you can reuse the same build directory later to speed up the rebuild.
-There are a number of useful arguments to ``run_tests.py``; for full usage information, run:
+Once you have built the unit tests (whether the build was successful or not), you can reuse the same build directory later to speed up the rebuild.
+There are a number of useful arguments to **run_tests.py**. For full usage information, run:
 
 .. code-block:: shell
 
-   > scripts/fortran_unit_testing/run_tests.py -h
+   > scripts/fortran_unit_testing/run_tests.py --help
 
-If the build is successful, then you should get a message that looks like this:
+If your build is successful, you will get a message like this:
 
 .. code-block:: none
 
@@ -73,7 +73,7 @@ If the build is successful, then you should get a message that looks like this:
    Running CTest tests for __command_line_test__/__command_line_test__.
    ==================================================
 
-This will be followed by a list of tests, with a Pass/Fail message for each, like this:
+This will be followed by a list of tests, with a Pass/Fail message for each, like these examples:
 
 .. code-block:: none
 
@@ -85,45 +85,46 @@ This will be followed by a list of tests, with a Pass/Fail message for each, lik
          Start  3: glc_elevclass
     3/17 Test  #3: glc_elevclass ....................   Passed    0.01 sec   
 
-You should then see a final message like this:
+You will also see a final message like this:
 
 .. code-block:: none
 
    100% tests passed, 0 tests failed out of 17
 
-For machines that have a serial build of pFUnit available for the default compiler, these unit tests are run automatically as part of ``scripts_regression_tests``.
+These unit tests are run automatically as part of **scripts_regression_tests** on machines that have a serial build of pFUnit available for the default compiler.
 
 .. _adding_machine_support:
 
 How to add unit testing support on your machine
 -----------------------------------------------
 
-The below instructions assume that you have already ported CIME to your machine, by following the instructions in :doc:`/users_guide/porting-cime`.
-Once you have done that, you can add unit testing support by building pFUnit on your machine and then pointing to the build in ``config_compilers.xml``.
+The following instructions assume that you have ported CIME to your machine by following the instructions in :doc:`/users_guide/porting-cime`.
+If you have done that, you can add unit testing support by building pFUnit on your machine and then pointing to the build in your **config_compilers.xml** file.
 
-At a minimum, you should do a serial build of pFUnit (without MPI or OpenMP), using the default compiler on your machine (according to ``config_machines.xml``).
-That is the default used by ``run_tests.py``, and is required for ``scripts_regression_tests.py`` to run the unit tests on your machine.
+At a minimum, do a serial build of pFUnit (without MPI or OpenMP) using the default compiler on your machine.
+That is the default that **run_tests.py** and that is required for **scripts_regression_tests.py** to run the unit tests on your machine.
+
 Optionally, you can also provide pFUnit builds with other supported compilers on your machine.
-If you'd like, you can also provide additional pFUnit builds with other combinations of MPI and OpenMP on or off.
-However, at this time, no unit tests require parallel support, so there is no benefit gained by providing MPI-enabled builds.
+You can also provide additional pFUnit builds with other combinations of MPI and OpenMP on or off.
+At this time, however, no unit tests require parallel support so no benefit is gained by providing MPI-enabled builds.
 
 Building pFUnit
 ~~~~~~~~~~~~~~~
 
-To perform a serial build of pFUnit, follow these instructions:
+For a serial build of pFUnit, follow these instructions:
 
-#. Download pFUnit from https://sourceforge.net/projects/pfunit/
+#. Download pFUnit from https://sourceforge.net/projects/pfunit/.
 
-#. Set up your environment to be similar to the environment used in system builds of CIME.
+#. Set up your environment to be similar to the environment used in CIME system builds.
    For example, load the appropriate compilers into your path.
-   An easy way to achieve this is to run:
+   An easy way to achieve this is to run the following with an optional compiler argument:
 
    .. code-block:: shell
 
       > $CIMEROOT/tools/configure --mpilib mpi-serial
 
-   (with an optional ``--compiler`` argument; you'll also want to change the ``--mpilib`` argument if you're doing an MPI-enabled build).
-   Then source either ``./.env_mach_specific.sh`` or ``./.env_mach_specific.csh``, depending on your shell.
+   If you are doing an MPI-enabled build, also change the ``--mpilib`` argument.
+   Then source either **./.env_mach_specific.sh** or **./.env_mach_specific.csh**, depending on your shell.
 
 #. For convenience, set the ``PFUNIT`` environment variable to point to the location where you want to install pFUnit. For example (in bash):
 
@@ -152,8 +153,8 @@ To perform a serial build of pFUnit, follow these instructions:
 
       > make install
 
-If you'd like, you can then repeat this process with different compiler environments and/or different choices of ``-DMPI`` and ``-DOPENMP`` in the cmake step (each of these can have the value ``NO`` or ``YES``).
-Make sure to choose a different installation directory for each of these, by setting the ``PFUNIT`` variable differently.
+You can repeat this process with different compiler environments and/or different choices of ``-DMPI`` and ``-DOPENMP`` in the cmake step. (Each of them can have the value ``NO`` or ``YES``.)
+Make sure to choose a different installation directory for each build by setting the ``PFUNIT`` variable differently.
 
 Adding to the xml file
 ~~~~~~~~~~~~~~~~~~~~~~

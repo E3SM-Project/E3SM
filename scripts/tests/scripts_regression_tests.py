@@ -262,6 +262,15 @@ class J_TestCreateNewcase(unittest.TestCase):
 
         cls._do_teardown.append(testdir)
 
+    def test_aa_no_flush_on_instantiate(self):
+        testdir = os.path.join(self.__class__._testroot, 'testcreatenewcase')
+        with Case(testdir, read_only=False) as case:
+            self.assertFalse(case._env_files_that_need_rewrite, msg="Instantiating a case should not trigger a flush call")
+        with Case(testdir, read_only=False) as case:
+            case.set_value("HIST_OPTION","nsteps")
+            self.assertTrue(case._env_files_that_need_rewrite, msg="Expected flush call not triggered")
+
+
     def test_b_user_mods(self):
         cls = self.__class__
 

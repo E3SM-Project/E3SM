@@ -80,10 +80,9 @@ OR
                         "If the compset name is found as a supported compset, then it will be treated as such.")
 
     parser.add_argument("--pesfile",
-                        help="Only used and required for --user-compset argument."
-                        "Full pathname of the pes specification file"
-                        "This argument is required if --user-compset is True"
-                        "The file can follow either the config_pes.xml or the env_mach_pes.xml format")
+                        help="Full pathname of an optional pes specification "
+                        "file. The file can follow either the config_pes.xml or "
+                        "the env_mach_pes.xml format.")
 
     parser.add_argument("--user-grid", action="store_true",
                         help="If set, then the -grid argument is treated as a user specified grid."
