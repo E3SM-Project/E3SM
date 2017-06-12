@@ -99,7 +99,7 @@ How to add unit testing support on your machine
 -----------------------------------------------
 
 The following instructions assume that you have ported CIME to your machine by following the instructions in :doc:`/users_guide/porting-cime`.
-If you have done that, you can add unit testing support by building pFUnit on your machine and then pointing to the build in your **config_compilers.xml** file.
+If you have done that, you can add unit testing support by building pFUnit on your machine and then pointing to the build in your **config_compilers.xml** file. Those processes are described in the following sections.
 
 At a minimum, do a serial build of pFUnit (without MPI or OpenMP) using the default compiler on your machine.
 That is the default that **run_tests.py** and that is required for **scripts_regression_tests.py** to run the unit tests on your machine.
@@ -159,19 +159,23 @@ Make sure to choose a different installation directory for each build by setting
 Adding to the xml file
 ~~~~~~~~~~~~~~~~~~~~~~
 
-You then need to tell CIME about your pFUnit build(s).
-To do this, specify the appropriate path(s) using the ``PFUNIT_PATH`` element in ``config_compilers.xml``.
-For a serial build, this will look like:
+After you build pFUnit, tell CIME about your build or builds.
+To do this, specify the appropriate path(s) using the ``PFUNIT_PATH`` element in **config_compilers.xml**.
+For a serial build, your setting will look like this example:
 
 .. code-block:: xml
 
      <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_noMPI_noOpenMP</PFUNIT_PATH>
 
-It is important that you provide the ``MPILIB`` and ``compile_threaded`` attributes.
-``MPILIB`` should be ``mpi-serial`` for a pFUnit build with ``-DMPI=NO``, or the name of the mpi library you used for a pFUnit build with ``-DMPI=YES`` (e.g., ``mpich``; this should be one of this machine's MPI libraries specified by ``MPILIBS`` in ``config_machines.xml``).
-``compile_threaded`` should be either ``true`` or ``false`` depending on the value of ``-DOPENMP``.
+The ``MPILIB`` attribute should be either:
 
-Once you have done this, you should be able to run the unit tests by following the instructions in :ref:`running_unit_tests`.
+* ``mpi-serial`` for a pFUnit build where ``-DMPI=NO``, or 
+
+* the name of the MPI library you used for a pFUnit build where ``-DMPI=YES``. (For example, you might use ``mpich``, which should be one of the machine's MPI libraries specified by ``MPILIBS`` in **config_machines.xml**.) 
+
+The ``compile_threaded`` attribute should be either ``true`` or ``false`` depending on the value of ``-DOPENMP``.
+
+Once you have specified the path for your build(s), you should be able to run the unit tests by following the instructions in :ref:`running_unit_tests`.
 
 How to write a new unit test
 ----------------------------
@@ -182,75 +186,46 @@ This will draw on some of the information in sections 3 and 4 of https://github.
 General guidelines for writing unit tests
 -----------------------------------------
 
-Unit tests typically test a small piece of code (e.g., order 10 - 100 lines,
-such as a single function or small-ish class).
+Unit tests typically test a small piece of code, on the order of 10-100 lines, as in a single function or small class.
 
-Good unit tests are "FIRST"
+Good unit tests are **"FIRST"**:
 (https://pragprog.com/magazines/2012-01/unit-tests-are-first):
 
-* Fast (order milliseconds or less)
+* **Fast** (milliseconds or less). This means that, generally, they should not do any file i/o. Also, if you are testing a complex function, test it with a simple set of inputs rather than a 10,000-element array that will require a few seconds of runtime to process.
 
-  * This means that, generally, they should not do any file i/o. Also, if you
-    are testing a complex function, test it with a simple set of inputs - not a
-    10,000-element array that will require a few seconds of runtime to process.
+* **Independent**. This means that test Y shouldn't depend on some global variable that text X created. Such dependencies cause problems if the tests run in a different order, if one test is dropped, and so on.
 
-* Independent
+* **Repeatable**. This means, for example, that you shouldn't generate random numbers in your tests.
 
-  * This means that test Y shouldn't depend on some global variable that was
-    created by test X. Dependencies like this cause problems if the tests run in
-    a different order, if one test is dropped, etc.
+* **Self-verifying**. Don't write a test that writes out its answers for manual comparison. Tests should generate an automatic pass/fail result.
 
-* Repeatable
-
-  * This means, for example, that you shouldn't generate random numbers in your
-    tests.
-
-* Self-verifying
-
-  * This means that you shouldn't write a test that writes out its answers for
-    manual comparison. Tests should generate an automatic pass/fail result.
-
-* Timely
-
-  * This means that the tests should be written *before* the production code
-    (Test Driven Development), or immediately afterwards - not six months later
-    when it's time to finally merge your changes onto the trunk, and have
-    forgotten the details of what you have written. Much of the benefit of unit
-    tests comes from developing them alongside the production code.
+* **Timely**. Write the tests *before* the production code (TDD) or immediately afterwards - not six months later when it's time to finally merge your changes onto the trunk and you have forgotten the details. Much of the benefit of unit tests comes from developing them concurrently with the production code.
 
 Good unit tests test a single, well-defined condition. This generally means that
-you make a single call to the function / subroutine that you're testing, with a
-single set of inputs. This means that you usually need multiple tests of the
-function / subroutine, in order to test all of its possible behaviors. The main
-reasons for testing a single condition in each test are:
+you make a single call to the function or subroutine that you're testing, with a
+single set of inputs. Usually you need to run multiple tests in order to test 
+all of the unit's possible behaviors. 
 
-* This makes it easier to pinpoint a problem when a test fails
-* This makes it easier to read and understand the tests, allowing the tests to
-  serve as useful documentation of how the code should operate
+Testing a single condition in each test makes pinpointing problems easier when a test fails. 
+This also makes it easier to read and understand the tests, allowing them to serve as useful 
+documentation of how the code should operate.
 
 A good unit test has four distinct pieces:
 
-#. **Setup**: e.g., create variables that will be needed for the routine you're
-   testing. For simple tests, this piece may be empty.
+#. **Setup**: For example, creating variables that will be needed for the routine you're testing. For simple tests, this piece may be empty.
 
-#. **Exercise**: Call the routine you're testing
+#. **Exercise**: Calling the routine you're testing.
 
-#. **Verify**: Call assertion methods to ensure that the results matched what
-   you expected
+#. **Verify**: Calling assertion methods (next section) to ensure that the results match what you expected.
 
-#. **Teardown**: e.g., deallocate variables. For simple tests, this piece may be
-   empty. **However, if this is needed, you should almost always do this
-   teardown in the special tearDown routine, as discussed in the sections,**
-   `Defining a test class in order to define setUp and tearDown methods`_ and
-   `More on test teardown`_.
+#. **Teardown**: For example, deallocating variables. For simple tests, this piece may be empty. If it is needed, however, it is best done in the special tearDown routine discussed in `Defining a test class in order to define setUp and tearDown methods`_ and `More on test teardown`_.**
 
-If you have many tests of the same subroutine, then you'll often find quite a
-lot of duplication between the tests. It's good practice to extract major areas
-of duplication to their own subroutines in the .pf file, which can be called by
-your tests. This aids the understandability and maintainability of your
-tests. pFUnit knows which subroutines are tests and which are "helper" routines
-because of the ``@Test`` directives: You only add a ``@Test`` directive for your
-tests, not for your helper routines.
+If you have many tests of the same subroutine, you may find quite a
+lot of duplication. It's good practice to extract major areas of duplication to their own 
+subroutines in the **.pf** file, which your tests can call. This aids the understandability 
+and maintainability of your tests. pFUnit knows which subroutines are tests and which are 
+"helper" routines because of the ``@Test`` directives: You only add a ``@Test`` directive 
+for your tests, not for your helper routines.
 
 More details on writing pFUnit-based unit tests
 -----------------------------------------------
@@ -258,59 +233,48 @@ More details on writing pFUnit-based unit tests
 Assertion methods
 ~~~~~~~~~~~~~~~~~
 
-pFUnit provides many assertion methods that you can use in the Verify step. Some
-of the most useful are the following:
+pFUnit provides many assertion methods that you can use in the Verify step.
+Here are some of the most useful:
 
-* ``@assertEqual(expected, actual)``
+=================================================    ===================================================================
 
-  * Ensures that expected == actual
+``@assertEqual(expected, actual)``                   Ensures that expected == actual.
+                                                     Accepts an optional ``tolerance`` argument giving the tolerance for
+                                                     real-valued comparisons.
 
-  * Accepts an optional ``tolerance`` argument giving the tolerance for
-    real-valued comparisons
+``@assertLessThan(expected, actual)``                Ensures that expected < actual.
 
-* ``@assertLessThan(expected, actual)``
+``@assertGreaterThan(expected, actual)``             Ensures that expected > actual.
 
-  * Ensures that expected < actual
+``@assertLessThanOrEqual(expected, actual)``
 
-* ``@assertGreaterThan(expected, actual)``
+``@assertGreaterThanOrEqual(expected, actual)``
 
-  * Ensures that expected > actual
+``@assertTrue(condition)``                           It is better to use the two-valued assertions above, if possible.
+                                                     They provide more information if a test fails.
 
-* ``@assertLessThanOrEqual(expected, actual)``
+``@assertFalse(condition)``
 
-* ``@assertGreaterThanOrEqual(expected, actual)``
+``@assertIsFinite(value)``                           Ensures that the result is not NaN or infinity.
 
-* ``@assertTrue(condition)``
+``@assertIsNan(value)``                              This can be useful for failure checking - for example, when your 
+                                                     function returns NaN to signal an error.
 
-  * It's better to use the two-valued assertions above, if possible. For
-    example, use ``@assertEqual(foo, bar)`` rather than ``@assertTrue(foo ==
-    bar)``: the former gives more information if the test fails.
-
-* ``@assertFalse(condition)``
-
-* ``@assertIsFinite(value)``
-
-  * Ensures that the result is not NaN or infinity
-
-* ``@assertIsNan(value)``
-
-  * Can be useful for failure checking, e.g., if your function returns NaN to
-    signal an error
+=================================================    ===================================================================
 
 Comparison assertions accept an optional ``tolerance`` argument, which gives the
 tolerance for real-valued comparisons.
 
-In addition, all of the assertion methods accept an optional ``message``
-argument, which gives a string that will be printed if the assertion fails. If
-no message is provided, you will be pointed to the file and line number of the
-failed assertion.
+All of the assertion methods also accept an optional ``message`` argument, which prints
+a string if the assertion fails. If no message is provided, you will be pointed to the 
+file and line number of the failed assertion.
 
 Defining a test class in order to define setUp and tearDown methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-As noted in the comments in ``test_circle.pf``, the definition of a test class
-(here, ``TestCircle``) is optional. However, it's convenient to define a minimal
-test class when you first write a new .pf file:
+As noted in the comments in **test_circle.pf**, defining a test class is optional. 
+However, defining a minimal test class as shown here with ``TestCircle`` allows you
+use some pFUnit features such as the setUp and tearDown methods.
 
 .. code-block:: none
 
@@ -321,12 +285,9 @@ test class when you first write a new .pf file:
      procedure :: tearDown
   end type TestCircle
 
-Defining this test class allows you to take advantage of some useful pFUnit
-features like the setUp and tearDown methods.
+If you define this test class, you also need to:
 
-If you define this test class, then you also need to:
-
-* Define setUp and tearDown subroutines. These can start out empty:
+* Define *setUp* and *tearDown* subroutines. These can start out empty:
 
   .. code-block:: Fortran
 
@@ -338,42 +299,41 @@ If you define this test class, then you also need to:
       class(TestCircle), intent(inout) :: this
     end subroutine tearDown
 
-* Add an argument to each test subroutine, of class ``TestCircle`` (or whatever
-  you called your test class). By convention, this argument is named ``this``.
+* Add an argument to each subroutine of the class. By convention, this argument is named ``this``.
 
-Code in the setUp method will be executed before each test. This is convenient
+Code in the setUp method is executed before each test. This is convenient
 if you need to do some setup that is the same for every test.
 
-Code in the tearDown method will be executed after each test. This is often used
-to deallocate memory. See the section, `More on test teardown`_ for details.
+Code in the tearDown method is executed after each test. This is often used
+to deallocate memory. See `More on test teardown`_ for details.
 
 You can add any data or procedures to the test class. Adding data is
 particularly useful, as this can be a way for the setUp and tearDown methods to
 interact with your tests: The setUp method can fill a class variable with data,
-which can then be used by your tests (accessed via
-``this%somedata``). Conversely, if you want the tearDown method to deallocate a
-variable, that variable cannot be local to your test subroutine. Instead, you
-can make the variable a member of the class, so that the tearDown method can
-access it.
+which your tests can then use (accessed via ``this%somedata``). Conversely, if 
+you want the tearDown method to deallocate a variable, the variable cannot be local 
+to your test subroutine. Instead, you make the variable a member of the class, so 
+that the tearDown method can access it.
 
-So, for example, if you have this variable in your test class (as in the
-example):
+Here is an example. Say you have this variable in your test class:
 
 .. code-block:: Fortran
 
   real(r8), pointer :: somedata(:)
 
-Then ``somedata`` can be created in the setUp method (if it needs to be the same
-for every test). Alternatively, it can be created in each test routine that
-needs it (if it differs from test to test, or some tests don't need it at
-all). Its creation can look like:
+The setUp method can create ``somedata`` if it needs to be the same
+for every test. 
+
+Alternatively, it can be created in each test routine that needs it if it 
+differs from test to test. (Some tests don't need it at all.) In that situation,
+create it like this:
 
 .. code-block:: Fortran
 
   allocate(this%somedata(5))
   this%somedata(:) = [1,2,3,4,5]
 
-Then your tearDown method can have code like this:
+Your tearDown method then can have code like this:
 
 .. code-block:: Fortran
 
@@ -384,42 +344,41 @@ Then your tearDown method can have code like this:
 More on test teardown
 ~~~~~~~~~~~~~~~~~~~~~
 
-All of the tests in a single test executable - which, for CIME, typically means
-all of the tests defined in all ``.pf`` files in a single test directory - will
-execute one after another in one run of the executable. This means that, if you
-don't clean up after yourself, tests can interact with each other. In the best
-case, this can mean you get a memory leak. In the worst case, it can mean that
-the pass / fail status of tests depends on what other tests have run before
-them, making your unit tests unrepeatable and unreliable. **As a general rule,
-you should deallocate any pointers that your test allocated, reset any global
-variables to some known, initial state, and do other, similar cleanup for
-resources that may be shared by multiple tests.**
+As stated in `Defining a test class in order to define setUp and tearDown methods`_,
+code in the tearDown method is executed after each test, often to do cleanup operations.
 
-As described in the section, `Defining a test class in order to define setUp and
-tearDown methods`_, code in the tearDown method will be executed after each
-test. This is often used to do cleanup operations after each test. **Any
-teardown like this should generally happen in this tearDown method. This is
-because, if an assertion fails, the test aborts. So any teardown code in the
-test method (following the failed assert statement) is skipped, which can lead
-other tests to fail or give unexpected results. But this tearDown method is
-still called in this case, making it a safe place to put teardown that needs to
-be done regardless of whether the test passed or failed (which is the case for
-most teardown).** In order for this to work, you sometimes need to move
-variables that might otherwise be subroutine-local to the class - because the
-tearDown method can access class instance variables, but not subroutine-local
+Using the tearDown method is recommended because tests abort if an assertion fails.
+The tearDown method is still called, however, so teardown that needs to be done
+still gets done, regardless of pass/fail status. Teardown code might otherwise be
+skipped, which can lead other tests to fail or give unexpected results.
+
+All of the tests in a single test executable run one after another. For CIME, this
+means all of the tests that are defined in all **.pf** files in a single test directory.
+
+As a result, tests can interact with each other if you don't clean up after yourself.
+In the best case, you might get a memory leak. In the worst case, the pass/fail status of tests 
+depends on which other tests have run previously, making your unit tests unrepeatable 
+and unreliable. 
+
+**To avoid this:**
+
+* Deallocate any pointers that your test allocates.
+* Reset any global variables to some known, initial state.
+* Do other, similar cleanup for resources that are shared by multiple tests.
+
+In Fortran2003, allocatable variables are deallocated automatically when they go 
+out of scope, but pointers are not. Explicitly deallocate any pointers that have 
+been allocated, either in test setup or in the execution of the routine
+you are testing.
+
+You might need to move some variables from subroutine-local to the class. This is
+because the tearDown method can access class instance variables, but not subroutine-local
 variables.
 
-Note that, in Fortran2003, allocatable variables are automatically deallocated
-when they go out of scope, but pointers are not. So you need to explicitly
-deallocate any pointers that have been allocated, either in test setup or in the
-execution of the routine you're testing.
-
-CIME makes extensive use of global variables: variables declared in some module,
-which may be used (directly or indirectly) by the routine you're testing. If
-your test has allocated or modified any global variables, it is important to
-reset them to their initial state in the teardown portion of the
-test. (Incidentally, this is just one of many reasons to prefer explicit
-argument-passing over the use of global variables.)
+CIME makes extensive use of global variables that may be used directly or
+indirectly by a routine you are testing. If your test has allocated or modified 
+any global variables, it is important to reset them to their initial state in the 
+teardown portion of the test.
 
 pFUnit documentation and examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -447,25 +406,24 @@ Finding more documentation and examples in CIME
 Documentation of the unit test build system
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The CMake build infrastructure is in ``$CIMEROOT/src/externals/CMake``.
+The CMake build infrastructure is in **$CIMEROOT/src/externals/CMake**.
 
-The infrastructure for building and running tests with ``run_tests.py`` is in
-``$CIMEROOT/scripts/fortran_unit_testing``. That directory also contains some general
+The infrastructure for building and running tests with **run_tests.py** is in
+**$CIMEROOT/scripts/fortran_unit_testing**. That directory also contains general
 documentation about how to use the CIME unit test infrastructure (in the
-``README`` file), and examples (in the ``Examples`` directory).
+**README** file) and examples (in the **Examples** directory).
 
 Finding more detailed examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-At this point, there are many examples of unit tests in CIME, some simple and
-some quite complex. You can find these by looking for files with the '.pf'
-extension:
+There are many examples of unit tests in CIME, some simple and some quite complex. 
+You can find them by looking for files with the ".pf" extension:
 
 .. code-block:: shell
 
-   > find . -name '*.pf'
+   > find . --name '*.pf'
 
 You can also see examples of the unit test build scripts by viewing the
-CMakeLists.txt files throughout the source tree.
+**CMakeLists.txt** files throughout the source tree.
 
 
