@@ -168,10 +168,9 @@ DAE    data assimilation test: non answer changing
 PRE    pause-resume test: by default a BFB test of pause-resume cycling
 
 ======================================================================
-    Other component-specific tests
+    Other component-specific tests should be located with components
 ======================================================================
 
-LII    CLM initial condition interpolation test
 
 ======================================================================
     Infrastructural tests for CIME. These are used by scripts_regression_tests.
@@ -447,16 +446,6 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <COMP_RUN_BARRIERS>TRUE</COMP_RUN_BARRIERS>
     <TIMER_LEVEL>12</TIMER_LEVEL>
     <DOUT_S>FALSE</DOUT_S>
-  </test>
-
-  <test NAME="LII">
-    <DESC>CLM initial condition interpolation test (requires configuration with non-blank finidat)</DESC>
-    <INFO_DBUG>1</INFO_DBUG>
-    <DOUT_S>FALSE</DOUT_S>
-    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
-    <REST_OPTION>never</REST_OPTION>
-    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
-    <HIST_N>$STOP_N</HIST_N>
   </test>
 
   <test NAME="PEA">

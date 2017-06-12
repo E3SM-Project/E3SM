@@ -635,7 +635,7 @@ class Case(object):
         ftype = gfile.get_id()
         expect(ftype == "env_mach_pes.xml" or ftype == "config_pes", " Do not recognize {} as a valid CIME pes file {}".format(self._pesfile, ftype))
         if ftype == "env_mach_pes.xml":
-            new_mach_pes_obj = EnvMachPes(infile=self._pesfile, components=self._components)
+            new_mach_pes_obj = EnvMachPes(infile=self._pesfile, components=self._component_classes)
             self.update_env(new_mach_pes_obj, "mach_pes")
             return new_mach_pes_obj.get_value("TOTALPES")
         pesobj = Pes(self._pesfile)
