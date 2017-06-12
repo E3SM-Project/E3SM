@@ -191,7 +191,7 @@ contains
       integer, pointer :: nVertLevels, nEdgesSolve
 
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
-      real (kind=RKIND), pointer :: config_max_visc_tanh, config_min_visc_tanh, config_ZMid_tanh
+      real (kind=RKIND), pointer :: config_max_visc_tanh, config_min_visc_tanh, config_zMid_tanh
       real (kind=RKIND), pointer :: config_zWidth_tanh
 
       err = 0
@@ -202,7 +202,7 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_max_visc_tanh', config_max_visc_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_min_visc_tanh', config_min_visc_tanh)
-      call mpas_pool_get_config(ocnConfigs, 'config_ZMid_tanh', config_ZMid_tanh)
+      call mpas_pool_get_config(ocnConfigs, 'config_zMid_tanh', config_zMid_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_zWidth_tanh', config_zWidth_tanh)
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
@@ -218,7 +218,7 @@ contains
       do iEdge = 1, nEdges
          do k = 2, nVertLevels
             vertViscTopOfEdge(k, iEdge) = vertViscTopOfEdge(k, iEdge) - (config_max_visc_tanh - config_min_visc_tanh) / 2.0_RKIND &
-               * tanh((refBottomDepth(k-1) + config_ZMid_tanh) &
+               * tanh((refBottomDepth(k-1) + config_zMid_tanh) &
                      / config_zWidth_tanh) &
                + (config_max_visc_tanh + config_min_visc_tanh) / 2
          end do
@@ -282,7 +282,7 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
 
-      real (kind=RKIND), pointer :: config_max_diff_tanh, config_min_diff_tanh, config_ZMid_tanh
+      real (kind=RKIND), pointer :: config_max_diff_tanh, config_min_diff_tanh, config_zMid_tanh
       real (kind=RKIND), pointer :: config_zWidth_tanh
 
       err = 0
@@ -293,7 +293,7 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_max_diff_tanh', config_max_diff_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_min_diff_tanh', config_min_diff_tanh)
-      call mpas_pool_get_config(ocnConfigs, 'config_ZMid_tanh', config_ZMid_tanh)
+      call mpas_pool_get_config(ocnConfigs, 'config_zMid_tanh', config_zMid_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_zWidth_tanh', config_zWidth_tanh)
 
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
@@ -309,7 +309,7 @@ contains
       do iCell = 1, nCells
          do k=2,nVertLevels
             vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) - (config_max_diff_tanh - config_min_diff_tanh) / 2.0_RKIND &
-               * tanh((refBottomDepth(k-1) + config_ZMid_tanh) &
+               * tanh((refBottomDepth(k-1) + config_zMid_tanh) &
                      / config_zWidth_tanh) &
                + (config_max_diff_tanh + config_min_diff_tanh) / 2
          end do
