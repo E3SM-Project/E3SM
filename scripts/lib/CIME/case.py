@@ -1111,7 +1111,7 @@ class Case(object):
             append_status("{} is {}".format(comp_grid,self.get_value(comp_grid)),
                           "README.case", caseroot=self._caseroot)
             comp = str(self.get_value("COMP_{}".format(component_class)))
-            user_mods = self.get_value("{}_USER_MODS".format(comp.upper()))
+            user_mods = self._get_comp_user_mods(comp)
             if user_mods is not None:
                 note = "This component includes user_mods {}".format(user_mods)
                 append_status(note, "README.case", caseroot=self._caseroot)
@@ -1130,11 +1130,11 @@ class Case(object):
             component = str(self.get_value("COMP_{}".format(comp)))
             if component == self._primary_component:
                 continue
-            comp_user_mods = self.get_value("{}_USER_MODS".format(component.upper()))
+            comp_user_mods = self._get_comp_user_mods(component)
             if comp_user_mods is not None:
                 all_user_mods.append(comp_user_mods)
         # get the primary last so that it takes precidence over other components
-        comp_user_mods = self.get_value("{}_USER_MODS".format(self._primary_component.upper()))
+        comp_user_mods = self._get_comp_user_mods(self._primary_component)
         if comp_user_mods is not None:
             all_user_mods.append(comp_user_mods)
         if user_mods_dir is not None:
@@ -1149,6 +1149,19 @@ class Case(object):
                 user_mods_path = self.get_value('USER_MODS_DIR')
                 user_mods_path = os.path.join(user_mods_path, user_mods)
             apply_user_mods(self._caseroot, user_mods_path)
+
+    def _get_comp_user_mods(self, component):
+        """
+        For a component 'foo', gets the value of FOO_USER_MODS.
+
+        Returns None if no value was found, or if the value is an empty string.
+        """
+        comp_user_mods = self.get_value("{}_USER_MODS".format(component.upper()))
+        #pylint: disable=no-member
+        if comp_user_mods is None or comp_user_mods == "" or comp_user_mods.isspace():
+            return None
+        else:
+            return comp_user_mods
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None):
         if cime_output_root is None:
