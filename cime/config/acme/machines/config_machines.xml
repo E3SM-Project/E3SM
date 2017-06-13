@@ -1649,6 +1649,7 @@
 	 </environment_variables>
 	 <environment_variables compiler="intel">
 	   <env name="MKL_PATH">$ENV{MLIB_LIB}</env>
+	   <env name="COMPILER">intel</env>
 	 </environment_variables>
 </machine>
 
