@@ -1267,6 +1267,7 @@ for mct, etc.
         <SCC>gcc</SCC>
         <SCXX>g++</SCXX>
         <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+        <ADD_SLIBS> ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</ADD_SLIBS>
         <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
 </compiler>
 
