@@ -1,10 +1,7 @@
 import CIME.wait_for_tests
 from CIME.utils import expect
-from CIME.XML.machines import Machines
 
 import os, shutil, glob, signal, logging
-
-_MACHINE = Machines()
 
 ###############################################################################
 def cleanup_queue(set_of_jobs_we_created):
@@ -27,20 +24,20 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                         arg_cdash_build_name, cdash_project,
                         arg_test_suite,
                         cdash_build_group, baseline_compare,
-                        scratch_root, parallel_jobs):
+                        scratch_root, parallel_jobs, walltime,
+                        machine, compiler):
 ###############################################################################
     """
     Return True if all tests passed
     """
-    use_batch = _MACHINE.has_batch_system() and not no_batch
-    compiler = _MACHINE.get_default_compiler()
-    test_suite = _MACHINE.get_value("TESTS")
-    proxy = _MACHINE.get_value("PROXY")
+    use_batch = machine.has_batch_system() and not no_batch
+    test_suite = machine.get_value("TESTS")
+    proxy = machine.get_value("PROXY")
     test_suite = test_suite if arg_test_suite is None else arg_test_suite
     test_root = os.path.join(scratch_root, "jenkins")
 
     if (use_batch):
-        batch_system = _MACHINE.get_value("BATCH_SYSTEM")
+        batch_system = machine.get_value("BATCH_SYSTEM")
         expect(batch_system is not None, "Bad XML. Batch machine has no batch_system configuration.")
 
     #
@@ -49,12 +46,6 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
 
     if (submit_to_cdash and proxy is not None):
         os.environ["http_proxy"] = proxy
-
-    #
-    # Update submodules (Jenkins is struggling with this at the moment)
-    #
-
-    CIME.utils.run_cmd_no_fail("git submodule update --init", from_dir=CIME.utils.get_cime_root())
 
     if (not os.path.isdir(scratch_root)):
         os.makedirs(scratch_root)
@@ -98,17 +89,27 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     # Set up create_test command and run it
     #
 
-    baseline_args = ""
+    test_id = "%s_%s" % (test_id_root, CIME.utils.get_timestamp())
+    create_test_args = [test_suite, "--test-root %s" % test_root, "-t %s" % test_id, "--machine %s" % machine.get_machine_name(), "--compiler %s" % compiler]
     if (generate_baselines):
-        baseline_args = "-g -b {}".format(baseline_name)
-    elif (baseline_compare == "yes"):
-        baseline_args = "-c -b {}".format(baseline_name)
+        create_test_args.append("-g -b " + baseline_name)
+    elif (baseline_compare):
+        create_test_args.append("-c -b " + baseline_name)
 
-    batch_args = "--no-batch" if no_batch else ""
-    pjob_arg = "" if parallel_jobs is None else "-j {:d}".format(parallel_jobs)
+    if scratch_root != machine.get_value("CIME_OUTPUT_ROOT"):
+        create_test_args.append("--output-root=" + scratch_root)
 
-    test_id = "{}_{}".format(test_id_root, CIME.utils.get_timestamp())
-    create_test_cmd = "./create_test {} --test-root {} -t {} {} {} {}".format(test_suite, test_root, test_id, baseline_args, batch_args, pjob_arg)
+    if no_batch:
+        create_test_args.append("--no-batch")
+
+    if parallel_jobs is not None:
+        create_test_args.append("-j {:d}".format(parallel_jobs))
+
+    if walltime is not None:
+        create_test_args.append(" --walltime " + walltime)
+
+
+    create_test_cmd = "./create_test " + " ".join(create_test_args)
 
     if (not CIME.wait_for_tests.SIGNAL_RECEIVED):
         create_test_stat = CIME.utils.run_cmd(create_test_cmd, from_dir=CIME.utils.get_scripts_root(),
@@ -136,6 +137,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     else:
         cdash_build_name = None
 
+    os.environ["CIME_MACHINE"] = machine.get_machine_name()
     tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("{}/*{}/TestStatus".format(test_root, test_id)),
                                                  no_wait=not use_batch, # wait if using queue
                                                  check_throughput=False, # don't check throughput

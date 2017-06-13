@@ -1251,7 +1251,7 @@ class Case(object):
         # special case for aprun
         if executable is not None and "aprun" in executable:
             aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)
-            expect(num_nodes == self.num_nodes, "Not using optimized num nodes")
+            expect( (num_nodes + self.spare_nodes) == self.num_nodes, "Not using optimized num nodes")
             return executable + aprun_args + " " + run_misc_suffix
 
         else:

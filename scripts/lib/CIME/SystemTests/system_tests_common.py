@@ -206,18 +206,20 @@ class SystemTestsCommon(object):
         stop_n      = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
         run_type    = self._case.get_value("RUN_TYPE")
-        rest_option = self._case.get_value("REST_OPTION")
-        rest_n      = self._case.get_value("REST_N")
-        rundir = self._case.get_value("RUNDIR")
+        rundir      = self._case.get_value("RUNDIR")
         # remove any cprnc output leftover from previous runs
         for compout in glob.iglob(os.path.join(rundir,"*.cprnc.out")):
             os.remove(compout)
-        infostr     = "doing an {:d} {} {} test".format(stop_n, stop_option,run_type)
 
+        infostr     = "doing an {:d} {} {} test".format(stop_n, stop_option, run_type)
+
+        rest_option = self._case.get_value("REST_OPTION")
         if rest_option == "none" or rest_option == "never":
             infostr += ", no restarts written"
         else:
+            rest_n   = self._case.get_value("REST_N")
             infostr += ", with restarts every {:d} {}".format(rest_n, rest_option)
+
         logger.info(infostr)
 
         case_run(self._case)
@@ -266,7 +268,11 @@ class SystemTestsCommon(object):
         memlist = []
         meminfo = re.compile(r".*model date =\s+(\w+).*memory =\s+(\d+\.?\d+).*highwater")
         if cpllog is not None and os.path.isfile(cpllog):
-            with gzip.open(cpllog, "rb") as f:
+            if '.gz' == cpllog[-3:]:
+                fopen = gzip.open
+            else:
+                fopen = open
+            with fopen(cpllog, "rb") as f:
                 for line in f:
                     m = meminfo.match(line)
                     if m:
@@ -360,14 +366,21 @@ class SystemTestsCommon(object):
             if not os.path.isfile(baselog):
                 # for backward compatibility
                 baselog = os.path.join(basecmp_dir, "cpl.log")
+
             if os.path.isfile(baselog) and len(memlist) > 3:
-                blmem = self._get_mem_usage(baselog)[-1][1]
+                blmem = self._get_mem_usage(baselog)
+                blmem = 0 if blmem == [] else blmem[-1][1]
                 curmem = memlist[-1][1]
-                diff = (curmem-blmem)/blmem
-                if(diff < 0.1):
-                    self._test_status.set_status(MEMCOMP_PHASE, TEST_PASS_STATUS)
+                if blmem != 0:
+                    diff = (curmem - blmem) / blmem
+                    if diff < 0.1:
+                        self._test_status.set_status(MEMCOMP_PHASE, TEST_PASS_STATUS)
+                    else:
+                        comment = "Error: Memory usage increase > 10% from baseline"
+                        self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
+                        append_testlog(comment)
                 else:
-                    comment = "Error: Memory usage increase > 10% from baseline"
+                    comment = "Error: Could not determine baseline memory usage"
                     self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
                     append_testlog(comment)
 
