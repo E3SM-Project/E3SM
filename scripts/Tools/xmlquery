@@ -42,31 +42,31 @@ xmlquery has two usage categories:
       ./xmlquery var1
 
      or, for multiple variables
-      ./xmlquery var1,var2,.... 
+      ./xmlquery var1,var2,....
 
      where var1, var2 are variables that appear in a $CASEROOT xml file
 
-   - You can tailor the query by adding ONE of the following 8 possible qualifier arguments: 
-       [--full, --fileonly, --value, --raw, --description, --get-group, --type, --valid-values ] 
+   - You can tailor the query by adding ONE of the following 8 possible qualifier arguments:
+       [--full, --fileonly, --value, --raw, --description, --get-group, --type, --valid-values ]
        as examples:
           ./xmlquery var1,var2 --full
           ./xmlquery var1,var2 --fileonly
 
-   - You can query variables via a partial-match 
+   - You can query variables via a partial-match
        as examples:
-          ./xmlquery STOP --partial-match  
+          ./xmlquery STOP --partial-match
               Results in group run_begin_stop_restart
                   STOP_DATE: -999
                   STOP_N: 5
                   STOP_OPTION: ndays
           ./xmlquery STOP_N
                   STOP_N: 5
-                
+
 2) Listing all groups and variables in those groups
 
       ./xmlquery --listall
 
-     - You can tailor the query query by adding ONE of the following 9 possible qualifier arguments: 
+     - You can tailor the query query by adding ONE of the following 9 possible qualifier arguments:
        [--full, --fileonly, --value, --raw, --description, --get-group, --type, --valid-values, --file]
 
 Examples:
@@ -177,6 +177,8 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
     """
     results = {}
     comp_classes = case.get_values("COMP_CLASSES")
+    if xmlfile:
+        case.set_file(xmlfile)
 
     # Loop over variables
     for var in variables:
@@ -239,7 +241,7 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
             if dtype or full:
                 results[group][var]['type'] = case.get_type_info(var)
             if valid_values or full:
-                results[group][var]['valid_values'] = case.get_record_fields(var, "valid_values") #*** this is the problem *** 
+                results[group][var]['valid_values'] = case.get_record_fields(var, "valid_values") #*** this is the problem ***
 
     return results
 

@@ -1321,7 +1321,8 @@ class Case(object):
         """
         expect(os.path.isfile(xmlfile), "Could not find file {}".format(xmlfile))
 
-        self.flush(flushall=True)
+        if not self._read_only_mode:
+            self.flush(flushall=True)
 
         gfile = GenericXML(infile=xmlfile)
         ftype = gfile.get_id()
