@@ -1451,10 +1451,10 @@
       <nx>89147</nx>
       <ny>1</ny>
       <desc>1-deg with 1/4-deg over Cont. U.S. (version 1):</desc>
-      <file atm_mask="tx0.1v2">domain.lnd.conusx4v1_tx0.1v2.141022.nc</file>
-      <file ice_mask="tx0.1v2">domain.ocn.conusx4v1_tx0.1v2.141022.nc</file>
-      <file lnd_mask="tx0.1v2">domain.lnd.conusx4v1_tx0.1v2.141022.nc</file>
-      <file ocn_mask="tx0.1v2">domain.ocn.conusx4v1_tx0.1v2.141022.nc</file>
+      <file atm_mask="tx0.1v2">domain.lnd.conusx4v1_tx0.1v2.161129.nc</file>
+      <file ice_mask="tx0.1v2">domain.ocn.conusx4v1_tx0.1v2.161129.nc</file>
+      <file lnd_mask="tx0.1v2">domain.lnd.conusx4v1_tx0.1v2.161129.nc</file>
+      <file ocn_mask="tx0.1v2">domain.ocn.conusx4v1_tx0.1v2.161129.nc</file>
     </domain>
 
     <domain name="ne0np4_svalbard_x8v1_lowcon">
