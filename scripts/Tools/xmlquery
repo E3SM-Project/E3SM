@@ -38,8 +38,12 @@ xmlquery has two usage categories:
 
 1) Querying variables:
 
-   - You can query a variable, or a list of variables via the
+   - You can query a variable, or a list of variables via
+      ./xmlquery var1
+
+     or, for multiple variables
       ./xmlquery var1,var2,.... 
+
      where var1, var2 are variables that appear in a $CASEROOT xml file
 
    - You can tailor the query by adding ONE of the following 8 possible qualifier arguments: 
@@ -63,7 +67,7 @@ xmlquery has two usage categories:
       ./xmlquery --listall
 
      - You can tailor the query query by adding ONE of the following 9 possible qualifier arguments: 
-       [--full, --fileonly, --value, --raw, --description, --get-group, --type, --valid-values --file] 
+       [--full, --fileonly, --value, --raw, --description, --get-group, --type, --valid-values, --file]
 
 Examples:
 
