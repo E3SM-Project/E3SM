@@ -32,6 +32,39 @@ def parse_command_line(args):
     parser = argparse.ArgumentParser(
 usage="""%s <VAR> [<VAR> <VAR> ...]
 
+Usage:
+
+xmlquery has two usage categories:
+
+1) Querying variables:
+
+   - You can query a variable, or a list of variables via the
+      ./xmlquery var1,var2,.... 
+     where var1, var2 are variables that appear in a $CASEROOT xml file
+
+   - You can tailor the query by adding ONE of the following 8 possible qualifier arguments: 
+       [--full, --fileonly, --value, --raw, --description, --get-group, --type, --valid-values ] 
+       as examples:
+          ./xmlquery var1,var2 --full
+          ./xmlquery var1,var2 --fileonly
+
+   - You can query variables via a partial-match 
+       as examples:
+          ./xmlquery STOP --partial-match  
+              Results in group run_begin_stop_restart
+                  STOP_DATE: -999
+                  STOP_N: 5
+                  STOP_OPTION: ndays
+          ./xmlquery STOP_N
+                  STOP_N: 5
+                
+2) Listing all groups and variables in those groups
+
+      ./xmlquery --listall
+
+     - You can tailor the query query by adding ONE of the following 9 possible qualifier arguments: 
+       [--full, --fileonly, --value, --raw, --description, --get-group, --type, --valid-values --file] 
+
 Examples:
 
 # Show NTASKS for all components
