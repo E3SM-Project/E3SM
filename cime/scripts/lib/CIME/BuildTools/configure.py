@@ -88,6 +88,7 @@ def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug,
     ems_file.populate(machobj)
     ems_file.write()
     fake_case = FakeCase(compiler, mpilib, debug)
+    ems_file.load_env(fake_case)
     for shell in ('sh', 'csh'):
         ems_file.make_env_mach_specific_file(shell, fake_case)
         shell_path = os.path.join(output_dir, ".env_mach_specific." + shell)
