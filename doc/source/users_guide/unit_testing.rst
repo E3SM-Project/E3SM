@@ -180,8 +180,9 @@ Once you have specified the path for your build(s), you should be able to run th
 How to write a new unit test
 ----------------------------
 
-TODO: Need to write this section.
-This will draw on some of the information in sections 3 and 4 of https://github.com/NCAR/cesm_unit_test_tutorial (though without the clm and cam stuff).
+TODO: Need to write this section. This will draw on some of the information in sections 3 and 4 of https://github.com/NCAR/cesm_unit_test_tutorial (though without the clm and cam stuff).
+
+It should also introduce the role of .pf files, which are referenced several paragraphs later as if already explained.
 
 General guidelines for writing unit tests
 -----------------------------------------
@@ -380,15 +381,29 @@ indirectly by a routine you are testing. If your test has allocated or modified
 any global variables, it is important to reset them to their initial state in the 
 teardown portion of the test.
 
-pFUnit documentation and examples
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Finding more documentation and examples
+---------------------------------------
 
-Some pFUnit documentation is available here: http://pfunit.sourceforge.net/
+More detailed examples in CIME
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you download pFUnit (from
-http://sourceforge.net/projects/pfunit/), you can find more
-extensive documentation and examples in the following places. Among other
-things, this can show you other assertion methods that are available:
+There are many examples of unit tests in CIME, some simple and some quite complex.
+You can find them by looking for files with the ".pf" extension:
+
+.. code-block:: shell
+
+   > find . --name '*.pf'
+
+You can also see examples of the unit test build scripts by viewing the
+**CMakeLists.txt** files throughout the source tree.
+
+Other pFUnit documentation sources
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Some pFUnit documentation is available here: http://pfunit.sourceforge.net/.
+
+Extensive documentation and examples are included in the following when you download 
+pFUnit from http://sourceforge.net/projects/pfunit/:
 
 * documentation/pFUnit3-ReferenceManual.pdf
 
@@ -396,12 +411,9 @@ things, this can show you other assertion methods that are available:
 
 * tests/
 
-  * These are tests of the pFUnit code itself, written in pFUnit. You can see
-    many uses of pFUnit features in these tests.
-
-
-Finding more documentation and examples in CIME
------------------------------------------------
+The tests are tests of the pFUnit code itself, written in pFUnit. They demonstrate
+many uses of pFUnit features. Other documentation includes additional assertion
+methods that are available.
 
 Documentation of the unit test build system
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -412,18 +424,3 @@ The infrastructure for building and running tests with **run_tests.py** is in
 **$CIMEROOT/scripts/fortran_unit_testing**. That directory also contains general
 documentation about how to use the CIME unit test infrastructure (in the
 **README** file) and examples (in the **Examples** directory).
-
-Finding more detailed examples
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-There are many examples of unit tests in CIME, some simple and some quite complex. 
-You can find them by looking for files with the ".pf" extension:
-
-.. code-block:: shell
-
-   > find . --name '*.pf'
-
-You can also see examples of the unit test build scripts by viewing the
-**CMakeLists.txt** files throughout the source tree.
-
-

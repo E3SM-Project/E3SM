@@ -1,5 +1,8 @@
 .. _multi-instance:
 
+**TODO: Need to update PE elements and explain + and - values**
+
+
 Multi-instance component functionality
 ======================================
 
@@ -54,7 +57,7 @@ As a result, you will have two instances of CAM, CLM and CICE (prescribed), RTM,
    > ./case.setup
 
 A new **user_nl_xxx_NNNN** file (where NNNN is the number of the component instances) is generated when **case.setup** is called. 
-When calling **case.setup** with the above ``env_mach_pes.xml`` file specifically, these files are created in **$CASEROOT**:
+When calling **case.setup** with the **env_mach_pes.xml** file specifically, these files are created in **$CASEROOT**:
 ::
 
    user_nl_cam_0001,  user_nl_cam_0002
