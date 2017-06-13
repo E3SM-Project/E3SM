@@ -1559,7 +1559,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
-        self.assertEqual(result, "02:00:00")
+        self.assertEqual(result, "2:00:00")
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
         self.assertEqual(result, "batch")
