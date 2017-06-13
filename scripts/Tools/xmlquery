@@ -81,15 +81,15 @@ epilog=textwrap.dedent(__doc__))
                         help="Do not resolve variable values")
 
     parser.add_argument("-p", "--partial-match", action="store_true",
-                        help="Allow partial matches of variable names, treats args as regex. ")
+                        help="Allow partial matches of variable names, treats args as regex.")
 
     group = parser.add_mutually_exclusive_group()
 
     group.add_argument("--full", default=False, action="store_true",
-                        help="Print a full listing for a variable, or a list of variables ")
+                        help="Print a full listing for a variable, or a list of variables")
 
     group.add_argument("-fileonly", "--fileonly", default=False, action="store_true",
-                        help="Only print the filename that the field is defined in. ")
+                        help="Only print the filename that the field is defined in.")
 
     group.add_argument("-value", "--value", default=False, action="store_true",
                         help="Only print one value without newline character. "
@@ -101,13 +101,13 @@ epilog=textwrap.dedent(__doc__))
                         help="Print the description associated with this variable")
 
     group.add_argument("--get-group", default=False, action="store_true",
-                        help="Print the group associated with this variable ")
+                        help="Print the group associated with this variable")
 
     group.add_argument("--type", default=False, action="store_true",
-                        help="Print the data type associated with this variable ")
+                        help="Print the data type associated with this variable")
 
     group.add_argument("--valid-values", default=False, action="store_true",
-                        help="Print the valid values associated with this variable if defined ")
+                        help="Print the valid values associated with this variable if defined")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
@@ -140,8 +140,6 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
     """
     results = {}
     comp_classes = case.get_values("COMP_CLASSES")
-    if xmlfile:
-        case.set_file(xmlfile)
 
     # Loop over variables
     for var in variables:
