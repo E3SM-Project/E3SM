@@ -42,7 +42,7 @@ has two usage categories:
 
      or, for multiple variables (either comma or space separated)
       ./xmlquery var1,var2,var3 ....
-      ./xmlquery var1 var2  var3 
+      ./xmlquery var1 var2 var3 ....
      where var1, var2 and var3 are variables that appear in a CIME case xml file
 
      Several xml variables that have settings for each component have somewhat special treatment
@@ -57,7 +57,7 @@ has two usage categories:
     -  the CIME case xml variables are grouped together in xml elements <group></group>.  
        These are done to associate together xml variables with common features. 
        Most variables are only associated with one group.
-       However, in env_batch.xml, there also xml variables that are associated with more than one group. 
+       However, in env_batch.xml, there are also xml variables that are associated with more than one group.
        For these variables, the '--subgroup' qualifier permits querying an xml variable that appears in more than
        one group.  
 
@@ -66,7 +66,7 @@ has two usage categories:
         <group id="case.st_archive">
         <group id="case.test">
 
-       To query the variable JOB_QUEUE only for in group case.run, you need
+       To query the variable JOB_QUEUE only for one group in case.run, you need
        to specify a sub-group argument to xmlquery.
           ./xmlquery JOB_QUEUE --subgroup case.test
               JOB_QUEUE: regular
