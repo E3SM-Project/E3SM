@@ -1102,7 +1102,6 @@ def find_system_test(testname, case):
     Fail if the test is not found in any of the paths.
     """
     from importlib import import_module
-    print "TESTNAME %s "%testname
     system_test_path = None
     if testname.startswith("TEST"):
         system_test_path =  "CIME.SystemTests.system_tests_common.{}".format(testname)
