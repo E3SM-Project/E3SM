@@ -16,7 +16,7 @@ module CanopyTemperatureMod
   use shr_const_mod        , only : SHR_CONST_PI
   use decompMod            , only : bounds_type
   use abortutils           , only : endrun
-  use clm_varctl           , only : iulog, do_varsoil, use_ed
+  use clm_varctl           , only : iulog, use_ed
   use PhotosynthesisMod    , only : Photosynthesis, PhotosynthesisTotal, Fractionation
   use SurfaceResistanceMod , only : calc_soilevap_stress
   use EcophysConType       , only : ecophyscon
@@ -123,7 +123,7 @@ contains
          z_0_town         =>    lun%z_0_town                          , & ! Input:  [real(r8) (:)   ] momentum roughness length of urban landunit (m)
          z_d_town         =>    lun%z_d_town                          , & ! Input:  [real(r8) (:)   ] displacement height of urban landunit (m)
          urbpoi           =>    lun%urbpoi                            , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
-         nlev2bed         =>    col%nlev2bed                          , & ! Input:  [integer  (:)   ] number of layers to bedrock
+         nlev2bed         =>    col%nlevbed                           , & ! Input:  [integer  (:)   ] number of layers to bedrock
 
          z0mr             =>    ecophyscon%z0mr                       , & ! Input:  [real(r8) (:)   ] ratio of momentum roughness length to canopy top height (-)
          displar          =>    ecophyscon%displar                    , & ! Input:  [real(r8) (:)   ] ratio of displacement height to canopy top height (-)
@@ -266,11 +266,7 @@ contains
 
             else if (col%itype(c) == icol_road_perv) then
                ! Pervious road depends on water in total soil column
-              if(do_varsoil) then
-                nlevbed = nlev2bed(c)
-              else
-                nlevbed = nlevsoi
-              end if
+               nlevbed = nlev2bed(c)
                do j = 1, nlevbed
                   if (t_soisno(c,j) >= tfrz) then
                      vol_ice = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))

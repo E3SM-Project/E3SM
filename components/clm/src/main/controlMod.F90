@@ -41,7 +41,7 @@ module controlMod
   use clm_varcon              , only: h2osno_max
   use clm_varctl              , only: use_dynroot
   use CNAllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
-  use clm_varctl              , only: nu_com, do_varsoil
+  use clm_varctl              , only: nu_com, use_var_soil_thick
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
   !
   ! !PUBLIC TYPES:
@@ -242,7 +242,7 @@ contains
 
     namelist /clm_inparm/ use_dynroot
 
-    namelist /clm_inparm/ do_varsoil
+    namelist /clm_inparm/ use_var_soil_thick
 
     namelist /clm_inparm / &
          use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch
@@ -752,7 +752,7 @@ contains
     write(iulog,*) '    use_lch4 = ', use_lch4
     write(iulog,*) '    use_nitrif_denitrif = ', use_nitrif_denitrif
     write(iulog,*) '    use_vertsoilc = ', use_vertsoilc
-    write(iulog,*) '    do_varsoil = ', do_varsoil
+    write(iulog,*) '    use_var_soil_thick = ', use_var_soil_thick
     write(iulog,*) '    use_extralakelayers = ', use_extralakelayers
     write(iulog,*) '    use_vichydro = ', use_vichydro
     write(iulog,*) '    use_century_decomp = ', use_century_decomp

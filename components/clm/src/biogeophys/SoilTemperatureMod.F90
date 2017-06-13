@@ -13,7 +13,7 @@ module SoilTemperatureMod
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
   use perf_mod          , only : t_startf, t_stopf
-  use clm_varctl        , only : iulog, do_varsoil
+  use clm_varctl        , only : iulog
   use UrbanParamsType   , only : urbanparams_type  
   use atm2lndType       , only : atm2lnd_type
   use CanopyStateType   , only : canopystate_type
@@ -621,7 +621,7 @@ contains
          dz           =>    col%dz			     , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                       
          zi           =>    col%zi			     , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m) 
          z            =>    col%z			     , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)                   
-         nlev2bed         =>    col%nlev2bed                 , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+         nlev2bed         =>    col%nlevbed                  , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
          
          nlev_improad =>    urbanparams_vars%nlev_improad    , & ! Input:  [integer  (:)   ]  number of impervious road layers         
          tk_wall      =>    urbanparams_vars%tk_wall	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban wall    
@@ -656,11 +656,7 @@ contains
       do j = -nlevsno+1,nlevgrnd
          do fc = 1, num_nolakec
             c = filter_nolakec(fc)
-            if(do_varsoil) then
-       	      nlevbed = nlev2bed(c)
-            else
-              nlevbed = nlevsoi
-            end if
+     	    nlevbed = nlev2bed(c)
 
             ! Only examine levels from 1->nlevgrnd
             if (j >= 1) then    
@@ -760,11 +756,7 @@ contains
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
             l = col%landunit(c)
-            if(do_varsoil) then
-       	      nlevbed = nlev2bed(c)
-            else
-              nlevbed = nlevsoi
-            end if
+     	    nlevbed = nlev2bed(c)
             if ((col%itype(c) == icol_sunwall .OR. col%itype(c) == icol_shadewall) .and. j <= nlevurb) then
                cv(c,j) = cv_wall(l,j) * dz(c,j)
             else if (col%itype(c) == icol_roof .and. j <= nlevurb) then

@@ -74,7 +74,7 @@ contains
     use tracerfluxType       , only : tracerflux_type
     use tracerstatetype      , only : tracerstate_type
     use BeTRTracerType       , only : betrtracer_type        
-    use clm_varctl           , only : use_vsfm, do_varsoil
+    use clm_varctl           , only : use_vsfm
     use SoilHydrologyMod     , only : DrainageVSFM
     use SoilWaterMovementMod, only : Compute_EffecRootFrac_And_VertTranSink_Default
     !
@@ -330,13 +330,9 @@ contains
          end if
       end do
       do fc = 1, num_nolakec
-        c = filter_nolakec(fc)
-	if(do_varsoil) then
-	  nlevbed = nlev2bed(c)
-	else
-	  nlevbed = nlevsoi
-        end if
-        do j = 1, nlevbed
+         c = filter_nolakec(fc)
+	 nlevbed = nlev2bed(c)
+         do j = 1, nlevbed
             l = col%landunit(c)
             if (.not. lun%urbpoi(l)) then
                ! soil T at top 17 cm added by F. Li and S. Levis

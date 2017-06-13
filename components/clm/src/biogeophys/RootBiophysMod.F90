@@ -87,7 +87,7 @@ contains
     use shr_log_mod    , only : errMsg => shr_log_errMsg   
     use decompMod      , only : bounds_type
     use pftvarcon      , only : noveg, roota_par, rootb_par  !these pars shall be moved to here and set as private in the future
-    use clm_varctl     , only : do_varsoil
+    use clm_varctl     , only : use_var_soil_thick
     use PatchType      , only : pft
     use ColumnType     , only : col
     !
@@ -129,7 +129,7 @@ contains
                + exp(-rootb_par(pft%itype(p)) * col%zi(c,ubj-1)) )
 
        ! Adjust layer root fractions if nlev2bed < nlevsoi
-         if(do_varsoil .and. nlevbed < ubj) then
+         if(use_var_soil_thick .and. nlevbed < ubj) then
            do lev = 1, nlevbed
              rootfr(p,lev) = rootfr(p,lev) / totrootfr
            end do
