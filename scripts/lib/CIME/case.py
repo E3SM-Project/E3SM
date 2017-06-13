@@ -1484,4 +1484,5 @@ class Case(object):
                 if re.search(compset_match, compset_name):
                     desc_dict[comp_name] = node.text
                     break
+
         return desc_dict

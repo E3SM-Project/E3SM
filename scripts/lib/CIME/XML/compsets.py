@@ -90,17 +90,14 @@ class Compsets(GenericXML):
     def return_all_values(self):
         all_compsets = dict()
         science_compsets = dict()
-        test_compsets = dict()
         help_text = self.get_value(name="help")
         compsets_text = self.get_value("names")
         for key in sorted(compsets_text.iterkeys()):
             all_compsets[key] = compsets_text[key]
 
         # get the matching science support grids
-        for alias in compsets.iterkeys():
+        for alias in all_compsets.iterkeys():
             science_compsets[alias] = self.get_compset_match(alias)
             
-        # TODO get the tested compsets
-
-        return help_text, all_compsets, science_compsets, test_compsets
+        return help_text, all_compsets
 

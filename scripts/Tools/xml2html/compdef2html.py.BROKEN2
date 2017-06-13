@@ -11,6 +11,7 @@
 
 import os, sys, re, glob
 import datetime
+import collections
 
 CIMEROOT = os.environ.get("CIMEROOT")
 if CIMEROOT is None:
@@ -23,10 +24,13 @@ if SRCROOT is None:
 os.environ['SRCROOT'] = SRCROOT
 
 from standard_script_setup import *
-from CIME.utils            import expect, get_model
-from CIME.XML.compsets     import Compsets
+from CIME.utils            import expect, get_model, get_cime_root
+from CIME.XML.entry_id     import GenericXML
 from CIME.XML.files        import Files
+from CIME.XML.component    import Component
+from CIME.XML.compsets     import Compsets
 from CIME.case             import Case
+import xml.etree.ElementTree as etree
 
 # check for  dependency module
 try:
@@ -94,13 +98,12 @@ def get_descs(desc_file):
 def _main_func(options, work_dir):
 ###############################################################################
 
-    """Construct compsets html from an XML files."""
+    """Construct compsets html from an XML file."""
         
     # Initialize variables
+    ordered_compsets = collections.OrderedDict()
     html_dict = dict()
-    desc = dict()
     model_version = options.version[0]
-    caseroot = os.getcwd()
 
     # read in all the component config_compsets.xml files
     files = Files()
@@ -117,31 +120,28 @@ def _main_func(options, work_dir):
         # Check that file exists on disk
         if (os.path.isfile(config_file)):
             compsets = Compsets(config_file)
-            help_text, all_compsets = compsets.return_all_values()
-
             # TODO finish getting the test_compsets from the compsets module
-            # look at query_testlists???
+            help_text, all_compsets, science_compsets, test_compsets = compsets.return_all_values()
 
-            # create an empty case object and get all the compset descriptions
-            for compset in all_compsets.values():
-                with Case(caseroot, read_only=False) as case:
-                    desc[compset] = case.get_compset_description(compset_name=compset)
+            # get the all_compsets sorted
+            ordered_compsets = collections.OrderedDict(sorted(all_compsets.items(), key=lambda t: t[0]))
 
             # load up the html_dict
-            html_dict[component] = { 'help_txt'         : help_text,
-                                     'all_compsets'     : all_compsets,
-                                     'desc'             : desc }                                     
+            html_dict[component] = { 'compsets' : ordered_compsets }
+
+    # loop through the compsets and get the matching the descriptions
+##    for compset in ordered_compsets:
 
     # load up jinja template
     templateLoader = jinja2.FileSystemLoader( searchpath='{0}/templates'.format(work_dir) )
     templateEnv = jinja2.Environment( loader=templateLoader )
     tmplFile = 'compdef2html.tmpl'
     template = templateEnv.get_template( tmplFile )
-
-    #TODO change the template to just loop through the html_dict
     templateVars = { 'html_dict'     : html_dict,
+                     'all_descs'     : all_descs,
                      'today'         : _now,
-                     'model_version' : model_version }
+                     'model_version' : model_version,
+                     'help'          : help_text }
         
     # render the template
     comp_tmpl = template.render( templateVars )
