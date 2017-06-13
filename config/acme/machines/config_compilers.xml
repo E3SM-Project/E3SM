@@ -936,7 +936,7 @@ for mct, etc.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <MPIFC> ftn </MPIFC>
   <MPICC> cc </MPICC>
-  <MPICXX> /opt/cray/craype/2.4.0/bin/CC </MPICXX>
+  <MPICXX> CC </MPICXX>
   <ALBANY_PATH>/ccs/proj/cli106/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
