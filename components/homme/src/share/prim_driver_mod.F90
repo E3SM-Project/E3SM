@@ -1,3 +1,17 @@
+! ------------------------------------------------------------------------------------------------
+! prim_driver_mod: 
+!
+! 08/2016: O. Guba Inserting code for area correction based on epsilon bubble:
+! Numerical area of the domain (sphere) is sum of integration weights. The sum
+! is not exactly equal geometric area (4\pi R). It is required that 
+! numerical area = geometric area.  
+! Previously, alpha correction was used. The alpha correction 'butters' 
+! the difference between numerical and geometrical areas evenly among DOFs. Then
+! geometric areas of individual elements do not equal their numerical areas,
+! only whole domain's areas coinside.
+! The 'epsilon bubble' approach modifies inner weights in each element so that
+! geometic and numerical areas of each element match.
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -48,7 +62,7 @@ contains
     use thread_mod, only : nthreads, nThreadsHoriz
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, integration, topology, &
-         partmethod, use_semi_lagrange_transport
+         partmethod, use_semi_lagrange_transport, cubed_sphere_map
     ! --------------------------------
     use prim_state_mod, only : prim_printstate_init
     ! --------------------------------
@@ -60,11 +74,12 @@ contains
     ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
-    use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology
+    use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology, cube_init_atomic, &
+                          set_corner_coordinates, assign_node_numbers_to_elem, &
+                          set_area_correction_map0, set_area_correction_map2
     ! --------------------------------
     use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
          MeshCubeElemCount, MeshCubeEdgeCount
-    use cube_mod, only : cube_init_atomic, set_corner_coordinates, assign_node_numbers_to_elem
     ! --------------------------------
     use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
     ! --------------------------------
@@ -131,9 +146,6 @@ contains
     integer :: iMv
     integer :: err, ierr, l, j
     logical, parameter :: Debug = .FALSE.
-
-    real(kind=real_kind), allocatable :: aratio(:,:)
-    real(kind=real_kind) :: area(1),xtmp
 
     integer  :: i
     integer,allocatable :: TailPartition(:)
@@ -358,23 +370,25 @@ contains
     ! =================================================================
     if(par%masterproc) write(iulog,*) 'running mass_matrix'
     call mass_matrix(par,elem)
-    allocate(aratio(nelemd,1))
 
-    if (topology=="cube") then
-       area = 0
-       do ie=1,nelemd
-          aratio(ie,1) = sum(elem(ie)%mp(:,:)*elem(ie)%metdet(:,:))
-       enddo
-       call repro_sum(aratio, area, nelemd, nelemd, 1, commid=par%comm)
-       area(1) = 4*dd_pi/area(1)  ! ratio correction
-       deallocate(aratio)
-       if (par%masterproc) &
-            write(iulog,'(a,f20.17)') " re-initializing cube elements: area correction=",area(1)
+    ! Alpha area correction for RRM meshes.
+    ! This routine does not check whether gp is init-ed and it relies on 
+    ! mass matrix call above.
+    if( cubed_sphere_map == 0 ) then
+       call set_area_correction_map0(elem, nelemd, par, gp)
+    endif
 
-       do ie=1,nelemd
-          call cube_init_atomic(elem(ie),gp%points,area(1))
-       enddo
-    end if
+    ! Epsilon bubble correction for RRM meshes.
+    ! This routine does not check whether gp is init-ed.
+    if(( cubed_sphere_map == 2 ).AND.( np > 2 )) then
+       call set_area_correction_map2(elem, nelemd, par, gp)
+    endif
+
+    ! Should I track if prim_driver_mod::gp used anywhere else?
+    !deallocate(gp%points)
+    !deallocate(gp%weights)
+
+
 
     if(par%masterproc) write(iulog,*) 're-running mass_matrix'
     call mass_matrix(par,elem)
