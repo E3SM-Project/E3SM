@@ -70,7 +70,11 @@
 
   <entry id="CONFIG_TESTS_FILE">
     <type>char</type>
-    <default_value>$CIMEROOT/config/config_tests.xml</default_value>
+    <values>
+      <value>$CIMEROOT/config/config_tests.xml</value>
+      <!-- component specific config_tests files -->
+      <value component="clm">$SRCROOT/components/clm/cime_config/config_tests.xml</value>
+    </values>
     <group>test</group>
     <file>env_test.xml</file>
     <desc>file containing system test descriptions </desc>
