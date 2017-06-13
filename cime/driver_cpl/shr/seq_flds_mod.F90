@@ -1872,20 +1872,12 @@ module seq_flds_mod
      attname  = 'Flrl_rofi'
      call metadata_set(attname, longname, stdname, units)
 
-     call seq_flds_add(l2x_fluxes,'Flrl_demand_unmet')
-     call seq_flds_add(x2r_fluxes,'Flrl_demand_unmet')
-     longname = 'Water flux unmet demand in land from rof'
-     stdname  = 'water_flux_unmet_demand_from_runoff'
-     units    = 'kg m-2 s-1'
-     attname  = 'Flrl_demand_unmet'
-     call metadata_set(attname, longname, stdname, units)
-
-     call seq_flds_add(l2x_fluxes,'Flrl_demand_total')
-     call seq_flds_add(x2r_fluxes,'Flrl_demand_total')
+     call seq_flds_add(l2x_fluxes,'Flrl_demand')
+     call seq_flds_add(x2r_fluxes,'Flrl_demand')
      longname = 'Water flux total demand in land from rof'
      stdname  = 'water_flux_total_demand_from_runoff'
      units    = 'kg m-2 s-1'
-     attname  = 'Flrl_demand_total'
+     attname  = 'Flrl_demand'
      call metadata_set(attname, longname, stdname, units)
 
      !-----------------------------

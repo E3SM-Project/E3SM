@@ -28,8 +28,7 @@ module clm_cpl_indices
   integer, public ::index_l2x_Flrl_rofgwl     ! lnd->rtm input gwl liquid fluxes
   integer, public ::index_l2x_Flrl_rofsub     ! lnd->rtm input subsurface liquid fluxes
   integer, public ::index_l2x_Flrl_rofi       ! lnd->rtm input frozen fluxes
-  integer, public ::index_l2x_Flrl_demand_unmet ! lnd->rtm input unmet demand (<= 0)
-  integer, public ::index_l2x_Flrl_demand_total ! lnd->rtm input total fluxes (<= 0)
+  integer, public ::index_l2x_Flrl_demand     ! lnd->rtm input total fluxes (<= 0)
 
   integer, public ::index_l2x_Sl_t            ! temperature
   integer, public ::index_l2x_Sl_tref         ! 2m reference temperature
@@ -168,8 +167,7 @@ contains
     index_l2x_Flrl_rofi     = mct_avect_indexra(l2x,'Flrl_rofi')
     index_l2x_Flrl_rofgwl   = mct_avect_indexra(l2x,'Flrl_rofgwl')
     index_l2x_Flrl_rofsub   = mct_avect_indexra(l2x,'Flrl_rofsub')
-    index_l2x_Flrl_demand_unmet = mct_avect_indexra(l2x,'Flrl_demand_unmet')
-    index_l2x_Flrl_demand_total = mct_avect_indexra(l2x,'Flrl_demand_total')
+    index_l2x_Flrl_demand   = mct_avect_indexra(l2x,'Flrl_demand')
 
     index_l2x_Sl_t          = mct_avect_indexra(l2x,'Sl_t')
     index_l2x_Sl_snowh      = mct_avect_indexra(l2x,'Sl_snowh')

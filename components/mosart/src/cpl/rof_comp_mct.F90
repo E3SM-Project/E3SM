@@ -30,8 +30,7 @@ module rof_comp_mct
   use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
                                 index_x2r_Flrl_rofsur, index_x2r_Flrl_rofi, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
-                                index_x2r_Flrl_rofdto, &
-                                index_x2r_Flrl_demand_unmet, index_x2r_Flrl_demand_total, &
+                                index_x2r_Flrl_rofdto, index_x2r_Flrl_demand, &
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
@@ -545,15 +544,13 @@ contains
        else
           rtmCTL%qdto(n,nliq) = 0.0_r8
        endif
-       rtmCTL%dunm(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_demand_unmet,n2) * (rtmCTL%area(n)*0.001_r8)
-       rtmCTL%dtot(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_demand_total,n2) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qdem(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_demand,n2) * (rtmCTL%area(n)*0.001_r8)
 
        rtmCTL%qsur(n,nfrz) = x2r_r%rAttr(index_x2r_Flrl_rofi,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsub(n,nfrz) = 0.0_r8
        rtmCTL%qgwl(n,nfrz) = 0.0_r8
        rtmCTL%qdto(n,nfrz) = 0.0_r8
-       rtmCTL%dunm(n,nfrz) = 0.0_r8
-       rtmCTL%dtot(n,nfrz) = 0.0_r8
+       rtmCTL%qdem(n,nfrz) = 0.0_r8
 
     enddo
 

@@ -1070,12 +1070,9 @@ contains
        l2x(index_l2x_Flrl_rofsur,i) = lnd2atm_vars%qflx_rofliq_qsur_grc(g)
        l2x(index_l2x_Flrl_rofsub,i) = lnd2atm_vars%qflx_rofliq_qsub_grc(g)
        l2x(index_l2x_Flrl_rofgwl,i) = lnd2atm_vars%qflx_rofliq_qgwl_grc(g)
-
-       l2x(index_l2x_Flrl_demand_unmet,i) =  0.0_r8   ! needs to be filled in
-       l2x(index_l2x_Flrl_demand_total,i) =  0.0_r8   ! needs to be filled in
-       if (l2x(index_l2x_Flrl_demand_unmet,i) > 0.0_r8 .or. &
-           l2x(index_l2x_Flrl_demand_total,i) > 0.0_r8) then
-          call endrun( sub//' ERROR: demand_unmet and demand_total must be <= 0.')
+       l2x(index_l2x_Flrl_demand,i) =  0.0_r8   ! needs to be filled in
+       if (l2x(index_l2x_Flrl_demand,i) > 0.0_r8) then
+          call endrun( sub//' ERROR: demand must be <= 0.')
        endif
 
        ! glc coupling
