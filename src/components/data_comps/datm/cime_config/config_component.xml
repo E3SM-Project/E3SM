@@ -27,7 +27,7 @@
     <desc compset="^HIST_DATM%GSW">GSWP3 atm input data for 1901-1920:</desc>
     <desc compset="^20TR_DATM%GSW">GSWP3 atm input data for 1901-1920:</desc>
     <desc compset="^RCP[2468]_DATM%GSW">GSWP3 atm input data for 1991-2010:</desc>
-    <desc compset="^1850_DATM%PCLHIST">CPL history input data:</desc>
+    <desc compset="^1850_DATM%CPLHIST">CPL history input data:</desc>
     <desc compset="^2000_DATM%1PT">single point tower site atm input data:</desc>
     <desc compset="_DATM%NYF">COREv2 datm normal year forcing: (requires additional user-supplied data)</desc>
     <desc compset="_DATM%IAF">COREv2 datm interannual year forcing: (requires additional user-supplied data)</desc>
@@ -146,7 +146,7 @@
     <valid_values></valid_values>
     <default_value>1</default_value>
     <values match="last">
-      <value compset="1850_DATM%PCLHIST">1</value>
+      <value compset="1850_DATM%CPLHIST">1</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -158,7 +158,7 @@
     <valid_values></valid_values>
     <default_value>-999</default_value>
     <values match="last">
-      <value compset="1850_DATM%PCLHIST">960</value>
+      <value compset="1850_DATM%CPLHIST">960</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -170,7 +170,7 @@
     <valid_values></valid_values>
     <default_value>-999</default_value>
     <values match="last">
-      <value compset="1850_DATM%PCLHIST">1030</value>
+      <value compset="1850_DATM%CPLHIST">1030</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
