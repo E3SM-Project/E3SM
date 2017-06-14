@@ -19,7 +19,6 @@ requirements:
   run:
     - cdp 2017.05.18
     - vcs >=2.10
-    - vtk-cdat >=7.1.0.2.10
     - cdms2 >=2.10
     - cdutil >=2.10
     - genutil >=2.10
@@ -28,7 +27,7 @@ requirements:
     - output_viewer
     - matplotlib
     - cartopy
-    - mesalib >8
+    - mesalib
     
 
 about:
