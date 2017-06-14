@@ -66,7 +66,11 @@ _TEST_SUITES = {
                              ("ERS.f19_f19.I1850CLM45CN",
                               "ERS.f09_g16.I1850CLM45CN",
                               "SMS.hcru_hcru.I1850CRUCLM45CN",
-                             ("SMS_Ly3_P1x1.1x1_smallvilleIA.ICLM45CNCROP", "force_netcdf_pio"),
+                             ("ERS.f19_g16.I1850CNECACNTBC" ,"clm-eca"),
+                             ("ERS.f19_g16.I1850CNECACTCBC" ,"clm-eca"),
+                             ("SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP", "force_netcdf_pio"),
+                             ("SMS_Ld4.f45_f45.ICLM45ED","clm-fates"),
+                             ("ERS.f19_g16.I1850CLM45","clm-betr"),
                               "ERS.ne11_oQU240.I20TRCLM45",
                               "ERS.f09_g16.IMCLM45BC")
                              ),
@@ -107,6 +111,7 @@ _TEST_SUITES = {
                          "ERS.f09_g16_g.MPASLISIA",
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
                          "SMS.f09_g16_a.IGCLM45_MLI",
+                        ("SMS_Ln5.ne4_ne4.FC5AV1C-L", "cam-cosplite_nhtfrq5"),
                          "SMS_D_Ln5.ne16_ne16.FC5AV1F",
                          "SMS_D_Ln5.ne16_ne16.FC5AV1C",
                          "SMS_D_Ln5.ne16_ne16.FC5AV1C-01",
@@ -118,6 +123,7 @@ _TEST_SUITES = {
                          "SMS_D_Ln5.ne16_ne16.F1850C5AV1C-04",
                          "SMS_D_Ln5.ne16_ne16.F20TRC5AV1C-03",
                          "SMS_D_Ln5.ne16_ne16.FC5AV1C-04P",
+                         "SMS_D_Ln5.ne4_ne4.FC5AV1C-04P2",
                          "SMS_D_Ld1.ne16_ne16.FC5ATMMOD")
                         ),
 
@@ -134,10 +140,10 @@ _TEST_SUITES = {
                            ("PET_Ln9.ne30_ne30.FC5", "cam-outfrq9s"),
                            "PET.f19_g16.X",
                            "PET.f45_g37_rx1.A",
-                           "PET_Ln9.ne30_oEC.A_WCYCL2000",
-                           "ERP_Ld3.ne30_oEC.A_WCYCL2000",
+                           "PET_Ln9.ne30_oECv3_ICG.A_WCYCL1850S",
+                           "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
                            "SEQ_IOP.f19_g16.X",
-                           "SMS.ne30_oEC.A_WCYCL2000",
+                           "SMS.ne30_oECv3_ICG.A_WCYCL1850S",
                            "SMS.ne16_ne16.FC5AQUAP",
                            "SMS_D_Ld3.ne16_ne16.FC5",
                            "SMS.f09_g16_a.MPASLIALB",
@@ -152,6 +158,7 @@ _TEST_SUITES = {
                            "ERS_Ld5.ne30_oEC.F1850C5AV1C-02",
                            "ERS_Ld5.ne16_ne16.F1850C5AV1C-04",
                            "ERS_Ld5.ne16_ne16.F20TRC5AV1C-03",
+                           "ERP_Ld5_P8x4.ne4_ne4.FC5AV1C-04P2",
                            "SMS_D_Ld1.ne16_ne16.FC5ATMMODCOSP")
                           ),
 }

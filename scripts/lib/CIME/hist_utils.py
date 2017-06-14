@@ -205,8 +205,8 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
 
         for hist1, hist2 in match_ups:
             success, cprnc_log_file = cprnc(model, hist1, hist2, case, from_dir1,
-                                            multiinst_cpl_compare = multiinst_cpl_compare,
-                                            outfile_suffix = outfile_suffix)
+                                            multiinst_cpl_compare=multiinst_cpl_compare,
+                                            outfile_suffix=outfile_suffix)
             if success:
                 comments += "    {} matched {}\n".format(hist1, hist2)
             else:
@@ -270,9 +270,12 @@ def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False, outfil
     if outfile_suffix:
         output_filename += ".{}".format(outfile_suffix)
 
-    cpr_stat = run_cmd("{} -m {} {}".format(cprnc_exe, file1, file2), combine_output=True, arg_stdout=output_filename)[0]
-    with open(output_filename, "r") as fd:
-        out = fd.read()
+    if outfile_suffix is None:
+        cpr_stat, out, _ = run_cmd("{} -m {} {}".format(cprnc_exe, file1, file2), combine_output=True)
+    else:
+        cpr_stat = run_cmd("{} -m {} {}".format(cprnc_exe, file1, file2), combine_output=True, arg_stdout=output_filename)[0]
+        with open(output_filename, "r") as fd:
+            out = fd.read()
 
     if multiinst_cpl_compare:
         #  In a multiinstance test the cpl hist file will have a different number of
@@ -290,7 +293,7 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
     case - The case containing the hist files to be compared against baselines
     baseline_dir - Optionally, specify a specific baseline dir, otherwise it will be computed from case config
     outfile_suffix - if non-blank, then the cprnc output file name ends with
-        this suffix (with a '.' added before the given suffix)
+        this suffix (with a '.' added before the given suffix). if None, no output file saved.
 
     returns (SUCCESS, comments)
     SUCCESS means all hist files matched their corresponding baseline
@@ -308,7 +311,7 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
         if not os.path.isdir(bdir):
             return False, "ERROR {} baseline directory '{}' does not exist".format(TEST_NO_BASELINES_COMMENT,bdir)
 
-    return _compare_hists(case, rundir, basecmp_dir, outfile_suffix = outfile_suffix)
+    return _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
 
 def get_extension(model, filepath):
     """

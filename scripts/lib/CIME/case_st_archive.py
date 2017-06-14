@@ -9,13 +9,18 @@ from CIME.case_submit               import submit
 from CIME.XML.env_archive           import EnvArchive
 from CIME.utils                     import run_and_log_case_status
 from os.path                        import isdir, join
+import datetime
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def _get_datenames(case):
+def _get_datenames(case, last_date=None):
 ###############################################################################
-
+    if last_date is not None:
+        try:
+            last = datetime.datetime.strptime(last_date, '%Y-%m-%d')
+        except ValueError:
+            expect(False, 'Could not parse the last date to archive')
     logger.debug('In get_datename...')
     rundir = case.get_value('RUNDIR')
     expect(isdir(rundir), 'Cannot open directory {} '.format(rundir))
@@ -27,8 +32,13 @@ def _get_datenames(case):
     for filename in files:
         names = filename.split('.')
         datename = names[-2]
-        datenames.append(datename)
-        logger.debug('cpl dateName: {} '.format(datename))
+        year, month, day, _ = [int(x) for x in datename.split('-')]
+        if last_date is None or (year <= last.year and month <= last.month
+                                 and day <= last.day):
+            datenames.append(datename)
+            logger.debug('cpl dateName: {}'.format(datename))
+        else:
+            logger.debug('Ignoring {}'.format(datename))
     return datenames
 
 
@@ -105,7 +115,7 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
 
 
 ###############################################################################
-def _archive_log_files(case):
+def _archive_log_files(case, archive_incomplete, archive_file_fn):
 ###############################################################################
 
     dout_s_root = case.get_value("DOUT_S_ROOT")
@@ -115,17 +125,22 @@ def _archive_log_files(case):
         os.makedirs(archive_logdir)
         logger.debug("created directory {} ".format(archive_logdir))
 
-    logfiles = glob.glob(os.path.join(rundir, '*.log.*'))
+    if archive_incomplete == False:
+        log_search = '*.log.*.gz'
+    else:
+        log_search = '*.log.*'
+
+    logfiles = glob.glob(os.path.join(rundir, log_search))
     for logfile in logfiles:
         srcfile = join(rundir, os.path.basename(logfile))
         destfile = join(archive_logdir, os.path.basename(logfile))
-        shutil.move(srcfile, destfile)
+        archive_file_fn(srcfile, destfile)
         logger.info("moving \n{} to \n{}".format(srcfile, destfile))
-
 
 ###############################################################################
 def _archive_history_files(case, archive, archive_entry,
-                           compclass, compname, histfiles_savein_rundir):
+                           compclass, compname, histfiles_savein_rundir,
+                           archive_file_fn):
 ###############################################################################
     """
     perform short term archiving on history files in rundir
@@ -149,6 +164,8 @@ def _archive_history_files(case, archive, archive_entry,
         for i in range(ninst):
             if compname == 'dart':
                 newsuffix = casename + suffix
+            elif compname.find('mpas') == 0:
+                newsuffix = compname + '.*' + suffix
             else:
                 if ninst_string:
                     newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
@@ -169,8 +186,7 @@ def _archive_history_files(case, archive, archive_entry,
                         shutil.copy(srcfile, destfile)
                     else:
                         logger.info("moving \n{} to \n{} ".format(srcfile, destfile))
-                        shutil.move(srcfile, destfile)
-
+                        archive_file_fn(srcfile, destfile)
 
 ###############################################################################
 def get_histfiles_for_restarts(case, archive, archive_entry, restfile):
@@ -204,7 +220,8 @@ def get_histfiles_for_restarts(case, archive, archive_entry, restfile):
 
 ###############################################################################
 def _archive_restarts(case, archive, archive_entry,
-                      compclass, compname, datename, datename_is_last):
+                      compclass, compname, datename, datename_is_last,
+                      archive_file_fn):
 ###############################################################################
 
     # determine directory for archiving restarts based on datename
@@ -231,22 +248,27 @@ def _archive_restarts(case, archive, archive_entry,
     for suffix in archive.get_rest_file_extensions(archive_entry):
         for i in range(ninst):
             restfiles = ""
-            pattern = r"{}\.{}\d*.*".format(casename, compname)
-            if "dart" not in pattern:
-                pfile = re.compile(pattern)
-                files = [f for f in os.listdir(rundir) if pfile.search(f)]
-                if ninst_strings:
-                    pattern = ninst_strings[i] + suffix + datename
-                    pfile = re.compile(pattern)
-                    restfiles = [f for f in files if pfile.search(f)]
-                else:
-                    pattern = suffix + datename
-                    pfile = re.compile(pattern)
-                    restfiles = [f for f in files if pfile.search(f)]
-            else:
-                pattern = suffix
+            if compname.find("mpas") == 0:
+                pattern = compname + suffix + '_'.join(datename.rsplit('-', 1))
                 pfile = re.compile(pattern)
                 restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+            else:
+                pattern = r"{}\.{}\d*.*".format(casename, compname)
+                if "dart" not in pattern:
+                    pfile = re.compile(pattern)
+                    files = [f for f in os.listdir(rundir) if pfile.search(f)]
+                    if ninst_strings:
+                        pattern = ninst_strings[i] + suffix + datename
+                        pfile = re.compile(pattern)
+                        restfiles = [f for f in files if pfile.search(f)]
+                    else:
+                        pattern = suffix + datename
+                        pfile = re.compile(pattern)
+                        restfiles = [f for f in files if pfile.search(f)]
+                else:
+                    pattern = suffix
+                    pfile = re.compile(pattern)
+                    restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
 
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
@@ -283,7 +305,7 @@ def _archive_restarts(case, archive, archive_entry,
                         logger.info("moving \n{} to \n{}".format(srcfile, destfile))
                         expect(os.path.isfile(srcfile),
                                "restart file {} does not exist ".format(srcfile))
-                        shutil.move(srcfile, destfile)
+                        archive_file_fn(srcfile, destfile)
                         logger.info("moving \n{} to \n{}".format(srcfile, destfile))
 
                         # need to copy the history files needed for interim restarts - since
@@ -309,7 +331,7 @@ def _archive_restarts(case, archive, archive_entry,
     return histfiles_savein_rundir
 
 ###############################################################################
-def _archive_process(case, archive):
+def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_only):
 ###############################################################################
     """
     Parse config_archive.xml and perform short term archiving
@@ -320,8 +342,13 @@ def _archive_process(case, archive):
     compset_comps.append('cpl')
     compset_comps.append('dart')
 
+    if copy_only is True:
+        archive_file_fn = shutil.copyfile
+    else:
+        archive_file_fn = shutil.move
+
     # archive log files
-    _archive_log_files(case)
+    _archive_log_files(case, archive_incomplete_logs, archive_file_fn)
 
     for archive_entry in archive.get_entries():
         # determine compname and compclass
@@ -335,8 +362,9 @@ def _archive_process(case, archive):
         logger.info('-------------------------------------------')
         logger.info('doing short term archiving for {} ({})'.format(compname, compclass))
         logger.info('-------------------------------------------')
-        datenames = _get_datenames(case)
+        datenames = _get_datenames(case, last_date)
         for datename in datenames:
+            logger.info('Archiving for date %s' % datename)
             datename_is_last = False
             if datename == datenames[-1]:
                 datename_is_last = True
@@ -344,14 +372,16 @@ def _archive_process(case, archive):
             # archive restarts
             histfiles_savein_rundir = _archive_restarts(case, archive, archive_entry,
                                                         compclass, compname,
-                                                        datename, datename_is_last)
+                                                        datename, datename_is_last,
+                                                        archive_file_fn)
 
             # if the last datename for restart files, then archive history files
             # for this compname
             if datename_is_last:
                 logger.info("histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
                 _archive_history_files(case, archive, archive_entry,
-                                       compclass, compname, histfiles_savein_rundir)
+                                       compclass, compname, histfiles_savein_rundir,
+                                       archive_file_fn)
 
 ###############################################################################
 def restore_from_archive(case):
@@ -372,7 +402,7 @@ def restore_from_archive(case):
         shutil.copy(item, rundir)
 
 ###############################################################################
-def case_st_archive(case, no_resubmit=False):
+def case_st_archive(case, last_date=None, archive_incomplete_logs=True, copy_only=False, no_resubmit=False):
 ###############################################################################
     """
     Create archive object and perform short term archiving
@@ -397,7 +427,7 @@ def case_st_archive(case, no_resubmit=False):
     logger.info("st_archive starting")
 
     archive = EnvArchive(infile=os.path.join(caseroot, 'env_archive.xml'))
-    functor = lambda: _archive_process(case, archive)
+    functor = lambda: _archive_process(case, archive, last_date, archive_incomplete_logs, copy_only)
     run_and_log_case_status(functor, "st_archive", caseroot=caseroot)
 
     logger.info("st_archive completed")

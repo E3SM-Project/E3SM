@@ -47,12 +47,20 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--caseroot", default=os.getcwd(),
                         help="Case directory to build")
 
-    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
+    parser.add_argument("--no-incomplete-logs", default=False, action="store_true",
+                        help="Whether to archive logs which have been completed or not")
+
+    parser.add_argument("--copy-only", default=False, action="store_true",
+                        help="Copy instead of move the files to be archived")
+
+    args = parser.parse_args()
+
+    CIME.utils.parse_args_and_handle_standard_logging_options(args)
 
     if args.caseroot is not None:
         os.chdir(args.caseroot)
 
-    return args.caseroot
+    return args.caseroot, args.no_incomplete_logs, args.copy_only
 
 ###############################################################################
 def _main_func(description):
@@ -61,9 +69,9 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot = parse_command_line(sys.argv, description)
+    caseroot, no_incomplete_logs, copy_only = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
-        success = case_st_archive(case)
+        success = case_st_archive(case, archive_incomplete_logs=not no_incomplete_logs, copy_only=copy_only)
 
     sys.exit(0 if success else 1)
 

@@ -199,7 +199,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
         logger.info("If an old case build already exists, might want to run \'case.build --clean\' before building")
 
-        # Some tests need namelists created here (ERP) - so do this if are in test mode
+        # Some tests need namelists created here (ERP) - so do this if we are in test mode
         if test_mode or get_model() == "acme":
             logger.info("Generating component namelists as part of setup")
             create_namelists(case)

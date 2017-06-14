@@ -18,8 +18,14 @@ class Tests(GenericXML):
             if files is None:
                 files = Files()
             infile = files.get_value("CONFIG_TESTS_FILE")
-
         GenericXML.__init__(self,  infile)
+        # append any component specific config_tests.xml files
+        for comp in files.get_components("CONFIG_TESTS_FILE"):
+            if comp is None:
+                continue
+            infile = files.get_value("CONFIG_TESTS_FILE", attribute={"component":comp})
+            if os.path.isfile(infile):
+                self.read(infile)
 
     def get_test_node(self, testname):
         logger.debug("Get settings for {}".format(testname))
