@@ -103,8 +103,8 @@ contains
     !
     ! !USES:
     use spmdMod              , only: masterproc
-    use PDynamicsMod           , only: PWeathering,PAdsorption,PDesorption,POcclusion
-    use PDynamicsMod           , only: PBiochemMin,PLeaching
+    use PDynamicsMod         , only: PWeathering,PAdsorption,PDesorption,POcclusion
+    use PDynamicsMod         , only: PBiochemMin,PLeaching
     use CNNDynamicsMod       , only: CNNLeaching
     use CNNStateUpdate3Mod   , only: NStateUpdate3
     use PStateUpdate3Mod     , only: PStateUpdate3
@@ -145,7 +145,7 @@ contains
   
     ! only do if ed is off
     if( .not. use_ed) then
-       if(.not.(use_pflotran.and.pf_cmode)) then
+       !if(.not.(use_pflotran.and.pf_cmode)) then
              call t_startf('PWeathering')
              call PWeathering(num_soilc, filter_soilc, &
                   cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
@@ -178,7 +178,7 @@ contains
                      cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
                 call t_stopf('PBiochemMin')
              end if
-       end if
+       !end if
        
        !-----------------------------------------------------------------------
        ! pflotran: when both 'pf-bgc' and 'pf-h' on, no need to call CLM-CN's N leaching module

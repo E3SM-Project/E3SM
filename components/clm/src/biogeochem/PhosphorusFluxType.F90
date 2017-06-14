@@ -2038,6 +2038,7 @@ contains
           do fi = 1,num_column
              i = filter_column(fi)
              this%decomp_ppools_sourcesink_col(i,j,k) = value_column
+             this%biochem_pmin_ppools_vr_col(i,j,k) = value_column   ! this is needed, if no P cycle
           end do
        end do
     end do

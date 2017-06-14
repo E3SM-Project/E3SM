@@ -812,10 +812,13 @@ contains
          end do
       end if
 
-      ! needs to zero CLM-CN variables NOT available from pflotran bgc coupling
+      ! needs to zero CLM-CNP variables NOT available from pflotran bgc coupling
       call CNvariables_nan4pf(bounds, num_soilc, filter_soilc,   &
-                        carbonflux_vars, nitrogenflux_vars)
-    end if !!if(use_bgc_interface.and.use_pflotran.and.pf_cmode)
+                        num_soilp, filter_soilp,                 &
+                        carbonflux_vars, nitrogenflux_vars,      &
+                        phosphorusstate_vars, phosphorusflux_vars)
+
+    end if !!if(use_clm_interface.and.use_pflotran.and.pf_cmode)
 
 !!------------------------------------------------------------------
       ! phase-3 Allocation for plants
@@ -846,8 +849,8 @@ contains
  
 !!-------------------------------------------------------------------------------------------------
   !
-  subroutine CNvariables_nan4pf (bounds, num_soilc, filter_soilc, &
-            carbonflux_vars, nitrogenflux_vars)
+  subroutine CNvariables_nan4pf (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            carbonflux_vars, nitrogenflux_vars, phosphorusstate_vars,phosphorusflux_vars)
   !
   !DESCRIPTION:
   !  CN variables not available from PFLOTRAN, some of which may be output and may cause issues,
@@ -855,14 +858,20 @@ contains
   !
   !USES:
 
+    use clm_varctl   , only: cnallocate_carbon_only, cnallocate_carbonnitrogen_only
     use clm_varpar   , only: nlevdecomp, ndecomp_cascade_transitions
    !
    !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc          ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:)    ! filter for soil columns
+    integer                  , intent(in)    :: num_soilp          ! number of soil patches in filter
+    integer                  , intent(in)    :: filter_soilp(:)    ! filter for soil patches
     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    !! add phosphorus --
+    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
    !
    !CALLED FROM:
    !
@@ -889,6 +898,18 @@ contains
       end do
 
    end do
+
+   ! pflotran not yet support phosphous cycle
+   if (cnallocate_carbon_only() .or. &
+       cnallocate_carbonnitrogen_only() ) then
+      call phosphorusstate_vars%SetValues (                                     &
+         num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8,   &
+         num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8  )
+
+      call phosphorusflux_vars%SetValues (                                      &
+         num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8,   &
+         num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8  )
+   end if
 
  end associate
  end subroutine CNvariables_nan4pf

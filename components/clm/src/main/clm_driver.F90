@@ -1308,13 +1308,6 @@ contains
             soilstate_vars%bsw_col(bounds_proc%begc:bounds_proc%endc, 1:),    &
             soilstate_vars%hksat_col(bounds_proc%begc:bounds_proc%endc, 1:))
 
-       !----------------------------------------------
-       ! pflotran
-       if (use_pflotran) then
-            call clm_pf_write_restart(rdate)
-       end if
-       !----------------------------------------------
-
        call t_stopf('clm_drv_io_htapes')
 
        ! Write to CNDV history buffer if appropriate
@@ -1342,6 +1335,14 @@ contains
                phosphorusstate_vars,phosphorusflux_vars,                                      &
                betrtracer_vars, tracerstate_vars, tracerflux_vars,                            &
                tracercoeff_vars, alm_fates, rdate=rdate )
+
+         !----------------------------------------------
+         ! pflotran (off now)
+         ! if (use_pflotran) then
+         !     call clm_pf_write_restart(rdate)
+         ! end if
+         !----------------------------------------------
+
 
           call t_stopf('clm_drv_io_wrest')
        end if

@@ -132,14 +132,14 @@ contains
     integer :: fc   ! lake filter indices
     !-----------------------------------------------------------------------
 
-    associate(                                         & 
+    associate(                                           &
          totcolp   => phosphorusstate_vars%totcolp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
          !X.YANG - checking P balance problem, starting from VEGP 
          totpftp   => phosphorusstate_vars%totpftp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
          totsomp   => phosphorusstate_vars%totsomp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         cwdp   => phosphorusstate_vars%cwdp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         cwdp   => phosphorusstate_vars%cwdp_col       , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          totlitp   => phosphorusstate_vars%totlitp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         sminp   => phosphorusstate_vars%sminp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         sminp   => phosphorusstate_vars%sminp_col     , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
  
          col_begpb => phosphorusstate_vars%begpb_col     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
          )
@@ -441,37 +441,37 @@ contains
 
     real(r8) :: leafp_to_litter_col(bounds%begc:bounds%endc) 
     real(r8) :: frootp_to_litter_col(bounds%begc:bounds%endc) 
-   real(r8):: flux_mineralization_col(bounds%begc:bounds%endc)   !!  local temperary variable
+    real(r8):: flux_mineralization_col(bounds%begc:bounds%endc)   !!  local temperary variable
     !-----------------------------------------------------------------------
 
-    associate(                                                             & 
+    associate(                                                                   &
          totcolp             =>    phosphorusstate_vars%totcolp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
          supplement_to_sminp =>    phosphorusflux_vars%supplement_to_sminp_col , & ! Input:  [real(r8) (:)]  supplemental P supply (gP/m2/s)         
          sminp_leached       =>    phosphorusflux_vars%sminp_leached_col       , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
-         col_fire_ploss      =>    phosphorusflux_vars%fire_ploss_col      , & ! Input:  [real(r8) (:)]  total column-level fire P loss (gP/m2/s)
+         col_fire_ploss      =>    phosphorusflux_vars%fire_ploss_col          , & ! Input:  [real(r8) (:)]  total column-level fire P loss (gP/m2/s)
          dwt_ploss           =>    phosphorusflux_vars%dwt_ploss_col           , & ! Input:  [real(r8) (:)]  (gP/m2/s) total phosphorus loss from product pools and conversion
          product_ploss       =>    phosphorusflux_vars%product_ploss_col       , & ! Input:  [real(r8) (:)]  (gP/m2/s) total wood product phosphorus loss
-         primp_to_labilep=>    phosphorusflux_vars%primp_to_labilep_col    , &
-         secondp_to_occlp=>    phosphorusflux_vars%secondp_to_occlp_col    , &
-         fert_p_to_sminp =>    phosphorusflux_vars%fert_p_to_sminp_col     , &
+         primp_to_labilep    =>    phosphorusflux_vars%primp_to_labilep_col    , &
+         secondp_to_occlp    =>    phosphorusflux_vars%secondp_to_occlp_col    , &
+         fert_p_to_sminp     =>    phosphorusflux_vars%fert_p_to_sminp_col     , &
  
-         col_pinputs         =>    phosphorusflux_vars%pinputs_col         , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)         
-         col_poutputs        =>    phosphorusflux_vars%poutputs_col        , & ! Output: [real(r8) (:)]  column-level P outputs (gP/m2/s)        
+         col_pinputs         =>    phosphorusflux_vars%pinputs_col             , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)
+         col_poutputs        =>    phosphorusflux_vars%poutputs_col            , & ! Output: [real(r8) (:)]  column-level P outputs (gP/m2/s)
          col_begpb           =>    phosphorusstate_vars%begpb_col              , & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
          col_endpb           =>    phosphorusstate_vars%endpb_col              , & ! Output: [real(r8) (:)]  phosphorus mass, end of time step (gP/m**2)
-         col_errpb           =>    phosphorusstate_vars%errpb_col              ,  & ! Output: [real(r8) (:)]  phosphorus balance error for the timestep (gP/m**2)
+         col_errpb           =>    phosphorusstate_vars%errpb_col              , & ! Output: [real(r8) (:)]  phosphorus balance error for the timestep (gP/m**2)
 
          !X.YANG testing P Balance, from VEGP
          totpftp             =>    phosphorusstate_vars%totpftp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
          totsomp             =>    phosphorusstate_vars%totsomp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         cwdp             =>    phosphorusstate_vars%cwdp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         cwdp                =>    phosphorusstate_vars%cwdp_col               , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          totlitp             =>    phosphorusstate_vars%totlitp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         sminp             =>    phosphorusstate_vars%sminp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         leafp_to_litter       =>    phosphorusflux_vars%leafp_to_litter_patch       , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
-         frootp_to_litter       =>   phosphorusflux_vars%frootp_to_litter_patch      , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
-         sminp_to_plant         =>   phosphorusflux_vars%sminp_to_plant_col          ,&
-         cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool ,     &
-         pf => phosphorusflux_vars                                               &
+         sminp                 =>  phosphorusstate_vars%sminp_col              , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         leafp_to_litter       =>  phosphorusflux_vars%leafp_to_litter_patch   , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
+         frootp_to_litter      =>  phosphorusflux_vars%frootp_to_litter_patch  , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
+         sminp_to_plant        =>  phosphorusflux_vars%sminp_to_plant_col      , &
+         cascade_receiver_pool =>  decomp_cascade_con%cascade_receiver_pool    , &
+         pf                    =>  phosphorusflux_vars                           &
          )
 
       ! set time steps
@@ -488,18 +488,18 @@ contains
 
       !! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes
       !! - X.YANG
-         ! column loop
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            flux_mineralization_col(c) = 0._r8
-         enddo
+        ! column loop
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         flux_mineralization_col(c) = 0._r8
+      enddo
 
       do k = 1, ndecomp_cascade_transitions
          if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                    flux_mineralization_col(c) = flux_mineralization_col(c) - &
+                  flux_mineralization_col(c) = flux_mineralization_col(c) - &
                                                pf%decomp_cascade_sminp_flux_col(c,k)*dt
                end do
          else
@@ -513,6 +513,12 @@ contains
          endif
       end do
 
+      ! column loop
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         flux_mineralization_col(c) = flux_mineralization_col(c) + &
+                                       pf%biochem_pmin_col(c)
+      end do
 
 
       ! column loop
