@@ -96,7 +96,7 @@ contains
                wa(c) = 5000._r8
 	    end if
          end do
-      end do
+      end if
       
       do f = 1, num_nolakec
          c = filter_nolakec(f)

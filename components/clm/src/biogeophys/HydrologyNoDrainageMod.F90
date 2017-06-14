@@ -124,7 +124,7 @@ contains
          dz                 => col%dz                                 , & ! Input:  [real(r8) (:,:) ]  layer thickness depth (m)             
          zi                 => col%zi                                 , & ! Input:  [real(r8) (:,:) ]  interface depth (m)                   
          snl                => col%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers                    
-         nlev2bed           =>    col%nlev2bed                          , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+         nlev2bed           => col%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
          ctype              => col%itype                              , & ! Input:  [integer  (:)   ]  column type                              
 
          t_h2osfc           => temperature_vars%t_h2osfc_col          , & ! Input:  [real(r8) (:)   ]  surface water temperature               

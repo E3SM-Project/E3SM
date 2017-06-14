@@ -17,9 +17,9 @@ module SoilWaterMovementMod
   public :: Compute_EffecRootFrac_And_VertTranSink_Default
   !
   ! !PRIVATE DATA MEMBERS:
-  integer, parameter :: zengdecker_2009 = 0
-  integer, parameter :: vsfm = 1
-  integer :: soilroot_water_method     !0: use the Zeng and deck method, this will be readin from namelist in the future
+  integer, parameter, public :: zengdecker_2009 = 0
+  integer, parameter, public :: vsfm = 1
+  integer, public :: soilroot_water_method     !0: use the Zeng and deck method, this will be readin from namelist in the future
 
   ! IDs to indentify the conditions for VSFM
   integer :: vsfm_cond_id_for_infil
@@ -252,6 +252,7 @@ contains
     ! r_j = a_j [d wat_j-1] + b_j [d wat_j] + c_j [d wat_j+1]
     !
     ! !USES:
+    use clm_varctl           , only : use_var_soil_thick
     use shr_kind_mod         , only : r8 => shr_kind_r8     
     use shr_const_mod        , only : SHR_CONST_TKFRZ, SHR_CONST_LATICE, SHR_CONST_G
     use decompMod            , only : bounds_type        

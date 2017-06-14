@@ -610,13 +610,13 @@ contains
 	       nlevbed = max(nlevbed, 5)
 	       nlevbed = min(nlevbed, nlevgrnd)
                col%nlevbed(c) = nlevbed
-	       col%zibed(c) = zi(nlevbed)
+	       col%zibed(c) = zisoi(nlevbed)
             end if
          end do
          deallocate(dtb)
       else
          col%nlevbed(c) = nlevsoi
-	 col%zibed(c) = zi(nlevsoi)
+	 col%zibed(c) = zisoi(nlevsoi)
       end if
 
       !-----------------------------------------------
