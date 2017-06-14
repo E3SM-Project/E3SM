@@ -55,7 +55,7 @@ class Component(EntryID):
         if values is None:
             return
 
-        # determine match_type if there is a tie 
+        # determine match_type if there is a tie
         # ASSUME a default of "last" if "match" attribute is not there
         match_type = values.get("match", default="last")
 
@@ -94,7 +94,7 @@ class Component(EntryID):
                         del match_values[:]
                     match_values.append(valnode.text)
 
-                else: 
+                else:
                     if match_type == "last":
                         # take the *last* best match
                         if match_count >= match_max:
@@ -116,14 +116,64 @@ class Component(EntryID):
         return match_value
 
     #pylint: disable=arguments-differ
-    def get_description(self, compsetname):
+    def get_description(self, compsetname, component=None):
+        component = component.lower()
         rootnode = self.get_node("description")
-        desc_nodes = self.get_nodes("desc", root=rootnode)
-        desc = ""
-        for node in desc_nodes:
-            compsetmatch = node.get("compset")
-            if re.search(compsetmatch, compsetname):
-                desc += node.text
+        desc = None
+        if self.get_version() == 3.0:
+            expect(component is not None,"component argument required for version3 files")
+            modifier_mode = rootnode.get('modifier_mode')
+            if modifier_mode is None:
+                modifier_mode = '*'
+                expect(modifier_mode in ('*','1','?','+'),
+                       "Invalid modifier_mode {} in file {}".format(modifier_mode, self.filename))
+
+            desc_nodes = self.get_nodes("desc", root=rootnode)
+            optiondesc = {}
+            # first pass just make a hash of the option descriptions
+            for node in desc_nodes:
+                option = node.get('option')
+                if option is not None:
+                    optiondesc[option] = node.text
+            #second pass find a component match
+            for node in desc_nodes:
+                compdesc = node.get(component)
+
+                if compdesc is None:
+                    continue
+                opt_parts = [ x.rstrip("]") for x in compdesc.split("[%") ]
+                parts = opt_parts.pop(0).split("%")
+
+                reqset = set(parts)
+                fullset = set(parts+opt_parts)
+                comparts = compsetname.split('_')
+                for comp in comparts:
+                    complist = comp.split('%')
+
+                    cset = set(complist)
+                    if cset <= fullset:
+                        if modifier_mode == '1':
+                            expect(len(complist) == 2,
+                                   "Expected exactly one modifer found {}".format(len(complist)))
+                        elif modifier_mode == '+':
+                            expect(len(complist) >= 2,
+                                   "Expected one or more modifers found {}".format(len(complist)))
+                        elif modifier_mode == '?':
+                            expect(len(complist) <= 2,
+                                   "Expected 0 or one modifers found {}".format(len(complist)))
+                        # found a match
+                        expect(desc is None
+                               ,"Found multiple matchs in file {} one: {} another: {}".format(self.filename,desc,node.text))
+                        desc = node.text
+                        for part in comp.split('%'):
+                            if part in optiondesc:
+                                desc += optiondesc[part]
+
+        elif self.get_version <= 2.0:
+            for node in desc_nodes:
+                compsetmatch = node.get("compset")
+                if compsetmatch is not None and re.search(compsetmatch, compsetname):
+                    desc += node.text
 
         return desc
 

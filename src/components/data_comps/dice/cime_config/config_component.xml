@@ -2,15 +2,16 @@
 
 <?xml-stylesheet type="text/xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
 
-  <!-- NOTE that the description block determines what DICE% values can appear in the compset name 
+  <!-- NOTE that the description block determines what DICE% values can appear in the compset name
        For DICE this is determined by the DICE_MODE values -->
-  <description>
-    <desc compset="DICE%SSMI">dice mode is ssmi:</desc>
-    <desc compset="DICE%SIAF">dice mode is ssmi_iaf:</desc>
-    <desc compset="DICE%PRES">dice mode is prescribed:</desc>
-    <desc compset="DICE%NULL">dice mode is null:</desc>
+  <description modifier_mode='1'>
+    <desc ice="DICE[%SSMI][%SIAF][%PRES][%NULL]">dice mode </desc>
+    <desc option="SSMI">is ssmi</desc>
+    <desc option="SIAF"> is siaf</desc>
+    <desc option="PRES"> is prescribed:</desc>
+    <desc option="NULL"> is null</desc>
   </description>
 
   <entry id="COMP_ICE">
