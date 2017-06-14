@@ -2,7 +2,20 @@
 
 <?xml-stylesheet type="text/xsl" href="config_compsets.xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
+ <description>
+   <desc forcing="1850"></desc>
+   <desc forcing="2000">1972-2004</desc>
+   <desc forcing="2003">2002-2003</desc>
+   <desc forcing="HIST">Historic transient </desc>
+   <desc forcing="20TR">Twentieth century transient</desc>
+   <desc forcing="4804"></desc>
+   <desc forcing="RCP2">CMIP5 rcp 2.6 forcing</desc>
+   <desc forcing="RCP4">CMIP5 rcp 4.5 forcing</desc>
+   <desc forcing="RCP6">CMIP5 rcp 6.0 forcing</desc>
+   <desc forcing="RCP8">CMIP5 rcp 8.5 forcing</desc>
+
+</description>
 
   <entry id="DRV_THREADING">
     <type>logical</type>
@@ -429,8 +442,8 @@
     <group>run_co2</group>
     <file>env_run.xml</file>
     <desc>
-      Mechanism for setting the CO2 value in ppmv for 
-      CLM if CLM_CO2_TYPE is constant or for 
+      Mechanism for setting the CO2 value in ppmv for
+      CLM if CLM_CO2_TYPE is constant or for
       POP if OCN_CO2_TYPE is constant.
     </desc>
   </entry>
