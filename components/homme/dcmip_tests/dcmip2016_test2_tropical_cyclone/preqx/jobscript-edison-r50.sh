@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#   Jobscript for launching dcmip2016 test 2 on the NERSC Cori machine
+#   Jobscript for launching dcmip2016 test 2 on the NERSC Edison machine
 #
 # usage: sbatch jobscript-...
 
@@ -9,19 +9,18 @@
 #SBATCH -n 640                # total number of mpi tasks requested
 #SBATCH -p debug              # queue (partition) -- normal, development, etc.
 #SBATCH -t 00:30:00           # run time (hh:mm:ss)
-#SBATCH -A acme               # charge hours to account 1
-#SBATCH -C haswell            # use Haswell nodes
+#SBATCH -A acme               # charge account
 
 EXEC=../../../test_execs/preqx-nlev30-interp/preqx-nlev30-interp        # set name of executable
 NCPU=640
 
 date
 
-# 1dg resolution
-cp namelist-r100.nl input.nl
+# 1/2 dg resolution
+cp namelist-r50.nl input.nl
 srun -n $NCPU $EXEC < input.nl
 
-mv movies/dcmip2016_test21.nc movies/dcmip2016_test2_r100.nc
-mv HommeTime HommeTime_r100
+mv movies/dcmip2016_test21.nc movies/dcmip2016_test2_r50.nc
+mv HommeTime HommeTime_r50
 
 date

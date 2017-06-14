@@ -6,7 +6,7 @@
 
 #SBATCH -J d16-3-theta-r50    # job name
 #SBATCH -o out_dcmip16-3.o%j  # output and error file name (%j expands to jobID)
-#SBATCH -n 1140               # total number of mpi tasks requested
+#SBATCH -n 960                # total number of mpi tasks requested
 #SBATCH -p debug              # queue (partition) -- normal, development, etc.
 #SBATCH -t 00:30:00           # run time (hh:mm:ss)
 #SBATCH -A acme               # charge hours to account 1

@@ -546,7 +546,7 @@ contains
      theta_ref(:,:,:,ie)=0
      phi_ref(:,:,:,ie)=0
      dp_ref(:,:,:,ie)=0
-#endif              
+#endif
   enddo
 
 
@@ -576,7 +576,7 @@ contains
         ! comptue mean flux
         if (nu_p>0) then
            elem(ie)%derived%dpdiss_ave(:,:,:)=elem(ie)%derived%dpdiss_ave(:,:,:)+&
-                eta_ave_w*elem(ie)%state%dp3d(:,:,:,nt)/hypervis_subcycle
+                (eta_ave_w*elem(ie)%state%dp3d(:,:,:,nt)+dp_ref(:,:,:,ie))/hypervis_subcycle
            elem(ie)%derived%dpdiss_biharmonic(:,:,:)=elem(ie)%derived%dpdiss_biharmonic(:,:,:)+&
                 eta_ave_w*stens(:,:,:,1,ie)/hypervis_subcycle
         endif
@@ -674,10 +674,17 @@ contains
            elem(ie)%state%w(:,:,k,nt)=elem(ie)%state%w(:,:,k,nt) &
                 +stens(:,:,k,3,ie)
            
-           elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt) &
-                +stens(:,:,k,4,ie)
+          ! elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt) &
+          !      +stens(:,:,k,4,ie)
         enddo
-        
+
+if(.not. theta_hydrostatic_mode) then
+  do k=1,nlev
+    elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt) +stens(:,:,k,4,ie)
+  enddo
+endif
+
+
         ! apply heating after updating sate.  using updated v gives better results in PREQX model
         !
         ! d(IE)/dt =  exner * d(Theta)/dt + phi d(dp3d)/dt   (Theta = dp3d*cp*theta)
@@ -710,7 +717,8 @@ contains
            if (theta_hydrostatic_mode) then
               heating(:,:,k)= (elem(ie)%state%v(:,:,1,k,nt)*vtens(:,:,1,k,ie) + &
                    elem(ie)%state%v(:,:,2,k,nt)*vtens(:,:,2,k,ie) ) / &
-                   (exner(:,:,k)*Cp)  
+                   (exner(:,:,k)*Cp)
+
            else
               heating(:,:,k)= (elem(ie)%state%v(:,:,1,k,nt)*vtens(:,:,1,k,ie) + &
                    elem(ie)%state%v(:,:,2,k,nt)*vtens(:,:,2,k,ie)  +&
@@ -1337,8 +1345,8 @@ contains
         elem(ie)%state%dp3d(:,:,k,np1) = &
              elem(ie)%spheremp(:,:) * (scale3 * elem(ie)%state%dp3d(:,:,k,nm1) - &
              scale1*dt2 * (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
-        
      enddo
+
 
      kptr=0
      call edgeVpack(edge6, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr, ie)
@@ -1383,6 +1391,9 @@ contains
         elem(ie)%state%v(:,:,1,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
         elem(ie)%state%v(:,:,2,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
      end do
+
+      if(theta_hydrostatic_mode) elem(ie)%state%phi(:,:,:,np1) = elem(ie)%state%phi(:,:,:,n0)
+
   end do
 
   call t_stopf('compute_andor_apply_rhs')

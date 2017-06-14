@@ -694,19 +694,31 @@ contains
   end subroutine set_elem_state
 
   !_____________________________________________________________________
+<<<<<<< HEAD
   subroutine get_state(u,v,w,T,pnh,dp,ps,rho,zm,g,elem,hvcoord,nt,ntQ)
+=======
+  subroutine get_state(u,v,w,T,pnh,dp,Cp_star,rho,zm,g,elem,hvcoord,nt,ntQ)
+>>>>>>> refs/remotes/origin/nonhydro/homme/thetah+pese
 
     ! get state variables at layer midpoints
     ! used by idealized tests to compute idealized physics forcing terms
 
+<<<<<<< HEAD
     real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,pnh,dp,zm,rho
     real(real_kind), dimension(np,np),      intent(inout) :: ps
+=======
+    real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,pnh,dp,cp_star,zm,rho
+>>>>>>> refs/remotes/origin/nonhydro/homme/thetah+pese
     real(real_kind), intent(in)    :: g
     integer,         intent(in)    :: nt,ntQ
     type(element_t), intent(inout) :: elem
     type (hvcoord_t),intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
 
-    real(real_kind) , dimension(np,np,nlev) :: phi,dpnh,kappa_star,exner,cp_star
+<<<<<<< HEAD
+    real(real_kind) , dimension(np,np,nlev) :: phi,dpnh,kappa_star,cp_star, Rstar, exner, theta
+=======
+    real(real_kind) , dimension(np,np,nlev) :: phi,dpnh,kappa_star,exner
+>>>>>>> refs/remotes/origin/nonhydro/homme/thetah+pese
     real(real_kind) , dimension(np,np) :: phis
 
     integer :: k

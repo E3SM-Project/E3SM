@@ -4,6 +4,7 @@
 #
 # usage: ./jobscript-...
 
-# launch the simulation
+# 4dg resolution
 EXEC=../../../test_execs/theta-nlev30/theta-nlev30
-openmpiexec -n 6 $EXEC < ./namelist-lowres.nl                         # launch simulation
+cp ./namelist-r400.nl input.nl
+openmpiexec -n 6 $EXEC < input.nl                          
