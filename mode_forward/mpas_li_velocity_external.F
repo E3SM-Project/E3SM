@@ -53,14 +53,16 @@ module li_velocity_external
       ! For now, just trying it with this new routine.
       subroutine velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, &
          config_default_flowParamA, config_enhancementFactor, &
-         config_flowLawExponent, config_dynamic_thickness, config_use_glp, li_mask_ValueDynamicIce, li_mask_ValueIce) &
+         config_flowLawExponent, config_dynamic_thickness, iceMeltingPointPressureDependence, &
+         li_mask_ValueDynamicIce, li_mask_ValueIce, config_use_glp) &
          bind(C, name="velocity_solver_set_parameters")
 
          use iso_c_binding, only: C_INT, C_DOUBLE, C_BOOL
 
          INTEGER(C_INT) :: li_mask_ValueDynamicIce, li_mask_ValueIce
          REAL(C_DOUBLE) :: config_ice_density, config_ocean_density, config_sea_level, config_default_flowParamA, &
-                           config_enhancementFactor, config_flowLawExponent, config_dynamic_thickness, gravity
+                           config_enhancementFactor, config_flowLawExponent, config_dynamic_thickness, gravity, &
+                           iceMeltingPointPressureDependence
          LOGICAL(C_BOOL) :: config_use_glp
       end subroutine velocity_solver_set_parameters
 
@@ -346,8 +348,10 @@ contains
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
       call velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, &
          config_default_flowParamA, config_enhancementFactor, &
-         config_flowLawExponent, config_dynamic_thickness, logical(config_use_glp, KIND=1), &
-         li_mask_ValueAlbanyActive, li_mask_ValueIce)
+         config_flowLawExponent, config_dynamic_thickness, &
+         iceMeltingPointPressureDependence, &
+         li_mask_ValueAlbanyActive, li_mask_ValueIce, &
+         logical(config_use_glp, KIND=1) )
 
       call interface_reset_stdout()
 #endif
@@ -442,6 +446,7 @@ contains
       integer :: iEdge
       real(kind=RKIND), parameter :: secondsInYear = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND
          !< The value of seconds in a year assumed by external dycores
+      integer :: err_tmp
 
       err = 0
 
@@ -548,9 +553,16 @@ contains
           call velocity_solver_solve_FO(bedTopography, lowerSurface, thickness, &
                 betaSolve, sfcMassBal, temperature, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
-                normalVelocity, dissipationVertexField % array, uReconstructX, uReconstructY, deltat)  ! return values
+                normalVelocity, dissipationVertexField % array, uReconstructX, uReconstructY, &  ! return values
+                deltat, err_tmp)  ! return values
 !	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)  ! this was used only for some ice2sea experiments, and is not a general routine to use
           call mpas_timer_stop("velocity_solver_solve_FO")
+
+          if (err_tmp > 0) then
+             call mpas_log_write("Albany velocity solve failed! (Possibly, non-convergence.) Check log.albany.0000.out for more information.", MPAS_LOG_ERR)
+          endif
+          err = ior(err,err_tmp)
+
           ! Now interpolate from vertices to cell centers
           call li_interpolate_vertex_to_cell_2d(meshPool, dissipationVertexField % array, heatDissipation)
           heatDissipation = heatDissipation / (config_ice_density * cp_ice)
@@ -602,6 +614,11 @@ contains
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
       call interface_reset_stdout()
 #endif
+
+      ! === error check
+      if (err > 0) then
+          call mpas_log_write("An error has occurred in li_velocity_external_solve.", MPAS_LOG_ERR)
+      endif
 
    !--------------------------------------------------------------------
    end subroutine li_velocity_external_solve
