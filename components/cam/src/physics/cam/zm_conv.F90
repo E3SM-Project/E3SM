@@ -2764,7 +2764,7 @@ subroutine cldprp(lchnk   , &
                totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-du(i,k)*ql(i,k+1))
             else
                totpcp(i) = totpcp(i)
-            end
+            end if
             !changes made here to put a threshold on liquid water 2017-06-01
             if (ql(i,k) > 0.0015_r8) then
                rprd(i,k) = c0mask(i)*mu(i,k)*ql(i,k)
