@@ -321,8 +321,8 @@ class Case(object):
                     elif field == "group":
                         result.extend(env_file.get_groups(root))
                     elif field == "valid_values":
-                        # pylint: disable=private-member
-                        vv = env_file._get_valid_values(root) 
+                        # pylint: disable=protected-access
+                        vv = env_file._get_valid_values(root)
                         if vv:
                             result.extend(vv)
                     elif field == "file":
