@@ -123,7 +123,6 @@ module clm_interface_pflotranMod
   private :: update_soil_moisture_pf2clm
   private :: update_bcflow_pf2clm
 
-
 #endif
 
 contains
@@ -1159,10 +1158,8 @@ contains
 
     endif
 
-#ifdef PF_THMODE
     ! (2) CLM thermal BC to PFLOTRAN-CLM interface
     if (pf_tmode) then
-
         call get_clm_bceflx(clm_interface_data, bounds, filters, ifilter)
         call pflotranModelUpdateSubsurfTCond( pflotran_m )   ! E-SrcSink and T bc
 
@@ -1170,14 +1167,12 @@ contains
 
     ! (3) pass CLM water fluxes to PFLOTRAN-CLM interface
     if (pf_hmode) then      !if coupled 'H' mode between CLM45 and PFLOTRAN
-
         call get_clm_bcwflx(clm_interface_data, bounds, filters, ifilter)
 
         ! pass flux 'vecs' from CLM to pflotran
         call pflotranModelUpdateHSourceSink( pflotran_m )   ! H SrcSink
         call pflotranModelSetSoilHbcsFromCLM( pflotran_m )  ! H bc
     end if
-#endif
 
     ! (4)
     if (pf_cmode) then
@@ -1220,7 +1215,6 @@ contains
 
     ! (6) update CLM variables from PFLOTRAN
 
-#ifdef PF_THMODE
     if (pf_hmode) then
 
         call pflotranModelGetSaturationFromPF( pflotran_m )   ! hydrological states
@@ -1229,7 +1223,6 @@ contains
         ! the actual infiltration/runoff/drainage and solute flux with BC, if defined,
         ! are retrieving from PFLOTRAN using 'update_bcflow_pf2clm' subroutine
         call pflotranModelGetBCMassBalanceDeltaFromPF( pflotran_m )
-
         call update_bcflow_pf2clm(clm_interface_data, bounds, filters, ifilter)
 
     endif
@@ -1240,7 +1233,6 @@ contains
         call update_soil_temperature_pf2clm(clm_interface_data, bounds, filters, ifilter)
 
     endif
-#endif
 
     if (pf_cmode) then
         call pflotranModelGetBgcVariablesFromPF( pflotran_m)      ! bgc variables

@@ -35,8 +35,8 @@ module CNDecompMod
   use WaterStateType         , only : waterstate_type
   use ch4Mod                 , only : ch4_type
   use cropType               , only : crop_type
-  !! bgc interface & pflotran:
-  use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode
+  !! clm interface & pflotran:
+  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -721,104 +721,94 @@ contains
       dt = real( get_step_size(), r8 )
 
       ! MUST have already updated needed bgc variables from PFLOTRAN by this point
-!!------------------------------------------------------------------
-! moved to EcosystemDynNoLeaching1
-!      call decomp_vertprofiles(bounds, &
-!           num_soilc, filter_soilc, num_soilp, filter_soilp, &
-!           soilstate_vars, canopystate_vars, cnstate_vars)
-
-!!------------------------------------------------------------------
-    if(use_bgc_interface.and.use_pflotran.and.pf_cmode) then
-      ! fpg calculation
-      do fc=1,num_soilc
-         c = filter_soilc(fc)
-         sminn_to_plant(c)       = 0._r8
-         !! local var 'col_plant_ndemand' is replaced by fluxtype%plant_ndemand_col
-!         col_plant_ndemand(c)    = 0._r8
-         do j = 1, nlevdecomp           ! sum up actual and potential column-level N fluxes to plant
-            sminn_to_plant(c)    = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
-!            col_plant_ndemand(c) = col_plant_ndemand(c) + col_plant_ndemand_vr(c,j) * dzsoi_decomp(j)
+      if(use_clm_interface.and.use_pflotran.and.pf_cmode) then
+         ! fpg calculation
+         do fc=1,num_soilc
+            c = filter_soilc(fc)
+            sminn_to_plant(c)       = 0._r8
+            do j = 1, nlevdecomp           ! sum up actual and potential column-level N fluxes to plant
+               sminn_to_plant(c)    = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
+            end do
          end do
-      end do
-      do fc=1,num_soilc
-         c = filter_soilc(fc)
-         ! calculate the fraction of potential growth that can be
-         ! acheived with the N available to plants
-         if (plant_ndemand_col(c) > 0.0_r8) then
-            fpg(c) = max(0._r8,sminn_to_plant(c)) / plant_ndemand_col(c)
-            fpg(c) = min(1._r8, fpg(c))
-         else
-            fpg(c) = 1.0_r8
-         end if
-      end do
-
-      ! fpi calculation
-      do fc=1,num_soilc
-         c = filter_soilc(fc)
-         potential_immob(c) = 0._r8
-         actual_immob(c)    = 0._r8
-         do j = 1, nlevdecomp
-            if (potential_immob_vr(c,j) > 0.0_r8) then
-                fpi_vr(c,j) = actual_immob_vr(c,j) / potential_immob_vr(c,j)
-                potential_immob(c) = potential_immob(c) + potential_immob_vr(c,j)*dzsoi_decomp(j)
-                actual_immob(c) = actual_immob(c) + actual_immob_vr(c,j)*dzsoi_decomp(j)
+         do fc=1,num_soilc
+            c = filter_soilc(fc)
+            ! calculate the fraction of potential growth that can be
+            ! acheived with the N available to plants
+            if (plant_ndemand_col(c) > 0.0_r8) then
+               fpg(c) = max(0._r8,sminn_to_plant(c)) / plant_ndemand_col(c)
+               fpg(c) = min(1._r8, fpg(c))
             else
-                fpi_vr(c,j) = 0.0_r8
+               fpg(c) = 1.0_r8
             end if
          end do
-      end do
-      do fc=1,num_soilc
-         c = filter_soilc(fc)
-         if (potential_immob(c) > 0.0_r8) then
-            fpi(c) = max(0._r8,actual_immob(c)) / potential_immob(c)
-            fpi(c) = min(1._r8, fpi(c))
-         else
-            fpi(c) = 1.0_r8
-         end if
-      end do
 
-
-      if (use_lch4) then
-         ! Add up potential hr for methane calculations
-         ! potential hr is not available from PFLOTRAN, so here temporarily as actual hr
-         ! in the end, this methane module will be moving into PFLOTRAN as well
-
-         do j = 1,nlevdecomp
-            do fc = 1, num_soilc
-               c = filter_soilc(fc)
-               phr_vr(c,j) = hr_vr(c,j)
-            end do
-         end do
-
-         ! Calculate total fraction of potential HR, for methane code
-         do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               hrsum(c,j) = hr_vr(c,j)
-            end do
-         end do
-
-         ! Nitrogen limitation / (low)-moisture limitation
-         do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               if (phr_vr(c,j) > 0._r8) then
-                  fphr(c,j) = hrsum(c,j) / phr_vr(c,j) * w_scalar(c,j)
-                  fphr(c,j) = max(fphr(c,j), 0.01_r8) ! Prevent overflow errors for 0 respiration
+         ! fpi calculation
+         do fc=1,num_soilc
+            c = filter_soilc(fc)
+            potential_immob(c) = 0._r8
+            actual_immob(c)    = 0._r8
+            do j = 1, nlevdecomp
+               if (potential_immob_vr(c,j) > 0.0_r8) then
+                  fpi_vr(c,j) = actual_immob_vr(c,j) / potential_immob_vr(c,j)
+                  potential_immob(c) = potential_immob(c) + potential_immob_vr(c,j)*dzsoi_decomp(j)
+                  actual_immob(c) = actual_immob(c) + actual_immob_vr(c,j)*dzsoi_decomp(j)
                else
-                  fphr(c,j) = 1._r8
+                  fpi_vr(c,j) = 0.0_r8
                end if
             end do
          end do
-      end if
+         do fc=1,num_soilc
+            c = filter_soilc(fc)
+            if (potential_immob(c) > 0.0_r8) then
+               fpi(c) = max(0._r8,actual_immob(c)) / potential_immob(c)
+               fpi(c) = min(1._r8, fpi(c))
+            else
+               fpi(c) = 1.0_r8
+            end if
+         end do
 
-      ! needs to zero CLM-CNP variables NOT available from pflotran bgc coupling
-      call CNvariables_nan4pf(bounds, num_soilc, filter_soilc,   &
-                        num_soilp, filter_soilp,                 &
-                        carbonflux_vars, nitrogenflux_vars,      &
+
+         if (use_lch4) then
+            ! Add up potential hr for methane calculations
+            ! potential hr is not available from PFLOTRAN, so here temporarily as actual hr
+            ! in the end, this methane module will be moving into PFLOTRAN as well
+
+            do j = 1,nlevdecomp
+               do fc = 1, num_soilc
+                  c = filter_soilc(fc)
+                  phr_vr(c,j) = hr_vr(c,j)
+               end do
+            end do
+
+            ! Calculate total fraction of potential HR, for methane code
+            do j = 1,nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  hrsum(c,j) = hr_vr(c,j)
+               end do
+            end do
+
+            ! Nitrogen limitation / (low)-moisture limitation
+            do j = 1,nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  if (phr_vr(c,j) > 0._r8) then
+                     fphr(c,j) = hrsum(c,j) / phr_vr(c,j) * w_scalar(c,j)
+                     fphr(c,j) = max(fphr(c,j), 0.01_r8) ! Prevent overflow errors for 0 respiration
+                  else
+                     fphr(c,j) = 1._r8
+                  end if
+               end do
+            end do
+         end if
+
+         ! needs to zero CLM-CNP variables NOT available from pflotran bgc coupling
+         call CNvariables_nan4pf(bounds, num_soilc, filter_soilc, &
+                        num_soilp, filter_soilp,                  &
+                        carbonflux_vars, nitrogenflux_vars,       &
                         phosphorusstate_vars, phosphorusflux_vars)
 
-    end if !!if(use_clm_interface.and.use_pflotran.and.pf_cmode)
+      end if !!if(use_clm_interface.and.use_pflotran.and.pf_cmode)
 
 !!------------------------------------------------------------------
       ! phase-3 Allocation for plants
