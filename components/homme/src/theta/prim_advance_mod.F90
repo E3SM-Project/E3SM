@@ -8,7 +8,7 @@
 !
 module prim_advance_mod
 
-  use control_mod,    only: qsplit,rsplit, use_moisture, theta_hydrostatic_mode
+  use control_mod,    only: qsplit,rsplit, use_moisture, use_cpstar, theta_hydrostatic_mode
   use derivative_mod, only: derivative_t
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
@@ -83,7 +83,7 @@ contains
   subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
 
     use bndry_mod,      only: bndry_exchangev
-    use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, &
+    use control_mod,    only: prescribed_wind, qsplit, tstep_type, &
                               qsplit, integration, hypervis_order, nu, dcmip16_mu, dcmip16_mu_s
     use edge_mod,       only: edgevpack, edgevunpack, initEdgeBuffer
     use edgetype_mod,   only: EdgeBuffer_t
@@ -458,7 +458,7 @@ contains
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
   !
   !
-  use control_mod, only : nu, nu_div, hypervis_subcycle, nu_s, nu_p, nu_top, psurf_vis, swest
+  use control_mod, only : nu, nu_div, hypervis_subcycle, nu_s, nu_p, nu_top
   use hybvcoord_mod, only : hvcoord_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
   use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
@@ -935,7 +935,6 @@ contains
   use edge_mod,       only : edgevpack, edgevunpack, edgeDGVunpack
   use edgetype_mod,   only : edgedescriptor_t
   use bndry_mod,      only : bndry_exchangev
-  use control_mod,    only : moisture, qsplit, use_cpstar, rsplit, swest
   use hybvcoord_mod,  only : hvcoord_t
   use physics_mod,    only : virtual_specific_heat, virtual_temperature
   use prim_si_mod,    only : preq_vertadv_v, preq_vertadv_upwind, preq_omega_ps, preq_hydrostatic_v2
@@ -1412,7 +1411,6 @@ contains
   use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
   use edgetype_mod, only : edgedescriptor_t
   use bndry_mod, only : bndry_exchangev
-  use control_mod, only : moisture, qsplit, use_cpstar, rsplit, swest
   use hybvcoord_mod, only : hvcoord_t
 
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa, Rwater_vapor,p0, g
