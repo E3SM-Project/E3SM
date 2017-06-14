@@ -201,7 +201,6 @@ module clm_interface_bgcType
   end type clm_interface_bgc_datatype
 !!-------------------------------------------------------------------------------------------------
 
-!!  type(clm_interface_bgc_datatype) , public, target , save :: clm_bgc_data
   
 contains
 

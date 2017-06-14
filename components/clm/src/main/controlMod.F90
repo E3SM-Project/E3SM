@@ -404,18 +404,20 @@ contains
        ! ----------------------------------------------------------------------
        !! bgc & pflotran interface
        if(.not.use_clm_interface) then
-            use_clm_bgc     = .true.
+            use_clm_bgc     = .false.
             use_pflotran    = .false.
-       end if
+       else
 
-       if (use_clm_bgc) then
-            use_pflotran = .false.
-       end if
+            if (use_clm_bgc) then
+                use_pflotran = .false.
+            end if
 
-       if (use_pflotran) then
-            use_clm_bgc = .false.
-            !! enable 'use_nitrif_denitrif' to initilize Nh4 & NO3 pools, NOT to implement 'nitrif_denitrif'
-            use_nitrif_denitrif = .true.
+            if (use_pflotran) then
+                use_clm_bgc = .false.
+                !! enable 'use_nitrif_denitrif' to initilize Nh4 & NO3 pools,
+                !! but NOT to implement 'nitrif_denitrif'
+               use_nitrif_denitrif = .true.
+            end if
        end if
 
     endif   ! end of if-masterproc if-block
