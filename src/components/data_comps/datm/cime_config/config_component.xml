@@ -46,7 +46,7 @@
       <value compset="%WISOQIA">CLM_QIAN_WISO</value>
       <value compset="%CRU">CLMCRUNCEP</value>
       <value compset="%CRUv7">CLMCRUNCEPv7</value>
-      <value compset="%GSWv1">CLMGSWP3v1</value>
+      <value compset="%GSWP3v1">CLMGSWP3v1</value>
       <value compset="%1PT">CLM1PT</value>
       <value compset="%CPLHIST">CPLHISTForcing</value>
     </values>
