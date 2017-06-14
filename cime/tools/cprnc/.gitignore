@@ -1,0 +1,4 @@
+.env_mach_specific.*
+Depends.intel
+Macros.cmake
+env_mach_specific.xml
