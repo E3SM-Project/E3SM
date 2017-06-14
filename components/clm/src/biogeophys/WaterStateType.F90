@@ -528,7 +528,6 @@ contains
     use abortutils      , only : endrun
     use fileutils       , only : getfil
     use ncdio_pio       , only : file_desc_t, ncd_io
-    use clm_varctl      , only : do_varsoil
     !
     ! !ARGUMENTS:
     class(waterstate_type)                :: this
@@ -585,7 +584,7 @@ contains
     ! of when FATES-hydraulics is used. As such, this is trivially set to 0.0 (rgk 03-2017)
     this%total_plant_stored_h2o_col(bounds%begc:bounds%endc) = 0.0_r8
     
-    associate(snl => col%snl, nlev2bed => col%nlev2bed) 
+    associate(snl => col%snl, nlev2bed => col%nlevbed) 
 
       this%h2osfc_col(bounds%begc:bounds%endc) = 0._r8
       this%h2ocan_patch(bounds%begp:bounds%endp) = 0._r8
@@ -656,11 +655,7 @@ contains
          l = col%landunit(c)
          if (.not. lun%lakpoi(l)) then  !not lake
 
-	    if(do_varsoil) then
-	      nlevbed = nlev2bed(c)
-	    else
-	      nlevbed = nlevsoi
-	    end if
+	    nlevbed = nlev2bed(c)
             ! volumetric water
             if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
                nlevs = nlevgrnd

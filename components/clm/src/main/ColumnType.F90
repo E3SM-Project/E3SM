@@ -48,7 +48,8 @@ module ColumnType
      real(r8), pointer :: n_melt               (:)   ! SCA shape parameter
      real(r8), pointer :: topo_slope           (:)   ! gridcell topographic slope
      real(r8), pointer :: topo_std             (:)   ! gridcell elevation standard deviation
-     integer, pointer  :: nlev2bed             (:)   ! number of layers to bedrock
+     integer, pointer  :: nlevbed              (:)   ! number of layers to bedrock
+     real(r8), pointer :: zibed                (:)   ! bedrock depth in model (interface level at nlevbed)
 
      ! vertical levels
      integer , pointer :: snl                  (:)   ! number of snow layers

@@ -30,11 +30,6 @@ module SoilHydrologyMod
   public :: Drainage             ! Calculate subsurface drainage
   public :: DrainageVSFM         ! Calculate subsurface drainage for VSFM
   public :: CLMVICMap
-  ! !PRIVATE DATA MEMBERS:
-  ! Get these from SoilWaterMovementMod eventually
-  integer, parameter :: zengdecker2009 = 0
-  integer, parameter :: vsfm = 1
-  integer :: soilroot_water_method=0     !0: use the Zeng and deck method, this will be readin from namelist in the future
   !-----------------------------------------------------------------------
 
 contains
@@ -54,9 +49,9 @@ contains
     use clm_varpar      , only : nlevsoi, nlevgrnd, maxpatch_pft
     use clm_time_manager, only : get_step_size
     use clm_varpar      , only : nlayer, nlayert
-     use clm_varctl     , only : do_varsoil
+    use clm_varctl      , only : use_var_soil_thick
     use abortutils      , only : endrun
-!    use SoilWaterMovementMod, only : soilroot_water_method, zengdecker_2009, vsfm
+    use SoilWaterMovementMod, only : soilroot_water_method, zengdecker_2009, vsfm
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -91,7 +86,7 @@ contains
     associate(                                                        & 
          snl              =>    col%snl                             , & ! Input:  [integer  (:)   ]  minus number of snow layers                        
          dz               =>    col%dz                              , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
-         nlev2bed         =>    col%nlev2bed                        , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+         nlev2bed         =>    col%nlevbed                         , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
 
          sucsat           =>    soilstate_vars%sucsat_col           , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
          watsat           =>    soilstate_vars%watsat_col           , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
@@ -130,12 +125,8 @@ contains
       dtime = get_step_size()
 
       do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
-        if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)
-        else
-            nlevbed = nlevsoi
-        end if
+         c = filter_hydrologyc(fc)
+       	 nlevbed = nlev2bed(c)
          do j = 1,nlevbed
 
             ! Porosity of soil, partial volume of ice and liquid, fraction of ice in each layer,
@@ -157,10 +148,10 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          fff(c) = 0.5_r8
-         if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-           nlevbed = nlev2bed(c)
-           fff(c) = 0.5_r8 * col%zi(c,nlevsoi) / min(col%zi(c,nlevbed), col%zi(c,nlevsoi))
-        end if
+         if (soilroot_water_method .eq. zengdecker2009 .and. use_var_soil_thick) then
+            nlevbed = nlev2bed(c)
+            fff(c) = 0.5_r8 * col%zi(c,nlevsoi) / min(col%zi(c,nlevbed), col%zi(c,nlevsoi))
+         end if
          if (use_vichydro) then 
             top_moist(c) = 0._r8
             top_ice(c) = 0._r8
@@ -269,12 +260,10 @@ contains
      use shr_const_mod    , only : shr_const_pi
      use clm_varpar       , only : nlayer, nlayert
      use clm_varpar       , only : nlevsoi, nlevgrnd
-     use clm_varctl       , only : do_varsoil
      use clm_varcon       , only : denh2o, denice, roverg, wimp, pc, mu, tfrz
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_sunwall, icol_shadewall, icol_road_perv
      use landunit_varcon  , only : istsoil, istcrop
      use clm_time_manager , only : get_step_size
-!     use SoilWaterMovementMod, only : soilroot_water_method, zengdecker_2009, vsfm
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds               
@@ -328,7 +317,7 @@ contains
      associate(                                                                & 
           snl                  =>    col%snl                                 , & ! Input:  [integer  (:)   ]  minus number of snow layers                        
           dz                   =>    col%dz                                  , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
-         nlev2bed         =>    col%nlev2bed                                 , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+         nlev2bed         =>    col%nlevbed                                  , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
 
           t_soisno             =>    temperature_vars%t_soisno_col           , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
 
@@ -378,12 +367,8 @@ contains
 
        ! Infiltration into surface soil layer (minus the evaporation)
        do fc = 1, num_hydrologyc
-             c = filter_hydrologyc(fc)
-          if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)
-          else
-            nlevbed = nlevsoi
-          end if
+          c = filter_hydrologyc(fc)
+       	  nlevbed = nlev2bed(c)
           do j = 1,nlevbed
              ! Porosity of soil, partial volume of ice and liquid
              vol_ice(c,j) = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))
@@ -556,8 +541,8 @@ contains
      use clm_varcon       , only : pondmx, tfrz, watmin,denice,denh2o
      use clm_varpar       , only : nlevsoi, nlevgrnd
      use column_varcon    , only : icol_roof, icol_road_imperv
-     use clm_varctl       , only : use_vsfm, do_varsoil
-!     use SoilWaterMovementMod, only : soilroot_water_method, zengdecker_2009, vsfm
+     use clm_varctl       , only : use_vsfm, use_var_soil_thick
+     use SoilWaterMovementMod, only : soilroot_water_method, zengdecker_2009, vsfm
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds  
@@ -616,7 +601,7 @@ contains
           dz                 =>    col%dz                                , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
           z                  =>    col%z                                 , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
           zi                 =>    col%zi                                , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
-         nlev2bed            =>    col%nlev2bed                          , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+         nlev2bed            =>    col%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
 
           t_soisno           =>    temperature_vars%t_soisno_col         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
 
@@ -655,12 +640,8 @@ contains
        ! Convert layer thicknesses from m to mm
 
        do fc = 1, num_hydrologyc
-             c = filter_hydrologyc(fc)
-          if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)
-          else
-            nlevbed = nlevsoi
-          end if
+          c = filter_hydrologyc(fc)
+       	  nlevbed = nlev2bed(c)
           do j = 1,nlevbed
              dzmm(c,j) = dz(c,j)*1.e3_r8
           end do
@@ -680,20 +661,16 @@ contains
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-          if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)
-          else
-            nlevbed = nlevsoi
-          end if
+       	  nlevbed = nlev2bed(c)
           jwt(c) = nlevbed
           ! allow jwt to equal zero when zwt is in top layer
           do j = 1,nlevbed
              if(zwt(c) <= zi(c,j)) then
-                  if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil .and. zwt(c) == zi(c,nlevbed)) then
-                    exit
+                  if (soilroot_water_method .eq. zengdecker2009 .and. use_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
+                     exit
                   else
-                    jwt(c) = j-1
-                    exit
+                     jwt(c) = j-1
+                     exit
 		  end if
              end if
           enddo
@@ -703,11 +680,7 @@ contains
        ! Water table changes due to qcharge
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-          if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)
-          else
-            nlevbed = nlevsoi
-          end if
+       	  nlevbed = nlev2bed(c)
 
           !scs: use analytical expression for aquifer specific yield
           rous = watsat(c,nlevbed) &
@@ -716,10 +689,10 @@ contains
 
           !--  water table is below the soil column  --------------------------------------
           if(jwt(c) == nlevbed) then             
-	    if(.not. (soilroot_water_method .eq. zengdecker2009 .and. do_varsoil)) then
-             wa(c)  = wa(c) + qcharge(c)  * dtime
-             zwt(c) = zwt(c) - (qcharge(c)  * dtime)/1000._r8/rous
-            end if
+	     if (.not. (soilroot_water_method .eq. zengdecker2009 .and. use_var_soil_thick)) then
+                wa(c)  = wa(c) + qcharge(c)  * dtime
+                zwt(c) = zwt(c) - (qcharge(c)  * dtime)/1000._r8/rous
+             end if
           else                                
              !-- water table within soil layers 1-9  -------------------------------------
              ! try to raise water table to account for qcharge
@@ -765,12 +738,12 @@ contains
              jwt(c) = nlevbed
              do j = 1,nlevbed
                 if(zwt(c) <= zi(c,j)) then
-                  if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil .and. zwt(c) == zi(c,nlevbed)) then
-                    exit
-                  else
-                   jwt(c) = j-1
-                   exit
-		  end if
+                   if (soilroot_water_method .eq. zengdecker2009 .and. use_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
+                       exit
+                    else
+                       jwt(c) = j-1
+                       exit
+		    end if
                 end if
              enddo
           endif
@@ -781,11 +754,7 @@ contains
        ! perched water table code
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-          if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)
-          else
-            nlevbed = nlevsoi
-          end if
+       	  nlevbed = nlev2bed(c)
 
           ! define frost table as first frozen layer with unfrozen layer above it
           if(t_soisno(c,1) > tfrz) then 
@@ -905,8 +874,8 @@ contains
      use clm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
      use abortutils       , only : endrun
-     use clm_varctl       , only : use_vsfm, do_varsoil
-!     use SoilWaterMovementMod, only : soilroot_water_method, zengdecker_2009, vsfm
+     use clm_varctl       , only : use_vsfm, use_var_soil_thick
+     use SoilWaterMovementMod, only : soilroot_water_method, zengdecker_2009, vsfm
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds               
@@ -978,7 +947,7 @@ contains
           zi                 =>    col%zi                                , & ! Input:  [real(r8) (:,:) ] interface level below a "z" level (m)           
           dz                 =>    col%dz                                , & ! Input:  [real(r8) (:,:) ] layer depth (m)                                 
           snl                =>    col%snl                               , & ! Input:  [integer  (:)   ] number of snow layers                              
-         nlev2bed            =>    col%nlev2bed                          , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+         nlev2bed            =>    col%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
 
           t_soisno           =>    temperature_vars%t_soisno_col         , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)                       
 
@@ -1031,12 +1000,8 @@ contains
        ! Convert layer thicknesses from m to mm
 
         do fc = 1, num_hydrologyc
-             c = filter_hydrologyc(fc)
-          if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)
-          else
-            nlevbed = nlevsoi
-          end if
+          c = filter_hydrologyc(fc)
+       	  nlevbed = nlev2bed(c)
           do j = 1,nlevbed
              dzmm(c,j) = dz(c,j)*1.e3_r8
 
@@ -1062,21 +1027,17 @@ contains
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-          if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)
-          else
-            nlevbed = nlevsoi
-          end if
+       	  nlevbed = nlev2bed(c)
           jwt(c) = nlevbed
           ! allow jwt to equal zero when zwt is in top layer
           do j = 1,nlevbed
              if(zwt(c) <= zi(c,j)) then
-               if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil .and. zwt(c) == zi(c,nlevbed)) then
-                exit
-               else
-                 jwt(c) = j-1
-                exit
-	       end if
+                if (soilroot_water_method .eq. zengdecker2009 .and. use_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
+                   exit
+                else
+                   jwt(c) = j-1
+                   exit
+	        end if
              end if
           enddo
        end do
@@ -1087,11 +1048,7 @@ contains
        ! perched water table code
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-          if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)
-          else
-            nlevbed = nlevsoi
-          end if
+       	  nlevbed = nlev2bed(c)
 
           !  specify maximum drainage rate
           q_perch_max = 1.e-5_r8 * sin(col%topo_slope(c) * (rpi/180._r8))
@@ -1166,12 +1123,12 @@ contains
              jwt(c) = nlevbed
              do j = 1,nlevbed
                 if(zwt(c) <= zi(c,j)) then
-                  if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil .and. zwt(c) == zi(c,nlevbed)) then
-                    exit
-                  else
-                   jwt(c) = j-1
-                   exit
-                  end if
+                   if (soilroot_water_method .eq. zengdecker2009 .and. use_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
+                      exit
+                   else
+                      jwt(c) = j-1
+                      exit
+                   end if
                 end if
              enddo
           else 
@@ -1293,10 +1250,10 @@ contains
                 ! make sure baseflow isn't negative
                 rsub_top(c) = max(0._r8, rsub_top(c))
              else
-	        if(jwt(c) == nlevbed .and. soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-                  rsub_top(c)    = 0._r8
+	        if (jwt(c) == nlevbed .and. soilroot_water_method .eq. zengdecker2009 .and. use_var_soil_thick) then
+                   rsub_top(c)    = 0._r8
                 else
-                  rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*zwt(c))
+                   rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*zwt(c))
 		end if
              end if
 
@@ -1309,34 +1266,34 @@ contains
 
              !--  water table is below the soil column  --------------------------------------
              if(jwt(c) == nlevbed) then             
-	      if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-         	 if(-1._r8 * smp_l(c,nlevbed) < 0.5_r8 * dzmm(c,nlevbed)) then
-           	   zwt(c) = z(c,nlevbed) - (smp_l(c,nlevbed) / 1000._r8)
-		 end if
-                 rsub_top(c) = imped * rsub_top_max * exp(-fff(c) * zwt(c))
-                 rsub_top_tot = - rsub_top(c) * dtime
-                 s_y = watsat(c,nlevbed) &
+	        if (soilroot_water_method .eq. zengdecker2009 .and. use_var_soil_thick) then
+         	   if (-1._r8 * smp_l(c,nlevbed) < 0.5_r8 * dzmm(c,nlevbed)) then
+           	      zwt(c) = z(c,nlevbed) - (smp_l(c,nlevbed) / 1000._r8)
+		   end if
+                   rsub_top(c) = imped * rsub_top_max * exp(-fff(c) * zwt(c))
+                   rsub_top_tot = - rsub_top(c) * dtime
+                   s_y = watsat(c,nlevbed) &
                      * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
-                 s_y=max(s_y,0.02_r8)     
-                 rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,nlevbed) - zwt(c))*1.e3))
-                 rsub_top_layer=min(rsub_top_layer,0._r8)
-                 h2osoi_liq(c,nlevbed) = h2osoi_liq(c,nlevbed) + rsub_top_layer
-                 rsub_top_tot = rsub_top_tot - rsub_top_layer
-                 if (rsub_top_tot >= 0.) then 
-                   zwt(c) = zwt(c) - rsub_top_layer/s_y/1000._r8
-                 else
-                   zwt(c) = zi(c,nlevbed)
-                 end if
-	         if(rsub_top_tot < 0.) then
-	           rsub_top(c) = rsub_top(c) + rsub_top_tot / dtime
-                   rsub_top_tot = 0.
-                 end if
-              else
-                wa(c)  = wa(c) - rsub_top(c) * dtime
-                zwt(c)     = zwt(c) + (rsub_top(c) * dtime)/1000._r8/rous
-                h2osoi_liq(c,nlevsoi) = h2osoi_liq(c,nlevsoi) + max(0._r8,(wa(c)-5000._r8))
-                wa(c)  = min(wa(c), 5000._r8)
-              end if
+                   s_y=max(s_y,0.02_r8)     
+                   rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,nlevbed) - zwt(c))*1.e3))
+                   rsub_top_layer=min(rsub_top_layer,0._r8)
+                   h2osoi_liq(c,nlevbed) = h2osoi_liq(c,nlevbed) + rsub_top_layer
+                   rsub_top_tot = rsub_top_tot - rsub_top_layer
+                   if (rsub_top_tot >= 0.) then 
+                      zwt(c) = zwt(c) - rsub_top_layer/s_y/1000._r8
+                   else
+                      zwt(c) = zi(c,nlevbed)
+                   end if
+	           if (rsub_top_tot < 0.) then
+	              rsub_top(c) = rsub_top(c) + rsub_top_tot / dtime
+                      rsub_top_tot = 0.
+                   end if
+                else
+                   wa(c)  = wa(c) - rsub_top(c) * dtime
+                   zwt(c)     = zwt(c) + (rsub_top(c) * dtime)/1000._r8/rous
+                   h2osoi_liq(c,nlevsoi) = h2osoi_liq(c,nlevsoi) + max(0._r8,(wa(c)-5000._r8))
+                   wa(c)  = min(wa(c), 5000._r8)
+                end if
              else                                
                 !-- water table within soil layers 1-9  -------------------------------------
                 !============================== RSUB_TOP =========================================
@@ -1399,12 +1356,12 @@ contains
                 jwt(c) = nlevbed
                 do j = 1,nlevbed
                    if(zwt(c) <= zi(c,j)) then
-                     if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil .and. zwt(c) == zi(c,nlevbed)) then
-                       exit
-                     else
-                      jwt(c) = j-1
-                      exit
-                     end if
+                      if (soilroot_water_method .eq. zengdecker2009 .and. use_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
+                         exit
+                      else
+                         jwt(c) = j-1
+                         exit
+                      end if
                    end if
                 enddo
              end if! end of jwt if construct
@@ -1420,12 +1377,8 @@ contains
        !  if column fully saturated, excess water goes to runoff
 
        do fc = 1, num_hydrologyc
-             c = filter_hydrologyc(fc)
-          if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)
-          else
-            nlevbed = nlevsoi
-          end if
+          c = filter_hydrologyc(fc)
+      	  nlevbed = nlev2bed(c)
           do j = nlevbed,2,-1
              xsi(c)            = max(h2osoi_liq(c,j)-eff_porosity(c,j)*dzmm(c,j),0._r8)
              if (use_vsfm) then
@@ -1472,12 +1425,8 @@ contains
        ! If insufficient water in soil layers, get from aquifer water
 
        do fc = 1, num_hydrologyc
-             c = filter_hydrologyc(fc)
-          if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)
-          else
-            nlevbed = nlevsoi
-          end if
+          c = filter_hydrologyc(fc)
+       	  nlevbed = nlev2bed(c)
        	  do j = 1, nlevbed-1
              if (h2osoi_liq(c,j) < watmin) then
                 xs(c) = watmin - h2osoi_liq(c,j)
@@ -1496,11 +1445,7 @@ contains
        ! Get water for bottom layer from layers above if possible
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-          if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
-       	    nlevbed = nlev2bed(c)
-          else
-            nlevbed = nlevsoi
-          end if
+       	  nlevbed = nlev2bed(c)
        	  j = nlevbed
           if (h2osoi_liq(c,j) < watmin) then
              xs(c) = watmin-h2osoi_liq(c,j)

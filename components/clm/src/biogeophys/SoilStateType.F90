@@ -395,7 +395,7 @@ contains
    ! Initialize root fraction 
    
    call init_vegrootfr(bounds, nlevsoi, nlevgrnd, &
-        col%nlev2bed(bounds%begc:bounds%endc), &
+        col%nlevbed(bounds%begc:bounds%endc), &
         this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
 
     ! --------------------------------------------------------------------
@@ -579,7 +579,7 @@ contains
 
           do lev = 1,nlevgrnd
          ! Number of soil layers in hydrologically active columns = NLEV2BED
-	     nlevbed = col%nlev2bed(c)
+	     nlevbed = col%nlevbed(c)
              if ( more_vertlayers )then ! duplicate clay and sand values from last soil layer
 
                 if (lev .eq. 1) then
@@ -609,7 +609,7 @@ contains
                    sand = sand3d(g,nlevsoi)
                    om_frac = 0._r8
 		   if(do_varsoil .and. lev <= nlevbed) then
-		     om_frac = (organic3d(g,nlevbed)/organic_max)**2._r8
+		     om_frac = (organic3d(g,nlevsoi)/organic_max)**2._r8
                    end if
                 endif
              end if
@@ -856,7 +856,7 @@ if(use_dynroot) then
           write(iulog,*) "Initialize rootfr to default"
        end if
        call init_vegrootfr(bounds, nlevsoi, nlevgrnd, &
-        col%nlev2bed(bounds%begc:bounds%endc), &
+        col%nlevbed(bounds%begc:bounds%endc), &
        this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
     end if
 end if
