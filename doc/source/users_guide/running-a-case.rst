@@ -102,7 +102,7 @@ messages:
   ``$REST_OPTION``, ``$REST_N`` and/or ``$REST_DATE``, and ``$RESUBMIT``
   before resubmitting.
 
-See :ref:`the basic example<faq-basic-example>` for a complete example 
+See :ref:`the basic example<use-cases-basic-example>` for a complete example 
 of how to run a case.
 
 ---------------------------------

@@ -1,6 +1,7 @@
-FAQ
-=====
-The following section contains examples for a variety of use cases, spanning a beginner to expert-only range.
+Use cases
+=========
+
+This section contains examples in a variety of use cases.
 
 .. toctree::
    :maxdepth: 3
