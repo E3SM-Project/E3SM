@@ -2,7 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" href="config_compsets.xsl" ?>
 
-<entry_id>
+<entry_id version="2.0">
 
 <!-- The list of component classes that this coupler/driver knows how
      to deal with.  Stub and data models for each component class
@@ -2566,7 +2566,7 @@
    <desc>whether the PROJECT value is required on this machine</desc>
  </entry>
 
-  <help>
+ <help>
     =========================================
     Notes:
     (1) Time period is first four characters of
