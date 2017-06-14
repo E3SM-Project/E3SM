@@ -91,8 +91,12 @@ int velocity_solver_init_mpi(int* fComm);
 
 void velocity_solver_finalize();
 
-void velocity_solver_set_parameters(double const* gravity_F, double const* ice_density_F, double const* ocean_density_F, double const* sea_level_F, double const* flowParamA_F, 
-                        double const* enhancementFactor_F, double const* flowLawExponent_F, double const* dynamic_thickness_F, bool const* use_GLP_F, int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce);
+void velocity_solver_set_parameters(double const* gravity_F, double const* ice_density_F, double const* ocean_density_F,
+                        double const* sea_level_F, double const* flowParamA_F,
+                        double const* enhancementFactor_F, double const* flowLawExponent_F, double const* dynamic_thickness_F,
+                        double const* clausius_clapeyron_coeff,
+                        int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce,
+                        bool const* use_GLP_F);
 
 void velocity_solver_init_l1l2(double const* levelsRatio);
 
@@ -108,7 +112,8 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
     double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F,
     double* const dirichletVelocityXValue = 0, double* const dirichletVelocitYValue = 0,
     double* u_normal_F = 0, double* dissipation_heat_F = 0,
-    double* xVelocityOnCell = 0, double* yVelocityOnCell = 0, double const * deltat = 0);
+    double* xVelocityOnCell = 0, double* yVelocityOnCell = 0, double const * deltat = 0,
+    int error = 0);
 
 
 void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _cellsMask_F, int const* dirichletNodesMask_F, int const* floatingEdgeMask_F);
@@ -162,7 +167,7 @@ extern void velocity_solver_export_l1l2_velocity__(const std::vector<double>& la
 #endif
 
 extern void velocity_solver_set_physical_parameters__(double const& gravity, double const& ice_density, double const& ocean_density, double const& sea_level, double const& flowParamA, 
-                        double const& enhancementFactor, double const& flowLawExponent, double const& dynamic_thickness); 
+                        double const& enhancementFactor, double const& flowLawExponent, double const& dynamic_thickness, bool const& useGLP, double const& clausiusClapeyronCoeff); 
 
 extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     int nGlobalTriangles, bool ordering, bool first_time_step,
@@ -178,6 +183,7 @@ extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     const std::vector<double>& temperatureOnTetra,
     std::vector<double>& dissipationHeatOnTetra,
     std::vector<double>& velocityOnVertices,
+    int& error,
     const double& deltat = 0.0);
 
 
