@@ -21,8 +21,9 @@ class Component(EntryID):
         if comp_class is None:
             schema = files.get_schema("CONFIG_CPL_FILE", attributes={"version":"{}".format(self.get_version())})
         else:
-            schema = files.get_schema("CONFIG_{}_FILE".format(comp_class), attributes={"version":self.get_version()})
-        self.validate_xml_file(infile, schema)
+            schema = files.get_schema("CONFIG_{}_FILE".format(comp_class), attributes={"version":"{}".format(self.get_version())})
+        if schema is not None:
+            self.validate_xml_file(infile, schema)
 
     #pylint: disable=arguments-differ
     def get_value(self, name, attribute=None, resolved=False, subgroup=None):

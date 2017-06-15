@@ -14,7 +14,6 @@
   <xs:element name="help" type="xs:string"/>
   <xs:element name="default_value" type="xs:string"/>
   <xs:element name="valid_values" type="xs:string"/>
-  <xs:element name="schema" type="xs:string"/>
   <xs:element name="category" type="xs:string"/>
   <xs:element name="header" type="xs:string"/>
 
@@ -32,6 +31,12 @@
   <xs:element name="desc">
     <xs:complexType mixed="true">
       <xs:attribute ref="compset"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="schema">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="version"/>
     </xs:complexType>
   </xs:element>
 

@@ -623,7 +623,7 @@ class Case(object):
             comp_config_file = self.get_resolved_value(comp_config_file)
             expect(comp_config_file is not None and os.path.isfile(comp_config_file),
                    "Config file {} for component {} not found.".format(comp_config_file, comp_name))
-            compobj = Component(comp_config_file)
+            compobj = Component(comp_config_file, comp_class=comp_class)
             compsetname = self._compsetname
             if 'ESP_' not in compsetname:
                 compsetname += '_SESP'
@@ -1072,10 +1072,12 @@ class Case(object):
                       "README.case", caseroot=self._caseroot)
         append_status("Pes     specification file is {}".format(self.get_value("PES_SPEC_FILE")),
                       "README.case", caseroot=self._caseroot)
-        append_status("Forcing is {}".format(self._component_description["forcing"])
+        if "forcing" in self._component_description:
+            append_status("Forcing is {}".format(self._component_description["forcing"])
                       ,"README.case", caseroot=self._caseroot)
         for component_class in self._component_classes:
-            if component_class in self._component_description:
+            if component_class in self._component_description and \
+               len(self._component_description[component_class])>0:
                 append_status("Component {} is {}".format(component_class, self._component_description[component_class]),"README.case", caseroot=self._caseroot)
             if component_class == "CPL":
                 continue
