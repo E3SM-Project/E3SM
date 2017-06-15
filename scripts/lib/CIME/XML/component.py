@@ -155,7 +155,8 @@ class Component(EntryID):
                     expect(len(desc)==0,
                            "Too many matches on forcing field {} in file {}".\
                                format(forcing, self.filename))
-                desc = node.text
+                    desc = node.text
+
             expect(len(desc) > 0,"No match found for forcing field {} in file {}".\
                        format(forcing, self.filename))
             return desc
