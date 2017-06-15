@@ -226,6 +226,10 @@ class Component(EntryID):
         # The following is not allowed because the required WCCM field is missing
         >>> obj._get_description_match("1850_CAM50%RCO2_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]),{"RCO2":"CRU"}, "*")
         False
+        >>> obj._get_description_match("1850_CAM50_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]),{"RCO2":"CRU"}, "+")
+        False
+        >>> obj._get_description_match("1850_CAM50%WCCM_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]),{"RCO2":"CRU"}, "+")
+        True
         """
         match = False
         comparts = compsetname.split('_')
