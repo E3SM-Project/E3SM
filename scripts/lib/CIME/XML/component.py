@@ -13,7 +13,8 @@ class Component(EntryID):
 
     def __init__(self, infile, comp_class=None):
         """
-        initialize an object
+        initialize a Component obect from the component xml file in infile
+        associate the component class with comp_class if provided.
         """
         files = Files()
         schema = None
@@ -22,6 +23,8 @@ class Component(EntryID):
             schema = files.get_schema("CONFIG_CPL_FILE", attributes={"version":"{}".format(self.get_version())})
         else:
             schema = files.get_schema("CONFIG_{}_FILE".format(comp_class), attributes={"version":"{}".format(self.get_version())})
+            self._comp_class = comp_class
+
         if schema is not None:
             self.validate_xml_file(infile, schema)
 
@@ -118,74 +121,97 @@ class Component(EntryID):
         return match_value
 
     #pylint: disable=arguments-differ
-    def get_description(self, compsetname, comp_class=None):
+    def get_description(self, compsetname):
+        if self.get_version() == 3.0:
+            return self._get_description_v3(compsetname, comp_class=self._comp_class)
+        else:
+            return self._get_description_v2(compsetname)
+
+    def get_forcing_description(self, compsetname):
+        if self.get_version() == 3.0:
+            return self._get_description_v3(compsetname, comp_class='forcing')
+        else:
+            return ""
+
+
+    def _get_description_v3(self, compsetname, comp_class=None):
         comp_class = comp_class.lower()
         rootnode = self.get_node("description")
         desc = ""
         desc_nodes = self.get_nodes("desc", root=rootnode)
-        if self.get_version() == 3.0:
-            expect(comp_class is not None,"comp_class argument required for version3 files")
-            modifier_mode = rootnode.get('modifier_mode')
-            if modifier_mode is None:
-                modifier_mode = '*'
-                expect(modifier_mode in ('*','1','?','+'),
-                       "Invalid modifier_mode {} in file {}".format(modifier_mode, self.filename))
 
-            optiondesc = {}
-            if comp_class == "forcing":
-                for node in desc_nodes:
-                    forcing = node.get('forcing')
-                    if forcing is not None and compsetname.startswith(forcing):
-                        desc = node.text
-                        return desc
+        expect(comp_class is not None,"comp_class argument required for version3 files")
+        modifier_mode = rootnode.get('modifier_mode')
+        if modifier_mode is None:
+            modifier_mode = '*'
+        expect(modifier_mode in ('*','1','?','+'),
+               "Invalid modifier_mode {} in file {}".format(modifier_mode, self.filename))
 
-            # first pass just make a hash of the option descriptions
+        optiondesc = {}
+        if comp_class == "forcing":
             for node in desc_nodes:
-                option = node.get('option')
-                if option is not None:
-                    optiondesc[option] = node.text
-            #second pass find a comp_class match
-            for node in desc_nodes:
-                compdesc = node.get(comp_class)
+                forcing = node.get('forcing')
+                if forcing is not None and compsetname.startswith(forcing+'_'):
+                    expect(len(desc)==0,
+                           "Too many matches on forcing field {} in file {}".\
+                               format(forcing, self.filename))
+                desc = node.text
+            expect(len(desc) > 0,"No match found for forcing field {} in file {}".\
+                       format(forcing, self.filename))
+            return desc
 
-                if compdesc is None:
-                    continue
-                opt_parts = [ x.rstrip("]") for x in compdesc.split("[%") ]
-                parts = opt_parts.pop(0).split("%")
+        # first pass just make a hash of the option descriptions
+        for node in desc_nodes:
+            option = node.get('option')
+            if option is not None:
+                optiondesc[option] = node.text
+        #second pass find a comp_class match
+        for node in desc_nodes:
+            compdesc = node.get(comp_class)
 
-                reqset = set(parts)
-                fullset = set(parts+opt_parts)
-                comparts = compsetname.split('_')
-                for comp in comparts:
-                    complist = comp.split('%')
+            if compdesc is None:
+                continue
+            opt_parts = [ x.rstrip("]") for x in compdesc.split("[%") ]
+            parts = opt_parts.pop(0).split("%")
 
-                    cset = set(complist)
-                    if cset == reqset or (cset > reqset and cset <= fullset):
-                        if modifier_mode == '1':
-                            expect(len(complist) == 2,
-                                   "Expected exactly one modifer found {}".format(len(complist)))
-                        elif modifier_mode == '+':
-                            expect(len(complist) >= 2,
-                                   "Expected one or more modifers found {}".format(len(complist)))
-                        elif modifier_mode == '?':
-                            expect(len(complist) <= 2,
-                                   "Expected 0 or one modifers found {}".format(len(complist)))
-                        # found a match
-                        expect(len(desc) == 0
-                               ,"Found multiple matchs in file {} one: {} another: {}".format(self.filename,desc,node.text))
-                        desc = node.text
-                        for part in comp.split('%'):
-                            if part in optiondesc:
-                                desc += optiondesc[part]
-            if comp_class != 'cpl':
-                expect(len(desc) > 0,
+            reqset = set(parts)
+            fullset = set(parts+opt_parts)
+            comparts = compsetname.split('_')
+            for comp in comparts:
+                complist = comp.split('%')
+
+                cset = set(complist)
+                if cset == reqset or (cset > reqset and cset <= fullset):
+                    if modifier_mode == '1':
+                        expect(len(complist) == 2,
+                               "Expected exactly one modifer found {}".format(len(complist)))
+                    elif modifier_mode == '+':
+                        expect(len(complist) >= 2,
+                               "Expected one or more modifers found {}".format(len(complist)))
+                    elif modifier_mode == '?':
+                        expect(len(complist) <= 2,
+                               "Expected 0 or one modifers found {}".format(len(complist)))
+                    # found a match
+                    expect(len(desc) == 0
+                           ,"Found multiple matches in file {} one: {} another: {}".format(self.filename,desc,node.text))
+                    desc = node.text
+                    for part in comp.split('%'):
+                        if part in optiondesc:
+                            desc += optiondesc[part]
+        if comp_class != 'cpl':
+            expect(len(desc) > 0,
                    "No description found for comp_class {} matching compsetname {} in file {}"\
                        .format(comp_class,compsetname, self.filename))
-        elif self.get_version() <= 2.0:
-            for node in desc_nodes:
-                compsetmatch = node.get("compset")
-                if compsetmatch is not None and re.search(compsetmatch, compsetname):
-                    desc += node.text
+        return desc
+
+    def _get_description_v2(self, compsetname):
+        rootnode = self.get_node("description")
+        desc = ""
+        desc_nodes = self.get_nodes("desc", root=rootnode)
+        for node in desc_nodes:
+            compsetmatch = node.get("compset")
+            if compsetmatch is not None and re.search(compsetmatch, compsetname):
+                desc += node.text
 
         return desc
 

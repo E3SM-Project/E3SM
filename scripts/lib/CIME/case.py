@@ -592,11 +592,11 @@ class Case(object):
             env_file.add_elements_by_group(drv_comp, attributes=attlist)
 
         drv_config_file_model_specific = files.get_value("CONFIG_CPL_FILE_MODEL_SPECIFIC")
-        drv_comp_model_specific = Component(drv_config_file_model_specific)
+        drv_comp_model_specific = Component(drv_config_file_model_specific, comp_class='CPL')
 
-        self._component_description["forcing"] = drv_comp_model_specific.get_description(self._compsetname, 'forcing')
+        self._component_description["forcing"] = drv_comp_model_specific.get_forcing_description(self._compsetname)
         logger.info("Compset forcing is {}".format(self._component_description["forcing"]))
-        self._component_description["CPL"] = drv_comp_model_specific.get_description(self._compsetname, 'cpl')
+        self._component_description["CPL"] = drv_comp_model_specific.get_description(self._compsetname)
         if len(self._component_description["CPL"]) > 0:
             logger.info("Com forcing is {}".format(self._component_description["CPL"]))
         for env_file in self._env_entryid_files:
@@ -624,7 +624,8 @@ class Case(object):
             compsetname = self._compsetname
             if 'ESP_' not in compsetname:
                 compsetname += '_SESP'
-            self._component_description[comp_class] = compobj.get_description(compsetname, comp_class)
+            # For files following version 3 schema this also checks the compsetname validity
+            self._component_description[comp_class] = compobj.get_description(compsetname)
             expect(self._component_description[comp_class] is not None,"No description found in file {} for component {} in comp_class {}".format(comp_config_file, comp_name, comp_class))
             logger.info("{} component is {}".format(comp_class, self._component_description[comp_class]))
             for env_file in self._env_entryid_files:
