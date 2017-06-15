@@ -101,6 +101,7 @@ contains
 
          qflx_evap_tot      => waterflux_vars%qflx_evap_tot_col      , & ! Input:  [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg     
          qflx_irrig         => waterflux_vars%qflx_irrig_col         , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)                       
+         qflx_irr_demand    => waterflux_vars%qflx_irr_demand_col    , & ! Input:  [real(r8) (:)   ]  irrigation demand sent to MOSART/WM (mm H2O /s)                       
          qflx_glcice_melt   => waterflux_vars%qflx_glcice_melt_col   , & ! Input:  [real(r8) (:)]  ice melt (positive definite) (mm H2O/s)      
          qflx_h2osfc_surf   => waterflux_vars%qflx_h2osfc_surf_col   , & ! Output: [real(r8) (:)   ]  surface water runoff (mm/s)                        
          qflx_drain_perched => waterflux_vars%qflx_drain_perched_col , & ! Output: [real(r8) (:)   ]  sub-surface runoff from perched zwt (mm H2O /s)   
@@ -259,13 +260,18 @@ contains
 
          if ((lun%itype(l)==istsoil .or. lun%itype(l)==istcrop) .and. col%active(c)) then
            ! qflx_runoff(c) = qflx_runoff(c) - qflx_irrig(c)
-            qflx_runoff(c) = qflx_runoff(c) - qflx_irrig(c) *ldomain%f_surf(g)
-         !   wa(c) =  max(0.0_r8, wa(c) - qflx_irrig(c) * dtime * ldomain%f_grd(g))
+           qflx_irr_demand(c) = -1.0_r8 * qflx_irrig(c) * ldomain%f_surf(g)
+ 
+           !if (qflx_irrig(c) > 0._r8) then
+               !qflx_irr_demand(c) = -1.0_r8 * qflx_irrig(c) * ldomain%f_surf(g)
+
+           !    write(iulog,*)'irrigation demand is',qflx_irrig(c)
+           !    write(iulog,*)'qflx_irr_demand calculated is',qflx_irr_demand(c)
+           !end if
+
+         else
+           qflx_irr_demand(c) = 0._r8
          end if
-
-!         call WaterTable(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
- !            soilhydrology_vars, soilstate_vars, temperature_vars, waterstate_vars, waterflux_vars)
-
 
          if (lun%urbpoi(l)) then
             qflx_runoff_u(c) = qflx_runoff(c)
