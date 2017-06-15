@@ -37,7 +37,7 @@ module HommeNVector
   !-------------------------------------
 
 contains
-  
+
   integer function ReserveHommeNVectorRegistryIdx()
     ! Marks first available vector from registry as used (if any are available)
     integer :: i
@@ -53,9 +53,9 @@ contains
   end function ReserveHommeNVectorRegistryIdx
 
   subroutine MakeHommeNVector(elem, hvcoord, hybrid, deriv, nets, nete, qn0, tl_idx, vec, ier)
-    ! Function to create an NVec_t wrapper (vec) to the Homme solution 
+    ! Function to create an NVec_t wrapper (vec) to the Homme solution
     !   structure, and reserve its index in the vector registry.
-    ! The return value is 0 if succssful, 1 if failure (if the registry 
+    ! The return value is 0 if succssful, 1 if failure (if the registry
     !   index is already taken)
     use element_mod,    only: element_t
     use hybvcoord_mod,  only: hvcoord_t
@@ -78,7 +78,7 @@ contains
        ier = 1
        return
     end if
-    
+
     ! otherwise, set up wrapper and reserve registry entry
     vec%elem => elem
     vec%hvcoord => hvcoord
@@ -89,6 +89,7 @@ contains
     vec%qn0 = qn0
     vec%tl_idx = tl_idx
     HommeNVectorRegistry(tl_idx) = .true.
+
     return
   end subroutine MakeHommeNVector
 
@@ -100,22 +101,48 @@ end module HommeNVector
 subroutine FNVExtPrint(x_C)
   !-----------------------------------------------------------------------
   ! Print routine for EXT vector
-  ! 
-  ! Note: this function is not required by ARKode (or any of SUNDIALS) -- 
+  !
+  ! Note: this function is not required by ARKode (or any of SUNDIALS) --
   !       it is merely here for convenience when debugging
   !-----------------------------------------------------------------------
-  use HommeNVector, only: NVec_t
+  use HommeNVector,   only: NVec_t
+  use dimensions_mod, only: np, nlev
+
   use, intrinsic :: iso_c_binding
   implicit none
   type(c_ptr) :: x_C
   type(NVec_t), pointer :: x => NULL()
+
+  integer :: ie, inpx, inpy, inlev
 
   !=======Internals ============
 
   ! dereference x_C pointer for NVec_t object
   call c_f_pointer(x_C, x)
 
-  ! print vector data (not implemented)
+  ! print vector data
+  write(6,*) 'u velocity'
+  do inlev=1,nlev
+    write(6,*) 'level: ', inlev
+
+    do ie=x%nets,x%nete
+      write(6,*) ' element number: ', ie
+
+      do inpx=1,np
+        do inpy=1,np
+          write(6,*) '  (npx,npy): ', inpx, inpy
+          write(6,*) '   u: ', x%elem(ie)%state%v(inpx,inpy,1,inlev,x%tl_idx)
+          write(6,*) '   v: ', x%elem(ie)%state%v(inpx,inpy,2,inlev,x%tl_idx)
+          write(6,*) '   w: ', x%elem(ie)%state%w(inpx,inpy,inlev,x%tl_idx)
+          write(6,*) '   phi: ', x%elem(ie)%state%phi(inpx,inpy,inlev,x%tl_idx)
+          write(6,*) '   theta_dp_cp: ', x%elem(ie)%state%theta_dp_cp(inpx,inpy,inlev,x%tl_idx)
+          write(6,*) '   dp3d: ', x%elem(ie)%state%dp3d(inpx,inpy,inlev,x%tl_idx)
+        end do
+      end do
+
+    end do
+
+  end do
 
   return
 end subroutine FNVExtPrint
@@ -125,7 +152,7 @@ end subroutine FNVExtPrint
 
 subroutine FNVExtClone(x_C, y_C)
   !-----------------------------------------------------------------------
-  ! Clone routine for EXT vector -- allocates memory for a new NVec_t y that 
+  ! Clone routine for EXT vector -- allocates memory for a new NVec_t y that
   ! that matches structure for x.
   !-----------------------------------------------------------------------
   use HommeNVector, only: NVec_t, ReserveHommeNVectorRegistryIdx
@@ -139,10 +166,10 @@ subroutine FNVExtClone(x_C, y_C)
 
   !=======Internals ============
 
-  ! grab next available registry index; 
-  ! if none are available, return with a NULL value for y_C 
+  ! grab next available registry index;
+  ! if none are available, return with a NULL value for y_C
   tl_idx = ReserveHommeNVectorRegistryIdx()
-  if (tl_idx == 0) then  
+  if (tl_idx == 0) then
      y_C = C_NULL_PTR
      return
   end if
@@ -162,7 +189,7 @@ subroutine FNVExtClone(x_C, y_C)
   y%nete = x%nete
   y%qn0 = x%qn0
   y%tl_idx = tl_idx
-  
+
   ! associate y_C pointer with y
   y_C = c_loc(y)
 
@@ -182,7 +209,6 @@ subroutine FNVExtDestroy(x_C)
   implicit none
   type(c_ptr) :: x_C
   type(NVec_t), pointer :: x => NULL()
-  integer :: ierr
 
   !=======Internals ============
 
@@ -191,7 +217,7 @@ subroutine FNVExtDestroy(x_C)
 
   ! return index to registry
   HommeNVectorRegistry(x%tl_idx) = .false.
-  
+
   ! detach pointers, deallocate vector and nullify x_C
   if (associated(x%elem))     nullify(x%elem)
   if (associated(x%hvcoord))  nullify(x%hvcoord)
@@ -222,6 +248,7 @@ subroutine FNVExtLinearSum(aval, x_C, bval, y_C, z_C)
   type(NVec_t), pointer :: x => NULL()
   type(NVec_t), pointer :: y => NULL()
   type(NVec_t), pointer :: z => NULL()
+
   integer :: ie
 
   !=======Internals ============
@@ -232,24 +259,24 @@ subroutine FNVExtLinearSum(aval, x_C, bval, y_C, z_C)
   call c_f_pointer(z_C, z)
 
   ! perform vector operation
-  do ie=x%nets,x%nete
-     z%elem(ie)%state%v(:,:,:,:,x%tl_idx) = &
-          aval * z%elem(ie)%state%v(:,:,:,:,z%tl_idx) + &
+  do ie=z%nets,z%nete
+     z%elem(ie)%state%v(:,:,:,:,z%tl_idx) = &
+          aval * x%elem(ie)%state%v(:,:,:,:,x%tl_idx) + &
           bval * y%elem(ie)%state%v(:,:,:,:,y%tl_idx)
-     z%elem(ie)%state%w(:,:,:,x%tl_idx) = &
-          aval * z%elem(ie)%state%w(:,:,:,z%tl_idx) + &
+     z%elem(ie)%state%w(:,:,:,z%tl_idx) = &
+          aval * x%elem(ie)%state%w(:,:,:,x%tl_idx) + &
           bval * y%elem(ie)%state%w(:,:,:,y%tl_idx)
-     z%elem(ie)%state%phi(:,:,:,x%tl_idx) = &
-          aval * z%elem(ie)%state%phi(:,:,:,z%tl_idx) + &
+     z%elem(ie)%state%phi(:,:,:,z%tl_idx) = &
+          aval * x%elem(ie)%state%phi(:,:,:,x%tl_idx) + &
           bval * y%elem(ie)%state%phi(:,:,:,y%tl_idx)
-     z%elem(ie)%state%theta_dp_cp(:,:,:,x%tl_idx) = &
-          aval * z%elem(ie)%state%theta_dp_cp(:,:,:,z%tl_idx) + &
+     z%elem(ie)%state%theta_dp_cp(:,:,:,z%tl_idx) = &
+          aval * x%elem(ie)%state%theta_dp_cp(:,:,:,x%tl_idx) + &
           bval * y%elem(ie)%state%theta_dp_cp(:,:,:,y%tl_idx)
-     z%elem(ie)%state%dp3d(:,:,:,x%tl_idx) = &
-          aval * z%elem(ie)%state%dp3d(:,:,:,z%tl_idx) + &
+     z%elem(ie)%state%dp3d(:,:,:,z%tl_idx) = &
+          aval * x%elem(ie)%state%dp3d(:,:,:,x%tl_idx) + &
           bval * y%elem(ie)%state%dp3d(:,:,:,y%tl_idx)
-     !z%elem(ie)%state%psv(:,:,x%tl_idx) = &
-     !     aval * z%elem(ie)%state%psv(:,:,z%tl_idx) + &
+     !z%elem(ie)%state%psv(:,:,z%tl_idx) = &
+     !     aval * x%elem(ie)%state%psv(:,:,x%tl_idx) + &
      !     bval * y%elem(ie)%state%psv(:,:,y%tl_idx)
   end do
 
@@ -261,7 +288,7 @@ end subroutine FNVExtLinearSum
 
 subroutine FNVExtConst(cval, z_C)
   !-----------------------------------------------------------------------
-  ! z = c 
+  ! z = c
   !-----------------------------------------------------------------------
   use HommeNVector, only: NVec_t
   use, intrinsic :: iso_c_binding
@@ -271,12 +298,22 @@ subroutine FNVExtConst(cval, z_C)
 
   type(NVec_t), pointer :: z => NULL()
 
+  integer :: ie
+
   !=======Internals ============
 
   ! dereference z_C pointer for NVec_t object
   call c_f_pointer(z_C, z)
 
   ! perform vector operation
+  do ie=z%nets,z%nete
+     z%elem(ie)%state%v(:,:,:,:,z%tl_idx) = cval
+     z%elem(ie)%state%w(:,:,:,z%tl_idx) = cval
+     z%elem(ie)%state%phi(:,:,:,z%tl_idx) = cval
+     z%elem(ie)%state%theta_dp_cp(:,:,:,z%tl_idx) = cval
+     z%elem(ie)%state%dp3d(:,:,:,z%tl_idx) = cval
+     !z%elem(ie)%state%psv(:,:,z%tl_idx) = cval
+  end do
 
   return
 end subroutine FNVExtConst
@@ -299,6 +336,8 @@ subroutine FNVExtProd(x_C, y_C, z_C)
   type(NVec_t), pointer :: y => NULL()
   type(NVec_t), pointer :: z => NULL()
 
+  integer :: ie
+
   !=======Internals ============
 
   ! dereference pointers for NVec_t objects
@@ -307,6 +346,26 @@ subroutine FNVExtProd(x_C, y_C, z_C)
   call c_f_pointer(z_C, z)
 
   ! perform vector operation
+  do ie=z%nets,z%nete
+     z%elem(ie)%state%v(:,:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%v(:,:,:,:,x%tl_idx)* &
+          y%elem(ie)%state%v(:,:,:,:,y%tl_idx)
+     z%elem(ie)%state%w(:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%w(:,:,:,x%tl_idx)* &
+          y%elem(ie)%state%w(:,:,:,y%tl_idx)
+     z%elem(ie)%state%phi(:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%phi(:,:,:,x%tl_idx)* &
+          y%elem(ie)%state%phi(:,:,:,y%tl_idx)
+     z%elem(ie)%state%theta_dp_cp(:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%theta_dp_cp(:,:,:,x%tl_idx)* &
+          y%elem(ie)%state%theta_dp_cp(:,:,:,y%tl_idx)
+     z%elem(ie)%state%dp3d(:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%dp3d(:,:,:,x%tl_idx)* &
+          y%elem(ie)%state%dp3d(:,:,:,y%tl_idx)
+     !z%elem(ie)%state%psv(:,:,z%tl_idx) = &
+     !     x%elem(ie)%state%psv(:,:,x%tl_idx)* &
+     !     y%elem(ie)%state%psv(:,:,y%tl_idx)
+  end do
 
   return
 end subroutine FNVExtProd
@@ -329,6 +388,8 @@ subroutine FNVExtDiv(x_C, y_C, z_C)
   type(NVec_t), pointer :: y => NULL()
   type(NVec_t), pointer :: z => NULL()
 
+  integer :: ie
+
   !=======Internals ============
 
   ! dereference pointers for NVec_t objects
@@ -337,6 +398,26 @@ subroutine FNVExtDiv(x_C, y_C, z_C)
   call c_f_pointer(z_C, z)
 
   ! perform vector operation
+  do ie=z%nets,z%nete
+     z%elem(ie)%state%v(:,:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%v(:,:,:,:,x%tl_idx)/ &
+          y%elem(ie)%state%v(:,:,:,:,y%tl_idx)
+     z%elem(ie)%state%w(:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%w(:,:,:,x%tl_idx)/ &
+          y%elem(ie)%state%w(:,:,:,y%tl_idx)
+     z%elem(ie)%state%phi(:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%phi(:,:,:,x%tl_idx)/ &
+          y%elem(ie)%state%phi(:,:,:,y%tl_idx)
+     z%elem(ie)%state%theta_dp_cp(:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%theta_dp_cp(:,:,:,x%tl_idx)/ &
+          y%elem(ie)%state%theta_dp_cp(:,:,:,y%tl_idx)
+     z%elem(ie)%state%dp3d(:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%dp3d(:,:,:,x%tl_idx)/ &
+          y%elem(ie)%state%dp3d(:,:,:,y%tl_idx)
+     !z%elem(ie)%state%psv(:,:,z%tl_idx) = &
+     !     x%elem(ie)%state%psv(:,:,x%tl_idx)/ &
+     !     y%elem(ie)%state%psv(:,:,y%tl_idx)
+  end do
 
   return
 end subroutine FNVExtDiv
@@ -358,6 +439,8 @@ subroutine FNVExtScale(cval, x_C, z_C)
   type(NVec_t), pointer :: x => NULL()
   type(NVec_t), pointer :: z => NULL()
 
+  integer :: ie
+
   !=======Internals ============
 
   ! dereference pointers for NVec_t objects
@@ -365,6 +448,20 @@ subroutine FNVExtScale(cval, x_C, z_C)
   call c_f_pointer(z_C, z)
 
   ! perform vector operation
+  do ie=z%nets,z%nete
+     z%elem(ie)%state%v(:,:,:,:,z%tl_idx) = &
+          cval * x%elem(ie)%state%v(:,:,:,:,x%tl_idx)
+     z%elem(ie)%state%w(:,:,:,z%tl_idx) = &
+          cval * x%elem(ie)%state%w(:,:,:,x%tl_idx)
+     z%elem(ie)%state%phi(:,:,:,z%tl_idx) = &
+          cval * x%elem(ie)%state%phi(:,:,:,x%tl_idx)
+     z%elem(ie)%state%theta_dp_cp(:,:,:,z%tl_idx) = &
+          cval * x%elem(ie)%state%theta_dp_cp(:,:,:,x%tl_idx)
+     z%elem(ie)%state%dp3d(:,:,:,z%tl_idx) = &
+          cval * x%elem(ie)%state%dp3d(:,:,:,x%tl_idx)
+     !z%elem(ie)%state%psv(:,:,z%tl_idx) = &
+     !     cval * x%elem(ie)%state%psv(:,:,x%tl_idx)
+  end do
 
   return
 end subroutine FNVExtScale
@@ -385,6 +482,8 @@ subroutine FNVExtAbs(x_C, z_C)
   type(NVec_t), pointer :: x => NULL()
   type(NVec_t), pointer :: z => NULL()
 
+  integer :: ie
+
   !=======Internals ============
 
   ! dereference pointers for NVec_t objects
@@ -392,6 +491,20 @@ subroutine FNVExtAbs(x_C, z_C)
   call c_f_pointer(z_C, z)
 
   ! perform vector operation
+  do ie=z%nets,z%nete
+     z%elem(ie)%state%v(:,:,:,:,z%tl_idx) = &
+          abs(x%elem(ie)%state%v(:,:,:,:,x%tl_idx))
+     z%elem(ie)%state%w(:,:,:,z%tl_idx) = &
+          abs(x%elem(ie)%state%w(:,:,:,x%tl_idx))
+     z%elem(ie)%state%phi(:,:,:,z%tl_idx) = &
+          abs(x%elem(ie)%state%phi(:,:,:,x%tl_idx))
+     z%elem(ie)%state%theta_dp_cp(:,:,:,z%tl_idx) = &
+          abs(x%elem(ie)%state%theta_dp_cp(:,:,:,x%tl_idx))
+     z%elem(ie)%state%dp3d(:,:,:,z%tl_idx) = &
+          abs(x%elem(ie)%state%dp3d(:,:,:,x%tl_idx))
+     !z%elem(ie)%state%psv(:,:,z%tl_idx) = &
+     !     abs(x%elem(ie)%state%psv(:,:,x%tl_idx))
+  end do
 
   return
 end subroutine FNVExtAbs
@@ -412,6 +525,8 @@ subroutine FNVExtInv(x_C, z_C)
   type(NVec_t), pointer :: x => NULL()
   type(NVec_t), pointer :: z => NULL()
 
+  integer :: ie
+
   !=======Internals ============
 
   ! dereference pointers for NVec_t objects
@@ -419,11 +534,24 @@ subroutine FNVExtInv(x_C, z_C)
   call c_f_pointer(z_C, z)
 
   ! perform vector operation
+  do ie=z%nets,z%nete
+     z%elem(ie)%state%v(:,:,:,:,z%tl_idx) = &
+          1.d0 / x%elem(ie)%state%v(:,:,:,:,x%tl_idx)
+     z%elem(ie)%state%w(:,:,:,z%tl_idx) = &
+          1.d0 / x%elem(ie)%state%w(:,:,:,x%tl_idx)
+     z%elem(ie)%state%phi(:,:,:,z%tl_idx) = &
+          1.d0 / x%elem(ie)%state%phi(:,:,:,x%tl_idx)
+     z%elem(ie)%state%theta_dp_cp(:,:,:,z%tl_idx) = &
+          1.d0 / x%elem(ie)%state%theta_dp_cp(:,:,:,x%tl_idx)
+     z%elem(ie)%state%dp3d(:,:,:,z%tl_idx) = &
+          1.d0 / x%elem(ie)%state%dp3d(:,:,:,x%tl_idx)
+     !z%elem(ie)%state%psv(:,:,z%tl_idx) = &
+     !     1.d0 / x%elem(ie)%state%psv(:,:,x%tl_idx)
+  end do
 
   return
 end subroutine FNVExtInv
 !=======================================================================
-
 
 
 subroutine FNVExtAddConst(cval, x_C, z_C)
@@ -440,6 +568,8 @@ subroutine FNVExtAddConst(cval, x_C, z_C)
   type(NVec_t), pointer :: x => NULL()
   type(NVec_t), pointer :: z => NULL()
 
+  integer :: ie
+
   !=======Internals ============
 
   ! dereference pointers for NVec_t objects
@@ -447,6 +577,20 @@ subroutine FNVExtAddConst(cval, x_C, z_C)
   call c_f_pointer(z_C, z)
 
   ! perform vector operation
+  do ie=z%nets,z%nete
+     z%elem(ie)%state%v(:,:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%v(:,:,:,:,x%tl_idx) + cval
+     z%elem(ie)%state%w(:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%w(:,:,:,x%tl_idx) + cval
+     z%elem(ie)%state%phi(:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%phi(:,:,:,x%tl_idx) + cval
+     z%elem(ie)%state%theta_dp_cp(:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%theta_dp_cp(:,:,:,x%tl_idx) + cval
+     z%elem(ie)%state%dp3d(:,:,:,z%tl_idx) = &
+          x%elem(ie)%state%dp3d(:,:,:,x%tl_idx) + cval
+     !z%elem(ie)%state%psv(:,:,z%tl_idx) = &
+     !     x%elem(ie)%state%psv(:,:,x%tl_idx) + cval
+  end do
 
   return
 end subroutine FNVExtAddConst
@@ -468,14 +612,32 @@ subroutine FNVExtDotProd(x_C, y_C, cval)
   type(NVec_t), pointer :: x => NULL()
   type(NVec_t), pointer :: y => NULL()
 
+  integer :: ie
+
   !=======Internals ============
 
   ! dereference pointers for NVec_t objects
   call c_f_pointer(x_C, x)
   call c_f_pointer(y_C, y)
 
+  ! TODO: check that the loop isn't including 'inactive' data
   ! perform vector operation
   cval = 0.d0
+  do ie=x%nets,x%nete
+     cval = cval + &
+          sum(x%elem(ie)%state%v(:,:,:,:,x%tl_idx)* &
+              y%elem(ie)%state%v(:,:,:,:,y%tl_idx)) + &
+          sum(x%elem(ie)%state%w(:,:,:,x%tl_idx)* &
+              y%elem(ie)%state%w(:,:,:,y%tl_idx)) + &
+          sum(x%elem(ie)%state%phi(:,:,:,x%tl_idx)* &
+              y%elem(ie)%state%phi(:,:,:,y%tl_idx)) + &
+          sum(x%elem(ie)%state%theta_dp_cp(:,:,:,x%tl_idx)* &
+              y%elem(ie)%state%theta_dp_cp(:,:,:,y%tl_idx)) + &
+          sum(x%elem(ie)%state%dp3d(:,:,:,x%tl_idx)* &
+              y%elem(ie)%state%dp3d(:,:,:,y%tl_idx)) !+ &
+          !sum(x%elem(ie)%state%psv(:,:,:,x%tl_idx)* &
+          !    y%elem(ie)%state%psv(:,:,:,y%tl_idx))
+  end do
 
   return
 end subroutine FNVExtDotProd
@@ -495,6 +657,8 @@ subroutine FNVExtMaxNorm(x_C, cval)
 
   type(NVec_t), pointer :: x => NULL()
 
+  integer :: ie
+
   !=======Internals ============
 
   ! dereference x_C pointer for NVec_t object
@@ -502,6 +666,16 @@ subroutine FNVExtMaxNorm(x_C, cval)
 
   ! perform vector operation
   cval = 0.d0
+  do ie=x%nets,x%nete
+    cval = max(cval, &
+          maxval(abs(x%elem(ie)%state%v(:,:,:,:,x%tl_idx))), &
+          maxval(abs(x%elem(ie)%state%w(:,:,:,x%tl_idx))), &
+          maxval(abs(x%elem(ie)%state%phi(:,:,:,x%tl_idx))), &
+          maxval(abs(x%elem(ie)%state%theta_dp_cp(:,:,:,x%tl_idx))), &
+          maxval(abs(x%elem(ie)%state%dp3d(:,:,:,x%tl_idx))), &
+          maxval(abs(x%elem(ie)%state%dp3d(:,:,:,x%tl_idx))))
+          !maxval(abs(x%elem(ie)%state%psv(:,:,x%tl_idx))))
+  end do
 
   return
 end subroutine FNVExtMaxNorm
@@ -513,7 +687,8 @@ subroutine FNVExtWrmsNorm(x_C, w_C, cval)
   !-----------------------------------------------------------------------
   ! cval = sqrt(||x.*w||^2_2 / Ntotal)
   !-----------------------------------------------------------------------
-  use HommeNVector, only: NVec_t
+  use HommeNVector,   only: NVec_t
+  use dimensions_mod, only: np, nlev
   use, intrinsic :: iso_c_binding
   implicit none
   type(c_ptr),    intent(in)  :: x_C
@@ -523,6 +698,8 @@ subroutine FNVExtWrmsNorm(x_C, w_C, cval)
   type(NVec_t), pointer :: x => NULL()
   type(NVec_t), pointer :: w => NULL()
 
+  integer :: ie, ntotal
+
   !=======Internals ============
 
   ! dereference pointers for NVec_t objects
@@ -530,8 +707,24 @@ subroutine FNVExtWrmsNorm(x_C, w_C, cval)
   call c_f_pointer(w_C, w)
 
   ! perform vector operation
+  ntotal = (x%nete-x%nets+1)*np*np*nlev*6 ! needs to be updated if psv included
   cval = 0.d0
-  
+  do ie=x%nets,x%nete
+    cval = sum( (x%elem(ie)%state%v(:,:,:,:,x%tl_idx)* &
+                 w%elem(ie)%state%v(:,:,:,:,w%tl_idx))**2 ) + &
+           sum( (x%elem(ie)%state%w(:,:,:,x%tl_idx)* &
+                 w%elem(ie)%state%w(:,:,:,w%tl_idx))**2 ) + &
+           sum( (x%elem(ie)%state%phi(:,:,:,x%tl_idx)* &
+                 w%elem(ie)%state%phi(:,:,:,w%tl_idx))**2 ) + &
+           sum( (x%elem(ie)%state%theta_dp_cp(:,:,:,x%tl_idx)* &
+                 w%elem(ie)%state%theta_dp_cp(:,:,:,w%tl_idx))**2 ) + &
+           sum( (x%elem(ie)%state%dp3d(:,:,:,x%tl_idx)* &
+                 w%elem(ie)%state%dp3d(:,:,:,w%tl_idx))**2 ) !+ &
+           !sum( (x%elem(ie)%state%psv(:,:,:,:,x%tl_idx)* &
+           !      w%elem(ie)%state%psv(:,:,:,:,w%tl_idx))**2 )
+  end do
+  cval = sqrt(cval/ntotal)
+
   return
 end subroutine FNVExtWrmsNorm
 !=======================================================================
@@ -541,9 +734,9 @@ end subroutine FNVExtWrmsNorm
 subroutine FNVExtWrmsNormMask(x_C, w_C, l_C, cval)
   !-----------------------------------------------------------------------
   ! cval = ||x.*w||_2 / Ntotal (but only where l > 0)
-  ! 
+  !
   ! Note: this function is not required by ARKode (it is used for other
-  !       SUNDIALS solvers).  As such it need not be implemented, and 
+  !       SUNDIALS solvers).  As such it need not be implemented, and
   !       it may be removed from the associated nvector_external files
   !       (set the corresponding function pointer in the 'ops' to 'NULL()')
   !-----------------------------------------------------------------------
@@ -558,7 +751,7 @@ subroutine FNVExtWrmsNormMask(x_C, w_C, l_C, cval)
   type(NVec_t), pointer :: x => NULL()
   type(NVec_t), pointer :: w => NULL()
   type(NVec_t), pointer :: l => NULL()
-  integer :: ntot
+  integer :: ntotal
 
   !=======Internals ============
 
@@ -578,7 +771,7 @@ end subroutine FNVExtWrmsNormMask
 
 subroutine FNVExtMin(x_C, cval)
   !-----------------------------------------------------------------------
-  ! cval = min(xvec)
+  ! cval = min(|xvec|)
   !-----------------------------------------------------------------------
   use HommeNVector, only: NVec_t
   use, intrinsic :: iso_c_binding
@@ -588,13 +781,22 @@ subroutine FNVExtMin(x_C, cval)
 
   type(NVec_t), pointer :: x => NULL()
 
+  integer :: ie
   !=======Internals ============
 
   ! dereference x_C pointer for NVec_t object
   call c_f_pointer(x_C, x)
 
   ! perform vector operation
-  cval = 0.d0
+  cval = abs(x%elem(x%nets)%state%v(1,1,1,1,x%tl_idx))
+  do ie=x%nets,x%nete
+    cval = min( minval(abs(x%elem(ie)%state%v(:,:,:,:,x%tl_idx))), &
+                minval(abs(x%elem(ie)%state%w(:,:,:,x%tl_idx))), &
+                minval(abs(x%elem(ie)%state%phi(:,:,:,x%tl_idx))), &
+                minval(abs(x%elem(ie)%state%theta_dp_cp(:,:,:,x%tl_idx))), &
+                minval(abs(x%elem(ie)%state%dp3d(:,:,:,x%tl_idx))) )
+                !minval(x%elem(ie)%state%psv(:,:,:,:,x%tl_idx)))
+  end do
 
   return
 end subroutine FNVExtMin
@@ -605,9 +807,9 @@ end subroutine FNVExtMin
 subroutine FNVExtWl2Norm(x_C, w_C, cval)
   !-----------------------------------------------------------------------
   ! c = ||x.*w||_2
-  ! 
+  !
   ! Note: this function is not required by ARKode (it is used for other
-  !       SUNDIALS solvers).  As such it need not be implemented, and 
+  !       SUNDIALS solvers).  As such it need not be implemented, and
   !       it may be removed from the associated nvector_external files
   !       (set the corresponding function pointer in the 'ops' to 'NULL()')
   !-----------------------------------------------------------------------
@@ -639,9 +841,9 @@ end subroutine FNVExtWl2Norm
 subroutine FNVExtl1Norm(x_C, cval)
   !-----------------------------------------------------------------------
   ! c = ||x||_1
-  ! 
+  !
   ! Note: this function is not required by ARKode (it is used for other
-  !       SUNDIALS solvers).  As such it need not be implemented, and 
+  !       SUNDIALS solvers).  As such it need not be implemented, and
   !       it may be removed from the associated nvector_external files
   !       (set the corresponding function pointer in the 'ops' to 'NULL()')
   !-----------------------------------------------------------------------
@@ -670,9 +872,9 @@ end subroutine FNVExtl1Norm
 subroutine FNVExtCompare(cval, x_C, z_C)
   !-----------------------------------------------------------------------
   ! z(i) = 1 if x(i) > c, otherwise z(i) = 0
-  ! 
+  !
   ! Note: this function is not required by ARKode (it is used for other
-  !       SUNDIALS solvers).  As such it need not be implemented, and 
+  !       SUNDIALS solvers).  As such it need not be implemented, and
   !       it may be removed from the associated nvector_external files
   !       (set the corresponding function pointer in the 'ops' to 'NULL()')
   !-----------------------------------------------------------------------
@@ -703,9 +905,9 @@ end subroutine FNVExtCompare
 subroutine FNVExtInvTest(x_C, z_C, cval)
   !-----------------------------------------------------------------------
   ! z = 1./x, if all x nonzero, cval = 0, else cval = 1
-  ! 
+  !
   ! Note: this function is not required by ARKode (it is used for other
-  !       SUNDIALS solvers).  As such it need not be implemented, and 
+  !       SUNDIALS solvers).  As such it need not be implemented, and
   !       it may be removed from the associated nvector_external files
   !       (set the corresponding function pointer in the 'ops' to 'NULL()')
   !-----------------------------------------------------------------------
@@ -743,9 +945,9 @@ subroutine FNVExtConstrMask(c_C, x_C, m_C, testval)
   ! if c(i) = -1, then x(i) <= 0
   ! if c(i) = -2, then x(i) <  0
   ! fills m(i) = 1 where test fails, m(i) = 0 elsewhere.
-  ! 
+  !
   ! Note: this function is not required by ARKode (it is used for other
-  !       SUNDIALS solvers).  As such it need not be implemented, and 
+  !       SUNDIALS solvers).  As such it need not be implemented, and
   !       it may be removed from the associated nvector_external files
   !       (set the corresponding function pointer in the 'ops' to 'NULL()')
   !-----------------------------------------------------------------------
@@ -780,9 +982,9 @@ end subroutine FNVExtConstrMask
 subroutine FNVExtMinQuotient(x_C, y_C, cval)
   !-----------------------------------------------------------------------
   ! c = min(x./y), over all y /= 0
-  ! 
+  !
   ! Note: this function is not required by ARKode (it is used for other
-  !       SUNDIALS solvers).  As such it need not be implemented, and 
+  !       SUNDIALS solvers).  As such it need not be implemented, and
   !       it may be removed from the associated nvector_external files
   !       (set the corresponding function pointer in the 'ops' to 'NULL()')
   !-----------------------------------------------------------------------
