@@ -210,7 +210,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.8
+set script_ver = 3.0.9
 
 #===========================================
 # DEFINE ALIASES
@@ -811,8 +811,22 @@ set input_data_dir = `$xmlquery_exe DIN_LOC_ROOT --value`
 #$xmlchange_exe --id CAM_CONFIG_OPTS --val "-phys cam5 -chem linoz_mam3"
 
 ## Chris Golaz: build with COSP
-#NOTE: xmlchange has a bug which requires append to be specified with quotes and a leading space
-$xmlchange_exe --id CAM_CONFIG_OPTS --append -val " -cosp"
+#NOTE: xmlchange has a bug which requires append to be specified with quotes and a leading space.
+#NOTE: The xmlchange will fail if CAM is not active (eg a land only simulation), so we need to test that CAM_CONFIG_OPTS is in env_build.xml
+
+grep CAM_CONFIG_OPTS env_build.xml >> /dev/null
+set CAM_CONFIG_OPTS_status = $status
+if ( $CAM_CONFIG_OPTS_status == 0 ) then 
+  $xmlchange_exe --id CAM_CONFIG_OPTS --append --val " -cosp"
+  acme_newline
+  acme_print 'Configuring ACME to use the COSP simulator.'
+  acme_newline
+else
+  acme_newline
+  acme_print 'CAM_CONFIG_OPTS is not in env_build.xml, so cannot activate COSP simulator.'
+  acme_print 'This is probably because the atmosphere is not active, so this message can be safely ignored.' 
+  acme_newline
+endif
 
 #===========================
 # SET THE PARTITION OF NODES
@@ -1357,6 +1371,7 @@ acme_newline
 #                        Note that this breaks compatibility with older versions of CIME
 #                        Also add a fix to reenable using the special acme qos queue on Edison (MD)
 # 3.0.8    2017-05-24    Fixed minor bug when $machine contained a capital letter. Bug was introduced recently. (PJC)
+# 3.0.9    2017-06-14    To allow data-atm compsets to work, I added a test for CAM_CONFIG_OPTS. (PJC)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
@@ -1368,6 +1383,8 @@ acme_newline
 # +) Add a 'default' option, for which REST_OPTION='$STOP_OPTION' and REST_N='$STOP_N'.
 #    This is important if the user subsequently edits STOP_OPTION or STOP_N.      (PJC)
 # +) triggering on $acme_tag = master_detached doesn't make sense.  Fix logic. (PJC)
+# +) run_root and run_root_dir are duplicative.  Also, move logical link creation before case.setup (PJC)
+# +) change comments referring to cesm_setup to case.setup (name has changed). (PJC)
 
 ###Example sed commands
 #============================
