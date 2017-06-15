@@ -193,7 +193,7 @@ class Component(EntryID):
 
             reqset = set(parts)
             fullset = set(parts+opt_parts)
-            if self._get_description_match(compsetname, reqset, fullset, optiondesc, modifier_mode):
+            if self._get_description_match(compsetname, reqset, fullset, modifier_mode):
                 desc = node.text
         # cpl component may not have a description, all others must
         if comp_class != 'cpl':
@@ -202,33 +202,33 @@ class Component(EntryID):
                        .format(comp_class,compsetname, self.filename))
         return desc
 
-    def _get_description_match(self, compsetname, reqset, fullset, optiondesc, modifier_mode):
+    def _get_description_match(self, compsetname, reqset, fullset, modifier_mode):
         """
 
         >>> obj = Component('testingonly', 'ATM')
-        >>> obj._get_description_match("1850_DATM%CRU_FRED",set(["DATM"]), set(["DATM","CRU","HSI"]),{"CRU":"CRU"}, "*")
+        >>> obj._get_description_match("1850_DATM%CRU_FRED",set(["DATM"]), set(["DATM","CRU","HSI"]), "*")
         True
-        >>> obj._get_description_match("1850_DATM%FRED_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]),{"CRU":"CRU"}, "*")
+        >>> obj._get_description_match("1850_DATM%FRED_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "*")
         False
-        >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]),{"CRU":"CRU"}, "?")
+        >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "?")
         True
-        >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]),{"CRU":"CRU"}, "1")
+        >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "1")
         Traceback (most recent call last):
         ...
         SystemExit: ERROR: Expected exactly one modifer found 0
-        >>> obj._get_description_match("1850_DATM%CRU%HSI_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]),{"CRU":"CRU","HSI":"HSI"}, "1")
+        >>> obj._get_description_match("1850_DATM%CRU%HSI_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "1")
         Traceback (most recent call last):
         ...
         SystemExit: ERROR: Expected exactly one modifer found 2
-        >>> obj._get_description_match("1850_CAM50%WCCM%RCO2_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]),{"RCO2":"CRU"}, "*")
+        >>> obj._get_description_match("1850_CAM50%WCCM%RCO2_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]), "*")
         True
 
         # The following is not allowed because the required WCCM field is missing
-        >>> obj._get_description_match("1850_CAM50%RCO2_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]),{"RCO2":"CRU"}, "*")
+        >>> obj._get_description_match("1850_CAM50%RCO2_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]), "*")
         False
-        >>> obj._get_description_match("1850_CAM50_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]),{"RCO2":"CRU"}, "+")
+        >>> obj._get_description_match("1850_CAM50_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]), "+")
         False
-        >>> obj._get_description_match("1850_CAM50%WCCM_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]),{"RCO2":"CRU"}, "+")
+        >>> obj._get_description_match("1850_CAM50%WCCM_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]), "+")
         True
         """
         match = False
