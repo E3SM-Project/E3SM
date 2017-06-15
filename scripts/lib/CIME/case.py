@@ -617,7 +617,6 @@ class Case(object):
             comp_name  = self._components[i-1]
             node_name = 'CONFIG_' + comp_class + '_FILE'
             # Add the group and elements for the config_files.xml
-
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=False)
             self.set_value(node_name, comp_config_file)
             comp_config_file = self.get_resolved_value(comp_config_file)
