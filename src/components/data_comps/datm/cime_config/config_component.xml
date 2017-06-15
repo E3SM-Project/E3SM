@@ -1,8 +1,14 @@
 <?xml version="1.0"?>
 
 <entry_id version="3.0">
-  <!-- NOTE that the description block determines what DATM% values can appear in the compset name
-       For DATM this is determined by the DATM_MODE values in combination with the FORCING prefix -->
+  <!-- modifier_mode allowed values are
+       '*' 0 or more modifiers (default)
+       '1' exactly 1 modifier
+       '?' 0 or 1 modifiers
+       '+' 1 or more modifiers
+
+       This file may have atm desc entries.
+  -->
   <description modifier_mode="1">
     <desc atm="DATM[%QIA][%WISOQIA][%CRU][%GSW][%CPLHIST][%1PT][%NYF][%IAF]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>

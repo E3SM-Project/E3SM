@@ -595,6 +595,12 @@ class Case(object):
 
         drv_config_file_model_specific = files.get_value("CONFIG_CPL_FILE_MODEL_SPECIFIC")
         drv_comp_model_specific = Component(drv_config_file_model_specific)
+
+        self._component_description["forcing"] = drv_comp_model_specific.get_description(self._compsetname, 'forcing')
+        logger.info("Compset forcing is {}".format(self._component_description["forcing"]))
+        self._component_description["CPL"] = drv_comp_model_specific.get_description(self._compsetname, 'cpl')
+        if len(self._component_description["CPL"]) > 0:
+            logger.info("Com forcing is {}".format(self._component_description["CPL"]))
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp_model_specific, attributes=attlist)
 
@@ -611,6 +617,7 @@ class Case(object):
             comp_name  = self._components[i-1]
             node_name = 'CONFIG_' + comp_class + '_FILE'
             # Add the group and elements for the config_files.xml
+
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=False)
             self.set_value(node_name, comp_config_file)
             comp_config_file = self.get_resolved_value(comp_config_file)
@@ -625,6 +632,8 @@ class Case(object):
             logger.info("{} component is {}".format(comp_class, self._component_description[comp_class]))
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
+
+
 
         self.clean_up_lookups()
 
@@ -1063,12 +1072,15 @@ class Case(object):
                       "README.case", caseroot=self._caseroot)
         append_status("Pes     specification file is {}".format(self.get_value("PES_SPEC_FILE")),
                       "README.case", caseroot=self._caseroot)
+        append_status("Forcing is {}".format(self._component_description["forcing"])
+                      ,"README.case", caseroot=self._caseroot)
         for component_class in self._component_classes:
+            if component_class in self._component_description:
+                append_status("Component {} is {}".format(component_class, self._component_description[component_class]),"README.case", caseroot=self._caseroot)
             if component_class == "CPL":
                 continue
             comp_grid = "{}_GRID".format(component_class)
-            append_status("Component {} is {}".format(component_class, self._component_description[component_class]),
-                          "README.case", caseroot=self._caseroot)
+
             append_status("{} is {}".format(comp_grid,self.get_value(comp_grid)),
                           "README.case", caseroot=self._caseroot)
             comp = str(self.get_value("COMP_{}".format(component_class)))

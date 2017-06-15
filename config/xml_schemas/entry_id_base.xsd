@@ -7,6 +7,7 @@
   <xs:attribute name="component" type="xs:string"/>
   <xs:attribute name="grid"  type="xs:string"/>
   <xs:attribute name="modifier" type="xs:NCName"/>
+  <xs:attribute name="match" type="xs:NCName"/>
   <xs:attribute name="version" type="xs:decimal"/>
 
   <!-- simple elements -->
@@ -48,6 +49,7 @@
         <xs:element ref="value" maxOccurs="unbounded"/>
       </xs:sequence>
       <xs:attribute ref="modifier"/>
+      <xs:attribute ref="match"/>
     </xs:complexType>
   </xs:element>
 

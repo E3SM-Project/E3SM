@@ -2,14 +2,20 @@
 
 <?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
+  <!-- modifier_mode allowed values are
+       '*' 0 or more modifiers (default)
+       '1' exactly 1 modifier
+       '?' 0 or 1 modifiers
+       '+' 1 or more modifiers
 
-  <!-- NOTE that the description block determines what DLND% values can appear in the compset name 
-       For DLND this is determined by the DLND_MODE values -->
-  <description>
-    <desc compset="_DLND%NULL">dlnd modes are DLND_MODE=NULL:</desc>
-    <desc compset="_DLND%SCPL">dlnd modes for coupler-hist snow coupling are DLND_MODE=GLC_CPLHIST:</desc>
-    <desc compset="_DLND%LCPL">dlnd modes for coupler-hist non-snow coupling are DLND_MODE=CPLHIST:</desc>
+       This file may have lnd desc entries.
+  -->
+  <description modifier_mode="1">
+    <desc lnd="DLND[%NULL][%SCPL][%LCPL]">Data land model (DLND) </desc>
+    <desc option="NULL">Null mode </desc>
+    <desc option="SCPL">snow coupling mode </desc>
+    <desc option="LCPL">non-snow coupling </desc>
   </description>
 
   <entry id="COMP_LND">
@@ -120,4 +126,3 @@
   </help>
 
 </entry_id>
-

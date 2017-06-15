@@ -4,13 +4,19 @@
 
 <entry_id version="3.0">
 
-  <!-- NOTE that the description block determines what DICE% values can appear in the compset name
-       For DICE this is determined by the DICE_MODE values -->
+  <!-- modifier_mode allowed values are
+       '*' 0 or more modifiers (default)
+       '1' exactly 1 modifier
+       '?' 0 or 1 modifiers
+       '+' 1 or more modifiers
+
+       This file may have ice desc entries.
+  -->
   <description modifier_mode='1'>
     <desc ice="DICE[%SSMI][%SIAF][%PRES][%NULL]">dice mode </desc>
     <desc option="SSMI">is ssmi</desc>
     <desc option="SIAF"> is siaf</desc>
-    <desc option="PRES"> is prescribed:</desc>
+    <desc option="PRES"> is prescribed</desc>
     <desc option="NULL"> is null</desc>
   </description>
 

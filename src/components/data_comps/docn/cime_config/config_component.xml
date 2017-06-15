@@ -4,8 +4,14 @@
 
 <entry_id version="3.0">
 
-  <!-- NOTE that the description block determines what DOCN% values can appear in the compset name
-       For DOCN this is determined by the DOCN_MODE values -->
+  <!-- modifier_mode allowed values are
+       '*' 0 or more modifiers (default)
+       '1' exactly 1 modifier
+       '?' 0 or 1 modifiers
+       '+' 1 or more modifiers
+
+       This file may have ocn desc entries.
+  -->
   <description modifier_mode="1">
     <desc ocn="DOCN[%NULL][%DOM][%SOM][%SOMAQP][%IAF][%SST_AQUAP][%AQP1][%AQP2][%AQP3][%AQP4][%AQP5][%AQP6][%AQP7][%AQP8][%AQP9][%AQP10][%AQPFILE]">DOCN </desc>
     <desc option="NULL">  null mode</desc>

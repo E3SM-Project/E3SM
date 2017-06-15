@@ -11,17 +11,18 @@ logger = logging.getLogger(__name__)
 
 class Component(EntryID):
 
-    def __init__(self, infile):
+    def __init__(self, infile, comp_class=None):
         """
         initialize an object
         """
         files = Files()
         schema = None
-        # not checking schema on external components yet
-        cimeroot = get_cime_root()
-        if  cimeroot in os.path.abspath(infile):
-            schema = files.get_schema("CONFIG_CPL_FILE")
-        EntryID.__init__(self, infile, schema=schema)
+        EntryID.__init__(self, infile)
+        if comp_class is None:
+            schema = files.get_schema("CONFIG_CPL_FILE", attributes={"version":"{}".format(self.get_version())})
+        else:
+            schema = files.get_schema("CONFIG_{}_FILE".format(comp_class), attributes={"version":self.get_version()})
+        self.validate_xml_file(infile, schema)
 
     #pylint: disable=arguments-differ
     def get_value(self, name, attribute=None, resolved=False, subgroup=None):
@@ -119,7 +120,7 @@ class Component(EntryID):
     def get_description(self, compsetname, component=None):
         component = component.lower()
         rootnode = self.get_node("description")
-        desc = None
+        desc = ""
         if self.get_version() == 3.0:
             expect(component is not None,"component argument required for version3 files")
             modifier_mode = rootnode.get('modifier_mode')
@@ -130,6 +131,13 @@ class Component(EntryID):
 
             desc_nodes = self.get_nodes("desc", root=rootnode)
             optiondesc = {}
+            if component == "forcing":
+                for node in desc_nodes:
+                    forcing = node.get('forcing')
+                    if forcing is not None and compsetname.startswith(forcing):
+                        desc = node.text
+                        return desc
+
             # first pass just make a hash of the option descriptions
             for node in desc_nodes:
                 option = node.get('option')
@@ -162,7 +170,7 @@ class Component(EntryID):
                             expect(len(complist) <= 2,
                                    "Expected 0 or one modifers found {}".format(len(complist)))
                         # found a match
-                        expect(desc is None
+                        expect(len(desc) == 0
                                ,"Found multiple matchs in file {} one: {} another: {}".format(self.filename,desc,node.text))
                         desc = node.text
                         for part in comp.split('%'):
