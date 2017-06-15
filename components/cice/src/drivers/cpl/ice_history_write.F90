@@ -467,6 +467,10 @@
 1000    format('This dataset was created on ', &
            a,'-',a,'-',a,' at ',a,':',a)
       end if
+<<<<<<< HEAD
+=======
+!!!      call broadcast_scalar(start_time, my_task)
+>>>>>>> Fixed a bug in the docn model
       call broadcast_scalar(start_time, master_task)
       status = pio_put_att(File,pio_global,'history',start_time)
       !-----------------------------------------------------------------
