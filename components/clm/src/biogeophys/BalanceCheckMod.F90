@@ -88,7 +88,10 @@ contains
             h2ocan_col(bounds%begc:bounds%endc))
       
       if (use_var_soil_thick) then
-      	 wa = 0._r8                    ! Made 0 for variable soil thickness
+	 do f = 1, num_hydrologyc
+            c = filter_hydrologyc(f)
+      	    wa(c) = 0._r8                ! Made 0 for variable soil thickness
+	 end do
       else
 	 do f = 1, num_hydrologyc
             c = filter_hydrologyc(f)

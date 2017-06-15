@@ -581,42 +581,48 @@ contains
          allocate(dtb(bounds%begg:bounds%endg))
          call ncd_io(ncid=ncid, varname='aveDTB', flag='read', data=dtb, dim1name=grlnd, readvar=readvar)
          if (.not. readvar) then
-            call shr_sys_abort(' ERROR: DTB NOT on surfdata file'//&
-              errMsg(__FILE__, __LINE__)) 
-         end if
-         do c = begc,endc
-            g = col%gridcell(c)
-            l = col%landunit(c)
-            if (lun%urbpoi(l) .and. col%itype(c) /= icol_road_imperv .and. col%itype(c) /= icol_road_perv) then
-               col%nlevbed(c) = nlevurb
-            else if (lun%itype(l) == istdlak) then
-               col%nlevbed(c) = nlevlak
-            else if (lun%itype(l) == istice_mec) then
-               col%nlevbed(c) = 5
-            else
-            ! check for near zero DTBs, set minimum value
-	       beddep = max(dtb(g), 0.2_r8)
-	       j = 0
-	       zimid = 0._r8
-               do while (zimid < beddep .and. j < nlevgrnd)
-	          zimid = 0.5_r8*(zisoi(j)+zisoi(j+1))
-	          if (beddep > zimid) then
-	             nlevbed = j + 1
-	          else
-	             nlevbed = j
-                  end if
-	          j = j + 1
-               enddo
-	       nlevbed = max(nlevbed, 5)
-	       nlevbed = min(nlevbed, nlevgrnd)
-               col%nlevbed(c) = nlevbed
-	       col%zibed(c) = zisoi(nlevbed)
-            end if
-         end do
+            write(iulog,*) 'aveDTB not in surfdata: reverting to default 10 layers.'
+            do c = begc,endc
+               col%nlevbed(c) = nlevsoi
+	       col%zibed(c) = zisoi(nlevsoi)
+	    end do
+         else
+	    do c = begc,endc
+               g = col%gridcell(c)
+               l = col%landunit(c)
+               if (lun%urbpoi(l) .and. col%itype(c) /= icol_road_imperv .and. col%itype(c) /= icol_road_perv) then
+               	  col%nlevbed(c) = nlevurb
+               else if (lun%itype(l) == istdlak) then
+               	  col%nlevbed(c) = nlevlak
+               else if (lun%itype(l) == istice_mec) then
+               	  col%nlevbed(c) = 5
+               else
+                  ! check for near zero DTBs, set minimum value
+	          beddep = max(dtb(g), 0.2_r8)
+	          j = 0
+	          zimid = 0._r8
+                  do while (zimid < beddep .and. j < nlevgrnd)
+	             zimid = 0.5_r8*(zisoi(j)+zisoi(j+1))
+	             if (beddep > zimid) then
+	                nlevbed = j + 1
+	             else
+	                nlevbed = j
+                     end if
+	             j = j + 1
+                  enddo
+	          nlevbed = max(nlevbed, 5)
+	          nlevbed = min(nlevbed, nlevgrnd)
+                  col%nlevbed(c) = nlevbed
+	          col%zibed(c) = zisoi(nlevbed)
+               end if
+            end do
+	 end if
          deallocate(dtb)
       else
-         col%nlevbed(c) = nlevsoi
-	 col%zibed(c) = zisoi(nlevsoi)
+         do c = begc,endc
+            col%nlevbed(c) = nlevsoi
+	    col%zibed(c) = zisoi(nlevsoi)
+	 end do
       end if
 
       !-----------------------------------------------

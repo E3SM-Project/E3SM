@@ -16,6 +16,9 @@ module SoilWaterMovementMod
   public :: init_vsfm_condition_ids
   public :: Compute_EffecRootFrac_And_VertTranSink_Default
   !
+  ! !PUBLIC DATA MEMBERS:
+  logical, public :: zengdecker_2009_with_var_soil_thick
+  !
   ! !PRIVATE DATA MEMBERS:
   integer, parameter, public :: zengdecker_2009 = 0
   integer, parameter, public :: vsfm = 1
@@ -46,6 +49,7 @@ contains
     !------------------------------------------------------------------------------
 
     soilroot_water_method = zengdecker_2009
+    zengdecker_2009_with_var_soil_thick = .false.
 
     ! Initialize condition id for VSFM
     vsfm_cond_id_for_infil         = -1
@@ -60,8 +64,12 @@ contains
     call mpi_bcast (use_vsfm, 1, MPI_LOGICAL, 0, mpicom, ier)
     if (use_vsfm) soilroot_water_method = vsfm
 
-    if(use_var_soil_thick .and. soilroot_water_method .ne. zengdecker_2009) then
-      use_var_soil_thick = .false.
+    if (use_var_soil_thick .and. soilroot_water_method .eq. zengdecker_2009) then
+       zengdecker_2009_with_var_soil_thick = .true.
+    end if
+    if (use_var_soil_thick .and. soilroot_water_method .ne. zengdecker_2009) then
+       call shr_sys_abort(' ERROR: use_var_soil_thick not supported with anything but zengdecker_2009 at this time. '//&
+              errMsg(__FILE__, __LINE__))
     end if
     call mpi_bcast (use_var_soil_thick, 1, MPI_LOGICAL, 0, mpicom, ier)
 
@@ -478,8 +486,7 @@ contains
       ! If water table is below soil column calculate zq for the 11th layer
       do fc=1, num_hydrologyc
          c = filter_hydrologyc(fc)
-         nlevbed = nlev2bed(c)
-         j = nlevbed
+         j = nlev2bed(c)
          if(jwt(c) == nlevbed) then 
             tempi = 1._r8
             temp0 = (((sucsat(c,j)+zwtmm(c)-zimm(c,j))/sucsat(c,j)))**(1._r8-1._r8/bsw(c,j))
@@ -708,29 +715,28 @@ contains
       jtop(bounds%begc : bounds%endc) = 1
       ! Determination of how many layers (nlev2bed) to do for the tridiagonal
       ! at each column
-      do fc = 1,num_hydrologyc
-         c = filter_hydrologyc(fc)
-         nlevbed = nlev2bed(c)
-	 jbot(c) = nlevbed
-      end do
       if (use_var_soil_thick) then
-         call Tridiagonal2(bounds, 1, nlevgrnd+1, &
-           jtop(bounds%begc:bounds%endc), jbot(bounds%begc:bounds%endc), &
-           num_hydrologyc, filter_hydrologyc, &
-           amx(bounds%begc:bounds%endc, :), &
-           bmx(bounds%begc:bounds%endc, :), &
-           cmx(bounds%begc:bounds%endc, :), &
-           rmx(bounds%begc:bounds%endc, :), &
-           dwat2(bounds%begc:bounds%endc, :) )
+      	 do fc = 1,num_hydrologyc
+            c = filter_hydrologyc(fc)
+            jbot(c) = nlev2bed(c)
+      	 end do
+         call Tridiagonal(bounds, 1, nlevgrnd+1, &
+              jtop(bounds%begc:bounds%endc), jbot(bounds%begc:bounds%endc), &
+              num_hydrologyc, filter_hydrologyc, &
+              amx(bounds%begc:bounds%endc, :), &
+              bmx(bounds%begc:bounds%endc, :), &
+              cmx(bounds%begc:bounds%endc, :), &
+              rmx(bounds%begc:bounds%endc, :), &
+              dwat2(bounds%begc:bounds%endc, :) )
       else
          call Tridiagonal(bounds, 1, nlevsoi+1, &
-           jtop(bounds%begc:bounds%endc), &
-           num_hydrologyc, filter_hydrologyc, &
-           amx(bounds%begc:bounds%endc, :), &
-           bmx(bounds%begc:bounds%endc, :), &
-           cmx(bounds%begc:bounds%endc, :), &
-           rmx(bounds%begc:bounds%endc, :), &
-           dwat2(bounds%begc:bounds%endc, :) )
+              jtop(bounds%begc:bounds%endc), &
+              num_hydrologyc, filter_hydrologyc, &
+              amx(bounds%begc:bounds%endc, :), &
+              bmx(bounds%begc:bounds%endc, :), &
+              cmx(bounds%begc:bounds%endc, :), &
+              rmx(bounds%begc:bounds%endc, :), &
+              dwat2(bounds%begc:bounds%endc, :) )
       end if
 
       ! Renew the mass of liquid water

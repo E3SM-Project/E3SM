@@ -11,9 +11,9 @@ module TridiagonalMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: Tridiagonal
   public :: trisim
-  public :: Tridiagonal2
   interface Tridiagonal
     module procedure Tridiagonal_sr
+    module procedure Tridiagonal_sr_with_var_bottom
     module procedure Tridiagonal_mr
   end interface Tridiagonal
 
@@ -324,7 +324,7 @@ contains
    end subroutine trisim
 
   !-----------------------------------------------------------------------
-  subroutine Tridiagonal2 (bounds, lbj, ubj, jtop, jbot, numf, filter, a, b, c, r, u, is_col_active)
+  subroutine Tridiagonal_sr_with_var_bottom (bounds, lbj, ubj, jtop, jbot, numf, filter, a, b, c, r, u, is_col_active)
     !
     ! !DESCRIPTION:
     ! Tridiagonal matrix solution
@@ -402,6 +402,6 @@ contains
     end do
 
 
-  end subroutine Tridiagonal2
+  end subroutine Tridiagonal_sr_with_bottom
 
 end module TridiagonalMod

@@ -853,8 +853,8 @@ if(use_dynroot) then
           write(iulog,*) "Initialize rootfr to default"
        end if
        call init_vegrootfr(bounds, nlevsoi, nlevgrnd, &
-        col%nlevbed(bounds%begc:bounds%endc), &
-       this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
+            col%nlevbed(bounds%begc:bounds%endc), &
+       	    this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
     end if
 end if
   end subroutine Restart

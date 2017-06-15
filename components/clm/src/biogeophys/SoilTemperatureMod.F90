@@ -621,7 +621,7 @@ contains
          dz           =>    col%dz			     , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                       
          zi           =>    col%zi			     , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m) 
          z            =>    col%z			     , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)                   
-         nlev2bed         =>    col%nlevbed                  , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+         nlev2bed     =>    col%nlevbed                      , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
          
          nlev_improad =>    urbanparams_vars%nlev_improad    , & ! Input:  [integer  (:)   ]  number of impervious road layers         
          tk_wall      =>    urbanparams_vars%tk_wall	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban wall    

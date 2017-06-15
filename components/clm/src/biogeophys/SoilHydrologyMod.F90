@@ -148,7 +148,7 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          fff(c) = 0.5_r8
-         if (soilroot_water_method .eq. zengdecker_2009 .and. use_var_soil_thick) then
+         if (zengdecker_2009_with_var_soil_thick) then
             nlevbed = nlev2bed(c)
             fff(c) = 0.5_r8 * col%zi(c,nlevsoi) / min(col%zi(c,nlevbed), col%zi(c,nlevsoi))
          end if
@@ -666,7 +666,7 @@ contains
           ! allow jwt to equal zero when zwt is in top layer
           do j = 1,nlevbed
              if(zwt(c) <= zi(c,j)) then
-                  if (soilroot_water_method .eq. zengdecker_2009 .and. use_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
+                  if (zengdecker_2009_with_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
                      exit
                   else
                      jwt(c) = j-1
@@ -689,7 +689,7 @@ contains
 
           !--  water table is below the soil column  --------------------------------------
           if(jwt(c) == nlevbed) then             
-	     if (.not. (soilroot_water_method .eq. zengdecker_2009 .and. use_var_soil_thick)) then
+	     if (.not. (zengdecker_2009_with_var_soil_thick)) then
                 wa(c)  = wa(c) + qcharge(c)  * dtime
                 zwt(c) = zwt(c) - (qcharge(c)  * dtime)/1000._r8/rous
              end if
@@ -738,7 +738,7 @@ contains
              jwt(c) = nlevbed
              do j = 1,nlevbed
                 if(zwt(c) <= zi(c,j)) then
-                   if (soilroot_water_method .eq. zengdecker_2009 .and. use_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
+                   if (zengdecker_2009_with_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
                        exit
                     else
                        jwt(c) = j-1
@@ -903,7 +903,7 @@ contains
      real(r8) :: xsi(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer i (mm)
      real(r8) :: xsia(bounds%begc:bounds%endc)           ! available pore space at layer i (mm)
      real(r8) :: xs1(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer 1 (mm)
-     real(r8) :: smpfz(1:nlevgrnd)                        ! matric potential of layer right above water table (mm)
+     real(r8) :: smpfz(1:nlevsoi)                        ! matric potential of layer right above water table (mm)
      real(r8) :: wtsub                                   ! summation of hk*dzmm for layers below water table (mm**2/s)
      real(r8) :: rous                                    ! aquifer yield (-)
      real(r8) :: wh                                      ! smpfz(jwt)-z(jwt) (mm)
@@ -1032,7 +1032,7 @@ contains
           ! allow jwt to equal zero when zwt is in top layer
           do j = 1,nlevbed
              if(zwt(c) <= zi(c,j)) then
-                if (soilroot_water_method .eq. zengdecker_2009 .and. use_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
+                if (zengdecker_2009_with_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
                    exit
                 else
                    jwt(c) = j-1
@@ -1123,7 +1123,7 @@ contains
              jwt(c) = nlevbed
              do j = 1,nlevbed
                 if(zwt(c) <= zi(c,j)) then
-                   if (soilroot_water_method .eq. zengdecker_2009 .and. use_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
+                   if (zengdecker_2009_with_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
                       exit
                    else
                       jwt(c) = j-1
@@ -1250,7 +1250,7 @@ contains
                 ! make sure baseflow isn't negative
                 rsub_top(c) = max(0._r8, rsub_top(c))
              else
-	        if (jwt(c) == nlevbed .and. soilroot_water_method .eq. zengdecker_2009 .and. use_var_soil_thick) then
+	        if (jwt(c) == nlevbed .and. zengdecker_2009_with_var_soil_thick) then
                    rsub_top(c)    = 0._r8
                 else
                    rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*zwt(c))
@@ -1266,7 +1266,7 @@ contains
 
              !--  water table is below the soil column  --------------------------------------
              if(jwt(c) == nlevbed) then             
-	        if (soilroot_water_method .eq. zengdecker_2009 .and. use_var_soil_thick) then
+	        if (zengdecker_2009_with_var_soil_thick) then
          	   if (-1._r8 * smp_l(c,nlevbed) < 0.5_r8 * dzmm(c,nlevbed)) then
            	      zwt(c) = z(c,nlevbed) - (smp_l(c,nlevbed) / 1000._r8)
 		   end if
@@ -1356,7 +1356,7 @@ contains
                 jwt(c) = nlevbed
                 do j = 1,nlevbed
                    if(zwt(c) <= zi(c,j)) then
-                      if (soilroot_water_method .eq. zengdecker_2009 .and. use_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
+                      if (zengdecker_2009_with_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
                          exit
                       else
                          jwt(c) = j-1

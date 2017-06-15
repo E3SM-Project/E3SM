@@ -128,12 +128,12 @@ contains
           rootfr(p,ubj) = .5_r8*( exp(-roota_par(pft%itype(p)) * col%zi(c,ubj-1))  &
                + exp(-rootb_par(pft%itype(p)) * col%zi(c,ubj-1)) )
 
-       ! Adjust layer root fractions if nlev2bed < nlevsoi
-         if(use_var_soil_thick .and. nlevbed < ubj) then
-           do lev = 1, nlevbed
-             rootfr(p,lev) = rootfr(p,lev) / totrootfr
-           end do
-	   rootfr(p,nlevbed+1:ubj) = 0.0_r8
+         ! Adjust layer root fractions if nlev2bed < nlevsoi
+         if (use_var_soil_thick .and. nlevbed < ubj) then
+            do lev = 1, nlevbed
+               rootfr(p,lev) = rootfr(p,lev) / totrootfr
+            end do
+	    rootfr(p,nlevbed+1:ubj) = 0.0_r8
          endif
        else
           rootfr(p,1:ubj) = 0._r8
