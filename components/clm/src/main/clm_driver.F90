@@ -148,7 +148,7 @@ module clm_driver
   use clm_varctl                  , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
   use clm_interface_funcsMod      , only : update_bgc_data_pf2clm, update_th_data_pf2clm
   use clm_interface_pflotranMod   , only : clm_pf_run, clm_pf_write_restart
-!  use clm_interface_pflotranMod   , only : clm_pf_finalize
+  use clm_interface_pflotranMod   , only : clm_pf_finalize
   !!----------------------------------------------------------------------------
 
   !
@@ -1364,6 +1364,10 @@ contains
        end if
        call t_stopf('clm_drv_io')
 
+    end if
+
+    if (nstep>=nestep) then
+       call clm_pf_finalize()
     end if
 
   end subroutine clm_drv
