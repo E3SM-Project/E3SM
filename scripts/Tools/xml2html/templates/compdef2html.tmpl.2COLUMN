@@ -137,36 +137,55 @@
       <button class="detailsBtn" onclick="showAll();">Show Details</button>
       <button class="detailsBtn" onclick="hideAll();">Hide Details</button>
 
-      {% for component, values in html_dict|dictsort %}
       <br/><br/>
+      <div class="accordionItem">
+	<h2> <span id="variable">Compset Naming Convention</span></h2>
+	<div>
+	  <pre>{{ help }}</pre>
+	</div>
+      </div>
+
+
+      {% for component, comp_dict in html_dict|dictsort %}
       <div class="accordionItem">
 	<h2>Component: <span id="variable">{{ component|e }}</span></h2>
 	<div>
-	  <pre>{{ values.help_text }}</pre>
 	  <table>
 	    <tr>
 	      <th>Alias</th>
 	      <th>Long Name</th>
 	    <tr/>
-	    {% for alias, long_name in html_dict.all_compsets.iteritems() %}
+	    {% for alias, long_name in comp_dict.compsets.iteritems() %}
 	    <tr>
 	      <td><b>{{ alias|e }}</b></td>
-	      <td>{{ long_name|e }}<br/>
-		{% for comp_part, desc in html_dict.desc.long_name.iteritems() %}
-		<table>
-		  <tr>
-		    <td><b>{{ comp_part }}</b></td>
-		    <td>{{ desc }}</td>
-		  </tr>
-		</table>
-		{% endfor %}
-	      </td>
+	      <td>{{ long_name|e }}</td>
 	    </tr>
 	    {% endfor %}
 	  </table>
 	</div>
       </div>
       {% endfor %}
+
+      <div class="sidebar">
+	<h2> <span id="variable">Compset Mode Descriptions</span></h2>
+	<div>
+	  <p>The modes define options for the different component models using
+	    a python regular expression syntax for matching when creating a new case.</p>
+	  <table>
+	    <tr>
+	      <th>Mode</th>
+	      <th>Description</th>
+	    <tr/>
+	    {% for mode, desc in all_descs|dictsort %}
+	    <tr>
+	      <td valign="top"><b>{{ mode|e }}</b></td>
+	      <td valign="top">{{ desc|e }}</td>
+	    </tr>
+	    {% endfor %}
+	    </table>
+	    <br/><br/>
+	  </div>
+	</div>
 
     </div>
   </body>

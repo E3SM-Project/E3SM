@@ -1478,9 +1478,13 @@ class Case(object):
             desc_nodes = compobj.get_nodes("desc", root=root_node)
             for node in desc_nodes:
                 compset_match = node.get("compset")
-                compset_match = compset_match.replace("_","")
-                compset_match = "_" + compset_match + "_"
-                compset_name = compset_name + "_"
+##                compset_match = compset_match.replace("_","")
+                # check if compset_match is bounded by "_"
+                if compset_match[0] != "_":
+                    compset_match = "_" + compset_match
+                if compset_match[-1] != "_":
+                    compset_match = compset_match + "_"
+##                compset_name = compset_name + "_"
                 if re.search(compset_match, compset_name):
                     desc_dict[comp_name] = node.text
                     break

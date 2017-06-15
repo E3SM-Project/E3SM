@@ -128,9 +128,9 @@ def _main_func(options, work_dir):
                     desc[compset] = case.get_compset_description(compset_name=compset)
 
             # load up the html_dict
-            html_dict[component] = { 'help_txt'         : help_text,
-                                     'all_compsets'     : all_compsets,
-                                     'desc'             : desc }                                     
+            html_dict[component] = { 'help_text'    : help_text,
+                                     'all_compsets' : all_compsets,
+                                     'desc'         : desc }                                     
 
     # load up jinja template
     templateLoader = jinja2.FileSystemLoader( searchpath='{0}/templates'.format(work_dir) )
