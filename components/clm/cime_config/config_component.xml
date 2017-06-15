@@ -40,6 +40,7 @@
     <type>char</type>
     <default_value>UNSET</default_value>
     <values>
+      <value compset="CAM[45]%SCAM"     >2000_control</value> 
       <value compset="2000_DATM.*_CLM"  >2000_control</value> 
       <value compset="2000_CAM.*_CLM"   >2000_control</value> 
       <value compset="1996_CAM.*_CLM"   >2000_control</value> 

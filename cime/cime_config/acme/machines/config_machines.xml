@@ -1237,7 +1237,7 @@
          <DESC>PNL Haswell cluster, OS is Linux, batch system is SLURM</DESC>
          <OS>LINUX</OS>
          <COMPILERS>intel,pgi</COMPILERS>
-         <MPILIBS>mvapich2,openmpi,intelmpi,mvapich</MPILIBS>
+         <MPILIBS>mvapich2,mpi-serial,openmpi,intelmpi,mvapich</MPILIBS>
 	 <NODENAME_REGEX>constance</NODENAME_REGEX>
          <RUNDIR>/pic/scratch/$USER/csmruns/$CASE/run</RUNDIR>
          <EXEROOT>/pic/scratch/$USER/csmruns/$CASE/bld</EXEROOT>
@@ -1317,6 +1317,9 @@
 	   <modules mpilib="mvapich2">
 	     <command name="load">mvapich2/2.1</command>
 	   </modules>
+	   <modules mpilib="mpi-serial">
+	     <command name="rm">pnetcdf/1.6.1</command>
+	   </modules>
 	   <modules mpilib="intelmpi">
 	     <command name="load">intelmpi/5.0.1.035</command>
 	   </modules>
@@ -1332,7 +1335,7 @@
 	   <env name="NETCDF_HOME">${NETCDF_LIB}/../</env>
 	 </environment_variables>
 	 <environment_variables compiler="intel">
-	   <env name="MKL_PATH">$ENV{MLIB_LIB}</env>
+	   <env name="MKL_PATH">${MKL_PATH}</env>
 	 </environment_variables>
 </machine>
 

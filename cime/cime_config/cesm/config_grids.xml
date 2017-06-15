@@ -1300,7 +1300,7 @@
       <support>Only for DATM/CLM compsets</support>
     </domain>
 
-    <domain name="usgs">
+    <domain name="USGS">
       <!-- usgs grid - for used for mask specification-->
       <desc>USGS mask</desc>
     </domain>
@@ -1487,10 +1487,10 @@
 
     <domain name="T42">
       <nx>128</nx> <ny>64</ny>
-      <file lnd_mask="usgs">domain.lnd.T42_USGS.111004.nc</file>
-      <file ocn_mask="usgs">domain.camocn.64x128_USGS_070807.nc</file>
-      <path lnd_mask="usgs">$DIN_LOC_ROOT/share/domains/domain.clm</path>
-      <path ocn_mask="usgs">$DIN_LOC_ROOT/atm/cam/ocnfrac</path>
+      <file lnd_mask="USGS">domain.lnd.T42_USGS.111004.nc</file>
+      <file ocn_mask="USGS">domain.camocn.64x128_USGS_070807.nc</file>
+      <path lnd_mask="USGS">$DIN_LOC_ROOT/share/domains/domain.clm</path>
+      <path ocn_mask="USGS">$DIN_LOC_ROOT/atm/cam/ocnfrac</path>
       <desc>T42 is Gaussian grid:</desc>
     </domain>
 
