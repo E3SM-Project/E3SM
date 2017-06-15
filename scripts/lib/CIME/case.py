@@ -321,7 +321,8 @@ class Case(object):
                     elif field == "group":
                         result.extend(env_file.get_groups(root))
                     elif field == "valid_values":
-                        vv = env_file.get_valid_values(variable)
+                        # pylint: disable=protected-access
+                        vv = env_file._get_valid_values(root)
                         if vv:
                             result.extend(vv)
                     elif field == "file":
@@ -677,7 +678,7 @@ class Case(object):
         ftype = gfile.get_id()
         expect(ftype == "env_mach_pes.xml" or ftype == "config_pes", " Do not recognize {} as a valid CIME pes file {}".format(self._pesfile, ftype))
         if ftype == "env_mach_pes.xml":
-            new_mach_pes_obj = EnvMachPes(infile=self._pesfile, components=self._components)
+            new_mach_pes_obj = EnvMachPes(infile=self._pesfile, components=self._component_classes)
             self.update_env(new_mach_pes_obj, "mach_pes")
             return new_mach_pes_obj.get_value("TOTALPES")
         pesobj = Pes(self._pesfile)
@@ -1293,7 +1294,7 @@ class Case(object):
         # special case for aprun
         if executable is not None and "aprun" in executable:
             aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)
-            expect(num_nodes == self.num_nodes, "Not using optimized num nodes")
+            expect( (num_nodes + self.spare_nodes) == self.num_nodes, "Not using optimized num nodes")
             return executable + aprun_args + " " + run_misc_suffix
 
         else:
@@ -1375,7 +1376,8 @@ class Case(object):
         """
         expect(os.path.isfile(xmlfile), "Could not find file {}".format(xmlfile))
 
-        self.flush(flushall=True)
+        if not self._read_only_mode:
+            self.flush(flushall=True)
 
         gfile = GenericXML(infile=xmlfile)
         ftype = gfile.get_id()

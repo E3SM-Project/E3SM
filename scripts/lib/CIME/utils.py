@@ -1102,7 +1102,6 @@ def find_system_test(testname, case):
     Fail if the test is not found in any of the paths.
     """
     from importlib import import_module
-
     system_test_path = None
     if testname.startswith("TEST"):
         system_test_path =  "CIME.SystemTests.system_tests_common.{}".format(testname)
@@ -1110,6 +1109,7 @@ def find_system_test(testname, case):
         components = ["any"]
         components.extend( case.get_compset_components())
         env_test = case.get_env("test")
+        fdir = []
         for component in components:
             tdir = env_test.get_value("SYSTEM_TESTS_DIR",
                                       attribute={"component":component})
@@ -1118,6 +1118,7 @@ def find_system_test(testname, case):
                 tdir = os.path.abspath(tdir)
                 system_test_file = os.path.join(tdir  ,"{}.py".format(testname.lower()))
                 if os.path.isfile(system_test_file):
+                    fdir.append(tdir)
                     logger.debug( "found "+system_test_file)
                     if component == "any":
                         system_test_path = "CIME.SystemTests.{}.{}".format(testname.lower(), testname)
@@ -1126,8 +1127,7 @@ def find_system_test(testname, case):
                         if system_test_dir not in sys.path:
                             sys.path.append(system_test_dir)
                         system_test_path = "{}.{}".format(testname.lower(), testname)
-                    break
-
+        expect(len(fdir) == 1, "Test {} found in multiple locations {}, aborting".format(testname, fdir))
     expect(system_test_path is not None, "No test {} found".format(testname))
 
     path, m = system_test_path.rsplit('.',1)

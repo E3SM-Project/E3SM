@@ -91,9 +91,9 @@ class EnvMachSpecific(EnvBase):
         if (module_system == "module"):
             self._load_module_modules(modules_to_load)
         elif (module_system == "soft"):
-            self._load_soft_modules(modules_to_load)
-        elif (module_system == "dotkit"):
-            self._load_dotkit_modules(modules_to_load)
+            self._load_modules_generic(modules_to_load)
+        elif (module_system == "generic"):
+            self._load_modules_generic(modules_to_load)
         elif (module_system == "none"):
             self._load_none_modules(modules_to_load)
         else:
@@ -116,7 +116,7 @@ class EnvMachSpecific(EnvBase):
         elif (module_system == "soft"):
             # Does soft really not provide this capability?
             return ""
-        elif (module_system == "dotkit"):
+        elif (module_system == "generic"):
             return run_cmd_no_fail("{}use -lv".format(source_cmd))
         elif (module_system == "none"):
             return ""
@@ -229,18 +229,14 @@ class EnvMachSpecific(EnvBase):
                    "module command {} failed with message:\n{}".format(cmd, errout))
             exec(py_module_code)
 
-    def _load_soft_modules(self, modules_to_load):
+    def _load_modules_generic(self, modules_to_load):
         sh_init_cmd = self.get_module_system_init_path("sh")
         sh_mod_cmd = self.get_module_system_cmd_path("sh")
 
-        # Some machines can set the environment
-        # variables using a script (such as /etc/profile.d/00softenv.sh
-        # on mira or /etc/profile.d/a_softenv.sh on blues)
-        # which load the new environment variables using softenv-load.
-
-        # Other machines need to run soft-dec.sh and evaluate the output,
-        # which may or may not have unresolved variables such as
-        # PATH=/soft/com/packages/intel/16/initial/bin:${PATH}
+        # Purpose is for environment management system that does not have
+        # a python interface and therefore can only determine what they
+        # do by running shell command and looking at the changes
+        # in the environment.  
 
         cmd = "source {}".format(sh_init_cmd)
 
@@ -287,10 +283,7 @@ class EnvMachSpecific(EnvBase):
             if key in os.environ and key not in newenv:
                 del(os.environ[key])
             else:
-                os.environ[key] = newenv[key]
-
-    def _load_dotkit_modules(self, _):
-        expect(False, "Not yet implemented")
+                os.environ[key] = newenv[key] 
 
     def _load_none_modules(self, modules_to_load):
         """

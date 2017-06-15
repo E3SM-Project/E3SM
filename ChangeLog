@@ -1,5 +1,47 @@
 ======================================================================
 
+Originator: Bill Sacks
+Date: 6-13-2017
+Tag: cime5.3.0-alpha.27
+Answer Changes: None
+Tests: scripts_regression_tests on most PRs
+Dependencies: CLM now needs to define its own LII and SSP tests
+
+Brief Summary:
+    - Allow for distributed config_tests.xml file and move LII and SSP
+      tests out of cime. Also an unrelated minor bug fix in case.py
+    - Updates to CIME User Guide
+    - Fix XML schemas error for ALCF's Mira/Cetus
+    - Do not add empty user mods
+    - Clean up help text for query_testlists
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+d8ae575 Merge pull request #1682 from jedwards4b/config_tests_distribution
+08cfb55 Merge pull request #1681 from bjsmith2014/master
+d0d6648 Merge pull request #1679 from ESMCI/dqwu/fix_xml_schemas_alcf
+876b6fe Merge pull request #1675 from billsacks/do_not_add_empty_user_mods
+fdcac68 Merge pull request #1669 from billsacks/query_testlists_help
+15768a0 Merge pull request #1671 from bjsmith2014/master
+
+Modified files: git diff --name-status [previous_tag]
+M       config/acme/machines/config_machines.xml
+M       config/cesm/config_files.xml
+M       config/config_tests.xml
+M       doc/source/users_guide/multi-instance.rst
+M       doc/source/users_guide/unit_testing.rst
+D       scripts/lib/CIME/SystemTests/lii.py
+D       scripts/lib/CIME/SystemTests/ssp.py
+M       scripts/lib/CIME/XML/tests.py
+M       scripts/lib/CIME/case.py
+M       scripts/lib/CIME/utils.py
+M       scripts/query_testlists
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 6-10-2017
 Tag: cime5.3.0-alpha.26
