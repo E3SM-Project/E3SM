@@ -43,6 +43,7 @@ contains
     !
     use clm_varctl, only : use_vsfm, use_var_soil_thick
     use spmdMod,    only : mpicom, MPI_LOGICAL
+    use shr_sys_mod,only : shr_sys_abort
     ! !ARGUMENTS:
     implicit none
     integer :: ier ! error status
@@ -68,8 +69,7 @@ contains
        zengdecker_2009_with_var_soil_thick = .true.
     end if
     if (use_var_soil_thick .and. soilroot_water_method .ne. zengdecker_2009) then
-       call shr_sys_abort(' ERROR: use_var_soil_thick not supported with anything but zengdecker_2009 at this time. '//&
-              errMsg(__FILE__, __LINE__))
+       call shr_sys_abort('ERROR: use_var_soil_thick not supported with anything but zengdecker_2009 at this time.')
     end if
     call mpi_bcast (use_var_soil_thick, 1, MPI_LOGICAL, 0, mpicom, ier)
 
@@ -269,7 +269,7 @@ contains
     use clm_varpar           , only : nlevsoi, max_patch_per_col, nlevgrnd
     use clm_time_manager     , only : get_step_size
     use column_varcon        , only : icol_roof, icol_road_imperv
-    use TridiagonalMod       , only : Tridiagonal, Tridiagonal2
+    use TridiagonalMod       , only : Tridiagonal
     use abortutils           , only : endrun     
     use SoilStateType        , only : soilstate_type
     use SoilHydrologyType    , only : soilhydrology_type

@@ -51,7 +51,7 @@ contains
     use clm_varpar      , only : nlayer, nlayert
     use clm_varctl      , only : use_var_soil_thick
     use abortutils      , only : endrun
-    use SoilWaterMovementMod, only : soilroot_water_method, zengdecker_2009, vsfm
+    use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -542,7 +542,7 @@ contains
      use clm_varpar       , only : nlevsoi, nlevgrnd
      use column_varcon    , only : icol_roof, icol_road_imperv
      use clm_varctl       , only : use_vsfm, use_var_soil_thick
-     use SoilWaterMovementMod, only : soilroot_water_method, zengdecker_2009, vsfm
+     use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds  
@@ -875,7 +875,7 @@ contains
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
      use abortutils       , only : endrun
      use clm_varctl       , only : use_vsfm, use_var_soil_thick
-     use SoilWaterMovementMod, only : soilroot_water_method, zengdecker_2009, vsfm
+     use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds               

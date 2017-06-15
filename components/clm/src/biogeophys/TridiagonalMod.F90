@@ -402,6 +402,6 @@ contains
     end do
 
 
-  end subroutine Tridiagonal_sr_with_bottom
+  end subroutine Tridiagonal_sr_with_var_bottom
 
 end module TridiagonalMod
