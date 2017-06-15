@@ -118,21 +118,21 @@ class Component(EntryID):
         return match_value
 
     #pylint: disable=arguments-differ
-    def get_description(self, compsetname, component=None):
-        component = component.lower()
+    def get_description(self, compsetname, comp_class=None):
+        comp_class = comp_class.lower()
         rootnode = self.get_node("description")
         desc = ""
+        desc_nodes = self.get_nodes("desc", root=rootnode)
         if self.get_version() == 3.0:
-            expect(component is not None,"component argument required for version3 files")
+            expect(comp_class is not None,"comp_class argument required for version3 files")
             modifier_mode = rootnode.get('modifier_mode')
             if modifier_mode is None:
                 modifier_mode = '*'
                 expect(modifier_mode in ('*','1','?','+'),
                        "Invalid modifier_mode {} in file {}".format(modifier_mode, self.filename))
 
-            desc_nodes = self.get_nodes("desc", root=rootnode)
             optiondesc = {}
-            if component == "forcing":
+            if comp_class == "forcing":
                 for node in desc_nodes:
                     forcing = node.get('forcing')
                     if forcing is not None and compsetname.startswith(forcing):
@@ -144,9 +144,9 @@ class Component(EntryID):
                 option = node.get('option')
                 if option is not None:
                     optiondesc[option] = node.text
-            #second pass find a component match
+            #second pass find a comp_class match
             for node in desc_nodes:
-                compdesc = node.get(component)
+                compdesc = node.get(comp_class)
 
                 if compdesc is None:
                     continue
@@ -160,7 +160,7 @@ class Component(EntryID):
                     complist = comp.split('%')
 
                     cset = set(complist)
-                    if cset <= fullset:
+                    if cset == reqset or (cset > reqset and cset <= fullset):
                         if modifier_mode == '1':
                             expect(len(complist) == 2,
                                    "Expected exactly one modifer found {}".format(len(complist)))
@@ -177,8 +177,11 @@ class Component(EntryID):
                         for part in comp.split('%'):
                             if part in optiondesc:
                                 desc += optiondesc[part]
-
-        elif self.get_version <= 2.0:
+            if comp_class != 'cpl':
+                expect(len(desc) > 0,
+                   "No description found for comp_class {} matching compsetname {} in file {}"\
+                       .format(comp_class,compsetname, self.filename))
+        elif self.get_version() <= 2.0:
             for node in desc_nodes:
                 compsetmatch = node.get("compset")
                 if compsetmatch is not None and re.search(compsetmatch, compsetname):
