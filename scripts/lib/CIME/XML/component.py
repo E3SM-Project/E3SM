@@ -11,19 +11,19 @@ logger = logging.getLogger(__name__)
 
 class Component(EntryID):
 
-    def __init__(self, infile, comp_class=None):
+    def __init__(self, infile, comp_class):
         """
         initialize a Component obect from the component xml file in infile
         associate the component class with comp_class if provided.
         """
+        self._comp_class = comp_class
+        if infile == 'testingonly':
+            self.filename = infile
+            return
         files = Files()
         schema = None
         EntryID.__init__(self, infile)
-        if comp_class is None:
-            schema = files.get_schema("CONFIG_CPL_FILE", attributes={"version":"{}".format(self.get_version())})
-        else:
-            schema = files.get_schema("CONFIG_{}_FILE".format(comp_class), attributes={"version":"{}".format(self.get_version())})
-            self._comp_class = comp_class
+        schema = files.get_schema("CONFIG_{}_FILE".format(comp_class), attributes={"version":"{}".format(self.get_version())})
 
         if schema is not None:
             self.validate_xml_file(infile, schema)
@@ -135,6 +135,22 @@ class Component(EntryID):
 
 
     def _get_description_v3(self, compsetname, comp_class=None):
+        """
+        version 3 of the config_component.xml file has the description section at the top of the file
+        the description field has one attribute 'modifier_mode' which has allowed values
+        '*' 0 or more modifiers (default)
+        '1' exactly 1 modifier
+        '?' 0 or 1 modifiers
+        '+' 1 or more modifiers
+
+        modifiers are fields in the component section of the compsetname following the % symbol.
+
+        The desc field can have an attribute which is the component class ('cpl', 'atm', 'lnd' etc)
+        or it can have an attribute 'option' which provides descriptions of each optional modifier
+        or (in the config_component_{model}.xml in the driver only) it can have the attribute 'forcing'
+
+        component descriptions are matched to the compsetname using a set method
+        """
         comp_class = comp_class.lower()
         rootnode = self.get_node("description")
         desc = ""
@@ -177,33 +193,62 @@ class Component(EntryID):
 
             reqset = set(parts)
             fullset = set(parts+opt_parts)
-            comparts = compsetname.split('_')
-            for comp in comparts:
-                complist = comp.split('%')
-
-                cset = set(complist)
-                if cset == reqset or (cset > reqset and cset <= fullset):
-                    if modifier_mode == '1':
-                        expect(len(complist) == 2,
-                               "Expected exactly one modifer found {}".format(len(complist)))
-                    elif modifier_mode == '+':
-                        expect(len(complist) >= 2,
-                               "Expected one or more modifers found {}".format(len(complist)))
-                    elif modifier_mode == '?':
-                        expect(len(complist) <= 2,
-                               "Expected 0 or one modifers found {}".format(len(complist)))
-                    # found a match
-                    expect(len(desc) == 0
-                           ,"Found multiple matches in file {} one: {} another: {}".format(self.filename,desc,node.text))
-                    desc = node.text
-                    for part in comp.split('%'):
-                        if part in optiondesc:
-                            desc += optiondesc[part]
+            if self._get_description_match(compsetname, reqset, fullset, optiondesc, modifier_mode):
+                desc = node.text
+        # cpl component may not have a description, all others must
         if comp_class != 'cpl':
             expect(len(desc) > 0,
                    "No description found for comp_class {} matching compsetname {} in file {}"\
                        .format(comp_class,compsetname, self.filename))
         return desc
+
+    def _get_description_match(self, compsetname, reqset, fullset, optiondesc, modifier_mode):
+        """
+
+        >>> obj = Component('testingonly', 'ATM')
+        >>> obj._get_description_match("1850_DATM%CRU_FRED",set(["DATM"]), set(["DATM","CRU","HSI"]),{"CRU":"CRU"}, "*")
+        True
+        >>> obj._get_description_match("1850_DATM%FRED_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]),{"CRU":"CRU"}, "*")
+        False
+        >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]),{"CRU":"CRU"}, "?")
+        True
+        >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]),{"CRU":"CRU"}, "1")
+        Traceback (most recent call last):
+        ...
+        SystemExit: ERROR: Expected exactly one modifer found 0
+        >>> obj._get_description_match("1850_DATM%CRU%HSI_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]),{"CRU":"CRU","HSI":"HSI"}, "1")
+        Traceback (most recent call last):
+        ...
+        SystemExit: ERROR: Expected exactly one modifer found 2
+        >>> obj._get_description_match("1850_CAM50%WCCM%RCO2_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]),{"RCO2":"CRU"}, "*")
+        True
+
+        # The following is not allowed because the required WCCM field is missing
+        >>> obj._get_description_match("1850_CAM50%RCO2_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]),{"RCO2":"CRU"}, "*")
+        False
+        """
+        match = False
+        comparts = compsetname.split('_')
+        for comp in comparts:
+            complist = comp.split('%')
+            cset = set(complist)
+            if cset == reqset or (cset > reqset and cset <= fullset):
+                if modifier_mode == '1':
+                    expect(len(complist) == 2,
+                           "Expected exactly one modifer found {}".format(len(complist)-1))
+                elif modifier_mode == '+':
+                    expect(len(complist) >= 2,
+                           "Expected one or more modifers found {}".format(len(complist)-1))
+                elif modifier_mode == '?':
+                    expect(len(complist) <= 2,
+                           "Expected 0 or one modifers found {}".format(len(complist)-1))
+                expect(not match,"Found multiple matches in file {} for {}".format(self.filename,comp))
+                match = True
+                # found a match
+
+        return match
+
+
 
     def _get_description_v2(self, compsetname):
         rootnode = self.get_node("description")
