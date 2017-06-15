@@ -2096,7 +2096,12 @@ contains
 ! gp, repro_sum options should be inited before this call.
   subroutine set_area_correction_map0(elem, nelemd, par, gp)
 
+#ifndef CAM
     use repro_sum_mod,      only: repro_sum
+#else
+    use shr_reprosum_mod,   only: repro_sum => shr_reprosum_calc
+#endif
+
     use quadrature_mod,   only: quadrature_t
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
@@ -2151,7 +2156,12 @@ contains
 ! gp, repro_sum options should be inited before this call.
   subroutine set_area_correction_map2(elem, nelemd, par, gp)
 
+#ifndef CAM
     use repro_sum_mod,      only: repro_sum
+#else
+    use shr_reprosum_mod,   only: repro_sum => shr_reprosum_calc
+#endif
+
     use quadrature_mod,   only: quadrature_t
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
