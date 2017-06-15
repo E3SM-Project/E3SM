@@ -152,7 +152,7 @@ def query_component(name, all_components=False):
            "Cannot find any config_component.xml file for {}".format(name))
 
     # determine component xml content
-    component = Component(config_file)
+    component = Component(config_file, "CPL")
     component.print_values()
 
 ###############################################################################
