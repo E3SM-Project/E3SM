@@ -1,5 +1,135 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 6-15-2017
+Tag: cime5.3.0-alpha.28
+Answer Changes: None
+Tests:  scripts_regression_tests.py
+Dependencies:
+
+Brief Summary:
+    - Change typo PCLHIST to CPLHIST in datm.
+    - Remove empty proxy tag from anlworkstation.
+    - Create PULL_REQUEST_TEMPLATE.
+    - Updating CIME users guide.
+    - Adds support for data model to read multiple time slices at once.
+    - Fix xmlquery issues.
+    - Merge last 3 months of ACME work.
+    - Backward compatible change to allow more than one mach for each grid.
+
+User interface changes: 
+    - new xml variable, readmode
+    - xmlquery --group has been changed go xmlquery --get-group
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+f449794 Merge pull request #1696 from ESMCI/fischer/cplhist
+547f68b Merge pull request #1689 from ESMCI/dqwu/anlworkstation-remove-proxy-tag
+160a6e7 Create PULL_REQUEST_TEMPLATE
+9b5ef51 Merge pull request #1686 from bjsmith2014/master 7efcbcf hot fix for pylint error
+002df11 Merge pull request #1418 from bishtgautam/bishtgautam/data-model c7c79fe 
+813683d Merge pull request #1684 from ESMCI/mvertens/fixing_xmlquery
+47a559a Merge pull request #1634 from ESMCI/jgfouca/acme_merge_06_01_2017
+b795c3e Merge pull request #1680 from jedwards4b/config_pes_xsd_correction
+
+
+Modified files: git diff --name-status [previous_tag]
+M	.github/PULL_REQUEST_TEMPLATE
+M	config/acme/allactive/config_compsets.xml
+D	config/acme/allactive/config_compsets.xml.cime2
+D	config/acme/allactive/config_pes.xml
+D	config/acme/allactive/config_pes.xml.cime2
+M	config/acme/allactive/config_pesall.xml
+D	config/acme/allactive/testmods_dirs/cam/outfrq9s/shell_commands
+D	config/acme/allactive/testmods_dirs/force_netcdf_pio/shell_commands
+M	config/acme/config_archive.xml
+M	config/acme/config_grids.xml
+M	config/acme/machines/Makefile
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/config_compilers.xml
+M	config/acme/machines/config_machines.xml
+M	config/acme/machines/config_pio.xml
+M	config/acme/machines/syslog.anvil
+M	config/acme/machines/syslog.cetus
+M	config/acme/machines/syslog.cori-haswell
+M	config/acme/machines/syslog.cori-knl
+M	config/acme/machines/syslog.edison
+M	config/acme/machines/syslog.mira
+M	config/acme/machines/syslog.titan
+M	config/acme/machines/template.case.run
+M	config/acme/machines/template.st_archive
+A	config/acme/testmods_dirs/allactive/cam/cosplite/user_nl_cam
+A	config/acme/testmods_dirs/allactive/cam/cosplite/xmlchange_cmnds
+A	config/acme/testmods_dirs/allactive/cam/cosplite_nhtfrq5/user_nl_cam
+A	config/acme/testmods_dirs/allactive/cam/cosplite_nhtfrq5/xmlchange_cmnds
+M	config/acme/testmods_dirs/allactive/cam/outfrq9s/xmlchange_cmnds
+A	config/acme/testmods_dirs/allactive/cam/rtm_null/xmlchange_cmnds
+A	config/acme/testmods_dirs/allactive/clm/betr/xmlchange_cmnds
+A	config/acme/testmods_dirs/allactive/clm/eca/user_nl_clm
+A	config/acme/testmods_dirs/allactive/clm/fates/user_nl_clm
+M	config/cesm/machines/template.st_archive
+M	config/config_tests.xml
+M	config/xml_schemas/config_pes.xsd
+M	doc/source/users_guide/adding-cases.rst
+M	doc/source/users_guide/multi-instance.rst
+M	doc/source/users_guide/unit_testing.rst
+D	scripts/Tools/cron_script
+M	scripts/Tools/jenkins_generic_job
+M	scripts/Tools/jenkins_script
+M	scripts/Tools/xmlquery
+A	scripts/lib/CIME/SystemTests/erri.py
+M	scripts/lib/CIME/SystemTests/homme.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/aprun.py
+M	scripts/lib/CIME/bless_test_results.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_cmpgen_namelists.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/case_st_archive.py
+M	scripts/lib/CIME/check_input_data.py
+M	scripts/lib/CIME/code_checker.py
+M	scripts/lib/CIME/compare_test_results.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/test_status.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/lib/update_acme_tests.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/components/data_comps/datm/cime_config/config_component.xml
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps/dice/cime_config/namelist_definition_dice.xml
+M	src/components/data_comps/dlnd/cime_config/namelist_definition_dlnd.xml
+M	src/components/data_comps/docn/cime_config/config_component.xml
+M	src/components/data_comps/docn/cime_config/namelist_definition_docn.xml
+M	src/components/data_comps/drof/cime_config/namelist_definition_drof.xml
+M	src/components/data_comps/dwav/cime_config/namelist_definition_dwav.xml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_acme.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/config_pes.xml
+M	src/externals/mct/mct/Makefile
+M	src/externals/mct/mct/m_AttrVect.F90
+M	src/externals/mct/mct/m_GlobalSegMap.F90
+M	src/externals/mct/mct/m_MatAttrVectMul.F90
+M	src/externals/mct/mct/m_Rearranger.F90
+M	src/externals/mct/mct/m_Router.F90
+A	src/externals/mct/mct/m_SPMDutils.F90
+M	src/externals/mct/mpeu/m_FcComms.F90
+D	src/externals/mct/mpi-serial/NOTES
+M	src/externals/mct/testsystem/testall/ReadSparseMatrixAsc.F90
+M	src/externals/mct/testsystem/testall/cpl.F90
+M	src/externals/pio1/pio/pio_types.F90
+M	src/externals/pio1/pio/piolib_mod.F90
+M	src/externals/pio1/pio/pionfput_mod.F90.in
+M	src/share/util/shr_dmodel_mod.F90
+M	src/share/util/shr_strdata_mod.F90
+M	tools/cprnc/CMakeLists.txt
+
+======================================================================
+
+======================================================================
+
 Originator: Bill Sacks
 Date: 6-13-2017
 Tag: cime5.3.0-alpha.27
