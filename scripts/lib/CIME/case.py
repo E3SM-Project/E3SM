@@ -425,7 +425,6 @@ class Case(object):
         """
         science_support = []
         compset_alias = None
-        component_defining_compset = None
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}".format(components))
 
@@ -445,13 +444,12 @@ class Case(object):
                     self._compsetname = match
                     self.set_lookup_value("COMPSETS_SPEC_FILE" ,
                                    files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
-                    component_defining_compset = component
                     logger.info("Compset longname is {}".format(match))
                     logger.info("Compset specification file is {}".format(compsets_filename))
                     if user_compset is True:
                         logger.info("Found a compset match for longname {} in alias {}".format(compset_name, compset_alias))
 
-                    return compset_alias, science_support, component_defining_compset
+                    return compset_alias, science_support
 
         if user_compset is True:
             self._compsetname = compset_name
@@ -460,7 +458,7 @@ class Case(object):
                    "Could not find a compset match for either alias or longname in {}\n".format(compset_name)
                    + "You may need the --user-compset argument.")
 
-        return None, science_support, None
+        return None, science_support
 
     def _find_primary_component(self):
         """
@@ -754,7 +752,7 @@ class Case(object):
         # compset, pesfile, and compset components
         #--------------------------------------------
         files = Files()
-        compset_alias, science_support, component_defining_compset = self._set_compset(
+        compset_alias, science_support = self._set_compset(
             compset_name, files, user_compset=user_compset)
 
         self._components = self.get_compset_components()
@@ -777,12 +775,10 @@ class Case(object):
         #--------------------------------------------
         self._get_component_config_data(files)
 
-        if component_defining_compset is None:
-            # This needs to be called after self.set_comp_classes, which is called
-            # from self._get_component_config_data
-            self._primary_component = self._find_primary_component()
-        else:
-            self._primary_component = component_defining_compset
+        # This needs to be called after self.set_comp_classes, which is called
+        # from self._get_component_config_data
+        self._primary_component = self._find_primary_component()
+
         self._set_info_from_primary_component(files, pesfile=pesfile)
 
         self.get_compset_var_settings()
