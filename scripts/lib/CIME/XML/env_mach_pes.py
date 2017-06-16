@@ -63,8 +63,6 @@ class EnvMachPes(EnvBase):
             pstrid = self.get_value("PSTRID", attribute={"component":comp})
             tt = rootpe + (ntasks - 1) * pstrid + 1
             total_tasks = max(tt, total_tasks)
-        import pdb
-        pdb.set_trace()
         total_tasks *= self.get_value("NINST_CPL")
         return total_tasks
 

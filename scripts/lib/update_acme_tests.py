@@ -51,7 +51,8 @@ _TEST_SUITES = {
                              "PET_P32.f19_f19.A",
                              "SMS.T42_T42.S",
                              "PRE.f19_f19.ADESP",
-                             "PRE.f19_f19.ADESP_TEST")
+                             "PRE.f19_f19.ADESP_TEST",
+                             "MCC_P12.f19_g16_rx1.A")
                             ),
 
     #

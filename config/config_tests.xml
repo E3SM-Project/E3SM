@@ -517,6 +517,24 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
   </test>
 
+  <test NAME="MCC">
+    <DESC>multi-instance validation vs multi-coupler (default length)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>none</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <NINST_CPL>1</NINST_CPL>
+    <NINST_ATM>1</NINST_ATM>
+    <NINST_OCN>1</NINST_OCN>
+    <NINST_WAV>1</NINST_WAV>
+    <NINST_GLC>1</NINST_GLC>
+    <NINST_ICE>1</NINST_ICE>
+    <NINST_ROF>1</NINST_ROF>
+    <NINST_LND>1</NINST_LND>
+  </test>
+
   <test NAME="NCK">
     <DESC>multi-instance validation vs single instance (default length)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
