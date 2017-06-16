@@ -307,8 +307,13 @@
   </compset>
 
   <compset>
+<<<<<<< HEAD
     <alias>FC5AV1C-04P2-AQUAP</alias>
     <lname>2000_CAM5%AV1C-04P2_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+=======
+    <alias>FSCM5A97</alias>
+    <lname>AR97_CAM5%SCAM_CLM45%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+>>>>>>> PR1591 for SCM
   </compset>
 
   <compset>
@@ -339,7 +344,7 @@
     <lname>SCAM_CAM5%SCAM_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
 =======
     <alias>F_ARM97_SCAM5</alias>
-    <lname>AR97_CAM5%SCAM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+    <lname>AR97_CAM5%SCAM_CLM45%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
   </compset> 
 
   <compset>
