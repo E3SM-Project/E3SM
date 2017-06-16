@@ -1464,6 +1464,7 @@ class Case(object):
         components = self.get_compset_components()
         if len(comp_classes) > len(components):
             components.append('sesp')
+        print "DEBUG compset_name = {0}".format(compset_name)
         for i in xrange(1,len(comp_classes)):
             comp_class = comp_classes[i]
             comp_name  = components[i-1]

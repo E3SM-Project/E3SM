@@ -11,6 +11,7 @@
 
 import os, sys, re, glob
 import datetime
+import xml.etree.ElementTree as etree
 
 CIMEROOT = os.environ.get("CIMEROOT")
 if CIMEROOT is None:
@@ -63,8 +64,11 @@ def commandline_options():
     parser.add_argument('--version', nargs=1, required=True,
                         help='Model version (e.g. CESM2.0)')
 
-    parser.add_argument('--xmlfile', nargs=1, required=True,
+    parser.add_argument('--xmlfile', nargs=1, required=True, choices=_xmlfiles,
                         help='Must be one of {0}.'.format(_xmlfiles))
+
+    parser.add_argument('--caseroot', nargs=1, required=True,
+                        help='caseroot location of input xmlfile')
 
     options = parser.parse_args()
 
@@ -99,10 +103,23 @@ def parse_archive(env_file, xml_dict):
 def parse_batch(env_file, xml_dict):
 ###############################################################################
 
-    batch = EnvBatch(infile=env_file)
-    for batch_entry in batch.get_nodes:
-        
+    batch = etree.parse(env_file)
+    root = batch.getroot()
+    
+    # get the header text
+    header = root.find('header').text
 
+    # loop throught the batch_system elements
+    batch_systems = root.findall('batchsystem')
+
+
+    batch = EnvBatch(infile=env_file)
+    header = batch.get_nodes('header')
+    batch_systems = batch.get_nodes('batch_system')
+    groups = batch.get_nodes('group')
+    for batch_system in batch_systems.
+
+    # load the xml_dict
     return xml_dict
 
 ###############################################################################
@@ -156,7 +173,9 @@ def _main_func(options, work_dir):
     xml_dict = dict()
     model_version = options.version[0]
 
-    env_file = options.xmlfile[0]
+    xmlfile = options.xmlfile[0]
+    caseroot = options.caseroot[0]
+    env_file = os.path.join(caseroot, xmlfile)
     expect(os.path.isfile(env_file),
            "Cannot find env_file {} on disk".format(env_file))
 

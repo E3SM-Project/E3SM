@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <body>
+        <h1>CIME CESM Allactive config_compsets.xml</h1>
+        <pre>
+    =========================================
+    compset naming convention
+    =========================================
+    The compset longname below has the specified order
+    atm, lnd, ice, ocn, river, glc wave cesm-options
+
+    The notation for the compset longname is
+    TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_ESP%phys][_BGC%phys]
+    Where for the CAM specific compsets below the following is supported
+    TIME = Time period (e.g. 2000, HIST, RCP8...)
+    ATM  = [CAM40, CAM5]
+    LND  = [CLM40, CLM45, CLM50, SLND]
+    ICE  = [CICE, DICE, SICE]
+    OCN  = [DOCN, ,AQUAP, SOCN]
+    ROF  = [RTM, MOSART, SROF]
+    GLC  = [CISM1, CISM2, SGLC]
+    WAV  = [WW3, DWAV, XWAV, SWAV]
+    ESP  = [SESP]
+    BGC  = optional BGC scenario
+
+    The OPTIONAL %phys attributes specify submodes of the given system
+    For example DOCN%DOM is the data ocean model for DOCN
+    ALL the possible %phys choices for each component are listed
+    with the -list command for create_newcase
+    ALL data models must have a %phys option that corresponds to the data  model mode
+
+    Each compset node is associated with the following elements
+    - lname
+    - alias
+    - support  (optional description of the support level for this compset)
+    Each compset node can also have the following attributes
+    - grid  (optional regular expression match for grid to work with the compset)
+  </pre>
+        <hr/>
+        <table border="1" bgcolor="yellow">
+            <tbody>
+                <tr>
+                    <th>Alias</th>
+                    <th>Long Name</th>
+                </tr>
+                <tr>
+                    <td>BC4L40P1DR</td>
+                    <td>2000_CAM40_CLM40%SP_CICE_POP2%1D_RTM_SGLC_SWAV</td>
+                </tr>
+                <tr>
+                    <td>B1850RG</td>
+                    <td>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_RTM_CISM1%NOEVOLVE_SWAV_BGC%BDRD</td>
+                </tr>
+                <tr>
+                    <td>B1850RW</td>
+                    <td>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_RTM_SGLC_DWAV_BGC%BDRD</td>
+                </tr>
+                <tr>
+                    <td>B1850GW</td>
+                    <td>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_DWAV_BGC%BDRD</td>
+                </tr>
+                <tr>
+                    <td>B1850W</td>
+                    <td>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_MOSART_SGLC_DWAV_BGC%BDRD</td>
+                </tr>
+                <tr>
+                    <td>B1850</td>
+                    <td>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_SWAV_BGC%BDRD</td>
+                </tr>
+                <tr>
+                    <td>B1850R</td>
+                    <td>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BDRD</td>
+                </tr>
+                <tr>
+                    <td>B1850Cw</td>
+                    <td>1850_CAM55%WTSM_CLM50%BGC_CICE_POP2%ECO_MOSART_SGLC_SWAV</td>
+                </tr>
+            </tbody>
+        </table>
+    </body>
+</html>

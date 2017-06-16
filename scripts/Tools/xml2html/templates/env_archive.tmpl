@@ -125,6 +125,8 @@
 	<p>
 	  These rules are specified in the CASEROOT/env_archive.xml file and rely on python<br/>
 	  regular expression filename matches to determine where files should be moved or copied.<br/>
+	  Please see <a href="http://www.cesm.ucar.edu/models/cesm2.0/cesm/filename_conventions_cesm.html">
+	  CESM2 Output Filename Conventions</a> for details regarding filenames. 
 	</p>
 	<br/>
 	Clicking on the name of a component will display additional descriptive information.<br/>  
@@ -137,10 +139,24 @@
 	<br/><br/>
 
 	<div class="accordionItem">
-	  <h2><span id="variable">env_archive.xml component schema definition</span></h2>
+	  <h2>Example: <span id="variable">atm - cam component class XML schema definition explained</span></h2>
 	  <div>
 	    <p>
-	      To validate the env_archive.xml file after manually modifying any XML entriesg xmllint, 
+	      Listed below is a fragment of the env_archive.xml file for specifying how
+	      CAM files are archived from the RUNDIR to the DOUT_S_ROOT/atm location. </p>
+	    <p>
+	      Each CESM active component, including DART, has a section in the 
+	      env_archive.xml file that follows this example schema. 
+	    </p>
+	    <p>
+	      The short-term archiver has been tested to work with CESM cases that follow
+	      the <a href="http://www.cesm.ucar.edu/models/cesm2.0/cesm/filename_conventions_cesm.html">
+		CESM2 Output Filename Conventions</a> but users may want to manually modify the XML
+	      for their particular experiment. Note that xmlquery and xmlchange do not work with
+	      the env_archive.xml file.
+	    </p>
+	    <p>
+	      To validate the env_archive.xml file after manually modifying any XML entries,
 	      run the following <b>xmllint</b> from the CASEROOT:
 	    </p>
 	    <pre>
