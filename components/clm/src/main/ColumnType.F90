@@ -107,7 +107,8 @@ contains
     allocate(this%n_melt      (begc:endc))                     ; this%n_melt      (:)   = nan 
     allocate(this%topo_slope  (begc:endc))                     ; this%topo_slope  (:)   = nan
     allocate(this%topo_std    (begc:endc))                     ; this%topo_std    (:)   = nan
-    allocate(this%nlevbed     (begc:endc))                     ; this%nlevbed    (:)   = ispval
+    allocate(this%nlevbed     (begc:endc))                     ; this%nlevbed     (:)   = ispval
+    allocate(this%zibed       (begc:endc))                     ; this%zibed       (:)   = nan
 
   end subroutine Init
 
@@ -141,6 +142,7 @@ contains
     deallocate(this%topo_slope )
     deallocate(this%topo_std   )
     deallocate(this%nlevbed    )
+    deallocate(this%zibed      )
 
   end subroutine Clean
 
