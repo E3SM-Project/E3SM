@@ -585,6 +585,9 @@ end if
 !
 !     set relaxation time to constant here if desired
 !
+           if (pmidm1(k) .le. scm_relaxation_low*100._r8 .and. &
+	     pmidm1(k) .ge. scm_relaxation_high*100._r8) then 
+
             rtau(k)   = 10800._r8          ! 3-hr adj. time scale
             rtau(k)   = max(ztodt,rtau(k))
             relaxt(k) = -(t3(k)   - tobs(k))/rtau(k)
@@ -592,6 +595,8 @@ end if
 !
             t3(k)     = t3(k)   + relaxt(k)*ztodt
             q3(k,1)   = q3(k,1) + relaxq(k)*ztodt
+	   
+	   endif
          end do
 !
          call outfld('TRELAX',relaxt,plon,lat )
