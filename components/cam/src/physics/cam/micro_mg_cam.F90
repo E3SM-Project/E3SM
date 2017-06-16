@@ -2466,7 +2466,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                cldfsnow(i,k) = 0.25_r8
             endif
          endif
-
          ! Calculate in-cloud snow water path
          icswp(i,k) = qsout(i,k) / max( mincld, cldfsnow(i,k) ) * state_loc%pdel(i,k) / gravit
       end do
