@@ -262,13 +262,6 @@ contains
            ! qflx_runoff(c) = qflx_runoff(c) - qflx_irrig(c)
            qflx_irr_demand(c) = -1.0_r8 * qflx_irrig(c) * ldomain%f_surf(g)
  
-           !if (qflx_irrig(c) > 0._r8) then
-               !qflx_irr_demand(c) = -1.0_r8 * qflx_irrig(c) * ldomain%f_surf(g)
-
-           !    write(iulog,*)'irrigation demand is',qflx_irrig(c)
-           !    write(iulog,*)'qflx_irr_demand calculated is',qflx_irr_demand(c)
-           !end if
-
          else
            qflx_irr_demand(c) = 0._r8
          end if

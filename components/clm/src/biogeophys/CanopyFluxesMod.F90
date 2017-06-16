@@ -450,7 +450,7 @@ contains
       ! Determine step size
 
       dtime = get_step_size()
-      irrig_nsteps_per_day = ((irrig_length + (dtime - 1))/dtime)  ! round up
+      irrig_nsteps_per_day = ((irrig_length + (dtime - 1))/dtime)*6._r8  ! round up
 
       ! First - set the following values over points where frac vegetation covered by snow is zero
       ! (e.g. btran, t_veg, rootr, rresis)
