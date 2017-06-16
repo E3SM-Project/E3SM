@@ -23,6 +23,15 @@
       </machine>
     </machines>
   </test>
+  <test name="ERS_C3" grid="f19_g17_rx1" compset="A">
+    <machines>
+      <machine name="cheyenne" compiler="pgi" category="prealpha">
+        <options>
+          <option name="wallclock">00:30:00</option>
+        </options>
+      </machine>
+    </machines>
+  </test>
   <test name="ERI_D" grid="T31_g37_rx1" compset="A">
     <machines>
       <machine name="hobart" compiler="intel" category="prebeta">
