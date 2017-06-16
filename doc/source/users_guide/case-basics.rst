@@ -115,30 +115,26 @@ Querying CIME - calling **query_config**
 
 Use the utility **$CIMEROOT/scripts/query_config** to see which out-of-the-box compsets, components, grids and machines are available for a model.
 
-Optional arguments include the following:
-  ::
+Optional arguments include the following::
 
-     --compsets
-     --components
-     --grids
-     --machines
+  --compsets
+  --components
+  --grids
+  --machines
 
 If CIME is downloaded in standalone mode, only standalone CIME compsets can be queried. If CIME is part of CIME-driven model, **query_config** will allow you to query all prognostic component compsets.
 
-To see lists of available compsets, components, grids and machines, look at the **help** text:
-  ::
+To see lists of available compsets, components, grids and machines, look at the **help** text::
 
-     > query_config --help
+  > query_config --help
 
 **Usage examples**
 
-To run **query_config** for compset information, follow this example, where **drv** is the component name:
-  ::
+To run **query_config** for compset information, follow this example, where **drv** is the component name::
 
-     > query_config --compsets drv
+  > query_config --compsets drv
 
-The output will be similar to this:
-  ::
+The output will be similar to this::
 
      --------------------------------------
      Compset Short Name: Compset Long Name
@@ -154,13 +150,11 @@ The output will be similar to this:
 
 Each model component specifies its own definitions of what can appear after the ``%`` modifier in the compset longname (for example, ``DOM`` in ``DOCN%DOM``).
 
-To see what supported modifiers are for ``DOCN``, run **query_config** as in this example:
-  ::
+To see what supported modifiers are for ``DOCN``, run **query_config** as in this example::
 
-     > query_config --component docn
+  > query_config --component docn
 
-The output will be similar to this:
-  ::
+The output will be similar to this::
 
      =========================================
      DOCN naming conventions
