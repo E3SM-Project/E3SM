@@ -468,9 +468,12 @@
            a,'-',a,'-',a,' at ',a,':',a)
       end if
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 !!!      call broadcast_scalar(start_time, my_task)
 >>>>>>> Fixed a bug in the docn model
+=======
+>>>>>>> minor changes
       call broadcast_scalar(start_time, master_task)
       status = pio_put_att(File,pio_global,'history',start_time)
       !-----------------------------------------------------------------
