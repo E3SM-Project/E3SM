@@ -1017,10 +1017,7 @@ if ( $machine == hopper ) then
     sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $longterm_archive_script
 
 else if ( $machine == cori || $machine == edison ) then
-    set batch_options = "--job-name=${job_name} --account=${project} --output=batch_output/${case_name}.o"
-    sed -i /"#SBATCH \( \)*--job-name"/c"#SBATCH  --job-name=${job_name}"                 ${case_run_exe}
-    sed -i /"#SBATCH \( \)*--job-name"/a"#SBATCH  --account=${project}"                   ${case_run_exe}
-    sed -i /"#SBATCH \( \)*--output"/c"#SBATCH  --output=batch_output/"${case_name}'.o%j' ${case_run_exe}
+    set batch_options = "--job-name=${job_name} --output=batch_output/${case_name}.o%j"
 
     sed -i /"#SBATCH \( \)*--job-name"/c"#SBATCH  --job-name=ST+${job_name}"                  $shortterm_archive_script
     sed -i /"#SBATCH \( \)*--job-name"/a"#SBATCH  --account=${project}"                       $shortterm_archive_script
@@ -1044,6 +1041,8 @@ else
     acme_print 'WARNING: This script does not have batch directives for $machine='$machine
     acme_print '         Assuming default ACME values.'
 endif
+
+acme_print "Batch options: ${batch_options}"
 
 #============================================
 # QUEUE OPTIONS
@@ -1221,7 +1220,7 @@ acme_newline
 if ( `lowercase $submit_run` == 'true' ) then
   if ( $num_submits == 1 ) then
     acme_print '         SUBMITTING A SINGLE JOB.'
-    ${case_submit_exe} --batch-args " ${batch_options} --dependency=afterany:1769195 "
+    ${case_submit_exe} --batch-args " ${batch_options} "
   else if ( $num_submits <= 0 ) then
     acme_print '$num_submits <= 0 so NOT submitting a job.'
     acme_print '$num_submits = '$num_submits
