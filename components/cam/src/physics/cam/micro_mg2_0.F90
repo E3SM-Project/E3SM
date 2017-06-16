@@ -478,6 +478,8 @@ subroutine micro_mg_tend ( &
 					     
   logical, intent(in)  :: precip_off					     
 
+  logical, intent(in)  :: precip_off					     
+
   real(r8), intent(in) :: p(:,:)        ! air pressure (pa)
   real(r8), intent(in) :: pdel(:,:)     ! pressure difference across level (pa)
 
@@ -2071,6 +2073,8 @@ subroutine micro_mg_tend ( &
   
    if (.not. precip_off) then
 
+   if (.not. precip_off) then
+
      do k=1,nlev
 
         ! calculate sedimentation for cloud water and ice
@@ -2469,6 +2473,8 @@ subroutine micro_mg_tend ( &
 
      end do   !! nstep loop
      
+     end if
+
      end if
 
      ! end sedimentation
