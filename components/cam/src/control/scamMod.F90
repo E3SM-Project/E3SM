@@ -288,7 +288,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   if (present (lwrad_off_in)) then
      lwrad_off=lwrad_off_in
   endif
-
+  
   if (present (precip_off_in)) then
      precip_off=precip_off_in
   endif

@@ -477,7 +477,7 @@ end subroutine spec_c_to_a
     real(r8) :: logm_data(pcols,pver),logv_data(pcols,pver)
 
     randn = randn_prescribed_aero()
-
+   
     ! random sampling is off (randn=0) in single column model setting. 
     if (single_column) then
       randn = 0._r8
