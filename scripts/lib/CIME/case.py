@@ -621,11 +621,8 @@ class Case(object):
             expect(comp_config_file is not None and os.path.isfile(comp_config_file),
                    "Config file {} for component {} not found.".format(comp_config_file, comp_name))
             compobj = Component(comp_config_file, comp_class)
-            compsetname = self._compsetname
-            if not compsetname.endswith('ESP'):
-                compsetname += '_SESP'
             # For files following version 3 schema this also checks the compsetname validity
-            self._component_description[comp_class] = compobj.get_description(compsetname)
+            self._component_description[comp_class] = compobj.get_description(self._compsetname)
             expect(self._component_description[comp_class] is not None,"No description found in file {} for component {} in comp_class {}".format(comp_config_file, comp_name, comp_class))
             logger.info("{} component is {}".format(comp_class, self._component_description[comp_class]))
             for env_file in self._env_entryid_files:

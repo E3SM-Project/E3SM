@@ -195,8 +195,8 @@ class Component(EntryID):
             fullset = set(parts+opt_parts)
             if self._get_description_match(compsetname, reqset, fullset, modifier_mode):
                 desc = node.text
-        # cpl component may not have a description, all others must
-        if comp_class != 'cpl':
+        # cpl and esp components may not have a description
+        if comp_class not in ['cpl','esp']:
             expect(len(desc) > 0,
                    "No description found for comp_class {} matching compsetname {} in file {}"\
                        .format(comp_class,compsetname, self.filename))
