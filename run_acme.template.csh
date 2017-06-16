@@ -812,20 +812,17 @@ set input_data_dir = `$xmlquery_exe DIN_LOC_ROOT --value`
 
 ## Chris Golaz: build with COSP
 #NOTE: xmlchange has a bug which requires append to be specified with quotes and a leading space.
-#NOTE: The xmlchange will fail if CAM is not active (eg a land only simulation), so we need to test that CAM_CONFIG_OPTS is in env_build.xml
+#NOTE: The xmlchange will fail if CAM is not active, so test whether a data atmosphere (datm) is used.
 
-grep CAM_CONFIG_OPTS env_build.xml >> /dev/null
-set CAM_CONFIG_OPTS_status = $status
-if ( $CAM_CONFIG_OPTS_status == 0 ) then 
-  $xmlchange_exe --id CAM_CONFIG_OPTS --append --val " -cosp"
+if ( `$xmlquery_exe --value COMP_ATM` == 'datm'  ) then 
   acme_newline
-  acme_print 'Configuring ACME to use the COSP simulator.'
+  acme_print 'The specified configuration uses a data atmosphere, so cannot activate COSP simulator.'
   acme_newline
 else
   acme_newline
-  acme_print 'CAM_CONFIG_OPTS is not in env_build.xml, so cannot activate COSP simulator.'
-  acme_print 'This is probably because the atmosphere is not active, so this message can be safely ignored.' 
+  acme_print 'Configuring ACME to use the COSP simulator.'
   acme_newline
+  $xmlchange_exe --id CAM_CONFIG_OPTS --append --val " -cosp"
 endif
 
 #===========================
@@ -926,6 +923,10 @@ $xmlchange_exe --id DEBUG --val `uppercase $debug_compile`
 cat <<EOF >> user_nl_cam
  nhtfrq = $atm_output_freq
  mfilt  = $records_per_atm_output_file
+EOF
+
+cat <<EOF >> user_nl_clm
+! finidat=''
 EOF
 
 ### NOTES ON COMMON NAMELIST OPTIONS ###
