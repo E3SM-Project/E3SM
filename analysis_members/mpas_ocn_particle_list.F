@@ -803,7 +803,9 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
      ! from the registry.  If this changes, this will break this member...  It also assumes the code is deterministic
      ! and that pools are built and computed the exact same way on each processor.
      call mpas_timer_start("communicate_data_halo_LPT")
+     !call MPI_Barrier(domain % dminfo % comm, err)
      call communicate_particle_halo_data(domain, procNeighs, nPartSend, nPartRecv, listPLSend, listPLRecv)
+     !call MPI_Barrier(domain % dminfo % comm, err)
      call mpas_timer_stop("communicate_data_halo_LPT")
      LIGHT_DEBUG_WRITE('finished communicate_particle_halo_data')
 
@@ -3398,6 +3400,7 @@ end subroutine allocate_list_particlelists !}}}
      integer, dimension(:), pointer, intent(in) :: procNeighs
      integer, dimension(:), pointer, intent(in) :: nPartSend
      integer, dimension(:), pointer, intent(out) :: nPartRecv
+     integer :: MPI_TYPE
      type (mpas_list_of_particle_list_type), dimension(:), pointer :: listSend, listRecv
 
      integer :: i, j, numProcs, numFields, numRecv, numSends
@@ -3436,21 +3439,6 @@ end subroutine allocate_list_particlelists !}}}
        if (nPartRecv(i) > 0) numRecv = numRecv + 1
      end do
      allocate(recvRequestID(numRecv))
-
-     !Notes !{{{
-     !! get number of items that need transfered from halo pool, numFields which is a constant
-     !call mpas_pool_get_subpool(domain % blocklist % structs, 'lagrPartTrackHalo', lagrPartTrackPool)
-     !call mpas_pool_begin_iteration(lagrPartTrackPool)
-     !numFields = 0
-     !do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
-     !  ! only need to transfer pool
-     !  if (dimItr % memberType == MPAS_POOL_FIELD) then
-     !    numFields = numFields + 1
-     !  end if
-     !end do
-     !! assume, for now, that this will be constant accross processors.  If not, it would need to be sent to other
-     !! processors too.  This also presumes that properties will be fixed accross the processesors.
-     !}}}
 
      ! on each list, transmit relevant fields to associated processors (note using the var struct since it has the names
      ! required and this information is on each processor, even if the pool's fields are empty their names and types
@@ -3561,15 +3549,12 @@ end subroutine allocate_list_particlelists !}}}
 #endif
           if (mpi_ierr /= 0) call mpas_log_write('send: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
 
-          !do i=1,numProcs
-          !  if(nPartRecv(i) > 0) print *,  'Received ', trim(dimItr % memberName), ' = ', array1DIntRecv(i) % val
-          !end do
-
           ! store values
           do i=1,numProcs
             if(nPartRecv(i) > 0) then
               ! place it in particle list
-              call add_halo_data_to_particle_list_array(listRecv(i)%list, dimItr % memberName, array1DIntRecv(i)%val)
+              call add_halo_data_to_particle_list_array(listRecv(i)%list, dimItr % memberName, &
+                array1DIntRecv(i)%val)
             end if
           end do
 
