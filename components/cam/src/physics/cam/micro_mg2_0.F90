@@ -1338,6 +1338,11 @@ subroutine micro_mg_tend ( &
         prci(:,k)  = tnd_qsnow(:,k) / cldm(:,k)
         nprci(:,k) = tnd_nsnow(:,k) / cldm(:,k)
      end if
+     
+     if (precip_off) then
+        prci(:,k) = 0.0_r8
+	nprci(:,k) = 0.0_r8
+     endif
 
      ! note, currently we don't have this
      ! inside the do_cldice block, should be changed later
