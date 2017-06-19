@@ -102,7 +102,7 @@ messages:
   ``$REST_OPTION``, ``$REST_N`` and/or ``$REST_DATE``, and ``$RESUBMIT``
   before resubmitting.
 
-See :ref:`the basic example<faq-basic-example>` for a complete example 
+See :ref:`the basic example<use-cases-basic-example>` for a complete example 
 of how to run a case.
 
 ---------------------------------
@@ -306,7 +306,7 @@ Also:
 
 Standard output generated from each component is saved in ``$RUNDIR`` 
 in a  *log file*. Each time the model is run, a single coordinated datestamp 
-is incorporated into the filename of each output log file. This common 
+is incorporated into the filename of each output log file.
 The run script generates the datestamp in the form YYMMDD-hhmmss, indicating
 the year, month, day, hour, minute and second that the run began
 (ocn.log.040526-082714, for example). Log files are copied to a user-specified 

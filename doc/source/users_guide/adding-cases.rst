@@ -19,23 +19,24 @@ CIME supports numerous out-of-the box model resolutions. To see the grids that a
 
       > manage_case --query-grids
 
- 
+
 CIME model grids generally are associated with a specific combination of atmosphere, land, land-ice, river-runoff and ocean/ice grids. The naming convention for these grids uses only atmosphere, land, and ocean/ice grid specifications.
 
 The most common resolutions have the atmosphere and land components on one grid and the ocean and ice on a second grid. The following overview assumes that this is the case.
-The naming convention looks like *f19_g16*, where the f19 indicates that the atmosphere and land are on the 1.9x2.5 (finite volume dycore) grid while the g16 means the ocean and ice are on the gx1v6 one-degree displaced pole grid. 
+The naming convention looks like *f19_g16*, where the f19 indicates that the atmosphere and land are on the 1.9x2.5 (finite volume dycore) grid while the g16 means the ocean and ice are on the gx1v6 one-degree displaced pole grid.
 
 CIME enables users to add their own component grid combinations.
 The steps for adding a new component grid to the model system follow. gain, this process can be simplified if the atmosphere and land are running on the same grid.
 
-1. The first step is to have or generate SCRIP grid files for the atmosphere, land, ocean, land-ice, river and wave component grids that will comprise your model grid.
+1. The first step is to generate SCRIP grid files for the atmosphere, land, ocean, land-ice, river and wave component grids that will comprise your model grid.
    If you are introducing just one new grid, you can leverage SCRIP grid files that are already in place for the other components.
    There is no supported functionality for creating the SCRIP format file.
 
 2. Build the **check_map** utility by following the instructions in **$CCSMROOT/mapping/check_maps/INSTALL**. Also confirm that the `ESMF <http://www.cesm.ucar.edu/models2.0/external-link-here>`_ toolkit is installed on your machine.
-   When you add new user-defined grid files, you also need to generate a set of mapping files so the coupler can send data from a component on one grid to a component on another grid. 
-   There is an ESMF tool that tests the mapping file by comparing a mapping of a smooth function to its true value on the destination grid. 
-   We have tweaked this utility to test a suite of smooth functions, as well as ensure conservation (when the map is conservative). 
+   
+   When you add new user-defined grid files, you also need to generate a set of mapping files so the coupler can send data from a component on one grid to a component on another grid.
+   There is an ESMF tool that tests the mapping file by comparing a mapping of a smooth function to its true value on the destination grid.
+   We have tweaked this utility to test a suite of smooth functions, as well as ensure conservation (when the map is conservative).
    Before generating mapping functions it is *highly recommended* that you build this utility.
 
 3. Generate these mapping files:
@@ -48,9 +49,9 @@ The steps for adding a new component grid to the model system follow. gain, this
      ocn <-> wav
      rof -> ocn
 
-  Using the SCRIP grid files from step one, you must generate a set of conservative (area-averaged) and non-conservative (patch and bilinear) mapping files.
+  Using the SCRIP grid files from Step 1, generate a set of conservative (area-averaged) and non-conservative (patch and bilinear) mapping files.
 
-  You can do this by calling **gen_cesm_maps.sh** in ``$CCSMROOT/tools/mapping/gen_mapping_files/``. 
+  You can do this by calling **gen_cesm_maps.sh** in ``$CCSMROOT/tools/mapping/gen_mapping_files/``.
   This script generates all the mapping files needed except ``rof -> ocn``, which is discussed below.
   This script uses the ESMF offline weight generation utility, which you must build *prior* to running **gen_cesm_maps.sh**.
 
@@ -63,10 +64,10 @@ The steps for adding a new component grid to the model system follow. gain, this
        --fileatm  <input SCRIP atm grid full pathname>  \
        --filelnd  <input SCRIP lnd grid full pathname>  \
        --filertm  <input SCRIP rtm grid full pathname>  \
-       --nameocn  <ocnname in output mapping file> \ 
-       --nameatm  <atmname in output mapping file> \ 
-       --namelnd  <lndname in output mapping file> \ 
-       --namertm  <rtmname in output mapping file> 
+       --nameocn  <ocnname in output mapping file> \
+       --nameatm  <atmname in output mapping file> \
+       --namelnd  <lndname in output mapping file> \
+       --namertm  <rtmname in output mapping file>
 
   This command generates the following mapping files:
    ::
@@ -83,15 +84,15 @@ The steps for adding a new component grid to the model system follow. gain, this
      map_lndname_TO_rtmname_aave.yymmdd.nc
      map_rtmname_TO_lndname_aave.yymmdd.nc
 
-   .. note:: You do not need to specify all four grids. For example, if you are running with the atmosphere and land on the same grid, then you do not need to specify the land grid (and atm<->rtm maps will be generated). 
-	     If you also omit the runoff grid, then only the 5 atm<->ocn maps will be generated.
+   .. note:: You do not need to specify all four grids. For example, if you are running with the atmosphere and land on the same grid, then you do not need to specify the land grid (and atm<->rtm maps will be generated).
+                   If you also omit the runoff grid, then only the 5 atm<->ocn maps will be generated.
 
-   .. note:: ESMF_RegridWeightGen runs in parallel, and the ``gen_cesm_maps.sh`` script has been written to run on yellowstone. 
-	     To run on any other machine, you may need to add some environment variables to ``$CCSMROOT/mapping/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh`` -- search for hostname to see where to edit the file.
+   .. note:: ESMF_RegridWeightGen runs in parallel, and the ``gen_cesm_maps.sh`` script has been written to run on yellowstone.
+                   To run on any other machine, you may need to add some environment variables to ``$CCSMROOT/mapping/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh`` -- search for hostname to see where to edit the file.
 
 4. Generate atmosphere, land and ocean / ice domain files.
 
-   Using the conservative ocean to land and ocean to atmosphere mapping files created in the previous step, you can create domain files for the atmosphere, land, and ocean; these are basically grid files with consistent masks and fractions. 
+   Using the conservative ocean to land and ocean to atmosphere mapping files created in the previous step, you can create domain files for the atmosphere, land, and ocean; these are basically grid files with consistent masks and fractions.
    You make these files by calling **gen_domain** in **$CCSMROOT/mapping/gen_domain_files**.
    The **INSTALL** file in the **gen_domain_files/** directory describes how to build the **gen_domain** executable. The **README** file in the same directory explains how to use the tool. The basic usage is:
    ::
@@ -113,7 +114,7 @@ The steps for adding a new component grid to the model system follow. gain, this
    .. note:: If the ocean and land grids *are identical* then the mapping file will simply be unity and the land fraction will be one minus the ocean fraction.
 
 5. If you are adding a new ocn or rtm grid, create a new rtm->ocn mapping file. (Otherwise you can skip this step.)
-   The process for mapping from the runoff grid to the ocean grid is currently undergoing many changes. 
+   The process for mapping from the runoff grid to the ocean grid is currently undergoing many changes.
    At this time, if you are running with a new ocean or runoff grid, please contact Michael Levy (mlevy_AT_ucar_DOT_edu) for assistance. If you are running with standard ocean and runoff grids, the mapping file should already exist and you do not need to generate it.
 
 
@@ -153,3 +154,4 @@ The steps for adding a new component grid to the model system follow. gain, this
 ===================
 Adding components
 ===================
+
