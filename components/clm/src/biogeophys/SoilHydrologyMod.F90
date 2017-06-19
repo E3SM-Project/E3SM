@@ -666,12 +666,12 @@ contains
           ! allow jwt to equal zero when zwt is in top layer
           do j = 1,nlevbed
              if(zwt(c) <= zi(c,j)) then
-                  if (zengdecker_2009_with_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
-                     exit
-                  else
-                     jwt(c) = j-1
-                     exit
-		  end if
+                if (zengdecker_2009_with_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
+                   exit
+                else
+                   jwt(c) = j-1
+                   exit
+                end if
              end if
           enddo
        end do
@@ -739,11 +739,11 @@ contains
              do j = 1,nlevbed
                 if(zwt(c) <= zi(c,j)) then
                    if (zengdecker_2009_with_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
-                       exit
-                    else
-                       jwt(c) = j-1
-                       exit
-		    end if
+                      exit
+                   else
+                      jwt(c) = j-1
+                      exit
+                   end if
                 end if
              enddo
           endif

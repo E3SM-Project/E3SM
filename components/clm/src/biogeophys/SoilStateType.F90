@@ -395,7 +395,7 @@ contains
    ! Initialize root fraction 
    
    call init_vegrootfr(bounds, nlevsoi, nlevgrnd, &
-        col%nlevbed(bounds%begc:bounds%endc), &
+        col%nlevbed(bounds%begc:bounds%endc)    , &
         this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
 
     ! --------------------------------------------------------------------
@@ -578,7 +578,7 @@ contains
        else
 
           do lev = 1,nlevgrnd
-         ! Number of soil layers in hydrologically active columns = NLEV2BED
+             ! Number of soil layers in hydrologically active columns = NLEV2BED
 	     nlevbed = col%nlevbed(c)
              if ( more_vertlayers )then ! duplicate clay and sand values from last soil layer
 

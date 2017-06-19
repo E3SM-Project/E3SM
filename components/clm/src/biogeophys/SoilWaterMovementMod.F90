@@ -721,12 +721,13 @@ contains
             jbot(c) = nlev2bed(c)
       	 end do
          call Tridiagonal(bounds, 1, nlevgrnd+1, &
-              jtop(bounds%begc:bounds%endc), jbot(bounds%begc:bounds%endc), &
+              jtop(bounds%begc:bounds%endc),     &
+              jbot(bounds%begc:bounds%endc),     &
               num_hydrologyc, filter_hydrologyc, &
-              amx(bounds%begc:bounds%endc, :), &
-              bmx(bounds%begc:bounds%endc, :), &
-              cmx(bounds%begc:bounds%endc, :), &
-              rmx(bounds%begc:bounds%endc, :), &
+              amx(bounds%begc:bounds%endc, :),   &
+              bmx(bounds%begc:bounds%endc, :),   &
+              cmx(bounds%begc:bounds%endc, :),   &
+              rmx(bounds%begc:bounds%endc, :),   &
               dwat2(bounds%begc:bounds%endc, :) )
       else
          call Tridiagonal(bounds, 1, nlevsoi+1, &

@@ -122,19 +122,19 @@ contains
                   - exp(-roota_par(pft%itype(p)) * col%zi(c,lev  ))  &
                   - exp(-rootb_par(pft%itype(p)) * col%zi(c,lev  )) )
 	     if(lev <= nlevbed) then
-	       totrootfr = totrootfr + rootfr(p,lev)
+                totrootfr = totrootfr + rootfr(p,lev)
 	     end if
           end do
           rootfr(p,ubj) = .5_r8*( exp(-roota_par(pft%itype(p)) * col%zi(c,ubj-1))  &
                + exp(-rootb_par(pft%itype(p)) * col%zi(c,ubj-1)) )
 
-         ! Adjust layer root fractions if nlev2bed < nlevsoi
-         if (use_var_soil_thick .and. nlevbed < ubj) then
-            do lev = 1, nlevbed
-               rootfr(p,lev) = rootfr(p,lev) / totrootfr
-            end do
-	    rootfr(p,nlevbed+1:ubj) = 0.0_r8
-         endif
+          ! Adjust layer root fractions if nlev2bed < nlevsoi
+          if (use_var_soil_thick .and. nlevbed < ubj) then
+             do lev = 1, nlevbed
+                rootfr(p,lev) = rootfr(p,lev) / totrootfr
+             end do
+             rootfr(p,nlevbed+1:ubj) = 0.0_r8
+          endif
        else
           rootfr(p,1:ubj) = 0._r8
        endif
