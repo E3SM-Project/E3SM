@@ -1600,4 +1600,13 @@ Type of saturation function used in VSFM.
 Runtime flag to dynamically modify PETSc SNES linesearch option when VSFM fails to converge before cutting the timestep.
 </entry>
 
+<!-- ========================================================================================  -->
+<!-- Namelist options for variable soil thickness                                              -->
+<!-- ========================================================================================  -->
+
+<entry id="use_var_soil_thick" type="logical" category="default_settings"
+        group="clm_inparm" valid_values="">
+Runtime flag to turn on/off variable soil thickness.
+</entry>
+
 </namelist_definition>

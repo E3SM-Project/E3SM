@@ -9,7 +9,7 @@ module BalanceCheckMod
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
   use abortutils         , only : endrun
-  use clm_varctl         , only : iulog
+  use clm_varctl         , only : iulog, use_var_soil_thick
   use clm_varcon         , only : namep, namec
   use GetGlobalValuesMod , only : GetGlobalIndex
   use atm2lndType        , only : atm2lnd_type
@@ -87,12 +87,19 @@ contains
             h2ocan_patch(bounds%begp:bounds%endp), &
             h2ocan_col(bounds%begc:bounds%endc))
       
-      do f = 1, num_hydrologyc
-         c = filter_hydrologyc(f)
-         if(zwt(c) <= zi(c,nlevsoi)) then
-            wa(c) = 5000._r8
-         end if
-      end do
+      if (use_var_soil_thick) then
+	 do f = 1, num_hydrologyc
+            c = filter_hydrologyc(f)
+      	    wa(c) = 0._r8                ! Made 0 for variable soil thickness
+	 end do
+      else
+	 do f = 1, num_hydrologyc
+            c = filter_hydrologyc(f)
+            if (zwt(c) <= zi(c,nlevsoi)) then
+               wa(c) = 5000._r8
+	    end if
+         end do
+      end if
       
       do f = 1, num_nolakec
          c = filter_nolakec(f)
