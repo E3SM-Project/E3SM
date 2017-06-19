@@ -210,7 +210,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.8
+set script_ver = 3.0.9
 
 #===========================================
 # DEFINE ALIASES
@@ -1005,18 +1005,7 @@ set batch_options = ''
 
 set machine = `lowercase $machine`   # Change to lowercase, just to make the following easier to read. 
 
-if ( $machine == hopper ) then
-    # TODO: Pass the correct options to the queue through batch_options
-    set batch_options = ""
-    sed -i /"#PBS \( \)*-N"/c"#PBS  -N ${job_name}"                                ${case_run_exe}
-    sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' ${case_run_exe}
-
-    sed -i /"#PBS \( \)*-N"/c"#PBS  -N ST+${job_name}"                             $shortterm_archive_script
-    sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $shortterm_archive_script
-    sed -i /"#PBS \( \)*-N"/c"#PBS  -N LT+${job_name}"                             $longterm_archive_script
-    sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $longterm_archive_script
-
-else if ( $machine == cori || $machine == edison ) then
+if ( $machine == cori || $machine == edison ) then
     set batch_options = "--job-name=${job_name} --output=batch_output/${case_name}.o%j"
 
     sed -i /"#SBATCH \( \)*--job-name"/c"#SBATCH  --job-name=ST+${job_name}"                  $shortterm_archive_script
@@ -1041,8 +1030,6 @@ else
     acme_print 'WARNING: This script does not have batch directives for $machine='$machine
     acme_print '         Assuming default ACME values.'
 endif
-
-acme_print "Batch options: ${batch_options}"
 
 #============================================
 # QUEUE OPTIONS
@@ -1366,6 +1353,7 @@ acme_newline
 #                        Note that this breaks compatibility with older versions of CIME
 #                        Also add a fix to reenable using the special acme qos queue on Edison (MD)
 # 3.0.8    2017-05-24    Fixed minor bug when $machine contained a capital letter. Bug was introduced recently. (PJC)
+# 3.0.9    2017-06-19    Fixed branch runs. Also removed sed commands for case.run and use --batch-args in case.submit (MD)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
