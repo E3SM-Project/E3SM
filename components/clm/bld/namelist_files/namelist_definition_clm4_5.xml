@@ -1627,7 +1627,7 @@ Type of lateral flow formulation supported in VSFM.
     three_dimensional  = 3D VSFM solution (only supported for serial run)
 </entry>
 
-<entry id=vsfm_include_seepage_bc" type="logical" category="default_settings"
+<entry id="vsfm_include_seepage_bc" type="logical" category="default_settings"
         group="clm_inparm" valid_values="">
 Runtime flag to add seepage boundary condition on the top soil layer to allow for exfiltration.
 </entry>
