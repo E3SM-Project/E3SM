@@ -400,7 +400,6 @@ class EntryID(GenericXML):
                 if f1val is not None:
                     f2val = other.get_value(vid, resolved=False)
                     if f1val != f2val:
-                        logger.info("HERE %s %s "%(f1val, f2val))
                         xmldiffs[vid] = [f1val, f2val]
                 else:
                     for comp in self.get_values("COMP_CLASSES"):
