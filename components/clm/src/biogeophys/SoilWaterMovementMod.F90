@@ -65,13 +65,13 @@ contains
     call mpi_bcast (use_vsfm, 1, MPI_LOGICAL, 0, mpicom, ier)
     if (use_vsfm) soilroot_water_method = vsfm
 
+    call mpi_bcast (use_var_soil_thick, 1, MPI_LOGICAL, 0, mpicom, ier)
     if (use_var_soil_thick .and. soilroot_water_method .eq. zengdecker_2009) then
        zengdecker_2009_with_var_soil_thick = .true.
     end if
     if (use_var_soil_thick .and. soilroot_water_method .ne. zengdecker_2009) then
        call shr_sys_abort('ERROR: use_var_soil_thick not supported with anything but zengdecker_2009 at this time.')
     end if
-    call mpi_bcast (use_var_soil_thick, 1, MPI_LOGICAL, 0, mpicom, ier)
 
   end subroutine init_soilwater_movement
 
