@@ -48,6 +48,8 @@ module ColumnType
      real(r8), pointer :: n_melt               (:)   ! SCA shape parameter
      real(r8), pointer :: topo_slope           (:)   ! gridcell topographic slope
      real(r8), pointer :: topo_std             (:)   ! gridcell elevation standard deviation
+     integer, pointer  :: nlevbed             (:)   ! number of layers to bedrock
+     real(r8), pointer :: zibed                (:)   ! bedrock depth in model (interface level at nlevbed)
 
      ! vertical levels
      integer , pointer :: snl                  (:)   ! number of snow layers
@@ -105,6 +107,8 @@ contains
     allocate(this%n_melt      (begc:endc))                     ; this%n_melt      (:)   = nan 
     allocate(this%topo_slope  (begc:endc))                     ; this%topo_slope  (:)   = nan
     allocate(this%topo_std    (begc:endc))                     ; this%topo_std    (:)   = nan
+    allocate(this%nlevbed     (begc:endc))                     ; this%nlevbed     (:)   = ispval
+    allocate(this%zibed       (begc:endc))                     ; this%zibed       (:)   = nan
 
   end subroutine Init
 
@@ -137,6 +141,8 @@ contains
     deallocate(this%n_melt     )
     deallocate(this%topo_slope )
     deallocate(this%topo_std   )
+    deallocate(this%nlevbed    )
+    deallocate(this%zibed      )
 
   end subroutine Clean
 

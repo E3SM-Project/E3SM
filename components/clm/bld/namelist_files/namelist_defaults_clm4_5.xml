@@ -84,6 +84,9 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- ========================================================================================  -->
 <use_petsc_thermal_model>.false.</use_petsc_thermal_model>
 
+<!-- Do variable soil thickness -->
+<use_var_soil_thick>.false.</use_var_soil_thick>
+
 <!-- ================================================================== -->
 <!-- The default filenames are given relative to the root directory
      for the CLM2 data in the CESM distribution -->
