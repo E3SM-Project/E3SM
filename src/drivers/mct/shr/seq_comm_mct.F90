@@ -198,15 +198,16 @@ contains
   end function seq_comm_get_ncomps
 
 
-  subroutine seq_comm_init(Comm_in, nmlfile, Comm_ID)
-
+  subroutine seq_comm_init(Comm_in, nmlfile, Cpl_comm_id)
     !----------------------------------------------------------
     !
     ! Arguments
     implicit none
     integer, intent(in) :: Comm_in
     character(len=*), intent(IN) :: nmlfile
-    integer, optional, intent(in) :: Comm_ID
+    ! Optional argument cpl_comm_id is used to identify the particular
+    ! coupler instance used by each component instance in a multi-coupler case.
+    integer, optional, intent(in) :: Cpl_comm_id
     !
     ! Local variables
     !
