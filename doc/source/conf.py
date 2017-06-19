@@ -48,8 +48,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'CIME'
-copyright = u'2017, Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks'
-author = u'Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks'
+copyright = u'2017, U.S. National Science Foundation and U.S. Department of Energy'
+author = u'Staff of the NSF/CESM and DOE/ACME projects'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -129,7 +129,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'on.tex', u'on Documentation',
-     u'Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks', 'manual'),
+     u'Staff of the NSF/CESM and DOE/ACME projects', 'manual'),
 ]
 
 
@@ -160,7 +160,7 @@ pdf_documents = [
     (master_doc,
      u'CIME_Users_Guide', 
      u'CIME Users Guide (PDF)', 
-     u'Mariana Vertenstein, Rob Jacob, Jim Edwards, Jim Foucar, Alice Bertini, Bill Sacks'),
+     u'Staff of the NSF/CESM and DOE/ACME projects'),
 ]
 
 
