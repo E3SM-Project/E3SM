@@ -608,7 +608,7 @@ subroutine cime_pre_init1()
    time_brun = mpi_wtime()
 
    !--- Initialize multiple coupler instances, if requested ---
-   call cesm_cpl_init(Global_Comm, num_inst_cpl, cpl_id)
+   call cime_cpl_init(Global_Comm, num_inst_cpl, cpl_id)
 
    call shr_pio_init1(num_inst_total,NLFileName, Global_Comm)
    !
@@ -618,7 +618,7 @@ subroutine cime_pre_init1()
    !   if (Global_Comm /= MPI_COMM_NULL) then
 
    if (num_inst_cpl > 1) then
-      call seq_comm_init(Global_Comm, NLFileName, Comm_ID=cpl_id)
+      call seq_comm_init(Global_Comm, NLFileName, cpl_comm_ID=cpl_id)
       write(cpl_inst_tag,'("_",i4.4)') cpl_id
    else
       call seq_comm_init(Global_Comm, NLFileName)
@@ -4066,7 +4066,7 @@ subroutine cime_comp_barriers(mpicom, timer)
   endif
 end subroutine cime_comp_barriers
 
-subroutine cime_cpl_init(comm, ninst, id)
+subroutine cime_cpl_init(comm, num_inst_cpl, id)
 
   !-----------------------------------------------------------------------
   !
@@ -4077,43 +4077,43 @@ subroutine cime_cpl_init(comm, ninst, id)
   implicit none
 
   integer , intent(inout) :: comm
-  integer , intent(out)   :: ninst
+  integer , intent(out)   :: num_inst_cpl
   integer , intent(out)   :: id      ! instance ID, starts from 1
   !
   ! Local variables
   !
   integer :: ierr, inst_comm, mype, nu, numpes !, pes
-  integer :: cpl_ninst
+  integer :: ninst_cpl
 
-  namelist /cime_cpl/ cpl_ninst
+  namelist /cime_cpl_inst/ ninst_cpl
 
   call shr_mpi_commrank(comm, mype  , ' cime_cpl_init')
   call shr_mpi_commsize(comm, numpes, ' cime_cpl_init')
 
-  ninst = 1
+  num_inst_cpl = 1
   id    = 0
 
   if (mype == 0) then
     ! Read coupler namelist if it exists
-    cpl_ninst = 1
+    ninst_cpl = 1
     nu = shr_file_getUnit()
     open(unit = nu, file = NLFileName, status = 'old', iostat = ierr)
     rewind(unit = nu)
-    read(unit = nu, nml = cime_cpl, iostat = ierr)
+    read(unit = nu, nml = cime_cpl_inst, iostat = ierr)
     close(unit = nu)
     call shr_file_freeUnit(nu)
-    ninst = max(cpl_ninst, 1)
+    num_inst_cpl = max(ninst_cpl, 1)
   end if
 
-  call shr_mpi_bcast(ninst, comm, 'cpl_ninst')
+  call shr_mpi_bcast(num_inst_cpl, comm, 'ninst_cpl')
 
-  if (mod(numpes, ninst) /= 0) then
+  if (mod(numpes, num_inst_cpl) /= 0) then
     call shr_sys_abort(subname // &
       ' : Total PE number must be a multiple of coupler instance number')
   end if
 
-  if (ninst > 1) then
-    id = mype * ninst / numpes + 1
+  if (num_inst_cpl > 1) then
+    id = mype * num_inst_cpl / numpes + 1
     call mpi_comm_split(comm, id, 0, inst_comm, ierr)
     if (ierr /= 0) &
       call shr_sys_abort(subname // ' : Error in generating coupler instances')
