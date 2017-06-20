@@ -115,7 +115,7 @@ for configuration in testsuite:
                     foundTest = True
 
                     # run test
-                    module = imp.load_source(testAvail["name"], os.path.dirname(__file__) + "/tests/" + testAvail["name"]+".py")
+                    module = imp.load_source(testAvail["name"], os.path.dirname(os.path.abspath(__file__)) + "/tests/" + testAvail["name"]+".py")
                     test_function = getattr(module, testAvail["name"])
                     if (testAvail["needsBase"]):
                         failed = test_function(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain.get('name'), configuration.get('name'), args.check)
