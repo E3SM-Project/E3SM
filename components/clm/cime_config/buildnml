@@ -32,7 +32,9 @@ def buildnml(case, caseroot, compname):
     clm_namelist_opts   = case.get_value("CLM_NAMELIST_OPTS")
     clm_bldnml_opts     = case.get_value("CLM_BLDNML_OPTS")
     clm_nml_use_case    = case.get_value("CLM_NML_USE_CASE")
+    clm_ad_spinup       = case.get_value("CLM_ACCELERATED_SPINUP")
     clm_force_coldstart = case.get_value("CLM_FORCE_COLDSTART")
+    clm_interface_mode  = case.get_value("CLM_INTERFACE_MODE")
     comp_interface      = case.get_value("COMP_INTERFACE")
     comp_glc            = case.get_value("COMP_GLC")
     din_loc_root        = case.get_value("DIN_LOC_ROOT")
@@ -49,7 +51,7 @@ def buildnml(case, caseroot, compname):
     run_refcase         = case.get_value("RUN_REFCASE")
     run_refdate         = case.get_value("RUN_REFDATE")
     run_reftod          = case.get_value("RUN_REFTOD")
-    casebuild		= case.get_value("CASEBUILD")
+    casebuild           = case.get_value("CASEBUILD")
 
     clmconf_dir = os.path.join(casebuild, "clmconf")
 
@@ -179,6 +181,14 @@ def buildnml(case, caseroot, compname):
         sysmod += " -config {}/config_cache.xml {}".format(clmconf_dir, clm_bldnml_opts)
         if mask_grid != "reg":
             sysmod += " -mask {}".format(mask_grid)
+
+        # add 'ad_spinup' runtime options
+        if clm_ad_spinup != "UNSET":
+            sysmod += " -bgc_spinup {}".format(clm_ad_spinup)
+
+        # add 'clm-interface-mode' runtime options (for coupling with pflotran and others)
+        if clm_interface_mode != "UNSET":
+            sysmod += " -clm_interface_mode {}".format(clm_interface_mode)
 
         # TODO: clm/bld/build-namelist needs to be converted to python
         run_cmd_no_fail(sysmod, from_dir=clmconf_dir)
