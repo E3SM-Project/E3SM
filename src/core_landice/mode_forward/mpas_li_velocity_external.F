@@ -446,9 +446,11 @@ contains
       integer :: iEdge
       real(kind=RKIND), parameter :: secondsInYear = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND
          !< The value of seconds in a year assumed by external dycores
-      integer :: err_tmp
+      integer, target :: err_tmp
+      integer, pointer :: err_albany
 
       err = 0
+      err_tmp = 0
 
       ! configs
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
@@ -550,16 +552,17 @@ contains
 
 
           call mpas_timer_start("velocity_solver_solve_FO")
+          err_albany => err_tmp
           call velocity_solver_solve_FO(bedTopography, lowerSurface, thickness, &
                 betaSolve, sfcMassBal, temperature, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, dissipationVertexField % array, uReconstructX, uReconstructY, &  ! return values
-                deltat, err_tmp)  ! return values
+                deltat, err_albany)  ! return values
 !	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)  ! this was used only for some ice2sea experiments, and is not a general routine to use
           call mpas_timer_stop("velocity_solver_solve_FO")
 
           if (err_tmp > 0) then
-             call mpas_log_write("Albany velocity solve failed! (Possibly, non-convergence.) Check log.albany.0000.out for more information.", MPAS_LOG_ERR)
+             call mpas_log_write("Albany velocity solve encountered an error!  Check log.albany.0000.out for more information.", MPAS_LOG_ERR)
           endif
           err = ior(err,err_tmp)
 
