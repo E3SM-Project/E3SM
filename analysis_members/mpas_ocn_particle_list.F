@@ -1516,7 +1516,7 @@ subroutine add_halo_data_to_particle_list_1Dreal_array & !{{{
     ! input data
     type (mpas_particle_list_type), pointer, intent(in) :: particlelist
     character(len=*), intent(in) :: dataName
-    real (kind=RKIND), dimension(:), pointer, intent(in) :: array1DRealPointer
+    real (kind=RKIND), dimension(:), intent(in) :: array1DRealPointer
 
     ! subroutine data
     integer :: dataNumber
@@ -1692,7 +1692,7 @@ subroutine add_halo_data_to_particle_list_1Dint_array & !{{{
     ! input data
     type (mpas_particle_list_type), pointer, intent(in) :: particlelist
     character(len=*), intent(in) :: dataName
-    integer, dimension(:), pointer, intent(in) :: array1DIntPointer
+    integer, dimension(:), intent(in) :: array1DIntPointer
 
     ! subroutine data
     integer :: dataNumber
@@ -3403,7 +3403,7 @@ end subroutine allocate_list_particlelists !}}}
      integer :: MPI_TYPE
      type (mpas_list_of_particle_list_type), dimension(:), pointer :: listSend, listRecv
 
-     integer :: i, j, numProcs, numFields, numRecv, numSends, numReals, numInts
+     integer :: i, j, ii, numProcs, numFields, numRecv, numSends, numReals, numInts
      integer, dimension(:), pointer :: recvRequestID, sendRequestID
      integer :: mpi_ierr
      type (mpas_pool_type), pointer :: lagrPartTrackPool
@@ -3411,9 +3411,11 @@ end subroutine allocate_list_particlelists !}}}
      type array1DReal_list
        real (kind=RKIND), dimension(:), pointer :: val
      end type
+     real (kind=RKIND), dimension(:), pointer :: realVal
      type array1DInt_list
        integer, dimension(:), pointer :: val
      end type
+     integer, dimension(:), pointer :: intVal
      type (array1DInt_list), dimension(:), pointer :: array1DIntSend, array1DIntRecv
      type (array1DReal_list), dimension(:), pointer :: array1DRealSend, array1DRealRecv
      character (len=StrKIND) :: message
@@ -3424,14 +3426,9 @@ end subroutine allocate_list_particlelists !}}}
      !call MPI_Barrier(domain % dminfo % comm)
 #endif
      
-     call mpas_pool_get_subpool(domain % blocklist % structs, 'lagrPartTrackHalo', lagrPartTrackPool)
-
-     numProcs = size(procNeighs)
-     allocate(array1DRealSend(numProcs), array1DRealRecv(numProcs))
-     allocate(array1DIntSend(numProcs),  array1DIntRecv(numProcs))
-     
      numReals = 0
      numInts = 0
+     call mpas_pool_get_subpool(domain % blocklist % structs, 'lagrPartTrackHalo', lagrPartTrackPool)
      call mpas_pool_begin_iteration(lagrPartTrackPool)
      do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
        if (dimItr % memberType == MPAS_POOL_FIELD) then
@@ -3449,6 +3446,15 @@ end subroutine allocate_list_particlelists !}}}
        end if 
      end do
 
+! NOTE, code assumes that memberName is consistent between processors in terms of pool interation
+!#ifdef mpas_debug
+!     ! verify that membername order is the same between processors
+!     call mpas_log_write('printing particle pool contents (verify that membername consistent between processors):') 
+!     call mpas_pool_print_summary(lagrPartTrackPool, mpas_pool_field, .true.)
+!#endif
+
+     numProcs = size(procNeighs)
+
      numSends = 0
      do i = 1, numProcs
        if (nPartSend(i) > 0) numSends = numSends + 1
@@ -3461,133 +3467,183 @@ end subroutine allocate_list_particlelists !}}}
      end do
      allocate(recvRequestID(numRecv))
 
-     ! perform the parallel communication
-     call mpas_pool_begin_iteration(lagrPartTrackPool)
-     do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
-       if (dimItr % memberType == MPAS_POOL_FIELD) then
-         !print *,  'transfering ', trim(dimItr % memberName)
-         if (dimItr % dataType == MPAS_POOL_REAL) then ! {{{
-           ! recv
-           j = 1
-           do i=1,numProcs ! {{{ 
-             if(nPartRecv(i) > 0) then
-               allocate(array1DRealRecv(i)%val(nPartRecv(i)))
-               !print *,  'receiving real ', trim(dimItr % memberName), ' from ', procNeighs(i)
-               ! receive communicated data
+     !!!!! begin REALS !!!! ! {{{
+     allocate(array1DRealSend(numProcs), array1DRealRecv(numProcs))
+     ! recv
+     j = 1
+     do i=1,numProcs ! {{{ 
+       if(nPartRecv(i) > 0) then
+         allocate(array1DRealRecv(i)%val(nPartRecv(i)*numReals))
 #ifdef _MPI
-               call MPI_IRecv(array1DRealRecv(i)%val, nPartRecv(i), MPI_REALKIND, procNeighs(i), procNeighs(i), &
-                 domain % dminfo % comm, recvRequestID(j), mpi_ierr)
+         call MPI_IRecv(array1DRealRecv(i)%val, nPartRecv(i)*numReals, MPI_REALKIND, &
+           procNeighs(i), procNeighs(i), domain % dminfo % comm, recvRequestID(j), mpi_ierr)
 #endif
-               j = j + 1
-             end if
-           end do ! }}}
-           ! send
-           j = 1
-           do i=1,numProcs ! {{{
-             if (nPartSend(i) > 0) then
-               allocate(array1DRealSend(i)%val(nPartSend(i)))
-               !print *,  'sending real ', trim(dimItr % memberName), ' to ', procNeighs(i)
+         j = j + 1
+       end if
+     end do ! }}}
+
+     ! aggregate data to send
+     do i=1,numProcs ! {{{
+       if (nPartSend(i) > 0) then
+         allocate(array1DRealSend(i)%val(nPartSend(i)*numReals))
+         allocate(realVal(nPartSend(i)))
+         j = 1
+         ! perform the parallel communication
+         call mpas_pool_begin_iteration(lagrPartTrackPool)
+         do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
+           if (dimItr % memberType == MPAS_POOL_FIELD) then
+             if (dimItr % dataType == MPAS_POOL_REAL) then ! {{{
                call get_halo_data_from_particle_list_array(listSend(i)%list, dimItr % memberName, &
-                 array1DRealSend(i)%val)
-#ifdef _MPI
-               call MPI_ISend(array1DRealSend(i)%val, nPartSend(i), MPI_REALKIND, procNeighs(i), &
-                 domain % dminfo % my_proc_id, domain % dminfo % comm, sendRequestID(j), mpi_ierr)
-#endif
+                 realVal)
+               do ii=1,nPartSend(i)
+                 array1DRealSend(i)%val((ii+(j-1)*nPartSend(i))) = realval(ii)
+               end do
                j = j + 1
-             end if
-           end do !}}}
+             end if ! }}}
+           end if
+         end do
+         deallocate(realVal)
+       end if
+     end do !}}}
+
+     ! send
+     j = 1
+     do i=1,numProcs ! {{{
+       if (nPartSend(i) > 0) then
+#ifdef _MPI
+         call MPI_ISend(array1DRealSend(i)%val, nPartSend(i)*numReals, MPI_REALKIND, procNeighs(i), &
+           domain % dminfo % my_proc_id, domain % dminfo % comm, sendRequestID(j), mpi_ierr)
+#endif
+         j = j + 1
+       end if
+     end do !}}}
 
 #ifdef _MPI
-           call MPI_WaitAll(numRecv, recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
+     call MPI_WaitAll(numRecv, recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
 #endif
-           if (mpi_ierr /= 0) call mpas_log_write('recv: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
+     if (mpi_ierr /= 0) call mpas_log_write('recv: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
 #ifdef _MPI
-           call MPI_WaitAll(numSends, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
+     call MPI_WaitAll(numSends, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
 #endif
-           if (mpi_ierr /= 0) call mpas_log_write('send: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
+     if (mpi_ierr /= 0) call mpas_log_write('send: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
 
-           ! store values
-           do i=1,numProcs ! {{{{
-             if(nPartRecv(i) > 0) then
+     ! store values
+     do i=1,numProcs ! {{{{
+       if(nPartRecv(i) > 0) then
+         j = 1
+         call mpas_pool_begin_iteration(lagrPartTrackPool)
+         do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
+           if (dimItr % memberType == MPAS_POOL_FIELD) then
+             if (dimItr % dataType == MPAS_POOL_REAL) then ! {{{
                ! place it in particle list
                call add_halo_data_to_particle_list_array(listRecv(i)%list, dimItr % memberName, &
-                 array1DRealRecv(i)%val)
-             end if
-           end do ! }}}
-
-           do i=1,numProcs
-             if(nPartSend(i) > 0) deallocate(array1DRealSend(i)%val)
-           end do
-           do i=1,numProcs
-             if(nPartRecv(i) > 0) deallocate(array1DRealRecv(i)%val)
-           end do
-           !print *,  'finished'
-
-           ! }}}
-         elseif (dimItr % dataType == MPAS_POOL_INTEGER) then !{{{
-          ! recv
-          j = 1
-          do i=1,numProcs !{{{
-            if(nPartRecv(i) > 0) then
-              allocate(array1DIntRecv(i)%val(nPartRecv(i)))
-              ! receive communicated data
-              !print *,  'receiving int ', trim(dimItr % memberName), ' from ', procNeighs(i)
-#ifdef _MPI
-              call MPI_IRecv(array1DIntRecv(i)%val, nPartRecv(i), MPI_INTEGERKIND, procNeighs(i), procNeighs(i), &
-                domain % dminfo % comm, recvRequestID(j), mpi_ierr)
-#endif
-              !if( trim(dimItr % memberName) == 'currentBlock') print *,  'currentBlock received ',nPartRecv(i), &
-              !                                                 ' from', procNeighs(i), ' = ', array1DIntRecv(i)%val
-              j = j + 1
-            end if
-          end do !}}}
-          ! send
-          j = 1
-          do i=1,numProcs !{{{
-            if(nPartSend(i) > 0) then
-              allocate(array1DIntSend(i)%val(nPartSend(i)))
-              !print *,  'sending int ', trim(dimItr % memberName), ' to ', procNeighs(i)
-              call get_halo_data_from_particle_list_array(listSend(i)%list, dimItr % memberName, array1DIntSend(i)%val)
-              !if( trim(dimItr % memberName) == 'currentBlock') print *,  'currentBlock sent ',nPartSend(i), ' to ', &
-              !                                                 procNeighs(i), ' = ', array1DIntSend(i)%val
-#ifdef _MPI
-              call MPI_ISend(array1DIntSend(i)%val, nPartSend(i), MPI_INTEGERKIND, procNeighs(i), &
-                domain % dminfo % my_proc_id, domain % dminfo % comm, sendRequestID(j), mpi_ierr)
-#endif
-              j = j + 1
-            end if
-          end do !}}}
-
-#ifdef _MPI
-          call MPI_WaitAll(numRecv, recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
-#endif
-          if (mpi_ierr /= 0) call mpas_log_write('recv: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
-#ifdef _MPI
-          call MPI_WaitAll(numSends, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
-#endif
-          if (mpi_ierr /= 0) call mpas_log_write('send: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
-
-          ! store values
-          do i=1,numProcs !{{{
-            if(nPartRecv(i) > 0) then
-              ! place it in particle list
-              call add_halo_data_to_particle_list_array(listRecv(i)%list, dimItr % memberName, &
-                array1DIntRecv(i)%val)
-            end if
-          end do !}}}
-
-          do i=1,numProcs
-            if(nPartSend(i) > 0) deallocate(array1DIntSend(i)%val)
-          end do
-          do i=1,numProcs
-            if(nPartRecv(i) > 0) deallocate(array1DIntRecv(i)%val)
-          end do
-          !call mpas_log_write( 'finished')
-         end if ! }}}
+                       array1DRealRecv(i)%val((1+(j-1)*nPartRecv(i)) : (j*nPartRecv(i))))
+               j = j + 1
+             end if ! }}}
+           end if
+         end do
        end if
+     end do ! }}}
+
+     do i=1,numProcs
+       if(nPartSend(i) > 0) deallocate(array1DRealSend(i)%val)
+     end do
+     do i=1,numProcs
+       if(nPartRecv(i) > 0) deallocate(array1DRealRecv(i)%val)
      end do
 
-     deallocate(array1DIntSend, array1DIntRecv, array1DRealSend, array1DRealRecv, recvRequestID, sendRequestID)
+     deallocate(array1DRealSend, array1DRealRecv)
+     !!!! end REALS !!!! ! }}}
+     
+     !!!!! begin INTS !!!! ! {{{
+     allocate(array1DIntSend(numProcs), array1DIntRecv(numProcs))
+     ! recv
+     j = 1
+     do i=1,numProcs ! {{{ 
+       if(nPartRecv(i) > 0) then
+         allocate(array1DIntRecv(i)%val(nPartRecv(i)*numInts))
+#ifdef _MPI
+         call MPI_IRecv(array1DIntRecv(i)%val, nPartRecv(i)*numInts, MPI_INTEGERKIND, &
+           procNeighs(i), procNeighs(i), domain % dminfo % comm, recvRequestID(j), mpi_ierr)
+#endif
+         j = j + 1
+       end if
+     end do ! }}}
+
+     ! aggregate data to send
+     do i=1,numProcs ! {{{
+       if (nPartSend(i) > 0) then
+         allocate(array1DIntSend(i)%val(nPartSend(i)*numInts))
+         allocate(intVal(nPartSend(i)))
+         j = 1
+         ! perform the parallel communication
+         call mpas_pool_begin_iteration(lagrPartTrackPool)
+         do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
+           if (dimItr % memberType == MPAS_POOL_FIELD) then
+             if (dimItr % dataType == MPAS_POOL_INTEGER) then ! {{{
+               call get_halo_data_from_particle_list_array(listSend(i)%list, dimItr % memberName, &
+                 intVal)
+               do ii=1,nPartSend(i)
+                 array1DIntSend(i)%val((ii+(j-1)*nPartSend(i))) = intval(ii)
+               end do
+               j = j + 1
+             end if ! }}}
+           end if
+         end do
+         deallocate(intVal)
+       end if
+     end do !}}}
+
+     ! send
+     j = 1
+     do i=1,numProcs ! {{{
+       if (nPartSend(i) > 0) then
+#ifdef _MPI
+         call MPI_ISend(array1DIntSend(i)%val, nPartSend(i)*numInts, MPI_INTEGERKIND, procNeighs(i), &
+           domain % dminfo % my_proc_id, domain % dminfo % comm, sendRequestID(j), mpi_ierr)
+#endif
+         j = j + 1
+       end if
+     end do !}}}
+
+#ifdef _MPI
+     call MPI_WaitAll(numRecv, recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
+#endif
+     if (mpi_ierr /= 0) call mpas_log_write('recv: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
+#ifdef _MPI
+     call MPI_WaitAll(numSends, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
+#endif
+     if (mpi_ierr /= 0) call mpas_log_write('send: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
+
+     ! store values
+     do i=1,numProcs ! {{{{
+       if(nPartRecv(i) > 0) then
+         j = 1
+         call mpas_pool_begin_iteration(lagrPartTrackPool)
+         do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
+           if (dimItr % memberType == MPAS_POOL_FIELD) then
+             if (dimItr % dataType == MPAS_POOL_INTEGER) then ! {{{
+               ! place it in particle list
+               call add_halo_data_to_particle_list_array(listRecv(i)%list, dimItr % memberName, &
+                       array1DIntRecv(i)%val((1+(j-1)*nPartRecv(i)) : (j*nPartRecv(i))))
+               j = j + 1
+             end if ! }}}
+           end if
+         end do
+       end if
+     end do ! }}}
+
+     do i=1,numProcs
+       if(nPartSend(i) > 0) deallocate(array1DIntSend(i)%val)
+     end do
+     do i=1,numProcs
+       if(nPartRecv(i) > 0) deallocate(array1DIntRecv(i)%val)
+     end do
+
+     deallocate(array1DIntSend, array1DIntRecv)
+     !!!! end INTS !!!! ! }}}
+     
+     deallocate(recvRequestID, sendRequestID)
      LIGHT_DEBUG_WRITE('Finished primary MPI communication for halo')
 
    end subroutine communicate_particle_halo_data!}}}
