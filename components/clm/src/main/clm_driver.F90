@@ -1366,7 +1366,7 @@ contains
 
     end if
 
-    if (nstep>=nestep) then
+    if (use_pflotran .and. nstep>=nestep) then
        call clm_pf_finalize()
     end if
 
