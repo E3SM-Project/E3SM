@@ -1706,8 +1706,8 @@ this mask will have smb calculated over the entire global land surface
 <!-- =========================================  -->
 <!-- Defaults for clm_pflotran_inparm interface -->
 <!-- =========================================  -->
-<pflotran_inputdir>pflotran</pflotran_inputdir>
-<pflotran_prefix>pflotran_clm</pflotran_prefix>
+<pflotran_inputdir use_pflotran=".true.">lnd/clm2/pflotran</pflotran_inputdir>
+<pflotran_prefix use_pflotran=".true.">pflotran_clm</pflotran_prefix>
 
 <!-- =========================================  -->
 <!-- Defaults for FATES interface -->
