@@ -324,7 +324,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
     double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
     double* u_normal_F, double* dissipation_heat_F,
     double* xVelocityOnCell, double* yVelocityOnCell, double const* deltat,
-    int error) {
+    int *error) {
 
   std::fill(u_normal_F, u_normal_F + nEdges_F * (nLayers+1), 0.);
   //import velocity from initial guess and from dirichlet values.
@@ -378,13 +378,14 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
     std::cout << "\n\nTimeStep: "<< *deltat << "\n\n"<< std::endl;
 
     double dt = (*deltat)/secondsInAYear;
+    int albany_error;
     velocity_solver_solve_fo__(nLayers, nGlobalVertices, nGlobalTriangles,
         Ordering, first_time_step, indexToVertexID, indexToTriangleID, minBeta,
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
         betaData, bedTopographyData, smbData,
         temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices,
-        error, dt);
-    
+        albany_error, dt);
+    *error=albany_error;
   }
   
   exportDissipationHeat(dissipation_heat_F);

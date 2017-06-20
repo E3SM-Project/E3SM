@@ -113,7 +113,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
     double* const dirichletVelocityXValue = 0, double* const dirichletVelocitYValue = 0,
     double* u_normal_F = 0, double* dissipation_heat_F = 0,
     double* xVelocityOnCell = 0, double* yVelocityOnCell = 0, double const * deltat = 0,
-    int error = 0);
+    int *error = 0 );
 
 
 void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _cellsMask_F, int const* dirichletNodesMask_F, int const* floatingEdgeMask_F);
