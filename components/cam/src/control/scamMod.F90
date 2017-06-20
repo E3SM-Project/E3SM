@@ -213,7 +213,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(single_column_out) )    single_column_out  = .false.
    if ( present(scm_iop_srf_prop_out) )scm_iop_srf_prop_out  = .false.
    if ( present(scm_relaxation_out) )   scm_relaxation_out  = .false.
-   if ( present(scm_relaxation_low_out) ) scm_relaxation_low_out = 100.e3
+   if ( present(scm_relaxation_low_out) ) scm_relaxation_low_out = 1050.0_r8
    if ( present(scm_relaxation_high_out) ) scm_relaxation_high_out = 0.e3   
    if ( present(scm_diurnal_avg_out) )  scm_diurnal_avg_out = .false.
    if ( present(scm_crm_mode_out) )     scm_crm_mode_out  = .false.

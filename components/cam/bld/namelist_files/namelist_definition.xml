@@ -4185,7 +4185,7 @@ Default: FALSE
        group="cam_inparm" valid_values="">
 Lowest layer to apply relaxation.  Keep to default value to apply relaxation 
 at the surface.   
-Default: 100.e3 (hPa)
+Default: 1050.0 (hPa)
 </entry>
 
 <entry id="scm_relaxation_high" type="real" category="scam"
