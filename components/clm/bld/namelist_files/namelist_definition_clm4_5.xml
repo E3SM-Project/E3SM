@@ -1650,7 +1650,7 @@ Specifies the method for decomposing CLM grids across processors.
 </entry>
 
 <!-- =========================================================================================  -->
-<!-- Namelist options related to the bgc & pflotran interface
+<!-- Namelist options related to the clm_interface & pflotran coupling
 <!-- ========================================================================================  -->
 
 <entry id="use_clm_interface" type="logical" category="default_settings"
@@ -1668,12 +1668,12 @@ Specifies the method for decomposing CLM grids across processors.
     Runtime flag to turn on/off pflotran interface.
 </entry>
 
-<entry id="pflotran_inputdir" type="char*256" category="clm_pflotran"
+<entry id="pflotran_inputdir" type="char*256" category="default_settings"
     group="clm_pflotran_inparm" valid_values="" >
-    pflotran input directory in which $pflotran_prefix.in and files contained should be located, but not yet done.
+    pflotran input directory in which $pflotran_prefix.in and files contained should be located.
 </entry>
 
-<entry id="pflotran_prefix" type="char*256" category="clm_pflotran"
+<entry id="pflotran_prefix" type="char*256" category="default_settings"
     group="clm_pflotran_inparm" valid_values="" >
     pflotran file prefix.
 </entry>
@@ -1700,6 +1700,7 @@ Type of saturation function used in VSFM.
 <entry id="vsfm_use_dynamic_linesearch"  type="logical" category="default_settings"
        group="clm_inparm" valid_values="">
 Runtime flag to dynamically modify PETSc SNES linesearch option when VSFM fails to converge before cutting the timestep.
+</entry>
 
 <entry id="vsfm_lateral_model_type" type="char*32" category="clm_physics"
        group="clm_inparm"

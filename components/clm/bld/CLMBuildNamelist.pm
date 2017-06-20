@@ -239,6 +239,9 @@ OPTIONS
      -vichydro                Toggle to turn on VIC hydrologic parameterizations (default is off)
                               This turns on the namelist variable: use_vichydro
      -betr_mode               Turn on betr model for tracer transport in soil. [on|off] default is off.
+     -clm_interface_mode      CLM4.5 only. Turn on and specify CLM interface mode. [off|bgc|pflotran] default is off.
+                                 bgc      = run native bgc via the interface (for test purpose)
+                                 pflotran = run coupled CLM-PFLOTRAN via the interface (BGC/H/TH coupling upon pflotran_clm.in)
 
 
 Note: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -276,7 +279,7 @@ sub process_commandline {
                clm_demand            => "null",
                help                  => 0,
                glc_nec               => "default",
-	       fsnowoptics           => "default",
+	           fsnowoptics           => "default",
                glc_present           => 0,
                glc_smb               => "default",
                l_ncpl                => undef,
@@ -306,6 +309,7 @@ sub process_commandline {
                nutrient              => "default",
                nutrient_comp_pathway => "default",
                soil_decomp           => "default",
+               clm_interface_mode    => "off",
              );
 
   GetOptions(
@@ -356,6 +360,7 @@ sub process_commandline {
              "nutrient=s"                => \$opts{'nutrient'},
              "nutrient_comp_pathway=s"   => \$opts{'nutrient_comp_pathway'},
              "soil_decomp=s"             => \$opts{'soil_decomp'},
+             "clm_interface_mode=s"      => \$opts{'clm_interface_mode'},
             )  or usage();
 
   # Give usage message.
@@ -682,6 +687,7 @@ sub process_namelist_commandline_options {
   setup_cmdl_fates_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_vichydro($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_betr_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);  
+  setup_cmdl_clm_interface($opts, $nl_flags, $definition, $defaults, $nl, $physv);  
 }
 
 #-------------------------------------------------------------------------------
@@ -887,6 +893,117 @@ sub setup_cmdl_betr_mode {
 
     }
   }
+}
+
+
+#-------------------------------------------------------------------------------
+sub setup_cmdl_clm_interface {
+  #
+  #
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+  my $val;
+  my $var = "clm_interface_mode";
+
+  $val = $opts->{$var};
+
+  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {     
+    if ($val ne "off"){
+	  fatal_error("** Cannot turn clm_interface_mode on with clm4_0 physics.\n" );
+    }
+  } else {
+    if ($val ne "off"){
+
+        $var = "use_clm_interface";
+        my $group = $definition->get_group_name($var);
+        $nl->set_variable_value($group, $var, ".true.");
+        
+        if ($val eq "bgc") {
+           message("Using clm-interface mode: use_clm_bgc =.true.");
+
+           if ($nl_flags->{"bgc_mode"} eq "sp"){
+             fatal_error("-clm_interface_mode option of 'bgc' can ONLY be used with clm4_5 with -bgc cn|bgc");
+           
+           } else {
+
+             $var = "use_clm_bgc";
+             $nl->set_variable_value($group, $var, ".true.");
+
+             $var = "use_pflotran";
+             $nl->set_variable_value($group, $var, ".false.");
+           }
+           
+        } else {
+           
+           # note: pflotran TH mode can be working with 'bgc_mode = sp'
+           if ($val eq "pflotran"){
+               message("\n==================================================");
+               message("Using clm-interface mode: use_pflotran =.true.");
+               $var = "use_clm_bgc";
+               $nl->set_variable_value($group, $var, ".false.");
+
+               $var = "use_pflotran";
+               $nl->set_variable_value($group, $var, ".true.");                          
+
+               if ( $nl_flags->{"bgc_mode"} eq "cn" ){
+                  message("use_pflotran =.true. for CN coupling is via additional dataType of use_nitrif_denitrif=.true.");
+                  $var = "use_nitrif_denitrif";
+                  $nl->set_variable_value($group, $var, ".true.");
+               }
+
+               $var = "pflotran_inputdir";
+               my $group2 = $definition->get_group_name($var);
+               $val = $nl->get_value($var);
+               if(string_is_undef_or_empty($val)) {
+               	  $val = $nl_flags->{'inputdata_rootdir'}.'/'.$defaults->get_value($var);
+                  $nl->set_variable_value($group2, $var, quote_string($val));
+               }              
+               message("pflotran input directory: ".$val);
+               
+               $var = "pflotran_prefix";
+               $val = $nl->get_value($var);
+               if(string_is_undef_or_empty($val)) {
+               	  $val = $defaults->get_value($var);
+                  $nl->set_variable_value($group2, $var, quote_string($val));
+               }
+               message("pflotran input deck file: '".$val.".in'");
+ 
+               message("==================================================\n");
+                             
+           } else {
+               fatal_error("-clm_interface_mode option can ONLY be off|bgc|pflotran");
+          	
+           }
+        }        
+        
+    } else {
+      # ' -clm_interface_mode off' in env_run.xml
+      # but somehow namelist 'use_pflotran' was set to '.true.'
+      #     which currently only good via 'clm-interface'
+      if ( $nl->get_value("use_pflotran") eq ".true." ) {
+        if ($nl->get_value("use_clm_interface") ne ".true." ) {
+           my $errorinfo = "\nNamelist 'use_pflotran=.true.' contradicts the command line option '-clm_interface_mode off'\n".
+      	                     "Please set CLM namelist 'use_pflotran' via -clm_interface_mode pflotran";
+       	   fatal_error ($errorinfo);   	
+        } else {
+      	   message ("WARNING: both 'use_pflotran' and 'use_clm_interface' are set to true in a way by experts");
+      	   message ("WARNING: Please be sure pflotran inputs set correctly");           
+        }
+      }
+
+      if ( $nl->get_value("use_clm_bgc") eq ".true." ) {
+        if ($nl->get_value("use_clm_interface") ne ".true." ) {
+          my $errorinfo = "\nNamelist 'use_clm_bgc=.true.' contradicts the command line option '-clm_interface_mode off'\n".
+      	               "Please set CLM namelist 'use_clm_bgc' via -clm_interface_mode bgc\n".
+       	               "OR, add 'use_clm_interface = .true' in 'usr_nl_clm'";   
+       	  fatal_error ($errorinfo);   	
+        }
+      }
+    	
+    }
+    
+
+  }#clm4_5
 }
 
 
@@ -2019,7 +2136,7 @@ sub process_namelist_inline_logic {
   #########################################
   # namelist group: clm_pflotran_inparm   #
   #########################################
-  setup_logic_pflotran($opts, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_logic_pflotran($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
 
 }
 
@@ -3313,7 +3430,7 @@ sub setup_logic_snowpack {
 #-------------------------------------------------------------------------------
 sub setup_logic_pflotran {
     # clm_pflotran_inparm
-    # PFLOTRAN model if bgc=CN or CNDV and CLM4.5 physics
+    # PFLOTRAN model if CLM4.5 physics
     #
     my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
@@ -3323,10 +3440,10 @@ sub setup_logic_pflotran {
         add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'pflotran_inputdir' );
         add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'pflotran_prefix' );
         #
-        # Check if $pflotran_prefix is set in $inputdata_rootdir/$pflotran      #
+        # Check if $pflotran_prefix is set in $inputdata_rootdir/$pflotran_inputdir      #
         my $pflotran_inputdir = $nl->get_value('pflotran_inputdir');
         my $pflotran_prefix = $nl->get_value('pflotran_prefix');
-             # (TODO) something here, but not yet at this momment.
+             # (TODO) something here, but not yet at this momment.      
       }
     }
 } # end setup_logic_pflotran

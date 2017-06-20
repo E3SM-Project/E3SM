@@ -204,6 +204,19 @@
       precedence over any settings for finidat in the $CASEROOT/user_clm_clm file.</desc>
   </entry>
 
+  <entry id="CLM_INTERFACE_MODE">
+    <type>char</type>
+    <valid_values>off,bgc,pflotran</valid_values>
+    <default_value>off</default_value>
+    <group>run_component_clm</group>
+    <file>env_run.xml</file>
+    <desc>CLM build-namelist options for ' -clm_interface_mode'
+         FOR run-time options to apply for new CLM capabilities via clm-interface.
+         VALID options: (1) off (default); 
+                        (2) bgc - run native clm BGC via interface (for purpose of testing interface);
+                        (3) pflotran - run coupled clm-pflotran via interface (coupled module(s) upon pflotran.in).</desc>
+  </entry>
+
   <description>
     <desc compset="_CLM40"          >clm4.0 physics:</desc>
     <desc compset="_CLM40%[^_]*SP"  >clm4.0 Satellite phenology:</desc>

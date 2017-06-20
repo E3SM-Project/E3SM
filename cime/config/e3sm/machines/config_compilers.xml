@@ -372,26 +372,22 @@ for mct, etc.
          collect2: error: ld returned 1 exit status 
     -->
     <base> -mcmodel=small </base>
-    <append compile_threaded="true"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
-    <append DEBUG="FALSE"> -O </append>
-    <append MODEL="csm_share"> -std=c99 </append>
     <append> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </append>
   </CFLAGS>
   <FFLAGS>
     <base> -mcmodel=small -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
-    <append compile_threaded="true"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
-    <append DEBUG="FALSE"> -O </append>
     <append> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </append>
+    <!-- A NOTE here: $(PFLOTRAN_INC) may contain both PETSC and actual PFLOTRAN include dir, or only PETSC include dir -->
+    <append MODEL="clm"> $(PFLOTRAN_INC) </append>
   </FFLAGS>
   <LDFLAGS>
-    <append compile_threaded="true"> -fopenmp </append>
     <append> -framework Accelerate </append>
     <append MODEL="driver">-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </append>
     <append MODEL="driver">-L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran </append>
-    <append MODEL="driver">-L$(PNETCDF_PATH)/lib -lpnetcdf </append>
-    <append>-L$(CC_ROOT)/lib -lgomp </append> 
+    <!-- append>-L$(PNETCDF_PATH)/lib -lpnetcdf </append> -->
+    <append>-L$(CC_ROOT)/lib -lgomp </append>
+    <!-- A NOTE here: $(PFLOTRAN_LIB) may contain both PETSC libraries and actual PFLOTRAN libray, or only PETSC libraries -->
+    <append MODEL="driver"> $(PFLOTRAN_LIB) </append>
   </LDFLAGS>
   <SLIBS>
     <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -framework Accelerate </append>
@@ -420,6 +416,7 @@ for mct, etc.
   <MPICXX>$(MPI_ROOT)/bin/mpicxx</MPICXX>
   <MPIFC>$(MPI_ROOT)/bin/mpifort</MPIFC>
 </compiler>
+
 
 <compiler COMPILER="pathscale">
   <CFLAGS>
@@ -727,13 +724,11 @@ for mct, etc.
   <CPPDEFS>
     <append> -DSYSDARWIN </append>
   </CPPDEFS>
-  <!-- The following may cause duplicate symbol issue, especially with Mac OSX high sierra -->
-  <!-- NOTE: it's observed when coupled with pflotran, which uses PETSc library
+  <!-- The following may cause duplicate symbol issue, especially with Mac OSX high sierra
   <LDFLAGS>
     <append MODEL="driver"> -all_load </append>
   </LDFLAGS>
   -->
-  
 </compiler>
 
 <compiler OS="Darwin" COMPILER="intel">
@@ -923,13 +918,6 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="cades" COMPILER="gnu">
-  <CFLAGS>
-    <append compile_threaded="true"> -fopenmp </append>
-    <append> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </append>
-  </CFLAGS>
-  <CMAKE_OPTS>
-    <append MODEL="cism"> -D CISM_GNU=ON </append>
-  </CMAKE_OPTS>
   <CPPDEFS>
     <append> -DFORTRANUNDERSCORE -DNO_R16</append>
   </CPPDEFS>
@@ -941,9 +929,9 @@ for mct, etc.
     <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
                                  so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
     <base> -O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -fno-range-check</base>
-    <append compile_threaded="true"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall </append>
     <append> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </append>
+    <!-- A NOTE here: $(PFLOTRAN_INC) may contain both PETSC and actual PFLOTRAN include dir, or only PETSC include dir -->
+    <append MODEL="clm"> $(PFLOTRAN_INC) </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
@@ -959,9 +947,10 @@ for mct, etc.
   <PNETCDF_PATH>/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/pnetcdf/1.9.0/centos7.2_gnu5.3.0</PNETCDF_PATH>
   <LAPACK_LIBDIR>/software/tools/compilers/intel_2017/mkl/lib/intel64</LAPACK_LIBDIR>
   <LDFLAGS>
-    <append compile_threaded="true"> -fopenmp </append>
     <append MODEL="driver"> -L$NETCDF_PATH/lib -Wl,-rpath=$NETCDF_PATH/lib -lnetcdff -lnetcdf </append>
     <append MODEL="driver"> -L$HDF5_PATH/lib -Wl,-rpath=$HDF5_PATH/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran </append>
+    <!-- A NOTE here: $(PFLOTRAN_LIB) may contain both PETSC libraries and actual PFLOTRAN libray, or only PETSC libraries -->
+    <append MODEL="driver"> $(PFLOTRAN_LIB) </append>
   </LDFLAGS>
   <MPICC>mpicc</MPICC>
   <MPICXX>mpic++</MPICXX>
