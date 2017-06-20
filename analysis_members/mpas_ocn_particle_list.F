@@ -3403,7 +3403,7 @@ end subroutine allocate_list_particlelists !}}}
      integer :: MPI_TYPE
      type (mpas_list_of_particle_list_type), dimension(:), pointer :: listSend, listRecv
 
-     integer :: i, j, numProcs, numFields, numRecv, numSends
+     integer :: i, j, numProcs, numFields, numRecv, numSends, numReals, numInts
      integer, dimension(:), pointer :: recvRequestID, sendRequestID
      integer :: mpi_ierr
      type (mpas_pool_type), pointer :: lagrPartTrackPool
@@ -3423,10 +3423,31 @@ end subroutine allocate_list_particlelists !}}}
 #ifdef _MPI
      !call MPI_Barrier(domain % dminfo % comm)
 #endif
+     
+     call mpas_pool_get_subpool(domain % blocklist % structs, 'lagrPartTrackHalo', lagrPartTrackPool)
 
      numProcs = size(procNeighs)
      allocate(array1DRealSend(numProcs), array1DRealRecv(numProcs))
      allocate(array1DIntSend(numProcs),  array1DIntRecv(numProcs))
+     
+     numReals = 0
+     numInts = 0
+     call mpas_pool_begin_iteration(lagrPartTrackPool)
+     do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
+       if (dimItr % memberType == MPAS_POOL_FIELD) then
+         !print *,  'transfering ', trim(dimItr % memberName)
+         if (dimItr % dataType == MPAS_POOL_REAL) then 
+           numReals = numReals + 1
+         elseif (dimItr % dataType == MPAS_POOL_INTEGER) then 
+           numInts = numInts + 1
+         end if
+       else
+         ! only need to print this warning once in this function to simplify if-else statements
+         write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
+                           " of type", dimItr % memberType, "in halo data for communication-- don't know what to do!"
+         LIGHT_DEBUG_ALL_WRITE(message)
+       end if 
+     end do
 
      numSends = 0
      do i = 1, numProcs
@@ -3440,10 +3461,7 @@ end subroutine allocate_list_particlelists !}}}
      end do
      allocate(recvRequestID(numRecv))
 
-     ! on each list, transmit relevant fields to associated processors (note using the var struct since it has the names
-     ! required and this information is on each processor, even if the pool's fields are empty their names and types
-     ! are there from the registry).
-     call mpas_pool_get_subpool(domain % blocklist % structs, 'lagrPartTrackHalo', lagrPartTrackPool)
+     ! perform the parallel communication
      call mpas_pool_begin_iteration(lagrPartTrackPool)
      do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
        if (dimItr % memberType == MPAS_POOL_FIELD) then
@@ -3451,7 +3469,7 @@ end subroutine allocate_list_particlelists !}}}
          if (dimItr % dataType == MPAS_POOL_REAL) then ! {{{
            ! recv
            j = 1
-           do i=1,numProcs
+           do i=1,numProcs ! {{{ 
              if(nPartRecv(i) > 0) then
                allocate(array1DRealRecv(i)%val(nPartRecv(i)))
                !print *,  'receiving real ', trim(dimItr % memberName), ' from ', procNeighs(i)
@@ -3462,10 +3480,10 @@ end subroutine allocate_list_particlelists !}}}
 #endif
                j = j + 1
              end if
-           end do
+           end do ! }}}
            ! send
            j = 1
-           do i=1,numProcs
+           do i=1,numProcs ! {{{
              if (nPartSend(i) > 0) then
                allocate(array1DRealSend(i)%val(nPartSend(i)))
                !print *,  'sending real ', trim(dimItr % memberName), ' to ', procNeighs(i)
@@ -3477,7 +3495,7 @@ end subroutine allocate_list_particlelists !}}}
 #endif
                j = j + 1
              end if
-           end do
+           end do !}}}
 
 #ifdef _MPI
            call MPI_WaitAll(numRecv, recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
@@ -3489,13 +3507,13 @@ end subroutine allocate_list_particlelists !}}}
            if (mpi_ierr /= 0) call mpas_log_write('send: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
 
            ! store values
-           do i=1,numProcs
+           do i=1,numProcs ! {{{{
              if(nPartRecv(i) > 0) then
                ! place it in particle list
                call add_halo_data_to_particle_list_array(listRecv(i)%list, dimItr % memberName, &
                  array1DRealRecv(i)%val)
              end if
-           end do
+           end do ! }}}
 
            do i=1,numProcs
              if(nPartSend(i) > 0) deallocate(array1DRealSend(i)%val)
@@ -3506,10 +3524,10 @@ end subroutine allocate_list_particlelists !}}}
            !print *,  'finished'
 
            ! }}}
-        elseif (dimItr % dataType == MPAS_POOL_INTEGER) then !{{{
+         elseif (dimItr % dataType == MPAS_POOL_INTEGER) then !{{{
           ! recv
           j = 1
-          do i=1,numProcs
+          do i=1,numProcs !{{{
             if(nPartRecv(i) > 0) then
               allocate(array1DIntRecv(i)%val(nPartRecv(i)))
               ! receive communicated data
@@ -3522,10 +3540,10 @@ end subroutine allocate_list_particlelists !}}}
               !                                                 ' from', procNeighs(i), ' = ', array1DIntRecv(i)%val
               j = j + 1
             end if
-          end do
+          end do !}}}
           ! send
           j = 1
-          do i=1,numProcs
+          do i=1,numProcs !{{{
             if(nPartSend(i) > 0) then
               allocate(array1DIntSend(i)%val(nPartSend(i)))
               !print *,  'sending int ', trim(dimItr % memberName), ' to ', procNeighs(i)
@@ -3538,7 +3556,7 @@ end subroutine allocate_list_particlelists !}}}
 #endif
               j = j + 1
             end if
-          end do
+          end do !}}}
 
 #ifdef _MPI
           call MPI_WaitAll(numRecv, recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
@@ -3550,13 +3568,13 @@ end subroutine allocate_list_particlelists !}}}
           if (mpi_ierr /= 0) call mpas_log_write('send: mpi_ierr = %i', intArgs=(/ mpi_ierr /) )
 
           ! store values
-          do i=1,numProcs
+          do i=1,numProcs !{{{
             if(nPartRecv(i) > 0) then
               ! place it in particle list
               call add_halo_data_to_particle_list_array(listRecv(i)%list, dimItr % memberName, &
                 array1DIntRecv(i)%val)
             end if
-          end do
+          end do !}}}
 
           do i=1,numProcs
             if(nPartSend(i) > 0) deallocate(array1DIntSend(i)%val)
@@ -3565,17 +3583,8 @@ end subroutine allocate_list_particlelists !}}}
             if(nPartRecv(i) > 0) deallocate(array1DIntRecv(i)%val)
           end do
           !call mpas_log_write( 'finished')
-        else
-           !call mpas_log_write( "Different field type than implemented during halo communication!")
-         end if 
-       ! }}}
-       elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
-         ! ignore dimensions for now and have this code so they aren't printed as an error message
-       else
-         write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
-                           " in halo data for communication-- don't know what to do!"
-         LIGHT_DEBUG_ALL_WRITE(message)
-       end if 
+         end if ! }}}
+       end if
      end do
 
      deallocate(array1DIntSend, array1DIntRecv, array1DRealSend, array1DRealRecv, recvRequestID, sendRequestID)
