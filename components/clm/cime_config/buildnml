@@ -18,7 +18,9 @@ my $CLM_CONFIG_OPTS	= `./xmlquery  CLM_CONFIG_OPTS	   -value`;
 my $CLM_NAMELIST_OPTS	= `./xmlquery  CLM_NAMELIST_OPTS   -value`;
 my $CLM_BLDNML_OPTS	= `./xmlquery  CLM_BLDNML_OPTS	   -value`;
 my $CLM_NML_USE_CASE	= `./xmlquery  CLM_NML_USE_CASE	   -value`;
+my $CLM_ACCELERATED_SPINUP = `./xmlquery  CLM_ACCELERATED_SPINUP -value`;
 my $CLM_FORCE_COLDSTART = `./xmlquery  CLM_FORCE_COLDSTART -value`;
+my $CLM_INTERFACE_MODE = `./xmlquery  CLM_INTERFACE_MODE -value`;
 my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE	   -value`;
 my $COMP_GLC		= `./xmlquery  COMP_GLC		   -value`;
 my $DEBUG		= `./xmlquery  DEBUG		   -value`;
@@ -94,6 +96,23 @@ system($sysmod) == 0 or die "ERROR clm.buildnml: $sysmod failed: $?\n";
 # Invoke clm build-namelist - output will go in CASEROOT/Buildconf/clmconf
 #--------------------------------------------------------------------
 
+# adding ad_spinup into $CLM_BLDNML_OPTS, if not yet AND for supported compset and options
+my $ad_opt = " -bgc_spinup";
+my $bldnml_opts = $CLM_BLDNML_OPTS;
+if ( ($CLM_ACCELERATED_SPINUP eq "on") && (index($bldnml_opts, $ad_opt) == -1) ) { 
+  $ad_opt = " -bgc_spinup on"; 
+  if ( (index($COMPSET, "1850") != -1) && (index($bldnml_opts, "-bgc cn") != -1) ) {
+    $CLM_BLDNML_OPTS = $bldnml_opts.$ad_opt;
+    print "INFO - edited CLM_BLDNML_OPTS: ".$CLM_BLDNML_OPTS."\n";
+  } else {
+    print "WARNING: ".$ad_opt."NOT VALID for compset".$COMPSET.", OR CLM_BLDNML_OPTS".$bldnml_opts."\n";
+  }
+} else {
+  if ( ($CLM_ACCELERATED_SPINUP eq "on") && (index($bldnml_opts, $ad_opt) != -1) ) {
+    print "WARNING: cannot over-ride CLM_BLDNML_OPTS: ".$CLM_BLDNML_OPTS."\n";
+  }
+}
+
 my $startfiletype = "finidat";
 my $start_type = "default";
 if ($RUN_TYPE eq "startup" ) {
@@ -106,6 +125,23 @@ if ($RUN_TYPE eq "startup" ) {
     }
 }
 if ($RUN_TYPE eq "branch" ) {$startfiletype = "nrevsn";}
+
+# adding clm_interface_mode into $CLM_BLDNML_OPTS, for supported compset and options
+my $interface_opt = " -clm_interface_mode";
+my $bldnml_opts = $CLM_BLDNML_OPTS;
+if ( ($CLM_INTERFACE_MODE ne "off") && (index($bldnml_opts, $interface_opt) == -1) ) { 
+   $interface_opt = " -clm_interface_mode ".$CLM_INTERFACE_MODE;     
+   if (index($COMPSET, "CLM45") != -1) {
+      $CLM_BLDNML_OPTS = $bldnml_opts.$interface_opt;
+      print "INFO - edited CLM_BLDNML_OPTS: ".$CLM_BLDNML_OPTS."\n";
+   } else {
+    print "WARNING: ".$interface_opt."NOT VALID for compset".$COMPSET."\n";
+   }
+} else {
+  if ( ($CLM_INTERFACE_MODE ne "off") && (index($bldnml_opts, $interface_opt) != -1) ) {
+    print "WARNING: cannot over-ride CLM_BLDNML_OPTS: ".$CLM_BLDNML_OPTS."\n";
+  }
+}
 
 my $inst_string;
 my $inst_counter = 1;

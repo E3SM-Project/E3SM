@@ -1631,30 +1631,30 @@ Specifies the method for decomposing CLM grids across processors.
 </entry>
 
 <!-- =========================================================================================  -->
-<!-- Namelist options related to the bgc & pflotran interface
+<!-- Namelist options related to the clm_interface & pflotran coupling
 <!-- ========================================================================================  -->
 
-<entry id="use_clm_interface" type="logical" category="default_settings"
+<entry id="use_clm_interface" type="logical" category="clm_interface"
     group="clm_inparm" valid_values="">
     Runtime flag to turn on/off bgc interface.
 </entry>
 
-<entry id="use_clm_bgc" type="logical" category="default_settings"
+<entry id="use_clm_bgc" type="logical" category="clm_interface"
     group="clm_inparm" valid_values="">
     Runtime flag to turn on/off clm-bgc.
 </entry>
 
-<entry id="use_pflotran" type="logical" category="default_settings"
+<entry id="use_pflotran" type="logical" category="clm_interface"
     group="clm_inparm" valid_values="">
     Runtime flag to turn on/off pflotran interface.
 </entry>
 
-<entry id="pflotran_inputdir" type="char*256" category="clm_pflotran"
+<entry id="pflotran_inputdir" type="char*256" category="clm_interface"
     group="clm_pflotran_inparm" valid_values="" >
-    pflotran input directory in which $pflotran_prefix.in and files contained should be located, but not yet done.
+    pflotran input directory in which $pflotran_prefix.in and files contained should be located.
 </entry>
 
-<entry id="pflotran_prefix" type="char*256" category="clm_pflotran"
+<entry id="pflotran_prefix" type="char*256" category="clm_interface"
     group="clm_pflotran_inparm" valid_values="" >
     pflotran file prefix.
 </entry>

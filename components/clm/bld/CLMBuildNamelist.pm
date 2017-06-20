@@ -239,6 +239,9 @@ OPTIONS
      -vichydro                Toggle to turn on VIC hydrologic parameterizations (default is off)
                               This turns on the namelist variable: use_vichydro
      -betr_mode               Turn on betr model for tracer transport in soil. [on|off] default is off.
+     -clm_interface_mode      CLM4.5 only. Turn on and specify CLM interface mode. [off|bgc|pflotran] default is off.
+                                 bgc      = run native bgc via the interface (for test purpose)
+                                 pflotran = run coupled CLM-PFLOTRAN via the interface (BGC/H/TH coupling upon pflotran_clm.in)
 
 
 Note: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -276,7 +279,7 @@ sub process_commandline {
                clm_demand            => "null",
                help                  => 0,
                glc_nec               => "default",
-	       fsnowoptics           => "default",
+	           fsnowoptics           => "default",
                glc_present           => 0,
                glc_smb               => "default",
                l_ncpl                => undef,
@@ -306,6 +309,7 @@ sub process_commandline {
                nutrient              => "default",
                nutrient_comp_pathway => "default",
                soil_decomp           => "default",
+               clm_interface_mode    => "off",
              );
 
   GetOptions(
@@ -356,6 +360,7 @@ sub process_commandline {
              "nutrient=s"                => \$opts{'nutrient'},
              "nutrient_comp_pathway=s"   => \$opts{'nutrient_comp_pathway'},
              "soil_decomp=s"             => \$opts{'soil_decomp'},
+             "clm_interface_mode=s"      => \$opts{'clm_interface_mode'},
             )  or usage();
 
   # Give usage message.
@@ -682,6 +687,7 @@ sub process_namelist_commandline_options {
   setup_cmdl_fates_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_vichydro($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_betr_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);  
+  setup_cmdl_clm_interface($opts, $nl_flags, $definition, $defaults, $nl, $physv);  
 }
 
 #-------------------------------------------------------------------------------
@@ -880,6 +886,71 @@ sub setup_cmdl_betr_mode {
         fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
       }
 
+    }
+  }
+}
+
+
+#-------------------------------------------------------------------------------
+sub setup_cmdl_clm_interface {
+  #
+  #
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+  my $val;
+  my $var = "clm_interface_mode";
+
+  $val = $opts->{$var};
+
+  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {     
+    if ($val ne "off"){
+	  fatal_error("** Cannot turn clm_interface_mode on with clm4_0 physics.\n" );
+    }
+  } else {
+    if ($val ne "off"){
+
+        $var = "use_clm_interface";
+        my $group = $definition->get_group_name($var);
+        $nl->set_variable_value($group, $var, ".true.");
+        
+        if ($val eq "bgc") {
+           message("Using clm-interface mode: use_clm_bgc =.true.");
+
+           if ($nl_flags->{"bgc_mode"} eq "sp"){
+             fatal_error("-clm_interface_mode option of 'bgc' can ONLY be used with clm4_5 with -bgc cn|bgc");
+           
+           } else {
+
+             $var = "use_clm_bgc";
+             $nl->set_variable_value($group, $var, ".true.");
+
+             $var = "use_pflotran";
+             $nl->set_variable_value($group, $var, ".false.");
+           }
+           
+        } else {
+           
+           # note: pflotran TH mode can be working with 'bgc_mode = sp'
+           if ($val eq "pflotran"){
+               message("Using clm-interface mode: use_pflotran =.true.");
+               $var = "use_clm_bgc";
+               $nl->set_variable_value($group, $var, ".false.");
+
+               $var = "use_pflotran";
+               $nl->set_variable_value($group, $var, ".true.");
+
+               if (!$nl_flags->{"bgc_mode"} eq "sp"){
+                  message("NOTE: use_pflotran =.true. for CN coupling is via additional dataType of use_nitrif_denitrif=.true.");
+                  $var = "use_nitrif_denitrif";
+                  $nl->set_variable_value($group, $var, ".true.");
+               }
+               
+           } else {
+               fatal_error("-clm_interface_mode option can ONLY be off|bgc|pflotran");
+          	
+           }
+        }        
+        
     }
   }
 }
