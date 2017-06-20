@@ -612,6 +612,81 @@
     <lname>20TR_DATM%GSWP3v1_CLM45%CNPRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
    </compset>
 
+   <!---I compsets of CLM45%CNRDCTC, coupling with PFLOTRAN biogeochemistry   -->
+   <!-- CLMCN: CN-RD-CTC, with (1850/20TR) X (SATM/DATM%QIA/DATM%GSWP3v1) X (noBC/BC)  -->
+   <compset>
+     <alias>I1850PFCNRDCTC</alias>
+     <lname>1850_DATM%QIA_CLM45%PFCNRDCTC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+   <compset>
+     <alias>I20TRPFCNRDCTC</alias>
+     <lname>20TR_DATM%QIA_CLM45%PFCNRDCTC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+
+  <compset>
+    <alias>ICB1850PFCNRDCTC</alias>
+    <lname>1850_SATM_CLM45%PFCNRDCTC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+   <compset>
+     <alias>ICB20TRPFCNRDCTC</alias>
+     <lname>20TR_SATM_CLM45%PFCNRDCTC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+
+   <compset>
+     <alias>I1850CRUPFCNRDCTC</alias>
+     <lname>1850_DATM%CRU_CLM45%PFCNRDCTC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+   <compset>
+     <alias>I20TRCRUPFCNRDCTC</alias>
+     <lname>20TR_DATM%CRU_CLM45%PFCNRDCTC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+
+  <compset>
+    <alias>I1850GSWPFCNRDCTC</alias>
+    <lname>1850_DATM%GSWP3v1_CLM45%PFCNRDCTC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>I20TRGSWPFCNRDCTC</alias>
+    <lname>20TR_DATM%GSWP3v1_CLM45%PFCNRDCTC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+
+  <compset>
+    <alias>I1850PFCNRDCTCBC</alias>
+    <lname>1850_DATM%QIA_CLM45%PFCNRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>I20TRCNRDCTCBC</alias>
+    <lname>20TR_DATM%QIA_CLM45%PFCNRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>ICB1850PFCNRDCTCBC</alias>
+    <lname>1850_SATM_CLM45%PFCNRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+   <compset>
+     <alias>ICB20TRPFCNRDCTCBC</alias>
+     <lname>20TR_SATM_CLM45%PFCNRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+
+   <compset>
+     <alias>I1850CRUPFCNRDCTCBC</alias>
+     <lname>1850_DATM%CRU_CLM45%PFCNRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+   <compset>
+     <alias>I20TRCRUPFCNRDCTCBC</alias>
+     <lname>20TR_DATM%CRU_CLM45%PFCNRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+
+   <compset>
+     <alias>I1850GSWPFCNRDCTCBC</alias>
+     <lname>1850_DATM%GSWP3v1_CLM45%PFCNRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+   <compset>
+     <alias>I20TRGSWPFCNRDCTCBC</alias>
+     <lname>20TR_DATM%GSWP3v1_CLM45%PFCNRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+
   <!---I compset system tests -->
 
   <compset>

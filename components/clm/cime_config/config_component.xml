@@ -23,7 +23,11 @@
       <value compset="_CLM40%[^_]*CROP"      >-crop on</value>
       <value compset="_CLM45"                >-phys clm4_5</value>
       <value compset="_CLM50"                >-phys clm5_0</value>
-      <value compset="_CLM45%[^_]*BC" >-phys clm4_5 -cppdefs -DMODAL_AER</value>
+      <value compset="_CLM45%[^_P][^F]*BC"        >-cppdefs -DMODAL_AER</value>
+      <!-- CLM45CN coupling with PFLOTRAN vertical-only mode. NB - needed to exclude PF if 'BC' combined, as above-->
+      <value compset="_CLM45%[^_]*PF.*(BC).*"     >-cppdefs '-DMODAL_AER -DCLM_PFLOTRAN -DCOLUMN_MODE'</value>
+      <value compset="_CLM45%[^_]*PF(?!.*(BC).*)" >-cppdefs '-DCLM_PFLOTRAN -DCOLUMN_MODE'</value>
+
     </values>
     <group>build_component_clm</group>
     <file>env_build.xml</file>
