@@ -34,6 +34,7 @@ def buildnml(case, caseroot, compname):
     clm_nml_use_case    = case.get_value("CLM_NML_USE_CASE")
     clm_force_coldstart = case.get_value("CLM_FORCE_COLDSTART")
     clm_ad_spinup       = case.get_value("CLM_ACCELERATED_SPINUP")
+    clm_interface_mode  = case.get_value("CLM_INTERFACE_MODE")
     comp_interface      = case.get_value("COMP_INTERFACE")
     comp_glc            = case.get_value("COMP_GLC")
     din_loc_root        = case.get_value("DIN_LOC_ROOT")
@@ -184,6 +185,10 @@ def buildnml(case, caseroot, compname):
         # add 'ad_spinup' runtime options
         if "-bgc_spinup" not in sysmod and clm_ad_spinup != "UNSET":
             sysmod += " -bgc_spinup {}".format(clm_ad_spinup)
+
+        # add 'clm-interface-mode' runtime options (for coupling with pflotran and others)
+        if clm_interface_mode != "UNSET":
+            sysmod += " -clm_interface_mode {}".format(clm_interface_mode)
 
         # TODO: clm/bld/build-namelist needs to be converted to python
         run_cmd_no_fail(sysmod, from_dir=clmconf_dir)
