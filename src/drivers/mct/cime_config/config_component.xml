@@ -2548,6 +2548,22 @@
    <desc>project for project-sensitive build and run paths, and job scripts</desc>
  </entry>
 
+ <entry id="MAIL_USER">
+   <type>char</type>
+   <default_value>$ENV{EMAIL}</default_value>
+   <group>job_submission</group>
+   <file>env_batch.xml</file>
+   <desc>email address which the user wants job status sent to</desc>
+ </entry>
+
+ <entry id="MAIL_TYPE">
+   <type>char</type>
+   <default_value>never</default_value>
+   <group>job_submission</group>
+   <file>env_batch.xml</file>
+   <desc>when to send email of job status</desc>
+ </entry>
+
  <entry id="MODEL_VERSION">
    <type>char</type>
    <default_value>unknown</default_value>
