@@ -1071,8 +1071,9 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
     !BSINGH - variables req for building rng for lw and sw
     integer  :: tot_colslw,tot_colssw, iown, ilchnk
-    integer  :: i, icol, ilev,isubcol, ierr, igcol, chunkid
-    real(r8) :: rng
+    integer  :: i, icol, ilev,isubcol, ierr, igcol, chunkid, irng
+    real(r8) :: rng(1)
+    real(r8) :: rng_arr(ngcols_p*pver*(nsubcollw+nsubcolsw))
 
     call t_startf ('physpkg_st1')
     nstep = get_nstep()
@@ -1140,7 +1141,8 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           rnglw_mstr(1:nsubcollw,1:pcols,1:pver,1:max_chnks_in_blk,1:npes) = huge(1.0_r8)
           rngsw_mstr(1:nsubcolsw,1:pcols,1:pver,1:max_chnks_in_blk,1:npes) = huge(1.0_r8)
           
-
+          call kissvec_scalar_seeds(s1,s2,s3,s4,rng_arr)
+          irng = 1
           do igcol = 1, ngcols_p
              i = latlon_to_dyn_gcol_map(igcol)
              chunkid  = knuhcs(i)%chunkid
@@ -1150,12 +1152,17 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
              
              do ilev = 1, pver
                 do isubcol = 1, nsubcollw
-                   call kissvec(s1,s2,s3,s4,rng)
-                   rnglw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng !long wave
+                   !call kissvec_scalar_seeds(s1,s2,s3,s4,rng)
+                   !rnglw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng(1) !long wave
+                   !rnglw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng_arr(irng) !long wave
+                   irng = irng + 1
                 enddo
                 do isubcol = 1, nsubcolsw
-                   call kissvec(s1,s2,s3,s4,rng)
-                   rngsw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng !short wave
+                   !call kissvec_scalar_seeds(s1,s2,s3,s4,rng)
+                   !write(102,*)'sw:',igcol,ilev,isubcol,s1,s2,s3,s4,rng
+                   !rngsw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng(1) !short wave
+                   !rngsw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng_arr(irng) !short wave
+                   irng = irng + 1
                 enddo
              enddo
           enddo
@@ -3102,7 +3109,7 @@ end subroutine add_fld_default_calls
 !BSINGH
 
 !--------------------------------------------------------------------------------------------------
-subroutine kissvec(seed1,seed2,seed3,seed4,ran_arr)
+subroutine kissvec_scalar_seeds(seed1,seed2,seed3,seed4,ran_arr)
   !--------------------------------------------------------------------------------------------------
 
   ! public domain code
@@ -3117,7 +3124,7 @@ subroutine kissvec(seed1,seed2,seed3,seed4,ran_arr)
   !  Overall period>2^123;
   !
 
-  real(kind=r8), intent(inout)  :: ran_arr
+  real(kind=r8), dimension(:), intent(inout)  :: ran_arr
   integer, intent(inout) :: seed1,seed2,seed3,seed4
   integer(i8) :: kiss
   integer :: i
@@ -3126,15 +3133,15 @@ subroutine kissvec(seed1,seed2,seed3,seed4,ran_arr)
   
   big_endian = (transfer(1_i8, 1) == 0)
   
-
-  kiss = 69069_i8 * seed1 + 1327217885
-  seed1 = low_byte(kiss)
-  seed2 = m (m (m (seed2, 13), - 17), 5)
-  seed3 = 18000 * iand (seed3, 65535) + ishft (seed3, - 16)
-  seed4 = 30903 * iand (seed4, 65535) + ishft (seed4, - 16)
-  kiss = int(seed1, i8) + seed2 + ishft (seed3, 16) + seed4
-  ran_arr = low_byte(kiss)*2.328306e-10_r8 + 0.5_r8
-  
+  do i = 1, size(ran_arr)
+     kiss = 69069_i8 * seed1 + 1327217885
+     seed1 = low_byte(kiss)
+     seed2 = m (m (m (seed2, 13), - 17), 5)
+     seed3 = 18000 * iand (seed3, 65535) + ishft (seed3, - 16)
+     seed4 = 30903 * iand (seed4, 65535) + ishft (seed4, - 16)
+     kiss = int(seed1, i8) + seed2 + ishft (seed3, 16) + seed4
+     ran_arr(i) = low_byte(kiss)*2.328306e-10_r8 + 0.5_r8
+  enddo
   
 contains
   
@@ -3157,7 +3164,7 @@ contains
     
   end function low_byte
   
-end subroutine kissvec
+end subroutine kissvec_scalar_seeds
 
 
 subroutine init_rand_seed_restart( piofile )

@@ -389,7 +389,7 @@
             do isubcol = 1,nsubcol
                do ilev = 1,nlay
                   call kissvec(seed1, seed2, seed3, seed4, rand_num)
-                  CDF(isubcol,:,ilev) = rand_num!BASINGH - commented this line
+                  CDF(isubcol,:,ilev) = rand_num!BSINGH - commented this line
                   if(pergro_mods)CDF(isubcol,:,ilev) = rngsw(isubcol,1:ncol,ilev)!BSINGH - added this line
                enddo
             enddo
