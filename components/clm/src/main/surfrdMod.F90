@@ -955,15 +955,15 @@ contains
     ! be saved
     ibeg_c = 0
     iend_c = 0
-    call MPI_Exscan(nCells_loc, ibeg_c, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    call MPI_Scan(nCells_loc, ibeg_c, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
     call MPI_Scan(  nCells_loc, iend_c, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
-    ibeg_c = ibeg_c + 1
+    ibeg_c = ibeg_c + 1 - nCells_loc
 
     ibeg_e = 0
     iend_e = 0
-    call MPI_Exscan(nEdges_loc, ibeg_e, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    call MPI_Scan(nEdges_loc, ibeg_e, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
     call MPI_Scan(  nEdges_loc, iend_e, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
-    ibeg_e = ibeg_e + 1
+    ibeg_e = ibeg_e + 1 - nEdges_loc
 
     ! Allocate memory
     allocate(cellsOnCell   (maxEdges, nCells_loc))
