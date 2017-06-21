@@ -17,7 +17,6 @@ module SoilStateType
   use clm_varcon      , only : zsoi, dzsoi, zisoi, spval
   use clm_varcon      , only : secspday, pc, mu, denh2o, denice, grlnd
   use clm_varctl      , only : use_cn, use_lch4,use_dynroot, use_ed
-  use clm_varctl      , only : use_var_soil_thick
   use clm_varctl      , only : iulog, fsurdat, hist_wrtch4diag
   use ch4varcon       , only : allowlakeprod
   use LandunitType    , only : lun                
@@ -130,9 +129,9 @@ contains
     allocate(this%mss_frc_cly_vld_col  (begc:endc))                     ; this%mss_frc_cly_vld_col  (:)   = nan
     allocate(this%sandfrac_patch       (begp:endp))                     ; this%sandfrac_patch       (:)   = nan
     allocate(this%clayfrac_patch       (begp:endp))                     ; this%clayfrac_patch       (:)   = nan
-    allocate(this%cellorg_col          (begc:endc,nlevgrnd))            ; this%cellorg_col          (:,:) = nan 
-    allocate(this%cellsand_col         (begc:endc,nlevgrnd))            ; this%cellsand_col         (:,:) = nan 
-    allocate(this%cellclay_col         (begc:endc,nlevgrnd))            ; this%cellclay_col         (:,:) = nan 
+    allocate(this%cellorg_col          (begc:endc,nlevsoi))             ; this%cellorg_col          (:,:) = nan 
+    allocate(this%cellsand_col         (begc:endc,nlevsoi))             ; this%cellsand_col         (:,:) = nan 
+    allocate(this%cellclay_col         (begc:endc,nlevsoi))             ; this%cellclay_col         (:,:) = nan 
     allocate(this%bd_col               (begc:endc,nlevgrnd))            ; this%bd_col               (:,:) = nan
 
     allocate(this%hksat_col            (begc_all:endc_all,nlevgrnd))    ; this%hksat_col            (:,:) = spval
@@ -353,7 +352,6 @@ contains
     real(r8) ,pointer  :: clay3d (:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: organic3d (:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
     character(len=256) :: locfn                         ! local filename
-    integer            :: nlevbed                       ! # of layers above bedrock
     integer            :: ipedof  
     integer            :: begc, endc
     integer            :: begg, endg
@@ -399,7 +397,6 @@ contains
    ! Initialize root fraction 
    
    call init_vegrootfr(bounds, nlevsoi, nlevgrnd, &
-        col%nlevbed(bounds%begc:bounds%endc)    , &
         this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
 
     ! --------------------------------------------------------------------
@@ -582,8 +579,7 @@ contains
        else
 
           do lev = 1,nlevgrnd
-             ! Number of soil layers in hydrologically active columns = NLEV2BED
-	     nlevbed = col%nlevbed(c)
+
              if ( more_vertlayers )then ! duplicate clay and sand values from last soil layer
 
                 if (lev .eq. 1) then
@@ -629,7 +625,7 @@ contains
                    om_frac = 0._r8 ! No organic matter for urban
                 end if
 
-                if (lev <= nlevbed) then
+                if (lev <= nlevsoi) then
                    this%cellsand_col(c,lev) = sand
                    this%cellclay_col(c,lev) = clay
                    this%cellorg_col(c,lev)  = om_frac*organic_max
@@ -688,7 +684,7 @@ contains
                 this%csol_col(c,lev)   = ((1._r8-om_frac)*(2.128_r8*sand+2.385_r8*clay) / (sand+clay) + &
                      om_csol*om_frac)*1.e6_r8  ! J/(m3 K)
 
-                if (lev > nlevbed) then
+                if (lev > nlevsoi) then
                    this%csol_col(c,lev) = csol_bedrock
                 endif
 
@@ -857,8 +853,7 @@ if(use_dynroot) then
           write(iulog,*) "Initialize rootfr to default"
        end if
        call init_vegrootfr(bounds, nlevsoi, nlevgrnd, &
-            col%nlevbed(bounds%begc:bounds%endc), &
-       	    this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
+       this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
     end if
 end if
   end subroutine Restart

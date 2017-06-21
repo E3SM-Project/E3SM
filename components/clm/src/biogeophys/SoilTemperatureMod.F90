@@ -861,7 +861,6 @@ end subroutine SolveTemperature
     !
     ! !LOCAL VARIABLES:
     integer  :: l,c,j                     ! indices
-    integer  :: nlevbed                   ! # levels to bedrock
     integer  :: fc                        ! lake filtered column indices
     real(r8) :: dksat                     ! thermal conductivity for saturated soil (j/(k s m))
     real(r8) :: dke                       ! kersten number
@@ -882,7 +881,6 @@ end subroutine SolveTemperature
          dz           =>    col%dz			     , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                       
          zi           =>    col%zi			     , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m) 
          z            =>    col%z			     , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)                   
-         nlev2bed     =>    col%nlevbed                      , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
          
          nlev_improad =>    urbanparams_vars%nlev_improad    , & ! Input:  [integer  (:)   ]  number of impervious road layers         
          tk_wall      =>    urbanparams_vars%tk_wall	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban wall    
@@ -917,7 +915,6 @@ end subroutine SolveTemperature
       do j = -nlevsno+1,nlevgrnd
          do fc = 1, num_nolakec
             c = filter_nolakec(fc)
-     	    nlevbed = nlev2bed(c)
 
             ! Only examine levels from 1->nlevgrnd
             if (j >= 1) then    
@@ -947,12 +944,12 @@ end subroutine SolveTemperature
                   else
                      thk(c,j) = tkdry(c,j)
                   endif
-                  if (j > nlevbed) thk(c,j) = thk_bedrock
+                  if (j > nlevsoi) thk(c,j) = thk_bedrock
                else if (lun%itype(l) == istice .OR. lun%itype(l) == istice_mec) then
                   thk(c,j) = tkwat
                   if (t_soisno(c,j) < tfrz) thk(c,j) = tkice
                else if (lun%itype(l) == istwet) then                         
-                  if (j > nlevbed) then 
+                  if (j > nlevsoi) then 
                      thk(c,j) = thk_bedrock
                   else
                      thk(c,j) = tkwat
@@ -1017,7 +1014,6 @@ end subroutine SolveTemperature
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
             l = col%landunit(c)
-     	    nlevbed = nlev2bed(c)
             if ((col%itype(c) == icol_sunwall .OR. col%itype(c) == icol_shadewall) .and. j <= nlevurb) then
                cv(c,j) = cv_wall(l,j) * dz(c,j)
             else if (col%itype(c) == icol_roof .and. j <= nlevurb) then
@@ -1030,7 +1026,7 @@ end subroutine SolveTemperature
                cv(c,j) = csol(c,j)*(1._r8-watsat(c,j))*dz(c,j) + (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
             else if (lun%itype(l) == istwet) then 
                cv(c,j) = (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
-               if (j > nlevbed) cv(c,j) = csol(c,j)*dz(c,j)
+               if (j > nlevsoi) cv(c,j) = csol(c,j)*dz(c,j)
             else if (lun%itype(l) == istice .OR. lun%itype(l) == istice_mec) then
                cv(c,j) = (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
             endif

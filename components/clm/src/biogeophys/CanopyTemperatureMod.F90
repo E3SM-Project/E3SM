@@ -97,7 +97,6 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,p      ! indices
-    integer  :: nlevbed      ! number of layers to bedrock
     integer  :: j            ! soil/snow level index
     integer  :: fp           ! lake filter pft index
     integer  :: fc           ! lake filter column index
@@ -126,7 +125,6 @@ contains
          z_0_town         =>    lun%z_0_town                          , & ! Input:  [real(r8) (:)   ] momentum roughness length of urban landunit (m)
          z_d_town         =>    lun%z_d_town                          , & ! Input:  [real(r8) (:)   ] displacement height of urban landunit (m)
          urbpoi           =>    lun%urbpoi                            , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
-         nlev2bed         =>    col%nlevbed                           , & ! Input:  [integer  (:)   ] number of layers to bedrock
 
          z0mr             =>    ecophyscon%z0mr                       , & ! Input:  [real(r8) (:)   ] ratio of momentum roughness length to canopy top height (-)
          displar          =>    ecophyscon%displar                    , & ! Input:  [real(r8) (:)   ] ratio of displacement height to canopy top height (-)
@@ -269,8 +267,7 @@ contains
 
             else if (col%itype(c) == icol_road_perv) then
                ! Pervious road depends on water in total soil column
-               nlevbed = nlev2bed(c)
-               do j = 1, nlevbed
+               do j = 1, nlevsoi
                   if (t_soisno(c,j) >= tfrz) then
                      vol_ice = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))
                      eff_porosity = watsat(c,j)-vol_ice

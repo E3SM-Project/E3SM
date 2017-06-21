@@ -538,7 +538,7 @@ contains
     real(r8)              , intent(in)    :: t_soisno_col(bounds%begc:, -nlevsno+1:) ! col soil temperature (Kelvin)
     !
     ! !LOCAL VARIABLES:
-    integer            :: p,c,j,l,g,lev,nlevs,nlevbed 
+    integer            :: p,c,j,l,g,lev,nlevs 
     real(r8)           :: maxslope, slopemax, minslope
     real(r8)           :: d, fd, dfdd, slope0,slopebeta
     real(r8) ,pointer  :: std (:)     
@@ -584,7 +584,7 @@ contains
     ! of when FATES-hydraulics is used. As such, this is trivially set to 0.0 (rgk 03-2017)
     this%total_plant_stored_h2o_col(bounds%begc:bounds%endc) = 0.0_r8
     
-    associate(snl => col%snl, nlev2bed => col%nlevbed) 
+    associate(snl => col%snl) 
 
       this%h2osfc_col(bounds%begc:bounds%endc) = 0._r8
       this%h2ocan_patch(bounds%begp:bounds%endp) = 0._r8
@@ -655,12 +655,11 @@ contains
          l = col%landunit(c)
          if (.not. lun%lakpoi(l)) then  !not lake
 
-	    nlevbed = nlev2bed(c)
             ! volumetric water
             if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
                nlevs = nlevgrnd
                do j = 1, nlevs
-                  if (j > nlevbed) then
+                  if (j > nlevsoi) then
                      this%h2osoi_vol_col(c,j) = 0.0_r8
                   else
                      this%h2osoi_vol_col(c,j) = 0.15_r8
@@ -670,7 +669,7 @@ contains
                if (col%itype(c) == icol_road_perv) then
                   nlevs = nlevgrnd
                   do j = 1, nlevs
-                     if (j <= nlevbed) then
+                     if (j <= nlevsoi) then
                         this%h2osoi_vol_col(c,j) = 0.3_r8
                      else
                         this%h2osoi_vol_col(c,j) = 0.0_r8
@@ -690,7 +689,7 @@ contains
             else if (lun%itype(l) == istwet) then
                nlevs = nlevgrnd
                do j = 1, nlevs
-                  if (j > nlevbed) then
+                  if (j > nlevsoi) then
                      this%h2osoi_vol_col(c,j) = 0.0_r8
                   else
                      this%h2osoi_vol_col(c,j) = 1.0_r8

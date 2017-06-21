@@ -108,7 +108,6 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,j,fc                    ! indices
-    integer  :: nlevbed                       ! # layers to bedrock
     real(r8) :: dtime                         ! land model time step (sec)
     real(r8) :: psi,vwc,fsattmp,psifrz        ! temporary variables for soilpsi calculation
     real(r8) :: watdry                        ! temporary
@@ -119,7 +118,7 @@ contains
     real(r8) :: stsw                          ! volumetric soil water to 0.5 m at saturation
     real(r8) :: fracl                         ! fraction of soil layer contributing to 10cm total soil water
     real(r8) :: s_node                        ! soil wetness (-)
-    real(r8) :: icefrac(bounds%begc:bounds%endc,1:nlevgrnd)
+    real(r8) :: icefrac(bounds%begc:bounds%endc,1:nlevsoi)
     !-----------------------------------------------------------------------
     
     associate(                                                          & 
@@ -127,7 +126,6 @@ contains
          dz                 => col%dz                                 , & ! Input:  [real(r8) (:,:) ]  layer thickness depth (m)             
          zi                 => col%zi                                 , & ! Input:  [real(r8) (:,:) ]  interface depth (m)                   
          snl                => col%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers                    
-         nlev2bed           => col%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
          ctype              => col%itype                              , & ! Input:  [integer  (:)   ]  column type                              
 
          t_h2osfc           => temperature_vars%t_h2osfc_col          , & ! Input:  [real(r8) (:)   ]  surface water temperature               
@@ -332,10 +330,9 @@ contains
             h2osoi_liqice_10cm(c) = 0._r8
          end if
       end do
-      do fc = 1, num_nolakec
-         c = filter_nolakec(fc)
-	 nlevbed = nlev2bed(c)
-         do j = 1, nlevbed
+      do j = 1, nlevsoi
+         do fc = 1, num_nolakec
+            c = filter_nolakec(fc)
             l = col%landunit(c)
             if (.not. lun%urbpoi(l)) then
                ! soil T at top 17 cm added by F. Li and S. Levis
