@@ -425,7 +425,7 @@ contains
 
             ! Set beta for solver to use
             ! (this could potentially be applied to an SIA solver, so it is calculated in this module)
-            call calculate_beta(velocityPool, geometryPool, err_tmp)
+            call calculate_beta(block, err_tmp)
             err = ior(err, err_tmp)
 
 
@@ -744,7 +744,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine calculate_beta(velocityPool, geometryPool, err)
+   subroutine calculate_beta(block, err)
 
       use li_mask
 
@@ -752,38 +752,57 @@ contains
       ! input variables
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: velocityPool
-      type (mpas_pool_type), pointer :: geometryPool
-
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
+      type (block_type), pointer, intent(inout) :: block
 
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
-
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
+      type (mpas_pool_type), pointer :: hydroPool
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: velocityPool
       real (kind=RKIND), dimension(:), pointer :: betaSolve, beta
+      real (kind=RKIND), dimension(:), pointer :: effectivePressure
       integer, dimension(:), pointer :: cellMask
       logical, pointer :: config_use_glp
+      logical, pointer :: config_beta_use_effective_pressure
+      logical, pointer :: hydroActive
 
       err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_use_glp', config_use_glp)
+      call mpas_pool_get_config(liConfigs, 'config_beta_use_effective_pressure', config_beta_use_effective_pressure)
+
+      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
 
       call mpas_pool_get_array(velocityPool, 'betaSolve', betaSolve)
       call mpas_pool_get_array(velocityPool, 'beta', beta)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
+      betaSolve = beta
 
-      if (config_use_glp) then
-         betaSolve = beta
-      else
+      if (config_beta_use_effective_pressure) then
+         call mpas_pool_get_package(liPackages, 'hydroActive', hydroActive)
+         if (.not. hydroActive) then
+            call mpas_log_write("config_beta_use_effective_pressure can only be used if the subglacial hydrology model is active.", &
+               MPAS_LOG_ERR)
+            err = ior(err, 1)
+            return
+         endif
+         call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+         call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
+         betaSolve = betaSolve * effectivePressure
+      end if
+
+      if (.not. config_use_glp) then
          where (li_mask_is_floating_ice(cellMask))
             betaSolve = 0.0_RKIND
          elsewhere
