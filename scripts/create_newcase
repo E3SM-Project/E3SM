@@ -46,15 +46,14 @@ OR
                         help="Specify a compiler. "
                         "To see list of supported compilers for each machine, use the utility query_config in this directory")
 
-    parser.add_argument("--ncouplers",default=1,
-                        help="Specify number of coupler instances. "
-                        "Set the number of coupler instances in the case. "
-                        "If ncouplers is > 1 then ninst should = 1.")
+    parser.add_argument("--ninst-couplers",action="store_true",
+                        help="Specify that ninst should modify number of coupler instances "
+                        "default is to have one coupler supporting multiple component instances.")
 
     parser.add_argument("--ninst",default=1,
-                        help="Specify number of component instances. "
-                        "Set the number of component instances in the case. "
-                        "If ninst > 1 then ncouplers should = 1")
+                        help="Specify number of model ensemble instances. "
+                        "Default is multiple components and one coupler.  Use --ninst-couplers to "
+                        "run multiple couplers in the ensemble.")
 
     parser.add_argument("--mpilib", "-mpilib",
                         help="Specify the mpilib. "
@@ -148,9 +147,6 @@ OR
         expect(args.gridfile is not None,
                "User grid specification file must be set if the user grid is requested")
 
-    expect(not (int(args.ncouplers) > 1 and int(args.ninst) > 1),
-           "Only one component instance per coupler is allowed when using multiple couplers")
-
     run_unsupported = False
     if model == "cesm":
         run_unsupported = args.run_unsupported
@@ -161,12 +157,19 @@ OR
     if args.input_dir is not None:
         args.input_dir = os.path.abspath(args.input_dir)
 
+    if args.ninst_couplers:
+        ncouplers = args.ninst
+        ninst = 1
+    else:
+        ncouplers = 1
+        ninst = args.ninst
+
+
     return args.case, args.compset, args.res, args.machine, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.user_mods_dir, args.pesfile, \
-        args.user_grid, args.gridfile, args.srcroot, args.test, args.ncouplers, \
-        args.ninst, \
-        args.walltime, args.queue, args.output_root, args.script_root, \
+        args.user_grid, args.gridfile, args.srcroot, args.test, ncouplers, \
+        ninst, args.walltime, args.queue, args.output_root, args.script_root, \
         run_unsupported, args.answer, args.input_dir
 
 ###############################################################################
