@@ -228,9 +228,9 @@ alias acme_newline "echo ''"
 set first_argument = $1
 if ( $first_argument != '' ) then
  echo 'This script does everything needed to configure/compile/run a case. As such, it'
- echo 'provides complete provenance for each run and makes sharing with newbies easy. Future'
- echo 'users should make sure that everything required for a run is in this script, the ACME'
- echo 'git repo, or the inputdata svn repo.'
+ echo 'provides complete provenance for each run and makes sharing simulation configurations easy.'
+ echo 'Users should make sure that everything required for a run is in this script, the ACME'
+ echo 'git repo, and/or the inputdata svn repo.'
  echo '** This script accepts no arguments. Please edit the script as needed and resubmit without arguments. **'
  exit 5
 endif
