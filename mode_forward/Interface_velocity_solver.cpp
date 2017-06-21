@@ -40,6 +40,7 @@ const double secondsInAYear = 31536000.0;  // This may vary slightly in MPAS, bu
 double minThickness = 1e-3; //[km]
 const double minBeta = 1e-5;
 double rho_ice;
+double rho_ocean;
 //unsigned char dynamic_ice_bit_value;
 //unsigned char ice_present_bit_value;
 int dynamic_ice_bit_value;
@@ -100,6 +101,7 @@ void velocity_solver_set_parameters(double const* gravity_F, double const* ice_d
                          bool const* use_GLP_F) {
   // This function sets parameter values used by MPAS on the C/C++ side
   rho_ice = *ice_density_F;
+  rho_ocean = *ocean_density_F;
   dynamic_ice_bit_value = *li_mask_ValueDynamicIce;
   ice_present_bit_value = *li_mask_ValueIce;
   velocity_solver_set_physical_parameters__(*gravity_F, rho_ice, *ocean_density_F, *sea_level_F/unit_length, *flowParamA_F*std::pow(unit_length,4)*secondsInAYear, 
@@ -361,7 +363,6 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
    std::cout << "Thickness change: " << sum << std::endl;
    std::copy(thickness_F, thickness_F + nCellsSolve_F, &thicknessOnCells[0]);
 #endif
-
 
 
 
@@ -1452,30 +1453,60 @@ void import2DFields(double const* bedTopography_F, double const * lowerSurface_F
         int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
         isFloating = (floatingEdgesMask_F[fEdge] != 0);
       }
-      if(!isFloating) continue;
+      if(isFloating) {
 
-      double elevTemp =1e10;
-      for (int j = 0; j < nEdg; j++) {
-        int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
-        // bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & dynamic_ice_bit_value)
-        //     && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & dynamic_ice_bit_value);
-        // if (!keep)
-        //   continue;
+         // -- floating margin --
+         // Identify the lowest elevation neighboring cell with ice
+         // Scalar values will be mapped from that location to here.
+         double elevTemp =1e10;
+         bool foundNeighbor = false;
+         for (int j = 0; j < nEdg; j++) {
+           int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
+           // bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & dynamic_ice_bit_value)
+           //     && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & dynamic_ice_bit_value);
+           // if (!keep)
+           //   continue;
 
-        int c0 = cellsOnEdge_F[2 * fEdge] - 1;
-        int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
-        c = (fCellToVertex[c0] == iV) ? c1 : c0;
-        if(!(cellsMask_F[c] & ice_present_bit_value)) continue;
-        double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
+           int c0 = cellsOnEdge_F[2 * fEdge] - 1;
+           int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
+           c = (fCellToVertex[c0] == iV) ? c1 : c0;
+           if(!(cellsMask_F[c] & ice_present_bit_value)) continue;
+           double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
+           std::cout << "  elev="<<elev<<std::endl;
+           if (elev < elevTemp) {
+             elevTemp = elev;
+             bdExtensionMap[iV] = c;
+             foundNeighbor = true;
+           }
+         }
+         // check if we didn't assign anything.  This occurs if this node has no neighbors with ice that are floating.
+         // This should not ever occur, but including the check just to be safe.
+         if (!foundNeighbor) {
+            // -- grounded margin --
+            // Check that this margin location is not below sea level!
+            if (bedTopographyData[iV] < 0.0) { // This check is probably redundant...
+               thicknessData[iV] = eps*2.0; // insert special value here to make identifying these points easier in exo output
+               elevationData[iV] = (rho_ocean / rho_ice - 1.0) * thicknessData[iV];  // floating surface
+               betaData[iV] = 0.0; // free slip under floating ice
+            }
+         }
+      } else {
+         // non-floating ("grounded") boundary
+         // If this margin location is below sea level, we need to force it to have reasonable values.
+         // Otherwise, it will have a surface elevation below sea level,
+         // which is unphysical and can cause large slopes and other issues.
+         if (bedTopographyData[iV] < 0.0) {
+            //std::cout<<"non-floating boundary below sea level at iV="<<iV<<std::endl;
+            thicknessData[iV] = eps*2.0; // insert special small value here to make identifying these points easier in exo output
+            elevationData[iV] = (rho_ocean / rho_ice - 1.0) * thicknessData[iV];  // floating surface
+            betaData[iV] = 0.0; // free slip under floating ice
+         } // if below sea level
 
-        if (elevTemp > elev) {
-          elevTemp = elev;
-          bdExtensionMap[iV] = c;
-        }
-      }
-    }
-  }
+      }  // floating or not
+    } // is boundary
+  }  // vertex loop
 
+  // Apply floating extension where needed
   for (std::map<int, int>::iterator it = bdExtensionMap.begin();
       it != bdExtensionMap.end(); ++it) {
     int iv = it->first;
