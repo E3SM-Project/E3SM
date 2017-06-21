@@ -1686,7 +1686,7 @@ subroutine micro_mg_tend ( &
              nprc(i,k)*lcldm(i,k))*deltat
 
         if (dum.gt.nr(i,k)) then
-           ratio = (nr(i,k)/deltat+nprc(i,k)*lcldm(i,k)/precip_frac(i,k))/ &
+           ratio = (nr(i,k)/deltat+nprc(i,k)*lcldm(i,k))/precip_frac(i,k)/ &
                 (-nsubr(i,k)+npracs(i,k)+nnuccr(i,k)+nnuccri(i,k)-nragg(i,k))*omsm
 
            nragg(i,k)=nragg(i,k)*ratio
