@@ -2969,6 +2969,7 @@ contains
     real(r8):: cp_stoich_var=0.4    ! variability of CP ratio
     real(r8):: curmr, curmr_ratio         !xsmrpool temporary variables
     real(r8):: xsmr_ratio                 ! ratio of mr comes from non-structue carobn hydrate pool
+    real(r8):: dt
     !-----------------------------------------------------------------------
 
     associate(                                                                                 &
@@ -3133,12 +3134,18 @@ contains
          allocation_froot             => carbonflux_vars%allocation_froot                      , &
          xsmrpool_turnover            => carbonflux_vars%xsmrpool_turnover_patch               , &
 
+         smin_no3_vr                  => nitrogenstate_vars%smin_no3_vr_col                    , &
+         smin_nh4_vr                  => nitrogenstate_vars%smin_nh4_vr_col                    , &
+         solutionp_vr                 => phosphorusstate_vars%solutionp_vr_col                 , & !Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral P
+
          c13cf => c13_carbonflux_vars, &
          c14cf => c14_carbonflux_vars  &
          )
 
 !
 !    !-------------------------------------------------------------------
+      ! set time steps
+      dt = real( get_step_size(), r8 )
 
       ! debug
       do fc=1,num_soilc
@@ -3883,8 +3890,8 @@ contains
       
           else     ! use_nitrif_denitrif
 
-              temp_sminn_to_plant = sminn_to_plant
-              temp_sminp_to_plant = sminp_to_plant
+              temp_sminn_to_plant(bounds%begc:bounds%endc) = sminn_to_plant(bounds%begc:bounds%endc)
+              temp_sminp_to_plant(bounds%begc:bounds%endc) = sminp_to_plant(bounds%begc:bounds%endc)
 
               call p2c(bounds,num_soilc,filter_soilc, &
                   sminn_to_npool(bounds%begp:bounds%endp), &
@@ -3902,6 +3909,10 @@ contains
                           sminn_to_plant_vr(c,j)    = sminn_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) )
                           smin_nh4_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
                           smin_no3_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
+                          ! ensure that plant uptake rate isn't larger than soil N pool
+                          smin_nh4_to_plant_vr(c,j) = min(smin_nh4_to_plant_vr(c,j), smin_nh4_vr(c,j) / dt )
+                          smin_no3_to_plant_vr(c,j) = min(smin_no3_to_plant_vr(c,j), smin_no3_vr(c,j) / dt )
+                          sminn_to_plant_vr(c,j)    = smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j)
                       else
                           sminn_to_plant_vr(c,j)    = 0._r8
                           smin_nh4_to_plant_vr(c,j) = 0._r8
@@ -3910,6 +3921,8 @@ contains
                  
                       if ( temp_sminp_to_plant(c) > 0._r8) then 
                           sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
+                          ! ensure that plant uptake rate isn't larger than soil P pool
+                          sminp_to_plant_vr(c,j) = min(sminp_to_plant_vr(c,j), solutionp_vr(c,j) / dt )
                       else
                           sminp_to_plant_vr(c,j) = 0._r8
                       endif 
@@ -3961,8 +3974,8 @@ contains
               .not.cnallocate_carbonnitrogen_only().and.    &
               .not.cnallocate_carbon_only() )then
 
-            temp_sminn_to_plant = sminn_to_plant
-            temp_sminp_to_plant = sminp_to_plant
+          temp_sminn_to_plant(bounds%begc:bounds%endc) = sminn_to_plant(bounds%begc:bounds%endc)
+          temp_sminp_to_plant(bounds%begc:bounds%endc) = sminp_to_plant(bounds%begc:bounds%endc)
 
             call p2c(bounds,num_soilc,filter_soilc, &
                 sminn_to_npool(bounds%begp:bounds%endp), &
@@ -3980,6 +3993,10 @@ contains
                      sminn_to_plant_vr(c,j)    = sminn_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) )
                      smin_nh4_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
                      smin_no3_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
+                     ! ensure that plant uptake rate isn't larger than soil N pool
+                     smin_nh4_to_plant_vr(c,j) = min(smin_nh4_to_plant_vr(c,j), smin_nh4_vr(c,j) / dt )
+                     smin_no3_to_plant_vr(c,j) = min(smin_no3_to_plant_vr(c,j), smin_no3_vr(c,j) / dt )
+                     sminn_to_plant_vr(c,j)    = smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j)
                   else
                      sminn_to_plant_vr(c,j)    = 0._r8
                      smin_nh4_to_plant_vr(c,j) = 0._r8
@@ -3988,6 +4005,8 @@ contains
                    
                   if ( temp_sminp_to_plant(c) > 0._r8) then 
                      sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
+                     ! ensure that plant uptake rate isn't larger than soil P pool
+                     sminp_to_plant_vr(c,j) = min(sminp_to_plant_vr(c,j), solutionp_vr(c,j) / dt )
                   else
                      sminp_to_plant_vr(c,j) = 0._r8
                   endif 
@@ -3998,7 +4017,7 @@ contains
 
           if( cnallocate_carbonnitrogen_only() )then
 
-            temp_sminp_to_plant = sminp_to_plant
+          temp_sminp_to_plant(bounds%begc:bounds%endc) = sminp_to_plant(bounds%begc:bounds%endc)
 
             call p2c(bounds,num_soilc,filter_soilc, &
                 sminp_to_ppool(bounds%begp:bounds%endp), &
@@ -4011,6 +4030,8 @@ contains
 
                   if ( temp_sminp_to_plant(c) > 0._r8) then 
                      sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
+                     ! ensure that plant uptake rate isn't larger than soil P pool
+                     sminp_to_plant_vr(c,j) = min(sminp_to_plant_vr(c,j), solutionp_vr(c,j) / dt )
                   else
                      sminp_to_plant_vr(c,j) = 0._r8
                   endif 
