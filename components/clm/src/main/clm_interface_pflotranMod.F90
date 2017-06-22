@@ -564,6 +564,9 @@ contains
     real(r8) :: plant_ndemand, potential_immob, actual_immob, gross_nmin            !! _immob: N immobilization; _nmin: N mineralization
     real(r8) :: pf_ngas_dec, pf_ngas_min, pf_errnb_org, pf_errnb_min                !! _ngas_dec: N gas from decomposition-mineralization; _ngas_min: N gas from nitrification & denitrification
 
+    real(r8) :: pf_errnb_org_vr(1:nlevdecomp_full)
+    real(r8) :: pf_ndelta_org_vr(1:nlevdecomp_full)
+    real(r8) :: pf_ninputs_org_vr(1:nlevdecomp_full)
     !-----------------------------------------------------------------------
 
     associate(                                                                        &
@@ -752,8 +755,7 @@ contains
 !************************************************************************************!
 ! (BEGIN)
 ! Private interface subroutines, requiring explicit coupling between CLM and PFLOTRAN
-!
-#ifdef CLM_PFLOTRAN
+
 
   !====================================================================================================
   !                                                                                                   !
