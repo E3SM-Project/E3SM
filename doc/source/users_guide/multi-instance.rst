@@ -89,14 +89,13 @@ To change the DOCN stream txt file instance 0002, copy **docn.streams.txt.prescr
 
 Also keep these important points in mind:
 
-#. Note that these changes can be made at create_newcase time with option --ninst #, use the additional option --ninst-couplers to invoke the multi-coupler mode.
+#. Note that these changes can be made at create_newcase time with option --ninst # where # is a positive integer, use the additional logical option --ninst-couplers to invoke the multi-coupler mode.
 
 #. **Multiple component instances can differ ONLY in namelist settings; they ALL use the same model executable.**
 
-#. Calling **case.setup** with ``--clean`` *DOES NOT* remove the **user_nl_xxx_NN** files created by **case.setup**.
+#. Calling **case.setup** with ``--clean`` *DOES NOT* remove the **user_nl_xxx_NN** (where xxx is the component name) files created by **case.setup**.
 
 #. A special variable NINST_LAYOUT is provided for some experimental compsets, its value should be
    'concurrent' for all but a few special cases.
 
-#. In create test these options can be invoked with testname modifiers _N# for the single coupler mode and
-   _C# for the multi-coupler mode.
+#. In **create_test** these options can be invoked with testname modifiers _N# for the single coupler mode and _C# for the multi-coupler mode.  These are mutually exclusive options, they cannot be combined.
