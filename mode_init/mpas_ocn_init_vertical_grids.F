@@ -741,11 +741,11 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'globalRx1Max', globalRx1Max, 1)
       do k = 1,nVertLevels
          call mpas_dmpar_max_real(domain % dminfo, rx1MaxLevel(k), globalRx1Max)
-         call mpas_log_write ('  max of rx1 in level $i :  %f', intArgs=(/ k /),  realArgs=(/ globalRx1Max /))
+         call mpas_log_write ('  max of rx1 in level $i :  $r', intArgs=(/ k /),  realArgs=(/ globalRx1Max /))
       end do
 
       call mpas_dmpar_max_real(domain % dminfo, localMaxRx1Edge, globalRx1Max)
-      call mpas_log_write ('global max of rx1: $f', realArgs=(/ globalRx1Max /))
+      call mpas_log_write ('global max of rx1: $r', realArgs=(/ globalRx1Max /))
 
       deallocate(rx1MaxLevel)
 
@@ -1273,11 +1273,11 @@ contains
           block_ptr => block_ptr % next
         end do
         call mpas_dmpar_max_real(domain % dminfo, localMaxRx1Edge, globalRx1Max)
-        print '(a, i5, a, es10.2)', ' iter:', iterIndex, ' global max of rx1:', globalRx1Max
+        call mpas_log_write (' iter:  $i global max of rx1 $r', intArgs=(/ iterIndex /),  realArgs=(/ globalRx1Max /))
         call mpas_dmpar_min_real(domain % dminfo, localStretchMin, globalVerticalStretchMin)
-        print '(a, es10.2)', '            global min of verticalStretch:', globalVerticalStretchMin
+        call mpas_log_write ('            global min of verticalStretch: $r', realArgs=(/ globalVerticalStretchMin /))
         call mpas_dmpar_max_real(domain % dminfo, localStretchMax, globalVerticalStretchMax)
-        print '(a, es10.2)', '            global max of verticalStretch:', globalVerticalStretchMax
+        call mpas_log_write ('            global max of verticalStretch: $r', realArgs=(/ globalVerticalStretchMax /))
 
       end do !iterIndex
 
