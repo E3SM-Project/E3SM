@@ -241,7 +241,7 @@ include 'mpif.h'
       else
          dminfo % initialized_mpi = .true.
 #ifdef MPAS_OPENMP
-         desiredThreadLevel = MPI_THREAD_MULTIPLE
+         desiredThreadLevel = MPI_THREAD_FUNNELED
          call MPI_Init_thread(desiredThreadLevel, threadLevel, mpi_ierr)
 #else
          call MPI_Init(mpi_ierr)
@@ -7957,7 +7957,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (mpas_exchange_field_list), pointer :: exchFieldListPtr
       type (mpas_communication_list), pointer :: commListPtr
 
-      logical :: allReceived
+      !logical :: allReceived
       integer :: mpi_ierr, iErr_tmp
       integer :: threadNum
 
@@ -7967,54 +7967,60 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
-      !$omp master
-      commListPtr => exchangeGroup % recvList
-      do while ( associated(commListPtr) )
-         DMPAR_DEBUG_WRITE(' -- Marking receive lists as not received, and not unpacked')
-         commListPtr % received = .false.
+      if (threadNum == 0) then
+        commListPtr => exchangeGroup % recvList
+        do while ( associated(commListPtr) )
+           DMPAR_DEBUG_WRITE(' -- Marking receive lists as not received, and not unpacked')
+           commListPtr % received = .false.
+           commListPtr % unpacked = .false.
+           commListPtr => commListPtr % next
+        end do
+        exchangeGroup % allReceived = .false.
+      endif
 
-         commListPtr => commListPtr % next
-      end do
-      !$omp end master
       call mpas_threading_barrier()
 
-      allReceived = .false.
-      do while ( .not. allReceived )
+      ! asarje: changing the loop structures to reduce omp barrier calls to just one
+      !         adding 'unpacked' boolean to the comm list
+      !         moving 'allReceived' to exchange group
 
-         allReceived = .true.
+      do while ( .not. exchangeGroup % allReceived )
+        ! Loop over receive lists to check if they have been received yet.
 
-         DMPAR_DEBUG_WRITE(' -- Test receive messages, and unpack buffers as they receive')
-         ! Loop over receive lists to check if they have been received yet.
-         commListPtr => exchangeGroup % recvList
-         do while ( associated(commListPtr) )
-
-            call mpas_threading_barrier()
-
+        call mpas_threading_barrier()   !! to make sure 'allReceived' is not updated by thread 0 \
+                                        !! before all threads check its value
+        ! first let master thread check what has been received before unpacking
+        commListPtr => exchangeGroup % recvList
+        if(threadNum == 0) then
+          exchangeGroup % allReceived = .true.
+          do while ( associated(commListPtr) )
             ! Poll receive list messages, and unpack as they are received.
             if ( .not. commListPtr % received ) then
-               call mpas_threading_barrier()
-
-               allReceived = .false.
-               if ( threadNum == 0 ) then
-                  call MPI_Test(commListPtr % reqID, commListPtr % received, MPI_STATUS_IGNORE, mpi_ierr)
-               end if
-
-               call mpas_threading_barrier()
-
-               if ( commListPtr % received ) then
-                  call mpas_dmpar_exch_group_unpack_single_buffer(allFieldsPool, exchangeGroup, commListPtr, iErr_tmp)
-                  if ( iErr_tmp /= MPAS_DMPAR_NOERR ) then
-                     if ( present(iErr) ) then
-                        iErr = iErr_tmp
-                     end if
-                     DMPAR_ERROR_WRITE('Halo exchange unpacking encountered an error.')
-                  end if
-               end if
+              exchangeGroup % allReceived = .false.
+              call MPI_Test(commListPtr % reqID, commListPtr % received, MPI_STATUS_IGNORE, mpi_ierr)
             end if
-
-            call mpas_threading_barrier()
             commListPtr => commListPtr % next 
-         end do
+          end do
+        end if
+
+        call mpas_threading_barrier()   !! to make sure thread 0 has tested the list before \
+                                        !! any thread attempts to read its status
+        ! then all threads unpack the new stuff that has been received
+        if ( .not. exchangeGroup % allReceived ) then
+          commListPtr => exchangeGroup % recvList
+          do while ( associated(commListPtr) )
+            ! if it was received but not yet unpacked, then unpack it and mark as unpacked
+            if ( commListPtr % received .and. .not. commListPtr % unpacked ) then
+              call mpas_dmpar_exch_group_unpack_single_buffer(allFieldsPool, exchangeGroup, commListPtr, iErr_tmp)
+              if ( iErr_tmp /= MPAS_DMPAR_NOERR ) then
+                if ( present(iErr) ) then
+                  iErr = iErr_tmp
+                end if
+              end if
+            end if
+            commListPtr => commListPtr % next 
+          end do
+        end if
 
       end do
       DMPAR_DEBUG_WRITE(' -- All buffers have been unpacked. Exiting buffer unpack routine.')
@@ -8058,8 +8064,6 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_NOERR
       end if
-
-      threadNum = mpas_threading_get_thread_num()
 
       exchFieldListPtr => exchangeGroup % fieldList
       do while ( associated(exchFieldListPtr) )
@@ -8148,8 +8152,6 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
          exchFieldListPtr => exchFieldListPtr % next
       end do
-
-      call mpas_threading_barrier()
 
    end subroutine mpas_dmpar_exch_group_unpack_single_buffer!}}}
 
@@ -9252,8 +9254,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
-      call mpas_threading_barrier()
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field1d_integer!}}}
 
@@ -9317,6 +9319,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field2d_integer!}}}
@@ -9384,6 +9387,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field3d_integer!}}}
@@ -9444,6 +9448,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field1d_real!}}}
@@ -9507,6 +9512,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field2d_real!}}}
@@ -9573,6 +9579,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field3d_real!}}}
@@ -9644,6 +9651,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field4d_real!}}}
@@ -9719,6 +9727,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       bufferOffset = bufferOffset + nAdded
       if ( threadNum == 0 ) then
          recvList % bufferOffset = recvList % bufferOffset + nAdded
+         recvList % unpacked = .true.
       end if
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field5d_real!}}}
