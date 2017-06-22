@@ -7,6 +7,7 @@ module clm_interface_thType
 !
 ! date: 8/25/2015
 ! update: 9/16/2016, 2/2/2017
+! modifed by yfm, June-2017
 !!=================================================================================================
   !! USES:
   use shr_log_mod           , only : errMsg => shr_log_errMsg

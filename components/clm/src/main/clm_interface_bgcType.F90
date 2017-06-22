@@ -5,7 +5,8 @@ module clm_interface_bgcType
 ! Created by wgs @ ORNL
 !
 ! date: 8/25/2015
-! update: 9/16/2016, 2/2/2017
+! update: 9/16/2016, 2/2/2017, May-2017
+! modifed by yfm, June-2017
 !!=================================================================================================
   !! USES:
   use shr_log_mod           , only : errMsg => shr_log_errMsg

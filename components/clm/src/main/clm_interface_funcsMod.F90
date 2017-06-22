@@ -5,12 +5,13 @@ module clm_interface_funcsMod
 ! Created by wgs @ ORNL
 !
 ! date: 8/25/2015
+! modifed by yfm, June-2017
 !!=================================================================================================
 
 #include "shr_assert.h"
 
 
-  !! MODULE: clm_interface_bgcMod
+  !! MODULE: clm_interface_funcsMod
   !!--------------------------------------------------------------------------------------
   !! DESCRIPTION:
   !! Coupling of CLM with any specific Soil BGC module Consists of 3 STEPS:
