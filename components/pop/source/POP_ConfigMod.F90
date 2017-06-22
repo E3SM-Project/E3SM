@@ -47,7 +47,7 @@
 !-----------------------------------------------------------------------
 
    character (POP_charLength) :: &
-      configFileDefault = 'pop_in'
+      configFileDefault = 'pop2_in'
 
    interface POP_ConfigRead
       module procedure POP_ConfigReadI4,      &
@@ -116,7 +116,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   configFileDefault = 'pop_in' // trim(inst_suffix)
+   configFileDefault = 'pop2_in' // trim(inst_suffix)
 
    if (POP_myTask == POP_masterTask) then
       if (present(configFileName)) then

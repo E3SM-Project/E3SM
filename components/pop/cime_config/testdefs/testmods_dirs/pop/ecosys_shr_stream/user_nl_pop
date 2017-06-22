@@ -1,0 +1,5 @@
+ndep_data_type = 'shr_stream'
+ndep_shr_stream_file = '$DIN_LOC_ROOT/ocn/pop/gx1v6/forcing/ndep_ocn_1850_gx1v6_150727.nc'
+ndep_shr_stream_year_first = 1850
+ndep_shr_stream_year_last = 1850
+ndep_shr_stream_scale_factor = 7142900

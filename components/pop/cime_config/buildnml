@@ -8,22 +8,24 @@ if ($#ARGV == -1) {
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my @dirs = ("$CASEROOT/Tools");
-unshift @INC, @dirs;
-require SetupTools;
-my $sysmod; 
+#JW my @dirs = ("$CASEROOT/Tools");
+#JW unshift @INC, @dirs;
+#JW require SetupTools;
+#JW my $sysmod; 
 
+my $CIMEROOT            = `./xmlquery  CIMEROOT         -value`;
+print "CIMEROOT: $CIMEROOT \n";
 my $CASEROOT                    = `./xmlquery CASEROOT                  -value`;
 my $CASEBUILD                   = `./xmlquery CASEBUILD                 -value`;
 my $SRCROOT                     = `./xmlquery SRCROOT                  -value`;
 my $OBJROOT                     = `./xmlquery OBJROOT                   -value`;
-my $SCRIPTSROOT                 = `./xmlquery SCRIPTSROOT               -value`;
 my $CASETOOLS                   = `./xmlquery CASETOOLS                 -value`;
 my $CONTINUE_RUN                = `./xmlquery CONTINUE_RUN              -value`;
 my $DIN_LOC_ROOT                = `./xmlquery DIN_LOC_ROOT              -value`;
 my $EXEROOT                     = `./xmlquery EXEROOT                   -value`;
 my $GET_REFCASE                 = `./xmlquery GET_REFCASE               -value`;
-my $NINST_OCN                   = `./xmlquery NINST_OCN                 -value`;
+my $NINST_OCN                   = 1;
+my $NTASKS_OCN                  = `./xmlquery NTASKS_OCN                -value`;
 my $OCN_GRID                    = `./xmlquery OCN_GRID                  -value`;
 my $OCN_TRACER_MODULES          = `./xmlquery OCN_TRACER_MODULES        -value`;
 my $RUN_TYPE                    = `./xmlquery RUN_TYPE                  -value`;
@@ -31,6 +33,12 @@ my $RUN_REFCASE                 = `./xmlquery RUN_REFCASE               -value`;
 my $RUN_REFDATE                 = `./xmlquery RUN_REFDATE               -value`;
 my $RUNDIR                      = `./xmlquery RUNDIR                    -value`;
 my $BUILD_COMPLETE              = `./xmlquery BUILD_COMPLETE            -value`;
+
+print "CIMEROOT2: $CIMEROOT \n";
+my @dirs = ("$CIMEROOT/utils/perl5lib");
+unshift @INC, @dirs;
+require Config::SetupTools;
+my $sysmod;
 
 if (! -d "$EXEROOT/ocn/obj" ) {
     $sysmod = "mkdir -p $EXEROOT/ocn/obj";
@@ -40,12 +48,12 @@ if (! -d "$EXEROOT/ocn/source") {
     $sysmod = "mkdir -p $EXEROOT/ocn/source";
     system($sysmod) == 0 or die "ERROR pop.buildnml: $sysmod failed: $?\n";
 }
-if (! -d "$CASEBUILD/popconf" ) {
-    $sysmod = "mkdir $CASEBUILD/popconf";
+if (! -d "$CASEBUILD/pop2conf" ) {
+    $sysmod = "mkdir $CASEBUILD/pop2conf";
     system($sysmod) == 0 or die "ERROR pop.buildnml: $sysmod failed: $?\n";
 }
 
-chdir "$CASEBUILD/popconf";
+chdir "$CASEBUILD/pop2conf";
 
 #--------------------------------------------------------------------
 # Invoke pop configure, output will go in $CASEBUILD/camconf
@@ -60,7 +68,7 @@ if ($BUILD_COMPLETE eq 'FALSE' ) {
   system($sysmod) == 0 or die "ERROR pop.buildnml: $sysmod failed: $?\n";
 } else {
   # Verify that config_cache.xml exists
-  if (! -e "$CASEBUILD/popconf/config_cache.xml") {
+  if (! -e "$CASEBUILD/pop2conf/config_cache.xml") {
     die "ERROR pop.buildnml: Build is complete but config_cache.xml is missing\n Can not run build-namelist; try cleaning build and building again.\n";
   }
 }
@@ -86,10 +94,10 @@ if (($GET_REFCASE eq 'TRUE') && ($RUN_TYPE ne 'startup') && ($CONTINUE_RUN eq 'F
 }
 
 #--------------------------------------------------------------------
-# Invoke pop build-namelist - output will go in $CASEBUILD/popconf
+# Invoke pop build-namelist - output will go in $CASEBUILD/pop2conf
 #--------------------------------------------------------------------
 
-chdir "$CASEBUILD/popconf";
+chdir "$CASEBUILD/pop2conf";
 
 my $inst_string;
 my $inst_counter = 1;
@@ -114,12 +122,12 @@ while ($inst_counter <= $NINST_OCN) {
     }
 
     # -----------------------------------------------------
-    # create popconf/cesm_namelist
+    # create pop2conf/cesm_namelist
     # -----------------------------------------------------
 
     SetupTools::create_namelist_infile("$CASEROOT", 
                                        "$CASEROOT/user_nl_pop${inst_string}", 
-                                       "$CASEBUILD/popconf/cesm_namelist"); 
+                                       "$CASEBUILD/pop2conf/cesm_namelist"); 
 
     # -----------------------------------------------------
     # env variable declaring type of pop restart file (nc vs bin) 
@@ -150,7 +158,7 @@ while ($inst_counter <= $NINST_OCN) {
     }
 
     # -----------------------------------------------------
-    # call build-namelist- output will go in $CASEBUILD/popconf/ocn_in
+    # call build-namelist- output will go in $CASEBUILD/pop2conf/ocn_in
     # -----------------------------------------------------
     
     # Check to see if "-preview" flag should be passed
@@ -169,10 +177,10 @@ while ($inst_counter <= $NINST_OCN) {
     # Note that the following two environment variables are needed by the csh template scripts 
     # called by build-namelist
     $sysmod = "$bld_nml_dir/build-namelist $cfg_flag $preview_flag";
-    $sysmod = "$sysmod -infile $CASEBUILD/popconf/cesm_namelist";
+    $sysmod = "$sysmod -infile $CASEBUILD/pop2conf/cesm_namelist";
     $sysmod = "$sysmod -caseroot $CASEROOT"; 
     $sysmod = "$sysmod -casebuild $CASEBUILD";
-    $sysmod = "$sysmod -scriptsroot $SCRIPTSROOT";
+    $sysmod = "$sysmod -cimeroot $CIMEROOT";
     $sysmod = "$sysmod -inst_string \"$inst_string\"";
     $sysmod = "$sysmod -ocn_grid \"$OCN_GRID\"";
     system($sysmod) == 0 or die "ERROR pop.buildnml: $sysmod failed: $?\n";
@@ -182,10 +190,10 @@ while ($inst_counter <= $NINST_OCN) {
     # -----------------------------------------------------
 
     if (-d ${RUNDIR}) {
-        $sysmod = "cp -fp $CASEBUILD/popconf/pop_in   ${RUNDIR}/pop_in${inst_string}";
+        $sysmod = "cp -fp $CASEBUILD/pop2conf/pop2_in   ${RUNDIR}/pop2_in${inst_string}";
         system($sysmod) == 0 or die "ERROR pop.buildnml: $sysmod failed: $?\n";
 
-        $sysmod = "cp -fp $CASEBUILD/popconf/${OCN_GRID}_tavg_contents   ${RUNDIR}/${OCN_GRID}_tavg_contents";
+        $sysmod = "cp -fp $CASEBUILD/pop2conf/${OCN_GRID}_tavg_contents   ${RUNDIR}/${OCN_GRID}_tavg_contents";
         system($sysmod) == 0 or die "ERROR pop.buildnml: $sysmod failed: $?\n";
     }
 

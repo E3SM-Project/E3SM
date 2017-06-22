@@ -1,0 +1,14 @@
+# check to see if abio_dic_dic14 is present before appending it
+# check for an exact module name match, to avoid false matches
+array_of_tracer_modules=(`./xmlquery OCN_TRACER_MODULES --value`)
+found=0
+for mod in ${array_of_tracer_modules[@]}; do
+  if [[ $mod == "abio_dic_dic14" ]] ; then
+    found=1
+  fi
+done
+if [[ $found == 0 ]]; then
+    ./xmlchange -a OCN_TRACER_MODULES=abio_dic_dic14
+fi
+./xmlchange CCSM_CO2_PPMV=284.7
+./xmlchange PIO_TYPENAME=pnetcdf

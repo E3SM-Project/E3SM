@@ -2,7 +2,7 @@
 
 if ( $OCN_GRID =~ gx* ) then
 #shut off time-invariant stream until vertical grid issues are resolved
-cat >! $CASEBUILD/popconf/base.tavg.nml << EOF
+cat >! $CASEBUILD/pop2conf/base.tavg.nml << EOF
 tavg_freq_opt           = 'nmonth'   'nday'   'once' 
 tavg_freq               =     1         1       1   
 tavg_stream_filestrings = 'nmonth1'  'nday1'  'once' 
@@ -21,7 +21,7 @@ EOF
 endif
 
 if ( $OCN_GRID =~ tx* ) then
-cat >! $CASEBUILD/popconf/base.tavg.nml << EOF
+cat >! $CASEBUILD/pop2conf/base.tavg.nml << EOF
 tavg_freq_opt           = 'nmonth'     'nday'   
 tavg_freq               =     1          1      
 tavg_stream_filestrings = 'nmonth1'    'nday1'  

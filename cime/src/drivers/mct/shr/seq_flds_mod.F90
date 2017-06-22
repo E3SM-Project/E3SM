@@ -284,6 +284,8 @@ module seq_flds_mod
      character(len=  2) :: cnum
      character(len=CSS) :: name
      character(len=CSS) :: cime_model
+     character(len=CSS) :: ocn_model
+     character(len=CSS) :: ocn_gnam
 
      character(CXX) :: dom_coord  = ''
      character(CXX) :: dom_other  = ''
@@ -362,7 +364,9 @@ module seq_flds_mod
 
      call seq_comm_setptrs(ID,mpicom=mpicom)
 
-     call seq_infodata_GetData(infodata, cime_model=cime_model)
+     call seq_infodata_GetData(infodata, cime_model=cime_model, ocn_gnam=ocn_gnam)
+     ocn_model = 'mpas-o'
+     if (trim(ocn_gnam) == 'gx1v6') ocn_model = 'pop'
 
      !---------------------------------------------------------------------------
      ! Read in namelist for use cases
@@ -640,7 +644,7 @@ module seq_flds_mod
      call seq_flds_add(a2x_states,"Sa_pbot")
      call seq_flds_add(x2l_states,"Sa_pbot")
      call seq_flds_add(x2i_states,"Sa_pbot")
-     if (trim(cime_model) == 'acme') then
+     if (trim(cime_model) == 'acme' .AND. trim(ocn_model) == 'mpas-o') then
         call seq_flds_add(x2o_states,"Sa_pbot")
      end if
      longname = 'Pressure at the lowest model level'
@@ -1350,7 +1354,7 @@ module seq_flds_mod
      attname  = 'Si_ifrac'
      call metadata_set(attname, longname, stdname, units)
 
-     if (trim(cime_model) == 'acme') then
+     if (trim(cime_model) == 'acme' .AND. trim(ocn_model) == 'mpas-o') then
         ! Sea ice basal pressure 
         call seq_flds_add(i2x_states,"Si_bpress")
         call seq_flds_add(x2o_states,"Si_bpress")
@@ -1370,7 +1374,7 @@ module seq_flds_mod
      attname  = 'Fioo_q'
      call metadata_set(attname, longname, stdname, units)
 
-     if (trim(cime_model) == 'acme') then
+     if (trim(cime_model) == 'acme' .AND. trim(ocn_model) == 'mpas-o') then
         ! Ocean melt (q<0) potential
         call seq_flds_add(o2x_fluxes,"Fioo_meltp")
         call seq_flds_add(x2i_fluxes,"Fioo_meltp")
@@ -1381,7 +1385,7 @@ module seq_flds_mod
         call metadata_set(attname, longname, stdname, units)
      end if
 
-     if (trim(cime_model) == 'acme') then
+     if (trim(cime_model) == 'acme' .AND. trim(ocn_model) == 'mpas-o') then
         ! Ocean frazil production
         call seq_flds_add(o2x_fluxes,"Fioo_frazil")
         call seq_flds_add(x2i_fluxes,"Fioo_frazil")
@@ -1972,7 +1976,7 @@ module seq_flds_mod
      ! this conditional: Code in other places in the coupler is written to trigger off of
      ! whether Flrl_irrig has been added to the field list, so it should Just Work if this
      ! conditional is removed.)
-     if (trim(cime_model) == 'cesm') then
+!     if (trim(cime_model) == 'cesm') then
         ! Irrigation flux (land/rof only)
         call seq_flds_add(l2x_fluxes,"Flrl_irrig")
         call seq_flds_add(x2r_fluxes,"Flrl_irrig")
@@ -1981,7 +1985,7 @@ module seq_flds_mod
         units    = 'kg m-2 s-1'
         attname  = 'Flrl_irrig'
         call metadata_set(attname, longname, stdname, units)
-     end if
+!     end if
 
      !-----------------------------
      ! rof->ocn (runoff) and rof->lnd (flooding)

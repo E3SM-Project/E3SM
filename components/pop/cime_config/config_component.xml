@@ -1,0 +1,261 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+
+<definitions_variables>
+
+  <entry id="COMP_OCN">
+    <type>char</type>
+    <valid_values>pop</valid_values>
+    <default_value>pop</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of ocean component</desc>
+  </entry>
+
+  <entry id="OCN_PE_CHANGE_REQUIRES_REBUILD">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>TRUE</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>This component requires a clean build if the pelayout changes, if this variable is
+                not defined for a component it is assumed false
+    </desc>
+  </entry>
+
+  <entry id="OCN_CHL_TYPE">
+    <type>char</type>
+    <valid_values>diagnostic,prognostic</valid_values>
+    <default_value>diagnostic</default_value>
+    <values>
+      <value compset="_POP2%ECO"             >prognostic</value>
+      <value compset="_DATM.*CICE.*_POP2%ECO">diagnostic</value>
+      <value compset="_POP2%DAR"             >diagnostic</value>
+    </values>
+    <group>run_component_pop</group>
+    <file>env_run.xml</file>
+    <desc>
+      Determines provenance of surface Chl for radiative penetration,
+      computations. This option is used in the POP ecosystem model.
+      The default is diagnostic.
+    </desc>
+  </entry>
+
+  <entry id="OCN_TAVG_TRACER_BUDGET">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_component_pop</group>
+    <file>env_run.xml</file>
+    <desc>tavg output control for tracer-budget terms</desc>
+  </entry>
+
+  <entry id="OCN_TAVG_HIFREQ">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_component_pop</group>
+    <file>env_run.xml</file>
+    <desc>tavg output control for high-frequency output</desc>
+  </entry>
+
+  <entry id="OCN_ONEDIM">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values>
+      <value compset = "_POP2%1D">TRUE</value>
+    </values>
+    <group>run_component_pop</group>
+    <file>env_run.xml</file>
+    <desc>TRUE turns off all horizontal motion in POP (single column)</desc>
+  </entry>
+
+  <entry id="OCN_TRACER_MODULES">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>iage</default_value>
+    <values modifier='merge'>
+      <value compset="HIST">cfc</value>
+      <value compset="5505">cfc</value>
+      <value compset="_POP2%ECO">ecosys</value>
+    </values>
+    <group>build_component_pop</group>
+    <file>env_build.xml</file>
+    <desc>Optional ocean tracers.  Valid values are Any combination of: iage cfc ecosys</desc>
+  </entry>
+
+  <entry id="OCN_TRACER_MODULES_OPT">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>build_component_pop</group>
+    <file>env_build.xml</file>
+    <desc>Optional ocean tracers option (keyword=value pairs)</desc>
+  </entry>
+
+  <entry id="OCN_COUPLING">
+    <type>char</type>
+    <valid_values>full,partial</valid_values>
+    <default_value>full</default_value>
+    <values>
+      <value compset="_DATM.*_POP2">partial</value>
+    </values>
+    <group>build_pop</group>
+    <file>env_build.xml</file>
+    <desc>Determine surface freshwater and heat forcing settings.
+      The full option yields settings that are appropriate for coupling to an
+      active atmospheric model (e.g., a B-type compset). The partial option yields
+      settings that are appropriate for coupling to a data atmospheric model
+      (e.g., a C or G-type compset). The create_newcase command selects the
+      appropriate setting for this variable based on the specified compset.
+      Users should NOT EDIT this setting.</desc>
+  </entry>
+
+  <entry id="OCN_TRANSIENT">
+    <type>char</type>
+    <valid_values>unset,1850-2000,rcp4.5,rcp8.5</valid_values>
+    <default_value>unset</default_value>
+    <values>
+      <value compset="^5505_CAM">1850-2000</value>
+      <value compset="^HIST_CAM">1850-2000</value>
+      <value compset="^RCP4_CAM">rcp4.5</value>
+      <value compset="^RCP8_CAM">rcp8.5</value>
+    </values>
+    <group>run_component_pop</group>
+    <file>env_run.xml</file>
+    <desc>Determine settings for transient forcing datasets (e.g., atmospheric pCFC
+      concentrations). The create_newcase command selects the appropriate setting for this
+      variable based on the specified compset. This option is used in the POP ecosystem model.
+      Users should NOT EDIT this setting.</desc>
+  </entry>
+
+  <entry id="OCN_ICE_FORCING">
+    <type>char</type>
+    <valid_values>active,inactive</valid_values>
+    <default_value>active</default_value>
+    <values>
+      <value compset="_DATM.*_DICE">inactive</value>
+      <value compset="_DATM.*_CICE">active</value>
+    </values>
+    <group>run_component_pop</group>
+    <file>env_run.xml</file>
+    <desc>Determine under-ice forcing settings.
+      The active option yields settings that are appropriate for coupling to an active ice model
+      (e.g., a B or G-type compset). The inactive option yields settings that are appropriate for
+      coupling to a data ice model (e.g., a C-type compset). The create_newcase command
+      selects the appropriate setting for this variable based on the specified compset.
+      Users should NOT EDIT this setting.</desc>
+  </entry>
+
+  <!--- Note that positive second match will overwrite positive first match -->
+  <entry id="OCN_CO2_TYPE">
+    <type>char</type>
+    <valid_values>constant,prognostic,diagnostic</valid_values>
+    <default_value>constant</default_value>
+    <values>
+      <value compset="_POP2%ECO.*_BGC%BPRP">prognostic</value>
+      <value compset="_POP2%ECO.*_BGC%BDRD">diagnostic</value>
+    </values>
+    <group>run_component_pop</group>
+    <file>env_run.xml</file>
+    <desc>Determines provenance of atmospheric CO2 for gas flux computation.
+      This option is used in the POP ecosystem model.
+      The default is constant.</desc>
+  </entry>
+
+  <entry id="POP_TAVG_R8">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_component_pop</group>
+    <file>env_build.xml</file>
+    <desc>If TRUE then time-averaged history files from POP will contain double precision output</desc>
+  </entry>
+
+  <entry id="POP_AUTO_DECOMP">
+    <type>logical</type>
+    <valid_values>true,false</valid_values>
+    <default_value>true</default_value>
+    <group>build_component_pop</group>
+    <file>env_build.xml</file>
+    <desc>if false, user must set the POP decomp, otherwise cesm_setup script sets it</desc>
+  </entry>
+
+  <entry id="POP_BLCKX">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>0</default_value>
+    <group>build_component_pop</group>
+    <file>env_build.xml</file>
+    <desc>Size of pop block in first horiz dimension (do not edit if POP_AUTO_DECOMP is true)</desc>
+  </entry>
+
+  <entry id="POP_BLCKY">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>0</default_value>
+    <group>build_component_pop</group>
+    <file>env_build.xml</file>
+    <desc>Size of pop block in second horiz dimension (do not edit if POP_AUTO_DECOMP is true)</desc>
+  </entry>
+
+  <entry id="POP_NX_BLOCKS">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>0</default_value>
+    <group>build_component_pop</group>
+    <file>env_build.xml</file>
+    <desc>Number of pop blocks in first horiz dimension (do not edit if POP_AUTO_DECOMP is true)</desc>
+  </entry>
+
+  <entry id="POP_NY_BLOCKS">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>0</default_value>
+    <group>build_component_pop</group>
+    <file>env_build.xml</file>
+    <desc>Number of pop blocks in second horiz dimension (do not edit if POP_AUTO_DECOMP is true)</desc>
+  </entry>
+
+  <entry id="POP_MXBLCKS">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>0</default_value>
+    <group>build_component_pop</group>
+    <file>env_build.xml</file>
+    <desc>Max number of pop blocks per processor (do not edit if POP_AUTO_DECOMP is true</desc>
+  </entry>
+
+  <entry id="POP_DECOMPTYPE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>0</default_value>
+    <group>build_component_pop</group>
+    <file>env_build.xml</file>
+    <desc>pop block distribution type (do not edit if POP_AUTO_DECOMP is true)</desc>
+  </entry>
+
+  <entry id="POP_CPPDEFS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>UNSET</default_value>
+    <group>build_component_pop</group>
+    <file>env_build.xml</file>
+    <desc>POP cpp definitions (for diagnostic use only, setup automatically, overwritten by configure_pop.py - DO NOT EDIT)</desc>
+  </entry>
+
+  <description>
+    <desc compset="_POP2"    >POP2 default:</desc>
+    <desc compset="_POP2%1D" >Single column POP2:</desc>
+    <desc compset="_POP2%ECO">POP2/Ecosystem:</desc>
+  </description>
+
+  <help>
+    =========================================
+    POP naming conventions
+    =========================================
+  </help>
+
+</definitions_variables>

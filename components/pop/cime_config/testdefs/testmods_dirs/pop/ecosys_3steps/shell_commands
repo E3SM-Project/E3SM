@@ -1,0 +1,4 @@
+./xmlchange POP_TAVG_R8=TRUE
+./xmlchange OCN_CHL_TYPE=prognostic
+./xmlchange OCN_NCPL=8
+./xmlchange STOP_OPTION=nhours,STOP_N=6

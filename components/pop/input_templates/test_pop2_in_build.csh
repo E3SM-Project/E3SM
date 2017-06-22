@@ -40,9 +40,9 @@ setenv OCN_GRID $grid
 
 echo $compset $OCN_GRID
 
-setenv CASE pop_in_testcase_${OCN_GRID}_${compset}
+setenv CASE pop2_in_testcase_${OCN_GRID}_${compset}
 setenv LID 123456
-setenv POP_NMLFILE $nmldir/pop_in_${OCN_GRID}_${compset}
+setenv POP2_NMLFILE $nmldir/pop2_in_${OCN_GRID}_${compset}
 setenv NPROCS_CLINIC 4
 setenv NPROCS_TROPIC 4
 if ($OCN_GRID == tx0.1v2) then
@@ -65,7 +65,7 @@ setenv output_r  $rundir/$CASE.pop.r
 setenv output_h  $rundir/$CASE.pop.h
 setenv output_d  $rundir/$CASE.pop.d
 setenv log_filename   ocn.log.$LID
-setenv pop_pointer  $rundir/rpointer.ocn
+setenv pop2_pointer  $rundir/rpointer.ocn
 setenv depth_accel_filename        ${grid}_depth_accel
 setenv bathymetry_filename         ${grid}_bathymetry
 setenv bottom_cell_filename        ${grid}_bottom_cell
@@ -115,7 +115,7 @@ endif
 
 
 
-./pop_in_build.csh
+./pop2_in_build.csh
 
 
 

@@ -1292,6 +1292,7 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
    logical,save             :: first_time    = .true.
    logical,save             :: flds_wiso_ocn = .false.
    character(len=cs)        :: cime_model
+   character(len=cs)        :: ocn_gnam, ocn_model
 
    !----- formats -----
    character(*),parameter :: subName = '(seq_diag_ocn_mct) '
@@ -1320,13 +1321,15 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
    ko    = mct_aVect_indexRA(frac_o,ofracname)
    ki    = mct_aVect_indexRA(frac_o,ifracname)
 
-   call seq_infodata_GetData(infodata, cime_model=cime_model)
+   call seq_infodata_GetData(infodata, cime_model=cime_model, ocn_gnam=ocn_gnam)
+   ocn_model = 'mpas-o'
+   if (trim(ocn_gnam) == 'gx1v6') ocn_model = 'pop'
 
    if (present(do_o2x)) then
       if (first_time) then
-         if (trim(cime_model) == 'acme') then
+         if (trim(cime_model) == 'acme' .AND. trim(ocn_model) == 'mpas-o') then
             index_o2x_Fioo_frazil = mct_aVect_indexRA(o2x_o,'Fioo_frazil') 
-         else if (trim(cime_model) == 'cesm') then
+         else if (trim(cime_model) == 'cesm' .OR. trim(ocn_model) == 'pop') then
             index_o2x_Fioo_q = mct_aVect_indexRA(o2x_o,'Fioo_q')      
          end if
       end if
@@ -1337,15 +1340,15 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
          do =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ko,n)
          di =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
          if = f_area; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + do
-         if (trim(cime_model) == 'acme') then
+         if (trim(cime_model) == 'acme' .AND. trim(ocn_model) == 'mpas-o') then
             if = f_hfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
-         else if (trim(cime_model) == 'cesm') then
+         else if (trim(cime_model) == 'cesm' .OR. trim(ocn_model) == 'pop') then
             if = f_hfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_q,n))
          end if
       end do
-      if (trim(cime_model) == 'acme') then
+      if (trim(cime_model) == 'acme' .AND. trim(ocn_model) == 'mpas-o') then
          budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX * shr_const_rhoice * shr_const_latice
-      else if (trim(cime_model) == 'cesm') then
+      else if (trim(cime_model) == 'cesm' .OR. trim(ocn_model) == 'pop') then
          budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX
       end if
    end if
@@ -1546,6 +1549,7 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
    logical,save             :: flds_wiso_ice     = .false.
    logical,save             :: flds_wiso_ice_x2i = .false.
    character(len=cs)        :: cime_model
+   character(len=cs)        :: ocn_gnam, ocn_model
 
    !----- formats -----
    character(*),parameter :: subName = '(seq_diag_ice_mct) '
@@ -1554,7 +1558,9 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
 !
 !-------------------------------------------------------------------------------
 
-   call seq_infodata_GetData(infodata, cime_model=cime_model)
+   call seq_infodata_GetData(infodata, cime_model=cime_model, ocn_gnam=ocn_gnam)
+   ocn_model = 'mpas-o'
+   if (trim(ocn_gnam) == 'gx1v6') ocn_model = 'pop'
 
    !---------------------------------------------------------------------------
    ! add values found in this bundle to the budget table
@@ -1640,9 +1646,9 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
          index_x2i_Faxa_lwdn   = mct_aVect_indexRA(x2i_i,'Faxa_lwdn')
          index_x2i_Faxa_rain   = mct_aVect_indexRA(x2i_i,'Faxa_rain')
          index_x2i_Faxa_snow   = mct_aVect_indexRA(x2i_i,'Faxa_snow')
-         if (trim(cime_model) == 'acme') then
+         if (trim(cime_model) == 'acme' .AND. trim(ocn_model) == 'mpas-o') then
             index_x2i_Fioo_frazil = mct_aVect_indexRA(x2i_i,'Fioo_frazil') 
-         else if (trim(cime_model) == 'cesm') then
+         else if (trim(cime_model) == 'cesm' .OR. trim(ocn_model) == 'pop') then
             index_x2i_Fioo_q      = mct_aVect_indexRA(x2i_i,'Fioo_q')      
          end if
          index_x2i_Fixx_rofi   = mct_aVect_indexRA(x2i_i,'Fixx_rofi')
@@ -1674,9 +1680,9 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
          if = f_wsnow; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_snow,n)
          if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Fixx_rofi,n)
 
-         if (trim(cime_model) == 'acme') then
+         if (trim(cime_model) == 'acme' .AND. trim(ocn_model) == 'mpas-o') then
             if = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
-         else if (trim(cime_model) == 'cesm') then
+         else if (trim(cime_model) == 'cesm' .OR. trim(ocn_model) == 'pop') then
             if = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_q,n))
          end if
          if ( flds_wiso_ice_x2i )then
@@ -1704,18 +1710,18 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
       ic = c_inh_is
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-      if (trim(cime_model) == 'acme') then
+      if (trim(cime_model) == 'acme' .AND. trim(ocn_model) == 'mpas-o') then
          budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX *  shr_const_rhoice * shr_const_latice
-      else if (trim(cime_model) == 'cesm') then
+      else if (trim(cime_model) == 'cesm' .OR. trim(ocn_model) == 'pop') then
          budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX
       end if
 
       ic = c_ish_is
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-      if (trim(cime_model) == 'acme') then
+      if (trim(cime_model) == 'acme' .AND. trim(ocn_model) == 'mpas-o') then
          budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX *  shr_const_rhoice * shr_const_latice
-      else if (trim(cime_model) == 'cesm') then
+      else if (trim(cime_model) == 'cesm' .OR. trim(ocn_model) == 'pop') then
          budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX
       end if
    end if

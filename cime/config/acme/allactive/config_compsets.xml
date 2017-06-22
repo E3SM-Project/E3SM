@@ -57,6 +57,16 @@
 </compset>
 
 <compset>
+  <alias>A_WCYCL1850-POP</alias>
+  <lname>1850_CAM5%AV1C-L_CLM45%SPBC_CICE_POP2_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL1850_v0atm-POP</alias>
+  <lname>1850_CAM5_CLM45%SP_CICE_POP2_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
   <alias>A_WCYCL1850S</alias>
   <lname>1850_CAM5%AV1C-L_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
 </compset>

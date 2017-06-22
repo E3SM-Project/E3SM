@@ -12,14 +12,21 @@
 my $CASEROOT = shift;
 
 # Global variables
-my $SRCROOT, $CASEBUILD, $OBJROOT, $OCN_GRID, $OCN_TRACER_MODULES;
+my $CIMEROOT, $SRCROOT, $CASEBUILD, $OBJROOT, $OCN_GRID, $OCN_TRACER_MODULES;
 my $OCN_TRACER_MODULES_OPT, $POP_AUTO_DECOMP, $POP_BLCKX, $POP_BLCKY;
+my $POP_NX_BLOCKS, $POP_NY_BLOCKS, $POP_DECOMPTYPE;
 my $POP_MXBLCKS, $POP_TAVG_R8, $NTHRDS_OCN, $NINST_OCN, $OCN_ICE_FORCING;
 my $NT, $ECOSYS_NT, $ZOOPLANKTON_CNT, $AUTOTROPH_CNT, $GRAZER_PREY_CNT;
 my $USE_IAGE, $USE_CFC, $USE_ABIO, $USE_CISO, $USE_ECOSYS, $USE_MOBY;
 
 set_environment();
 auto_decomp();
+print "POP2 configure: POP_BLCKX is $POP_BLCKX \n";
+print "POP2 configure: POP_BLCKY is $POP_BLCKY \n";
+print "POP2 configure: POP_MXBLCKS is $POP_MXBLCKS \n";
+print "POP2 configure: POP_NX_BLOCKS is $POP_NX_BLOCKS \n";
+print "POP2 configure: POP_NY_BLOCKS is $POP_NY_BLOCKS \n";
+print "POP2 configure: POP_DECOMPTYPE is $POP_DECOMPTYPE \n";
 determine_tracer_count();
 set_cppdefs();
 write_config_cache();
@@ -30,7 +37,8 @@ sub set_environment {
   # Read variables from env_mach_pes.xml and env_build.xml
 
   chdir "$CASEROOT";
-  $SRCROOT                 = `./xmlquery SRCROOT               -value`;
+  $CIMEROOT                = `./xmlquery CIMEROOT               -value`;
+  $SRCROOT                 = `./xmlquery SRCROOT                -value`;
   $CASEBUILD               = `./xmlquery CASEBUILD              -value`;
   $OBJROOT                 = `./xmlquery OBJROOT                -value`;
   $OCN_GRID                = `./xmlquery OCN_GRID               -value`;
@@ -39,6 +47,9 @@ sub set_environment {
   $POP_AUTO_DECOMP         = `./xmlquery POP_AUTO_DECOMP        -value`;
   $POP_BLCKX               = `./xmlquery POP_BLCKX              -value`;
   $POP_BLCKY               = `./xmlquery POP_BLCKY              -value`;
+  $POP_NX_BLOCKS           = `./xmlquery POP_NX_BLOCKS          -value`;
+  $POP_NY_BLOCKS           = `./xmlquery POP_NY_BLOCKS          -value`;
+  $POP_DECOMPTYPE          = `./xmlquery POP_DECOMPTYPE         -value`;
   $POP_MXBLCKS             = `./xmlquery POP_MXBLCKS            -value`;
   $POP_TAVG_R8             = `./xmlquery POP_TAVG_R8            -value`;
   $NTASKS_OCN              = `./xmlquery NTASKS_OCN             -value`;
@@ -52,33 +63,40 @@ sub auto_decomp {
   # If POP_AUTO_DECOMP eq "TRUE", set POP_BLCKX, etc
 
   # Is only run when POP_AUTO_DECOMP == TRUE
-  if ($POP_AUTO_DECOMP ne 'true') {
+  if ($POP_AUTO_DECOMP ne 'TRUE') {
     return;
   }
 
   my $ntasks = $NTASKS_OCN / $NINST_OCN;
-  chdir "$CASEBUILD";
-  my $config_args = `./generate_pop_decomp.pl -ccsmroot $SRCROOT -res $OCN_GRID -nproc $ntasks -thrds $NTHRDS_OCN -output all`;
-  my @config = split(/\s/, $config_args);
+  my $pop_decomp_gen = "$SRCROOT/components/pop/bld/generate_pop_decomp.pl ";
+  $pop_decomp_gen .=  "-ccsmroot $SRCROOT -res $OCN_GRID ";
+  $pop_decomp_gen .=  "-nproc $ntasks -thrds $NTHRDS_OCN -output all";
+  my $pop_decomp = `$pop_decomp_gen `;
+  my @config = split(/\s/, $pop_decomp);
   if ($config[0] >= 0) {
     chdir "$CASEROOT";
-    $POP_BLCKX=$config[2];
+    $POP_BLCKX=$config[5];
     $sysmod = "./xmlchange POP_BLCKX=$POP_BLCKX";
     system($sysmod) == 0 or die "ERROR pop.buildnml: $sysmod failed: $?\n";
 
-    $POP_BLCKY=$config[3];
+    $POP_BLCKY=$config[6];
     $sysmod = "./xmlchange POP_BLCKY=$POP_BLCKY";
     system($sysmod) == 0 or die "ERROR pop.buildnml: $sysmod failed: $?\n";
 
-    $POP_MXBLCKS=$config[4];
+    $POP_MXBLCKS=$config[7];
     $sysmod = "./xmlchange POP_MXBLCKS=$POP_MXBLCKS";
     system($sysmod) == 0 or die "ERROR pop.buildnml: $sysmod failed: $?\n";
 
-    $sysmod = "./xmlchange POP_DECOMPTYPE=$config[5]";
+    $POP_DECOMPTYPE=$config[8];
+    $sysmod = "./xmlchange POP_DECOMPTYPE=$POP_DECOMPTYPE";
     system($sysmod) == 0 or die "ERROR pop.buildnml: $sysmod failed: $?\n";
-    $sysmod = "./xmlchange POP_NX_BLOCKS=$config[6]";
+
+    $POP_NX_BLOCKS=$config[9];
+    $sysmod = "./xmlchange POP_NX_BLOCKS=$POP_NX_BLOCKS";
     system($sysmod) == 0 or die "ERROR pop.buildnml: $sysmod failed: $?\n";
-    $sysmod = "./xmlchange POP_NY_BLOCKS=$config[7]";
+
+    $POP_NY_BLOCKS=$config[10];
+    $sysmod = "./xmlchange POP_NY_BLOCKS=$POP_NY_BLOCKS";
     system($sysmod) == 0 or die "ERROR pop.buildnml: $sysmod failed: $?\n";
   } else {
     die "ERROR pop.buildnml: pop decomp not set for $OCN_GRID on $ntasks x  $NTHRDS_OCN procs \n";
@@ -192,7 +210,7 @@ sub set_cppdefs {
 }
 
 sub write_config_cache {
-  open(file,">${CASEBUILD}/popconf/config_cache.xml") or die "Could not open file ${CASEBUILD}/popconf/config_cache.xml to write";
+  open(file,">${CASEBUILD}/pop2conf/config_cache.xml") or die "Could not open file ${CASEBUILD}/pop2conf/config_cache.xml to write";
   print file <<"EOF";
 <?xml version="1.0"?>
 <config_definition>
@@ -207,7 +225,7 @@ sub write_config_cache {
 EOF
   close(file);
 #  if ($print>=2) { print "Wrote file $config_cache $eol"; }
-  (-f "$CASEBUILD/popconf/config_cache.xml")  or  die <<"EOF";
+  (-f "$CASEBUILD/pop2conf/config_cache.xml")  or  die <<"EOF";
 ** $ProgName - Cannot find configuration cache file: config_cache.xml\" **
 EOF
 

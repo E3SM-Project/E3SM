@@ -84,8 +84,12 @@ foreach my $key ( keys( %opts ) ) {
 #------------------------------------------------------------------------------------------------
 # Add perl5lib to the list of paths that Perl searches for modules
 my $cesmroot = $opts{'ccsmroot'};
-my @dirs = ("$cesmroot/cime/utils/perl5lib");
-unshift @INC, @dirs;
+print "cesmroot: $cesmroot \n";
+#JW print "nproc $nproc \n";
+#JW my @dirs = ("$cesmroot/utils/perl5lib");
+#JW unshift @INC, @dirs;
+my $perl5lib = "${cesmroot}/cime/utils/perl5lib";
+unshift @INC, "$perl5lib";
 require Decomp::Config;
 
 #------------------------------------------------------------------------------------------------
