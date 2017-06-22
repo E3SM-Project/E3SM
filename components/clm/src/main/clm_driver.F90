@@ -849,9 +849,6 @@ contains
                     call update_bgc_data_pf2clm(clm_interface_data%bgc,         &
                            bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc, &
                            filter(nc)%num_soilp, filter(nc)%soilp,              &
-                           !waterstate_vars, waterflux_vars,                     &
-                           !soilstate_vars,  temperature_vars, energyflux_vars,  &
-                           !soilhydrology_vars, soil_water_retention_curve,      &
                            cnstate_vars, carbonflux_vars, carbonstate_vars,     &
                            nitrogenflux_vars, nitrogenstate_vars,               &
                            phosphorusflux_vars, phosphorusstate_vars,           &
@@ -881,10 +878,6 @@ contains
                     call update_bgc_data_clm2clm(clm_interface_data%bgc,        &
                            bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc,&
                            filter(nc)%num_soilp, filter(nc)%soilp,              &
-                           !atm2lnd_vars,                                        &
-                           !waterstate_vars, waterflux_vars,                     &
-                           !soilstate_vars,  temperature_vars, energyflux_vars,  &
-                           !soilhydrology_vars, soil_water_retention_curve,      &
                            cnstate_vars, carbonflux_vars, carbonstate_vars,     &
                            nitrogenflux_vars, nitrogenstate_vars,               &
                            phosphorusflux_vars, phosphorusstate_vars,           &
