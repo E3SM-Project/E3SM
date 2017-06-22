@@ -1,6 +1,51 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 6-22-2017
+Tag: cime5.3.0-alpha.29
+Answer Changes: None
+Tests: Hand tested AIAF creation for acme and cesm models  
+Dependencies:
+
+Brief Summary:
+    - Back up datm tintalgo for AIAF to cesm default for just cesm.
+    - Update copyright, authors and section 6.4 content.
+    - Correct faq to point to use_cases.
+    - Merge doc branch from bjsmith
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+5921fff Merge pull request #1702 from ESMCI/mvertens/fix_datm_tintalgo
+18faea2 Merge pull request #1700 from bertinia/master
+d29cd98 Merge pull request #1698 from bertinia/master
+00989ab Merge branch 'bjsmith2014-master'
+
+
+Modified files: git diff --name-status [previous_tag]
+M       doc/source/conf.py
+M       doc/source/users_guide/adding-cases.rst
+M       doc/source/users_guide/case-basics.rst
+M       doc/source/users_guide/create-a-case.rst
+D       doc/source/users_guide/faq/basics-a-basic-example.rst
+D       doc/source/users_guide/faq/basics-mpi-example.rst
+D       doc/source/users_guide/faq/basics-setting-up-a-branch-or-hybrid-run.rst
+D       doc/source/users_guide/faq/faq.rst
+M       doc/source/users_guide/index.rst
+M       doc/source/users_guide/running-a-case.rst
+A       doc/source/users_guide/use_cases/basics-a-basic-example.rst
+A       doc/source/users_guide/use_cases/basics-mpi-example.rst
+A       doc/source/users_guide/use_cases/basics-setting-up-a-branch-or-hybrid-run.rst
+A       doc/source/users_guide/use_cases/use-cases.rst
+M       src/components/data_comps/datm/cime_config/buildnml
+M       src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 6-15-2017
 Tag: cime5.3.0-alpha.28
 Answer Changes: None
