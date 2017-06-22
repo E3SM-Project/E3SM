@@ -2914,7 +2914,7 @@ contains
     use clm_varpar       , only:  nlevdecomp !!nlevsoi,
     use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
 !    use landunit_varcon  , only: istsoil, istcrop
-!    use clm_time_manager , only: get_step_size
+    use clm_time_manager , only: get_step_size
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
