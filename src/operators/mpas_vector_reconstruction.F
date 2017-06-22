@@ -243,15 +243,16 @@ module mpas_vector_reconstruction
 
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-    ! init the intent(out)
-    uReconstructX = 0.0
-    uReconstructY = 0.0
-    uReconstructZ = 0.0
-
     ! loop over cell centers
+    !$omp do schedule(runtime)
     do iCell = 1, nCells
-      ! a more efficient reconstruction where rbf_values*matrix_reconstruct has been precomputed
-      ! in coeffs_reconstruct
+      ! initialize the reconstructed vectors
+      uReconstructX(:,iCell) = 0.0
+      uReconstructY(:,iCell) = 0.0
+      uReconstructZ(:,iCell) = 0.0
+
+      ! a more efficient reconstruction where rbf_values*matrix_reconstruct
+      ! has been precomputed in coeffs_reconstruct
       do i=1,nEdgesOnCell(iCell)
         iEdge = edgesOnCell(i,iCell)
         uReconstructX(:,iCell) = uReconstructX(:,iCell) &
@@ -263,21 +264,31 @@ module mpas_vector_reconstruction
 
       enddo
     enddo   ! iCell
+    !$omp end do
+
+    call mpas_threading_barrier()
 
     if (on_a_sphere) then
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
         clat = cos(latCell(iCell))
         slat = sin(latCell(iCell))
         clon = cos(lonCell(iCell))
         slon = sin(lonCell(iCell))
-        uReconstructZonal(:,iCell) = -uReconstructX(:,iCell)*slon + uReconstructY(:,iCell)*clon
-        uReconstructMeridional(:,iCell) = -(uReconstructX(:,iCell)*clon &
-          + uReconstructY(:,iCell)*slon)*slat &
-          + uReconstructZ(:,iCell)*clat
+        uReconstructZonal(:,iCell) = -uReconstructX(:,iCell)*slon + &
+                                      uReconstructY(:,iCell)*clon
+        uReconstructMeridional(:,iCell) = -(uReconstructX(:,iCell)*clon       &
+                                          + uReconstructY(:,iCell)*slon)*slat &
+                                          + uReconstructZ(:,iCell)*clat
       end do
+      !$omp end do
     else
-      uReconstructZonal = uReconstructX
-      uReconstructMeridional = uReconstructY
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+        uReconstructZonal     (:,iCell) = uReconstructX(:,iCell)
+        uReconstructMeridional(:,iCell) = uReconstructY(:,iCell)
+      end do
+      !$omp end do
     end if
 
   end subroutine mpas_reconstruct_2d!}}}
@@ -346,15 +357,16 @@ module mpas_vector_reconstruction
 
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-    ! init the intent(out)
-    uReconstructX = 0.0
-    uReconstructY = 0.0
-    uReconstructZ = 0.0
-
     ! loop over cell centers
+    !$omp do schedule(runtime)
     do iCell = 1, nCells
-      ! a more efficient reconstruction where rbf_values*matrix_reconstruct has been precomputed
-      ! in coeffs_reconstruct
+      ! initialize the reconstructed vectors
+      uReconstructX(iCell) = 0.0
+      uReconstructY(iCell) = 0.0
+      uReconstructZ(iCell) = 0.0
+
+      ! a more efficient reconstruction where rbf_values*matrix_reconstruct 
+      ! has been precomputed in coeffs_reconstruct
       do i=1,nEdgesOnCell(iCell)
         iEdge = edgesOnCell(i,iCell)
         uReconstructX(iCell) = uReconstructX(iCell) &
@@ -366,21 +378,31 @@ module mpas_vector_reconstruction
 
       enddo
     enddo   ! iCell
+    !$omp end do
+
+    call mpas_threading_barrier()
 
     if (on_a_sphere) then
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
         clat = cos(latCell(iCell))
         slat = sin(latCell(iCell))
         clon = cos(lonCell(iCell))
         slon = sin(lonCell(iCell))
-        uReconstructZonal(iCell) = -uReconstructX(iCell)*slon + uReconstructY(iCell)*clon
-        uReconstructMeridional(iCell) = -(uReconstructX(iCell)*clon &
-          + uReconstructY(iCell)*slon)*slat &
-          + uReconstructZ(iCell)*clat
+        uReconstructZonal(iCell) = -uReconstructX(iCell)*slon + &
+                                    uReconstructY(iCell)*clon
+        uReconstructMeridional(iCell) = -(uReconstructX(iCell)*clon       &
+                                        + uReconstructY(iCell)*slon)*slat &
+                                        + uReconstructZ(iCell)*clat
       end do
+      !$omp end do
     else
-      uReconstructZonal = uReconstructX
-      uReconstructMeridional = uReconstructY
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+        uReconstructZonal     (iCell) = uReconstructX(iCell)
+        uReconstructMeridional(iCell) = uReconstructY(iCell)
+      end do
+      !$omp end do
     end if
 
   end subroutine mpas_reconstruct_1d!}}}

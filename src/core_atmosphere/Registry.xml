@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="atmosphere" core_abbrev="atm" version="5.0">
+<registry model="mpas" core="atmosphere" core_abbrev="atm" version="5.1">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -141,7 +141,7 @@
 
                 <nml_option name="config_len_disp" type="real" default_value="120000.0"
                      units="m"
-                     description="Horizontal length scale for Smagorinsky formulation of horizontal diffusion"
+                     description="Horizontal length scale, used by the Smagorinsky formulation of horizontal diffusion and by 3-d divergence damping"
                      possible_values="Positive real values"/>
 
                 <nml_option name="config_visc4_2dsmag" type="real" default_value="0.05"
@@ -224,15 +224,10 @@
                      description="Off-centering parameter for the vertically implicit acoustic integration"
                      possible_values="Positive real values"/>
 
-                <nml_option name="config_smdiv" type="real" default_value="0.025"
+                <nml_option name="config_smdiv" type="real" default_value="0.1"
                      units="-"
                      description="3-d divergence damping coefficient"
                      possible_values="Positive real values"/>
-
-                <nml_option name="config_smdiv_p_forward" type="real" default_value="0.1"
-                     units="-"
-                     description="Fractional forward weighting of the pressure during the acoustic step --- a form of 3D divergence damping"
-                     possible_values="Real values typically in the range 0 to 0.2"/>
 
                 <nml_option name="config_apvm_upwinding" type="real" default_value="0.5" in_defaults="false"
                      units="-"
@@ -1587,9 +1582,6 @@
 
                 <var name="rho_p_save" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
                      description="predicted value rho_p, saved before acoustic steps"/>
-
-                <var name="divergence_3d" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3} s^{-1}"
-                     description="3D divergence used for acoustic filtering"/>
 
                 <var name="kdiff" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-1}"
                      description="Smagorinsky horizontal eddy viscosity"/>

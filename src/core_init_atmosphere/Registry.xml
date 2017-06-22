@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="init_atmosphere" core_abbrev="init_atm" version="5.0">
+<registry model="mpas" core="init_atmosphere" core_abbrev="init_atm" version="5.1">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -171,6 +171,15 @@
                      units="-"
                      description="Whether to use the vertical layer profile that was developed for use in real-time TC experiments"
                      possible_values="true or false"/>
+
+        </nml_record>
+
+        <nml_record name="interpolation_control" in_defaults="true">
+
+                <nml_option name="config_extrap_airtemp"        type="character"     default_value="linear"
+                     units="-"
+                     description="Method of extrapolation of air temperature above/below first-guess levels."
+                     possible_values="`constant' (last valid value), `linear' (linear extrapolation based on last two values), `lapse-rate' (0.0065 K/m from last valid value)"/>
 
         </nml_record>
 
