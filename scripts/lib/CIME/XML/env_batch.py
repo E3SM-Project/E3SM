@@ -430,7 +430,7 @@ class EnvBatch(EnvBase):
             mail_user_flag = get_batch_mail_flag(batch_system)
             if mail_user_flag is not None:
                 submitargs += " " + mail_user_flag + " " + mail_user
-        if 'never' is not in mail_type:
+        if 'never' not in mail_type:
             mail_type_flag, mail_type = get_batch_mail_type(batch_system, mail_type)
             if mail_type_flag is not None:
                 submitargs += " " + mail_type_flag + " " + mail_type
