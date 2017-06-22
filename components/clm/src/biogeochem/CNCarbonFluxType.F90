@@ -4974,29 +4974,32 @@ contains
          end if
        end do
 
-       ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
-       do l = 1, ndecomp_pools
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%decomp_cpools_leached_col(c,l) = 0._r8
-          end do
-          do j = 1, nlev
+       if (use_pflotran .and. pf_cmode) then
+          ! note: the follwoing should be useful to non-pflotran-coupled, but seems cause 1 BFB test unmatching.
+          ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
+          do l = 1, ndecomp_pools
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                this%decomp_cpools_leached_col(c,l) = &
-                  this%decomp_cpools_leached_col(c,l) + &
-                  this%decomp_cpools_transport_tendency_col(c,j,l) * dzsoi_decomp(j)
+                this%decomp_cpools_leached_col(c,l) = 0._r8
+             end do
+             do j = 1, nlev
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   this%decomp_cpools_leached_col(c,l) = &
+                     this%decomp_cpools_leached_col(c,l) + &
+                     this%decomp_cpools_transport_tendency_col(c,j,l) * dzsoi_decomp(j)
+                end do
+             end do
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%som_c_leached_col(c) = &
+                   this%som_c_leached_col(c) + &
+                   this%decomp_cpools_leached_col(c,l)
              end do
           end do
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-            this%som_c_leached_col(c) = &
-               this%som_c_leached_col(c) + &
-               this%decomp_cpools_leached_col(c,l)
-          end do
-       end do
+       end if
 
-    endif
+    end if
     
     ! debug
     do fc = 1,num_soilc
