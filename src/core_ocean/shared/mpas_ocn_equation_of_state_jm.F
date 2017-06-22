@@ -412,8 +412,6 @@ contains
       end do
       !$omp end do
 
-      call mpas_threading_barrier()
-
       deallocate(pRefEOS,p,p2)
       deallocate(tracerTemp)
       deallocate(tracerSalt)
