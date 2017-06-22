@@ -190,6 +190,13 @@ module clm_interface_bgcType
      real(r8), pointer :: forc_pco2_grc                             (:)     ! CO2 partial pressure (Pa)
      real(r8), pointer :: forc_pch4_grc                             (:)     ! CH4 partial pressure (Pa)
 
+     !! mass balance check:
+     !! summary of layer 1:nlevdecomp_full
+     real(r8), pointer :: soil_begcb_col                            (:)     ! soil organic carbon mass, beginning of time step (gC/m**2)
+     real(r8), pointer :: soil_begnb_col                            (:)     ! soil nitrogen mass, beginning of time step (gN/m**2)
+     real(r8), pointer :: soil_begnb_org_col                        (:)     ! soil organic nitrogen mass, beginning of time step (gN/m**2)
+     real(r8), pointer :: soil_begnb_min_col                        (:)     ! soil mineral nitrogen mass, beginning of time step (gN/m**2) = no3 + nh4 + nh4sorb
+
      !!------------------------------------------------------------------------------------------
      !! pflotran variables: END
      !!------------------------------------------------------------------------------------------
@@ -408,6 +415,13 @@ contains
     ! atm2lnd:
     allocate(this%forc_pco2_grc                 (begg:endg))                ; this%forc_pco2_grc                 (:)   = ival
     allocate(this%forc_pch4_grc                 (begg:endg))                ; this%forc_pch4_grc                 (:)   = ival
+
+    ! mass balance check
+    allocate(this%soil_begcb_col                (begc:endc))                ; this%soil_begcb_col                (:)   = ival
+    allocate(this%soil_begnb_col                (begc:endc))                ; this%soil_begnb_col                (:)   = ival
+    allocate(this%soil_begnb_org_col            (begc:endc))                ; this%soil_begnb_org_col            (:)   = ival
+    allocate(this%soil_begnb_min_col            (begc:endc))                ; this%soil_begnb_min_col            (:)   = ival
+
     !!------------------------------------------------------------------------------------------
     !! pflotran variables: END
     !!------------------------------------------------------------------------------------------

@@ -3910,9 +3910,9 @@ contains
                           smin_nh4_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
                           smin_no3_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
                           ! ensure that plant uptake rate isn't larger than soil N pool
-                          smin_nh4_to_plant_vr(c,j) = min(smin_nh4_to_plant_vr(c,j), smin_nh4_vr(c,j) / dt )
-                          smin_no3_to_plant_vr(c,j) = min(smin_no3_to_plant_vr(c,j), smin_no3_vr(c,j) / dt )
-                          sminn_to_plant_vr(c,j)    = smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j)
+!                          smin_nh4_to_plant_vr(c,j) = min(smin_nh4_to_plant_vr(c,j), smin_nh4_vr(c,j) / dt )
+!                          smin_no3_to_plant_vr(c,j) = min(smin_no3_to_plant_vr(c,j), smin_no3_vr(c,j) / dt )
+!                          sminn_to_plant_vr(c,j)    = smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j)
                       else
                           sminn_to_plant_vr(c,j)    = 0._r8
                           smin_nh4_to_plant_vr(c,j) = 0._r8
@@ -3922,7 +3922,7 @@ contains
                       if ( temp_sminp_to_plant(c) > 0._r8) then 
                           sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
                           ! ensure that plant uptake rate isn't larger than soil P pool
-                          sminp_to_plant_vr(c,j) = min(sminp_to_plant_vr(c,j), solutionp_vr(c,j) / dt )
+!                          sminp_to_plant_vr(c,j) = min(sminp_to_plant_vr(c,j), solutionp_vr(c,j) / dt )
                       else
                           sminp_to_plant_vr(c,j) = 0._r8
                       endif 
@@ -3994,9 +3994,9 @@ contains
                      smin_nh4_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
                      smin_no3_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
                      ! ensure that plant uptake rate isn't larger than soil N pool
-                     smin_nh4_to_plant_vr(c,j) = min(smin_nh4_to_plant_vr(c,j), smin_nh4_vr(c,j) / dt )
-                     smin_no3_to_plant_vr(c,j) = min(smin_no3_to_plant_vr(c,j), smin_no3_vr(c,j) / dt )
-                     sminn_to_plant_vr(c,j)    = smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j)
+!                     smin_nh4_to_plant_vr(c,j) = min(smin_nh4_to_plant_vr(c,j), smin_nh4_vr(c,j) / dt )
+!                     smin_no3_to_plant_vr(c,j) = min(smin_no3_to_plant_vr(c,j), smin_no3_vr(c,j) / dt )
+!                     sminn_to_plant_vr(c,j)    = smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j)
                   else
                      sminn_to_plant_vr(c,j)    = 0._r8
                      smin_nh4_to_plant_vr(c,j) = 0._r8
@@ -4006,7 +4006,7 @@ contains
                   if ( temp_sminp_to_plant(c) > 0._r8) then 
                      sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
                      ! ensure that plant uptake rate isn't larger than soil P pool
-                     sminp_to_plant_vr(c,j) = min(sminp_to_plant_vr(c,j), solutionp_vr(c,j) / dt )
+!                     sminp_to_plant_vr(c,j) = min(sminp_to_plant_vr(c,j), solutionp_vr(c,j) / dt )
                   else
                      sminp_to_plant_vr(c,j) = 0._r8
                   endif 
@@ -4031,7 +4031,7 @@ contains
                   if ( temp_sminp_to_plant(c) > 0._r8) then 
                      sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
                      ! ensure that plant uptake rate isn't larger than soil P pool
-                     sminp_to_plant_vr(c,j) = min(sminp_to_plant_vr(c,j), solutionp_vr(c,j) / dt )
+!                     sminp_to_plant_vr(c,j) = min(sminp_to_plant_vr(c,j), solutionp_vr(c,j) / dt )
                   else
                      sminp_to_plant_vr(c,j) = 0._r8
                   endif 
