@@ -67,21 +67,21 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_test_template.blank(["mean", "max", "min", "zvalue", "dataname", "crtime", "ytic2", "xtic2"])
     
     # the actual box around the plot
-    ref_test_template.box1.x1 = 0.123
-    ref_test_template.box1.x2 = 0.86
+    ref_test_template.box1.x1 = 0.1223
+    ref_test_template.box1.x2 = 0.96
     ref_test_template.box1.y1 = 0.55
     ref_test_template.box1.y2 = 0.90
 
     # data (the lines) need to be offset accordingly
-    ref_test_template.data.x1 = 0.123
-    ref_test_template.data.x2 = 0.86
+    ref_test_template.data.x1 = 0.1223
+    ref_test_template.data.x2 = 0.96
     ref_test_template.data.y1 = 0.55
     ref_test_template.data.y2 = 0.90
 
     '''
     ref_test_template.legend.x1 = 0.88
     ref_test_template.legend.x2 = 0.98
-    ref_test_template.legend.y1 = 0.86
+    ref_test_template.legend.y1 = 0.96
     ref_test_template.legend.y2 = 0.88
     ref_test_template.legend.textorientation = 'defright'
     '''
@@ -90,7 +90,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_test_template.title.textorientation = 'defcenter'
 
     ref_test_template.units.textorientation = 'defright'
-    ref_test_template.units.x = 0.86
+    ref_test_template.units.x = 0.96
     ref_test_template.units.y = 0.91
 
     # labels on xaxis
@@ -104,18 +104,18 @@ def plot(ref, test, diff, metrics_dict, parameters):
     # ref_test_template.xname.y += 0.29
 
     # labels on yaxis
-    ref_test_template.ylabel1.x = 0.1108  # no ylabel1.y attribute
+    ref_test_template.ylabel1.x = 0.11  # no ylabel1.y attribute
 
     # actual ticks on yaxis
-    ref_test_template.ytic1.x1 = (0.123 - 0.005) + 0.01
-    ref_test_template.ytic1.x2 = (0.123 - 0.005)
+    ref_test_template.ytic1.x1 = (0.1223 - 0.006) + 0.01
+    ref_test_template.ytic1.x2 = (0.1223 - 0.006)
 
     # name of yaxis
     ref_test_template.yname.priority = 1
     ref_test_template.yname.x = ref_test_template.xname.x
     ref_test_template.yname.y = ref_test_template.xname.y
     
-    #ref_test_template.xname.y += 0.20
+    # ref_test_template.xname.y += 0.20
     # ref_test_template.yname.x += 0.05
     # ref_test_template.yname.y += 0.17
 
@@ -124,6 +124,13 @@ def plot(ref, test, diff, metrics_dict, parameters):
     diff_template.units.textorientation = 'defright'
     diff_template.units.x += 0.01
     diff_template.legend.priority = 0
+    
+    diff_template.ytic1.x1 = (0.1223 - 0.006) + 0.01
+    diff_template.ytic1.x2 = (0.1223 - 0.006)
+    diff_template.ylabel1.x = 0.11  # no ylabel1.y attribute
+    diff_template.units.textorientation = 'defright'
+    diff_template.units.x = 0.96
+
 
     '''
     diff_template.box1.y1 -= 0.47
