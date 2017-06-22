@@ -117,7 +117,7 @@
 	    HTML created on: 2017-06-21
 	  </p>
   	  <p>
-	    This page contains the an example env_archive.xml file read by the short-term archiver script.
+	    This page contains an example env_archive.xml file read by the short-term archiver script.
 	  </p>
 	  <p>
 	    The short-term archiver, case.st_archive, reads these settings in order to<br/>
