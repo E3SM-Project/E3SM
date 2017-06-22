@@ -62,6 +62,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
     vcs_canvas.setcolormap('rainbow')  # 6 to 239 are purple to red in rainbow order
 
     ref_test_template = vcs.gettemplate('ref_test_template')
+    ref_test_template.legend.priority = 0
     # make all of the elements listed have priority = 0
     ref_test_template.blank(["mean", "max", "min", "zvalue", "dataname", "crtime", "ytic2", "xtic2"])
     
@@ -77,11 +78,13 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_test_template.data.y1 = 0.55
     ref_test_template.data.y2 = 0.90
 
+    '''
     ref_test_template.legend.x1 = 0.88
     ref_test_template.legend.x2 = 0.98
     ref_test_template.legend.y1 = 0.86
     ref_test_template.legend.y2 = 0.88
     ref_test_template.legend.textorientation = 'defright'
+    '''
 
     ref_test_template.title.x = 0.5
     ref_test_template.title.textorientation = 'defcenter'
@@ -149,10 +152,9 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_line.datawc_y2 = max(ref.max(), test.max())
     ref_line.datawc_x1 = -90
     ref_line.datawc_x2 = 90
-    ref_line.xticlabels1 = {-90: "90S", -80: "80S", -60: "60S",
-                        -40: "40S", -20: "20S", 0: "Eq",
-                        20: "20N", 40: "40N", 60: "60N",
-                        80: "80N", 90: "90N"}
+    ref_line.xticlabels1 = {-90: "90S", -60: "60S",
+                            -30: "30S", 0: "Eq", 30: "30N",
+                            60: "60N", 90: "90N"}
 
 
     test_line = vcs_canvas.getxvsy('test_plot')
@@ -166,10 +168,9 @@ def plot(ref, test, diff, metrics_dict, parameters):
     diff_line.datawc_y2 = diff.max()
     diff_line.datawc_x1 = -90
     diff_line.datawc_x2 = 90
-    diff_line.xticlabels1 = {-90: "90S", -80: "80S", -60: "60S",
-                        -40: "40S", -20: "20S", 0: "Eq",
-                        20: "20N", 40: "40N", 60: "60N",
-                        80: "80N", 90: "90N"}
+    diff_line.xticlabels1 = {-90: "90S", -60: "60S",
+                             -30: "30S", 0: "Eq", 30: "30N",
+                             60: "60N", 90: "90N"}
 
 
 
@@ -199,6 +200,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
     diff_line.markercolor = diff_plot_markercolor
 
     blank_template = vcs_canvas.gettemplate('blank_template')
+    blank_template.legend.priority = 0
     #blank_template.blank()
     #blank_template.legend.priority = 1
     #blank_template.legend.y1 -= 0.05
