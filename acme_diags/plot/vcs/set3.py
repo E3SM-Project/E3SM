@@ -43,12 +43,8 @@ def plot(ref, test, diff, metrics_dict, parameters):
     diff_plot_markersize = 1
     diff_plot_markercolor = 1
 
-
-    vcs_canvas.geometry(parameters.canvas_size_w, parameters.canvas_size_h)
-    vcs_canvas.drawlogooff()
     file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'set3')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_3.json'))
-
 
     set_units(test, parameters.test_units)
     set_units(ref, parameters.reference_units)
@@ -219,6 +215,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
     #main_title.halign = 'center'
     #main_title.x = 0.5
     #main_title.y = 0.97
+    vcs_canvas.portrait()  # for some reason, this needs to be before a call to vcs_canvas.plot()
     vcs_canvas.plot(main_title)
 
     #ref_test_template.script('plot_set_3.json')
@@ -228,6 +225,11 @@ def plot(ref, test, diff, metrics_dict, parameters):
     #test_line.script('plot_set_3.json')
     #diff_line.script('plot_set_3.json')
     #main_title.script('plot_set_3.json')
+
+    vcs_canvas.bgX = parameters.canvas_size_w
+    vcs_canvas.bgY = parameters.canvas_size_h
+    if not parameters.logo:
+        vcs_canvas.drawlogooff()
 
     fnm = os.path.join(get_output_dir('3', parameters), parameters.output_file)
     for f in parameters.output_format:
