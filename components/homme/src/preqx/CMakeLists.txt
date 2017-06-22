@@ -84,6 +84,7 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/metis_mod.F90
   ${SRC_SHARE_DIR}/prim_driver_mod.F90
   ${SRC_SHARE_DIR}/mesh_mod.F90 
+  ${SRC_SHARE_DIR}/compose_mod.F90 
   ${UTILS_SHARE_DIR}/shr_kind_mod.F90
   ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
   ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
@@ -100,13 +101,18 @@ SET(PREQX_SRCS_C
   ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c
 )
 
+SET(PREQX_SRCS_CXX
+  ${SRC_SHARE_DIR}/qlt.cpp
+  ${SRC_SHARE_DIR}/ir.cpp
+)
+
 # If the user specified a file for custom compiler options use those
 IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)
   setCustomCompilerFlags(PREQX_CUSTOM_FLAGS_FILE PREQX_SRCS_F90)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(EXEC_SOURCES ${PREQX_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90} )
+SET(EXEC_SOURCES ${PREQX_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_CXX} ${PREQX_SRCS_F90} )
 
 # Set up defaults
 IF (NOT PREQX_NP)

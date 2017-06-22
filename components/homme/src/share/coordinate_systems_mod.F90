@@ -19,7 +19,7 @@ module coordinate_systems_mod
      real(real_kind) :: y             ! y coordinate
   end type cartesian2D_t
 
-  type, public :: cartesian3D_t
+  type, bind(C), public :: cartesian3D_t
      real(real_kind) :: x             ! x coordinate
      real(real_kind) :: y             ! y coordinate
      real(real_kind) :: z             ! z coordinate

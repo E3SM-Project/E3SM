@@ -68,13 +68,14 @@ IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
   SET (HOMME_USE_CXX TRUE)
   SET (HOMME_USE_TRILINOS TRUE)
 ELSE ()
-  SET(HOMME_USE_CXX FALSE)
+  SET(HOMME_USE_CXX TRUE)
   SET(HOMME_USE_TRILINOS FALSE)
 ENDIF ()
 
 IF (${HOMME_USE_CXX})
   MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
   ENABLE_LANGUAGE(CXX)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ENDIF ()
 
 ##############################################################################
@@ -170,9 +171,9 @@ ENDIF ()
 ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
 
 # CPRNC locations
-SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
-SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
-ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+#SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
+#SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
+#ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
 
 SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")
 IF(${BUILD_HOMME_SWEQX})

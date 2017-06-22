@@ -16,6 +16,9 @@ module control_mod
 ! none of this is used anymore:
   logical, public  :: use_semi_lagrange_transport   = .false.
   logical, public  :: use_semi_lagrange_transport_local_conservation   = .false.
+  logical, public  :: use_semi_lagrange_transport_ir = .false.
+  logical, public  :: use_semi_lagrange_transport_qlt = .false.
+  logical, public  :: use_semi_lagrange_transport_qlt_check = .false.
 
 
 !shallow water advection tests:

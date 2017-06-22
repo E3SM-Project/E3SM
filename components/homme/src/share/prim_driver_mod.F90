@@ -6,7 +6,8 @@ module prim_driver_mod
 
   use cg_mod,           only: cg_t
   use derivative_mod,   only: derivative_t, derivinit
-  use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, qsize
+  use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, &
+                              qsize, qsize_d
   use element_mod,      only: element_t, allocate_element_desc, setup_element_pointers
   use element_state,    only: timelevels
   use hybrid_mod,       only: hybrid_t
@@ -48,7 +49,7 @@ contains
     use thread_mod, only : nthreads, nThreadsHoriz
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, integration, topology, &
-         partmethod, use_semi_lagrange_transport
+         partmethod, use_semi_lagrange_transport, use_semi_lagrange_transport_qlt
     ! --------------------------------
     use prim_state_mod, only : prim_printstate_init
     ! --------------------------------
@@ -112,6 +113,8 @@ contains
     use prim_implicit_mod,  only : prim_implicit_init
 #endif
 
+    use compose_mod
+
     implicit none
 
     type (element_t),   pointer     :: elem(:)
@@ -125,7 +128,7 @@ contains
 
     integer :: ii,ie, ith
     integer :: nets, nete
-    integer :: nelem_edge,nedge
+    integer :: nelem_edge,nedge,ne
     integer :: nstep
     integer :: nlyr
     integer :: iMv
@@ -238,7 +241,12 @@ contains
            end if
            call MeshCubeTopology(GridEdge, GridVertex)
        else
+          if (par%masterproc) then
+             write(6,*)"call CubeTopology..."
+          end if
            call CubeTopology(GridEdge,GridVertex)
+           ne = sqrt(real(size(GridVertex)/6))
+           write(6,*) GridVertex(1)%number, GridVertex(2)%number, GridVertex(3)%number
         end if
 
        if(par%masterproc)       write(iulog,*)"...done."
@@ -254,6 +262,9 @@ contains
         if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
        call genmetispart(GridEdge,GridVertex)
     endif
+
+    ! At exactly this point, processor_number is valid.
+    call kokkos_init()
 
     ! ===========================================================
     ! given partition, count number of local element descriptors
@@ -426,20 +437,6 @@ contains
 #endif
     !DBG  write(iulog,*) 'prim_init: after call to initRestartFile'
 
-    deallocate(GridEdge)
-    do j =1,nelem
-       call deallocate_gridvertex_nbrs(GridVertex(j))
-    end do
-    deallocate(GridVertex)
-
-    do j = 1, MetaVertex(1)%nmembers
-       call deallocate_gridvertex_nbrs(MetaVertex(1)%members(j))
-    end do
-    deallocate(MetaVertex)
-    deallocate(TailPartition)
-    deallocate(HeadPartition)
-
-
     ! =====================================
     ! Set number of threads...
     ! =====================================
@@ -458,6 +455,31 @@ contains
     nete=nelemd
     ! set the actual number of threads which will be used in the horizontal
     nThreadsHoriz = nthreads
+
+    if (use_semi_lagrange_transport .and. use_semi_lagrange_transport_qlt) then
+       call qlt_init(par%comm, GridVertex)
+       call qlt_unittest(par%comm, ierr)
+       if (par%masterproc) then
+          write(iulog,*) "QLT unittest returned", ierr
+       end if
+       do ie = 1, nelemd
+          call qlt_set_ie2gci(ie, elem(ie)%vertex%number)
+       end do
+    end if
+
+    deallocate(GridEdge)
+    do j =1,nelem
+       call deallocate_gridvertex_nbrs(GridVertex(j))
+    end do
+    deallocate(GridVertex)
+
+    do j = 1, MetaVertex(1)%nmembers
+       call deallocate_gridvertex_nbrs(MetaVertex(1)%members(j))
+    end do
+    deallocate(MetaVertex)
+    deallocate(TailPartition)
+    deallocate(HeadPartition)
+
 #ifndef CAM
     allocate(cm(0:n_domains-1))
 #endif

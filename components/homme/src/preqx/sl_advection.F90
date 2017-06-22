@@ -10,8 +10,8 @@ module sl_advection
 !
 !  Author:  James Overfelt   3/2015
 !
-  use kinds, only              : real_kind
-  use dimensions_mod, only     : nlev, nlevp, np, qsize
+  use kinds, only              : real_kind, int_kind
+  use dimensions_mod, only     : nlev, nlevp, np, qsize, qsize_d
   use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
   use derivative_mod, only     : derivative_t, gradient_sphere, divergence_sphere
   use element_mod, only        : element_t
@@ -26,7 +26,8 @@ module sl_advection
   use viscosity_mod, only      : biharmonic_wk_scalar, neighbor_minmax, &
                                  neighbor_minmax_start, neighbor_minmax_finish
   use perf_mod, only           : t_startf, t_stopf, t_barrierf ! _EXTERNAL
-  use parallel_mod, only   : abortmp, parallel_t
+  use parallel_mod, only       : abortmp, parallel_t
+  use compose_mod
 
   implicit none
 
@@ -34,39 +35,52 @@ module sl_advection
   save
 
   type (ghostBuffer3D_t)   :: ghostbuf_tr
-  type (EdgeBuffer_t)      :: edgeveloc
+  type (EdgeBuffer_t)      :: edgeveloc, edgeQdp
 
   public :: Prim_Advec_Tracers_remap_ALE, sl_init1
+
+  logical, parameter :: barrier = .false.
 
 contains
 
 
 !=================================================================================================!
-  subroutine sl_init1(par, elem, n_domains)
-    use interpolate_mod,        only : interpolate_tracers_init
-    type(parallel_t) :: par
-    integer, intent(in) :: n_domains
-    type (element_t) :: elem(:)
+subroutine sl_init1(par, elem, n_domains)
+  use interpolate_mod,        only : interpolate_tracers_init
+  use control_mod,            only : use_semi_lagrange_transport_ir
+  type(parallel_t) :: par
+  integer, intent(in) :: n_domains
+  type (element_t) :: elem(:)
+  integer :: nslots
+  
+  if (use_semi_lagrange_transport) then
+     call initEdgeBuffer(par,edgeveloc,elem,2*nlev)
+     nslots = nlev*qsize
+     if (use_semi_lagrange_transport_ir) then
+        nslots = nslots + nlev
+     end if
+     call initghostbuffer3D(ghostbuf_tr,nslots,np)
+     call interpolate_tracers_init()
+     if (use_semi_lagrange_transport_ir) then
+        call initEdgeBuffer(par, edgeQdp, elem, qsize*nlev)
+        call ir_init(np, size(elem))
+     end if
+  endif
 
-    if  (use_semi_lagrange_transport) then
-       call initEdgeBuffer(par,edgeveloc,elem,2*nlev)
-       call initghostbuffer3D(ghostbuf_tr,nlev*qsize,np)
-       call interpolate_tracers_init()
-    endif
-
-  end subroutine 
-
+end subroutine
 
 subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets , nete )
   use coordinate_systems_mod, only : cartesian3D_t, cartesian2D_t
   use dimensions_mod,         only : max_neigh_edges
+  use element_state,          only : timelevels
   use bndry_mod,              only : ghost_exchangevfull
   use interpolate_mod,        only : interpolate_tracers, minmax_tracers
   use control_mod   ,         only : qsplit
   use global_norms_mod,       only : wrap_repro_sum
-  use parallel_mod,           only: global_shared_buf, global_shared_sum, syncmp
+  use parallel_mod,           only : global_shared_buf, global_shared_sum, syncmp
   use control_mod,            only : use_semi_lagrange_transport_local_conservation
-
+  use control_mod,            only : use_semi_lagrange_transport_ir, &
+       use_semi_lagrange_transport_qlt, use_semi_lagrange_transport_qlt_check
 
 
   implicit none
@@ -92,106 +106,213 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   real(kind=real_kind)                          :: elem_mass         (nlev,qsize,nets:nete)
   real(kind=real_kind)                          :: rho         (np,np,nlev,      nets:nete)
 
-  real(kind=real_kind)                          :: neigh_q     (np,np,qsize,max_neigh_edges+1)
-  real(kind=real_kind)                          :: u           (np,np,qsize)
+  !TODO we don't want this. i think it causes a temp array in the
+  !     ghostVpack_unoriented call.
+  real(kind=real_kind)                          :: neigh_q     (np,np,qsize+1,max_neigh_edges+1)
+  real(kind=real_kind)                          :: u           (np,np,qsize+1)
 
   integer                                       :: i,j,k,l,n,q,ie,kptr, n0_qdp, np1_qdp
-  integer                                       :: num_neighbors
+  integer                                       :: num_neighbors, need_conservation, scalar_q_bounds
 
   call t_barrierf('Prim_Advec_Tracers_remap_ALE', hybrid%par%comm)
   call t_startf('Prim_Advec_Tracers_remap_ALE')
 
   call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
 
-  ! compute displacements for departure grid
-  ! store in elem%derived%vstar
+  ! compute displacements for departure grid store in elem%derived%vstar
   call ALE_RKdss (elem, nets, nete, hybrid, deriv, dt, tl)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  run ghost exchange to get global ID of all neighbors
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  call t_startf('Prim_Advec_Tracers_remap_ALE_ghost_exchange')
-  do ie=nets,nete
-     kptr=0
-     do k=1,nlev
-     do q=1,qsize
-        ! note: pack so that tracers per level are contiguous so we can unpack into
-        ! array neigh_q()
-        elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp) / elem(ie)%derived%dp(:,:,k)
-        call ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,q),np,1,kptr,elem(ie)%desc)
-        kptr=kptr+1
-     enddo
-     enddo
-  end do
-
-  call t_startf('pat_remap_ale_gexchV')
-  call ghost_exchangeVfull(hybrid%par,hybrid%ithr,ghostbuf_tr)
-  call t_stopf('pat_remap_ale_gexchV')
-
-  do ie=nets,nete
-     num_neighbors = elem(ie)%desc%actual_neigh_edges+1
-     do k=1,nlev
-
-        ! find departure points
-        call ALE_departure_from_gll     (dep_points, elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt)
-
-        ! find element containing departure point
-        call ALE_elems_with_dep_points  (elem_indexes, dep_points, num_neighbors, elem(ie)%desc%neigh_corners)
-
-        ! compute the parametric points
-        call ALE_parametric_coords      (para_coords, elem_indexes, dep_points, num_neighbors, elem(ie)%desc%neigh_corners)
-
-        ! for each level k, unpack all tracer neighbor data on that level
-        kptr=(k-1)*qsize
-        neigh_q=0
-        u(:,:,:) = elem(ie)%state%Q(:,:,k,1:qsize)
-        call ghostVunpack_unoriented (ghostbuf_tr, neigh_q, np, qsize, kptr, elem(ie)%desc, elem(ie)%GlobalId, u)
-
-        do i=1,np
-        do j=1,np
-          ! interpolate tracers to deperature grid
-          call interpolate_tracers     (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f)
-          elem(ie)%state%Q(i,j,k,:) = f 
-!         call minmax_tracers          (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f,g)
-          do q=1,qsize
-            f(q) = MINVAL(neigh_q(:,:,q,elem_indexes(i,j)))
-            g(q) = MAXVAL(neigh_q(:,:,q,elem_indexes(i,j)))
-          end do 
-          minq(i,j,k,:,ie) = f 
-          maxq(i,j,k,:,ie) = g 
+  if (use_semi_lagrange_transport_ir) then
+     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
+     call t_startf('IR_ghost_pack')
+     do ie = nets, nete
+        kptr = 0
+        do k = 1, nlev
+           ! Send rho*Jacobian[ref elem -> sphere].
+           !todo What's the difference between derived.dp and state.dp3d?
+           !elem(ie)%state%Q(:,:,k,1) = elem(ie)%state%dp3d(:,:,k,tl%n0) * elem(ie)%metdet(:,:)
+           elem(ie)%state%Q(:,:,k,1) = elem(ie)%derived%dp(:,:,k) * elem(ie)%metdet(:,:)
+           call ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,1), np, 1, kptr, elem(ie)%desc)
+           kptr = kptr + 1
+           do q = 1, qsize
+              ! Remap the curious quantity
+              !     (tracer density)*Jacobian[ref elem -> sphere],
+              ! not simply the tracer mixing ratio.
+              elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp) * elem(ie)%metdet(:,:)
+              call ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,q), np, 1, kptr, elem(ie)%desc)
+              kptr = kptr + 1
+           enddo
         enddo
-        enddo
-
      end do
-  end do
+     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
+     call t_stopf('IR_ghost_pack')
 
+     call t_startf('IR_ghost_exchange')
+     call ghost_exchangeVfull(hybrid%par, hybrid%ithr, ghostbuf_tr)
+     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
+     call t_stopf('IR_ghost_exchange')
 
-  call t_stopf('Prim_Advec_Tracers_remap_ALE_ghost_exchange')
+     call t_startf('IR_project')
+     do ie = nets, nete
+        num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
+        n = qsize + 1 ! Number of fields to unpack.
+        do k = 1, nlev
+           call ALE_departure_from_gll(dep_points, elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt)
+
+           ! Unpack all tracer neighbor data on level k.
+           kptr = (k-1)*n
+           u(:,:,1        ) = elem(ie)%derived%dp(:,:,k) * elem(ie)%metdet(:,:)
+           u(:,:,2:qsize+1) = elem(ie)%state%Q(:,:,k,1:qsize)
+           call ghostVunpack_unoriented(ghostbuf_tr, neigh_q, np, n, kptr, elem(ie)%desc, elem(ie)%GlobalId, u)
+
+           call ir_project(k, ie, num_neighbors, np, nlev, qsize, nets, nete, &
+                dep_points, elem(ie)%desc%neigh_corners, &
+                neigh_q, &                     ! (tracer density)*Jacobian[ref elem -> sphere] on source mesh.
+                elem(ie)%metdet, &             ! Jacobian[ref elem -> sphere] on target element.
+                elem(ie)%state%dp3d, tl%np1, & ! Total density to get mixing ratios.
+                elem(ie)%state%Q, minq, maxq)  ! Outputs are all mixing ratios.
+        end do
+     end do
+     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
+     call t_stopf('IR_project')
+  else
+     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
+     call t_startf('Prim_Advec_Tracers_remap_ALE_ghost_exchange')
+     do ie=nets,nete
+        kptr=0
+        do k=1,nlev
+           do q=1,qsize
+              ! note: pack so that tracers per level are contiguous so we can unpack into
+              ! array neigh_q()
+              elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp) / elem(ie)%derived%dp(:,:,k)
+              call ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,q),np,1,kptr,elem(ie)%desc)
+              kptr=kptr+1
+           enddo
+        enddo
+     end do
+
+     call ghost_exchangeVfull(hybrid%par,hybrid%ithr,ghostbuf_tr)
+
+     do ie=nets,nete
+        num_neighbors = elem(ie)%desc%actual_neigh_edges+1
+        do k=1,nlev
+
+           ! find departure points
+           call ALE_departure_from_gll     (dep_points, elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt)
+
+           ! find element containing departure point
+           call ALE_elems_with_dep_points  (elem_indexes, dep_points, num_neighbors, elem(ie)%desc%neigh_corners)
+
+           ! compute the parametric points
+           call ALE_parametric_coords      (para_coords, elem_indexes, dep_points, num_neighbors, elem(ie)%desc%neigh_corners)
+
+           ! for each level k, unpack all tracer neighbor data on that level
+           kptr=(k-1)*qsize
+           neigh_q=0
+           u(:,:,1:qsize) = elem(ie)%state%Q(:,:,k,1:qsize)
+           call ghostVunpack_unoriented (ghostbuf_tr, neigh_q(:,:,1:qsize,:), np, qsize, kptr, elem(ie)%desc, &
+                elem(ie)%GlobalId, u(:,:,1:qsize))
+
+           do i=1,np
+              do j=1,np
+                 ! interpolate tracers to deperature grid
+                 call interpolate_tracers     (para_coords(i,j), neigh_q(:,:,1:qsize,elem_indexes(i,j)),f)
+                 elem(ie)%state%Q(i,j,k,:) = f 
+                 !         call minmax_tracers          (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f,g)
+                 do q=1,qsize
+                    f(q) = MINVAL(neigh_q(:,:,q,elem_indexes(i,j)))
+                    g(q) = MAXVAL(neigh_q(:,:,q,elem_indexes(i,j)))
+                 end do
+                 minq(i,j,k,:,ie) = f 
+                 maxq(i,j,k,:,ie) = g 
+              enddo
+           enddo
+
+        end do
+     end do
+     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
+     call t_stopf('Prim_Advec_Tracers_remap_ALE_ghost_exchange')
+  end if
+
+  ! QLT works with either classical SL or IR.
+  if (use_semi_lagrange_transport_qlt) then
+     need_conservation = 1
+     ! The IR method is locally conservative, so we don't need QLT to handle
+     ! conservation.
+     if (use_semi_lagrange_transport_ir) need_conservation = 0
+
+     scalar_q_bounds = 0
+     ! The IR method has uniform bounds on q throughout a cell.
+     if (use_semi_lagrange_transport_ir) scalar_q_bounds = 1
+
+     call qlt_sl_set_pointers_begin(nets, nete, np, nlev, qsize, qsize_d, &
+          timelevels, need_conservation)
+     do ie = 1, size(elem)
+        call qlt_sl_set_spheremp(ie, elem(ie)%spheremp)
+        call qlt_sl_set_Qdp(ie, elem(ie)%state%Qdp, n0_qdp, np1_qdp)
+        call qlt_sl_set_dp3d(ie, elem(ie)%state%dp3d, tl%np1)
+        call qlt_sl_set_Q(ie, elem(ie)%state%Q)
+     end do
+     call qlt_sl_set_pointers_end()
+     if (.true.) then
+        call t_startf('QLT')
+        call qlt_sl_run(minq, maxq, nets, nete)
+        if (barrier) call mpi_barrier(hybrid%par%comm, ie)
+        call t_stopf('QLT')
+        call t_startf('QLT_local')
+        call qlt_sl_run_local(minq, maxq, nets, nete, scalar_q_bounds)
+        if (barrier) call mpi_barrier(hybrid%par%comm, ie)
+        call t_stopf('QLT_local')
+     else
+        do ie = nets, nete
+           do k = 1, nlev
+              do q = 1, qsize
+                 elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Q(:,:,k,q) * elem(ie)%state%dp3d(:,:,k,tl%np1)
+              enddo
+           enddo
+        end do
+     end if
+  end if
+  if (use_semi_lagrange_transport_ir) then
+     call t_startf('IR_dss')
+     call ir_dss(elem, nets, nete, hybrid, np1_qdp)
+     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
+     call t_stopf('IR_dss')
+  end if
+  if (use_semi_lagrange_transport_qlt_check) then
+     call t_startf('QLT_check')
+     call qlt_sl_check(minq, maxq, nets, nete)
+     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
+     call t_stopf('QLT_check')
+  end if
+  if (use_semi_lagrange_transport_qlt) then
+     call t_stopf('Prim_Advec_Tracers_remap_ALE')
+     return
+  end if
+
   ! compute original mass, at tl_1%n0
   elem_mass = 0
   do ie=nets,nete
-    n=0
-    do k=1,nlev
-    do q=1,qsize
-      n=n+1
-      global_shared_buf(ie,n) = 0
-      do j=1,np
-        global_shared_buf(ie,n) = global_shared_buf(ie,n) + DOT_PRODUCT(elem(ie)%state%Qdp(:,j,k,q,n0_qdp),elem(ie)%spheremp(:,j))
-        elem_mass(k,q,ie)       = elem_mass(k,q,ie)       + DOT_PRODUCT(elem(ie)%state%Qdp(:,j,k,q,n0_qdp),elem(ie)%spheremp(:,j))
-      end do
-    end do
-    end do
+     n=0
+     do k=1,nlev
+        do q=1,qsize
+           n=n+1
+           global_shared_buf(ie,n) = 0
+           do j=1,np
+              global_shared_buf(ie,n) = global_shared_buf(ie,n) + DOT_PRODUCT(elem(ie)%state%Qdp(:,j,k,q,n0_qdp),elem(ie)%spheremp(:,j))
+              elem_mass(k,q,ie)       = elem_mass(k,q,ie)       + DOT_PRODUCT(elem(ie)%state%Qdp(:,j,k,q,n0_qdp),elem(ie)%spheremp(:,j))
+           end do
+        end do
+     end do
   end do
   call wrap_repro_sum(nvars=n, comm=hybrid%par%comm)
   n=0
   do k=1,nlev
-  do q=1,qsize
-    n=n+1
-    mass(k,q) = global_shared_sum(n)
+     do q=1,qsize
+        n=n+1
+        mass(k,q) = global_shared_sum(n)
+     enddo
   enddo
-  enddo
-
 
   do ie=nets,nete
   do k=1,nlev
@@ -204,9 +325,9 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   end do
   call t_startf('Prim_Advec_Tracers_remap_ALE_Cobra')
   if (use_semi_lagrange_transport_local_conservation) then
-    call Cobra_Elem (Que, Que_t, rho, minq, maxq, elem_mass, hybrid, nets, nete)
+     call Cobra_Elem (Que, Que_t, rho, minq, maxq, elem_mass, hybrid, nets, nete)
   else
-    call Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
+     call Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   end if
   call t_stopf('Prim_Advec_Tracers_remap_ALE_Cobra')
 
@@ -326,11 +447,11 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   if (MAXVAL(ABS(rp)).lt.eta) return
 
   do ie=nets,nete
-  do q=1,qsize
-  do k=1,nlev
-     Que(:,k,q,ie) = hfd * rho(:,k,ie) + Que_t(:,k,q,ie)
-  enddo
-  enddo
+     do q=1,qsize
+        do k=1,nlev
+           Que(:,k,q,ie) = hfd * rho(:,k,ie) + Que_t(:,k,q,ie)
+        enddo
+     enddo
   enddo
 
   Que = MIN(MAX(Que,minq),maxq)
@@ -339,7 +460,7 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
 
   rd = rc-rp
   if (MAXVAL(ABS(rd)).eq.0) return 
-  
+
   alpha = 0
   WHERE (rd.ne.0) alpha = hfd / rd 
 
@@ -348,29 +469,29 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
 
   do while (MAXVAL(ABS(rc)).gt.eta .and. nclip.lt.max_clip)
 
-    do ie=nets,nete
-    do q=1,qsize
-    do k=1,nlev
-       Que(:,k,q,ie) = (lambda_c(k,q) + hfd) * rho(:,k,ie) + Que_t(:,k,q,ie)
-    enddo
-    enddo
-    enddo
-    Que = MIN(MAX(Que,minq),maxq)
+     do ie=nets,nete
+        do q=1,qsize
+           do k=1,nlev
+              Que(:,k,q,ie) = (lambda_c(k,q) + hfd) * rho(:,k,ie) + Que_t(:,k,q,ie)
+           enddo
+        enddo
+     enddo
+     Que = MIN(MAX(Que,minq),maxq)
 
-    call VDOT(rc,Que,rho,mass,hybrid,nets,nete)
-    nclip = nclip + 1
+     call VDOT(rc,Que,rho,mass,hybrid,nets,nete)
+     nclip = nclip + 1
 
-    rd = rp-rc
+     rd = rp-rc
 
-    if (MAXVAL(ABS(rd)).eq.0) exit
+     if (MAXVAL(ABS(rd)).eq.0) exit
 
-    alpha = 0
-    WHERE (rd.ne.0) alpha = (lambda_p - lambda_c) / rd 
+     alpha = 0
+     WHERE (rd.ne.0) alpha = (lambda_p - lambda_c) / rd 
 
-    rp       = rc
-    lambda_p = lambda_c
+     rp       = rc
+     lambda_p = lambda_c
 
-    lambda_c = lambda_c -  alpha * rc
+     lambda_c = lambda_c -  alpha * rc
 
   enddo
 end subroutine Cobra_SLBQP
@@ -644,7 +765,6 @@ subroutine ALE_departure_from_gll(acart, vstar, elem, dt)
      ! just asking for trouble.)
      uxyz(:,:,i)=sum( elem%vec_sphere2cart(:,:,i,:)*vstar(:,:,:) ,3)
   end do
-  ! interpolate velocity to fvm nodes
   ! compute departure point
   ! crude, 1st order accurate approximation.  to be improved
   do i=1,np
@@ -911,5 +1031,39 @@ subroutine  ALE_parametric_coords (parametric_coord, elem_indexes, dep_points, n
   end do
 end subroutine ALE_parametric_coords
 
+subroutine ir_dss(elem, nets, nete, hybrid, np1_qdp)
+  use edgetype_mod,    only : EdgeBuffer_t
+  use bndry_mod,       only : bndry_exchangev
+  use hybrid_mod,      only : hybrid_t
+  use element_mod,     only : element_t
+  implicit none
+
+  type (element_t), intent(inout) :: elem(:)
+  integer         , intent(in   ) :: nets, nete, np1_qdp
+  type (hybrid_t) , intent(in)    :: hybrid
+  integer                         :: ie, q, k
+
+  do ie = nets, nete
+     do q = 1, qsize
+        do k = 1, nlev
+           elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)*elem(ie)%spheremp(:,:)
+        end do
+     end do
+     call edgeVpack(edgeQdp, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), qsize*nlev, 0, ie)
+  enddo
+
+  call t_startf('IR_bexchV')
+  call bndry_exchangeV(hybrid, edgeQdp)
+  call t_stopf('IR_bexchV')
+
+  do ie = nets, nete
+     call edgeVunpack(edgeQdp, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), qsize*nlev, 0, ie)
+     do q = 1, qsize
+        do k = 1, nlev
+           elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)*elem(ie)%rspheremp(:,:)
+        end do
+     end do
+  end do
+end subroutine ir_dss
 
 end module 

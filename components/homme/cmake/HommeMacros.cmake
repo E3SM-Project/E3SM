@@ -70,6 +70,8 @@ macro(createTestExec execName execType macroNP macroNC
   
   ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
 
+  SET_PROPERTY(TARGET ${execName} PROPERTY LINKER_LANGUAGE Fortran)
+
   # Add this executable to a list 
   SET(EXEC_LIST ${EXEC_LIST} ${execName} CACHE INTERNAL "List of configured executables")
 
