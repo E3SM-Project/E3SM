@@ -1,0 +1,41 @@
+{
+    "type": "FeatureCollection", 
+    "groupName": "enterGroupName", 
+    "features": [
+        {
+            "type": "Feature", 
+            "properties": {
+                "name": "Land Coverage", 
+                "tags": "", 
+                "object": "region", 
+                "component": "ocean", 
+                "author": "Mark Petersen"
+            }, 
+            "geometry": {
+                "type": "MultiPolygon", 
+                "coordinates": [
+                    [
+                        [
+                            [
+                                -157.5,
+                                  71.35
+                            ], 
+                            [
+                                -155.5,
+                                  71.35
+                            ], 
+                            [
+                                -155.5,
+                                  72.35
+                            ], 
+                            [
+                                -157.5,
+                                  72.35
+                            ]
+                        ]
+                    ]
+                ]
+            }
+        }
+    ]
+}
