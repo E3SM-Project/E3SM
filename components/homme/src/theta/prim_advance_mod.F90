@@ -19,7 +19,8 @@ module prim_advance_mod
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
-  use parallel_mod,   only: abortmp, parallel_t, iam
+  use parallel_mod,   only: abortmp, parallel_t, iam,global_shared_buf, global_shared_sum
+
   use time_mod,       only: timelevel_t
   use test_mod,       only: set_prescribed_wind
   use hevi_mod,       only: state_save,state_read,backsubstitution,mgs,elemstate_add
@@ -257,7 +258,7 @@ contains
       call elemstate_add(elem,statesave,nets,nete,1,n0,np1,n0,gamma,1.d0,0.d0)
                              
       maxiter=1000
-      itertol=1e-9
+      itertol=1e-13
       ! solve g2 = un0 + dt*gamma*n(g1)+dt*gamma*s(g2) for g2 and save at nm1
       call compute_stage_value_dirk(nm1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,maxiter,itertol)
@@ -285,7 +286,7 @@ contains
       call elemstate_add(elem,statesave,nets,nete,3,nm1,np1,nm1,1.d0-gamma,1.d0-gamma,1.d0)
                        
       maxiter=1000
-      itertol=1e-9
+      itertol=1e-13
       !	solve g3 = (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2)+dt*gamma*s(g3)
       ! for g3 using (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2) as initial guess
       ! and save at np1
@@ -1443,29 +1444,25 @@ endif
   real (kind=real_kind), pointer, dimension(:,:,:)   :: phi
   real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
   real (kind=real_kind), pointer, dimension(:,:,:)   :: theta_dp_cp
+  real (kind=real_kind), pointer, dimension(:,:)   :: phis
    
   real (kind=real_kind) :: kappa_star(np,np,nlev)
   real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
   real (kind=real_kind) :: dpnh(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
   real (kind=real_kind) :: dpnh_dp(np,np,nlev),dpnh_dp2(np,np,nlev)    !    ! dpnh / dp3d  
-  real (kind=real_kind) :: temp(np,np,nlev)
-  real (kind=real_kind) :: Jac(np,np,2*nlev,2*nlev), Q(np,np,2*nlev,2*nlev)
-  real (kind=real_kind) :: R(np,np,2*nlev,2*nlev), Qt(2*nlev,2*nlev)
-  real (kind=real_kind) :: e(np,np,2*nlev)
-  real (kind=real_kind) :: Fn(np,np,2*nlev,1),x(np,np,2*nlev,1),epsie
-  real (kind=real_kind) :: dFn(np,np,2*nlev,1)
-  real (kind=real_kind) :: QtFn(np,np,2*nlev,1), Fntemp(2*nlev,1)
-  real (kind=real_kind) :: res(np,np,2*nlev),resnorm,resnormmax
+  real (kind=real_kind) :: Jac(np,np,nlev,nlev)=0.d0, Q(np,np,nlev,nlev)
+  real (kind=real_kind) :: R(np,np,nlev,nlev), Qt(nlev,nlev)
+  real (kind=real_kind) :: Fn(np,np,2*nlev,1),x(np,np,nlev,1),epsie
+  real (kind=real_kind) :: QtFn(np,np,nlev,1), Fntemp(nlev,1)
+  ! these variables are for developing/testing the analytic Jacobian
+  real (kind=real_kind) :: pnh_i(np,np,nlevp),exner_i(np,np,nlevp)
 
-  real (kind=real_kind) ::  itererr, itererrmax
-  integer :: i,j,k,l,ie,itercount,itercountmax
+  real (kind=real_kind) ::  itererr(nete-nets+1),resnorm(nete-nets+1)
+  real (kind=real_kind) ::itererrmat(nete-nets+1)
+   
+  integer :: i,j,k,l,ie,itercount(nete-nets+1)
 
-  itercountmax=1
-  itererrmax=0.d0
-  resnormmax=0.d0
-
-  epsie=1e-4
   call t_startf('compute_stage_value_dirk')
 
   do ie=nets,nete 
@@ -1476,92 +1473,86 @@ endif
     elem(ie)%state%theta_dp_cp(:,:,:,np1) = elem(ie)%state%theta_dp_cp(:,:,:,n0)
     elem(ie)%state%dp3d(:,:,:,np1)        = elem(ie)%state%dp3d(:,:,:,n0)
 
-    itercount=1
-    itererr = 2.0*itertol      
-    
-    do while ((itercount < maxiter).and.((itererr > itertol).or.(resnorm > itertol*1.d2)) )
+    itercount(ie)=0
+    Fn(:,:,1:nlev,1) = elem(ie)%state%w(:,:,:,np1)-elem(ie)%state%w(:,:,:,n0) &
+        +dt2*g*(1.0-dpnh_dp(:,:,:))
+
+    Fn(:,:,nlev+1:2*nlev,1) = elem(ie)%state%phi(:,:,:,np1)-elem(ie)%state%phi(:,:,:,n0) &
+        -dt2*g*elem(ie)%state%w(:,:,:,np1)
+    resnorm=maxval(abs(Fn))/max( maxval(abs(elem(ie)%state%w(:,:,:,np1))), &
+       maxval(abs(elem(ie)%state%phi(:,:,:,np1))))
+    itererr=resnorm
+
+    do while ((itercount(ie) < maxiter).and.((itererr(ie) > itertol).or.(resnorm(ie) > itertol)) )
       
       dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
       theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,np1)
       phi => elem(ie)%state%phi(:,:,:,np1)
+      phis => elem(ie)%state%phis(:,:)
         
       if (theta_hydrostatic_mode) then
         dpnh_dp(:,:,:)=1.d0
       else   
         call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)   
         call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
-        kappa_star,pnh,dpnh,exner)   
+        kappa_star,pnh,dpnh,exner,exner_i,pnh_i)   
         dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
       end if
-                
+                    
+     !   form d/dphi + I/g
+      do k=1,nlev
+        if (k < nlev) then 
+          Jac(:,:,k,k+1) = dt2*g*pnh_i(:,:,k+1)/(phi(:,:,k+1)-phi(:,:,k))/dp3d(:,:,k)
+          Jac(:,:,k,k) = dt2*g*(pnh_i(:,:,k+1)/(phi(:,:,k)-phi(:,:,k+1))-pnh_i(:,:,k)/&
+           (phi(:,:,k-1)-phi(:,:,k)))/dp3d(:,:,k)+1.d0/(g*dt2)
+        else
+          Jac(:,:,k,k) = dt2*g*(-2.d0*pnh_i(:,:,k+1)/(phi(:,:,k)-phis(:,:))-pnh_i(:,:,k)/&
+           (phi(:,:,k-1)-phi(:,:,k)))/dp3d(:,:,k)+1.d0/(g*dt2)
+        end if
+        if (k > 1 ) then 
+          Jac(:,:,k,k-1) =  dt2*g*pnh_i(:,:,k)/(phi(:,:,k)-phi(:,:,k-1))/dp3d(:,:,k)
+        end if
+      end do
+
       Fn(:,:,1:nlev,1) = elem(ie)%state%w(:,:,:,np1)-elem(ie)%state%w(:,:,:,n0) &
         +dt2*g*(1.0-dpnh_dp(:,:,:))
                 
       Fn(:,:,nlev+1:2*nlev,1) = elem(ie)%state%phi(:,:,:,np1)-elem(ie)%state%phi(:,:,:,n0) &
         -dt2*g*elem(ie)%state%w(:,:,:,np1)      
-  
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-      do k=1,2*nlev
-           
-        e(:,:,:)=0.0   
-        e(:,:,k)=1.0  
-           
-        if (theta_hydrostatic_mode) then
-          dpnh_dp2(:,:,:)=1.d0
-        else            
-         ! compute the new dpnh_dp at the perturbed values
-         ! use the pointers onl
-          phi(:,:,:)=phi(:,:,:)+epsie*e(:,:,nlev+1:2*nlev)                  
-          call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&     
-            kappa_star,pnh,dpnh,exner) 
-          dpnh_dp2(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
-          phi(:,:,:)=phi(:,:,:)-epsie*e(:,:,nlev+1:2*nlev)
-        end if    
 
-       ! Form the approximate Jacobian
-        Jac(:,:,1:nlev,k)=e(:,:,1:nlev)+dt2*g*(dpnh_dp(:,:,:)-dpnh_dp2(:,:,:))/epsie 
-        Jac(:,:,nlev+1:2*nlev,k)=e(:,:,nlev+1:2*nlev)-dt2*g*e(:,:,1:nlev)
-      end do
- 
-      call mgs(Jac,Q,R)
-    
+       call mgs(Jac,Q,R)
+
       do i=1,np
         do j=1,np
           Qt(:,:)=Q(i,j,:,:)
-          Fntemp(:,1)=Fn(i,j,:,1)
+
+          Fntemp(1:nlev,1)=Fn(i,j,1:nlev,1)+Fn(i,j,nlev+1:2*nlev,1)/(g*dt2)
+       
           Qt=transpose(Qt)
           Fntemp=matmul(Qt,Fntemp)
           QtFn(i,j,:,1) = Fntemp(:,1)
-        end do
-      end do               
-                        
-      call backsubstitution(R,-QtFn,x)
 
+         end do
+      end do            
+      call backsubstitution(R,-QtFn,x)
+ 
       elem(ie)%state%w(:,:,:,np1)  = elem(ie)%state%w(:,:,:,np1) + x(:,:,1:nlev,1)                          
-      elem(ie)%state%phi(:,:,:,np1) = elem(ie)%state%phi(:,:,:,np1) + x(:,:,nlev+1:2*nlev,1)                          
-      itererr=norm2(x)
-      resnorm=norm2(Fn)
-      itercount=itercount+1
-      if (itercount > itercountmax) then
-        itercountmax=itercount
-      endif
-      if (itererr > itererrmax) then 
-        itererrmax=itererr
-      end if 
-      if (resnorm > resnormmax) then 
-        resnormmax = resnorm
-      end if 
+      elem(ie)%state%phi(:,:,:,np1) = elem(ie)%state%phi(:,:,:,np1) + &
+        dt2*g*x(:,:,1:nlev,1)-Fn(:,:,nlev+1:2*nlev,1)                          
+      ! compute relative errors
+      itererr(ie)=maxval(abs(x))/max( maxval(abs(elem(ie)%state%w(:,:,:,np1))), maxval(abs(elem(ie)%state%phi(:,:,:,np1))))
+      resnorm(ie)=maxval(abs(Fn))/max( maxval(abs(elem(ie)%state%w(:,:,:,np1))), maxval(abs(elem(ie)%state%phi(:,:,:,np1))))
+    
+      
+      itercount(ie)=itercount(ie)+1 
+      itererrmat(ie)=max(itererr(ie),resnorm(ie))
     end do ! end do for the do while loop
   end do ! end do for the ie=nets,nete loop
-  maxiter=itercountmax
-  if (itererrmax > resnormmax) then 
-    itertol=itererrmax
-  else
-    itertol= resnormmax
-  end if 
-  
+
+  maxiter = maxval(itercount(:))
+  itertol = maxval(itererrmat(:))
+  print *, maxiter, itertol
+
   call t_stopf('compute_stage_value_dirk')
 
   end subroutine compute_stage_value_dirk

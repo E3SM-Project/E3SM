@@ -57,25 +57,25 @@ contains
 ! is over the vertical components 
   subroutine mgs(A,Q,R)
 
-    real (kind=real_kind), intent(inout) :: A(np,np,2*nlev,2*nlev)
-    real (kind=real_kind), intent(inout) :: Q(np,np,2*nlev,2*nlev)
-    real (kind=real_kind), intent(inout) :: R(np,np,2*nlev,2*nlev)
+    real (kind=real_kind), intent(inout) :: A(np,np,nlev,nlev)
+    real (kind=real_kind), intent(inout) :: Q(np,np,nlev,nlev)
+    real (kind=real_kind), intent(inout) :: R(np,np,nlev,nlev)
 
     ! local variables
     integer :: i,j,k,l
-    real (kind=real_kind) :: Atemp(2*nlev,2*nlev)
-    real (kind=real_kind) :: Qtemp(2*nlev,2*nlev)
-    real (kind=real_kind) :: Rtemp(2*nlev,2*nlev)
+    real (kind=real_kind) :: Atemp(nlev,nlev)
+    real (kind=real_kind) :: Qtemp(nlev,nlev)
+    real (kind=real_kind) :: Rtemp(nlev,nlev)
 
     R=0.0
     do i=1,np
       do j=1,np
         Atemp(:,:)=A(i,j,:,:)
         Rtemp=0.0
-        do k=1,2*nlev
+        do k=1,nlev
           Rtemp(k,k)=norm2(Atemp(:,k))
-          Qtemp(1:2*nlev,k)=Atemp(1:2*nlev,k)/Rtemp(k,k)
-          do l=k+1,2*nlev
+          Qtemp(1:nlev,k)=Atemp(1:nlev,k)/Rtemp(k,k)
+          do l=k+1,nlev
             Rtemp(k,l)=dot_product(Qtemp(:,k),Atemp(:,l))
             Atemp(:,l)=Atemp(:,l)-Rtemp(k,l)*Qtemp(:,k)
           end do
@@ -92,20 +92,20 @@ contains
 ! vertical hevi part of the arrays
   subroutine backsubstitution(R,b,x)
 
-    real (kind=real_kind), intent(in) :: R(np,np,2*nlev,2*nlev)
-    real (kind=real_kind), intent(in) :: b(np,np,2*nlev)
-    real (kind=real_kind), intent(inout) :: x(np,np,2*nlev)
+    real (kind=real_kind), intent(in) :: R(np,np,nlev,nlev)
+    real (kind=real_kind), intent(in) :: b(np,np,nlev)
+    real (kind=real_kind), intent(inout) :: x(np,np,nlev)
 
     integer :: i,j
     real (kind=real_kind) :: sum(np,np)
-    real (kind=real_kind) :: Rtemp(2*nlev,2*nlev)
-    real (kind=real_kind) :: btemp(2*nlev,1)
-    real (kind=real_kind) :: xtemp(2*nlev,1)
+    real (kind=real_kind) :: Rtemp(nlev,nlev)
+    real (kind=real_kind) :: btemp(nlev,1)
+    real (kind=real_kind) :: xtemp(nlev,1)
 
 
-    do i=2*nlev,1,-1
+    do i=nlev,1,-1
       sum(:,:) = b(:,:,i)
-      do j=i+1,2*nlev
+      do j=i+1,nlev
         sum(:,:)=sum(:,:)-R(:,:,i,j)*x(:,:,j)
       end do
       x(:,:,i)=sum(:,:)/R(:,:,i,i)
