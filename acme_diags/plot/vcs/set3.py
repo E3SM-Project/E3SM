@@ -23,18 +23,18 @@ def plot(ref, test, diff, metrics_dict, parameters):
     # Line options, see here: https://uvcdat.llnl.gov/documentation/vcs/vcs-10.html
     # Other options not in the above link: https://uvcdat.llnl.gov/docs/vcs/graphics/unified1D.html
     ref_plot_linetype = 0
-    ref_plot_color = 1  # 6 to 239
+    ref_plot_color = 215  # 6 to 239
     ref_plot_width = 3  # 1 to 100
     ref_plot_marker = 1
     ref_plot_markersize = 1
-    ref_plot_markercolor = 1
+    ref_plot_markercolor = 215
 
     test_plot_linetype = 0
-    test_plot_color = 215
+    test_plot_color = 1
     test_plot_width = 3
     test_plot_marker = 1
     test_plot_markersize = 1
-    test_plot_markercolor = 215
+    test_plot_markercolor = 1
 
     diff_plot_linetype = 0
     diff_plot_color = 1
@@ -50,22 +50,34 @@ def plot(ref, test, diff, metrics_dict, parameters):
     set_units(ref, parameters.reference_units)
     set_units(diff, parameters.diff_units)
 
-    test.long_name = parameters.test_title
-    ref.long_name = parameters.reference_title
-    diff.long_name = parameters.diff_title
+    
+    test.long_name = parameters.test_title if parameters.test_title is not '' else test.long_name
+    ref.long_name = parameters.reference_title if parameters.reference_title is not '' else ref.long_name
+    diff.long_name = parameters.diff_title if parameters.diff_title is not '' else diff.long_name
 
-    test.id = str(parameters.test_name)
-    ref.id = str(parameters.reference_name)
-    diff.id = str(parameters.diff_name)
-
+    test.id = str(parameters.test_name) if parameters.test_name is not '' else test.id
+    ref.id = str(parameters.reference_name) if parameters.reference_name is not '' else ref.id
+    diff.id = str(parameters.diff_name) if parameters.diff_name is not '' else diff.id
+    
     # use vcs_canvas.show('colormap') to view all colormaps
     vcs_canvas.setcolormap('rainbow')  # 6 to 239 are purple to red in rainbow order
 
     ref_test_template = vcs.gettemplate('ref_test_template')
+
+    ref_test_yaxis_title = managetextcombined('ref_test_yaxis_title', 'ref_test_yaxis_title')
+    ref_test_yaxis_title.angle = 270
+    ref_test_yaxis_title.halign = 'center'
+    ref_test_yaxis_title.y = (ref_test_template.data.y1 + ref_test_template.data.y2) / 2
+    ref_test_yaxis_title.x = ref_test_template.data.x1 - 0.08
+    ref_test_yaxis_title.string = test.long_name + ' (' + test.units + ')'
+    vcs_canvas.plot(ref_test_yaxis_title)
+
     ref_test_template.legend.priority = 0
+    ref_test_template.title.priority = 0
+
     # make all of the elements listed have priority = 0
-    ref_test_template.blank(["mean", "max", "min", "zvalue", "dataname", "crtime", "ytic2", "xtic2"])
-    
+    # ref_test_template.blank(["mean", "max", "min", "zvalue", "crtime", "ytic2", "xtic2"])
+
     # the actual box around the plot
     ref_test_template.box1.x1 = 0.1223
     ref_test_template.box1.x2 = 0.96
@@ -78,16 +90,14 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_test_template.data.y1 = 0.55
     ref_test_template.data.y2 = 0.90
 
-    '''
-    ref_test_template.legend.x1 = 0.88
-    ref_test_template.legend.x2 = 0.98
-    ref_test_template.legend.y1 = 0.96
-    ref_test_template.legend.y2 = 0.88
-    ref_test_template.legend.textorientation = 'defright'
-    '''
+    # ref_test_template.legend.x1 = 0.88
+    # ref_test_template.legend.x2 = 0.98
+    # ref_test_template.legend.y1 = 0.96
+    # ref_test_template.legend.y2 = 0.88
+    # ref_test_template.legend.textorientation = 'defright'
 
-    ref_test_template.title.x = 0.5
-    ref_test_template.title.textorientation = 'defcenter'
+    # ref_test_template.title.x = 0.5
+    # ref_test_template.title.textorientation = 'defcenter'
 
     ref_test_template.units.textorientation = 'defright'
     ref_test_template.units.x = 0.96
@@ -110,27 +120,26 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_test_template.ytic1.x1 = (0.1223 - 0.006) + 0.01
     ref_test_template.ytic1.x2 = (0.1223 - 0.006)
 
-    # name of yaxis
-    ref_test_template.yname.priority = 1
-    ref_test_template.yname.x = ref_test_template.xname.x
-    ref_test_template.yname.y = ref_test_template.xname.y
-    
-    # ref_test_template.xname.y += 0.20
-    # ref_test_template.yname.x += 0.05
-    # ref_test_template.yname.y += 0.17
-
-
     diff_template = vcs.gettemplate('diff_template')
+
+    diff_yaxis_title = vcs.createtextcombined('diff_yaxis_title')
+    diff_yaxis_title.angle = 270
+    diff_yaxis_title.halign = 'center'
+    diff_yaxis_title.y = (diff_template.data.y1 + diff_template.data.y2) / 2
+    diff_yaxis_title.x = diff_template.data.x1 - 0.08
+    diff_yaxis_title.string = test.long_name + ' (' + test.units + ')'
+    # diff_yaxis_title.script('plot_set_3.json')
+    vcs_canvas.plot(diff_yaxis_title)
+
     diff_template.units.textorientation = 'defright'
     diff_template.units.x += 0.01
     diff_template.legend.priority = 0
-    
+
     diff_template.ytic1.x1 = (0.1223 - 0.006) + 0.01
     diff_template.ytic1.x2 = (0.1223 - 0.006)
     diff_template.ylabel1.x = 0.11  # no ylabel1.y attribute
     diff_template.units.textorientation = 'defright'
     diff_template.units.x = 0.96
-
 
     '''
     diff_template.box1.y1 -= 0.47
@@ -180,7 +189,6 @@ def plot(ref, test, diff, metrics_dict, parameters):
                              60: "60N", 90: "90N"}
 
 
-
     #ref_line.line = ref_plot_linetype
     ref_line.linetype = ref_plot_linetype
     ref_line.linecolor = ref_plot_color
@@ -213,32 +221,31 @@ def plot(ref, test, diff, metrics_dict, parameters):
     #blank_template.legend.y1 -= 0.05
     #blank_template.legend.y2 -= 0.05
 
+    # vcs_canvas.plot(ref, ref_line, ref_test_template, xname='Latitude')
     vcs_canvas.plot(ref, ref_line, ref_test_template)
     vcs_canvas.plot(test, test_line, blank_template)
+    # vcs_canvas.plot(diff, diff_line, diff_template, xname='Latitude')
     vcs_canvas.plot(diff, diff_line, diff_template)
 
     # Plot the main title
     main_title = managetextcombined('main_title', 'main_title')
     main_title.string = parameters.main_title
-    #main_title.height = 18
-    #main_title.halign = 'center'
-    #main_title.x = 0.5
-    #main_title.y = 0.97
     vcs_canvas.portrait()  # for some reason, this needs to be before a call to vcs_canvas.plot()
     vcs_canvas.plot(main_title)
 
-    #ref_test_template.script('plot_set_3.json')
-    #blank_template.script('plot_set_3.json')
-    #diff_template.script('plot_set_3.json')
-    #ref_line.script('plot_set_3.json')
-    #test_line.script('plot_set_3.json')
-    #diff_line.script('plot_set_3.json')
-    #main_title.script('plot_set_3.json')
-
+    
     vcs_canvas.bgX = parameters.canvas_size_w
     vcs_canvas.bgY = parameters.canvas_size_h
     if not parameters.logo:
         vcs_canvas.drawlogooff()
+
+    # ref_test_template.script('plot_set_3.json')
+    # blank_template.script('plot_set_3.json')
+    # diff_template.script('plot_set_3.json')
+    # ref_line.script('plot_set_3.json')
+    # test_line.script('plot_set_3.json')
+    # diff_line.script('plot_set_3.json')
+    # main_title.script('plot_set_3.json')
 
     fnm = os.path.join(get_output_dir('3', parameters), parameters.output_file)
     for f in parameters.output_format:
