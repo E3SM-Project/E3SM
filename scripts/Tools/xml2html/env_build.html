@@ -1,0 +1,331 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=ASCII" />
+    <title>CESM CASEROOT env_build.xml file</title>
+    <style type="text/css">
+	  body {
+          font-family:'Open Sans', Arial, sans-serif;
+          font-size:14px;
+          font-weight:300;
+          line-height:1.6em;
+          color:#656565;
+          width: 90%;
+          align: center;
+	  }
+
+	  .container {
+          padding: 0 30px 0 30px;
+          padding-top: 0px;
+          padding-right: 30px;
+          padding-bottom: 30px;
+          padding-left: 30px;
+          position: relative;
+	  }
+      
+	  dt { color:#656565; font-weight: bold }
+
+	  .accordionItem h2 { margin: 0; font-size: 1.1em; padding: 0.4em; color: #000; background-color: #E3E4E6; border-bottom: 1px solid #66d; width: 90%}
+	  .accordionItem h2:hover { cursor: pointer; }
+	  .accordionItem div { margin: 0; padding: 1em 0.4em; background-color: #eef; border-bottom: 1px solid #66d; width: 90%}
+	  .accordionItem.hide h2 { color: #000; background-color: #E3E4E6; width: 90%}
+      
+	  .detailsBtn { background-color: #E3E4E6; }
+
+	  #variable { color:#66d; font-size: 1.2em; font-weight: bold; display: inline-block; margin-right: 30px; width: 550px; }
+	  #emphasis { color:#656565; font-weight: bold; display: inline-block; }
+	  #small { color:#9f9f9f; display: inline-block; }
+
+	</style>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script type="text/javascript">
+	// 
+	var accordionItems = new Array();
+
+	function init() {
+	  // Grab the accordion items from the page
+	  var divs = document.getElementsByTagName( 'div' );
+	  for ( var i = 0; i < divs.length; i++ ) {
+	    if ( divs[i].className == 'accordionItem' ) accordionItems.push( divs[i] );
+	  }
+	  // Assign onclick events to the accordion item headings
+	  for ( var i = 0; i < accordionItems.length; i++ ) {
+	    var h2 = getFirstChildWithTagName( accordionItems[i], 'H2' );
+	    h2.onclick = toggleItem;
+          }
+          // Hide all accordion item bodies 
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideUp();
+          }
+        }
+
+        function toggleItem() {
+          var itemClass = this.parentNode.className;
+          // Hide all items
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideUp();
+          }
+          // Show this item if it was previously hidden
+          if ( itemClass == 'accordionItem hide' ) {
+            this.parentNode.className = 'accordionItem';
+            $(this).parent().find('div').slideDown();
+          }
+        }
+
+        function getFirstChildWithTagName( element, tagName ) {
+          for ( var i = 0; i < element.childNodes.length; i++ ) {
+            if ( element.childNodes[i].nodeName == tagName ) return element.childNodes[i];
+          }
+        }
+
+        function hideAll() {
+        // Hide all accordian items
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideUp();
+          }
+        }
+
+        function showAll() {
+        // show all accordian items
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideDown();
+          }
+        }
+        //
+	</script>
+  </head>
+  <body onload="init()">
+    <div class="container"><h1>CESM CASEROOT env_build.xml file</h1><p style="font-size: 0.9em;">
+	    Model Version: CESM2.0<br />
+	    HTML created on: 2017-06-21
+	  </p><h3>Description</h3><p>
+	    The case.build script reads the XML settings in the env_build.xml file in order to<br />
+	    determine the machine specific compile and build commands used for a specific case<br />
+	    and machine. 
+	  </p><h3>Interface Tools</h3><p>
+	    CESM2.0 supports multiple build groups.
+	    The <a href="http://www.cesm.ucar.edu/models/cesm2.0/cesm/xmlquery.html">xmlquery</a> 
+	    and <a href="http://www.cesm.ucar.edu/models/cesm2.0/cesm/xmlchange.html">xmlchange</a> script tools<br />
+	    accept the <b>--subgroup</b> command line argument to define one of the build groups.
+	    Changes to the build settings can be made prior to calling case.build for the first time..<br />
+	    Subsequent changes may require <b>case.build --clean</b> or <b>case.build --clean-all</b>
+	    followed by <b>case.build</b>.
+	  </p><p>
+	    Variable names delimited by <pre>{{ }}</pre> are substituted at run-time and should not be modified.
+	  </p><h4>Examples</h4><h3>Navigation Instuctions</h3><p>
+	  Clicking on the blue link will display additional descriptive information.<br />  
+	  Click on the "Show Details" button and then cntl+F key to search for specific strings in this file.
+	  </p><button class="detailsBtn" onclick="showAll();">Show Details</button><button class="detailsBtn" onclick="hideAll();">Hide Details</button><br /><br />
+  <div class="accordionItem"><h2><span id="variable">File Description Header &lt;header&gt;</span></h2><div><pre>
+    These variables SHOULD NOT be changed once the model has been built.
+    urrently, these variables are not cached.
+    Note1: users SHOULD NOT modify BUILD_COMPETE below
+    this is done automatically by the scripts.
+    </pre></div></div>
+  <div class="accordionItem"><h2>Build Group Settings <span id="variable"><b> &lt;group id="build_grid"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GRID</b></li><li>value = <b>a%0.9x1.25_l%0.9x1.25_oi%gx1v7_r%r05_g%gland4_w%ww3a_m%gx1v7</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>Model grid - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM_GRID</b></li><li>value = <b>0.9x1.25</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>atmosphere grid - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM_NX</b></li><li>value = <b>288</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of atmosphere cells in i direction - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM_NY</b></li><li>value = <b>192</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of atmosphere cells in j direction - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND_GRID</b></li><li>value = <b>0.9x1.25</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>land grid - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND_NX</b></li><li>value = <b>288</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of land cells in i direction - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND_NY</b></li><li>value = <b>192</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of land cells in j direction - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_GRID</b></li><li>value = <b>gx1v7</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>ocn grid - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_NX</b></li><li>value = <b>320</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of ocn cells in i direction - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_NY</b></li><li>value = <b>384</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of ocn cells in j direction - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ICE_GRID</b></li><li>value = <b>gx1v7</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>ice grid (must equal ocn grid) - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ICE_NX</b></li><li>value = <b>320</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of ice cells in i direction - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ICE_NY</b></li><li>value = <b>384</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of ice cells in j direction - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ICE_NCAT</b></li><li>value = <b>5</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of ice thickness categories - DO NOT EDIT (set by CICE configure)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ROF_GRID</b></li><li>value = <b>r05</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>river runoff (rof) grid</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ROF_NX</b></li><li>value = <b>720</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of rof cells in i direction - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ROF_NY</b></li><li>value = <b>360</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of rof cells in j direction - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC_GRID</b></li><li>value = <b>gland4</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>gland20,gland10,gland5,gland5UM,gland4,mpas.gis20km,mpas.ais20km,null</b></li><li>Description &lt;desc&gt; : <b>glacier (glc) grid - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC_NX</b></li><li>value = <b>376</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of glc cells in i direction - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC_NY</b></li><li>value = <b>701</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of glc cells in j direction - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>WAV_GRID</b></li><li>value = <b>ww3a</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>wave model (wav) grid</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>WAV_NX</b></li><li>value = <b>90</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of wav cells in i direction - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>WAV_NY</b></li><li>value = <b>50</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>number of wav cells in j direction - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>MASK_GRID</b></li><li>value = <b>gx1v7</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>grid mask - DO NOT EDIT (for experts only)</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Build Group Settings <span id="variable"><b> &lt;group id="build_derived"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PERL5LIB</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>Perl 5 library directory</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OBJROOT</b></li><li>value = <b>$EXEROOT</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>case build directory (set automatically to $EXEROOT, - DO NOT EDIT)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LIBROOT</b></li><li>value = <b>$EXEROOT/lib</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>case lib directory (set automatically to $EXEROOT/lib - DO NOT EDIT)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>INCROOT</b></li><li>value = <b>$EXEROOT/lib/include</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>case lib include directory (set automatically to $EXEROOT/lib/include - DO NOT EDIT)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>SHAREDLIBROOT</b></li><li>value = <b>$EXEROOT</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Shared library root, (set automatically to $EXEROOT - DO NOT EDIT)</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Build Group Settings <span id="variable"><b> &lt;group id="build_def"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CIME_OUTPUT_ROOT</b></li><li>value = <b>/glade/scratch/aliceb</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Output root directory for each machine.
+		Base directory for build and run directories.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>EXEROOT</b></li><li>value = <b>$CIME_OUTPUT_ROOT/$CASE/bld</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Case executable root directory.
+    (executable is $EXEROOT/$MODEL.exe, component libraries are in $EXEROOT/lib)
+    This is where the model builds its executable and by default runs the executable.
+    Note that EXEROOT needs to have enough disk space for the experimental configuration
+    requirements. As an example, a model run can produce more than a terabyte of
+    data during a 100-year run, so you should set EXEROOT to scratch or
+    tmp space and frequently back up the data to a long term archiving storage device
+    For a supported machine, EXEROOT is set in $CIMEROOT/machines/config_machines.xml.
+    For a userdefined machine, EXEROOT must explicitly be set it in env_build.xml.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>SUPPORTED_BY</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>email address of person (or group) that supports the build and port for this machine (do not edit)&gt;</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CALENDAR</b></li><li>value = <b>NO_LEAP</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>NO_LEAP,GREGORIAN</b></li><li>Description &lt;desc&gt; : <b>calendar type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>COMP_INTERFACE</b></li><li>value = <b>MCT</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>MCT</b></li><li>Description &lt;desc&gt; : <b>use MCT component interface</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>USE_ESMF_LIB</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>TRUE implies using the ESMF library specified by ESMF_LIBDIR or ESMFMKFILE</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>DEBUG</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>TRUE implies turning on run and compile time debugging
+      Flag to turn on debugging for run time and compile time.
+      If TRUE, compile-time debugging flags are activated that you can use to verify
+      software robustness, such as bounds checking.
+      Important:: On IBM machines, floating point trapping is not activated for production
+      runs (i.e., non-DEBUG), due to performance penalties associated with turning on these flags.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>BUILD_THREADED</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>TRUE implies always build model for openmp capability
+      If FALSE, component libraries are built with OpenMP capability only if
+      the NTHREADS_ setting for that component is greater than 1 in env_mach_pes.xml.
+      If TRUE, the component libraries are always built with OpenMP capability.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>USE_PETSC</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>TRUE implies linking to the PETSc library - set
+    automatically by XXX_USE_PETSC options (do not edit). Flag to turn
+    on linking to the PETSc library. Currently this is used by
+    CLM. This is currently only supported for certain machines.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>USE_ALBANY</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>TRUE implies linking to the Albany library - set
+    automatically by XXX_USE_ALBANY options (do not edit). Flag to
+    turn on linking to the Albany library. Currently this is used by
+    MPASLI. Note that Albany is a C++ library, so setting this
+    variable to TRUE will involve the inclusion of C++ code in the
+    MPASLI executable. This is currently only supported for certain
+    machines.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>USE_TRILINOS</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>TRUE implies linking to the trilinos library - set automatically by XXX_USE_TRILINOS options (do not edit)
+      Flag to turn on linking to the trilinos library. Currently this is
+      used by CISM. Note that trilinos is a C++ library, so setting this
+      variable to TRUE will involve the inclusion of C++ code in the model
+      executable. This is currently only supported for certain machines.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GMAKE</b></li><li>value = <b>gmake</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>GNU make command</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GMAKE_J</b></li><li>value = <b>8</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Number of processors for gmake</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Build Group Settings <span id="variable"><b> &lt;group id="build_macros"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OS</b></li><li>value = <b>LINUX</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Operating system - DO NOT EDIT UNLESS for userdefined machine - ignored once Macros has been created.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>COMPILER</b></li><li>value = <b>intel</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Machine compiler (must match one the supported compilers)
+    Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
+    Must be explicitly set in env_build.xml for userdefined machine.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>MPILIB</b></li><li>value = <b>mpt</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>mpi library (must match one of the supported libraries) -
+    ignored once Macros has been created
+    Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
+    Must be explicitly set in env_build.xml for userdefined machine.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_VERSION</b></li><li>value = <b>1</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b>1,2</b></li><li>Description &lt;desc&gt; : <b>PIO library version</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_CONFIG_OPTS</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>PIO configure options, see PIO configure utility for details</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Build Group Settings <span id="variable"><b> &lt;group id="build_status"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>BUILD_COMPLETE</b></li><li>value = <b>TRUE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Status output: if TRUE, models have been built successfully. (DO NOT EDIT)&gt;</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>SMP_BUILD</b></li><li>value = <b>c0a0l0i0o0r0g0w0e0</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Status: smp status of previous build, coded string. (DO NOT EDIT)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>SMP_VALUE</b></li><li>value = <b>c0a0l0i0o0r0g0w0e0</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Status: smp status of current case, coded string (DO NOT EDIT)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>NINST_BUILD</b></li><li>value = <b>0</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Status: ninst status of previous build, coded string. (DO NOT EDIT)&gt;</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>NINST_VALUE</b></li><li>value = <b>c1a1l1i1o1r1g1w1e1</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Status: ninst status of current case, coded string (DO NOT EDIT)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>BUILD_STATUS</b></li><li>value = <b>0</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b>0,1,2</b></li><li>Description &lt;desc&gt; : <b>Status: of prior build. (DO NOT EDIT)</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Build Group Settings <span id="variable"><b> &lt;group id="build_component_clm"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CLM_USE_PETSC</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>TRUE implies CLM is built with support for the PETSc
+      library. The Variably Saturated Flow Model (VSFM) solver in CLM
+      uses the PETSc library. In order to use the VSFM solver, CLM
+      must be built with PETSc support and linking to PETSc must occur
+      when building the ACME executable. This occurs if this variable
+      is set to TRUE. Note that is only available on a limited set of
+      machines/compilers.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CLM_CONFIG_OPTS</b></li><li>value = <b>-phys clm5_0</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>Provides option(s) for the CLM configure utility.
+      CLM_CONFIG_OPTS are normally set as compset variables (e.g., -bgc cn)
+      and in general should not be modified for supported compsets.
+      It is recommended that if you want to modify this value for your experiment,
+      you should use your own user-defined component sets via using create_newcase
+      with a compset_file argument.
+      This is an advanced flag and should only be used by expert users.</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Build Group Settings <span id="variable"><b> &lt;group id="build_component_mpasli"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>MPASLI_CONFIG_OPTS</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>MPASLI configure options. Currently not used</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>MPASLI_USE_ALBANY</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>TRUE implies MPASLI is built with support for the Albany
+      library The first-order velocity solver in MPASLI uses the
+      Albany library.  In order to use that velocity solver, MPASLI
+      must be built with Albany support and linking to Albany must
+      occur when building the ACME executable.  This occurs if this
+      variable is set to TRUE.  Note that is only available on a
+      limited set of machines/compilers.  This must remain FALSE to
+      run MPASLI on a machine that does not have Albany, or for which
+      the CIME scripts are not aware of the existence of
+      Albany.</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Build Group Settings <span id="variable"><b> &lt;group id="build_component_cam"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CAM_CPPDEFS</b></li><li>value = <b>   -DCO2A -DMAXPATCH_PFT=numpft+1 -DLSMLAT=1 -DLSMLON=1 -DPLON=288 -DPLAT=192 -DPLEV=32 -DPCNST=37 -DPCOLS=16 -DPSUBCOLS=1 -DN_RAD_CNST=30 -DPTRM=1 -DPTRN=1 -DPTRK=1 -DSPMD -DMODAL_AERO -DMODAL_AERO_4MODE  -DCLUBB_SGS -DCLUBB_CAM -DNO_LAPACK_ISNAN -DCLUBB_REAL_TYPE=dp -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY -DHAVE_COMM_F2C -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>CAM cpp definitions (setup automatically - DO NOT EDIT)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CAM_DYCORE</b></li><li>value = <b>fv</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>eul,fv,se</b></li><li>Description &lt;desc&gt; : <b>CAM dynamical core</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CAM_CONFIG_OPTS</b></li><li>value = <b>-phys cam5.4 -clubb_sgs -co2_cycle</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>
+      CAM configure options, see CAM configure utility for details
+      Provides option(s) for the CAM configure utility.
+      CAM_CONFIG_OPTS are normally set as compset variables (e.g., -phys  cam4 -chem waccm_ma)
+      and in general should not be modified for supported compsets.  It is recommended that if you want
+      to modify this value for your experiment, you should use your own user-defined
+      component sets via using create_newcase with a compset_file argument
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CLM_CPPDEFS</b></li><li>value = <b>UNSET</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>CLM cpp definitions (if-any) (setup automatically - DO NOT EDIT)</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Build Group Settings <span id="variable"><b> &lt;group id="build_component_cice"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CICE_MODE</b></li><li>value = <b>prognostic</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>prognostic,prescribed,thermo_only</b></li><li>Description &lt;desc&gt; : <b>Option to the CICE configure utility for the -mode argument (default is prognostic)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CICE_CONFIG_OPTS</b></li><li>value = <b> -phys cice5 </b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>CICE configure options, see CICE configure utility for details.
+      Provides option(s) for the CLM configure utility.
+      CICE_CONFIG_OPTS are normally set as compset variables (e.g., -ntr_aero 3)
+      and in general should not be modified for supported compsets.
+      It is recommended that if you want to modify this value for your experiment,
+      you should use your own user-defined component sets via using create_newcase
+      with a compset_file argument.
+      This is an advanced flag and should only be used by expert users.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CICE_AUTO_DECOMP</b></li><li>value = <b>true</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>true,false</b></li><li>Description &lt;desc&gt; : <b>This is for experts only - if CICE_AUTO_DECOMP is set to false, then
+      can manually set the values of CICE_BLCKX, CICE_BLCKY, CICE_MXBLCKS,
+      CICE_DECOMPTYPE, and CICE_DECOMPSETTING".</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CICE_BLCKX</b></li><li>value = <b>16</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Size of cice block in first horiz dimension
+      (DO NOT EDIT if CICE_AUTO_DECOMP is true).
+      This is for experts only - automatically set if CICE_AUTO_DECOMP
+      is true to set this value, must first set CICE_AUTO_DECOMP to false.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CICE_BLCKY</b></li><li>value = <b>12</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Size of cice block in second horiz dimension
+      (DO NOT EDIT if CICE_AUTO_DECOMP is true).
+      This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
+      to set this value, must first set CICE_AUTO_DECOMP to false.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CICE_MXBLCKS</b></li><li>value = <b>6</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Max number of cice blocks per processor (do not edit if CICE_AUTO_DECOMP is true)
+      This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
+      to set this value, must first set CICE_AUTO_DECOMP to false.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CICE_DECOMPTYPE</b></li><li>value = <b>sectrobin</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>cartesian,rake,sectrobin,spacecurve,roundrobin,sectrobin,sectcart,null</b></li><li>Description &lt;desc&gt; : <b>cice block distribution type (do not edit if CICE_AUTO_DECOMP is true)
+      This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
+      to set this value, must first set CICE_AUTO_DECOMP to false.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CICE_DECOMPSETTING</b></li><li>value = <b>null</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>slenderX1,slenderX2,square-ice,square-pop,blocks,null</b></li><li>Description &lt;desc&gt; : <b>cice decomp setting for decomp type (do not edit if CICE_AUTO_DECOMP is true)
+      This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
+      to set this value, must first set CICE_AUTO_DECOMP to false.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CICE_CPPDEFS</b></li><li>value = <b> -DCESMCOUPLED -Dncdf -DNUMIN=11 -DNUMAX=99  -DNICECAT=5 -DNXGLOB=320 -DNYGLOB=384 -DNTRAERO=3 -DNTRISO=0 -DNBGCLYR=3 -DNICELYR=8 -DNSNWLYR=3 -DTRAGE=1 -DTRFY=1 -DTRLVL=1 -DTRPND=1 -DTRBRI=0 -DTRBGCS=0 -DBLCKX=16 -DBLCKY=12 -DMXBLCKS=6</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>CICE cpp definitions (setup automatically - DO NOT EDIT)</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Build Group Settings <span id="variable"><b> &lt;group id="build_component_pop"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_TRACER_MODULES</b></li><li>value = <b>iage cfc ecosys</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Optional ocean tracers.  Valid values are Any combination of: iage cfc ecosys</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_TRACER_MODULES_OPT</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Optional ocean tracers option (keyword=value pairs)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>POP_TAVG_R8</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>If TRUE then time-averaged history files from POP will contain double precision output</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>POP_AUTO_DECOMP</b></li><li>value = <b>TRUE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>if FALSE, user must set the POP decomp, otherwise cesm_setup script sets it</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>POP_BLCKX</b></li><li>value = <b>36</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Size of pop block in first horiz dimension (do not edit if POP_AUTO_DECOMP is TRUE)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>POP_BLCKY</b></li><li>value = <b>32</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Size of pop block in second horiz dimension (do not edit if POP_AUTO_DECOMP is TRUE)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>POP_NX_BLOCKS</b></li><li>value = <b>9</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Number of pop blocks in first horiz dimension (do not edit if POP_AUTO_DECOMP is TRUE)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>POP_NY_BLOCKS</b></li><li>value = <b>12</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Number of pop blocks in second horiz dimension (do not edit if POP_AUTO_DECOMP is TRUE)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>POP_MXBLCKS</b></li><li>value = <b>1</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Max number of pop blocks per processor (do not edit if POP_AUTO_DECOMP is TRUE</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>POP_DECOMPTYPE</b></li><li>value = <b>cartesian</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>pop block distribution type (do not edit if POP_AUTO_DECOMP is TRUE)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>POP_CPPDEFS</b></li><li>value = <b>-DCCSMCOUPLED -DMARBL_TIMING_OPT=CIME -DBLCKX=36 -DBLCKY=32 -DMXBLCKS=1 -DNT=32 -DECOSYS_NT=27 -DMARBL_NT=27 -DZOOPLANKTON_CNT=1 -DAUTOTROPH_CNT=3 -DGRAZER_PREY_CNT=3 -DIRF_NT=0 </b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>POP cpp definitions (for diagnostic use only, setup automatically, overwritten by configure_pop.py - DO NOT EDIT)</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Build Group Settings <span id="variable"><b> &lt;group id="build_pop"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_COUPLING</b></li><li>value = <b>full</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>full,partial</b></li><li>Description &lt;desc&gt; : <b>Determine surface freshwater and heat forcing settings.
+      The full option yields settings that are appropriate for coupling to an
+      active atmospheric model (e.g., a B-type compset). The partial option yields
+      settings that are appropriate for coupling to a data atmospheric model
+      (e.g., a C or G-type compset). The create_newcase command selects the
+      appropriate setting for this variable based on the specified compset.
+      Users should NOT EDIT this setting.</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Build Group Settings <span id="variable"><b> &lt;group id="build_component_mosart"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>MOSART_MODE</b></li><li>value = <b>ACTIVE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>ACTIVE,NULL</b></li><li>Description &lt;desc&gt; : <b>mode for mosart model, NULL means mosart is turned off</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>MOSART_FLOOD_MODE</b></li><li>value = <b>NULL</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>ACTIVE,NULL</b></li><li>Description &lt;desc&gt; : <b>mode for mosart flood feature, NULL means mosart flood is turned off</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Build Group Settings <span id="variable"><b> &lt;group id="build_component_cism"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CISM_USE_TRILINOS</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>TRUE implies CISM is built with support for the trilinos library
+      When using the higher-order dynamical cores in CISM, one option is to
+      use the trilinos solver library for sparse matrix solves. In order to
+      exercise that option, you need to build CISM with trilinos support, and
+      link to the trilinos libraries when building the CESM executable. Setting
+      this variable to TRUE accomplishes these things. Note that you can set
+      this to TRUE and still choose not to use the trilinos solvers for the
+      sparse matrix solves. Also, note that trilinos is only available on a
+      limited set of machines; this must remain FALSE to run CISM on a
+      machine that does not have trilinos, or for which the CESM scripts are
+      not aware of the existence of trilinos.</b></li></ul></dd></dl></div></div>
+</div>
+  </body>
+</html>

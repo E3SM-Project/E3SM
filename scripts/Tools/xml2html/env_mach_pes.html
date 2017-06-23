@@ -1,0 +1,158 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=ASCII" />
+    <title>CESM CASEROOT env_mach_pes.xml file</title>
+    <style type="text/css">
+	  body {
+          font-family:'Open Sans', Arial, sans-serif;
+          font-size:14px;
+          font-weight:300;
+          line-height:1.6em;
+          color:#656565;
+          width: 90%;
+          align: center;
+	  }
+
+	  .container {
+          padding: 0 30px 0 30px;
+          padding-top: 0px;
+          padding-right: 30px;
+          padding-bottom: 30px;
+          padding-left: 30px;
+          position: relative;
+	  }
+      
+	  dt { color:#656565; font-weight: bold }
+
+	  .accordionItem h2 { margin: 0; font-size: 1.1em; padding: 0.4em; color: #000; background-color: #E3E4E6; border-bottom: 1px solid #66d; width: 90%}
+	  .accordionItem h2:hover { cursor: pointer; }
+	  .accordionItem div { margin: 0; padding: 1em 0.4em; background-color: #eef; border-bottom: 1px solid #66d; width: 90%}
+	  .accordionItem.hide h2 { color: #000; background-color: #E3E4E6; width: 90%}
+      
+	  .detailsBtn { background-color: #E3E4E6; }
+
+	  #variable { color:#66d; font-size: 1.2em; font-weight: bold; display: inline-block; margin-right: 30px; width: 550px; }
+	  #emphasis { color:#656565; font-weight: bold; display: inline-block; }
+	  #small { color:#9f9f9f; display: inline-block; }
+
+	</style>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script type="text/javascript">
+	// 
+	var accordionItems = new Array();
+
+	function init() {
+	  // Grab the accordion items from the page
+	  var divs = document.getElementsByTagName( 'div' );
+	  for ( var i = 0; i < divs.length; i++ ) {
+	    if ( divs[i].className == 'accordionItem' ) accordionItems.push( divs[i] );
+	  }
+	  // Assign onclick events to the accordion item headings
+	  for ( var i = 0; i < accordionItems.length; i++ ) {
+	    var h2 = getFirstChildWithTagName( accordionItems[i], 'H2' );
+	    h2.onclick = toggleItem;
+          }
+          // Hide all accordion item bodies 
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideUp();
+          }
+        }
+
+        function toggleItem() {
+          var itemClass = this.parentNode.className;
+          // Hide all items
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideUp();
+          }
+          // Show this item if it was previously hidden
+          if ( itemClass == 'accordionItem hide' ) {
+            this.parentNode.className = 'accordionItem';
+            $(this).parent().find('div').slideDown();
+          }
+        }
+
+        function getFirstChildWithTagName( element, tagName ) {
+          for ( var i = 0; i < element.childNodes.length; i++ ) {
+            if ( element.childNodes[i].nodeName == tagName ) return element.childNodes[i];
+          }
+        }
+
+        function hideAll() {
+        // Hide all accordian items
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideUp();
+          }
+        }
+
+        function showAll() {
+        // show all accordian items
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideDown();
+          }
+        }
+        //
+	</script>
+  </head>
+  <body onload="init()">
+    <div class="container"><h1>CESM CASEROOT env_mach_pes.xml file</h1><p style="font-size: 0.9em;">
+	    Model Version: CESM2.0<br />
+	    HTML created on: 2017-06-21
+	  </p><h3>Description</h3><p>
+	    The CASEROOT scripts read these XML settings in the env_mach_pes.xml file<br />
+	    in order to determine the machine and case specific MPI decomposition or <br />
+	    processor element (PE) layouts for each model component.<br /></p><h3>Interface Tools</h3><p>
+	    CESM2.0 supports multiple machine PE layout groups.
+	    The <a href="http://www.cesm.ucar.edu/models/cesm2.0/cesm/xmlquery.html">xmlquery</a> 
+	    and <a href="http://www.cesm.ucar.edu/models/cesm2.0/cesm/xmlchange.html">xmlchange</a> script tools<br />
+	    accept the <b>--subgroup</b> command line argument to define one of the groups.<br />
+	    Changes to these settings may be made prior to calling <b>case.setup</b>.
+	    Subsequent changes require <b>case.setup --reset</b> followed by <b>case.build --clean</b>
+	    and <b>case.build</b>.
+	  </p><h4>Examples</h4><h3>Navigation Instuctions</h3><p>
+	  Clicking on the blue link will display additional descriptive information.<br />  
+	  Click on the "Show Details" button and then cntl+F key to search for specific strings in this file.
+	  </p><button class="detailsBtn" onclick="showAll();">Show Details</button><button class="detailsBtn" onclick="hideAll();">Hide Details</button><br /><br />
+  <div class="accordionItem"><h2><span id="variable">File Description Header &lt;header&gt;</span></h2><div><pre>
+    These variables CANNOT be modified once case_setup has been
+    invoked without first invoking case_setup -reset
+
+    NTASKS: the total number of MPI tasks, a negative value indicates nodes rather than tasks.
+    NTHRDS: the number of OpenMP threads per MPI task.
+    ROOTPE: the global mpi task of the component root task, if negative, indicates nodes rather than tasks.
+    PSTRID: the stride of MPI tasks across the global set of pes (for now set to 1)
+    NINST : the number of component instances (will be spread evenly across NTASKS)
+
+    for example, for NTASKS = 8, NTHRDS = 2, ROOTPE = 32, NINST  = 2
+    the MPI tasks would be placed starting on global pe 32 and each pe would be threaded 2-ways
+    These tasks will be divided amongst both instances (4 tasks each).
+
+    Note: PEs that support threading never have an MPI task associated
+    with them for performance reasons.  As a result, NTASKS and ROOTPE
+    are relatively independent of NTHRDS and they determine
+    the layout of mpi processors between components.  NTHRDS is used
+    to determine how those mpi tasks should be placed across the machine.
+
+    The following values should not be set by the user since they'll be
+    overwritten by scripts: TOTALPES, MAX_TASKS_PER_NODE, PES_PER_NODE
+    </pre></div></div>
+  <div class="accordionItem"><h2>Group Settings <span id="variable"><b> &lt;group id="mach_pes_last"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li> attributes :
+	    <ul><li>id = <b>COST_PES</b></li><li>value = <b>684</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>pes or cores used relative to PES_PER_NODE for accounting (0 means TOTALPES is valid)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li> attributes :
+	    <ul><li>id = <b>TOTALPES</b></li><li>value = <b>684</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>total number of tasks and threads (setup automatically - DO NOT EDIT)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li> attributes :
+	    <ul><li>id = <b>MAX_TASKS_PER_NODE</b></li><li>value = <b>36</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>maximum number of tasks/ threads allowed per node </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li> attributes :
+	    <ul><li>id = <b>PES_PER_NODE</b></li><li>value = <b>36</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>pes or cores per node for accounting purposes </b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Group Settings <span id="variable"><b> &lt;group id="mach_pes"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li> attributes :
+	    <ul><li>id = <b>PCT_SPARE_NODES</b></li><li>value = <b>0</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>Percent of extra spare nodes to allocate</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li> attributes :
+	    <ul><li>id = <b>NTASKS</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><dl><dt>Values &lt;values&gt; :</dt><dd><ul><li>Value &lt;value component=<b>ATM</b>&gt; <b>-16</b></li><li>Value &lt;value component=<b>CPL</b>&gt; <b>-16</b></li><li>Value &lt;value component=<b>OCN</b>&gt; <b>-3</b></li><li>Value &lt;value component=<b>WAV</b>&gt; <b>-1</b></li><li>Value &lt;value component=<b>GLC</b>&gt; <b>-16</b></li><li>Value &lt;value component=<b>ICE</b>&gt; <b>-3</b></li><li>Value &lt;value component=<b>ROF</b>&gt; <b>-12</b></li><li>Value &lt;value component=<b>LND</b>&gt; <b>-12</b></li><li>Value &lt;value component=<b>ESP</b>&gt; <b>1</b></li></ul></dd></dl><li>Description &lt;desc&gt; : <b>number of tasks for each component</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li> attributes :
+	    <ul><li>id = <b>NTHRDS</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><dl><dt>Values &lt;values&gt; :</dt><dd><ul><li>Value &lt;value component=<b>ATM</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>CPL</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>OCN</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>WAV</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>GLC</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>ICE</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>ROF</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>LND</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>ESP</b>&gt; <b>1</b></li></ul></dd></dl><li>Description &lt;desc&gt; : <b>number of threads for each task in each component</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li> attributes :
+	    <ul><li>id = <b>ROOTPE</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><dl><dt>Values &lt;values&gt; :</dt><dd><ul><li>Value &lt;value component=<b>ATM</b>&gt; <b>0</b></li><li>Value &lt;value component=<b>CPL</b>&gt; <b>0</b></li><li>Value &lt;value component=<b>OCN</b>&gt; <b>-16</b></li><li>Value &lt;value component=<b>WAV</b>&gt; <b>-15</b></li><li>Value &lt;value component=<b>GLC</b>&gt; <b>0</b></li><li>Value &lt;value component=<b>ICE</b>&gt; <b>-12</b></li><li>Value &lt;value component=<b>ROF</b>&gt; <b>0</b></li><li>Value &lt;value component=<b>LND</b>&gt; <b>0</b></li><li>Value &lt;value component=<b>ESP</b>&gt; <b>0</b></li></ul></dd></dl><li>Description &lt;desc&gt; : <b>ROOTPE (mpi task in MPI_COMM_WORLD) for each component</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li> attributes :
+	    <ul><li>id = <b>NINST</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><dl><dt>Values &lt;values&gt; :</dt><dd><ul><li>Value &lt;value component=<b>ATM</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>OCN</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>WAV</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>GLC</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>ICE</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>ROF</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>LND</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>ESP</b>&gt; <b>1</b></li></ul></dd></dl><li>Description &lt;desc&gt; : <b>Number of instances for each component</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li> attributes :
+	    <ul><li>id = <b>NINST_LAYOUT</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><dl><dt>Values &lt;values&gt; :</dt><dd><ul><li>Value &lt;value component=<b>ATM</b>&gt; <b>concurrent</b></li><li>Value &lt;value component=<b>OCN</b>&gt; <b>concurrent</b></li><li>Value &lt;value component=<b>WAV</b>&gt; <b>concurrent</b></li><li>Value &lt;value component=<b>GLC</b>&gt; <b>concurrent</b></li><li>Value &lt;value component=<b>ICE</b>&gt; <b>concurrent</b></li><li>Value &lt;value component=<b>ROF</b>&gt; <b>concurrent</b></li><li>Value &lt;value component=<b>LND</b>&gt; <b>concurrent</b></li><li>Value &lt;value component=<b>ESP</b>&gt; <b>concurrent</b></li></ul></dd></dl><li>Valid Values &lt;valid_values&gt; : <b>sequential,concurrent</b></li><li>Description &lt;desc&gt; : <b>Layout of component instances for each component</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li> attributes :
+	    <ul><li>id = <b>PSTRID</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><dl><dt>Values &lt;values&gt; :</dt><dd><ul><li>Value &lt;value component=<b>ATM</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>CPL</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>OCN</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>WAV</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>GLC</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>ICE</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>ROF</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>LND</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>ESP</b>&gt; <b>1</b></li></ul></dd></dl><li>Description &lt;desc&gt; : <b>Number of instances for each component</b></li></ul></dd></dl></div></div>
+</div>
+  </body>
+</html>

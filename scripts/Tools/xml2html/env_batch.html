@@ -99,25 +99,26 @@
 	</script>
   </head>
   <body onload="init()">
-    <div class="container"><h1>CESM CASEROOT example env_batch.xml file</h1><p style="font-size: 0.9em;">
+    <div class="container"><h1>CESM CASEROOT env_batch.xml file</h1><p style="font-size: 0.9em;">
 	    Model Version: CESM2.0<br />
 	    HTML created on: 2017-06-21
-	  </p><p>
-	    This page contains an example env_batch.xml file read by the case.submit script.
-	  </p><p>
-	    The case.submit reads these XML settings in order to<br />
-	    determine the machine specific batch job submission arguments to be used for<br />
-	    job group. CESM2.0 supports 3 job groups; <i>case.run</i>, <i>case.test</i>, and <i>case.st_archive</i>.<br />
+	  </p><h3>Description</h3><p>
+	    The case.submit script reads these XML env_batch.xml settings in order to<br />
+	    determine the machine specific batch job submission arguments to be used for a<br />
+	    given job group; <i>case.run</i>, <i>case.test</i>, and <i>case.st_archive</i>.. 
+	  </p><h3>Interface Tools</h3><p>
+	    CESM2.0 supports 3 job groups; <i>case.run</i>, <i>case.test</i>, and <i>case.st_archive</i>.<br />
 	    The <a href="http://www.cesm.ucar.edu/models/cesm2.0/cesm/xmlquery.html">xmlquery</a> 
 	    and <a href="http://www.cesm.ucar.edu/models/cesm2.0/cesm/xmlchange.html">xmlchange</a> script tools<br />
-	    accept the <b>--subgroup</b> command line argument to define one of the 3 job groups.
+	    accept the <b>--subgroup</b> command line argument to define one of the 3 job groups.<br />
+	    Batch settings can be modified anytime before case.submit is called.
 	  </p><p>
-	    Varible names delimited by <pre>{{ }}</pre> are substituted at run-time and should not be modified.
-	  </p><p>
+	    Variable names delimited by <pre>{{ }}</pre> are substituted at run-time and should not be modified.
+	  </p><h4>Examples</h4><h3>Navigation Instuctions</h3><p>
 	  Clicking on the blue link will display additional descriptive information.<br />  
 	  Click on the "Show Details" button and then cntl+F key to search for specific strings in this file.
 	  </p><button class="detailsBtn" onclick="showAll();">Show Details</button><button class="detailsBtn" onclick="hideAll();">Hide Details</button><br /><br />
-  <div class="accordionItem"><h2><span id="variable">Header &lt;header&gt;</span></h2><div><pre>
+  <div class="accordionItem"><h2><span id="variable">File Description Header &lt;header&gt;</span></h2><div><pre>
       These variables may be changed anytime during a run, they
       control arguments to the batch submit command.
     </pre></div></div>
@@ -158,7 +159,7 @@
 	    <ul><li>id = <b>BATCH_COMMAND_FLAGS</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Override the batch submit command this job. Do not include executable or dependencies</b></li></ul></dd></dl><dl><dt>entry &lt;entry&gt; :</dt><dd><ul><li> attributes :
 	    <ul><li>id = <b>JOB_WALLCLOCK_TIME</b></li><li>value = <b>12:00:00</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>The machine wallclock setting.  Default determined in config_machines.xml can be overwritten by testing</b></li></ul></dd></dl><dl><dt>entry &lt;entry&gt; :</dt><dd><ul><li> attributes :
 	    <ul><li>id = <b>JOB_QUEUE</b></li><li>value = <b>regular</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>The machine queue in which to submit the job.  Default determined in config_machines.xml can be overwritten by testing</b></li></ul></dd></dl></div></div>
-  <div class="accordionItem"><h2>Group <i>case.run</i> Settings <b><span id="variable">&lt;group id="case.test"&gt; : </span></b></h2><div><dl><dt>entry &lt;entry&gt; :</dt><dd><ul><li> attributes :
+  <div class="accordionItem"><h2>Group <i>case.test</i> Settings <b><span id="variable">&lt;group id="case.test"&gt; : </span></b></h2><div><dl><dt>entry &lt;entry&gt; :</dt><dd><ul><li> attributes :
 	    <ul><li>id = <b>prereq</b></li><li>value = <b>$BUILD_COMPLETE and $TEST</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li></ul></dd></dl><dl><dt>entry &lt;entry&gt; :</dt><dd><ul><li> attributes :
 	    <ul><li>id = <b>task_count</b></li><li>value = <b>default</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li></ul></dd></dl><dl><dt>entry &lt;entry&gt; :</dt><dd><ul><li> attributes :
 	    <ul><li>id = <b>template</b></li><li>value = <b>template.case.test</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li></ul></dd></dl><dl><dt>entry &lt;entry&gt; :</dt><dd><ul><li> attributes :

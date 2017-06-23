@@ -1,0 +1,658 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=ASCII" />
+    <title>CESM CASEROOT env_run.xml file</title>
+    <style type="text/css">
+	  body {
+          font-family:'Open Sans', Arial, sans-serif;
+          font-size:14px;
+          font-weight:300;
+          line-height:1.6em;
+          color:#656565;
+          width: 90%;
+          align: center;
+	  }
+
+	  .container {
+          padding: 0 30px 0 30px;
+          padding-top: 0px;
+          padding-right: 30px;
+          padding-bottom: 30px;
+          padding-left: 30px;
+          position: relative;
+	  }
+      
+	  dt { color:#656565; font-weight: bold }
+
+	  .accordionItem h2 { margin: 0; font-size: 1.1em; padding: 0.4em; color: #000; background-color: #E3E4E6; border-bottom: 1px solid #66d; width: 90%}
+	  .accordionItem h2:hover { cursor: pointer; }
+	  .accordionItem div { margin: 0; padding: 1em 0.4em; background-color: #eef; border-bottom: 1px solid #66d; width: 90%}
+	  .accordionItem.hide h2 { color: #000; background-color: #E3E4E6; width: 90%}
+      
+	  .detailsBtn { background-color: #E3E4E6; }
+
+	  #variable { color:#66d; font-size: 1.2em; font-weight: bold; display: inline-block; margin-right: 30px; width: 550px; }
+	  #emphasis { color:#656565; font-weight: bold; display: inline-block; }
+	  #small { color:#9f9f9f; display: inline-block; }
+
+	</style>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script type="text/javascript">
+	// 
+	var accordionItems = new Array();
+
+	function init() {
+	  // Grab the accordion items from the page
+	  var divs = document.getElementsByTagName( 'div' );
+	  for ( var i = 0; i < divs.length; i++ ) {
+	    if ( divs[i].className == 'accordionItem' ) accordionItems.push( divs[i] );
+	  }
+	  // Assign onclick events to the accordion item headings
+	  for ( var i = 0; i < accordionItems.length; i++ ) {
+	    var h2 = getFirstChildWithTagName( accordionItems[i], 'H2' );
+	    h2.onclick = toggleItem;
+          }
+          // Hide all accordion item bodies 
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideUp();
+          }
+        }
+
+        function toggleItem() {
+          var itemClass = this.parentNode.className;
+          // Hide all items
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideUp();
+          }
+          // Show this item if it was previously hidden
+          if ( itemClass == 'accordionItem hide' ) {
+            this.parentNode.className = 'accordionItem';
+            $(this).parent().find('div').slideDown();
+          }
+        }
+
+        function getFirstChildWithTagName( element, tagName ) {
+          for ( var i = 0; i < element.childNodes.length; i++ ) {
+            if ( element.childNodes[i].nodeName == tagName ) return element.childNodes[i];
+          }
+        }
+
+        function hideAll() {
+        // Hide all accordian items
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideUp();
+          }
+        }
+
+        function showAll() {
+        // show all accordian items
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideDown();
+          }
+        }
+        //
+	</script>
+  </head>
+  <body onload="init()">
+    <div class="container"><h1>CESM CASEROOT env_run.xml file</h1><p style="font-size: 0.9em;">
+	    Model Version: CESM2.0<br />
+	    HTML created on: 2017-06-21
+	  </p><h3>Description</h3><p>
+	    The CASEROOT scripts read the XML settings in the env_run.xml file in order to<br />
+	    determine case run specific settings.<br /></p><h3>Interface Tools</h3><p>
+	    CESM2.0 supports multiple run groups.
+	    The <a href="http://www.cesm.ucar.edu/models/cesm2.0/cesm/xmlquery.html">xmlquery</a> 
+	    and <a href="http://www.cesm.ucar.edu/models/cesm2.0/cesm/xmlchange.html">xmlchange</a> script tools<br />
+	    accept the <b>--subgroup</b> command line argument to define one of the run groups.<br />
+	    Changes to these settings may be made prior to calling <b>case.submit</b>.
+	  </p><h4>Examples</h4><h3>Navigation Instuctions</h3><p>
+	  Clicking on the blue link will display additional descriptive information.<br />  
+	  Click on the "Show Details" button and then cntl+F key to search for specific strings in this file.
+	  </p><button class="detailsBtn" onclick="showAll();">Show Details</button><button class="detailsBtn" onclick="hideAll();">Hide Details</button><br /><br />
+  <div class="accordionItem"><h2><span id="variable">File Description Header &lt;header&gt;</span></h2><div><pre>
+    These variables MAY BE CHANGED ANYTIME during a run.
+    Additional machine speific variables that can be changed
+    during a run are contained in the env_mach_specific file
+    Note1: users SHOULD NOT modify BUILD_COMPETE in env_build.xml
+    this is done automatically by the scripts.
+    </pre></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_desc"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LOGDIR</b></li><li>value = <b>$CASEROOT/logs</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>Extra copies of the component log files will be saved here.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CASESTR</b></li><li>value = <b>UNSET</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>case description</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>RUNDIR</b></li><li>value = <b>$CIME_OUTPUT_ROOT/$CASE/run</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>
+      The directory where the executable will be run.
+      By default this is set to EXEROOT/../run.
+      RUNDIR allows you to keep the run directory separate from the build directory
+    </b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_begin_stop_restart"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>RUN_TYPE</b></li><li>value = <b>startup</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>startup,hybrid,branch</b></li><li>Description &lt;desc&gt; : <b>
+      Determines the model run initialization type.
+      This setting is only important for the initial run of a production run when the
+      CONTINUE_RUN variable is set to FALSE.  After the initial run, the CONTINUE_RUN
+      variable is set to TRUE, and the model restarts exactly using input
+      files in a case, date, and bit-for-bit continuous fashion.
+      Default: startup.
+      -- In a startup run (the default), all components are initialized
+      using baseline states.  These baseline states are set independently by
+      each component and can include the use of restart files, initial
+      files, external observed data files, or internal initialization (i.e.,
+      a cold start). In a startup run, the coupler sends the start date to
+      the components at initialization. In addition, the coupler does not
+      need an input data file.  In a startup initialization, the ocean model
+      does not start until the second ocean coupling (normally the second
+      day).
+      -- In a branch run, all components are initialized using a consistent
+      set of restart files from a previous run (determined by the
+      RUN_REFCASE and RUN_REFDATE variables in env_run.xml).  The case name
+      is generally changed for a branch run, although it does not have to
+      be. In a branch run, setting RUN_STARTDATE is ignored because the
+      model components obtain the start date from their restart datasets.
+      Therefore, the start date cannot be changed for a branch run. This is
+      the same mechanism that is used for performing a restart run (where
+      CONTINUE_RUN is set to TRUE in the env_run.xml) Branch runs are
+      typically used when sensitivity or parameter studies are required, or
+      when settings for history file output streams need to be modified
+      while still maintaining bit-for-bit reproducibility. Under this
+      scenario, the new case is able to produce an exact bit-for-bit restart
+      in the same manner as a continuation run IF no source code or
+      component namelist inputs are modified. All models use restart files
+      to perform this type of run.  RUN_REFCASE and RUN_REFDATE are required
+      for branch runs.
+      To set up a branch run, locate the restart tar file or restart
+      directory for RUN_REFCASE and RUN_REFDATE from a previous run, then
+      place those files in the RUNDIR directory.
+      --- In a hybrid run the model is initialized as a startup, BUT uses
+      initialization datasets FROM A PREVIOUS case.  This
+      is somewhat analogous to a branch run with relaxed restart
+      constraints.  A hybrid run allows users to bring together combinations
+      of initial/restart files from a previous case (specified by
+      RUN_REFCASE) at a given model output date (specified by
+      RUN_REFDATE). Unlike a branch run, the starting date of a hybrid run
+      (specified by RUN_STARTDATE) can be modified relative to the reference
+      case. In a hybrid run, the model does not continue in a bit-for-bit
+      fashion with respect to the reference case. The resulting climate,
+      however, should be continuous provided that no model source code or
+      namelists are changed in the hybrid run.  In a hybrid initialization,
+      the ocean model does not start until the second ocean coupling
+      (normally the second day), and the coupler does a cold start without
+      a restart file.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>RUN_REFDIR</b></li><li>value = <b>ccsm4_init</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>
+      Reference directory containing RUN_REFCASE data - used for hybrid or branch runs
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>RUN_REFCASE</b></li><li>value = <b>case.std</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>
+      Reference case for hybrid or branch runs
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>RUN_REFDATE</b></li><li>value = <b>0001-01-01</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>
+      Reference date for hybrid or branch runs (yyyy-mm-dd)
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>RUN_REFTOD</b></li><li>value = <b>00000</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>
+      Reference time of day (seconds) for hybrid or branch runs (sssss)
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GET_REFCASE</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>
+      Flag for automatically prestaging the refcase restart dataset.
+      If TRUE, then the refcase data is prestaged into the executable directory
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>RUN_STARTDATE</b></li><li>value = <b>1850-01-01</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>
+      Run start date (yyyy-mm-dd). Only used for startup or hybrid runs.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>START_TOD</b></li><li>value = <b>0</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>
+      Run start time-of-day
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>STOP_OPTION</b></li><li>value = <b>nyears</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</b></li><li>Description &lt;desc&gt; : <b>
+      Sets the run length along with STOP_N and STOP_DATE
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>STOP_N</b></li><li>value = <b>2</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>
+      Provides a numerical count for $STOP_OPTION.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>STOP_DATE</b></li><li>value = <b>-999</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>
+      Alternative date yyyymmdd date option, sets the run length with STOP_OPTION and STOP_N
+      negative value implies off
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>REST_OPTION</b></li><li>value = <b>nmonths</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</b></li><li>Description &lt;desc&gt; : <b>
+      sets frequency of model restart writes (same options as STOP_OPTION)
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>REST_N</b></li><li>value = <b>2</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>
+      sets model restart writes with REST_OPTION and REST_DATE
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>REST_DATE</b></li><li>value = <b>$STOP_DATE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>
+      Alternative date in yyyymmdd format
+      sets model restart write date with REST_OPTION and REST_N
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PAUSE_OPTION</b></li><li>value = <b>never</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear</b></li><li>Description &lt;desc&gt; : <b>
+      Sets the pause frequency along with PAUSE_N
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PAUSE_N</b></li><li>value = <b>0</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>
+      Provides a numerical count for $PAUSE_OPTION.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PAUSE_COMPONENT_LIST</b></li><li>value = <b>none</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>
+      A colon-separated list of components to receive pause and resume signals
+      A value of 'all' means all components will pause and resume
+      A value of 'none' means that no components will pause or resume
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>BARRIER_N</b></li><li>value = <b>1</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>
+      sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>BARRIER_DATE</b></li><li>value = <b>-999</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>
+      Alternative date in yyyymmdd format
+      sets periodic model barriers with BARRIER_OPTION and BARRIER_N for synchronization
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ESP_RUN_ON_PAUSE</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>
+      ESP component runs after driver 'pause cycle'
+      If any component 'pauses' (see PAUSE_OPTION, PAUSE_N and
+      PAUSE_COMPONENT_LIST XML variables), the ESP component (if
+      present) will be run to process the component 'pause' (restart)
+      files and set any required 'resume' signals.
+      If true, esp_cpl_dt and esp_cpl_offset settings are ignored.
+      default: false
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CONTINUE_RUN</b></li><li>value = <b>TRUE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>
+      A setting of TRUE implies a continuation run
+      When you first begin a branch, hybrid or startup run, CONTINUE_RUN
+      must be set to FALSE. When you successfully run and get a restart
+      file, you will need to change CONTINUE_RUN to TRUE for the remainder
+      of your run. This variable determines if the run is a restart run.
+      Set to FALSE when initializing a startup, branch or hybrid case.
+      Set to TRUE when continuing a run.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>RESUBMIT</b></li><li>value = <b>0</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>If RESUBMIT is greater than 0, then case will automatically resubmit
+    Enables the model to automatically resubmit a new run.  To get
+    multiple runs, set RESUBMIT greater than 0, then RESUBMIT will be
+    decremented and the case will be resubmitted.  The case will stop automatically
+    resubmitting when the RESUBMIT value reaches 0.
+    Long runs can easily outstrip supercomputer queue time limits. For
+    this reason, a case is usually run as a series of jobs, each
+    restarting where the previous finished.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>RESUBMIT_SETS_CONTINUE_RUN</b></li><li>value = <b>TRUE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Description &lt;desc&gt; : <b>This flag controls whether the RESUBMIT flag causes
+      CONTINUE_RUN to toggle from FALSE to TRUE.  The default is
+      TRUE.  This flag might be used in conjunction with COMP_RUN_BARRIERS for
+      timing tests.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>RUN_WITH_SUBMIT</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Logical to determine whether CESM run has been submitted with the submit script or not</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>BARRIER_OPTION</b></li><li>value = <b>never</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</b></li><li>Description &lt;desc&gt; : <b>
+      sets frequency of full model barrier (same options as STOP_OPTION) for synchronization with BARRIER_N and BARRIER_DATE
+    </b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_data_archive"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>DOUT_S</b></li><li>value = <b>TRUE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Logical to turn on short term archiving.
+    If TRUE, short term archiving will be turned on.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>DOUT_S_SAVE_INTERIM_RESTART_FILES</b></li><li>value = <b>TRUE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Logical to archive all interim restart files, not just those at eor
+    If TRUE, perform short term archiving on all interim restart files,
+    not just those at the end of the run. By default, this value is FALSE.
+    The restart files are saved under the specific component directory
+    ($DOUT_S_ROOT/$CASE/$COMPONENT/rest rather than the top-level $DOUT_S_ROOT/$CASE/rest directory).
+    Interim restart files are created using the REST_N and REST_OPTION variables.
+    This is for expert users ONLY and requires expert knowledge.
+    We will not document this further in this guide.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>SYSLOG_N</b></li><li>value = <b>900</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>system workload snapshot frequency (in seconds, if greater than 0; disabled otherwise)</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_flags"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CHECK_TIMING</b></li><li>value = <b>TRUE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>logical to diagnose model timing at the end of the run</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>TIMER_LEVEL</b></li><li>value = <b>4</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>timer output depth</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>SAVE_TIMING_DIR</b></li><li>value = <b>timing</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Where to auto archive timing data</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>COMP_RUN_BARRIERS</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Turns on component barriers for component timing.
+	  This variable is for testing and debugging only and should never
+	  be set for a production run.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CPL_DECOMP</b></li><li>value = <b>0</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b>0,1,2,3,4,5,6</b></li><li>Description &lt;desc&gt; : <b>Coupler decomposition option.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>INFO_DBUG</b></li><li>value = <b>1</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b>0,1,2,3</b></li><li>Description &lt;desc&gt; : <b>level of debug output, 0=minimum, 1=normal, 2=more, 3=too much</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>DRV_THREADING</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Turns on component varying thread control in the driver.
+    Used to set the driver namelist variable "drv_threading".</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>SAVE_TIMING</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>logical to save timing files in rundir</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>TIMER_DETAIL</b></li><li>value = <b>2</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>timer output depth</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>BFBFLAG</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>turns on coupler bit-for-bit reproducibility with varying pe counts</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>FLDS_WISO</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Turn on the passing of water isotope fields through the coupler</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_cesm"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PROFILE_PAPI_ENABLE</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Enables the papi hardware counters in gptl
+    The papi library must be included in the build step for
+    this to work.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ESMF_LOGFILE_KIND</b></li><li>value = <b>ESMF_LOGKIND_NONE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>ESMF_LOGKIND_SINGLE,ESMF_LOGKIND_MULTI,ESMF_LOGKIND_NONE</b></li><li>Description &lt;desc&gt; : <b>
+      Determines what ESMF log files (if any) are generated when
+          USE_ESMF_LIB is TRUE.
+      ESMF_LOGKIND_SINGLE: Use a single log file, combining messages from
+          all of the PETs. Not supported on some platforms.
+      ESMF_LOGKIND_MULTI: Use multiple log files -- one per PET.
+      ESMF_LOGKIND_NONE: Do not issue messages to a log file.
+      By default, no ESMF log files are generated.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>TPROF_TOTAL</b></li><li>value = <b>0</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>Determines number of times profiler is called over the model run period.
+    This sets values for tprof_option and tprof_n that determine the timing output file frequency
+    </b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_domain"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PTS_MODE</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Operate on only a single point of the global grid  - DO NOT EDIT (for experts only)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PTS_LAT</b></li><li>value = <b>-999.99</b></li></ul></li><li>Data Type &lt;type&gt; : <b>real</b></li><li>Description &lt;desc&gt; : <b>Latitude to find nearest points for points mode (only used if PTS_MODE is TRUE)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PTS_LON</b></li><li>value = <b>-999.99</b></li></ul></li><li>Data Type &lt;type&gt; : <b>real</b></li><li>Description &lt;desc&gt; : <b>Longitude to find nearest points for points mode (only used if PTS_MODE is TRUE)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM_DOMAIN_FILE</b></li><li>value = <b>domain.lnd.fv0.9x1.25_gx1v7.151020.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>atm domain file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM_DOMAIN_PATH</b></li><li>value = <b>$DIN_LOC_ROOT/share/domains</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>path of atm domain file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND_DOMAIN_FILE</b></li><li>value = <b>domain.lnd.fv0.9x1.25_gx1v7.151020.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>lnd domain file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND_DOMAIN_PATH</b></li><li>value = <b>$DIN_LOC_ROOT/share/domains</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>path of lnd domain file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ROF_DOMAIN_FILE</b></li><li>value = <b>UNSET</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>rof domain file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ROF_DOMAIN_PATH</b></li><li>value = <b>$DIN_LOC_ROOT/share/domains</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>path of rof domain file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>WAV_DOMAIN_FILE</b></li><li>value = <b>UNSET</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>wav domain file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>WAV_DOMAIN_PATH</b></li><li>value = <b>$DIN_LOC_ROOT/share/domains</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>path of wav domain file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ICE_DOMAIN_FILE</b></li><li>value = <b>domain.ocn.gx1v7.151008.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>ice domain file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ICE_DOMAIN_PATH</b></li><li>value = <b>$DIN_LOC_ROOT/share/domains</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>path of ice domain file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_DOMAIN_FILE</b></li><li>value = <b>domain.ocn.gx1v7.151008.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>ocn domain file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_DOMAIN_PATH</b></li><li>value = <b>$DIN_LOC_ROOT/share/domains</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>path of ocn domain file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC_DOMAIN_FILE</b></li><li>value = <b>UNSET</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>glc domain file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC_DOMAIN_PATH</b></li><li>value = <b>$DIN_LOC_ROOT/share/domains</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>path of glc domain file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM2OCN_FMAPNAME</b></li><li>value = <b>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v7_aave.151008.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>atm2ocn flux mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM2OCN_FMAPTYPE</b></li><li>value = <b>X</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>atm2ocn flux mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM2OCN_SMAPNAME</b></li><li>value = <b>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v7_blin.151008.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>atm2ocn state mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM2OCN_SMAPTYPE</b></li><li>value = <b>X</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>atm2ocn state mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM2OCN_VMAPNAME</b></li><li>value = <b>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v7_patc.151008.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>atm2ocn vector mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM2OCN_VMAPTYPE</b></li><li>value = <b>X</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>atm2ocn vector mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM2LND_FMAPNAME</b></li><li>value = <b>idmap</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>atm2lnd flux mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM2LND_FMAPTYPE</b></li><li>value = <b>X</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>atm2lnd flux mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM2LND_SMAPNAME</b></li><li>value = <b>idmap</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>atm2lnd state mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM2LND_SMAPTYPE</b></li><li>value = <b>X</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>atm2lnd state mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM2WAV_SMAPNAME</b></li><li>value = <b>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_ww3a_bilin.160324.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>atm2wav state mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM2WAV_SMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>atm2wav state mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN2ATM_FMAPNAME</b></li><li>value = <b>cpl/gridmaps/gx1v7/map_gx1v7_TO_fv0.9x1.25_aave.151008.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>ocn2atm flux mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN2ATM_FMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>ocn2atm flux mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN2ATM_SMAPNAME</b></li><li>value = <b>cpl/gridmaps/gx1v7/map_gx1v7_TO_fv0.9x1.25_aave.151008.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>ocn2atm state mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN2ATM_SMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>ocn2atm state mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND2ATM_FMAPNAME</b></li><li>value = <b>idmap</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>lnd2atm flux mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND2ATM_FMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>lnd2atm flux mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND2ATM_SMAPNAME</b></li><li>value = <b>idmap</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>lnd2atm state mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND2ATM_SMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>lnd2atm state mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND2GLC_FMAPNAME</b></li><li>value = <b>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland4km_aave.170429.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>lnd2glc flux mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND2GLC_FMAPTYPE</b></li><li>value = <b>X</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>lnd2glc flux mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND2GLC_SMAPNAME</b></li><li>value = <b>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland4km_blin.170429.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>lnd2glc state mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND2GLC_SMAPTYPE</b></li><li>value = <b>X</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>lnd2glc state mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND2ROF_FMAPNAME</b></li><li>value = <b>lnd/clm2/mappingdata/maps/0.9x1.25/map_0.9x1.25_nomask_to_0.5x0.5_nomask_aave_da_c120522.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>lnd2rof flux mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND2ROF_FMAPTYPE</b></li><li>value = <b>X</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>lnd2rof flux mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ROF2LND_FMAPNAME</b></li><li>value = <b>lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_nomask_to_0.9x1.25_nomask_aave_da_c121019.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>rof2lnd flux mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ROF2LND_FMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>rof2lnd flux mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ROF2OCN_FMAPNAME</b></li><li>value = <b>cpl/gridmaps/r05/map_r05_TO_gx1v7_aave.161012.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>rof2ocn flux mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ROF2OCN_FMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>rof2ocn flux mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ROF2OCN_LIQ_RMAPNAME</b></li><li>value = <b>cpl/gridmaps/r05/map_r05_to_gx1v7_nn_open_ocean_nnsm_e1000r300_marginal_sea_170413.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>rof2ocn runoff mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ROF2OCN_LIQ_RMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>rof2ocn runoff mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ROF2OCN_ICE_RMAPNAME</b></li><li>value = <b>cpl/gridmaps/r05/map_r05_to_gx1v7_nnsm_e1000r300_170413.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>rof2ocn runoff mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ROF2OCN_ICE_RMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>rof2ocn runoff mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC2LND_FMAPNAME</b></li><li>value = <b>cpl/gridmaps/gland4km/map_gland4km_TO_fv0.9x1.25_aave.170429.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>glc2lnd flux mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC2LND_FMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>glc2lnd flux mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC2LND_SMAPNAME</b></li><li>value = <b>cpl/gridmaps/gland4km/map_gland4km_TO_fv0.9x1.25_aave.170429.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>glc2lnd state mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC2LND_SMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>glc2lnd state mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC2ICE_RMAPNAME</b></li><li>value = <b>idmap</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>glc2ice runoff mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC2ICE_RMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>glc2ice runoff mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC2OCN_RMAPNAME</b></li><li>value = <b>cpl/gridmaps/gland4km/map_gland4km_to_gx1v7_nnsm_e1000r300_170501.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>glc2ocn runoff mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC2OCN_RMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>glc2ocn runoff mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN2WAV_SMAPNAME</b></li><li>value = <b>cpl/gridmaps/gx1v7/map_gx1v7_TO_ww3a_splice_170214.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>ocn2wav state mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN2WAV_SMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>ocn2wav state mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ICE2WAV_SMAPNAME</b></li><li>value = <b>cpl/gridmaps/gx1v7/map_gx1v7_TO_ww3a_splice_170214.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>ice2wav state mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ICE2WAV_SMAPTYPE</b></li><li>value = <b>Y</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>ice2wav state mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>WAV2OCN_SMAPNAME</b></li><li>value = <b>cpl/gridmaps/ww3a/map_ww3a_TO_gx1v7_splice_170214.nc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>wav2ocn state mapping file</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>WAV2OCN_SMAPTYPE</b></li><li>value = <b>X</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>X,Y</b></li><li>Description &lt;desc&gt; : <b>wav2ocn state mapping file decomp type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>VECT_MAP</b></li><li>value = <b>cart3d</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>none,npfix,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag</b></li><li>Description &lt;desc&gt; : <b>vector mapping option</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>EPS_FRAC</b></li><li>value = <b>1.0e-02</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>Error tolerance for differences in fractions in domain checking</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>EPS_AAREA</b></li><li>value = <b>9.0e-07</b></li></ul></li><li>Data Type &lt;type&gt; : <b>real</b></li><li>Description &lt;desc&gt; : <b>Error tolerance for differences in atm/land areas in domain checking</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>EPS_AMASK</b></li><li>value = <b>1.0e-13</b></li></ul></li><li>Data Type &lt;type&gt; : <b>real</b></li><li>Description &lt;desc&gt; : <b>Error tolerance for differences in atm/land masks in domain checking</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>EPS_AGRID</b></li><li>value = <b>1.0e-12</b></li></ul></li><li>Data Type &lt;type&gt; : <b>real</b></li><li>Description &lt;desc&gt; : <b>Error tolerance for differences in atm/land lat/lon in domain checking</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>EPS_OAREA</b></li><li>value = <b>1.0e-01</b></li></ul></li><li>Data Type &lt;type&gt; : <b>real</b></li><li>Description &lt;desc&gt; : <b>Error tolerance for differences in ocean/ice lon/lat in domain checking</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>EPS_OMASK</b></li><li>value = <b>1.0e-06</b></li></ul></li><li>Data Type &lt;type&gt; : <b>real</b></li><li>Description &lt;desc&gt; : <b>Error tolerance for differences in ocean/ice lon/lat in domain checking</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>EPS_OGRID</b></li><li>value = <b>1.0e-02</b></li></ul></li><li>Data Type &lt;type&gt; : <b>real</b></li><li>Description &lt;desc&gt; : <b>Error tolerance for differences in ocean/ice lon/lat in domain checking</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_din"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>NODENAME_REGEX</b></li><li>value = <b>.*.cheyenne.ucar.edu</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>
+      A regular expression to match machine node names to ACME machine.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>NODE_FAIL_REGEX</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>
+      A regular expression to search for an indication that a run failure was caused by a node failure
+      and should therefore be re-attempted.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PROXY</b></li><li>value = <b>UNSET</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>
+      Proxy (if any) setting for http_proxy to allow web access on this machine.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>TEST</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Description &lt;desc&gt; : <b>
+      Indicates to case.submit that this is a test case.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>DIN_LOC_ROOT</b></li><li>value = <b>$ENV{CESMDATAROOT}/inputdata</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>
+      The root directory of all CIME and component input data for the selected machine.
+      This is usually a shared disk area.
+      Default values for the target machine are in the
+      $CIMEROOT/machines/config_machines.xml
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>DIN_LOC_ROOT_CLMFORC</b></li><li>value = <b>$ENV{CESMDATAROOT}/lmwg</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>CLM-specific root directory for CLM type input forcing data
+    This directory will only be used for I (CLM/DATM) compsets and only
+    for datm forcing data that is NOT checked into the svn repository
+    (datasets other than the Qian or single-point forcing).
+    This is usually a shared disk area.
+    Default values for the target machine are in the
+    $CIMEROOT/machines/config_machines.xml</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_dout"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>DOUT_S_ROOT</b></li><li>value = <b>$CIME_OUTPUT_ROOT/archive/$CASE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>Root directory for short term archiving. This directory must be visible to compute nodes.</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_mpi"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>MPI_RUN_COMMAND</b></li><li>value = <b>UNSET</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>override the mpi run command, do not include model executable</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_pio"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_ASYNC_INTERFACE</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>TRUE implies perform asynchronous i/o</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_REARR_COMM_TYPE</b></li><li>value = <b>p2p</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>p2p,coll,default</b></li><li>Description &lt;desc&gt; : <b>pio rearranger communication type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_REARR_COMM_FCD</b></li><li>value = <b>2denable</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>2denable,io2comp,comp2io,disable,default</b></li><li>Description &lt;desc&gt; : <b>pio rearranger communication flow control direction</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO</b></li><li>value = <b>0</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>pio rearranger communication max pending requests (comp2io) : 0 implies that CIME internally calculates the value ( = max(64, 2 * PIO_NUMTASKS) ), -1 implies no bound on max pending requests </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_REARR_COMM_ENABLE_HS_COMP2IO</b></li><li>value = <b>TRUE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>pio rearranger communiation options (comp2io) : TRUE implies enable handshake </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_REARR_COMM_ENABLE_ISEND_COMP2IO</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>pio rearranger communiation options (comp2io) : TRUE implies enable isend</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP</b></li><li>value = <b>64</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>pio rearranger communication max pending requests (io2comp) : -1 implies no bound on max pending requests </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_REARR_COMM_ENABLE_HS_IO2COMP</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>pio rearranger communiation options (io2comp) : TRUE implies enable handshake</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_REARR_COMM_ENABLE_ISEND_IO2COMP</b></li><li>value = <b>TRUE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>pio rearranger communiation options (io2comp) : TRUE implies enable isend</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_DEBUG_LEVEL</b></li><li>value = <b>0</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>pio debug level</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_BLOCKSIZE</b></li><li>value = <b>-1</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>pio blocksize for box decompositions</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_BUFFER_SIZE_LIMIT</b></li><li>value = <b>-1</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>pio buffer size limit for pnetcdf output</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_TYPENAME</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><dl><dt>Values &lt;values&gt; :</dt><dd><ul><li>Value &lt;value component=<b>ATM</b>&gt; <b>pnetcdf</b></li><li>Value &lt;value component=<b>CPL</b>&gt; <b>pnetcdf</b></li><li>Value &lt;value component=<b>OCN</b>&gt; <b>pnetcdf</b></li><li>Value &lt;value component=<b>WAV</b>&gt; <b>pnetcdf</b></li><li>Value &lt;value component=<b>GLC</b>&gt; <b>pnetcdf</b></li><li>Value &lt;value component=<b>ICE</b>&gt; <b>pnetcdf</b></li><li>Value &lt;value component=<b>ROF</b>&gt; <b>pnetcdf</b></li><li>Value &lt;value component=<b>LND</b>&gt; <b>pnetcdf</b></li><li>Value &lt;value component=<b>ESP</b>&gt; <b>pnetcdf</b></li></ul></dd></dl><li>Valid Values &lt;valid_values&gt; : <b>netcdf,pnetcdf,netcdf4p,netcdf4c</b></li><li>Description &lt;desc&gt; : <b>pio io type</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_STRIDE</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><dl><dt>Values &lt;values&gt; :</dt><dd><ul><li>Value &lt;value component=<b>ATM</b>&gt; <b>$PES_PER_NODE</b></li><li>Value &lt;value component=<b>CPL</b>&gt; <b>$PES_PER_NODE</b></li><li>Value &lt;value component=<b>OCN</b>&gt; <b>$PES_PER_NODE</b></li><li>Value &lt;value component=<b>WAV</b>&gt; <b>$PES_PER_NODE</b></li><li>Value &lt;value component=<b>GLC</b>&gt; <b>$PES_PER_NODE</b></li><li>Value &lt;value component=<b>ICE</b>&gt; <b>$PES_PER_NODE</b></li><li>Value &lt;value component=<b>ROF</b>&gt; <b>$PES_PER_NODE</b></li><li>Value &lt;value component=<b>LND</b>&gt; <b>$PES_PER_NODE</b></li><li>Value &lt;value component=<b>ESP</b>&gt; <b>$PES_PER_NODE</b></li></ul></dd></dl><li>Description &lt;desc&gt; : <b>
+     stride in compute comm of io tasks for each component, if this value is -99 it will
+     be computed based on PIO_NUMTASKS and number of compute tasks
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_REARRANGER</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><dl><dt>Values &lt;values&gt; :</dt><dd><ul><li>Value &lt;value component=<b></b>&gt; <b>$PIO_VERSION</b></li><li>Value &lt;value component=<b>ATM</b>&gt; <b>$PIO_VERSION</b></li><li>Value &lt;value component=<b>CPL</b>&gt; <b>$PIO_VERSION</b></li><li>Value &lt;value component=<b>OCN</b>&gt; <b>$PIO_VERSION</b></li><li>Value &lt;value component=<b>WAV</b>&gt; <b>$PIO_VERSION</b></li><li>Value &lt;value component=<b>GLC</b>&gt; <b>$PIO_VERSION</b></li><li>Value &lt;value component=<b>ICE</b>&gt; <b>$PIO_VERSION</b></li><li>Value &lt;value component=<b>ROF</b>&gt; <b>$PIO_VERSION</b></li><li>Value &lt;value component=<b>LND</b>&gt; <b>$PIO_VERSION</b></li><li>Value &lt;value component=<b>ESP</b>&gt; <b>$PIO_VERSION</b></li></ul></dd></dl><li>Valid Values &lt;valid_values&gt; : <b>1,2</b></li><li>Description &lt;desc&gt; : <b>pio rearranger choice box=1, subset=2 </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_ROOT</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><dl><dt>Values &lt;values&gt; :</dt><dd><ul><li>Value &lt;value component=<b>ATM</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>CPL</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>OCN</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>WAV</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>GLC</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>ICE</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>ROF</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>LND</b>&gt; <b>1</b></li><li>Value &lt;value component=<b>ESP</b>&gt; <b>1</b></li></ul></dd></dl><li>Description &lt;desc&gt; : <b>pio root processor relative to component root</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PIO_NUMTASKS</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><dl><dt>Values &lt;values&gt; :</dt><dd><ul><li>Value &lt;value component=<b>ATM</b>&gt; <b>-99</b></li><li>Value &lt;value component=<b>CPL</b>&gt; <b>-99</b></li><li>Value &lt;value component=<b>OCN</b>&gt; <b>-99</b></li><li>Value &lt;value component=<b>WAV</b>&gt; <b>-99</b></li><li>Value &lt;value component=<b>GLC</b>&gt; <b>-99</b></li><li>Value &lt;value component=<b>ICE</b>&gt; <b>-99</b></li><li>Value &lt;value component=<b>ROF</b>&gt; <b>-99</b></li><li>Value &lt;value component=<b>LND</b>&gt; <b>-99</b></li><li>Value &lt;value component=<b>ESP</b>&gt; <b>-99</b></li></ul></dd></dl><li>Description &lt;desc&gt; : <b>
+      pio number of io tasks, if this value is -99 it will be computed based on PIO_STRIDE and
+      number of tasks
+    </b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_coupling"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CPL_I2O_PER_CAT</b></li><li>value = <b>TRUE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>determine if per ice thickness category fields are passed from ice to ocean - DO NOT EDIT (set by POP build-namelist)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CCSM_BGC</b></li><li>value = <b>CO2C</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>none,CO2A,CO2B,CO2C,CO2_DMSA</b></li><li>Description &lt;desc&gt; : <b>Flag to turn on new fields in coupling.
+    If the value is not none, the coupler is compiled so that optional
+    BGC related fields are exchanged between component models.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>NCPL_BASE_PERIOD</b></li><li>value = <b>day</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>hour,day,year,decade</b></li><li>Description &lt;desc&gt; : <b>Base period associated with NCPL coupling frequency.
+    This xml variable is only used to set the driver namelist variables,
+    atm_cpl_dt, lnd_cpl_dt, ocn_cpl_dt, ice_cpl_dt, glc_cpl_dt, rof_cpl_dt, wav_cpl_dt, and esp_dt.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ATM_NCPL</b></li><li>value = <b>48</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>Number of atm coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist atm_cpl_dt, equal to basedt/ATM_NCPL,
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND_NCPL</b></li><li>value = <b>$ATM_NCPL</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>Number of land coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist atm_cpl_dt, equal to basedt/LND_NCPL,
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ICE_NCPL</b></li><li>value = <b>$ATM_NCPL</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>Number of ice coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist ice_cpl_dt, equal to basedt/ICE_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_NCPL</b></li><li>value = <b>24</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>Number of ocn coupling intervals per NCPL_BASE_PERIOD.
+    Thisn is used to set the driver namelist ocn_cpl_dt, equal to basedt/OCN_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC_NCPL</b></li><li>value = <b>1</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>Number of glc coupling intervals per NCPL_BASE_PERIOD.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC_AVG_PERIOD</b></li><li>value = <b>yearly</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>glc_coupling_period,yearly</b></li><li>Description &lt;desc&gt; : <b>Period at which coupler averages fields sent to GLC.
+    This supports doing the averaging to GLC less frequently than GLC is called
+    (i.e., separating the averaging frequency from the calling frequency).
+    This is useful because there are benefits to only averaging the GLC inputs
+    as frequently as they are really needed (yearly for CISM), but GLC needs to
+    still be called more frequently than that in order to support mid-year restarts.
+
+    Setting GLC_AVG_PERIOD to 'glc_coupling_period' means that the averaging is
+    done exactly when the GLC is called (governed by GLC_NCPL).
+
+    IMPORTANT: In order to restart mid-year when running with CISM, you MUST specify GLC_AVG_PERIOD = 'yearly'.
+    If using GLC_AVG_PERIOD = 'glc_coupling_period' with CISM, you can only restart on year boundaries.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>ROF_NCPL</b></li><li>value = <b>8</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>Number of rof coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist rof_cpl_dt, equal to basedt/ROF_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>WAV_NCPL</b></li><li>value = <b>$ATM_NCPL</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Description &lt;desc&gt; : <b>Number of wav coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist wav_cpl_dt, equal to basedt/WAV_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CPL_SEQ_OPTION</b></li><li>value = <b>RASM_OPTION1</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>CESM1_ORIG,CESM1_ORIG_TIGHT,CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</b></li><li>Description &lt;desc&gt; : <b>
+      Coupler sequencing option. This is used to set the driver namelist variable cpl_seq_option.
+      CESM1_ORIG is the cesm1.1 implementation.
+      CESM1_MOD includes a cesm1.3 mod that swaps ocean merging and atm/ocn flux
+      computation.
+      RASM_OPTION1 runs prep ocean before the ocean coupling reducing
+      most of the lags and field inconsistency but still allowing the ocean to run
+      concurrently with the ice and atmosphere.
+      RASM_OPTION2 is similar to RASM_OPTION1
+      but sequences the ice model, prep ocean and ocean model in that order.  The
+      ocean model loses some of the concurrency with the ice model.
+      CESM1_ORIG_TIGHT and CESM1_MOD_TIGHT are consistent with the old variables
+      ocean_tight_coupling = true in the driver.  That namelist is gone and the
+      cpl_seq_option flags take it's place.
+      TIGHT coupling makes no sense with the OPTION5 and OPTION6 flags.
+    </b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_drv_history"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>HIST_OPTION</b></li><li>value = <b>never</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Sets driver snapshot history file frequency (like REST_OPTION)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>HIST_N</b></li><li>value = <b>-999</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Sets driver snapshot history file frequency (like REST_N)
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>HIST_DATE</b></li><li>value = <b>-999</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>yyyymmdd format, sets coupler snapshot history date (like REST_DATE)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>AVGHIST_OPTION</b></li><li>value = <b>never</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Sets driver average history file frequency (like REST_OPTION)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>AVGHIST_N</b></li><li>value = <b>-999</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>Sets driver average history file frequency (like REST_N)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>AVGHIST_DATE</b></li><li>value = <b>-999</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>yyyymmdd format, sets driver average history date (like REST_DATE)</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="external_tools"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>PRERUN_SCRIPT</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>External script to be run before model completion</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>POSTRUN_SCRIPT</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>External script to be run after model completion</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>DATA_ASSIMILATION</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b> Run the external tool pointed to by DATA_ASSIMILATION_SCRIPT after the model run completes </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>DATA_ASSIMILATION_CYCLES</b></li><li>value = <b>1</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b> Number of model run - data assimilation steps to complete </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>DATA_ASSIMILATION_SCRIPT</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>External script to be run after model completion</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_component_cpl"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CPL_ALBAV</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>
+      Only used for compsets with DATM and POP (currently C, G and J):
+      If true, compute albedos to work with daily avg SW down
+      If false (default), albedos are computed with the assumption that downward
+      solar radiation from the atm component has a diurnal cycle and zenith-angle
+      dependence. This is normally the case when using an active atm component
+      If true, albedos are computed with the assumption that downward
+      solar radiation from the atm component is a daily average quantity and
+      does not have a zenith-angle dependence. This is often the case when
+      using a data atm component. Only used for compsets with DATM and POP (currently C, G and J).
+      NOTE: This should really depend on the datm forcing and not the compset per se.
+      So, for example, whether it is set in a J compset should depend on
+      what datm forcing is used.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CPL_EPBAL</b></li><li>value = <b>off</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>off,ocn</b></li><li>Description &lt;desc&gt; : <b>
+      Only used for compsets with DATM and POP (currently C, G and J):
+      If ocn, ocn provides EP balance factor for precipitation.
+      Provides EP balance factor for precip for POP. A factor computed by
+      POP is applied to precipitation so that precipitation balances
+      evaporation and ocn global salinity does not drift. This is intended
+      for use when coupling POP to a DATM. Only used for C, G and J compsets.
+      Default is off
+    </b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_budgets"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>BUDGETS</b></li><li>value = <b>TRUE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>logical that turns on diagnostic budgets for driver</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_co2"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CCSM_CO2_PPMV</b></li><li>value = <b>284.7</b></li></ul></li><li>Data Type &lt;type&gt; : <b>real</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>
+      Mechanism for setting the CO2 value in ppmv for 
+      CLM if CLM_CO2_TYPE is constant or for 
+      POP if OCN_CO2_TYPE is constant.
+    </b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_glc"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC_NEC</b></li><li>value = <b>10</b></li></ul></li><li>Data Type &lt;type&gt; : <b>integer</b></li><li>Valid Values &lt;valid_values&gt; : <b>0,1,3,5,10,36</b></li><li>Description &lt;desc&gt; : <b>Glacier model number of elevation classes, 0 implies no glacier land unit in clm
+    Used by both CLM and CISM (even if CISM is not running, and only SGLC is used).</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GLC_TWO_WAY_COUPLING</b></li><li>value = <b>TRUE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Whether the glacier component feeds back to the rest of the system
+      This affects:
+      (1) Whether CLM updates its areas based on glacier areas sent from GLC
+      (2) Whether GLC sends fluxes (e.g., calving fluxes) to the coupler
+      Note that this is set to TRUE by default for TG compsets - even though there are
+      no feedbacks for TG compsets, this enables extra coupler diagnostics for these
+      compsets.</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_physics"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>TFREEZE_SALTWATER_OPTION</b></li><li>value = <b>mushy</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>minus1p8,linear_salt,mushy</b></li><li>Description &lt;desc&gt; : <b>Freezing point calculation for salt water.</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_component_cam"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CAM_NML_USE_CASE</b></li><li>value = <b>hist_cam6</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>CAM namelist use_case.  Provides the use_case option for the
+      CAM build-namelist utility (which is called from
+      $CASEROOT/Buildconf/cam.buildnml).  The CAM build-namelist
+      leverages groups of namelist options (use cases) that are often
+      paired with the CAM configure options.  These use cases are xml
+      files located in
+      $CIMEROOT/../components/atm/cam/bld/namelist_files/use_cases.
+      In general, this variable should not be modified for supported
+      component sets (compsets).  Recommendation: If you want to
+      modify this value for your experiment, use your own user-defined
+      component sets.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CAM_NAMELIST_OPTS</b></li><li>value = <b> co2_cycle_rad_passive=.true. </b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>CAM specific namelist settings for -namelist option Provides
+      options to the -namelist argument for the CAM build-namelist
+      utility.  This should be reserved for component set
+      specification. Users should modify CAM namelists only via the
+      $CASEROOT/user_nl_cam file.</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_component_clm"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>LND_TUNING_MODE</b></li><li>value = <b>clm5_0_cam5.5</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>clm4_0_default,clm5_0_cam5.5,clm5_0_GSW3P,clm4_5_CRUNCEP</b></li><li>Description &lt;desc&gt; : <b>Tuning parameters should be optimized for what CLM model version and what meteorlogical forcing combination?
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CLM_NML_USE_CASE</b></li><li>value = <b>20thC_glacierMEC_transient</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>CLM namelist use_case.
+      Determines the use-case that will be sent to the CLM build-namelist utility.
+      This is normally set by the component set. This is an advanced flag and should only be
+      used by expert users.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CLM_BLDNML_OPTS</b></li><li>value = <b>-bgc bgc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>CLM build-namelist options</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CLM_CO2_TYPE</b></li><li>value = <b>diagnostic</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>constant,diagnostic,prognostic</b></li><li>Description &lt;desc&gt; : <b>Determines how CLM will determine where CO2 is set.
+      If value is constant, it will be set to CCSM_CO2_PPMV,
+      if value is either diagnostic or prognostic, the atmosphere model
+      MUST send it to CLM. CLM_CO2_TYPE is normally set by the specific
+      compset, since it HAS to be coordinated with settings for the
+      atmospheric model. Do not modify this variable. If you want to modify for
+      your experiment, use your own user-defined component set
+      This is an advanced flag and should only be used by expert users.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CLM_NAMELIST_OPTS</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>CLM-specific namelist settings for -namelist option in the CLM
+      build-namelist. CLM_NAMELIST_OPTS is normally set as a compset variable
+      and in general should not be modified for supported compsets.
+      It is recommended that if you want to modify this value for your experiment,
+      you should use your own user-defined component sets via using create_newcase
+      with a compset_file argument.
+      This is an advanced flag and should only be used by expert users.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CLM_ACCELERATED_SPINUP</b></li><li>value = <b>off</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>on,off</b></li><li>Description &lt;desc&gt; : <b>Turn on any settings for accellerating the model spinup.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CLM_USRDAT_NAME</b></li><li>value = <b>UNSET</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>Dataset name for user-created datasets. This is used as the argument
+      in Buildconf/clm.buildnml to build-namelist -clm_usr_name. An example of
+      such a dataset would be 1x1pt_boulderCO_c090722. The default value is UNSET.
+      This is an advanced flag and should only be used by expert users.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CLM_FORCE_COLDSTART</b></li><li>value = <b>off</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>on,off</b></li><li>Description &lt;desc&gt; : <b>Flag to the CLM build-namelist command to force CLM to do a
+      cold start (finidat will be set to blanks).
+      A value of on forces the model to spin up from a cold-start
+      (arbitrary initial conditions). Setting this value in the xml file will take
+      precedence over any settings for finidat in the $CASEROOT/user_clm_clm file.</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_component_cice"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CICE_NAMELIST_OPTS</b></li><li>value = <b></b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>CICE specific namelist settings for -namelist option</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_component_pop"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_CHL_TYPE</b></li><li>value = <b>prognostic</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>diagnostic,prognostic</b></li><li>Description &lt;desc&gt; : <b>
+      Determines provenance of surface Chl for radiative penetration,
+      computations. This option is used in the POP ecosystem model.
+      The default is diagnostic.
+    </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_TAVG_TRACER_BUDGET</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>tavg output control for tracer-budget terms</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_TAVG_HIFREQ</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>tavg output control for high-frequency output</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_ONEDIM</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>TRUE turns off all horizontal motion in POP (single column)</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_TRANSIENT</b></li><li>value = <b>1850-2000</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>unset,1850-2000,rcp4.5,rcp8.5</b></li><li>Description &lt;desc&gt; : <b>Determine settings for transient forcing datasets (e.g., atmospheric pCFC
+      concentrations). The create_newcase command selects the appropriate setting for this
+      variable based on the specified compset. This option is used in the POP ecosystem model.
+      Users should NOT EDIT this setting.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_ICE_FORCING</b></li><li>value = <b>active</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>active,inactive</b></li><li>Description &lt;desc&gt; : <b>Determine under-ice forcing settings.
+      The active option yields settings that are appropriate for coupling to an active ice model
+      (e.g., a B or G-type compset). The inactive option yields settings that are appropriate for
+      coupling to a data ice model (e.g., a C-type compset). The create_newcase command
+      selects the appropriate setting for this variable based on the specified compset.
+      Users should NOT EDIT this setting.</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>OCN_CO2_TYPE</b></li><li>value = <b>diagnostic</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>constant,prognostic,diagnostic</b></li><li>Description &lt;desc&gt; : <b>Determines provenance of atmospheric CO2 for gas flux computation.
+      This option is used in the POP ecosystem model.
+      The default is constant.</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_component_mosart"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>MOSART_SIMYR</b></li><li>value = <b>1850</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b></b></li><li>Description &lt;desc&gt; : <b>MOSART build-namelist options</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Run Group Settings <span id="variable"><b> &lt;group id="run_component_cism"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CISM_PHYS</b></li><li>value = <b>cism2</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Valid Values &lt;valid_values&gt; : <b>cism1,cism2</b></li><li>Description &lt;desc&gt; : <b>Version of CISM physics/dynamics to use</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CISM_EVOLVE</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Whether CISM ice evolution is on or off</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CISM_OBSERVED_IC</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>For hybrid runs, whether CISM should use observed initial conditions 
+      instead of restart file.
+      For hybrid runs, a value of FALSE (default) implies that CISM should
+      use the restart file from the reference case; a value of TRUE implies
+      that CISM should instead use the observed initial conditions that are
+      generally used for startup runs. This variable is ignored for startup
+      runs; for branch runs, it MUST BE FALSE.</b></li></ul></dd></dl></div></div>
+</div>
+  </body>
+</html>

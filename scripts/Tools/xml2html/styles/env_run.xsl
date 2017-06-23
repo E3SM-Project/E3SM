@@ -8,7 +8,7 @@
   <xsl:template match="//file">
     <html>
       <head>
-	<title>CESM CASEROOT env_batch.xml file</title>
+	<title>CESM CASEROOT env_run.xml file</title>
 	<style type="text/css">
 	  body {
           font-family:'Open Sans', Arial, sans-serif;
@@ -111,7 +111,7 @@
 
       <body onload="init()">
 	<div class="container">
-	  <h1>CESM CASEROOT env_batch.xml file</h1>
+	  <h1>CESM CASEROOT env_run.xml file</h1>
 	  <p style="font-size: 0.9em;">
 	    Model Version: CESM2.0<br/>
 	    HTML created on: 2017-06-21
@@ -119,21 +119,17 @@
 
 	  <h3>Description</h3>
 	  <p>
-	    The case.submit script reads these XML env_batch.xml settings in order to<br/>
-	    determine the machine specific batch job submission arguments to be used for a<br/>
-	    given job group; <i>case.run</i>, <i>case.test</i>, and <i>case.st_archive</i>.. 
+	    The CASEROOT scripts read the XML settings in the env_run.xml file in order to<br/>
+	    determine case run specific settings.<br/>
 	  </p>
 
 	  <h3>Interface Tools</h3>
 	  <p>
-	    CESM2.0 supports 3 job groups; <i>case.run</i>, <i>case.test</i>, and <i>case.st_archive</i>.<br/>
+	    CESM2.0 supports multiple run groups.
 	    The <a href="http://www.cesm.ucar.edu/models/cesm2.0/cesm/xmlquery.html">xmlquery</a> 
 	    and <a href="http://www.cesm.ucar.edu/models/cesm2.0/cesm/xmlchange.html">xmlchange</a> script tools<br/>
-	    accept the <b>--subgroup</b> command line argument to define one of the 3 job groups.<br/>
-	    Batch settings can be modified anytime before case.submit is called.
-	  </p>
-	  <p>
-	    Variable names delimited by <pre>{{ }}</pre> are substituted at run-time and should not be modified.
+	    accept the <b>--subgroup</b> command line argument to define one of the run groups.<br/>
+	    Changes to these settings may be made prior to calling <b>case.submit</b>.
 	  </p>
 	  <h4>Examples</h4>
 
@@ -158,72 +154,15 @@
       <h2><span id="variable">File Description Header &lt;header&gt;</span></h2>
       <div>
 	<pre>
-	  <xsl:value-of select="//file/header" />
+	  <xsl:value-of select="." />
 	</pre>
       </div>
     </div>
   </xsl:template>
 
-  <xsl:template match="group[@id='config_batch']">
+  <xsl:template match="group">
     <div class="accordionItem">
-      <h2>Default Batch Group Settings <span id="variable"><b>&lt;group id="config_batch"&gt; : </b></span></h2>
-      <div>
-	  <xsl:apply-templates select="entry"/>
-      </div>
-    </div>
-  </xsl:template>
-
-  <xsl:template match="batch_system[@type='pbs'][1]">
-    <div class="accordionItem">
-      <h2>Default Batch System Settings <span id="variable"><b>&lt;batch_system type="pbs"&gt; : </b></span></h2>
-      <div>
-	<ul>
-	  <xsl:apply-templates select="batch_query"/>
-	  <xsl:apply-templates select="batch_submit"/>
-	  <xsl:apply-templates select="batch_directive"/>
-	  <xsl:apply-templates select="jobid_pattern"/>
-	  <xsl:apply-templates select="depend_string"/>
-	  <xsl:apply-templates select="walltime_format"/>
-	  <xsl:apply-templates select="submit_args"/>
-	  <xsl:apply-templates select="directives"/>
-	</ul>
-      </div>
-    </div>
-  </xsl:template>
-
-  <xsl:template match="batch_system[@MACH='cheyenne' and @type='pbs']">
-    <div class="accordionItem">
-      <h2>Machine Specific Batch System Settings <span id="variable"><b>&lt;batch_system MACH="cheyenne" type="pbs"&gt; : </b></span></h2>
-      <div>
-	<ul>
-	  <xsl:apply-templates select="directives"/>
-	  <xsl:apply-templates select="queues"/>
-	</ul>
-      </div>
-    </div>
-  </xsl:template>
-
-  <xsl:template match="group[@id='case.run']">
-    <div class="accordionItem">
-      <h2>Group <i>case.run</i> Settings <b><span id="variable">&lt;group id="case.run"&gt; : </span></b></h2>
-      <div>
-	  <xsl:apply-templates select="entry"/>
-      </div>
-    </div>
-  </xsl:template>
-
-  <xsl:template match="group[@id='case.test']">
-    <div class="accordionItem">
-      <h2>Group <i>case.test</i> Settings <b><span id="variable">&lt;group id="case.test"&gt; : </span></b></h2>
-      <div>
-	  <xsl:apply-templates select="entry"/>
-      </div>
-    </div>
-  </xsl:template>
-
-  <xsl:template match="group[@id='case.st_archive']">
-    <div class="accordionItem">
-      <h2>Group <i>case.st_archive</i> Settings <b><span id="variable">&lt;group id="case.st_archive"&gt; : </span></b></h2>
+      <h2>Run Group Settings <span id="variable"><b> &lt;group id="<xsl:value-of select="@id" />"&gt; : </b></span></h2>
       <div>
 	  <xsl:apply-templates select="entry"/>
       </div>
@@ -232,10 +171,10 @@
 
   <xsl:template match="entry">
     <dl>
-      <dt>entry &lt;entry&gt; :</dt>
+      <dt>Entry ID/Value Definitions &lt;entry&gt; :</dt>
       <dd>
 	<ul>
-	  <li> attributes :
+	  <li>Attributes :
 	    <ul>
 	      <li>id = <b><xsl:value-of select="@id" /></b></li>
 	      <li>value = <b><xsl:value-of select="@value" /></b></li>
@@ -256,7 +195,7 @@
 
   <xsl:template match="values">
     <dl>
-      <dt>values &lt;values&gt; :</dt>
+      <dt>Values &lt;values&gt; :</dt>
       <dd>
 	<ul>
 	  <xsl:apply-templates select="value"/>
@@ -266,7 +205,7 @@
   </xsl:template>
 
   <xsl:template match="value">
-    <li>value &lt;value component=<b><xsl:value-of select="@component" /></b>&gt; <b><xsl:value-of select="." /></b></li>
+    <li>Value &lt;value component=<b><xsl:value-of select="@component" /></b>&gt; <b><xsl:value-of select="." /></b></li>
   </xsl:template>
 
   <xsl:template match="valid_values">
@@ -275,94 +214,6 @@
 
   <xsl:template match="desc">
     <li>Description &lt;desc&gt; : <b><xsl:value-of select="." /></b></li>
-  </xsl:template>
-
-  <xsl:template match="batch_query">
-    <li>Batch Query Command &lt;batch_query&gt; : <b><xsl:value-of select="." /></b>
-      <ul>
-	<li> attributes :
-	  <ul>
-	    <li>args = <b><xsl:value-of select="@args" /></b></li>
-	  </ul>
-	</li>
-      </ul>
-    </li>
-  </xsl:template>
-
-  <xsl:template match="batch_submit">
-    <li>Batch Submission Command &lt;batch_submit&gt; : <b><xsl:value-of select="." /></b></li>
-  </xsl:template>
-
-  <xsl:template match="batch_directive">
-    <li>Batch Directive Prefix &lt;batch_directive&gt; : <b><xsl:value-of select="." /></b></li>
-  </xsl:template>
-
-  <xsl:template match="jobid_pattern">
-    <li>Job ID Regular Expression Pattern &lt;jobid_pattern&gt; : <b><xsl:value-of select="." /></b></li>
-  </xsl:template>
-
-  <xsl:template match="depend_string">
-    <li>Job Dependency Command &lt;depend_string&gt; : <b><xsl:value-of select="." /></b></li>
-  </xsl:template>
-
-  <xsl:template match="walltime_format">
-    <li>Job Walltime Format &lt;walltime_format&gt; : <b><xsl:value-of select="." /></b></li>
-  </xsl:template>
-
-  <xsl:template match="submit_args">
-    Batch Job Submission Arguments &lt;submit_args&gt; :
-    <ul>
-      <xsl:apply-templates select="arg"/>
-    </ul>
-  </xsl:template>
-
-  <xsl:template match="arg">
-    <li>Batch Argument &lt;arg&gt; : 
-      <ul>
-	<li>Attributes :
-	  <ul>
-	    <li>flag = <b><xsl:value-of select="@flag" /></b></li>
-	    <li>name = <b><xsl:value-of select="@name" /></b></li>
-	  </ul>
-	</li>
-      </ul>
-    </li>
-  </xsl:template>
-
-  <xsl:template match="directives">
-    Batch Job Submission Directives &lt;direcitves&gt; :
-    <ul>
-      <xsl:apply-templates select="directive"/>
-    </ul>
-  </xsl:template>
-
-  <xsl:template match="directive">
-    <li>&lt;directive&gt; : <b><xsl:value-of select="." /></b><br/>
-      default=<b><xsl:value-of select="@default" /></b><br/>
-    </li>
-  </xsl:template>
-
-  <xsl:template match="queues">
-    Batch Submission Default Queue Settings &lt;queues&gt; : <br/>
-    Note: each job group defines their own job submission settings.
-    <ul>
-      <xsl:apply-templates select="queue"/>
-    </ul>
-  </xsl:template>
-
-  <xsl:template match="queue">
-    <li>Queue Name &lt;queue&gt; : <b><xsl:value-of select="." /></b>
-      <ul>
-	<li>Attributes :
-	  <ul>
-	    <li>default = <b><xsl:value-of select="@default" /></b></li>
-	    <li>jobmax = <b><xsl:value-of select="@jobmax" /></b></li>
-	    <li>jobmin = <b><xsl:value-of select="@jobmin" /></b></li>
-	    <li>walltimemax = <b><xsl:value-of select="@jobmin" /></b></li>
-	  </ul>
-	</li>
-      </ul>
-    </li>
   </xsl:template>
 
 </xsl:stylesheet>

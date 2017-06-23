@@ -111,14 +111,13 @@
 
       <body onload="init()">
 	<div class="container">
-	  <h1>CESM CASEROOT example env_archive.xml file</h1>
+	  <h1>CESM CASEROOT env_archive.xml file</h1>
 	  <p style="font-size: 0.9em;">
 	    Model Version: CESM2.0<br/>
 	    HTML created on: 2017-06-21
 	  </p>
-  	  <p>
-	    This page contains an example env_archive.xml file read by the short-term archiver script.
-	  </p>
+
+	  <h3>Description</h3>
 	  <p>
 	    The short-term archiver, case.st_archive, reads these settings in order to<br/>
 	    determine the rules for migrating files out of the RUNDIR and into the DOUT_S_ROOT<br/>
@@ -136,6 +135,15 @@
 	    the last component history file required for restarts that must remain as a copy<br/>
 	    in the RUNDIR. 
 	  </p>
+
+	  <h3>Interface Tools</h3>
+	  The env_archive.xml can only be modified manually. Users should run the system <i>xmllint</i><br/>
+	  to ensure the validity of the XML schema as follows:
+	  <pre>
+	    xmllint --schema $CIMEROOT/config/xml_schemas/config_archive.xsd env_archive.xml
+	  </pre>
+
+	  <h3>Navigation Instuctions</h3>
 	  <p>
 	  Clicking on the component name or class will display additional descriptive information.<br/>  
 	  Click on the "Show Details" button and then cntl+F key to search for specific strings in this file.
@@ -146,7 +154,7 @@
 
 	  <br/><br/>
 	  <div class="accordionItem">
-	    <h2><span id="variable">Header &lt;header&gt;</span></h2>
+	    <h2><span id="variable">File Description Header &lt;header&gt;</span></h2>
 	    <div>
 	      <pre>
 		<xsl:value-of select="//file/header" />
@@ -190,7 +198,7 @@
   </xsl:template>
 
   <xsl:template match="rpointer">
-    rpointer file specifications &lt;rpointer&gt; :
+    rpointer File Specifications &lt;rpointer&gt; :
     <ul>
       <xsl:apply-templates select="rpointer_file"/>
       <xsl:apply-templates select="rpointer_content"/>
@@ -198,11 +206,11 @@
   </xsl:template>
 
   <xsl:template match="rpointer_file">
-    <li>rpointer filename &lt;rpointer_file&gt; : <b><xsl:value-of select="." /></b></li>
+    <li>rpointer Filename &lt;rpointer_file&gt; : <b><xsl:value-of select="." /></b></li>
   </xsl:template>
 
   <xsl:template match="rpointer_content">
-    <li>rpointer file content &lt;rpointer_content&gt; : <b><xsl:value-of select="." /></b></li>
+    <li>rpointer File Content &lt;rpointer_content&gt; : <b><xsl:value-of select="." /></b></li>
   </xsl:template>
 
 </xsl:stylesheet>

@@ -99,12 +99,10 @@
 	</script>
   </head>
   <body onload="init()">
-    <div class="container"><h1>CESM CASEROOT example env_archive.xml file</h1><p style="font-size: 0.9em;">
+    <div class="container"><h1>CESM CASEROOT env_archive.xml file</h1><p style="font-size: 0.9em;">
 	    Model Version: CESM2.0<br />
 	    HTML created on: 2017-06-21
-	  </p><p>
-	    This page contains the an example env_archive.xml file read by the short-term archiver script.
-	  </p><p>
+	  </p><h3>Description</h3><p>
 	    The short-term archiver, case.st_archive, reads these settings in order to<br />
 	    determine the rules for migrating files out of the RUNDIR and into the DOUT_S_ROOT<br />
 	    location while preserving a complete set of necessary restart files in the RUNDIR.
@@ -118,10 +116,15 @@
 	    value of restart history variable name &lt;rest_history_varname&gt; to determine<br />
 	    the last component history file required for restarts that must remain as a copy<br />
 	    in the RUNDIR. 
-	  </p><p>
+	  </p><h3>Interface Tools</h3>
+	  The env_archive.xml can only be modified manually. Users should run the system <i>xmllint</i><br />
+	  to ensure the validity of the XML schema as follows:
+	  <pre>
+	    xmllint --schema $CIMEROOT/config/xml_schemas/config_archive.xsd env_archive.xml
+	  </pre><h3>Navigation Instuctions</h3><p>
 	  Clicking on the component name or class will display additional descriptive information.<br />  
 	  Click on the "Show Details" button and then cntl+F key to search for specific strings in this file.
-	  </p><button class="detailsBtn" onclick="showAll();">Show Details</button><button class="detailsBtn" onclick="hideAll();">Hide Details</button><br /><br /><div class="accordionItem"><h2><span id="variable">Header &lt;header&gt;</span></h2><div><pre>
+	  </p><button class="detailsBtn" onclick="showAll();">Show Details</button><button class="detailsBtn" onclick="hideAll();">Hide Details</button><br /><br /><div class="accordionItem"><h2><span id="variable">File Description Header &lt;header&gt;</span></h2><div><pre>
       These are the variables specific to the short term archiver.
       See  ./case.st_archive --help for details on running the short term archiver script.
       To validate the env_archive.xml file using xmllint, run
@@ -131,50 +134,50 @@
     <div class="accordionItem"><h2>Component Archive Specification &lt;comp_archive_spec&gt; :<br />
 	Component Class &lt;compclass&gt; : <span id="variable"><b>atm</b></span><br />
 	Component Name &lt;compname&gt; : <span id="variable"><b>cam</b></span></h2><div><ul><li>Restart File Extension &lt;rest_file_extension&gt; : <b>\.[ri]\..*</b></li><li>Restart File Extension &lt;rest_file_extension&gt; : <b>\.r[sh]\.*</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\.h.*.nc$</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\.i.*.nc$</b></li><li>Restart History Variable Name &lt;rest_history_varname&gt; : <b>nhfil</b></li>
-    rpointer file specifications &lt;rpointer&gt; :
-    <ul><li>rpointer filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.atm</b></li><li>rpointer file content &lt;rpointer_content&gt; : <b>$CASE.cam$NINST_STRING.r.$DATENAME.nc </b></li></ul></ul></div></div>
+    rpointer File Specifications &lt;rpointer&gt; :
+    <ul><li>rpointer Filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.atm</b></li><li>rpointer File Content &lt;rpointer_content&gt; : <b>$CASE.cam$NINST_STRING.r.$DATENAME.nc </b></li></ul></ul></div></div>
     <div class="accordionItem"><h2>Component Archive Specification &lt;comp_archive_spec&gt; :<br />
 	Component Class &lt;compclass&gt; : <span id="variable"><b>lnd</b></span><br />
 	Component Name &lt;compname&gt; : <span id="variable"><b>clm</b></span></h2><div><ul><li>Restart File Extension &lt;rest_file_extension&gt; : <b>\.[ri]\..*</b></li><li>Restart File Extension &lt;rest_file_extension&gt; : <b>\.rh.*</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\.h.*.nc$</b></li><li>Restart History Variable Name &lt;rest_history_varname&gt; : <b>locfnh</b></li>
-    rpointer file specifications &lt;rpointer&gt; :
-    <ul><li>rpointer filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.lnd</b></li><li>rpointer file content &lt;rpointer_content&gt; : <b>./$CASE.clm2$NINST_STRING.r.$DATENAME.nc</b></li></ul></ul></div></div>
+    rpointer File Specifications &lt;rpointer&gt; :
+    <ul><li>rpointer Filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.lnd</b></li><li>rpointer File Content &lt;rpointer_content&gt; : <b>./$CASE.clm2$NINST_STRING.r.$DATENAME.nc</b></li></ul></ul></div></div>
     <div class="accordionItem"><h2>Component Archive Specification &lt;comp_archive_spec&gt; :<br />
 	Component Class &lt;compclass&gt; : <span id="variable"><b>ice</b></span><br />
 	Component Name &lt;compname&gt; : <span id="variable"><b>cice</b></span></h2><div><ul><li>Restart File Extension &lt;rest_file_extension&gt; : <b>\.[ri].*</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\.h.*.nc$</b></li><li>Restart History Variable Name &lt;rest_history_varname&gt; : <b>unset</b></li>
-    rpointer file specifications &lt;rpointer&gt; :
-    <ul><li>rpointer filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.ice</b></li><li>rpointer file content &lt;rpointer_content&gt; : <b>./$CASE.cice$NINST_STRING.r.$DATENAME.nc</b></li></ul></ul></div></div>
+    rpointer File Specifications &lt;rpointer&gt; :
+    <ul><li>rpointer Filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.ice</b></li><li>rpointer File Content &lt;rpointer_content&gt; : <b>./$CASE.cice$NINST_STRING.r.$DATENAME.nc</b></li></ul></ul></div></div>
     <div class="accordionItem"><h2>Component Archive Specification &lt;comp_archive_spec&gt; :<br />
 	Component Class &lt;compclass&gt; : <span id="variable"><b>ocn</b></span><br />
 	Component Name &lt;compname&gt; : <span id="variable"><b>pop</b></span></h2><div><ul><li>Restart File Extension &lt;rest_file_extension&gt; : <b>\.r.*</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\.h.*.nc$|\.d[dovt]\.</b></li><li>Restart History Variable Name &lt;rest_history_varname&gt; : <b>unset</b></li>
-    rpointer file specifications &lt;rpointer&gt; :
-    <ul><li>rpointer filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.ocn.restart</b></li><li>rpointer file content &lt;rpointer_content&gt; : <b>./$CASE.pop$NINST_STRING.r.$DATENAME.nc,RESTART_FMT=nc</b></li></ul>
-    rpointer file specifications &lt;rpointer&gt; :
-    <ul><li>rpointer filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.ocn.ovf</b></li><li>rpointer file content &lt;rpointer_content&gt; : <b>./$CASE.pop$NINST_STRING.ro.$DATENAME</b></li></ul></ul></div></div>
+    rpointer File Specifications &lt;rpointer&gt; :
+    <ul><li>rpointer Filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.ocn.restart</b></li><li>rpointer File Content &lt;rpointer_content&gt; : <b>./$CASE.pop$NINST_STRING.r.$DATENAME.nc,RESTART_FMT=nc</b></li></ul>
+    rpointer File Specifications &lt;rpointer&gt; :
+    <ul><li>rpointer Filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.ocn.ovf</b></li><li>rpointer File Content &lt;rpointer_content&gt; : <b>./$CASE.pop$NINST_STRING.ro.$DATENAME</b></li></ul></ul></div></div>
     <div class="accordionItem"><h2>Component Archive Specification &lt;comp_archive_spec&gt; :<br />
 	Component Class &lt;compclass&gt; : <span id="variable"><b>rof</b></span><br />
 	Component Name &lt;compname&gt; : <span id="variable"><b>mosart</b></span></h2><div><ul><li>Restart File Extension &lt;rest_file_extension&gt; : <b>\.r.*</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\.h.*.nc$</b></li><li>Restart History Variable Name &lt;rest_history_varname&gt; : <b>locfnh</b></li>
-    rpointer file specifications &lt;rpointer&gt; :
-    <ul><li>rpointer filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.rof</b></li><li>rpointer file content &lt;rpointer_content&gt; : <b>$CASE.mosart$NINST_STRING.r.$DATENAME.nc</b></li></ul></ul></div></div>
+    rpointer File Specifications &lt;rpointer&gt; :
+    <ul><li>rpointer Filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.rof</b></li><li>rpointer File Content &lt;rpointer_content&gt; : <b>$CASE.mosart$NINST_STRING.r.$DATENAME.nc</b></li></ul></ul></div></div>
     <div class="accordionItem"><h2>Component Archive Specification &lt;comp_archive_spec&gt; :<br />
 	Component Class &lt;compclass&gt; : <span id="variable"><b>glc</b></span><br />
 	Component Name &lt;compname&gt; : <span id="variable"><b>cism</b></span></h2><div><ul><li>Restart File Extension &lt;rest_file_extension&gt; : <b>\.[ri]\..*</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\.h\..*\.nc$</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\.initial_hist\..*\.nc$</b></li><li>Restart History Variable Name &lt;rest_history_varname&gt; : <b>unset</b></li>
-    rpointer file specifications &lt;rpointer&gt; :
-    <ul><li>rpointer filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.glc</b></li><li>rpointer file content &lt;rpointer_content&gt; : <b>./$CASE.cism$NINST_STRING.r.$DATENAME.nc</b></li></ul></ul></div></div>
+    rpointer File Specifications &lt;rpointer&gt; :
+    <ul><li>rpointer Filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.glc</b></li><li>rpointer File Content &lt;rpointer_content&gt; : <b>./$CASE.cism$NINST_STRING.r.$DATENAME.nc</b></li></ul></ul></div></div>
     <div class="accordionItem"><h2>Component Archive Specification &lt;comp_archive_spec&gt; :<br />
 	Component Class &lt;compclass&gt; : <span id="variable"><b>wav</b></span><br />
 	Component Name &lt;compname&gt; : <span id="variable"><b>ww3</b></span></h2><div><ul><li>Restart File Extension &lt;rest_file_extension&gt; : <b>\.r.*</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\.hi\..*\.nc$</b></li><li>Restart History Variable Name &lt;rest_history_varname&gt; : <b>unset</b></li>
-    rpointer file specifications &lt;rpointer&gt; :
-    <ul><li>rpointer filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.wav</b></li><li>rpointer file content &lt;rpointer_content&gt; : <b>unset</b></li></ul></ul></div></div>
+    rpointer File Specifications &lt;rpointer&gt; :
+    <ul><li>rpointer Filename &lt;rpointer_file&gt; : <b>rpointer$NINST_STRING.wav</b></li><li>rpointer File Content &lt;rpointer_content&gt; : <b>unset</b></li></ul></ul></div></div>
     <div class="accordionItem"><h2>Component Archive Specification &lt;comp_archive_spec&gt; :<br />
 	Component Class &lt;compclass&gt; : <span id="variable"><b>cpl</b></span><br />
 	Component Name &lt;compname&gt; : <span id="variable"><b>cpl</b></span></h2><div><ul><li>Restart File Extension &lt;rest_file_extension&gt; : <b>\.r\..*</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\.h.*.nc$</b></li><li>Restart History Variable Name &lt;rest_history_varname&gt; : <b>unset</b></li>
-    rpointer file specifications &lt;rpointer&gt; :
-    <ul><li>rpointer filename &lt;rpointer_file&gt; : <b>rpointer.cpl</b></li><li>rpointer file content &lt;rpointer_content&gt; : <b>$CASE.cpl.r.$DATENAME.nc</b></li></ul></ul></div></div>
+    rpointer File Specifications &lt;rpointer&gt; :
+    <ul><li>rpointer Filename &lt;rpointer_file&gt; : <b>rpointer.cpl</b></li><li>rpointer File Content &lt;rpointer_content&gt; : <b>$CASE.cpl.r.$DATENAME.nc</b></li></ul></ul></div></div>
     <div class="accordionItem"><h2>Component Archive Specification &lt;comp_archive_spec&gt; :<br />
 	Component Class &lt;compclass&gt; : <span id="variable"><b>esp</b></span><br />
 	Component Name &lt;compname&gt; : <span id="variable"><b>dart</b></span></h2><div><ul><li>Restart File Extension &lt;rest_file_extension&gt; : <b>inflate_restart.*</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\.True_State.*</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\.Prior_Diag.*</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\.Posterior_Diag.*</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\..+\.posterior*</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\..+\.prior*</b></li><li>History File Extension &lt;hist_file_extension&gt; : <b>\..+$_obs_seq.*</b></li><li>Restart History Variable Name &lt;rest_history_varname&gt; : <b>unset</b></li>
-    rpointer file specifications &lt;rpointer&gt; :
-    <ul><li>rpointer filename &lt;rpointer_file&gt; : <b>rpointer.unset</b></li><li>rpointer file content &lt;rpointer_content&gt; : <b>unset</b></li></ul></ul></div></div>
+    rpointer File Specifications &lt;rpointer&gt; :
+    <ul><li>rpointer Filename &lt;rpointer_file&gt; : <b>rpointer.unset</b></li><li>rpointer File Content &lt;rpointer_content&gt; : <b>unset</b></li></ul></ul></div></div>
   </div>
   </body>
 </html>
