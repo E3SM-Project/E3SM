@@ -1136,6 +1136,7 @@ for mct, etc.
 <compiler COMPILER="intel" MACH="anvil">
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas -mkl </ADD_SLIBS>
   <ADD_SLIBS> -Wl,-rpath -Wl,$(NETCDF_PATH)/lib </ADD_SLIBS>
+  <GPTL_CPPDEFS> -DHAVE_SLASHPROC </GPTL_CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
 
