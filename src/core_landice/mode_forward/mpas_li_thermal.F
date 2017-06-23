@@ -1432,7 +1432,18 @@ module li_thermal
 
       if (trim(config_basal_mass_bal_float) == 'none') then
 
-         return   ! nothing to do
+         ! Zero entire field
+
+         ! block loop
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+
+            floatingBasalMassBal = 0.0_RKIND
+
+            block => block % next
+         enddo   ! associated(block)
 
       elseif (trim(config_basal_mass_bal_float) == 'file') then
 
@@ -2902,14 +2913,11 @@ module li_thermal
 
       ! initialize to zero melt
       floatingBasalMassBal(:) = 0.0_RKIND
-
       if (trim(config_basal_mass_bal_float) == 'none') then
-
-         ! nothing to do; bmlt_float already set to zero
+         ! Do nothing, handled in calling routine
 
       elseif (trim(config_basal_mass_bal_float) == 'file') then
-
-         ! Do nothing in this routine -- use whatever value was input as data
+         ! Do nothing, handled in calling routine
 
       elseif (trim(config_basal_mass_bal_float) == 'constant') then
 
