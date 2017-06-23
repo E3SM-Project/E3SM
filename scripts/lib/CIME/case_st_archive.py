@@ -59,8 +59,11 @@ def _get_datenames(case, last_date=None):
 ###############################################################################
 def _get_ninst_info(case, compclass):
 ###############################################################################
-
-    ninst = case.get_value('NINST_' + compclass.upper())
+    comp = compclass.upper()
+    if comp == "CPL":
+        ninst = case.get_value("COUPLER_COUNT")
+    else:
+        ninst = case.get_value('NINST_' + compclass.upper())
     ninst_strings = []
     if ninst is None:
         ninst = 1

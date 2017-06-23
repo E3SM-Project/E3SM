@@ -26,9 +26,9 @@ class MCC(SystemTestsCompareTwo):
     def _case_one_setup(self):
         # The multicoupler case will increase the number of tasks by the
         # number of requested couplers.
-        self._case.set_value("NINST_CPL", self._test_instances)
+        self._case.set_value("COUPLER_COUNT", self._test_instances)
         case_setup(self._case, test_mode=False, reset=True)
 
     def _case_two_setup(self):
-        self._case.set_value("NINST_CPL", 1)
+        self._case.set_value("COUPLER_COUNT", 1)
         case_setup(self._case, test_mode=True, reset=True)

@@ -1949,10 +1949,17 @@
     <desc>ROOTPE (mpi task in MPI_COMM_WORLD) for each component</desc>
   </entry>
 
+  <entry id="COUPLER_COUNT">
+    <type>integer</type>
+    <default_value>1</default_value>
+    <group>mach_pes</group>
+    <file>env_mach_pes.xml</file>
+    <desc>Number of couplers in ensemble: if COUPLER_COUNT > 1 then NINST must be 1 for all components.</desc>
+  </entry>
+
   <entry id="NINST">
     <type>integer</type>
     <values>
-      <value component="CPL">1</value>
       <value component="ATM">1</value>
       <value component="OCN">1</value>
       <value component="WAV">1</value>
@@ -1964,7 +1971,7 @@
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>Number of instances for each component</desc>
+    <desc>Number of instances for each component in single coupler mode</desc>
   </entry>
 
   <entry id="NINST_LAYOUT">
