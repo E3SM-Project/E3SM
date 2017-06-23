@@ -25,7 +25,7 @@ class EnvMachPes(EnvBase):
         Returns the value or None if not found
         subgroup is ignored in the general routine and applied in specific methods
         """
-        vid, comp, iscompvar = self.check_if_comp_var(vid, None)
+        nvid, comp, iscompvar = self.check_if_comp_var(vid, None)
         if vid == "COUPLER_COUNT":
             if value > 1:
                 for othercomp in self._components:
@@ -36,7 +36,7 @@ class EnvMachPes(EnvBase):
             elif value < 0:
                 # negative value effectively overrides safety check
                 value = -value
-        elif vid == "NINST":
+        elif nvid == "NINST":
             if value > 1:
                 coupler_count = self.get_value("COUPLER_COUNT")
                 expect(coupler_count == 1,"Cannot change NINST value if COUPLER_COUNT > 1")
