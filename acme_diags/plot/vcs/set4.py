@@ -32,7 +32,7 @@ def log_yaxis(data, method):
 
     # needed until cdms2 supports in-place operations
     return data
-    
+
 def managetextcombined(tt_name, to_name):
     """Caches textcombined objects."""
     new_name = "%s:::%s" % (tt_name, to_name)
@@ -125,13 +125,6 @@ def plot(reference, test, diff, metrics_dict, parameter):
     test = rotate_180(test)
     diff = rotate_180(diff)
 
-    # Plotting
-    vcs_canvas.bgX = parameter.canvas_size_w
-    vcs_canvas.bgY = parameter.canvas_size_h
-
-    if not parameter.logo:
-        vcs_canvas.drawlogooff()
-
     file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'set4')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_4.json'))
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_4_new.json'))
@@ -194,7 +187,14 @@ def plot(reference, test, diff, metrics_dict, parameter):
     # Plotting the main title
     main_title = managetextcombined('main_title', 'main_title')
     main_title.string = parameter.main_title
+    vcs_canvas.portrait()  # for some reason, this needs to be before a call to vcs_canvas.plot()
     vcs_canvas.plot(main_title)
+
+    vcs_canvas.bgX = parameter.canvas_size_w
+    vcs_canvas.bgY = parameter.canvas_size_h
+    if not parameter.logo:
+        vcs_canvas.drawlogooff()
+
 
     fnm = os.path.join(get_output_dir('4', parameter), parameter.output_file)
     for f in parameter.output_format:
@@ -207,5 +207,5 @@ def plot(reference, test, diff, metrics_dict, parameter):
             vcs_canvas.svg(fnm)
 
         print('Plot saved in: ' + fnm + '.' + f)
+
     vcs_canvas.clear()
-    
