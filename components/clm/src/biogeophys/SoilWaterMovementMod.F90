@@ -837,7 +837,6 @@ contains
 
       dtime = get_step_size()
 
-<<<<<<< HEAD
       mflx_infl_col(:)              = 0.d0
       mflx_dew_col(:)               = 0.d0
       mflx_snowlyr_disp_col(:)      = 0.d0
@@ -852,7 +851,7 @@ contains
 
 #ifdef USE_PETSC_LIB
          if (lateral_connectivity) then
-            g    = col%gridCell(c)
+            g    = col_pp%gridCell(c)
             area = ldomain_lateral%ugrid%areaGrid_ghosted(g)
          endif
 #endif
@@ -956,7 +955,7 @@ contains
     use SoilStateType    , only : soilstate_type
     use WaterFluxType    , only : waterflux_type
     use PatchType        , only : pft
-    use ColumnType       , only : col
+    use ColumnType       , only : col_pp
     !
     ! !ARGUMENTS:
     type(bounds_type)    , intent(in)    :: bounds                          ! bounds
@@ -1002,8 +1001,8 @@ contains
          do j = 1,nlevsoi
             do fc = 1, num_filterc
                c = filterc(fc)
-               if (pi <= col%npfts(c)) then
-                  p = col%pfti(c) + pi - 1
+               if (pi <= col_pp%npfts(c)) then
+                  p = col_pp%pfti(c) + pi - 1
                   if (pft%active(p)) then
                      rootr_col(c,j) = rootr_col(c,j) + rootr_patch(p,j) * &
                            qflx_tran_veg_patch(p) * pft%wtcol(p)
@@ -1013,8 +1012,8 @@ contains
          end do
          do fc = 1, num_filterc
             c = filterc(fc)
-            if (pi <= col%npfts(c)) then
-               p = col%pfti(c) + pi - 1
+            if (pi <= col_pp%npfts(c)) then
+               p = col_pp%pfti(c) + pi - 1
                if (pft%active(p)) then
                   temp(c) = temp(c) + qflx_tran_veg_patch(p) * pft%wtcol(p)
                end if

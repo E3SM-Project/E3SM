@@ -339,7 +339,7 @@ contains
       num_nolakec_and_urbanc   = 0
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
          if (lun%urbpoi(l)) then
             num_nolakec_and_urbanc = num_nolakec_and_urbanc + 1
          else
@@ -354,7 +354,7 @@ contains
       num_nolakec_and_urbanc   = 0
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
          if (lun%urbpoi(l)) then
             num_nolakec_and_urbanc = num_nolakec_and_urbanc + 1
             filter_nolakec_and_urbanc(num_nolakec_and_urbanc) = c
@@ -529,7 +529,7 @@ contains
 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
 
          if (lun%urbpoi(l)) then
             do j = snl(c)+1, 0
