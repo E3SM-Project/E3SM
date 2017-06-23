@@ -15,12 +15,12 @@ module clm_interface_funcsMod
   !!--------------------------------------------------------------------------------------
   !! DESCRIPTION:
   !! Coupling of CLM with any specific Soil BGC module Consists of 3 STEPS:
-  !! STEP-1:   clm vars         -> clm_bgc_data (i.e. clm_interface_bgc_datatype)  ; pass clm vars to clm_bgc_data
-  !! STEP-2:   clm_bgc_data     -> soil bgc module -> clm_bgc_data
-  !!      2.1: clm_bgc_data     -> soil bgc module
+  !! STEP-1:   clm vars             -> clm_interface_data (i.e. clm_interface_dataType)  ; pass clm vars to clm_interface_data
+  !! STEP-2:   clm_interface_data   -> soil bgc module -> clm_interface_data
+  !!      2.1: clm_interface_data   -> soil bgc module
   !!      2.2: run soil bgc module
-  !!      2.3: soil bgc module  -> clm_bgc_data
-  !! STEP-3:   clm_bgc_data     -> clm vars
+  !!      2.3: soil bgc module      -> clm_interface_data
+  !! STEP-3:   clm_interface_data   -> clm vars
   !!--------------------------------------------------------------------------------------
 
 
@@ -88,16 +88,16 @@ module clm_interface_funcsMod
   !!--------------------------------------------------------------------------------------
   !! (1) GENERIC SUBROUTINES: used by any specific soil BGC module
   !! pass clm variables to clm_bgc_data
-  public    :: get_clm_data                 !! STEP-1: clm vars -> clm_bgc_data
+  public    :: get_clm_data                 !! STEP-1: clm vars -> clm_interface_data
 
-  !! pass clm variables to clm_bgc_data, called by get_clm_bgc_data
+  !! pass clm variables to clm_interface_data, called by get_clm_data
   private   :: get_clm_soil_property        !! STEP-1.1: soil properties
   private   :: get_clm_soil_th_state        !! STEP-1.2: thermohydrology (TH) state vars
   private   :: get_clm_bgc_state            !! STEP-1.3: state vars
   private   :: get_clm_bgc_flux             !! STEP-1.4: flux vars
 
-  !! STEP-3.x: clm_bgc_data -> clm vars
-  !! update clm variables from clm_bgc_data,
+  !! STEP-3.x: clm_interface_data -> clm vars
+  !! update clm variables from clm_interface_data,
   !! e.g., called in 'update_bgc_data_clm2clm' and 'update_bgc_data_pf2clm'
   !! specific bgc-module (e.g., PFLOTRAN) requires certain combination of these subroutines
   private   :: update_bgc_state_decomp
@@ -114,16 +114,16 @@ module clm_interface_funcsMod
   !! (2) SPECIFIC SUBROUTINES: used by a specific soil BGC module
   !! (2.1) Specific Subroutines for running clm-bgc (CN or BGC) through interface
   !! if (use_clm_interface .and. use_clm_bgc)
-  public    :: clm_bgc_run              !! STEP-2:   clm_bgc_data  -> clm-bgc module -> clm_bgc_data    ; called in clm_driver
-  private   :: clm_bgc_get_data         !! STEP-2.1: clm_bgc_data  -> clm-bgc module                    ; called in clm_bgc_run
-                                        !! STEP-2.2: run clm-bgc module                                 ; see CNDecompAlloc in CNDecompMod
-  private   :: clm_bgc_update_data      !! STEP-2.3: clm-bgc module-> clm_bgc_data                      ; called in clm_bgc_run
-  public    :: update_bgc_data_clm2clm  !! STEP-3:   clm_bgc_data  -> clm vars                          ; called in clm_driver
+  public    :: clm_bgc_run              !! STEP-2:   clm_interface_data  -> clm-bgc module -> clm_interface_data    ; called in clm_driver
+  private   :: clm_bgc_get_data         !! STEP-2.1: clm_interface_data  -> clm-bgc module                          ; called in clm_bgc_run
+                                        !! STEP-2.2: run clm-bgc module                                             ; see CNDecompAlloc in CNDecompMod
+  private   :: clm_bgc_update_data      !! STEP-2.3: clm-bgc module-> clm_interface_data                            ; called in clm_bgc_run
+  public    :: update_bgc_data_clm2clm  !! STEP-3:   clm_interface_data  -> clm vars                                ; called in clm_driver
 
   !! (2.2) Specific Subroutines for CLM-PFLOTRAN Coupling: update clm variables from pflotran
   !! if (use_clm_interface .and. use_pflotran)
-  public    :: update_bgc_data_pf2clm   !! STEP-3:   clm_bgc_data  -> clm vars                          ; called in clm_driver
-                                        !! STEP-2:   see 'clm_pf_run' in clm_pflotran_interfaceMod
+  public    :: update_bgc_data_pf2clm   !! STEP-3:   clm_interface_data  -> clm vars                                ; called in clm_driver
+                                        !! STEP-2:   see 'clm_pf_run' in clm_interface_pflotranMod
 
   public    :: update_th_data_pf2clm
   !!--------------------------------------------------------------------------------------
@@ -1701,10 +1701,6 @@ contains
   subroutine update_bgc_data_clm2clm(clm_bgc_data,bounds,         &
            num_soilc, filter_soilc,                               &
            num_soilp, filter_soilp,                               &
-!          atm2lnd_vars,                                          &
-!           waterstate_vars, waterflux_vars,                       &
-!           soilstate_vars,  temperature_vars, energyflux_vars,    &
-!           soilhydrology_vars, soil_water_retention_curve,        &
            cnstate_vars, carbonflux_vars, carbonstate_vars,       &
            nitrogenflux_vars, nitrogenstate_vars,                 &
            phosphorusflux_vars, phosphorusstate_vars,             &
@@ -1720,13 +1716,6 @@ contains
     integer                     , intent(in)    :: filter_soilc(:)   ! filter for soil columns
     integer                     , intent(in)    :: num_soilp         ! number of soil patches in filter
     integer                     , intent(in)    :: filter_soilp(:)   ! filter for soil patches
-!    type(atm2lnd_type)          , intent(in)    :: atm2lnd_vars
-!    type(waterstate_type)       , intent(inout) :: waterstate_vars
-!    type(waterflux_type)        , intent(inout) :: waterflux_vars
-!    type(soilstate_type)        , intent(inout) :: soilstate_vars
-!    type(temperature_type)      , intent(inout) :: temperature_vars
-!    type(soilhydrology_type)    , intent(inout) :: soilhydrology_vars
-!    type(energyflux_type)       , intent(inout) :: energyflux_vars
 
     type(cnstate_type)          , intent(inout) :: cnstate_vars
     type(carbonflux_type)       , intent(inout) :: carbonflux_vars

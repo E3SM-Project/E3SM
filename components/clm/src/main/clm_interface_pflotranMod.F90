@@ -719,24 +719,26 @@ contains
                                     gross_nmin*dtime,actual_immob*dtime,potential_immob*dtime
             write(iulog,*)
             write(iulog,'(10A15)')  "errnb_min","Ndelta_min","Nbeg_min","Nend_min",         &
-                                    "Nend_no3","Nend_nh4", "Nend_nh4sorb","Ngas_dec","Ngas_min"
+                                    "Nend_no3","Nend_nh4", "Nend_nh4sorb"
             write(iulog,'(10E15.6)')pf_errnb_min, pf_ndelta_min,pf_nbeg_min,pf_nend_min,    &
-                                    pf_nend_no3,pf_nend_nh4,pf_nend_nh4sorb,pf_ngas_dec*dtime,pf_ngas_min*dtime
+                                    pf_nend_no3,pf_nend_nh4,pf_nend_nh4sorb
             write(iulog,*)
             write(iulog,'(10A15)')  "Ninputs_org","Ninputs_min",                            &
                                     "Noutputs_nit","Noutputs_denit",                        &
-                                    "Noutputs_gas","Noutputs_veg","plant_Ndemand"
+                                    "Noutputs_gas","Noutputs_veg",                          &
+                                    "plant_Ndemand","Ngas_dec","Ngas_min"
             write(iulog,'(10E15.6)')pf_ninputs_org*dtime,pf_ninputs_min*dtime,              &
                                     pf_noutputs_nit*dtime,pf_noutputs_denit*dtime,          &
-                                    pf_noutputs_gas*dtime,pf_noutputs_veg*dtime, plant_ndemand*dtime
+                                    pf_noutputs_gas*dtime,pf_noutputs_veg*dtime,            &
+                                    plant_ndemand*dtime,pf_ngas_dec*dtime,pf_ngas_min*dtime
 
 !            write(iulog,*)
-!            write(iulog,'(A10,20A15)')  "Layer","errbn_org","ndelta_org","ninputs","gross_nmin","actual_immob" !!"ngas",
-!            do j = 1, nlevdecomp_full
+!            write(iulog,'(A10,20A15)')  "Layer","errbn_org","ndelta_org","ninputs","gross_nmin","actual_immob"
+!            do j = 1, nlev
 !                write(iulog,'(I10,15E15.6)')j,pf_errnb_org_vr(j),                           &
 !                                            pf_ndelta_org_vr(j)*dzsoi_decomp(j),            &
 !                                            pf_ninputs_org_vr(j)*dtime*dzsoi_decomp(j),     &
-!!                                            f_ngas_decomp_vr(c,j)*dtime*dzsoi_decomp(j),    &
+!                                            f_ngas_decomp_vr(c,j)*dtime*dzsoi_decomp(j),    &
 !                                            gross_nmin_vr(c,j)*dtime*dzsoi_decomp(j),       &
 !                                            actual_immob_vr(c,j)*dtime*dzsoi_decomp(j)
 

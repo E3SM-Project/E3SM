@@ -407,7 +407,7 @@ contains
             use_clm_bgc     = .false.
             use_pflotran    = .false.
        else
-
+       !! use_clm_interface
             if (use_clm_bgc) then
                 use_pflotran = .false.
             end if
@@ -416,7 +416,7 @@ contains
                 use_clm_bgc = .false.
                 !! enable 'use_nitrif_denitrif' to initilize Nh4 & NO3 pools,
                 !! but NOT to implement 'nitrif_denitrif'
-               use_nitrif_denitrif = .true.
+                use_nitrif_denitrif = .true.
             end if
        end if
 
