@@ -124,7 +124,8 @@ _TEST_SUITES = {
                          "SMS_D_Ln5.ne16_ne16.F20TRC5AV1C-03",
                          "SMS_D_Ln5.ne16_ne16.FC5AV1C-04P",
                          "SMS_D_Ln5.ne4_ne4.FC5AV1C-04P2",
-                         "SMS_D_Ld1.ne16_ne16.FC5ATMMOD")
+                         "SMS_D_Ld1.ne16_ne16.FC5ATMMOD",
+                         "SMS_R_Ld5.T42_T42.FSCM5A97")
                         ),
 
     "acme_integration" : ("acme_developer", "03:00:00",
