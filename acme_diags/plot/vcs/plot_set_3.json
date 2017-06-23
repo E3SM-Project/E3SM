@@ -1205,6 +1205,13 @@
    "height": 14, 
    "path": 0, 
    "valign": 2		  
+  },
+  "diff_yaxis_title": {
+   "angle": 270, 
+   "halign": 1, 
+   "height": 14, 
+   "path": 0, 
+   "valign": 2
   }
  }, 
  "Tt": {
@@ -1292,6 +1299,49 @@
    ], 
    "y": [
     0.7250000000000001
+   ]
+  },
+  "diff_yaxis_title": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Reference height temperature (K)"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.042300000000000004
+   ], 
+   "y": [
+    0.25500000000000006
    ]
   }
  }

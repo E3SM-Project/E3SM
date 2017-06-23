@@ -122,13 +122,12 @@ def plot(ref, test, diff, metrics_dict, parameters):
 
     diff_template = vcs.gettemplate('diff_template')
 
-    diff_yaxis_title = vcs.createtextcombined('diff_yaxis_title')
+    diff_yaxis_title = managetextcombined('diff_yaxis_title', 'diff_yaxis_title')
     diff_yaxis_title.angle = 270
     diff_yaxis_title.halign = 'center'
     diff_yaxis_title.y = (diff_template.data.y1 + diff_template.data.y2) / 2
     diff_yaxis_title.x = diff_template.data.x1 - 0.08
     diff_yaxis_title.string = test.long_name + ' (' + test.units + ')'
-    # diff_yaxis_title.script('plot_set_3.json')
     vcs_canvas.plot(diff_yaxis_title)
 
     diff_template.units.textorientation = 'defright'
