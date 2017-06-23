@@ -358,6 +358,7 @@ subroutine micro_mg_tend ( &
      qrn,                          qsn,                          &
      nrn,                          nsn,                          &
      relvar,                       accre_enhan,                  &
+     precip_off,                                                 &
      p,                            pdel,                         &
      cldn,               liqcldf,            icecldf,            &
      qcsinksum_rate1ord,                                         &
@@ -463,6 +464,8 @@ subroutine micro_mg_tend ( &
   real(r8), intent(in) :: relvar(:,:)   ! cloud water relative variance (-)
   real(r8), intent(in) :: accre_enhan(:,:)  ! optional accretion
                                              ! enhancement factor (-)
+					     
+  logical, intent(in)  :: precip_off					     
 
   real(r8), intent(in) :: p(:,:)        ! air pressure (pa)
   real(r8), intent(in) :: pdel(:,:)     ! pressure difference across level (pa)
@@ -1281,6 +1284,12 @@ subroutine micro_mg_tend ( &
      call kk2000_liq_autoconversion(microp_uniform, qcic(:,k), &
           ncic(:,k), rho(:,k), relvar(:,k),mg_prc_coeff_fix,prc_coef1,prc_exp,prc_exp1, prc(:,k), nprc(:,k), nprc1(:,k))
 
+     if (precip_off) then
+       prc(:,k) = 0.0_r8
+       nprc(:,k) = 0.0_r8
+       nprc1(:,k) = 0.0_r8
+     endif
+
      ! assign qric based on prognostic qr, using assumed precip fraction
      ! note: this could be moved above for consistency with qcic and qiic calculations
      qric(:,k) = qr(:,k)/precip_frac(:,k)
@@ -1329,6 +1338,11 @@ subroutine micro_mg_tend ( &
         prci(:,k)  = tnd_qsnow(:,k) / cldm(:,k)
         nprci(:,k) = tnd_nsnow(:,k) / cldm(:,k)
      end if
+     
+     if (precip_off) then
+        prci(:,k) = 0.0_r8
+	nprci(:,k) = 0.0_r8
+     endif
 
      ! note, currently we don't have this
      ! inside the do_cldice block, should be changed later
@@ -2018,6 +2032,8 @@ subroutine micro_mg_tend ( &
   prain = prain + prodsnow
 
   sed_col_loop: do i=1,mgncol
+  
+   if (.not. precip_off) then
 
      do k=1,nlev
 
@@ -2416,6 +2432,8 @@ subroutine micro_mg_tend ( &
         preci(i) = preci(i)+falouts(nlev)/g/real(nstep)/1000._r8
 
      end do   !! nstep loop
+     
+     end if
 
      ! end sedimentation
      !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
