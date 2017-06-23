@@ -50,10 +50,12 @@ def plot(ref, test, diff, metrics_dict, parameters):
     set_units(ref, parameters.reference_units)
     set_units(diff, parameters.diff_units)
 
-    
-    test.long_name = parameters.test_title if parameters.test_title is not '' else test.long_name
-    ref.long_name = parameters.reference_title if parameters.reference_title is not '' else ref.long_name
-    diff.long_name = parameters.diff_title if parameters.diff_title is not '' else diff.long_name
+    if hasattr(test, 'long_name'):
+        test.long_name = parameters.test_title if parameters.test_title is not '' else test.long_name
+    if hasattr(ref, 'long_name'):
+        ref.long_name = parameters.reference_title if parameters.reference_title is not '' else ref.long_name
+    if hasattr(diff, 'long_name'):
+        diff.long_name = parameters.diff_title if parameters.diff_title is not '' else diff.long_name
 
     test.id = str(parameters.test_name) if parameters.test_name is not '' else test.id
     ref.id = str(parameters.reference_name) if parameters.reference_name is not '' else ref.id
