@@ -90,8 +90,8 @@
    "box1": {
     "line": "default", 
     "priority": 0, 
-    "x1": 0.123, 
-    "x2": 0.86, 
+    "x1": 0.1223, 
+    "x2": 0.96, 
     "y1": 0.55, 
     "y2": 0.9
    }, 
@@ -164,8 +164,8 @@
    "data": {
     "priority": 0, 
     "ratio": -999, 
-    "x1": 0.123, 
-    "x2": 0.86, 
+    "x1": 0.1223, 
+    "x2": 0.96, 
     "y1": 0.55, 
     "y2": 0.9
    }, 
@@ -458,8 +458,8 @@
    "box1": {
     "line": "default", 
     "priority": 1, 
-    "x1": 0.123, 
-    "x2": 0.86, 
+    "x1": 0.1223, 
+    "x2": 0.96, 
     "y1": 0.08000000000000007, 
     "y2": 0.43000000000000005
    }, 
@@ -477,7 +477,7 @@
     "x1": 0.0, 
     "x2": 0.910000026226, 
     "y1": 0.319999992847, 
-    "y2": 0.860000014305
+    "y2": 0.960000014305
    }, 
    "box4": {
     "line": "default", 
@@ -532,8 +532,8 @@
    "data": {
     "priority": 1, 
     "ratio": -999, 
-    "x1": 0.123, 
-    "x2": 0.86, 
+    "x1": 0.1223, 
+    "x2": 0.96, 
     "y1": 0.08000000000000007, 
     "y2": 0.43000000000000005
    }, 
@@ -826,8 +826,8 @@
    "box1": {
     "line": "default", 
     "priority": 1, 
-    "x1": 0.123, 
-    "x2": 0.86, 
+    "x1": 0.1223, 
+    "x2": 0.96, 
     "y1": 0.55, 
     "y2": 0.9
    }, 
@@ -900,8 +900,8 @@
    "data": {
     "priority": 1, 
     "ratio": -999, 
-    "x1": 0.123, 
-    "x2": 0.86, 
+    "x1": 0.1223, 
+    "x2": 0.96, 
     "y1": 0.55, 
     "y2": 0.9
    }, 
@@ -1198,6 +1198,34 @@
    "height": 18, 
    "path": 0, 
    "valign": 2
+  },
+  "ref_test_yaxis_title": {
+   "angle": 270, 
+   "halign": 1, 
+   "height": 14, 
+   "path": 0, 
+   "valign": 2		  
+  },
+  "diff_yaxis_title": {
+   "angle": 270, 
+   "halign": 1, 
+   "height": 14, 
+   "path": 0, 
+   "valign": 2
+  },
+  "ref_title": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 12, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "test_title": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 12, 
+   "path": 0, 
+   "valign": 2
   }
  }, 
  "Tt": {
@@ -1242,6 +1270,168 @@
    ], 
    "y": [
     0.97
+   ]
+  },
+  "ref_test_yaxis_title": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Reference height temperature (K)"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.042300000000000004
+   ], 
+   "y": [
+    0.7250000000000001
+   ]
+  },
+  "diff_yaxis_title": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Reference height temperature (K)"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.042300000000000004
+   ], 
+   "y": [
+    0.25500000000000006
+   ]
+  },
+  "ref_title": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": 215, 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Reference: IPCC/CRU climatology1961-90"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.0723
+   ], 
+   "y": [
+    0.925
+   ]
+  }, 
+  "test_title": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": 1, 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Test: 20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.0723
+   ], 
+   "y": [
+    0.9450000000000001
    ]
   }
  }

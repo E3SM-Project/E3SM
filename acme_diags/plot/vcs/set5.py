@@ -100,12 +100,6 @@ def add_cyclic(var):
 def plot(reference, test, diff, metrics_dict, parameter):
     case_id = parameter.case_id
 
-    # Plotting
-    vcs_canvas.bgX = parameter.canvas_size_w
-    vcs_canvas.bgY = parameter.canvas_size_h
-
-    if not parameter.logo:
-        vcs_canvas.drawlogooff()
 
     file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'set5')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5.json'))
@@ -161,11 +155,17 @@ def plot(reference, test, diff, metrics_dict, parameter):
     vcs_canvas.plot(add_cyclic(diff), template_diff, diff_isofill)
 
     plot_rmse_and_corr(vcs_canvas, metrics_dict)
+    vcs_canvas.portrait()  # for some reason, this needs to be before a call to vcs_canvas.plot()
 
     # Plotting the main title
     main_title = managetextcombined('main_title', 'main_title')
     main_title.string = parameter.main_title
     vcs_canvas.plot(main_title)
+
+    if not parameter.logo:
+        vcs_canvas.drawlogooff()
+    vcs_canvas.bgX = parameter.canvas_size_w
+    vcs_canvas.bgY = parameter.canvas_size_h
 
     fnm = os.path.join(get_output_dir('5', parameter), parameter.output_file)
     for f in parameter.output_format:
