@@ -857,7 +857,7 @@ contains
        do coi = begCohort,endCohort
           if ( mod(coi, fates_maxElementsPerSite ) == 0 ) ci = ci + 1
           
-          gi = col%gridcell(ci) !function call to get gcell for this cohort idx
+          gi = col_pp%gridcell(ci) !function call to get gcell for this cohort idx
           gindex(coi) = coStart(gi) + ioff(gi)
           ioff(gi) = ioff(gi) + 1
        enddo
