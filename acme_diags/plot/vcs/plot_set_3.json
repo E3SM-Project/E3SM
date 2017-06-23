@@ -1212,6 +1212,20 @@
    "height": 14, 
    "path": 0, 
    "valign": 2
+  },
+  "ref_title": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 12, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "test_title": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 12, 
+   "path": 0, 
+   "valign": 2
   }
  }, 
  "Tt": {
@@ -1342,6 +1356,82 @@
    ], 
    "y": [
     0.25500000000000006
+   ]
+  },
+  "ref_title": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": 215, 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Reference: IPCC/CRU climatology1961-90"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.0723
+   ], 
+   "y": [
+    0.925
+   ]
+  }, 
+  "test_title": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": 1, 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Test: 20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.0723
+   ], 
+   "y": [
+    0.9450000000000001
    ]
   }
  }

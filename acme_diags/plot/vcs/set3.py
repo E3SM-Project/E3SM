@@ -232,7 +232,22 @@ def plot(ref, test, diff, metrics_dict, parameters):
     vcs_canvas.portrait()  # for some reason, this needs to be before a call to vcs_canvas.plot()
     vcs_canvas.plot(main_title)
 
-    
+    test_title = managetextcombined('test_title', 'test_title')
+    test_title.string = "Test: " + str(parameters.test_name)
+    test_title.color = 1
+    test_title.x = ref_test_template.data.x1 - 0.05
+    test_title.y = ref_test_template.data.y2 + 0.045
+    test_title.height = 12
+    vcs_canvas.plot(test_title)
+
+    ref_title = managetextcombined('ref_title', 'ref_title')
+    ref_title.string = "Reference: " + str(parameters.reference_name)
+    ref_title.color = 215
+    ref_title.x = ref_test_template.data.x1 - 0.05
+    ref_title.y = ref_test_template.data.y2 + 0.025
+    ref_title.height = 12
+    vcs_canvas.plot(ref_title)
+
     vcs_canvas.bgX = parameters.canvas_size_w
     vcs_canvas.bgY = parameters.canvas_size_h
     if not parameters.logo:
@@ -245,6 +260,10 @@ def plot(ref, test, diff, metrics_dict, parameters):
     # test_line.script('plot_set_3.json')
     # diff_line.script('plot_set_3.json')
     # main_title.script('plot_set_3.json')
+    # ref_test_yaxis_title.script('plot_set_3.json')
+    # diff_yaxis_title.script('plot_set_3.json')
+    # test_title.script('plot_set_3.json')
+    # ref_title.script('plot_set_3.json')
 
     fnm = os.path.join(get_output_dir('3', parameters), parameters.output_file)
     for f in parameters.output_format:
