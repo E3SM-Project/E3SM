@@ -74,22 +74,30 @@ def create_namelists(case, component=None):
         model_str = model.lower()
         config_file = case.get_value("CONFIG_{}_FILE".format(model_str.upper()))
         config_dir = os.path.dirname(config_file)
+        # Multicoupler mode (coupler_count > 1) must temporarily change
+        # NINST and NTASKS settings so that the component buildnml scripts
+        # will work correctly.  After the call to buildnml the original values
+        # are restored.
         if model_str == "cpl":
             compname = "drv"
-            complist = [m for m in models if m.upper() != "CPL"]
-            if coupler_count > 1:
-                xmlfac = {"NINST" : -(coupler_count), "NTASKS" : 1}
         else:
             compname = case.get_value("COMP_{}".format(model_str.upper()))
-            complist = [model_str.upper()]
-            if coupler_count > 1:
-                xmlfac = {"NINST" : -(coupler_count), "NTASKS" : coupler_count}
 
-        xmlsave = {}
-        for k in xmlfac.keys():
-            for m in complist:
-                key = "{}_{}" .format(k, m.upper())
-                xmlsave[key] = case.get_value(key)
+        if coupler_count > 1:
+            if model_str == "cpl":
+                complist = [m for m in models if m.upper() != "CPL"]
+                if coupler_count > 1:
+                    xmlfac = {"NINST" : -(coupler_count), "NTASKS" : 1}
+            else:
+                complist = [model_str.upper()]
+                if coupler_count > 1:
+                    xmlfac = {"NINST" : -(coupler_count), "NTASKS" : coupler_count}
+
+            xmlsave = {}
+            for k in xmlfac.keys():
+                for m in complist:
+                    key = "{}_{}" .format(k, m.upper())
+                    xmlsave[key] = case.get_value(key)
 
         if component is None or component == model_str:
             # first look in the case SourceMods directory

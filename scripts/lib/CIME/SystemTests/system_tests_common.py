@@ -368,7 +368,6 @@ class SystemTestsCommon(object):
                     continue
                 if log.endswith(suffix):
                     lastcpllogs.append(log)
-
         return lastcpllogs
 
     def _compare_baseline(self):
@@ -389,7 +388,7 @@ class SystemTestsCommon(object):
             newestcpllogfiles = self._get_latest_cpl_logs()
             memlist = self._get_mem_usage(newestcpllogfiles[0])
             for cpllog in newestcpllogfiles:
-                m = re.search(r"(cpl.*.log).*.gz",cpllog)
+                m = re.search(r"/(cpl.*.log).*.gz",cpllog)
                 if m is not None:
                     baselog = os.path.join(basecmp_dir, m.group(1))+".gz"
                 if baselog is None or not os.path.isfile(baselog):
@@ -434,7 +433,7 @@ class SystemTestsCommon(object):
             # drop the date so that the name is generic
             newestcpllogfiles = self._get_latest_cpl_logs()
             for cpllog in newestcpllogfiles:
-                m = re.search(r"(cpl.*.log).*.gz",cpllog)
+                m = re.search(r"/(cpl.*.log).*.gz",cpllog)
                 if m is not None:
                     baselog = os.path.join(basegen_dir, m.group(1))+".gz"
                     shutil.copyfile(cpllog,
