@@ -1076,14 +1076,9 @@ contains
     integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
     integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
-!    type(photosyns_type)     , intent(in)    :: photosyns_vars
-!    type(crop_type)          , intent(in)    :: crop_vars
-!    type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(carbonstate_type)   , intent(in)    :: carbonstate_vars
     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-!    type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
-!    type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
 !     !!  add phosphorus  -X.YANG
@@ -2922,8 +2917,7 @@ contains
     integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
     integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
-!    type(photosyns_type)     , intent(in)    :: photosyns_vars
-!    type(crop_type)          , intent(in)    :: crop_vars
+
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(carbonstate_type)   , intent(in)    :: carbonstate_vars
@@ -3133,10 +3127,6 @@ contains
          allocation_stem              => carbonflux_vars%allocation_stem                       , &
          allocation_froot             => carbonflux_vars%allocation_froot                      , &
          xsmrpool_turnover            => carbonflux_vars%xsmrpool_turnover_patch               , &
-
-         smin_no3_vr                  => nitrogenstate_vars%smin_no3_vr_col                    , &
-         smin_nh4_vr                  => nitrogenstate_vars%smin_nh4_vr_col                    , &
-         solutionp_vr                 => phosphorusstate_vars%solutionp_vr_col                 , & !Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral P
 
          c13cf => c13_carbonflux_vars, &
          c14cf => c14_carbonflux_vars  &
@@ -3890,8 +3880,8 @@ contains
       
           else     ! use_nitrif_denitrif
 
-              temp_sminn_to_plant(bounds%begc:bounds%endc) = sminn_to_plant(bounds%begc:bounds%endc)
-              temp_sminp_to_plant(bounds%begc:bounds%endc) = sminp_to_plant(bounds%begc:bounds%endc)
+              temp_sminn_to_plant = sminn_to_plant
+              temp_sminp_to_plant = sminp_to_plant
 
               call p2c(bounds,num_soilc,filter_soilc, &
                   sminn_to_npool(bounds%begp:bounds%endp), &
@@ -3909,10 +3899,6 @@ contains
                           sminn_to_plant_vr(c,j)    = sminn_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) )
                           smin_nh4_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
                           smin_no3_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
-                          ! ensure that plant uptake rate isn't larger than soil N pool
-!                          smin_nh4_to_plant_vr(c,j) = min(smin_nh4_to_plant_vr(c,j), smin_nh4_vr(c,j) / dt )
-!                          smin_no3_to_plant_vr(c,j) = min(smin_no3_to_plant_vr(c,j), smin_no3_vr(c,j) / dt )
-!                          sminn_to_plant_vr(c,j)    = smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j)
                       else
                           sminn_to_plant_vr(c,j)    = 0._r8
                           smin_nh4_to_plant_vr(c,j) = 0._r8
@@ -3921,8 +3907,6 @@ contains
                  
                       if ( temp_sminp_to_plant(c) > 0._r8) then 
                           sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
-                          ! ensure that plant uptake rate isn't larger than soil P pool
-!                          sminp_to_plant_vr(c,j) = min(sminp_to_plant_vr(c,j), solutionp_vr(c,j) / dt )
                       else
                           sminp_to_plant_vr(c,j) = 0._r8
                       endif 
@@ -3974,8 +3958,8 @@ contains
               .not.cnallocate_carbonnitrogen_only().and.    &
               .not.cnallocate_carbon_only() )then
 
-          temp_sminn_to_plant(bounds%begc:bounds%endc) = sminn_to_plant(bounds%begc:bounds%endc)
-          temp_sminp_to_plant(bounds%begc:bounds%endc) = sminp_to_plant(bounds%begc:bounds%endc)
+          temp_sminn_to_plant = sminn_to_plant
+          temp_sminp_to_plant = sminp_to_plant
 
             call p2c(bounds,num_soilc,filter_soilc, &
                 sminn_to_npool(bounds%begp:bounds%endp), &
@@ -3993,10 +3977,6 @@ contains
                      sminn_to_plant_vr(c,j)    = sminn_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) )
                      smin_nh4_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
                      smin_no3_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
-                     ! ensure that plant uptake rate isn't larger than soil N pool
-!                     smin_nh4_to_plant_vr(c,j) = min(smin_nh4_to_plant_vr(c,j), smin_nh4_vr(c,j) / dt )
-!                     smin_no3_to_plant_vr(c,j) = min(smin_no3_to_plant_vr(c,j), smin_no3_vr(c,j) / dt )
-!                     sminn_to_plant_vr(c,j)    = smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j)
                   else
                      sminn_to_plant_vr(c,j)    = 0._r8
                      smin_nh4_to_plant_vr(c,j) = 0._r8
@@ -4005,8 +3985,6 @@ contains
                    
                   if ( temp_sminp_to_plant(c) > 0._r8) then 
                      sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
-                     ! ensure that plant uptake rate isn't larger than soil P pool
-!                     sminp_to_plant_vr(c,j) = min(sminp_to_plant_vr(c,j), solutionp_vr(c,j) / dt )
                   else
                      sminp_to_plant_vr(c,j) = 0._r8
                   endif 
@@ -4017,7 +3995,7 @@ contains
 
           if( cnallocate_carbonnitrogen_only() )then
 
-          temp_sminp_to_plant(bounds%begc:bounds%endc) = sminp_to_plant(bounds%begc:bounds%endc)
+          temp_sminp_to_plant = sminp_to_plant
 
             call p2c(bounds,num_soilc,filter_soilc, &
                 sminp_to_ppool(bounds%begp:bounds%endp), &
@@ -4030,8 +4008,6 @@ contains
 
                   if ( temp_sminp_to_plant(c) > 0._r8) then 
                      sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
-                     ! ensure that plant uptake rate isn't larger than soil P pool
-!                     sminp_to_plant_vr(c,j) = min(sminp_to_plant_vr(c,j), solutionp_vr(c,j) / dt )
                   else
                      sminp_to_plant_vr(c,j) = 0._r8
                   endif 
@@ -4117,8 +4093,7 @@ contains
                else
                   nuptake_prof(c,j) = nfixation_prof(c,j)
                end if
-               !! sum_ndemand_vr will be calculated after calling calc_nuptake_prof
-!                sum_ndemand_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j) + potential_immob_vr(c,j)
+
             end do
          end do
 
@@ -4149,7 +4124,7 @@ contains
 
     associate( &
          nfixation_prof               => cnstate_vars%nfixation_prof_col                     , & ! Output: [real(r8) (:,:) ]
-         solutionp_vr                 => phosphorusstate_vars%solutionp_vr_col                       & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N
+         solutionp_vr                 => phosphorusstate_vars%solutionp_vr_col                 & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N
          )
 
 
@@ -4176,8 +4151,7 @@ contains
                else
                   puptake_prof(c,j) = nfixation_prof(c,j)      !!!! need modifications !!!!
                endif
-               !! sum_pdemand_vr will be calculated after calling calc_puptake_prof
-!               sum_pdemand_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j) + potential_immob_p_vr(c,j)
+
             end do
          end do
     end associate

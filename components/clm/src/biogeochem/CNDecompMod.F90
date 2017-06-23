@@ -799,7 +799,7 @@ contains
       call t_stopf('CNAllocation - phase-3')
 !!------------------------------------------------------------------
     if(use_pflotran.and.pf_cmode) then
-!! wgs: CNAllocation3_PlantCNPAlloc(): Line 3882-3890:
+!! wgs: CNAllocation3_PlantCNPAlloc():
 !! smin_nh4_to_plant_vr(c,j), smin_no3_to_plant_vr(c,j), sminn_to_plant_vr(c,j) may be adjusted
 !! therefore, we need to update smin_no3_vr(c,j) & smin_nh4_vr(c,j)
       do fc = 1,num_soilc

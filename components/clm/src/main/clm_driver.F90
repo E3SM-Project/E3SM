@@ -839,13 +839,13 @@ contains
                     ! -------------------------------------------------------------------------
                     ! PFLOTRAN calling for solving below-ground and ground-surface processes,
                     ! including thermal, hydrological and biogeochemical processes
-                    !! STEP-2: (1) pass data from clm_bgc_data to pflotran
+                    !! STEP-2: (1) pass data from clm_interface_data to pflotran
                     !! STEP-2: (2) run pflotran
-                    !! STEP-2: (3) update clm_bgc_data from pflotran
+                    !! STEP-2: (3) update clm_interface_data from pflotran
                     ! -------------------------------------------------------------------------
                     call clm_pf_run(clm_interface_data, bounds_clump, filter, nc)
 
-                    !! STEP-3: update CLM from clm_bgc_data
+                    !! STEP-3: update CLM from clm_interface_data
                     call update_bgc_data_pf2clm(clm_interface_data%bgc,         &
                            bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc, &
                            filter(nc)%num_soilp, filter(nc)%soilp,              &
@@ -860,9 +860,9 @@ contains
                     call t_startf('clm-bgc via interface')
                     ! -------------------------------------------------------------------------
                     !! run clm-bgc (CNDecompAlloc) through interface
-                    !! STEP-2: (1) pass data from clm_bgc_data to CNDecompAlloc
+                    !! STEP-2: (1) pass data from clm_interface_data to CNDecompAlloc
                     !! STEP-2: (2) run CNDecompAlloc
-                    !! STEP-2: (3) update clm_bgc_data from CNDecompAlloc
+                    !! STEP-2: (3) update clm_interface_data from CNDecompAlloc
                     ! -------------------------------------------------------------------------
                     call clm_bgc_run(clm_interface_data, bounds_clump,          &
                            filter(nc)%num_soilc, filter(nc)%soilc,              &
@@ -874,7 +874,7 @@ contains
                            nitrogenstate_vars, nitrogenflux_vars,               &
                            phosphorusstate_vars,phosphorusflux_vars)
 
-                    !! STEP-3: update CLM from clm_bgc_data
+                    !! STEP-3: update CLM from clm_interface_data
                     call update_bgc_data_clm2clm(clm_interface_data%bgc,        &
                            bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc,&
                            filter(nc)%num_soilp, filter(nc)%soilp,              &
