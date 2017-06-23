@@ -474,7 +474,13 @@ contains
     real(r8) :: dtime                                                               ! land model time step (sec)
     integer  :: err_index                                                           ! indices
     logical  :: err_found                                                           ! error flag
-    real(r8) :: pf_cinputs, pf_coutputs, pf_cdelta,pf_errcb, pf_cbeg, pf_cend       ! balance check varialbes
+    ! balance check varialbes:
+    real(r8) :: pf_cinputs(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_coutputs(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_cdelta(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_errcb(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_cbeg(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_cend(1:filters(ifilter)%num_soilc)
     !-----------------------------------------------------------------------
 
     associate(                                                                    &
@@ -490,39 +496,40 @@ contains
     err_found = .false.
     do fc = 1,filters(ifilter)%num_soilc
         c = filters(ifilter)%soilc(fc)
-        pf_cbeg     = soil_begcb(c)
-        pf_cend     = 0._r8
-        pf_errcb    = 0._r8
+        pf_cbeg(fc)     = soil_begcb(c)
+        pf_cend(fc)     = 0._r8
+        pf_errcb(fc)    = 0._r8
 
-        pf_cinputs  = 0._r8
-        pf_coutputs = 0._r8
-        pf_cdelta   = 0._r8
+        pf_cinputs(fc)  = 0._r8
+        pf_coutputs(fc) = 0._r8
+        pf_cdelta(fc)   = 0._r8
 
         do j = 1, nlevdecomp_full
-            pf_coutputs = pf_coutputs + hr_vr(c,j)*dzsoi_decomp(j)
+            pf_coutputs(fc) = pf_coutputs(fc) + hr_vr(c,j)*dzsoi_decomp(j)
             do l = 1, ndecomp_pools
-                pf_cinputs = pf_cinputs + externalc(c,j,l)*dzsoi_decomp(j)
-                pf_cdelta  = pf_cdelta  + decomp_cpools_delta_vr(c,j,l)*dzsoi_decomp(j)
+                pf_cinputs(fc) = pf_cinputs(fc) + externalc(c,j,l)*dzsoi_decomp(j)
+                pf_cdelta(fc)  = pf_cdelta(fc)  + decomp_cpools_delta_vr(c,j,l)*dzsoi_decomp(j)
             end do
         end do
 
-        pf_cend = pf_cbeg + pf_cdelta
-        pf_errcb = (pf_cinputs - pf_coutputs)*dtime - pf_cdelta
+        pf_cend(fc) = pf_cbeg(fc) + pf_cdelta(fc)
+        pf_errcb(fc) = (pf_cinputs(fc) - pf_coutputs(fc))*dtime - pf_cdelta(fc)
 
         ! check for significant errors
-        if (abs(pf_errcb) > 1e-8_r8) then
+        if (abs(pf_errcb(fc)) > 1e-8_r8) then
             err_found = .true.
-            err_index = c
+            err_index = fc
         end if
     end do
 
     if (.not. use_ed) then
          if (err_found) then
+            fc = err_index
             write(iulog,'(A,70(1h-))')">>>--------  PFLOTRAN Mass Balance Check:beg  "
-            write(iulog,'(A35,I5,I15)')"Carbon Balance Error in Column = ",err_index, get_nstep()
+            write(iulog,'(A35,I15,A10,I20)')"Carbon Balance Error in Column = ",filters(ifilter)%soilc(fc), "@ nstep=",get_nstep()
             write(iulog,'(10A15)')"errcb", "C_in-out", "Cdelta","Cinputs","Coutputs","Cbeg","Cend"
-            write(iulog,'(10E15.6)')pf_errcb, (pf_cinputs - pf_coutputs)*dtime, pf_cdelta, &
-                                    pf_cinputs*dtime,pf_coutputs*dtime,pf_cbeg,pf_cend
+            write(iulog,'(10E15.6)')pf_errcb(fc), (pf_cinputs(fc) - pf_coutputs(fc))*dtime, pf_cdelta(fc), &
+                                    pf_cinputs(fc)*dtime,pf_coutputs(fc)*dtime,pf_cbeg(fc),pf_cend(fc)
             write(iulog,'(A,70(1h-))')">>>--------  PFLOTRAN Mass Balance Check:end  "
          end if
     end if !!(.not. use_ed)
@@ -554,15 +561,35 @@ contains
     integer  :: err_index                                                           ! indices
     logical  :: err_found                                                           ! error flag
 
-    real(r8) :: pf_ninputs, pf_noutputs, pf_ndelta,pf_errnb                         !! _errnb: mass balance error; _ndelta: difference in pool sizes between end & beginning
-    real(r8) :: pf_noutputs_gas, pf_noutputs_veg                                    !! _gas:nitrogen gases; _veg:plant uptake of NO3/NH4
-    real(r8) :: pf_noutputs_nit, pf_noutputs_denit                                  !! _gas = _nit + _denit
-    real(r8) :: pf_ninputs_org, pf_ninputs_min, pf_ndelta_org,pf_ndelta_min         !! _org:organic; _min:mineral nitrogen
-    real(r8) :: pf_nbeg, pf_nbeg_org, pf_nbeg_min                                   !! _nbeg: Nitrogen mass at the beginning of time-step
-    real(r8) :: pf_nend, pf_nend_org, pf_nend_min                                   !! _end: Nitrogen mass at the end of time-step
-    real(r8) :: pf_nend_no3, pf_nend_nh4, pf_nend_nh4sorb                           !! 3 mineral N pools at the end of time-step
-    real(r8) :: plant_ndemand, potential_immob, actual_immob, gross_nmin            !! _immob: N immobilization; _nmin: N mineralization
-    real(r8) :: pf_ngas_dec, pf_ngas_min, pf_errnb_org, pf_errnb_min                !! _ngas_dec: N gas from decomposition-mineralization; _ngas_min: N gas from nitrification & denitrification
+    real(r8) :: pf_ninputs(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_noutputs(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_ndelta(1:filters(ifilter)%num_soilc)                             !! _ndelta: difference in pool sizes between end & beginning
+    real(r8) :: pf_errnb(1:filters(ifilter)%num_soilc)                              !! _errnb: mass balance error;
+    real(r8) :: pf_noutputs_gas(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_noutputs_veg(1:filters(ifilter)%num_soilc)                       !! _gas:nitrogen gases; _veg:plant uptake of NO3/NH4
+    real(r8) :: pf_noutputs_nit(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_noutputs_denit(1:filters(ifilter)%num_soilc)                     !! _gas = _nit + _denit
+    real(r8) :: pf_ninputs_org(1:filters(ifilter)%num_soilc)                        !! _org:organic; _min:mineral nitrogen
+    real(r8) :: pf_ninputs_min(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_ndelta_org(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_ndelta_min(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_nbeg(1:filters(ifilter)%num_soilc)                               !! _nbeg: Nitrogen mass at the beginning of time-step
+    real(r8) :: pf_nbeg_org(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_nbeg_min(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_nend(1:filters(ifilter)%num_soilc)                               !! _end: Nitrogen mass at the end of time-step
+    real(r8) :: pf_nend_org(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_nend_min(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_nend_no3(1:filters(ifilter)%num_soilc)                           !! 3 mineral N pools at the end of time-step
+    real(r8) :: pf_nend_nh4(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_nend_nh4sorb(1:filters(ifilter)%num_soilc)
+    real(r8) :: plant_ndemand(1:filters(ifilter)%num_soilc)
+    real(r8) :: potential_immob(1:filters(ifilter)%num_soilc)
+    real(r8) :: actual_immob(1:filters(ifilter)%num_soilc)
+    real(r8) :: gross_nmin(1:filters(ifilter)%num_soilc)                            !! _immob: N immobilization; _nmin: N mineralization
+    real(r8) :: pf_ngas_dec(1:filters(ifilter)%num_soilc)                           !! _ngas_dec: N gas from decomposition-mineralization
+    real(r8) :: pf_ngas_min(1:filters(ifilter)%num_soilc)                           !! _ngas_min: N gas from nitrification & denitrification
+    real(r8) :: pf_errnb_org(1:filters(ifilter)%num_soilc)
+    real(r8) :: pf_errnb_min(1:filters(ifilter)%num_soilc)
 
     real(r8) :: pf_errnb_org_vr(1:nlevdecomp_full)
     real(r8) :: pf_ndelta_org_vr(1:nlevdecomp_full)
@@ -600,67 +627,67 @@ contains
     err_found = .false.
     do fc = 1,filters(ifilter)%num_soilc
         c = filters(ifilter)%soilc(fc)
-        pf_nbeg_org         = soil_begnb_org(c)
-        pf_nbeg_min         = soil_begnb_min(c)
-        pf_nbeg             = soil_begnb(c)
+        pf_nbeg_org(fc)         = soil_begnb_org(c)
+        pf_nbeg_min(fc)         = soil_begnb_min(c)
+        pf_nbeg(fc)             = soil_begnb(c)
 
-        pf_nend_org         = 0._r8
-        pf_nend_min         = 0._r8
-        pf_nend_no3         = 0._r8
-        pf_nend_nh4         = 0._r8
-        pf_nend_nh4sorb     = 0._r8
-        pf_nend             = 0._r8
+        pf_nend_org(fc)         = 0._r8
+        pf_nend_min(fc)         = 0._r8
+        pf_nend_no3(fc)         = 0._r8
+        pf_nend_nh4(fc)         = 0._r8
+        pf_nend_nh4sorb(fc)     = 0._r8
+        pf_nend(fc)             = 0._r8
 
-        pf_ninputs_org      = 0._r8
-        pf_ninputs_min      = 0._r8
-        pf_ninputs          = 0._r8
+        pf_ninputs_org(fc)      = 0._r8
+        pf_ninputs_min(fc)      = 0._r8
+        pf_ninputs(fc)          = 0._r8
 
-        pf_noutputs_nit     = 0._r8
-        pf_noutputs_denit   = 0._r8
-        pf_noutputs_gas     = 0._r8
-        pf_noutputs_veg     = 0._r8
-        pf_noutputs         = 0._r8
+        pf_noutputs_nit(fc)     = 0._r8
+        pf_noutputs_denit(fc)   = 0._r8
+        pf_noutputs_gas(fc)     = 0._r8
+        pf_noutputs_veg(fc)     = 0._r8
+        pf_noutputs(fc)         = 0._r8
 
-        pf_ndelta_org       = 0._r8
-        pf_ndelta_min       = 0._r8
-        pf_ndelta           = 0._r8
+        pf_ndelta_org(fc)       = 0._r8
+        pf_ndelta_min(fc)       = 0._r8
+        pf_ndelta(fc)           = 0._r8
 
-        plant_ndemand       = 0._r8
-        potential_immob     = 0._r8
-        actual_immob        = 0._r8
-        gross_nmin          = 0._r8
+        plant_ndemand(fc)       = 0._r8
+        potential_immob(fc)     = 0._r8
+        actual_immob(fc)        = 0._r8
+        gross_nmin(fc)          = 0._r8
 
-        pf_ngas_dec         = 0._r8
-        pf_ngas_min         = 0._r8
-        pf_errnb_org        = 0._r8
-        pf_errnb_min        = 0._r8
+        pf_ngas_dec(fc)         = 0._r8
+        pf_ngas_min(fc)         = 0._r8
+        pf_errnb_org(fc)        = 0._r8
+        pf_errnb_min(fc)        = 0._r8
 
         do j = 1, nlev
             !! sminn_vr(c,j) has been calculated above
-            pf_nend_no3     = pf_nend_no3     + smin_no3_vr(c,j)*dzsoi_decomp(j)
-            pf_nend_nh4     = pf_nend_nh4     + smin_nh4_vr(c,j)*dzsoi_decomp(j)
-            pf_nend_nh4sorb = pf_nend_nh4sorb + smin_nh4sorb_vr(c,j)*dzsoi_decomp(j)
+            pf_nend_no3(fc)     = pf_nend_no3(fc)     + smin_no3_vr(c,j)*dzsoi_decomp(j)
+            pf_nend_nh4(fc)     = pf_nend_nh4(fc)     + smin_nh4_vr(c,j)*dzsoi_decomp(j)
+            pf_nend_nh4sorb(fc) = pf_nend_nh4sorb(fc) + smin_nh4sorb_vr(c,j)*dzsoi_decomp(j)
 
-            pf_ninputs_min  = pf_ninputs_min  + externaln_to_nh4_vr(c,j)*dzsoi_decomp(j) &
-                                              + externaln_to_no3_vr(c,j)*dzsoi_decomp(j)
+            pf_ninputs_min(fc)  = pf_ninputs_min(fc)  + externaln_to_nh4_vr(c,j)*dzsoi_decomp(j) &
+                                                      + externaln_to_no3_vr(c,j)*dzsoi_decomp(j)
 
-            pf_noutputs_nit = pf_noutputs_nit + f_ngas_decomp_vr(c,j)*dzsoi_decomp(j) &
-                                              + f_ngas_nitri_vr(c,j)*dzsoi_decomp(j)
-            pf_noutputs_denit = pf_noutputs_denit + f_ngas_denit_vr(c,j)*dzsoi_decomp(j)
-            pf_noutputs_veg = pf_noutputs_veg + sminn_to_plant_vr(c,j)*dzsoi_decomp(j)
+            pf_noutputs_nit(fc) = pf_noutputs_nit(fc) + f_ngas_decomp_vr(c,j)*dzsoi_decomp(j) &
+                                                      + f_ngas_nitri_vr(c,j)*dzsoi_decomp(j)
+            pf_noutputs_denit(fc) = pf_noutputs_denit(fc) + f_ngas_denit_vr(c,j)*dzsoi_decomp(j)
+            pf_noutputs_veg(fc) = pf_noutputs_veg(fc) + sminn_to_plant_vr(c,j)*dzsoi_decomp(j)
 
-            pf_ngas_dec     = pf_ngas_dec     + f_ngas_decomp_vr(c,j)*dzsoi_decomp(j)
-            pf_ngas_min     = pf_ngas_min     + f_ngas_denit_vr(c,j)*dzsoi_decomp(j) &
-                                              + f_ngas_nitri_vr(c,j)*dzsoi_decomp(j)
+            pf_ngas_dec(fc)     = pf_ngas_dec(fc)     + f_ngas_decomp_vr(c,j)*dzsoi_decomp(j)
+            pf_ngas_min(fc)     = pf_ngas_min(fc)     + f_ngas_denit_vr(c,j)*dzsoi_decomp(j) &
+                                                      + f_ngas_nitri_vr(c,j)*dzsoi_decomp(j)
             do l = 1, ndecomp_pools
-                pf_ndelta_org  = pf_ndelta_org  + decomp_npools_delta_vr(c,j,l)*dzsoi_decomp(j)
-                pf_ninputs_org = pf_ninputs_org + externaln_to_decomp_npools(c,j,l)*dzsoi_decomp(j)
+                pf_ndelta_org(fc)  = pf_ndelta_org(fc)  + decomp_npools_delta_vr(c,j,l)*dzsoi_decomp(j)
+                pf_ninputs_org(fc) = pf_ninputs_org(fc) + externaln_to_decomp_npools(c,j,l)*dzsoi_decomp(j)
             end do
 
-            plant_ndemand   = plant_ndemand   + plant_ndemand_vr(c,j)*dzsoi_decomp(j)
-            potential_immob = potential_immob + potential_immob_vr(c,j)*dzsoi_decomp(j)
-            actual_immob    = actual_immob    + actual_immob_vr(c,j)*dzsoi_decomp(j)
-            gross_nmin      = gross_nmin      + gross_nmin_vr(c,j)*dzsoi_decomp(j)
+            plant_ndemand(fc)   = plant_ndemand(fc)   + plant_ndemand_vr(c,j)*dzsoi_decomp(j)
+            potential_immob(fc) = potential_immob(fc) + potential_immob_vr(c,j)*dzsoi_decomp(j)
+            actual_immob(fc)    = actual_immob(fc)    + actual_immob_vr(c,j)*dzsoi_decomp(j)
+            gross_nmin(fc)      = gross_nmin(fc)      + gross_nmin_vr(c,j)*dzsoi_decomp(j)
         end do !!j = 1, nlevdecomp
 
 
@@ -680,57 +707,58 @@ contains
             pf_errnb_org_vr(j)    = pf_errnb_org_vr(j)*dzsoi_decomp(j)
         end do
 
-        pf_nend_org     = pf_nbeg_org       + pf_ndelta_org   !!pf_ndelta_org has been calculated
-        pf_nend_min     = pf_nend_no3       + pf_nend_nh4 + pf_nend_nh4sorb
-        pf_nend         = pf_nend_org       + pf_nend_min
-        pf_ndelta_min   = pf_nend_min       - pf_nbeg_min
-        pf_ndelta       = pf_nend           - pf_nbeg         !!pf_ndelta_org     + pf_ndelta_min
-        pf_ninputs      = pf_ninputs_org    + pf_ninputs_min
-        pf_noutputs_gas = pf_noutputs_nit   + pf_noutputs_denit
-        pf_noutputs     = pf_noutputs_gas   + pf_noutputs_veg
-        pf_errnb        = (pf_ninputs - pf_noutputs)*dtime - pf_ndelta
+        pf_nend_org(fc)     = pf_nbeg_org(fc)       + pf_ndelta_org(fc)   !!pf_ndelta_org has been calculated
+        pf_nend_min(fc)     = pf_nend_no3(fc)       + pf_nend_nh4(fc) + pf_nend_nh4sorb(fc)
+        pf_nend(fc)         = pf_nend_org(fc)       + pf_nend_min(fc)
+        pf_ndelta_min(fc)   = pf_nend_min(fc)       - pf_nbeg_min(fc)
+        pf_ndelta(fc)       = pf_nend(fc)           - pf_nbeg(fc)         !!pf_ndelta_org     + pf_ndelta_min
+        pf_ninputs(fc)      = pf_ninputs_org(fc)    + pf_ninputs_min(fc)
+        pf_noutputs_gas(fc) = pf_noutputs_nit(fc)   + pf_noutputs_denit(fc)
+        pf_noutputs(fc)     = pf_noutputs_gas(fc)   + pf_noutputs_veg(fc)
+        pf_errnb(fc)        = (pf_ninputs(fc) - pf_noutputs(fc))*dtime - pf_ndelta(fc)
 !write(iulog,*)'>>>DEBUG | pflotran nbalance error = ', pf_errnb, c, get_nstep()
 
-        pf_errnb_org    = (pf_ninputs_org                   &
-                        - gross_nmin + actual_immob)*dtime  &
-                        - pf_ndelta_org
-        pf_errnb_min    = (pf_ninputs_min - pf_ngas_min - pf_ngas_dec        &
-                        + gross_nmin - actual_immob - pf_noutputs_veg)*dtime &
-                        - pf_ndelta_min
+        pf_errnb_org(fc)    = (pf_ninputs_org(fc)                   &
+                            - gross_nmin(fc) + actual_immob(fc))*dtime  &
+                            - pf_ndelta_org(fc)
+        pf_errnb_min(fc)    = (pf_ninputs_min(fc) - pf_ngas_min(fc) - pf_ngas_dec(fc)        &
+                            + gross_nmin(fc) - actual_immob(fc) - pf_noutputs_veg(fc))*dtime &
+                            - pf_ndelta_min(fc)
         ! check for significant errors
-        if (abs(pf_errnb) > 1e-8_r8) then
+        if (abs(pf_errnb(fc)) > 1e-8_r8) then
             err_found = .true.
-            err_index = c
+            err_index = fc
         end if
     end do
 
     if (.not. use_ed) then
          if (err_found) then
+            fc = err_index
             write(iulog,'(A,70(1h-))')">>>--------  PFLOTRAN Mass Balance Check:beg  "
-            write(iulog,'(A35,I5,I15)')"Nitrogen Balance Error in Column = ",err_index, get_nstep()
+            write(iulog,'(A35,I15,A10,I20)')"Nitrogen Balance Error in Column = ",filters(ifilter)%soilc(fc), "@ nstep = ",get_nstep()
             write(iulog,'(10A15)')  "errnb", "N_in-out", "Ndelta",                          &
                                     "Ninputs","Noutputs", "Nbeg","Nend"
-            write(iulog,'(10E15.6)')pf_errnb, (pf_ninputs - pf_noutputs)*dtime, pf_ndelta,  &
-                                    pf_ninputs*dtime,pf_noutputs*dtime,pf_nbeg,pf_nend
+            write(iulog,'(10E15.6)')pf_errnb(fc), (pf_ninputs(fc) - pf_noutputs(fc))*dtime, pf_ndelta(fc),  &
+                                    pf_ninputs(fc)*dtime,pf_noutputs(fc)*dtime,pf_nbeg(fc),pf_nend(fc)
             write(iulog,*)
             write(iulog,'(10A15)')  "errnb_org","Ndelta_org","Nbeg_org","Nend_org",         &
                                     "gross_nmin", "actual_immob", "pot_immob"
-            write(iulog,'(10E15.6)')pf_errnb_org,pf_ndelta_org,pf_nbeg_org,pf_nend_org,     &
-                                    gross_nmin*dtime,actual_immob*dtime,potential_immob*dtime
+            write(iulog,'(10E15.6)')pf_errnb_org(fc),pf_ndelta_org(fc),pf_nbeg_org(fc),pf_nend_org(fc),     &
+                                    gross_nmin(fc)*dtime,actual_immob(fc)*dtime,potential_immob(fc)*dtime
             write(iulog,*)
             write(iulog,'(10A15)')  "errnb_min","Ndelta_min","Nbeg_min","Nend_min",         &
                                     "Nend_no3","Nend_nh4", "Nend_nh4sorb"
-            write(iulog,'(10E15.6)')pf_errnb_min, pf_ndelta_min,pf_nbeg_min,pf_nend_min,    &
-                                    pf_nend_no3,pf_nend_nh4,pf_nend_nh4sorb
+            write(iulog,'(10E15.6)')pf_errnb_min(fc), pf_ndelta_min(fc),pf_nbeg_min(fc),pf_nend_min(fc),    &
+                                    pf_nend_no3(fc),pf_nend_nh4(fc),pf_nend_nh4sorb(fc)
             write(iulog,*)
             write(iulog,'(10A15)')  "Ninputs_org","Ninputs_min",                            &
                                     "Noutputs_nit","Noutputs_denit",                        &
                                     "Noutputs_gas","Noutputs_veg",                          &
                                     "plant_Ndemand","Ngas_dec","Ngas_min"
-            write(iulog,'(10E15.6)')pf_ninputs_org*dtime,pf_ninputs_min*dtime,              &
-                                    pf_noutputs_nit*dtime,pf_noutputs_denit*dtime,          &
-                                    pf_noutputs_gas*dtime,pf_noutputs_veg*dtime,            &
-                                    plant_ndemand*dtime,pf_ngas_dec*dtime,pf_ngas_min*dtime
+            write(iulog,'(10E15.6)')pf_ninputs_org(fc)*dtime,pf_ninputs_min(fc)*dtime,              &
+                                    pf_noutputs_nit(fc)*dtime,pf_noutputs_denit(fc)*dtime,          &
+                                    pf_noutputs_gas(fc)*dtime,pf_noutputs_veg(fc)*dtime,            &
+                                    plant_ndemand(fc)*dtime,pf_ngas_dec(fc)*dtime,pf_ngas_min(fc)*dtime
 
 !            write(iulog,*)
 !            write(iulog,'(A10,20A15)')  "Layer","errbn_org","ndelta_org","ninputs","gross_nmin","actual_immob"
