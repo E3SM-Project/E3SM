@@ -340,7 +340,7 @@ contains
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             num_nolakec_and_urbanc = num_nolakec_and_urbanc + 1
          else
             num_nolakec_and_nourbanc = num_nolakec_and_nourbanc + 1
@@ -355,7 +355,7 @@ contains
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             num_nolakec_and_urbanc = num_nolakec_and_urbanc + 1
             filter_nolakec_and_urbanc(num_nolakec_and_urbanc) = c
          else
@@ -531,7 +531,7 @@ contains
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
 
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             do j = snl(c)+1, 0
                t_soisno(c,j)       = tvector_urbanc(c,j-1)        !snow layers
             end do

@@ -82,7 +82,7 @@ module CLMFatesInterfaceMod
                                   get_clump_bounds
    use GridCellType      , only : grc
    use ColumnType        , only : col_pp
-   use LandunitType      , only : lun
+   use LandunitType      , only : lun_pp
    use landunit_varcon   , only : istsoil
    use abortutils        , only : endrun
    use shr_log_mod       , only : errMsg => shr_log_errMsg    
@@ -341,13 +341,13 @@ contains
             ! INTERF-TODO: WE HAVE NOT FILTERED OUT FATES SITES ON INACTIVE COLUMNS.. YET
             ! NEED A RUN-TIME ROUTINE THAT CLEARS AND REWRITES THE SITE LIST
 
-            if (lun%itype(l) == istsoil ) then
+            if (lun_pp%itype(l) == istsoil ) then
                s = s + 1
                collist(s) = c
                this%f2hmap(nc)%hsites(c) = s
                if(DEBUG)then
                   write(iulog,*) 'alm_fates%init(): thread',nc,': found column',c,'with lu',l
-                  write(iulog,*) 'LU type:', lun%itype(l)
+                  write(iulog,*) 'LU type:', lun_pp%itype(l)
                end if
             endif
             
@@ -2160,7 +2160,7 @@ contains
     num_filter_fates = 0
     do s = 1,num_filterc
        l = col_pp%landunit(filterc(s))
-       if (lun%itype(l) == istsoil ) then
+       if (lun_pp%itype(l) == istsoil ) then
           num_filter_fates = num_filter_fates + 1
        end if
     end do

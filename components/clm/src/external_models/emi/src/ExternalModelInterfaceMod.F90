@@ -169,7 +169,7 @@ contains
     use ExternalModelBETRMod  , only : EM_BETR_Populate_E2L_List
     use decompMod             , only : get_clump_bounds
     use ColumnType            , only : col_pp
-    use LandunitType          , only : lun
+    use LandunitType          , only : lun_pp
     use landunit_varcon       , only : istsoil, istcrop,istice
     use column_varcon         , only : icol_road_perv
     !
@@ -339,8 +339,8 @@ contains
           do c = bounds_clump%begc,bounds_clump%endc
              if (col_pp%active(c)) then
                 l = col_pp%landunit(c)
-                if (lun%itype(l) == istsoil .or. col_pp%itype(c) == icol_road_perv .or. &
-                    lun%itype(l) == istcrop) then
+                if (lun_pp%itype(l) == istsoil .or. col_pp%itype(c) == icol_road_perv .or. &
+                    lun_pp%itype(l) == istcrop) then
                    num_e2l_filter_col = num_e2l_filter_col + 1
                    tmp_col(c) = 1
                 end if
@@ -1402,7 +1402,7 @@ contains
     use ExternalModelConstants    , only : L2E_LANDUNIT_TYPE
     use ExternalModelConstants    , only : L2E_LANDUNIT_LAKEPOINT
     use ExternalModelConstants    , only : L2E_LANDUNIT_URBANPOINT
-    use LandunitType              , only : lun
+    use LandunitType              , only : lun_pp
     !
     implicit none
     !
@@ -1436,21 +1436,21 @@ contains
           case (L2E_LANDUNIT_TYPE)
              do fl = 1, num_filter
                 l = filter(fl)
-                cur_data%data_int_1d(l) = lun%itype(l)
+                cur_data%data_int_1d(l) = lun_pp%itype(l)
              enddo
              cur_data%is_set = .true.
 
           case (L2E_LANDUNIT_LAKEPOINT)
              do fl = 1, num_filter
                 l = filter(fl)
-                if (lun%lakpoi(l)) cur_data%data_int_1d(l) = 1
+                if (lun_pp%lakpoi(l)) cur_data%data_int_1d(l) = 1
              enddo
              cur_data%is_set = .true.
 
           case (L2E_LANDUNIT_URBANPOINT)
              do fl = 1, num_filter
                 l = filter(fl)
-                if (lun%urbpoi(l)) cur_data%data_int_1d(l) = 1
+                if (lun_pp%urbpoi(l)) cur_data%data_int_1d(l) = 1
              enddo
              cur_data%is_set = .true.
 

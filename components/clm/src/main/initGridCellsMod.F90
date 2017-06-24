@@ -584,7 +584,7 @@ contains
 
     max_nlun_local = 0
     do l = bounds_proc%begl, bounds_proc%endl
-       g       = lun%gridcell(l)
+       g       = lun_pp%gridcell(l)
        nlun(g) = nlun(g) + 1
        if (nlun(g) > max_nlun_local) max_nlun_local = nlun(g)
     enddo
@@ -613,7 +613,7 @@ contains
     nlun = 0
     do l = bounds_proc%begl, bounds_proc%endl
 
-       g       = lun%gridcell(l)
+       g       = lun_pp%gridcell(l)
        beg_idx = (g-bounds_proc%begg)*nblocks + nlun(g)*nvals + 1
        end_idx = beg_idx + nvals - 1
 
@@ -646,22 +646,22 @@ contains
                 values(1:nvals) = data_recv(beg_idx:end_idx)
                 call SetValuesForLandunit(l, values)
 
-                if (lun%itype(l) /= ltype) then
+                if (lun_pp%itype(l) /= ltype) then
                    l = l - 1
                 else
 
                    ! Correct the local grid cell index
-                   lun%gridcell(l) = g
+                   lun_pp%gridcell(l) = g
 
                    ! Correct the indices of column associated with the landunit
-                   count       = lun%colf(l) - lun%coli(l)
-                   lun%coli(l) = lun%colf(l-1) + 1
-                   lun%colf(l) = lun%coli(l) + count
+                   count       = lun_pp%colf(l) - lun_pp%coli(l)
+                   lun_pp%coli(l) = lun_pp%colf(l-1) + 1
+                   lun_pp%colf(l) = lun_pp%coli(l) + count
 
                    ! Correct the indices of PFT associated with the landunit
-                   count       = lun%pftf(l) - lun%pfti(l)
-                   lun%pfti(l) = lun%pftf(l-1) + 1
-                   lun%pftf(l) = lun%pfti(l) + count
+                   count       = lun_pp%pftf(l) - lun_pp%pfti(l)
+                   lun_pp%pfti(l) = lun_pp%pftf(l-1) + 1
+                   lun_pp%pftf(l) = lun_pp%pfti(l) + count
                 endif
              endif
 
@@ -729,8 +729,8 @@ contains
     landunit_index = 0
 
     do lidx = bounds_proc%begl_all,  bounds_proc%endl_all
-       if (landunit_index(lun%gridcell(lidx),lun%itype(lidx)) == 0) then
-          landunit_index(lun%gridcell(lidx),lun%itype(lidx)) = lidx
+       if (landunit_index(lun_pp%gridcell(lidx),lun_pp%itype(lidx)) == 0) then
+          landunit_index(lun_pp%gridcell(lidx),lun_pp%itype(lidx)) = lidx
        endif
     enddo
 
@@ -781,10 +781,10 @@ contains
     grid_count(:) = 0.d0
     last_lun_type   = -1
     do l = bounds_proc%begl_all, bounds_proc%endl_all
-       g             = lun%gridcell(l)
-       if (last_lun_type /= lun%itype(l)) then
+       g             = lun_pp%gridcell(l)
+       if (last_lun_type /= lun_pp%itype(l)) then
           grid_count(:) = 0.d0
-          last_lun_type = lun%itype(l)
+          last_lun_type = lun_pp%itype(l)
        endif
        grid_count(g) = grid_count(g) + 1.d0
        lun_rank(l)   = grid_count(g)
@@ -798,7 +798,7 @@ contains
        l = col%landunit(c)
 
        beg_idx            = (g-bounds_proc%begg)*nblocks + ncol(g)*nvals + 1
-       data_send(beg_idx) = real(lun%itype(l))
+       data_send(beg_idx) = real(lun_pp%itype(l))
 
        beg_idx            = beg_idx + 1
        data_send(beg_idx) = lun_rank(l)
@@ -917,8 +917,8 @@ contains
     landunit_index = 0
 
     do lidx = bounds_proc%begl_all,  bounds_proc%endl_all
-       if (landunit_index(lun%gridcell(lidx),lun%itype(lidx)) == 0) then
-          landunit_index(lun%gridcell(lidx),lun%itype(lidx)) = lidx
+       if (landunit_index(lun_pp%gridcell(lidx),lun_pp%itype(lidx)) == 0) then
+          landunit_index(lun_pp%gridcell(lidx),lun_pp%itype(lidx)) = lidx
        endif
     enddo
 
@@ -970,10 +970,10 @@ contains
     grid_count(:) = 0.d0
     last_lun_type   = -1
     do l = bounds_proc%begl_all, bounds_proc%endl_all
-       g             = lun%gridcell(l)
-       if (last_lun_type /= lun%itype(l)) then
+       g             = lun_pp%gridcell(l)
+       if (last_lun_type /= lun_pp%itype(l)) then
           grid_count(:) = 0.d0
-          last_lun_type = lun%itype(l)
+          last_lun_type = lun_pp%itype(l)
        endif
        grid_count(g) = grid_count(g) + 1.d0
        lun_rank(l)   = grid_count(g)
@@ -984,9 +984,9 @@ contains
     last_lun_type   = -1
     do c = bounds_proc%begc_all, bounds_proc%endc_all
        g             = col%gridcell(c)
-       if (last_lun_type /= lun%itype(col%landunit(c))) then
+       if (last_lun_type /= lun_pp%itype(col%landunit(c))) then
           grid_count(:) = 0.d0
-          last_lun_type = lun%itype(col%landunit(c))
+          last_lun_type = lun_pp%itype(col%landunit(c))
        endif
        grid_count(g) = grid_count(g) + 1.d0
        col_rank(c)   = grid_count(g)
@@ -1005,7 +1005,7 @@ contains
        data_send(beg_idx) = real(ctype)
 
        beg_idx            = beg_idx + 1
-       ltype              = lun%itype(pft%landunit(p))
+       ltype              = lun_pp%itype(pft%landunit(p))
        data_send(beg_idx) = real(ltype)
 
        beg_idx            = beg_idx + 1
@@ -1060,7 +1060,7 @@ contains
 
                 pft%gridcell(p) = g
                 pft%landunit(p) = landunit_index(g,ltype) + l_rank - 1
-                pft%column(p)   = lun%coli(pft%landunit(p)) + c_rank - 1
+                pft%column(p)   = lun_pp%coli(pft%landunit(p)) + c_rank - 1
 
              endif
 
@@ -1100,8 +1100,8 @@ contains
     grc%landunit_indices(:,bounds_proc%endg + 1:bounds_proc%endg_all) = ispval
 
     do l = bounds_proc%endl + 1 ,bounds_proc%endl_all
-       ltype = lun%itype(l)
-       curg  = lun%gridcell(l)
+       ltype = lun_pp%itype(l)
+       curg  = lun_pp%gridcell(l)
        if (curg < bounds_proc%begg_all .or. curg > bounds_proc%endg_all) then
           write(iulog,*) 'ERROR: landunit_indices ', l,curg,bounds_proc%begg_all,bounds_proc%endg_all
           call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
@@ -1118,13 +1118,13 @@ contains
 
     do l = bounds_proc%endl + 1, bounds_proc%endl_all
 
-       do c = lun%coli(l), lun%colf(l)
+       do c = lun_pp%coli(l), lun_pp%colf(l)
           if (col%landunit(c) /= l) then
              call endrun(msg="ERROR col%landunit(c) /= l "//errmsg(__FILE__, __LINE__))
           endif
        enddo
 
-       do p = lun%pfti(l), lun%pftf(l)
+       do p = lun_pp%pfti(l), lun_pp%pftf(l)
           if (pft%landunit(p) /= l) then
              call endrun(msg="ERROR pft%landunit(c) /= l "//errmsg(__FILE__, __LINE__))
              stop
