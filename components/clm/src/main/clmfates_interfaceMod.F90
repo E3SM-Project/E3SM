@@ -80,7 +80,7 @@ module CLMFatesInterfaceMod
    use decompMod         , only : get_proc_bounds,   &
                                   get_proc_clumps,   &
                                   get_clump_bounds
-   use GridCellType      , only : grc
+   use GridCellType      , only : grc_pp
    use ColumnType        , only : col_pp
    use LandunitType      , only : lun_pp
    use landunit_varcon   , only : istsoil
@@ -395,8 +395,8 @@ contains
             ! ---------------------------------------------------------------------------
             c = this%f2hmap(nc)%fcolumn(s)
             g = col_pp%gridcell(c)
-            this%fates(nc)%sites(s)%lat = grc%latdeg(g)
-            this%fates(nc)%sites(s)%lon = grc%londeg(g)
+            this%fates(nc)%sites(s)%lat = grc_pp%latdeg(g)
+            this%fates(nc)%sites(s)%lon = grc_pp%londeg(g)
 
          end do
 

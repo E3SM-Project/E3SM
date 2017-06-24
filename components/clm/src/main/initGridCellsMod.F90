@@ -1097,7 +1097,7 @@ contains
 
     call get_proc_bounds(bounds_proc)
 
-    grc%landunit_indices(:,bounds_proc%endg + 1:bounds_proc%endg_all) = ispval
+    grc_pp%landunit_indices(:,bounds_proc%endg + 1:bounds_proc%endg_all) = ispval
 
     do l = bounds_proc%endl + 1 ,bounds_proc%endl_all
        ltype = lun_pp%itype(l)
@@ -1107,8 +1107,8 @@ contains
           call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
        end if
 
-       if (grc%landunit_indices(ltype, curg) == ispval) then
-          grc%landunit_indices(ltype, curg) = l
+       if (grc_pp%landunit_indices(ltype, curg) == ispval) then
+          grc_pp%landunit_indices(ltype, curg) = l
        else
           write(iulog,*) 'CheckGhostSubgridHierarchy ERROR: This landunit type has already been set for this gridcell'
           write(iulog,*) 'l, ltype, curg = ', l, ltype, curg
