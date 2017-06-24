@@ -19,9 +19,6 @@ requirements:
   run:
     - cdp 2017.05.25
     - vcs-nox 2.8
-    - vtk-cdat-nox >=7.1.0.2017.3
-    - mesalib <8
-    - ffmpeg <3
     - cdms2 2.10
     - cdutil 2.10
     - genutil 2.10
