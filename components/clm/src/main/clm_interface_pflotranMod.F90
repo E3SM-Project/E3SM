@@ -591,9 +591,9 @@ contains
     real(r8) :: pf_errnb_org(1:filters(ifilter)%num_soilc)
     real(r8) :: pf_errnb_min(1:filters(ifilter)%num_soilc)
 
-    real(r8) :: pf_errnb_org_vr(1:nlevdecomp_full)
-    real(r8) :: pf_ndelta_org_vr(1:nlevdecomp_full)
-    real(r8) :: pf_ninputs_org_vr(1:nlevdecomp_full)
+    real(r8) :: pf_errnb_org_vr  (1:filters(ifilter)%num_soilc, 1:nlevdecomp_full)
+    real(r8) :: pf_ndelta_org_vr (1:filters(ifilter)%num_soilc, 1:nlevdecomp_full)
+    real(r8) :: pf_ninputs_org_vr(1:filters(ifilter)%num_soilc, 1:nlevdecomp_full)
     !-----------------------------------------------------------------------
 
     associate(                                                                        &
@@ -690,23 +690,6 @@ contains
             gross_nmin(fc)      = gross_nmin(fc)      + gross_nmin_vr(c,j)*dzsoi_decomp(j)
         end do !!j = 1, nlevdecomp
 
-
-        !! check SON balance at each layer
-        pf_errnb_org_vr(:) = 0._r8
-        pf_ndelta_org_vr(:) = 0._r8
-        pf_ninputs_org_vr(:) = 0._r8
-        do j = 1, nlev
-
-            do l = 1, ndecomp_pools
-                pf_ndelta_org_vr(j)  = pf_ndelta_org_vr(j)  + decomp_npools_delta_vr(c,j,l)
-                pf_ninputs_org_vr(j) = pf_ninputs_org_vr(j) + externaln_to_decomp_npools(c,j,l)
-            end do
-            pf_errnb_org_vr(j)    = (pf_ninputs_org_vr(j)                   &  !!- f_ngas_decomp_vr(c,j)
-                        - gross_nmin_vr(c,j) + actual_immob_vr(c,j))*dtime  &
-                        - pf_ndelta_org_vr(j)
-            pf_errnb_org_vr(j)    = pf_errnb_org_vr(j)*dzsoi_decomp(j)
-        end do
-
         pf_nend_org(fc)     = pf_nbeg_org(fc)       + pf_ndelta_org(fc)   !!pf_ndelta_org has been calculated
         pf_nend_min(fc)     = pf_nend_no3(fc)       + pf_nend_nh4(fc) + pf_nend_nh4sorb(fc)
         pf_nend(fc)         = pf_nend_org(fc)       + pf_nend_min(fc)
@@ -716,7 +699,6 @@ contains
         pf_noutputs_gas(fc) = pf_noutputs_nit(fc)   + pf_noutputs_denit(fc)
         pf_noutputs(fc)     = pf_noutputs_gas(fc)   + pf_noutputs_veg(fc)
         pf_errnb(fc)        = (pf_ninputs(fc) - pf_noutputs(fc))*dtime - pf_ndelta(fc)
-!write(iulog,*)'>>>DEBUG | pflotran nbalance error = ', pf_errnb, c, get_nstep()
 
         pf_errnb_org(fc)    = (pf_ninputs_org(fc)                   &
                             - gross_nmin(fc) + actual_immob(fc))*dtime  &
@@ -729,6 +711,21 @@ contains
             err_found = .true.
             err_index = fc
         end if
+
+        !! check SON balance at each layer,
+        pf_errnb_org_vr(fc,:) = 0._r8
+        pf_ndelta_org_vr(fc,:) = 0._r8
+        pf_ninputs_org_vr(fc,:) = 0._r8
+        do j = 1, nlev
+            do l = 1, ndecomp_pools
+                pf_ndelta_org_vr(fc,j)  = pf_ndelta_org_vr(fc,j)  + decomp_npools_delta_vr(c,j,l)
+                pf_ninputs_org_vr(fc,j) = pf_ninputs_org_vr(fc,j) + externaln_to_decomp_npools(c,j,l)
+            end do
+            pf_errnb_org_vr(fc,j)    = (pf_ninputs_org_vr(fc,j)                   &
+                        - gross_nmin_vr(c,j) + actual_immob_vr(c,j))*dtime  &
+                        - pf_ndelta_org_vr(fc,j)
+            pf_errnb_org_vr(fc,j)    = pf_errnb_org_vr(fc,j)*dzsoi_decomp(j)
+        end do
     end do
 
     if (.not. use_ed) then
@@ -759,15 +756,15 @@ contains
                                     pf_noutputs_nit(fc)*dtime,pf_noutputs_denit(fc)*dtime,          &
                                     pf_noutputs_gas(fc)*dtime,pf_noutputs_veg(fc)*dtime,            &
                                     plant_ndemand(fc)*dtime,pf_ngas_dec(fc)*dtime,pf_ngas_min(fc)*dtime
-
+!            ! close output currently
 !            write(iulog,*)
 !            write(iulog,'(A10,20A15)')  "Layer","errbn_org","ndelta_org","ninputs","gross_nmin","actual_immob"
 !            do j = 1, nlev
-!                write(iulog,'(I10,15E15.6)')j,pf_errnb_org_vr(j),                           &
-!                                            pf_ndelta_org_vr(j)*dzsoi_decomp(j),            &
-!                                            pf_ninputs_org_vr(j)*dtime*dzsoi_decomp(j),     &
-!                                            f_ngas_decomp_vr(c,j)*dtime*dzsoi_decomp(j),    &
-!                                            gross_nmin_vr(c,j)*dtime*dzsoi_decomp(j),       &
+!                write(iulog,'(I10,15E15.6)')j,pf_errnb_org_vr(fc,j),                           &
+!                                            pf_ndelta_org_vr(fc,j)*dzsoi_decomp(j),            &
+!                                            pf_ninputs_org_vr(fc,j)*dtime*dzsoi_decomp(j),     &
+!                                            f_ngas_decomp_vr(c,j)*dtime*dzsoi_decomp(j),       &
+!                                            gross_nmin_vr(c,j)*dtime*dzsoi_decomp(j),          &
 !                                            actual_immob_vr(c,j)*dtime*dzsoi_decomp(j)
 
 !            end do
