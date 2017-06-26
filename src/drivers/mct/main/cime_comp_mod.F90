@@ -1,4 +1,4 @@
-module cesm_comp_mod
+module cime_comp_mod
 
 !-------------------------------------------------------------------------------
 !
@@ -177,7 +177,7 @@ module cesm_comp_mod
 
    private
 
-   public cesm_pre_init1, cesm_pre_init2, cesm_init, cesm_run, cesm_final
+   public cime_pre_init1, cime_pre_init2, cime_init, cime_run, cime_final
    public timing_dir, mpicom_GLOID
 
 #include <mpif.h>
@@ -585,7 +585,7 @@ contains
 !*******************************************************************************
 !===============================================================================
 
-subroutine cesm_pre_init1()
+subroutine cime_pre_init1()
    use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
 
    !----------------------------------------------------------
@@ -790,13 +790,13 @@ subroutine cesm_pre_init1()
    !
    call shr_pio_init2(comp_id,comp_name,comp_iamin,comp_comm,comp_comm_iam)
 
-end subroutine cesm_pre_init1
+end subroutine cime_pre_init1
 
 !===============================================================================
 !*******************************************************************************
 !===============================================================================
 
-subroutine cesm_pre_init2()
+subroutine cime_pre_init2()
    use pio, only : file_desc_t, pio_closefile, pio_file_is_open
    use shr_const_mod, only: shr_const_tkfrz, shr_const_tktrip, &
         shr_const_mwwv, shr_const_mwdair
@@ -820,7 +820,7 @@ subroutine cesm_pre_init2()
    ! Print Model heading and copyright message
    !----------------------------------------------------------
 
-   if (iamroot_CPLID) call seq_cesm_printlogheader()
+   if (iamroot_CPLID) call seq_cime_printlogheader()
 
    !----------------------------------------------------------
    !| Timer initialization (has to be after mpi init)
@@ -839,7 +839,7 @@ subroutine cesm_pre_init2()
    call t_startf('CPL:INIT')
    call t_adj_detailf(+1)
 
-   call t_startf('CPL:cesm_pre_init2')
+   call t_startf('CPL:cime_pre_init2')
    !----------------------------------------------------------
    !| Memory test
    !----------------------------------------------------------
@@ -1115,18 +1115,18 @@ subroutine cesm_pre_init2()
       call pio_closefile(pioid)
    endif
 
-   call t_stopf('CPL:cesm_pre_init2')
+   call t_stopf('CPL:cime_pre_init2')
 
    call t_adj_detailf(-1)
    call t_stopf('CPL:INIT')
 
-end subroutine cesm_pre_init2
+end subroutine cime_pre_init2
 
 !===============================================================================
 !*******************************************************************************
 !===============================================================================
 
-subroutine cesm_init()
+subroutine cime_init()
 
  101  format( A, 2i8, 12A, A, F8.2, A, F8.2 )
  102  format( A, 2i8, A, 8L3 )
@@ -1146,7 +1146,7 @@ subroutine cesm_init()
    !  components will set them to true for the purposes of symmetry
    !-----------------------------------------------------------------------------
 
-   call t_startf('cesm_init')
+   call t_startf('cime_init')
    call t_adj_detailf(+1)
 
    call t_startf('CPL:init_comps')
@@ -2058,15 +2058,15 @@ subroutine cesm_init()
    endif
 
    call t_adj_detailf(-1)
-   call t_stopf('cesm_init')
+   call t_stopf('cime_init')
 
-end subroutine cesm_init
+end subroutine cime_init
 
  !===============================================================================
  !*******************************************************************************
  !===============================================================================
 
- subroutine cesm_run()
+ subroutine cime_run()
    use seq_comm_mct,   only: atm_layout, lnd_layout, ice_layout, glc_layout,  &
         rof_layout, ocn_layout, wav_layout, esp_layout
    use shr_string_mod, only: shr_string_listGetIndexF
@@ -3891,13 +3891,13 @@ end subroutine cesm_init
 
    Time_end = mpi_wtime()
 
- end subroutine cesm_run
+ end subroutine cime_run
 
 !===============================================================================
 !*******************************************************************************
 !===============================================================================
 
- subroutine cesm_final()
+ subroutine cime_final()
 
    use shr_pio_mod, only : shr_pio_finalize
    use shr_wv_sat_mod, only: shr_wv_sat_final
@@ -3910,7 +3910,7 @@ end subroutine cesm_init
    call t_startf ('CPL:FINAL')
    call t_adj_detailf(+1)
 
-   call t_startf('cesm_final')
+   call t_startf('cime_final')
    call t_adj_detailf(+1)
 
    call seq_timemgr_EClockGetData( EClock_d, stepno=endstep)
@@ -3958,7 +3958,7 @@ end subroutine cesm_init
    endif
 
    call t_adj_detailf(-1)
-   call t_stopf('cesm_final')
+   call t_stopf('cime_final')
 
    call t_startf("final:sync1_tprof")
    call mpi_barrier(mpicom_GLOID,ierr)
@@ -3978,13 +3978,13 @@ end subroutine cesm_init
 
    call t_finalizef()
 
-end subroutine cesm_final
+end subroutine cime_final
 
 !===============================================================================
 !*******************************************************************************
 !===============================================================================
 
-subroutine seq_cesm_printlogheader()
+subroutine seq_cime_printlogheader()
 
   !-----------------------------------------------------------------------
   !
@@ -4015,10 +4015,10 @@ subroutine seq_cesm_printlogheader()
   ctime(6:6) = ':'
   ctime(7:8) = time(5:6)
   write(logunit,F00) '------------------------------------------------------------'
-  write(logunit,F00) '        NCAR CPL7 Community Earth System Model (CESM)  '
+  write(logunit,F00) '    Common Infrastructure for Modeling the Earth CIME CPL7  '
   write(logunit,F00) '------------------------------------------------------------'
-  write(logunit,F00) '     (Online documentation is available on the CESM         '
-  write(logunit,F00) '      Models page: http://www.cesm.ucar.edu/models/         '
+  write(logunit,F00) '     (Online documentation is available on the CIME         '
+  write(logunit,F00) '      github: http://esmci.github.io/cime/                  '
   write(logunit,F00) '      License information is available as a link from above '
   write(logunit,F00) '------------------------------------------------------------'
   write(logunit,F00) '                DATE ',cdate, ' TIME ', ctime
@@ -4026,7 +4026,7 @@ subroutine seq_cesm_printlogheader()
   write(logunit,*)' '
   write(logunit,*)' '
 
-end subroutine seq_cesm_printlogheader
+end subroutine seq_cime_printlogheader
 
 !===============================================================================
 
@@ -4042,4 +4042,4 @@ subroutine cesm_comp_barriers(mpicom, timer)
   endif
 end subroutine cesm_comp_barriers
 
-end module cesm_comp_mod
+end module cime_comp_mod
