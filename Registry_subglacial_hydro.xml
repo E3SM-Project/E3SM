@@ -106,6 +106,10 @@
                             description="calculate time-varying forcing specified by SHMIP experiments C or D"
 		            possible_values="'none', 'C1'-'C4', 'D1'-'D5'"
 		/>
+        <nml_option name="config_SGH_basal_melt" type="character" default_value="file" units="none"
+                            description="input for the basal melt"
+		            possible_values="'file', 'thermal'"
+		/>
 
 	</nml_record>
 
