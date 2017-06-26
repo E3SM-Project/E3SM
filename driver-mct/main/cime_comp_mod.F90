@@ -2,7 +2,7 @@ module cime_comp_mod
 
 !-------------------------------------------------------------------------------
 !
-! Purpose: Main program for NCAR CESM4/cpl7. Can have different
+! Purpose: Main program for CIME cpl7. Can have different
 !          land, sea-ice, and ocean models plugged in at compile-time.
 !          These models can be either: stub, dead, data, or active
 !          components or some combination of the above.
@@ -1138,7 +1138,7 @@ subroutine cime_init()
    !-----------------------------------------------------------------------------
    !| Component Initialization
    !  Note that within each component initialization, the relevant x_present flag
-   !  part of CESMInit can be modified
+   !  part of CIMEInit can be modified
    !  By default, all these flags are set to true
    !  The atm can reset the lnd_present, ice_present and ocn_present flags based
    !  on aqua_planet, ideal_phys and adiabatic modes
@@ -2246,7 +2246,7 @@ end subroutine cime_init
       !----------------------------------------------------------
 
       if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
          call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2263,7 +2263,7 @@ end subroutine cime_init
       if ((trim(cpl_seq_option) == 'RASM_OPTION1') .and. &
            iamin_CPLID .and. ocn_present) then
 
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCN1_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCN1_BARRIER')
          call t_drvstartf ('CPL:ATMOCN1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(4))
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2347,7 +2347,7 @@ end subroutine cime_init
          !----------------------------------------------------------
 
          if (do_budgets) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
             call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
             xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
             call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
@@ -2393,7 +2393,7 @@ end subroutine cime_init
          !----------------------------------------------------
 
          if (iamin_CPLID .and. ocn_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPREP_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPREP_BARRIER')
             call t_drvstartf ('CPL:OCNPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2434,7 +2434,7 @@ end subroutine cime_init
          !----------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:LNDPREP_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:LNDPREP_BARRIER')
             call t_drvstartf ('CPL:LNDPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2481,7 +2481,7 @@ end subroutine cime_init
          !----------------------------------------------------
 
          if (iamin_CPLID .and. ice_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPREP_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPREP_BARRIER')
 
             call t_drvstartf ('CPL:ICEPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -2533,7 +2533,7 @@ end subroutine cime_init
          !----------------------------------------------------------
 
          if (iamin_CPLID .and. wav_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:WAVPREP_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:WAVPREP_BARRIER')
 
             call t_drvstartf ('CPL:WAVPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -2584,7 +2584,7 @@ end subroutine cime_init
          !----------------------------------------------------
 
          if (iamin_CPLID .and. rof_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ROFPREP_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ROFPREP_BARRIER')
 
             call t_drvstartf ('CPL:ROFPREP', cplrun=.true., barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -2710,7 +2710,7 @@ end subroutine cime_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOSTT_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOSTT_BARRIER')
             call t_drvstartf  ('CPL:OCNPOSTT',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2733,7 +2733,7 @@ end subroutine cime_init
            trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' ) .and. &
            iamin_CPLID .and. ocn_present) then
 
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCNP_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCNP_BARRIER')
          call t_drvstartf ('CPL:ATMOCNP',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(7))
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2847,7 +2847,7 @@ end subroutine cime_init
          !----------------------------------------------------------
 
          if (do_budgets) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
             call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
             xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
             call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
@@ -2881,7 +2881,7 @@ end subroutine cime_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:LNDPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:LNDPOST_BARRIER')
             call t_drvstartf  ('CPL:LNDPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2912,7 +2912,7 @@ end subroutine cime_init
          !----------------------------------------------------
 
          if (iamin_CPLID .and. glc_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPREP_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPREP_BARRIER')
             call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2985,7 +2985,7 @@ end subroutine cime_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ROFPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ROFPOST_BARRIER')
             call t_drvstartf  ('CPL:ROFPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3010,7 +3010,7 @@ end subroutine cime_init
 
       if (rof_present) then
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ROFPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ROFPOST_BARRIER')
             call t_drvstartf  ('DRIVER_ROFPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
             if (do_hist_r2x) then
@@ -3039,7 +3039,7 @@ end subroutine cime_init
       ! consistent with the ocean coupling
 
       if (iamin_CPLID .and. do_budgets) then
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET1_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET1_BARRIER')
          call t_drvstartf ('CPL:BUDGET1',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
          if (lnd_present) then
             call seq_diag_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, &
@@ -3079,7 +3079,7 @@ end subroutine cime_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPOST_BARRIER')
             call t_drvstartf  ('CPL:ICEPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3096,7 +3096,7 @@ end subroutine cime_init
       !----------------------------------------------------------
 
       if (iamin_CPLID) then
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:FRACSET_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:FRACSET_BARRIER')
          call t_drvstartf ('CPL:FRACSET',cplrun=.true.,barrier=mpicom_CPLID)
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
          call t_drvstartf ('CPL:fracset_fracset',barrier=mpicom_CPLID)
@@ -3120,7 +3120,7 @@ end subroutine cime_init
       if ((trim(cpl_seq_option) == 'RASM_OPTION2') .and. &
            iamin_CPLID .and. ocn_present) then
 
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCN2_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCN2_BARRIER')
          call t_drvstartf ('CPL:ATMOCN2',cplrun=.true.,barrier=mpicom_CPLID)
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3204,7 +3204,7 @@ end subroutine cime_init
          !----------------------------------------------------------
 
          if (do_budgets) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
             call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
             xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
             call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
@@ -3246,7 +3246,7 @@ end subroutine cime_init
          !----------------------------------------------------
 
          if (iamin_CPLID .and. ocn_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE2_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE2_BARRIER')
             call t_drvstartf ('CPL:OCNPRE2',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3287,7 +3287,7 @@ end subroutine cime_init
          !----------------------------------------------------------
 
          if (iamin_CPLID .and. atm_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMPREP_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMPREP_BARRIER')
             call t_drvstartf ('CPL:ATMPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3400,7 +3400,7 @@ end subroutine cime_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:WAVPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:WAVPOST_BARRIER')
             call t_drvstartf  ('CPL:WAVPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3434,7 +3434,7 @@ end subroutine cime_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPOST_BARRIER')
             call t_drvstartf  ('CPL:GLCPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3480,7 +3480,7 @@ end subroutine cime_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMPOST_BARRIER')
             call t_drvstartf ('CPL:ATMPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3497,7 +3497,7 @@ end subroutine cime_init
       !----------------------------------------------------------
 
       if (iamin_CPLID .and. do_budgets) then
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET2_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET2_BARRIER')
 
          call t_drvstartf ('CPL:BUDGET2',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
          if (atm_present) then
@@ -3549,7 +3549,7 @@ end subroutine cime_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOST_BARRIER')
             call t_drvstartf  ('CPL:OCNPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3566,7 +3566,7 @@ end subroutine cime_init
       !----------------------------------------------------------
 
       if ( (restart_alarm .or. drv_pause) .and. iamin_CPLID) then
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_BARRIER')
          call t_drvstartf ('CPL:RESTART',cplrun=.true.,barrier=mpicom_CPLID)
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
          if (iamroot_CPLID) then
@@ -3589,7 +3589,7 @@ end subroutine cime_init
 
       if (iamin_CPLID) then
 
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:HISTORY_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:HISTORY_BARRIER')
          call t_drvstartf ('CPL:HISTORY',cplrun=.true.,barrier=mpicom_CPLID)
          if ( history_alarm) then
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -4030,7 +4030,7 @@ end subroutine seq_cime_printlogheader
 
 !===============================================================================
 
-subroutine cesm_comp_barriers(mpicom, timer)
+subroutine cime_comp_barriers(mpicom, timer)
   integer         , intent(in) :: mpicom
   character(len=*), intent(in) :: timer
   integer :: ierr
@@ -4040,6 +4040,6 @@ subroutine cesm_comp_barriers(mpicom, timer)
      call mpi_barrier(mpicom,ierr)
      call t_drvstopf (trim(timer))
   endif
-end subroutine cesm_comp_barriers
+end subroutine cime_comp_barriers
 
 end module cime_comp_mod
