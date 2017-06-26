@@ -217,11 +217,8 @@ class GenericXML(object):
             logger.debug("look for {} in env".format(item_data))
             env_var = m.groups()[0]
             env_var_exists = env_var in os.environ
-            if 'EMAIL' in env_var and not env_var_exists:
-                item_date = item_data.replace(m.group, '')
-            else:
-                expect(env_var_exists, "Undefined env var '{}'".format(env_var))
-                item_data = item_data.replace(m.group(), os.environ[env_var])
+            expect(env_var_exists, "Undefined env var '{}'".format(env_var))
+            item_data = item_data.replace(m.group(), os.environ[env_var])
 
         for s in shell_ref_re.finditer(item_data):
             logger.debug("execute {} in shell".format(item_data))

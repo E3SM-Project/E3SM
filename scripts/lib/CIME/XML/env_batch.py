@@ -427,11 +427,11 @@ class EnvBatch(EnvBase):
             submitargs += " " + batch_args
 
         if mail_user is not None:
-            mail_user_flag = get_batch_mail_flag(batch_system)
+            mail_user_flag = self.get_batch_mail_flag(batch_system)
             if mail_user_flag is not None:
                 submitargs += " " + mail_user_flag + " " + mail_user
         if 'never' not in mail_type:
-            mail_type_flag, mail_type = get_batch_mail_type(batch_system, mail_type)
+            mail_type_flag, mail_type = self.get_batch_mail_type(batch_system, mail_type)
             if mail_type_flag is not None:
                 submitargs += " " + mail_type_flag + " " + mail_type
 
@@ -456,26 +456,26 @@ class EnvBatch(EnvBase):
             logger.info("Submitted job id is {}".format(jobid))
             return jobid
 
-    def get_batch_mail_flag(batch_system):
+    def get_batch_mail_flag(self, batch_system):
         mail_user_flag = {
             'none' : None,
             'cobalt' : '-M',
             'cobalt_theta' : '-M',
             'pbs' : '-M',
-            'slurm' : '--mail_user',
+            'slurm' : '--mail-user',
             'lsf' : '-u',
         }
 
         return mail_user_flag[batch_system]
 
-    def get_batch_mail_type(batch_system, mail_type='never'):
+    def get_batch_mail_type(self, batch_system, mail_type='never'):
         mail_type_flag = {
             'none' : None,
             'cobalt' : None,
             'cobalt_theta' : None,
             'lsf' : None,
             'pbs' : '-m',
-            'slurm' : '--mail_type',
+            'slurm' : '--mail-type',
         }
 
         batch_mail_type = {
