@@ -226,6 +226,7 @@ module li_subglacial_hydro
       ! Pools pointers
       logical, pointer :: config_SGH
       logical, pointer :: config_SGH_chnl_active
+      character (len=StrKIND), pointer :: config_SGH_basal_melt
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: hydroPool
@@ -236,6 +237,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:,:), pointer :: temperature, flowParamA
       real (kind=RKIND), dimension(:), pointer :: Wtill, WtillOld
       real (kind=RKIND), dimension(:), pointer :: basalMeltInput
+      real (kind=RKIND), dimension(:), pointer :: groundedBasalMassBal
       real (kind=RKIND), dimension(:), pointer :: externalWaterInput
       real (kind=RKIND), dimension(:), pointer :: divergence
       real (kind=RKIND), dimension(:), pointer :: waterFlux
@@ -281,7 +283,7 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_active', config_SGH_chnl_active)
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_drainage', Cd)
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_max', tillMax)
-
+      call mpas_pool_get_config(liConfigs, 'config_SGH_basal_melt', config_SGH_basal_melt)
 
       block => domain % blocklist
       do while (associated(block))
@@ -342,6 +344,15 @@ module li_subglacial_hydro
          call mpas_pool_get_array(hydroPool, 'basalMeltInput', basalMeltInput)
          call mpas_pool_get_array(hydroPool, 'externalWaterInput', externalWaterInput)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+
+         ! Decide where the basal melt input comes from 
+         ! Either prescribed or from the temperature model
+         if (trim(config_SGH_basal_melt) == 'file') then
+             ! do nothing
+         elseif (trim(config_SGH_basal_melt) == 'thermal') then
+             call mpas_pool_get_array(geometryPool,'groundedBasalMassBal',groundedBasalMassBal)
+             basalMeltInput = -1.0 * groundedBasalMassBal ! TODO: Ensure positive flux? 
+         endif
 
          WtillOld = Wtill
          Wtill = Wtill + deltatSGH * ( (basalMeltInput + externalWaterInput) / rho_water - Cd)
