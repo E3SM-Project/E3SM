@@ -254,10 +254,8 @@ def _create_component_modelio_namelists(case, files):
             config = {}
             config['component'] = model
             entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=True)
-            if model == "cpl":
-                inst_count = case.get_value("COUPLER_COUNT")
-            else:
-                inst_count = case.get_value("NINST_" + model.upper())
+
+            inst_count = case.get_value("NINST_" + model.upper())
 
             inst_string = ""
             inst_index = 1
