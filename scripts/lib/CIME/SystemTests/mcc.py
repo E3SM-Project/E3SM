@@ -2,8 +2,7 @@
 Implemetation of CIME MCC test: Compares ensemble methods
 
 This does two runs: In the first we run a three member ensemble using the
-original multi component single coupler method and in the second we use
-the new multi coupler method.  We then compare results with the expectation that they are bfb
+ MULTI_COUPLER capability, then we run a second single instance case and compare
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
@@ -19,13 +18,14 @@ class MCC(SystemTestsCompareTwo):
         self._test_instances = 3
         SystemTestsCompareTwo.__init__(self, case,
                                        separate_builds = False,
-                                       run_two_suffix = 'multicoupler',
-                                       run_one_description = 'single instance',
-                                       run_two_description = 'multi coupler')
+                                       run_two_suffix = 'single_instance',
+                                       run_two_description = 'single instance',
+                                       run_one_description = 'multi coupler')
 
     def _case_one_setup(self):
         # The multicoupler case will increase the number of tasks by the
         # number of requested couplers.
+        self._case.set_value("MULTI_COUPLER",True)
         self._case.set_value("NINST_CPL", self._test_instances)
         case_setup(self._case, test_mode=False, reset=True)
 

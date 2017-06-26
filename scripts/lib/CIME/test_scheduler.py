@@ -411,7 +411,7 @@ class TestScheduler(object):
                 if case_opt.startswith('C'):
                     expect(ninst == 1,"Cannot combine _C and _N options")
                     ncpl = case_opt[1:]
-                    create_newcase_cmd += " --ninst {} --ninst-couplers" .format(ncpl)
+                    create_newcase_cmd += " --ninst {} --multi-coupler" .format(ncpl)
                     logger.debug (" NCPL set to {}" .format(ncpl))
                 if case_opt.startswith('P'):
                     pesize = case_opt[1:]

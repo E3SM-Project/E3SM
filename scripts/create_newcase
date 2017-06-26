@@ -46,13 +46,13 @@ OR
                         help="Specify a compiler. "
                         "To see list of supported compilers for each machine, use the utility query_config in this directory")
 
-    parser.add_argument("--ninst-couplers",action="store_true",
+    parser.add_argument("--multi-coupler",action="store_true",
                         help="Specify that ninst should modify number of coupler instances "
                         "default is to have one coupler supporting multiple component instances.")
 
     parser.add_argument("--ninst",default=1,
                         help="Specify number of model ensemble instances. "
-                        "Default is multiple components and one coupler.  Use --ninst-couplers to "
+                        "Default is multiple components and one coupler.  Use --multi-coupler to "
                         "run multiple couplers in the ensemble.")
 
     parser.add_argument("--mpilib", "-mpilib",
@@ -157,7 +157,7 @@ OR
     if args.input_dir is not None:
         args.input_dir = os.path.abspath(args.input_dir)
 
-    if args.ninst_couplers:
+    if args.multi_coupler:
         ncouplers = args.ninst
         ninst = 1
     else:

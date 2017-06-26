@@ -1951,7 +1951,8 @@
 
   <entry id="MULTI_COUPLER">
     <type>logical</type>
-    <default_value>False</default_value>
+    <default_value>FALSE</default_value>
+    <valid_values>TRUE,FALSE</valid_values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
     <desc>MULTI_COUPLER mode provides a separate coupler component for each

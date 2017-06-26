@@ -74,30 +74,17 @@ def create_namelists(case, component=None):
         model_str = model.lower()
         config_file = case.get_value("CONFIG_{}_FILE".format(model_str.upper()))
         config_dir = os.path.dirname(config_file)
-        # Multicoupler mode (coupler_count > 1) must temporarily change
-        # NINST and NTASKS settings so that the component buildnml scripts
-        # will work correctly.  After the call to buildnml the original values
-        # are restored.
+        multicoupler = case.get_value("MULTI_COUPLER")
         if model_str == "cpl":
             compname = "drv"
         else:
             compname = case.get_value("COMP_{}".format(model_str.upper()))
-
-            complist = [m for m in models if m.upper() != "CPL"]
-            if cpl_ninst > 1:
-                xmlfac = {"NINST" : cpl_ninst, "NTASKS" : 1}
-        else:
-            compname = case.get_value("COMP_{}".format(model_str.upper()))
-            complist = [model_str.upper()]
-            if cpl_ninst > 1:
-                xmlfac = {"NINST" : cpl_ninst, "NTASKS" : cpl_ninst}
-
-        xmlsave = {}
-        for k in xmlfac.keys():
-            for m in complist:
-                key = "{}_{}" .format(k, m.upper())
-                xmlsave[key] = case.get_value(key)
-
+        # Multicoupler mode (MULTI_COUPLER ) must temporarily change
+        # NINST and NTASKS settings so that the component buildnml scripts
+        # will work correctly.  After the call to buildnml the original values
+        # are restored.
+        if multicoupler and model_str != "cpl":
+            case.set_value("MULTI_COUPLER",False)
         if component is None or component == model_str:
             # first look in the case SourceMods directory
             cmd = os.path.join(caseroot, "SourceMods", "src."+compname, "buildnml")
@@ -109,6 +96,8 @@ def create_namelists(case, component=None):
             expect(os.path.isfile(cmd), "Could not find buildnml file for component {}".format(compname))
             run_sub_or_cmd(cmd, (caseroot), "buildnml", (case, caseroot, compname), case=case)
 
+        if multicoupler and model_str != "cpl":
+            case.set_value("MULTI_COUPLER",True)
     logger.info("Finished creating component namelists")
 
     # Save namelists to docdir

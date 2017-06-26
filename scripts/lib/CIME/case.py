@@ -727,12 +727,14 @@ class Case(object):
         for compclass in self._component_classes:
             key = "NINST_{}".format(compclass)
             if compclass == "CPL":
-                mach_pes_obj.set_value(key, ncouplers)
+                if ncouplers > 1:
+                    mach_pes_obj.set_value("MULTI_COUPLER", True)
+                    mach_pes_obj.set_value(key, ncouplers)
                 continue
             # ESP models are currently limited to 1 instance
             if compclass == "ESP":
                 mach_pes_obj.set_value(key, 1)
-            else:
+            elif ncouplers == 1:
                 mach_pes_obj.set_value(key, ninst)
 
             key = "NTASKS_{}".format(compclass)

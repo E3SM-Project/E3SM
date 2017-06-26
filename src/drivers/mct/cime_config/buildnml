@@ -248,8 +248,9 @@ def _create_component_modelio_namelists(case, files):
     confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
     lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")
 
-    models = ["cpl", "atm", "lnd", "ice", "ocn", "glc", "rof", "wav", "esp"]
+    models = case.get_values("COMP_CLASSES")
     for model in models:
+        model = model.lower()
         with NamelistGenerator(case, definition_file) as nmlgen:
             config = {}
             config['component'] = model

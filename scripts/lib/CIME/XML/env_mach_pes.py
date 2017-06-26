@@ -25,31 +25,51 @@ class EnvMachPes(EnvBase):
         Returns the value or None if not found
         subgroup is ignored in the general routine and applied in specific methods
         """
-        oldcomps = self._components
+        oldcomps = self._components[:]
         nvid, comp, iscompvar = self.check_if_comp_var(vid, None)
         if nvid == "NINST":
             if self.get_value("MULTI_COUPLER"):
-                self._components = "CPL"
+                self._components = ["CPL"]
                 if comp is None:
                     comp = "CPL"
-                expect(comp == "CPL","Cannot change {} when MULTI_COUPLER flag is True".format(vid))
-            else:
-                expect(comp is None or comp != "CPL","Cannot change NINST_CPL if MULTI_COUPLER flag is False")
+                expect(comp == "CPL" or value == 1,"Cannot change {} when MULTI_COUPLER flag is TRUE".format(vid))
+            elif value != 1:
+                if 'CPL' in self._components:
+                    self._components.remove('CPL')
+                if 'ESP' in self._components and value != 1:
+                    self._components.remove('ESP')
+                expect(comp is None or comp != "CPL","Cannot change NINST_CPL if MULTI_COUPLER flag is FALSE")
+        # Toggling the
         if vid == "MULTI_COUPLER":
             oldval = self.get_value("MULTI_COUPLER")
-            if oldval != value:
-                newval = EnvBase.set_value(self, vid, value,subgroup=subgroup, ignore_type=ignore_type)
-                if value:
-                    maxinst = 1
-                    for tcomp in self._components:
-                        tcomp_inst = "NINST_{}".format(tcomp)
-                        maxinst = max(1, self.get_value(tcomp))
-                        EnvBase.set_value(self,tcomp_inst, 1)
+            newval = EnvBase.set_value(self, vid, value,subgroup=subgroup, ignore_type=ignore_type)
+            if value:
+                maxinst = 1
+                for tcomp in self._components:
+                    if tcomp in ["CPL"]:
+                        continue
+                    tcomp_inst = "NINST_{}".format(tcomp)
+                    maxinst = max(maxinst, self.get_value(tcomp_inst))
+                    EnvBase.set_value(self,tcomp_inst, 1)
                     self.set_value("NINST_CPL", maxinst)
-                else:
-                    ninst = self.get_value("NINST_CPL")
-                    newval = EnvBase.set_value(self, vid, value,subgroup=subgroup, ignore_type=ignore_type)
-                    EnvBase.set_value(self, "NINST", ninst)
+            else:
+                ninst = self.get_value("NINST_CPL")
+                newval = EnvBase.set_value(self, vid, value,subgroup=subgroup, ignore_type=ignore_type)
+                cpl_index = None
+                esp_index = None
+                if 'CPL' in self._components:
+                    cpl_index = self._components.index('CPL')
+                    del self._components[cpl_index]
+                if 'ESP' in self._components:
+                    esp_index = self._components.index('ESP')
+                    del self._components[esp_index]
+
+                EnvBase.set_value(self, "NINST", ninst)
+                if cpl_index is not None:
+                    self._components.insert(cpl_index,'CPL')
+                if esp_index is not None:
+                    self._components.insert(esp_index,'ESP')
+                EnvBase.set_value(self, "NINST_CPL", 1)
         else:
             newval = EnvBase.set_value(self, vid, value,subgroup=subgroup, ignore_type=ignore_type)
         self._components = oldcomps
@@ -99,7 +119,8 @@ class EnvMachPes(EnvBase):
             pstrid = self.get_value("PSTRID", attribute={"component":comp})
             tt = rootpe + (ntasks - 1) * pstrid + 1
             total_tasks = max(tt, total_tasks)
-        total_tasks *= self.get_value("NINST_CPL")
+        if self.get_value("MULTI_COUPLER"):
+            total_tasks *= self.get_value("NINST_CPL")
         return total_tasks
 
     def get_tasks_per_node(self, total_tasks, max_thread_count):
