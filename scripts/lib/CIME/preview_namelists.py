@@ -66,8 +66,6 @@ def create_namelists(case, component=None):
     # Create namelists - must have cpl last in the list below
     # Note - cpl must be last in the loop below so that in generating its namelist,
     # it can use xml vars potentially set by other component's buildnml scripts
-    xmlfac = {}
-    cpl_ninst = case.get_value("NINST_CPL")
     models = case.get_values("COMP_CLASSES")
     models += [models.pop(0)]
     for model in models:

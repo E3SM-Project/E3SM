@@ -26,7 +26,7 @@ class EnvMachPes(EnvBase):
         subgroup is ignored in the general routine and applied in specific methods
         """
         oldcomps = self._components[:]
-        nvid, comp, iscompvar = self.check_if_comp_var(vid, None)
+        nvid, comp, _ = self.check_if_comp_var(vid, None)
         if nvid == "NINST":
             if self.get_value("MULTI_COUPLER"):
                 self._components = ["CPL"]
@@ -41,7 +41,6 @@ class EnvMachPes(EnvBase):
                 expect(comp is None or comp != "CPL","Cannot change NINST_CPL if MULTI_COUPLER flag is FALSE")
         # Toggling the
         if vid == "MULTI_COUPLER":
-            oldval = self.get_value("MULTI_COUPLER")
             newval = EnvBase.set_value(self, vid, value,subgroup=subgroup, ignore_type=ignore_type)
             if value:
                 maxinst = 1

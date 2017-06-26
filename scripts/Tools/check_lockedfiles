@@ -41,7 +41,7 @@ def _main_func(description):
 
     caseroot = parse_command_line(sys.argv, description)
 
-    with Case(read_only=True) as case:
+    with Case(case_root=caseroot, read_only=True) as case:
         check_lockedfiles(case)
 
 if __name__ == "__main__":
