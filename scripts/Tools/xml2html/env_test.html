@@ -1,0 +1,137 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=ASCII" />
+    <title>CESM CASEROOT env_test.xml file</title>
+    <style type="text/css">
+	  body {
+          font-family:'Open Sans', Arial, sans-serif;
+          font-size:14px;
+          font-weight:300;
+          line-height:1.6em;
+          color:#656565;
+          width: 90%;
+          align: center;
+	  }
+
+	  .container {
+          padding: 0 30px 0 30px;
+          padding-top: 0px;
+          padding-right: 30px;
+          padding-bottom: 30px;
+          padding-left: 30px;
+          position: relative;
+	  }
+      
+	  dt { color:#656565; font-weight: bold }
+
+	  .accordionItem h2 { margin: 0; font-size: 1.1em; padding: 0.4em; color: #000; background-color: #E3E4E6; border-bottom: 1px solid #66d; width: 90%}
+	  .accordionItem h2:hover { cursor: pointer; }
+	  .accordionItem div { margin: 0; padding: 1em 0.4em; background-color: #eef; border-bottom: 1px solid #66d; width: 90%}
+	  .accordionItem.hide h2 { color: #000; background-color: #E3E4E6; width: 90%}
+      
+	  .detailsBtn { background-color: #E3E4E6; }
+
+	  #variable { color:#66d; font-size: 1.2em; font-weight: bold; display: inline-block; margin-right: 30px; width: 550px; }
+	  #emphasis { color:#656565; font-weight: bold; display: inline-block; }
+	  #small { color:#9f9f9f; display: inline-block; }
+
+	</style>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script type="text/javascript">
+	// 
+	var accordionItems = new Array();
+
+	function init() {
+	  // Grab the accordion items from the page
+	  var divs = document.getElementsByTagName( 'div' );
+	  for ( var i = 0; i < divs.length; i++ ) {
+	    if ( divs[i].className == 'accordionItem' ) accordionItems.push( divs[i] );
+	  }
+	  // Assign onclick events to the accordion item headings
+	  for ( var i = 0; i < accordionItems.length; i++ ) {
+	    var h2 = getFirstChildWithTagName( accordionItems[i], 'H2' );
+	    h2.onclick = toggleItem;
+          }
+          // Hide all accordion item bodies 
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideUp();
+          }
+        }
+
+        function toggleItem() {
+          var itemClass = this.parentNode.className;
+          // Hide all items
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideUp();
+          }
+          // Show this item if it was previously hidden
+          if ( itemClass == 'accordionItem hide' ) {
+            this.parentNode.className = 'accordionItem';
+            $(this).parent().find('div').slideDown();
+          }
+        }
+
+        function getFirstChildWithTagName( element, tagName ) {
+          for ( var i = 0; i < element.childNodes.length; i++ ) {
+            if ( element.childNodes[i].nodeName == tagName ) return element.childNodes[i];
+          }
+        }
+
+        function hideAll() {
+        // Hide all accordian items
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideUp();
+          }
+        }
+
+        function showAll() {
+        // show all accordian items
+          for ( var i = 0; i < accordionItems.length; i++ ) {
+            accordionItems[i].className = 'accordionItem hide';
+            $(accordionItems[i]).find('div').slideDown();
+          }
+        }
+        //
+	</script>
+  </head>
+  <body onload="init()">
+    <div class="container"><h1>CESM CASEROOT env_test.xml file</h1><p style="font-size: 0.9em;">
+	    Model Version: CESM2.0<br />
+	    HTML created on: 2017-06-21
+	  </p><h3>Description</h3><p>
+	    The CASEROOT scripts read the XML settings in the env_test.xml file in order to<br />
+	    determine case specific settings when running a regression test..<br /></p><h3>Interface Tools</h3><p>
+	    CESM2.0 supports a single test group with id="test" in env_test.xml which can be queried but not changed.
+	    The <a href="http://www.cesm.ucar.edu/models/cesm2.0/cesm/xmlquery.html">xmlquery</a> script tool<br /></p><h4>Examples</h4><h3>Navigation Instuctions</h3><p>
+	  Clicking on the blue link will display additional descriptive information.<br />  
+	  Click on the "Show Details" button and then cntl+F key to search for specific strings in this file.
+	  </p><button class="detailsBtn" onclick="showAll();">Show Details</button><button class="detailsBtn" onclick="hideAll();">Hide Details</button><br /><br />
+  <div class="accordionItem"><h2><span id="variable">File Description Header &lt;header&gt;</span></h2><div><pre>These are the variables specific to a test case.</pre></div></div>
+  <div class="accordionItem"><h2>Test Group Settings <span id="variable"><b> &lt;group id="test"&gt; : </b></span></h2><div><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CONFIG_TESTS_FILE</b></li><li>value = <b>$CIMEROOT/config/config_tests.xml</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>file containing system test descriptions </b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>SYSTEM_TESTS_DIR</b></li><li>value = <b>$CIMEROOT/scripts/lib/CIME/SystemTests</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><dl><dt>Values &lt;values&gt; :</dt><dd><ul><li>Value &lt;value component=<b>any</b>&gt; <b>$CIMEROOT/scripts/lib/CIME/SystemTests</b></li><li>Value &lt;value component=<b>clm</b>&gt; <b>$SRCROOT/components/clm/cime_config/SystemTests</b></li><li>Value &lt;value component=<b>cam</b>&gt; <b>$SRCROOT/components/cam/cime_config/SystemTests</b></li><li>Value &lt;value component=<b>pop</b>&gt; <b>$SRCROOT/components/pop/cime_config/SystemTests</b></li><li>Value &lt;value component=<b>cice</b>&gt; <b>$SRCROOT/components/cice/cime_config/SystemTests</b></li><li>Value &lt;value component=<b>cism</b>&gt; <b>$SRCROOT/components/cism/cime_config/SystemTests</b></li><li>Value &lt;value component=<b>rtm</b>&gt; <b>$SRCROOT/components/rtm/cime_config/SystemTests</b></li><li>Value &lt;value component=<b>mosart</b>&gt; <b>$SRCROOT/components/mosart/cime_config/SystemTests</b></li></ul></dd></dl><li>Description &lt;desc&gt; : <b>directories containing cime compatible system test modules</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>NAME</b></li><li>value = <b>UNSET</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>Test type name</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>DESC</b></li><li>value = <b>performance test setup</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>Test type descriptor</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>TESTCASE</b></li><li>value = <b>PFS</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>Testcase short name</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CASEBASEID</b></li><li>value = <b>PFS.f09_g17.B1850.hobart_intel.allactive-default</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>Case base ID</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>IS_FIRST_RUN</b></li><li>value = <b>TRUE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Is first run of test</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>TEST_ARGV</b></li><li>value = <b>-testname PFS.f09_g17.B1850.hobart_intel.allactive-default -testroot /home/aliceb/sandboxes/tests</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>Arguments supplied to create_test</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>TEST_TESTID</b></li><li>value = <b>20170622_105935_i88gkt</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>supplied or computed test id</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>TEST_MEMLEAK_TOLERANCE</b></li><li>value = <b>0.10</b></li></ul></li><li>Data Type &lt;type&gt; : <b>real</b></li><li>Description &lt;desc&gt; : <b>Expected relative memory usage growth for test</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>GENERATE_BASELINE</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Whether to generate a baseline</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>COMPARE_BASELINE</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Whether to compare the baseline</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>BASEGEN_CASE</b></li><li>value = <b>UNSET</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>The tagname we are comparing baselines against</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>BASECMP_CASE</b></li><li>value = <b>UNSET</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>The tagname we are comparing baselines against</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>BASELINE_ROOT</b></li><li>value = <b>/UNSET</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>The directory where baselines are stored</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>BASELINE_NAME_GEN</b></li><li>value = <b>UNSET</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>The tagname we are generating baselines for</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>BASELINE_NAME_CMP</b></li><li>value = <b>UNSET</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>The tagname we are comparing baselines against</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CLEANUP</b></li><li>value = <b>FALSE</b></li></ul></li><li>Data Type &lt;type&gt; : <b>logical</b></li><li>Valid Values &lt;valid_values&gt; : <b>TRUE,FALSE</b></li><li>Description &lt;desc&gt; : <b>Whether to clean the test after it is built/run</b></li></ul></dd></dl><dl><dt>Entry ID/Value Definitions &lt;entry&gt; :</dt><dd><ul><li>Attributes :
+	    <ul><li>id = <b>CCSM_CPRNC</b></li><li>value = <b>/fs/cgd/csm/tools/cprnc_hobart/cprnc</b></li></ul></li><li>Data Type &lt;type&gt; : <b>char</b></li><li>Description &lt;desc&gt; : <b>standard full pathname of the cprnc executable</b></li></ul></dd></dl></div></div>
+  <div class="accordionItem"><h2>Specific Test Settings <span id="variable"><b> &lt;test NAME="PFS"&gt; : </b></span></h2><div><ul><li>Description &lt;DESC&gt; : <b>performance test setup</b></li><li>Information Debug Level &lt;INFO_DBUG&gt; : <b>1</b></li><li>Test Run Length &lt;STOP_OPTION&gt; : <b>ndays</b></li><li>Test Run Count for STOP_OPTION &lt;STOP_N&gt; : <b>20</b></li><li>Restart Length &lt;REST_OPTION&gt; : <b>none</b></li><li>Short-term Archiving &lt;DOUT_S&gt; : <b>FALSE</b></li><li>Continuation Run &lt;CONTINUE_RUN&gt; : <b>FALSE</b></li></ul></div></div>
+</div>
+  </body>
+</html>
