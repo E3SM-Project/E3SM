@@ -3,14 +3,13 @@ import sys
 import vcs
 from acme_diags.driver.utils import get_output_dir
 
-vcs_canvas = vcs.init()
 textcombined_objs = {}
 
 def set_units(ref_or_test, units):
     if units != '':
         ref_or_test.units = units
 
-def managetextcombined(tt_name, to_name):
+def managetextcombined(tt_name, to_name, vcs_canvas):
     """Caches textcombined objects"""
     new_name = "%s:::%s" % (tt_name, to_name)
     mytc = textcombined_objs.get(new_name, None)
@@ -20,6 +19,8 @@ def managetextcombined(tt_name, to_name):
     return mytc
 
 def plot(ref, test, diff, metrics_dict, parameters):
+    vcs_canvas = vcs.init(bg=True, geometry=(parameters.canvas_size_w, parameters.canvas_size_h))
+
     # Line options, see here: https://uvcdat.llnl.gov/documentation/vcs/vcs-10.html
     # Other options not in the above link: https://uvcdat.llnl.gov/docs/vcs/graphics/unified1D.html
     ref_plot_linetype = 0
@@ -66,7 +67,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
 
     ref_test_template = vcs.gettemplate('ref_test_template')
 
-    ref_test_yaxis_title = managetextcombined('ref_test_yaxis_title', 'ref_test_yaxis_title')
+    ref_test_yaxis_title = managetextcombined('ref_test_yaxis_title', 'ref_test_yaxis_title', vcs_canvas)
     ref_test_yaxis_title.angle = 270
     ref_test_yaxis_title.halign = 'center'
     ref_test_yaxis_title.y = (ref_test_template.data.y1 + ref_test_template.data.y2) / 2
@@ -124,7 +125,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
 
     diff_template = vcs.gettemplate('diff_template')
 
-    diff_yaxis_title = managetextcombined('diff_yaxis_title', 'diff_yaxis_title')
+    diff_yaxis_title = managetextcombined('diff_yaxis_title', 'diff_yaxis_title', vcs_canvas)
     diff_yaxis_title.angle = 270
     diff_yaxis_title.halign = 'center'
     diff_yaxis_title.y = (diff_template.data.y1 + diff_template.data.y2) / 2
@@ -229,12 +230,12 @@ def plot(ref, test, diff, metrics_dict, parameters):
     vcs_canvas.plot(diff, diff_line, diff_template)
 
     # Plot the main title
-    main_title = managetextcombined('main_title', 'main_title')
+    main_title = managetextcombined('main_title', 'main_title', vcs_canvas)
     main_title.string = parameters.main_title
     vcs_canvas.portrait()  # for some reason, this needs to be before a call to vcs_canvas.plot()
     vcs_canvas.plot(main_title)
 
-    test_title = managetextcombined('test_title', 'test_title')
+    test_title = managetextcombined('test_title', 'test_title', vcs_canvas)
     test_title.string = "Test: " + str(parameters.test_name)
     test_title.color = 1
     test_title.x = ref_test_template.data.x1 - 0.05
@@ -242,7 +243,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
     test_title.height = 12
     vcs_canvas.plot(test_title)
 
-    ref_title = managetextcombined('ref_title', 'ref_title')
+    ref_title = managetextcombined('ref_title', 'ref_title', vcs_canvas)
     ref_title.string = "Reference: " + str(parameters.reference_name)
     ref_title.color = 215
     ref_title.x = ref_test_template.data.x1 - 0.05
@@ -250,8 +251,6 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_title.height = 12
     vcs_canvas.plot(ref_title)
 
-    vcs_canvas.bgX = parameters.canvas_size_w
-    vcs_canvas.bgY = parameters.canvas_size_h
     if not parameters.logo:
         vcs_canvas.drawlogooff()
 

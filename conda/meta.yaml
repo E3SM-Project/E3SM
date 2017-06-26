@@ -18,9 +18,8 @@ requirements:
 
   run:
     - cdp 2017.05.25
-    - vcs 2.8
+    - vcs 2.10
     - mesalib
-    - vtk-cdat 
     - cdms2 2.10
     - cdutil 2.10
     - genutil 2.10

@@ -12,8 +12,8 @@ from acme_diags.driver.utils import get_output_dir
 vcs_canvas = vcs.init(bg=True)
 textcombined_objs = {}
 
-def managetextcombined(tt_name, to_name):
-    """ Caches textcombined objects. """
+def managetextcombined(tt_name, to_name, vcs_canvas):
+    """Caches textcombined objects"""
     new_name = "%s:::%s" % (tt_name, to_name)
     mytc = textcombined_objs.get(new_name, None)
     if mytc is None:
@@ -22,8 +22,8 @@ def managetextcombined(tt_name, to_name):
     return mytc
 
 def plot_min_max_mean(canvas, metrics_dict, ref_test_or_diff):
-    """ canvas is a vcs.Canvas, metrics_dict is a dict and 
-    ref_test_or_diff is a string """
+    """ canvas is a vcs.Canvas, metrics_dict is a dict and
+    ref_test_or_diff is a string. """
     var_min = '%.2f' % metrics_dict[ref_test_or_diff]['min']
     var_max = '%.2f' % metrics_dict[ref_test_or_diff]['max']
     var_mean = '%.2f' % metrics_dict[ref_test_or_diff]['mean']
@@ -33,13 +33,13 @@ def plot_min_max_mean(canvas, metrics_dict, ref_test_or_diff):
  
     # can be either 'reference', 'test' or 'diff'
     plot = ref_test_or_diff
-    min_label = managetextcombined(plot + '_min_label', plot + '_min_label')
-    max_label = managetextcombined(plot + '_max_label', plot + '_max_label')
-    mean_label = managetextcombined(plot + '_mean_label', plot + '_mean_label')
+    min_label = managetextcombined(plot + '_min_label', plot + '_min_label', canvas)
+    max_label = managetextcombined(plot + '_max_label', plot + '_max_label', canvas)
+    mean_label = managetextcombined(plot + '_mean_label', plot + '_mean_label', canvas)
 
-    min_value = managetextcombined(plot + '_min_value', plot + '_min_value')
-    max_value = managetextcombined(plot + '_max_value', plot + '_max_value')
-    mean_value = managetextcombined(plot + '_mean_value', plot + '_mean_value')
+    min_value = managetextcombined(plot + '_min_value', plot + '_min_value', canvas)
+    max_value = managetextcombined(plot + '_max_value', plot + '_max_value', canvas)
+    mean_value = managetextcombined(plot + '_mean_value', plot + '_mean_value', canvas)
 
     min_value.string = var_min
     max_value.string = var_max
@@ -52,18 +52,18 @@ def plot_min_max_mean(canvas, metrics_dict, ref_test_or_diff):
     canvas.plot(mean_label)
 
 def plot_rmse_and_corr(canvas, metrics_dict):
-    """canvas is a vcs.Canvas, metrics_dict is a dict"""
+    """ canvas is a vcs.Canvas, metrics_dict is a dict """
 
     rmse_str = '%.2f' % metrics_dict['misc']['rmse']
     corr_str = '%.2f' % metrics_dict['misc']['corr']
 
-    rmse_label = managetextcombined('diff_plot_comment1_title', 'diff_plot_comment1_title')
-    corr_label = managetextcombined('diff_plot_comment2_title', 'diff_plot_comment2_title')
+    rmse_label = managetextcombined('diff_plot_comment1_title', 'diff_plot_comment1_title', canvas)
+    corr_label = managetextcombined('diff_plot_comment2_title', 'diff_plot_comment2_title', canvas)
     rmse_label.string = 'RMSE'
     corr_label.string = 'CORR'
 
-    rmse_value = managetextcombined('diff_plot_comment1_value', 'diff_plot_comment1_value')
-    corr_value = managetextcombined('diff_plot_comment2_value', 'diff_plot_comment2_value')
+    rmse_value = managetextcombined('diff_plot_comment1_value', 'diff_plot_comment1_value', canvas)
+    corr_value = managetextcombined('diff_plot_comment2_value', 'diff_plot_comment2_value', canvas)
 
     rmse_value.string = rmse_str
     corr_value.string = corr_str
@@ -191,14 +191,12 @@ def plot(reference, test, diff, metrics_dict, parameter):
     plot_rmse_and_corr(vcs_canvas, metrics_dict)
 
     # Plotting the main title
-    main_title = managetextcombined('main_title', 'main_title')
+    main_title = managetextcombined('main_title', 'main_title', vcs_canvas)
     main_title.string = parameter.main_title
     main_title.y = [0.985]
     vcs_canvas.portrait()  # for some reason, this needs to be before a call to vcs_canvas.plot()
     vcs_canvas.plot(main_title)
 
-    vcs_canvas.bgX = parameter.canvas_size_w
-    vcs_canvas.bgY = parameter.canvas_size_h
     if not parameter.logo:
         vcs_canvas.drawlogooff()
 
