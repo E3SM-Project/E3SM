@@ -44,15 +44,15 @@
   <!-- group cime_cpl_inst              -->
   <!-- =========================== -->
 
-  <entry id="ninst_cpl" modify_via_xml="COUPLER_COUNT">
+  <entry id="ninst_cpl" modify_via_xml="NINST_CPL">
     <type>integer</type>
     <category>cime_cpl_inst</category>
     <group>cime_cpl_inst</group>
     <desc>
-      Number of CESM coupler instances. If > 1 then all component instances must equal 1.
+      Number of CESM coupler instances.
     </desc>
     <values>
-      <value>$COUPLER_COUNT</value>
+      <value>$NINST_CPL</value>
     </values>
   </entry>
 

@@ -727,7 +727,7 @@ class Case(object):
         for compclass in self._component_classes:
             key = "NINST_{}".format(compclass)
             if compclass == "CPL":
-                mach_pes_obj.set_value("COUPLER_COUNT", ncouplers)
+                mach_pes_obj.set_value(key, ncouplers)
                 continue
             # ESP models are currently limited to 1 instance
             if compclass == "ESP":
@@ -1086,7 +1086,7 @@ class Case(object):
                 append_status("Component {} is {}".format(component_class, self._component_description[component_class]),"README.case", caseroot=self._caseroot)
             if component_class == "CPL":
                 append_status("Using %s coupler instances" %
-                              (self.get_value("COUPLER_COUNT")),
+                              (self.get_value("NINST_CPL")),
                               "README.case", caseroot=self._caseroot)
                 continue
             comp_grid = "{}_GRID".format(component_class)

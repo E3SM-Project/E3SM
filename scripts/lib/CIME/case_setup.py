@@ -34,7 +34,7 @@ def _build_usernl_files(case, model, comp):
     expect(os.path.isdir(model_dir),
            "cannot find cime_config directory {} for component {}".format(model_dir, comp))
 
-    ninst = case.get_value("COUPLER_COUNT")
+    ninst = case.get_value("NINST_CPL")
     if comp == "cpl":
         if not os.path.exists("user_nl_cpl"):
             shutil.copy(os.path.join(model_dir, "user_nl_cpl"), ".")
@@ -124,14 +124,13 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.
         for comp in models:
             if comp == "CPL":
-                ninst = case.get_value("COUPLER_COUNT")
-            else:
-                ninst  = case.get_value("NINST_{}".format(comp))
+                continue
+            ninst  = case.get_value("NINST_{}".format(comp))
             ntasks = case.get_value("NTASKS_{}".format(comp))
             # ESP models are currently limited to 1 instance
             expect((comp != "ESP") or (ninst == 1),
                    "ESP components may only have one instance")
-            if ninst > ntasks and comp != "CPL":
+            if ninst > ntasks:
                 if ntasks == 1:
                     case.set_value("NTASKS_{}".format(comp), ninst)
                 else:

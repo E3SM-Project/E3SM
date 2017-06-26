@@ -93,7 +93,7 @@ class _TimingParser:
         return (0, 0, False)
 
     def getTiming(self):
-        ninst = self.case.get_value("COUPLER_COUNT")
+        ninst = self.case.get_value("NINST_CPL")
         if ninst > 1:
             for inst in range(ninst):
                 self._getTiming(inst+1)

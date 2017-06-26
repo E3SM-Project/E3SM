@@ -152,10 +152,10 @@ def post_run_check(case, lid):
 
     rundir = case.get_value("RUNDIR")
     model = case.get_value("MODEL")
-    coupler_count = case.get_value("COUPLER_COUNT")
+    cpl_ninst = case.get_value("NINST_CPL")
     cpl_logs = []
-    if coupler_count > 1:
-        for inst in range(coupler_count):
+    if cpl_ninst > 1:
+        for inst in range(cpl_ninst):
             cpl_logs.append(os.path.join(rundir, "cpl_%04d.log." % (inst+1) + lid))
     else:
         cpl_logs = [os.path.join(rundir, "cpl" + ".log." + lid)]
@@ -176,7 +176,7 @@ def post_run_check(case, lid):
             with open(cpl_logfile, 'r') as fd:
                 if 'SUCCESSFUL TERMINATION' in fd.read():
                     count_ok += 1
-        if count_ok != coupler_count:
+        if count_ok != cpl_ninst:
             expect(False, "Model did not complete - see {} \n " .format(cpl_logfile))
 
 ###############################################################################
