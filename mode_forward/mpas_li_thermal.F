@@ -2979,6 +2979,30 @@ module li_thermal
          ! change units from m/s to kg/m2/s
          floatingBasalMassBal(:) = floatingBasalMassBal(:) * rhoi
 
+      elseif (trim(config_basal_mass_bal_float) == 'seroussi') then
+
+         ! Melt rate parameterization from:
+         ! Seroussi, H., Y. Nakayama, E. Larour, D. Menemenlis, M. Morlighem, E. Rignot, and A. Khazendar (2017), Continued retreat of Thwaites Glacier, West Antarctica, controlled by bed topography and ocean circulation, Geophys. Res. Lett., 1-9, doi:10.1002/2017GL072910.
+         ! for Thwaites Glacier.
+         ! Specifically, this is a linear fit of melt with shelf draft from the Supplemental Information, Figure S1.
+
+         floatingBasalMassBal(:) = 0.0_RKIND
+
+         do iCell = 1, nCellsSolve
+
+            if ( floatingMask(iCell) == 1 ) then
+               ! ice is present and floating
+
+               zDraft = lowerSurface(iCell) - config_sea_level
+               ! Coefficients for m/yr melt rate (units of Seroussi figure)
+               floatingBasalMassBal(iCell) = min(0.0_RKIND, 0.088_RKIND * (zDraft + 100.0_RKIND))
+
+            endif   ! ice is present
+         enddo   ! iCell
+
+         ! change units from m/yr to kg/m2/s
+         floatingBasalMassBal(:) = floatingBasalMassBal(:) * rhoi / scyr
+
       else
 
          call mpas_log_write('Unknown option selected for config_basal_mass_bal_float:' // trim(config_basal_mass_bal_float), MPAS_LOG_CRIT)
