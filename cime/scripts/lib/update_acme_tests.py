@@ -78,6 +78,7 @@ _TEST_SUITES = {
     "acme_atm_developer" : (None, None,
                             ("SMS_D_Ln5.ne4_ne4.FC5",
                              ("ERP_Ln9.ne4_ne4.FC5AV1C-L", "cam-rtm_null"),
+                             ("SMS_Ln9.ne4_ne4.FC5AV1C-L", "cam-outfrq9s"),
                              "SMS_D_Ln5.ne4_ne4.FC5AV1C-L")
                             ),
 
