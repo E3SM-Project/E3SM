@@ -234,7 +234,7 @@ contains
        call compute_andor_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,0.d0,1.d0)
  
-      maxiter=1000
+      maxiter=4
       itertol=1e-8
       call compute_stage_value_dirk(np1,n0,qn0,dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,maxiter,itertol)
@@ -257,12 +257,12 @@ contains
       ! form un0+dt*gamma*n(g1) and store at n0
       call elemstate_add(elem,statesave,nets,nete,1,n0,np1,n0,gamma,1.d0,0.d0)
                              
-      maxiter=1000
+      maxiter=4
       itertol=1e-15
       ! solve g2 = un0 + dt*gamma*n(g1)+dt*gamma*s(g2) for g2 and save at nm1
       call compute_stage_value_dirk(nm1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      print *, 'num iters  ', maxiter
+ !     print *, 'num iters  ', maxiter
 !=== End of Phase 1 ====
 ! at this point, g2 is at nm1, un0+dt*gamma*n(g1) is at n0, and dt*n(g1) is at np1
                 
@@ -286,14 +286,14 @@ contains
       ! form un0+dt*(1-gamma)*(n(g2)+s(g2)) at nm1
       call elemstate_add(elem,statesave,nets,nete,3,nm1,np1,nm1,1.d0-gamma,1.d0-gamma,1.d0)
                        
-      maxiter=1000
+      maxiter=4
       itertol=1e-15
       !	solve g3 = (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2)+dt*gamma*s(g3)
       ! for g3 using (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2) as initial guess
       ! and save at np1
       call compute_stage_value_dirk(np1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      print *, 'num iters  ', maxiter
+  !    print *, 'num iters  ', maxiter
 !=== End of Phase 2 ===
 ! at this point, un0+dt*(1-gamma)*(n(g2)+s(g2)) is at nm1, g3 is at np1, and n0 is free
        
@@ -1476,12 +1476,12 @@ endif
 
     itercount(ie)=0
     Fn(:,:,1:nlev,1) = elem(ie)%state%w(:,:,:,np1)-elem(ie)%state%w(:,:,:,n0) &
-        +dt2*g*(1.0-dpnh_dp(:,:,:))
+      +dt2*g*(1.0-dpnh_dp(:,:,:))
 
     Fn(:,:,nlev+1:2*nlev,1) = elem(ie)%state%phi(:,:,:,np1)-elem(ie)%state%phi(:,:,:,n0) &
-        -dt2*g*elem(ie)%state%w(:,:,:,np1)
+      -dt2*g*elem(ie)%state%w(:,:,:,np1)
     resnorm=maxval(abs(Fn))/max( maxval(abs(elem(ie)%state%w(:,:,:,np1))), &
-       maxval(abs(elem(ie)%state%phi(:,:,:,np1))))
+      maxval(abs(elem(ie)%state%phi(:,:,:,np1))))
     itererr=resnorm
     phis => elem(ie)%state%phis(:,:)
     do while ((itercount(ie) < maxiter).and.((itererr(ie) > itertol).or.(resnorm(ie) > itertol)) )
@@ -1500,6 +1500,9 @@ endif
       end if
       Jac(:,:,:,:)=0.d0              
      !   form d/dphi + I/g  
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
       do k=1,nlev
         kappa_star_i(:,:,k+1) = 0.5D0* (kappa_star(:,:,k+1)+kappa_star(:,:,k))
         if (k==1) then 
@@ -1550,19 +1553,19 @@ endif
       elem(ie)%state%phi(:,:,:,np1) = elem(ie)%state%phi(:,:,:,np1) + x(:,:,1:nlev,1)                          
 
       ! compute relative errors
-      itererr(ie)=maxval(abs(x))/max( maxval(abs(elem(ie)%state%w(:,:,:,np1))), maxval(abs(elem(ie)%state%phi(:,:,:,np1))))
-      resnorm(ie)=maxval(abs(Fn))/max( maxval(abs(elem(ie)%state%w(:,:,:,np1))), maxval(abs(elem(ie)%state%phi(:,:,:,np1))))
+!      itererr(ie)=maxval(abs(x))/max( maxval(abs(elem(ie)%state%w(:,:,:,np1))), maxval(abs(elem(ie)%state%phi(:,:,:,np1))))
+!      resnorm(ie)=maxval(abs(Fn))/max( maxval(abs(elem(ie)%state%w(:,:,:,np1))), maxval(abs(elem(ie)%state%phi(:,:,:,np1))))
     
       
       itercount(ie)=itercount(ie)+1 
-      itererrmat(ie)=max(itererr(ie),resnorm(ie))
+!      itererrmat(ie)=max(itererr(ie),resnorm(ie))
 
     end do ! end do for the do while loop
 
   end do ! end do for the ie=nets,nete loop
 
-  maxiter = maxval(itercount(:))
-  itertol = maxval(itererrmat(:))
+!  maxiter = maxval(itercount(:))
+!  itertol = maxval(itererrmat(:))
 !  print *, maxiter, itertol
 
   call t_stopf('compute_stage_value_dirk')

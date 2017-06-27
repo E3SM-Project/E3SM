@@ -72,6 +72,9 @@ contains
       do j=1,np
         Atemp(:,:)=A(i,j,:,:)
         Rtemp=0.0
+#if (defined COLUMN_OPENMP)
+  !$omp parallel do default(shared), private(k)
+#endif
         do k=1,nlev
           Rtemp(k,k)=norm2(Atemp(:,k))
           Qtemp(1:nlev,k)=Atemp(1:nlev,k)/Rtemp(k,k)
