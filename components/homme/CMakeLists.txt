@@ -170,9 +170,14 @@ ENDIF ()
 ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
 
 # CPRNC locations
-SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
-SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
-ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+IF (CPRNC_BINARY)
+  # user specifed CPRNC binary - dont build
+ELSE ()
+  SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
+  SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
+  ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+ENDIF ()
+
 
 SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")
 IF(${BUILD_HOMME_SWEQX})
