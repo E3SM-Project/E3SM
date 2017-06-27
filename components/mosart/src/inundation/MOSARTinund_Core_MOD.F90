@@ -25,7 +25,7 @@ MODULE MOSARTinund_Core_MOD
   implicit none
   private
   
-  public MOSARTinund_simulate
+  public MOSARTinund_simulate, ManningEq
                    
   contains
   
@@ -139,7 +139,8 @@ MODULE MOSARTinund_Core_MOD
     !$OMP PARALLEL FIRSTPRIVATE( iu, hsV )
     !$OMP DO SCHEDULE( GUIDED )
     do iu = rtmCTL%begr, rtmCTL%endr
-      if ( TUnit%mask( iu ) .gt. 0 ) then
+      !if ( TUnit%mask( iu ) .gt. 0 ) then
+      if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
         
         ! Estimate flow velocity with Manning equation :
         hsV = ManningEq ( TUnit%hslp( iu ), TUnit%nh( iu ), TRunoff%wh( iu, 1 ) )     
@@ -225,7 +226,8 @@ MODULE MOSARTinund_Core_MOD
     !$OMP DO SCHEDULE ( GUIDED )
     do iu = rtmCTL%begr, rtmCTL%endr
       
-      if ( TUnit%mask( iu ) .gt. 0 ) then
+      !if ( TUnit%mask( iu ) .gt. 0 ) then
+      if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
 
         ! If the tributary channel is very short, then no subnetwork routing :
         if ( TUnit%tlen(iu) .lt. Tctl%minL_tribRouting )  then    
@@ -299,7 +301,8 @@ MODULE MOSARTinund_Core_MOD
     !$OMP PARALLEL FIRSTPRIVATE( iu, wr_rcd, w_over, j, d_s, d_e, hf, ff_unit, wr_over )
     !$OMP DO SCHEDULE( GUIDED )
     do iu = rtmCTL%begr, rtmCTL%endr
-      if ( TUnit%mask( iu ) .gt. 0 ) then
+      !if ( TUnit%mask( iu ) .gt. 0 ) then
+      if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
 
         ! If the channel water level is higher than the floodplain water level, or on the contrary :
         if (TRunoff%yr( iu, 1 ) - TUnit%rdepth(iu) .gt. TRunoff%hf_ini(iu) + con1Em3 .or. &
@@ -335,7 +338,8 @@ MODULE MOSARTinund_Core_MOD
                 else
 
                   ! Calculate the elevation difference "d_e" ( = Storage difference / Flooded area ) :
-                  d_e = d_s / TUnit%area(iu) / TUnit%a_eprof3(iu, j)
+                  !d_e = d_s / TUnit%area(iu) / TUnit%a_eprof3(iu, j)
+                  d_e = d_s / ( TUnit%area(iu) * TUnit%frac(iu) * TUnit%a_eprof3(iu, j) )
 
                   ! Calculate the flooded fraction in the computation unit (including channel area) :
                   ff_unit = TUnit%a_eprof3(iu, j)
@@ -360,7 +364,8 @@ MODULE MOSARTinund_Core_MOD
             TRunoff%ff_fp(iu) = ff_unit - TUnit%a_chnl( iu )              
 
             ! Area of flooded floodplain :
-            TRunoff%fa_fp(iu) = TUnit%area(iu) * TRunoff%ff_fp(iu)      
+            !TRunoff%fa_fp(iu) = TUnit%area(iu) * TRunoff%ff_fp(iu)      
+            TRunoff%fa_fp(iu) = TUnit%area(iu) * TUnit%frac(iu) * TRunoff%ff_fp(iu)
 
             ! Floodplain max water depth after exchange :
             TRunoff%hf_exchg(iu) = hf                             
@@ -426,7 +431,8 @@ MODULE MOSARTinund_Core_MOD
     
 #ifdef NO_MCT
     do iu = rtmCTL%begr, rtmCTL%endr
-      if ( TUnit%mask( iu ) .gt. 0 ) then
+      !if ( TUnit%mask( iu ) .gt. 0 ) then
+      if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
       
         do k=1, TUnit%nUp(iu)
           unitUp = TUnit%iUp(iu, k)
@@ -480,7 +486,8 @@ MODULE MOSARTinund_Core_MOD
     !$OMP PARALLEL FIRSTPRIVATE( iu, k, surfaceSlope, y_c, len_c, slp_c, y_down, len_down, slp_down, hydrR, wv_gwl )
     !$OMP DO SCHEDULE( GUIDED )
     do iu = rtmCTL%begr, rtmCTL%endr      
-      if ( TUnit%mask( iu ) .gt. 0 ) then
+      !if ( TUnit%mask( iu ) .gt. 0 ) then
+      if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
 
         ! ---------------------------------   
         ! Calculate water surface slope ( from the current channel to the downstream channel ) :
@@ -490,7 +497,8 @@ MODULE MOSARTinund_Core_MOD
         if ( Tctl%OPT_trueDW .eq. 1 ) then
 
           ! If this channel is NOT at basin outlet :
-          if ( TUnit%mask( iu ) .eq. 1 ) then     
+          !if ( TUnit%mask( iu ) .eq. 1 ) then     
+          if ( rtmCTL%mask( iu ) .eq. 1 ) then
             y_c = TRunoff%yr_exchg( iu )
             len_c = TUnit%rlen( iu )
             slp_c = TUnit%rslp( iu )
@@ -499,7 +507,8 @@ MODULE MOSARTinund_Core_MOD
             slp_down = TUnit%rslp_dstrm( iu )
 
           ! If this channel is at basin outlet (downstream is ocean) :
-          elseif ( TUnit%mask( iu ) .eq. 2 ) then
+          !elseif ( TUnit%mask( iu ) .eq. 2 ) then
+          elseif ( rtmCTL%mask( iu ) .eq. 3 ) then
             y_c = TRunoff%yr_exchg( iu )
             len_c = TUnit%rlen( iu )
             slp_c = TUnit%rslp( iu )
@@ -578,7 +587,8 @@ MODULE MOSARTinund_Core_MOD
           TRunoff%erout( iu, 1 ) = - TRunoff%vr( iu, 1 ) * TUnit%rwidth( iu ) * TRunoff%yr_exchg( iu )
         
           ! If this channel is NOT at basin outlet :
-          if ( TUnit%mask( iu ) .eq. 1 ) then
+          !if ( TUnit%mask( iu ) .eq. 1 ) then
+          if ( rtmCTL%mask( iu ) .eq. 1 ) then
           
             ! If upward flow (from downstream channel to current channel) is too large, so that water volume becomes negative in downstream channel :
             if ( TRunoff%wr_exchg_dstrm( iu ) - TRunoff%erout( iu, 1 ) * Tctl%DeltaT .lt. 0._r8 ) then
@@ -621,7 +631,7 @@ MODULE MOSARTinund_Core_MOD
         ! Channel water depth after routing computation :
         TRunoff%yr_rtg( iu ) = TRunoff%wr_rtg( iu ) / TUnit%rwidth( iu ) / TUnit%rlen( iu )
     
-      end if    ! if ( TUnit%mask( iu ) .gt. 0 )
+      end if    ! end of if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 )
     end do
     !$OMP END DO
     !$OMP END PARALLEL
@@ -647,8 +657,9 @@ MODULE MOSARTinund_Core_MOD
     !$OMP PARALLEL FIRSTPRIVATE( iu, k, hydrR, wv_gwl )
     !$OMP DO SCHEDULE( GUIDED )
     do iu = rtmCTL%begr, rtmCTL%endr
-      if ( TUnit%mask( iu ) .gt. 0 ) then
-      
+      !if ( TUnit%mask( iu ) .gt. 0 ) then
+      if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).      
+
         ! ---------------------------------  
         ! Calculate flow velocity, streamflow and water volume change :
         ! ---------------------------------  
@@ -693,7 +704,7 @@ MODULE MOSARTinund_Core_MOD
         ! Channel water depth after routing computation :
         TRunoff%yr_rtg( iu ) = TRunoff%wr_rtg( iu ) / TUnit%rwidth( iu ) / TUnit%rlen( iu )   
     
-      end if    ! if ( TUnit%mask( iu ) .gt. 0 )
+      end if    ! end of if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 )
     end do
     !$OMP END DO
     !$OMP END PARALLEL

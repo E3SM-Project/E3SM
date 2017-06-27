@@ -175,6 +175,14 @@ module RunoffMod
      integer :: npt_elevProf         ! Number of dividing points in the elevation profile.
      real(r8) :: threshold_slpRatio  ! Threshold of the ratio of the lowest section's slope to the second lowest section's slope in 
                                      ! the elevation profile (used to alleviate the effect of DEM pits on elevation profiles).
+
+     ! Elevations in the hypothetical elevation profile (m):
+     ! (1) Gentle slope:
+     real(r8) :: e_eprof_std(12) = (/ 0.0_r8, 1.0_r8, 2.0_r8, 3.0_r8, 4.0_r8, 5.0_r8, 7.0_r8, 11.0_r8, 19.0_r8, 35.0_r8, 75.0_r8, 10000.0_r8 /)
+
+     ! (2) Steep slope:
+     !real(r8) :: e_eprof_std(12) = (/ 0.0_r8, 15.0_r8, 35.0_r8, 60.0_r8, 90.0_r8, 125.0_r8, 165.0_r8, 205.0_r8, 245.0_r8, 285.0_r8, 325.0_r8, 10000.0_r8 /)
+
 #endif
    
   end type Tcontrol
@@ -235,7 +243,7 @@ module RunoffMod
      ! --------------------------------- 
      ! Parameters related to elevation profiles : 
      ! --------------------------------- 
-     real(r8) :: e_eprof_std(12)         ! Elevations in the hypothetical elevation profile (m).
+     !real(r8) :: e_eprof_std(12)         ! Elevations in the hypothetical elevation profile (m).
      real(r8), pointer :: e_eprof_in2(:,:)  ! Absolute elevations in the input elevation profiles (m).
      real(r8), pointer :: a_eprof(:,:)   ! Area fractions of computation unit (grid cell or subbasin) in the elevation profiles (dimensionless).
      real(r8), pointer :: e_eprof(:,:)   ! Absolute elevations in the elevation profiles used in computation (m).

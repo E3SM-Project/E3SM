@@ -39,7 +39,8 @@ MODULE MOSARTinund_PreProcs_MOD
     if ( Tctl%OPT_calcNr .eq. 1 ) then    
       
       do iu = rtmCTL%begr, rtmCTL%endr
-        if ( TUnit%mask( iu ) .gt. 0 ) then
+        !if ( TUnit%mask( iu ) .gt. 0 ) then
+        if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
         
           if ( Tctl%rdepth_min .lt. TUnit%rdepth(iu) .and. TUnit%rdepth(iu) .lt. Tctl%rdepth_max ) then
             TUnit%nr(iu) = Tctl%nr_min + (Tctl%nr_max - Tctl%nr_min) * ( ( Tctl%rdepth_max - TUnit%rdepth(iu) ) / (Tctl%rdepth_max - Tctl%rdepth_min) )
@@ -56,7 +57,8 @@ MODULE MOSARTinund_PreProcs_MOD
     elseif ( Tctl%OPT_calcNr .eq. 2 ) then
       
       do iu = rtmCTL%begr, rtmCTL%endr
-        if ( TUnit%mask( iu ) .gt. 0 ) then
+        !if ( TUnit%mask( iu ) .gt. 0 ) then
+        if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
         
           if ( Tctl%rdepth_min .lt. TUnit%rdepth(iu) .and. TUnit%rdepth(iu) .lt. Tctl%rdepth_max ) then
             TUnit%nr(iu) = Tctl%nr_min + (Tctl%nr_max - Tctl%nr_min) * ( ( Tctl%rdepth_max - TUnit%rdepth(iu) ) / (Tctl%rdepth_max - Tctl%rdepth_min) ) ** (1.0_r8/3.0_r8)
@@ -73,7 +75,8 @@ MODULE MOSARTinund_PreProcs_MOD
     elseif ( Tctl%OPT_calcNr .eq. 3 ) then
       
       do iu = rtmCTL%begr, rtmCTL%endr
-        if ( TUnit%mask( iu ) .gt. 0 ) then
+        !if ( TUnit%mask( iu ) .gt. 0 ) then
+        if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean). 
       
           if ( Tctl%rwidth_min .lt. TUnit%rwidth(iu) .and. TUnit%rwidth(iu) .lt. Tctl%rwidth_max ) then
             TUnit%nr(iu) = Tctl%nr_min + (Tctl%nr_max - Tctl%nr_min) * ( ( Tctl%rwidth_max - TUnit%rwidth(iu) ) / (Tctl%rwidth_max - Tctl%rwidth_min) )
@@ -90,7 +93,8 @@ MODULE MOSARTinund_PreProcs_MOD
     elseif ( Tctl%OPT_calcNr .eq. 4 ) then
       
       do iu = rtmCTL%begr, rtmCTL%endr
-        if ( TUnit%mask( iu ) .gt. 0 ) then
+        !if ( TUnit%mask( iu ) .gt. 0 ) then
+        if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
           TUnit%nr(iu) = Tctl%nr_uniform
         end if  
       enddo 
@@ -123,24 +127,42 @@ MODULE MOSARTinund_PreProcs_MOD
     implicit none
     integer :: j, k, iu     ! Indexes.
     real( r8 ) :: ds        ! The volume between two elevations of an adjusted elevation profile (m^3).
+    character( len = * ), parameter :: subname = '(preprocess_elevProf)'
     
     ! Area fraction of a computation unit (grid cell or subbasin) (dimensionless) :
-    TUnit%a_eprof(:,1) = 0.0_r8
-    TUnit%a_eprof(:,2) = 0.1_r8
-    TUnit%a_eprof(:,3) = 0.2_r8
-    TUnit%a_eprof(:,4) = 0.3_r8
-    TUnit%a_eprof(:,5) = 0.4_r8
-    TUnit%a_eprof(:,6) = 0.5_r8
-    TUnit%a_eprof(:,7) = 0.6_r8
-    TUnit%a_eprof(:,8) = 0.7_r8
-    TUnit%a_eprof(:,9) = 0.8_r8
-    TUnit%a_eprof(:,10) = 0.9_r8
-    TUnit%a_eprof(:,11) = 1.0_r8
-    TUnit%a_eprof(:,12) = 1.0_r8
+    ! TUnit%a_eprof(:,1) = 0.0_r8
+    ! TUnit%a_eprof(:,2) = 0.1_r8
+    ! TUnit%a_eprof(:,3) = 0.2_r8
+    ! TUnit%a_eprof(:,4) = 0.3_r8
+    ! TUnit%a_eprof(:,5) = 0.4_r8
+    ! TUnit%a_eprof(:,6) = 0.5_r8
+    ! TUnit%a_eprof(:,7) = 0.6_r8
+    ! TUnit%a_eprof(:,8) = 0.7_r8
+    ! TUnit%a_eprof(:,9) = 0.8_r8
+    ! TUnit%a_eprof(:,10) = 0.9_r8
+    ! TUnit%a_eprof(:,11) = 1.0_r8
+    ! TUnit%a_eprof(:,12) = 1.0_r8
+    do iu = rtmCTL%begr, rtmCTL%endr
+      !if ( TUnit%mask( iu ) .gt. 0 ) then
+      if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
+        TUnit%a_eprof(iu,1) = 0.0_r8
+        TUnit%a_eprof(iu,2) = 0.1_r8
+        TUnit%a_eprof(iu,3) = 0.2_r8
+        TUnit%a_eprof(iu,4) = 0.3_r8
+        TUnit%a_eprof(iu,5) = 0.4_r8
+        TUnit%a_eprof(iu,6) = 0.5_r8
+        TUnit%a_eprof(iu,7) = 0.6_r8
+        TUnit%a_eprof(iu,8) = 0.7_r8
+        TUnit%a_eprof(iu,9) = 0.8_r8
+        TUnit%a_eprof(iu,10) = 0.9_r8
+        TUnit%a_eprof(iu,11) = 1.0_r8
+        TUnit%a_eprof(iu,12) = 1.0_r8
+      end if
+    end do
     
     ! Elevations in the hypothetical elevation profile :
     ! Gentle slope (m) :
-    TUnit%e_eprof_std = (/ 0.0_r8, 1.0_r8, 2.0_r8, 3.0_r8, 4.0_r8, 5.0_r8, 7.0_r8, 11.0_r8, 19.0_r8, 35.0_r8, 75.0_r8, 10000.0_r8 /)                  
+    !TUnit%e_eprof_std = (/ 0.0_r8, 1.0_r8, 2.0_r8, 3.0_r8, 4.0_r8, 5.0_r8, 7.0_r8, 11.0_r8, 19.0_r8, 35.0_r8, 75.0_r8, 10000.0_r8 /)                  
 
     ! Steep slope (m) :
     !TUnit%e_eprof_std = (/ 0.0_r8, 15.0_r8, 35.0_r8, 60.0_r8, 90.0_r8, 125.0_r8, 165.0_r8, 205.0_r8, 245.0_r8, 285.0_r8, 325.0_r8, 10000.0_r8 /)     
@@ -149,11 +171,13 @@ MODULE MOSARTinund_PreProcs_MOD
     if ( Tctl%OPT_elevProf .eq. 1 ) then      
       
       do iu = rtmCTL%begr, rtmCTL%endr
-        if ( TUnit%mask( iu ) .gt. 0 ) then
+        !if ( TUnit%mask( iu ) .gt. 0 ) then
+        if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
           do k = 1, 11
             TUnit%e_eprof( iu, k ) = TUnit%e_eprof_in2( k, iu )
           end do
-          TUnit%e_eprof(iu,12) = TUnit%e_eprof_std(12)      ! The last point is hypothetical.
+          !TUnit%e_eprof(iu,12) = TUnit%e_eprof_std(12)      ! The last point is hypothetical.
+          TUnit%e_eprof(iu,12) = Tctl%e_eprof_std(12)        ! The last point is hypothetical.
         end if
       enddo
       
@@ -161,9 +185,11 @@ MODULE MOSARTinund_PreProcs_MOD
     elseif ( Tctl%OPT_elevProf .eq. 2 ) then    
       
       do iu = rtmCTL%begr, rtmCTL%endr
-        if ( TUnit%mask( iu ) .gt. 0 ) then
+        !if ( TUnit%mask( iu ) .gt. 0 ) then
+        if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
           do k = 1, 12
-            TUnit%e_eprof( iu, k ) = TUnit%e_eprof_std(k)
+            !TUnit%e_eprof( iu, k ) = TUnit%e_eprof_std(k)
+            TUnit%e_eprof( iu, k ) = Tctl%e_eprof_std(k)
           end do        
         end if  
       enddo
@@ -177,7 +203,8 @@ MODULE MOSARTinund_PreProcs_MOD
     ! ---------------------------------  
 
     do iu = rtmCTL%begr, rtmCTL%endr
-      if ( TUnit%mask( iu ) .gt. 0 ) then
+      !if ( TUnit%mask( iu ) .gt. 0 ) then
+      if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
         ! It is deemed that there exist DEM pits :
         if ( (TUnit%e_eprof(iu, 2) - TUnit%e_eprof(iu, 1) ) .gt. Tctl%threshold_slpRatio * (TUnit%e_eprof(iu, 3) - TUnit%e_eprof(iu, 2) ) ) then    
           TUnit%e_eprof(iu, 1) = TUnit%e_eprof(iu, 2) - Tctl%threshold_slpRatio * (TUnit%e_eprof(iu, 3) - TUnit%e_eprof(iu, 2) )
@@ -190,7 +217,8 @@ MODULE MOSARTinund_PreProcs_MOD
     ! ---------------------------------  
 
     do iu = rtmCTL%begr, rtmCTL%endr
-      if ( TUnit%mask( iu ) .gt. 0 ) then
+      !if ( TUnit%mask( iu ) .gt. 0 ) then
+      if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
         do k = 2, 11
           if (TUnit%e_eprof(iu, k-1) .ge. TUnit%e_eprof(iu, k)) then
             TUnit%e_eprof(iu, k) = TUnit%e_eprof(iu, k-1) + 0.01_r8    ! (Unit: m)
@@ -204,11 +232,19 @@ MODULE MOSARTinund_PreProcs_MOD
     ! --------------------------------- 
 
     do iu=rtmCTL%begr, rtmCTL%endr
-      if ( TUnit%mask( iu ) .gt. 0 ) then
+      !if ( TUnit%mask( iu ) .gt. 0 ) then
+      if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
     
         ! Fraction of channel area ( = channel width * channel length / unit area ) :
-        TUnit%a_chnl(iu) = TUnit%rwidth(iu) * TUnit%rlen(iu) / TUnit%area(iu)   
-      
+
+        if ( TUnit%area(iu) .gt. 0._r8 .and. TUnit%frac(iu) .gt. 0._r8 ) then
+          !TUnit%a_chnl(iu) = TUnit%rwidth(iu) * TUnit%rlen(iu) / TUnit%area(iu)   
+          TUnit%a_chnl(iu) = TUnit%rwidth(iu) * TUnit%rlen(iu) / ( TUnit%area(iu) * TUnit%frac(iu) )
+        else
+          TUnit%a_chnl(iu) = 0._r8
+          write( iulog, * ) trim( subname ) // 'TUnit%area(iu) and TUnit%frac(iu) are:', TUnit%area(iu), TUnit%frac(iu)
+        end if
+
         do j=1, Tctl%npt_elevProf -1
           !if (TUnit%a_eprof(iu,j) < TUnit%a_chnl(iu) .and. TUnit%a_chnl(iu) <= TUnit%a_eprof(iu,j+1)) then
           if (TUnit%a_eprof(iu,j) <= TUnit%a_chnl(iu) .and. TUnit%a_chnl(iu) < TUnit%a_eprof(iu,j+1)) then          
@@ -229,7 +265,8 @@ MODULE MOSARTinund_PreProcs_MOD
     ! --------------------------------- 
 
     do iu=rtmCTL%begr, rtmCTL%endr
-      if ( TUnit%mask( iu ) .gt. 0 ) then
+      !if ( TUnit%mask( iu ) .gt. 0 ) then
+      if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
     
         ! ---------------------------------  
         ! Create the adjusted elevation profile :
@@ -248,13 +285,23 @@ MODULE MOSARTinund_PreProcs_MOD
           ! Index of a point in the adjusted elevation profile :
           k = j - TUnit%ipt_bl_bktp(iu) + 2                             
 
+          if (k > size(Tunit%a_eprof3,dim=2)) then
+            write( iulog, * ) trim( subname ) // ' ERROR: k > size(Tunit%a_eprof3,dim=2) !'
+            call shr_sys_abort( trim( subname ) // ' ERROR: k > size(Tunit%a_eprof3,dim=2) !' )
+          end if
+
           ! Area fraction does not change :
           TUnit%a_eprof3(iu, k) = TUnit%a_eprof(iu, j)                    
 
           ! Elevation is lowered by the channel banktop elevation :
           TUnit%e_eprof3(iu, k) = TUnit%e_eprof(iu, j) - TUnit%e_chnl(iu)   
         enddo
-      
+
+        if (k+1 > size(Tunit%a_eprof3,dim=2)) then
+          write( iulog, * ) trim( subname ) // ' ERROR: k+1 > size(Tunit%a_eprof3,dim=2) !'
+          call shr_sys_abort( trim( subname ) // ' ERROR: k+1 > size(Tunit%a_eprof3,dim=2) !' )
+        end if
+
         ! The upmost point (which is a virtual point) :
         TUnit%a_eprof3(iu, k+1) = TUnit%a_eprof3(iu, k)   ! Actually this area fraction equals 1.0 .      
         TUnit%e_eprof3(iu, k+1) = 10000.0_r8              ! Arbitrary high elevation (assume that water cannot overflow the watershed) (m).
@@ -268,9 +315,18 @@ MODULE MOSARTinund_PreProcs_MOD
         ! ---------------------------------  
 
         do j = 2, TUnit%npt_eprof3(iu) - 1    ! NOTE: j start from 2 .
-          TUnit%alfa3(iu, j) = (TUnit%a_eprof3(iu, j+1) - TUnit%a_eprof3(iu, j)) / (TUnit%e_eprof3(iu, j+1) - TUnit%e_eprof3(iu, j))    ! (1/m)
-          TUnit%p3(iu, j) = TUnit%alfa3(iu, j) * TUnit%area(iu) / 2.0_r8       ! (m)
-          TUnit%q3(iu, j) = TUnit%a_eprof3(iu, j) * TUnit%area(iu)             ! (m^2)
+          if ( abs( TUnit%e_eprof3(iu, j+1) - TUnit%e_eprof3(iu, j) ) > 1.0e-10_r8 ) then      ! Precision is 15-16 decimal digits.
+            TUnit%alfa3(iu, j) = (TUnit%a_eprof3(iu, j+1) - TUnit%a_eprof3(iu, j)) / (TUnit%e_eprof3(iu, j+1) - TUnit%e_eprof3(iu, j))    ! (1/m)
+          else
+            write( iulog, * ) trim( subname ) // ' ERROR: Divided by zero !'
+            call shr_sys_abort( trim( subname ) // ' ERROR: Divided by zero !' )
+          end if
+
+          !TUnit%p3(iu, j) = TUnit%alfa3(iu, j) * TUnit%area(iu) / 2.0_r8                 ! (m)
+          TUnit%p3(iu, j) = TUnit%alfa3(iu, j) * TUnit%area(iu) * TUnit%frac(iu) / 2.0_r8 ! (m)
+
+          !TUnit%q3(iu, j) = TUnit%a_eprof3(iu, j) * TUnit%area(iu)                       ! (m^2)
+          TUnit%q3(iu, j) = TUnit%a_eprof3(iu, j) * TUnit%area(iu) * TUnit%frac(iu)       ! (m^2)
         enddo
             
         ! ---------------------------------  
@@ -286,13 +342,14 @@ MODULE MOSARTinund_PreProcs_MOD
         ! The volumes below other upper elevations :
         do j = 3, TUnit%npt_eprof3(iu)
           ! The volume between the two levels through two points in the adjusted elevation profile (i.e., the volume between two elevations of the adjusted elevation profile) (m^3) :
-          ds = ( TUnit%a_eprof3(iu, j-1) + TUnit%a_eprof3(iu, j) ) * ( TUnit%e_eprof3(iu, j) - TUnit%e_eprof3(iu, j-1) ) * TUnit%area(iu) / 2.0_r8 
+          !ds = ( TUnit%a_eprof3(iu, j-1) + TUnit%a_eprof3(iu, j) ) * ( TUnit%e_eprof3(iu, j) - TUnit%e_eprof3(iu, j-1) ) * TUnit%area(iu) / 2.0_r8 
+          ds = ( TUnit%a_eprof3(iu, j-1) + TUnit%a_eprof3(iu, j) ) * ( TUnit%e_eprof3(iu, j) - TUnit%e_eprof3(iu, j-1) ) * TUnit%area(iu) * TUnit%frac(iu) / 2.0_r8
         
           ! Total volume below the level through the current point in the adjusted elevation profile (m^3) :
           TUnit%s_eprof3(iu, j) = TUnit%s_eprof3(iu, j-1) + ds
         enddo
     
-      end if    ! if ( TUnit%mask( iu ) .gt. 0 )
+      end if    ! end of if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 )
     enddo   ! do iu=rtmCTL%begr, rtmCTL%endr
       
   end subroutine preprocess_elevProf
