@@ -817,12 +817,6 @@ subroutine cime_pre_init2()
    real(r8), parameter :: epsilo = shr_const_mwwv/shr_const_mwdair
 
    !----------------------------------------------------------
-   ! Print Model heading and copyright message
-   !----------------------------------------------------------
-
-   if (iamroot_CPLID) call seq_cime_printlogheader()
-
-   !----------------------------------------------------------
    !| Timer initialization (has to be after mpi init)
    !----------------------------------------------------------
    maxthreads = max(nthreads_GLOID,nthreads_CPLID,nthreads_ATMID, &
@@ -852,6 +846,12 @@ subroutine cime_pre_init2()
    !----------------------------------------------------------
 
    call seq_infodata_init(infodata,nlfilename, GLOID, pioid)
+
+   !----------------------------------------------------------
+   ! Print Model heading and copyright message
+   !----------------------------------------------------------
+
+   if (iamroot_CPLID) call seq_cime_printlogheader()
 
    !----------------------------------------------------------
    !| Initialize coupled fields (depends on infodata)
@@ -4000,10 +4000,12 @@ subroutine seq_cime_printlogheader()
   character(len=8) :: ctime          ! System time
   integer          :: values(8)
   character        :: date*8, time*10, zone*5
+  character(len=cs)        :: cime_model
 
 !-------------------------------------------------------------------------------
 
   call date_and_time (date, time, zone, values)
+  call seq_infodata_GetData(infodata, cime_model=cime_model)
   cdate(1:2) = date(5:6)
   cdate(3:3) = '/'
   cdate(4:5) = date(7:8)
@@ -4015,11 +4017,13 @@ subroutine seq_cime_printlogheader()
   ctime(6:6) = ':'
   ctime(7:8) = time(5:6)
   write(logunit,F00) '------------------------------------------------------------'
-  write(logunit,F00) '    Common Infrastructure for Modeling the Earth CIME CPL7  '
+  write(logunit,F00) '  Common Infrastructure for Modeling the Earth (CIME) CPL7  '
   write(logunit,F00) '------------------------------------------------------------'
   write(logunit,F00) '     (Online documentation is available on the CIME         '
-  write(logunit,F00) '      github: http://esmci.github.io/cime/                  '
-  write(logunit,F00) '      License information is available as a link from above '
+  write(logunit,F00) '          github: http://esmci.github.io/cime/)             '
+  write(logunit,F00) '     License information is available as a link from above  '
+  write(logunit,F00) '------------------------------------------------------------'
+  write(logunit,F00) '                     MODEL ',cime_model
   write(logunit,F00) '------------------------------------------------------------'
   write(logunit,F00) '                DATE ',cdate, ' TIME ', ctime
   write(logunit,F00) '------------------------------------------------------------'
