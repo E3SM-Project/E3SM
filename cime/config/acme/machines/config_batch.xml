@@ -389,6 +389,15 @@
      </queues>
    </batch_system>
 
+   <batch_system MACH="metis" type="pbs" >
+     <directives>
+       <directive>-l nodes={{ num_nodes }}</directive>
+     </directives>
+     <queues>
+       <queue walltimemax="24:00:00" jobmin="0" jobmax="3104" default="true">batch</queue>
+     </queues>
+   </batch_system>
+
    <batch_system MACH="titan" type="pbs" >
      <directives>
        <directive>-A {{ project }}</directive>

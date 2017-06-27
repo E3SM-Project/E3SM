@@ -1791,6 +1791,144 @@
       </module_system>
 </machine>
 
+
+<machine MACH="metis">
+<DESC>ORNL XK7, os is CNL, 16 pes/node, batch system is PBS</DESC>
+    <NODENAME_REGEX>metis</NODENAME_REGEX>
+    <TESTS>acme_developer</TESTS>
+    <COMPILERS>pgi,pgiacc,intel,cray</COMPILERS>
+    <MPILIBS>mpich,mpi-serial</MPILIBS>
+    <RUNDIR>/lustre/or-hydra/cades-ccsi/scratch/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/lustre/or-hydra/cades-ccsi/scratch/$USER/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/archives/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <CIME_OUTPUT_ROOT>/lustre/or-hydra/cades-ccsi/scratch/$USER</CIME_OUTPUT_ROOT>
+    <BASELINE_ROOT>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/lustre/or-hydra/cades-ccsi/proj-shared/tools/cprnc.orcondo</CCSM_CPRNC>
+    <OS>CNL</OS>
+    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <PES_PER_NODE>16</PES_PER_NODE>
+    <SUPPORTED_BY>yinj -at- ornl.gov</SUPPORTED_BY>
+    <GMAKE_J>8</GMAKE_J>
+    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+    <PCT_SPARE_NODES>10</PCT_SPARE_NODES>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable args="default">aprun</executable>
+      <arguments>
+      <arg name="aprun"> {{ aprun }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
+      <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+      <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+      <init_path lang="python">/opt/modules/default/init/python.py</init_path>
+      <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+      <!-- list of cmd_path elements, one for every supported language, e.g. sh, perl, python -->
+      <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <!-- List of modules elements, executing commands
+                         if compiler and mpilib condition applies -->
+      <!-- Always execute -->
+      <modules>
+        <command name="load">python/2.7.12</command>
+        <command name="load">subversion/1.9.4</command>
+        <command name="load">cmake/3.6.2</command>
+      </modules>
+
+      <modules compiler="pgi">
+        <command name="rm">PrgEnv-cray</command>
+        <command name="rm">PrgEnv-gnu</command>
+        <command name="rm">PrgEnv-intel</command>
+        <command name="rm">PrgEnv-pathscale</command>
+        <command name="load">PrgEnv-pgi</command>
+        <command name="switch">pgi pgi/15.7.0</command>
+        <command name="rm">cray-mpich</command>
+        <command name="rm">cray-libsci</command>
+        <command name="rm">atp</command>
+        <command name="rm">esmf</command>
+        <command name="load">cray-mpich/7.4.3</command>
+        <command name="load">cray-libsci/16.09.1</command>
+        <command name="load">atp/2.0.2</command>
+      </modules>
+      <modules compiler="intel">
+        <command name="rm">PrgEnv-pgi</command>
+        <command name="rm">PrgEnv-cray</command>
+        <command name="rm">PrgEnv-gnu</command>
+        <command name="rm">PrgEnv-pathscale</command>
+        <command name="load">PrgEnv-intel</command>
+        <command name="rm">intel</command>
+        <command name="rm">cray-libsci</command>
+        <command name="rm">cray-mpich</command>
+        <command name="rm">atp</command>
+        <command name="load">intel/15.0.2.164</command>
+        <command name="load">cray-libsci/16.09.1</command>
+        <command name="load">cray-mpich/7.4.3</command>
+        <command name="load">atp/2.0.2</command>
+      </modules>
+      <modules compiler="cray">
+        <command name="rm">PrgEnv-pgi</command>
+        <command name="rm">PrgEnv-gnu</command>
+        <command name="rm">PrgEnv-intel</command>
+        <command name="rm">PrgEnv-pathscale</command>
+        <command name="load">PrgEnv-cray</command>
+        <command name="rm">cce</command>
+        <command name="rm">cray-mpich</command>
+        <command name="load">cce/8.5.3</command>
+        <command name="load">cray-mpich/7.4.3</command>
+      </modules>
+      <!-- mpi lib settings -->
+      <modules mpilib="mpi-serial">
+        <command name="load">cray-netcdf/4.4.1</command>
+        <command name="load">cray-hdf5/1.10.0</command>
+      </modules>
+      <modules mpilib="!mpi-serial">
+        <command name="load">cray-netcdf-hdf5parallel/4.4.1</command>
+        <command name="load">cray-parallel-netcdf/1.7.0</command>
+        <command name="load">cray-hdf5-parallel/1.10.0</command>
+      </modules>
+      <!-- Default -->
+      <environment_variables>
+        <env name="COMPILER">$COMPILER</env>
+        <env name="MPILIB">$MPILIB</env>
+        <env name="MPICH_ENV_DISPLAY">1</env>
+        <env name="MPICH_VERSION_DISPLAY">1</env>
+        <env name="MPICH_CPUMASK_DISPLAY">1</env>
+        <env name="MPSTKZ">128M</env>
+	<env name="NETCDFROOT" compiler="pgi">/opt/cray/netcdf-hdf5parallel/4.4.1/PGI/15.3/</env>
+	<env name="PNETCDFROOT" compiler="pgi" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/PGI/15.3</env>
+	<env name="NETCDFROOT" compiler="pgiacc">/opt/cray/netcdf-hdf5parallel/4.4.1/PGI/15.3/</env>
+	<env name="PNETCDFROOT" compiler="pgiacc" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/PGI/15.3</env>
+	<env name="NETCDFROOT" compiler="intel">/opt/cray/netcdf-hdf5parallel/4.4.1/INTEL/15.0/</env>
+	<env name="PNETCDFROOT" compiler="intel" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/INTEL/15.0</env>
+	<env name="NETCDFROOT" compiler="cray">/opt/cray/netcdf-hdf5parallel/4.4.1/CRAY/8.3/</env>
+	<env name="PNETCDFROOT" compiler="cray" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/CRAY/8.3</env>
+        <env name="OMP_STACKSIZE">128M</env>
+      </environment_variables>
+
+      <!-- Set if compiler and mpilib  -->
+      <environment_variables compiler="pgiacc">
+        <!-- NOTE(wjs, 2015-03-12) The following line is needed for bit-for-bit reproducibility -->
+        <env name="CRAY_CPU_TARGET">istanbul</env>
+        <env name="CRAY_CUDA_MPS">1</env>
+      </environment_variables>
+      <environment_variables compiler="pgi">
+        <!-- NOTE(wjs, 2015-03-12) The following line is needed for bit-for-bit reproducibility -->
+        <env name="CRAY_CPU_TARGET">istanbul</env>
+      </environment_variables>
+      <environment_variables compiler="intel">
+        <env name="CRAYPE_LINK_TYPE">dynamic</env>
+      </environment_variables>
+    </module_system>
+</machine>
+  
+
+
 <machine MACH="titan">
 <DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>titan</NODENAME_REGEX>
