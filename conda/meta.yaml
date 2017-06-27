@@ -30,7 +30,6 @@ requirements:
     - output_viewer
     - matplotlib
     - cartopy
-    - mesalib
 
 about:
     home: https://github.com/zshaheen/acme-diags
