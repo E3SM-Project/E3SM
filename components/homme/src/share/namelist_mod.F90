@@ -140,10 +140,15 @@ module namelist_mod
   ! ============================================
   ! readnl:
   ! read in the namelists...
+  !
+  ! Revision History
+  !
+  ! Aaron Donahue 17.06.27: Fixed bug with multiple communication groups for
+  !             dyn_npes < npes.
   ! ============================================
 
 #ifdef CAM
-  subroutine readnl(par, NLFileName)
+  subroutine readnl(par, masterproc, masterprocid, mpicom, NLFileName)
     use units, only : getunit, freeunit
     use mesh_mod, only : MeshOpen
     character(len=*), intent(in) :: NLFilename  ! namelist filename
@@ -152,6 +157,15 @@ module namelist_mod
     use mesh_mod, only : MeshOpen
 #endif
     type (parallel_t), intent(in) ::  par
+#ifdef CAM
+    logical, intent(in) :: masterproc
+    integer, intent(in) :: masterprocid
+    integer, intent(in) :: mpicom
+#else
+    logical :: masterproc = par%masterproc
+    integer :: masterprocid = par%root
+    integer :: mpicom = par%comm
+#endif
     character(len=MAX_FILE_LEN) :: mesh_file
     integer :: se_ftype, se_limiter_option
     integer :: se_phys_tscale, se_nsplit
@@ -567,137 +581,137 @@ module namelist_mod
     if(se_topology .ne. 'none') topology = se_topology
 #endif
 
-    call MPI_barrier(par%comm,ierr)
+    call MPI_barrier(mpicom,ierr)
 
     npart  = par%nprocs
 
     ! Broadcast namelist variables to all MPI processes
 
-    call MPI_bcast(PARTMETHOD ,     1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(TOPOLOGY,        MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
-    call MPI_bcast(test_case,       MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
-    call MPI_bcast(tasknum,         1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(ne,              1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(qsize,           1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(sub_case,        1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(remapfreq,       1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(remap_type, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
-    call MPI_bcast(statefreq,       1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(restartfreq,     1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(multilevel,      1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(useframes,       1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(runtype,         1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(PARTMETHOD ,     1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(TOPOLOGY,        MAX_STRING_LEN,MPIChar_t  ,masterprocid,mpicom,ierr)
+    call MPI_bcast(test_case,       MAX_STRING_LEN,MPIChar_t  ,masterprocid,mpicom,ierr)
+    call MPI_bcast(tasknum,         1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(ne,              1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(qsize,           1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(sub_case,        1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(remapfreq,       1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(remap_type, MAX_STRING_LEN, MPIChar_t, masterprocid, mpicom, ierr)
+    call MPI_bcast(statefreq,       1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(restartfreq,     1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(multilevel,      1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(useframes,       1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(runtype,         1,MPIinteger_t,masterprocid,mpicom,ierr)
 
 #ifdef CAM
     phys_tscale     = se_phys_tscale
     limiter_option  = se_limiter_option
     nsplit          = se_nsplit
 #else
-    call MPI_bcast(omega,           1, MPIreal_t   , par%root,par%comm,ierr)
-    call MPI_bcast(pertlim,         1, MPIreal_t   , par%root,par%comm,ierr)
-    call MPI_bcast(tstep,           1, MPIreal_t   , par%root,par%comm,ierr)
-    call MPI_bcast(nmax,            1, MPIinteger_t, par%root,par%comm,ierr)
-    call MPI_bcast(NTHREADS,        1, MPIinteger_t, par%root,par%comm,ierr)
-    call MPI_bcast(ndays,           1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(omega,           1, MPIreal_t   , masterprocid,mpicom,ierr)
+    call MPI_bcast(pertlim,         1, MPIreal_t   , masterprocid,mpicom,ierr)
+    call MPI_bcast(tstep,           1, MPIreal_t   , masterprocid,mpicom,ierr)
+    call MPI_bcast(nmax,            1, MPIinteger_t, masterprocid,mpicom,ierr)
+    call MPI_bcast(NTHREADS,        1, MPIinteger_t, masterprocid,mpicom,ierr)
+    call MPI_bcast(ndays,           1, MPIinteger_t, masterprocid,mpicom,ierr)
     nEndStep = nmax
 
-    call MPI_bcast(omega,           1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(rearth,          1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(omega,           1, MPIreal_t,    masterprocid,mpicom,ierr)
+    call MPI_bcast(rearth,          1, MPIreal_t,    masterprocid,mpicom,ierr)
     rrearth = 1.0d0/rearth
 
-    call MPI_bcast(dcmip2_0_h0,     1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(dcmip2_0_rm,     1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(dcmip2_0_zetam,  1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(dcmip2_x_ueq,    1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(dcmip2_x_h0,     1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(dcmip2_x_d,      1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(dcmip2_x_xi,     1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(dcmip2_0_h0,     1, MPIreal_t,    masterprocid,mpicom,ierr)
+    call MPI_bcast(dcmip2_0_rm,     1, MPIreal_t,    masterprocid,mpicom,ierr)
+    call MPI_bcast(dcmip2_0_zetam,  1, MPIreal_t,    masterprocid,mpicom,ierr)
+    call MPI_bcast(dcmip2_x_ueq,    1, MPIreal_t,    masterprocid,mpicom,ierr)
+    call MPI_bcast(dcmip2_x_h0,     1, MPIreal_t,    masterprocid,mpicom,ierr)
+    call MPI_bcast(dcmip2_x_d,      1, MPIreal_t,    masterprocid,mpicom,ierr)
+    call MPI_bcast(dcmip2_x_xi,     1, MPIreal_t,    masterprocid,mpicom,ierr)
 #endif
-    call MPI_bcast(vthreads  ,      1, MPIinteger_t, par%root,par%comm,ierr)
-    call MPI_bcast(smooth,          1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(phys_tscale,     1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(NSPLIT,          1, MPIinteger_t, par%root,par%comm,ierr)
-    call MPI_bcast(limiter_option,  1, MPIinteger_t, par%root,par%comm,ierr)
-    call MPI_bcast(se_ftype,        1, MPIinteger_t, par%root,par%comm,ierr)
-    call MPI_bcast(vert_remap_q_alg,1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(vthreads  ,      1, MPIinteger_t, masterprocid,mpicom,ierr)
+    call MPI_bcast(smooth,          1, MPIreal_t,    masterprocid,mpicom,ierr)
+    call MPI_bcast(phys_tscale,     1, MPIreal_t,    masterprocid,mpicom,ierr)
+    call MPI_bcast(NSPLIT,          1, MPIinteger_t, masterprocid,mpicom,ierr)
+    call MPI_bcast(limiter_option,  1, MPIinteger_t, masterprocid,mpicom,ierr)
+    call MPI_bcast(se_ftype,        1, MPIinteger_t, masterprocid,mpicom,ierr)
+    call MPI_bcast(vert_remap_q_alg,1, MPIinteger_t, masterprocid,mpicom,ierr)
 
-    call MPI_bcast(fine_ne,         1, MPIinteger_t, par%root,par%comm,ierr)
-    call MPI_bcast(max_hypervis_courant,1,MPIreal_t, par%root,par%comm,ierr)
-    call MPI_bcast(nu,              1, MPIreal_t   , par%root,par%comm,ierr)
-    call MPI_bcast(nu_s,            1, MPIreal_t   , par%root,par%comm,ierr)
-    call MPI_bcast(nu_q,            1, MPIreal_t   , par%root,par%comm,ierr)
-    call MPI_bcast(nu_div,          1, MPIreal_t   , par%root,par%comm,ierr)
-    call MPI_bcast(nu_p,            1, MPIreal_t   , par%root,par%comm,ierr)
-    call MPI_bcast(nu_top,          1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(fine_ne,         1, MPIinteger_t, masterprocid,mpicom,ierr)
+    call MPI_bcast(max_hypervis_courant,1,MPIreal_t, masterprocid,mpicom,ierr)
+    call MPI_bcast(nu,              1, MPIreal_t   , masterprocid,mpicom,ierr)
+    call MPI_bcast(nu_s,            1, MPIreal_t   , masterprocid,mpicom,ierr)
+    call MPI_bcast(nu_q,            1, MPIreal_t   , masterprocid,mpicom,ierr)
+    call MPI_bcast(nu_div,          1, MPIreal_t   , masterprocid,mpicom,ierr)
+    call MPI_bcast(nu_p,            1, MPIreal_t   , masterprocid,mpicom,ierr)
+    call MPI_bcast(nu_top,          1, MPIreal_t   , masterprocid,mpicom,ierr)
 
-    call MPI_bcast(disable_diagnostics,1,MPIlogical_t,par%root,par%comm,ierr)
-    call MPI_bcast(psurf_vis,1,MPIinteger_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(hypervis_order,1,MPIinteger_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(hypervis_power,1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(hypervis_scaling,1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(hypervis_subcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(hypervis_subcycle_q,1,MPIinteger_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(smooth_phis_numcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(smooth_sgh_numcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(smooth_phis_nudt,1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(initial_total_mass ,1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(u_perturb     ,1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(rotate_grid   ,1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(integration,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
-    call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
-    call MPI_bcast(use_semi_lagrange_transport ,1,MPIlogical_t,par%root,par%comm,ierr)
-    call MPI_bcast(use_semi_lagrange_transport_local_conservation ,1,MPIlogical_t,par%root,par%comm,ierr)
-    call MPI_bcast(tstep_type,1,MPIinteger_t ,par%root,par%comm,ierr)
-    call MPI_bcast(cubed_sphere_map,1,MPIinteger_t ,par%root,par%comm,ierr)
-    call MPI_bcast(qsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
-    call MPI_bcast(rsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
-    call MPI_bcast(rk_stage_user,1,MPIinteger_t ,par%root,par%comm,ierr)
-    call MPI_bcast(LFTfreq,1,MPIinteger_t ,par%root,par%comm,ierr)
-    call MPI_bcast(prescribed_wind,1,MPIinteger_t ,par%root,par%comm,ierr)
-    call MPI_bcast(moisture,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
-    call MPI_bcast(columnpackage,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
+    call MPI_bcast(disable_diagnostics,1,MPIlogical_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(psurf_vis,1,MPIinteger_t   ,masterprocid,mpicom,ierr)
+    call MPI_bcast(hypervis_order,1,MPIinteger_t   ,masterprocid,mpicom,ierr)
+    call MPI_bcast(hypervis_power,1,MPIreal_t   ,masterprocid,mpicom,ierr)
+    call MPI_bcast(hypervis_scaling,1,MPIreal_t   ,masterprocid,mpicom,ierr)
+    call MPI_bcast(hypervis_subcycle,1,MPIinteger_t   ,masterprocid,mpicom,ierr)
+    call MPI_bcast(hypervis_subcycle_q,1,MPIinteger_t   ,masterprocid,mpicom,ierr)
+    call MPI_bcast(smooth_phis_numcycle,1,MPIinteger_t   ,masterprocid,mpicom,ierr)
+    call MPI_bcast(smooth_sgh_numcycle,1,MPIinteger_t   ,masterprocid,mpicom,ierr)
+    call MPI_bcast(smooth_phis_nudt,1,MPIreal_t   ,masterprocid,mpicom,ierr)
+    call MPI_bcast(initial_total_mass ,1,MPIreal_t   ,masterprocid,mpicom,ierr)
+    call MPI_bcast(u_perturb     ,1,MPIreal_t   ,masterprocid,mpicom,ierr)
+    call MPI_bcast(rotate_grid   ,1,MPIreal_t   ,masterprocid,mpicom,ierr)
+    call MPI_bcast(integration,MAX_STRING_LEN,MPIChar_t ,masterprocid,mpicom,ierr)
+    call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,masterprocid,mpicom,ierr)
+    call MPI_bcast(use_semi_lagrange_transport ,1,MPIlogical_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(use_semi_lagrange_transport_local_conservation ,1,MPIlogical_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(tstep_type,1,MPIinteger_t ,masterprocid,mpicom,ierr)
+    call MPI_bcast(cubed_sphere_map,1,MPIinteger_t ,masterprocid,mpicom,ierr)
+    call MPI_bcast(qsplit,1,MPIinteger_t ,masterprocid,mpicom,ierr)
+    call MPI_bcast(rsplit,1,MPIinteger_t ,masterprocid,mpicom,ierr)
+    call MPI_bcast(rk_stage_user,1,MPIinteger_t ,masterprocid,mpicom,ierr)
+    call MPI_bcast(LFTfreq,1,MPIinteger_t ,masterprocid,mpicom,ierr)
+    call MPI_bcast(prescribed_wind,1,MPIinteger_t ,masterprocid,mpicom,ierr)
+    call MPI_bcast(moisture,MAX_STRING_LEN,MPIChar_t ,masterprocid,mpicom,ierr)
+    call MPI_bcast(columnpackage,MAX_STRING_LEN,MPIChar_t ,masterprocid,mpicom,ierr)
 
-    call MPI_bcast(restartfile,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
-    call MPI_bcast(restartdir,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
+    call MPI_bcast(restartfile,MAX_STRING_LEN,MPIChar_t ,masterprocid,mpicom,ierr)
+    call MPI_bcast(restartdir,MAX_STRING_LEN,MPIChar_t ,masterprocid,mpicom,ierr)
 
-    call MPI_bcast(uselapi,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(uselapi,1,MPIlogical_t,masterprocid,mpicom,ierr)
 
     if (integration == "full_imp") then
-       call MPI_bcast(precon_method,MAX_STRING_LEN,MPIChar_t,par%root,par%comm,ierr)
-       call MPI_bcast(maxits     ,1,MPIinteger_t,par%root,par%comm,ierr)
-       call MPI_bcast(tol        ,1,MPIreal_t   ,par%root,par%comm,ierr)
+       call MPI_bcast(precon_method,MAX_STRING_LEN,MPIChar_t,masterprocid,mpicom,ierr)
+       call MPI_bcast(maxits     ,1,MPIinteger_t,masterprocid,mpicom,ierr)
+       call MPI_bcast(tol        ,1,MPIreal_t   ,masterprocid,mpicom,ierr)
     end if
 
-    call MPI_bcast(vform    , MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
-    call MPI_bcast(vfile_mid, MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
-    call MPI_bcast(vfile_int, MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
-    call MPI_bcast(vanalytic, 1,              MPIinteger_t, par%root, par%comm,ierr)
-    call MPI_bcast(vtop     , 1,              MPIreal_t   , par%root, par%comm,ierr)
+    call MPI_bcast(vform    , MAX_STRING_LEN, MPIChar_t   , masterprocid, mpicom,ierr)
+    call MPI_bcast(vfile_mid, MAX_STRING_LEN, MPIChar_t   , masterprocid, mpicom,ierr)
+    call MPI_bcast(vfile_int, MAX_STRING_LEN, MPIChar_t   , masterprocid, mpicom,ierr)
+    call MPI_bcast(vanalytic, 1,              MPIinteger_t, masterprocid, mpicom,ierr)
+    call MPI_bcast(vtop     , 1,              MPIreal_t   , masterprocid, mpicom,ierr)
 
 #ifndef CAM
-    call MPI_bcast(output_prefix,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
-    call MPI_bcast(output_timeunits ,max_output_streams,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(output_start_time ,max_output_streams,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(output_end_time ,max_output_streams,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(output_frequency ,max_output_streams,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(output_prefix,MAX_STRING_LEN,MPIChar_t  ,masterprocid,mpicom,ierr)
+    call MPI_bcast(output_timeunits ,max_output_streams,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(output_start_time ,max_output_streams,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(output_end_time ,max_output_streams,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(output_frequency ,max_output_streams,MPIinteger_t,masterprocid,mpicom,ierr)
 
-    call MPI_bcast(output_dir   ,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
-    call MPI_bcast(output_varnames1 ,varname_len*max_output_variables,MPIChar_t,par%root,par%comm,ierr)
-    call MPI_bcast(output_varnames2 ,varname_len*max_output_variables,MPIChar_t,par%root,par%comm,ierr)
-    call MPI_bcast(output_varnames3 ,varname_len*max_output_variables,MPIChar_t,par%root,par%comm,ierr)
-    call MPI_bcast(output_varnames4 ,varname_len*max_output_variables,MPIChar_t,par%root,par%comm,ierr)
-    call MPI_bcast(output_varnames5 ,varname_len*max_output_variables,MPIChar_t,par%root,par%comm,ierr)
-    call MPI_bcast(io_stride , 1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(num_io_procs , 1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
-    call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
+    call MPI_bcast(output_dir   ,MAX_STRING_LEN,MPIChar_t  ,masterprocid,mpicom,ierr)
+    call MPI_bcast(output_varnames1 ,varname_len*max_output_variables,MPIChar_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(output_varnames2 ,varname_len*max_output_variables,MPIChar_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(output_varnames3 ,varname_len*max_output_variables,MPIChar_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(output_varnames4 ,varname_len*max_output_variables,MPIChar_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(output_varnames5 ,varname_len*max_output_variables,MPIChar_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(io_stride , 1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(num_io_procs , 1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(output_type , 9,MPIChar_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,masterprocid,mpicom,ierr)
 
     ! sanity check on thread count
     ! HOMME will run if if nthreads > max, but gptl will print out GB of warnings.
     if (NThreads*vthreads > omp_get_max_threads()) then
-       if(par%masterproc) write(iulog,*) "Main:NThreads=",NThreads
-       if(par%masterproc) print *,'omp_get_max_threads() = ',OMP_get_max_threads()
-       if(par%masterproc) print *,'requested threads exceeds OMP_get_max_threads()'
+       if(masterproc) write(iulog,*) "Main:NThreads=",NThreads
+       if(masterproc) print *,'omp_get_max_threads() = ',OMP_get_max_threads()
+       if(masterproc) print *,'requested threads exceeds OMP_get_max_threads()'
        call abortmp('stopping')
     endif
     call omp_set_num_threads(NThreads*vthreads)
@@ -728,9 +742,9 @@ module namelist_mod
       call abortmp("Do not specify ne if using a mesh file input.")
     end if
     end if
-    if (par%masterproc) write (iulog,*) "Mesh File:", trim(mesh_file)
+    if (masterproc) write (iulog,*) "Mesh File:", trim(mesh_file)
     if (ne.eq.0) then
-       if (par%masterproc) write (iulog,*) "Opening Mesh File:", trim(mesh_file)
+       if (masterproc) write (iulog,*) "Opening Mesh File:", trim(mesh_file)
       call set_mesh_dimensions()
       call MeshOpen(mesh_file, par)
     end if
@@ -739,7 +753,7 @@ module namelist_mod
        cubed_sphere_map=0  ! default is equi-angle gnomonic
        if (ne.eq.0) cubed_sphere_map=2  ! element_local for var-res grids
     endif
-    if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
+    if (masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
 
 !logic around different hyperviscosity options
     if (hypervis_power /= 0) then
@@ -782,15 +796,15 @@ module namelist_mod
     nmpi_per_node=1
 #endif
 #ifndef CAM
-    call MPI_bcast(interpolate_analysis, 7,MPIlogical_t,par%root,par%comm,ierr)
-    call MPI_bcast(interp_nlat , 1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(interp_nlon , 1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(interp_gridtype , 1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(interp_type , 1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(interpolate_analysis, 7,MPIlogical_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(interp_nlat , 1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(interp_nlon , 1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(interp_gridtype , 1,MPIinteger_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(interp_type , 1,MPIinteger_t,masterprocid,mpicom,ierr)
 
-    call MPI_bcast(replace_vec_by_vordiv ,MAX_VECVARS ,MPIlogical_t,par%root,par%comm,ierr)
-    call MPI_bcast(vector_uvars ,10*MAX_VECVARS ,MPIChar_t,par%root,par%comm,ierr)
-    call MPI_bcast(vector_vvars ,10*MAX_VECVARS ,MPIChar_t,par%root,par%comm,ierr)
+    call MPI_bcast(replace_vec_by_vordiv ,MAX_VECVARS ,MPIlogical_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(vector_uvars ,10*MAX_VECVARS ,MPIChar_t,masterprocid,mpicom,ierr)
+    call MPI_bcast(vector_vvars ,10*MAX_VECVARS ,MPIChar_t,masterprocid,mpicom,ierr)
 
     call set_interp_parameter('gridtype',interp_gridtype)
     call set_interp_parameter("itype",interp_type)
@@ -831,7 +845,7 @@ module namelist_mod
     ! PartitionForNodes=.FALSE.
     if((nnodes .eq. 1) .and. PartitionForNodes) PartitionForNodes=.FALSE.
 
-    if (par%masterproc) then
+    if (masterproc) then
        write(iulog,*)"done reading namelist..."
 
        write(iulog,*)"readnl: topology      = ",TRIM( TOPOLOGY )
