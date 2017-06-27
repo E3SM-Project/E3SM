@@ -247,7 +247,7 @@ def _create_component_modelio_namelists(case, files):
 
     confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
     lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")
-
+    inst_cpl = case.get_value("NINST_CPL")
     models = case.get_values("COMP_CLASSES")
     for model in models:
         model = model.lower()
@@ -255,8 +255,12 @@ def _create_component_modelio_namelists(case, files):
             config = {}
             config['component'] = model
             entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=True)
-
-            inst_count = case.get_value("NINST_" + model.upper())
+            if inst_cpl == 1:
+                inst_count = case.get_value("NINST_" + model.upper())
+            elif model != 'ESP':
+                inst_count = inst_cpl
+            else:
+                inst_count = 1
 
             inst_string = ""
             inst_index = 1

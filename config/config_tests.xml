@@ -525,14 +525,8 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <REST_OPTION>none</REST_OPTION>
     <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
     <HIST_N>$STOP_N</HIST_N>
-    <NINST_CPL>1</NINST_CPL>
-    <NINST_ATM>1</NINST_ATM>
-    <NINST_OCN>1</NINST_OCN>
-    <NINST_WAV>1</NINST_WAV>
-    <NINST_GLC>1</NINST_GLC>
-    <NINST_ICE>1</NINST_ICE>
-    <NINST_ROF>1</NINST_ROF>
-    <NINST_LND>1</NINST_LND>
+    <MULTI_COUPLER>TRUE</MULTI_COUPLER>
+    <NINST_CPL>3</NINST_CPL>
   </test>
 
   <test NAME="NCK">

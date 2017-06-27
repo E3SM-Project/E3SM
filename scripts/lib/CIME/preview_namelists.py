@@ -83,6 +83,7 @@ def create_namelists(case, component=None):
         # are restored.
         if multicoupler and model_str != "cpl":
             case.set_value("MULTI_COUPLER",False)
+            print "HERE NINST_{} = {}".format(model_str.upper(), case.get_value("NINST_{}".format(model_str.upper())))
         if component is None or component == model_str:
             # first look in the case SourceMods directory
             cmd = os.path.join(caseroot, "SourceMods", "src."+compname, "buildnml")
