@@ -1977,7 +1977,8 @@
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
     <desc>Number of instances for each component.  If MULTI_COUPLER is True
-    only NINST_CPL is used, if MULTI_COUPLER is False NINST_CPL is 1.</desc>
+    only NINST_CPL is used and all components have NINST_CPL instances;
+    if MULTI_COUPLER is False NINST_CPL is 1.</desc>
   </entry>
 
   <entry id="NINST_LAYOUT">

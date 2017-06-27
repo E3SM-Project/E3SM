@@ -5,7 +5,7 @@ be used by other XML interface modules and not directly.
 from CIME.XML.standard_module_setup import *
 from distutils.spawn import find_executable
 from xml.dom import minidom
-
+from CIME.utils import append_status
 import getpass
 
 logger = logging.getLogger(__name__)
@@ -82,6 +82,8 @@ class GenericXML(object):
             doc = minidom.parseString(xmlstr)
             with open(outfile,'w') as xmlout:
                 doc.writexml(xmlout,addindent='  ')
+        append_status("Flush completed at {}".format(get_timestamp()), CaseStatus)
+
 
     def get_node(self, nodename, attributes=None, root=None, xpath=None):
         """

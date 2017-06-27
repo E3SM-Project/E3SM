@@ -77,10 +77,10 @@ def create_namelists(case, component=None):
             compname = "drv"
         else:
             compname = case.get_value("COMP_{}".format(model_str.upper()))
-        # Multicoupler mode (MULTI_COUPLER ) must temporarily change
-        # NINST and NTASKS settings so that the component buildnml scripts
-        # will work correctly.  After the call to buildnml the original values
-        # are restored.
+        # We must temporarily toggle out of Multicoupler mode (MULTI_COUPLER )
+        # so that the component build namelists use the correct number of instances
+        # we can get rid of this hack when all of the components understand MULTI_COUPLER
+        # mode
         if multicoupler and model_str != "cpl":
             case.set_value("MULTI_COUPLER",False)
         if component is None or component == model_str:

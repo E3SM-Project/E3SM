@@ -1,6 +1,6 @@
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
-from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status
+from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status, get_timestamp
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
@@ -255,7 +255,7 @@ def case_run(case, skip_pnl=False):
            "You are not calling the run script via the submit script. "
            "As a result, short-term archiving will not be called automatically."
            "Please submit your run using the submit script like so:"
-           " ./case.submit")
+           " ./case.submit Time: {}".format(get_timestamp())
 
     # Forces user to use case.submit if they re-submit
     if case.get_value("TESTCASE") is None:
