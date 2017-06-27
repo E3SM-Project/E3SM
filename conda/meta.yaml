@@ -22,6 +22,7 @@ requirements:
     - vtk-cdat-nox 7.1.0.2.8.2017.03.23.16.48.73fb094d17ccdd594a6abf9ff8732149c88dc2e6
     - mesalib <8
     - ffmpeg <3
+    - vcsaddons-nox 2.8
     - dv3d-nox 2.8
     - cdms2 2.10
     - cdutil 2.10
