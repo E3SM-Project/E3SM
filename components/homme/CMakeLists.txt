@@ -154,20 +154,35 @@ ADD_SUBDIRECTORY(utils/cime/src/share/timing)
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/CMake" ${CMAKE_MODULE_PATH})
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio2/cmake" ${CMAKE_MODULE_PATH})
-FIND_PACKAGE(NETCDF)
 
-# These are needed for pio's FindNetCDF
+
+#
+# Bug in PIO: PIO1 calls TARGET_LINK_LIBRARIES uses all caps variables, 
+# instead of the mixed case variables computed by PIO's findNetCDF.  
+# 2017/6 PR submitted to pio1
+# workaround until this makes it back into ACME:
+#
 SET(NetCDF_PATH ${NETCDF_DIR})
 SET(PnetCDF_PATH ${PNETCDF_DIR})
+FIND_PACKAGE(NetCDF "4.3.3" COMPONENTS C Fortran)
+FIND_PACKAGE(PnetCDF COMPONENTS C Fortran)
+set(NETCDF_LIBRARIES ${NetCDF_Fortran_LIBRARIES})
+set(PNETCDF_LIBRARY ${PnetCDF_Fortran_FOUND})
+set(PNETCDF_LIBRARIES ${PnetCDF_Fortran_LIBRARIES})
 
+
+
+#
+# PIO
+#
+#set search paths for PIO's findNetCDF
+SET(NetCDF_PATH ${NETCDF_DIR})
+SET(PnetCDF_PATH ${PNETCDF_DIR})
 # pio needs cime/externals/genf90/genf90.pl
 SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/genf90)
-
-# For pio - allow the user to set HDF5_DIR to find libhdf5 etc.
-IF (HDF5_DIR)
-  SET(ENV{HDF5_ROOT} ${HDF5_DIR})
-ENDIF ()
 ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
+
+
 
 # CPRNC locations
 IF (CPRNC_BINARY)
