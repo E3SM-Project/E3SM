@@ -97,7 +97,7 @@ def add_cyclic(var):
     return var(longitude=(lon[0], lon[0]+360.0, 'coe'))
 
 def plot(reference, test, diff, metrics_dict, parameter):
-    vcs_canvas = vcs.init(bg=True, geometry=(parameters.canvas_size_w, parameters.canvas_size_h))
+    vcs_canvas = vcs.init(bg=True, geometry=(parameter.canvas_size_w, parameter.canvas_size_h))
     case_id = parameter.case_id
 
     file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'set7')
