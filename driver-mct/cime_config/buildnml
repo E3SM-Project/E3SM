@@ -247,18 +247,23 @@ def _create_component_modelio_namelists(case, files):
 
     confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
     lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")
-    inst_cpl = case.get_value("NINST_CPL")
     models = case.get_values("COMP_CLASSES")
+    #if we are in multi-coupler mode the number of instances of cpl will be the max
+    # of any NINST_* value
+    maxinst = 1
+    if case.get_value("MULTI_COUPLER"):
+        maxinst = case.get_value("NINST_MAX")
+
     for model in models:
         model = model.lower()
         with NamelistGenerator(case, definition_file) as nmlgen:
             config = {}
             config['component'] = model
             entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=True)
-            if inst_cpl == 1:
+            if maxinst == 1:
                 inst_count = case.get_value("NINST_" + model.upper())
             elif model != 'ESP':
-                inst_count = inst_cpl
+                inst_count = maxinst
             else:
                 inst_count = 1
 
