@@ -10,7 +10,7 @@
 
        This file may have wav desc entries.
   -->
-  <description>
+  <description modifier_mode="1">
     <desc wav="DWAV[%NULL][%CLIMO]">Data wave model (DWAV)</desc>
     <desc option="NULL">null mode</desc>
     <desc option="CLIMO">climatological mode</desc>

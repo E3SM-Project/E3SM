@@ -123,18 +123,18 @@ class Component(EntryID):
     #pylint: disable=arguments-differ
     def get_description(self, compsetname):
         if self.get_version() == 3.0:
-            return self._get_description_v3(compsetname, comp_class=self._comp_class)
+            return self._get_description_v3(compsetname, self._comp_class)
         else:
             return self._get_description_v2(compsetname)
 
     def get_forcing_description(self, compsetname):
         if self.get_version() == 3.0:
-            return self._get_description_v3(compsetname, comp_class='forcing')
+            return self._get_description_v3(compsetname, 'forcing')
         else:
             return ""
 
 
-    def _get_description_v3(self, compsetname, comp_class=None):
+    def _get_description_v3(self, compsetname, comp_class):
         """
         version 3 of the config_component.xml file has the description section at the top of the file
         the description field has one attribute 'modifier_mode' which has allowed values
@@ -151,12 +151,12 @@ class Component(EntryID):
 
         component descriptions are matched to the compsetname using a set method
         """
+        expect(comp_class is not None,"comp_class argument required for version3 files")
         comp_class = comp_class.lower()
         rootnode = self.get_node("description")
         desc = ""
         desc_nodes = self.get_nodes("desc", root=rootnode)
 
-        expect(comp_class is not None,"comp_class argument required for version3 files")
         modifier_mode = rootnode.get('modifier_mode')
         if modifier_mode is None:
             modifier_mode = '*'
@@ -195,6 +195,7 @@ class Component(EntryID):
             fullset = set(parts+opt_parts)
             if self._get_description_match(compsetname, reqset, fullset, modifier_mode):
                 desc = node.text
+                break
         # cpl and esp components may not have a description
         if comp_class not in ['cpl','esp']:
             expect(len(desc) > 0,

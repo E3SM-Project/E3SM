@@ -13,7 +13,7 @@
        This file may have esp desc entries.
   -->
 
-  <description>
+  <description modifier_mode="1">
     <desc esp="DESP[%NOOP][%TEST]">Data External System Processor (DESP)</desc>
     <desc option="NOOP">no modification of any model data</desc>
     <desc option="TEST">test modification of any model data</desc>
