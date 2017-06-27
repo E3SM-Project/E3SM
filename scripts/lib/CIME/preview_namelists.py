@@ -77,12 +77,6 @@ def create_namelists(case, component=None):
             compname = "drv"
         else:
             compname = case.get_value("COMP_{}".format(model_str.upper()))
-        # We must temporarily toggle out of Multicoupler mode (MULTI_COUPLER )
-        # so that the component build namelists use the correct number of instances
-        # we can get rid of this hack when all of the components understand MULTI_COUPLER
-        # mode
-        if multicoupler and model_str != "cpl":
-            case.set_value("MULTI_COUPLER",False)
         if component is None or component == model_str:
             # first look in the case SourceMods directory
             cmd = os.path.join(caseroot, "SourceMods", "src."+compname, "buildnml")
@@ -94,8 +88,6 @@ def create_namelists(case, component=None):
             expect(os.path.isfile(cmd), "Could not find buildnml file for component {}".format(compname))
             run_sub_or_cmd(cmd, (caseroot), "buildnml", (case, caseroot, compname), case=case)
 
-        if multicoupler and model_str != "cpl":
-            case.set_value("MULTI_COUPLER",True)
     logger.info("Finished creating component namelists")
 
     # Save namelists to docdir

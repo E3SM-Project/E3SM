@@ -636,7 +636,7 @@ class Case(object):
         self.clean_up_lookups()
 
 
-    def _setup_mach_pes(self, pecount, ncouplers, ninst, machine_name, mpilib):
+    def _setup_mach_pes(self, pecount, multi_coupler, ninst, machine_name, mpilib):
         #--------------------------------------------
         # pe layout
         #--------------------------------------------
@@ -720,21 +720,20 @@ class Case(object):
                 val = -1*val*pes_per_node
             if val > pesize:
                 pesize = val
-        pesize *= int(ncouplers)
+        if multi_coupler:
+            pesize *= int(ninst)
+            mach_pes_obj.set_value("MULTI_COUPLER", True)
 
         # Make sure that every component has been accounted for
         # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
         for compclass in self._component_classes:
             key = "NINST_{}".format(compclass)
             if compclass == "CPL":
-                if ncouplers > 1:
-                    mach_pes_obj.set_value("MULTI_COUPLER", True)
-                    mach_pes_obj.set_value(key, ncouplers)
                 continue
             # ESP models are currently limited to 1 instance
             if compclass == "ESP":
                 mach_pes_obj.set_value(key, 1)
-            elif ncouplers == 1:
+            else:
                 mach_pes_obj.set_value(key, ninst)
 
             key = "NTASKS_{}".format(compclass)
@@ -750,7 +749,7 @@ class Case(object):
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
                   pesfile=None,user_grid=False, gridfile=None,
-                  ncouplers=1, ninst=1, test=False,
+                  multi_coupler=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
                   input_dir=None):
@@ -841,10 +840,10 @@ class Case(object):
         env_mach_specific_obj.populate(machobj)
         self.schedule_rewrite(env_mach_specific_obj)
 
-        pesize = self._setup_mach_pes(pecount, ncouplers, ninst, machine_name, mpilib)
+        pesize = self._setup_mach_pes(pecount, multi_coupler, ninst, machine_name, mpilib)
 
-        if ncouplers > 1:
-            logger.info(" Coupler has %s instances" % ncouplers)
+        if multi_coupler and ninst>1:
+            logger.info(" Coupler has %s instances" % ninst)
 
         #--------------------------------------------
         # batch system
@@ -1463,7 +1462,7 @@ class Case(object):
                user_mods_dir=None, machine_name=None,
                project=None, pecount=None, compiler=None, mpilib=None,
                pesfile=None,user_grid=False, gridfile=None,
-               ncouplers=1, ninst=1, test=False,
+               multi_coupler=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
                input_dir=None):
@@ -1478,7 +1477,7 @@ class Case(object):
                            project=project,
                            pecount=pecount, compiler=compiler, mpilib=mpilib,
                            pesfile=pesfile,user_grid=user_grid, gridfile=gridfile,
-                           ncouplers=ncouplers, ninst=ninst, test=test,
+                           multi_coupler=multi_coupler, ninst=ninst, test=test,
                            walltime=walltime, queue=queue,
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,

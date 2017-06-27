@@ -255,7 +255,7 @@ def case_run(case, skip_pnl=False):
            "You are not calling the run script via the submit script. "
            "As a result, short-term archiving will not be called automatically."
            "Please submit your run using the submit script like so:"
-           " ./case.submit Time: {}".format(get_timestamp())
+           " ./case.submit Time: {}".format(get_timestamp()))
 
     # Forces user to use case.submit if they re-submit
     if case.get_value("TESTCASE") is None:

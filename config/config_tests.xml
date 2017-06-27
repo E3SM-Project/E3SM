@@ -526,7 +526,6 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
     <HIST_N>$STOP_N</HIST_N>
     <MULTI_COUPLER>TRUE</MULTI_COUPLER>
-    <NINST_CPL>3</NINST_CPL>
   </test>
 
   <test NAME="NCK">

@@ -157,19 +157,11 @@ OR
     if args.input_dir is not None:
         args.input_dir = os.path.abspath(args.input_dir)
 
-    if args.multi_coupler:
-        ncouplers = args.ninst
-        ninst = 1
-    else:
-        ncouplers = 1
-        ninst = args.ninst
-
-
     return args.case, args.compset, args.res, args.machine, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.user_mods_dir, args.pesfile, \
-        args.user_grid, args.gridfile, args.srcroot, args.test, ncouplers, \
-        ninst, args.walltime, args.queue, args.output_root, args.script_root, \
+        args.user_grid, args.gridfile, args.srcroot, args.test, args.multi_coupler, \
+        args.ninst, args.walltime, args.queue, args.output_root, args.script_root, \
         run_unsupported, args.answer, args.input_dir
 
 ###############################################################################
@@ -180,8 +172,8 @@ def _main_func(description):
     casename, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
         user_mods_dir, pesfile, \
-        user_grid, gridfile, srcroot, test, ncouplers, ninst, walltime, queue, \
-        output_root, script_root, run_unsupported, \
+        user_grid, gridfile, srcroot, test, multi_coupler, ninst, walltime, \
+        queue, output_root, script_root, run_unsupported, \
         answer, input_dir = parse_command_line(sys.argv, cimeroot, description)
 
     if script_root is None:
@@ -204,7 +196,7 @@ def _main_func(description):
                     machine_name=machine, project=project,
                     pecount=pecount, compiler=compiler, mpilib=mpilib,
                     pesfile=pesfile,user_grid=user_grid, gridfile=gridfile,
-                    ncouplers=ncouplers, ninst=ninst, test=test,
+                    multi_coupler=multi_coupler, ninst=ninst, test=test,
                     walltime=walltime, queue=queue, output_root=output_root,
                     run_unsupported=run_unsupported, answer=answer,
                     input_dir=input_dir)
