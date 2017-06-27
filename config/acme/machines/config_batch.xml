@@ -82,7 +82,8 @@
       <directive                       > -n {{ total_tasks }} </directive>
       <directive                       > -R "span[ptile={{ tasks_per_node }}]"</directive>
       <directive                       > -N  </directive>
-	  <!-- The following option causes problems with lsf version on Summitdev. -->
+	  <!-- The following option causes problems with lsf version on Summitdev. 
+	  If desired, this should be in specific machine section. -->
       <!-- <directive default="poe"         > -a {{ poe }} </directive> -->
       <directive default="acme.stdout" > -o {{ output_error_path }}.%J  </directive>
       <directive default="acme.stderr" > -e {{ output_error_path }}.%J  </directive>
@@ -408,6 +409,11 @@
      </directives>
      <queues>
        <queue walltimemax="01:00" default="true">batch</queue>
+	   <!--
+	   Nodes	Max Walltime
+	   <=4		4 hours
+	   >4		1 hour
+	   -->
      </queues>
    </batch_system>
 
