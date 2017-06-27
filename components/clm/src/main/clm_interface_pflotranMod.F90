@@ -526,7 +526,7 @@ contains
          if (err_found) then
             fc = err_index
             write(iulog,'(A,70(1h-))')">>>--------  PFLOTRAN Mass Balance Check:beg  "
-            write(iulog,'(A35,I15,A10,I20)')"Carbon Balance Error in Column = ",filters(ifilter)%soilc(fc), "@ nstep=",get_nstep()
+            write(iulog,'(A35,I15,A10,I20)')"Carbon Balance Error in Column = ",filters(ifilter)%soilc(fc), " @ nstep=",get_nstep()
             write(iulog,'(10A15)')"errcb", "C_in-out", "Cdelta","Cinputs","Coutputs","Cbeg","Cend"
             write(iulog,'(10E15.6)')pf_errcb(fc), (pf_cinputs(fc) - pf_coutputs(fc))*dtime, pf_cdelta(fc), &
                                     pf_cinputs(fc)*dtime,pf_coutputs(fc)*dtime,pf_cbeg(fc),pf_cend(fc)
@@ -732,7 +732,7 @@ contains
          if (err_found) then
             fc = err_index
             write(iulog,'(A,70(1h-))')">>>--------  PFLOTRAN Mass Balance Check:beg  "
-            write(iulog,'(A35,I15,A10,I20)')"Nitrogen Balance Error in Column = ",filters(ifilter)%soilc(fc), "@ nstep = ",get_nstep()
+            write(iulog,'(A35,I15,A10,I20)')"Nitrogen Balance Error in Column = ",filters(ifilter)%soilc(fc), " @ nstep = ",get_nstep()
             write(iulog,'(10A15)')  "errnb", "N_in-out", "Ndelta",                          &
                                     "Ninputs","Noutputs", "Nbeg","Nend"
             write(iulog,'(10E15.6)')pf_errnb(fc), (pf_ninputs(fc) - pf_noutputs(fc))*dtime, pf_ndelta(fc),  &
