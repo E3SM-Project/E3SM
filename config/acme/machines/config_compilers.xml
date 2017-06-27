@@ -1039,6 +1039,21 @@ for mct, etc.
   <ADD_SLIBS>-L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib64 -llapack</ADD_SLIBS>
 </compiler>
 
+<compiler COMPILER="pgi" MACH="summitdev">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_LDFLAGS> $(shell nc-config --libs) $(shell nf-config --flibs) -L$OLCF_NETLIB_LAPACK_ROOT/lib -lblas -llapack </ADD_LDFLAGS>
+  <ADD_SLIBS> $(shell nf-config --flibs) </ADD_SLIBS>
+  <MPIFC> mpif90 </MPIFC>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpiCC </MPICXX>
+</compiler>
+
+
 <compiler COMPILER="ibm" MACH="cetus">
   <SFC> mpixlf2003_r </SFC>
   <MPIFC> mpixlf2003_r </MPIFC>
