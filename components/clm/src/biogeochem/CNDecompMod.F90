@@ -775,17 +775,17 @@ contains
                         carbonflux_vars, nitrogenflux_vars,       &
                         phosphorusstate_vars, phosphorusflux_vars)
 
+         !! save variables before updating
+         do j = 1,nlevdecomp
+            do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                smin_no3_to_plant_vr_loc(c,j) = smin_no3_to_plant_vr(c,j)
+                smin_nh4_to_plant_vr_loc(c,j) = smin_nh4_to_plant_vr(c,j)
+            end do
+         end do
+
       end if !!if(use_clm_interface.and.use_pflotran.and.pf_cmode)
 
-!!------------------------------------------------------------------
-!! wgs: save variables before updating
-      do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               smin_no3_to_plant_vr_loc(c,j) = smin_no3_to_plant_vr(c,j)
-               smin_nh4_to_plant_vr_loc(c,j) = smin_nh4_to_plant_vr(c,j)
-            end do
-      end do
 !!------------------------------------------------------------------
       ! phase-3 Allocation for plants
       call t_startf('CNAllocation - phase-3')
@@ -798,6 +798,7 @@ contains
                 phosphorusstate_vars, phosphorusflux_vars)
       call t_stopf('CNAllocation - phase-3')
 !!------------------------------------------------------------------
+
     if(use_pflotran.and.pf_cmode) then
 !! wgs: CNAllocation3_PlantCNPAlloc():
 !! smin_nh4_to_plant_vr(c,j), smin_no3_to_plant_vr(c,j), sminn_to_plant_vr(c,j) may be adjusted
@@ -807,8 +808,6 @@ contains
            do j = 1,nlevdecomp
                smin_no3_vr(c,j) = smin_no3_vr(c,j) - (smin_no3_to_plant_vr(c,j) - smin_no3_to_plant_vr_loc(c,j))*dt
                smin_nh4_vr(c,j) = smin_nh4_vr(c,j) - (smin_nh4_to_plant_vr(c,j) - smin_nh4_to_plant_vr_loc(c,j))*dt
-               !! have added controls to ensure smin_no3_to_plant_vr(c,j) <= smin_no3_vr(c,j)/dt in CNAllocation3_PlantCNPAlloc()
-               !! it seems smin_no3_to_plant_vr(c,j) = 0 or smin_no3_to_plant_vr(c,j) <= smin_no3_to_plant_vr_loc(c,j)
                smin_no3_vr(c,j) = max(0._r8, smin_no3_vr(c,j))
                smin_nh4_vr(c,j) = max(0._r8, smin_nh4_vr(c,j))
             end do
@@ -816,13 +815,13 @@ contains
     end if !!(use_pflotran.and.pf_cmode)
 !!------------------------------------------------------------------
       ! vertically integrate net and gross mineralization fluxes for diagnostic output
-      do fc=1,num_soilc
-         c = filter_soilc(fc)
-         net_nmin(c)    = 0._r8
-         gross_nmin(c)  = 0._r8
-         net_pmin(c)    = 0._r8
-         gross_pmin(c)  = 0._r8
-      end do
+!      do fc=1,num_soilc
+!         c = filter_soilc(fc)
+!         net_nmin(c)    = 0._r8
+!         gross_nmin(c)  = 0._r8
+!         net_pmin(c)    = 0._r8
+!         gross_pmin(c)  = 0._r8
+!      end do
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
