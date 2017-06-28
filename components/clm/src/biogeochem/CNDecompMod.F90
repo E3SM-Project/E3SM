@@ -818,13 +818,13 @@ contains
     end if !!(use_pflotran.and.pf_cmode)
 !!------------------------------------------------------------------
       ! vertically integrate net and gross mineralization fluxes for diagnostic output
-      do fc=1,num_soilc
-         c = filter_soilc(fc)
-         net_nmin(c)    = 0._r8
-         gross_nmin(c)  = 0._r8
-         net_pmin(c)    = 0._r8
-         gross_pmin(c)  = 0._r8
-      end do
+!      do fc=1,num_soilc
+!         c = filter_soilc(fc)
+!         net_nmin(c)    = 0._r8
+!         gross_nmin(c)  = 0._r8
+!         net_pmin(c)    = 0._r8
+!         gross_pmin(c)  = 0._r8
+!      end do
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
