@@ -48,10 +48,9 @@ To run two instances of CAM, CLM, CICE, RTM and DOCN, invoke the following :ref:
 As a result, you will have two instances of CAM, CLM and CICE (prescribed), RTM, and DOCN, each running concurrently on 72 MPI tasks and all using the same coupler component.   In this single coupler mode the number of tasks for each component instance is NTASKS_COMPONENT/NINST_COMPONENT and the total number of tasks is the same as for the single instance case.
 
 Now consider the multi coupler model.
-To use this mode change the NINST values for the individual components back to 1 and the NINST_CPL to 2.
+To use this mode change
 ::
-   > ./xmlchange NINST=1
-   > ./xmlchange NINST_CPL=2
+   > ./xmlchange MULTI_COUPLER=TRUE
 
 This configuration will run each component instance on the original 144 tasks but will generate two copies of the model (in the same executable) for a total of 288 tasks.
 
@@ -96,6 +95,8 @@ Also keep these important points in mind:
 #. Calling **case.setup** with ``--clean`` *DOES NOT* remove the **user_nl_xxx_NN** (where xxx is the component name) files created by **case.setup**.
 
 #. A special variable NINST_LAYOUT is provided for some experimental compsets, its value should be
-   'concurrent' for all but a few special cases.
+   'concurrent' for all but a few special cases and it cannot be used if MULTI_COUPLER=TRUE.
 
 #. In **create_test** these options can be invoked with testname modifiers _N# for the single coupler mode and _C# for the multi-coupler mode.  These are mutually exclusive options, they cannot be combined.
+
+#. In create_newcase you may use --ninst # to set the number of instances and --multi-coupler for multi-coupler mode.
