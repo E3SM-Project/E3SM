@@ -186,8 +186,13 @@ subroutine seq_io_wopen(filename,clobber,cdf64,file_ind)
           if (lclobber) then
              nmode = pio_clobber
              !lcdf64 only applies to classic NETCDF files.
-             if (lcdf64 .and. cpl_pio_iotype == PIO_IOTYPE_NETCDF) &
-                  nmode = ior(nmode,PIO_64BIT_OFFSET)
+             if (lcdf64) then
+                if(cpl_pio_iotype == PIO_IOTYPE_NETCDF) then
+                   nmode = ior(nmode,PIO_64BIT_OFFSET)
+                elseif(cpl_pio_iotype == PIO_IOTYPE_PNETCDF) then
+                   nmode = ior(nmode,PIO_64BIT_DATA)
+                endif
+             endif
              rcode = pio_createfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), nmode)
              if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
              rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
@@ -207,8 +212,13 @@ subroutine seq_io_wopen(filename,clobber,cdf64,file_ind)
        else
           nmode = pio_noclobber
           !lcdf64 only applies to classic NETCDF files.
-          if (lcdf64 .and. cpl_pio_iotype == PIO_IOTYPE_NETCDF) &
-               nmode = ior(nmode,PIO_64BIT_OFFSET)
+          if (lcdf64) then
+             if(cpl_pio_iotype == PIO_IOTYPE_NETCDF) then
+                nmode = ior(nmode,PIO_64BIT_OFFSET)
+             elseif(cpl_pio_iotype == PIO_IOTYPE_PNETCDF) then
+                nmode = ior(nmode,PIO_64BIT_DATA)
+             endif
+          endif
           rcode = pio_createfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), nmode)
           if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
           rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
