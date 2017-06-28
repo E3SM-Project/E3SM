@@ -269,8 +269,10 @@ def case_run(case, skip_pnl=False):
             lid = new_lid()
 
         if prerun_script:
+            case.flush()
             do_external(prerun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
                         lid, prefix="prerun")
+            case.read_xml()
 
         lid = run_model(case, lid, skip_pnl)
         save_logs(case, lid)       # Copy log files back to caseroot
@@ -278,12 +280,16 @@ def case_run(case, skip_pnl=False):
             get_timing(case, lid)     # Run the getTiming script
 
         if data_assimilation:
+            case.flush()
             do_data_assimilation(data_assimilation_script, case.get_value("CASEROOT"), cycle, lid,
                                  case.get_value("RUNDIR"))
+            case.read_xml()
 
         if postrun_script:
+            case.flush()
             do_external(postrun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
                         lid, prefix="postrun")
+            case.read_xml()
 
         save_postrun_provenance(case)
 
