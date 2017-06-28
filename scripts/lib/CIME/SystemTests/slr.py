@@ -1,17 +1,48 @@
 """
-CIME smoke test  This class inherits from SystemTestsCommon
-It does a startup run with restarts off and optionally compares to or generates baselines
+Solution reproducibility test - common parts shared by
+different test methods. The CESM/ACME model's 
+multi-instance capability is used to conduct an ensemble 
+of simulations starting from different initial conditions.
+
+This class inherits from SystemTestsCommon.
+
+Different solution reproducibility test methods use
+different namelist settings and postprocessing. 
+We will decide later whether separate test types 
+will be created for those different methods 
+(pergro, time step convergence, statistical methods)
 """
 
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
+from CIME.case_setup import case_setup
+#import CIME.utils
+#from CIME.check_lockedfiles import *
 
 logger = logging.getLogger(__name__)
 
-class SMS(SystemTestsCommon):
+class SLR(SystemTestsCommon):
 
     def __init__(self, case):
         """
-        initialize an object interface to the SMS system test
+        initialize an object interface to the SLR test
         """
         SystemTestsCommon.__init__(self, case)
+
+    def build_phase(self, sharedlib_only=False, model_only=False):
+
+        # Build exectuable with multiple instances
+        # (in the development phase we use 3)
+        # Lay all of the components out concurrently
+
+        ninst = 3
+        logging.warn("Starting to build multi-instance exe")
+        for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
+            ntasks = self._case.get_value("NTASKS_%s"%comp)
+            self._case.set_value("ROOTPE_%s"%comp, 0)
+            self._case.set_value("NINST_%s"%comp,  ninst)
+            self._case.set_value("NTASKS_%s"%comp, ntasks*ninst)
+
+        self._case.set_value("ROOTPE_CPL",0)
+        self._case.set_value("NTASKS_CPL",ntasks*ninst)
+        self._case.flush()
