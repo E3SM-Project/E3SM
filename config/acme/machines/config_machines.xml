@@ -2522,7 +2522,6 @@
      </module_system>
 </machine>
 
-<<<<<<< HEAD:cime/config/acme/machines/config_machines.xml
 <machine MACH="eddi">
   <DESC>small developer workhorse at lbl climate sciences</DESC>
   <OS>LINUX</OS>
@@ -2555,8 +2554,6 @@
   <module_system type="none"/>
 </machine>
 
-
-=======
 <machine MACH="summitdev">
 	 <DESC>Pre-Exascale testbed at ORNL. Each node: 2 IBM POWER8 CPUs + 4 NVIDIA Tesla P100 GPUs, 20 cores/node, 8 HW threads/core.</DESC>
 	 <NODENAME_REGEX>summitdev-*</NODENAME_REGEX>
@@ -2662,12 +2659,9 @@
     </module_system>
 </machine>
 
-
-
->>>>>>> Preliminary machine config for Summitdev:cime/cime_config/acme/machines/config_machines.xml
 <default_run_suffix>
   <default_run_exe>${EXEROOT}/acme.exe </default_run_exe>
-  <default_run_misc_suffix> >> acme.log.$ENV{LID} 2>&amp;1 </default_run_misc_suffix>
+  <default_run_misc_suffix> >> acme.log.$LID 2>&amp;1 </default_run_misc_suffix>
 </default_run_suffix>
 
 </config_machines>
