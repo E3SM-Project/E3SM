@@ -421,7 +421,7 @@ macro(createTest testFile)
     ENDIF ()
 
     # Force cprnc to be built when the individual test is run
-    SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS cprnc)
+#    SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS cprnc)
 
     # Individual target to rerun and diff the tests
     SET(THIS_TEST_INDIV "test-${TEST_NAME}")
@@ -438,7 +438,7 @@ macro(createTest testFile)
     ADD_DEPENDENCIES(baseline ${EXEC_NAME})
 
     # Force cprnc to be built when the individual test is run
-    ADD_DEPENDENCIES(${THIS_TEST_INDIV} cprnc)
+#    ADD_DEPENDENCIES(${THIS_TEST_INDIV} cprnc)
 
     # Now make the Individual targets
     #ADD_CUSTOM_COMMAND(TARGET ${THIS_TEST_INDIV}
