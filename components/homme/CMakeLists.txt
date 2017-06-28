@@ -191,10 +191,10 @@ IF (CPRNC_DIR)
   # user specifed CPRNC binary - dont build
   ADD_EXECUTABLE( cprnc IMPORTED)
   find_program(CPRNC_BINARY cprnc ${CPRNC_DIR})
-  IF ( ${CPRNC_BINARY} )
+  IF ( CPRNC_BINARY )
      message("-- CPRNC_BINARY = ${CPRNC_BINARY}")
   ELSE()
-     message(WARNING "cprnc not found - cannot run regression tests")
+     message(WARNING "cprnc not found - cannot check regression test output")
   ENDIF ()
 ELSE ()
   # compile CPRNC from CIME source code. Requires CIME support for machine
