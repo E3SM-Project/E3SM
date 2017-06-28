@@ -210,7 +210,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.9
+set script_ver = 3.0.10
 
 #===========================================
 # DEFINE ALIASES
@@ -228,9 +228,9 @@ alias acme_newline "echo ''"
 set first_argument = $1
 if ( $first_argument != '' ) then
  echo 'This script does everything needed to configure/compile/run a case. As such, it'
- echo 'provides complete provenance for each run and makes sharing with newbies easy. Future'
- echo 'users should make sure that everything required for a run is in this script, the ACME'
- echo 'git repo, or the inputdata svn repo.'
+ echo 'provides complete provenance for each run and makes sharing simulation configurations easy.'
+ echo 'Users should make sure that everything required for a run is in this script, the ACME'
+ echo 'git repo, and/or the inputdata svn repo.'
  echo '** This script accepts no arguments. Please edit the script as needed and resubmit without arguments. **'
  exit 5
 endif
@@ -811,8 +811,19 @@ set input_data_dir = `$xmlquery_exe DIN_LOC_ROOT --value`
 #$xmlchange_exe --id CAM_CONFIG_OPTS --val "-phys cam5 -chem linoz_mam3"
 
 ## Chris Golaz: build with COSP
-#NOTE: xmlchange has a bug which requires append to be specified with quotes and a leading space
-$xmlchange_exe --id CAM_CONFIG_OPTS --append -val " -cosp"
+#NOTE: xmlchange has a bug which requires append to be specified with quotes and a leading space.
+#NOTE: The xmlchange will fail if CAM is not active, so test whether a data atmosphere (datm) is used.
+
+if ( `$xmlquery_exe --value COMP_ATM` == 'datm'  ) then 
+  acme_newline
+  acme_print 'The specified configuration uses a data atmosphere, so cannot activate COSP simulator.'
+  acme_newline
+else
+  acme_newline
+  acme_print 'Configuring ACME to use the COSP simulator.'
+  acme_newline
+  $xmlchange_exe --id CAM_CONFIG_OPTS --append --val " -cosp"
+endif
 
 #===========================
 # SET THE PARTITION OF NODES
@@ -912,6 +923,10 @@ $xmlchange_exe --id DEBUG --val `uppercase $debug_compile`
 cat <<EOF >> user_nl_cam
  nhtfrq = $atm_output_freq
  mfilt  = $records_per_atm_output_file
+EOF
+
+cat <<EOF >> user_nl_clm
+! finidat=''
 EOF
 
 ### NOTES ON COMMON NAMELIST OPTIONS ###
@@ -1354,6 +1369,7 @@ acme_newline
 #                        Also add a fix to reenable using the special acme qos queue on Edison (MD)
 # 3.0.8    2017-05-24    Fixed minor bug when $machine contained a capital letter. Bug was introduced recently. (PJC)
 # 3.0.9    2017-06-19    Fixed branch runs. Also removed sed commands for case.run and use --batch-args in case.submit (MD)
+# 3.0.10    2017-06-14    To allow data-atm compsets to work, I added a test for CAM_CONFIG_OPTS. (PJC)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
@@ -1365,6 +1381,8 @@ acme_newline
 # +) Add a 'default' option, for which REST_OPTION='$STOP_OPTION' and REST_N='$STOP_N'.
 #    This is important if the user subsequently edits STOP_OPTION or STOP_N.      (PJC)
 # +) triggering on $acme_tag = master_detached doesn't make sense.  Fix logic. (PJC)
+# +) run_root and run_root_dir are duplicative.  Also, move logical link creation before case.setup (PJC)
+# +) change comments referring to cesm_setup to case.setup (name has changed). (PJC)
 
 ###Example sed commands
 #============================
