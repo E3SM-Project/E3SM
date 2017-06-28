@@ -283,7 +283,7 @@ class GenericXML(object):
         return None
 
     def get_raw_record(self, root=None):
-        logger.info("writing file {}".format(self.filename))
+        logger.debug("writing file {}".format(self.filename))
         if root is None:
             root = self.root
         try:
