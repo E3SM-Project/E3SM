@@ -721,10 +721,14 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       logical, pointer :: config_write_albany_ascii_mesh
       character (len=StrKIND), pointer :: config_velocity_solver
       real (kind=RKIND), dimension(:), pointer :: &
-         thickness, bedTopography, lowerSurface, upperSurface, layerThicknessFractions, sfcMassBal, beta
-      real (kind=RKIND), dimension(:,:), pointer :: temperature
+         bedTopography, lowerSurface, upperSurface, layerThicknessFractions, beta
+      real (kind=RKIND), dimension(:), pointer :: thickness, thicknessUncertainty
+      real (kind=RKIND), dimension(:), pointer :: sfcMassBal, sfcMassBalUncertainty
+      real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal, floatingBasalMassBalUncertainty
       real (kind=RKIND), dimension(:), pointer :: &
-         observedSurfaceVelocityX, observedSurfaceVelocityY, observedSurfaceVelocityUncertainty, observedThicknessTendency
+         observedSurfaceVelocityX, observedSurfaceVelocityY, observedSurfaceVelocityUncertainty
+      real (kind=RKIND), dimension(:), pointer :: observedThicknessTendency, observedThicknessTendencyUncertainty
+      real (kind=RKIND), dimension(:,:), pointer :: temperature
       integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask, floatingEdges
       integer, dimension(:,:), pointer :: dirichletVelocityMask
       type (mpas_pool_type), pointer :: meshPool, geometryPool, thermalPool, observationsPool, velocityPool
@@ -778,6 +782,7 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
       call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
+      call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
       call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel = 1)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
@@ -795,6 +800,10 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       call mpas_pool_get_array(observationsPool, 'observedSurfaceVelocityY', observedSurfaceVelocityY)
       call mpas_pool_get_array(observationsPool, 'observedSurfaceVelocityUncertainty', observedSurfaceVelocityUncertainty)
       call mpas_pool_get_array(observationsPool, 'observedThicknessTendency', observedThicknessTendency)
+      call mpas_pool_get_array(observationsPool, 'observedThicknessTendencyUncertainty', observedThicknessTendencyUncertainty)
+      call mpas_pool_get_array(observationsPool, 'thicknessUncertainty', thicknessUncertainty)
+      call mpas_pool_get_array(observationsPool, 'sfcMassBalUncertainty', sfcMassBalUncertainty)
+      call mpas_pool_get_array(observationsPool, 'floatingBasalMassBalUncertainty', floatingBasalMassBalUncertainty)
 
       !----
 
@@ -821,8 +830,13 @@ subroutine li_velocity_external_write_albany_mesh(domain)
 
       ! call the C++ routine to write the mesh
       call mpas_log_write("Writing Albany ASCII mesh.", flushNow=.true.)
-      call write_ascii_mesh(bedTopography, lowerSurface, thickness, beta, sfcMassBal, temperature, &
-         observedSurfaceVelocityX, observedSurfaceVelocityY, observedSurfaceVelocityUncertainty, observedThicknessTendency)
+      call write_ascii_mesh(bedTopography, lowerSurface, &
+              beta, temperature, &
+              thickness, thicknessUncertainty, &
+              sfcMassBal, sfcMassBalUncertainty, &
+              floatingBasalMassBal, floatingBasalMassBalUncertainty, &
+              observedSurfaceVelocityX, observedSurfaceVelocityY, observedSurfaceVelocityUncertainty, &
+              observedThicknessTendency, observedThicknessTendencyUncertainty)
 
       !----
 
