@@ -374,7 +374,8 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
 
 
 
-    import2DFields(bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F,  minThickness);
+    std::map<int, int> bdExtensionMap;
+    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
@@ -1001,6 +1002,7 @@ void interface_init_log(){
   Interface_stdout = open(albany_log_filename, O_CREAT|O_WRONLY|O_TRUNC,0644);
   if(Interface_stdout >=  0) {
      write(Interface_stdout, "-- Beginning log file for output from Albany velocity solver --", 63);
+     write(Interface_stdout, " ", 1);
      fsync(Interface_stdout);
   } else {
     std::cerr << "Error opening Albany stdout file." << std::endl;
@@ -1424,8 +1426,9 @@ void extendMaskByOneLayer(int const* verticesMask_F,
   }
 }
 
-void import2DFields(double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
+void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
     double const * beta_F, double const * temperature_F, double const * smb_F, double eps) {
+        
   elevationData.assign(nVertices, 1e10);
   thicknessData.assign(nVertices, 1e10);
   bedTopographyData.assign(nVertices, 1e10);
@@ -1436,7 +1439,6 @@ void import2DFields(double const* bedTopography_F, double const * lowerSurface_F
   if (smb_F != 0)
     smbData.assign(nVertices, 1e10);
 
-  std::map<int, int> bdExtensionMap;
 
   //import fields
   for (int index = 0; index < nVertices; index++) {
@@ -1556,7 +1558,8 @@ void import2DFields(double const* bedTopography_F, double const * lowerSurface_F
 
 }
 
-void import2DFieldsObservations(double const * lowerSurface_F, 
+void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
+            double const * lowerSurface_F, 
             double const * thickness_F, double const * thicknessUncertainty_F,
             double const * smbUncertainty_F,
             double const * bmb_F, double const * bmbUncertainty_F,
@@ -1574,7 +1577,6 @@ void import2DFieldsObservations(double const * lowerSurface_F,
   observedDHDtData.assign(nVertices, 1e10);
   observedDHDtUncertaintyData.assign(nVertices, 1e10);
 
-  std::map<int, int> bdExtensionMap;
 
   //import fields
   for (int index = 0; index < nVertices; index++) {
@@ -1593,43 +1595,7 @@ void import2DFieldsObservations(double const * lowerSurface_F,
     observedDHDtUncertaintyData[index] = observedThicknessTendencyUncertainty_F[iCell] / unit_length * secondsInAYear;
   }
 
-  //extend to the border for floating vertices (copy of logic in previous function)
-  std::set<int>::const_iterator iter;
-
-  for (int iV = 0; iV < nVertices; iV++) {
-    int fCell = vertexToFCell[iV];
-    if (isVertexBoundary[iV] && !(cellsMask_F[fCell] & ice_present_bit_value)) {
-      int c;
-      int nEdg = nEdgesOnCells_F[fCell];
-      bool isFloating = false;
-      for (int j = 0; (j < nEdg)&&(!isFloating); j++) {
-        int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
-        isFloating = (floatingEdgesMask_F[fEdge] != 0);
-      }
-      if(!isFloating) continue;
-
-      double elevTemp =1e10;
-      for (int j = 0; j < nEdg; j++) {
-        int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
-        // bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & dynamic_ice_bit_value)
-        //     && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & dynamic_ice_bit_value);
-        // if (!keep)
-        //   continue;
-
-        int c0 = cellsOnEdge_F[2 * fEdge] - 1;
-        int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
-        c = (fCellToVertex[c0] == iV) ? c1 : c0;
-        if(!(cellsMask_F[c] & ice_present_bit_value)) continue;
-        double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
-
-        if (elevTemp > elev) {
-          elevTemp = elev;
-          bdExtensionMap[iV] = c;
-        }
-      }
-    }
-  }
-
+  //extend to the border for floating vertices (using map created by import2DFields above)
   for (std::map<int, int>::iterator it = bdExtensionMap.begin();
       it != bdExtensionMap.end(); ++it) {
     int iv = it->first;
@@ -1648,8 +1614,8 @@ void import2DFieldsObservations(double const * lowerSurface_F,
     observedDHDtUncertaintyData[iv] = observedThicknessTendencyUncertainty_F[ic] / unit_length * secondsInAYear;
 
   }
-
 }
+
 
 void importP0Temperature() {
   int lElemColumnShift = (Ordering == 1) ? 3 : 3 * indexToTriangleID.size();
@@ -2196,10 +2162,12 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
 
     // individual field values
     // Call needed functions to process MPAS fields to Albany units/format
-    //
-    import2DFields(bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F, minThickness);
+    
+    std::map<int, int> bdExtensionMap;  // local map to be created by import2DFields
+    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F, minThickness);
 
-    import2DFieldsObservations(lowerSurface_F, 
+    import2DFieldsObservations(bdExtensionMap,
+                    lowerSurface_F, 
                     thickness_F, thicknessUncertainty_F,
                     smbUncertainty_F,
                     bmb_F, bmbUncertainty_F,
