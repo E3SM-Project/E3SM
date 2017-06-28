@@ -169,6 +169,8 @@ FIND_PACKAGE(PnetCDF COMPONENTS C Fortran)
 set(NETCDF_LIBRARIES ${NetCDF_Fortran_LIBRARIES})
 set(PNETCDF_LIBRARY ${PnetCDF_Fortran_FOUND})
 set(PNETCDF_LIBRARIES ${PnetCDF_Fortran_LIBRARIES})
+# needed to build cprnc:
+set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
 
 
 
@@ -187,6 +189,7 @@ ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
 # CPRNC locations
 IF (CPRNC_BINARY)
   # user specifed CPRNC binary - dont build
+  ADD_EXECUTABLE( ${CPRNC_BINARY} IMPORTED)
 ELSE ()
   SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
   SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
