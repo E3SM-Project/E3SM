@@ -62,8 +62,14 @@ std::vector<int> indexToVertexID, vertexToFCell, triangleToFVertex, indexToEdgeI
 std::vector<double> temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices, velocityOnCells,
     elevationData, thicknessData, betaData, bedTopographyData, temperatureData, smbData, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
-std::vector<double> observedVeloXData, observedVeloYData, observedDHDtData; // only needed for creating ASCII mesh
-;
+
+// only needed for creating ASCII mesh
+std::vector<double> thicknessUncertaintyData;
+std::vector<double> smbUncertaintyData;
+std::vector<double> bmbData, bmbUncertaintyData;
+std::vector<double> observedVeloXData, observedVeloYData, observedVeloUncertaintyData;
+std::vector<double> observedDHDtData, observedDHDtUncertaintyData;
+
 int numBoundaryEdges;
 double radius;
 
@@ -1550,21 +1556,41 @@ void import2DFields(double const* bedTopography_F, double const * lowerSurface_F
 
 }
 
-void import2DFieldsObservations(double const * lowerSurface_F, double const * thickness_F,
-            double const* observedSurfaceVelocityX_F, double const * observedSurfaceVelocityY_F,
-            double const * observedThicknessTendency_F) {
+void import2DFieldsObservations(double const * lowerSurface_F, 
+            double const * thickness_F, double const * thicknessUncertainty_F,
+            double const * smbUncertainty_F,
+            double const * bmb_F, double const * bmbUncertainty_F,
+            double const * observedSurfaceVelocityX_F, double const * observedSurfaceVelocityY_F,
+            double const * observedSurfaceVelocityUncertainty_F,
+            double const * observedThicknessTendency_F, double const * observedThicknessTendencyUncertainty_F) {
+
+  thicknessUncertaintyData.assign(nVertices, 1e10);
+  smbUncertaintyData.assign(nVertices, 1e10);
+  bmbData.assign(nVertices, 1e10);
+  bmbUncertaintyData.assign(nVertices, 1e10);
   observedVeloXData.assign(nVertices, 1e10);
   observedVeloYData.assign(nVertices, 1e10);
+  observedVeloUncertaintyData.assign(nVertices, 1e10);
   observedDHDtData.assign(nVertices, 1e10);
+  observedDHDtUncertaintyData.assign(nVertices, 1e10);
 
   std::map<int, int> bdExtensionMap;
 
   //import fields
   for (int index = 0; index < nVertices; index++) {
     int iCell = vertexToFCell[index];
+
+    thicknessUncertaintyData[index] = thicknessUncertainty_F[iCell] / unit_length;
+    smbUncertaintyData[index] = smbUncertainty_F[iCell] / unit_length * secondsInAYear / rho_ice;
+    bmbData[index] = bmb_F[iCell] / unit_length * secondsInAYear / rho_ice;
+    bmbUncertaintyData[index] = bmbUncertainty_F[iCell] / unit_length * secondsInAYear / rho_ice;
+
     observedVeloXData[index] = observedSurfaceVelocityX_F[iCell] * secondsInAYear;
     observedVeloYData[index] = observedSurfaceVelocityY_F[iCell] * secondsInAYear;
+    observedVeloUncertaintyData[index] = observedSurfaceVelocityUncertainty_F[iCell] * secondsInAYear;
+
     observedDHDtData[index] = observedThicknessTendency_F[iCell] / unit_length * secondsInAYear;
+    observedDHDtUncertaintyData[index] = observedThicknessTendencyUncertainty_F[iCell] / unit_length * secondsInAYear;
   }
 
   //extend to the border for floating vertices (copy of logic in previous function)
@@ -1608,9 +1634,19 @@ void import2DFieldsObservations(double const * lowerSurface_F, double const * th
       it != bdExtensionMap.end(); ++it) {
     int iv = it->first;
     int ic = it->second;
+
+    thicknessUncertaintyData[iv] = thicknessUncertainty_F[ic] / unit_length;
+    smbUncertaintyData[iv] = smbUncertainty_F[ic] / unit_length * secondsInAYear / rho_ice;
+    bmbData[iv] = bmb_F[ic] / unit_length * secondsInAYear / rho_ice;
+    bmbUncertaintyData[iv] = bmbUncertainty_F[ic] / unit_length * secondsInAYear / rho_ice;
+
     observedVeloXData[iv] = observedSurfaceVelocityX_F[ic] * secondsInAYear;
     observedVeloYData[iv] = observedSurfaceVelocityY_F[ic] * secondsInAYear;
+    observedVeloUncertaintyData[iv] = observedSurfaceVelocityUncertainty_F[ic] * secondsInAYear;
+
     observedDHDtData[iv] = observedThicknessTendency_F[ic] / unit_length * secondsInAYear;
+    observedDHDtUncertaintyData[iv] = observedThicknessTendencyUncertainty_F[ic] / unit_length * secondsInAYear;
+
   }
 
 }
@@ -2088,11 +2124,14 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
   }
 
   void write_ascii_mesh(double const* bedTopography_F, double const* lowerSurface_F,
-    double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F,
+    double const* beta_F, double const* temperature_F,
+    double const* thickness_F, double const* thicknessUncertainty_F,
+    double const* smb_F, double const* smbUncertainty_F,
+    double const* bmb_F, double const* bmbUncertainty_F,
     double const* observedSurfaceVelocityX_F, double const* observedSurfaceVelocityY_F,
-    double const* observedVelocityUncertainty_F, double const* observedThicknessTendency_F) {
+    double const* observedSurfaceVelocityUncertainty_F, 
+    double const* observedThicknessTendency_F, double const * observedThicknessTendencyUncertainty_F) {
 
-    // TODO: add BMB?
 
 //    std::vector<double> regulThk(thicknessData);
 //    for (int index = 0; index < nVertices; index++)
@@ -2113,6 +2152,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
 
     // Write out ASCII format
 
+    std::cout << "Writing mesh to albany.msh." << std::endl;
     // msh file
     std::ofstream outfile;
     outfile.open ("albany.msh", std::ios::out | std::ios::trunc);
@@ -2156,21 +2196,34 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
 
     // individual field values
     // Call needed functions to process MPAS fields to Albany units/format
-    import2DFields(bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F,  minThickness);
-    import2DFieldsObservations(lowerSurface_F, thickness_F, 
-                    observedSurfaceVelocityX_F, observedSurfaceVelocityX_F, observedThicknessTendency_F);
+    //
+    import2DFields(bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F, minThickness);
 
-    outfile.open ("thickness.ascii", std::ios::out | std::ios::trunc);
-    if (outfile.is_open()) {
-       outfile << nVertices << "\n";  //number of vertices on first line
-       for(int i = 0; i<nVertices; ++i)
-         outfile << thicknessData[i]<<"\n";
-       outfile.close();
-    }
-    else {
-       std::cout << "Failed to open thickness ascii file!"<< std::endl;
-    }
+    import2DFieldsObservations(lowerSurface_F, 
+                    thickness_F, thicknessUncertainty_F,
+                    smbUncertainty_F,
+                    bmb_F, bmbUncertainty_F,
+                    observedSurfaceVelocityX_F, observedSurfaceVelocityX_F, observedSurfaceVelocityUncertainty_F,
+                    observedThicknessTendency_F, observedThicknessTendencyUncertainty_F);
 
+
+    // Write out individual fields
+    write_ascii_mesh_field(thicknessData, "thickness");
+    write_ascii_mesh_field(thicknessUncertaintyData, "thickness_uncertainty");
+
+    write_ascii_mesh_field(elevationData, "surface_height");
+
+    write_ascii_mesh_field(betaData, "basal_friction");
+
+    write_ascii_mesh_field(smbData, "surface_mass_balance");
+    write_ascii_mesh_field(smbUncertaintyData, "surface_mass_balance_uncertainty");
+
+    write_ascii_mesh_field(bmbData, "basal_mass_balance");
+    write_ascii_mesh_field(bmbUncertaintyData, "basal_mass_balance_uncertainty");
+
+    // These two fields are more complicated than the others so cannot use the function to write out
+
+    std::cout << "Writing temperature.ascii." << std::endl;
     outfile.open ("temperature.ascii", std::ios::out | std::ios::trunc);
     if (outfile.is_open()) {
        outfile << nTriangles << " " << nLayers << "\n";  //number of triangles and number of layers on first line
@@ -2191,39 +2244,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
        std::cout << "Failed to open tempertature ascii file!"<< std::endl;
     }
 
-    outfile.open ("surface_height.ascii", std::ios::out | std::ios::trunc);
-    if (outfile.is_open()) {
-       outfile << nVertices << "\n";  //number of vertices on first line
-       for(int i = 0; i<nVertices; ++i)
-         outfile << elevationData[i] <<"\n";
-       outfile.close();
-    }
-    else {
-       std::cout << "Failed to open surface_height ascii file!"<< std::endl;
-    }
-
-    outfile.open ("surface_mass_balance.ascii", std::ios::out | std::ios::trunc);
-    if (outfile.is_open()) {
-       outfile << nVertices << "\n";  //number of vertices on first line
-       for(int i = 0; i<nVertices; ++i)
-         outfile << smbData[i]<<"\n";
-       outfile.close();
-    }
-    else {
-       std::cout << "Failed to open surface_mass_balance ascii file!"<< std::endl;
-    }
-
-    outfile.open ("basal_friction.ascii", std::ios::out | std::ios::trunc);
-    if (outfile.is_open()) {
-       outfile << nVertices << "\n";  //number of vertices on first line
-       for(int i = 0; i<nVertices; ++i)
-         outfile << betaData[i]<<"\n";
-       outfile.close();
-    }
-    else {
-       std::cout << "Failed to open basal_friction ascii file!"<< std::endl;
-    }
-
+    std::cout << "Writing surface_velocity.ascii." << std::endl;
     outfile.open ("surface_velocity.ascii", std::ios::out | std::ios::trunc);
     if (outfile.is_open()) {
        outfile << nVertices << " " << 2 << "\n";  //number of vertices, number of components per vertex
@@ -2237,19 +2258,32 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
        std::cout << "Failed to open surface velocity ascii file!"<< std::endl;
     }
 
+    write_ascii_mesh_field(observedVeloUncertaintyData, "surface_velocity_uncertainty");
 
-    outfile.open ("dhdt.ascii", std::ios::out | std::ios::trunc);
-    if (outfile.is_open()) {
-       outfile << nVertices << "\n";  //number of vertices on first line
-       for(int i = 0; i<nVertices; ++i)
-         outfile << observedDHDtData[i]<<"\n";
-       outfile.close();
-    }
-    else {
-       std::cout << "Failed to open dhdt ascii file!"<< std::endl;
-    }
+    write_ascii_mesh_field(observedDHDtData, "dhdt");
+    write_ascii_mesh_field(observedDHDtUncertaintyData, "dhdt_uncertainty");
 
-
+    std::cout << "\nWriting of all Albany fields complete." << std::endl;
 
   }
 
+
+  void write_ascii_mesh_field(std::vector<double> fieldData, std::string filenamebase) {
+
+    std::string filename = filenamebase+".ascii";
+    std::cout << "Writing " << filename << std::endl;
+    std::ofstream outfile;
+    outfile.open (filename.c_str(), std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+       outfile << nVertices << "\n";  //number of vertices on first line
+       for(int i = 0; i < nVertices; ++i)
+         outfile << fieldData[i] << "\n";
+       outfile.close();
+    }
+    else {
+       std::cout << "Error: Failed to open  "+filename << std::endl;
+    }
+
+
+  }
+ 

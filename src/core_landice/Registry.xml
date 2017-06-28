@@ -448,11 +448,16 @@
 			<var name="waterThickness" packages="hydro"/>
 			<var name="waterPressure" packages="hydro"/>
 			<var name="channelArea" packages="hydro"/>
-			<var name="waterFluxMask" packages="hydro"/>
+                        <var name="waterFluxMask" packages="hydro"/>
+<!-- The following variables are only used for the Albany mesh converter. -->
                         <var name="observedSurfaceVelocityX" packages="observations"/>
                         <var name="observedSurfaceVelocityY" packages="observations"/>
                         <var name="observedSurfaceVelocityUncertainty" packages="observations"/>
                         <var name="observedThicknessTendency" packages="observations"/>
+                        <var name="observedThicknessTendencyUncertainty" packages="observations"/>
+                        <var name="sfcMassBalUncertainty" packages="observations"/>
+                        <var name="thicknessUncertainty" packages="observations"/>
+                        <var name="floatingBasalMassBalUncertainty" packages="observations"/>
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -911,6 +916,14 @@ is the value of that variable from the *previous* time level!
 		     description="uncertainty in observed surface velocity" />
 		<var name="observedThicknessTendency" type="real" dimensions="nCells Time" units="m s^-1"
                         description="observed tendency in thickness (dH/dt)" />
+		<var name="observedThicknessTendencyUncertainty" type="real" dimensions="nCells Time" units="m s^-1"
+                        description="uncertainty in observed tendency in thickness (dH/dt)" />
+                <var name="sfcMassBalUncertainty" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                        description="uncertainty in observed surface mass balance" />
+                <var name="thicknessUncertainty" type="real" dimensions="nCells Time" units="m"
+                        description="uncertainty in observed thickness" />
+                <var name="floatingBasalMassBalUncertainty" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                        description="uncertainty in observed floating basal mass balance" />
 	</var_struct>
 
 <!-- ================ -->
