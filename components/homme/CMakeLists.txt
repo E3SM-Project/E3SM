@@ -187,10 +187,17 @@ ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
 
 
 # CPRNC locations
-IF (CPRNC_BINARY)
+IF (CPRNC_DIR)
   # user specifed CPRNC binary - dont build
   ADD_EXECUTABLE( cprnc IMPORTED)
+  find_program(CPRNC_BINARY cprnc ${CPRNC_DIR})
+  IF ( ${CPRNC_BINARY} )
+     message("-- CPRNC_BINARY = ${CPRNC_BINARY}")
+  ELSE()
+     message(WARNING "cprnc not found - cannot run regression tests")
+  ENDIF ()
 ELSE ()
+  # compile CPRNC from CIME source code. Requires CIME support for machine
   SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
   SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
   ADD_SUBDIRECTORY(utils/cime/tools/cprnc)

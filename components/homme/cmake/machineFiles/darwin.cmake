@@ -18,4 +18,4 @@ SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 
 # see ../../README.cmake for options regarding cprnc
 # For non-CIME supported systems, assume cprnc is already built:
-SET (CPRNC_BINARY /usr/local/bin/cprnc CACHE FILEPAHT "")
+SET (CPRNC_DIR /usr/local/bin CACHE FILEPATH "")
