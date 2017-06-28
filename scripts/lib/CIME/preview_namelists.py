@@ -72,7 +72,6 @@ def create_namelists(case, component=None):
         model_str = model.lower()
         config_file = case.get_value("CONFIG_{}_FILE".format(model_str.upper()))
         config_dir = os.path.dirname(config_file)
-        multicoupler = case.get_value("MULTI_COUPLER")
         if model_str == "cpl":
             compname = "drv"
         else:

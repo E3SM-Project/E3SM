@@ -260,9 +260,9 @@ def _create_component_modelio_namelists(case, files):
             config = {}
             config['component'] = model
             entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=True)
-            if maxinst == 1:
+            if maxinst == 1 and model != 'cpl':
                 inst_count = case.get_value("NINST_" + model.upper())
-            elif model != 'ESP':
+            elif model != 'esp':
                 inst_count = maxinst
             else:
                 inst_count = 1
@@ -272,7 +272,7 @@ def _create_component_modelio_namelists(case, files):
             while inst_index <= inst_count:
                 # determine instance string
                 if inst_count > 1:
-                    inst_string = '_%04d' % inst_index
+                    inst_string = '_{04d}'.format(inst_index)
 
                 # set default values
                 for entry in entries:

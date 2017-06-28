@@ -152,7 +152,9 @@ def post_run_check(case, lid):
 
     rundir = case.get_value("RUNDIR")
     model = case.get_value("MODEL")
-    cpl_ninst = case.get_value("NINST_CPL")
+    cpl_ninst = 1
+    if case.get_value("MULTI_COUPLER"):
+        cpl_ninst = case.get_value("NINST_MAX")
     cpl_logs = []
     if cpl_ninst > 1:
         for inst in range(cpl_ninst):
