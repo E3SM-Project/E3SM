@@ -425,7 +425,6 @@ class Case(object):
         """
         science_support = []
         compset_alias = None
-        component_defining_compset = None
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}".format(components))
 
@@ -445,13 +444,12 @@ class Case(object):
                     self._compsetname = match
                     self.set_lookup_value("COMPSETS_SPEC_FILE" ,
                                    files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
-                    component_defining_compset = component
                     logger.info("Compset longname is {}".format(match))
                     logger.info("Compset specification file is {}".format(compsets_filename))
                     if user_compset is True:
                         logger.info("Found a compset match for longname {} in alias {}".format(compset_name, compset_alias))
 
-                    return compset_alias, science_support, component_defining_compset
+                    return compset_alias, science_support
 
         if user_compset is True:
             self._compsetname = compset_name
@@ -460,7 +458,7 @@ class Case(object):
                    "Could not find a compset match for either alias or longname in {}\n".format(compset_name)
                    + "You may need the --user-compset argument.")
 
-        return None, science_support, None
+        return None, science_support
 
     def _find_primary_component(self):
         """
@@ -589,12 +587,18 @@ class Case(object):
             env_file.add_elements_by_group(files, attlist)
 
         drv_config_file = files.get_value("CONFIG_CPL_FILE")
-        drv_comp = Component(drv_config_file)
+        drv_comp = Component(drv_config_file, "CPL")
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp, attributes=attlist)
 
         drv_config_file_model_specific = files.get_value("CONFIG_CPL_FILE_MODEL_SPECIFIC")
-        drv_comp_model_specific = Component(drv_config_file_model_specific)
+        drv_comp_model_specific = Component(drv_config_file_model_specific, 'CPL')
+
+        self._component_description["forcing"] = drv_comp_model_specific.get_forcing_description(self._compsetname)
+        logger.info("Compset forcing is {}".format(self._component_description["forcing"]))
+        self._component_description["CPL"] = drv_comp_model_specific.get_description(self._compsetname)
+        if len(self._component_description["CPL"]) > 0:
+            logger.info("Com forcing is {}".format(self._component_description["CPL"]))
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp_model_specific, attributes=attlist)
 
@@ -606,7 +610,6 @@ class Case(object):
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
 
-
         for i in xrange(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
@@ -617,12 +620,15 @@ class Case(object):
             comp_config_file = self.get_resolved_value(comp_config_file)
             expect(comp_config_file is not None and os.path.isfile(comp_config_file),
                    "Config file {} for component {} not found.".format(comp_config_file, comp_name))
-            compobj = Component(comp_config_file)
+            compobj = Component(comp_config_file, comp_class)
+            # For files following version 3 schema this also checks the compsetname validity
             self._component_description[comp_class] = compobj.get_description(self._compsetname)
-            expect(self._component_description[comp_class] is not None,"No description found in file {} for component {}".format(comp_config_file, comp_name))
+            expect(self._component_description[comp_class] is not None,"No description found in file {} for component {} in comp_class {}".format(comp_config_file, comp_name, comp_class))
             logger.info("{} component is {}".format(comp_class, self._component_description[comp_class]))
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
+
+
 
         self.clean_up_lookups()
 
@@ -744,7 +750,7 @@ class Case(object):
         # compset, pesfile, and compset components
         #--------------------------------------------
         files = Files()
-        compset_alias, science_support, component_defining_compset = self._set_compset(
+        compset_alias, science_support = self._set_compset(
             compset_name, files, user_compset=user_compset)
 
         self._components = self.get_compset_components()
@@ -767,12 +773,10 @@ class Case(object):
         #--------------------------------------------
         self._get_component_config_data(files)
 
-        if component_defining_compset is None:
-            # This needs to be called after self.set_comp_classes, which is called
-            # from self._get_component_config_data
-            self._primary_component = self._find_primary_component()
-        else:
-            self._primary_component = component_defining_compset
+        # This needs to be called after self.set_comp_classes, which is called
+        # from self._get_component_config_data
+        self._primary_component = self._find_primary_component()
+
         self._set_info_from_primary_component(files, pesfile=pesfile)
 
         self.get_compset_var_settings()
@@ -1061,12 +1065,17 @@ class Case(object):
                       "README.case", caseroot=self._caseroot)
         append_status("Pes     specification file is {}".format(self.get_value("PES_SPEC_FILE")),
                       "README.case", caseroot=self._caseroot)
+        if "forcing" in self._component_description:
+            append_status("Forcing is {}".format(self._component_description["forcing"])
+                      ,"README.case", caseroot=self._caseroot)
         for component_class in self._component_classes:
+            if component_class in self._component_description and \
+               len(self._component_description[component_class])>0:
+                append_status("Component {} is {}".format(component_class, self._component_description[component_class]),"README.case", caseroot=self._caseroot)
             if component_class == "CPL":
                 continue
             comp_grid = "{}_GRID".format(component_class)
-            append_status("Component {} is {}".format(component_class, self._component_description[component_class]),
-                          "README.case", caseroot=self._caseroot)
+
             append_status("{} is {}".format(comp_grid,self.get_value(comp_grid)),
                           "README.case", caseroot=self._caseroot)
             comp = str(self.get_value("COMP_{}".format(component_class)))

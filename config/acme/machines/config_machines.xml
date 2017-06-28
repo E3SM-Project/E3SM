@@ -2236,6 +2236,7 @@
   <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
   <PES_PER_NODE>15</PES_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+  <SAVE_TIMING_DIR>/glade/scratch/$USER/acme/timing/performance_archive</SAVE_TIMING_DIR>
   <mpirun >
     <executable>mpirun.lsf</executable>
   </mpirun>

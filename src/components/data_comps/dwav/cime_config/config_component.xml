@@ -1,12 +1,19 @@
 <?xml version="1.0"?>
 
-<entry_id>
+<entry_id version="3.0">
 
-  <!-- NOTE that the description block determines what DWAV% values can appear in the compset name 
-       For DWAV this is determined by the DWAV_MODE values -->
-  <description>
-    <desc compset="_DWAV%NULL">dwav null mode:</desc>
-    <desc compset="_DWAV%CLIMO">dwav climatological mode:</desc>
+  <!-- modifier_mode allowed values are
+       '*' 0 or more modifiers (default)
+       '1' exactly 1 modifier
+       '?' 0 or 1 modifiers
+       '+' 1 or more modifiers
+
+       This file may have wav desc entries.
+  -->
+  <description modifier_mode="1">
+    <desc wav="DWAV[%NULL][%CLIMO]">Data wave model (DWAV)</desc>
+    <desc option="NULL">null mode</desc>
+    <desc option="CLIMO">climatological mode</desc>
   </description>
 
   <entry id="COMP_WAV">

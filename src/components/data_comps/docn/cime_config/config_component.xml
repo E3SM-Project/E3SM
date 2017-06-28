@@ -2,28 +2,35 @@
 
 <?xml-stylesheet type="text/xsl" href="setup_comp.xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
 
-  <!-- NOTE that the description block determines what DOCN% values can appear in the compset name 
-       For DOCN this is determined by the DOCN_MODE values -->
-  <description>
-    <desc compset="_DOCN%NULL">docn null mode</desc>
-    <desc compset="_DOCN%DOM">docn prescribed ocean mode</desc>
-    <desc compset="_DOCN%SOM">docn slab ocean mode</desc>
-    <desc compset="_DOCN%SOMAQP">docn aquaplanet slab ocean mode</desc>
-    <desc compset="_DOCN%IAF">docn interannual mode</desc>
-    <desc compset="_DOCN%SST_AQUAP">docn aquaplanet mode:</desc>
-    <desc compset="_DOCN%AQP1">docn analytic aquaplanet sst - option 1</desc>
-    <desc compset="_DOCN%AQP2">docn analytic aquaplanet sst - option 2</desc>
-    <desc compset="_DOCN%AQP3">docn analytic aquaplanet sst - option 3</desc>
-    <desc compset="_DOCN%AQP4">docn analytic aquaplanet sst - option 4</desc>
-    <desc compset="_DOCN%AQP5">docn analytic aquaplanet sst - option 5</desc>
-    <desc compset="_DOCN%AQP6">docn analytic aquaplanet sst - option 6</desc>
-    <desc compset="_DOCN%AQP7">docn analytic aquaplanet sst - option 7</desc>
-    <desc compset="_DOCN%AQP8">docn analytic aquaplanet sst - option 8</desc>
-    <desc compset="_DOCN%AQP9">docn analytic aquaplanet sst - option 9</desc>
-    <desc compset="_DOCN%AQP10">docn analytic aquaplanet sst - option 10</desc>
-    <desc compset="_DOCN%AQPFILE">docn file input aquaplanet sst </desc>
+  <!-- modifier_mode allowed values are
+       '*' 0 or more modifiers (default)
+       '1' exactly 1 modifier
+       '?' 0 or 1 modifiers
+       '+' 1 or more modifiers
+
+       This file may have ocn desc entries.
+  -->
+  <description modifier_mode="1">
+    <desc ocn="DOCN[%NULL][%DOM][%SOM][%SOMAQP][%IAF][%SST_AQUAP][%AQP1][%AQP2][%AQP3][%AQP4][%AQP5][%AQP6][%AQP7][%AQP8][%AQP9][%AQP10][%AQPFILE]">DOCN </desc>
+    <desc option="NULL">  null mode</desc>
+    <desc option="DOM">  prescribed ocean mode</desc>
+    <desc option="SOM">  slab ocean mode</desc>
+    <desc option="SOMAQP">  aquaplanet slab ocean mode</desc>
+    <desc option="IAF">  interannual mode</desc>
+    <desc option="SST_AQUAP">  aquaplanet mode:</desc>
+    <desc option="AQP1">  analytic aquaplanet sst - option 1</desc>
+    <desc option="AQP2">  analytic aquaplanet sst - option 2</desc>
+    <desc option="AQP3">  analytic aquaplanet sst - option 3</desc>
+    <desc option="AQP4">  analytic aquaplanet sst - option 4</desc>
+    <desc option="AQP5">  analytic aquaplanet sst - option 5</desc>
+    <desc option="AQP6">  analytic aquaplanet sst - option 6</desc>
+    <desc option="AQP7">  analytic aquaplanet sst - option 7</desc>
+    <desc option="AQP8">  analytic aquaplanet sst - option 8</desc>
+    <desc option="AQP9">  analytic aquaplanet sst - option 9</desc>
+    <desc option="AQP10">  analytic aquaplanet sst - option 10</desc>
+    <desc option="AQPFILE">  file input aquaplanet sst </desc>
   </description>
 
   <entry id="COMP_OCN">

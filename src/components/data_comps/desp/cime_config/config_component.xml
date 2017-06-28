@@ -2,13 +2,21 @@
 
 <?xml-stylesheet type="text/xsl" href="definitions_components.xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
 
-  <!-- NOTE that the description block determines what DESP% values can appear in the compset name 
-       For DESP this is determined by the DESP_MODE values -->
-  <description>
-    <desc compset="_DESP%NOOP">no modification of any model data</desc>
-    <desc compset="_DESP%TEST">test modification of any model data</desc>
+  <!-- modifier_mode allowed values are
+       '*' 0 or more modifiers (default)
+       '1' exactly 1 modifier
+       '?' 0 or 1 modifiers
+       '+' 1 or more modifiers
+
+       This file may have esp desc entries.
+  -->
+
+  <description modifier_mode="1">
+    <desc esp="DESP[%NOOP][%TEST]">Data External System Processor (DESP)</desc>
+    <desc option="NOOP">no modification of any model data</desc>
+    <desc option="TEST">test modification of any model data</desc>
   </description>
 
   <entry id="COMP_ESP">
@@ -41,4 +49,3 @@
   </help>
 
 </entry_id>
-

@@ -2,7 +2,11 @@
 
 <?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
+  <description>
+    <desc wav="XWAV">Dead wave component</desc>
+  </description>
+
 
   <entry id="COMP_WAV">
     <type>char</type>
@@ -12,10 +16,6 @@
     <file>env_case.xml</file>
     <desc>Name of wave component</desc>
   </entry>
-
-  <description>
-    <desc compset="_XWAV">Dead wave component</desc>
-  </description>
 
   <help>
     =========================================

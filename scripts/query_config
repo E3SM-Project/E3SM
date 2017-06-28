@@ -152,7 +152,7 @@ def query_component(name, all_components=False):
            "Cannot find any config_component.xml file for {}".format(name))
 
     # determine component xml content
-    component = Component(config_file)
+    component = Component(config_file, "CPL")
     component.print_values()
 
 ###############################################################################
@@ -233,7 +233,7 @@ def get_components():
     '''
     files = Files()
     infile = files.get_value("CONFIG_CPL_FILE")
-    config_drv = Component(infile)
+    config_drv = Component(infile, "CPL")
     return files, config_drv.get_valid_model_components()
 
 # we override the error message from ArgumentParser to have a more helpful
