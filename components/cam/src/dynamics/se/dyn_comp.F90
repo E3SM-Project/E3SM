@@ -88,8 +88,7 @@ CONTAINS
     use dyn_grid,            only: dyn_grid_init, elem, get_dyn_grid_parm,&
                                    set_horiz_grid_cnt_d, define_cam_grids
     use rgrid,               only: fullgrid
-    use spmd_utils,          only: mpi_integer, mpicom, mpi_logical,&
-                                   masterproc, masterprocid
+    use spmd_utils,          only: mpi_integer, mpicom, mpi_logical
     use spmd_dyn,            only: spmd_readnl
     use native_mapping,      only: create_native_mapping_files, native_mapping_readnl
     use time_manager,        only: get_nstep, dtime
@@ -132,7 +131,9 @@ CONTAINS
     par=initmp(npes_se)
 
     ! Read the SE specific part of the namelist
-    call readnl(par, masterproc, masterprocid, mpicom, NLFileName)
+    if (iam<par%nprocs) then
+       call readnl(par, NLFileName)
+    end if
 
     ! override the setting in the SE namelist, it's redundant anyway
     if (.not. is_first_step()) runtype = 1
