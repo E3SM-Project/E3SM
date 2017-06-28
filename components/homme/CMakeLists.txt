@@ -189,7 +189,7 @@ ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
 # CPRNC locations
 IF (CPRNC_BINARY)
   # user specifed CPRNC binary - dont build
-  ADD_EXECUTABLE( ${CPRNC_BINARY} IMPORTED)
+  ADD_EXECUTABLE( cprnc IMPORTED)
 ELSE ()
   SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
   SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
