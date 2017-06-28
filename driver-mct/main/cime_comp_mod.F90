@@ -507,8 +507,7 @@ module cime_comp_mod
    !----------------------------------------------------------------------------
    ! communicator groups and related
    !----------------------------------------------------------------------------
-   integer  :: Global_Comm
-
+   integer :: driver_comm
    integer  :: mpicom_GLOID          ! MPI global communicator
    integer  :: mpicom_CPLID          ! MPI cpl communicator
    integer  :: mpicom_OCNID          ! MPI ocn communicator for ensemble member 1
@@ -599,29 +598,31 @@ subroutine cime_pre_init1()
    character(len=seq_comm_namelen) :: comp_name(num_inst_total)
    integer :: i, it
    integer :: num_inst_cpl, cpl_id
+   integer :: cpl_comm
 
    call mpi_init(ierr)
    call shr_mpi_chkerr(ierr,subname//' mpi_init')
+   call mpi_comm_dup(MPI_COMM_WORLD, driver_comm, ierr)
+   call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
 
-   Global_Comm=MPI_COMM_WORLD
    comp_comm = MPI_COMM_NULL
    time_brun = mpi_wtime()
 
    !--- Initialize multiple coupler instances, if requested ---
-   call cime_cpl_init(Global_Comm, num_inst_cpl, cpl_id)
+   call cime_cpl_init(driver_comm, cpl_comm, num_inst_cpl, cpl_id)
 
-   call shr_pio_init1(num_inst_total,NLFileName, Global_Comm)
+   call shr_pio_init1(num_inst_total,NLFileName, cpl_comm)
    !
-   ! If pio_async_interface is true Global_Comm is MPI_COMM_NULL on the servernodes
+   ! If pio_async_interface is true Driver_comm is MPI_COMM_NULL on the servernodes
    ! and server nodes do not return from shr_pio_init2
    !
-   !   if (Global_Comm /= MPI_COMM_NULL) then
+   !   if (Driver_comm /= MPI_COMM_NULL) then
 
    if (num_inst_cpl > 1) then
-      call seq_comm_init(Global_Comm, NLFileName, cpl_comm_ID=cpl_id)
+      call seq_comm_init(cpl_comm, NLFileName, cpl_comm_ID=cpl_id)
       write(cpl_inst_tag,'("_",i4.4)') cpl_id
    else
-      call seq_comm_init(Global_Comm, NLFileName)
+      call seq_comm_init(cpl_comm, NLFileName)
       cpl_inst_tag = ''
    end if
 
@@ -2542,7 +2543,6 @@ end subroutine cime_init
       !----------------------------------------------------------
       !| WAV SETUP-SEND
       !----------------------------------------------------------
-
       if (wav_present .and. wavrun_alarm) then
 
          !----------------------------------------------------------
@@ -2743,7 +2743,6 @@ end subroutine cime_init
       !----------------------------------------------------------
       !| ATM/OCN SETUP (cesm1_orig, cesm1_orig_tight, cesm1_mod or cesm1_mod_tight)
       !----------------------------------------------------------
-
       if ((trim(cpl_seq_option) == 'CESM1_ORIG'       .or. &
            trim(cpl_seq_option) == 'CESM1_ORIG_TIGHT' .or. &
            trim(cpl_seq_option) == 'CESM1_MOD'        .or. &
@@ -3581,7 +3580,6 @@ end subroutine cime_init
       !----------------------------------------------------------
       !| Write driver restart file
       !----------------------------------------------------------
-
       if ( (restart_alarm .or. drv_pause) .and. iamin_CPLID) then
          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_BARRIER')
          call t_drvstartf ('CPL:RESTART',cplrun=.true.,barrier=mpicom_CPLID)
@@ -3741,11 +3739,13 @@ end subroutine cime_init
          call t_drvstopf  ('CPL:HISTORY',cplrun=.true.)
 
       endif
-
       !----------------------------------------------------------
       !| RUN ESP MODEL
       !----------------------------------------------------------
       if (esp_present .and. esprun_alarm) then
+         ! Make sure that all couplers are here in multicoupler mode before running ESP component
+         call mpi_barrier(driver_comm, ierr)
+
          call component_run(Eclock_e, esp, esp_run, infodata, &
               comp_prognostic=esp_prognostic, comp_num=comp_num_esp, &
               timer_barrier= 'CPL:ESP_RUN_BARRIER', timer_comp_run='CPL:ESP_RUN', &
@@ -4066,7 +4066,7 @@ subroutine cime_comp_barriers(mpicom, timer)
   endif
 end subroutine cime_comp_barriers
 
-subroutine cime_cpl_init(comm, num_inst_cpl, id)
+subroutine cime_cpl_init(comm_in, comm_out, num_inst_cpl, id)
 
   !-----------------------------------------------------------------------
   !
@@ -4076,7 +4076,8 @@ subroutine cime_cpl_init(comm, num_inst_cpl, id)
 
   implicit none
 
-  integer , intent(inout) :: comm
+  integer , intent(in) :: comm_in
+  integer , intent(in) :: comm_out
   integer , intent(out)   :: num_inst_cpl
   integer , intent(out)   :: id      ! instance ID, starts from 1
   !
@@ -4087,8 +4088,8 @@ subroutine cime_cpl_init(comm, num_inst_cpl, id)
 
   namelist /cime_cpl_inst/ ninst_cpl
 
-  call shr_mpi_commrank(comm, mype  , ' cime_cpl_init')
-  call shr_mpi_commsize(comm, numpes, ' cime_cpl_init')
+  call shr_mpi_commrank(comm_in, mype  , ' cime_cpl_init')
+  call shr_mpi_commsize(comm_in, numpes, ' cime_cpl_init')
 
   num_inst_cpl = 1
   id    = 0
@@ -4105,19 +4106,20 @@ subroutine cime_cpl_init(comm, num_inst_cpl, id)
     num_inst_cpl = max(ninst_cpl, 1)
   end if
 
-  call shr_mpi_bcast(num_inst_cpl, comm, 'ninst_cpl')
+  call shr_mpi_bcast(num_inst_cpl, comm_in, 'ninst_cpl')
 
   if (mod(numpes, num_inst_cpl) /= 0) then
     call shr_sys_abort(subname // &
       ' : Total PE number must be a multiple of coupler instance number')
   end if
 
-  if (num_inst_cpl > 1) then
+  if (num_inst_cpl == 1) then
+     call mpi_comm_dup(comm_in, comm_out, ierr)
+     call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
+  else
     id = mype * num_inst_cpl / numpes + 1
-    call mpi_comm_split(comm, id, 0, inst_comm, ierr)
-    if (ierr /= 0) &
-      call shr_sys_abort(subname // ' : Error in generating coupler instances')
-    comm = inst_comm
+    call mpi_comm_split(comm_in, id, 0, comm_out, ierr)
+    call shr_mpi_chkerr(ierr,subname//' mpi_comm_split')
   end if
 
 end subroutine cime_cpl_init

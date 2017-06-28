@@ -272,7 +272,7 @@ def _create_component_modelio_namelists(case, files):
             while inst_index <= inst_count:
                 # determine instance string
                 if inst_count > 1:
-                    inst_string = '_{04d}'.format(inst_index)
+                    inst_string = '_{:04d}'.format(inst_index)
 
                 # set default values
                 for entry in entries:
