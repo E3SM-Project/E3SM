@@ -2555,10 +2555,11 @@
 </machine>
 
 <machine MACH="summitdev">
-	 <DESC>Pre-Exascale testbed at ORNL. Each node: 2 IBM POWER8 CPUs + 4 NVIDIA Tesla P100 GPUs, 20 cores/node, 8 HW threads/core.</DESC>
+	 <DESC>ORNL pre-Summit testbed. Node: 2x POWER8 + 4x Tesla P100, 20 cores/node, 8 HW threads/core.</DESC>
 	 <NODENAME_REGEX>summitdev-*</NODENAME_REGEX>
+	 <NODE_FAIL_REGEX>Received node event ec_node</NODE_FAIL_REGEX>
 	 <TESTS>acme_developer</TESTS>
-	 <COMPILERS>ibm</COMPILERS>
+	 <COMPILERS>ibm,pgi</COMPILERS>
 	 <MPILIBS>openmpi,mpi_serial</MPILIBS>
 	 <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/$PROJECT</CIME_OUTPUT_ROOT>
 	 <RUNDIR>/lustre/atlas/scratch/$ENV{USER}/$PROJECT/$CASE/run</RUNDIR>
@@ -2568,18 +2569,17 @@
 	 <DOUT_S_ROOT>/lustre/atlas/scratch/$ENV{USER}/$PROJECT/archive/$CASE</DOUT_S_ROOT>
 	 <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
 	 <BASELINE_ROOT>/lustre/atlas1/cli900/world-shared/cesm/baselines</BASELINE_ROOT>
-	 <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.summitdev</CCSM_CPRNC>
+	 <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
 	 <SAVE_TIMING_DIR>/lustre/atlas/proj-shared/$PROJECT</SAVE_TIMING_DIR>
 	 <OS>LINUX</OS>
 	 <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
 	 <SUPPORTED_BY>acme</SUPPORTED_BY>
-	 <GMAKE_J>8</GMAKE_J>
+	 <GMAKE_J>32</GMAKE_J>
 	 <PES_PER_NODE>20</PES_PER_NODE>
 	 <MAX_TASKS_PER_NODE>160</MAX_TASKS_PER_NODE>
 	 <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	 <PROJECT>csc190</PROJECT>
 	 <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
-	 <PERL5LIB>/lustre/atlas/proj-shared/cli115/summitdev/soft/perlmods/lib</PERL5LIB>
 
 	 <mpirun mpilib="openmpi">
 	 <executable args="default">mpirun</executable>
@@ -2595,66 +2595,66 @@
 	 </arguments>  
 	 </mpirun>
 
-    <module_system type="module">
+    <module_system type="module_lmod">
       <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
-      <init_path lang="sh">/sw/summitdev/init/profile</init_path>
-      <init_path lang="csh">/sw/summitdev/init/cshrc</init_path>
-      <init_path lang="python">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/lmod/init/env_modules_python.py</init_path>
-      <init_path lang="perl">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/lmod/init/perl</init_path>
+      <init_path lang="sh">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/sh</init_path>
+      <init_path lang="csh">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/csh</init_path>
+      <init_path lang="python">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/env_modules_python.py</init_path>
+      <init_path lang="perl">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/perl</init_path>
       <!-- list of cmd_path elements, one for every supported language, e.g. sh, perl, python -->
-      <!-- <cmd_path lang="perl">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/lmod/libexec/lmod perl</cmd_path> -->
-      <cmd_path lang="perl">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/lmod/libexec/lmod /lustre/atlas/proj-shared/cli115/summitdev/soft/perl/default/bin/perl</cmd_path>
-      <cmd_path lang="python">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/lmod/libexec/lmod python</cmd_path>
- 
-      <!-- list of cmd_path elements, one for every supported language, e.g. sh, perl, python -->
+      <cmd_path lang="perl">module</cmd_path>
+      <cmd_path lang="python">module</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
-      <!-- List of modules elements, executing commands
-                         if compiler and mpilib condition applies -->
+ 
       <!-- Always execute -->
       <modules>
-        <command name="rm">python</command>
-        <command name="rm">hdf5</command>
-        <command name="rm">parallel-netcdf</command>
-        <command name="load">python/2.7.12</command>
-        <command name="rm">subversion</command>
-        <command name="load">subversion/1.9.3</command>
-        <command name="rm">cmake</command>
-        <command name="load">cmake/3.6.1</command>
+		<command name="ls"/>
+		<command name="purge"/>
+		<command name="ls"/>
+		<command name="load">DefApps</command>
+		<command name="load">python/3.5.2</command>
+		<command name="load">subversion/1.9.3</command>
+		<command name="load">git/2.13.0</command>
+		<command name="load">cmake/3.6.1</command>
+		<command name="load">essl/5.5.0-20161110</command>
+		<command name="load">netlib-lapack/3.6.1</command>
       </modules>
-
+      <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
+      <modules compiler="pgi">
+        <command name="rm">xl</command>
+        <command name="load">pgi/17.4</command>
+        <command name="load">netcdf-fortran/4.4.4</command>
+        <command name="ls"/>
+      </modules>
       <modules compiler="ibm">
         <command name="rm">pgi</command>
-        <command name="rm">gcc</command>
-        <command name="rm">clang</command>
-        <command name="rm">xlflang</command>
         <command name="load">xl/20161123</command>
-        <command name="load">spectrum_mpi/10.1.0.2-20161221</command>
-        <command name="load">essl/5.5.0-20161110</command>
-        <command name="load">netlib-lapack/3.6.1</command>
+        <command name="ls"/>
       </modules>
+
       <!-- mpi lib settings -->
       <modules mpilib="mpi-serial">
         <command name="load">netcdf/4.4.1</command>
       </modules>
       <modules mpilib="!mpi-serial">
+        <command name="load">spectrum_mpi/10.1.0.2-20161221</command>
         <command name="load">netcdf/4.4.1</command>
         <command name="load">parallel-netcdf/1.7.0</command>
         <command name="load">hdf5/1.10.0-patch1-parallel</command>
       </modules>
       <!-- Default -->
       <environment_variables>
-        <env name="COMPILER">$COMPILER</env>
-        <env name="MPILIB">$MPILIB</env>
-        <env name="OMP_STACKSIZE">128M</env>
-		<env name="NETCDF_C_PATH">`which nc-config | xargs dirname | xargs dirname`</env>
-        <env name="NETCDF_FORTRAN_PATH">/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4</env>
-		<env name="PNETCDF_PATH" mpilib="!mpi-serial">`which pnetcdf_version | xargs dirname | xargs dirname`</env>
-        <env name="HDF5_PATH" mpilib="!mpi-serial">`which h5dump | xargs dirname | xargs dirname`</env>
-        <env name="ESSL_PATH">/sw/summitdev/essl/5.5.0-20161110</env>
-        <env name="NETLIB_LAPACK_PATH">/autofs/nccs-svm1_sw/summitdev/.spack/opt/spack/20170224/linux-rhel7-ppc64le/xl-20161123/netlib-lapack-3.6.1-7y4cztmzhlmtfu2pl5cwz2bk4hhpeixh</env>
-        <env name="LD_LIBRARY_PATH">$ENV{LD_LIBRARY_PATH}:/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4/lib</env>
-        <!-- <env name="NETLIB_LAPACK_PATH">`echo '#include <lapacke.h>' | cpp -H -o /dev/null 2>&amp;1 | head -n1 | cut -f2 -d' ' | xargs dirname | xargs dirname`</env> -->
+		  <env name="COMPILER">$COMPILER</env>
+		  <env name="MPILIB">$MPILIB</env>
+		  <env name="OMP_STACKSIZE">128M</env>
+		  <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
+		  <env name="NETCDF_FORTRAN_PATH" compiler="pgi">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
+		  <env name="PNETCDF_PATH" compiler="pgi" mpilib="!mpi-serial">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
+		  <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
+		  <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
+		  <env name="NETCDF_FORTRAN_PATH" compiler="ibm">/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4</env>
+		  <env name="LD_LIBRARY_PATH" compiler="ibm">$ENV{LD_LIBRARY_PATH}:/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4/lib</env>
       </environment_variables>
     </module_system>
 </machine>
