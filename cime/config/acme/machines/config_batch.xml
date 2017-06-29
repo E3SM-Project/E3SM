@@ -408,8 +408,9 @@
        <directive>-P {{ project }}</directive>
      </directives>
      <queues>
-       <queue walltimemax="01:00" default="true">batch</queue>
+       <queue walltimemax="01:00" jobmin="0" jobmax="8640" default="true">batch</queue>
 	   <!--
+	   jobmax = 54nodes*20cores*16th = 8640
 	   Nodes	Max Walltime
 	   <=4		4 hours
 	   >4		1 hour
