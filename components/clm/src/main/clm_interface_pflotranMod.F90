@@ -90,13 +90,6 @@ module clm_interface_pflotranMod
   public :: clm_pf_write_restart
   public :: clm_pf_finalize
 
-  !! pflotran mass balance check
-  private :: clm_pf_BeginCBalance
-  private :: clm_pf_BeginNBalance
-  private :: clm_pf_CBalanceCheck
-  private :: clm_pf_NBalanceCheck
-
-
   private :: pflotran_not_available
 
 #ifdef CLM_PFLOTRAN
