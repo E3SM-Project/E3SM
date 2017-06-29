@@ -57,8 +57,23 @@
 		<var name="totalSfcMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
 			description="total, area integrated surface mass balance"
 		/>
+		<var name="avgAccumulation" type="real" dimensions="Time" units="m yr^{-1}^"
+			description="average sfcMassBal, as a thickness rate"
+		/>
 		<var name="totalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
 			description="total, area integrated basal mass balance"
+		/>
+		<var name="totalGroundedBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+			description="total, area integrated grounded basal mass balance"
+		/>
+		<var name="avgGroundedBasalMelt" type="real" dimensions="Time" units="m yr^{-1}^"
+			description="average groundedBasalMassBal, as a negative thickness rate"
+		/>
+		<var name="totalFloatingBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+			description="total, area integrated floating basal mass balance"
+		/>
+		<var name="avgSubshelfMelt" type="real" dimensions="Time" units="m yr^{-1}^"
+			description="average floatingBasalMassBal value, as a negative thickness rate"
 		/>
 		<var name="totalCalvingFlux" type="real" dimensions="Time" units="kg yr^{-1}^"
 			description="total, area integrated mass loss due to calving"
