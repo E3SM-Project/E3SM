@@ -2908,6 +2908,12 @@ module li_thermal
            bmlt_float_z0 = -100._RKIND              ! scale for ice draft (m)
                                                     ! MISMIP+ default value = -100 m
 
+      ! basal melt parameters for Seroussi param.
+      real (kind=RKIND) :: slopeSer  ! slope of relation between depth and melt rate
+      real (kind=RKIND) :: interceptSer  ! depth at which melting goes to 0
+      real (kind=RKIND) :: maxMeltSer  ! maximum allowable melt rate
+
+
       ! Compute melt rate for floating ice
 
       ! initialize to zero melt
@@ -2985,7 +2991,13 @@ module li_thermal
          ! Seroussi, H., Y. Nakayama, E. Larour, D. Menemenlis, M. Morlighem, E. Rignot, and A. Khazendar (2017), Continued retreat of Thwaites Glacier, West Antarctica, controlled by bed topography and ocean circulation, Geophys. Res. Lett., 1-9, doi:10.1002/2017GL072910.
          ! for Thwaites Glacier.
          ! Specifically, this is a linear fit of melt with shelf draft from the Supplemental Information, Figure S1.
+         ! The linear relation is modified by a depth above which there is no melt, and a maximum melt rate.
 
+         slopeSer = 0.088_RKIND ! slope of relation between depth and melt rate
+         interceptSer = 100.0_RKIND  ! depth (m) at which melting goes to 0
+         maxMeltSer = 50.0_RKIND ! maximum allowable melt rate (m/yr)
+
+         ! Initialize before computing
          floatingBasalMassBal(:) = 0.0_RKIND
 
          do iCell = 1, nCellsSolve
@@ -2994,8 +3006,8 @@ module li_thermal
                ! ice is present and floating
 
                zDraft = lowerSurface(iCell) - config_sea_level
-               ! Coefficients for m/yr melt rate (units of Seroussi figure)
-               floatingBasalMassBal(iCell) = min(0.0_RKIND, 0.088_RKIND * (zDraft + 100.0_RKIND))
+               ! Coefficients for m/yr melt rate (in units of Seroussi figure)
+               floatingBasalMassBal(iCell) = max(-1.0_RKIND * maxMeltSer, min(0.0_RKIND, slopeSer * (zDraft + interceptSer)))
 
             endif   ! ice is present
          enddo   ! iCell
