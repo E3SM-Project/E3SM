@@ -22,8 +22,10 @@ MODULE MOSARTinund_PreProcs_MOD
   real( r8 ), public, parameter :: con1Em3 = 1.0e-3_r8
   public calc_chnlMannCoe, preprocess_elevProf, interpolation_linear
   
+!-----------------------------------------------------------------------------
   contains
-  
+!-----------------------------------------------------------------------------
+
   subroutine calc_chnlMannCoe ( )
     ! DESCRIPTION: Calculate channel Manning roughness coefficients.
     
@@ -116,6 +118,8 @@ MODULE MOSARTinund_PreProcs_MOD
   
   end subroutine calc_chnlMannCoe
 
+!-----------------------------------------------------------------------------
+
   subroutine preprocess_elevProf ( )
     ! DESCRIPTION: Pre-process elevation profile parameters.
     
@@ -166,7 +170,7 @@ MODULE MOSARTinund_PreProcs_MOD
 
     ! Steep slope (m) :
     !TUnit%e_eprof_std = (/ 0.0_r8, 15.0_r8, 35.0_r8, 60.0_r8, 90.0_r8, 125.0_r8, 165.0_r8, 205.0_r8, 245.0_r8, 285.0_r8, 325.0_r8, 10000.0_r8 /)     
-    
+
     ! 1 -- use real elevation profile data :
     if ( Tctl%OPT_elevProf .eq. 1 ) then      
       
@@ -305,7 +309,7 @@ MODULE MOSARTinund_PreProcs_MOD
         ! The upmost point (which is a virtual point) :
         TUnit%a_eprof3(iu, k+1) = TUnit%a_eprof3(iu, k)   ! Actually this area fraction equals 1.0 .      
         TUnit%e_eprof3(iu, k+1) = 10000.0_r8              ! Arbitrary high elevation (assume that water cannot overflow the watershed) (m).
-      
+
         ! Number of points in the adjusted elevation profile :
         TUnit%npt_eprof3(iu) = k + 1
       
@@ -351,9 +355,11 @@ MODULE MOSARTinund_PreProcs_MOD
     
       end if    ! end of if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 )
     enddo   ! do iu=rtmCTL%begr, rtmCTL%endr
-      
+
   end subroutine preprocess_elevProf
   
+!-----------------------------------------------------------------------------
+
   !function interpolation_linear (x,x1,x2,y1,y2) result (y)
   real( r8 ) function interpolation_linear (x, x1, x2, y1, y2)
     ! DESCRIPTION: For linear interpolation.
@@ -378,6 +384,7 @@ MODULE MOSARTinund_PreProcs_MOD
     return
   end function interpolation_linear
 
+!-----------------------------------------------------------------------------
 #endif
   
 end MODULE MOSARTinund_PreProcs_MOD
