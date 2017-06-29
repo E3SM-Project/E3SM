@@ -154,25 +154,55 @@ ADD_SUBDIRECTORY(utils/cime/src/share/timing)
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/CMake" ${CMAKE_MODULE_PATH})
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio2/cmake" ${CMAKE_MODULE_PATH})
-FIND_PACKAGE(NETCDF)
 
-# These are needed for pio's FindNetCDF
+
+#
+# Bug in PIO: PIO1 calls TARGET_LINK_LIBRARIES uses all caps variables, 
+# instead of the mixed case variables computed by PIO's findNetCDF.  
+# 2017/6 PR submitted to pio1
+# workaround until this makes it back into ACME:
+#
 SET(NetCDF_PATH ${NETCDF_DIR})
 SET(PnetCDF_PATH ${PNETCDF_DIR})
+FIND_PACKAGE(NetCDF "4.3.3" COMPONENTS C Fortran)
+FIND_PACKAGE(PnetCDF COMPONENTS C Fortran)
+set(NETCDF_LIBRARIES ${NetCDF_Fortran_LIBRARIES})
+set(PNETCDF_LIBRARY ${PnetCDF_Fortran_FOUND})
+set(PNETCDF_LIBRARIES ${PnetCDF_Fortran_LIBRARIES})
+# needed to build cprnc:
+set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
 
+
+
+#
+# PIO
+#
+#set search paths for PIO's findNetCDF
+SET(NetCDF_PATH ${NETCDF_DIR})
+SET(PnetCDF_PATH ${PNETCDF_DIR})
 # pio needs cime/externals/genf90/genf90.pl
 SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/genf90)
-
-# For pio - allow the user to set HDF5_DIR to find libhdf5 etc.
-IF (HDF5_DIR)
-  SET(ENV{HDF5_ROOT} ${HDF5_DIR})
-ENDIF ()
 ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
 
+
+
 # CPRNC locations
-SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
-SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
-ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+IF (CPRNC_DIR)
+  # user specifed CPRNC binary - dont build
+  ADD_EXECUTABLE( cprnc IMPORTED)
+  find_program(CPRNC_BINARY cprnc ${CPRNC_DIR})
+  IF ( CPRNC_BINARY )
+     message("-- CPRNC_BINARY = ${CPRNC_BINARY}")
+  ELSE()
+     message(WARNING "cprnc not found - cannot check regression test output")
+  ENDIF ()
+ELSE ()
+  # compile CPRNC from CIME source code. Requires CIME support for machine
+  SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
+  SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
+  ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+ENDIF ()
+
 
 SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")
 IF(${BUILD_HOMME_SWEQX})
