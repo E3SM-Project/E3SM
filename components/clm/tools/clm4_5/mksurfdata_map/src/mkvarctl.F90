@@ -47,6 +47,7 @@ module mkvarctl
   character(len=256), public :: mksrf_ftopostats = ' '  ! topography statistics data file name
   character(len=256), public :: mksrf_fvic       = ' '  ! VIC parameters data file name
   character(len=256), public :: mksrf_fch4       = ' '  ! inversion-derived CH4 parameters data file name
+  character(len=256), public :: mksrf_fphosphorus= ' '  ! phosphorus data file name
 
   integer           , public :: numpft         = 16   ! number of plant types
 
@@ -71,6 +72,7 @@ module mkvarctl
   character(len=256), public :: map_ftopostats  = ' ' ! Mapping file for topography statistics
   character(len=256), public :: map_fvic        = ' ' ! Mapping file for VIC parameters
   character(len=256), public :: map_fch4        = ' ' ! Mapping file for inversion-derived CH4 parameters
+  character(len=256), public :: map_fphosphorus = ' ' ! Mapping file for soil phosphorus
 !
 ! Variables to override data read in with
 ! (all_urban is mostly for single-point mode, but could be used for sensitivity studies)
