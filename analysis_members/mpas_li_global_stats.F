@@ -169,18 +169,26 @@ contains
       real (kind=RKIND), pointer ::  deltat
       real (kind=RKIND), dimension(:), pointer ::  areaCell
       real (kind=RKIND), dimension(:), pointer ::  thickness
+      real (kind=RKIND), dimension(:), pointer ::  bedTopography
       real (kind=RKIND), dimension(:), pointer ::  sfcMassBal
       real (kind=RKIND), dimension(:), pointer ::  basalMassBal
       real (kind=RKIND), dimension(:), pointer ::  calvingThickness
       real (kind=RKIND), dimension(:), pointer ::  surfaceSpeed
       real (kind=RKIND), dimension(:), pointer ::  basalSpeed
-
       integer, dimension(:), pointer :: cellMask
       integer, pointer :: nCellsSolve
+
+      ! config options needed
+      real (kind=RKIND), pointer :: config_sea_level
+      real (kind=RKIND), pointer :: rhoi ! config_ice_density
+      real (kind=RKIND), pointer :: rhow ! config_ocean_density
+
+      ! Local counters
       integer :: k, iCell
 
       ! scalars to be calculated here from global reductions
       real (kind=RKIND), pointer ::  totalIceArea, totalIceVolume
+      real (kind=RKIND), pointer ::  volumeAboveFloatation
       real (kind=RKIND), pointer ::  groundedIceArea, groundedIceVolume
       real (kind=RKIND), pointer ::  floatingIceArea, floatingIceVolume
       real (kind=RKIND), pointer ::  iceThicknessMax, iceThicknessMin, iceThicknessMean
@@ -191,6 +199,7 @@ contains
 
       ! scalar reductions over all blocks on this processor
       real (kind=RKIND) ::  blockSumIceArea, blockSumIceVolume
+      real (kind=RKIND) ::  blockSumVAF
       real (kind=RKIND) ::  blockSumGroundedIceArea, blockSumGroundedIceVolume
       real (kind=RKIND) ::  blockSumFloatingIceArea, blockSumFloatingIceVolume
       real (kind=RKIND) ::  blockThickMin, blockThickMax
@@ -211,6 +220,7 @@ contains
       ! initialize sums over blocks to 0
       blockSumIceArea = 0.0_RKIND
       blockSumIceVolume = 0.0_RKIND
+      blockSumVAF = 0.0_RKIND
       blockSumGroundedIceArea = 0.0_RKIND
       blockSumGroundedIceVolume = 0.0_RKIND
       blockSumFloatingIceArea = 0.0_RKIND
@@ -225,6 +235,10 @@ contains
       blockMaxSurfaceSpeed = 0.0_RKIND
       blockMaxBasalSpeed = 0.0_RKIND
 
+      ! Get needed configs
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
+      call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhow)
 
       ! loop over blocks
       block => domain % blocklist
@@ -242,6 +256,7 @@ contains
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
          call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
@@ -257,6 +272,9 @@ contains
                 * areaCell(iCell)
             blockSumIceVolume = blockSumIceVolume + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * thickness(iCell)
+
+            blockSumVAF = blockSumVAF + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) * areaCell(iCell) * &
+                ( thickness(iCell) + (rhow / rhoi) * min(0.0_RKIND, (bedTopography(iCell) - config_sea_level)) ) 
 
             blockSumGroundedIceArea = blockSumGroundedIceArea + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
                  * areaCell(iCell)
@@ -329,7 +347,9 @@ contains
       sums(7) = blockSumSfcMassBal
       sums(8) = blockSumBasalMassBal
       sums(9) = blockSumCalvingFlux
-      nVars = 9
+      sums(10) = blockSumVAF
+      nVars = 10
+
       call mpas_dmpar_sum_real_array(dminfo, nVars, sums(1:nVars), reductions(1:nVars))
 
       block => domain % blocklist
@@ -338,6 +358,7 @@ contains
 
          call mpas_pool_get_array(globalStatsAMPool, 'totalIceArea', totalIceArea)
          call mpas_pool_get_array(globalStatsAMPool, 'totalIceVolume', totalIceVolume)
+         call mpas_pool_get_array(globalStatsAMPool, 'volumeAboveFloatation', volumeAboveFloatation)
          call mpas_pool_get_array(globalStatsAMPool, 'floatingIceArea', floatingIceArea)
          call mpas_pool_get_array(globalStatsAMPool, 'floatingIceVolume', floatingIceVolume)
          call mpas_pool_get_array(globalStatsAMPool, 'groundedIceArea', groundedIceArea)
@@ -358,6 +379,7 @@ contains
          totalSfcMassBal = reductions(7)
          totalBasalMassBal = reductions(8)
          totalCalvingFlux = reductions(9)
+         volumeAboveFloatation = reductions(10)
 
          iceThicknessMean = totalIceVolume / totalIceArea
 
