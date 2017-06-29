@@ -142,7 +142,8 @@ module li_advection
            sfcMassBal,            & ! surface mass balance
            basalMassBal,          & ! basal mass balance
            groundedBasalMassBal,  & ! basal mass balance for grounded ice
-           floatingBasalMassBal     ! basal mass balance for floating ice
+           floatingBasalMassBal,  & ! basal mass balance for floating ice
+           dynamicThickening        ! dynamic thickening rate
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,           & ! interior ice temperature
@@ -239,6 +240,7 @@ module li_advection
       call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
       call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'dynamicThickening', dynamicThickening)
 
       ! get arrays from the velocity pool
       call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
@@ -377,6 +379,9 @@ module li_advection
                endif
             enddo
          endif
+
+         ! Calculate dynamicThickening (layerThickness is updated by advection at this point, while thickness is still old)
+         dynamicThickening = (sum(layerThickness, 1) - thickness) / dt * scyr  ! units of m/yr
 
          ! Update the thickness and cellMask before applying the mass balance.
          ! The update is needed because the SMB and BMB depend on whether ice is present.

@@ -30,6 +30,7 @@ module li_diagnostic_vars
    use mpas_log
 
    use li_mask
+   use li_constants
 
    implicit none
    private
@@ -68,11 +69,9 @@ contains
 !> \date    12 September 2013
 !> \details
 !>  This routine calculates diagnostic variables using the current prognostic
-!>  variables.  This is done in 3 parts:
-!>  1. diagnostic solve part 1;  2. solve velocity;  3. diagnostic solve part 2
-!>  Note: If the velocity solver requires an initial guess, it will be taken
-!>  from the current value.  Therefore the normalVelocity in that time level
-!>  should be updated with the guess prior to calling this subroutine, if necessary.
+!>  variables.  These should only be variables that are output for convenience
+!>  but otherwise not needed by the model.
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -118,6 +117,9 @@ contains
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:,:), pointer :: pmpTemperature
       real (kind=RKIND), dimension(:), pointer :: basalPmpTemperature
+      real (kind=RKIND), dimension(:), pointer :: thicknessOld
+      real (kind=RKIND), dimension(:), pointer :: dHdt
+      real (kind=RKIND), pointer :: deltat
 
       integer :: err_tmp
 
@@ -133,7 +135,10 @@ contains
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
           call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
+          call mpas_pool_get_array(meshPool, 'deltat', deltat)
           call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+          call mpas_pool_get_array(geometryPool, 'thicknessOld', thicknessOld)
+          call mpas_pool_get_array(geometryPool, 'dHdt', dHdt)
           call mpas_pool_get_array(thermalPool, 'pmpTemperature', pmpTemperature)
           call mpas_pool_get_array(thermalPool, 'basalPmpTemperature', basalPmpTemperature)
 
@@ -145,6 +150,10 @@ contains
          !       advection occurs.
          call li_compute_pressure_melting_point_fields(nCells, thickness, layerCenterSigma, &
                pmpTemperature, basalPmpTemperature)
+
+         ! Calculate dHdt.  Do it here after all thickness adjustments are complete
+         dHdt = (thickness - thicknessOld) / deltat * scyr  ! Units are m/yr
+         thicknessOld = thickness  ! Reset thicknessOld for next time step
 
          block => block % next
       end do
