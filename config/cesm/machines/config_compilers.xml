@@ -715,6 +715,14 @@ using a fortran linker.
   </LDFLAGS>
 </compiler>
 
+<compiler MACH="hobart" COMPILER="gnu">
+  <MPI_LIB_NAME MPILIB="openmpi"> openmpi</MPI_LIB_NAME>
+  <LDFLAGS>
+    <append> -lm </append>
+    <append> -ldl </append>
+  </LDFLAGS>
+</compiler>
+
 <compiler MACH="juqueen" COMPILER="ibm">
   <MPICC> mpixlc_r </MPICC>
   <MPIFC> mpixlf2003_r </MPIFC>

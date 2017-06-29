@@ -235,6 +235,8 @@
       <queue walltimemax="02:00:00" jobmin="1" jobmax="192" >short</queue>
       <queue walltimemax="06:00:00" jobmin="1" jobmax="192" default="true">medium</queue>
       <queue walltimemax="40:00:00" jobmin="1" jobmax="144" >long</queue>
+      <queue jobmax="768" jobmin="1" walltimemax="12:00:00">overnight</queue>
+      <queue jobmax="1536" jobmin="1" walltimemax="3000:00:">monster</queue>
     </queues>
   </batch_system>
 

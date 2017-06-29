@@ -848,7 +848,7 @@
     <NODENAME_REGEX>^hob.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
-    <MPILIBS>mvapich2</MPILIBS>
+    <MPILIBS>mvapich2,openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/scratch/cluster/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
@@ -896,7 +896,11 @@
 	<command name="load">compiler/nag/6.1</command>
       </modules>
       <modules compiler="gnu">
-	<command name="load">compiler/gnu/4.8.5</command>
+	<command name="load">compiler/gnu/5.4.0</command>
+      </modules>
+      <modules compiler="gnu" mpilib="openmpi">
+	<command name="load">  mpi/gcc/openmpi-2.0.2-static  </command>
+	<command name="load">  tool/parallel-netcdf/1.8.1/gnu-5.4.0/openmpi  </command>
       </modules>
     </module_system>
     <environment_variables>
