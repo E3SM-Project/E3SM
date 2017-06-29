@@ -27,6 +27,9 @@
 		<var name="totalIceVolume" type="real" dimensions="Time" units="m^3"
 			description="total ice sheet volume"
 		/>
+		<var name="volumeAboveFloatation" type="real" dimensions="Time" units="m^3"
+			description="total ice sheet volume above floatation"
+		/>
 		<var name="totalIceArea" type="real" dimensions="Time" units="m^2"
 			description="total ice sheet area"
 		/>
@@ -80,6 +83,7 @@
 			<var name="xtime"/> 
                         <var name="daysSinceStart"/>
                         <var name="totalIceVolume"/>
+                        <var name="volumeAboveFloatation"/>
 			<var name="totalIceArea"/> 
 			<var name="floatingIceVolume"/> 
 			<var name="floatingIceArea"/> 
