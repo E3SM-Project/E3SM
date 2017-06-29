@@ -172,6 +172,8 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  bedTopography
       real (kind=RKIND), dimension(:), pointer ::  sfcMassBal
       real (kind=RKIND), dimension(:), pointer ::  basalMassBal
+      real (kind=RKIND), dimension(:), pointer ::  groundedBasalMassBal
+      real (kind=RKIND), dimension(:), pointer ::  floatingBasalMassBal
       real (kind=RKIND), dimension(:), pointer ::  calvingThickness
       real (kind=RKIND), dimension(:), pointer ::  surfaceSpeed
       real (kind=RKIND), dimension(:), pointer ::  basalSpeed
@@ -193,6 +195,10 @@ contains
       real (kind=RKIND), pointer ::  floatingIceArea, floatingIceVolume
       real (kind=RKIND), pointer ::  iceThicknessMax, iceThicknessMin, iceThicknessMean
       real (kind=RKIND), pointer ::  totalSfcMassBal, totalBasalMassBal
+      real (kind=RKIND), pointer ::  totalGroundedBasalMassBal, totalFloatingBasalMassBal
+      real (kind=RKIND), pointer ::  avgAccumulation
+      real (kind=RKIND), pointer ::  avgGroundedBasalMelt
+      real (kind=RKIND), pointer ::  avgSubshelfMelt
       real (kind=RKIND), pointer ::  totalCalvingFlux
       real (kind=RKIND), pointer ::  surfaceSpeedMax
       real (kind=RKIND), pointer ::  basalSpeedMax
@@ -204,6 +210,7 @@ contains
       real (kind=RKIND) ::  blockSumFloatingIceArea, blockSumFloatingIceVolume
       real (kind=RKIND) ::  blockThickMin, blockThickMax
       real (kind=RKIND) ::  blockSumSfcMassBal, blockSumBasalMassBal
+      real (kind=RKIND) ::  blockSUmGroundedBasalMassBal, blockSumFloatingBasalMassBal
       real (kind=RKIND) ::  blockSumCalvingFlux
       real (kind=RKIND) ::  blockMaxSurfaceSpeed
       real (kind=RKIND) ::  blockMaxBasalSpeed
@@ -227,6 +234,8 @@ contains
       blockSumFloatingIceVolume = 0.0_RKIND
       blockSumSfcMassBal = 0.0_RKIND
       blockSumBasalMassBal = 0.0_RKIND
+      blockSumGroundedBasalMassBal = 0.0_RKIND
+      blockSumFloatingBasalMassBal = 0.0_RKIND
       blockSumCalvingFlux = 0.0_RKIND
 
       ! initialize max to 0, min to large number
@@ -260,6 +269,8 @@ contains
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
          call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
+         call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
+         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
          call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
@@ -300,6 +311,10 @@ contains
                 * areaCell(iCell) * sfcMassBal(iCell) * scyr
             blockSumBasalMassBal = blockSumBasalMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * basalMassBal(iCell) * scyr
+            blockSumGroundedBasalMassBal = blockSumGroundedBasalMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
+                * areaCell(iCell) * groundedBasalMassBal(iCell) * scyr
+            blockSumFloatingBasalMassBal = blockSumFloatingBasalMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
+                * areaCell(iCell) * floatingBasalMassBal(iCell) * scyr
 
             ! mass lass due do calving (kg yr^{-1})
             blockSumCalvingFlux = blockSumCalvingFlux + calvingThickness(iCell) * &
@@ -334,7 +349,7 @@ contains
       ! correct values for writing output.
 
       ! ---------------------------
-      ! compute sums over all procs
+      ! compute sums (and means) over all procs
       ! ---------------------------
       sums = 0.0_RKIND
       reductions = 0.0_RKIND
@@ -346,9 +361,11 @@ contains
       sums(6) = blockSumFloatingIceVolume
       sums(7) = blockSumSfcMassBal
       sums(8) = blockSumBasalMassBal
-      sums(9) = blockSumCalvingFlux
-      sums(10) = blockSumVAF
-      nVars = 10
+      sums(9) = blockSumGroundedBasalMassBal
+      sums(10) = blockSumFloatingBasalMassBal
+      sums(11) = blockSumCalvingFlux
+      sums(12) = blockSumVAF
+      nVars = 12
 
       call mpas_dmpar_sum_real_array(dminfo, nVars, sums(1:nVars), reductions(1:nVars))
 
@@ -367,7 +384,12 @@ contains
          call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMin', iceThicknessMin)
          call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMean', iceThicknessMean)
          call mpas_pool_get_array(globalStatsAMPool, 'totalSfcMassBal', totalSfcMassBal)
+         call mpas_pool_get_array(globalStatsAMPool, 'avgAccumulation', avgAccumulation)
          call mpas_pool_get_array(globalStatsAMPool, 'totalBasalMassBal', totalBasalMassBal)
+         call mpas_pool_get_array(globalStatsAMPool, 'totalGroundedBasalMassBal', totalGroundedBasalMassBal)
+         call mpas_pool_get_array(globalStatsAMPool, 'avgGroundedBasalMelt', avgGroundedBasalMelt)
+         call mpas_pool_get_array(globalStatsAMPool, 'totalFloatingBasalMassBal', totalFloatingBasalMassBal)
+         call mpas_pool_get_array(globalStatsAMPool, 'avgSubshelfMelt', avgSubshelfMelt)
          call mpas_pool_get_array(globalStatsAMPool, 'totalCalvingFlux', totalCalvingFlux)
 
          totalIceArea = reductions(1)
@@ -378,10 +400,15 @@ contains
          floatingIceVolume = reductions(6)
          totalSfcMassBal = reductions(7)
          totalBasalMassBal = reductions(8)
-         totalCalvingFlux = reductions(9)
-         volumeAboveFloatation = reductions(10)
+         totalGroundedBasalMassBal = reductions(9)
+         totalFloatingBasalMassBal = reductions(10)
+         totalCalvingFlux = reductions(11)
+         volumeAboveFloatation = reductions(12)
 
          iceThicknessMean = totalIceVolume / totalIceArea
+         avgAccumulation = totalSfcMassBal / totalIceArea / rhoi
+         avgGroundedBasalMelt = -1.0_RKIND * totalGroundedBasalMassBal / groundedIceArea / rhoi
+         avgSubshelfMelt = -1.0_RKIND * totalFloatingBasalMassBal / floatingIceArea / rhoi
 
          block => block % next
       end do
