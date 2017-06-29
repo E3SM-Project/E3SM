@@ -686,6 +686,9 @@ contains
 	  !!------------------------------------------------------------------
 	  ! 'call decomp_vertprofiles()' moved to EcosystemDynNoLeaching1
 	  !!------------------------------------------------------------------
+	  smin_nh4_to_plant_vr_loc(:,:) = 0._r8
+	  smin_no3_to_plant_vr_loc(:,:) = 0._r8
+
 
       ! MUST have already updated needed bgc variables from PFLOTRAN by this point
       if(use_clm_interface.and.use_pflotran.and.pf_cmode) then
@@ -776,9 +779,9 @@ contains
                         phosphorusstate_vars, phosphorusflux_vars)
 
          !! save variables before updating
-         do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-                c = filter_soilc(fc)
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            do j = 1,nlevdecomp
                 smin_no3_to_plant_vr_loc(c,j) = smin_no3_to_plant_vr(c,j)
                 smin_nh4_to_plant_vr_loc(c,j) = smin_nh4_to_plant_vr(c,j)
             end do
@@ -815,13 +818,13 @@ contains
     end if !!(use_pflotran.and.pf_cmode)
 !!------------------------------------------------------------------
       ! vertically integrate net and gross mineralization fluxes for diagnostic output
-!      do fc=1,num_soilc
-!         c = filter_soilc(fc)
-!         net_nmin(c)    = 0._r8
-!         gross_nmin(c)  = 0._r8
-!         net_pmin(c)    = 0._r8
-!         gross_pmin(c)  = 0._r8
-!      end do
+      do fc=1,num_soilc
+         c = filter_soilc(fc)
+         net_nmin(c)    = 0._r8
+         gross_nmin(c)  = 0._r8
+         net_pmin(c)    = 0._r8
+         gross_pmin(c)  = 0._r8
+      end do
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
