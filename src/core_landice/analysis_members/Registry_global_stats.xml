@@ -95,22 +95,8 @@
 				packages="globalStatsAMPKG"
 				clobber_mode="truncate"
 				runtime_format="single_file">
-			<var name="xtime"/> 
+			<var name="xtime"/>
                         <var name="daysSinceStart"/>
-                        <var name="totalIceVolume"/>
-                        <var name="volumeAboveFloatation"/>
-			<var name="totalIceArea"/> 
-			<var name="floatingIceVolume"/> 
-			<var name="floatingIceArea"/> 
-			<var name="groundedIceVolume"/> 
-			<var name="groundedIceArea"/> 
-			<var name="iceThicknessMin"/> 
-			<var name="iceThicknessMax"/> 
-			<var name="iceThicknessMean"/>
-			<var name="totalSfcMassBal"/> 
-			<var name="totalBasalMassBal"/>
-			<var name="totalCalvingFlux"/>
-			<var name="surfaceSpeedMax"/>
-			<var name="basalSpeedMax"/>
+                        <var_struct name="globalStatsAM"/>
 		</stream>
 	</streams>
