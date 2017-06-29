@@ -12,7 +12,7 @@ module physpkg
   ! July 2015   B. Singh       Added code for unified convective transport
   !-----------------------------------------------------------------------
 
-  use module_perturb
+
   use shr_kind_mod,     only: r8 => shr_kind_r8, i8 => shr_kind_i8
   use spmd_utils,       only: masterproc, iam, npes!BSINGH added iam, npes
   use physconst,        only: latvap, latice, rh2o
@@ -21,6 +21,7 @@ module physpkg
        physics_type_alloc, physics_ptend_dealloc,&
        physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc
   use phys_grid,        only: get_ncols_p, chunks, npchunks,knuhcs, ngcols_p, latlon_to_dyn_gcol_map !BSINGH-added  chunks
+  use cam_abortutils,     only: endrun
   use phys_gmean,       only: gmean_mass
   use ppgrid,           only: begchunk, endchunk, pcols, pver, pverp, psubcols
   use constituents,     only: pcnst, cnst_name, cnst_get_ind
@@ -41,16 +42,6 @@ module physpkg
 
   use modal_aero_calcsize,    only: modal_aero_calcsize_init, modal_aero_calcsize_diag, modal_aero_calcsize_reg
   use modal_aero_wateruptake, only: modal_aero_wateruptake_init, modal_aero_wateruptake_dr, modal_aero_wateruptake_reg
-
-  !BSINGH - For writing to the restart file
-   use pio,             only : var_desc_t!BSINGH
-   use tracer_data,     only : trfile    !BSINGH
-
-
-   use parrrtm,         only: nsubcollw => ngptlw !BSINGH
-   use parrrsw,         only: nsubcolsw => ngptsw !BSINGH
-
-   use cam_abortutils,      only : endrun !BSINGH
 
   implicit none
   private
@@ -81,21 +72,9 @@ module physpkg
   !BSINGH - (For fixing random number generation-perturbation growth test)
   !Seeds for random number generator
   integer :: s1,s2,s3,s4 !BSINGH
-  integer :: seedrst(4), seed_dim !BSINGH - for restart runs
-  integer :: nchunks,max_chnks_in_blk
+  integer :: nchunks
   integer :: firstblock, lastblock      ! global block indices
   integer, allocatable,dimension(:) :: tot_chnk_till_this_prc !total number of chunks till this processor
-  real(r8),allocatable,dimension(:,:,:,:) :: rnglw,rngsw  
-  real(r8),allocatable,dimension(:,:,:,:,:) :: rnglw_mstr ,rngsw_mstr  
-  
-  
-  
-  !Following definitions are added to
-  !allow seeds to persist during restart runs
-  type(var_desc_t) :: seedrst_desc
-  character(len=15), parameter :: seedrstarr_name = 'rrtmg_randn_seed'
-  character(len=19), parameter :: seedrstarr_dim  = 'rrtmg_randn_seed_dim'
-  type(trfile) :: file
   !BSINGH -Ends
 
 
@@ -108,13 +87,6 @@ module physpkg
   public phys_run1   ! First phase of the public run method
   public phys_run2   ! Second phase of the public run method
   public phys_final  ! Public finalization method
-  
-   !BSINGH - For reading and writing seeds to the restart file
-   public init_rand_seed_restart 
-   public write_rand_seed_restart
-   public read_rand_seed_restart
-   !BSINGH -ENDS
-
   !
   ! Private module data
   !
@@ -725,7 +697,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use cam3_aero_data,     only: cam3_aero_data_on, cam3_aero_data_init
     use cam3_ozone_data,    only: cam3_ozone_data_on, cam3_ozone_data_init
     use radheat,            only: radheat_init
-    use radiation,          only: radiation_init
+    use radiation,          only: radiation_init, max_chnks_in_blk
     use cloud_diagnostics,  only: cloud_diagnostics_init
     use stratiform,         only: stratiform_init
     use wv_saturation,      only: wv_sat_init
@@ -760,9 +732,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     !BSINGH -  added for fixing random number generation
     use dyn_grid,           only: get_block_bounds_d
     use ppgrid,             only: pver 
-    use dycore,              only: dycore_is
-
-
 
     ! Input/output arguments
     type(physics_state), pointer       :: phys_state(:)
@@ -772,20 +741,15 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     type(cam_out_t),intent(inout)      :: cam_out(begchunk:endchunk)
 
     ! local variables
-    integer :: lchnk
-    integer :: astat,ipes, ipes_tmp    !BSINGH-  added for fixing random number generation
+    integer :: lchnk,i
+    integer :: astat,ipes, ipes_tmp, igcol, chunkid,icol, iown,ilchnk, tot_cols, ierr    !BSINGH-  added for fixing random number generation
+    integer, allocatable, dimension(:,:,:) :: clm_id_mstr
+    integer, allocatable, dimension(:,:) :: clm_id
     real(r8) :: dp1 = huge(1.0_r8) !set in namelist, assigned in cloud_fraction.F90
 
     !-----------------------------------------------------------------------
 
     call physics_type_alloc(phys_state, phys_tend, begchunk, endchunk, pcols)
-
-    !BSINGH - Exit if it is not an FV dycore
-    !if(.not.dycore_is('LR')) then
-    !   write(iulog,*)'ERROR: The dycore used is not FV. This code only works for FV dycore'
-    !   call endrun
-    !endif
-
 
     !BSINGH - Build lat lon relationship to chunk and column
     nchunks = size(chunks)
@@ -814,28 +778,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call get_block_bounds_d(firstblock,lastblock)
     
     !Allocate arrays
-    allocate(rnglw(nsubcollw,pcols,pver,max_chnks_in_blk), stat=astat )          
-    if( astat /= 0 ) then
-       write(iulog,*) 'physpkg-phys_run1: failed to allocate rnglw; error = ',astat
-       call endrun
-    end if
-    allocate(rngsw(nsubcolsw,pcols,pver,max_chnks_in_blk), stat=astat )
-    if( astat /= 0 ) then
-       write(iulog,*) 'physpkg-phys_run1: failed to allocate rngsw; error = ',astat
-       call endrun
-    end if
-    !Arrays to be populated by master proc
-    allocate(rnglw_mstr(nsubcollw,pcols,pver,max_chnks_in_blk,npes), stat=astat)
-    if( astat /= 0 ) then
-       write(iulog,*) 'physpkg-phys_run1: failed to allocate rnglw_mstr; error = ',astat
-       call endrun
-    end if
-    allocate(rngsw_mstr(nsubcolsw,pcols,pver,max_chnks_in_blk,npes), stat=astat)
-    if( astat /= 0 ) then
-       write(iulog,*) 'physpkg-phys_run1: failed to allocate rngsw; error = ',astat
-       call endrun
-    end if
-
     if(masterproc) then
       !Initialize seeds to fixed values for both LW and SW at first time step
       s1 = 1
@@ -849,6 +791,48 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
        call physics_state_set_grid(lchnk, phys_state(lchnk))
     end do
 
+    !---NEW CODE
+    allocate(clm_id_mstr(pcols,max_chnks_in_blk,npes), stat=astat)
+    if( astat /= 0 ) then
+       write(iulog,*) 'physpkg-phys_init: failed to allocate clm_id_mstr; error = ',astat
+       call endrun
+    end if
+
+    allocate(clm_id(pcols,max_chnks_in_blk), stat=astat)
+    if( astat /= 0 ) then
+       write(iulog,*) 'physpkg-phys_init: failed to allocate clm_id; error = ',astat
+       call endrun
+    end if
+    
+    if(masterproc) then
+       do igcol = 1, ngcols_p
+          i = latlon_to_dyn_gcol_map(igcol)
+          chunkid  = knuhcs(i)%chunkid
+          icol = knuhcs(i)%col
+          iown  = chunks(chunkid)%owner
+          ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
+          clm_id_mstr(icol,ilchnk,iown+1) = igcol
+       enddo
+    endif
+    
+#ifdef SPMD
+    !Scatter
+    tot_cols = pcols*max_chnks_in_blk
+    call MPI_Scatter( clm_id_mstr, tot_cols,  mpi_integer, &
+         clm_id,    tot_cols,  mpi_integer, 0,             &
+         MPI_COMM_WORLD,ierr)
+#else
+    !BSINGH - Havn't tested it.....               
+    call endrun('BSINGH: PHYSPKG.F90: I havent tested it yet')
+    rnglw = rnglw_mstr(:,:,:,1)
+    rngsw = rngsw_mstr(:,:,:,1)
+#endif
+    
+    !BSINGH - ENDS
+    
+    call t_barrierf('sync_bc_physics', mpicom)
+    call t_startf ('bc_physics')
+    !--- NEW CODE ENDS
     !-------------------------------------------------------------------------------------------
     ! Initialize any variables in physconst which are not temporally and/or spatially constant
     !------------------------------------------------------------------------------------------- 
@@ -945,7 +929,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     call tsinti(tmelt, latvap, rair, stebol, latice)
 
-    call radiation_init
+    call radiation_init(clm_id, phys_state)
 
     call rad_solar_var_init()
 
@@ -1065,15 +1049,11 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     integer :: c                                 ! indices
     integer :: ncol                              ! number of columns
     integer :: nstep                             ! current timestep number
+    integer :: ilchnk
 #if (! defined SPMD)
     integer  :: mpicom = 0
 #endif
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
-    !BSINGH - variables req for building rng for lw and sw
-    integer  :: tot_colslw,tot_colssw, iown, ilchnk
-    integer  :: i, icol, ilev,isubcol, ierr, igcol, chunkid, irng
-    real(r8) :: rng(1)
-    real(r8) :: rng_arr(ngcols_p*pver*(nsubcollw+nsubcolsw))
 
     call t_startf ('physpkg_st1')
     nstep = get_nstep()
@@ -1130,80 +1110,12 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           call outfld('Tg',cam_in(c)%ts,pcols   ,c     )
        end do
 #endif
-       !BSINGH - Random number generation for RRTMG codes
-       if(masterproc) then
-          if(nsrest == 1) then !restart run, used seeds read from file
-             s1 = seedrst(1)
-             s2 = seedrst(2)
-             s3 = seedrst(3)
-             s4 = seedrst(4)
-          endif
-          rnglw_mstr(1:nsubcollw,1:pcols,1:pver,1:max_chnks_in_blk,1:npes) = huge(1.0_r8)
-          rngsw_mstr(1:nsubcolsw,1:pcols,1:pver,1:max_chnks_in_blk,1:npes) = huge(1.0_r8)
-          
-          call kissvec_scalar_seeds(s1,s2,s3,s4,rng_arr)
-          irng = 1
-          do igcol = 1, ngcols_p
-             i = latlon_to_dyn_gcol_map(igcol)
-             chunkid  = knuhcs(i)%chunkid
-             icol = knuhcs(i)%col
-             iown  = chunks(chunkid)%owner
-             ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
-             
-             do ilev = 1, pver
-                do isubcol = 1, nsubcollw
-                   !call kissvec_scalar_seeds(s1,s2,s3,s4,rng)
-                   !rnglw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng(1) !long wave
-                   !rnglw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng_arr(irng) !long wave
-                   irng = irng + 1
-                enddo
-                do isubcol = 1, nsubcolsw
-                   !call kissvec_scalar_seeds(s1,s2,s3,s4,rng)
-                   !write(102,*)'sw:',igcol,ilev,isubcol,s1,s2,s3,s4,rng
-                   !rngsw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng(1) !short wave
-                   !rngsw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng_arr(irng) !short wave
-                   irng = irng + 1
-                enddo
-             enddo
-          enddo
-          !store seeds in the restart file variables
-          seedrst(1) = s1
-          seedrst(2) = s2
-          seedrst(3) = s3
-          seedrst(4) = s4
-       endif
-       !BSINGH -ENDS [Allow it to sync in the next call ]
-
 
        call t_barrierf('sync_bc_physics', mpicom)
        call t_startf ('bc_physics')
        !call t_adj_detailf(+1)
-       
-       !BSINGH - broadcast data
-#ifdef SPMD
-       !Broadcast seeds
-       call mpibcast(seedrst,4, mpi_integer, 0, mpicom)
-       
-       tot_colslw = pcols*nsubcollw*pver*max_chnks_in_blk
-       tot_colssw = pcols*nsubcolsw*pver*max_chnks_in_blk
-       !Scatter 
-       call MPI_Scatter( rnglw_mstr, tot_colslw,  mpi_real8, &
-            rnglw,    tot_colslw,  mpi_real8, 0,             &
-            MPI_COMM_WORLD,ierr)
-       
-       call MPI_Scatter( rngsw_mstr, tot_colssw,  mpi_real8, &
-            rngsw,    tot_colssw,  mpi_real8, 0,             &
-            MPI_COMM_WORLD,ierr)
-#else
-       !BSINGH - Havn't tested it.....
-       call endrun('BSINGH: PHYSPKG.F90: I havent tested it yet')
-       rnglw = rnglw_mstr(:,:,:,1)
-       rngsw = rngsw_mstr(:,:,:,1)
-#endif
-       !BSINGH - ENDS
 
-
-!$OMP PARALLEL DO PRIVATE (C, phys_buffer_chunk, ilchnk)
+!$OMP PARALLEL DO PRIVATE (C, phys_buffer_chunk)
        do c=begchunk, endchunk
           !
           ! Output physics terms to IC file
@@ -1215,8 +1127,8 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           call t_stopf ('diag_physvar_ic')
           ilchnk = (c - lastblock) - tot_chnk_till_this_prc(iam)
           call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
-                       phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c), rnglw(:,:,:,ilchnk),  & !BSINGH - Added rnglw and rngsw
-                       rngsw(:,:,:,ilchnk), sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
+                       phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
+                       sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c), ilchnk )
 
        end do
 
@@ -1973,8 +1885,8 @@ end subroutine tphysac
 
 subroutine tphysbc (ztodt,               &
        fsns,    fsnt,    flns,    flnt,    state,   &
-       tend,    pbuf,     fsds,    landm,   rnglw,   & !BSINGH- Added rnglw and rngsw
-       rngsw, sgh, sgh30, cam_out, cam_in )
+       tend,    pbuf,     fsds,    landm,            &
+       sgh, sgh30, cam_out, cam_in , ilchnk)
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -2042,14 +1954,13 @@ subroutine tphysbc (ztodt,               &
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
-    use parrrtm, only: nsubcollw => ngptlw !BSINGH
-    use parrrsw, only: nsubcolsw => ngptsw !BSINGH
 
     implicit none
 
     !
     ! Arguments
     !
+    integer :: ilchnk
     real(r8), intent(in) :: ztodt                            ! 2 delta t (model time increment)
     real(r8), intent(inout) :: fsns(pcols)                   ! Surface solar absorbed flux
     real(r8), intent(inout) :: fsnt(pcols)                   ! Net column abs solar flux at model top
@@ -2059,10 +1970,6 @@ subroutine tphysbc (ztodt,               &
     real(r8), intent(in) :: landm(pcols)                     ! land fraction ramp
     real(r8), intent(in) :: sgh(pcols)                       ! Std. deviation of orography
     real(r8), intent(in) :: sgh30(pcols)                     ! Std. deviation of 30 s orography for tms
-
-    !BSINGH - Added rnglw and rngsw for use in radiation for random numbers
-    real(r8), intent(in) :: rnglw(nsubcollw,pcols,pver)                   ! rand # for long wave
-    real(r8), intent(in) :: rngsw(nsubcolsw,pcols,pver)                   ! rand # for short wave
 
     type(physics_state), intent(inout) :: state
     type(physics_tend ), intent(inout) :: tend
@@ -2893,7 +2800,7 @@ if (l_rad) then
          cam_out, cam_in, &
          cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
          fsns,    fsnt, flns,    flnt,  &
-         fsds, net_flx, rnglw, rngsw, is_cmip6_volc )
+         fsds, net_flx, ilchnk, is_cmip6_volc)
 
     ! Set net flux used by spectral dycores
     do i=1,ncol
@@ -3106,115 +3013,5 @@ subroutine add_fld_default_calls()
   enddo
 
 end subroutine add_fld_default_calls
-!BSINGH
-
-!--------------------------------------------------------------------------------------------------
-subroutine kissvec_scalar_seeds(seed1,seed2,seed3,seed4,ran_arr)
-  !--------------------------------------------------------------------------------------------------
-
-  ! public domain code
-  ! made available from http://www.fortran.com/
-  ! downloaded by pjr on 03/16/04 for NCAR CAM
-  ! converted to vector form, functions inlined by pjr,mvr on 05/10/2004
-
-  ! The  KISS (Keep It Simple Stupid) random number generator. Combines:
-  ! (1) The congruential generator x(n)=69069*x(n-1)+1327217885, period 2^32.
-  ! (2) A 3-shift shift-register generator, period 2^32-1,
-  ! (3) Two 16-bit multiply-with-carry generators, period 597273182964842497>2^59
-  !  Overall period>2^123;
-  !
-
-  real(kind=r8), dimension(:), intent(inout)  :: ran_arr
-  integer, intent(inout) :: seed1,seed2,seed3,seed4
-  integer(i8) :: kiss
-  integer :: i
-  
-  logical :: big_endian
-  
-  big_endian = (transfer(1_i8, 1) == 0)
-  
-  do i = 1, size(ran_arr)
-     kiss = 69069_i8 * seed1 + 1327217885
-     seed1 = low_byte(kiss)
-     seed2 = m (m (m (seed2, 13), - 17), 5)
-     seed3 = 18000 * iand (seed3, 65535) + ishft (seed3, - 16)
-     seed4 = 30903 * iand (seed4, 65535) + ishft (seed4, - 16)
-     kiss = int(seed1, i8) + seed2 + ishft (seed3, 16) + seed4
-     ran_arr(i) = low_byte(kiss)*2.328306e-10_r8 + 0.5_r8
-  enddo
-  
-contains
-  
-  pure integer function m(k, n)
-    integer, intent(in) :: k
-    integer, intent(in) :: n
-    
-    m = ieor (k, ishft (k, n) )
-    
-  end function m
-  
-  pure integer function low_byte(i)
-    integer(i8), intent(in) :: i
-    
-    if (big_endian) then
-       low_byte = transfer(ishft(i,bit_size(1)),1)
-    else
-       low_byte = transfer(i,1)
-    end if
-    
-  end function low_byte
-  
-end subroutine kissvec_scalar_seeds
-
-
-subroutine init_rand_seed_restart( piofile )
-  use pio, only : file_desc_t, pio_def_var, pio_def_dim, pio_int 
-  use tracer_data, only : init_trc_restart
-  implicit none
-  type(file_desc_t),intent(inout) :: pioFile     ! pio File pointer
-  integer :: ierr
-  
-  !For storing random seeds for kissvec random number generator
-  ierr = pio_def_dim( piofile, seedrstarr_dim, 4, seed_dim)
-  ierr = pio_def_var (piofile, seedrstarr_name,pio_int,(/seed_dim/),seedrst_desc)
-
-  call init_trc_restart( 'rand_seed', piofile, file )
-  
-end subroutine init_rand_seed_restart 
-!-------------------------------------------------------------------
-subroutine write_rand_seed_restart( piofile )
-  use tracer_data, only : write_trc_restart
-  use pio, only : file_desc_t, pio_put_var 
-  implicit none
-  
-  type(file_desc_t) :: piofile
-  integer :: ierr
-  
-  !  For allowing randn_persists to persist during reststarts
-  ierr = pio_put_var(piofile, seedrst_desc, seedrst)
-
-  call write_trc_restart( piofile, file )
-  
-end subroutine write_rand_seed_restart
-
-!-------------------------------------------------------------------
-!-------------------------------------------------------------------
-subroutine read_rand_seed_restart( pioFile )
-  use tracer_data, only : read_trc_restart
-  use pio, only : file_desc_t, pio_inq_varid, pio_get_var 
-  implicit none
-  
-  type(file_desc_t) :: piofile    
-  integer :: ierr
-  
-  ! For allowing randn_persists to persist during reststarts
-  ierr = pio_inq_varid(pioFile, seedrstarr_name , seedrst_desc)
-  ierr = pio_get_var(pioFile, seedrst_desc, seedrst)
-  
-  call read_trc_restart( 'rand_seed', piofile, file )
-  
-end subroutine read_rand_seed_restart
-!BSINGH -ENDS
-
 
 end module physpkg

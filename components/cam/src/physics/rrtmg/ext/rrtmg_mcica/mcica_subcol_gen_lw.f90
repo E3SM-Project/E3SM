@@ -51,7 +51,7 @@
 
       subroutine mcica_subcol_lw(lchnk, ncol, nlay, icld, permuteseed, play, &
                        cldfrac, ciwp, clwp, rei, rel, tauc, cldfmcl, &
-                       ciwpmcl, clwpmcl, reicmcl, relqmcl, taucmcl, rnglw, pergro_mods)
+                       ciwpmcl, clwpmcl, reicmcl, relqmcl, taucmcl, clm_rand_seed, pergro_mods)
 
 ! ----- Input -----
 ! Control
@@ -86,7 +86,7 @@
                                                         !    Dimensions: (ncol,nlay)
       real(kind=r8), intent(in) :: rel(:,:)           ! cloud liquid particle size
                                                         !    Dimensions: (ncol,nlay)
-      real(kind=r8), intent(in) :: rnglw(:,:,:)           ! rand lw
+      integer      , intent(inout) :: clm_rand_seed(:,:)           ! rand # seeds 
 
 ! ----- Output -----
 ! Atmosphere/clouds - cldprmc [mcica]
@@ -152,14 +152,14 @@
 
 !  Generate the stochastic subcolumns of cloud optical properties for the longwave;
       call generate_stochastic_clouds (ncol, nlay, nsubclw, icld, pmid, cldfrac, clwp, ciwp, tauc, &
-                               cldfmcl, clwpmcl, ciwpmcl, taucmcl, permuteseed, rnglw, pergro_mods)!BSINGH
+                               cldfmcl, clwpmcl, ciwpmcl, taucmcl, permuteseed, clm_rand_seed, pergro_mods)!BSINGH
 
       end subroutine mcica_subcol_lw
 
 
 !-------------------------------------------------------------------------------------------------
       subroutine generate_stochastic_clouds(ncol, nlay, nsubcol, icld, pmid, cld, clwp, ciwp, tauc, &
-                                   cld_stoch, clwp_stoch, ciwp_stoch, tauc_stoch, changeSeed,rnglw, pergro_mods)!BSINGH  
+                                   cld_stoch, clwp_stoch, ciwp_stoch, tauc_stoch, changeSeed, clm_rand_seed, pergro_mods)!BSINGH  
 !-------------------------------------------------------------------------------------------------
 
   !----------------------------------------------------------------------------------------------------------------
@@ -246,7 +246,7 @@
 !      real(kind=r8), intent(in) :: ssac(:,:,:)       ! cloud single scattering albedo
                                                         !    Dimensions: (nbndlw,ncol,nlay)
                                                         !   inactive - for future expansion
-       real(kind=r8), intent(in) :: rnglw(:,:,:)           ! rand #lw
+       integer      , intent(inout) :: clm_rand_seed(:,:)           ! rand # seeds
 !      real(kind=r8), intent(in) :: asmc(:,:,:)       ! cloud asymmetry parameter
                                                         !    Dimensions: (nbndlw,ncol,nlay)
                                                         !   inactive - for future expansion
@@ -324,17 +324,26 @@
    
 ! Advance randum number generator by changeseed values
       if (irnd.eq.0) then   
-! For kissvec, create a seed that depends on the state of the columns. Maybe not the best way, but it works.  
-! Must use pmid from bottom four layers. 
-         do i=1,ncol
-            if (pmid(i,nlay).lt.pmid(i,nlay-1)) then 
-               call endrun('MCICA_SUBCOL: KISSVEC SEED GENERATOR REQUIRES PMID FROM BOTTOM FOUR LAYERS.')
-            endif 
-            seed1(i) = (pmid(i,nlay) - int(pmid(i,nlay)))  * 1000000000
-            seed2(i) = (pmid(i,nlay-1) - int(pmid(i,nlay-1)))  * 1000000000
-            seed3(i) = (pmid(i,nlay-2) - int(pmid(i,nlay-2)))  * 1000000000
-            seed4(i) = (pmid(i,nlay-3) - int(pmid(i,nlay-3)))  * 1000000000
-          enddo
+         if(pergro_mods) then
+            do i=1,ncol
+               seed1(i) = clm_rand_seed (i,1)
+               seed2(i) = clm_rand_seed (i,2)
+               seed3(i) = clm_rand_seed (i,3)
+               seed4(i) = clm_rand_seed (i,4)
+            enddo
+         else
+            ! For kissvec, create a seed that depends on the state of the columns. Maybe not the best way, but it works.  
+            ! Must use pmid from bottom four layers. 
+            do i=1,ncol
+               if (pmid(i,nlay).lt.pmid(i,nlay-1)) then 
+                  call endrun('MCICA_SUBCOL: KISSVEC SEED GENERATOR REQUIRES PMID FROM BOTTOM FOUR LAYERS.')
+               endif
+               seed1(i) = (pmid(i,nlay) - int(pmid(i,nlay)))  * 1000000000
+               seed2(i) = (pmid(i,nlay-1) - int(pmid(i,nlay-1)))  * 1000000000
+               seed3(i) = (pmid(i,nlay-2) - int(pmid(i,nlay-2)))  * 1000000000
+               seed4(i) = (pmid(i,nlay-3) - int(pmid(i,nlay-3)))  * 1000000000
+            enddo
+         endif
          do i=1,changeSeed
             call kissvec(seed1, seed2, seed3, seed4, rand_num)
          enddo
@@ -382,8 +391,7 @@
             do isubcol = 1,nsubcol
                do ilev = 1,nlay
                   call kissvec(seed1, seed2, seed3, seed4, rand_num) 
-                  CDF(isubcol,:,ilev) = rand_num !BSINGH -commented this line
-                  if(pergro_mods)CDF(isubcol,:,ilev) = rnglw(isubcol,1:ncol,ilev) !BSINGH - added this line
+                  CDF(isubcol,:,ilev) = rand_num !BSINGH -this line now stays the same
                enddo
             enddo
          elseif (irnd.eq.1) then
@@ -542,6 +550,19 @@
 !      mean_tauc_stoch(:,:) = mean_tauc_stoch(:,:) / nsubcol
 !      mean_ssac_stoch(:,:) = mean_ssac_stoch(:,:) / nsubcol
 !      mean_asmc_stoch(:,:) = mean_asmc_stoch(:,:) / nsubcol
+      
+       !BSINGH - update seeds  
+      if (irnd.eq.0) then
+         if(pergro_mods) then
+            do i=1,ncol
+               clm_rand_seed (i,1) = seed1(i)
+               clm_rand_seed (i,2) = seed2(i)
+               clm_rand_seed (i,3) = seed3(i)
+               clm_rand_seed (i,4) = seed4(i)
+            enddo
+         endif
+      endif
+
 
       end subroutine generate_stochastic_clouds
 
