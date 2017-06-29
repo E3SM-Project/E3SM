@@ -172,9 +172,8 @@ class Component(EntryID):
                            "Too many matches on forcing field {} in file {}".\
                                format(forcing, self.filename))
                     desc = node.text
-
-            expect(len(desc) > 0,"No match found for forcing field {} in file {}".\
-                       format(forcing, self.filename))
+            if desc is None:
+                desc = compsetname.split('_')[0]
             return desc
 
         # first pass just make a hash of the option descriptions
