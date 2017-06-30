@@ -1299,7 +1299,7 @@ class R_TestUpdateACMETests(unittest.TestCase):
         #                  msg="COMMAND SHOULD HAVE WORKED\ncs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 ###############################################################################
-class S_TestCreateTest(TestCreateTestCommon):
+class W_TestCreateTest(TestCreateTestCommon):
 ###############################################################################
     def test_create_test_longname(self):
         create_test_cmd =  "%s/create_test SMS.f19_g16.2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --no-build --output-root %s" % (SCRIPT_DIR, TEST_ROOT)
