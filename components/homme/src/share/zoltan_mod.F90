@@ -66,9 +66,9 @@ contains
     use params_mod,             only : SPHERE_COORDS, CUBE_COORDS, FACE_2D_LB_COORDS
 
     type (GridVertex_t), intent(inout) :: GridVertex(:)
-    type (real(kind=real_kind)),allocatable, intent(inout) :: coord_dim1(:)
-    type (real(kind=real_kind)),allocatable, intent(inout) :: coord_dim2(:)
-    type (real(kind=real_kind)),allocatable, intent(inout) :: coord_dim3(:)
+    real (kind=real_kind),allocatable, intent(inout) :: coord_dim1(:)
+    real (kind=real_kind),allocatable, intent(inout) :: coord_dim2(:)
+    real (kind=real_kind),allocatable, intent(inout) :: coord_dim3(:)
     integer, intent(inout) :: coord_dimension
     !type(cartesian3D_t)     ,  allocatable   :: cartResult(:)
     !type (real(kind=real_kind)),  allocatable   :: coord_dim1(:)
@@ -303,7 +303,7 @@ contains
     implicit none
     type (GridVertex_t), intent(inout) :: GridVertex(:)
     type (GridEdge_t),   intent(inout) :: GridEdge(:)
-    type (integer),   intent(in) :: comm
+    integer,             intent(in) :: comm
 
     integer , target, allocatable :: xadj(:),adjncy(:)    ! Adjacency structure for METIS
     real(kind=REAL_KIND),  target, allocatable :: vwgt(:),adjwgt(:)    ! Weights for the adj struct for METIS
@@ -339,10 +339,10 @@ contains
     implicit none 
     type (GridVertex_t), intent(inout) :: GridVertex(:)
     type (GridEdge_t),   intent(inout) :: GridEdge(:)
-    type (integer),   intent(in) :: comm
-    type (real(kind=real_kind)),intent(in) :: coord_dim1(:)
-    type (real(kind=real_kind)),intent(in) :: coord_dim2(:)
-    type (real(kind=real_kind)),intent(in) :: coord_dim3(:)
+    integer,             intent(in) :: comm
+    real (kind=real_kind),intent(in) :: coord_dim1(:)
+    real (kind=real_kind),intent(in) :: coord_dim2(:)
+    real (kind=real_kind),intent(in) :: coord_dim3(:)
     integer, intent(inout) :: coord_dimension
 
 
@@ -353,9 +353,6 @@ contains
     integer , target, allocatable :: vwgt_nl(:),adjwgt_nl(:)
 
     type (GridVertex_t), allocatable   :: SubVertex(:)
-
-    !real(kind=4), allocatable   :: tpwgts(:)
-    real(kind=4)                :: tmp
 
     !integer(kind=int_kind), allocatable          :: part(:)
     integer, allocatable          :: part_nl(:),local2global_nl(:)
@@ -372,7 +369,6 @@ contains
     integer                       :: partitionmethod,numpartitions
     integer                       :: nodes_per_frame
     logical , parameter           :: Debug = .true.
-    real (kind=4)                 :: dummy(1) 
     nelem_edge = SIZE(GridEdge) 
 
     !print *, "nelem = ", nelem
