@@ -5,15 +5,57 @@
 module zoltan_mod
   use kinds, only : iulog, real_kind
   use parallel_mod, only : abortmp
+  use params_mod,             only : SFCURVE, ZOLTAN2RCB, ZOLTAN2MJ, ZOLTAN2RIB, ZOLTAN2HSFC, ZOLTAN2PATOH, ZOLTAN2PHG, ZOLTAN2METIS, &
+                                       ZOLTAN2PARMETIS, ZOLTAN2SCOTCH, ZOLTAN2PTSCOTCH, ZOLTAN2BLOCK, ZOLTAN2CYCLIC, ZOLTAN2RANDOM, &
+                                       ZOLTAN2ZOLTAN, ZOLTAN2ND, ZOLTAN2PARMA, &
+                                       ZOLTAN2MJRCB, ZOLTAN2_1PHASEMAP,  &
+                                       Z2_NO_TASK_MAPPING, Z2_TASK_MAPPING, Z2_OPTIMIZED_TASK_MAPPING
   implicit none
 
   private 
   integer, parameter :: VertexWeight = 1
   integer, parameter :: EdgeWeight = 1
 
-  public :: genzoltanpart, getfixmeshcoordinates, printMetrics
+  public :: genzoltanpart, getfixmeshcoordinates, printMetrics, is_zoltan_partition, is_zoltan_task_mapping
 
 contains
+
+  function is_zoltan_partition(partmethod) result (zm)
+  integer :: partmethod
+  logical :: zm
+
+  zm=.false.
+  if (partmethod .eq. ZOLTAN2RCB .OR. &
+       partmethod .eq. ZOLTAN2MJ .OR.  &
+       partmethod .eq. ZOLTAN2RIB .OR. &
+       partmethod .eq. ZOLTAN2HSFC .OR. &
+       partmethod .eq. ZOLTAN2PATOH .OR. &
+       partmethod .eq. ZOLTAN2PHG .OR. &
+       partmethod .eq. ZOLTAN2METIS .OR. &
+       partmethod .eq. ZOLTAN2PARMETIS .OR. &
+       partmethod .eq. ZOLTAN2PARMA .OR. &
+       partmethod .eq. ZOLTAN2SCOTCH .OR. &
+       partmethod .eq. ZOLTAN2PTSCOTCH .OR. &
+       partmethod .eq. ZOLTAN2BLOCK .OR. &
+       partmethod .eq. ZOLTAN2CYCLIC .OR. &
+       partmethod .eq. ZOLTAN2RANDOM .OR. &
+       partmethod .eq. ZOLTAN2ZOLTAN .OR. &
+       partmethod .eq. ZOLTAN2MJRCB .OR. &
+       partmethod .eq. ZOLTAN2_1PHASEMAP .OR. &
+       partmethod .eq. ZOLTAN2ND) zm=.true.
+  end function is_zoltan_partition
+
+  function is_zoltan_task_mapping(z2_map_method) result (zm)
+  integer :: z2_map_method
+  logical :: zm
+
+  zm=.false.
+  if ( z2_map_method .eq. Z2_TASK_MAPPING .OR. &
+       z2_map_method .eq. Z2_OPTIMIZED_TASK_MAPPING ) zm=.true.
+  end function is_zoltan_task_mapping
+
+
+
   subroutine getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension) !result(cartResult)
 
     use gridgraph_mod,          only : GridVertex_t
@@ -276,7 +318,11 @@ contains
     allocate(adjwgt(nelem_edge))
     vwgt(:)=VertexWeight
     call CreateMeshGraph(GridVertex,xadj,adjncy,adjwgt)
+#if TRILINOS_HAVE_ZOLTAN2
     CALL Z2PRINTMETRICS(nelem,xadj,adjncy,adjwgt,vwgt,npart, comm, GridVertex%processor_number)
+#else
+    call abortmp("ERROR: Zoltan partition option not available")
+#endif
   end subroutine printMetrics
 
   subroutine genzoltanpart(GridEdge,GridVertex, comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
@@ -342,8 +388,11 @@ contains
 
     call CreateMeshGraph(GridVertex,xadj,adjncy,adjwgt)
     vwgt(:)=VertexWeight
+#if TRILINOS_HAVE_ZOLTAN2
     CALL ZOLTANPART(nelem,xadj,adjncy,adjwgt,vwgt, npart, comm, coord_dim1, coord_dim2, coord_dim3,coord_dimension,  GridVertex%processor_number, partmethod, z2_map_method)
-
+#else
+    call abortmp("ERROR: Zoltan partition option not available")
+#endif
   end subroutine genzoltanpart
 
 

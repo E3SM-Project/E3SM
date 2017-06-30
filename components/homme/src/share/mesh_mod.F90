@@ -1157,14 +1157,10 @@ contains
     use cube_mod,               only : CubeSetupEdgeIndex
     use gridgraph_mod,          only : initgridedge, num_neighbors
     use control_mod,            only : north, south, east, west, neast, seast, swest, nwest, partmethod, z2_map_method, coord_transform_method
-    use params_mod,             only : SFCURVE, ZOLTAN2RCB, ZOLTAN2MJ, ZOLTAN2RIB, ZOLTAN2HSFC, ZOLTAN2PATOH, ZOLTAN2PHG, ZOLTAN2METIS, &
-                                       ZOLTAN2PARMETIS, ZOLTAN2SCOTCH, ZOLTAN2PTSCOTCH, ZOLTAN2BLOCK, ZOLTAN2CYCLIC, ZOLTAN2RANDOM, &
-                                       ZOLTAN2ZOLTAN, ZOLTAN2ND, ZOLTAN2PARMA, &
-                                       ZOLTAN2MJRCB, ZOLTAN2_1PHASEMAP,  &
-                                       Z2_NO_TASK_MAPPING, Z2_TASK_MAPPING, Z2_OPTIMIZED_TASK_MAPPING
-    use params_mod,             only : SPHERE_COORDS, CUBE_COORDS, FACE_2D_LB_COORDS
+    use params_mod,             only : SFCURVE, SPHERE_COORDS, CUBE_COORDS, FACE_2D_LB_COORDS
 
     use kinds, only : iulog, real_kind
+    use zoltan_mod, only : is_zoltan_partition, is_zoltan_task_mapping
 
     implicit none
     type (GridEdge_t),   intent(inout) :: GridEdge(:)
@@ -1244,28 +1240,7 @@ contains
 
     ! side neighbors
     call find_side_neighbors(GridVertex, normal_to_homme_ordering, element_nodes, EdgeWgtP, index_table)
-
-    if (partmethod .eq. ZOLTAN2RCB .OR. &
-        partmethod .eq. ZOLTAN2MJ .OR.  &
-        partmethod .eq. ZOLTAN2RIB .OR. &
-        partmethod .eq. ZOLTAN2HSFC .OR. &
-        partmethod .eq. ZOLTAN2PATOH .OR. &
-        partmethod .eq. ZOLTAN2PHG .OR. &
-        partmethod .eq. ZOLTAN2METIS .OR. &
-        partmethod .eq. ZOLTAN2PARMETIS .OR. &
-        partmethod .eq. ZOLTAN2PARMA .OR. &
-        partmethod .eq. ZOLTAN2SCOTCH .OR. &
-        partmethod .eq. ZOLTAN2PTSCOTCH .OR. &
-        partmethod .eq. ZOLTAN2BLOCK .OR. &
-        partmethod .eq. ZOLTAN2CYCLIC .OR. &
-        partmethod .eq. ZOLTAN2RANDOM .OR. &
-        partmethod .eq. ZOLTAN2ZOLTAN .OR. &
-        partmethod .eq. ZOLTAN2MJRCB .OR. &
-        partmethod .eq. ZOLTAN2_1PHASEMAP .OR. &
-        z2_map_method .eq. Z2_TASK_MAPPING .OR. &
-        z2_map_method .eq. Z2_OPTIMIZED_TASK_MAPPING .OR. &
-        partmethod .eq. ZOLTAN2ND) then
-
+    if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
         allocate(coord_dim1(p_number_elements))
         allocate(coord_dim2(p_number_elements))
         allocate(coord_dim3(p_number_elements))
@@ -1281,27 +1256,7 @@ contains
        face_center%z = centroid(3)
        GridVertex(i)%face_number = cube_face_number_from_cart(face_center)
 
-
-       if (partmethod .eq. ZOLTAN2RCB .OR. &
-           partmethod .eq. ZOLTAN2MJ .OR.  &
-           partmethod .eq. ZOLTAN2RIB .OR. &
-           partmethod .eq. ZOLTAN2HSFC .OR. &
-           partmethod .eq. ZOLTAN2PATOH .OR. &
-           partmethod .eq. ZOLTAN2PHG .OR. &
-           partmethod .eq. ZOLTAN2METIS .OR. &
-           partmethod .eq. ZOLTAN2PARMETIS .OR. &
-           partmethod .eq. ZOLTAN2PARMA .OR. &
-           partmethod .eq. ZOLTAN2SCOTCH .OR. &
-           partmethod .eq. ZOLTAN2PTSCOTCH .OR. &
-           partmethod .eq. ZOLTAN2BLOCK .OR. &
-           partmethod .eq. ZOLTAN2CYCLIC .OR. &
-           partmethod .eq. ZOLTAN2RANDOM .OR. &
-           partmethod .eq. ZOLTAN2ZOLTAN .OR. &
-           partmethod .eq. ZOLTAN2MJRCB .OR. &
-           partmethod .eq. ZOLTAN2_1PHASEMAP .OR. &
-           z2_map_method .eq. Z2_TASK_MAPPING .OR. &
-           z2_map_method .eq. Z2_OPTIMIZED_TASK_MAPPING .OR. &
-           partmethod .eq. ZOLTAN2ND) then
+       if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
                 rangex = 1.7 ! ~pi/2
                 if (coord_transform_method == SPHERE_COORDS) then
                     coord_dim1(i) = face_center%x

@@ -183,8 +183,6 @@ module namelist_mod
                       TOPOLOGY,                  &         ! mesh topology
 #ifdef CAM
       se_partmethod,     &
-      se_COORD_TRANSFORM_METHOD, &
-      se_Z2_MAP_METHOD,  &
       se_topology,       &
       se_ne,             &
       se_limiter_option, &
@@ -198,6 +196,8 @@ module namelist_mod
       omega,                   &   ! scaled rotation rate
       rearth,                  &   ! scaled earth radius
 #endif
+      COORD_TRANSFORM_METHOD, &
+      Z2_MAP_METHOD,  &
       vthreads,      &             ! number of vertical/column threads per horizontal thread
       npart,         &
       uselapi,       &
@@ -314,9 +314,10 @@ module namelist_mod
     ! ==========================
     ! Set the default partmethod
     ! ==========================
+    PARTMETHOD    = SFCURVE
+!    PARTMETHOD    = RECURSIVE
     COORD_TRANSFORM_METHOD = SPHERE_COORDS
     Z2_MAP_METHOD = Z2_NO_TASK_MAPPING
-    PARTMETHOD    = RECURSIVE
     npart         = 1
     useframes     = 0
     multilevel    = 1
@@ -397,11 +398,8 @@ module namelist_mod
       read(*,nml=ctl_nl)
 #endif
 #ifndef _USEMETIS
-      !=================================
-      ! override the selected partition
-      ! method and set it to SFCURVE
-      !=================================
-      !PARTMETHOD = SFCURVE
+      ! override METIS options to SFCURVE
+      if (partmethod>=0 .and. partmethod<=3) partmethod=SFCURVE
 #endif
        ! ========================
        ! if this is a restart run
