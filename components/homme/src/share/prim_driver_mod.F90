@@ -48,7 +48,7 @@ contains
     use thread_mod, only : nthreads, nThreadsHoriz
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, integration, topology, &
-         partmethod, use_semi_lagrange_transport
+         partmethod, use_semi_lagrange_transport, z2_map_method
     ! --------------------------------
     use prim_state_mod, only : prim_printstate_init
     ! --------------------------------
@@ -63,7 +63,7 @@ contains
     use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology
     ! --------------------------------
     use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
-         MeshCubeElemCount, MeshCubeEdgeCount
+         MeshCubeElemCount, MeshCubeEdgeCount, MeshCubeTopologyCoords
     use cube_mod, only : cube_init_atomic, set_corner_coordinates, assign_node_numbers_to_elem
     ! --------------------------------
     use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
@@ -94,6 +94,8 @@ contains
     use dof_mod, only : global_dof, CreateUniqueIndex, SetElemOffset
     ! --------------------------------
     use params_mod, only : SFCURVE
+    ! --------------------------------
+    use zoltan_mod, only: genzoltanpart, getfixmeshcoordinates, printMetrics, is_zoltan_partition, is_zoltan_task_mapping
     ! --------------------------------
     use domain_mod, only : domain1d_t, decompose
     ! --------------------------------
@@ -143,6 +145,11 @@ contains
     real(kind=real_kind) :: approx_elements_per_task
     integer :: n_domains
 
+
+    real (kind=real_kind) ,  allocatable :: coord_dim1(:)
+    real (kind=real_kind) ,  allocatable :: coord_dim2(:)
+    real (kind=real_kind) ,  allocatable :: coord_dim3(:)
+    integer :: coord_dimension = 3
 #ifndef CAM
     logical :: repro_sum_use_ddpdd, repro_sum_recompute
     real(kind=real_kind) :: repro_sum_rel_diff_max
@@ -205,7 +212,6 @@ contains
     ! ===============================================================
     ! Allocate and initialize the graph (array of GridVertex_t types)
     ! ===============================================================
-
     if (topology=="cube") then
 
        if (par%masterproc) then
@@ -236,9 +242,15 @@ contains
            if (par%masterproc) then
                write(iulog,*) "Set up grid vertex from mesh..."
            end if
-           call MeshCubeTopology(GridEdge, GridVertex)
+           call MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+           !MD:TODO: still need to do the coordinate transformation for this case.
+
+
        else
            call CubeTopology(GridEdge,GridVertex)
+           if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
+              call getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+           endif
         end if
 
        if(par%masterproc)       write(iulog,*)"...done."
@@ -247,13 +259,31 @@ contains
 
     !DBG if(par%masterproc) call PrintGridVertex(GridVertex)
 
+    call t_startf('PartitioningTime')
+
     if(partmethod .eq. SFCURVE) then
        if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
+       !if the partitioning method is space filling curves
        call genspacepart(GridEdge,GridVertex)
+       if (is_zoltan_task_mapping(z2_map_method)) then
+          if(par%masterproc) write(iulog,*)"mapping graph using zoltan2 task mapping on the result of SF Curve..."
+        call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+       endif
+    !if zoltan2 partitioning method is asked to run.
+    elseif ( is_zoltan_partition(partmethod)) then
+        if(par%masterproc) write(iulog,*)"partitioning graph using zoltan2 partitioning/task mapping..."
+        call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
     else
         if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
        call genmetispart(GridEdge,GridVertex)
     endif
+
+    call t_stopf('PartitioningTime')
+
+    !call t_startf('PrintMetricTime')
+    !print partitioning and mapping metrics
+    !call printMetrics(GridEdge,GridVertex, par%comm)
+    !call t_stopf('PrintMetricTime')
 
     ! ===========================================================
     ! given partition, count number of local element descriptors
@@ -301,6 +331,7 @@ contains
     ! ====================================================
 
     call genEdgeSched(elem,iam,Schedule(1),MetaVertex(1))
+
 
     allocate(global_shared_buf(nelemd,nrepro_vars))
     global_shared_buf=0.0_real_kind
@@ -474,6 +505,7 @@ contains
     end if
 
     call TimeLevel_init(tl)
+
     if(par%masterproc) write(iulog,*) 'end of prim_init'
 
   end subroutine prim_init1

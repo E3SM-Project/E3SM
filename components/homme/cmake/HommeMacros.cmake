@@ -93,6 +93,10 @@ macro(createTestExec execName execType macroNP macroNC
     TARGET_LINK_LIBRARIES(${execName} ${Extrae_LIBRARY})
   ENDIF ()
 
+  IF (HOMME_USE_TRILINOS)
+    TARGET_LINK_LIBRARIES(${execName} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
+  ENDIF()
+
   INSTALL(TARGETS ${execName} RUNTIME DESTINATION tests)
 
 endmacro(createTestExec)
