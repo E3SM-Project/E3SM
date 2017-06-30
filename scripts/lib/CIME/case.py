@@ -10,7 +10,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
-from CIME.utils                     import get_current_commit
+from CIME.utils                     import get_current_commit, check_name
 from CIME.check_lockedfiles         import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -741,6 +741,7 @@ class Case(object):
                   walltime=None, queue=None, output_root=None, run_unsupported=False, answer=None,
                   input_dir=None):
 
+        expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
         #--------------------------------------------
         # compset, pesfile, and compset components
         #--------------------------------------------
