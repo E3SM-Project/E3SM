@@ -720,6 +720,7 @@ using a fortran linker.
   <LDFLAGS>
     <append> -lm </append>
     <append> -ldl </append>
+    <append> -lopenmpi </append>
   </LDFLAGS>
 </compiler>
 
