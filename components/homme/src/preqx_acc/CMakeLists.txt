@@ -37,6 +37,7 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/vertremap_mod_base.F90
   ${SRC_SHARE_DIR}/viscosity_mod_base.F90
   ${SRC_DIR}/preqx/dcmip_tests.F90
+  ${SRC_SHARE_DIR}/zoltan_mod.F90
   ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
   ${SRC_SHARE_DIR}/control_mod.F90
