@@ -380,7 +380,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._testdirs.append(testdir)
 
         pesfile = os.path.join("..","src","drivers","mct","cime_config","config_pes.xml")
-        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --user-compset --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
+        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV  --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
         if CIME.utils.get_model() == "cesm":
             args += " --run-unsupported"
 
@@ -400,7 +400,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._testdirs.append(testdir)
 
         pesfile = os.path.join(previous_testdir,"env_mach_pes.xml")
-        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --user-compset --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
+        args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
         if CIME.utils.get_model() == "cesm":
             args += " --run-unsupported"
 
@@ -1299,6 +1299,12 @@ class R_TestUpdateACMETests(unittest.TestCase):
         #                  msg="COMMAND SHOULD HAVE WORKED\ncs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 ###############################################################################
+class S_TestCreateTest(TestCreateTestCommon):
+###############################################################################
+    def test_create_test_longname(self):
+        create_test_cmd =  "%s/create_test SMS.f19_g16.2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --no-build --output-root %s" % (SCRIPT_DIR, TEST_ROOT)
+        run_cmd_assert_result(self, create_test_cmd)
+
 class Z_FullSystemTest(TestCreateTestCommon):
 ###############################################################################
 

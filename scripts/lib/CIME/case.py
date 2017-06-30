@@ -411,7 +411,7 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
-    def _set_compset(self, compset_name, files, user_compset=False):
+    def _set_compset(self, compset_name, files):
         """
         Loop through all the compset files and find the compset
         specifation file that matches either the input 'compset_name'.
@@ -446,17 +446,11 @@ class Case(object):
                                    files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
                     logger.info("Compset longname is {}".format(match))
                     logger.info("Compset specification file is {}".format(compsets_filename))
-                    if user_compset is True:
-                        logger.info("Found a compset match for longname {} in alias {}".format(compset_name, compset_alias))
-
                     return compset_alias, science_support
 
-        if user_compset is True:
+        if compset_alias is None:
+            logger.info("Did not find a compset match for longname {} ".format(compset_name))
             self._compsetname = compset_name
-        else:
-            expect(False,
-                   "Could not find a compset match for either alias or longname in {}\n".format(compset_name)
-                   + "You may need the --user-compset argument.")
 
         return None, science_support
 
@@ -529,6 +523,8 @@ class Case(object):
         else:
             self._pesfile = pesfile
             pesfile_unresolved = pesfile
+        expect(self._pesfile is not None,"No pesfile found for component {}".format(component))
+
         self.set_lookup_value("PES_SPEC_FILE", pesfile_unresolved)
 
         tests_filename = files.get_value("TESTS_SPEC_FILE", {"component":component}, resolved=False)
@@ -741,8 +737,7 @@ class Case(object):
 
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
-                  user_compset=False, pesfile=None,
-                  user_grid=False, gridfile=None, ninst=1, test=False,
+                  pesfile=None,user_grid=False, gridfile=None, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None, run_unsupported=False, answer=None,
                   input_dir=None):
 
@@ -751,7 +746,7 @@ class Case(object):
         #--------------------------------------------
         files = Files()
         compset_alias, science_support = self._set_compset(
-            compset_name, files, user_compset=user_compset)
+            compset_name, files)
 
         self._components = self.get_compset_components()
         #--------------------------------------------

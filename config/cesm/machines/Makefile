@@ -27,8 +27,8 @@ VPATH := $(subst $(space),:,$(VPATH))
 RM    := rm
 CP    := cp
 
-exec_se: $(EXEC_SE)  $(CURDIR)/Depends
-complib: $(COMPLIB)  $(CURDIR)/Depends
+exec_se: $(EXEC_SE)  Depends
+complib: $(COMPLIB)  Depends
 
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
@@ -98,26 +98,26 @@ ifeq ($(compile_threaded), true)
 endif
 
 ifeq (,$(EXEROOT))
-  EXEROOT = $(shell ./xmlquery EXEROOT -value)
+  EXEROOT = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
 endif
 ifeq (,$(BUILD_THREADED))
-  BUILD_THREADED = $(shell ./xmlquery BUILD_THREADED -value)
+  BUILD_THREADED = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) BUILD_THREADED --value)
 endif
 
 ifeq (,$(LIBROOT))
-  LIBROOT = $(shell ./xmlquery LIBROOT -value)
+  LIBROOT = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) LIBROOT --value)
 endif
 ifeq (,$(SHAREDLIBROOT))
-  SHAREDLIBROOT = $(shell ./xmlquery SHAREDLIBROOT -value)
+  SHAREDLIBROOT = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SHAREDLIBROOT --value)
 endif
 ifeq (,$(COMPILER))
-  COMPILER = $(shell ./xmlquery COMPILER -value)
+  COMPILER = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
 endif
 ifeq (,$(NINST_VALUE))
-  NINST_VALUE = $(shell ./xmlquery NINST_VALUE -value)
+  NINST_VALUE = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) NINST_VALUE --value)
 endif
 ifeq (,$(MPILIB))
-  MPILIB = $(shell ./xmlquery MPILIB -value)
+  MPILIB = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MPILIB --value)
 endif
 ifeq ($(strip $(PIO_VERSION)),1)
   CPPDEFS += -DPIO1
@@ -616,7 +616,7 @@ $(PIO_LIBDIR)/Makefile:
 #-------------------------------------------------------------------------------
 
 touch_filepath:
-	touch $(CURDIR)/Filepath
+	touch Filepath
 
 # Get list of files and build dependency file for all .o files
 #   using perl scripts mkSrcfiles and mkDepends
@@ -626,19 +626,19 @@ BASENAMES := $(basename $(basename $(SOURCES)))
 OBJS    := $(addsuffix .o, $(BASENAMES))
 INCS    := $(foreach dir,$(cpp_dirs),-I$(dir))
 
-CURDIR := $(shell pwd)
+CASETOOLS := $(CASEROOT)/Tools
 
-$(CURDIR)/Depends: $(CURDIR)/Srcfiles $(CURDIR)/Deppath
+Depends: Srcfiles Deppath
 	$(CASETOOLS)/mkDepends $(USER_MKDEPENDS_OPTS) Deppath Srcfiles > $@
 
-$(CURDIR)/Deppath: $(CURDIR)/Filepath
-	$(CP) -f $(CURDIR)/Filepath $@
+Deppath: Filepath
+	$(CP) -f Filepath $@
 	@echo "$(MINCROOT)" >> $@
 
-$(CURDIR)/Srcfiles: $(CURDIR)/Filepath
+Srcfiles: Filepath
 	$(CASETOOLS)/mkSrcfiles
 
-$(CURDIR)/Filepath:
+Filepath:
 	@echo "$(VPATH)" > $@
 
 
@@ -852,7 +852,7 @@ realclean: clean cleancsmshare cleanpio cleanmct cleangptl
 ifneq ($(MAKECMDGOALS), db_files)
 ifneq ($(MAKECMDGOALS), db_flags)
 ifeq (,$(findstring clean,$(MAKECMDGOALS)))
-    -include $(CURDIR)/Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH)
+    -include Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH)
 endif
 endif
 endif
