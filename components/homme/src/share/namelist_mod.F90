@@ -174,10 +174,6 @@ module namelist_mod
     integer :: se_ne
     integer :: unitn
     character(len=*), parameter ::  subname = "homme:namelist_mod"
-    ! These items are only here to keep readnl from crashing. Remove when possible
-    integer :: se_fv_nphys
-    character(len=80)  :: se_write_phys_grid
-    character(len=256) :: se_phys_grid_file
 #endif
     ! ============================================
     ! Namelists
