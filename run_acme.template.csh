@@ -1241,12 +1241,8 @@ if ( `lowercase $submit_run` == 'true' ) then
   else
     acme_print 'executing 'auto_chain_runs.$machine
     acme_print '$num_submits = '$num_submits
-    acme_print '$do_short_term_archiving = '`uppercase $do_short_term_archiving`
-     '$do_long_term_archiving  = '`uppercase $do_long_term_archiving`
-    # To avoid the error checking in the ACME scripts, it is necessary to tell ACME the archiving is FALSE, and then implement it manually.
-    $xmlchange_exe --id DOUT_S    --val 'FALSE'
-    $xmlchange_exe --id DOUT_L_MS --val 'FALSE'
-    ./auto_chain_runs.$machine  $num_submits -1 `uppercase $do_short_term_archiving` `uppercase $do_long_term_archiving` ${case_run_exe}
+    acme_print '$do_short_term_archiving = '`uppercase $do_short_term_archiving` '$do_long_term_archiving  = '`uppercase $do_long_term_archiving`
+    ./auto_chain_runs.$machine $num_submits -1
   endif
 else
     acme_print 'Run NOT submitted because $submit_run = '$submit_run
