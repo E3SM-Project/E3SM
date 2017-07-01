@@ -1,8 +1,8 @@
 !--------------------------------------------------------------------------------
 !
-! 08/2016: O. Guba Modifying metric_atomic routine to accomodate for 'epsilon
-! bubble' correction of numerical area. For more details see comments at the
-! beginning of prim_driver_mod.
+! 08/2016: O. Guba Modifying metric_atomic routine to add support for 'epsilon
+! bubble' reference element map with GLL area = geometric area
+!
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -458,8 +458,6 @@ contains
 
     if( cubed_sphere_map == 0 ) then
        ! alpha correction for cases (1) and (2).
-       ! It would be better to disable this code when alpha == 1 by using some
-       ! logical flag in control_mod.
        elem%D = elem%D * sqrt(alpha)
        elem%Dinv = elem%Dinv / sqrt(alpha)
        elem%metdet = elem%metdet * alpha
@@ -2092,9 +2090,15 @@ contains
   end function 
 
 
-! The routine sets epsilon bubble area correction for each element.
-! gp, repro_sum options should be inited before this call.
   subroutine set_area_correction_map0(elem, nelemd, par, gp)
+! Numerical area of the domain (sphere) is sum of integration weights. The sum
+! is not exactly equal geometric area (4\pi R). It is required that 
+! numerical area = geometric area.  
+! This correction 'butters' 
+! the difference between numerical and geometrical areas evenly among DOFs. Then
+! geometric areas of individual elements still do not equal their numerical areas,
+! only whole domain's areas coinside.
+
 
 #ifndef CAM
     use repro_sum_mod,      only: repro_sum
@@ -2124,16 +2128,7 @@ contains
     if ( topology == "cube" ) then
        area = 0.0d0
        do ie=1,nelemd
-          ! Code that is bound with mass_matrix() call above
           aratio(ie,1) = sum(elem(ie)%mp(:,:)*elem(ie)%metdet(:,:))
-          ! New code that can replace mass_matrix call in prim_driver_mod.
-          !aratio(ie,1) = 0.0d0
-          !do j = 1,np
-          !   do i = 1,np
-          !      aratio(ie,1) = aratio(ie,1) +
-          !      gp%weights(i)*gp%weights(j)*elem(ie)%metdet(i,j)
-          !   enddo
-          !enddo
        enddo
 
        call repro_sum(aratio, area, nelemd, nelemd, 1, commid=par%comm)
@@ -2152,10 +2147,12 @@ contains
   end subroutine set_area_correction_map0
 
 
-! The routine sets epsilon bubble area correction for each element.
-! gp, repro_sum options should be inited before this call.
   subroutine set_area_correction_map2(elem, nelemd, par, gp)
-
+! Numerical area of the domain (sphere) is sum of integration weights. The sum
+! is not exactly equal geometric area (4\pi R). It is required that 
+! numerical area = geometric area.  
+! The 'epsilon bubble' approach modifies inner weights in each element so that
+! geometic and numerical areas of each element match.
 #ifndef CAM
     use repro_sum_mod,      only: repro_sum
 #else
@@ -2217,9 +2214,8 @@ contains
                 call abortmp('Cube_mod, set_area_correction_map2() : Area correction based on eps. bubble &
                               cannot be done, sum_w is too small.')
              endif
-!             call rotation_init_atomic(elem(ie),"contravariant")
           enddo ! loop over elements
-          ! Temporary code for verification.
+          ! code for verification.
           area = 0.0d0
           do ie = 1,nelemd
              aratio(ie,1) = 0.0

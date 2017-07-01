@@ -1,17 +1,9 @@
 ! ------------------------------------------------------------------------------------------------
 ! prim_driver_mod: 
 !
-! 08/2016: O. Guba Inserting code for area correction based on epsilon bubble:
-! Numerical area of the domain (sphere) is sum of integration weights. The sum
-! is not exactly equal geometric area (4\pi R). It is required that 
-! numerical area = geometric area.  
-! Previously, alpha correction was used. The alpha correction 'butters' 
-! the difference between numerical and geometrical areas evenly among DOFs. Then
-! geometric areas of individual elements do not equal their numerical areas,
-! only whole domain's areas coinside.
-! The 'epsilon bubble' approach modifies inner weights in each element so that
-! geometic and numerical areas of each element match.
-
+! 08/2016: O. Guba Inserting code for "espilon bubble" reference element map
+!
+!
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -46,7 +38,6 @@ module prim_driver_mod
   public :: smooth_topo_datasets
 
   type (cg_t), allocatable  :: cg(:)              ! conjugate gradient struct (nthreads)
-  type (quadrature_t)   :: gp                     ! element GLL points
 
 #ifndef CAM
   type (ColumnModel_t), allocatable :: cm(:) ! (nthreads)
@@ -154,6 +145,7 @@ contains
     integer total_nelem
     real(kind=real_kind) :: approx_elements_per_task
     integer :: n_domains
+    type (quadrature_t)   :: gp                     ! element GLL points
 
 #ifndef CAM
     logical :: repro_sum_use_ddpdd, repro_sum_recompute
@@ -371,23 +363,18 @@ contains
     if(par%masterproc) write(iulog,*) 'running mass_matrix'
     call mass_matrix(par,elem)
 
-    ! Alpha area correction for RRM meshes.
-    ! This routine does not check whether gp is init-ed and it relies on 
-    ! mass matrix call above.
+    ! global area correction (default for cubed-sphere meshes)
     if( cubed_sphere_map == 0 ) then
        call set_area_correction_map0(elem, nelemd, par, gp)
     endif
 
-    ! Epsilon bubble correction for RRM meshes.
-    ! This routine does not check whether gp is init-ed.
+    ! Epsilon bubble correction (default for RRM meshes).
     if(( cubed_sphere_map == 2 ).AND.( np > 2 )) then
        call set_area_correction_map2(elem, nelemd, par, gp)
     endif
 
-    ! Should I track if prim_driver_mod::gp used anywhere else?
-    !deallocate(gp%points)
-    !deallocate(gp%weights)
-
+    deallocate(gp%points)
+    deallocate(gp%weights)
 
 
     if(par%masterproc) write(iulog,*) 're-running mass_matrix'
