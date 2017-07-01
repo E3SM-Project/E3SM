@@ -17,7 +17,7 @@ SET(UTILS_TRILINOS_DIR ${HOMME_SOURCE_DIR}/utils/trilinos)
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                        ${UTILS_TIMING_DIR} )
 
-FILE(GLOB SB81_SRC_F90  ${SRC_SHARE_DIR}/sb81/*.F90)
+FILE(GLOB SB81_SRC_F90  ${SRC_DIR}/preqx/share/*.F90)
 
 # Make SRCS global so the tests can access it
 SET(PRIM_SRCS 
