@@ -239,7 +239,7 @@ CONTAINS
   subroutine dyn_init2(dyn_in)
     use dimensions_mod,   only: nlev, nelemd
     use prim_driver_mod,  only: prim_init2
-    use prim_si_ref_mod,  only: prim_set_mass
+    use prim_si_mod,  only: prim_set_mass
     use hybrid_mod,       only: hybrid_create
     use hycoef,           only: hyam, hybm, hyai, hybi, ps0
     use parallel_mod,     only: par
