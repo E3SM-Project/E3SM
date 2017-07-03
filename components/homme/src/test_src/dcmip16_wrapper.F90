@@ -59,9 +59,13 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat                                                    ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,thetav, phis_ps,ps,rho,rho_mean,q(1),dp    ! pointwise field values
+  real(rl):: p,z,phis,u,v,w,T,thetav, phis_ps,ps,rho,rho_mean,q(1),dp   ! pointwise field values
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 1: moist baroclinic wave'
+
+  ! allocate storage for total precip, for output to file
+  allocate(precl(np,np,nelemd))
+  precl = 0
 
   ! set initial conditions
   do ie = nets,nete
@@ -77,12 +81,15 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
 
         call baroclinic_wave_test(deep,moist,pertt,dcmip_X,lon,lat,p,z,zcoords,u,v,T,thetav,phis,ps,rho,q(1))
 
-        call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
+        call set_state(u,v,w,T,ps,phis,p,dp,z,g, i,j,k,elem(ie),1,nt)
         call set_tracers(q,1, dp,i,j,k,lat,lon,elem(ie))
 
       enddo; enddo
     enddo
+    !call tests_finalize(elem(ie),hvcoord,1,nt)
+
   enddo
+  sample_period = 1800.0 ! sec
 
 end subroutine
 

@@ -6,4 +6,4 @@
 
 # launch the simulation
 EXEC=../../../test_execs/theta-nlev30/theta-nlev30
-openmpiexec -n 6 $EXEC < ./namelist-h-lowres.nl                         # launch simulation
+openmpiexec -n 6 $EXEC < ./namelist-r400.nl                         # launch simulation

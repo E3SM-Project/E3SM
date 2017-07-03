@@ -70,7 +70,7 @@ contains
   select case(name)
     case ('temperature','T'); call get_temperature(elem,field,hvcoord,nt,ntQ)
     case ('pottemp','Th');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
-    case ('phi');             field = elem%state%phi(:,:,:,nt)
+    case ('phi','geo');       field = elem%state%phi(:,:,:,nt)
     case ('dpnh_dp');         call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
     case ('pnh');             call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt,ntQ)
     case ('exner');           call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt,ntQ)
