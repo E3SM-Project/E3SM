@@ -773,6 +773,10 @@ test_esmf: test_esmf.o
 #-------------------------------------------------------------------------------
 # create list of component libraries - hard-wired for current ccsm components
 #-------------------------------------------------------------------------------
+ifdef CLM_PFLOTRAN_COUPLED
+PFLOTRAN_DIR=$(CIMEROOT)/../components/clm/src/external_models/clm-pflotran
+PFLOTRANLIB = $(LIBROOT)/libpflotran.a
+endif 
 
 ifeq ($(ULIBDEP),$(null))
    ifneq ($(LIBROOT),$(null))
@@ -790,6 +794,9 @@ ifeq ($(ULIBDEP),$(null))
 
      ULIBDEP += $(LIBROOT)/$(LNDLIB)
      INCLDIR += -I$(EXEROOT)/lnd/obj
+     ifdef CLM_PFLOTRAN_COUPLED
+     ULIBDEP += $(PFLOTRANLIB)
+     endif
      ULIBDEP += $(LIBROOT)/libocn.a
      ULIBDEP += $(LIBROOT)/librof.a
      ULIBDEP += $(LIBROOT)/libglc.a
@@ -850,6 +857,15 @@ ifneq ($(MODEL),csm_share)
   $(OBJS):  $(CSMSHARELIB)
 endif
 
+ifdef CLM_PFLOTRAN_COUPLED
+$(PFLOTRANLIB):
+	cd $(PFLOTRAN_DIR); \
+	make PETSC_DIR=$(PETSC_PATH) th_characteristic_curves=TRUE smoothing2=TRUE libpflotran.a -f $(PFLOTRAN_DIR)/makefile
+	mv $(PFLOTRAN_DIR)/*.mod $(PFLOTRAN_DIR)/*.o $(EXEROOT)/lnd/obj
+	mv $(PFLOTRAN_DIR)/libpflotran.a $(LIBROOT)
+$(LIBROOT)/libclm.a : $(PFLOTRANLIB)
+endif
+
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
@@ -906,6 +922,7 @@ cleanrof:
 
 cleanlnd:
 	$(RM) -f $(LIBROOT)/$(LNDLIB)
+	$(RM) -f $(LIBROOT)/libpflotran.a
 	$(RM) -fr $(EXEROOT)/lnd/obj
 
 cleancsmshare:
