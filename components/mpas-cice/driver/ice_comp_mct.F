@@ -1561,14 +1561,23 @@ contains
         vOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_v, n)
         seaSurfaceTiltU(i)             = x2i_i % rAttr(index_x2i_So_dhdx, n)
         seaSurfaceTiltV(i)             = x2i_i % rAttr(index_x2i_So_dhdy, n)
-        meltingPotential               = x2i_i % rAttr(index_x2i_Fioo_meltp, n)
 
-        ! frazil calculation
-        frazilProduction               = x2i_i % rAttr(index_x2i_Fioo_frazil, n)
-        call freezing_potential(freezingPotential, frazilProduction, seaSurfaceSalinity(i), &
-                                config_thermodynamics_type)
-        freezingMeltingPotential(i)    = freezingPotential + meltingPotential
+        if () then ! free surface (MPAS-O)
         
+           meltingPotential            = x2i_i % rAttr(index_x2i_Fioo_meltp, n)
+
+           ! frazil calculation
+           frazilProduction            = x2i_i % rAttr(index_x2i_Fioo_frazil, n)
+           call freezing_potential(freezingPotential, frazilProduction, seaSurfaceSalinity(i), &
+                                   config_thermodynamics_type)
+           freezingMeltingPotential(i) = freezingPotential + meltingPotential
+
+        else ! non-free surface (SOM)
+
+           freezingMeltingPotential(i) = x2i_i % rAttr(index_x2i_Fioo_q, n)
+
+        endif
+
         airLevelHeight(i)              = x2i_i % rAttr(index_x2i_Sa_z, n)
         airPotentialTemperature(i)     = x2i_i % rAttr(index_x2i_Sa_ptem, n)
         airTemperature(i)              = x2i_i % rAttr(index_x2i_Sa_tbot, n)
