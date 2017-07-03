@@ -1,0 +1,324 @@
+<?xml version="1.0"?>
+<file id="env_mach_pes.xml">
+  <header>
+    These variables CANNOT be modified once case_setup has been
+    invoked without first invoking case_setup -clean.
+
+    component task/thread settings
+    if the user wants to change the values below after ./case_setup, run
+    ./case_setup -clean
+    ./case_setup
+    to reset the pes for the run
+
+    NTASKS are the total number of MPI tasks, a negative value in this field
+                 indicates nodes rather than tasks.
+    NTHRDS are the number of OpenMP threads per MPI task
+    ROOTPE is the global mpi task associated with the root task
+    of that component, a negative value in this field indicates nodes rather than tasks.           PSTRID is the stride of MPI tasks across the global
+    set of pes (for now this is set to 1)
+    NINST is the number of instances of the component (will be spread
+    evenly across NTASKS)
+
+    for example, for a setting with
+    NTASKS = 8
+    NTHRDS = 2
+    ROOTPE = 32
+    NINST  = 2
+    the MPI tasks would be placed starting on global pe 32
+    and each pe would be threaded 2-ways for this component.
+    These tasks will be divided amongst both instances (4 tasks each).
+
+    Note: PEs that support threading never have an MPI task associated
+    with them for performance reasons.  As a result, NTASKS and ROOTPE
+    are relatively independent of NTHRDS and they determine
+    the layout of mpi processors between components.  NTHRDS is used
+    to determine how those mpi tasks should be placed across the machine.
+
+    The following values should not be set by the user since they'll be
+    overwritten by scripts.
+    TOTALPES
+    CCSM_PCOST
+    CCSM_ESTCOST
+    PES_LEVEL
+    MAX_TASKS_PER_NODE
+    PES_PER_NODE
+    CCSM_TCOST
+    CCSM_ESTCOST
+
+    The user can copy env_mach_pes.xml from another run, but they'll need to
+    do the following
+    ./case_setup -clean
+    ./case_setup
+    ./CASE.build
+    </header>
+  <group id="mach_pes_last">
+    <entry id="CCSM_PCOST" value="3">
+      <type>integer</type>
+      <desc>cost relative to 64 pes (DO NOT EDIT)</desc>
+    </entry>
+    <entry id="CCSM_TCOST" value="-1">
+      <type>integer</type>
+      <desc>relative cost of test where ERS is 1 (DO NOT EDIT)</desc>
+    </entry>
+    <entry id="CCSM_ESTCOST" value="7">
+      <type>integer</type>
+      <desc>relative total cost of case (DO NOT EDIT)</desc>
+    </entry>
+    <entry id="COST_PES" value="0">
+      <type>integer</type>
+      <desc>pes or cores used relative to PES_PER_NODE for accounting (0 means TOTALPES is valid)</desc>
+    </entry>
+    <entry id="TOTALPES" value="1">
+      <type>integer</type>
+      <desc>total number of tasks and threads (setup automatically - DO NOT EDIT)</desc>
+    </entry>
+    <entry id="MAX_TASKS_PER_NODE" value="30">
+      <type>integer</type>
+      <desc>maximum number of tasks/ threads allowed per node </desc>
+    </entry>
+    <entry id="PES_PER_NODE" value="15">
+      <type>integer</type>
+      <desc>pes or cores per node for accounting purposes </desc>
+    </entry>
+  </group>
+  <group id="mach_pes_atm">
+    <entry id="NTASKS_ATM" value="1">
+      <type>integer</type>
+      <desc>number of atmosphere tasks</desc>
+    </entry>
+    <entry id="NTHRDS_ATM" value="1">
+      <type>integer</type>
+      <desc>number of atmosphere threads</desc>
+    </entry>
+    <entry id="ROOTPE_ATM" value="0">
+      <type>integer</type>
+      <desc>root atm mpi task</desc>
+    </entry>
+    <entry id="NINST_ATM" value="1">
+      <type>integer</type>
+      <desc>Number of atmosphere instances</desc>
+    </entry>
+    <entry id="NINST_ATM_LAYOUT" value="concurrent">
+      <type>char</type>
+      <valid_values>sequential,concurrent</valid_values>
+      <desc>Layout of atmosphere instances</desc>
+    </entry>
+  </group>
+  <group id="mach_pes_lnd">
+    <entry id="NTASKS_LND" value="1">
+      <type>integer</type>
+      <desc>number of land mpi tasks</desc>
+    </entry>
+    <entry id="NTHRDS_LND" value="1">
+      <type>integer</type>
+      <desc>number of land mpi threads</desc>
+    </entry>
+    <entry id="ROOTPE_LND" value="0">
+      <type>integer</type>
+      <desc>root lnd mpi task</desc>
+    </entry>
+    <entry id="NINST_LND" value="1">
+      <type>integer</type>
+      <desc>Number of land instances</desc>
+    </entry>
+    <entry id="NINST_LND_LAYOUT" value="concurrent">
+      <type>char</type>
+      <valid_values>sequential,concurrent</valid_values>
+      <desc>Layout of land instances</desc>
+    </entry>
+  </group>
+  <group id="mach_pes_ice">
+    <entry id="NTASKS_ICE" value="1">
+      <type>integer</type>
+      <desc>number of ice mpi tasks</desc>
+    </entry>
+    <entry id="NTHRDS_ICE" value="1">
+      <type>integer</type>
+      <desc>number of ice mpi threads</desc>
+    </entry>
+    <entry id="ROOTPE_ICE" value="0">
+      <type>integer</type>
+      <desc>root ice mpi task</desc>
+    </entry>
+    <entry id="NINST_ICE" value="1">
+      <type>integer</type>
+      <desc>Number of sea ice instances</desc>
+    </entry>
+    <entry id="NINST_ICE_LAYOUT" value="concurrent">
+      <type>char</type>
+      <valid_values>equential,concurrent</valid_values>
+      <desc>Layout of sea ice instances</desc>
+    </entry>
+  </group>
+  <group id="mach_pes_ocn">
+    <entry id="NTASKS_OCN" value="1">
+      <type>integer</type>
+      <desc>number of ocean mpi tasks</desc>
+    </entry>
+    <entry id="NTHRDS_OCN" value="1">
+      <type>integer</type>
+      <desc>number of ocean mpi threads</desc>
+    </entry>
+    <entry id="ROOTPE_OCN" value="0">
+      <type>integer</type>
+      <desc>root ocn mpi task</desc>
+    </entry>
+    <entry id="NINST_OCN" value="1">
+      <type>integer</type>
+      <desc>Number of ocean instances</desc>
+    </entry>
+    <entry id="NINST_OCN_LAYOUT" value="concurrent">
+      <type>char</type>
+      <valid_values>sequential,concurrent</valid_values>
+      <desc>Layout of ocean instances</desc>
+    </entry>
+  </group>
+  <group id="mach_pes_cpl">
+    <entry id="NTASKS_CPL" value="1">
+      <type>integer</type>
+      <desc>number of coupler mpi tasks</desc>
+    </entry>
+    <entry id="NTHRDS_CPL" value="1">
+      <type>integer</type>
+      <desc>number of coupler mpi threads</desc>
+    </entry>
+    <entry id="ROOTPE_CPL" value="0">
+      <type>integer</type>
+      <desc>root cpl mpi task</desc>
+    </entry>
+  </group>
+  <group id="mach_pes_glc">
+    <entry id="NTASKS_GLC" value="1">
+      <type>integer</type>
+      <desc>number of glc mpi tasks</desc>
+    </entry>
+    <entry id="NTHRDS_GLC" value="1">
+      <type>integer</type>
+      <desc>number of glc mpi threads</desc>
+    </entry>
+    <entry id="ROOTPE_GLC" value="0">
+      <type>integer</type>
+      <desc>root glc mpi task</desc>
+    </entry>
+    <entry id="NINST_GLC" value="1">
+      <type>integer</type>
+      <desc>Number of glacier instances</desc>
+    </entry>
+    <entry id="NINST_GLC_LAYOUT" value="concurrent">
+      <type>char</type>
+      <valid_values>sequential,concurrent</valid_values>
+      <desc>Layout of glacier instances</desc>
+    </entry>
+  </group>
+  <group id="mach_pes_rof">
+    <entry id="NTASKS_ROF" value="1">
+      <type>integer</type>
+      <desc>number of river runoff tasks</desc>
+    </entry>
+    <entry id="NTHRDS_ROF" value="1">
+      <type>integer</type>
+      <desc>number of river runoff threads</desc>
+    </entry>
+    <entry id="ROOTPE_ROF" value="0">
+      <type>integer</type>
+      <desc>root rof mpi task</desc>
+    </entry>
+    <entry id="NINST_ROF" value="1">
+      <type>integer</type>
+      <desc>Number of river runoff instances</desc>
+    </entry>
+    <entry id="NINST_ROF_LAYOUT" value="concurrent">
+      <type>char</type>
+      <desc>Layout of river runoff instances</desc>
+    </entry>
+  </group>
+  <group id="mach_pes_wav">
+    <entry id="NTASKS_WAV" value="1">
+      <type>integer</type>
+      <desc>number of wav mpi tasks</desc>
+    </entry>
+    <entry id="NTHRDS_WAV" value="1">
+      <type>integer</type>
+      <desc>number of wav mpi threads</desc>
+    </entry>
+    <entry id="ROOTPE_WAV" value="0">
+      <type>integer</type>
+      <desc>root wav mpi task</desc>
+    </entry>
+    <entry id="NINST_WAV" value="1">
+      <type>integer</type>
+      <desc>Number of wave instances</desc>
+    </entry>
+    <entry id="NINST_WAV_LAYOUT" value="concurrent">
+      <type>char</type>
+      <valid_values>sequential,concurrent</valid_values>
+      <desc>Layout of wave instances</desc>
+    </entry>
+  </group>
+  <group id="mach_pes_esp">
+    <entry id="NTASKS_ESP" value="1">
+      <type>integer</type>
+      <desc>number of external processing tool mpi tasks</desc>
+    </entry>
+    <entry id="NTHRDS_ESP" value="0">
+      <type>integer</type>
+      <desc>number of external processing tool mpi threads</desc>
+    </entry>
+    <entry id="ROOTPE_ESP" value="0">
+      <type>integer</type>
+      <desc>root ocn mpi task</desc>
+    </entry>
+    <entry id="NINST_ESP" value="1">
+      <type>integer</type>
+      <desc>Number of external processing tool instances</desc>
+    </entry>
+    <entry id="NINST_ESP_LAYOUT" value="concurrent">
+      <type>char</type>
+      <valid_values>sequential,concurrent</valid_values>
+      <desc>Layout of external processing tool instances</desc>
+    </entry>
+  </group>
+  <group id="mach_pes_stride">
+    <entry id="PSTRID_ATM" value="1">
+      <type>integer</type>
+      <desc>stride of mpi tasks for atm comp - currently should always be set to 1</desc>
+    </entry>
+    <entry id="PSTRID_LND" value="1">
+      <type>integer</type>
+      <valid_values>1</valid_values>
+      <desc>stride of mpi tasks for lnd comp - currently should always be set to 1</desc>
+    </entry>
+    <entry id="PSTRID_ICE" value="1">
+      <type>integer</type>
+      <desc>stride of mpi tasks for ice comp - currently should always be set to 1</desc>
+    </entry>
+    <entry id="PSTRID_OCN" value="1">
+      <type>integer</type>
+      <valid_values>1</valid_values>
+      <desc>stride of mpi tasks for ocn comp - currently should always be set to 1</desc>
+    </entry>
+    <entry id="PSTRID_CPL" value="1">
+      <type>integer</type>
+      <desc>stride of mpi tasks for cpl comp - currently should always be set to 1</desc>
+    </entry>
+    <entry id="PSTRID_GLC" value="1">
+      <type>integer</type>
+      <valid_values>1</valid_values>
+      <desc>stride of mpi tasks for glc comp - currently should always be set to 1</desc>
+    </entry>
+    <entry id="PSTRID_ROF" value="1">
+      <type>integer</type>
+      <desc>stride of mpi tasks for rof comp - currently should always be set to 1</desc>
+    </entry>
+    <entry id="PSTRID_WAV" value="1">
+      <type>integer</type>
+      <valid_values>1</valid_values>
+      <desc>stride of mpi tasks for wav comp - currently should always be set to 1</desc>
+    </entry>
+    <entry id="PSTRID_ESP" value="1">
+      <type>integer</type>
+      <valid_values>1</valid_values>
+      <desc>stride of mpi tasks for esp comp - currently should always be set to 1</desc>
+    </entry>
+  </group>
+</file>
