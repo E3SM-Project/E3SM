@@ -1239,10 +1239,9 @@ if ( `lowercase $submit_run` == 'true' ) then
     acme_print '         SUBMITTING JUST A SINGLE JOB.'
     ${case_submit_exe}
   else
-    acme_print 'executing 'auto_chain_runs.$machine
-    acme_print '$num_submits = '$num_submits
-    acme_print '$do_short_term_archiving = '`uppercase $do_short_term_archiving` '$do_long_term_archiving  = '`uppercase $do_long_term_archiving`
-    ./auto_chain_runs.$machine $num_submits -1
+    # Need to understand why csh won't run auto
+    acme_print csh ${case_scripts_dir}/auto_chain_runs.$machine $num_submits -1
+    csh ${case_scripts_dir}/auto_chain_runs.$machine $num_submits -1
   endif
 else
     acme_print 'Run NOT submitted because $submit_run = '$submit_run
