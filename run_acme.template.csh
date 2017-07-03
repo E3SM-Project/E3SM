@@ -1058,7 +1058,7 @@ endif
 ### Only specially authorized people can use the special_acme qos on Cori or Edison. Don't uncomment unless you're one.
 #if ( `lowercase $debug_queue` == false && $machine == edison ) then
 #  set update_run = ${case_run_exe}.updated
-#  awk '/--account/{print; print "#SBATCH --qos=special_acme";next}1' ${case_run_exe} > ${update_run}
+#  set batch_options = "${batch_options} --qos=special_acme"
 #  mv ${update_run} ${case_run_exe}
 #  unset update_run
 #endif
@@ -1239,7 +1239,7 @@ if ( `lowercase $submit_run` == 'true' ) then
     acme_print '         SUBMITTING JUST A SINGLE JOB.'
     ${case_submit_exe}
   else
-    # Need to understand why csh won't run auto
+    # Need to understand why csh won't run with just ./
     acme_print csh ${case_scripts_dir}/auto_chain_runs.$machine $num_submits -1
     csh ${case_scripts_dir}/auto_chain_runs.$machine $num_submits -1
   endif
