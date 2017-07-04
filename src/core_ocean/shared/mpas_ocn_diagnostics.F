@@ -1443,7 +1443,7 @@ contains
       salineContractionCoeff => salineContractionCoeffField % array
 
       ! Only need to compute over the 0 and 1 halos
-      nCells = nCellsArray( 2 )
+      nCells = nCellsArray( 3 )
 
       ! compute EOS by displacing SST/SSS to every vertical layer in column
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 0, 'surfaceDisplaced', &
