@@ -111,6 +111,13 @@ ifeq ($(COMPILER),ifort)
     FFLAGS    += -CB
   endif
 endif
+ifeq ($(COMPILER),intel)
+  FFLAGS      :=  -O2 -c -132 -ftz -g -FR  -I $(OBJ_DIR)
+  ifeq ($(DEBUG),TRUE)
+    FFLAGS    += -CB
+  endif
+endif
+
 ifeq ($(COMPILER),lf95)
   ifeq ($(DEBUG),TRUE)
     FFLAGS    := --nfix --nap --chk --g --npca --nsav --trace --trap -c --mod $(OBJ_DIR) -O

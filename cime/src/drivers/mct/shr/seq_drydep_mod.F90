@@ -36,7 +36,7 @@ module seq_drydep_mod
   ! !PRIVATE ARRAY SIZES
 
   integer, private, parameter :: maxspc = 100              ! Maximum number of species
-  integer, public,  parameter :: n_species_table = 77      ! Number of species to work with
+  integer, public,  parameter :: n_species_table = 84      ! Number of species to work with
   integer, private, parameter :: NSeas = 5                 ! Number of seasons
   integer, private, parameter :: NLUse = 11                ! Number of land-use types
 
@@ -301,6 +301,13 @@ module seq_drydep_mod
              ,0.1_r8    &
              ,0.1_r8    &
              ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
             /)
 
   ! PRIVATE DATA:
@@ -374,6 +381,14 @@ module seq_drydep_mod
                            ,'HCN     '                       &
                            ,'CH3CN   '                       &
                            ,'SO2     '                       &
+                           ,'SOAG0   '                       &
+                           ,'SOAG15  '                       &
+                           ,'SOAG24  '                       &
+                           ,'SOAG35  '                       &
+                           ,'SOAG34  '                       &
+                           ,'SOAG33  '                       &
+                           ,'SOAG32  '                       &
+                           ,'SOAG31  '                       &
                            ,'SOAGff0 '                       &
                            ,'SOAGff1 '                       &
                            ,'SOAGff2 '                       &
@@ -384,7 +399,6 @@ module seq_drydep_mod
                            ,'SOAGbg2 '                       &
                            ,'SOAGbg3 '                       &
                            ,'SOAGbg4 '                       &
-                           ,'SOAG0   '                       &
                            ,'SOAG1   '                       &
                            ,'SOAG2   '                       &
                            ,'SOAG3   '                       &
@@ -398,6 +412,8 @@ module seq_drydep_mod
                            /)
 
   !--- data for effective Henry's Law coefficient ---
+! Column 1 is Heff at 298 K
+! Column 2 represents dhr i.e. temperature dependence of these coefficients
   real(r8), public, parameter :: dheff(n_species_table*6) = &
             (/1.15e-02_r8, 2560._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,8.33e+04_r8, 7379._r8,2.2e-12_r8,-3730._r8,0._r8     ,    0._r8  &
@@ -455,7 +471,14 @@ module seq_drydep_mod
              ,1.20e+01_r8, 5000._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,5.00e+01_r8, 4000._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,1.23e+00_r8, 3120._r8,1.23e-02_r8,1960._r8,0._r8     ,    0._r8  &
-             ,1.3e+07_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,7.59e+03_r8,     6013.95_r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,7.94e+04_r8,     6013.95_r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,2.57e+05_r8,     6013.95_r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,7.94e+04_r8,     6013.95_r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,2.57e+05_r8,     6013.95_r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,8.32e+05_r8,     6013.95_r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,2.69e+06_r8,     6013.95_r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,8.71e+06_r8,     6013.95_r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,3.2e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,4.0e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,1.3e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
@@ -492,6 +515,8 @@ module seq_drydep_mod
           68.1141968_r8, 70.0877991_r8, 70.0877991_r8, 46.0657997_r8, 147.125946_r8, &
           119.074341_r8, 162.117935_r8, 100.112999_r8, 27.0256_r8   , 41.0524_r8   , &
           64.064800_r8,  250._r8,       250._r8,       250._r8,       250._r8,       &
+          250._r8,       250._r8,       250._r8,       250._r8,       250._r8,       &
+          250._r8,       250._r8,                                                    &
           250._r8,       250._r8,       250._r8,       250._r8,       250._r8,       &
           250._r8,       250._r8,       250._r8,       250._r8,       250._r8,       &
           250._r8,       170.3_r8,      170.3_r8,      170.3_r8,       170.3_r8,     &
@@ -743,11 +768,11 @@ CONTAINS
 !         Added by Manish Shrivastava on 01/22/2016 to do wet deposition of SOA
 !         gas species
 !---------------------------------------------------------------------------------------------------------
-
-           case(  'SOAG0','SOAG15', 'SOAG24', &
-                  'SOAG31', 'SOAG32', &
-                  'SOAG33', 'SOAG34', 'SOAG35' )
-             test_name = 'CH3OOH'  ! this is just a place holder. values are explicitly set below
+!  These values are now explicitly set based on Hodzic et al. 2014 in n_species_table
+!           case(  'SOAG0','SOAG15', 'SOAG24', &
+!                  'SOAG31', 'SOAG32', &
+!                  'SOAG33', 'SOAG34', 'SOAG35' )
+!             test_name = 'CH3OOH'  ! this is just a place holder. values are explicitly set below
 !----------------------------------------------------------------------------------------------------
 
           case( 'COhc','COme')
