@@ -3074,7 +3074,7 @@ module mpas_io_streams
 
                else
    
-                  if (field_cursor % real3dField % isVarArray) then
+                  if (field_cursor % real4dField % isVarArray) then
                      call mpas_dmpar_bcast_reals( mpas_io_handle_dminfo(stream % fileHandle), size(real3d_temp), real3d_temp(:,1,1))
                      field_4dreal_ptr => field_cursor % real4dField
                      do while (associated(field_4dreal_ptr))
