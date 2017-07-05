@@ -77,13 +77,14 @@ _TEST_SUITES = {
 
     "acme_atm_developer" : (None, None,
                             ("SMS_D_Ln5.ne4_ne4.FC5",
-                             ("ERP_Ln9.ne4_ne4.FC5AV1C-L", "cam-rtm_null"),
+                             ("ERS_Ln9.ne4_ne4.FC5AV1C-L", "cam-rtm_null"),
                              ("SMS_Ln9.ne4_ne4.FC5AV1C-L", "cam-outfrq9s"),
+                             "SMS_R_Ld5.T42_T42.FSCM5A97",
                              "SMS_D_Ln5.ne4_ne4.FC5AV1C-L")
                             ),
 
     "acme_atm_integration" : (None, None,
-                              (("ERP_Ln9.ne4_ne4.FC5", "cam-rtm_null"),
+                              (("ERS_Ln9.ne4_ne4.FC5", "cam-rtm_null"),
                                "ERP_Ln9.ne4_ne4.FC5AQUAP",
                                "PET_Ln5.ne4_ne4.FC5AV1C-L",
                                "PEM_Ln5.ne4_ne4.FC5AV1C-L",
@@ -93,8 +94,8 @@ _TEST_SUITES = {
     
     "acme_atm_weekly" : (None, None,
                          ("SMS_Lm1.ne4_ne4.FC5AV1C-L",
-                          "ERS_Lm1.ne4_ne4.FC5AV1C-L",
-                          "ERS_Lm3.ne4_ne4.FC5AV1C-L",
+                          "ERS_Ld31.ne4_ne4.FC5AV1C-L",
+                          "ERP_Lm3.ne4_ne4.FC5AV1C-L",
                           "SMS_Ly1.ne4_ne4.FC5AV1C-L")
                          ),
     
