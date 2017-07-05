@@ -108,12 +108,6 @@ module li_time_integration_fe
 
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
 
-      ! During integration, time level 1 stores the model state at the beginning of the
-      !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
-      ! (time level 1 should not be modified.)
-
-!!!      procVertexMaskChanged = 0
-
 ! === Update subglacial hydrology  ===========
 ! It's not clear where the best place to call this should be, so putting it first for now
       call mpas_timer_start("subglacial hydro")
