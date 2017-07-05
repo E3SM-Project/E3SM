@@ -27,7 +27,7 @@ data_files = [
 setup(
     name="acme_diags",
     version="0.1",
-    author="Zeshawn Shaheen, Chengzhu (Jill) Zhang",
+    author="Chengzhu (Jill) Zhang, Zeshawn Shaheen",
     author_email="aims@llnl.gov",
     description="ACME Diagnostics.",
     scripts=["acme_diags/acme_diags_driver.py"],
