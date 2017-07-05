@@ -3,8 +3,8 @@
 # and executable prim.
 macro(prim_setup)
 
-INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
-LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
+INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
+LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS})
 
 SET(UTILS_SHARE_DIR ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR         ${HOMME_SOURCE_DIR}/src)
@@ -138,3 +138,5 @@ createTestExec(prim prim ${PRIM_NP} ${PRIM_NC} ${PRIM_PLEV}
 SET_PROPERTY(TARGET prim PROPERTY LINKER_LANGUAGE Fortran)
 
 TARGET_LINK_LIBRARIES(prim ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
+
+TARGET_LINK_LIBRARIES(prim ~/arkode/lib)

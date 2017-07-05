@@ -22,6 +22,7 @@ module dimensions_mod
 
   integer, parameter, public :: np = NP
 
+
   integer         :: qsize = 0
 
   integer, parameter, public :: npsq = np*np
