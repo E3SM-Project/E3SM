@@ -214,7 +214,7 @@ def restoa(fsnt, flnt):
 
 derived_variables = {
     'PRECT': OrderedDict([
-        (('pr'), rename),
+        (('pr'), lambda pr: convert_units(rename(pr),target_units="mm/day")),
         (('PRECC', 'PRECL'), lambda precc, precl: prect(precc, precl))
     ]),
     'SST': OrderedDict([
