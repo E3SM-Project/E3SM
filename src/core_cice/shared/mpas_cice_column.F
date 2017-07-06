@@ -2799,7 +2799,8 @@ contains
          config_use_brine, &
          config_use_skeletal_biochemistry, &
          config_use_column_biogeochemistry, &
-         config_use_zaerosols
+         config_use_zaerosols, &
+         config_use_vertical_tracers
 
     ! dimensions
     integer, pointer :: &
@@ -2809,6 +2810,7 @@ contains
          nSnowLayers, &
          nzAerosols, &
          nBioLayers, &
+         nBioLayersP1, &
          nAlgae, &
          nDOC, &
          nDIC, &
@@ -2885,7 +2887,8 @@ contains
          oceanDONConc, &
          oceanParticulateIronConc, &
          oceanDissolvedIronConc, &
-         oceanZAerosolConc
+         oceanZAerosolConc, &
+         bioShortwaveFluxCell
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          shortwaveLayerPenetration, &
@@ -2917,7 +2920,8 @@ contains
          iBioCount, &
          iSnowCount, &
          iIceCount, &
-         indexj
+         indexj, &
+         iBioLayers
 
     real(kind=RKIND), dimension(:), allocatable :: &
          oceanBioConcentrationsUsed
@@ -2957,6 +2961,7 @@ contains
        call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
        call MPAS_pool_get_dimension(mesh, "nzAerosols", nzAerosols)
        call MPAS_pool_get_dimension(mesh, "nBioLayers", nBioLayers)
+       call MPAS_pool_get_dimension(mesh, "nBioLayersP1", nBioLayersP1)
        call MPAS_pool_get_dimension(mesh, "nAlgae", nAlgae)
        call MPAS_pool_get_dimension(mesh, "nDOC", nDOC)
        call MPAS_pool_get_dimension(mesh, "nDIC", nDIC)
@@ -2980,6 +2985,7 @@ contains
        call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
        call MPAS_pool_get_config(block % configs, "config_use_zaerosols",config_use_zaerosols)
+       call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers",config_use_vertical_tracers)
 
        call MPAS_pool_get_array(biogeochemistry, "newlyFormedIce", newlyFormedIce)
        call MPAS_pool_get_array(biogeochemistry, "netNitrateUptake", netNitrateUptake)
@@ -2999,6 +3005,7 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "bioDiffusivity", bioDiffusivity)
        call MPAS_pool_get_array(biogeochemistry, "bioPermeability", bioPermeability)
        call MPAS_pool_get_array(biogeochemistry, "bioShortwaveFlux", bioShortwaveFlux)
+       call MPAS_pool_get_array(biogeochemistry, "bioShortwaveFluxCell", bioShortwaveFluxCell)
        call MPAS_pool_get_array(biogeochemistry, "darcyVelocityBio", darcyVelocityBio)
        call MPAS_pool_get_array(biogeochemistry, "snowIceBioFluxes", snowIceBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "atmosIceBioFluxes", atmosIceBioFluxes)
@@ -3212,6 +3219,7 @@ contains
 
           ! update
           totalSkeletalAlgae(iCell) = 0.0_RKIND
+          bioShortwaveFluxCell(:,iCell) = 0.0_RKIND
 
           do iCategory = 1, nCategories
              if (config_use_skeletal_biochemistry .and. iceAreaCategory(1,iCategory,iCell) > cicePuny) then
@@ -3221,9 +3229,13 @@ contains
                         iceAreaCategory(1,iCategory,iCell)
                 enddo
              endif
-          enddo ! iCategory
-
-          do iCategory = 1, nCategories
+             if (config_use_vertical_tracers) then
+                do iBioLayers = 1, nBioLayersP1
+                   bioShortwaveFluxCell(iBioLayers,iCell) = bioShortwaveFluxCell(iBioLayers,iCell) + &
+                        bioShortwaveFlux(iBioLayers,iCategory,iCell) * &
+                        iceAreaCategory(1,iCategory,iCell)
+                enddo
+             endif
              newlyFormedIce(iCategory,iCell) = 0
              if (newlyFormedIceLogical(iCategory)) newlyFormedIce(iCategory,iCell) = 1
           enddo ! iCategory

@@ -2246,8 +2246,10 @@
 		<var name="snowIceBioFluxes"			type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="snowIceBioFluxes"/>
 		<var name="atmosBlackCarbonFlux"		type="real"	dimensions="maxBCType nCells Time"			name_in_code="atmosBlackCarbonFlux"/>
 		<var name="atmosDustFlux"			type="real"	dimensions="maxDustType nCells Time"			name_in_code="atmosDustFlux"/>
-		<var name="oceanBioFluxes"			type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="oceanBioFluxes"			packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
-		<var name="oceanBioConcentrations"		type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="oceanBioConcentrations"		packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
+		<var name="oceanBioFluxes"			type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="oceanBioFluxes"
+		units="mmol/m2/s"	description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2/s, particulate iron in umol/m2/s, humic carbon, black carbon1 in mg/m2/s, black carbon2 in mg/m2/s,dust1 in mg/m2/s, dust2 in mg/m2/s, dust3 in mg/m2/s, dust4 in mg/m2/s"			packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
+		<var name="oceanBioConcentrations"		type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="oceanBioConcentrations"
+		units="mmol/m3"	description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m3, particulate iron in umol/m3, humic carbon, black carbon1 in mg/m3, black carbon2 in mg/m3,dust1 in mg/m3, dust2 in mg/m3, dust3 in mg/m3, dust4 in mg/m3"		packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
 		<var name="oceanAlgaeConc"			type="real"	dimensions="maxAlgaeType nCells Time"			name_in_code="oceanAlgaeConc"/>
 		<var name="oceanDOCConc"			type="real"	dimensions="maxDOCType nCells Time"			name_in_code="oceanDOCConc"/>
 		<var name="oceanDICConc"			type="real"	dimensions="maxDICType nCells Time"			name_in_code="oceanDICConc"/>
@@ -2279,6 +2281,7 @@
 		<var name="bioPorosity"			type="real"	dimensions="nBioLayersP2 nCategories nCells Time"	name_in_code="bioPorosity"/>
 		<var name="bioTemperature"			type="real"	dimensions="nBioLayersP2 nCategories nCells"		name_in_code="bioTemperature"/>
 		<var name="bioShortwaveFlux"			type="real"	dimensions="nBioLayersP1 nCategories nCells Time"	name_in_code="bioShortwaveFlux"/>
+		<var name="bioShortwaveFluxCell"		type="real"	dimensions="nBioLayersP1 nCells Time"			name_in_code="bioShortwaveFluxCell"/>
 		<var name="bioDiffusivity"			type="real"	dimensions="nBioLayersP1 nCategories nCells"		name_in_code="bioDiffusivity"/>
 		<var name="bioPermeability"			type="real"	dimensions="nBioLayersP1 nCategories nCells"		name_in_code="bioPermeability"/>
 		<var name="zSalinityFlux"			type="real"	dimensions="nCells Time"				name_in_code="zSalinityFlux"			packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
@@ -2296,8 +2299,10 @@
 		<var name="netAmmoniumUptake"			type="real"	dimensions="nCells Time"				name_in_code="netAmmoniumUptake"/>
 		<var name="primaryProduction"			type="real"	dimensions="nCells Time"				name_in_code="primaryProduction"/>
 		<var name="totalSkeletalAlgae"			type="real"	dimensions="nCells Time"				name_in_code="totalSkeletalAlgae"/>
-		<var name="totalVerticalBiologyIce"		type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="totalVerticalBiologyIce"/>
-		<var name="totalVerticalBiologySnow"		type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="totalVerticalBiologySnow"/>
+		<var name="totalVerticalBiologyIce" 		type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="totalVerticalBiologyIce"
+		units="mmol/m2"	description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"/>
+		<var name="totalVerticalBiologySnow"		type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="totalVerticalBiologySnow"
+		units="mmol/m2"	description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"/>
 		<var name="totalVerticalSalinity"		type="real"	dimensions="nCells Time"				name_in_code="totalVerticalSalinity"		packages="pkgTracerZSalinity;pkgColumnPackage"/>
 		<var name="totalChlorophyll"			type="real"	dimensions="nCells Time"				name_in_code="totalChlorophyll"		packages="pkgTracerVerticalAlgae;pkgTracerSkeletalAlgae"/>
 		<var name="totalNitrate"			type="real"	dimensions="nCells Time"				name_in_code="totalNitrate"			packages="pkgTracerSkeletalNitrate;pkgTracerVerticalNitrate"/>
