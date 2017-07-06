@@ -23,7 +23,7 @@ use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
 use kinds,                only: rl=>real_kind, iulog
 use parallel_mod,         only: abortmp
 use element_ops,          only: set_state, set_elem_state, get_state, tests_finalize, set_forcing_rayleigh_friction, set_thermostate
-use physical_constants,   only: p0, g, Rgas, kappa, Cp, Rwater_vapor
+use physical_constants,   only: p0, g, Rgas, kappa, Cp, Rwater_vapor, pi=>dd_pi
 use reduction_mod,        only: parallelmax, parallelmin
 use terminator,           only: initial_value_terminator, tendency_terminator
 use time_mod,             only: time_at, TimeLevel_t
@@ -39,7 +39,7 @@ real(rl), parameter :: rh2o    = 461.5d0,            &                  ! Gas co
                        Mvap    = (Rwater_vapor/Rgas) - 1.d0             ! Constant for virtual temp. calc. (~0.608)
 
 real(rl) :: sample_period  = 60.0_rl
-
+real(rl) :: rad2dg = 180.0_rl/pi
 contains
 
 !_____________________________________________________________________
@@ -90,7 +90,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
             z(i,j,k),use_zcoords,u(i,j,k),v(i,j,k),T(i,j,k),thetav(i,j,k),phis(i,j),ps(i,j),rho(i,j,k),q(i,j,k,1))
 
         ! initialize tracer chemistry
-        call initial_value_terminator( lat, lon, q(i,j,k,4), q(i,j,k,5) )
+        call initial_value_terminator( lat*rad2dg, lon*rad2dg, q(i,j,k,4), q(i,j,k,5) )
         call set_tracers(q(i,j,k,1:5),5,dp(i,j,k),i,j,k,lat,lon,elem(ie))
 
     enddo; enddo; enddo
@@ -399,7 +399,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       lat = elem(ie)%spherep(i,j)%lat
 
       do k=1,nlev
-        call tendency_terminator( lat, lon, cl(i,j,k), cl2(i,j,k), dt, ddt_cl(i,j,k), ddt_cl2(i,j,k))
+        call tendency_terminator( lat*rad2dg, lon*rad2dg, cl(i,j,k), cl2(i,j,k), dt, ddt_cl(i,j,k), ddt_cl2(i,j,k))
       enddo
 
     enddo; enddo;
