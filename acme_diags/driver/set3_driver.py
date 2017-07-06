@@ -89,6 +89,8 @@ def run_diag(parameter):
             f0 =  cdms2.open(mask_path)
             land_frac = f0('LANDFRAC')
             ocean_frac = f0('OCNFRAC')
+            f0.close()
+
 
         for var in variables: 
             print '***********', variables
