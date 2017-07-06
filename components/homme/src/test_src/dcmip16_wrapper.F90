@@ -55,7 +55,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   integer,  parameter :: use_zcoords  = 0                               ! use vertical pressure coordinates
   integer,  parameter :: is_deep      = 0                               ! use shallow atmosphere approximation
   integer,  parameter :: pertt        = 0                               ! use exponential perturbation type
-  integer,  parameter :: use_moist    = 1                               ! use moist version
+  integer,  parameter :: use_moisture = 1                               ! use moist version
   real(rl), parameter :: dcmip_X      = 1.0_rl                          ! full scale planet
 
   integer :: i,j,k,ie                                                   ! loop indices
@@ -77,17 +77,17 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
     do k=1,nlev; do j=1,np; do i=1,np
 
         ! no surface topography
-        p(i,j,k)  =  p0*hvcoord%etam(k)
+        p(i,j,k)  = p0*hvcoord%etam(k)
         dp(i,j,k) = (hvcoord%etai(k+1)-hvcoord%etai(k))*p0
 
         lon = elem(ie)%spherep(i,j)%lon
         lat = elem(ie)%spherep(i,j)%lat
 
-        call baroclinic_wave_test(is_deep,use_moist,pertt,dcmip_X,lon,lat,p(i,j,k),&
-            z(i,j,k),use_zcoords,u(i,j,k),v(i,j,k),T(i,j,k),thetav(i,j,k),phis(i,j),ps(i,j),rho(i,j,k),q(i,j,k,1))
+        q(i,j,k,:) = 0.0d0
         w(i,j,k)   = 0.0d0
-        q(i,j,k,2) = 0.0d0
-        q(i,j,k,3) = 0.0d0
+
+        call baroclinic_wave_test(is_deep,use_moisture,pertt,dcmip_X,lon,lat,p(i,j,k),&
+            z(i,j,k),use_zcoords,u(i,j,k),v(i,j,k),T(i,j,k),thetav(i,j,k),phis(i,j),ps(i,j),rho(i,j,k),q(i,j,k,1))
 
         ! initialize tracer chemistry
         call initial_value_terminator( lat, lon, q(i,j,k,4), q(i,j,k,5) )
@@ -96,7 +96,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
     enddo; enddo; enddo
 
     call set_elem_state(u,v,w,T,ps,phis,p,dp,z,g,elem(ie),1,nt,ntQ=1)
-    !call tests_finalize(elem(ie),hvcoord,1,nt)
+   ! call tests_finalize(elem(ie),hvcoord,1,nt)
 
   enddo
   sample_period = 1800.0 ! sec
