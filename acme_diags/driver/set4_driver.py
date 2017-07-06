@@ -90,9 +90,16 @@ def run_diag(parameter):
 
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
+
         #save land/ocean fraction for masking
-        land_frac = f_mod('LANDFRAC')
-        ocean_frac = f_mod('OCNFRAC')
+        try:
+            land_frac = f_mod('LANDFRAC')
+            ocean_frac = f_mod('OCNFRAC')
+        except:
+            mask_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'acme_ne30_ocean_land_mask.nc')
+            f0 =  cdms2.open(mask_path)
+            land_frac = f0('LANDFRAC')
+            ocean_frac = f0('OCNFRAC')
 
         for var in variables: 
             print '***********', variables

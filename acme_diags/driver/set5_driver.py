@@ -58,8 +58,8 @@ def run_diag(parameter):
 
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
+
         #save land/ocean fraction for masking  
-        
         try:
             land_frac = f_mod('LANDFRAC')
             ocean_frac = f_mod('OCNFRAC')
