@@ -218,6 +218,7 @@ derived_variables = {
         (('PRECC', 'PRECL'), lambda precc, precl: prect(precc, precl))
     ]),
     'SST': OrderedDict([
+        (('sst'),rename),# lambda sst: convert_units(rename(sst),target_units="degC")),
         (('SST'), lambda sst: convert_units(sst, target_units="degC")),
         (('TS', 'OCNFRAC'), lambda ts, ocnfrac: mask_by(
             convert_units(ts, target_units="degC"), ocnfrac, low_limit=0.9))

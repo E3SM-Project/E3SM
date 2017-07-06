@@ -21,6 +21,9 @@ data_files = [
      ['acme_diags/driver/set7_diags_AMWG_default.json',
       'acme_diags/plot/vcs/plot_set_7_new.json',
       'acme_diags/plot/vcs/plot_set_7.json'
+     ]),
+    (sys.prefix + '/share/acme_diags',
+     ['acme_diags/driver/acme_ne30_ocean_land_mask.nc'
      ])
 ]
 
