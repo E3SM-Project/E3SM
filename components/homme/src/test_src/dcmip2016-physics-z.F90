@@ -115,7 +115,7 @@ SUBROUTINE DCMIP2016_PHYSICS(test, u, v, p, theta, qv, qc, qr, rho, &
   !  omega   = 7.29212d-5,    & ! Reference rotation rate of the Earth (s^-1)
   !  pi      = 4.d0*atan(1.d0)  ! Pi
 
-REAL(8), PARAMETER ::         &
+  REAL(8), PARAMETER ::         &
     one     = 1.d0,           & ! One
     gravit  = g,              & ! Gravity (m/s^2)
     rair    = Rgas,           & ! Gas constant for dry air (J/kg/K)
@@ -314,7 +314,7 @@ REAL(8), PARAMETER ::         &
   !----------------------------------------------------
   ! Do not apply surface fluxes or PBL for supercell
   !----------------------------------------------------
-  if (test .eq. 3) then
+  if (test .eq. 3 .or. pbl_type < 0) then
     return
   endif
 

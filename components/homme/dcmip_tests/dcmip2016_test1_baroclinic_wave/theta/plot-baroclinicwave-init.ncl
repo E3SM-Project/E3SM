@@ -75,6 +75,12 @@ begin
   p     = p/100.0
   ps    = datafile->ps(0,:,:)
 
+delete(u@long_name)
+delete(p@long_name)
+delete(qv@long_name)
+delete(theta@long_name)
+delete(t@long_name)
+
   print("lon(0)="+lon(0))
   if(lon(0) .eq. 0) then
     print("lonFlip")
@@ -93,16 +99,12 @@ begin
     up(0,:,i) = up(0,:,i) - u(0,:,0)
   end do
 
-print(max(up))
-print(min(up))
-
   ;_________________________________________________
   ; Interpolate fields from eta coord to z coord
 
   z_eta = geo/9.81
   z     = lev
   z     = ispan(500,29500,1000)
-;print (z_eta(:,1,1))
 
   print("interpolating from geopotential levels to evenly spaced z")
   theta = linint1_n_Wrap(z_eta,theta,False,z,0,0)
@@ -113,11 +115,11 @@ print(min(up))
 
 ; ---
 ;  z         = lev * 30.0
-  p&lev     = z
-  t&lev     = z
-  theta&lev = z
-  qv&lev    = z
-  u&lev     = z
+  p&lev     = z/1000
+  t&lev     = z/1000
+  theta&lev = z/1000
+  qv&lev    = z/1000
+  u&lev     = z/1000
 
 ; ---
   res_t@cnLevelSelectionMode= "ManualLevels"

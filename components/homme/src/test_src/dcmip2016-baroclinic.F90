@@ -40,24 +40,41 @@ MODULE baroclinic_wave
 !
 !=======================================================================
 
+use physical_constants, only: g0=>g,kappa0=>kappa,Rgas,Cp0=>Cp,Rwater_vapor,rearth0,omega0, dd_pi
+
   IMPLICIT NONE
+
 
 !=======================================================================
 !    Physical constants
 !=======================================================================
 
-  REAL(8), PARAMETER ::               &
-       a     = 6371220.0d0,           & ! Reference Earth's Radius (m)
-       Rd    = 287.0d0,               & ! Ideal gas const dry air (J kg^-1 K^1)
-       g     = 9.80616d0,             & ! Gravity (m s^2)
-       cp    = 1004.5d0,              & ! Specific heat capacity (J kg^-1 K^1)
+ ! REAL(8), PARAMETER ::               &
+ !      a     = 6371220.0d0,           & ! Reference Earth's Radius (m)
+ !      Rd    = 287.0d0,               & ! Ideal gas const dry air (J kg^-1 K^1)
+ !      g     = 9.80616d0,             & ! Gravity (m s^2)
+ !      cp    = 1004.5d0,              & ! Specific heat capacity (J kg^-1 K^1)
+ !      Lvap  = 2.5d6,                 & ! Latent heat of vaporization of water
+ !      Rvap  = 461.5d0,               & ! Ideal gas constnat for water vapor
+ !      Mvap  = 0.608d0,               & ! Ratio of molar mass of dry air/water
+ !      pi    = 3.14159265358979d0,    & ! pi
+ !      p0    = 100000.0d0,            & ! surface pressure (Pa)
+ !      kappa = 2.d0/7.d0,             & ! Ratio of Rd to cp
+ !      omega = 7.29212d-5,            & ! Reference rotation rate of the Earth (s^-1)
+ !      deg2rad  = pi/180.d0             ! Conversion factor of degrees to radians
+
+ REAL(8), PARAMETER ::               &
+       a     = rearth0,               & ! Reference Earth's Radius (m)
+       Rd    = Rgas,                  & ! Ideal gas const dry air (J kg^-1 K^1)
+       g     = g0,                    & ! Gravity (m s^2)
+       cp    = Cp0,                   & ! Specific heat capacity (J kg^-1 K^1)
        Lvap  = 2.5d6,                 & ! Latent heat of vaporization of water
-       Rvap  = 461.5d0,               & ! Ideal gas constnat for water vapor
-       Mvap  = 0.608d0,               & ! Ratio of molar mass of dry air/water
-       pi    = 3.14159265358979d0,    & ! pi
+       Rvap  = Rwater_vapor,          & ! Ideal gas constnat for water vapor
+       Mvap  = Rvap/Rd-1.0d0,         & ! Ratio of molar mass of dry air/water
+       pi    = dd_pi,                 & ! pi
        p0    = 100000.0d0,            & ! surface pressure (Pa)
-       kappa = 2.d0/7.d0,             & ! Ratio of Rd to cp
-       omega = 7.29212d-5,            & ! Reference rotation rate of the Earth (s^-1)
+       kappa = kappa0,             & ! Ratio of Rd to cp
+       omega = omega0,            & ! Reference rotation rate of the Earth (s^-1)
        deg2rad  = pi/180.d0             ! Conversion factor of degrees to radians
 
 !=======================================================================
@@ -244,7 +261,7 @@ CONTAINS
     !-----------------------------------------------------
     !   Initialize virtual potential temperature
     !-----------------------------------------------------
-    thetav = t * (1.d0 + 0.61d0 * q) * (p0 / p)**(Rd / cp)
+    thetav = t * (1.d0 + Mvap * q) * (p0 / p)**(Rd / cp)
 
   END SUBROUTINE baroclinic_wave_test
 
@@ -350,7 +367,7 @@ CONTAINS
     CALL evaluate_pressure_temperature(deep, X, lon, lat, z0, p0, t)
     CALL evaluate_pressure_temperature(deep, X, lon, lat, z1, p1, t)
 
-    DO ix = 1, 100
+    DO ix = 1, 1000
       z2 = z1 - (p1 - p) * (z1 - z0) / (p1 - p0)
 
       CALL evaluate_pressure_temperature(deep, X, lon, lat, z2, p2, t)
