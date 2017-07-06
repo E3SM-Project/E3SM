@@ -420,7 +420,8 @@ EOF
       my $mkopts = "-csmdata $CSMDATA -silent -justvalue -namelist clmexp $usrnam";
       foreach my $typ ( "lak", "veg", "voc", "top", "tex", "col","ord", 
                         "fmx", "lai", "urb", "org", "glc", "utp", "wet",
-		        "gdp", "peat","abm", "topostats" , "vic", "ch4") {
+		        "gdp", "peat","abm", "topostats" , "vic", "ch4", 
+                        "pho") {
          my $lmask = `$scrdir/../../../bld/queryDefaultNamelist.pl $mopts -options type=$typ,mergeGIS=$merge_gis,hirespft=$hirespft -var lmask`;
          $lmask = trim($lmask);
          my $hgrid = `$scrdir/../../../bld/queryDefaultNamelist.pl $mopts -options type=$typ,hirespft=$hirespft -var hgrid`;
@@ -509,48 +510,50 @@ EOF
 	    print "CSMDATA is $CSMDATA \n";
             print $fh <<"EOF";
 &clmexp
- nglcec           = $glc_nec
- mksrf_fgrid      = '$griddata'
- map_fpft         = '$map{'veg'}'
- map_fglacier     = '$map{'glc'}'
- map_fsoicol      = '$map{'col'}'
- map_fsoiord      = '$map{'ord'}'
- map_furban       = '$map{'urb'}'
- map_fmax         = '$map{'fmx'}'
- map_forganic     = '$map{'org'}'
- map_flai         = '$map{'lai'}'
- map_fharvest     = '$map{'lai'}'
- map_flakwat      = '$map{'lak'}'
- map_fwetlnd      = '$map{'wet'}'
- map_fvocef       = '$map{'voc'}'
- map_fsoitex      = '$map{'tex'}'
- map_furbtopo     = '$map{'utp'}'
- map_flndtopo     = '$map{'top'}'
- map_fgdp         = '$map{'gdp'}'
- map_fpeat        = '$map{'peat'}'
- map_fabm         = '$map{'abm'}'
- map_ftopostats   = '$map{'topostats'}'
- map_fvic         = '$map{'vic'}'
- map_fch4         = '$map{'ch4'}'
- mksrf_fsoitex    = '$datfil{'tex'}'
- mksrf_forganic   = '$datfil{'org'}'
- mksrf_flakwat    = '$datfil{'lak'}'
- mksrf_fwetlnd    = '$datfil{'wet'}'
- mksrf_fmax       = '$datfil{'fmx'}'
- mksrf_fglacier   = '$datfil{'glc'}'
- mksrf_fvocef     = '$datfil{'voc'}'
- mksrf_furbtopo   = '$datfil{'utp'}'
- mksrf_flndtopo   = '$datfil{'top'}'
- mksrf_fgdp       = '$datfil{'gdp'}'
- mksrf_fpeat      = '$datfil{'peat'}'
- mksrf_fabm       = '$datfil{'abm'}'
- mksrf_ftopostats = '$datfil{'topostats'}'
- mksrf_fvic       = '$datfil{'vic'}'
- mksrf_fch4       = '$datfil{'ch4'}'
- outnc_double   = $double
- all_urban      = $all_urb
- no_inlandwet   = $no_inlandwet
- mksrf_furban   = '$datfil{'urb'}'
+ nglcec            = $glc_nec
+ mksrf_fgrid       = '$griddata'
+ map_fpft          = '$map{'veg'}'
+ map_fglacier      = '$map{'glc'}'
+ map_fsoicol       = '$map{'col'}'
+ map_fsoiord       = '$map{'ord'}'
+ map_furban        = '$map{'urb'}'
+ map_fmax          = '$map{'fmx'}'
+ map_forganic      = '$map{'org'}'
+ map_flai          = '$map{'lai'}'
+ map_fharvest      = '$map{'lai'}'
+ map_flakwat       = '$map{'lak'}'
+ map_fwetlnd       = '$map{'wet'}'
+ map_fvocef        = '$map{'voc'}'
+ map_fsoitex       = '$map{'tex'}'
+ map_furbtopo      = '$map{'utp'}'
+ map_flndtopo      = '$map{'top'}'
+ map_fgdp          = '$map{'gdp'}'
+ map_fpeat         = '$map{'peat'}'
+ map_fabm          = '$map{'abm'}'
+ map_ftopostats    = '$map{'topostats'}'
+ map_fvic          = '$map{'vic'}'
+ map_fch4          = '$map{'ch4'}'
+ map_fphosphorus   = '$map{'pho'}'
+ mksrf_fsoitex     = '$datfil{'tex'}'
+ mksrf_forganic    = '$datfil{'org'}'
+ mksrf_flakwat     = '$datfil{'lak'}'
+ mksrf_fwetlnd     = '$datfil{'wet'}'
+ mksrf_fmax        = '$datfil{'fmx'}'
+ mksrf_fglacier    = '$datfil{'glc'}'
+ mksrf_fvocef      = '$datfil{'voc'}'
+ mksrf_furbtopo    = '$datfil{'utp'}'
+ mksrf_flndtopo    = '$datfil{'top'}'
+ mksrf_fgdp        = '$datfil{'gdp'}'
+ mksrf_fpeat       = '$datfil{'peat'}'
+ mksrf_fabm        = '$datfil{'abm'}'
+ mksrf_ftopostats  = '$datfil{'topostats'}'
+ mksrf_fvic        = '$datfil{'vic'}'
+ mksrf_fch4        = '$datfil{'ch4'}'
+ outnc_double      = $double
+ all_urban         = $all_urb
+ no_inlandwet      = $no_inlandwet
+ mksrf_furban      = '$datfil{'urb'}'
+ mksrf_fphosphorus = '$datfil{'pho'}'
 EOF
             my $urbdesc = "urb3den";
 
