@@ -91,14 +91,14 @@ _TEST_SUITES = {
                                ("SMS_D_Ln5.ne4_ne4.FC5AV1C-L", "cam-cosplite_nhtfrq5"),
                                "REP_Ln5.ne4_ne4.FC5AV1C-L")
                               ),
-    
+
     "acme_atm_weekly" : (None, None,
                          ("SMS_Lm1.ne4_ne4.FC5AV1C-L",
                           "ERS_Ld31.ne4_ne4.FC5AV1C-L",
                           "ERP_Lm3.ne4_ne4.FC5AV1C-L",
                           "SMS_Ly1.ne4_ne4.FC5AV1C-L")
                          ),
-    
+
     "acme_developer" : (("acme_land_developer","acme_atm_developer"), "0:45:00",
                         ("ERS.f19_g16_rx1.A",
                          "ERS.f45_g37_rx1.DTEST",
@@ -116,10 +116,10 @@ _TEST_SUITES = {
                          "ERS_Ld5.T62_oQU120.CMPASO-NYF",
                          "ERS.f09_g16_g.MPASLISIA",
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
-                         "SMS.f09_g16_a.IGCLM45_MLI")
+                         "SMS.f09_g16_a.IGCLM45_MLI",
+                         "SMS_R_Ld5.T42_T42.FSCM5A97")
                         ),
-    
-    
+
     "acme_integration" : (("acme_developer", "acme_atm_integration"),"03:00:00",
                           ("ERS.ne11_oQU240.A_WCYCL1850",
                           #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
