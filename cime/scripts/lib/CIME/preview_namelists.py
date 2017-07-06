@@ -100,7 +100,7 @@ def create_namelists(case, component=None):
             if do_run_cmd:
                 logger.info("   Running %s buildnml"%compname)
                 case.flush()
-                output = run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=False)
+                output = run_cmd_no_fail("%s %s" % (cmd, caseroot), combine_output=True)
                 logger.info(output)
                 # refresh case xml object from file
                 case.read_xml()
