@@ -3,7 +3,7 @@ module PatchMod
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use clm_varcon     , only : ispval
-  use PatchType      , only : patch_type, pft
+  use PatchType      , only : patch_physical_properties_type, pft_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -106,7 +106,7 @@ contains
   subroutine NumValuesPerPatch(nvalues)
     !
     ! !DESCRIPTION:
-    ! Returns the number of values for each patch within the patch_type
+    ! Returns the number of values for each patch within the patch_physical_properties_type
     !
     ! !ARGUMENTS:
     integer, intent(out)     :: nvalues
