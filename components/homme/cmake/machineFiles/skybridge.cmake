@@ -29,3 +29,5 @@ SET (HDF5_DIR /projects/ccsm/tpl/hdf5/1.8.11/intel/13.0.1/openmpi/1.6.5 CACHE FI
 
 SET (USE_QUEUING FALSE CACHE BOOL "")
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
+
+SET (CPRNC_DIR /projects/ccsm/cprnc/build CACHE FILEPATH "")

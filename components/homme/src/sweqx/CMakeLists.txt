@@ -26,6 +26,7 @@ SET(SWEQX_SRCS
   ${SRC_BASE}/pio_io_mod.F90
   ${SRC_BASE}/repro_sum_mod.F90
   ${SRC_BASE}/restart_io_mod.F90
+  ${SRC_SHARE}/zoltan_mod.F90
   ${SRC_SHARE}/bndry_mod_base.F90
   ${SRC_SHARE}/cg_mod.F90
   ${SRC_SHARE}/control_mod.F90

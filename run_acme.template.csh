@@ -210,7 +210,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.8
+set script_ver = 3.0.10
 
 #===========================================
 # DEFINE ALIASES
@@ -228,9 +228,9 @@ alias acme_newline "echo ''"
 set first_argument = $1
 if ( $first_argument != '' ) then
  echo 'This script does everything needed to configure/compile/run a case. As such, it'
- echo 'provides complete provenance for each run and makes sharing with newbies easy. Future'
- echo 'users should make sure that everything required for a run is in this script, the ACME'
- echo 'git repo, or the inputdata svn repo.'
+ echo 'provides complete provenance for each run and makes sharing simulation configurations easy.'
+ echo 'Users should make sure that everything required for a run is in this script, the ACME'
+ echo 'git repo, and/or the inputdata svn repo.'
  echo '** This script accepts no arguments. Please edit the script as needed and resubmit without arguments. **'
  exit 5
 endif
@@ -811,8 +811,19 @@ set input_data_dir = `$xmlquery_exe DIN_LOC_ROOT --value`
 #$xmlchange_exe --id CAM_CONFIG_OPTS --val "-phys cam5 -chem linoz_mam3"
 
 ## Chris Golaz: build with COSP
-#NOTE: xmlchange has a bug which requires append to be specified with quotes and a leading space
-$xmlchange_exe --id CAM_CONFIG_OPTS --append -val " -cosp"
+#NOTE: xmlchange has a bug which requires append to be specified with quotes and a leading space.
+#NOTE: The xmlchange will fail if CAM is not active, so test whether a data atmosphere (datm) is used.
+
+if ( `$xmlquery_exe --value COMP_ATM` == 'datm'  ) then 
+  acme_newline
+  acme_print 'The specified configuration uses a data atmosphere, so cannot activate COSP simulator.'
+  acme_newline
+else
+  acme_newline
+  acme_print 'Configuring ACME to use the COSP simulator.'
+  acme_newline
+  $xmlchange_exe --id CAM_CONFIG_OPTS --append --val " -cosp"
+endif
 
 #===========================
 # SET THE PARTITION OF NODES
@@ -914,6 +925,10 @@ cat <<EOF >> user_nl_cam
  mfilt  = $records_per_atm_output_file
 EOF
 
+cat <<EOF >> user_nl_clm
+! finidat=''
+EOF
+
 ### NOTES ON COMMON NAMELIST OPTIONS ###
 
 ### ATMOSPHERE NAMELIST ###
@@ -1001,20 +1016,12 @@ endif
 
 mkdir -p batch_output      ### Make directory that stdout and stderr will go into.
 
+set batch_options = ''
+
 set machine = `lowercase $machine`   # Change to lowercase, just to make the following easier to read. 
 
-if ( $machine == hopper ) then
-    sed -i /"#PBS \( \)*-N"/c"#PBS  -N ${job_name}"                                ${case_run_exe}
-    sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' ${case_run_exe}
-    sed -i /"#PBS \( \)*-N"/c"#PBS  -N ST+${job_name}"                             $shortterm_archive_script
-    sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $shortterm_archive_script
-    sed -i /"#PBS \( \)*-N"/c"#PBS  -N LT+${job_name}"                             $longterm_archive_script
-    sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $longterm_archive_script
-
-else if ( $machine == cori || $machine == edison ) then
-    sed -i /"#SBATCH \( \)*--job-name"/c"#SBATCH  --job-name=${job_name}"                 ${case_run_exe}
-    sed -i /"#SBATCH \( \)*--job-name"/a"#SBATCH  --account=${project}"                   ${case_run_exe}
-    sed -i /"#SBATCH \( \)*--output"/c"#SBATCH  --output=batch_output/"${case_name}'.o%j' ${case_run_exe}
+if ( $machine == cori || $machine == edison ) then
+    set batch_options = "--job-name=${job_name} --output=batch_output/${case_name}.o%j"
 
     sed -i /"#SBATCH \( \)*--job-name"/c"#SBATCH  --job-name=ST+${job_name}"                  $shortterm_archive_script
     sed -i /"#SBATCH \( \)*--job-name"/a"#SBATCH  --account=${project}"                       $shortterm_archive_script
@@ -1024,6 +1031,7 @@ else if ( $machine == cori || $machine == edison ) then
     sed -i /"#SBATCH \( \)*--output"/c'#SBATCH  --output=batch_output/LT+'${case_name}'.o%j'  $longterm_archive_script
 
 else if ( $machine == titan || $machine == eos ) then
+    set batch_options = ""
     sed -i /"#PBS \( \)*-N"/c"#PBS  -N ${job_name}"                                ${case_run_exe}
     sed -i /"#PBS \( \)*-A"/c"#PBS  -A ${project}"                                 ${case_run_exe}
     sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' ${case_run_exe}
@@ -1153,6 +1161,7 @@ else if ( $model_start_type == 'branch' ) then
   acme_print '$restart_filedate  = '$restart_filedate
 
   ### the next line gets the YYYY-MM of the month before the restart time. Needed for staging history files.
+  ### NOTE: This is broken for cases that have run for less than a month
   set restart_prevdate = `date -d "${restart_filedate} - 1 month" +%Y-%m`
 
   acme_print '$restart_prevdate  = '$restart_prevdate
@@ -1165,9 +1174,9 @@ else if ( $model_start_type == 'branch' ) then
   cp ${restart_files_dir}/${restart_case_name}.cpl.r.${restart_filedate}-00000.nc $case_run_dir
   cp ${restart_files_dir}/${restart_case_name}.mosart.r.${restart_filedate}-00000.nc $case_run_dir
   cp ${restart_files_dir}/${restart_case_name}.mosart.rh0.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/rst.mpas-cice.${restart_filedate}_00.00.00.nc $case_run_dir
-  cp ${restart_files_dir}/rst.mpas-o.${restart_filedate}_00.00.00.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.cam.h0.${restart_prevdate}.nc $case_run_dir
+  cp ${restart_files_dir}/mpascice.rst.${restart_filedate}_00000.nc $case_run_dir
+  cp ${restart_files_dir}/mpaso.rst.${restart_filedate}_00000.nc $case_run_dir
+  cp ${restart_files_dir}/${restart_case_name}.cam.h0.${restart_prevdate}-*-00000.nc $case_run_dir
   cp ${restart_files_dir}/${restart_case_name}.mosart.h0.${restart_prevdate}.nc $case_run_dir
   cp ${restart_files_dir}/${restart_case_name}.clm2.h0.${restart_prevdate}.nc $case_run_dir
   cp ${restart_files_dir}/rpointer* $case_run_dir
@@ -1176,7 +1185,9 @@ else if ( $model_start_type == 'branch' ) then
   $xmlchange_exe --id RUN_REFCASE --val $restart_case_name
   $xmlchange_exe --id RUN_REFDATE --val $restart_filedate    # Model date of restart file
   $xmlchange_exe --id CONTINUE_RUN --val "FALSE"
-  $xmlchange_exe --id BRNCH_RETAIN_CASENAME --val "FALSE"  ## Only TRUE if you want to continue the run with the same name (risky)!!
+  # Currently broken in CIME
+  # Only uncomment this if you want to continue the run with the same name (risky)!!
+  # $xmlchange_exe --id BRNCH_RETAIN_CASENAME --val "TRUE"
 
 else
 
@@ -1211,7 +1222,7 @@ acme_newline
 if ( `lowercase $submit_run` == 'true' ) then
   if ( $num_submits == 1 ) then
     acme_print '         SUBMITTING A SINGLE JOB.'
-    ${case_submit_exe}
+    ${case_submit_exe} --batch-args " ${batch_options} "
   else if ( $num_submits <= 0 ) then
     acme_print '$num_submits <= 0 so NOT submitting a job.'
     acme_print '$num_submits = '$num_submits
@@ -1357,6 +1368,8 @@ acme_newline
 #                        Note that this breaks compatibility with older versions of CIME
 #                        Also add a fix to reenable using the special acme qos queue on Edison (MD)
 # 3.0.8    2017-05-24    Fixed minor bug when $machine contained a capital letter. Bug was introduced recently. (PJC)
+# 3.0.9    2017-06-19    Fixed branch runs. Also removed sed commands for case.run and use --batch-args in case.submit (MD)
+# 3.0.10    2017-06-14    To allow data-atm compsets to work, I added a test for CAM_CONFIG_OPTS. (PJC)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
@@ -1368,6 +1381,8 @@ acme_newline
 # +) Add a 'default' option, for which REST_OPTION='$STOP_OPTION' and REST_N='$STOP_N'.
 #    This is important if the user subsequently edits STOP_OPTION or STOP_N.      (PJC)
 # +) triggering on $acme_tag = master_detached doesn't make sense.  Fix logic. (PJC)
+# +) run_root and run_root_dir are duplicative.  Also, move logical link creation before case.setup (PJC)
+# +) change comments referring to cesm_setup to case.setup (name has changed). (PJC)
 
 ###Example sed commands
 #============================

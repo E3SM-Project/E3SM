@@ -139,7 +139,8 @@ ADD_CUSTOM_TARGET(baseline
 
 # Create a target for making the reference data
 ADD_TEST(verifyBaselineResults ${CMAKE_BINARY_DIR}/tests/check_baseline.sh)
-ADD_DEPENDENCIES(check verifyBaselineResults)
+# looks like a target(check) cant depend on a test(verifyBaselineResults)
+#ADD_DEPENDENCIES(check verifyBaselineResults)
 
 IF (${HOMME_QUEUING})
   # The first CMake test is running

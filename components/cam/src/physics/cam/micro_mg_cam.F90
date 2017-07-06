@@ -96,6 +96,7 @@ use ref_pres,       only: top_lev=>trop_cloud_top_lev
 
 use subcol_utils,   only: subcol_get_scheme
 use perf_mod,       only: t_startf, t_stopf
+use scamMod,        only: precip_off
 
 implicit none
 private
@@ -2172,6 +2173,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                  packed_qr,              packed_qs,              &
                  packed_nr,              packed_ns,              &
                  packed_relvar,          packed_accre_enhan,     &
+		 precip_off,                                     &
                  packed_p,               packed_pdel,            &
                  packed_cldn,    packed_liqcldf, packed_icecldf, &
                  packed_rate1ord_cw2pr_st,                       &

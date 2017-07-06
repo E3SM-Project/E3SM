@@ -1210,7 +1210,8 @@ contains
 
     ! Determine the cell id offset on each processor
     cell_id_offset = 0
-    call MPI_Exscan(ncells_loc, cell_id_offset, 1, MPIU_INTEGER, MPI_SUM, mpicom, ierr)
+    call MPI_Scan(ncells_loc, cell_id_offset, 1, MPIU_INTEGER, MPI_SUM, mpicom, ierr)
+    cell_id_offset = cell_id_offset - ncells_loc
 
     ! Determine the total number of grid cells
     call MPI_Allreduce(ncells_loc, ncells_tot, 1, MPIU_INTEGER, MPI_SUM, mpicom, ierr)
@@ -1375,8 +1376,8 @@ contains
     procinfo%ncells = ncells_owned
 
     offset = 0
-    call MPI_Exscan(ncells_owned, offset, 1, MPIU_INTEGER, MPI_SUM, mpicom, ierr)
-    procinfo%begg = offset + 1
+    call MPI_Scan(ncells_owned, offset, 1, MPIU_INTEGER, MPI_SUM, mpicom, ierr)
+    procinfo%begg = offset + 1 - ncells_owned
 
     offset = 0
     call MPI_scan(ncells_owned, offset, 1, MPIU_INTEGER, MPI_SUM, mpicom, ierr)
