@@ -5547,6 +5547,22 @@ Valid values: any real number greater than config_AM_waterMassCensus_minSalinity
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_AM_waterMassCensus_compute_predefined_regions" type="logical"
+	category="AM_waterMassCensus" group="AM_waterMassCensus">
+Computes predefined regions. (Does not require a region mask file.)
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_waterMassCensus_region_group" type="char*1024"
+	category="AM_waterMassCensus" group="AM_waterMassCensus">
+The name of the region group, for which the WMC should be computed in addition to the existing WMC.
+
+Valid values: 'all', '', or the name of a region group.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- AM_layerVolumeWeightedAverage -->
 
