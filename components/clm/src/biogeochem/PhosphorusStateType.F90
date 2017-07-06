@@ -54,7 +54,7 @@ module PhosphorusStateType
      real(r8), pointer :: retransp_patch               (:)     ! patch (gP/m2) plant pool of retranslocated P
      real(r8), pointer :: ppool_patch                  (:)     ! patch (gP/m2) temporary plant P pool
      real(r8), pointer :: ptrunc_patch                 (:)     ! patch (gP/m2) pft-level sink for P truncation
-
+     real(r8), pointer :: plant_p_buffer_patch        (:)     ! patch (gP/m2) pft-level abstract p storage
      real(r8), pointer :: decomp_ppools_vr_col         (:,:,:)     ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools 
      real(r8), pointer :: solutionp_vr_col             (:,:)       ! col (gP/m3) vertically-resolved soil solution P
      real(r8), pointer :: labilep_vr_col               (:,:)       ! col (gP/m3) vertically-resolved soil labile mineral P
@@ -207,6 +207,7 @@ contains
     allocate(this%storvegp_patch           (begp:endp))                   ; this%storvegp_patch           (:)   = nan
     allocate(this%totvegp_patch            (begp:endp))                   ; this%totvegp_patch            (:)   = nan
     allocate(this%totpftp_patch            (begp:endp))                   ; this%totpftp_patch            (:)   = nan
+    allocate(this%plant_p_buffer_patch    (begp:endp))                   ; this%plant_p_buffer_patch      (:)   = nan
 
     allocate(this%ptrunc_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%ptrunc_vr_col            (:,:) = nan
     
@@ -439,6 +440,10 @@ contains
          avgflag='A', long_name='total PFT-level phosphorus', &
          ptr_patch=this%totpftp_patch)
 
+    this%plant_p_buffer_patch(begp:endp) = spval
+    call hist_addfld1d (fname='PLANTP_BUFFER', units='gP/m^2', &
+            avgflag='A', long_name='plant phosphorus stored as buffer', &
+            ptr_col=this%plant_p_buffer_patch,default='inactive')
     !-------------------------------
     ! P state variables - native to column
     !-------------------------------
@@ -739,7 +744,7 @@ contains
           this%totvegp_patch(p)            = 0._r8
           this%totpftp_patch(p)            = 0._r8
        end if
-       
+       this%plant_p_buffer_patch(p)= 1.e-4_r8 
     end do
 
     !-------------------------------------------
@@ -953,6 +958,10 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='pft_ptrunc', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%ptrunc_patch) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='plant_p_buffer', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%plant_p_buffer_patch)
 
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag,  varname='grainp', xtype=ncd_double,  &

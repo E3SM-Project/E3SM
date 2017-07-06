@@ -14,6 +14,7 @@ module PStateUpdate2Mod
   use PhosphorusFLuxType  , only : phosphorusflux_type
   use VegetationType           , only : veg_pp
   use pftvarcon           , only : npcropmin
+  use tracer_varcon       , only : is_active_betr_bgc
   !! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
   !
@@ -66,7 +67,7 @@ contains
       !------------------------------------------------------------------
 
       ! column-level phosporus fluxes from gap-phase mortality
-
+      if (.not. is_active_betr_bgc) then
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -81,7 +82,7 @@ contains
                  ps%decomp_ppools_vr_col(c,j,i_cwd)     + pf%gap_mortality_p_to_cwdp_col(c,j)       * dt
          end do
       end do
-!      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      endif ! if (.not.is_active_betr_bgc))
       !------------------------------------------------------------------
 
       ! patch -level phosporus fluxes from gap-phase mortality
@@ -155,7 +156,7 @@ contains
 
       !------------------------------------------------------------------
       ! if coupled with pflotran, the following updates are NOT needed
-      if (.not.(use_pflotran .and. pf_cmode)) then
+      if ((.not. is_active_betr_bgc) .and. .not.(use_pflotran .and. pf_cmode)) then
       !------------------------------------------------------------------
 
       ! column-level phosporus fluxes from harvest mortality
