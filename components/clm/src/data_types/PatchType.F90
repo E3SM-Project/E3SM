@@ -134,6 +134,6 @@ contains
        deallocate(this%wt_ed)
     end if
 
-  end subroutine path_pp_clean
+  end subroutine patch_pp_clean
 
 end module PatchType
