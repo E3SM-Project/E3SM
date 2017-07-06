@@ -716,12 +716,10 @@ using a fortran linker.
 </compiler>
 
 <compiler MACH="hobart" COMPILER="gnu">
-  <MPI_LIB_NAME MPILIB="openmpi"> openmpi</MPI_LIB_NAME>
-  <LDFLAGS>
+  <SLIBS>
     <append> -lm </append>
     <append> -ldl </append>
-    <append> -lopenmpi </append>
-  </LDFLAGS>
+  </SLIBS>
 </compiler>
 
 <compiler MACH="juqueen" COMPILER="ibm">
