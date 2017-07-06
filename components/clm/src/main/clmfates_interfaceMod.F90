@@ -32,7 +32,7 @@ module CLMFatesInterfaceMod
    !  use ed_driver_interface, only: 
    
    ! Used CLM Modules
-   use PatchType         , only : pft
+   use PatchType         , only : pft_pp
    use shr_kind_mod      , only : r8 => shr_kind_r8
    use decompMod         , only : bounds_type
    use WaterStateType    , only : waterstate_type
