@@ -203,6 +203,8 @@ SUBROUTINE DCMIP2016_PHYSICS(test, u, v, p, theta, qv, qc, qr, rho, &
     Km,                       & ! Eddy diffusivity for boundary layer
     Ke                          ! Eddy diffusivity for boundary layer
 
+  if (prec_type < 0) return
+
   !------------------------------------------------
   ! Store altitude of lowest model level
   !------------------------------------------------

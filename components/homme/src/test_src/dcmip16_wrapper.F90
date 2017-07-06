@@ -25,7 +25,7 @@ use parallel_mod,         only: abortmp
 use element_ops,          only: set_state, set_elem_state, get_state, tests_finalize, set_forcing_rayleigh_friction, set_thermostate
 use physical_constants,   only: p0, g, Rgas, kappa, Cp, Rwater_vapor
 use reduction_mod,        only: parallelmax, parallelmin
-use terminator,           only: initial_value_terminator
+use terminator,           only: initial_value_terminator, tendency_terminator
 use time_mod,             only: time_at, TimeLevel_t
 
 implicit none
@@ -96,7 +96,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
     enddo; enddo; enddo
 
     call set_elem_state(u,v,w,T,ps,phis,p,dp,z,g,elem(ie),1,nt,ntQ=1)
-   ! call tests_finalize(elem(ie),hvcoord,1,nt)
+    call tests_finalize(elem(ie),hvcoord,1,nt)
 
   enddo
   sample_period = 1800.0 ! sec
@@ -321,10 +321,10 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl), dimension(np,np,nlev) :: u,v,w,T,exner_kess,theta_kess,p,dp,rho,z,qv,qc,qr
-  real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0
+  real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0,cl,cl2,ddt_cl,ddt_cl2
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
   real(rl) :: max_w, max_precl, min_ps
-  real(rl) :: lat, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
+  real(rl) :: lat, lon, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
 
   integer :: pbl_type, prec_type
   integer, parameter :: test = 1
@@ -351,6 +351,8 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     qv  = elem(ie)%state%Qdp(:,:,:,1,ntQ)/dp
     qc  = elem(ie)%state%Qdp(:,:,:,2,ntQ)/dp
     qr  = elem(ie)%state%Qdp(:,:,:,3,ntQ)/dp
+    cl  = elem(ie)%state%Qdp(:,:,:,4,ntQ)/dp
+    cl2 = elem(ie)%state%Qdp(:,:,:,5,ntQ)/dp
 
     ! ensure positivity
     where(qv<0); qv=0; endwhere
@@ -393,6 +395,13 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       qr(i,j,:) = qr_c(nlev:1:-1)
       theta_kess(i,j,:) = th_c(nlev:1:-1)
 
+      lon = elem(ie)%spherep(i,j)%lon
+      lat = elem(ie)%spherep(i,j)%lat
+
+      do k=1,nlev
+        call tendency_terminator( lat, lon, cl(i,j,k), cl2(i,j,k), dt, ddt_cl(i,j,k), ddt_cl2(i,j,k))
+      enddo
+
     enddo; enddo;
 
     ! get temperature from new pressure
@@ -408,8 +417,8 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     elem(ie)%derived%FQ(:,:,:,2) = dp*(qc-qc0)/dt
     elem(ie)%derived%FQ(:,:,:,3) = dp*(qr-qr0)/dt
 
-    elem(ie)%derived%FQ(:,:,:,4) = dp*(0.0d0)/dt
-    elem(ie)%derived%FQ(:,:,:,5) = dp*(0.0d0)/dt
+    elem(ie)%derived%FQ(:,:,:,4) = dp*ddt_cl
+    elem(ie)%derived%FQ(:,:,:,5) = dp*ddt_cl2
 
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )
