@@ -928,7 +928,7 @@ contains
 
     max_npft_local = 0
     do p = bounds_proc%begp, bounds_proc%endp
-       g       = pft%gridcell(p)
+       g       = pft_pp%gridcell(p)
        npft(g) = npft(g) + 1
        if (npft(g) > max_npft_local) max_npft_local = npft(g)
     enddo
@@ -996,16 +996,16 @@ contains
     npft = 0
     do p = bounds_proc%begp, bounds_proc%endp
 
-       g = pft%gridcell(p)
-       l = pft%landunit(p)
-       c = pft%column(p)
+       g = pft_pp%gridcell(p)
+       l = pft_pp%landunit(p)
+       c = pft_pp%column(p)
 
        beg_idx            = (g-bounds_proc%begg)*nblocks + npft(g)*nvals + 1
-       ctype              = col%itype(pft%column(p))
+       ctype              = col%itype(pft_pp%column(p))
        data_send(beg_idx) = real(ctype)
 
        beg_idx            = beg_idx + 1
-       ltype              = lun_pp%itype(pft%landunit(p))
+       ltype              = lun_pp%itype(pft_pp%landunit(p))
        data_send(beg_idx) = real(ltype)
 
        beg_idx            = beg_idx + 1
@@ -1058,9 +1058,9 @@ contains
                 values(1:nvals_pft) = data_recv(beg_idx:end_idx)
                 call SetValuesForPatch(p, values)
 
-                pft%gridcell(p) = g
-                pft%landunit(p) = landunit_index(g,ltype) + l_rank - 1
-                pft%column(p)   = lun_pp%coli(pft%landunit(p)) + c_rank - 1
+                pft_pp%gridcell(p) = g
+                pft_pp%landunit(p) = landunit_index(g,ltype) + l_rank - 1
+                pft_pp%column(p)   = lun_pp%coli(pft_pp%landunit(p)) + c_rank - 1
 
              endif
 
@@ -1125,8 +1125,8 @@ contains
        enddo
 
        do p = lun_pp%pfti(l), lun_pp%pftf(l)
-          if (pft%landunit(p) /= l) then
-             call endrun(msg="ERROR pft%landunit(c) /= l "//errmsg(__FILE__, __LINE__))
+          if (pft_pp%landunit(p) /= l) then
+             call endrun(msg="ERROR pft_pp%landunit(c) /= l "//errmsg(__FILE__, __LINE__))
              stop
           endif
        enddo
@@ -1134,8 +1134,8 @@ contains
 
     do c = bounds_proc%endc + 1, bounds_proc%endc_all
        do p = col%pfti(c), col%pftf(c)
-          if (pft%column(p) /= c) then
-             call endrun(msg="ERROR pft%column(c) /= c "//errmsg(__FILE__, __LINE__))
+          if (pft_pp%column(p) /= c) then
+             call endrun(msg="ERROR pft_pp%column(c) /= c "//errmsg(__FILE__, __LINE__))
           endif
        enddo
     enddo

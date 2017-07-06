@@ -930,7 +930,7 @@ contains
            ! If sun/shade big leaf code, nrad=1 and fluxes from SurfaceAlbedo
            ! are canopy integrated so that layer values equal big leaf values.
            
-           g = pft%gridcell(p)
+           g = pft_pp%gridcell(p)
            
            do iv = 1, nrad(p)
               parsun_z(p,iv) = forc_solad(g,ipar)*fabd_sun_z(p,iv) + forc_solai(g,ipar)*fabi_sun_z(p,iv)

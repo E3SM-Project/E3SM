@@ -406,9 +406,9 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         if( .not.(pft%is_fates(p))) then
-            z0m(p)    = z0mr(pft%itype(p)) * htop(p)
-            displa(p) = displar(pft%itype(p)) * htop(p)
+         if( .not.(pft_pp%is_fates(p))) then
+            z0m(p)    = z0mr(pft_pp%itype(p)) * htop(p)
+            displa(p) = displar(pft_pp%itype(p)) * htop(p)
          end if
       end do
 

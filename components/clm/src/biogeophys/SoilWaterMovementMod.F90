@@ -1003,9 +1003,9 @@ contains
                c = filterc(fc)
                if (pi <= col_pp%npfts(c)) then
                   p = col_pp%pfti(c) + pi - 1
-                  if (pft%active(p)) then
+                  if (pft_pp%active(p)) then
                      rootr_col(c,j) = rootr_col(c,j) + rootr_patch(p,j) * &
-                           qflx_tran_veg_patch(p) * pft%wtcol(p)
+                           qflx_tran_veg_patch(p) * pft_pp%wtcol(p)
                   end if
                end if
             end do
@@ -1014,8 +1014,8 @@ contains
             c = filterc(fc)
             if (pi <= col_pp%npfts(c)) then
                p = col_pp%pfti(c) + pi - 1
-               if (pft%active(p)) then
-                  temp(c) = temp(c) + qflx_tran_veg_patch(p) * pft%wtcol(p)
+               if (pft_pp%active(p)) then
+                  temp(c) = temp(c) + qflx_tran_veg_patch(p) * pft_pp%wtcol(p)
                end if
             end if
          end do

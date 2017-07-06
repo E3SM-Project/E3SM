@@ -620,7 +620,7 @@ contains
                endif
             end if
 
-            if ( crop_prog .and. pft%itype(p) >= nc3crop )then
+            if ( crop_prog .and. pft_pp%itype(p) >= nc3crop )then
                ! xsmrpool (C only)
                if (abs(cs%xsmrpool_patch(p)) < ccrit) then
                   pc = pc + cs%xsmrpool_patch(p)

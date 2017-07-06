@@ -48,16 +48,16 @@ contains
 
     idx = 0
 
-    idx = idx + 1;                                   values(idx) = real( pft%gridcell (p))
-    idx = idx + 1; if (.not. isnan(pft%wtgcell(p))) values(idx) =       pft%wtgcell  (p)
-    idx = idx + 1;                                   values(idx) = real( pft%landunit (p))
-    idx = idx + 1; if (.not. isnan(pft%wtlunit(p))) values(idx) =       pft%wtlunit  (p)
-    idx = idx + 1;                                   values(idx) = real( pft%column   (p))
-    idx = idx + 1; if (.not. isnan(pft%wtcol(p)))   values(idx) =       pft%wtcol    (p)
-    idx = idx + 1;                                   values(idx) = real( pft%itype    (p))
-    idx = idx + 1;                                   values(idx) = real( pft%mxy      (p))
+    idx = idx + 1;                                   values(idx) = real( pft_pp%gridcell (p))
+    idx = idx + 1; if (.not. isnan(pft_pp%wtgcell(p))) values(idx) =       pft_pp%wtgcell  (p)
+    idx = idx + 1;                                   values(idx) = real( pft_pp%landunit (p))
+    idx = idx + 1; if (.not. isnan(pft_pp%wtlunit(p))) values(idx) =       pft_pp%wtlunit  (p)
+    idx = idx + 1;                                   values(idx) = real( pft_pp%column   (p))
+    idx = idx + 1; if (.not. isnan(pft_pp%wtcol(p)))   values(idx) =       pft_pp%wtcol    (p)
+    idx = idx + 1;                                   values(idx) = real( pft_pp%itype    (p))
+    idx = idx + 1;                                   values(idx) = real( pft_pp%mxy      (p))
 
-    idx = idx + 1; if (pft%active(p))               values(idx) = 1._r8
+    idx = idx + 1; if (pft_pp%active(p))               values(idx) = 1._r8
 
   end subroutine GetValuesForPatch
 
@@ -90,15 +90,15 @@ contains
 
     idx = 0
 
-    idx = idx + 1;                           pft%gridcell (p) = int(values(idx))
-    idx = idx + 1;                           pft%wtgcell  (p) =     values(idx)
-    idx = idx + 1;                           pft%landunit (p) = int(values(idx))
-    idx = idx + 1;                           pft%wtlunit  (p) =     values(idx)
-    idx = idx + 1;                           pft%column   (p) = int(values(idx))
-    idx = idx + 1;                           pft%wtcol    (p) =     values(idx)
-    idx = idx + 1;                           pft%itype    (p) = int(values(idx))
-    idx = idx + 1;                           pft%mxy      (p) = int(values(idx))
-    idx = idx + 1; if (values(idx) == 1._r8) pft%active   (p) = .true.
+    idx = idx + 1;                           pft_pp%gridcell (p) = int(values(idx))
+    idx = idx + 1;                           pft_pp%wtgcell  (p) =     values(idx)
+    idx = idx + 1;                           pft_pp%landunit (p) = int(values(idx))
+    idx = idx + 1;                           pft_pp%wtlunit  (p) =     values(idx)
+    idx = idx + 1;                           pft_pp%column   (p) = int(values(idx))
+    idx = idx + 1;                           pft_pp%wtcol    (p) =     values(idx)
+    idx = idx + 1;                           pft_pp%itype    (p) = int(values(idx))
+    idx = idx + 1;                           pft_pp%mxy      (p) = int(values(idx))
+    idx = idx + 1; if (values(idx) == 1._r8) pft_pp%active   (p) = .true.
 
   end subroutine SetValuesForPatch
 

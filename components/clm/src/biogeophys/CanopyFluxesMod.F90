@@ -518,7 +518,7 @@ contains
       !assign the temporary filter
       do f = 1, fn
          p = filterp(f)
-         filterc_tmp(f)=pft%column(p)
+         filterc_tmp(f)=pft_pp%column(p)
       enddo
       
       !compute effective soil porosity
