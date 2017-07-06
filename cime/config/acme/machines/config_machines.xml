@@ -1121,7 +1121,7 @@
          <PES_PER_NODE>4</PES_PER_NODE>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-	 <PROJECT>HiRes_EarthSys_2</PROJECT>
+         <PROJECT>ClimateEnergy_2</PROJECT>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <mpirun mpilib="default">
            <executable>/usr/bin/runjob</executable>
@@ -1281,7 +1281,7 @@
          <PES_PER_NODE>4</PES_PER_NODE>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-	 <PROJECT>HiRes_EarthSys_2</PROJECT>
+         <PROJECT>ClimateEnergy_2</PROJECT>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <mpirun mpilib="default">
            <executable>/usr/bin/runjob</executable>
@@ -2554,6 +2554,110 @@
   <module_system type="none"/>
 </machine>
 
+<machine MACH="summitdev">
+	 <DESC>ORNL pre-Summit testbed. Node: 2x POWER8 + 4x Tesla P100, 20 cores/node, 8 HW threads/core.</DESC>
+	 <NODENAME_REGEX>summitdev-*</NODENAME_REGEX>
+	 <NODE_FAIL_REGEX>Received node event ec_node</NODE_FAIL_REGEX>
+	 <TESTS>acme_developer</TESTS>
+	 <COMPILERS>ibm,pgi</COMPILERS>
+	 <MPILIBS>openmpi,mpi_serial</MPILIBS>
+	 <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/$PROJECT</CIME_OUTPUT_ROOT>
+	 <RUNDIR>/lustre/atlas/scratch/$ENV{USER}/$PROJECT/$CASE/run</RUNDIR>
+	 <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+	 <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
+	 <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+	 <DOUT_S_ROOT>/lustre/atlas/scratch/$ENV{USER}/$PROJECT/archive/$CASE</DOUT_S_ROOT>
+	 <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+	 <BASELINE_ROOT>/lustre/atlas1/cli900/world-shared/cesm/baselines</BASELINE_ROOT>
+	 <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
+	 <SAVE_TIMING_DIR>/lustre/atlas/proj-shared/$PROJECT</SAVE_TIMING_DIR>
+	 <OS>LINUX</OS>
+	 <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
+	 <SUPPORTED_BY>acme</SUPPORTED_BY>
+	 <GMAKE_J>32</GMAKE_J>
+	 <PES_PER_NODE>20</PES_PER_NODE>
+	 <MAX_TASKS_PER_NODE>160</MAX_TASKS_PER_NODE>
+	 <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+	 <PROJECT>csc190</PROJECT>
+	 <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
+
+	 <mpirun mpilib="openmpi">
+	 <executable args="default">mpirun</executable>
+	 <arguments>
+		 <arg name="num_tasks" > -np $TOTALPES</arg>
+		 <arg name="binding_core"> --map-by core:PE=$ENV{OMP_NUM_THREADS} --bind-to core </arg>
+		 <arg name="thread_count"> -x OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
+		 <arg name="show-binding"> --report-bindings </arg>
+		 <arg name="show-processmap"> --display-map </arg>
+		 <!--
+		 <arg name="tasks_per_node"> map-by ppr:$PES_PER_NODE:node</arg>
+		 -->
+	 </arguments>  
+	 </mpirun>
+
+    <module_system type="module_lmod">
+      <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
+      <init_path lang="sh">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/sh</init_path>
+      <init_path lang="csh">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/csh</init_path>
+      <init_path lang="python">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/env_modules_python.py</init_path>
+      <init_path lang="perl">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/perl</init_path>
+      <!-- list of cmd_path elements, one for every supported language, e.g. sh, perl, python -->
+      <cmd_path lang="perl">module</cmd_path>
+      <cmd_path lang="python">module</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+ 
+      <!-- Always execute -->
+      <modules>
+		<command name="ls"/>
+		<command name="purge"/>
+		<command name="ls"/>
+		<command name="load">DefApps</command>
+		<command name="load">python/3.5.2</command>
+		<command name="load">subversion/1.9.3</command>
+		<command name="load">git/2.13.0</command>
+		<command name="load">cmake/3.6.1</command>
+		<command name="load">essl/5.5.0-20161110</command>
+		<command name="load">netlib-lapack/3.6.1</command>
+      </modules>
+      <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
+      <modules compiler="pgi">
+        <command name="rm">xl</command>
+        <command name="load">pgi/17.4</command>
+        <command name="load">netcdf-fortran/4.4.4</command>
+        <command name="ls"/>
+      </modules>
+      <modules compiler="ibm">
+        <command name="rm">pgi</command>
+        <command name="load">xl/20161123</command>
+        <command name="ls"/>
+      </modules>
+
+      <!-- mpi lib settings -->
+      <modules mpilib="mpi-serial">
+        <command name="load">netcdf/4.4.1</command>
+      </modules>
+      <modules mpilib="!mpi-serial">
+        <command name="load">spectrum_mpi/10.1.0.2-20161221</command>
+        <command name="load">netcdf/4.4.1</command>
+        <command name="load">parallel-netcdf/1.7.0</command>
+        <command name="load">hdf5/1.10.0-patch1-parallel</command>
+      </modules>
+      <!-- Default -->
+      <environment_variables>
+		  <env name="COMPILER">$COMPILER</env>
+		  <env name="MPILIB">$MPILIB</env>
+		  <env name="OMP_STACKSIZE">128M</env>
+		  <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
+		  <env name="NETCDF_FORTRAN_PATH" compiler="pgi">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
+		  <env name="PNETCDF_PATH" compiler="pgi" mpilib="!mpi-serial">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
+		  <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
+		  <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
+		  <env name="NETCDF_FORTRAN_PATH" compiler="ibm">/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4</env>
+		  <env name="LD_LIBRARY_PATH" compiler="ibm">$ENV{LD_LIBRARY_PATH}:/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4/lib</env>
+      </environment_variables>
+    </module_system>
+</machine>
 
 <default_run_suffix>
   <default_run_exe>${EXEROOT}/acme.exe </default_run_exe>
