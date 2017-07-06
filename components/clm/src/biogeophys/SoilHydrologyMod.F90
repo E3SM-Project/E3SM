@@ -1271,8 +1271,15 @@ contains
                    end if
 
                    !--  remove residual rsub_top  ---------------------------------------------
-                   zwt(c) = zwt(c) - rsub_top_tot/1000._r8/rous
-                   wa(c) = wa(c) + rsub_top_tot
+                   if (zengdecker_2009_with_var_soil_thick) then
+                      if (rsub_top_tot < 0.) then
+                         rsub_top(c) = rsub_top(c) + rsub_top_tot / dtime
+                         rsub_top_tot = 0._r8
+                      end if
+                   else
+                      zwt(c) = zwt(c) - rsub_top_tot/1000._r8/rous
+                      wa(c) = wa(c) + rsub_top_tot
+                   end if
                 endif
 
                 !-- recompute jwt  ---------------------------------------------------------
