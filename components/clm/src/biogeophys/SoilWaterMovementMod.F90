@@ -954,7 +954,7 @@ contains
     use clm_varpar       , only : nlevsoi, max_patch_per_col
     use SoilStateType    , only : soilstate_type
     use WaterFluxType    , only : waterflux_type
-    use PatchType        , only : pft
+    use PatchType        , only : pft_pp
     use ColumnType       , only : col_pp
     !
     ! !ARGUMENTS:
