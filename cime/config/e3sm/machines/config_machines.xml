@@ -2032,8 +2032,19 @@
          <GMAKE_J>32</GMAKE_J>
 	 <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+         <environment_variables>
+            <env name="PATH">/projects/cesm/devtools/python27/bin:/usr/local/bin/:/opt/local/sbin/:/opt/local/bin:/usr/bin/:/bin/</env>
+         </environment_variables>
+         <environment_variables compiler="gnu">
+            <env name="GCC_ROOT">/projects/cesm/devtools/gcc-5.3.0</env>
+            <env name="MPI_ROOT">/projects/cesm/devtools/mpich-32-gcc53</env>
+            <env name="HDF5_PATH">/projects/cesm/devtools/hdf5-1.8.16-mpich32-gcc53</env>
+            <env name="NETCDF_PATH">/projects/cesm/devtools/netcdf-4.4-mpich32-gcc53</env>
+            <env name="PETSC_PATH">/projects/cesm/devtools/petsc-mpich32-gcc53</env>
+         </environment_variables>
+         
          <mpirun mpilib="mpich">
-              <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
+              <executable args="default">/projects/cesm/devtools/mpich-3.2-gcc53/bin/mpirun </executable>
 	      <arguments>
 			<arg name="num_tasks"> -np $TOTALPES</arg>
                         <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
