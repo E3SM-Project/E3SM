@@ -88,6 +88,8 @@ class EnvMachSpecific(EnvBase):
         module_system = self.get_module_system_type()
         if (module_system == "module"):
             self._load_module_modules(modules_to_load)
+        elif (module_system == "module_lmod"):
+            self._load_modules_generic(modules_to_load)
         elif (module_system == "soft"):
             self._load_modules_generic(modules_to_load)
         elif (module_system == "generic"):
@@ -109,7 +111,7 @@ class EnvMachSpecific(EnvBase):
         else:
             source_cmd = ""
 
-        if (module_system == "module"):
+        if (module_system in ["module", "module_lmod"]):
             return run_cmd_no_fail("%smodule list" % source_cmd, combine_output=True)
         elif (module_system == "soft"):
             # Does soft really not provide this capability?
