@@ -18,9 +18,8 @@ class EnvMachSpecific(EnvBase):
         """
         initialize an object interface to file env_mach_specific.xml in the case directory
         """
-        fullpath = infile if os.path.isabs(infile) else os.path.join(caseroot, infile)
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_specific.xsd")
-        EnvBase.__init__(self, caseroot, fullpath,schema=schema)
+        EnvBase.__init__(self, caseroot, infile, schema=schema)
         self._allowed_mpi_attributes = ("compiler", "mpilib", "threaded", "unit_testing")
         self._unit_testing = unit_testing
 
@@ -236,7 +235,7 @@ class EnvMachSpecific(EnvBase):
         # Purpose is for environment management system that does not have
         # a python interface and therefore can only determine what they
         # do by running shell command and looking at the changes
-        # in the environment.  
+        # in the environment.
 
         cmd = "source {}".format(sh_init_cmd)
 
@@ -283,7 +282,7 @@ class EnvMachSpecific(EnvBase):
             if key in os.environ and key not in newenv:
                 del(os.environ[key])
             else:
-                os.environ[key] = newenv[key] 
+                os.environ[key] = newenv[key]
 
     def _load_none_modules(self, modules_to_load):
         """
