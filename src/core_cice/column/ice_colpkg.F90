@@ -5622,7 +5622,7 @@
              get_number_warnings, &
              get_warning
 
-        character(len=*), dimension(:), allocatable, intent(out) :: &
+        character(len=char_len_long), dimension(:), allocatable, intent(out) :: &
              warningsOut
 
         integer :: &
