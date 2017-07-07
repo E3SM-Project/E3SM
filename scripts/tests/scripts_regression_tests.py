@@ -1298,13 +1298,6 @@ class R_TestUpdateACMETests(unittest.TestCase):
         # self.assertEqual(stat, 0,
         #                  msg="COMMAND SHOULD HAVE WORKED\ncs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
-###############################################################################
-class W_TestCreateTest(TestCreateTestCommon):
-###############################################################################
-    def test_create_test_longname(self):
-        create_test_cmd =  "%s/create_test SMS.f19_g16.2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --no-build --output-root %s" % (SCRIPT_DIR, TEST_ROOT)
-        run_cmd_assert_result(self, create_test_cmd)
-
 class Z_FullSystemTest(TestCreateTestCommon):
 ###############################################################################
 
@@ -1599,6 +1592,10 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
         self.assertEqual(result, "slartibartfast")
+
+    def test_create_test_longname(self):
+        create_test_cmd =  "%s/create_test SMS.f19_g16.2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --no-build --output-root %s" % (SCRIPT_DIR, TEST_ROOT)
+        run_cmd_assert_result(self, create_test_cmd)
 
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
