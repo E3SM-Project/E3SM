@@ -134,7 +134,7 @@ def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
 
 def qflxconvert_units(var):
     print var.units
-    if var.units == 'kg/m2/s':
+    if var.units == 'kg/m2/s' or var.units == 'kg m-2 s-1':
         # need to find a solution for units not included in udunits
         # var = convert_units( var, 'kg/m2/s' )
         var = var * 3600.0 * 24  # convert to mm/day
@@ -234,7 +234,7 @@ def restoa(fsnt, flnt):
 
 derived_variables = {
     'PRECT': OrderedDict([
-        (('pr'), lambda pr: convert_units(rename(pr),target_units="mm/day")),
+        (('pr'), lambda pr:  qflxconvert_units(rename(pr))),
         (('PRECC', 'PRECL'), lambda precc, precl: prect(precc, precl))
     ]),
     'SST': OrderedDict([
@@ -244,7 +244,8 @@ derived_variables = {
             convert_units(ts, target_units="degC"), ocnfrac, low_limit=0.9))
     ]),
     'PREH2O': OrderedDict([
-        (('TMQ'), rename)
+        (('TMQ'), rename),
+        (('prw'), rename)
     ]),
     'SOLIN': OrderedDict([
         (('rsdt'), rename)
@@ -350,16 +351,23 @@ derived_variables = {
             prect(precc, precl), landfrac, low_limit=0.5))
     ]),
     'Z3': OrderedDict([
+        (('zg'), lambda zg: convert_units(rename(zg), target_units="hectometer")),
         (('Z3'), lambda z3: convert_units(z3, target_units="hectometer"))
     ]),
     'PSL': OrderedDict([
         (('PSL'), lambda psl: convert_units(psl, target_units="mbar"))
     ]),
     'T': OrderedDict([
+        (('ta'), rename),
         (('T'), lambda t: convert_units(t, target_units="K"))
     ]),
     'U': OrderedDict([
+        (('ua'), rename),
         (('U'), lambda u: convert_units(u, target_units="m/s"))
+    ]),
+    'V': OrderedDict([
+        (('va'), rename),
+        (('V'), lambda u: convert_units(u, target_units="m/s"))
     ]),
     'TREFHT': OrderedDict([
         (('TREFHT'), lambda t: convert_units(t, target_units="K"))
@@ -371,7 +379,7 @@ derived_variables = {
         (('QFLX'), lambda qflx: qflxconvert_units(qflx))
     ]),
     'LHFLX': OrderedDict([
-        (('LHFLX'), rename)
+        (('hfls'), rename)
     ]),
     'SHFLX': OrderedDict([
         (('SHFLX'), rename)
