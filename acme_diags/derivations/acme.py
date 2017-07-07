@@ -148,18 +148,38 @@ def prect(precc, precl):
     var.long_name = "Total precipitation rate (convective + large-scale)"
     return var
 
-def albedo(solin, fsntoa):
-    """TOA (top-of-atmosphere) albedo, (solin - fsntoa) / solin, unit is nondimension"""
-    var = (solin - fsntoa) / solin
+
+def albedo(rsdt, rsut):
+    """TOA (top-of-atmosphere) albedo, rsut / rsdt, unit is nondimension"""
+    var = rsut / rsdt
     var.units = "dimensionless"
     var.long_name = "TOA albedo"
     return var
 
-def albedoc(solin, fsntoa):
-    """TOA (top-of-atmosphere) albedo clear-sky, (solin - fsntoac) / solin, unit is nondimension"""
-    var = (solin - fsntoa) / solin
+def albedoc(rsdt, rsutcs):
+    """TOA (top-of-atmosphere) albedo clear-sky, rsutcs / rsdt, unit is nondimension"""
+    var = rsutcs / rsdt
     var.units = "dimensionless"
     var.long_name = "TOA albedo clear-sky"
+    return var
+
+def albedo_srf(rsds, rsus):
+    """Surface albedo, rsus / rsds, unit is nondimension"""
+    var = rsus / rsds
+    var.units = "dimensionless"
+    var.long_name = "Surface albedo"
+    return var
+
+def rst(rsdt, rsut):
+    """TOA (top-of-atmosphere) net shortwave flux"""
+    var = rsdt - rsut
+    var.long_name = "TOA net shortwave flux"
+    return var
+
+def rstcs(rsdt, rsutcs):
+    """TOA (top-of-atmosphere) net shortwave flux clear-sky"""
+    var = rsdt - rsutcs
+    var.long_name = "TOA net shortwave flux clear-sky"
     return var
 
 def swcfsrf(fsns, fsnsc):
@@ -226,74 +246,96 @@ derived_variables = {
     'PREH2O': OrderedDict([
         (('TMQ'), rename)
     ]),
+    'SOLIN': OrderedDict([
+        (('rsdt'), rename)
+    ]),
     'ALBEDO': OrderedDict([
         (('ALBEDO'), rename),
-        (('SOLIN', 'FSNTOA'), lambda solin, fsntoa: albedo(solin, fsntoa))
+        (('SOLIN', 'FSNTOA'), lambda solin, fsntoa: albedo(solin, solin-fsntoa)),
+        (('rsdt', 'rsut'), lambda rsdt, rsut: albedo(rsdt, rsut))
     ]),
     'ALBEDOC': OrderedDict([
         (('ALBEDOC'), rename),
-        (('SOLIN', 'FSNTOAC'), lambda solin, fsntoac: albedoc(solin, fsntoac))
+        (('SOLIN', 'FSNTOAC'), lambda solin, fsntoac: albedoc(solin, solin-fsntoac)),
+        (('rsdt', 'rsutcs'), lambda rsdt, rsutcs: albedoc(rsdt, rsutcs))
+    ]),
+    'ALBEDO_SRF': OrderedDict([
+        (('ALBEDO_SRF'), rename),
+        (('rsds', 'rsus'), lambda rsds, rsus: albedo_srf(rsds, rsus)),
+        (('FSDS', 'FSNS'), lambda fsds, fsns: albedo_srf(fsds, fsds-fsns))
     ]),
     'SWCF': OrderedDict([
         (('SWCF'), rename),
+        (('toa_cre_sw_mon'), rename),
         (('FSNTOA', 'FSNTOAC'), lambda fsntoa, fsntoac: swcf(fsntoa, fsntoac))
     ]),
     'SWCFSRF': OrderedDict([
         (('SWCFSRF'), rename),
+        (('sfc_cre_net_sw_mon'), rename),
         (('FSNS', 'FSNSC'), lambda fsns, fsnsc: swcfsrf(fsns, fsnsc))
     ]),
     'LWCF': OrderedDict([
         (('LWCF'), rename),
+        (('toa_cre_lw_mon'), rename),
         (('FLNTOA', 'FLNTOAC'), lambda flntoa, flntoac: lwcf(flntoa, flntoac))
     ]),
     'LWCFSRF': OrderedDict([
         (('LWCFSRF'), rename),
+        (('sfc_cre_net_lw_mon'), rename),
         (('FLNSC', 'FLNS'), lambda flns, flnsc: lwcfsrf(flnsc, flns))
     ]),
     'FLNS': OrderedDict([
-        (('FLNS'), rename)
+        (('sfc_net_lw_all_mon'), rename)
     ]),
     'FLNSC': OrderedDict([
-        (('FLNSC'), rename)
+        (('sfc_net_lw_clr_mon'), rename)
     ]),
     'FLDS': OrderedDict([
-        (('FLDS'), rename)
+        (('rlds'), rename)
     ]),
     'FLDSC': OrderedDict([
-        (('FLDSC'), rename),
+        (('rldscs'), rename),
         (('TS', 'FLNSC'), lambda ts, flnsc: fldsc(ts, flnsc))
     ]),
     'FSNS': OrderedDict([
-        (('FSNS'), rename)
+        (('sfc_net_sw_all_mon'), rename)
     ]),
     'FSNSC': OrderedDict([
-        (('FSNSC'), rename)
+        (('sfc_net_sw_clr_mon'), rename)
     ]),
     'FSDS': OrderedDict([
-        (('FSDS'), rename)
+        (('rsds'), rename)
     ]),
     'FSDSC': OrderedDict([
-        (('FSDSC'), rename)
+        (('rsdscs'), rename),
+        (('rsdsc'), rename)
     ]),
     'FLUT': OrderedDict([
-        (('FLUT'), rename)
+        (('rlut'), rename)
+    ]),
+    'FLNT': OrderedDict([
+        (('FLNT'), rename)
     ]),
     'FLUTC': OrderedDict([
-        (('FLUTC'), rename)
+        (('rlutcs'), rename)
     ]),
     'FSNTOA': OrderedDict([
-        (('FSNTOA'), rename)
+        (('FSNTOA'), rename),
+        (('rsdt', 'rsut'), lambda rsdt, rsut: rst(rsdt, rsut))
     ]),
     'FSNTOAC': OrderedDict([
         # Note: CERES_EBAF data in amwg obs sets misspells "units" as "lunits"
-        (('FSNTOAC'), rename)
+        (('FSNTOAC'), rename),
+        (('rsdt', 'rsutcs'), lambda rsdt, rsutcs: rstcs(rsdt, rsutcs))
     ]),
     'RESTOM': OrderedDict([
         (('RESTOA'), rename),
+        (('toa_net_all_mon'), rename),
         (('FSNT', 'FLNT'), lambda fsnt, flnt: restom(fsnt, flnt))
     ]),
     'RESTOA': OrderedDict([
-        (('RESTOA'), rename),
+        (('RESTOM'), rename),
+        (('toa_net_all_mon'), rename),
         (('FSNT', 'FLNT'), lambda fsnt, flnt: restoa(fsnt, flnt))
     ]),
     'TREFHT_LAND': OrderedDict([
