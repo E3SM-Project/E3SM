@@ -1553,7 +1553,7 @@ contains
              c4_r2 = c4_r1/(1._r8 + c4_r1)
 
              do i = bounds%begp,bounds%endp
-                if (vep_pp%c3psn(pft_pp%itype(i)) == 1._r8) then
+                if (veg_pp%c3psn(pft_pp%itype(i)) == 1._r8) then
                    this%grainc_patch(i)            = c12_carbonstate_vars%grainc_patch(i)         * c3_r2
                    this%grainc_storage_patch(i)    = c12_carbonstate_vars%grainc_storage_patch(i) * c3_r2
                    this%grainc_xfer_patch(i)       = c12_carbonstate_vars%grainc_xfer_patch(i)    * c3_r2
