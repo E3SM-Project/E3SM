@@ -86,10 +86,8 @@ for mct, etc.
 <!-- hacking of mach/compiler generated 'Macros.make' for coupling with pflotran -->
 <!-- ideally it should go with CLM configuration -->
 <compiler>
-  <ADD_FFLAGS  MODEL="clm"    CLM_PFLOTRAN_COUPLED="TRUE"> -I$(CLM_PFLOTRAN_SOURCE_DIR) </ADD_FFLAGS>
-  <ADD_CPPDEFS MODEL="clm"    CLM_PFLOTRAN_COUPLED="TRUE"> -DCLM_PFLOTRAN </ADD_CPPDEFS>
-  <ADD_CPPDEFS MODEL="clm"    CLM_PFLOTRAN_COUPLED="TRUE" CLM_PFLOTRAN_COLMODE="TRUE"> -DCOLUMN_MODE </ADD_CPPDEFS>
-  <ADD_LDFLAGS MODEL="driver" CLM_PFLOTRAN_COUPLED="TRUE"> -L$(CLM_PFLOTRAN_SOURCE_DIR) -lpflotran $(PETSC_LIB) </ADD_LDFLAGS>
+  <ADD_CPPDEFS MODEL="clm" CLM_PFLOTRAN_COUPLED="TRUE"> -DCLM_PFLOTRAN </ADD_CPPDEFS>
+  <ADD_CPPDEFS MODEL="clm" CLM_PFLOTRAN_COUPLED="TRUE" CLM_PFLOTRAN_COLMODE="TRUE"> -DCOLUMN_MODE </ADD_CPPDEFS>
 </compiler>
 <!-- end of hacking 'Macros.make' for coupling with pflotran -->
 

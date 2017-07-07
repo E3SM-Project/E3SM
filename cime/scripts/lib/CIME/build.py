@@ -427,6 +427,8 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only):
     ninst_build         = case.get_value("NINST_BUILD")
     smp_value           = case.get_value("SMP_VALUE")
     clm_use_petsc       = case.get_value("CLM_USE_PETSC")
+    clm_pflotran_coupled= case.get_value("CLM_PFLOTRAN_COUPLED")
+    clm_pflotran_colmode= case.get_value("CLM_PFLOTRAN_COLMODE")
     cism_use_trilinos   = case.get_value("CISM_USE_TRILINOS")
     mpasli_use_albany   = case.get_value("MPASLI_USE_ALBANY")
     use_moab            = case.get_value("USE_MOAB")
@@ -459,6 +461,8 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only):
     os.environ["OCN_SUBMODEL"]         = ocn_submodel        if ocn_submodel        is not None else ""
     os.environ["PROFILE_PAPI_ENABLE"]  = stringify_bool(profile_papi_enable)
     os.environ["CLM_USE_PETSC"]        = stringify_bool(clm_use_petsc)
+    os.environ["CLM_PFLOTRAN_COUPLED"] = stringify_bool(clm_pflotran_coupled)
+    os.environ["CLM_PFLOTRAN_COLMODE"] = stringify_bool(clm_pflotran_colmode)
     os.environ["CISM_USE_TRILINOS"]    = stringify_bool(cism_use_trilinos)
     os.environ["MPASLI_USE_ALBANY"]    = stringify_bool(mpasli_use_albany)
     os.environ["USE_MOAB"]             = stringify_bool(use_moab)

@@ -2528,6 +2528,31 @@
       machines/compilers.</desc>
   </entry>
 
+  <entry id="CLM_PFLOTRAN_COUPLED">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_component_clm</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies CLM is built with support for the PFLOTRAN
+      library. In order to use the PFLOTRAN solver, CLM must be built 
+      with PETSc support and linking to PETSc must occur when building 
+      the ACME executable. This occurs if CLM_USE_PETSC is set to TRUE.</desc>
+  </entry>
+
+  <entry id="CLM_PFLOTRAN_COLMODE">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_component_clm</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies CLM is built with support for the PFLOTRAN
+      library using column mode. In order to use the PFLOTRAN solver, 
+      CLM must be built with PETSc support and linking to PETSc must 
+      occur when building the ACME executable. This occurs if 
+      CLM_USE_PETSC is set to TRUE.</desc>
+  </entry>
+
   <!-- Prerun/postrun custom script options -->
 
   <entry id="PRERUN_SCRIPT">
