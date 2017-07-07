@@ -176,7 +176,7 @@ def _main_func(description):
         user_mods_dir, user_compset, pesfile, \
         user_grid, gridfile, srcroot, test, ninst, walltime, queue, \
         output_root, script_root, run_unsupported, \
-        answer, input_dir, = parse_command_line(sys.argv, cimeroot, description)
+        answer, input_dir = parse_command_line(sys.argv, cimeroot, description)
 
     if script_root is None:
         caseroot = os.path.abspath(casename)
