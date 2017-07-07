@@ -134,7 +134,7 @@ def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
 
 def qflxconvert_units(var):
     print var.units
-    if var.units == 'kg/m2/s':
+    if var.units == 'kg/m2/s' or var.units == 'kg m-2 s-1':
         # need to find a solution for units not included in udunits
         # var = convert_units( var, 'kg/m2/s' )
         var = var * 3600.0 * 24  # convert to mm/day
@@ -148,18 +148,38 @@ def prect(precc, precl):
     var.long_name = "Total precipitation rate (convective + large-scale)"
     return var
 
-def albedo(solin, fsntoa):
-    """TOA (top-of-atmosphere) albedo, (solin - fsntoa) / solin, unit is nondimension"""
-    var = (solin - fsntoa) / solin
+
+def albedo(rsdt, rsut):
+    """TOA (top-of-atmosphere) albedo, rsut / rsdt, unit is nondimension"""
+    var = rsut / rsdt
     var.units = "dimensionless"
     var.long_name = "TOA albedo"
     return var
 
-def albedoc(solin, fsntoa):
-    """TOA (top-of-atmosphere) albedo clear-sky, (solin - fsntoac) / solin, unit is nondimension"""
-    var = (solin - fsntoa) / solin
+def albedoc(rsdt, rsutcs):
+    """TOA (top-of-atmosphere) albedo clear-sky, rsutcs / rsdt, unit is nondimension"""
+    var = rsutcs / rsdt
     var.units = "dimensionless"
     var.long_name = "TOA albedo clear-sky"
+    return var
+
+def albedo_srf(rsds, rsus):
+    """Surface albedo, rsus / rsds, unit is nondimension"""
+    var = rsus / rsds
+    var.units = "dimensionless"
+    var.long_name = "Surface albedo"
+    return var
+
+def rst(rsdt, rsut):
+    """TOA (top-of-atmosphere) net shortwave flux"""
+    var = rsdt - rsut
+    var.long_name = "TOA net shortwave flux"
+    return var
+
+def rstcs(rsdt, rsutcs):
+    """TOA (top-of-atmosphere) net shortwave flux clear-sky"""
+    var = rsdt - rsutcs
+    var.long_name = "TOA net shortwave flux clear-sky"
     return var
 
 def swcfsrf(fsns, fsnsc):
@@ -214,85 +234,109 @@ def restoa(fsnt, flnt):
 
 derived_variables = {
     'PRECT': OrderedDict([
-        (('pr'), rename),
+        (('pr'), lambda pr:  qflxconvert_units(rename(pr))),
         (('PRECC', 'PRECL'), lambda precc, precl: prect(precc, precl))
     ]),
     'SST': OrderedDict([
+        (('sst'),rename),# lambda sst: convert_units(rename(sst),target_units="degC")),
         (('SST'), lambda sst: convert_units(sst, target_units="degC")),
         (('TS', 'OCNFRAC'), lambda ts, ocnfrac: mask_by(
             convert_units(ts, target_units="degC"), ocnfrac, low_limit=0.9))
     ]),
     'PREH2O': OrderedDict([
-        (('TMQ'), rename)
+        (('TMQ'), rename),
+        (('prw'), rename)
+    ]),
+    'SOLIN': OrderedDict([
+        (('rsdt'), rename)
     ]),
     'ALBEDO': OrderedDict([
         (('ALBEDO'), rename),
-        (('SOLIN', 'FSNTOA'), lambda solin, fsntoa: albedo(solin, fsntoa))
+        (('SOLIN', 'FSNTOA'), lambda solin, fsntoa: albedo(solin, solin-fsntoa)),
+        (('rsdt', 'rsut'), lambda rsdt, rsut: albedo(rsdt, rsut))
     ]),
     'ALBEDOC': OrderedDict([
         (('ALBEDOC'), rename),
-        (('SOLIN', 'FSNTOAC'), lambda solin, fsntoac: albedoc(solin, fsntoac))
+        (('SOLIN', 'FSNTOAC'), lambda solin, fsntoac: albedoc(solin, solin-fsntoac)),
+        (('rsdt', 'rsutcs'), lambda rsdt, rsutcs: albedoc(rsdt, rsutcs))
+    ]),
+    'ALBEDO_SRF': OrderedDict([
+        (('ALBEDO_SRF'), rename),
+        (('rsds', 'rsus'), lambda rsds, rsus: albedo_srf(rsds, rsus)),
+        (('FSDS', 'FSNS'), lambda fsds, fsns: albedo_srf(fsds, fsds-fsns))
     ]),
     'SWCF': OrderedDict([
         (('SWCF'), rename),
+        (('toa_cre_sw_mon'), rename),
         (('FSNTOA', 'FSNTOAC'), lambda fsntoa, fsntoac: swcf(fsntoa, fsntoac))
     ]),
     'SWCFSRF': OrderedDict([
         (('SWCFSRF'), rename),
+        (('sfc_cre_net_sw_mon'), rename),
         (('FSNS', 'FSNSC'), lambda fsns, fsnsc: swcfsrf(fsns, fsnsc))
     ]),
     'LWCF': OrderedDict([
         (('LWCF'), rename),
+        (('toa_cre_lw_mon'), rename),
         (('FLNTOA', 'FLNTOAC'), lambda flntoa, flntoac: lwcf(flntoa, flntoac))
     ]),
     'LWCFSRF': OrderedDict([
         (('LWCFSRF'), rename),
+        (('sfc_cre_net_lw_mon'), rename),
         (('FLNSC', 'FLNS'), lambda flns, flnsc: lwcfsrf(flnsc, flns))
     ]),
     'FLNS': OrderedDict([
-        (('FLNS'), rename)
+        (('sfc_net_lw_all_mon'), rename)
     ]),
     'FLNSC': OrderedDict([
-        (('FLNSC'), rename)
+        (('sfc_net_lw_clr_mon'), rename)
     ]),
     'FLDS': OrderedDict([
-        (('FLDS'), rename)
+        (('rlds'), rename)
     ]),
     'FLDSC': OrderedDict([
-        (('FLDSC'), rename),
+        (('rldscs'), rename),
         (('TS', 'FLNSC'), lambda ts, flnsc: fldsc(ts, flnsc))
     ]),
     'FSNS': OrderedDict([
-        (('FSNS'), rename)
+        (('sfc_net_sw_all_mon'), rename)
     ]),
     'FSNSC': OrderedDict([
-        (('FSNSC'), rename)
+        (('sfc_net_sw_clr_mon'), rename)
     ]),
     'FSDS': OrderedDict([
-        (('FSDS'), rename)
+        (('rsds'), rename)
     ]),
     'FSDSC': OrderedDict([
-        (('FSDSC'), rename)
+        (('rsdscs'), rename),
+        (('rsdsc'), rename)
     ]),
     'FLUT': OrderedDict([
-        (('FLUT'), rename)
+        (('rlut'), rename)
+    ]),
+    'FLNT': OrderedDict([
+        (('FLNT'), rename)
     ]),
     'FLUTC': OrderedDict([
-        (('FLUTC'), rename)
+        (('rlutcs'), rename)
     ]),
     'FSNTOA': OrderedDict([
-        (('FSNTOA'), rename)
+        (('FSNTOA'), rename),
+        (('rsdt', 'rsut'), lambda rsdt, rsut: rst(rsdt, rsut))
     ]),
     'FSNTOAC': OrderedDict([
         # Note: CERES_EBAF data in amwg obs sets misspells "units" as "lunits"
-        (('FSNTOAC'), rename)
+        (('FSNTOAC'), rename),
+        (('rsdt', 'rsutcs'), lambda rsdt, rsutcs: rstcs(rsdt, rsutcs))
     ]),
     'RESTOM': OrderedDict([
         (('RESTOA'), rename),
+        (('toa_net_all_mon'), rename),
         (('FSNT', 'FLNT'), lambda fsnt, flnt: restom(fsnt, flnt))
     ]),
     'RESTOA': OrderedDict([
-        (('RESTOA'), rename),
+        (('RESTOM'), rename),
+        (('toa_net_all_mon'), rename),
         (('FSNT', 'FLNT'), lambda fsnt, flnt: restoa(fsnt, flnt))
     ]),
     'TREFHT_LAND': OrderedDict([
@@ -307,16 +351,23 @@ derived_variables = {
             prect(precc, precl), landfrac, low_limit=0.5))
     ]),
     'Z3': OrderedDict([
+        (('zg'), lambda zg: convert_units(rename(zg), target_units="hectometer")),
         (('Z3'), lambda z3: convert_units(z3, target_units="hectometer"))
     ]),
     'PSL': OrderedDict([
         (('PSL'), lambda psl: convert_units(psl, target_units="mbar"))
     ]),
     'T': OrderedDict([
+        (('ta'), rename),
         (('T'), lambda t: convert_units(t, target_units="K"))
     ]),
     'U': OrderedDict([
+        (('ua'), rename),
         (('U'), lambda u: convert_units(u, target_units="m/s"))
+    ]),
+    'V': OrderedDict([
+        (('va'), rename),
+        (('V'), lambda u: convert_units(u, target_units="m/s"))
     ]),
     'TREFHT': OrderedDict([
         (('TREFHT'), lambda t: convert_units(t, target_units="K"))
@@ -328,7 +379,7 @@ derived_variables = {
         (('QFLX'), lambda qflx: qflxconvert_units(qflx))
     ]),
     'LHFLX': OrderedDict([
-        (('LHFLX'), rename)
+        (('hfls'), rename)
     ]),
     'SHFLX': OrderedDict([
         (('SHFLX'), rename)

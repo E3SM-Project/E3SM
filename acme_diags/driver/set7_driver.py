@@ -5,6 +5,8 @@ from acme_diags.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 from acme_diags.driver import utils
+import os
+import sys
 
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
@@ -56,9 +58,18 @@ def run_diag(parameter):
 
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
+
         #save land/ocean fraction for masking
-        land_frac = f_mod('LANDFRAC')
-        ocean_frac = f_mod('OCNFRAC')
+        try:
+            land_frac = f_mod('LANDFRAC')
+            ocean_frac = f_mod('OCNFRAC')
+        except:
+            mask_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'acme_ne30_ocean_land_mask.nc')
+            f0 =  cdms2.open(mask_path)
+            land_frac = f0('LANDFRAC')
+            ocean_frac = f0('OCNFRAC')
+            f0.close()
+
 
         for var in variables: 
             print '***********', variables
