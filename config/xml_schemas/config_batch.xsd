@@ -15,9 +15,6 @@
   <xs:element name="jobid_pattern" type="xs:string"/>
   <xs:element name="depend_string" type="xs:string"/>
   <xs:element name="walltime_format" type="xs:string"/>
-  <xs:element name="batch_mail_flag" type="xs:string"/>
-  <xs:element name="batch_mail_type_flag" type="xs:string"/>
-  <xs:element name="batch_mail_type" type="xs:string"/>
   <xs:element name="template" type="xs:NCName"/>
   <xs:element name="task_count" type="xs:NMTOKEN"/>
   <xs:element name="dependency" type="xs:string"/>
@@ -62,6 +59,13 @@
 
   <!-- walltime_format: time format expected by batch system for the wall clock time field -->
         <xs:element minOccurs="0" ref="walltime_format"/>
+
+  <!-- batch_mail_flag: user email flag expected by batch system -->
+        <xs:element name="batch_mail_flag" type="xs:string"/>
+  <!-- batch_mail_flag: user email type flag expected by batch system -->
+        <xs:element name="batch_mail_type_flag" type="xs:string"/>
+  <!-- batch_mail_flag: user email type expected by batch system -->
+        <xs:element name="batch_mail_type" type="xs:string"/>
 
   <!-- submit_args: A list of arguments to pass when submitting a job, queue, wallclock time
        and project are typical sub fields -->
