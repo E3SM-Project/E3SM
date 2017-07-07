@@ -15,6 +15,9 @@
   <xs:element name="jobid_pattern" type="xs:string"/>
   <xs:element name="depend_string" type="xs:string"/>
   <xs:element name="walltime_format" type="xs:string"/>
+  <xs:element name="batch_mail_flag" type="xs:string"/>
+  <xs:element name="batch_mail_type_flag" type="xs:string"/>
+  <xs:element name="batch_mail_type" type="xs:string"/>
   <xs:element name="template" type="xs:NCName"/>
   <xs:element name="task_count" type="xs:NMTOKEN"/>
   <xs:element name="dependency" type="xs:string"/>
