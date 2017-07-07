@@ -316,11 +316,17 @@ def parse_test_name(test_name):
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test-mods')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', 'test/mods']
+    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods')
+    Traceback (most recent call last):
+        ...
+    SystemExit: ERROR: Expected 4th item of 'SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods' ('A_XLND_SICE_SOCN_XROF_XGLC_SWAV') to be in form machine_compiler
+    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods')
+    Traceback (most recent call last):
+        ...
+    SystemExit: ERROR: Invalid compset name 2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV
     """
     rv = [None] * 7
     num_dots = test_name.count(".")
-    expect(num_dots <= 4,
-           "'{}' does not look like a CIME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]".format(test_name))
 
     rv[0:num_dots+1] = test_name.split(".")
     testcase_field_underscores = rv[0].count("_")
@@ -332,6 +338,8 @@ def parse_test_name(test_name):
         rv[1]    = full_str.split("_")[1:]
 
     if (num_dots >= 3):
+        expect(check_name( rv[3] ), "Invalid compset name {}".format(rv[3]))
+
         expect(rv[4].count("_") == 1,
                "Expected 4th item of '{}' ('{}') to be in form machine_compiler".format(test_name, rv[4]))
         rv[4:5] = rv[4].split("_")
@@ -339,6 +347,9 @@ def parse_test_name(test_name):
 
     if (rv[-1] is not None):
         rv[-1] = rv[-1].replace("-", "/")
+
+    expect(num_dots <= 4,
+           "'{}' does not look like a CIME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]".format(test_name))
 
     return rv
 
