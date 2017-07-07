@@ -10,7 +10,7 @@ module dcmip16_wrapper
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
 use dcmip12_wrapper,      only: pressure_thickness, set_tracers, get_evenly_spaced_z, set_hybrid_coefficients
-use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type
+use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type, use_moisture
 use baroclinic_wave,      only: baroclinic_wave_test
 use supercell,            only: supercell_init, supercell_test, supercell_z
 use tropical_cyclone,     only: tropical_cyclone_test
@@ -55,7 +55,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   integer,  parameter :: use_zcoords  = 0                               ! use vertical pressure coordinates
   integer,  parameter :: is_deep      = 0                               ! use shallow atmosphere approximation
   integer,  parameter :: pertt        = 0                               ! use exponential perturbation type
-  integer,  parameter :: use_moisture = 1                               ! use moist version
+  integer :: moist                                               ! use moist version
   real(rl), parameter :: dcmip_X      = 1.0_rl                          ! full scale planet
 
   integer :: i,j,k,ie                                                   ! loop indices
@@ -65,6 +65,8 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   real(rl), dimension(np,np):: ps, phis
   real(rl), dimension(np,np,nlev,5):: q
 
+  moist = 0
+  if (use_moisture) moist=1
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 1: moist baroclinic wave'
 
@@ -86,7 +88,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
         q(i,j,k,:) = 0.0d0
         w(i,j,k)   = 0.0d0
 
-        call baroclinic_wave_test(is_deep,use_moisture,pertt,dcmip_X,lon,lat,p(i,j,k),&
+        call baroclinic_wave_test(is_deep,moist,pertt,dcmip_X,lon,lat,p(i,j,k),&
             z(i,j,k),use_zcoords,u(i,j,k),v(i,j,k),T(i,j,k),thetav(i,j,k),phis(i,j),ps(i,j),rho(i,j,k),q(i,j,k,1))
 
         ! initialize tracer chemistry

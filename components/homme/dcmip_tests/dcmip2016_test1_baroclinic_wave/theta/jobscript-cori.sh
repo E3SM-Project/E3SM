@@ -17,7 +17,7 @@ NCPU=640
 
 date
 
-cp -f namelist-r100.nl input.nl
+cp -f namelist-r100-wet.nl input.nl
 srun -n $NCPU $EXEC < input.nl
 
 date

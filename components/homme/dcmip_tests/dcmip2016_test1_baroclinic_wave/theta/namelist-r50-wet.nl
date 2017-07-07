@@ -6,20 +6,20 @@
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2016_test1"         ! test identifier
-  ne                = 30                        ! number of elements per cube face
+  ne                = 60                        ! number of elements per cube face
   qsize             = 5                         ! num tracer fields
   ndays             = 30
   statefreq         = 10                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
-  tstep             = 100                       ! largest timestep in seconds
+  tstep             = 50                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5
   rsplit            = 3
   qsplit            = 1
-  nu                = 1e15                      ! default= 1e15*(ne30/ne30)**3.2 = 1e15
-  nu_s              = 1e15
-  nu_p              = 1e15
+  nu                = 1.1e14                      ! default= 1e15*(ne30/ne60)**3.2 = 1.1e14
+  nu_s              = 1.1e14
+  nu_p              = 1.1e14
   nu_top            = 0                         ! default = 2.5e5
   limiter_option    = 8
   hypervis_order    = 2                         ! 2 = hyperviscosity
@@ -35,6 +35,7 @@
   vfile_int         = "../vcoord/cami-30.ascii"
 /
 &analysis_nl
+  output_prefix     = "r50-wet-"
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 2,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
   output_frequency  = 6                         ! every 3 hours
@@ -42,8 +43,8 @@
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16
-  interp_nlon       = 360
-  interp_nlat       = 181
+  interp_nlon       = 720
+  interp_nlat       = 361
 /
 &prof_inparm
   profile_outpe_num   = 100
