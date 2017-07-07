@@ -8,22 +8,38 @@
 !
 module prim_advance_mod
 
-  use control_mod,    only: qsplit,rsplit, use_moisture, use_cpstar, theta_hydrostatic_mode
-  use derivative_mod, only: derivative_t
-  use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
-  use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
-  use element_mod,    only: element_t
-  use element_ops,    only: get_pnh_and_exner, set_hydrostatic_phi, get_kappa_star,&
-       get_cp_star, get_temperature, set_theta_ref, copy_state
-  use hybrid_mod,     only: hybrid_t
-  use hybvcoord_mod,  only: hvcoord_t
-  use kinds,          only: real_kind, iulog
-  use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
-  use parallel_mod,   only: abortmp, parallel_t, iam
-  use time_mod,       only: timelevel_t
-  use test_mod,       only: set_prescribed_wind
-  use hevi_mod,       only: state_save,state_read,backsubstitution,mgs,elemstate_add
+  use bndry_mod,          only: bndry_exchangev
+  use control_mod,        only: dcmip16_mu, dcmip16_mu_s, hypervis_order, hypervis_subcycle,&
+    integration, nu, nu_div, nu_p, nu_s, nu_top, prescribed_wind, qsplit, rsplit, test_case,&
+    theta_hydrostatic_mode, tstep_type, use_moisture, use_cpstar
+  use derivative_mod,     only: derivative_t, divergence_sphere, gradient_sphere, laplace_sphere_wk,&
+    laplace_z, vorticity_sphere, vlaplace_sphere_wk 
+  use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes
+  use dimensions_mod,     only: max_corner_elem, nelemd, nlev, nlevp, np, qsize
+  use edge_mod,           only: edgeDGVunpack, edgevpack, edgevunpack, initEdgeBuffer
+  use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
+  use element_mod,        only: element_t
+  use element_ops,        only: copy_state, get_cp_star, get_kappa_star, get_pnh_and_exner,&
+    get_temperature, set_hydrostatic_phi, set_theta_ref, state0
+  use hevi_mod,           only: backsubstitution, elemstate_add, mgs, state_save,state_read
+  use hybrid_mod,         only: hybrid_t
+  use hybvcoord_mod,      only: hvcoord_t
+  use kinds,              only: iulog, real_kind
+  use perf_mod,           only: t_adj_detailf, t_barrierf, t_startf, t_stopf ! _EXTERNAL
+  use parallel_mod,       only: abortmp, global_shared_buf, global_shared_sum, iam, parallel_t
+  use physical_constants, only: Cp, cp, cpwater_vapor, g, kappa, Rgas, Rwater_vapor, p0 
+  use physics_mod,        only: virtual_specific_heat, virtual_temperature
+  use prim_si_mod,        only: preq_vertadv_upwind, preq_vertadv_v, preq_hydrostatic_v2, preq_omega_ps
+  use reduction_mod,      only: parallelmax, reductionbuffer_ordered_1d_t
+  use time_mod,           only: timelevel_qdp, timelevel_t
+  use test_mod,           only: set_prescribed_wind
+  use viscosity_theta,    only: biharmonic_wk_theta
 
+#ifdef TRILINOS
+    use prim_derived_type_mod ,only : derived_type, initialize
+    use, intrinsic :: iso_c_binding
+#endif
+ 
   implicit none
   private
   save
@@ -36,10 +52,12 @@ module prim_advance_mod
 
 contains
 
+
+
+
+
   subroutine prim_advance_init1(par, elem,integration)
-    use edge_mod, only : initEdgeBuffer
-    implicit none
-    
+        
     type (parallel_t) :: par
     type (element_t), intent(inout), target   :: elem(:)
     character(len=*)    , intent(in) :: integration
@@ -56,7 +74,7 @@ contains
     if(mod(qsplit,2).NE.0)then
        ur_weights(1)=1.0d0/qsplit
        do i=3,qsplit,2
-         ur_weights(i)=2.0d0/qsplit
+        ur_weights(i)=2.0d0/qsplit
        enddo
     else
        do i=2,qsplit,2
@@ -65,6 +83,9 @@ contains
     endif
 
   end subroutine prim_advance_init1
+
+
+
 
 
   subroutine vertical_mesh_init2(elem, nets, nete, hybrid, hvcoord)
@@ -79,23 +100,10 @@ contains
   end subroutine vertical_mesh_init2
 
 
+
+
   !_____________________________________________________________________
   subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
-
-    use bndry_mod,      only: bndry_exchangev
-    use control_mod,    only: prescribed_wind, qsplit, tstep_type, &
-                              qsplit, integration, hypervis_order, nu, dcmip16_mu, dcmip16_mu_s
-    use edge_mod,       only: edgevpack, edgevunpack, initEdgeBuffer
-    use edgetype_mod,   only: EdgeBuffer_t
-    use reduction_mod,  only: reductionbuffer_ordered_1d_t, parallelmax
-    use time_mod,       only: timelevel_qdp
-
-#ifdef TRILINOS
-    use prim_derived_type_mod ,only : derived_type, initialize
-    use, intrinsic :: iso_c_binding
-#endif
-
-    implicit none
 
     type (element_t),      intent(inout), target :: elem(:)
     type (derivative_t),   intent(in)            :: deriv
@@ -233,7 +241,7 @@ contains
        call compute_andor_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,0.d0,1.d0)
  
-      maxiter=1000
+      maxiter=4
       itertol=1e-8
       call compute_stage_value_dirk(np1,n0,qn0,dt,elem,hvcoord,hybrid,&
        deriv,nets,nete,maxiter,itertol)
@@ -256,11 +264,12 @@ contains
       ! form un0+dt*gamma*n(g1) and store at n0
       call elemstate_add(elem,statesave,nets,nete,1,n0,np1,n0,gamma,1.d0,0.d0)
                              
-      maxiter=1000
-      itertol=1e-9
+      maxiter=10
+      itertol=1e-15
       ! solve g2 = un0 + dt*gamma*n(g1)+dt*gamma*s(g2) for g2 and save at nm1
       call compute_stage_value_dirk(nm1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,maxiter,itertol)
+        deriv,nets,nete,maxiter,itertol)
+!      print *, 'num iters  ', maxiter
 !=== End of Phase 1 ====
 ! at this point, g2 is at nm1, un0+dt*gamma*n(g1) is at n0, and dt*n(g1) is at np1
                 
@@ -284,13 +293,14 @@ contains
       ! form un0+dt*(1-gamma)*(n(g2)+s(g2)) at nm1
       call elemstate_add(elem,statesave,nets,nete,3,nm1,np1,nm1,1.d0-gamma,1.d0-gamma,1.d0)
                        
-      maxiter=1000
-      itertol=1e-9
+      maxiter=10
+      itertol=1e-15
       !	solve g3 = (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2)+dt*gamma*s(g3)
       ! for g3 using (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2) as initial guess
       ! and save at np1
       call compute_stage_value_dirk(np1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
-       deriv,nets,nete,maxiter,itertol)
+        deriv,nets,nete,maxiter,itertol)
+!      print *, 'num iters  ', maxiter
 !=== End of Phase 2 ===
 ! at this point, un0+dt*(1-gamma)*(n(g2)+s(g2)) is at nm1, g3 is at np1, and n0 is free
        
@@ -322,7 +332,8 @@ contains
     if (dcmip16_mu>0) call advance_physical_vis(edge6,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt,dcmip16_mu_s,dcmip16_mu)
 
     call t_stopf('prim_advance_exp')
-    end subroutine prim_advance_exp
+  end subroutine prim_advance_exp
+
 
 
 
@@ -422,17 +433,16 @@ contains
      elem(ie)%state%theta_dp_cp(:,:,:,np1) = temperature(:,:,:)*cp_star(:,:,:)&
           *dp(:,:,:)/exner(:,:,:)
 
-  enddo
-  call applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+    enddo
+    call applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
   end subroutine applyCAMforcing
 
 
 
-  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-  use physical_constants, only: Cp
-  use hybvcoord_mod,  only: hvcoord_t
 
-  implicit none
+
+  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+
   type (element_t)     ,  intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
@@ -448,6 +458,8 @@ contains
 
 
 
+
+
   subroutine advance_hypervis(edgebuf,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)
   !
   !  take one timestep of:
@@ -458,15 +470,6 @@ contains
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
   !
   !
-  use control_mod, only : nu, nu_div, hypervis_subcycle, nu_s, nu_p, nu_top
-  use hybvcoord_mod, only : hvcoord_t
-  use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
-  use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
-  use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
-  use bndry_mod, only : bndry_exchangev
-  use viscosity_theta, only : biharmonic_wk_theta
-  use physical_constants, only: Cp,p0,kappa,g
-  implicit none
 
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
@@ -755,11 +758,6 @@ endif
 
 
 
-
-
-
-
-
   subroutine advance_physical_vis(edgebuf,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt,mu_s,mu)
   !
   !  take one timestep of of physical viscosity (single laplace operator) for
@@ -772,16 +770,6 @@ endif
   !     uniform spacing in z with delz = 20km/nlev
   !
   !
-  use control_mod,      only: test_case
-  use hybvcoord_mod,    only: hvcoord_t
-  use derivative_mod,   only: derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, laplace_z
-  use edge_mod,         only: edgevpack, edgevunpack, edgeDGVunpack
-  use edgetype_mod,     only: EdgeBuffer_t, EdgeDescriptor_t
-  use bndry_mod,        only: bndry_exchangev
-  use viscosity_theta,  only: biharmonic_wk_theta
-  use element_ops,      only: state0
-  use physical_constants, only: Cp,p0,kappa,g
-  implicit none
 
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
@@ -917,8 +905,6 @@ endif
 
 
 
-
-
 !============================ stiff and or non-stiff ============================================
 
  subroutine compute_andor_apply_rhs(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
@@ -937,18 +923,6 @@ endif
   !
   ! ===================================
 
-  use kinds,          only : real_kind
-  use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
-  use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
-  use edge_mod,       only : edgevpack, edgevunpack, edgeDGVunpack
-  use edgetype_mod,   only : edgedescriptor_t
-  use bndry_mod,      only : bndry_exchangev
-  use hybvcoord_mod,  only : hvcoord_t
-  use physics_mod,    only : virtual_specific_heat, virtual_temperature
-  use prim_si_mod,    only : preq_vertadv_v, preq_vertadv_upwind, preq_omega_ps, preq_hydrostatic_v2
-  use physical_constants, only : cp, cpwater_vapor, Rgas, kappa, Rwater_vapor,p0, g
-
-  implicit none
   integer,              intent(in) :: np1,nm1,n0,qn0,nets,nete
   real*8,               intent(in) :: dt2
   logical,              intent(in) :: compute_diagnostics
@@ -1399,6 +1373,10 @@ endif
   call t_stopf('compute_andor_apply_rhs')
 
   end subroutine compute_andor_apply_rhs
+
+
+
+
  
 !===========================================================================================================
 !===========================================================================================================
@@ -1416,19 +1394,6 @@ endif
   ! It is assumed that un0 has the value of y and the computed value of gi is stored at 
   ! unp1
   !===================================================================================
-  use kinds, only : real_kind
-  use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
-  use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
-  use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
-  use edgetype_mod, only : edgedescriptor_t
-  use bndry_mod, only : bndry_exchangev
-  use hybvcoord_mod, only : hvcoord_t
-
-  use physical_constants, only : cp, cpwater_vapor, Rgas, kappa, Rwater_vapor,p0, g
-  use physics_mod, only : virtual_specific_heat, virtual_temperature
-  use prim_si_mod, only : preq_vertadv_v, preq_vertadv_upwind, preq_omega_ps, preq_hydrostatic_v2
-
-  implicit none
   integer, intent(in) :: np1,n0,qn0,nets,nete
   real*8, intent(in) :: dt2
   integer :: maxiter
@@ -1443,31 +1408,25 @@ endif
   real (kind=real_kind), pointer, dimension(:,:,:)   :: phi
   real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
   real (kind=real_kind), pointer, dimension(:,:,:)   :: theta_dp_cp
-   
-  real (kind=real_kind) :: kappa_star(np,np,nlev)
+  real (kind=real_kind), pointer, dimension(:,:)   :: phis
+  real (kind=real_kind) :: JacD(nlev,np,np)  , JacL(nlev-1,np,np)
+  real (kind=real_kind) :: JacU(nlev-1,np,np), JacU2(nlev-2,np,np)  
+  real (kind=real_kind) :: kappa_star(np,np,nlev),kappa_star_i(np,np,nlevp)
   real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
   real (kind=real_kind) :: dpnh(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
-  real (kind=real_kind) :: dpnh_dp(np,np,nlev),dpnh_dp2(np,np,nlev)    !    ! dpnh / dp3d  
-  real (kind=real_kind) :: temp(np,np,nlev)
-  real (kind=real_kind) :: Jac(np,np,2*nlev,2*nlev), Q(np,np,2*nlev,2*nlev)
-  real (kind=real_kind) :: R(np,np,2*nlev,2*nlev), Qt(2*nlev,2*nlev)
-  real (kind=real_kind) :: e(np,np,2*nlev)
-  real (kind=real_kind) :: Fn(np,np,2*nlev,1),x(np,np,2*nlev,1),epsie
-  real (kind=real_kind) :: dFn(np,np,2*nlev,1)
-  real (kind=real_kind) :: QtFn(np,np,2*nlev,1), Fntemp(2*nlev,1)
-  real (kind=real_kind) :: res(np,np,2*nlev),resnorm,resnormmax
+  real (kind=real_kind) :: dpnh_dp(np,np,nlev)    !    ! dpnh / dp3d  
+  real (kind=real_kind) :: Ipiv(nlev,np,np)
+  real (kind=real_kind) :: Fn(np,np,2*nlev,1),x(nlev)
+  real (kind=real_kind) :: pnh_i(np,np,nlevp),exner_i(np,np,nlevp)
+  real (kind=real_kind) :: itererr,resnorm,itererrmat,itercountmax,itererrmax
+  real (kind=real_kind) :: alpha1(np,np),alpha2(np,np) 
 
-  real (kind=real_kind) ::  itererr, itererrmax
-  integer :: i,j,k,l,ie,itercount,itercountmax
+  integer :: i,j,k,l,ie,itercount,info(np,np)
+!  itercountmax=0
+!  itererrmax=0.d0
 
-  itercountmax=1
-  itererrmax=0.d0
-  resnormmax=0.d0
-
-  epsie=1e-4
   call t_startf('compute_stage_value_dirk')
-
   do ie=nets,nete 
     elem(ie)%state%v(:,:,1,:,np1)         = elem(ie)%state%v(:,:,1,:,n0)  
     elem(ie)%state%v(:,:,2,:,np1)         = elem(ie)%state%v(:,:,2,:,n0)
@@ -1476,92 +1435,133 @@ endif
     elem(ie)%state%theta_dp_cp(:,:,:,np1) = elem(ie)%state%theta_dp_cp(:,:,:,n0)
     elem(ie)%state%dp3d(:,:,:,np1)        = elem(ie)%state%dp3d(:,:,:,n0)
 
-    itercount=1
-    itererr = 2.0*itertol      
-    
-    do while ((itercount < maxiter).and.((itererr > itertol).or.(resnorm > itertol*1.d2)) )
-      
-      dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
-      theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,np1)
-      phi => elem(ie)%state%phi(:,:,:,np1)
-        
-      if (theta_hydrostatic_mode) then
-        dpnh_dp(:,:,:)=1.d0
-      else   
-        call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)   
-        call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
-        kappa_star,pnh,dpnh,exner)   
-        dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
-      end if
-                
-      Fn(:,:,1:nlev,1) = elem(ie)%state%w(:,:,:,np1)-elem(ie)%state%w(:,:,:,n0) &
-        +dt2*g*(1.0-dpnh_dp(:,:,:))
-                
-      Fn(:,:,nlev+1:2*nlev,1) = elem(ie)%state%phi(:,:,:,np1)-elem(ie)%state%phi(:,:,:,n0) &
-        -dt2*g*elem(ie)%state%w(:,:,:,np1)      
-  
+    itercount=0
+
+    ! approximate the initial error of f(x) \approx 0
+    dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
+    theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,np1)
+    phi => elem(ie)%state%phi(:,:,:,np1)
+
+    call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+    call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
+      kappa_star,pnh,dpnh,exner,exner_i,pnh_i)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
-      do k=1,2*nlev
-           
-        e(:,:,:)=0.0   
-        e(:,:,k)=1.0  
-           
-        if (theta_hydrostatic_mode) then
-          dpnh_dp2(:,:,:)=1.d0
-        else            
-         ! compute the new dpnh_dp at the perturbed values
-         ! use the pointers onl
-          phi(:,:,:)=phi(:,:,:)+epsie*e(:,:,nlev+1:2*nlev)                  
-          call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&     
-            kappa_star,pnh,dpnh,exner) 
-          dpnh_dp2(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
-          phi(:,:,:)=phi(:,:,:)-epsie*e(:,:,nlev+1:2*nlev)
-        end if    
+    do k=1,nlev-1
+      kappa_star_i(:,:,k+1) = 0.5D0* (kappa_star(:,:,k+1)+kappa_star(:,:,k))
+    end do
+    kappa_star_i(:,:,1) = kappa_star(:,:,1)
+    kappa_star_i(:,:,nlev+1) = kappa_star(:,:,nlev)
 
-       ! Form the approximate Jacobian
-        Jac(:,:,1:nlev,k)=e(:,:,1:nlev)+dt2*g*(dpnh_dp(:,:,:)-dpnh_dp2(:,:,:))/epsie 
-        Jac(:,:,nlev+1:2*nlev,k)=e(:,:,nlev+1:2*nlev)-dt2*g*e(:,:,1:nlev)
-      end do
+    if (theta_hydrostatic_mode) then
+      dpnh_dp(:,:,:) = 1.d0
+    else
+      dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
+    end if
+
+    Fn(:,:,1:nlev,1) = elem(ie)%state%w(:,:,:,np1)-elem(ie)%state%w(:,:,:,n0) &
+      +dt2*g*(1.0-dpnh_dp(:,:,:))
+    Fn(:,:,nlev+1:2*nlev,1) = elem(ie)%state%phi(:,:,:,np1)-elem(ie)%state%phi(:,:,:,n0) &
+      -dt2*g*elem(ie)%state%w(:,:,:,np1)
+
+    resnorm=maxval(abs(Fn))/max( maxval(abs(elem(ie)%state%w(:,:,:,np1))), &
+      maxval(abs(elem(ie)%state%phi(:,:,:,np1))))
+    itererr=resnorm
+    phis => elem(ie)%state%phis(:,:)
+    do while ((itercount < maxiter).and.((itererr > itertol).or.(resnorm > itertol)) )
  
-      call mgs(Jac,Q,R)
-    
-      do i=1,np
-        do j=1,np
-          Qt(:,:)=Q(i,j,:,:)
-          Fntemp(:,1)=Fn(i,j,:,1)
-          Qt=transpose(Qt)
-          Fntemp=matmul(Qt,Fntemp)
-          QtFn(i,j,:,1) = Fntemp(:,1)
-        end do
-      end do               
-                        
-      call backsubstitution(R,-QtFn,x)
+      info(:,:) = 0
+! these next loops form the tridiagonal analytic Jacobian (we actual form the diagonal, sub-, and super-diagonal
+! of Jacobian + I/(g*dt2) and then use a LApack tridiagonal LU factorization and solver to solve  J * x = -f
+! thread over i and j rather than  k and add omp collapse make itercount, itererr, and resnorm private
+! move dowhile into the i,j loop and remove ie dependence, get rid of pointers, remove i,j dependence on jacobians
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,alpha1,alpha2)
+#endif
+      do k=1,nlev
+      ! this code will need to change when the equation of state is changed.
+      ! precompute the kappa_star, and add special cases for k==1 and k==nlev+1
+        if (k==1) then
+          alpha2(:,:)    = 1.d0 + kappa_star_i(:,:,k+1)/(1.d0-kappa_star_i(:,:,k+1))
+          JacD(k,:,:)    = dt2*g*alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k)-phi(:,:,k+1))* &
+            dp3d(:,:,k))+1.d0/(g*dt2)
+          JacU(k,:,:)    = dt2*g*alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k+1)-phi(:,:,k)) &
+            *dp3d(:,:,k))
+        elseif (k==nlev) then
+          alpha1(:,:)    = 1.d0 + kappa_star_i(:,:,k)/(1.d0-kappa_star_i(:,:,k))
+          JacL(k-1,:,:)  = dt2*g*(alpha1(:,:)*pnh_i(:,:,k)/((phi(:,:,k)-phi(:,:,k-1))*dp3d(:,:,k)))
+          JacD(k,:,:)    = dt2*g*(  alpha1(:,:)*pnh_i(:,:,k+1)/(phi(:,:,k)-phis(:,:) ) +  &
+            alpha1(:,:)*pnh_i(:,:,k)/(phi(:,:,k-1)-phi(:,:,k)) )/dp3d(:,:,k) + 1.d0/(dt2*g)
+        else
+          alpha1(:,:)   = 1.d0 + kappa_star_i(:,:,k)/(1.d0-kappa_star_i(:,:,k))
+          alpha2(:,:)   = 1.d0 + kappa_star_i(:,:,k+1)/(1.d0-kappa_star_i(:,:,k+1))
+          JacL(k-1,:,:) = dt2*g*alpha1(:,:)*pnh_i(:,:,k)/((phi(:,:,k)-phi(:,:,k-1))*dp3d(:,:,k))
+          JacD(k,:,:)   = dt2*g*(alpha2(:,:)*pnh_i(:,:,k+1)/(phi(:,:,k)-phi(:,:,k+1)) + &
+            alpha1(:,:)*pnh_i(:,:,k)/(phi(:,:,k-1)-phi(:,:,k)))/dp3d(:,:,k)+1.d0/(g*dt2)
+          JacU(k,:,:)   = dt2*g*(alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k+1)-phi(:,:,k))*dp3d(:,:,k)))
+        end if
+      end do
 
-      elem(ie)%state%w(:,:,:,np1)  = elem(ie)%state%w(:,:,:,np1) + x(:,:,1:nlev,1)                          
-      elem(ie)%state%phi(:,:,:,np1) = elem(ie)%state%phi(:,:,:,np1) + x(:,:,nlev+1:2*nlev,1)                          
-      itererr=norm2(x)
-      resnorm=norm2(Fn)
-      itercount=itercount+1
-      if (itercount > itercountmax) then
-        itercountmax=itercount
-      endif
-      if (itererr > itererrmax) then 
-        itererrmax=itererr
-      end if 
-      if (resnorm > resnormmax) then 
-        resnormmax = resnorm
-      end if 
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(i,j) collapse(2)
+#endif
+    do i=1,np
+      do j=1,np
+        x(1:nlev) = -(Fn(i,j,1:nlev,1)+Fn(i,j,nlev+1:2*nlev,1)/(g*dt2))
+! make all :,i,j
+        call DGTTRF(nlev, JacL(:,i,j), JacD(:,i,j),JacU(:,i,j),JacU2(:,i,j), Ipiv(:,i,j), info(i,j) )
+        ! Tridiagonal solve 
+        call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), Ipiv(:,i,j),x(:), nlev, info(i,j) )
+
+       ! update approximate solution
+       elem(ie)%state%w(i,j,1:nlev,np1)   = elem(ie)%state%w(i,j,1:nlev,np1) + &
+        (x(1:nlev)+Fn(i,j,nlev+1:2*nlev,1))/(g*dt2)
+       elem(ie)%state%phi(i,j,1:nlev,np1) = elem(ie)%state%phi(i,j,1:nlev,np1) + x(1:nlev)                          
+      end do
+    end do
+#if (defined COLUMN_OPENMP)
+!$omp end parallel do
+#endif
+
+      ! update approximate value of f(x) \approx  0
+      call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
+        kappa_star,pnh,dpnh,exner,exner_i,pnh_i)   
+      if (theta_hydrostatic_mode) then
+        dpnh_dp(:,:,:) = 1.d0
+      else     
+        dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
+      end if
+
+      ! update right-hand sides
+      Fn(:,:,1:nlev,1)        = elem(ie)%state%w(:,:,:,np1)-elem(ie)%state%w(:,:,:,n0) &
+        +dt2*g*(1.0-dpnh_dp(:,:,:))    
+      Fn(:,:,nlev+1:2*nlev,1) = elem(ie)%state%phi(:,:,:,np1)-elem(ie)%state%phi(:,:,:,n0) &
+        -dt2*g*elem(ie)%state%w(:,:,:,np1)      
+
+      ! compute relative errors
+      itererr=maxval(abs(x))/max( maxval(abs(elem(ie)%state%w(:,:,:,np1))), maxval(abs(elem(ie)%state%phi(:,:,:,np1))))
+      resnorm=maxval(abs(Fn))/max( maxval(abs(elem(ie)%state%w(:,:,:,np1))), maxval(abs(elem(ie)%state%phi(:,:,:,np1))))
+       
+      ! update iteration count and error measure
+      itercount=itercount+1 
+      itererrmat=max(itererr,resnorm)
+
+!     print *, itererrmat, itercount
+
     end do ! end do for the do while loop
+!  the following two if-statements are for debugging/testing purposes to track the number of iterations and error attained
+!  by the Newton iteration       
+!      if (itercount > itercountmax) then
+!        itercountmax=itercount
+!      end if
+!      if (itererrmat > itererrmax) then
+!        itererrmax = itererrmat
+!      end if
+
   end do ! end do for the ie=nets,nete loop
-  maxiter=itercountmax
-  if (itererrmax > resnormmax) then 
-    itertol=itererrmax
-  else
-    itertol= resnormmax
-  end if 
-  
+
+!  print *, itercountmax, itererrmax
   call t_stopf('compute_stage_value_dirk')
 
   end subroutine compute_stage_value_dirk
