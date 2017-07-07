@@ -353,6 +353,11 @@ OR
     if args.input_dir is not None:
         args.input_dir = os.path.abspath(args.input_dir)
 
+    # sanity check
+    for name in test_names:
+        dot_count = name.count('.')
+        expect(dot_count > 1 and dot_count <= 4, "Invalid test Name, '{}'".format(name))
+
     return test_names, test_extra_data, args.compiler, mach_obj.get_machine_name(), args.no_run, args.no_build, args.no_setup, args.no_batch,\
         args.test_root, args.baseline_root, args.clean, baseline_cmp_name, baseline_gen_name, \
         args.namelists_only, args.project, args.test_id, args.parallel_jobs, args.walltime, \

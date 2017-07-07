@@ -298,7 +298,9 @@ def normalize_case_id(case_id):
 def parse_test_name(test_name):
     """
     Given a CIME test name TESTCASE[_CASEOPTS].GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]],
-    return each component of the testname with machine and compiler split
+    return each component of the testname with machine and compiler split.
+    Do not error if a partial testname is provided (TESTCASE or TESTCASE.GRID) instead
+    parse and return the partial results.
 
     >>> parse_test_name('ERS')
     ['ERS', None, None, None, None, None, None]
