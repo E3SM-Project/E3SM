@@ -9,7 +9,6 @@
                 <option name="config_default_flowParamA">3.1689e-24</option>
 
                 <option name="config_SGH">.true.</option>
-                <option name="config_SGH_adaptive_timestep">.true.</option>
                 <option name="config_SGH_adaptive_timestep_fraction">0.5</option>
                 <option name="config_SGH_max_adaptive_timestep">31536000</option>
                 <option name="config_SGH_alpha">1.0</option>

@@ -9,7 +9,6 @@
                 <option name="config_default_flowParamA">2.5e-25</option>
 
                 <option name="config_SGH">.true.</option>
-                <option name="config_SGH_adaptive_timestep">.true.</option>
                 <option name="config_SGH_adaptive_timestep_fraction">0.9</option>
                 <option name="config_SGH_max_adaptive_timestep">864000.0</option>
                 <option name="config_SGH_tangent_slope_calculation">'from_vertex_barycentric_kiteareas'</option>
