@@ -888,6 +888,7 @@ module li_subglacial_hydro
       real(kind=RKIND), pointer :: maxDt
       real(kind=RKIND) :: proposedDt
       real(kind=RKIND) :: masterDt
+      real(kind=RKIND), dimension(5) :: localMinValues, reducedMinValues
 
 
       err = 0
@@ -959,16 +960,25 @@ module li_subglacial_hydro
       ! ---
       ! reduce across procs
       ! ---
-      ! TODO Pack these into array so only need 1 comm?
-      call mpas_timer_start("global reduce")
-      call mpas_dmpar_min_real(domain % dminfo, dtSGHadvecProc, deltatSGHadvec)
-      call mpas_dmpar_min_real(domain % dminfo, dtSGHdiffuProc, deltatSGHdiffu)
-      call mpas_dmpar_min_real(domain % dminfo, dtSGHpressureProc, deltatSGHpressure)
+      localMinValues(1) = dtSGHadvecProc
+      localMinValues(2) = dtSGHdiffuProc
+      localMinValues(3) = dtSGHpressureProc
       if (config_SGH_chnl_active) then
-         call mpas_dmpar_min_real(domain % dminfo, dtSGHadvecChanProc, deltatSGHadvecChannel)
-         call mpas_dmpar_min_real(domain % dminfo, dtSGHdiffuChanProc, deltatSGHdiffuChannel)
+         localMinValues(4) = dtSGHadvecChanProc
+         localMinValues(5) = dtSGHdiffuChanProc
+         call mpas_timer_start("global reduce")
+         call mpas_dmpar_min_real_array(domain % dminfo, 5, localMinValues, reducedMinValues)
+         call mpas_timer_stop("global reduce")
+         deltatSGHadvecChannel = reducedMinValues(4)
+         deltatSGHdiffuChannel = reducedMinValues(5)
+      else
+         call mpas_timer_start("global reduce")
+         call mpas_dmpar_min_real_array(domain % dminfo, 3, localMinValues(1:3), reducedMinValues(1:3))
+         call mpas_timer_stop("global reduce")
       endif
-      call mpas_timer_stop("global reduce")
+      deltatSGHadvec = reducedMinValues(1)
+      deltatSGHdiffu = reducedMinValues(2)
+      deltatSGHpressure = reducedMinValues(3)
 
 
       ! ---
