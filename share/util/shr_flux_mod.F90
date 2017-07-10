@@ -189,6 +189,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
    !--- local variables --------------------------------
    integer(IN) :: n      ! vector loop index
    real(R8)    :: vmag   ! surface wind magnitude   (m/s)
+   real(R8)    :: vmag_old   ! surface wind magnitude without gustiness (m/s)
    real(R8)    :: thvbot ! virtual temperature      (K)
    real(R8)    :: ssq    ! sea surface humidity     (kg/kg)
    real(R8)    :: delt   ! potential T difference   (K)
@@ -283,8 +284,16 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
 
         !--- vmag+ugust (convective gustiness) Limit to a max precip 6 cm/day = 0.00069444 mm/s.
         !--- reverts to original formula if gust_fac=0 
-        vmag   = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) +  ugust(min(prec_gust(n),6.94444e-4_R8)))
 
+        !PMA saves vmag_old for taux tauy computation 
+
+        vmag_old    = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
+
+        if (gust_fac .gt. 1.e-12_R8) then
+         vmag       = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) + ugust(min(prec_gust(n),6.94444e-4_R8)))
+        else
+         vmag       = vmag_old
+        endif
 
         thvbot = thbot(n) * (1.0_R8 + loc_zvir * qbot(n)) ! virtual temp (K)
         ssq    = 0.98_R8 * qsat(ts(n)) / rbot(n)   ! sea surf hum (kg/kg)
@@ -377,8 +386,8 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
         tau = rbot(n) * ustar * ustar 
        
         !--- momentum flux ---
-        taux(n) = tau * (ubot(n)-us(n)) / vmag 
-        tauy(n) = tau * (vbot(n)-vs(n)) / vmag 
+        taux(n) = tau * (ubot(n)-us(n)) / vmag_old !PMA uses vmag_old for taux 
+        tauy(n) = tau * (vbot(n)-vs(n)) / vmag_old !    tauy c20170620
         
         !--- heat flux ---
         sen (n) =          cp * tau * tstar / ustar 
