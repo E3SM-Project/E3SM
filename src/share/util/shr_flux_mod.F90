@@ -282,7 +282,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
         ! old version
         !vmag   = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
 
-        !--- vmag+ugust (convective gustiness) Limit to a max precip 6 cm/day = 0.00069444 mm/s.
+        !--- vmag+ugust (convective gustiness) Limit to a max precip 6 cm/day = 0.00069444 m/s.
         !--- reverts to original formula if gust_fac=0 
 
         !PMA saves vmag_old for taux tauy computation 
