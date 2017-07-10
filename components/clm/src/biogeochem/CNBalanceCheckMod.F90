@@ -440,6 +440,7 @@ contains
          secondp_to_occlp=>    phosphorusflux_vars%secondp_to_occlp_col    , &
          fert_p_to_sminp =>    phosphorusflux_vars%fert_p_to_sminp_col     , &
  
+         som_p_leached       =>    phosphorusflux_vars%som_p_leached_col   , & ! Input:  [real(r8) (:)]  total SOM P loss from vertical transportm
          col_pinputs         =>    phosphorusflux_vars%pinputs_col         , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)         
          col_poutputs        =>    phosphorusflux_vars%poutputs_col        , & ! Output: [real(r8) (:)]  column-level P outputs (gP/m2/s)        
          col_begpb           =>    phosphorusstate_vars%begpb_col              , & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
@@ -522,6 +523,7 @@ contains
 !         col_poutputs(c) = leafp_to_litter_col(c)+frootp_to_litter_col(c)
 !         col_poutputs(c) =  flux_mineralization_col(c)/dt
 !          col_poutputs(c) = sminp_to_plant(c)
+         col_poutputs(c) = col_poutputs(c) - som_p_leached(c)
 
          ! calculate the total column-level phosphorus balance error for this time step
          col_errpb(c) = (col_pinputs(c) - col_poutputs(c))*dt - &
