@@ -74,7 +74,14 @@ def create_namelists(case, component=None):
             compname = case.get_value("COMP_{}".format(model_str.upper()))
 
         if component is None or component == model_str:
-            cmd = os.path.join(config_dir, "buildnml")
+            # first look in the case SourceMods directory
+            cmd = os.path.join(caseroot, "SourceMods", "src."+compname, "buildnml")
+            if os.path.isfile(cmd):
+                logger.warn("\nWARNING: Using local buildnml file {}\n".format(cmd))
+            else:
+                # otherwise look in the component config_dir
+                cmd = os.path.join(config_dir, "buildnml")
+            expect(os.path.isfile(cmd), "Could not find buildnml file for component {}".format(compname))
             do_run_cmd = False
             # This code will try to import and run each buildnml as a subroutine
             # if that fails it will run it as a program in a seperate shell
