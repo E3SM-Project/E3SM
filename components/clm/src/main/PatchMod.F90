@@ -3,7 +3,7 @@ module PatchMod
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use clm_varcon     , only : ispval
-  use PatchType      , only : patch_physical_properties_type, pft_pp
+  use VegetationType      , only : vegetation_physical_properties_type, veg_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -48,16 +48,16 @@ contains
 
     idx = 0
 
-    idx = idx + 1;                                   values(idx) = real( pft_pp%gridcell (p))
-    idx = idx + 1; if (.not. isnan(pft_pp%wtgcell(p))) values(idx) =       pft_pp%wtgcell  (p)
-    idx = idx + 1;                                   values(idx) = real( pft_pp%landunit (p))
-    idx = idx + 1; if (.not. isnan(pft_pp%wtlunit(p))) values(idx) =       pft_pp%wtlunit  (p)
-    idx = idx + 1;                                   values(idx) = real( pft_pp%column   (p))
-    idx = idx + 1; if (.not. isnan(pft_pp%wtcol(p)))   values(idx) =       pft_pp%wtcol    (p)
-    idx = idx + 1;                                   values(idx) = real( pft_pp%itype    (p))
-    idx = idx + 1;                                   values(idx) = real( pft_pp%mxy      (p))
+    idx = idx + 1;                                   values(idx) = real( veg_pp%gridcell (p))
+    idx = idx + 1; if (.not. isnan(veg_pp%wtgcell(p))) values(idx) =       veg_pp%wtgcell  (p)
+    idx = idx + 1;                                   values(idx) = real( veg_pp%landunit (p))
+    idx = idx + 1; if (.not. isnan(veg_pp%wtlunit(p))) values(idx) =       veg_pp%wtlunit  (p)
+    idx = idx + 1;                                   values(idx) = real( veg_pp%column   (p))
+    idx = idx + 1; if (.not. isnan(veg_pp%wtcol(p)))   values(idx) =       veg_pp%wtcol    (p)
+    idx = idx + 1;                                   values(idx) = real( veg_pp%itype    (p))
+    idx = idx + 1;                                   values(idx) = real( veg_pp%mxy      (p))
 
-    idx = idx + 1; if (pft_pp%active(p))               values(idx) = 1._r8
+    idx = idx + 1; if (veg_pp%active(p))               values(idx) = 1._r8
 
   end subroutine GetValuesForPatch
 
@@ -90,15 +90,15 @@ contains
 
     idx = 0
 
-    idx = idx + 1;                           pft_pp%gridcell (p) = int(values(idx))
-    idx = idx + 1;                           pft_pp%wtgcell  (p) =     values(idx)
-    idx = idx + 1;                           pft_pp%landunit (p) = int(values(idx))
-    idx = idx + 1;                           pft_pp%wtlunit  (p) =     values(idx)
-    idx = idx + 1;                           pft_pp%column   (p) = int(values(idx))
-    idx = idx + 1;                           pft_pp%wtcol    (p) =     values(idx)
-    idx = idx + 1;                           pft_pp%itype    (p) = int(values(idx))
-    idx = idx + 1;                           pft_pp%mxy      (p) = int(values(idx))
-    idx = idx + 1; if (values(idx) == 1._r8) pft_pp%active   (p) = .true.
+    idx = idx + 1;                           veg_pp%gridcell (p) = int(values(idx))
+    idx = idx + 1;                           veg_pp%wtgcell  (p) =     values(idx)
+    idx = idx + 1;                           veg_pp%landunit (p) = int(values(idx))
+    idx = idx + 1;                           veg_pp%wtlunit  (p) =     values(idx)
+    idx = idx + 1;                           veg_pp%column   (p) = int(values(idx))
+    idx = idx + 1;                           veg_pp%wtcol    (p) =     values(idx)
+    idx = idx + 1;                           veg_pp%itype    (p) = int(values(idx))
+    idx = idx + 1;                           veg_pp%mxy      (p) = int(values(idx))
+    idx = idx + 1; if (values(idx) == 1._r8) veg_pp%active   (p) = .true.
 
   end subroutine SetValuesForPatch
 
