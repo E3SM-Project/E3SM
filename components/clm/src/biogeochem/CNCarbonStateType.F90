@@ -1544,7 +1544,7 @@ contains
              call endrun(msg=' ERROR: for C13 must pass in c12_carbonstate_vars as argument' // errMsg(__FILE__, __LINE__))
           end if
 
-d          if ( .not. is_restart() .and. get_nstep() == 1 ) then
+          if ( .not. is_restart() .and. get_nstep() == 1 ) then
              c3_del13c = -28._r8
              c4_del13c = -13._r8
              c3_r1 = SHR_CONST_PDB + ((c3_del13c*SHR_CONST_PDB)/1000._r8)
