@@ -93,13 +93,10 @@ module li_subglacial_hydro
       !-----------------------------------------------------------------
       ! Pools pointers
       logical, pointer :: config_SGH
-      logical, pointer :: config_SGH_adaptive_timestep
-      logical, pointer :: config_adaptive_timestep
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: hydroPool
       type (mpas_pool_type), pointer :: geometryPool
-      real (kind=RKIND), pointer :: deltat
       real (kind=RKIND), pointer :: deltatSGH
       real (kind=RKIND), dimension(:), pointer :: waterThickness
       real (kind=RKIND), dimension(:), pointer :: tillWaterThickness
@@ -131,15 +128,6 @@ module li_subglacial_hydro
          err = ior(err, 1)
       endif
 
-      ! Check for valid time steppers
-      call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep', config_SGH_adaptive_timestep)
-      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
-      if (config_adaptive_timestep .and. config_SGH_adaptive_timestep) then
-         call mpas_log_write("Subglacial hydrology cannot use its own adaptive time stepper " // &
-            "if primary time stepper is adaptive.  This may be relaxed in the future.", MPAS_LOG_ERR)
-         err = ior(err, 1)
-      endif
-
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_max', tillMax)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
 
@@ -149,15 +137,11 @@ module li_subglacial_hydro
          call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
 
-         call mpas_pool_get_array(meshPool, 'deltat', deltat)
          call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
 
-         if (config_SGH_adaptive_timestep) then
-            deltatSGH = 1.0_RKIND  ! Until init is done properly, make this tiny
-         else
-            ! For now, force hydro dt to be master dt
-            deltatSGH = deltat
-         endif
+         ! Until init is done properly, make this tiny.  It will be updated at the end of the first subcycle.
+         ! TODO: Set time step appropriately on first subcycle of init
+         deltatSGH = 1.0e-4_RKIND ! in seconds
 
          ! remove invalid values - not necessary on restart, but shouldn't hurt
          call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
@@ -424,7 +408,7 @@ module li_subglacial_hydro
 
 
       ! =============
-      ! Calculate time step if being adaptive, otherwise check for CFL
+      ! Calculate adaptive time step
       ! =============
       call check_timestep(domain, timeLeft, err_tmp)
       err = ior(err, err_tmp)
@@ -531,11 +515,6 @@ module li_subglacial_hydro
 
          block => block % next
       end do
-
-
-      ! =============
-      ! Update model time
-      ! =============
 
 
       ! =============
@@ -879,7 +858,6 @@ module li_subglacial_hydro
       !-----------------------------------------------------------------
       ! Pools pointers
       type (mpas_pool_type), pointer :: meshPool
-!        type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: hydroPool
       real (kind=RKIND), dimension(:), pointer :: waterVelocity
       real (kind=RKIND), dimension(:), pointer :: channelVelocity
@@ -896,7 +874,6 @@ module li_subglacial_hydro
       type (block_type), pointer :: block
       real (kind=RKIND), pointer :: deltat
       integer, pointer :: nEdgesSolve
-      logical, pointer :: config_SGH_adaptive_timestep
       logical, pointer :: config_SGH_chnl_active
       ! in the following variables, "Proc" indicates the value on the current processor,
       ! and "Block" indicates value on current block
@@ -917,7 +894,6 @@ module li_subglacial_hydro
       err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_SGH_englacial_porosity', porosity)
-      call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep', config_SGH_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_active', config_SGH_chnl_active)
 
       dtSGHadvecProc = bigNumber
@@ -926,6 +902,9 @@ module li_subglacial_hydro
       dtSGHadvecChanProc = bigNumber
       dtSGHdiffuChanProc = bigNumber
 
+      ! ---
+      ! Find local (block) limiting dt for various CFL conditions
+      ! ---
       block => domain % blocklist
       do while (associated(block))
 
@@ -976,7 +955,10 @@ module li_subglacial_hydro
          block => block % next
       end do
 
+
+      ! ---
       ! reduce across procs
+      ! ---
       ! TODO Pack these into array so only need 1 comm?
       call mpas_timer_start("global reduce")
       call mpas_dmpar_min_real(domain % dminfo, dtSGHadvecProc, deltatSGHadvec)
@@ -989,48 +971,46 @@ module li_subglacial_hydro
       call mpas_timer_stop("global reduce")
 
 
-      ! Set time step
-      if (config_SGH_adaptive_timestep) then
-         call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep_fraction', CFLfraction)
-         call mpas_pool_get_config(liConfigs, 'config_SGH_max_adaptive_timestep', maxDt)
+      ! ---
+      ! Find and set the new hydro subcycling dt
+      ! ---
+      call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep_fraction', CFLfraction)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_max_adaptive_timestep', maxDt)
 
-         ! Find smallest of 3 or 5 limiting time steps
-         proposedDt = min(deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure)
+      ! Find smallest of 3 or 5 limiting time steps
+      proposedDt = min(deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure)
+      if (config_SGH_chnl_active) then
+         proposedDt = min(proposedDt, deltatSGHadvecChannel, deltatSGHdiffuChannel)
+      endif
+      proposedDt = proposedDt * CFLfraction
+
+
+      ! Write out dt info on the final subcycle
+      if (proposedDt >= timeLeft) then
          if (config_SGH_chnl_active) then
-            proposedDt = min(proposedDt, deltatSGHadvecChannel, deltatSGHdiffuChannel)
+            call mpas_log_write("deltatSGH: used=$r, advec=$r, diffu=$r, pressure=$r, advecChannel=$r, diffuChannel=$r", &
+              realArgs=(/deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHadvecChannel, deltatSGHdiffuChannel/))
+         else
+            call mpas_log_write("deltatSGH: used=$r, advec=$r, diffu=$r, pressure=$r", &
+              realArgs=(/deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure/))
          endif
-         proposedDt = proposedDt * CFLfraction
-
-
-         ! Write out dt info on the final subcycle
-         if (proposedDt >= timeLeft) then
-            if (config_SGH_chnl_active) then
-               call mpas_log_write("deltatSGH: used=$r, advec=$r, diffu=$r, pressure=$r, advecChannel=$r, diffuChannel=$r", &
-                 realArgs=(/deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHadvecChannel, deltatSGHdiffuChannel/))
-            else
-               call mpas_log_write("deltatSGH: used=$r, advec=$r, diffu=$r, pressure=$r", &
-                 realArgs=(/deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure/))
-            endif
-         endif
-
-
-         ! Don't exceed the maximum allowed hydro time step
-         proposedDt = min(proposedDt, maxDt)
-         ! Don't let SGH time step exceed time left in the master model dt
-         proposedDt = min(proposedDt, timeLeft)
-
-         !call mpas_log_write('  Setting SGH time step to: $r seconds', realArgs=(/proposedDt/))
-
-         timeLeft = timeLeft - proposedDt
-         !call mpas_log_write("dt=$r, new TIMELEFT=$r", realArgs=(/proposedDt, timeLeft/))
-
-      else ! not SGH adaptive
-         ! master dt could change if using master adaptive time stepper, so update it in case
-         proposedDt = deltat
       endif
 
 
+      ! Don't exceed the maximum allowed hydro time step
+      proposedDt = min(proposedDt, maxDt)
+      ! Don't let SGH time step exceed time left in the master model dt
+      proposedDt = min(proposedDt, timeLeft)
+
+      !call mpas_log_write('  Setting SGH time step to: $r seconds', realArgs=(/proposedDt/))
+
+      timeLeft = timeLeft - proposedDt
+      !call mpas_log_write("dt=$r, new TIMELEFT=$r", realArgs=(/proposedDt, timeLeft/))
+
+
+      ! ---
       ! Assign new time step to all blocks
+      ! ---
       block => domain % blocklist
       do while (associated(block))
 

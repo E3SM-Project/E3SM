@@ -8,10 +8,6 @@
 		            description="activate subglacial hydrology model"
 		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_SGH_adaptive_timestep" type="logical" default_value=".false." units="unitless"
-		            description="Use adaptive timestepping for subglacial hydrology model"
-		            possible_values=".true. or .false."
-		/>
 		<nml_option name="config_SGH_adaptive_timestep_fraction" type="real" default_value="1.0" units="unitless"
 		            description="fraction of limiting timestep to use"
 		            possible_values="positive real number"
