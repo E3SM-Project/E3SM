@@ -71,6 +71,7 @@ _TEST_SUITES = {
                              ("SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP", "force_netcdf_pio"),
                              ("SMS_Ld4.f45_f45.ICLM45ED","clm-fates"),
                              ("ERS.f19_g16.I1850CLM45","clm-betr"),
+                             ("ERS.f19_g16.I1850CLM45","clm-vst"),
                               "ERS.ne11_oQU240.I20TRCLM45",
                               "ERS.f09_g16.IMCLM45BC")
                              ),
