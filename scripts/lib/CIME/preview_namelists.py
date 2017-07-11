@@ -3,8 +3,8 @@ API for preview namelist
 """
 
 from CIME.XML.standard_module_setup import *
-
-import glob, shutil, imp
+from CIME.utils import run_sub_or_cmd
+import glob, shutil
 logger = logging.getLogger(__name__)
 
 def create_dirs(case):
@@ -82,35 +82,36 @@ def create_namelists(case, component=None):
                 # otherwise look in the component config_dir
                 cmd = os.path.join(config_dir, "buildnml")
             expect(os.path.isfile(cmd), "Could not find buildnml file for component {}".format(compname))
-            do_run_cmd = False
-            # This code will try to import and run each buildnml as a subroutine
-            # if that fails it will run it as a program in a seperate shell
-            try:
-                with open(cmd, 'r') as f:
-                    first_line = f.readline()
-                if "python" in first_line:
-                    mod = imp.load_source("buildnml", cmd)
-                    logger.info("   Calling {} buildnml".format(compname))
-                    mod.buildnml(case, caseroot, compname)
-                else:
-                    raise SyntaxError
-            except SyntaxError as detail:
-                if 'python' in first_line:
-                    expect(False, detail)
-                else:
-                    do_run_cmd = True
-            except AttributeError:
-                do_run_cmd = True
-            except:
-                raise
+            run_sub_or_cmd(cmd, "buildnml", (case, caseroot, compname), case=case)
+            # do_run_cmd = False
+            # # This code will try to import and run each buildnml as a subroutine
+            # # if that fails it will run it as a program in a seperate shell
+            # try:
+            #     with open(cmd, 'r') as f:
+            #         first_line = f.readline()
+            #     if "python" in first_line:
+            #         mod = imp.load_source("buildnml", cmd)
+            #         logger.info("   Calling {} buildnml".format(compname))
+            #         mod.buildnml(case, caseroot, compname)
+            #     else:
+            #         raise SyntaxError
+            # except SyntaxError as detail:
+            #     if 'python' in first_line:
+            #         expect(False, detail)
+            #     else:
+            #         do_run_cmd = True
+            # except AttributeError:
+            #     do_run_cmd = True
+            # except:
+            #     raise
 
-            if do_run_cmd:
-                logger.info("   Running {} buildnml".format(compname))
-                case.flush()
-                output = run_cmd_no_fail("{} {}".format(cmd, caseroot), verbose=False)
-                logger.info(output)
-                # refresh case xml object from file
-                case.read_xml()
+            # if do_run_cmd:
+            #     logger.info("   Running {} buildnml".format(compname))
+            #     case.flush()
+            #     output = run_cmd_no_fail("{} {}".format(cmd, caseroot), verbose=False)
+            #     logger.info(output)
+            #     # refresh case xml object from file
+            #     case.read_xml()
 
     logger.info("Finished creating component namelists")
 

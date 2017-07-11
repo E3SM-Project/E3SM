@@ -34,64 +34,24 @@ def parse_input(argv):
 
     return args.caseroot, args.libroot, args.bldroot
 
-###############################################################################
-def build_data_lib(argv, compclass):
-###############################################################################
+def build_cime_component_lib(case, compname, libroot):
+    cimeroot  = case.get_value("CIMEROOT")
+    compclass = compname[1:]
 
-    caseroot, libroot, _ = parse_input(argv)
-
-    with Case(caseroot) as case:
-
-        cimeroot  = case.get_value("CIMEROOT")
-
-        # Write directory list (Filepath)
-        compname = "d" + compclass
-        with open('Filepath', 'w') as out:
-            out.write(os.path.join(caseroot, "SourceMods", "src.{}\n".format(compname)) + "\n")
+    with open('Filepath', 'w') as out:
+        out.write(os.path.join(case.get_value('CASEROOT'), "SourceMods",
+                               "src.{}\n".format(compname)) + "\n")
+        if compname.startswith('d'):
             out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname) + "\n")
-
-        # Build the component
-        run_gmake(case, compclass, libroot)
-
-###############################################################################
-def build_xcpl_lib(argv, compclass):
-###############################################################################
-
-    caseroot, libroot, _ = parse_input(argv)
-
-    with Case(caseroot) as case:
-
-        cimeroot  = case.get_value("CIMEROOT")
-
-        # Write directory list
-        compname = "x" + compclass
-        with open('Filepath', 'w') as out:
-            out.write(os.path.join(caseroot, "SourceMods", "src.{}", compname) + "\n")
+        elif compname.startswith('x'):
             out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", "xshare") + "\n")
             out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps",compname, "cpl") + "\n")
-
-        # Build the component
-        run_gmake(case, compclass, libroot)
-
-###############################################################################
-def build_stub_lib(argv, compclass):
-###############################################################################
-
-    caseroot, libroot, _ = parse_input(argv)
-
-    with Case(caseroot) as case:
-
-        cimeroot = case.get_value("CIMEROOT")
-
-        # Write directory list
-        compname = "s" + compclass
-        with open('Filepath', 'w') as out:
-            out.write(os.path.join(caseroot, "SourceMods", "src.{}", compname) + "\n")
+        elif compname.startswith('s'):
             out.write(os.path.join(cimeroot, "src", "components", "stub_comps", "xshare") + "\n")
             out.write(os.path.join(cimeroot, "src", "components", "stub_comps",compname, "cpl") + "\n")
 
-        # Build the component
-        run_gmake(case, compclass, libroot)
+    # Build the component
+    run_gmake(case, compclass, libroot)
 
 ###############################################################################
 def run_gmake(case, compclass, libroot, libname="", user_cppdefs=""):

@@ -2,7 +2,7 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import logging, gzip, sys, os, time, re, shutil, glob, string, random
+import logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
 import stat as statlib
 import warnings
 # Return this error code if the scripts worked but tests failed
@@ -177,6 +177,38 @@ def _convert_to_fd(filearg, from_dir):
     return open(filearg, "a")
 
 _hack=object()
+
+def run_sub_or_cmd(cmd, subname, args, case=None,
+                   input_str=None, from_dir=None, verbose=None,
+                   arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
+
+    # This code will try to import and run each buildnml as a subroutine
+    # if that fails it will run it as a program in a seperate shell
+    do_run_cmd = False
+    try:
+        mod = imp.load_source(subname, cmd)
+        logger.info("   Calling {}".format(cmd))
+        getattr(mod, subname)(*args)
+    except SyntaxError as detail:
+        do_run_cmd = True
+    except AttributeError:
+        do_run_cmd = True
+    except:
+        raise
+
+    if do_run_cmd:
+        logger.info("   Running {} ".format(cmd))
+        if case is not None:
+            case.flush()
+        output = run_cmd_no_fail("{} {}".format(cmd, *args), input_str=input_str, from_dir=from_dir,
+                                 verbose=verbose, arg_stdout=arg_stdout, arg_stderr=arg_stderr, env=env,
+                                 combine_output=combine_output)
+
+        logger.info(output)
+        # refresh case xml object from file
+        if case is not None:
+            case.read_xml()
+
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
             arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
     """

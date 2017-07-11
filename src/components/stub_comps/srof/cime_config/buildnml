@@ -3,5 +3,6 @@
 """
 build stub model namelist
 """
-
 # DO NOTHING
+def buildnml(case, caseroot, compname):
+    pass
