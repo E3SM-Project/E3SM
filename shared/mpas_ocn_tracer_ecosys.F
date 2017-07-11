@@ -1948,13 +1948,22 @@ contains
         integer, pointer :: nCells
         integer :: iCell
 
+        logical, pointer :: config_do_restart
+
         call MPAS_pool_get_config(domain%configs, 'config_dt', config_dt)
+        call MPAS_pool_get_config(domain%configs, 'config_do_restart', config_do_restart)
 
         call mpas_set_timeInterval(timeStepEco,timeString=config_dt)
         call mpas_get_timeInterval(timeStepEco,dt=dt)
 
+!maltrud debug
+        if (firstTimeStep .and. config_do_restart) then
+        call MPAS_forcing_get_forcing(ecosysForcingGroup, &
+             'ecosysMonthlyClimatology', streamManager, 0.0_RKIND)
+        else
         call MPAS_forcing_get_forcing(ecosysForcingGroup, &
              'ecosysMonthlyClimatology', streamManager, dt)
+        endif
 
         call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
         call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
