@@ -34,11 +34,11 @@ def parse_input(argv):
 
     return args.caseroot, args.libroot, args.bldroot
 
-def build_cime_component_lib(case, compname, libroot):
+def build_cime_component_lib(case, compname, libroot, bldroot):
     cimeroot  = case.get_value("CIMEROOT")
     compclass = compname[1:]
 
-    with open('Filepath', 'w') as out:
+    with open(os.path.join(bldroot,'Filepath'), 'w') as out:
         out.write(os.path.join(case.get_value('CASEROOT'), "SourceMods",
                                "src.{}\n".format(compname)) + "\n")
         if compname.startswith('d'):
@@ -51,10 +51,10 @@ def build_cime_component_lib(case, compname, libroot):
             out.write(os.path.join(cimeroot, "src", "components", "stub_comps",compname, "cpl") + "\n")
 
     # Build the component
-    run_gmake(case, compclass, libroot)
+    run_gmake(case, compclass, libroot, bldroot)
 
 ###############################################################################
-def run_gmake(case, compclass, libroot, libname="", user_cppdefs=""):
+def run_gmake(case, compclass, libroot, bldroot, libname="", user_cppdefs=""):
 ###############################################################################
 
     caseroot  = case.get_value("CASEROOT")
@@ -72,12 +72,10 @@ def run_gmake(case, compclass, libroot, libname="", user_cppdefs=""):
     makefile = os.path.join(casetools, "Makefile")
     macfile  = os.path.join(caseroot, "Macros.{}".format(mach))
 
+    cmd = "{} complib -j {:d} MODEL={} COMPLIB={} -f {} -C {} MACFILE={} " \
+        .format(gmake, gmake_j, compclass, complib, makefile, bldroot, macfile )
     if user_cppdefs:
-        cmd = "{} complib -j {:d} MODEL={} COMPLIB={} -f {} MACFILE={} USER_CPPDEFS='{}'" \
-            .format(gmake, gmake_j, compclass, complib, makefile, macfile, user_cppdefs )
-    else:
-        cmd = "{} complib -j {:d} MODEL={} COMPLIB={} -f {} MACFILE={} " \
-            .format(gmake, gmake_j, compclass, complib, makefile, macfile )
+        cmd = cmd + "USER_CPPDEFS='{}'".format(user_cppdefs )
 
     rc, out, err = run_cmd(cmd)
     expect(rc == 0, "Command {} failed rc={:d}\nout={}\nerr={}".format(cmd, rc, out, err))

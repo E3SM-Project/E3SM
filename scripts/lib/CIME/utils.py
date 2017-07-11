@@ -5,6 +5,7 @@ Warning: you cannot use CIME Classes in this module as it causes circular depend
 import logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
 import stat as statlib
 import warnings
+
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
 logger = logging.getLogger(__name__)

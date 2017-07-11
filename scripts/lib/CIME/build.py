@@ -297,7 +297,7 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
 #                       .format(compclass, stringify_bool(smp), config_dir, caseroot, libroot, bldroot),
 #                       from_dir=bldroot,  arg_stdout=fd,
 #                       arg_stderr=subprocess.STDOUT)[0]
-    analyze_build_log(compclass, file_build, compiler)
+#    analyze_build_log(compclass, file_build, compiler)
     if (stat != 0):
         thread_bad_results.append("BUILD FAIL: {}.buildlib failed, cat {}".format(compname, file_build))
 
