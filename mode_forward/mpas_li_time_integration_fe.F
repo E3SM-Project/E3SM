@@ -108,11 +108,12 @@ module li_time_integration_fe
 
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
 
-      ! During integration, time level 1 stores the model state at the beginning of the
-      !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
-      ! (time level 1 should not be modified.)
-
-!!!      procVertexMaskChanged = 0
+! === Prepare for advection (including CFL checks) ===========
+! This has to come first currently, because it sets the time step!
+      call mpas_timer_start("advection prep")
+      call prepare_advection(domain, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("advection prep")
 
 ! === Update subglacial hydrology  ===========
 ! It's not clear where the best place to call this should be, so putting it first for now
@@ -120,13 +121,6 @@ module li_time_integration_fe
       call li_SGH_solve(domain, err_tmp)
       err = ior(err, err_tmp)
       call mpas_timer_stop("subglacial hydro")
-
-! === Prepare for advection (including CFL checks) ===========
-
-      call mpas_timer_start("advection prep")
-      call prepare_advection(domain, err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_timer_stop("advection prep")
 
 ! === Basal melting for floating ice ===========
       call mpas_timer_start("basal melting for floating ice")
