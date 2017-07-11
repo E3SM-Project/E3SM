@@ -180,8 +180,24 @@ contains
          do fp = 1,num_urbanp  
             p = filter_urbanp(fp)
             l = veg_pp%landunit(p)
-            albd(p,ib)     = 1._r8
-            albi(p,ib)     = 1._r8
+            c = veg_pp%column(p)
+
+            ! Initialize direct and diffuse albedo such that if the Sun is below
+            ! the horizon, p2g scaling returns an albedo of 1.0.
+            if (col_pp%itype(c) == icol_sunwall) then
+               albd(p,ib) = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+               albi(p,ib) = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+            else if (col_pp%itype(c) == icol_shadewall) then
+               albd(p,ib) = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+               albi(p,ib) = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+            else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
+               albd(p,ib) = 1._r8 / (3.0_r8)
+               albi(p,ib) = 1._r8 / (3.0_r8)
+            else if (col_pp%itype(c) == icol_roof) then
+               albd(p,ib) = 1._r8
+               albi(p,ib) = 1._r8
+            endif
+
             fabd(p,ib)     = 0._r8
             fabd_sun(p,ib) = 0._r8
             fabd_sha(p,ib) = 0._r8
@@ -235,6 +251,19 @@ contains
             sref_improad_dif(l,ib)   = 1._r8
             sref_perroad_dir(l,ib)   = 1._r8
             sref_perroad_dif(l,ib)   = 1._r8
+
+            ! Initialize direct and diffuse albedos such that if the Sun is below
+            ! the horizon, p2g scaling returns an albedo of 1.0.
+            sref_sunwall_dir(l,ib)   = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+            sref_sunwall_dif(l,ib)   = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+            sref_shadewall_dir(l,ib) = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+            sref_shadewall_dif(l,ib) = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+            sref_improad_dir(l,ib)   = 1._r8 / (3.0_r8)
+            sref_improad_dif(l,ib)   = 1._r8 / (3.0_r8)
+            sref_perroad_dir(l,ib)   = 1._r8 / (3.0_r8)
+            sref_perroad_dif(l,ib)   = 1._r8 / (3.0_r8)
+            sref_roof_dir(l,ib)      = 1._r8
+            sref_roof_dif(l,ib)      = 1._r8
          end do
       end do
 
