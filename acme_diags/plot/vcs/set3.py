@@ -218,6 +218,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
 
     blank_template = vcs_canvas.gettemplate('blank_template')
     blank_template.legend.priority = 0
+    blank_template.data.priority = 1
     #blank_template.blank()
     #blank_template.legend.priority = 1
     #blank_template.legend.y1 -= 0.05
