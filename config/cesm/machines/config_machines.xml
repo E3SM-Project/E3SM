@@ -848,7 +848,7 @@
     <NODENAME_REGEX>^hob.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
-    <MPILIBS>mvapich2</MPILIBS>
+    <MPILIBS>mvapich2,openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/scratch/cluster/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
@@ -860,11 +860,17 @@
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY> cseg </SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>24</PES_PER_NODE>
-    <mpirun mpilib="default">
+    <PES_PER_NODE>48</PES_PER_NODE>
+    <mpirun mpilib="mvapich2">
       <executable>mpiexec</executable>
       <arguments>
 	<arg name="machine_file">--machinefile $ENV{PBS_NODEFILE}</arg>
+	<arg name="num_tasks"> -n $TOTALPES </arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>mpiexec</executable>
+      <arguments>
 	<arg name="num_tasks"> -n $TOTALPES </arg>
       </arguments>
     </mpirun>
@@ -895,8 +901,9 @@
       <modules compiler="nag">
 	<command name="load">compiler/nag/6.1</command>
       </modules>
-      <modules compiler="gnu">
-	<command name="load">compiler/gnu/4.8.5</command>
+      <modules compiler="gnu" mpilib="openmpi">
+	<command name="load">compiler/gnu/5.4.0</command>
+	<command name="load">  tool/parallel-netcdf/1.8.1/gnu-5.4.0/openmpi  </command>
       </modules>
     </module_system>
     <environment_variables>
