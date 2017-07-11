@@ -19,7 +19,7 @@
     <default_value>fv</default_value>
     <values>
       <value grid="a%T[1-9]" >eul</value>
-      <value grid="a%ne[1-9]">se</value>
+      <value grid="a%ne[0-9]">se</value>
     </values>
     <group>build_component_cam</group>
     <file>env_build.xml</file>
