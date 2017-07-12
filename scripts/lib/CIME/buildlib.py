@@ -80,4 +80,4 @@ def run_gmake(case, compclass, libroot, bldroot, libname="", user_cppdefs=""):
     rc, out, err = run_cmd(cmd)
     expect(rc == 0, "Command {} failed rc={:d}\nout={}\nerr={}".format(cmd, rc, out, err))
 
-    logger.info("Command {} completed with output {}\nerr {}".format(cmd, out, err))
+    print "Command {} completed with output {}\nerr {}".format(cmd, out, err)

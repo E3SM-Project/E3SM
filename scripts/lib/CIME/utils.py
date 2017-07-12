@@ -5,10 +5,29 @@ Warning: you cannot use CIME Classes in this module as it causes circular depend
 import logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
 import stat as statlib
 import warnings
+from contextlib import contextmanager
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
 logger = logging.getLogger(__name__)
+
+@contextmanager
+def redirect_stdout(new_target):
+    old_target, sys.stdout = sys.stdout, new_target # replace sys.stdout
+    try:
+        yield new_target # run some code with the replaced stdout
+    finally:
+        sys.stdout = old_target # restore to the previous value
+
+
+@contextmanager
+def redirect_stderr(new_target):
+    old_target, sys.stderr = sys.stderr, new_target # replace sys.stdout
+    try:
+        yield new_target # run some code with the replaced stdout
+    finally:
+        sys.stderr = old_target # restore to the previous value
+
 
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
@@ -179,7 +198,7 @@ def _convert_to_fd(filearg, from_dir):
 
 _hack=object()
 
-def run_sub_or_cmd(cmd, cmdargs, subname, subargs, case=None,
+def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
                    input_str=None, from_dir=None, verbose=None,
                    arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
 
@@ -192,7 +211,11 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, case=None,
     try:
         mod = imp.load_source(subname, cmd)
         logger.info("   Calling {}".format(cmd))
-        getattr(mod, subname)(*subargs)
+        if logfile:
+            with redirect_stdout(open(logfile,"w")):
+                getattr(mod, subname)(*subargs)
+        else:
+            getattr(mod, subname)(*subargs)
     except SyntaxError as detail:
         do_run_cmd = True
     except AttributeError:
