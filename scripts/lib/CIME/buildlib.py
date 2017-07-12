@@ -4,7 +4,6 @@ common utilities for buildlib
 
 from CIME.XML.standard_module_setup import *
 from CIME.utils import parse_args_and_handle_standard_logging_options, setup_standard_logging_options
-from CIME.case  import Case
 import sys, os, argparse, doctest
 
 logger = logging.getLogger(__name__)
