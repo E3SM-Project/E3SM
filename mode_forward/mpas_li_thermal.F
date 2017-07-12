@@ -170,6 +170,8 @@ module li_thermal
 
       real(kind=RKIND) :: temperatureValue
 
+      real(kind=RKIND), dimension(:), allocatable :: pmpTemperatureCol
+
       !WHL - debug - for test-case diagnostics
       logical, parameter :: circular_shelf_test = .false.
       logical, parameter :: dome_test = .false.
@@ -379,13 +381,22 @@ module li_thermal
 
          elseif (trim(config_temperature_init) == 'sfc_air_temperature') then
 
+            allocate(pmpTemperatureCol(nVertLevels))
             do iCell = 1, nCellsSolve
-               ! set the column temperature to the surface air temperature or 273.15, whichever is less
-               temperatureValue = min(surfaceAirTemperature(iCell), kelvin_to_celsius)
-               surfaceTemperature(iCell) = temperatureValue
-               temperature(:,iCell)      = temperatureValue
-               basalTemperature(iCell)   = temperatureValue
+               ! set the surface temperature to the surface air temperature or 273.15, whichever is less
+               surfaceTemperature(iCell) = min(surfaceAirTemperature(iCell), kelvin_to_celsius)
+
+               ! set the column temperature to surface air temp or PMP, whichever is less
+               call pressure_melting_point_column(layerCenterSigma, thickness(iCell), pmpTemperatureCol)
+               do k = 1, nVertLevels
+                  temperature(k,iCell) = min(surfaceAirTemperature(iCell), pmpTemperatureCol(k) + kelvin_to_celsius)
+               enddo
+
+               ! set the basal temperature to surface air temp or PMP, whichever is less
+               call pressure_melting_point(thickness(iCell), temperatureValue)
+               basalTemperature(iCell) = min(surfaceAirTemperature(iCell), temperatureValue + kelvin_to_celsius)
             enddo
+            deallocate(pmpTemperatureCol)
 
             waterfrac(:,:) = 0.0_RKIND
 
