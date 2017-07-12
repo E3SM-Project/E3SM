@@ -302,15 +302,38 @@ module li_subglacial_hydro
 
 
       ! =============
-      ! Calculate SHMIP time-varying forcing, if requested
+      ! Calculate time-varying forcing, as needed
       ! =============
       block => domain % blocklist
       do while (associated(block))
+
+         ! Decide where the basal melt input comes from
+         ! Either prescribed or from the temperature model
+         if (trim(config_SGH_basal_melt) == 'file') then
+             ! do nothing
+         elseif (trim(config_SGH_basal_melt) == 'thermal') then
+             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+             call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+             call mpas_pool_get_array(hydroPool, 'basalMeltInput', basalMeltInput)
+             call mpas_pool_get_array(geometryPool,'groundedBasalMassBal',groundedBasalMassBal)
+             basalMeltInput = -1.0 * groundedBasalMassBal ! TODO: Ensure positive flux?
+         endif
+
+         ! SHMIP forcing will override basalMeltInput.
          call shmip_timevarying_forcing(block, err_tmp)
          err = ior(err, err_tmp)
 
          block => block % next
       end do
+
+      ! Perform halo update, if needed
+      if (trim(config_SGH_basal_melt) == 'thermal') then
+         call mpas_timer_start("halo updates")
+         ! (groundedBasalMassBal will not have had a halo update,
+         !  because a halo update for it is unneeded except for the SGH model.)
+         call mpas_dmpar_field_halo_exch(domain, 'basalMeltInput')
+         call mpas_timer_stop("halo updates")
+      endif
 
 
       ! =============
@@ -328,15 +351,6 @@ module li_subglacial_hydro
          call mpas_pool_get_array(hydroPool, 'basalMeltInput', basalMeltInput)
          call mpas_pool_get_array(hydroPool, 'externalWaterInput', externalWaterInput)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-
-         ! Decide where the basal melt input comes from 
-         ! Either prescribed or from the temperature model
-         if (trim(config_SGH_basal_melt) == 'file') then
-             ! do nothing
-         elseif (trim(config_SGH_basal_melt) == 'thermal') then
-             call mpas_pool_get_array(geometryPool,'groundedBasalMassBal',groundedBasalMassBal)
-             basalMeltInput = -1.0 * groundedBasalMassBal ! TODO: Ensure positive flux? 
-         endif
 
          WtillOld = Wtill
          Wtill = Wtill + deltatSGH * ( (basalMeltInput + externalWaterInput) / rho_water - Cd)
