@@ -121,10 +121,10 @@
       <value compset="_CAM">CO2A</value>
       <value compset="_DATM">none</value>
       <value compset="_DATM%CPLHIST.+POP\d">CO2A</value>
+      <value compset="HIST.*_DATM.*_CLM">CO2A</value>
+      <value compset="RCP.*_DATM.*_CLM">CO2A</value>
       <value compset="_BGC%BPRP">CO2C</value>
       <value compset="_BGC%BDRD">CO2C</value>
-      <value compset="HIST.*_DATM%(QIA|CRU)">CO2A</value>
-      <value compset="RCP.*_DATM%(QIA|CRU)" >CO2A</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
