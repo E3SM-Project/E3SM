@@ -158,31 +158,32 @@ def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
 
 def save_ncfiles(set_num, test, ref, diff, parameter):
     """Saves the test, reference, and difference nc files."""
-    # Save files being plotted
-    # Set cdms preferences - no compression, no shuffling, no complaining
-    cdms2.setNetcdfDeflateFlag(1)
-    # 1-9, min to max - Comes at heavy IO (read/write time cost)
-    cdms2.setNetcdfDeflateLevelFlag(0)
-    cdms2.setNetcdfShuffleFlag(0)
-    cdms2.setCompressionWarnings(0)  # Turn off warning messages
-    # Save test file
-    pth = get_output_dir(set_num, parameter)
-    file_test = cdms2.open(pth + '/' + parameter.output_file + '_test.nc', 'w+')
-    test.id = parameter.var_id
-    file_test.write(test)
-    file_test.close()
+    if parameter.save_netcdf:
+        # Save files being plotted
+        # Set cdms preferences - no compression, no shuffling, no complaining
+        cdms2.setNetcdfDeflateFlag(1)
+        # 1-9, min to max - Comes at heavy IO (read/write time cost)
+        cdms2.setNetcdfDeflateLevelFlag(0)
+        cdms2.setNetcdfShuffleFlag(0)
+        cdms2.setCompressionWarnings(0)  # Turn off warning messages
+        # Save test file
+        pth = get_output_dir(set_num, parameter)
+        file_test = cdms2.open(pth + '/' + parameter.output_file + '_test.nc', 'w+')
+        test.id = parameter.var_id
+        file_test.write(test)
+        file_test.close()
 
-    # Save reference file
-    file_ref = cdms2.open(pth + '/' + parameter.output_file + '_ref.nc', 'w+')
-    ref.id = parameter.var_id
-    file_ref.write(ref)
-    file_ref.close()
+        # Save reference file
+        file_ref = cdms2.open(pth + '/' + parameter.output_file + '_ref.nc', 'w+')
+        ref.id = parameter.var_id
+        file_ref.write(ref)
+        file_ref.close()
 
-    # Save difference file
-    file_diff = cdms2.open(pth + '/' + parameter.output_file + '_diff.nc', 'w+')
-    diff.id = parameter.var_id + '(test - reference)'
-    file_diff.write(diff)
-    file_diff.close()
+        # Save difference file
+        file_diff = cdms2.open(pth + '/' + parameter.output_file + '_diff.nc', 'w+')
+        diff.id = parameter.var_id + '(test - reference)'
+        file_diff.write(diff)
+        file_diff.close()
 
 def get_output_dir(set_num, parameter):
     """Get the directory of where to save the outputs for a run."""
