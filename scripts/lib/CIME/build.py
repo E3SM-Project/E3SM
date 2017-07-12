@@ -15,7 +15,7 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
                  lid, caseroot, cimeroot, compiler):
 ###############################################################################
     logs = []
-    sys.path.append(os.path.join(cimeroot,"scripts","Tools"))
+
     thread_bad_results = []
     for model, comp, nthrds, _, config_dir in complist:
 
