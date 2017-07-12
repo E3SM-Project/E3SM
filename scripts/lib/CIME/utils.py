@@ -2,12 +2,32 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import logging, gzip, sys, os, time, re, shutil, glob, string, random
+import logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
 import stat as statlib
 import warnings
+from contextlib import contextmanager
+
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
 logger = logging.getLogger(__name__)
+
+@contextmanager
+def redirect_stdout(new_target):
+    old_target, sys.stdout = sys.stdout, new_target # replace sys.stdout
+    try:
+        yield new_target # run some code with the replaced stdout
+    finally:
+        sys.stdout = old_target # restore to the previous value
+
+
+@contextmanager
+def redirect_stderr(new_target):
+    old_target, sys.stderr = sys.stderr, new_target # replace sys.stdout
+    try:
+        yield new_target # run some code with the replaced stdout
+    finally:
+        sys.stderr = old_target # restore to the previous value
+
 
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
@@ -177,6 +197,46 @@ def _convert_to_fd(filearg, from_dir):
     return open(filearg, "a")
 
 _hack=object()
+
+def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
+                   input_str=None, from_dir=None, verbose=None,
+                   arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
+
+    # This code will try to import and run each buildnml as a subroutine
+    # if that fails it will run it as a program in a seperate shell
+    do_run_cmd = False
+    stat = 0
+    output = ""
+    errput = ""
+    try:
+        mod = imp.load_source(subname, cmd)
+        logger.info("   Calling {}".format(cmd))
+        if logfile:
+            with redirect_stdout(open(logfile,"w")):
+                getattr(mod, subname)(*subargs)
+        else:
+            getattr(mod, subname)(*subargs)
+    except SyntaxError:
+        do_run_cmd = True
+    except AttributeError:
+        do_run_cmd = True
+    except:
+        raise
+
+    if do_run_cmd:
+        logger.info("   Running {} ".format(cmd))
+        if case is not None:
+            case.flush()
+        stat, output, errput = run_cmd("{} {}".format(cmd, cmdargs), input_str=input_str, from_dir=from_dir,
+                                 verbose=verbose, arg_stdout=arg_stdout, arg_stderr=arg_stderr, env=env,
+                                 combine_output=combine_output)
+
+        logger.info(output)
+        # refresh case xml object from file
+        if case is not None:
+            case.read_xml()
+    return stat, output, errput
+
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
             arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
     """

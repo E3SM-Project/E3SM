@@ -94,7 +94,8 @@ Running **create_newcase** creates various scripts, files and directories ``$CAS
 
    =====================  ===============================================================================================================================
    SourceMods             Top-level directory containing subdirectories for each compset component where
-                          you can place modified source code for that component.
+                          you can place modified source code for that component.  You may also place modified
+			  buildnml and buildlib scripts here.
    =====================  ===============================================================================================================================
 
 - ``Provenance``
@@ -137,5 +138,3 @@ These other files can be "unlocked" as follows:
 - To unlock **env_mach_pes.xml**, run ``case.setup --clean``.
 
 - To unlock **env_build.xml**, run ``case.build --clean``.
-
-

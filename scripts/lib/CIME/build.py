@@ -57,7 +57,7 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
         # thread_bad_results captures error output from thread (expected to be empty)
         # logs is a list of log files to be compressed and added to the case logs/bld directory
         t = threading.Thread(target=_build_model_thread,
-            args=(config_dir, model, caseroot, libroot, bldroot, incroot, file_build,
+            args=(config_dir, model, comp, caseroot, libroot, bldroot, incroot, file_build,
                   thread_bad_results, smp, compiler))
         t.start()
 
@@ -66,18 +66,6 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
     # Wait for threads to finish
     while(threading.active_count() > 1):
         time.sleep(1)
-
-    # aquap has a dependency on atm so we build it after the threaded loop
-
-    for model, comp, nthrds, _, config_dir in complist:
-        smp = nthrds > 1 or build_threaded
-        if comp == "aquap":
-            logger.debug("Now build aquap ocn component")
-            # thread_bad_results captures error output from thread (expected to be empty)
-            # logs is a list of log files to be compressed and added to the case logs/bld directory
-            _build_model_thread(config_dir, comp, caseroot, libroot, bldroot, incroot, file_build,
-                                thread_bad_results, smp, compiler)
-            logs.append(file_build)
 
     expect(not thread_bad_results, "\n".join(thread_bad_results))
 
@@ -282,7 +270,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             # thread_bad_results captures error output from thread (expected to be empty)
             # logs is a list of log files to be compressed and added to the case logs/bld directory
             thread_bad_results = []
-            _build_model_thread(config_lnd_dir, "lnd", caseroot, libroot, bldroot, incroot,
+            _build_model_thread(config_lnd_dir, "lnd", comp_lnd, caseroot, libroot, bldroot, incroot,
                                 file_build, thread_bad_results, smp, compiler)
             logs.append(file_build)
             expect(not thread_bad_results, "\n".join(thread_bad_results))
@@ -290,25 +278,32 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
     return logs
 
 ###############################################################################
-def _build_model_thread(config_dir, compclass, caseroot, libroot, bldroot, incroot, file_build,
+def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldroot, incroot, file_build,
                         thread_bad_results, smp, compiler):
 ###############################################################################
     logger.info("Building {} with output to {}".format(compclass, file_build))
     t1 = time.time()
+    cmd = os.path.join(caseroot, "SourceMods", "src." + compname, "buildlib")
+    if os.path.isfile(cmd):
+        logger.warn("WARNING: using local buildlib script for {}".format(compname))
+    else:
+        cmd = os.path.join(config_dir, "buildlib")
+        expect(os.path.isfile(cmd), "Could not find buildlib for {}".format(compname))
+
     with open(file_build, "w") as fd:
-        stat = run_cmd("MODEL={} SMP={} {}/buildlib {} {} {} "
-                       .format(compclass, stringify_bool(smp), config_dir, caseroot, libroot, bldroot),
+        stat = run_cmd("MODEL={} SMP={} {} {} {} {} "
+                       .format(compclass, stringify_bool(smp), cmd, caseroot, libroot, bldroot),
                        from_dir=bldroot,  arg_stdout=fd,
                        arg_stderr=subprocess.STDOUT)[0]
     analyze_build_log(compclass, file_build, compiler)
     if (stat != 0):
-        thread_bad_results.append("BUILD FAIL: {}.buildlib failed, cat {}".format(compclass, file_build))
+        thread_bad_results.append("BUILD FAIL: {}.buildlib failed, cat {}".format(compname, file_build))
 
     for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
         shutil.copy(mod_file, incroot)
 
     t2 = time.time()
-    logger.info("{} built in {:f} seconds".format(compclass, (t2 - t1)))
+    logger.info("{} built in {:f} seconds".format(compname, (t2 - t1)))
 
 ###############################################################################
 def _clean_impl(case, cleanlist, clean_all):
