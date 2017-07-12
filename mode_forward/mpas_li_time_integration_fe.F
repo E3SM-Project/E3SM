@@ -115,13 +115,6 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("advection prep")
 
-! === Update subglacial hydrology  ===========
-! It's not clear where the best place to call this should be, so putting it first for now
-      call mpas_timer_start("subglacial hydro")
-      call li_SGH_solve(domain, err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_timer_stop("subglacial hydro")
-
 ! === Basal melting for floating ice ===========
       call mpas_timer_start("basal melting for floating ice")
       call li_basal_melt_floating_ice(domain, err_tmp)
@@ -139,6 +132,16 @@ module li_time_integration_fe
       call advection_solver(domain, err_tmp)
       err = ior(err, err_tmp)
       call mpas_timer_stop("advect thickness and tracers")
+
+! === Update subglacial hydrology  ===========
+! It's not clear where the best place to call this should be.
+! Seems sensible to put it after thermal evolution is complete to get updated basal melting source term.
+! Also seems (might be?) better to put it after geometry evolution.
+! We want it before the velocity solve since the hydro model can control  the velo basal b.c.
+      call mpas_timer_start("subglacial hydro")
+      call li_SGH_solve(domain, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("subglacial hydro")
 
 ! === Calve ice ========================
       call mpas_timer_start("calve_ice")
