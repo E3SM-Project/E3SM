@@ -216,7 +216,7 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
                 getattr(mod, subname)(*subargs)
         else:
             getattr(mod, subname)(*subargs)
-    except SyntaxError as detail:
+    except SyntaxError:
         do_run_cmd = True
     except AttributeError:
         do_run_cmd = True
