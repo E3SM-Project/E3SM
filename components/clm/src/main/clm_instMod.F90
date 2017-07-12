@@ -47,13 +47,13 @@ module clm_instMod
   use glcDiagnosticsMod          , only : glc_diagnostics_type
   use SoilWaterRetentionCurveMod , only : soil_water_retention_curve_type
   use UrbanParamsType            , only : urbanparams_type   ! Constants
-
-  use EcophysConType             , only : ecophyscon         ! Constants
+  use VegetationPropertiesType   , only : veg_vp             ! Ecophysical Constants
+  ! use VegetationPropertiesType             , only : veg_vp         ! Constants
   use SoilorderConType           , only : soilordercon         ! Constants
 
-  use LandunitType               , only : lun
-  use ColumnType                 , only : col
-  use PatchType                  , only : pft
+  use LandunitType               , only : lun_pp
+  use ColumnType                 , only : col_pp
+  use VegetationType             , only : veg_pp
 
   use clm_bgc_interface_data     , only : clm_bgc_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
@@ -231,7 +231,7 @@ contains
     use controlMod                        , only : nlfilename
     use SoilWaterRetentionCurveFactoryMod , only : create_soil_water_retention_curve
     use fileutils                         , only : getfil
-    use EcophysConType                    , only : ecophysconInit
+    use VegetationPropertiesType          , only : veg_vp
     use SoilorderConType                  , only : soilorderconInit
     use LakeCon                           , only : LakeConInit
     use initVerticalMod                   , only : initVertical
@@ -265,13 +265,13 @@ contains
     ! for columns with net ablation, at the cost of delaying ice formation
     ! in columns with net accumulation.
     do c = begc,endc
-       l = col%landunit(c)
-       g = col%gridcell(c)
+       l = col_pp%landunit(c)
+       g = col_pp%gridcell(c)
 
-       if (lun%itype(l)==istice) then
+       if (lun_pp%itype(l)==istice) then
           h2osno_col(c) = h2osno_max
-       elseif (lun%itype(l)==istice_mec .or. &
-              (lun%itype(l)==istsoil .and. ldomain%glcmask(g) > 0._r8)) then
+       elseif (lun_pp%itype(l)==istice_mec .or. &
+              (lun_pp%itype(l)==istsoil .and. ldomain%glcmask(g) > 0._r8)) then
           ! Initialize a non-zero snow thickness where the ice sheet can/potentially operate.
           ! Using glcmask to capture all potential vegetated points around GrIS (ideally
           ! we would use icemask from CISM, but that isn't available until after initialization.)
@@ -288,7 +288,7 @@ contains
 
     ! Initialize ecophys constants
 
-    call ecophysconInit()
+    call veg_vp%Init()
 
     ! Initialize soil order related constants
 

@@ -8,9 +8,9 @@ module CNGRespMod
   ! !USES:
   use shr_kind_mod     , only : r8 => shr_kind_r8
   use pftvarcon        , only : grperc, grpnow, npcropmin
-  use EcophysContype   , only : ecophyscon
+  use VegetationPropertiesType   , only : veg_vp
   use CNCarbonFluxType , only : carbonflux_type
-  use PatchType        , only : pft                
+  use VegetationType        , only : veg_pp                
   !
   implicit none
   save
@@ -42,9 +42,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                     & 
-         ivt                           =>    pft%itype                                           , & ! Input:  [integer (:)]  pft vegetation type                                
+         ivt                           =>    veg_pp%itype                                           , & ! Input:  [integer (:)]  pft vegetation type                                
 
-         woody                         =>    ecophyscon%woody                                    , & ! Input:  [real(r8) (:)]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                         =>    veg_vp%woody                                    , & ! Input:  [real(r8) (:)]  binary flag for woody lifeform (1=woody, 0=not woody)
 
          cpool_to_leafc                =>    carbonflux_vars%cpool_to_leafc_patch                , & ! Input:  [real(r8) (:)]                                                    
          cpool_to_leafc_storage        =>    carbonflux_vars%cpool_to_leafc_storage_patch        , & ! Input:  [real(r8) (:)]                                                    

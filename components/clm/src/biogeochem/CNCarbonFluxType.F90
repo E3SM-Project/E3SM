@@ -12,9 +12,9 @@ module CNCarbonFluxType
   use ch4varcon              , only : allowlakeprod
   use pftvarcon              , only : npcropmin
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use PatchType              , only : pft                
-  use ColumnType             , only : col                
-  use LandunitType           , only : lun
+  use VegetationType              , only : veg_pp                
+  use ColumnType             , only : col_pp                
+  use LandunitType           , only : lun_pp
   use clm_varctl             , only : nu_com
   ! bgc interface & pflotran
   use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, use_vertsoilc
@@ -3610,8 +3610,8 @@ contains
 
     num_special_col = 0
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
-       if (lun%ifspecial(l)) then
+       l = col_pp%landunit(c)
+       if (lun_pp%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
        end if
@@ -3621,9 +3621,9 @@ contains
 
     num_special_patch = 0
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
+       l = veg_pp%landunit(p)
 
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           num_special_patch = num_special_patch + 1
           special_patch(num_special_patch) = p
        end if
@@ -3632,12 +3632,12 @@ contains
     if (.not.use_ed) then
        
        do p = bounds%begp,bounds%endp
-          l = pft%landunit(p)
+          l = veg_pp%landunit(p)
 
           this%gpp_patch(p)                      = 0._r8
           this%gpp_before_downreg_patch(p)       = 0._r8
 
-          if (lun%ifspecial(l)) then
+          if (lun_pp%ifspecial(l)) then
              this%tempsum_npp_patch(p)           = spval
              this%annsum_npp_patch(p)            = spval
              this%availc_patch(p)                = spval
@@ -3654,7 +3654,7 @@ contains
                 this%xsmrpool_c13ratio_patch(p)  = spval
              endif
           end if
-          if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
              this%tempsum_npp_patch(p)           = 0._r8
              this%annsum_npp_patch(p)            = 0._r8
              this%availc_patch(p)                = 0._r8
@@ -3673,16 +3673,16 @@ contains
     end if !(.not.use_ed)
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
 
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           this%annsum_npp_col(c) = spval
        end if
 
        this%fphr_col(c,nlevdecomp+1:nlevgrnd) = 0._r8 !used to be in ch4Mod
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%fphr_col(c,nlevdecomp+1:nlevgrnd) = 0._r8 
-       else if (lun%itype(l) == istdlak .and. allowlakeprod) then
+       else if (lun_pp%itype(l) == istdlak .and. allowlakeprod) then
           this%fphr_col(c,:) = spval
        else  ! Inactive CH4 columns
           this%fphr_col(c,:) = spval
@@ -3690,7 +3690,7 @@ contains
 
        ! also initialize dynamic landcover fluxes so that they have
        ! real values on first timestep, prior to calling pftdyn_cnbal
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%lf_conv_cflux_col(c)         = 0._r8
           this%dwt_seedc_to_leaf_col(c)     = 0._r8
           this%dwt_seedc_to_deadstem_col(c) = 0._r8
@@ -4453,7 +4453,7 @@ contains
             this%cpool_livecroot_storage_gr_patch(p) + &
             this%cpool_deadcroot_storage_gr_patch(p)
 
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%mr_patch(p) = &
                this%mr_patch(p) + &
                this%grain_mr_patch(p)
@@ -4478,7 +4478,7 @@ contains
             this%storage_gr_patch(p)
 
        ! autotrophic respiration (AR)
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%ar_patch(p) = &
                this%mr_patch(p) + &
                this%gr_patch(p) + &
@@ -4593,7 +4593,7 @@ contains
        this%wood_harvestc_patch(p) = &
             this%hrv_deadstemc_to_prod10c_patch(p) + &
             this%hrv_deadstemc_to_prod100c_patch(p)
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%wood_harvestc_patch(p) = &
                this%wood_harvestc_patch(p) + &
                this%hrv_cropc_to_prod1c_patch(p)
@@ -4622,7 +4622,7 @@ contains
             this%m_gresp_storage_to_fire_patch(p)        + &
             this%m_gresp_xfer_to_fire_patch(p)
 
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
 
           this%litfall_patch(p) =                  &
                this%litfall_patch(p)             + &
@@ -4658,7 +4658,7 @@ contains
             this%hrv_leafc_to_litter_patch(p)    + &
             this%leafc_to_litter_patch(p)
 
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%leafc_loss_patch(p) = &
                this%leafc_loss_patch(p) + &
                this%hrv_leafc_to_prod1c_patch(p)
@@ -4700,7 +4700,7 @@ contains
             this%hrv_deadcrootc_storage_to_litter_patch(p) + &
             this%hrv_deadcrootc_xfer_to_litter_patch(p)   
        ! putting the harvested crop stem and grain in the wood loss bdrewniak
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%woodc_loss_patch(p) = &
                this%woodc_loss_patch(p) + &
                this%hrv_grainc_to_prod1c_patch(p) + &
@@ -5306,7 +5306,7 @@ end subroutine CSummary_interface
             this%cpool_to_deadstemc_patch(p)              + &
             this%deadstemc_xfer_to_deadstemc_patch(p)
 
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%agnpp_patch(p) =                    &
                this%agnpp_patch(p)               + &
                this%cpool_to_grainc_patch(p)     + &

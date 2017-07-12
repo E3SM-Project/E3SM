@@ -19,10 +19,10 @@ module BalanceCheckMod
   use SoilHydrologyType  , only : soilhydrology_type  
   use WaterstateType     , only : waterstate_type
   use WaterfluxType      , only : waterflux_type
-  use GridcellType       , only : grc                
-  use LandunitType       , only : lun                
-  use ColumnType         , only : col                
-  use PatchType          , only : pft                
+  use GridcellType       , only : grc_pp                
+  use LandunitType       , only : lun_pp                
+  use ColumnType         , only : col_pp                
+  use VegetationType          , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -66,14 +66,14 @@ contains
     real(r8):: h2osoi_vol
     !-----------------------------------------------------------------------
 
-    associate(                                                                     & 
-         zi                     =>    col%zi                                     , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m) 
+    associate(                                                         & 
+         zi                     =>    col_pp%zi                                  , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m) 
          h2ocan_patch           =>    waterstate_vars%h2ocan_patch               , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O) (pft-level)       
          h2osfc                 =>    waterstate_vars%h2osfc_col                 , & ! Input:  [real(r8) (:)   ]  surface water (mm)                      
          h2osno                 =>    waterstate_vars%h2osno_col                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
          h2osoi_ice             =>    waterstate_vars%h2osoi_ice_col             , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
          h2osoi_liq             =>    waterstate_vars%h2osoi_liq_col             , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
-         total_plant_stored_h2o =>    waterstate_vars%total_plant_stored_h2o_col , & ! Input [real(r8) (:) dynamic water stored in plants
+         total_plant_stored_h2o =>    waterstate_vars%total_plant_stored_h2o_col , & ! Input: [real(r8) (:) dynamic water stored in plants
          zwt                    =>    soilhydrology_vars%zwt_col                 , & ! Input:  [real(r8) (:)   ]  water table depth (m)                   
          wa                     =>    soilhydrology_vars%wa_col                  , & ! Output: [real(r8) (:)   ]  water in the unconfined aquifer (mm)    
          h2ocan_col             =>    waterstate_vars%h2ocan_col                 , & ! Output: [real(r8) (:)   ]  canopy water (mm H2O) (column level)    
@@ -103,8 +103,8 @@ contains
       
       do f = 1, num_nolakec
          c = filter_nolakec(f)
-         if (col%itype(c) == icol_roof .or. col%itype(c) == icol_sunwall &
-               .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_road_imperv) then
+         if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_sunwall &
+              .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_road_imperv) then
             begwb(c) = h2ocan_col(c) + h2osno(c)
          else
             begwb(c) = h2ocan_col(c) + h2osno(c) + h2osfc(c) + wa(c)
@@ -114,8 +114,8 @@ contains
       do j = 1, nlevgrnd
          do f = 1, num_nolakec
             c = filter_nolakec(f)
-            if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                  .or. col%itype(c) == icol_roof) .and. j > nlevurb) then
+            if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                 .or. col_pp%itype(c) == icol_roof) .and. j > nlevurb) then
             else
                begwb(c) = begwb(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
             end if
@@ -294,10 +294,10 @@ contains
        ! Assume no incident precipitation on urban wall columns (as in CanopyHydrologyMod.F90).
 
        do c = bounds%begc,bounds%endc
-          g = col%gridcell(c)
-          l = col%landunit(c)       
+          g = col_pp%gridcell(c)
+          l = col_pp%landunit(c)       
 
-          if (col%itype(c) == icol_sunwall .or.  col%itype(c) == icol_shadewall) then
+          if (col_pp%itype(c) == icol_sunwall .or.  col_pp%itype(c) == icol_shadewall) then
              forc_rain_col(c) = 0.
              forc_snow_col(c) = 0.
           else
@@ -311,7 +311,7 @@ contains
        do c = bounds%begc, bounds%endc
 
           ! add qflx_drain_perched and qflx_flood
-          if (col%active(c)) then
+          if (col_pp%active(c)) then
 
              errh2o(c) = endwb(c) - begwb(c) &
                   - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_irrig(c) &
@@ -341,7 +341,7 @@ contains
        
        do fc = 1,num_do_smb_c
           c = filter_do_smb_c(fc)
-          g = col%gridcell(c)
+          g = col_pp%gridcell(c)
           if (glc_dyn_runoff_routing(g)) then
              errh2o(c) = errh2o(c) + qflx_glcice_frz(c)*dtime
              errh2o(c) = errh2o(c) - qflx_glcice_melt(c)*dtime
@@ -363,9 +363,9 @@ contains
                !' global indexc= ',GetGlobalIndex(decomp_index=indexc, clmlevel=namec), &
                ' errh2o= ',errh2o(indexc)
 
-          if ((col%itype(indexc) == icol_roof .or. &
-               col%itype(indexc) == icol_road_imperv .or. &
-               col%itype(indexc) == icol_road_perv) .and. &
+          if ((col_pp%itype(indexc) == icol_roof .or. &
+               col_pp%itype(indexc) == icol_road_imperv .or. &
+               col_pp%itype(indexc) == icol_road_perv) .and. &
                abs(errh2o(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
 
              write(iulog,*)'clm urban model is stopping - error is greater than 1e-4 (mm)'
@@ -416,21 +416,21 @@ contains
        ! Snow balance check
 
        do c = bounds%begc,bounds%endc
-          if (col%active(c)) then
-             g = col%gridcell(c)
-             l = col%landunit(c)
+          if (col_pp%active(c)) then
+             g = col_pp%gridcell(c)
+             l = col_pp%landunit(c)
 
              ! As defined here, snow_sources - snow_sinks will equal the change in h2osno at 
              ! any given time step but only if there is at least one snow layer.  h2osno 
              ! also includes snow that is part of the soil column (an initial snow layer is 
              ! only created if h2osno > 10mm).
 
-             if (col%snl(c) < 0) then
+             if (col_pp%snl(c) < 0) then
                 snow_sources(c) = qflx_prec_grnd(c) + qflx_dew_snow(c) + qflx_dew_grnd(c)
                 snow_sinks(c)  = qflx_sub_snow(c) + qflx_evap_grnd(c) + qflx_snow_melt(c) &
                      + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) + qflx_sl_top_soil(c)
 
-                if (lun%itype(l) == istdlak) then 
+                if (lun_pp%itype(l) == istdlak) then 
                    if ( do_capsnow(c) ) then
                       snow_sources(c) = qflx_snow_grnd_col(c) &
                            + frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) 
@@ -448,7 +448,7 @@ contains
                    endif
                 endif
 
-                if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop .or. lun%itype(l) == istwet ) then
+                if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop .or. lun_pp%itype(l) == istwet ) then
                    if ( do_capsnow(c) ) then
                       snow_sources(c) = frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) &
                            + qflx_h2osfc_to_ice(c) + qflx_prec_grnd(c)
@@ -484,7 +484,7 @@ contains
 
        found = .false.
        do c = bounds%begc,bounds%endc
-          if (col%active(c)) then
+          if (col_pp%active(c)) then
              if (abs(errh2osno(c)) > 1.0e-7_r8) then
                 found = .true.
                 indexc = c
@@ -496,15 +496,15 @@ contains
           write(iulog,*)'nstep= ',nstep, &
                ' local indexc= ',indexc, &
                !' global indexc= ',GetGlobalIndex(decomp_index=indexc, clmlevel=namec), &
-               ' col%itype= ',col%itype(indexc), &
-               ' lun%itype= ',lun%itype(col%landunit(indexc)), &
+               ' col_pp%itype= ',col_pp%itype(indexc), &
+               ' lun_pp%itype= ',lun_pp%itype(col_pp%landunit(indexc)), &
                ' errh2osno= ',errh2osno(indexc)
 
           if (abs(errh2osno(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
              write(iulog,*)'clm model is stopping - error is greater than 1e-4 (mm)'
              write(iulog,*)'nstep            = ',nstep
              write(iulog,*)'errh2osno        = ',errh2osno(indexc)
-             write(iulog,*)'snl              = ',col%snl(indexc)
+             write(iulog,*)'snl              = ',col_pp%snl(indexc)
              write(iulog,*)'h2osno           = ',h2osno(indexc)
              write(iulog,*)'h2osno_old       = ',h2osno_old(indexc)
              write(iulog,*)'snow_sources     = ',snow_sources(indexc)
@@ -529,16 +529,16 @@ contains
        ! Energy balance checks
 
        do p = bounds%begp, bounds%endp
-          if (pft%active(p)) then
-             c = pft%column(p)
-             l = pft%landunit(p)
-             g = pft%gridcell(p)
+          if (veg_pp%active(p)) then
+             c = veg_pp%column(p)
+             l = veg_pp%landunit(p)
+             g = veg_pp%gridcell(p)
 
              ! Solar radiation energy balance
              ! Do not do this check for an urban pft since it will not balance on a per-column
              ! level because of interactions between columns and since a separate check is done
              ! in the urban radiation module
-             if (.not. lun%urbpoi(l)) then
+             if (.not. lun_pp%urbpoi(l)) then
                 errsol(p) = fsa(p) + fsr(p) &
                      - (forc_solad(g,1) + forc_solad(g,2) + forc_solai(g,1) + forc_solai(g,2))
              else
@@ -549,7 +549,7 @@ contains
              ! Do not do this check for an urban pft since it will not balance on a per-column
              ! level because of interactions between columns and since a separate check is done
              ! in the urban radiation module
-             if (.not. lun%urbpoi(l)) then
+             if (.not. lun_pp%urbpoi(l)) then
                 errlon(p) = eflx_lwrad_out(p) - eflx_lwrad_net(p) - forc_lwrad(c)
              else
                 errlon(p) = spval
@@ -561,7 +561,7 @@ contains
              ! For surfaces other than urban, (eflx_lwrad_net) equals (forc_lwrad - eflx_lwrad_out),
              ! and a separate check is done above for these terms.
 
-             if (.not. lun%urbpoi(l)) then
+             if (.not. lun_pp%urbpoi(l)) then
                 errseb(p) = sabv(p) + sabg_chk(p) + forc_lwrad(c) - eflx_lwrad_out(p) &
                      - eflx_sh_tot(p) - eflx_lh_tot(p) - eflx_soil_grnd(p)
              else
@@ -579,11 +579,11 @@ contains
 
        found = .false.
        do p = bounds%begp, bounds%endp
-          if (pft%active(p)) then
+          if (veg_pp%active(p)) then
              if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > 1.e-3_r8) ) then
                 found = .true.
                 indexp = p
-                indexg = pft%gridcell(indexp)
+                indexg = veg_pp%gridcell(indexp)
              end if
           end if
        end do
@@ -607,7 +607,7 @@ contains
 
        found = .false.
        do p = bounds%begp, bounds%endp
-          if (pft%active(p)) then
+          if (veg_pp%active(p)) then
              if ( (errlon(p) /= spval) .and. (abs(errlon(p)) > 1.e-3_r8) ) then
                 found = .true.
                 indexp = p
@@ -625,11 +625,11 @@ contains
 
        found = .false.
        do p = bounds%begp, bounds%endp
-          if (pft%active(p)) then
+          if (veg_pp%active(p)) then
              if (abs(errseb(p)) > 1.e-3_r8 ) then
                 found = .true.
                 indexp = p
-                indexc = pft%column(indexp)
+                indexc = veg_pp%column(indexp)
              end if
           end if
        end do
@@ -665,7 +665,7 @@ contains
 
        found = .false.
        do c = bounds%begc,bounds%endc
-          if (col%active(c)) then
+          if (col_pp%active(c)) then
              if (abs(errsoi_col(c)) > 1.0e-7_r8 ) then
                 found = .true.
                 indexc = c

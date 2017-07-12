@@ -22,10 +22,10 @@ module UrbanFluxesMod
   use FrictionVelocityType , only : frictionvel_type
   use EnergyFluxType       , only : energyflux_type
   use WaterfluxType        , only : waterflux_type
-  use GridcellType         , only : grc                
-  use LandunitType         , only : lun                
-  use ColumnType           , only : col                
-  use PatchType            , only : pft                
+  use GridcellType         , only : grc_pp                
+  use LandunitType         , only : lun_pp                
+  use ColumnType           , only : col_pp                
+  use VegetationType            , only : veg_pp                
   use SurfaceResistanceMod , only : do_soilevap_beta
   !
   ! !PUBLIC TYPES:
@@ -181,14 +181,14 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                & 
-         snl                 =>   col%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                              
-         ctype               =>   col%itype                                 , & ! Input:  [integer  (:)   ]  column type                                        
-         z_0_town            =>   lun%z_0_town                              , & ! Input:  [real(r8) (:)   ]  momentum roughness length of urban landunit (m)   
-         z_d_town            =>   lun%z_d_town                              , & ! Input:  [real(r8) (:)   ]  displacement height of urban landunit (m)         
-         ht_roof             =>   lun%ht_roof                               , & ! Input:  [real(r8) (:)   ]  height of urban roof (m)                          
-         wtlunit_roof        =>   lun%wtlunit_roof                          , & ! Input:  [real(r8) (:)   ]  weight of roof with respect to landunit           
-         canyon_hwr          =>   lun%canyon_hwr                            , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
-         wtroad_perv         =>   lun%wtroad_perv                           , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
+         snl                 =>   col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                              
+         ctype               =>   col_pp%itype                                 , & ! Input:  [integer  (:)   ]  column type                                        
+         z_0_town            =>   lun_pp%z_0_town                              , & ! Input:  [real(r8) (:)   ]  momentum roughness length of urban landunit (m)   
+         z_d_town            =>   lun_pp%z_d_town                              , & ! Input:  [real(r8) (:)   ]  displacement height of urban landunit (m)         
+         ht_roof             =>   lun_pp%ht_roof                               , & ! Input:  [real(r8) (:)   ]  height of urban roof (m)                          
+         wtlunit_roof        =>   lun_pp%wtlunit_roof                          , & ! Input:  [real(r8) (:)   ]  weight of roof with respect to landunit           
+         canyon_hwr          =>   lun_pp%canyon_hwr                            , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
+         wtroad_perv         =>   lun_pp%wtroad_perv                           , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
 
          forc_t              =>   atm2lnd_vars%forc_t_not_downscaled_grc    , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (K)                       
          forc_th             =>   atm2lnd_vars%forc_th_not_downscaled_grc   , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (K)             
@@ -282,9 +282,9 @@ contains
 
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
-         g = lun%gridcell(l)
+         g = lun_pp%gridcell(l)
 
-         local_secp1(l)        = secs + nint((grc%londeg(g)/degpsec)/dtime)*dtime
+         local_secp1(l)        = secs + nint((grc_pp%londeg(g)/degpsec)/dtime)*dtime
          local_secp1(l)        = mod(local_secp1(l),isecspday)
 
          ! Error checks
@@ -297,10 +297,10 @@ contains
             write (iulog,*) 'clm model is stopping'
             call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
-         if (forc_hgt_u_patch(lun%pfti(l)) - z_d_town(l) <= z_0_town(l)) then
+         if (forc_hgt_u_patch(lun_pp%pfti(l)) - z_d_town(l) <= z_0_town(l)) then
             write (iulog,*) 'aerodynamic parameter error in UrbanFluxes'
             write (iulog,*) 'h_u - z_d <= z_0'
-            write (iulog,*) 'forc_hgt_u_patch, z_d_town, z_0_town: ', forc_hgt_u_patch(lun%pfti(l)), z_d_town(l), &
+            write (iulog,*) 'forc_hgt_u_patch, z_d_town, z_0_town: ', forc_hgt_u_patch(lun_pp%pfti(l)), z_d_town(l), &
                  z_0_town(l)
             write (iulog,*) 'clm model is stopping'
             call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
@@ -314,7 +314,7 @@ contains
 
          canyontop_wind(l) = ur(l) * &
               log( (ht_roof(l)-z_d_town(l)) / z_0_town(l) ) / &
-              log( (forc_hgt_u_patch(lun%pfti(l))-z_d_town(l)) / z_0_town(l) )
+              log( (forc_hgt_u_patch(lun_pp%pfti(l))-z_d_town(l)) / z_0_town(l) )
 
          ! U component of canyon wind 
 
@@ -336,14 +336,14 @@ contains
 
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
-         g = lun%gridcell(l)
+         g = lun_pp%gridcell(l)
 
-         thm_g(l) = forc_t(g) + lapse_rate*forc_hgt_t_patch(lun%pfti(l))
+         thm_g(l) = forc_t(g) + lapse_rate*forc_hgt_t_patch(lun_pp%pfti(l))
          thv_g(l) = forc_th(g)*(1._r8+0.61_r8*forc_q(g))
          dth(l)   = thm_g(l)-taf(l)
          dqh(l)   = forc_q(g)-qaf(l)
          dthv     = dth(l)*(1._r8+0.61_r8*forc_q(g))+0.61_r8*forc_th(g)*dqh(l)
-         zldis(l) = forc_hgt_u_patch(lun%pfti(l)) - z_d_town(l)
+         zldis(l) = forc_hgt_u_patch(lun_pp%pfti(l)) - z_d_town(l)
 
          ! Initialize Monin-Obukhov length and wind speed including convective velocity
 
@@ -391,7 +391,7 @@ contains
 
          do fl = 1, num_urbanl
             l = filter_urbanl(fl)
-            g = lun%gridcell(l)
+            g = lun_pp%gridcell(l)
 
             ! Determine aerodynamic resistance to fluxes from urban canopy air to
             ! atmosphere
@@ -418,7 +418,7 @@ contains
          ! and specific humidity (numerator) and is a landunit quantity
          do fl = 1, num_urbanl
             l = filter_urbanl(fl)
-            g = lun%gridcell(l)
+            g = lun_pp%gridcell(l)
 
             taf_numer(l) = thm_g(l)/rahu(l)
             taf_denom(l) = 1._r8/rahu(l)
@@ -437,7 +437,7 @@ contains
 
          do fc = 1,num_urbanc
             c = filter_urbanc(fc)
-            l = col%landunit(c)
+            l = col_pp%landunit(c)
 
             if (ctype(c) == icol_roof) then
 
@@ -597,7 +597,7 @@ contains
 
          do fl = 1, num_urbanl
             l = filter_urbanl(fl)
-            g = lun%gridcell(l)
+            g = lun_pp%gridcell(l)
 
             ! Total waste heat and heat from AC is sum of heat for walls and roofs
             ! accounting for different surface areas
@@ -634,7 +634,7 @@ contains
          ! TODO: Some of these constants replicate what is in FrictionVelocity and BareGround fluxes should consildate. EBK
          do fl = 1, num_urbanl
             l = filter_urbanl(fl)
-            g = lun%gridcell(l)
+            g = lun_pp%gridcell(l)
 
             dth(l) = thm_g(l)-taf(l)
             dqh(l) = forc_q(g)-qaf(l)
@@ -667,9 +667,9 @@ contains
       do f = 1, num_urbanp
 
          p = filter_urbanp(f)
-         c = pft%column(p)
-         g = pft%gridcell(p)
-         l = pft%landunit(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
+         l = veg_pp%landunit(p)
 
          ram1(p) = ramu(l)  !pass value to global variable
 
@@ -787,11 +787,11 @@ contains
       ! the scaled heat fluxes above
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
-         g = lun%gridcell(l)
+         g = lun_pp%gridcell(l)
          eflx(l)       = -(forc_rho(g)*cpair/rahu(l))*(thm_g(l) - taf(l))
          qflx(l)       = -(forc_rho(g)/rawu(l))*(forc_q(g) - qaf(l))
-         eflx_scale(l) = sum(eflx_sh_grnd_scale(lun%pfti(l):lun%pftf(l)))
-         qflx_scale(l) = sum(qflx_evap_soi_scale(lun%pfti(l):lun%pftf(l)))
+         eflx_scale(l) = sum(eflx_sh_grnd_scale(lun_pp%pfti(l):lun_pp%pftf(l)))
+         qflx_scale(l) = sum(qflx_evap_soi_scale(lun_pp%pfti(l):lun_pp%pftf(l)))
          eflx_err(l)   = eflx_scale(l) - eflx(l)
          qflx_err(l)   = qflx_scale(l) - qflx(l)
       end do
@@ -811,7 +811,7 @@ contains
          if (abs(eflx_err(indexl)) > .01_r8) then
             write(iulog,*)'clm model is stopping - error is greater than .01 W/m**2'
             write(iulog,*)'eflx_scale    = ',eflx_scale(indexl)
-            write(iulog,*)'eflx_sh_grnd_scale: ',eflx_sh_grnd_scale(lun%pfti(indexl):lun%pftf(indexl))
+            write(iulog,*)'eflx_sh_grnd_scale: ',eflx_sh_grnd_scale(lun_pp%pfti(indexl):lun_pp%pftf(indexl))
             write(iulog,*)'eflx          = ',eflx(indexl)
             call endrun(decomp_index=indexl, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
@@ -842,7 +842,7 @@ contains
 
       do fc = 1,num_urbanc
          c = filter_urbanc(fc)
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
 
          if (ctype(c) == icol_roof) then
             t_roof_innerl(l) = t_soisno(c,nlevurb)
@@ -868,7 +868,7 @@ contains
       do j = 1, nlevgrnd
          do f = 1, num_urbanp
             p = filter_urbanp(f)
-            c = pft%column(p)
+            c = veg_pp%column(p)
             if (ctype(c) == icol_road_perv) then
                rootr(p,j) = rootr_road_perv(c,j)
             else
@@ -880,9 +880,9 @@ contains
       do f = 1, num_urbanp
 
          p = filter_urbanp(f)
-         c = pft%column(p)
-         g = pft%gridcell(p)
-         l = pft%landunit(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
+         l = veg_pp%landunit(p)
 
          ! Use urban canopy air temperature and specific humidity to represent 
          ! 2-m temperature and humidity

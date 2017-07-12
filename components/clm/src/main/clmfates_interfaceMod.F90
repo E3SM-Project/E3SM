@@ -32,7 +32,7 @@ module CLMFatesInterfaceMod
    !  use ed_driver_interface, only: 
    
    ! Used CLM Modules
-   use PatchType         , only : pft
+   use VegetationType    , only : veg_pp
    use shr_kind_mod      , only : r8 => shr_kind_r8
    use decompMod         , only : bounds_type
    use WaterStateType    , only : waterstate_type
@@ -80,9 +80,9 @@ module CLMFatesInterfaceMod
    use decompMod         , only : get_proc_bounds,   &
                                   get_proc_clumps,   &
                                   get_clump_bounds
-   use GridCellType      , only : grc
-   use ColumnType        , only : col
-   use LandunitType      , only : lun
+   use GridCellType      , only : grc_pp
+   use ColumnType        , only : col_pp
+   use LandunitType      , only : lun_pp
    use landunit_varcon   , only : istsoil
    use abortutils        , only : endrun
    use shr_log_mod       , only : errMsg => shr_log_errMsg    
@@ -334,7 +334,7 @@ contains
 
          s = 0
          do c = bounds_clump%begc,bounds_clump%endc
-            l = col%landunit(c)
+            l = col_pp%landunit(c)
                
             ! These are the key constraints that determine if this column
             ! will have a FATES site associated with it
@@ -342,13 +342,13 @@ contains
             ! INTERF-TODO: WE HAVE NOT FILTERED OUT FATES SITES ON INACTIVE COLUMNS.. YET
             ! NEED A RUN-TIME ROUTINE THAT CLEARS AND REWRITES THE SITE LIST
 
-            if (lun%itype(l) == istsoil ) then
+            if (lun_pp%itype(l) == istsoil ) then
                s = s + 1
                collist(s) = c
                this%f2hmap(nc)%hsites(c) = s
                if(DEBUG)then
                   write(iulog,*) 'alm_fates%init(): thread',nc,': found column',c,'with lu',l
-                  write(iulog,*) 'LU type:', lun%itype(l)
+                  write(iulog,*) 'LU type:', lun_pp%itype(l)
                end if
             endif
             
@@ -395,9 +395,9 @@ contains
             ! Pass any grid-cell derived attributes to the site
             ! ---------------------------------------------------------------------------
             c = this%f2hmap(nc)%fcolumn(s)
-            g = col%gridcell(c)
-            this%fates(nc)%sites(s)%lat = grc%latdeg(g)
-            this%fates(nc)%sites(s)%lon = grc%londeg(g)
+            g = col_pp%gridcell(c)
+            this%fates(nc)%sites(s)%lat = grc_pp%latdeg(g)
+            this%fates(nc)%sites(s)%lon = grc_pp%londeg(g)
 
          end do
 
@@ -423,9 +423,9 @@ contains
 
          do s = 1, this%fates(nc)%nsites
             c = this%f2hmap(nc)%fcolumn(s)
-            pi = col%pfti(c)+1
-            pf = col%pftf(c)
-            pft%is_fates(pi:pf) = .true.
+            pi = col_pp%pfti(c)+1
+            pf = col_pp%pftf(c)
+            veg_pp%is_fates(pi:pf) = .true.
          end do
 
       end do
@@ -463,13 +463,13 @@ contains
       do c = bounds_clump%begc,bounds_clump%endc
 
          ! FATES ACTIVE BUT HLM IS NOT
-         if(this%f2hmap(nc)%hsites(c)>0 .and. .not.col%active(c)) then
+         if(this%f2hmap(nc)%hsites(c)>0 .and. .not.col_pp%active(c)) then
             
             write(iulog,*) 'INACTIVE COLUMN WITH ACTIVE FATES SITE'
             write(iulog,*) 'c = ',c
             call endrun(msg=errMsg(sourcefile, __LINE__))
 
-         elseif (this%f2hmap(nc)%hsites(c)==0 .and. col%active(c)) then
+         elseif (this%f2hmap(nc)%hsites(c)==0 .and. col_pp%active(c)) then
             
             write(iulog,*) 'ACTIVE COLUMN WITH INACTIVE FATES SITE'
             write(iulog,*) 'c = ',c
@@ -562,12 +562,12 @@ contains
          ! TO-DO: SHOULD THIS BE LIQVOL OR IS VOL OK? (RGK-02-2017)
 
          this%fates(nc)%bc_in(s)%t_veg24_si = &
-               temperature_inst%t_veg24_patch(col%pfti(c))
+               temperature_inst%t_veg24_patch(col_pp%pfti(c))
 
          this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = canopystate_inst%altmax_lastyear_indx_col(c)
 
          do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
-            p = ifp+col%pfti(c)
+            p = ifp+col_pp%pfti(c)
             this%fates(nc)%bc_in(s)%t_veg24_pa(ifp) = &
                  temperature_inst%t_veg24_patch(p)
 
@@ -763,9 +763,9 @@ contains
        ! variables is to inform patch%wtcol(p).  wt_ed is imposed on wtcol,
        ! but only for FATES columns.
 
-       pft%is_veg(bounds_clump%begp:bounds_clump%endp)        = .false.
-       pft%is_bareground(bounds_clump%begp:bounds_clump%endp) = .false.
-       pft%wt_ed(bounds_clump%begp:bounds_clump%endp)         = 0.0_r8
+       veg_pp%is_veg(bounds_clump%begp:bounds_clump%endp)        = .false.
+       veg_pp%is_bareground(bounds_clump%begp:bounds_clump%endp) = .false.
+       veg_pp%wt_ed(bounds_clump%begp:bounds_clump%endp)         = 0.0_r8
 
        do s = 1,this%fates(nc)%nsites
           
@@ -773,25 +773,25 @@ contains
 
           ! Other modules may have AI's we only flush values
           ! that are on the naturally vegetated columns
-          elai(col%pfti(c):col%pftf(c)) = 0.0_r8
-          tlai(col%pfti(c):col%pftf(c)) = 0.0_r8
-          esai(col%pfti(c):col%pftf(c)) = 0.0_r8
-          tsai(col%pfti(c):col%pftf(c)) = 0.0_r8
-          htop(col%pfti(c):col%pftf(c)) = 0.0_r8
-          hbot(col%pfti(c):col%pftf(c)) = 0.0_r8
+          elai(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
+          tlai(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
+          esai(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
+          tsai(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
+          htop(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
+          hbot(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
 
           ! FATES does not dictate bare-ground so turbulent
           ! variables are not over-written.
-          z0m(col%pfti(c)+1:col%pftf(c)) = 0.0_r8
-          displa(col%pfti(c)+1:col%pftf(c)) = 0.0_r8
-          dleaf_patch(col%pfti(c)+1:col%pftf(c)) = 0.0_r8
+          z0m(col_pp%pfti(c)+1:col_pp%pftf(c)) = 0.0_r8
+          displa(col_pp%pfti(c)+1:col_pp%pftf(c)) = 0.0_r8
+          dleaf_patch(col_pp%pfti(c)+1:col_pp%pftf(c)) = 0.0_r8
 
-          frac_veg_nosno_alb(col%pfti(c):col%pftf(c)) = 0.0_r8
+          frac_veg_nosno_alb(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
 
           ! Set the bareground patch indicator
-          pft%is_bareground(col%pfti(c)) = .true.
+          veg_pp%is_bareground(col_pp%pfti(c)) = .true.
           npatch = this%fates(nc)%sites(s)%youngest_patch%patchno
-          pft%wt_ed(col%pfti(c)) = 1.0-sum(this%fates(nc)%bc_out(s)%canopy_fraction_pa(1:npatch))
+          veg_pp%wt_ed(col_pp%pfti(c)) = 1.0-sum(this%fates(nc)%bc_out(s)%canopy_fraction_pa(1:npatch))
 
           if(sum(this%fates(nc)%bc_out(s)%canopy_fraction_pa(1:npatch))>1.0_r8)then
              write(iulog,*)'Projected Canopy Area of all FATES patches'
@@ -801,14 +801,14 @@ contains
 
           do ifp = 1, npatch
 
-             p = ifp+col%pfti(c)
+             p = ifp+col_pp%pfti(c)
 
              ! bc_out(s)%canopy_fraction_pa(ifp) is the area fraction
              ! the site's total ground area that is occupied by the 
              ! area footprint of the current patch's vegetation canopy 
 
-             pft%is_veg(p) = .true.
-             pft%wt_ed(p)  = this%fates(nc)%bc_out(s)%canopy_fraction_pa(ifp)
+             veg_pp%is_veg(p) = .true.
+             veg_pp%wt_ed(p)  = this%fates(nc)%bc_out(s)%canopy_fraction_pa(ifp)
              elai(p) = this%fates(nc)%bc_out(s)%elai_pa(ifp)
              tlai(p) = this%fates(nc)%bc_out(s)%tlai_pa(ifp)
              esai(p) = this%fates(nc)%bc_out(s)%esai_pa(ifp)
@@ -1155,7 +1155,7 @@ contains
 
                  do j = 1, nlevsoi
                     vol_ice = min(soilstate_inst%watsat_col(c,j), &
-                          waterstate_inst%h2osoi_ice_col(c,j)/(col%dz(c,j)*denice))
+                          waterstate_inst%h2osoi_ice_col(c,j)/(col_pp%dz(c,j)*denice))
                     eff_porosity = max(0.01_r8,soilstate_inst%watsat_col(c,j)-vol_ice)
                     this%fates(nc)%bc_in(s)%eff_porosity_gl(j) = eff_porosity
                  end do
@@ -1244,12 +1244,12 @@ contains
 
         do s = 1, this%fates(nc)%nsites
            c = this%f2hmap(nc)%fcolumn(s)
-           g = col%gridcell(c)
+           g = col_pp%gridcell(c)
 
            do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
            !do ifp = 1, this%fates(nc)%bc_in(s)%npatches
 
-              p = ifp+col%pfti(c)
+              p = ifp+col_pp%pfti(c)
 
               this%fates(nc)%bc_in(s)%solad_parb(ifp,:) = forc_solad(g,:)
               this%fates(nc)%bc_in(s)%solai_parb(ifp,:) = forc_solai(g,:)
@@ -1275,7 +1275,7 @@ contains
         do s = 1, this%fates(nc)%nsites
            c = this%f2hmap(nc)%fcolumn(s)
            do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
-              p = ifp+col%pfti(c)
+              p = ifp+col_pp%pfti(c)
               fsun(p)   = this%fates(nc)%bc_out(s)%fsun_pa(ifp)
               laisun(p) = this%fates(nc)%bc_out(s)%laisun_pa(ifp)
               laisha(p) = this%fates(nc)%bc_out(s)%laisha_pa(ifp)
@@ -1474,7 +1474,7 @@ contains
            c = this%f2hmap(nc)%fcolumn(s)
            do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
               
-              p = ifp+col%pfti(c)
+              p = ifp+col_pp%pfti(c)
               
               do j = 1,nlevgrnd
                  
@@ -1554,7 +1554,7 @@ contains
 
          do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
             
-            p = ifp+col%pfti(c)
+            p = ifp+col_pp%pfti(c)
 
             ! Check to see if this patch is in the filter
             ! Note that this filter is most likely changing size, and getting smaller
@@ -1595,10 +1595,10 @@ contains
       ! ---------------------------------------------------------------------------------
       do icp = 1,fn
          p = filterp(icp)
-         c = pft%column(p)
+         c = veg_pp%column(p)
          s = this%f2hmap(nc)%hsites(c)
          ! do if structure here and only pass natveg columns
-         ifp = p-col%pfti(c)
+         ifp = p-col_pp%pfti(c)
          if(this%fates(nc)%bc_in(s)%filter_photo_pa(ifp) /= 2)then
             write(iulog,*) 'Not all patches on the natveg column in the photosynthesis'
             write(iulog,*) 'filter ran photosynthesis'
@@ -1638,9 +1638,9 @@ contains
     ! Run a check on the filter
     do icp = 1,fn
        p = filterp(icp)
-       c = pft%column(p)
+       c = veg_pp%column(p)
        s = this%f2hmap(nc)%hsites(c)
-       ifp = p-col%pfti(c)
+       ifp = p-col_pp%pfti(c)
        if(this%fates(nc)%bc_in(s)%filter_photo_pa(ifp) /= 3)then
           call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
@@ -1699,7 +1699,7 @@ contains
        c = this%f2hmap(nc)%fcolumn(s)
        do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
           
-          p = ifp+col%pfti(c)
+          p = ifp+col_pp%pfti(c)
           
           if( any(filter_vegsol==p) )then
     
@@ -1726,10 +1726,10 @@ contains
     ! -----------------------------------------------------------------------------------
     do icp = 1,num_vegsol
        p = filter_vegsol(icp)
-       c = pft%column(p)
+       c = veg_pp%column(p)
        s = this%f2hmap(nc)%hsites(c)
        ! do if structure here and only pass natveg columns
-       ifp = p-col%pfti(c)
+       ifp = p-col_pp%pfti(c)
 
        if(.not.this%fates(nc)%bc_in(s)%filter_vegzen_pa(ifp) )then
           write(iulog,*) 'Not all patches on the natveg column were passed to canrad'
@@ -1831,11 +1831,11 @@ contains
     do s = 1, this%fates(ci)%nsites
        c = this%f2hmap(ci)%fcolumn(s)
 
-       frictionvel_inst%z0m_patch(col%pfti(c)+1:col%pftf(c)) = 0.0_r8
-       canopystate_inst%displa_patch(col%pfti(c)+1:col%pftf(c)) = 0.0_r8
+       frictionvel_inst%z0m_patch(col_pp%pfti(c)+1:col_pp%pftf(c)) = 0.0_r8
+       canopystate_inst%displa_patch(col_pp%pfti(c)+1:col_pp%pftf(c)) = 0.0_r8
 
        do ifp = 1, this%fates(ci)%sites(s)%youngest_patch%patchno
-          p = ifp+col%pfti(c)
+          p = ifp+col_pp%pfti(c)
           frictionvel_inst%z0m_patch(p) = this%fates(ci)%bc_out(s)%z0m_pa(ifp)
           canopystate_inst%displa_patch(p) = this%fates(ci)%bc_out(s)%displa_pa(ifp)
        end do
@@ -1931,7 +1931,7 @@ contains
       do s=1,this%fates(nc)%nsites
          c = this%f2hmap(nc)%fcolumn(s)
          this%fates_hist%iovar_map(nc)%site_index(s)   = c
-         this%fates_hist%iovar_map(nc)%patch1_index(s) = col%pfti(c)+1
+         this%fates_hist%iovar_map(nc)%patch1_index(s) = col_pp%pfti(c)+1
       end do
       
    end do
@@ -2122,9 +2122,9 @@ contains
 
     do s = 1, this%fates(nc)%nsites
        c = this%f2hmap(nc)%fcolumn(s)
-       this%fates(nc)%bc_in(s)%zi_sisl(0:hlm_numlevsoil)    = col%zi(c,0:hlm_numlevsoil)
-       this%fates(nc)%bc_in(s)%dz_sisl(1:hlm_numlevsoil)    = col%dz(c,1:hlm_numlevsoil)
-       this%fates(nc)%bc_in(s)%z_sisl(1:hlm_numlevsoil)     = col%z(c,1:hlm_numlevsoil)
+       this%fates(nc)%bc_in(s)%zi_sisl(0:hlm_numlevsoil)    = col_pp%zi(c,0:hlm_numlevsoil)
+       this%fates(nc)%bc_in(s)%dz_sisl(1:hlm_numlevsoil)    = col_pp%dz(c,1:hlm_numlevsoil)
+       this%fates(nc)%bc_in(s)%z_sisl(1:hlm_numlevsoil)     = col_pp%z(c,1:hlm_numlevsoil)
        this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:hlm_numlevdecomp_full) = &
              dzsoi_decomp(1:hlm_numlevdecomp_full)
     end do
@@ -2160,8 +2160,8 @@ contains
     ! root water sink is the same that was expected in the hydrology filter
     num_filter_fates = 0
     do s = 1,num_filterc
-       l = col%landunit(filterc(s))
-       if (lun%itype(l) == istsoil ) then
+       l = col_pp%landunit(filterc(s))
+       if (lun_pp%itype(l) == istsoil ) then
           num_filter_fates = num_filter_fates + 1
        end if
     end do
@@ -2260,7 +2260,7 @@ contains
             soilstate_inst%eff_porosity_col(c,1:nlevsoi)
 
       do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno 
-         p = ifp+col%pfti(c)
+         p = ifp+col_pp%pfti(c)
          this%fates(nc)%bc_in(s)%swrad_net_pa(ifp) = solarabs_inst%fsa_patch(p)
          this%fates(nc)%bc_in(s)%lwrad_net_pa(ifp) = energyflux_inst%eflx_lwrad_net_patch(p)
          this%fates(nc)%bc_in(s)%qflx_transp_pa(ifp) = waterflux_inst%qflx_tran_veg_patch(p)

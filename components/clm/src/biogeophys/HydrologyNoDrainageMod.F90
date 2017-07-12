@@ -17,8 +17,8 @@ Module HydrologyNoDrainageMod
   use SoilStateType     , only : soilstate_type
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
-  use LandunitType      , only : lun                
-  use ColumnType        , only : col                
+  use LandunitType      , only : lun_pp                
+  use ColumnType        , only : col_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -123,12 +123,12 @@ contains
     !-----------------------------------------------------------------------
     
     associate(                                                          & 
-         z                  => col%z                                  , & ! Input:  [real(r8) (:,:) ]  layer depth  (m)                      
-         dz                 => col%dz                                 , & ! Input:  [real(r8) (:,:) ]  layer thickness depth (m)             
-         zi                 => col%zi                                 , & ! Input:  [real(r8) (:,:) ]  interface depth (m)                   
-         snl                => col%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers                    
-         nlev2bed           => col%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
-         ctype              => col%itype                              , & ! Input:  [integer  (:)   ]  column type                              
+         z                  => col_pp%z                                  , & ! Input:  [real(r8) (:,:) ]  layer depth  (m)                      
+         dz                 => col_pp%dz                                 , & ! Input:  [real(r8) (:,:) ]  layer thickness depth (m)             
+         zi                 => col_pp%zi                                 , & ! Input:  [real(r8) (:,:) ]  interface depth (m)                   
+         snl                => col_pp%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers                    
+         nlev2bed           => col_pp%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+         ctype              => col_pp%itype                              , & ! Input:  [integer  (:)   ]  column type                              
 
          t_h2osfc           => temperature_vars%t_h2osfc_col          , & ! Input:  [real(r8) (:)   ]  surface water temperature               
          dTdz_top           => temperature_vars%dTdz_top_col          , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer (col) [K m-1] !
@@ -325,8 +325,8 @@ contains
       ! Calculate soil temperature and total water (liq+ice) in top 17cm of soil
       do fc = 1, num_nolakec
          c = filter_nolakec(fc)
-         l = col%landunit(c)
-         if (.not. lun%urbpoi(l)) then
+         l = col_pp%landunit(c)
+         if (.not. lun_pp%urbpoi(l)) then
             t_soi_10cm(c) = 0._r8
             tsoi17(c) = 0._r8
             h2osoi_liqice_10cm(c) = 0._r8
@@ -336,8 +336,8 @@ contains
          c = filter_nolakec(fc)
 	 nlevbed = nlev2bed(c)
          do j = 1, nlevbed
-            l = col%landunit(c)
-            if (.not. lun%urbpoi(l)) then
+            l = col_pp%landunit(c)
+            if (.not. lun_pp%urbpoi(l)) then
                ! soil T at top 17 cm added by F. Li and S. Levis
                if (zi(c,j) <= 0.17_r8) then
                   fracl = 1._r8
@@ -374,7 +374,7 @@ contains
       do fc = 1, num_nolakec
 
          c = filter_nolakec(fc)
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
 
          ! t_grnd is weighted average of exposed soil and snow
          if (snl(c) < 0) then
@@ -385,13 +385,13 @@ contains
             t_grnd(c) = (1 - frac_h2osfc(c)) * t_soisno(c,1) + frac_h2osfc(c) * t_h2osfc(c)
          endif
 
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             t_grnd_u(c) = t_soisno(c,snl(c)+1)
          else
             t_soi_10cm(c) = t_soi_10cm(c)/0.1_r8
             tsoi17(c) =  tsoi17(c)/0.17_r8         ! F. Li and S. Levis
          end if
-         if (lun%itype(l)==istsoil .or. lun%itype(l)==istcrop) then
+         if (lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) then
             t_grnd_r(c) = t_soisno(c,snl(c)+1)
          end if
 

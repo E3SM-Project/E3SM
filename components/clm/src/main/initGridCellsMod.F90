@@ -16,10 +16,10 @@ module initGridCellsMod
   use clm_varctl     , only : iulog
   use clm_varcon     , only : namep, namec, namel, nameg
   use decompMod      , only : bounds_type, ldecomp
-  use GridcellType   , only : grc                
-  use LandunitType   , only : lun                
-  use ColumnType     , only : col                
-  use PatchType      , only : pft                
+  use GridcellType   , only : grc_pp                
+  use LandunitType   , only : lun_pp                
+  use ColumnType     , only : col_pp                
+  use VegetationType , only : veg_pp                
   use initSubgridMod , only : clm_ptrs_compdown, clm_ptrs_check
   use initSubgridMod , only : add_landunit, add_column, add_patch
   !
@@ -193,12 +193,12 @@ contains
        ! Set some other gridcell-level variables
 
        do gdc = bounds_clump%begg,bounds_clump%endg
-          grc%gindex(gdc) = ldecomp%gdc2glo(gdc)
-          grc%area(gdc)   = ldomain%area(gdc)
-          grc%latdeg(gdc) = ldomain%latc(gdc) 
-          grc%londeg(gdc) = ldomain%lonc(gdc) 
-          grc%lat(gdc)    = grc%latdeg(gdc) * SHR_CONST_PI/180._r8  
-          grc%lon(gdc)    = grc%londeg(gdc) * SHR_CONST_PI/180._r8
+          grc_pp%gindex(gdc) = ldecomp%gdc2glo(gdc)
+          grc_pp%area(gdc)   = ldomain%area(gdc)
+          grc_pp%latdeg(gdc) = ldomain%latc(gdc) 
+          grc_pp%londeg(gdc) = ldomain%lonc(gdc) 
+          grc_pp%lat(gdc)    = grc_pp%latdeg(gdc) * SHR_CONST_PI/180._r8  
+          grc_pp%lon(gdc)    = grc_pp%londeg(gdc) * SHR_CONST_PI/180._r8
        enddo
 
        ! Fill in subgrid datatypes
@@ -210,7 +210,7 @@ contains
        ! responsible for all columns and pfts in L.
        call clm_ptrs_check(bounds_clump)
 
-       ! Set pft%wtlunit, pft%wtgcell and col%wtgcell
+       ! Set veg_pp%wtlunit, veg_pp%wtgcell and col_pp%wtgcell
        call compute_higher_order_weights(bounds_clump)
 
     end do
@@ -584,7 +584,7 @@ contains
 
     max_nlun_local = 0
     do l = bounds_proc%begl, bounds_proc%endl
-       g       = lun%gridcell(l)
+       g       = lun_pp%gridcell(l)
        nlun(g) = nlun(g) + 1
        if (nlun(g) > max_nlun_local) max_nlun_local = nlun(g)
     enddo
@@ -613,7 +613,7 @@ contains
     nlun = 0
     do l = bounds_proc%begl, bounds_proc%endl
 
-       g       = lun%gridcell(l)
+       g       = lun_pp%gridcell(l)
        beg_idx = (g-bounds_proc%begg)*nblocks + nlun(g)*nvals + 1
        end_idx = beg_idx + nvals - 1
 
@@ -646,22 +646,22 @@ contains
                 values(1:nvals) = data_recv(beg_idx:end_idx)
                 call SetValuesForLandunit(l, values)
 
-                if (lun%itype(l) /= ltype) then
+                if (lun_pp%itype(l) /= ltype) then
                    l = l - 1
                 else
 
                    ! Correct the local grid cell index
-                   lun%gridcell(l) = g
+                   lun_pp%gridcell(l) = g
 
                    ! Correct the indices of column associated with the landunit
-                   count       = lun%colf(l) - lun%coli(l)
-                   lun%coli(l) = lun%colf(l-1) + 1
-                   lun%colf(l) = lun%coli(l) + count
+                   count       = lun_pp%colf(l) - lun_pp%coli(l)
+                   lun_pp%coli(l) = lun_pp%colf(l-1) + 1
+                   lun_pp%colf(l) = lun_pp%coli(l) + count
 
                    ! Correct the indices of PFT associated with the landunit
-                   count       = lun%pftf(l) - lun%pfti(l)
-                   lun%pfti(l) = lun%pftf(l-1) + 1
-                   lun%pftf(l) = lun%pfti(l) + count
+                   count       = lun_pp%pftf(l) - lun_pp%pfti(l)
+                   lun_pp%pfti(l) = lun_pp%pftf(l-1) + 1
+                   lun_pp%pftf(l) = lun_pp%pfti(l) + count
                 endif
              endif
 
@@ -729,8 +729,8 @@ contains
     landunit_index = 0
 
     do lidx = bounds_proc%begl_all,  bounds_proc%endl_all
-       if (landunit_index(lun%gridcell(lidx),lun%itype(lidx)) == 0) then
-          landunit_index(lun%gridcell(lidx),lun%itype(lidx)) = lidx
+       if (landunit_index(lun_pp%gridcell(lidx),lun_pp%itype(lidx)) == 0) then
+          landunit_index(lun_pp%gridcell(lidx),lun_pp%itype(lidx)) = lidx
        endif
     enddo
 
@@ -740,7 +740,7 @@ contains
 
     max_ncol_local = 0
     do c = bounds_proc%begc, bounds_proc%endc
-       g       = col%gridcell(c)
+       g       = col_pp%gridcell(c)
        ncol(g) = ncol(g) + 1
        if (ncol(g) > max_ncol_local) max_ncol_local = ncol(g)
     enddo
@@ -781,10 +781,10 @@ contains
     grid_count(:) = 0.d0
     last_lun_type   = -1
     do l = bounds_proc%begl_all, bounds_proc%endl_all
-       g             = lun%gridcell(l)
-       if (last_lun_type /= lun%itype(l)) then
+       g             = lun_pp%gridcell(l)
+       if (last_lun_type /= lun_pp%itype(l)) then
           grid_count(:) = 0.d0
-          last_lun_type = lun%itype(l)
+          last_lun_type = lun_pp%itype(l)
        endif
        grid_count(g) = grid_count(g) + 1.d0
        lun_rank(l)   = grid_count(g)
@@ -794,11 +794,11 @@ contains
     ncol = 0
     do c = bounds_proc%begc, bounds_proc%endc
 
-       g = col%gridcell(c)
-       l = col%landunit(c)
+       g = col_pp%gridcell(c)
+       l = col_pp%landunit(c)
 
        beg_idx            = (g-bounds_proc%begg)*nblocks + ncol(g)*nvals + 1
-       data_send(beg_idx) = real(lun%itype(l))
+       data_send(beg_idx) = real(lun_pp%itype(l))
 
        beg_idx            = beg_idx + 1
        data_send(beg_idx) = lun_rank(l)
@@ -841,13 +841,13 @@ contains
                 values(1:nvals_col) = data_recv(beg_idx:end_idx)
                 call SetValuesForColumn(c, values)
 
-                col%landunit(c) = landunit_index(g,ltype) + l_rank - 1
-                col%gridcell(c) = g
+                col_pp%landunit(c) = landunit_index(g,ltype) + l_rank - 1
+                col_pp%gridcell(c) = g
 
                 ! Correct the indices of PFT associated with the landunit
-                count       = col%pftf(c) - col%pfti(c)
-                col%pfti(c) = col%pftf(c-1) + 1
-                col%pftf(c) = col%pfti(c) + count
+                count       = col_pp%pftf(c) - col_pp%pfti(c)
+                col_pp%pfti(c) = col_pp%pftf(c-1) + 1
+                col_pp%pftf(c) = col_pp%pfti(c) + count
 
              endif
           enddo
@@ -917,8 +917,8 @@ contains
     landunit_index = 0
 
     do lidx = bounds_proc%begl_all,  bounds_proc%endl_all
-       if (landunit_index(lun%gridcell(lidx),lun%itype(lidx)) == 0) then
-          landunit_index(lun%gridcell(lidx),lun%itype(lidx)) = lidx
+       if (landunit_index(lun_pp%gridcell(lidx),lun_pp%itype(lidx)) == 0) then
+          landunit_index(lun_pp%gridcell(lidx),lun_pp%itype(lidx)) = lidx
        endif
     enddo
 
@@ -928,7 +928,7 @@ contains
 
     max_npft_local = 0
     do p = bounds_proc%begp, bounds_proc%endp
-       g       = pft%gridcell(p)
+       g       = veg_pp%gridcell(p)
        npft(g) = npft(g) + 1
        if (npft(g) > max_npft_local) max_npft_local = npft(g)
     enddo
@@ -970,10 +970,10 @@ contains
     grid_count(:) = 0.d0
     last_lun_type   = -1
     do l = bounds_proc%begl_all, bounds_proc%endl_all
-       g             = lun%gridcell(l)
-       if (last_lun_type /= lun%itype(l)) then
+       g             = lun_pp%gridcell(l)
+       if (last_lun_type /= lun_pp%itype(l)) then
           grid_count(:) = 0.d0
-          last_lun_type = lun%itype(l)
+          last_lun_type = lun_pp%itype(l)
        endif
        grid_count(g) = grid_count(g) + 1.d0
        lun_rank(l)   = grid_count(g)
@@ -983,10 +983,10 @@ contains
     grid_count(:) = 0.d0
     last_lun_type   = -1
     do c = bounds_proc%begc_all, bounds_proc%endc_all
-       g             = col%gridcell(c)
-       if (last_lun_type /= lun%itype(col%landunit(c))) then
+       g             = col_pp%gridcell(c)
+       if (last_lun_type /= lun_pp%itype(col_pp%landunit(c))) then
           grid_count(:) = 0.d0
-          last_lun_type = lun%itype(col%landunit(c))
+          last_lun_type = lun_pp%itype(col_pp%landunit(c))
        endif
        grid_count(g) = grid_count(g) + 1.d0
        col_rank(c)   = grid_count(g)
@@ -996,16 +996,16 @@ contains
     npft = 0
     do p = bounds_proc%begp, bounds_proc%endp
 
-       g = pft%gridcell(p)
-       l = pft%landunit(p)
-       c = pft%column(p)
+       g = veg_pp%gridcell(p)
+       l = veg_pp%landunit(p)
+       c = veg_pp%column(p)
 
        beg_idx            = (g-bounds_proc%begg)*nblocks + npft(g)*nvals + 1
-       ctype              = col%itype(pft%column(p))
+       ctype              = col_pp%itype(veg_pp%column(p))
        data_send(beg_idx) = real(ctype)
 
        beg_idx            = beg_idx + 1
-       ltype              = lun%itype(pft%landunit(p))
+       ltype              = lun_pp%itype(veg_pp%landunit(p))
        data_send(beg_idx) = real(ltype)
 
        beg_idx            = beg_idx + 1
@@ -1058,9 +1058,9 @@ contains
                 values(1:nvals_pft) = data_recv(beg_idx:end_idx)
                 call SetValuesForPatch(p, values)
 
-                pft%gridcell(p) = g
-                pft%landunit(p) = landunit_index(g,ltype) + l_rank - 1
-                pft%column(p)   = lun%coli(pft%landunit(p)) + c_rank - 1
+                veg_pp%gridcell(p) = g
+                veg_pp%landunit(p) = landunit_index(g,ltype) + l_rank - 1
+                veg_pp%column(p)   = lun_pp%coli(veg_pp%landunit(p)) + c_rank - 1
 
              endif
 
@@ -1097,18 +1097,18 @@ contains
 
     call get_proc_bounds(bounds_proc)
 
-    grc%landunit_indices(:,bounds_proc%endg + 1:bounds_proc%endg_all) = ispval
+    grc_pp%landunit_indices(:,bounds_proc%endg + 1:bounds_proc%endg_all) = ispval
 
     do l = bounds_proc%endl + 1 ,bounds_proc%endl_all
-       ltype = lun%itype(l)
-       curg  = lun%gridcell(l)
+       ltype = lun_pp%itype(l)
+       curg  = lun_pp%gridcell(l)
        if (curg < bounds_proc%begg_all .or. curg > bounds_proc%endg_all) then
           write(iulog,*) 'ERROR: landunit_indices ', l,curg,bounds_proc%begg_all,bounds_proc%endg_all
           call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
        end if
 
-       if (grc%landunit_indices(ltype, curg) == ispval) then
-          grc%landunit_indices(ltype, curg) = l
+       if (grc_pp%landunit_indices(ltype, curg) == ispval) then
+          grc_pp%landunit_indices(ltype, curg) = l
        else
           write(iulog,*) 'CheckGhostSubgridHierarchy ERROR: This landunit type has already been set for this gridcell'
           write(iulog,*) 'l, ltype, curg = ', l, ltype, curg
@@ -1118,24 +1118,24 @@ contains
 
     do l = bounds_proc%endl + 1, bounds_proc%endl_all
 
-       do c = lun%coli(l), lun%colf(l)
-          if (col%landunit(c) /= l) then
-             call endrun(msg="ERROR col%landunit(c) /= l "//errmsg(__FILE__, __LINE__))
+       do c = lun_pp%coli(l), lun_pp%colf(l)
+          if (col_pp%landunit(c) /= l) then
+             call endrun(msg="ERROR col_pp%landunit(c) /= l "//errmsg(__FILE__, __LINE__))
           endif
        enddo
 
-       do p = lun%pfti(l), lun%pftf(l)
-          if (pft%landunit(p) /= l) then
-             call endrun(msg="ERROR pft%landunit(c) /= l "//errmsg(__FILE__, __LINE__))
+       do p = lun_pp%pfti(l), lun_pp%pftf(l)
+          if (veg_pp%landunit(p) /= l) then
+             call endrun(msg="ERROR veg_pp%landunit(c) /= l "//errmsg(__FILE__, __LINE__))
              stop
           endif
        enddo
     enddo
 
     do c = bounds_proc%endc + 1, bounds_proc%endc_all
-       do p = col%pfti(c), col%pftf(c)
-          if (pft%column(p) /= c) then
-             call endrun(msg="ERROR pft%column(c) /= c "//errmsg(__FILE__, __LINE__))
+       do p = col_pp%pfti(c), col_pp%pftf(c)
+          if (veg_pp%column(p) /= c) then
+             call endrun(msg="ERROR veg_pp%column(c) /= c "//errmsg(__FILE__, __LINE__))
           endif
        enddo
     enddo

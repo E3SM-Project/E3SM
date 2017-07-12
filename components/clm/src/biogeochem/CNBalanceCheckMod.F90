@@ -17,8 +17,8 @@ module CNBalanceCheckMod
   use CNCarbonStateType   , only : carbonstate_type
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
-  use ColumnType          , only : col                
-  use GridcellType        , only : grc
+  use ColumnType          , only : col_pp                
+  use GridcellType        , only : grc_pp
 
   use CNDecompCascadeConType , only : decomp_cascade_con
   use clm_varpar          , only: ndecomp_cascade_transitions
@@ -242,7 +242,7 @@ contains
          if (err_found) then
             c = err_index
             write(iulog,*)'column cbalance error = ', col_errcb(c), c
-            write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
+            write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
             write(iulog,*)'input=',col_cinputs*dt
             write(iulog,*)'output=',col_coutputs*dt
             write(iulog,*)'er=',er(c)*dt,carbonflux_vars%hr_col(c)*dt
@@ -373,7 +373,7 @@ contains
       if (err_found) then
          c = err_index
          write(iulog,*)'column nbalance error = ', col_errnb(c), c, get_nstep()
-         write(iulog,*)'Latdeg,Londeg         = ',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
+         write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
          write(iulog,*)'begnb                 = ',col_begnb(c)
          write(iulog,*)'endnb                 = ',col_endnb(c)
          write(iulog,*)'delta store           = ',col_endnb(c)-col_begnb(c)
@@ -537,7 +537,7 @@ contains
       if (err_found) then
          c = err_index
          write(iulog,*)'column pbalance error = ', col_errpb(c), c
-         write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
+         write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
          write(iulog,*)'begpb       = ',col_begpb(c)
          write(iulog,*)'endpb       = ',col_endpb(c)
          write(iulog,*)'delta store = ',col_endpb(c)-col_begpb(c)

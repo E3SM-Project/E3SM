@@ -15,9 +15,9 @@ module subgridAveMod
   use clm_varctl    , only : iulog
   use abortutils    , only : endrun
   use decompMod     , only : bounds_type
-  use LandunitType  , only : lun                
-  use ColumnType    , only : col                
-  use PatchType     , only : pft                
+  use LandunitType  , only : lun_pp                
+  use ColumnType    , only : col_pp                
+  use VegetationType     , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -116,12 +116,12 @@ contains
     carr(bounds%begc:bounds%endc) = spval
     sumwt(bounds%begc:bounds%endc) = 0._r8
     do p = bounds%begp,bounds%endp
-       if (pft%active(p) .and. pft%wtcol(p) /= 0._r8) then
+       if (veg_pp%active(p) .and. veg_pp%wtcol(p) /= 0._r8) then
           if (parr(p) /= spval) then
-             c = pft%column(p)
+             c = veg_pp%column(p)
              if (sumwt(c) == 0._r8) carr(c) = 0._r8
-             carr(c) = carr(c) + parr(p) * scale_p2c(p) * pft%wtcol(p)
-             sumwt(c) = sumwt(c) + pft%wtcol(p)
+             carr(c) = carr(c) + parr(p) * scale_p2c(p) * veg_pp%wtcol(p)
+             sumwt(c) = sumwt(c) + veg_pp%wtcol(p)
           end if
        end if
     end do
@@ -179,12 +179,12 @@ contains
     do j = 1,num2d
        sumwt(bounds%begc : bounds%endc) = 0._r8
        do p = bounds%begp,bounds%endp
-          if (pft%active(p) .and. pft%wtcol(p) /= 0._r8) then
+          if (veg_pp%active(p) .and. veg_pp%wtcol(p) /= 0._r8) then
              if (parr(p,j) /= spval) then
-                c = pft%column(p)
+                c = veg_pp%column(p)
                 if (sumwt(c) == 0._r8) carr(c,j) = 0._r8
-                carr(c,j) = carr(c,j) + parr(p,j) * scale_p2c(p) * pft%wtcol(p)
-                sumwt(c) = sumwt(c) + pft%wtcol(p)
+                carr(c,j) = carr(c,j) + parr(p,j) * scale_p2c(p) * veg_pp%wtcol(p)
+                sumwt(c) = sumwt(c) + veg_pp%wtcol(p)
              end if
           end if
        end do
@@ -228,8 +228,8 @@ contains
     do fc = 1,numfc
        c = filterc(fc)
        colarr(c) = 0._r8
-       do p = col%pfti(c), col%pftf(c)
-          if (pft%active(p)) colarr(c) = colarr(c) + pftarr(p) * pft%wtcol(p)
+       do p = col_pp%pfti(c), col_pp%pftf(c)
+          if (veg_pp%active(p)) colarr(c) = colarr(c) + pftarr(p) * veg_pp%wtcol(p)
        end do
     end do
 
@@ -256,8 +256,8 @@ contains
        do fc = 1,numfc
           c = filterc(fc)
           colarr(c,j) = 0._r8
-          do p = col%pfti(c), col%pftf(c)
-             if (pft%active(p)) colarr(c,j) = colarr(c,j) + pftarr(p,j) * pft%wtcol(p)
+          do p = col_pp%pfti(c), col_pp%pftf(c)
+             if (veg_pp%active(p)) colarr(c,j) = colarr(c,j) + pftarr(p,j) * veg_pp%wtcol(p)
           end do
        end do
     end do
@@ -296,15 +296,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbanf') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
                 scale_c2l(c) = 3.0_r8
-             else if (col%itype(c) == icol_roof) then
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -313,15 +313,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbans') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
-                scale_c2l(c) = 3.0 / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_roof) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
+                scale_c2l(c) = 3.0 / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -345,13 +345,13 @@ contains
     larr(bounds%begl : bounds%endl) = spval
     sumwt(bounds%begl : bounds%endl) = 0._r8
     do p = bounds%begp,bounds%endp
-       if (pft%active(p) .and. pft%wtlunit(p) /= 0._r8) then
-          c = pft%column(p)
+       if (veg_pp%active(p) .and. veg_pp%wtlunit(p) /= 0._r8) then
+          c = veg_pp%column(p)
           if (parr(p) /= spval .and. scale_c2l(c) /= spval) then
-             l = pft%landunit(p)
+             l = veg_pp%landunit(p)
              if (sumwt(l) == 0._r8) larr(l) = 0._r8
-             larr(l) = larr(l) + parr(p) * scale_p2c(p) * scale_c2l(c) * pft%wtlunit(p)
-             sumwt(l) = sumwt(l) + pft%wtlunit(p)
+             larr(l) = larr(l) + parr(p) * scale_p2c(p) * scale_c2l(c) * veg_pp%wtlunit(p)
+             sumwt(l) = sumwt(l) + veg_pp%wtlunit(p)
           end if
        end if
     end do
@@ -404,15 +404,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbanf') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
                 scale_c2l(c) = 3.0_r8
-             else if (col%itype(c) == icol_roof) then
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -421,15 +421,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbans') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
-                scale_c2l(c) = 3.0 / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_roof) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
+                scale_c2l(c) = 3.0 / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -454,13 +454,13 @@ contains
     do j = 1,num2d
        sumwt(bounds%begl : bounds%endl) = 0._r8
        do p = bounds%begp,bounds%endp
-          if (pft%active(p) .and. pft%wtlunit(p) /= 0._r8) then
-             c = pft%column(p)
+          if (veg_pp%active(p) .and. veg_pp%wtlunit(p) /= 0._r8) then
+             c = veg_pp%column(p)
              if (parr(p,j) /= spval .and. scale_c2l(c) /= spval) then
-                l = pft%landunit(p)
+                l = veg_pp%landunit(p)
                 if (sumwt(l) == 0._r8) larr(l,j) = 0._r8
-                larr(l,j) = larr(l,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * pft%wtlunit(p)
-                sumwt(l) = sumwt(l) + pft%wtlunit(p)
+                larr(l,j) = larr(l,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * veg_pp%wtlunit(p)
+                sumwt(l) = sumwt(l) + veg_pp%wtlunit(p)
              end if
           end if
        end do
@@ -518,15 +518,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbanf') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
                 scale_c2l(c) = 3.0_r8
-             else if (col%itype(c) == icol_roof) then
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -535,15 +535,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbans') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
-                scale_c2l(c) = 3.0 / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_roof) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
+                scale_c2l(c) = 3.0 / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -567,14 +567,14 @@ contains
     garr(bounds%begg : bounds%endg) = spval
     sumwt(bounds%begg : bounds%endg) = 0._r8
     do p = bounds%begp,bounds%endp
-       if (pft%active(p) .and. pft%wtgcell(p) /= 0._r8) then
-          c = pft%column(p)
-          l = pft%landunit(p)
+       if (veg_pp%active(p) .and. veg_pp%wtgcell(p) /= 0._r8) then
+          c = veg_pp%column(p)
+          l = veg_pp%landunit(p)
           if (parr(p) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
-             g = pft%gridcell(p)
+             g = veg_pp%gridcell(p)
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
-             garr(g) = garr(g) + parr(p) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * pft%wtgcell(p)
-             sumwt(g) = sumwt(g) + pft%wtgcell(p)
+             garr(g) = garr(g) + parr(p) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * veg_pp%wtgcell(p)
+             sumwt(g) = sumwt(g) + veg_pp%wtgcell(p)
           end if
        end if
     end do
@@ -634,15 +634,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbanf') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
                 scale_c2l(c) = 3.0_r8
-             else if (col%itype(c) == icol_roof) then
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -651,15 +651,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbans') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
-                scale_c2l(c) = 3.0 / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_roof) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
+                scale_c2l(c) = 3.0 / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -684,14 +684,14 @@ contains
     do j = 1,num2d
        sumwt(bounds%begg : bounds%endg) = 0._r8
        do p = bounds%begp,bounds%endp 
-          if (pft%active(p) .and. pft%wtgcell(p) /= 0._r8) then
-             c = pft%column(p)
-             l = pft%landunit(p)
+          if (veg_pp%active(p) .and. veg_pp%wtgcell(p) /= 0._r8) then
+             c = veg_pp%column(p)
+             l = veg_pp%landunit(p)
              if (parr(p,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
-                g = pft%gridcell(p)
+                g = veg_pp%gridcell(p)
                 if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
-                garr(g,j) = garr(g,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * pft%wtgcell(p)
-                sumwt(g) = sumwt(g) + pft%wtgcell(p)
+                garr(g,j) = garr(g,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * veg_pp%wtgcell(p)
+                sumwt(g) = sumwt(g) + veg_pp%wtgcell(p)
              end if
           end if
        end do
@@ -742,15 +742,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbanf') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
                 scale_c2l(c) = 3.0_r8
-             else if (col%itype(c) == icol_roof) then
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -759,15 +759,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbans') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
-                scale_c2l(c) = 3.0 / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_roof) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
+                scale_c2l(c) = 3.0 / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -782,12 +782,12 @@ contains
     larr(bounds%begl : bounds%endl) = spval
     sumwt(bounds%begl : bounds%endl) = 0._r8
     do c = bounds%begc,bounds%endc
-       if (col%active(c) .and. col%wtlunit(c) /= 0._r8) then
+       if (col_pp%active(c) .and. col_pp%wtlunit(c) /= 0._r8) then
           if (carr(c) /= spval .and. scale_c2l(c) /= spval) then
-             l = col%landunit(c)
+             l = col_pp%landunit(c)
              if (sumwt(l) == 0._r8) larr(l) = 0._r8
-             larr(l) = larr(l) + carr(c) * scale_c2l(c) * col%wtlunit(c)
-             sumwt(l) = sumwt(l) + col%wtlunit(c)
+             larr(l) = larr(l) + carr(c) * scale_c2l(c) * col_pp%wtlunit(c)
+             sumwt(l) = sumwt(l) + col_pp%wtlunit(c)
           end if
        end if
     end do
@@ -838,15 +838,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbanf') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
                 scale_c2l(c) = 3.0_r8
-             else if (col%itype(c) == icol_roof) then
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -855,15 +855,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbans') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
-                scale_c2l(c) = 3.0 / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_roof) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
+                scale_c2l(c) = 3.0 / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -879,12 +879,12 @@ contains
     do j = 1,num2d
        sumwt(bounds%begl : bounds%endl) = 0._r8
        do c = bounds%begc,bounds%endc
-          if (col%active(c) .and. col%wtlunit(c) /= 0._r8) then
+          if (col_pp%active(c) .and. col_pp%wtlunit(c) /= 0._r8) then
              if (carr(c,j) /= spval .and. scale_c2l(c) /= spval) then
-                l = col%landunit(c)
+                l = col_pp%landunit(c)
                 if (sumwt(l) == 0._r8) larr(l,j) = 0._r8
-                larr(l,j) = larr(l,j) + carr(c,j) * scale_c2l(c) * col%wtlunit(c)
-                sumwt(l) = sumwt(l) + col%wtlunit(c)
+                larr(l,j) = larr(l,j) + carr(c,j) * scale_c2l(c) * col_pp%wtlunit(c)
+                sumwt(l) = sumwt(l) + col_pp%wtlunit(c)
              end if
           end if
        end do
@@ -940,15 +940,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbanf') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
                 scale_c2l(c) = 3.0_r8
-             else if (col%itype(c) == icol_roof) then
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -957,15 +957,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbans') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
-                scale_c2l(c) = 3.0 / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_roof) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
+                scale_c2l(c) = 3.0 / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -980,13 +980,13 @@ contains
     garr(bounds%begg : bounds%endg) = spval
     sumwt(bounds%begg : bounds%endg) = 0._r8
     do c = bounds%begc,bounds%endc
-       if (col%active(c) .and. col%wtgcell(c) /= 0._r8) then
-          l = col%landunit(c)
+       if (col_pp%active(c) .and. col_pp%wtgcell(c) /= 0._r8) then
+          l = col_pp%landunit(c)
           if (carr(c) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
-             g = col%gridcell(c)
+             g = col_pp%gridcell(c)
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
-             garr(g) = garr(g) + carr(c) * scale_c2l(c) * scale_l2g(l) * col%wtgcell(c)
-             sumwt(g) = sumwt(g) + col%wtgcell(c)
+             garr(g) = garr(g) + carr(c) * scale_c2l(c) * scale_l2g(l) * col_pp%wtgcell(c)
+             sumwt(g) = sumwt(g) + col_pp%wtgcell(c)
           end if
        end if
     end do
@@ -1042,15 +1042,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbanf') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = 3.0 * lun%canyon_hwr(l) 
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l) 
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
                 scale_c2l(c) = 3.0_r8
-             else if (col%itype(c) == icol_roof) then
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -1059,15 +1059,15 @@ contains
        end do
     else if (c2l_scale_type == 'urbans') then
        do c = bounds%begc,bounds%endc
-          l = col%landunit(c) 
-          if (lun%urbpoi(l)) then
-             if (col%itype(c) == icol_sunwall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_shadewall) then
-                scale_c2l(c) = (3.0 * lun%canyon_hwr(l)) / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then
-                scale_c2l(c) = 3.0 / (2.*lun%canyon_hwr(l) + 1.)
-             else if (col%itype(c) == icol_roof) then
+          l = col_pp%landunit(c) 
+          if (lun_pp%urbpoi(l)) then
+             if (col_pp%itype(c) == icol_sunwall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_shadewall) then
+                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
+                scale_c2l(c) = 3.0 / (2.*lun_pp%canyon_hwr(l) + 1.)
+             else if (col_pp%itype(c) == icol_roof) then
                 scale_c2l(c) = 1.0_r8
              end if
           else
@@ -1083,13 +1083,13 @@ contains
     do j = 1,num2d
        sumwt(bounds%begg : bounds%endg) = 0._r8
        do c = bounds%begc,bounds%endc 
-          if (col%active(c) .and. col%wtgcell(c) /= 0._r8) then
-             l = col%landunit(c)
+          if (col_pp%active(c) .and. col_pp%wtgcell(c) /= 0._r8) then
+             l = col_pp%landunit(c)
              if (carr(c,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
-                g = col%gridcell(c)
+                g = col_pp%gridcell(c)
                 if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
-                garr(g,j) = garr(g,j) + carr(c,j) * scale_c2l(c) * scale_l2g(l) * col%wtgcell(c)
-                sumwt(g) = sumwt(g) + col%wtgcell(c)
+                garr(g,j) = garr(g,j) + carr(c,j) * scale_c2l(c) * scale_l2g(l) * col_pp%wtgcell(c)
+                sumwt(g) = sumwt(g) + col_pp%wtgcell(c)
              end if
           end if
        end do
@@ -1140,12 +1140,12 @@ contains
     garr(bounds%begg : bounds%endg) = spval
     sumwt(bounds%begg : bounds%endg) = 0._r8
     do l = bounds%begl,bounds%endl
-       if (lun%active(l) .and. lun%wtgcell(l) /= 0._r8) then
+       if (lun_pp%active(l) .and. lun_pp%wtgcell(l) /= 0._r8) then
           if (larr(l) /= spval .and. scale_l2g(l) /= spval) then
-             g = lun%gridcell(l)
+             g = lun_pp%gridcell(l)
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
-             garr(g) = garr(g) + larr(l) * scale_l2g(l) * lun%wtgcell(l)
-             sumwt(g) = sumwt(g) + lun%wtgcell(l)
+             garr(g) = garr(g) + larr(l) * scale_l2g(l) * lun_pp%wtgcell(l)
+             sumwt(g) = sumwt(g) + lun_pp%wtgcell(l)
           end if
        end if
     end do
@@ -1198,12 +1198,12 @@ contains
     do j = 1,num2d
        sumwt(bounds%begg : bounds%endg) = 0._r8
        do l = bounds%begl,bounds%endl
-          if (lun%active(l) .and. lun%wtgcell(l) /= 0._r8) then
+          if (lun_pp%active(l) .and. lun_pp%wtgcell(l) /= 0._r8) then
              if (larr(l,j) /= spval .and. scale_l2g(l) /= spval) then
-                g = lun%gridcell(l)
+                g = lun_pp%gridcell(l)
                 if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
-                garr(g,j) = garr(g,j) + larr(l,j) * scale_l2g(l) * lun%wtgcell(l)
-                sumwt(g) = sumwt(g) + lun%wtgcell(l)
+                garr(g,j) = garr(g,j) + larr(l,j) * scale_l2g(l) * lun_pp%wtgcell(l)
+                sumwt(g) = sumwt(g) + lun_pp%wtgcell(l)
              end if
           end if
        end do
@@ -1249,7 +1249,7 @@ contains
      call create_scale_l2g_lookup(l2g_scale_type, scale_lookup)
 
      do l = bounds%begl,bounds%endl
-        scale_l2g(l) = scale_lookup(lun%itype(l))
+        scale_l2g(l) = scale_lookup(lun_pp%itype(l))
      end do
 
   end subroutine build_scale_l2g

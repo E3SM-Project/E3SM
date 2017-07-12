@@ -10,12 +10,12 @@ module CNCIsoFluxMod
   use clm_varpar             , only : max_patch_per_col, maxpatch_pft
   use abortutils             , only : endrun
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use EcophysConType         , only : ecophyscon
+  use VegetationPropertiesType         , only : veg_vp
   use CNCarbonFluxType       , only : carbonflux_type
   use CNCarbonStateType      , only : carbonstate_type
   use CNStateType            , only : cnstate_type
-  use ColumnType             , only : col                
-  use PatchType              , only : pft                
+  use ColumnType             , only : col_pp                
+  use VegetationType              , only : veg_pp                
   !
   implicit none
   save
@@ -829,16 +829,16 @@ contains
          do pi = 1,max_patch_per_col
             do fc = 1,num_soilc
                cc = filter_soilc(fc)
-               if ( pi <=  col%npfts(cc) ) then
-                  pp = col%pfti(cc) + pi - 1
-                  if (pft%active(pp)) then
+               if ( pi <=  col_pp%npfts(cc) ) then
+                  pp = col_pp%pfti(cc) + pi - 1
+                  if (veg_pp%active(pp)) then
                      do j = 1, nlevdecomp
                         isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
                              isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
-                             isotopeflux_vars%m_deadstemc_to_litter_fire_patch(pp) * pft%wtcol(pp) * stem_prof(pp,j)
+                             isotopeflux_vars%m_deadstemc_to_litter_fire_patch(pp) * veg_pp%wtcol(pp) * stem_prof(pp,j)
                         isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
                              isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
-                             isotopeflux_vars%m_deadcrootc_to_litter_fire_patch(pp) * pft%wtcol(pp) * croot_prof(pp,j)
+                             isotopeflux_vars%m_deadcrootc_to_litter_fire_patch(pp) * veg_pp%wtcol(pp) * croot_prof(pp,j)
                      end do
                   end if
                end if
@@ -883,15 +883,15 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                           & 
-         ivt                       =>    pft%itype                                     , & ! Input:  [integer  (:)   ]  pft vegetation type                                
-         wtcol                     =>    pft%wtcol                                     , & ! Input:  [real(r8) (:)   ]  weight (relative to column) for this pft (0-1)    
+         ivt                       =>    veg_pp%itype                                     , & ! Input:  [integer  (:)   ]  pft vegetation type                                
+         wtcol                     =>    veg_pp%wtcol                                     , & ! Input:  [real(r8) (:)   ]  weight (relative to column) for this pft (0-1)    
          
-         lf_flab                   =>    ecophyscon%lf_flab                            , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
-         lf_fcel                   =>    ecophyscon%lf_fcel                            , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
-         lf_flig                   =>    ecophyscon%lf_flig                            , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
-         fr_flab                   =>    ecophyscon%fr_flab                            , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
-         fr_fcel                   =>    ecophyscon%fr_fcel                            , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
-         fr_flig                   =>    ecophyscon%fr_flig                            , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
+         lf_flab                   =>    veg_vp%lf_flab                            , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
+         lf_fcel                   =>    veg_vp%lf_fcel                            , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
+         lf_flig                   =>    veg_vp%lf_flig                            , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
+         fr_flab                   =>    veg_vp%fr_flab                            , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
+         fr_fcel                   =>    veg_vp%fr_fcel                            , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
+         fr_flig                   =>    veg_vp%fr_flig                            , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
 
          leaf_prof                 =>    cnstate_vars%leaf_prof_patch                  , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
          froot_prof                =>    cnstate_vars%froot_prof_patch                 , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
@@ -908,9 +908,9 @@ contains
             do fc = 1,num_soilc
                c = filter_soilc(fc)
 
-               if ( pi <=  col%npfts(c) ) then
-                  p = col%pfti(c) + pi - 1
-                  if (pft%active(p)) then
+               if ( pi <=  col_pp%npfts(c) ) then
+                  p = col_pp%pfti(c) + pi - 1
+                  if (veg_pp%active(p)) then
                      ! leaf litter carbon fluxes
                      phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
                           + leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
@@ -956,15 +956,15 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                                                                       & 
-          ivt                            =>    pft%itype                                            , & ! Input:  [integer  (:)   ]  pft vegetation type                                
-          wtcol                          =>    pft%wtcol                                            , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
+          ivt                            =>    veg_pp%itype                                            , & ! Input:  [integer  (:)   ]  pft vegetation type                                
+          wtcol                          =>    veg_pp%wtcol                                            , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
           
-          lf_flab                        =>    ecophyscon%lf_flab                                   , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
-          lf_fcel                        =>    ecophyscon%lf_fcel                                   , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
-          lf_flig                        =>    ecophyscon%lf_flig                                   , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
-          fr_flab                        =>    ecophyscon%fr_flab                                   , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
-          fr_fcel                        =>    ecophyscon%fr_fcel                                   , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
-          fr_flig                        =>    ecophyscon%fr_flig                                   , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
+          lf_flab                        =>    veg_vp%lf_flab                                   , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
+          lf_fcel                        =>    veg_vp%lf_fcel                                   , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
+          lf_flig                        =>    veg_vp%lf_flig                                   , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
+          fr_flab                        =>    veg_vp%fr_flab                                   , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
+          fr_fcel                        =>    veg_vp%fr_fcel                                   , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
+          fr_flig                        =>    veg_vp%fr_flig                                   , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
 
           leaf_prof                      =>    cnstate_vars%leaf_prof_patch                         , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
           froot_prof                     =>    cnstate_vars%froot_prof_patch                        , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
@@ -1003,10 +1003,10 @@ contains
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
 
-                if (pi <=  col%npfts(c)) then
-                   p = col%pfti(c) + pi - 1
+                if (pi <=  col_pp%npfts(c)) then
+                   p = col_pp%pfti(c) + pi - 1
 
-                   if (pft%active(p)) then
+                   if (veg_pp%active(p)) then
 
                       ! leaf gap mortality carbon fluxes
                       gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + &
@@ -1098,15 +1098,15 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                                                                           & 
-          ivt                              =>    pft%itype                                              , & ! Input:  [integer  (:)   ]  pft vegetation type                                
-          wtcol                            =>    pft%wtcol                                              , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
+          ivt                              =>    veg_pp%itype                                              , & ! Input:  [integer  (:)   ]  pft vegetation type                                
+          wtcol                            =>    veg_pp%wtcol                                              , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
           
-          lf_flab                          =>    ecophyscon%lf_flab                                     , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
-          lf_fcel                          =>    ecophyscon%lf_fcel                                     , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
-          lf_flig                          =>    ecophyscon%lf_flig                                     , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
-          fr_flab                          =>    ecophyscon%fr_flab                                     , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
-          fr_fcel                          =>    ecophyscon%fr_fcel                                     , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
-          fr_flig                          =>    ecophyscon%fr_flig                                     , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
+          lf_flab                          =>    veg_vp%lf_flab                                     , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
+          lf_fcel                          =>    veg_vp%lf_fcel                                     , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
+          lf_flig                          =>    veg_vp%lf_flig                                     , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
+          fr_flab                          =>    veg_vp%fr_flab                                     , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
+          fr_fcel                          =>    veg_vp%fr_fcel                                     , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
+          fr_flig                          =>    veg_vp%fr_flig                                     , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
           
           leaf_prof                        =>    cnstate_vars%leaf_prof_patch                           , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
           froot_prof                       =>    cnstate_vars%froot_prof_patch                          , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
@@ -1148,10 +1148,10 @@ contains
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
                 
-                if (pi <=  col%npfts(c)) then
-                   p = col%pfti(c) + pi - 1
+                if (pi <=  col_pp%npfts(c)) then
+                   p = col_pp%pfti(c) + pi - 1
 
-                   if (pft%active(p)) then
+                   if (veg_pp%active(p)) then
 
                       ! leaf harvest mortality carbon fluxes
                       harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
@@ -1219,10 +1219,10 @@ contains
        do pi = 1,maxpatch_pft
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             if (pi <=  col%npfts(c)) then
-                p = col%pfti(c) + pi - 1
+             if (pi <=  col_pp%npfts(c)) then
+                p = col_pp%pfti(c) + pi - 1
 
-                if (pft%active(p)) then
+                if (veg_pp%active(p)) then
                    chrv_deadstemc_to_prod10c(c)  = chrv_deadstemc_to_prod10c(c)  + &
                         phrv_deadstemc_to_prod10c(p)  * wtcol(p)
                    chrv_deadstemc_to_prod100c(c)  = chrv_deadstemc_to_prod100c(c)  + &

@@ -10,9 +10,9 @@ module PhosphorusFluxType
   use clm_varctl             , only : use_nitrif_denitrif, use_vertsoilc
   use CNDecompCascadeConType , only : decomp_cascade_con
   use abortutils             , only : endrun
-  use LandunitType           , only : lun                
-  use ColumnType             , only : col                
-  use PatchType              , only : pft
+  use LandunitType           , only : lun_pp                
+  use ColumnType             , only : col_pp                
+  use VegetationType              , only : veg_pp
   !! bgc interface & pflotran:
   use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
@@ -1532,8 +1532,8 @@ contains
 
     num_special_col = 0
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
-       if (lun%ifspecial(l)) then
+       l = col_pp%landunit(c)
+       if (lun_pp%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
        end if
@@ -1543,8 +1543,8 @@ contains
 
     num_special_patch = 0
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
-       if (lun%ifspecial(l)) then
+       l = veg_pp%landunit(p)
+       if (lun_pp%ifspecial(l)) then
           num_special_patch = num_special_patch + 1
           special_patch(num_special_patch) = p
        end if
@@ -1555,7 +1555,7 @@ contains
     !-----------------------------------------------
 
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
+       l = veg_pp%landunit(p)
 
        this%prev_leafp_to_litter_patch (p)  = 0._r8 
        this%prev_frootp_to_litter_patch(p)  = 0._r8 
@@ -1565,11 +1565,11 @@ contains
           this%fert_p_patch(p)          = 0._r8 
        end if
 
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%fert_p_counter_patch(p)  = 0._r8
        end if
 
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           this%plant_pdemand_patch(p)  = spval
           this%avail_retransp_patch(p) = spval
           this%plant_palloc_patch(p)   = spval
@@ -2148,7 +2148,7 @@ contains
        this%wood_harvestp_patch(p) = &
             this%hrv_deadstemp_to_prod10p_patch(p) + &
             this%hrv_deadstemp_to_prod100p_patch(p)
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
             this%wood_harvestp_patch(p) = &
             this%wood_harvestp_patch(p) + &
             this%hrv_cropp_to_prod1p_patch(p)

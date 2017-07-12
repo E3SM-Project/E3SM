@@ -1105,7 +1105,7 @@ end subroutine EM_VSFM_Populate_E2L_List
              c_idx_up = -1
              c_idx_dn = -1
 
-             do c = lun%coli(l_idx_up), lun%colf(l_idx_up)
+             do c = lun_pp%coli(l_idx_up), lun_pp%colf(l_idx_up)
                 if (col%itype(c) == ctype) then
                    if (c_idx_up /= -1) then
                       write(iulog,*)'CreateFromCLMCols: More than one column found for ' // &
@@ -1116,7 +1116,7 @@ end subroutine EM_VSFM_Populate_E2L_List
                 endif
              enddo
 
-             do c = lun%coli(l_idx_dn), lun%colf(l_idx_dn)
+             do c = lun_pp%coli(l_idx_dn), lun_pp%colf(l_idx_dn)
                 if (col%itype(c) == ctype) then
                    if (c_idx_dn /= -1) then
                       write(iulog,*)'CreateFromCLMCols: More than one column found for ' // &
@@ -1161,7 +1161,7 @@ end subroutine EM_VSFM_Populate_E2L_List
              c_idx_up = -1
              c_idx_dn = -1
 
-             do c = lun%coli(l_idx_up), lun%colf(l_idx_up)
+             do c = lun_pp%coli(l_idx_up), lun_pp%colf(l_idx_up)
                 if (col%itype(c) == ctype) then
                    if (c_idx_up /= -1) then
                       write(iulog,*)'CreateFromCLMCols: More than one column found for ' // &
@@ -1172,7 +1172,7 @@ end subroutine EM_VSFM_Populate_E2L_List
                 endif
              enddo
 
-             do c = lun%coli(l_idx_dn), lun%colf(l_idx_dn)
+             do c = lun_pp%coli(l_idx_dn), lun_pp%colf(l_idx_dn)
                 if (col%itype(c) == ctype) then
                    if (c_idx_dn /= -1) then
                       write(iulog,*)'CreateFromCLMCols: More than one column found for ' // &

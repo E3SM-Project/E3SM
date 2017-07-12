@@ -14,12 +14,12 @@ module PhosphorusStateType
   use decompMod              , only : bounds_type
   use pftvarcon              , only : npcropmin
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use EcophysConType         , only : ecophyscon
+  use VegetationPropertiesType         , only : veg_vp
   use abortutils             , only : endrun
   use spmdMod                , only : masterproc 
-  use LandunitType           , only : lun                
-  use ColumnType             , only : col                
-  use PatchType              , only : pft
+  use LandunitType           , only : lun_pp                
+  use ColumnType             , only : col_pp                
+  use VegetationType              , only : veg_pp
   use clm_varctl             , only : nu_com
               
   ! 
@@ -657,8 +657,8 @@ contains
 
     num_special_patch = 0
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
-       if (lun%ifspecial(l)) then
+       l = veg_pp%landunit(p)
+       if (lun_pp%ifspecial(l)) then
           num_special_patch = num_special_patch + 1
           special_patch(num_special_patch) = p
        end if
@@ -668,8 +668,8 @@ contains
 
     num_special_col = 0
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
-       if (lun%ifspecial(l)) then
+       l = col_pp%landunit(c)
+       if (lun_pp%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
        end if
@@ -681,15 +681,15 @@ contains
 
     do p = bounds%begp,bounds%endp
 
-       l = pft%landunit(p)
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       l = veg_pp%landunit(p)
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
-          if (pft%itype(p) == noveg) then
+          if (veg_pp%itype(p) == noveg) then
              this%leafp_patch(p) = 0._r8
              this%leafp_storage_patch(p) = 0._r8
           else
-             this%leafp_patch(p)         = leafc_patch(p)         / ecophyscon%leafcp(pft%itype(p))
-             this%leafp_storage_patch(p) = leafc_storage_patch(p) / ecophyscon%leafcp(pft%itype(p))
+             this%leafp_patch(p)         = leafc_patch(p)         / veg_vp%leafcp(veg_pp%itype(p))
+             this%leafp_storage_patch(p) = leafc_storage_patch(p) / veg_vp%leafcp(veg_pp%itype(p))
           end if
 
           this%leafp_xfer_patch(p)        = 0._r8
@@ -708,8 +708,8 @@ contains
           ! tree types need to be initialized with some stem mass so that
           ! roughness length is not zero in canopy flux calculation
 
-          if (ecophyscon%woody(pft%itype(p)) == 1._r8) then
-             this%deadstemp_patch(p) = deadstemc_patch(p) / ecophyscon%deadwdcp(pft%itype(p))
+          if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
+             this%deadstemp_patch(p) = deadstemc_patch(p) / veg_vp%deadwdcp(veg_pp%itype(p))
           else
              this%deadstemp_patch(p) = 0._r8
           end if
@@ -717,9 +717,9 @@ contains
           if (nu_com .ne. 'RD') then
               ! ECA competition calculate root NP uptake as a function of fine root biomass
               ! better to initialize root CNP pools with a non-zero value
-              if (pft%itype(p) .ne. noveg) then
-                 this%frootp_patch(p) = frootc_patch(p) / ecophyscon%frootcp(pft%itype(p))
-                 this%frootp_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcp(pft%itype(p))
+              if (veg_pp%itype(p) .ne. noveg) then
+                 this%frootp_patch(p) = frootc_patch(p) / veg_vp%frootcp(veg_pp%itype(p))
+                 this%frootp_storage_patch(p) = frootc_storage_patch(p) / veg_vp%frootcp(veg_pp%itype(p))
               end if
           end if
            
@@ -747,8 +747,8 @@ contains
     !-------------------------------------------
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       l = col_pp%landunit(c)
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
           ! column phosphorus state variables
           this%ptrunc_col(c) = 0._r8
@@ -1419,7 +1419,7 @@ contains
            this%ppool_patch(p)              + &
            this%retransp_patch(p)
 
-      if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+      if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
          this%dispvegp_patch(p) = &
               this%dispvegp_patch(p) + &
               this%grainp_patch(p)

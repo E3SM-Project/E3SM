@@ -13,9 +13,9 @@ module CNStateType
   use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, crop_prog 
   use clm_varctl     , only : use_vertsoilc, use_c14, use_cn 
   use clm_varctl     , only : iulog, fsurdat
-  use LandunitType   , only : lun                
-  use ColumnType     , only : col                
-  use PatchType      , only : pft                
+  use LandunitType   , only : lun_pp                
+  use ColumnType     , only : col_pp                
+  use VegetationType      , only : veg_pp                
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -694,7 +694,7 @@ contains
        call endrun(msg=' ERROR: gdp NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
        this%gdp_lf_col(c) = gdp(g)
     end do
     deallocate(gdp)
@@ -709,7 +709,7 @@ contains
        call endrun(msg=' ERROR: peatf NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
        this%peatf_lf_col(c) = peatf(g)
     end do
     deallocate(peatf)
@@ -724,7 +724,7 @@ contains
     !   call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
     !end if
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
 !       this%isoilorder(c) = soilorder_rdin(g)
        this%isoilorder(c) = 12
     end do
@@ -741,7 +741,7 @@ contains
        call endrun(msg=' ERROR: abm NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
        this%abm_lf_col(c) = abm(g)
     end do
     deallocate(abm)
@@ -761,8 +761,8 @@ contains
     ! --------------------------------------------------------------------
        
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
-       if (lun%ifspecial(l)) then
+       l = col_pp%landunit(c)
+       if (lun_pp%ifspecial(l)) then
           this%annsum_counter_col (c) = spval
           this%annavg_t2m_col     (c) = spval
           this%scalaravg_col      (c) = spval
@@ -782,7 +782,7 @@ contains
           end do
        end if
 
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%annsum_counter_col(c) = 0._r8   
           this%annavg_t2m_col(c)     = 280._r8 
 
@@ -812,10 +812,10 @@ contains
     ! phenology variables
 
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
+       l = veg_pp%landunit(p)
        this%rc14_atm_patch(p)              = c14ratio 
 
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           this%annavg_t2m_patch  (p)          = spval
           this%tempavg_t2m_patch (p)          = spval
           this%dormant_flag_patch(p)          = spval
@@ -853,8 +853,8 @@ contains
     ! ecophysiological variables
 
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       l = veg_pp%landunit(p)
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
           this%rc14_atm_patch(p) = c14ratio
 

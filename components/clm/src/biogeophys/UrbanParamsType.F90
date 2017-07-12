@@ -11,7 +11,7 @@ module UrbanParamsType
   use decompMod    , only : bounds_type
   use clm_varctl   , only : iulog, fsurdat
   use clm_varcon   , only : namel, grlnd, spval
-  use LandunitType , only : lun                
+  use LandunitType , only : lun_pp                
   !
   implicit none
   save
@@ -187,10 +187,10 @@ contains
     do l = bounds%begl,bounds%endl
 
        ! "0" refers to urban wall/roof surface and "nlevsoi" refers to urban wall/roof bottom
-       if (lun%urbpoi(l)) then
+       if (lun_pp%urbpoi(l)) then
 
-          g = lun%gridcell(l)
-          dindx = lun%itype(l) - isturb_MIN + 1
+          g = lun_pp%gridcell(l)
+          dindx = lun_pp%itype(l) - isturb_MIN + 1
 
           this%wind_hgt_canyon(l) = urbinp%wind_hgt_canyon(g,dindx)
           do ib = 1,numrad
@@ -210,10 +210,10 @@ contains
 
           ! Landunit level initialization for urban wall and roof layers and interfaces
 
-          lun%canyon_hwr(l)   = urbinp%canyon_hwr(g,dindx)
-          lun%wtroad_perv(l)  = urbinp%wtroad_perv(g,dindx)
-          lun%ht_roof(l)      = urbinp%ht_roof(g,dindx)
-          lun%wtlunit_roof(l) = urbinp%wtlunit_roof(g,dindx)
+          lun_pp%canyon_hwr(l)   = urbinp%canyon_hwr(g,dindx)
+          lun_pp%wtroad_perv(l)  = urbinp%wtroad_perv(g,dindx)
+          lun_pp%ht_roof(l)      = urbinp%ht_roof(g,dindx)
+          lun_pp%wtlunit_roof(l) = urbinp%wtlunit_roof(g,dindx)
 
           this%tk_wall(l,:)      = urbinp%tk_wall(g,dindx,:)
           this%tk_roof(l,:)      = urbinp%tk_roof(g,dindx,:)
@@ -229,7 +229,7 @@ contains
 
           ! Inferred from Sailor and Lu 2004
           if (urban_traffic) then
-             this%eflx_traffic_factor(l) = 3.6_r8 * (lun%canyon_hwr(l)-0.5_r8) + 1.0_r8
+             this%eflx_traffic_factor(l) = 3.6_r8 * (lun_pp%canyon_hwr(l)-0.5_r8) + 1.0_r8
           else
              this%eflx_traffic_factor(l) = 0.0_r8
           end if
@@ -277,13 +277,13 @@ contains
           ! road -- sky view factor -> 1 as building height -> 0 
           ! and -> 0 as building height -> infinity
 
-          this%vf_sr(l) = sqrt(lun%canyon_hwr(l)**2 + 1._r8) - lun%canyon_hwr(l)
+          this%vf_sr(l) = sqrt(lun_pp%canyon_hwr(l)**2 + 1._r8) - lun_pp%canyon_hwr(l)
           this%vf_wr(l) = 0.5_r8 * (1._r8 - this%vf_sr(l))
 
           ! one wall -- sky view factor -> 0.5 as building height -> 0 
           ! and -> 0 as building height -> infinity
 
-          this%vf_sw(l) = 0.5_r8 * (lun%canyon_hwr(l) + 1._r8 - sqrt(lun%canyon_hwr(l)**2+1._r8)) / lun%canyon_hwr(l)
+          this%vf_sw(l) = 0.5_r8 * (lun_pp%canyon_hwr(l) + 1._r8 - sqrt(lun_pp%canyon_hwr(l)**2+1._r8)) / lun_pp%canyon_hwr(l)
           this%vf_rw(l) = this%vf_sw(l)
           this%vf_ww(l) = 1._r8 - this%vf_sw(l) - this%vf_rw(l)
 
@@ -307,36 +307,36 @@ contains
           !----------------------------------------------------------------------------------
 
           ! Calculate plan area index 
-          plan_ai = lun%canyon_hwr(l)/(lun%canyon_hwr(l) + 1._r8)
+          plan_ai = lun_pp%canyon_hwr(l)/(lun_pp%canyon_hwr(l) + 1._r8)
 
           ! Building shape shortside/longside ratio (e.g. 1 = square )
           ! This assumes the building occupies the entire canyon length
           build_lw_ratio = plan_ai
 
           ! Calculate frontal area index
-          frontal_ai = (1._r8 - plan_ai) * lun%canyon_hwr(l)
+          frontal_ai = (1._r8 - plan_ai) * lun_pp%canyon_hwr(l)
 
           ! Adjust frontal area index for different building configuration
           frontal_ai = frontal_ai * sqrt(1/build_lw_ratio) * sqrt(plan_ai)
 
           ! Calculate displacement height
           if (use_vancouver) then
-             lun%z_d_town(l) = 3.5_r8
+             lun_pp%z_d_town(l) = 3.5_r8
           else if (use_mexicocity) then
-             lun%z_d_town(l) = 10.9_r8
+             lun_pp%z_d_town(l) = 10.9_r8
           else
-             lun%z_d_town(l) = (1._r8 + alpha**(-plan_ai) * (plan_ai - 1._r8)) * lun%ht_roof(l)
+             lun_pp%z_d_town(l) = (1._r8 + alpha**(-plan_ai) * (plan_ai - 1._r8)) * lun_pp%ht_roof(l)
           end if
 
           ! Calculate the roughness length
           if (use_vancouver) then
-             lun%z_0_town(l) = 0.35_r8
+             lun_pp%z_0_town(l) = 0.35_r8
           else if (use_mexicocity) then
-             lun%z_0_town(l) = 2.2_r8
+             lun_pp%z_0_town(l) = 2.2_r8
           else
-             lun%z_0_town(l) = lun%ht_roof(l) * (1._r8 - lun%z_d_town(l) / lun%ht_roof(l)) * &
+             lun_pp%z_0_town(l) = lun_pp%ht_roof(l) * (1._r8 - lun_pp%z_d_town(l) / lun_pp%ht_roof(l)) * &
                   exp(-1.0_r8 * (0.5_r8 * beta * C_d / vkc**2 * &
-                  (1 - lun%z_d_town(l) / lun%ht_roof(l)) * frontal_ai)**(-0.5_r8))
+                  (1 - lun_pp%z_d_town(l) / lun_pp%ht_roof(l)) * frontal_ai)**(-0.5_r8))
           end if
 
        else ! Not urban point 

@@ -61,9 +61,9 @@ Module DryDepVelocity
   use FrictionVelocityType , only : frictionvel_type
   use PhotosynthesisType   , only : photosyns_type
   use WaterstateType       , only : waterstate_type
-  use GridcellType         , only : grc                
-  use LandunitType         , only : lun                
-  use PatchType            , only : pft                
+  use GridcellType         , only : grc_pp                
+  use LandunitType         , only : lun_pp                
+  use VegetationType            , only : veg_pp                
   !
   implicit none 
   save 
@@ -243,12 +243,12 @@ CONTAINS
       ! Begin loop through patches
 
       pft_loop: do pi = bounds%begp,bounds%endp
-         l = pft%landunit(pi)
+         l = veg_pp%landunit(pi)
 
-         active: if (pft%active(pi)) then
+         active: if (veg_pp%active(pi)) then
 
-            c = pft%column(pi)
-            g = pft%gridcell(pi)
+            c = veg_pp%column(pi)
+            g = veg_pp%gridcell(pi)
             !solar_flux = forc_lwrad  !rename CLM variables to fit with Dry Dep variables 
 
             pg         = forc_psrf(c)  
@@ -256,9 +256,9 @@ CONTAINS
             rain       = forc_rain(c) 
             sfc_temp   = forc_t(c) 
             solar_flux = forc_solad(g,1) 
-            lat        = grc%latdeg(g) 
-            lon        = grc%londeg(g) 
-            clmveg     = pft%itype(pi) 
+            lat        = grc_pp%latdeg(g) 
+            lon        = grc_pp%londeg(g) 
+            clmveg     = veg_pp%itype(pi) 
             soilw      = h2osoi_vol(c,1)
 
             !map CLM veg type into Wesely veg type  
@@ -282,7 +282,7 @@ CONTAINS
             if (clmveg == nc3irrig                            ) wesveg = 2 
             if (clmveg >= npcropmin .and. clmveg <= npcropmax ) wesveg = 2 
             if (wesveg == wveg_unset )then
-               write(iulog,*) 'clmveg = ', clmveg, 'lun%itype = ', lun%itype(l)
+               write(iulog,*) 'clmveg = ', clmveg, 'lun_pp%itype = ', lun_pp%itype(l)
                call endrun(decomp_index=pi, clmlevel=namep, &
                     msg='ERROR: Not able to determine Wesley vegetation type'//&
                     errMsg(__FILE__, __LINE__))
@@ -312,17 +312,17 @@ CONTAINS
 
             index_season = -1
 
-            if ( lun%itype(l) /= istsoil )then
-               if ( lun%itype(l) == istice .or. lun%itype(l) == istice_mec ) then
+            if ( lun_pp%itype(l) /= istsoil )then
+               if ( lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec ) then
                   wesveg       = 8
                   index_season = 4
-               elseif ( lun%itype(l) == istdlak ) then
+               elseif ( lun_pp%itype(l) == istdlak ) then
                   wesveg       = 7
                   index_season = 4
-               elseif ( lun%itype(l) == istwet ) then
+               elseif ( lun_pp%itype(l) == istwet ) then
                   wesveg       = 9
                   index_season = 2
-               elseif ( lun%urbpoi(l) ) then
+               elseif ( lun_pp%urbpoi(l) ) then
                   wesveg       = 1
                   index_season = 2
                end if

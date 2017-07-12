@@ -28,8 +28,8 @@ module column_varcon
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: icemec_class_to_col_itype  ! convert an icemec class (1..maxpatch_glcmec) into col%itype
-  public :: col_itype_to_icemec_class  ! convert col%itype into an icemec class (1..maxpatch_glcmec)
+  public :: icemec_class_to_col_itype  ! convert an icemec class (1..maxpatch_glcmec) into col_pp%itype
+  public :: col_itype_to_icemec_class  ! convert col_pp%itype into an icemec class (1..maxpatch_glcmec)
 
 contains
   
@@ -37,7 +37,7 @@ contains
   function icemec_class_to_col_itype(icemec_class) result(col_itype)
     !
     ! !DESCRIPTION:
-    ! Convert an icemec class (1..maxpatch_glcmec) into col%itype
+    ! Convert an icemec class (1..maxpatch_glcmec) into col_pp%itype
     !
     ! !USES:
     use clm_varpar, only : maxpatch_glcmec
@@ -62,7 +62,7 @@ contains
   function col_itype_to_icemec_class(col_itype) result(icemec_class)
     !
     ! !DESCRIPTION:
-    ! Convert a col%itype value (for an icemec landunit) into an icemec class (1..maxpatch_glcmec)
+    ! Convert a col_pp%itype value (for an icemec landunit) into an icemec class (1..maxpatch_glcmec)
     !
     ! !USES:
     use clm_varpar, only : maxpatch_glcmec
@@ -70,7 +70,7 @@ contains
     !
     ! !ARGUMENTS:
     integer :: icemec_class          ! function result
-    integer, intent(in) :: col_itype ! col%itype value for an icemec landunit
+    integer, intent(in) :: col_itype ! col_pp%itype value for an icemec landunit
     !
     ! !LOCAL VARIABLES:
     
