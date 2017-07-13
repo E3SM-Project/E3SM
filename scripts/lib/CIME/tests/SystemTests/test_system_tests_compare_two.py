@@ -166,7 +166,7 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
         if casename not in self.run_pass_casenames:
             raise RuntimeError('casename not in run_pass_casenames')
 
-    def _component_compare_test(self, suffix1, suffix2):
+    def _component_compare_test(self, suffix1, suffix2, success_change=False):
         # Trying to use the real version of _component_compare_test would pull
         # too much baggage into these tests. Since the return value from this
         # method isn't important, it's sufficient for the tests of this class to
@@ -186,6 +186,9 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
 
         self.log.append(Call(METHOD_component_compare_test,
                              {'suffix1': suffix1, 'suffix2': suffix2}))
+        if success_change:
+            return False
+        return True
 
     def _check_for_memleak(self):
         pass
@@ -395,4 +398,3 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
         # Verify
         self.assertEqual(test_status.TEST_FAIL_STATUS,
                          mytest._test_status.get_status(test_status.RUN_PHASE))
-
