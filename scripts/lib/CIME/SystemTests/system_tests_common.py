@@ -248,12 +248,16 @@ class SystemTestsCommon(object):
         comments = copy(self._case, suffix)
         append_testlog(comments)
 
-    def _component_compare_test(self, suffix1, suffix2):
+    def _component_compare_test(self, suffix1, suffix2, success_change=False):
         """
         Return value is not generally checked, but is provided in case a custom
         run case needs indirection based on success.
+        If success_change is True, success requires some files to be different
         """
         success, comments = compare_test(self._case, suffix1, suffix2)
+        if success_change:
+            success = not success
+
         append_testlog(comments)
         status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
         with self._test_status:
