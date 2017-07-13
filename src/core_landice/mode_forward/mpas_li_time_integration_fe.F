@@ -804,7 +804,13 @@ module li_time_integration_fe
       else
          allowableDt = allowableAdvecDt
       endif
+
+      ! Take minimum of the max adaptive timestep setting and the allowable dt from the CFL condition
       proposedDt = min(allowableDt * config_adaptive_timestep_CFL_fraction, config_max_adaptive_timestep)
+      ! Round down the proposed dt to avoid complications with fractional seconds
+      ! (some timekeeping-related functionality, like restarts, don't support them)
+      ! (need to perform floor with an 8-bit integer to allow up 293 billion years in seconds)
+      proposedDt = real(floor(proposedDt, KIND=8), RKIND)
 
       ! Check if we need to force a timestep length to hit the target interval
       currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
@@ -825,16 +831,24 @@ module li_time_integration_fe
       ! affect conservation within MPAS-LI, but it could have a very, very tiny
       ! effect on a climate model that thinks we ran for, say, 10 years, but we
       ! actually ran for 10 years +/- 1e-8 seconds.
-      intervalToNextForceTime % ti % basetime % Sn = intervalToNextForceTime % ti % basetime % Sn + 1
+      !intervalToNextForceTime % ti % basetime % Sn = intervalToNextForceTime % ti % basetime % Sn + 1
+      ! Note: commenting above line because it should no longer be relevant after rounding down to full second on line 815,
+      !       but we still include a check for fractional seconds.
       call mpas_get_timeInterval(intervalToNextForceTime, dt=secondsToNextForceTime, ierr=err_tmp)
       err = ior(err,err_tmp)
+      if (secondsToNextForceTime - real(floor(secondsToNextForceTime, KIND=8), RKIND) /= 0.0_RKIND) then
+         call mpas_log_write("set_timestep found secondsToNextForceTime not equal to 0.0: $r, decimal part=$r", MPAS_LOG_ERR, realArgs=(/secondsToNextForceTime, secondsToNextForceTime - real(floor(secondsToNextForceTime, KIND=8), RKIND)/))
+         err = ior(err, 1)
+      endif
       !print *, proposedDt, secondsToNextForceTime
+
+      ! --- Actually set the dt here ---
       dtSeconds = min(proposedDt, secondsToNextForceTime)
 
       call mpas_log_write('  Setting time step (days) to: $r', realArgs=(/dtSeconds / (86400.0_RKIND)/))
       if (dtSeconds < config_min_adaptive_timestep) then
          call mpas_log_write('New deltat is less than config_min_adaptive_timestep.', MPAS_LOG_ERR)
-         err = 1
+         err = ior(err, 1)
       endif
 
    !--------------------------------------------------------------------
