@@ -1057,10 +1057,7 @@ endif
 
 ### Only specially authorized people can use the special_acme qos on Cori or Edison. Don't uncomment unless you're one.
 #if ( `lowercase $debug_queue` == false && $machine == edison ) then
-#  set update_run = ${case_run_exe}.updated
 #  set batch_options = "${batch_options} --qos=special_acme"
-#  mv ${update_run} ${case_run_exe}
-#  unset update_run
 #endif
 
 #============================================
@@ -1231,13 +1228,13 @@ if ( `lowercase $submit_run` == 'true' ) then
     acme_print '         Submitting chained jobs to the debug queue is usually forbidden'
     acme_print '         $num_submits = '$num_submits
     acme_print '         SUBMITTING JUST A SINGLE JOB.'
-    ${case_submit_exe}
+    ${case_submit_exe} --batch-args " ${batch_options} "
   else if ( ! -x ./auto_chain_runs.$machine && $num_submits > 1 ) then
     acme_print 'WARNING: $num_submits > 1  but auto_chain_runs.$machine excutable cannot be found.'
     acme_print '         $num_submits = '$num_submits
     acme_print '         $machine     = '$machine
     acme_print '         SUBMITTING JUST A SINGLE JOB.'
-    ${case_submit_exe}
+    ${case_submit_exe} --batch-args " ${batch_options} "
   else
     # Need to understand why csh won't run with just ./
     acme_print csh ${case_scripts_dir}/auto_chain_runs.$machine $num_submits -1
