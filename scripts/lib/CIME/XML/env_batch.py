@@ -427,7 +427,7 @@ class EnvBatch(EnvBase):
             submitargs += " " + batch_args
 
         if mail_user is not None:
-            mail_user_flag = self.get_value('batch_mail_flag')
+            mail_user_flag = self.get_value('batch_mail_flag', subgroup=None)
             if mail_user_flag is not None:
                 submitargs += " " + mail_user_flag + " " + mail_user
         if 'never' not in mail_type:
@@ -457,8 +457,9 @@ class EnvBatch(EnvBase):
             return jobid
 
     def get_batch_mail_type(self, mail_type='never'):
-        mail_types_flag = self.get_value("batch_mail_type_flag")
-        raw =  self.get_value("batch_mail_type")
+        mail_type_flag = self.get_value("batch_mail_type_flag", subgroup=None)
+        raw =  self.get_value("batch_mail_type", subgroup=None)
+        print raw
         mail_types = [item.strip() for item in raw.split(",")]
         idx = ["never", "all", "begin", "end", "fail"].index(mail_type)
 

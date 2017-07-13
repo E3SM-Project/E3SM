@@ -51,7 +51,6 @@ OR
     parser.add_argument("--caseroot",
                         help="Case directory to build")
 
-
     parser.add_argument("--skip-preview-namelist", action="store_true",
                         help="Skip calling preview-namelist during case.run")
 
