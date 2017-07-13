@@ -166,8 +166,7 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
         if casename not in self.run_pass_casenames:
             raise RuntimeError('casename not in run_pass_casenames')
 
-    #pylint: disable=arguments-differ
-    def _component_compare_test(self, suffix1, suffix2):
+    def _component_compare_test(self, suffix1, suffix2, success_change=False):
         # Trying to use the real version of _component_compare_test would pull
         # too much baggage into these tests. Since the return value from this
         # method isn't important, it's sufficient for the tests of this class to
