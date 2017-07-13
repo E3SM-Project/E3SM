@@ -1883,8 +1883,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncZonal', GMStreamFuncZonal)
       call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncMeridional', GMStreamFuncMeridional)
 
-      !$omp sections
-      !$omp section
       call mpas_reconstruct(meshPool, normalTransportVelocity,          &
                        transportVelocityX,            &
                        transportVelocityY,            &
@@ -1893,7 +1891,6 @@ contains
                        transportVelocityMeridional    &
                       )
 
-      !$omp section
       call mpas_reconstruct(meshPool, normalGMBolusVelocity,          &
                        GMBolusVelocityX,            &
                        GMBolusVelocityY,            &
@@ -1902,7 +1899,6 @@ contains
                        GMBolusVelocityMeridional    &
                       )
 
-      !$omp section
       call mpas_reconstruct(meshPool, relativeSlopeTopOfEdge,          &
                       relativeSlopeTopOfCellX,            &
                       relativeSlopeTopOfCellY,            &
@@ -1911,7 +1907,6 @@ contains
                       relativeSlopeTopOfCellMeridional    &
                      )
 
-      !$omp section
       call mpas_reconstruct(meshPool, gmStreamFuncTopOfEdge,          &
                       GMStreamFuncX,            &
                       GMStreamFuncY,            &
@@ -1919,7 +1914,6 @@ contains
                       GMStreamFuncZonal,        &
                       GMStreamFuncMeridional    &
                      )
-      !$omp end sections
 
       call mpas_timer_stop('reconstruct gm vecs')
 
