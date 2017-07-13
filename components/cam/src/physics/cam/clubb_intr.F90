@@ -125,6 +125,8 @@ module clubb_intr
   logical            :: do_rainturb
   logical            :: do_expldiff
   logical            :: clubb_do_adv
+!  logical            :: clubb_interp_advtend=.true.
+  logical            :: clubb_interp_advtend=.false.
   logical            :: clubb_do_deep
   logical            :: micro_do_icesupersat
   logical            :: history_budget
@@ -187,6 +189,16 @@ module clubb_intr
     wprtp_mc_zt_idx,  &
     wpthlp_mc_zt_idx, &
     rtpthlp_mc_zt_idx
+
+  integer thlp2m_laststep_idx, thlp2t_laststep_idx, thlp2t_advtend_idx
+  integer rtp2m_laststep_idx, rtp2t_laststep_idx, rtp2t_advtend_idx
+  integer rtpthlpm_laststep_idx, rtpthlpt_laststep_idx, rtpthlpt_advtend_idx
+  integer wprtpm_laststep_idx, wprtpt_laststep_idx, wprtpt_advtend_idx
+  integer wpthlpm_laststep_idx, wpthlpt_laststep_idx, wpthlpt_advtend_idx
+  integer wp2m_laststep_idx, wp2t_laststep_idx, wp2t_advtend_idx
+  integer wp3m_laststep_idx, wp3t_laststep_idx, wp3t_advtend_idx
+  integer up2m_laststep_idx, up2t_laststep_idx, up2t_advtend_idx
+  integer vp2m_laststep_idx, vp2t_laststep_idx, vp2t_advtend_idx
  
   integer, public :: & 
     ixthlp2 = 0, &
@@ -240,6 +252,7 @@ module clubb_intr
     use physics_buffer,  only: pbuf_add_field, dtype_r8, dyn_time_lvls
     use clubb_api_module,only: num_pdf_params
     use ppgrid,          only: pver, pverp, pcols
+    use cam_abortutils,  only: endrun
     
     call phys_getopts( eddy_scheme_out                 = eddy_scheme, &
                        deep_scheme_out                 = deep_scheme, & 
@@ -313,6 +326,38 @@ module clubb_intr
     call pbuf_add_field('wpthlp_mc_zt','global',dtype_r8, (/pcols,pverp/), wpthlp_mc_zt_idx)
     call pbuf_add_field('rtpthlp_mc_zt','global',dtype_r8,(/pcols,pverp/), rtpthlp_mc_zt_idx)
 
+    if(clubb_interp_advtend.and.(.not.clubb_do_adv))then
+            call endrun('clubb_interp_advtend=t and clubb_do_adv=f in clubb_intr')
+    endif
+    if (clubb_do_adv.and.clubb_interp_advtend)then
+      call pbuf_add_field('thlp2m_laststep','global',dtype_r8,(/pcols,pverp/), thlp2m_laststep_idx)
+      call pbuf_add_field('thlp2t_laststep','global',dtype_r8,(/pcols,pverp/), thlp2t_laststep_idx)
+      call pbuf_add_field('thlp2t_advtend','global',dtype_r8,(/pcols,pverp/), thlp2t_advtend_idx)
+      call pbuf_add_field('rtp2m_laststep','global',dtype_r8,(/pcols,pverp/), rtp2m_laststep_idx)
+      call pbuf_add_field('rtp2t_laststep','global',dtype_r8,(/pcols,pverp/), rtp2t_laststep_idx)
+      call pbuf_add_field('rtp2t_advtend','global',dtype_r8,(/pcols,pverp/), rtp2t_advtend_idx)
+      call pbuf_add_field('rtpthlpm_laststep','global',dtype_r8,(/pcols,pverp/), rtpthlpm_laststep_idx)
+      call pbuf_add_field('rtpthlpt_laststep','global',dtype_r8,(/pcols,pverp/), rtpthlpt_laststep_idx)
+      call pbuf_add_field('rtpthlpt_advtend','global',dtype_r8,(/pcols,pverp/), rtpthlpt_advtend_idx)
+      call pbuf_add_field('wprtpm_laststep','global',dtype_r8,(/pcols,pverp/), wprtpm_laststep_idx)
+      call pbuf_add_field('wprtpt_laststep','global',dtype_r8,(/pcols,pverp/), wprtpt_laststep_idx)
+      call pbuf_add_field('wprtpt_advtend','global',dtype_r8,(/pcols,pverp/), wprtpt_advtend_idx)
+      call pbuf_add_field('wpthlpm_laststep','global',dtype_r8,(/pcols,pverp/), wpthlpm_laststep_idx)
+      call pbuf_add_field('wpthlpt_laststep','global',dtype_r8,(/pcols,pverp/), wpthlpt_laststep_idx)
+      call pbuf_add_field('wpthlpt_advtend','global',dtype_r8,(/pcols,pverp/), wpthlpt_advtend_idx)
+      call pbuf_add_field('wp2m_laststep','global',dtype_r8,(/pcols,pverp/), wp2m_laststep_idx)
+      call pbuf_add_field('wp2t_laststep','global',dtype_r8,(/pcols,pverp/), wp2t_laststep_idx)
+      call pbuf_add_field('wp2t_advtend','global',dtype_r8,(/pcols,pverp/), wp2t_advtend_idx)
+      call pbuf_add_field('wp3m_laststep','global',dtype_r8,(/pcols,pverp/), wp3m_laststep_idx)
+      call pbuf_add_field('wp3t_laststep','global',dtype_r8,(/pcols,pverp/), wp3t_laststep_idx)
+      call pbuf_add_field('wp3t_advtend','global',dtype_r8,(/pcols,pverp/), wp3t_advtend_idx)
+      call pbuf_add_field('up2m_laststep','global',dtype_r8,(/pcols,pverp/), up2m_laststep_idx)
+      call pbuf_add_field('up2t_laststep','global',dtype_r8,(/pcols,pverp/), up2t_laststep_idx)
+      call pbuf_add_field('up2t_advtend','global',dtype_r8,(/pcols,pverp/), up2t_advtend_idx)
+      call pbuf_add_field('vp2m_laststep','global',dtype_r8,(/pcols,pverp/), vp2m_laststep_idx)
+      call pbuf_add_field('vp2t_laststep','global',dtype_r8,(/pcols,pverp/), vp2t_laststep_idx)
+      call pbuf_add_field('vp2t_advtend','global',dtype_r8,(/pcols,pverp/), vp2t_advtend_idx)
+    endif
 #endif 
 
   end subroutine clubb_register_cam
@@ -963,6 +1008,7 @@ end subroutine clubb_init_cnst
        call pbuf_set_field(pbuf2d, wprtp_mc_zt_idx,   0.0_r8)
        call pbuf_set_field(pbuf2d, wpthlp_mc_zt_idx,  0.0_r8)
        call pbuf_set_field(pbuf2d, rtpthlp_mc_zt_idx, 0.0_r8)
+
     endif
    
     ! --------------- !
@@ -1095,6 +1141,15 @@ end subroutine clubb_init_cnst
    real(r8) :: dtime                            ! CLUBB time step                              [s]   
    real(r8) :: edsclr_in(pverp,edsclr_dim)      ! Scalars to be diffused through CLUBB         [units vary]
    real(r8) :: wp2_in(pverp)                    ! vertical velocity variance (CLUBB)           [m^2/s^2]
+   real(r8) :: thlp2t_advtend_in(pverp)         ! advective tendency of thlp2 (CLUBB)           []
+   real(r8) :: rtp2t_advtend_in(pverp)          ! advective tendency of rtp2 (CLUBB)           []
+   real(r8) :: rtpthlpt_advtend_in(pverp)       ! advective tendency of rtpthlp (CLUBB)           []
+   real(r8) :: wprtpt_advtend_in(pverp)         ! advective tendency of wprtp (CLUBB)           []
+   real(r8) :: wpthlpt_advtend_in(pverp)        ! advective tendency of wpthlp (CLUBB)           []
+   real(r8) :: wp2t_advtend_in(pverp)           ! advective tendency of vertical velocity variance (CLUBB)           [m^2/s^3]
+   real(r8) :: wp3t_advtend_in(pverp)           ! advective tendency of third moment of vertical velocity (CLUBB)    [m^3/s^4]
+   real(r8) :: up2t_advtend_in(pverp)           ! advective tendency of  (CLUBB)           [m^2/s^3]
+   real(r8) :: vp2t_advtend_in(pverp)           ! advective tendency of  (CLUBB)           [m^2/s^3]
    real(r8) :: wp3_in(pverp)                    ! third moment vertical velocity               [m^3/s^3]
    real(r8) :: wpthlp_in(pverp)                 ! turbulent flux of thetal                     [K m/s]
    real(r8) :: wprtp_in(pverp)                  ! turbulent flux of total water                [kg/kg m/s]
@@ -1210,7 +1265,7 @@ end subroutine clubb_init_cnst
    real(r8) :: wpthlp_output(pcols,pverp)       ! Heat flux output variable                     [W/m2]
    real(r8) :: wprtp_output(pcols,pverp)        ! Total water flux output variable              [W/m2]
    real(r8) :: wp3_output(pcols,pverp)          ! wp3 output                                    [m^3/s^3]
-   real(r8) :: rtpthlp_output(pcols,pverp)      ! rtpthlp ouptut                                [K kg/kg]
+   real(r8) :: rtpthlp_output(pcols,pverp)      ! rtpthlp output                                [K kg/kg]
    real(r8) :: qt_output(pcols,pver)            ! Total water mixing ratio for output           [kg/kg]
    real(r8) :: thetal_output(pcols,pver)        ! Liquid water potential temperature output     [K]
    real(r8) :: sl_output(pcols,pver)            ! Liquid water static energy                    [J/kg]
@@ -1230,8 +1285,14 @@ end subroutine clubb_init_cnst
    real(r8) :: rtp2_zt_out(pcols, pverp)        ! CLUBB R-tot variance on thermo levs           [kg^2/kg^2]
    real(r8) :: thl2_zt(pverp)                   ! CLUBB Theta-l variance on thermo levs         [K^2]
    real(r8) :: thl2_zt_out(pcols, pverp)        ! CLUBB Theta-l variance on thermo levs
-   real(r8) :: wp2_zt(pverp)                    ! CLUBB W variance on theromo levs              [m^2/s^2]
-   real(r8) :: wp2_zt_out(pcols, pverp)
+   real(r8) :: wp2_zt(pverp)                    ! CLUBB W variance on thermo levs               [m^2/s^2]
+   real(r8) :: wp2_zt_out(pcols, pverp)         ! CLUBB W variance on thermo levs               [m^2/s^2]
+   real(r8) :: wpthlpt(pverp)            ! CLUBB Heat flux output variable on thermo levs          [W/m2]
+   real(r8) :: wprtpt(pverp)             ! CLUBB Total water flux output variable on thermo levs   [W/m2]
+   real(r8) :: rtpthlpt(pverp)           ! CLUBB covariance of thetal and qt on thermo levs        [kg/kg K]
+   real(r8) :: wp3t(pverp)               ! CLUBB third moment vertical velocity on thermo levs     [m^3/s^3]
+   real(r8) :: up2t(pverp)               ! CLUBB meridional wind variance on thermo levs           [m^2/s^2]
+   real(r8) :: vp2t(pverp)               ! CLUBB zonal wind variance on thermo levs                [m^2/s^2]
    real(r8) :: dlf_liq_out(pcols, pverp)        ! Detrained liquid water from ZM                [kg/kg/s]
    real(r8) :: dlf_ice_out(pcols, pverp)        ! Detrained ice water from ZM                   [kg/kg/s]
    real(r8) :: wm_zt_out(pcols, pverp)          ! CLUBB mean W on thermo levs output            [m/s]
@@ -1338,6 +1399,16 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: wprtp_mc_zt
    real(r8), pointer, dimension(:,:) :: wpthlp_mc_zt
    real(r8), pointer, dimension(:,:) :: rtpthlp_mc_zt
+
+   real(r8), pointer, dimension(:,:) :: thlp2m_laststep, thlp2t_laststep, thlp2t_advtend 
+   real(r8), pointer, dimension(:,:) :: rtp2m_laststep, rtp2t_laststep, rtp2t_advtend 
+   real(r8), pointer, dimension(:,:) :: rtpthlpm_laststep, rtpthlpt_laststep, rtpthlpt_advtend 
+   real(r8), pointer, dimension(:,:) :: wpthlpm_laststep, wpthlpt_laststep, wpthlpt_advtend 
+   real(r8), pointer, dimension(:,:) :: wprtpm_laststep, wprtpt_laststep, wprtpt_advtend 
+   real(r8), pointer, dimension(:,:) :: wp2m_laststep, wp2t_laststep, wp2t_advtend 
+   real(r8), pointer, dimension(:,:) :: wp3m_laststep, wp3t_laststep, wp3t_advtend 
+   real(r8), pointer, dimension(:,:) :: up2m_laststep, up2t_laststep, up2t_advtend 
+   real(r8), pointer, dimension(:,:) :: vp2m_laststep, vp2t_laststep, vp2t_advtend 
 
    real(r8)  stend(pcols,pver)
    real(r8)  qvtend(pcols,pver)
@@ -1458,6 +1529,36 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, wprtp_mc_zt_idx,   wprtp_mc_zt)
    call pbuf_get_field(pbuf, wpthlp_mc_zt_idx,  wpthlp_mc_zt)
    call pbuf_get_field(pbuf, rtpthlp_mc_zt_idx, rtpthlp_mc_zt)
+
+   if (clubb_do_adv.and.clubb_interp_advtend)then
+      call pbuf_get_field(pbuf, thlp2m_laststep_idx, thlp2m_laststep)
+      call pbuf_get_field(pbuf, thlp2t_laststep_idx, thlp2t_laststep)
+      call pbuf_get_field(pbuf, thlp2t_advtend_idx, thlp2t_advtend)
+      call pbuf_get_field(pbuf, rtp2m_laststep_idx, rtp2m_laststep)
+      call pbuf_get_field(pbuf, rtp2t_laststep_idx, rtp2t_laststep)
+      call pbuf_get_field(pbuf, rtp2t_advtend_idx, rtp2t_advtend)
+      call pbuf_get_field(pbuf, rtpthlpm_laststep_idx, rtpthlpm_laststep)
+      call pbuf_get_field(pbuf, rtpthlpt_laststep_idx, rtpthlpt_laststep)
+      call pbuf_get_field(pbuf, rtpthlpt_advtend_idx, rtpthlpt_advtend)
+      call pbuf_get_field(pbuf, wpthlpm_laststep_idx, wpthlpm_laststep)
+      call pbuf_get_field(pbuf, wpthlpt_laststep_idx, wpthlpt_laststep)
+      call pbuf_get_field(pbuf, wpthlpt_advtend_idx, wpthlpt_advtend)
+      call pbuf_get_field(pbuf, wprtpm_laststep_idx, wprtpm_laststep)
+      call pbuf_get_field(pbuf, wprtpt_laststep_idx, wprtpt_laststep)
+      call pbuf_get_field(pbuf, wprtpt_advtend_idx, wprtpt_advtend)
+      call pbuf_get_field(pbuf, wp2m_laststep_idx, wp2m_laststep)
+      call pbuf_get_field(pbuf, wp2t_laststep_idx, wp2t_laststep)
+      call pbuf_get_field(pbuf, wp2t_advtend_idx, wp2t_advtend)
+      call pbuf_get_field(pbuf, wp3m_laststep_idx, wp3m_laststep)
+      call pbuf_get_field(pbuf, wp3t_laststep_idx, wp3t_laststep)
+      call pbuf_get_field(pbuf, wp3t_advtend_idx, wp3t_advtend)
+      call pbuf_get_field(pbuf, up2m_laststep_idx, up2m_laststep)
+      call pbuf_get_field(pbuf, up2t_laststep_idx, up2t_laststep)
+      call pbuf_get_field(pbuf, up2t_advtend_idx, up2t_advtend)
+      call pbuf_get_field(pbuf, vp2m_laststep_idx, vp2m_laststep)
+      call pbuf_get_field(pbuf, vp2t_laststep_idx, vp2t_laststep)
+      call pbuf_get_field(pbuf, vp2t_advtend_idx, vp2t_advtend)
+   endif
 
    ! Intialize the apply_const variable (note special logic is due to eularian backstepping)
    if (clubb_do_adv .and. (is_first_step() .or. all(wpthlp(1:ncol,1:pver) .eq. 0._r8))) then
@@ -1598,15 +1699,49 @@ end subroutine clubb_init_cnst
             !  Note that some of the moments below can be positive or negative.  
             !    Remove a constant that was added to prevent dynamics from clipping 
             !    them to prevent dynamics from making them positive.  
-            thlp2(i,k)   = state1%q(i,k,ixthlp2)
-            rtp2(i,k)    = state1%q(i,k,ixrtp2)
-            rtpthlp(i,k) = state1%q(i,k,ixrtpthlp) - (rtpthlp_const*apply_const)
-            wpthlp(i,k)  = state1%q(i,k,ixwpthlp) - (wpthlp_const*apply_const)
-            wprtp(i,k)   = state1%q(i,k,ixwprtp) - (wprtp_const*apply_const)
-            wp2(i,k)     = state1%q(i,k,ixwp2)
-            wp3(i,k)     = state1%q(i,k,ixwp3) - (wp3_const*apply_const)
-            up2(i,k)     = state1%q(i,k,ixup2)
-            vp2(i,k)     = state1%q(i,k,ixvp2)
+           if(clubb_interp_advtend) then
+               if(is_first_step()  )then
+                   thlp2t_advtend(i,k) = 0.
+                   rtp2t_advtend(i,k) = 0.
+                   rtpthlpt_advtend(i,k) = 0.
+                   wpthlpt_advtend(i,k) = 0.
+                   wprtpt_advtend(i,k) = 0.
+                   wp2t_advtend(i,k) = 0.
+                   wp3t_advtend(i,k) = 0.
+                   up2t_advtend(i,k) = 0.
+                   vp2t_advtend(i,k) = 0.
+               else 
+!                 state1%q(i,k,ix**) is the value coming out of dynamics. It has not been changed by other processes.
+                  thlp2t_advtend(i,k)=(state1%q(i,k,ixthlp2)-thlp2t_laststep(i,k))/(hdtime*cld_macmic_num_steps) ! saved in pbuf for subsequent time steps.
+                  rtp2t_advtend(i,k)=(state1%q(i,k,ixrtp2)-rtp2t_laststep(i,k))/(hdtime*cld_macmic_num_steps) ! saved in pbuf for subsequent time steps.
+                  rtpthlpt_advtend(i,k)=(state1%q(i,k,ixrtpthlp)-rtpthlpt_laststep(i,k))/(hdtime*cld_macmic_num_steps) ! saved in pbuf for subsequent time steps.
+                  wpthlpt_advtend(i,k)=(state1%q(i,k,ixwpthlp)-wpthlpt_laststep(i,k))/(hdtime*cld_macmic_num_steps) ! saved in pbuf for subsequent time steps.
+                  wprtpt_advtend(i,k)=(state1%q(i,k,ixwprtp)-wprtpt_laststep(i,k))/(hdtime*cld_macmic_num_steps) ! saved in pbuf for subsequent time steps.
+                  wp2t_advtend(i,k)=(state1%q(i,k,ixwp2)-wp2t_laststep(i,k))/(hdtime*cld_macmic_num_steps) ! saved in pbuf for subsequent time steps.
+                  wp3t_advtend(i,k)=(state1%q(i,k,ixwp3)-wp3t_laststep(i,k))/(hdtime*cld_macmic_num_steps) ! saved in pbuf for subsequent time steps.
+                  up2t_advtend(i,k)=(state1%q(i,k,ixup2)-up2t_laststep(i,k))/(hdtime*cld_macmic_num_steps) ! saved in pbuf for subsequent time steps.
+                  vp2t_advtend(i,k)=(state1%q(i,k,ixvp2)-vp2t_laststep(i,k))/(hdtime*cld_macmic_num_steps) ! saved in pbuf for subsequent time steps.
+                  thlp2(i,k) = thlp2m_laststep(i,k) ! on momentum levels if clubb_interp_advtend
+                  rtp2(i,k) = rtp2m_laststep(i,k) ! on momentum levels if clubb_interp_advtend
+                  rtpthlp(i,k) = rtpthlpm_laststep(i,k) - (rtpthlp_const*apply_const) ! on momentum levels if clubb_interp_advtend
+                  wpthlp(i,k) = wpthlpm_laststep(i,k) - (wpthlp_const*apply_const) ! on momentum levels if clubb_interp_advtend
+                  wprtp(i,k) = wprtpm_laststep(i,k) - (wprtp_const*apply_const) ! on momentum levels if clubb_interp_advtend
+                  wp2(i,k) = wp2m_laststep(i,k) ! on momentum levels if clubb_interp_advtend
+                  wp3(i,k) = wp3m_laststep(i,k) - (wp3_const*apply_const) ! on momentum levels if clubb_interp_advtend
+                  up2(i,k) = up2m_laststep(i,k) ! on momentum levels if clubb_interp_advtend
+                  vp2(i,k) = vp2m_laststep(i,k) ! on momentum levels if clubb_interp_advtend
+               endif
+            else
+               thlp2(i,k)   = state1%q(i,k,ixthlp2)
+               rtp2(i,k)    = state1%q(i,k,ixrtp2)
+               rtpthlp(i,k) = state1%q(i,k,ixrtpthlp) - (rtpthlp_const*apply_const)
+               wpthlp(i,k)  = state1%q(i,k,ixwpthlp) - (wpthlp_const*apply_const)
+               wprtp(i,k)   = state1%q(i,k,ixwprtp) - (wprtp_const*apply_const)
+               wp2(i,k)  = state1%q(i,k,ixwp2)
+               wp3(i,k)  = state1%q(i,k,ixwp3) - (wp3_const*apply_const)
+               up2(i,k)  = state1%q(i,k,ixup2)
+               vp2(i,k)  = state1%q(i,k,ixvp2)
+            endif
           endif
        endif
 
@@ -1638,7 +1773,18 @@ end subroutine clubb_init_cnst
       wp3(1:ncol,pverp)=wp3(1:ncol,pver)
       up2(1:ncol,pverp)=up2(1:ncol,pver)
       vp2(1:ncol,pverp)=vp2(1:ncol,pver)
-   endif
+      if(clubb_interp_advtend)then
+         thlp2t_advtend(1:ncol,pverp)=thlp2t_advtend(1:ncol,pver)
+         rtp2t_advtend(1:ncol,pverp)=rtp2t_advtend(1:ncol,pver)
+         rtpthlpt_advtend(1:ncol,pverp)=rtpthlpt_advtend(1:ncol,pver)
+         wpthlpt_advtend(1:ncol,pverp)=wpthlpt_advtend(1:ncol,pver)
+         wprtpt_advtend(1:ncol,pverp)=wprtpt_advtend(1:ncol,pver)
+         wp2t_advtend(1:ncol,pverp)=wp2t_advtend(1:ncol,pver)
+         wp3t_advtend(1:ncol,pverp)=wp3t_advtend(1:ncol,pver)
+         up2t_advtend(1:ncol,pverp)=up2t_advtend(1:ncol,pver)
+         vp2t_advtend(1:ncol,pverp)=vp2t_advtend(1:ncol,pver)
+      endif
+    endif
 
    ! Compute integrals of static energy, kinetic energy, water vapor, and liquid water
    ! for the computation of total energy before CLUBB is called.  This is for an 
@@ -1942,7 +2088,7 @@ end subroutine clubb_init_cnst
       pre_in(1) = pre_in(2)
      
       if (clubb_do_adv) then
-        if (macmic_it .eq. 1) then
+        if ((macmic_it .eq. 1).and.(.not.clubb_interp_advtend)) then
           wp2_in=zt2zm_api(wp2_in)    
           wpthlp_in=zt2zm_api(wpthlp_in)
           wprtp_in=zt2zm_api(wprtp_in)
@@ -1959,8 +2105,46 @@ end subroutine clubb_init_cnst
             up2_in(k)=max(w_tol_sqd,up2_in(k))
             vp2_in(k)=max(w_tol_sqd,vp2_in(k))
           enddo
-        endif
+       endif
       endif
+      if(clubb_do_adv.and.clubb_interp_advtend) then
+           do k=1,pverp
+               thlp2t_advtend_in(k) = thlp2t_advtend(i,pverp-k+1)
+               rtp2t_advtend_in(k) = rtp2t_advtend(i,pverp-k+1)
+               rtpthlpt_advtend_in(k) = rtpthlpt_advtend(i,pverp-k+1)
+               wpthlpt_advtend_in(k) = wpthlpt_advtend(i,pverp-k+1)
+               wprtpt_advtend_in(k) = wprtpt_advtend(i,pverp-k+1)
+               wp2t_advtend_in(k) = wp2t_advtend(i,pverp-k+1)
+               wp3t_advtend_in(k) = wp3t_advtend(i,pverp-k+1)
+               up2t_advtend_in(k) = up2t_advtend(i,pverp-k+1)
+               vp2t_advtend_in(k) = vp2t_advtend(i,pverp-k+1)
+           end do
+           thlp2t_advtend_in = zt2zm_api(thlp2t_advtend_in) 
+           rtp2t_advtend_in = zt2zm_api(rtp2t_advtend_in) 
+           rtpthlpt_advtend_in = zt2zm_api(rtpthlpt_advtend_in) 
+           wpthlpt_advtend_in = zt2zm_api(wpthlpt_advtend_in) 
+           wprtpt_advtend_in = zt2zm_api(wprtpt_advtend_in) 
+           wp2t_advtend_in = zt2zm_api(wp2t_advtend_in) 
+           wp3t_advtend_in = zt2zm_api(wp3t_advtend_in) 
+           up2t_advtend_in = zt2zm_api(up2t_advtend_in) 
+           vp2t_advtend_in = zt2zm_api(vp2t_advtend_in) 
+           thlp2_in(:) = thlp2_in(:) + thlp2t_advtend_in(:) * hdtime
+           rtp2_in(:) = rtp2_in(:) + rtp2t_advtend_in(:) * hdtime
+           rtpthlp_in(:) = rtpthlp_in(:) + rtpthlpt_advtend_in(:) * hdtime
+           wpthlp_in(:) = wpthlp_in(:) + wpthlpt_advtend_in(:) * hdtime
+           wprtp_in(:) = wprtp_in(:) + wprtpt_advtend_in(:) * hdtime
+           wp2_in(:) = wp2_in(:) + wp2t_advtend_in(:) * hdtime
+           up2_in(:) = up2_in(:) + up2t_advtend_in(:) * hdtime
+           up2_in(:) = up2_in(:) + up2t_advtend_in(:) * hdtime
+           vp2_in(:) = vp2_in(:) + vp2t_advtend_in(:) * hdtime
+          do k=1,pverp
+             thlp2_in(k)=max(thl_tol**2, thlp2_in(k))
+             rtp2_in(k)=max(rt_tol**2, rtp2_in(k))
+             wp2_in(k)=max(w_tol_sqd,wp2_in(k))
+             up2_in(k)=max(w_tol_sqd, up2_in(k))
+             vp2_in(k)=max(w_tol_sqd, vp2_in(k))
+          enddo
+      endif 
   
       !  Do the same for tracers 
       icnt=0
@@ -2101,31 +2285,41 @@ end subroutine clubb_init_cnst
       enddo  ! end time loop
       call t_stopf('adv_clubb_core_ts_loop')
      
-      if (clubb_do_adv) then
-         if (macmic_it .eq. cld_macmic_num_steps) then 
-            wp2_in=zm2zt_api(wp2_in)   
-            wpthlp_in=zm2zt_api(wpthlp_in)
-            wprtp_in=zm2zt_api(wprtp_in)
-            up2_in=zm2zt_api(up2_in)
-            vp2_in=zm2zt_api(vp2_in)
-            thlp2_in=zm2zt_api(thlp2_in)
-            rtp2_in=zm2zt_api(rtp2_in)
-            rtpthlp_in=zm2zt_api(rtpthlp_in) 
-
-            do k=1,pverp
-               thlp2_in(k)=max(thl_tol**2,thlp2_in(k))
-               rtp2_in(k)=max(rt_tol**2,rtp2_in(k))
-               wp2_in(k)=max(w_tol_sqd,wp2_in(k))
-               up2_in(k)=max(w_tol_sqd,up2_in(k))
-               vp2_in(k)=max(w_tol_sqd,vp2_in(k))
-            enddo
-         endif
-      endif
-   
       ! Convert RTP2 and THLP2 to thermo grid for output
       rtp2_zt = zm2zt_api(rtp2_in)
       thl2_zt = zm2zt_api(thlp2_in)
       wp2_zt  = zm2zt_api(wp2_in)
+
+      if (macmic_it .eq. cld_macmic_num_steps) then 
+         if (clubb_do_adv)then
+            if(clubb_interp_advtend) then
+               wpthlpt=zm2zt_api(wpthlp_in)
+               wprtpt=zm2zt_api(wprtp_in)
+               rtpthlpt=zm2zt_api(rtpthlp_in)
+               wp3t=zm2zt_api(wp3_in)
+               up2t=zm2zt_api(up2_in)
+               vp2t=zm2zt_api(vp2_in)
+            else
+               wp2_in=zm2zt_api(wp2_in)   
+               wpthlp_in=zm2zt_api(wpthlp_in)
+               wprtp_in=zm2zt_api(wprtp_in)
+               up2_in=zm2zt_api(up2_in)
+               vp2_in=zm2zt_api(vp2_in)
+               thlp2_in=zm2zt_api(thlp2_in)
+               rtp2_in=zm2zt_api(rtp2_in)
+               rtpthlp_in=zm2zt_api(rtpthlp_in) 
+
+               do k=1,pverp
+                  thlp2_in(k)=max(thl_tol**2,thlp2_in(k))
+                  rtp2_in(k)=max(rt_tol**2,rtp2_in(k))
+                  wp2_in(k)=max(w_tol_sqd,wp2_in(k))
+                  up2_in(k)=max(w_tol_sqd,up2_in(k))
+                  vp2_in(k)=max(w_tol_sqd,vp2_in(k))
+               enddo
+            endif
+         endif
+      endif
+   
 
       ! Pack up pdf_params and store it in the pbuf
       call pack_pdf_params_api(pdf_params, pverp, pdf_params_packed)
@@ -2166,6 +2360,18 @@ end subroutine clubb_init_cnst
           thl2_zt_out(i,k)  = thl2_zt(pverp-k+1)
           wp2_zt_out(i,k)   = wp2_zt(pverp-k+1)
 
+          if(clubb_interp_advtend.and.(macmic_it .eq. cld_macmic_num_steps)) then
+             thlp2t_laststep(i,k) = thl2_zt_out(i,k)
+             rtp2t_laststep(i,k)= rtp2_zt_out(i,k) 
+             rtpthlpt_laststep(i,k) = rtpthlpt(pverp-k+1) + rtpthlp_const
+             wpthlpt_laststep(i,k) = wpthlpt(pverp-k+1) + wpthlp_const
+             wprtpt_laststep(i,k) = wprtpt(pverp-k+1) + wprtp_const
+             wp2t_laststep(i,k) = wp2_zt_out(i,k)
+             wp3t_laststep(i,k) = wp3t(pverp-k+1) + wp3_const
+             up2t_laststep(i,k) = up2t(pverp-k+1) 
+             vp2t_laststep(i,k) = vp2t(pverp-k+1) 
+          endif
+
           mean_rt           = pdf_params(pverp-k+1)%mixt_frac*pdf_params(pverp-k+1)%rt_1 &
              + (1.0_r8-pdf_params(pverp-k+1)%mixt_frac)*pdf_params(pverp-k+1)%rt_2
 
@@ -2181,6 +2387,9 @@ end subroutine clubb_init_cnst
           enddo
 
       enddo 
+
+        
+
      
       !  Fill up arrays needed for McICA.  Note we do not want the ghost point,
       !   thus why the second loop is needed.
@@ -2244,6 +2453,8 @@ end subroutine clubb_init_cnst
          rtm_integral_ltend = rtm_integral_ltend + ptend_loc%q(i,k,ixcldliq)*state1%pdel(i,k)/gravit
          rtm_integral_vtend = rtm_integral_vtend + ptend_loc%q(i,k,ixq)*state1%pdel(i,k)/gravit
 
+!     save higher moments at last time step for calculating dynamic tendency on next time step.
+
          if (clubb_do_adv) then
             if (macmic_it .eq. cld_macmic_num_steps) then
 
@@ -2255,15 +2466,36 @@ end subroutine clubb_init_cnst
                wpthlp(i,k) = wpthlp(i,k) + wpthlp_const
                wprtp(i,k) = wprtp(i,k) + wprtp_const
 
-               ptend_loc%q(i,k,ixthlp2)=(thlp2(i,k)-state1%q(i,k,ixthlp2))/hdtime ! THLP Variance
-               ptend_loc%q(i,k,ixrtp2)=(rtp2(i,k)-state1%q(i,k,ixrtp2))/hdtime ! RTP Variance
-               ptend_loc%q(i,k,ixrtpthlp)=(rtpthlp(i,k)-state1%q(i,k,ixrtpthlp))/hdtime ! RTP THLP covariance
-               ptend_loc%q(i,k,ixwpthlp)=(wpthlp(i,k)-state1%q(i,k,ixwpthlp))/hdtime ! WPTHLP 
-               ptend_loc%q(i,k,ixwprtp)=(wprtp(i,k)-state1%q(i,k,ixwprtp))/hdtime ! WPRTP
-               ptend_loc%q(i,k,ixwp2)=(wp2(i,k)-state1%q(i,k,ixwp2))/hdtime ! WP2
-               ptend_loc%q(i,k,ixwp3)=(wp3(i,k)-state1%q(i,k,ixwp3))/hdtime ! WP3
-               ptend_loc%q(i,k,ixup2)=(up2(i,k)-state1%q(i,k,ixup2))/hdtime ! UP2
-               ptend_loc%q(i,k,ixvp2)=(vp2(i,k)-state1%q(i,k,ixvp2))/hdtime ! VP2
+               if (clubb_interp_advtend) then
+                  thlp2m_laststep(i,k)= thlp2(i,k) 
+                  rtp2m_laststep(i,k)= rtp2(i,k) 
+                  rtpthlpm_laststep(i,k)= rtpthlp(i,k) 
+                  wpthlpm_laststep(i,k)= wpthlp(i,k) 
+                  wprtpm_laststep(i,k)= wprtp(i,k) 
+                  wp2m_laststep(i,k)= wp2(i,k) 
+                  wp3m_laststep(i,k)= wp3(i,k) 
+                  up2m_laststep(i,k)= up2(i,k) 
+                  vp2m_laststep(i,k)= vp2(i,k) 
+                  ptend_loc%q(i,k,ixthlp2)=(thlp2t_laststep(i,k)-state1%q(i,k,ixthlp2))/hdtime ! THLP Variance
+                  ptend_loc%q(i,k,ixrtp2)=(rtp2t_laststep(i,k)-state1%q(i,k,ixrtp2))/hdtime ! RTP Variance
+                  ptend_loc%q(i,k,ixrtpthlp)=(rtpthlpt_laststep(i,k)-state1%q(i,k,ixrtpthlp))/hdtime ! RTP THLP covariance
+                  ptend_loc%q(i,k,ixwpthlp)=(wpthlpt_laststep(i,k)-state1%q(i,k,ixwpthlp))/hdtime ! WPTHLP 
+                  ptend_loc%q(i,k,ixwprtp)=(wprtpt_laststep(i,k)-state1%q(i,k,ixwprtp))/hdtime ! WPRTP
+                  ptend_loc%q(i,k,ixwp2)=(wp2t_laststep(i,k)-state1%q(i,k,ixwp2))/hdtime ! WP2
+                  ptend_loc%q(i,k,ixwp3)=(wp3t_laststep(i,k)-state1%q(i,k,ixwp3))/hdtime ! WP3
+                  ptend_loc%q(i,k,ixup2)=(up2t_laststep(i,k)-state1%q(i,k,ixup2))/hdtime ! UP2
+                  ptend_loc%q(i,k,ixvp2)=(vp2t_laststep(i,k)-state1%q(i,k,ixvp2))/hdtime ! VP2
+               else
+                  ptend_loc%q(i,k,ixthlp2)=(thlp2(i,k)-state1%q(i,k,ixthlp2))/hdtime ! THLP Variance
+                  ptend_loc%q(i,k,ixrtp2)=(rtp2(i,k)-state1%q(i,k,ixrtp2))/hdtime ! RTP Variance
+                  ptend_loc%q(i,k,ixrtpthlp)=(rtpthlp(i,k)-state1%q(i,k,ixrtpthlp))/hdtime ! RTP THLP covariance
+                  ptend_loc%q(i,k,ixwpthlp)=(wpthlp(i,k)-state1%q(i,k,ixwpthlp))/hdtime ! WPTHLP 
+                  ptend_loc%q(i,k,ixwprtp)=(wprtp(i,k)-state1%q(i,k,ixwprtp))/hdtime ! WPRTP
+                  ptend_loc%q(i,k,ixwp2)=(wp2(i,k)-state1%q(i,k,ixwp2))/hdtime ! WP2
+                  ptend_loc%q(i,k,ixwp3)=(wp3(i,k)-state1%q(i,k,ixwp3))/hdtime ! WP3
+                  ptend_loc%q(i,k,ixup2)=(up2(i,k)-state1%q(i,k,ixup2))/hdtime ! UP2
+                  ptend_loc%q(i,k,ixvp2)=(vp2(i,k)-state1%q(i,k,ixvp2))/hdtime ! VP2
+               endif
             else
                ptend_loc%q(i,k,ixthlp2)=0._r8
                ptend_loc%q(i,k,ixrtp2)=0._r8

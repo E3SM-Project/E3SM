@@ -1369,6 +1369,7 @@ if (($chem_pkg ne 'none') || ($prog_species)) {
     } 
 
 }
+if ($print>=2) { print "advected chemical constituents: $chem_nadv$eol"; }
 if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
 } elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom' ) {
@@ -1494,7 +1495,7 @@ else {
 
 	if ($clubb_do_adv) {
 	    $nadv += 9;
-            if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
+            if ($print>=2) { print "Advected constituents added by CLUBB: 9$eol"; }
 	}
 
         # co2_cycle
