@@ -362,7 +362,6 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
             Call(METHOD_component_compare_test,
                 {'suffix1': run_one_suffix, 'suffix2': run_two_suffix})
         ]
-        print "HJERE %s"%mytest.log
         self.assertEqual(expected_calls, mytest.log)
 
     def test_run1_fails(self):
