@@ -256,7 +256,7 @@ class SystemTestsCommon(object):
         """
         success, comments = compare_test(self._case, suffix1, suffix2)
         if success_change:
-          success = not success
+            success = not success
 
         append_testlog(comments)
         status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS

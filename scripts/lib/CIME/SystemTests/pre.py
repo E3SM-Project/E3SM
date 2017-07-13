@@ -66,7 +66,7 @@ class PRE(SystemTestsCompareTwo):
         self._case.flush()
 
     ###########################################################################
-    def run_phase(self):
+    def run_phase(self): # pylint: disable=arguments-differ
     ###########################################################################
         self._activate_case2()
         should_match = (self._case.get_value("DESP_MODE") == "NOCHANGE")
