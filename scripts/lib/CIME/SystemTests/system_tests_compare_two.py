@@ -26,8 +26,7 @@ In addition, they MAY require the following method:
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case import Case
-from CIME.check_input_data import check_all_input_data
-from CIME.preview_namelists import create_namelists
+from CIME.case_submit import check_case
 
 import shutil, os, glob
 
@@ -174,8 +173,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         self._activate_case2()
         # we need to make sure run2 is properly staged.
         if run_type != "startup":
-            create_namelists(self._case2)
-            check_all_input_data(self._case2)
+            check_case(self._case2, self._caseroot2)
         self._force_case2_settings()
         self.run_indv(suffix = self._run_two_suffix)
 
