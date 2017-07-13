@@ -13,9 +13,9 @@
        This file may have ice desc entries.
   -->
   <description modifier_mode='1'>
-    <desc ice="DICE[%SSMI][%SIAF][%PRES][%NULL]">dice mode </desc>
+    <desc ice="DICE[%SSMI][%IAF][%PRES][%NULL]">dice mode </desc>
     <desc option="SSMI">is ssmi</desc>
-    <desc option="SIAF"> is siaf</desc>
+    <desc option="IAF"> is siaf</desc>
     <desc option="PRES"> is prescribed</desc>
     <desc option="NULL"> is null</desc>
   </description>
@@ -35,7 +35,7 @@
     <default_value>ssmi</default_value>
     <values match="last">
       <value compset="DICE%SSMI">ssmi</value>
-      <value compset="DICE%SIAF">ssmi_iaf</value>
+      <value compset="DICE%IAF">ssmi_iaf</value>
       <value compset="DICE%PRES">prescribed</value>
       <value compset="DICE%NULL">null</value>
     </values>
