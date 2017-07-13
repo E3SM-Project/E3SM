@@ -299,7 +299,6 @@
         <command name="load">git/2.9.1</command>
 	<command name="load">cmake/3.3.2</command>
 	<command name="load">pmi/5.0.10-1.0000.11069.183.8.ari</command>
-	<command name="load">papi/5.4.3.2</command>
 	<command name="load">zlib/1.2.8</command>
       </modules>
     </module_system>
@@ -432,7 +431,6 @@
         <command name="load">git/2.9.1</command>
 	<command name="load">cmake/3.3.2</command>
 	<command name="load">pmi/5.0.10-1.0000.11069.183.8.ari</command>
-	<command name="load">papi/5.4.3.2</command>
 	<command name="load">zlib/1.2.8</command>
 	<!--command name="load">cray-petsc/3.7.0.0</command-->
       </modules>
