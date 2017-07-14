@@ -33,30 +33,29 @@ begin
   ; if you are outputting 1 file per time, you can run "ncrcat dcmip1.files.*.nc cat.nc"
   ; for one file
 
-	f = addfile("/home/zarzycki/dcmip/results/dcmip1/newcat.nc","r")
+	f = addfile("./movies/r400-wet-dcmip2016_test11.nc","r")
 
-		; Input useful parameters
+  ; Input useful parameters
 
 	lat  = f->lat
   lon  = f->lon
 	lev  = f->lev
-	nlat   = getfilevardimsizes(f, "lat" )
-	nlon   = getfilevardimsizes(f, "lon" )
-	nlev   = getfilevardimsizes(f, "lev" )
+	nlat = getfilevardimsizes(f, "lat" )
+	nlon = getfilevardimsizes(f, "lon" )
+	nlev = getfilevardimsizes(f, "lev" )
 
   ; We want plots of temperature, vertical velocity and relative vorticity 
   ; at the 850 hPa level. We also want surface pressure.
 
-  ; Select var_choice 	1 - Temperature at 850 hPa
-  ; 		        2 - Large-scale precipitation
-  ;			3 - Surface Pressure
+  ; Select var_choice
+  ; 1 - Temperature at 850 hPa
+  ; 2 - Large-scale precipitation
+  ; 3 - Surface Pressure
 
-	var_choice = 3
+	var_choice = 1
 	
-	if (var_choice .eq. 1) then				; Select T
-
+	if (var_choice .eq. 1) then ; Select T
 		if (isfilevar(f,"T850")) then
-
 			varload = f->T850
 
 		else	
@@ -68,16 +67,18 @@ begin
 			; If you have pressure as a variable just do
 			; P = f->P
       ; CALCPHERE
-			hyam = f->hyam
-  		hybm = f->hybm
-  		P0   = f->P0
-			PS   = f->PS
-			P    = 0.0*varload0
-			P = pres_hybrid_ccm(PS,P0,hyam,hybm)
-			P!0 = "time"
-			P!1 = "lev"
-			P!2 = "lat"
-			P!3 = "lon"
+;     hyam = f->hyam
+;  		hybm = f->hybm
+;  		P0   = f->P0
+;			ps   = f->ps
+;			P    = 0.0*varload0
+;			P = pres_hybrid_ccm(PS,P0,hyam,hybm)
+;			P!0 = "time"
+;			P!1 = "lev"
+;			P!2 = "lat"
+;			P!3 = "lon"
+
+      P = f->pnh
 			; interp to 850 hPa level
 			plevel = 85000.0
 			varload = int2p_n(P,varload0,plevel,2,1)
@@ -91,33 +92,37 @@ begin
 
 	else if (var_choice .eq. 3) then			; Select PS
 
-		varload = f->PS
+		varload = f->ps
 
 	end if
 	end if	
 	end if
 
-		; We want the output at days 6, 9, 12 and 15. If your model 
-		; output is in 6 hourly intervals this becomes indices 24, 36, 48 and 60
+  ; We want the output at days 6, 9, 12 and 15. If your model
+  ; output is in 6 hourly intervals this becomes indices 24, 36, 48 and 60
 
-	day6  = 6
-	day9  = 9
-	day12 = 12
-	day15 = 15
+time = f->time
+nt = dimsizes(time)
+print("nt="+nt)
+
+day6   = closest_val( 6, time)
+day9   = closest_val( 9, time)
+day12  = closest_val( 12, time)
+day15  = closest_val( 15, time)
 
 	var1 = varload(day6,:,:)
 	var2 = varload(day9,:,:)
 	var3 = varload(day12,:,:)
 	var4 = varload(day15,:,:)
 
-		; We don't want long-name in the plots
+  ; We don't want long-name in the plots
 
 	var1@long_name = " "
 	var2@long_name = " "
 	var3@long_name = " "
 	var4@long_name = " "
 
-		; Delete loaded data
+  ; Delete loaded data
 
 	delete(varload)
 
@@ -158,14 +163,14 @@ begin
 
 	if (var_choice .eq. 1) then 	;================ Temperature plot ====================
  
-	pltTitle="CAM-FV Test 42, T850 hPa" 			; Plot title if required
+	pltTitle="ACME Test 16-1, T850 hPa" 			; Plot title if required
 	pres@txString = pltTitle
 
 		; Change the output type and name
 
-	wks  = gsn_open_wks("X11","cam-fv-test42latlonT850")   	; output using X11
-	;wks  = gsn_open_wks("eps","cam-fv-test42latlonT850")   	; output using eps
-	;wks  = gsn_open_wks("png","cam-fv-test42latlonT850")   	; output using png
+	wks  = gsn_open_wks("X11","acme-test16-1-latlonT850")   	; output using X11
+	;wks  = gsn_open_wks("eps","acme-test16-1latlonT850")   	; output using eps
+	;wks  = gsn_open_wks("png","acme-test16-1latlonT850")   	; output using png
 	gsn_define_colormap(wks,"gui_default")  
 
 	res1@cnMaxLevelValF  = 300.0				; max contour color label
@@ -174,7 +179,7 @@ begin
  
 	else if (var_choice .eq. 2) then 	;================ Large-scale precipitation plot ====================
  
-	pltTitle="CAM-FV Test 42, Large-scale precipitation" 	; Plot title if required
+	pltTitle="ACME Test 16-1, Large-scale precipitation" 	; Plot title if required
 	pres@txString = pltTitle
 
 	var1@units = " "
@@ -186,9 +191,9 @@ begin
 
 		; Change the output type and name
 
-	wks  = gsn_open_wks("X11","cam-fv-test42latlonPRECL")   	; output using X11
-	;wks  = gsn_open_wks("eps","cam-fv-test42latlonPRECL")   	; output using eps
-	;wks  = gsn_open_wks("png","cam-fv-test42latlonPRECL")   	; output using png
+	wks  = gsn_open_wks("X11","acme-test16-1latlonPRECL")   	; output using X11
+	;wks  = gsn_open_wks("eps","acme-test16-1latlonPRECL")   	; output using eps
+	;wks  = gsn_open_wks("png","acme-test16-1latlonPRECL")   	; output using png
 	gsn_define_colormap(wks,"gui_default")  
 
 		; Note that the maximum might be larger than these contour spacing values
@@ -199,7 +204,7 @@ begin
  
 	else if (var_choice .eq. 3) then 	;================ Surface Pressure plot ====================
  
-	pltTitle="CAM-FV Test 42, PS" 			; Plot title if required
+	pltTitle="ACME Test 16-1, PS" 			; Plot title if required
 	pres@txString = pltTitle
 
 		; Convert to hPa 
@@ -216,9 +221,9 @@ begin
 
 		; Change the output type and name
 
-	wks  = gsn_open_wks("X11","cam-fv-test42latlonPS")   	; output using X11
-	;wks  = gsn_open_wks("eps","cam-fv-test42latlonPS")   	; output using eps
-	;wks  = gsn_open_wks("png","cam-fv-test42latlonPS")   	; output using png
+	wks  = gsn_open_wks("X11","acme-test16-1latlonPS")   	; output using X11
+	;wks  = gsn_open_wks("eps","acme-test16-1latlonPS")   	; output using eps
+	;wks  = gsn_open_wks("png","acme-test16-1latlonPS")   	; output using png
 	gsn_define_colormap(wks,"gui_default")  
 
 	res1@cnMaxLevelValF  = 1020.0				; max contour color label

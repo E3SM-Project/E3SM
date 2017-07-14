@@ -63,7 +63,7 @@ use physical_constants, only: g0=>g,kappa0=>kappa,Rgas,Cp0=>Cp,Rwater_vapor,rear
  !      omega = 7.29212d-5,            & ! Reference rotation rate of the Earth (s^-1)
  !      deg2rad  = pi/180.d0             ! Conversion factor of degrees to radians
 
- REAL(8), PARAMETER ::               &
+ REAL(8), PARAMETER ::                &
        a     = rearth0,               & ! Reference Earth's Radius (m)
        Rd    = Rgas,                  & ! Ideal gas const dry air (J kg^-1 K^1)
        g     = g0,                    & ! Gravity (m s^2)
@@ -73,8 +73,8 @@ use physical_constants, only: g0=>g,kappa0=>kappa,Rgas,Cp0=>Cp,Rwater_vapor,rear
        Mvap  = Rvap/Rd-1.0d0,         & ! Ratio of molar mass of dry air/water
        pi    = dd_pi,                 & ! pi
        p0    = 100000.0d0,            & ! surface pressure (Pa)
-       kappa = kappa0,             & ! Ratio of Rd to cp
-       omega = omega0,            & ! Reference rotation rate of the Earth (s^-1)
+       kappa = kappa0,                & ! Ratio of Rd to cp
+       omega = omega0,                & ! Reference rotation rate of the Earth (s^-1)
        deg2rad  = pi/180.d0             ! Conversion factor of degrees to radians
 
 !=======================================================================

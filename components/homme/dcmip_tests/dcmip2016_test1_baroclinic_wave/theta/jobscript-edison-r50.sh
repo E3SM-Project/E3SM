@@ -6,15 +6,14 @@
 
 #SBATCH -J d16-1-theta        # job name
 #SBATCH -o out_dcmip16-1.o%j  # output and error file name (%j expands to jobID)
-#SBATCH -n 1440                # total number of mpi tasks requested
+#SBATCH -n 1440               # total number of mpi tasks requested
 #SBATCH -p regular            # queue (partition) -- normal, development, etc.
-#SBATCH -t 01:00:00           # run time (hh:mm:ss)
+#SBATCH -t 01:40:00           # run time (hh:mm:ss)
 #SBATCH -A acme               # charge account
 #SBATCH --qos=premium         # charge account
 
-
 EXEC=../../../test_execs/theta-nlev30/theta-nlev30
-NCPU=640
+NCPU=1440
 
 date
 

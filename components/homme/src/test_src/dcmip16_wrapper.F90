@@ -55,15 +55,18 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   integer,  parameter :: use_zcoords  = 0                               ! use vertical pressure coordinates
   integer,  parameter :: is_deep      = 0                               ! use shallow atmosphere approximation
   integer,  parameter :: pertt        = 0                               ! use exponential perturbation type
-  integer :: moist                                               ! use moist version
   real(rl), parameter :: dcmip_X      = 1.0_rl                          ! full scale planet
-
+  integer :: moist                                                      ! use moist version
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat                                                    ! pointwise coordiantes
 
   real(rl), dimension(np,np,nlev):: p,z,u,v,w,T,thetav,rho,dp           ! field values
   real(rl), dimension(np,np):: ps, phis
   real(rl), dimension(np,np,nlev,5):: q
+
+real(rl) :: min_thetav, max_thetav
+min_thetav = +huge(rl)
+max_thetav = -huge(rl)
 
   moist = 0
   if (use_moisture) moist=1
@@ -95,6 +98,9 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
         call initial_value_terminator( lat*rad2dg, lon*rad2dg, q(i,j,k,4), q(i,j,k,5) )
         call set_tracers(q(i,j,k,1:5),5,dp(i,j,k),i,j,k,lat,lon,elem(ie))
 
+min_thetav =  min( min_thetav,   thetav(i,j,k) )
+max_thetav =  max( max_thetav,   thetav(i,j,k) )
+
     enddo; enddo; enddo
 
     call set_elem_state(u,v,w,T,ps,phis,p,dp,z,g,elem(ie),1,nt,ntQ=1)
@@ -102,6 +108,8 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
 
   enddo
   sample_period = 1800.0 ! sec
+print *,"min thetav = ",min_thetav, "max thetav=",max_thetav
+
 
 end subroutine
 

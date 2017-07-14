@@ -15,17 +15,16 @@
   tstep             = 400                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5 
-  rsplit            = 3
+  rsplit            = 0
   qsplit            = 1
   nu                = 3e16                      ! default= 1e15*(ne30/ne8)**3.2 = 6.9e16
   nu_s              = 3e16
   nu_p              = 3e16  
-  nu_top            = 0 !2.5e5                     ! default = 2.5e5
+  nu_top            = 0                         ! default = 2.5e5
   limiter_option    = 8
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'wet'
-  theta_hydrostatic_mode = .true.
   dcmip16_prec_type = 0                         ! 0=kessler physics
   dcmip16_pbl_type  = -1                        ! 0=reed-jablonowski pbl, -1 = none
 /
@@ -35,6 +34,7 @@
   vfile_int         = "../vcoord/cami-30.ascii"
 /
 &analysis_nl
+  output_prefix     = "r400-wet-"
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 2,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
   output_frequency  = 3                         ! every 3 hours

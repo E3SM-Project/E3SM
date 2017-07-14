@@ -12,10 +12,10 @@
   statefreq         = 10                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
-  tstep             = 400                       ! largest timestep in seconds
+  tstep             = 320                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
-  tstep_type        = 5 
-  rsplit            = 3
+  tstep_type        = 7
+  rsplit            = 1
   qsplit            = 1
   nu                = 3e16                      ! default= 1e15*(ne30/ne8)**3.2 = 6.9e16
   nu_s              = 3e16
@@ -25,7 +25,7 @@
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'wet'
-  theta_hydrostatic_mode = .true.
+  theta_hydrostatic_mode = .false.
   dcmip16_prec_type = 0                         ! 0=kessler physics
   dcmip16_pbl_type  = -1                        ! 0=reed-jablonowski pbl, -1 = none
 /
