@@ -2,7 +2,10 @@
 
 <?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
+  <description>
+    <desc rof="XROF">Dead river component</desc>
+  </description>
 
   <entry id="COMP_ROF">
     <type>char</type>
@@ -26,8 +29,11 @@
     <desc>mode for xrof flood feature, NULL means xrof flood is turned off</desc>
   </entry>
 
-  <description>
-    <desc compset="_XROF">Dead river component</desc>
-  </description>
+
+  <help>
+    =========================================
+    XROF naming conventions in compset name
+    =========================================
+  </help>
 
 </entry_id>

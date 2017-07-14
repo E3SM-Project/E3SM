@@ -223,7 +223,7 @@ contains
   @Test
   subroutine test_glc_elevclass_as_string_0(this)
     class(TestGLCElevclass), intent(inout) :: this
-    character(len=16) :: str
+    character(len=GLC_ELEVCLASS_STRLEN) :: str
 
     str = glc_elevclass_as_string(0)
     @assertEqual('00', trim(str))
@@ -232,7 +232,7 @@ contains
   @Test
   subroutine test_glc_elevclass_as_string_1digit(this)
     class(TestGLCElevclass), intent(inout) :: this
-    character(len=16) :: str
+    character(len=GLC_ELEVCLASS_STRLEN) :: str
 
     str = glc_elevclass_as_string(2)
     @assertEqual('02', trim(str))
@@ -241,7 +241,7 @@ contains
   @Test
   subroutine test_glc_elevclass_as_string_2digits(this)
     class(TestGLCElevclass), intent(inout) :: this
-    character(len=16) :: str
+    character(len=GLC_ELEVCLASS_STRLEN) :: str
 
     str = glc_elevclass_as_string(12)
     @assertEqual('12', trim(str))
@@ -254,15 +254,33 @@ contains
   @Test
   subroutine test_glc_all_elevclass_strings(this)
     class(TestGLCElevclass), intent(inout) :: this
-    character(len=16) :: elevclass_strings(3)
+    character(len=GLC_ELEVCLASS_STRLEN), allocatable :: elevclass_strings(:)
 
     call glc_elevclass_init(3)
     elevclass_strings = glc_all_elevclass_strings()
 
+    @assertEqual(3, size(elevclass_strings))
     ! There doesn't seem to be an assertEqual method for an array of strings
     @assertEqual('01', elevclass_strings(1))
     @assertEqual('02', elevclass_strings(2))
     @assertEqual('03', elevclass_strings(3))
   end subroutine test_glc_all_elevclass_strings
+
+  @Test
+  subroutine test_glc_all_elevclass_strings_include_zero(this)
+    class(TestGLCElevclass), intent(inout) :: this
+    character(len=GLC_ELEVCLASS_STRLEN), allocatable :: elevclass_strings(:)
+
+    call glc_elevclass_init(3)
+    elevclass_strings = glc_all_elevclass_strings(include_zero=.true.)
+
+    @assertEqual(4, size(elevclass_strings))
+    ! There doesn't seem to be an assertEqual method for an array of strings
+    @assertEqual('00', elevclass_strings(1))
+    @assertEqual('01', elevclass_strings(2))
+    @assertEqual('02', elevclass_strings(3))
+    @assertEqual('03', elevclass_strings(4))
+  end subroutine test_glc_all_elevclass_strings_include_zero
   
+
 end module test_glc_elevclass

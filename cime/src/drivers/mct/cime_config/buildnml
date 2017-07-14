@@ -16,7 +16,7 @@ from standard_script_setup import *
 from CIME.case import Case
 from CIME.nmlgen import NamelistGenerator
 from CIME.utils import expect
-from CIME.utils import run_cmd_no_fail, get_model, get_time_in_seconds
+from CIME.utils import get_model, get_time_in_seconds, get_timestamp
 from CIME.buildnml import create_namelist_infile, parse_input
 from CIME.XML.files import Files
 
@@ -246,7 +246,7 @@ def _create_component_modelio_namelists(case, files):
     definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"modelio"})]
 
     confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
-    lid = os.environ["LID"] if "LID" in os.environ else run_cmd_no_fail("date +%y%m%d-%H%M%S")
+    lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")
 
     models = ["cpl", "atm", "lnd", "ice", "ocn", "glc", "rof", "wav", "esp"]
     for model in models:

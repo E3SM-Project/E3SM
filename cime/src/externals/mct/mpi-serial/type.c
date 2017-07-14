@@ -843,4 +843,3 @@ int Pprint_typemap(Datatype type)
   return MPI_SUCCESS;
 }
 #endif //TEST_INTERNAL
-

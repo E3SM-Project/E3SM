@@ -1115,6 +1115,8 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
 
          !--- temperature ---
          if (tbotmax < 50.0_R8) a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + tkFrz
+         ! Limit very cold forcing to 180K
+         a2x%rAttr(ktbot,n) = max(180._r8, a2x%rAttr(ktbot,n))
          a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
 
          !--- pressure ---

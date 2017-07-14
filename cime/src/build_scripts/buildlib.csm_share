@@ -13,34 +13,31 @@ my ($sharedlibroot, $installroot, $CASEROOT) = @ARGV;
 
 chdir "${CASEROOT}" or die "Could not cd to \"$CASEROOT\"";
 
-my $CIMEROOT		= `./xmlquery CIMEROOT		-value`;
-my $COMP_INTERFACE	= `./xmlquery COMP_INTERFACE	-value`;
-my $USE_ESMF_LIB	= `./xmlquery USE_ESMF_LIB	-value`;
-my $GMAKE_J		= `./xmlquery GMAKE_J		-value`;
-my $GMAKE		= `./xmlquery GMAKE		-value`;
-my $CASETOOLS		= `./xmlquery CASETOOLS		-value`;
-my $NINST_ATM		= `./xmlquery NINST_ATM		-value`;
-my $NINST_ICE		= `./xmlquery NINST_ICE		-value`;
-my $NINST_GLC		= `./xmlquery NINST_GLC		-value`;
-my $NINST_LND		= `./xmlquery NINST_LND		-value`;
-my $NINST_OCN		= `./xmlquery NINST_OCN		-value`;
-my $NINST_ROF		= `./xmlquery NINST_ROF		-value`;
-my $NINST_WAV		= `./xmlquery NINST_WAV		-value`;
-my $NINST_ESP		= `./xmlquery NINST_ESP		-value`;
-my $NINST_VALUE		= `./xmlquery NINST_VALUE	-value`;
-$ENV{PIO_VERSION}  	= `./xmlquery PIO_VERSION	-value`;
+my $CIMEROOT		= `./xmlquery CIMEROOT		--value`;
+my $COMP_INTERFACE	= `./xmlquery COMP_INTERFACE	--value`;
+my $USE_ESMF_LIB	= `./xmlquery USE_ESMF_LIB	--value`;
+my $GMAKE_J		= `./xmlquery GMAKE_J		--value`;
+my $GMAKE		= `./xmlquery GMAKE		--value`;
+my $CASETOOLS		= `./xmlquery CASETOOLS		--value`;
+my $NINST_ATM		= `./xmlquery NINST_ATM		--value`;
+my $NINST_ICE		= `./xmlquery NINST_ICE		--value`;
+my $NINST_GLC		= `./xmlquery NINST_GLC		--value`;
+my $NINST_LND		= `./xmlquery NINST_LND		--value`;
+my $NINST_OCN		= `./xmlquery NINST_OCN		--value`;
+my $NINST_ROF		= `./xmlquery NINST_ROF		--value`;
+my $NINST_WAV		= `./xmlquery NINST_WAV		--value`;
+my $NINST_ESP		= `./xmlquery NINST_ESP		--value`;
+my $NINST_VALUE		= `./xmlquery NINST_VALUE	--value`;
+$ENV{PIO_VERSION}  	= `./xmlquery PIO_VERSION	--value`;
 #--------------------------------------------------------------------
 # Filepath: list of source code directories (in order of importance).
 #--------------------------------------------------------------------
 
-my $comp="mct";
-$comp = "esmf" if ($COMP_INTERFACE eq "ESMF");
-
 my $useesmf = "noesmf";
 $useesmf = "esmf" if ($USE_ESMF_LIB eq "TRUE");
 
-my $libdir = "$sharedlibroot/${COMP_INTERFACE}/$useesmf/${NINST_VALUE}/csm_share";
-my $installdir = "$installroot/${COMP_INTERFACE}/$useesmf/${NINST_VALUE}";
+my $libdir = "$sharedlibroot/$COMP_INTERFACE/$useesmf/${NINST_VALUE}/csm_share";
+my $installdir = "$installroot/$COMP_INTERFACE/$useesmf/${NINST_VALUE}";
 mkpath($libdir) unless -d $libdir;
 chdir($libdir) or die "Could not cd to $libdir: $!\n";
 
@@ -106,5 +103,3 @@ if ( ! -d "$installdir/lib"){
 }
 system("cp -p -f libcsm_share.a $installdir/lib/");
 system("cp -p -f *.mod $installdir/include/");
-
-

@@ -27,8 +27,8 @@ VPATH := $(subst $(space),:,$(VPATH))
 RM    := rm
 CP    := cp
 
-exec_se: $(EXEC_SE)  $(CURDIR)/Depends
-complib: $(COMPLIB)  $(CURDIR)/Depends
+exec_se: $(EXEC_SE)  Depends
+complib: $(COMPLIB)  Depends
 
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
@@ -90,12 +90,7 @@ ifeq ($(USE_ESMF_LIB), TRUE)
    CPPDEFS += -DUSE_ESMF_LIB
 endif
 
-# ESMF_INTERFACE is currently only defined in env_build.xml
-ifeq ($(COMP_INTERFACE), ESMF)
-   CPPDEFS += -DESMF_INTERFACE
-else
-   CPPDEFS += -DMCT_INTERFACE
-endif
+CPPDEFS += -DMCT_INTERFACE
 
 ifeq ($(strip $(MPILIB)),mpi-serial)
   CPPDEFS += -DNO_MPI2
@@ -679,7 +674,7 @@ $(PIO_LIBDIR)/Makefile:
 #-------------------------------------------------------------------------------
 
 touch_filepath:
-	touch $(CURDIR)/Filepath
+	touch Filepath
 
 # Get list of files and build dependency file for all .o files
 #   using perl scripts mkSrcfiles and mkDepends
@@ -691,17 +686,17 @@ INCS    := $(foreach dir,$(cpp_dirs),-I$(dir))
 
 CURDIR := $(shell pwd)
 
-$(CURDIR)/Depends: $(CURDIR)/Srcfiles $(CURDIR)/Deppath
+Depends: Srcfiles Deppath
 	$(CASETOOLS)/mkDepends $(USER_MKDEPENDS_OPTS) Deppath Srcfiles > $@
 
-$(CURDIR)/Deppath: $(CURDIR)/Filepath
-	$(CP) -f $(CURDIR)/Filepath $@
+Deppath: Filepath
+	$(CP) -f Filepath $@
 	@echo "$(MINCROOT)" >> $@
 
-$(CURDIR)/Srcfiles: $(CURDIR)/Filepath
+Srcfiles: Filepath
 	$(CASETOOLS)/mkSrcfiles
 
-$(CURDIR)/Filepath:
+Filepath:
 	@echo "$(VPATH)" > $@
 
 
@@ -904,7 +899,7 @@ realclean: clean cleancsmshare cleanpio cleanmct cleangptl
 ifneq ($(MAKECMDGOALS), db_files)
 ifneq ($(MAKECMDGOALS), db_flags)
 ifeq (,$(findstring clean,$(MAKECMDGOALS)))
-    -include $(CURDIR)/Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH) $(CASEROOT)/Depends.$(MACH).$(COMPILER)
+    -include Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH) $(CASEROOT)/Depends.$(MACH).$(COMPILER)
 endif
 endif
 endif

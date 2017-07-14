@@ -451,6 +451,13 @@ contains
        ! These are mapped using a simple area-conservative remapping. (Note that we use
        ! the flux mapper even though these contain states, because we need these icemask
        ! fields to be mapped conservatively.)
+       !
+       ! Note that this mapping is redone for Sg_icemask in prep_glc_mod:
+       ! prep_glc_map_qice_conservative_lnd2glc. If we ever change this mapping (e.g.,
+       ! changing norm to .false.), then we should change the mapping there, too.
+       !
+       ! BUG(wjs, 2017-05-11, #1516) I think we actually want norm = .false. here, but
+       ! this requires some more thought
        call seq_map_map(mapper_Fg2l, g2x_gx, g2x_lx(egi), &
             fldlist = glc2lnd_non_ec_fields, norm=.true.)
 

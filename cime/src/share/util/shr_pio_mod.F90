@@ -545,7 +545,13 @@ contains
 
           call shr_pio_getiotypefromname(pio_typename, pio_iotype, pio_default_iotype)
        end if
-       if(pio_stride== -99) pio_stride = pio_default_stride
+       if(pio_stride== -99) then
+          if (pio_numiotasks > 0) then
+             pio_stride = npes/pio_numiotasks
+          else
+             pio_stride = pio_default_stride
+          endif
+       endif
        if(pio_root == -99) pio_root = pio_default_root
        if(pio_rearranger == -99) pio_rearranger = pio_default_rearranger
        if(pio_numiotasks == -99) then
