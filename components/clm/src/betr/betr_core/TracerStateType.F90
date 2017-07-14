@@ -7,9 +7,9 @@ module TracerStateType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use decompMod      , only : bounds_type
-  use LandunitType   , only : lun
-  use ColumnType     , only : col
-  use PatchType      , only : pft
+  use LandunitType   , only : lun_pp
+  use ColumnType     , only : col_pp
+  use VegetationType      , only : veg_pp
   use clm_varctl     , only : iulog
   use abortutils     , only : endrun
   use spmdMod        , only : masterproc

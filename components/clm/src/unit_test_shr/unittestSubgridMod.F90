@@ -35,10 +35,10 @@ module unittestSubgridMod
 
   use shr_kind_mod , only : r8 => shr_kind_r8
   use decompMod    , only : bounds_type
-  use GridcellType , only : grc                
-  use LandunitType , only : lun                
-  use ColumnType   , only : col                
-  use PatchType    , only : pft                
+  use GridcellType , only : grc_pp                
+  use LandunitType , only : lun_pp                
+  use ColumnType   , only : col_pp                
+  use VegetationType    , only : veg_pp                
 
   implicit none
   private
@@ -196,10 +196,10 @@ contains
     ! !USES:
     use landunit_varcon , only : max_lunit
     use clm_varcon      , only : ispval
-    use GridcellType    , only : grc
-    use LandunitType    , only : lun
-    use ColumnType      , only : col
-    use PatchType       , only : pft
+    use GridcellType    , only : grc_pp
+    use LandunitType    , only : lun_pp
+    use ColumnType      , only : col_pp
+    use VegetationType       , only : veg_pp
     !
     ! !ARGUMENTS:
     !
@@ -208,10 +208,10 @@ contains
     character(len=*), parameter :: subname = 'initialize_arrays'
     !-----------------------------------------------------------------------
     
-    call grc%Init(begg, endg)
-    call lun%Init(begl, endl)
-    call col%Init(begc, endc)
-    call pft%init(begp, endp)
+    call grc_pp%Init(begg, endg)
+    call lun_pp%Init(begl, endl)
+    call col_pp%Init(begc, endc)
+    call veg_pp%init(begp, endp)
 
   end subroutine initialize_arrays
 
@@ -233,10 +233,10 @@ contains
     ! For now, nothing is needed... we currently don't bother with deallocation, and the
     ! initialization of arrays is done in the setup routine
 
-    call grc%clean
-    call lun%clean
-    call col%clean
-    call pft%clean
+    call grc_pp%clean
+    call lun_pp%clean
+    call col_pp%clean
+    call veg_pp%clean
 
   end subroutine unittest_subgrid_teardown
 

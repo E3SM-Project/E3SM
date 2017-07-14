@@ -21,7 +21,7 @@ module GridcellType
   save
   private
   !
-  type, public :: gridcell_type
+  type, public :: gridcell_physical_properties_type
 
      ! topological mapping functionality, local 1d gdc arrays
      integer , pointer :: gindex           (:) ! global index
@@ -45,20 +45,20 @@ module GridcellType
 
    contains
 
-     procedure, public :: Init
-     procedure, public :: Clean
+     procedure, public :: Init => grc_pp_init
+     procedure, public :: Clean => grc_pp_clean
      
-  end type gridcell_type
-  type(gridcell_type), public, target :: grc    !gridcell data structure
+  end type gridcell_physical_properties_type
+  type(gridcell_physical_properties_type), public, target :: grc_pp    !gridcell data structure
   !------------------------------------------------------------------------
 
 contains
   
   !------------------------------------------------------------------------
-  subroutine Init(this, begg, endg)
+  subroutine grc_pp_init(this, begg, endg)
     !
     ! !ARGUMENTS:
-    class(gridcell_type) :: this
+    class(gridcell_physical_properties_type) :: this
     integer, intent(in)  :: begg, endg
     !------------------------------------------------------------------------
 
@@ -77,13 +77,13 @@ contains
 
     allocate(this%landunit_indices(1:max_lunit, begg:endg)); this%landunit_indices(:,:) = ispval
 
-  end subroutine Init
+  end subroutine grc_pp_init
 
   !------------------------------------------------------------------------
-  subroutine Clean(this)
+  subroutine grc_pp_clean(this)
     !
     ! !ARGUMENTS:
-    class(gridcell_type) :: this
+    class(gridcell_physical_properties_type) :: this
     !------------------------------------------------------------------------
 
     deallocate(this%gindex           )
@@ -97,6 +97,6 @@ contains
     deallocate(this%prev_dayl        )
     deallocate(this%landunit_indices )
 
-  end subroutine Clean
+  end subroutine grc_pp_clean
 
 end module GridcellType

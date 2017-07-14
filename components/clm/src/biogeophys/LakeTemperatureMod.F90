@@ -19,8 +19,8 @@ module LakeTemperatureMod
   use TemperatureType   , only : temperature_type
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
-  use ColumnType        , only : col                
-  use PatchType         , only : pft                
+  use ColumnType        , only : col_pp                
+  use VegetationType         , only : veg_pp                
   !    
   ! !PUBLIC TYPES:
   implicit none
@@ -216,12 +216,12 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                       & 
-         dz_lake         =>   col%dz_lake                          , & ! Input:  [real(r8) (:,:) ]  layer thickness for lake (m)          
-         z_lake          =>   col%z_lake                           , & ! Input:  [real(r8) (:,:) ]  layer depth for lake (m)              
-         dz              =>   col%dz                               , & ! Input:  [real(r8) (:,:) ]  layer thickness for snow & soil (m)   
-         z               =>   col%z                                , & ! Input:  [real(r8) (:,:) ]  layer depth for snow & soil (m)       
-         snl             =>   col%snl                              , & ! Input:  [integer  (:)   ]  negative of number of snow layers        
-         lakedepth       =>   col%lakedepth                        , & ! Input:  [real(r8) (:)   ]  column lake depth (m)                   
+         dz_lake         =>   col_pp%dz_lake                          , & ! Input:  [real(r8) (:,:) ]  layer thickness for lake (m)          
+         z_lake          =>   col_pp%z_lake                           , & ! Input:  [real(r8) (:,:) ]  layer depth for lake (m)              
+         dz              =>   col_pp%dz                               , & ! Input:  [real(r8) (:,:) ]  layer thickness for snow & soil (m)   
+         z               =>   col_pp%z                                , & ! Input:  [real(r8) (:,:) ]  layer depth for snow & soil (m)       
+         snl             =>   col_pp%snl                              , & ! Input:  [integer  (:)   ]  negative of number of snow layers        
+         lakedepth       =>   col_pp%lakedepth                        , & ! Input:  [real(r8) (:)   ]  column lake depth (m)                   
 
          sabg            =>   solarabs_vars%sabg_patch             , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by ground (W/m**2)
          sabg_lyr        =>   solarabs_vars%sabg_lyr_patch         , & ! Input:  [real(r8) (:,:) ]  absorbed solar radiation (pft,lyr) [W/m2]
@@ -321,7 +321,7 @@ contains
 
     do fp = 1, num_lakep
        p = filter_lakep(fp)
-       c = pft%column(p)
+       c = veg_pp%column(p)
 
        ! fin(c) = betaprime * sabg(p) + forc_lwrad(c) - (eflx_lwrad_out(p) + &
        !     eflx_sh_tot(p) + eflx_lh_tot(p)) 
@@ -433,7 +433,7 @@ contains
     do j = 1, nlevlak
        do fp = 1, num_lakep
           p = filter_lakep(fp)
-          c = pft%column(p)
+          c = veg_pp%column(p)
 
           ! If no eta from surface data,
           ! Set eta, the extinction coefficient, according to L Hakanson, Aquatic Sciences, 1995
@@ -535,7 +535,7 @@ contains
     do j = -nlevsno+1,1
        do fp = 1, num_lakep
           p = filter_lakep(fp)
-          c = pft%column(p)
+          c = veg_pp%column(p)
 
           if (j >= jtop(c)) then
              if (j == jtop(c)) sabg_col(c) = sabg(p)
@@ -1024,7 +1024,7 @@ contains
     ! Check energy conservation.
     do fp = 1, num_lakep
        p = filter_lakep(fp)
-       c = pft%column(p)
+       c = veg_pp%column(p)
        errsoi(c) = (ncvts(c)-ocvts(c)) / dtime - fin(c)
        if (abs(errsoi(c)) < 0.10_r8) then ! else send to Balance Check and abort
           eflx_sh_tot(p)    = eflx_sh_tot(p)    - errsoi(c)
@@ -1110,10 +1110,10 @@ contains
      SHR_ASSERT_ALL((ubound(tktopsoillay) == (/bounds%endc/)),           errMsg(__FILE__, __LINE__))
 
      associate(                                           & 
-          snl         => col%snl                        , & ! Input:  [integer (:)]  number of snow layers                    
-          dz          => col%dz                         , & ! Input:  [real(r8) (:,:)]  layer thickness (m)                   
-          zi          => col%zi                         , & ! Input:  [real(r8) (:,:)]  interface level below a "z" level (m) 
-          z           => col%z                          , & ! Input:  [real(r8) (:,:)]  layer depth (m)                       
+          snl         => col_pp%snl                        , & ! Input:  [integer (:)]  number of snow layers                    
+          dz          => col_pp%dz                         , & ! Input:  [real(r8) (:,:)]  layer thickness (m)                   
+          zi          => col_pp%zi                         , & ! Input:  [real(r8) (:,:)]  interface level below a "z" level (m) 
+          z           => col_pp%z                          , & ! Input:  [real(r8) (:,:)]  layer depth (m)                       
 
           watsat      => soilstate_vars%watsat_col      , & ! Input:  [real(r8) (:,:)]  volumetric soil water at saturation (porosity)
           tksatu      => soilstate_vars%tksatu_col      , & ! Input:  [real(r8) (:,:)]  thermal conductivity, saturated soil [W/m-K]
@@ -1292,9 +1292,9 @@ contains
      SHR_ASSERT_ALL((ubound(lhabs)   == (/bounds%endc/)),           errMsg(__FILE__, __LINE__))
 
      associate(                                                   & 
-          dz_lake         => col%dz_lake                        , & ! Input:  [real(r8)  (:,:) ] lake layer thickness (m)              
-          dz              => col%dz                             , & ! Input:  [real(r8)  (:,:) ] layer thickness (m)                   
-          snl             => col%snl                            , & ! Input:  [integer   (:)   ] number of snow layers                    
+          dz_lake         => col_pp%dz_lake                        , & ! Input:  [real(r8)  (:,:) ] lake layer thickness (m)              
+          dz              => col_pp%dz                             , & ! Input:  [real(r8)  (:,:) ] layer thickness (m)                   
+          snl             => col_pp%snl                            , & ! Input:  [integer   (:)   ] number of snow layers                    
 
           snow_depth      => waterstate_vars%snow_depth_col     , & ! Output: [real(r8)  (:)   ] snow height (m)                         
           h2osno          => waterstate_vars%h2osno_col         , & ! Output: [real(r8)  (:)   ] snow water (mm H2O)                     

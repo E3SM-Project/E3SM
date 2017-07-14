@@ -5,9 +5,9 @@ module TracerFluxType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use decompMod      , only : bounds_type
-  use LandunitType   , only : lun
-  use ColumnType     , only : col
-  use PatchType      , only : pft
+  use LandunitType   , only : lun_pp
+  use ColumnType     , only : col_pp
+  use VegetationType      , only : veg_pp
   use clm_varcon     , only : spval, ispval
   use clm_varpar     , only : nlevtrc_soil
   use landunit_varcon, only : istsoil, istcrop
@@ -371,8 +371,8 @@ contains
     begp = bounds%begp; endp= bounds%endp
 
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
-       if (lun%ifspecial(l)) then
+       l = veg_pp%landunit(p)
+       if (lun_pp%ifspecial(l)) then
          this%tracer_flx_vtrans_patch(p,:)         = spval
          this%tracer_flx_snowfall_grnd_patch(p,:)  = spval
          this%tracer_flx_rainfall_grnd_patch(p,:)  = spval
@@ -381,7 +381,7 @@ contains
          this%tracer_flx_snwcp_liq_patch(p,:)      = spval
          this%tracer_flx_snwcp_ice_patch(p,:)      = spval
        endif
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
          this%tracer_flx_vtrans_patch(p,:)         = 0._r8
          this%tracer_flx_snowfall_grnd_patch(p,:)  = 0._r8
          this%tracer_flx_rainfall_grnd_patch(p,:)  = 0._r8
@@ -392,8 +392,8 @@ contains
        endif
     enddo
     do c = begc, endc
-       l = col%landunit(c)
-       if (lun%ifspecial(l)) then
+       l = col_pp%landunit(c)
+       if (lun_pp%ifspecial(l)) then
          this%tracer_flx_top_soil_col(c,:)    = spval
          this%tracer_flx_can_loss_col(c,:)    = spval
          this%tracer_flx_snowmelt_col (c,:)    = spval
@@ -418,7 +418,7 @@ contains
          this%tracer_flx_totleached_col(c,:)  = spval
        endif
 
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
          this%tracer_flx_top_soil_col(c,:)    = 0._r8
          this%tracer_flx_can_loss_col(c,:)    = 0._r8
          this%tracer_flx_snowmelt_col (c,:)   = 0._r8
@@ -594,7 +594,7 @@ contains
 
          if(is_volatile(jj))then
             kk = volatileid(jj)
-            this%tracer_flx_tparchm_col(c,kk) = dot_sum(x=this%tracer_flx_parchm_vr_col(c,1:nlevtrc_soil,kk), y=col%dz(c,1:nlevtrc_soil))
+            this%tracer_flx_tparchm_col(c,kk) = dot_sum(x=this%tracer_flx_parchm_vr_col(c,1:nlevtrc_soil,kk), y=col_pp%dz(c,1:nlevtrc_soil))
 
             this%tracer_flx_surfemi_col(c,kk) = this%tracer_flx_tparchm_col(c,kk) + this%tracer_flx_dif_col(c,kk) + &
                  this%tracer_flx_ebu_col(c,kk)
@@ -605,7 +605,7 @@ contains
       enddo
 
       do jj = 1, ntracers
-         this%tracer_flx_netpro_col(c,jj) = dot_sum(x=this%tracer_flx_netpro_vr_col(c,1:nlevtrc_soil,jj),y=col%dz(c,1:nlevtrc_soil))
+         this%tracer_flx_netpro_col(c,jj) = dot_sum(x=this%tracer_flx_netpro_vr_col(c,1:nlevtrc_soil,jj),y=col_pp%dz(c,1:nlevtrc_soil))
          if(jj<=ngwmobile_tracers)then
             if(is_volatile(jj))then
                kk = volatileid(jj)

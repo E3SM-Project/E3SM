@@ -9,7 +9,7 @@ module TracerBalanceMod
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
   use BeTRTracerType     , only : betrtracer_type
-  use ColumnType         , only : col
+  use ColumnType         , only : col_pp
   use clm_time_manager   , only : get_nstep
   use clm_varctl         , only : iulog
 implicit none
@@ -185,7 +185,7 @@ implicit none
            tracer_conc_mobile        => tracerstate_vars%tracer_conc_mobile_col           , &
            tracer_conc_solid_equil   => tracerstate_vars%tracer_conc_solid_equil_col      , &
            tracer_conc_solid_passive => tracerstate_vars%tracer_conc_solid_passive_col    , &
-           dz                        => col%dz                                            , &
+           dz                        => col_pp%dz                                            , &
            ngwmobile_tracers         => betrtracer_vars%ngwmobile_tracers                 , &
            ntracers                  => betrtracer_vars%ntracers                          , &
            is_adsorb                 => betrtracer_vars%is_adsorb                         , &

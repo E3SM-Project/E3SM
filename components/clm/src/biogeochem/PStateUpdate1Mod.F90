@@ -12,12 +12,12 @@ module PStateUpdate1Mod
   use clm_varcon             , only : nitrif_n2o_loss_frac
   use pftvarcon              , only : npcropmin, nc3crop
   use soilorder_varcon       , only : smax,ks_sorption
-  use EcophysconType         , only : ecophyscon
+  use VegetationPropertiesType         , only : veg_vp
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
-  use PatchType              , only : pft
+  use VegetationType              , only : veg_pp
   !! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
   use clm_varctl             , only : nu_com
@@ -58,9 +58,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                           & 
-         ivt                   => pft%itype                                , & ! Input:  [integer  (:)     ]  pft vegetation type                                
+         ivt                   => veg_pp%itype                                , & ! Input:  [integer  (:)     ]  pft vegetation type                                
 
-         woody                 => ecophyscon%woody                         , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                 => veg_vp%woody                         , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
 
          cascade_donor_pool    => decomp_cascade_con%cascade_donor_pool    , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step

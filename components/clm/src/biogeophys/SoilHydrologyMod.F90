@@ -15,9 +15,9 @@ module SoilHydrologyMod
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
   use TemperatureType   , only : temperature_type
-  use LandunitType      , only : lun                
-  use ColumnType        , only : col                
-  use PatchType         , only : pft     
+  use LandunitType      , only : lun_pp                
+  use ColumnType        , only : col_pp                
+  use VegetationType    , only : veg_pp     
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -84,9 +84,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                        & 
-         snl              =>    col%snl                             , & ! Input:  [integer  (:)   ]  minus number of snow layers                        
-         dz               =>    col%dz                              , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
-         nlev2bed         =>    col%nlevbed                         , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+         snl              =>    col_pp%snl                             , & ! Input:  [integer  (:)   ]  minus number of snow layers                        
+         dz               =>    col_pp%dz                              , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
+         nlev2bed         =>    col_pp%nlevbed                         , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
 
          sucsat           =>    soilstate_vars%sucsat_col           , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
          watsat           =>    soilstate_vars%watsat_col           , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
@@ -150,7 +150,7 @@ contains
          fff(c) = 0.5_r8
          if (zengdecker_2009_with_var_soil_thick) then
             nlevbed = nlev2bed(c)
-            fff(c) = 0.5_r8 * col%zi(c,nlevsoi) / min(col%zi(c,nlevbed), col%zi(c,nlevsoi))
+            fff(c) = 0.5_r8 * col_pp%zi(c,nlevsoi) / min(col_pp%zi(c,nlevbed), col_pp%zi(c,nlevsoi))
          end if
          if (use_vichydro) then 
             top_moist(c) = 0._r8
@@ -212,7 +212,7 @@ contains
 
       do fc = 1, num_urbanc
          c = filter_urbanc(fc)
-         if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
+         if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_road_imperv) then
 
             ! If there are snow layers then all qflx_top_soil goes to surface runoff
             if (snl(c) < 0) then
@@ -229,7 +229,7 @@ contains
                end if
                qflx_surf(c) = xs(c)
             end if
-         else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall) then
+         else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall) then
             qflx_surf(c) = 0._r8
          end if
          ! send flood water flux to runoff for all urban columns
@@ -315,9 +315,9 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                                                & 
-          snl                  =>    col%snl                                 , & ! Input:  [integer  (:)   ]  minus number of snow layers                        
-          dz                   =>    col%dz                                  , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
-         nlev2bed         =>    col%nlevbed                                  , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+          snl                  =>    col_pp%snl                                 , & ! Input:  [integer  (:)   ]  minus number of snow layers                        
+          dz                   =>    col_pp%dz                                  , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
+         nlev2bed         =>    col_pp%nlevbed                                  , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
 
           t_soisno             =>    temperature_vars%t_soisno_col           , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
 
@@ -380,7 +380,7 @@ contains
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
           ! partition moisture fluxes between soil and h2osfc       
-          if (lun%itype(col%landunit(c)) == istsoil .or. lun%itype(col%landunit(c))==istcrop) then
+          if (lun_pp%itype(col_pp%landunit(c)) == istsoil .or. lun_pp%itype(col_pp%landunit(c))==istcrop) then
 
              ! explicitly use frac_sno=0 if snl=0
              if (snl(c) >= 0) then
@@ -455,7 +455,7 @@ contains
              ! limit runoff to value of storage above S(pc)
              if(h2osfc(c) >= h2osfc_thresh(c) .and. h2osfcflag/=0) then
                 ! spatially variable k_wet
-                k_wet=1.0_r8 * sin((rpi/180.) * col%topo_slope(c))
+                k_wet=1.0_r8 * sin((rpi/180.) * col_pp%topo_slope(c))
                 qflx_h2osfc_surf(c) = k_wet * frac_infclust * (h2osfc(c) - h2osfc_thresh(c))
 
                 qflx_h2osfc_surf(c)=min(qflx_h2osfc_surf(c),(h2osfc(c) - h2osfc_thresh(c))/dtime)
@@ -520,7 +520,7 @@ contains
 
        do fc = 1, num_urbanc
           c = filter_urbanc(fc)
-          if (col%itype(c) /= icol_road_perv) then
+          if (col_pp%itype(c) /= icol_road_perv) then
              qflx_infl(c) = 0._r8
           end if
        end do
@@ -597,11 +597,11 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                                            & 
-          snl                =>    col%snl                               , & ! Input:  [integer  (:)   ]  number of snow layers                              
-          dz                 =>    col%dz                                , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
-          z                  =>    col%z                                 , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
-          zi                 =>    col%zi                                , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
-         nlev2bed            =>    col%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+          snl                =>    col_pp%snl                               , & ! Input:  [integer  (:)   ]  number of snow layers                              
+          dz                 =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
+          z                  =>    col_pp%z                                 , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
+          zi                 =>    col_pp%zi                                , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
+         nlev2bed            =>    col_pp%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
 
           t_soisno           =>    temperature_vars%t_soisno_col         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
 
@@ -842,7 +842,7 @@ contains
           c = filter_urbanc(fc)
           ! Renew the ice and liquid mass due to condensation for urban roof and impervious road
 
-          if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
+          if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_road_imperv) then
              if (snl(c)+1 >= 1) then
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + qflx_dew_grnd(c) * dtime
                 h2osoi_ice(c,1) = h2osoi_ice(c,1) + (qflx_dew_snow(c) * dtime)
@@ -943,11 +943,11 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                                            & 
-          z                  =>    col%z                                 , & ! Input:  [real(r8) (:,:) ] layer depth (m)                                 
-          zi                 =>    col%zi                                , & ! Input:  [real(r8) (:,:) ] interface level below a "z" level (m)           
-          dz                 =>    col%dz                                , & ! Input:  [real(r8) (:,:) ] layer depth (m)                                 
-          snl                =>    col%snl                               , & ! Input:  [integer  (:)   ] number of snow layers                              
-         nlev2bed            =>    col%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+          z                  =>    col_pp%z                                 , & ! Input:  [real(r8) (:,:) ] layer depth (m)                                 
+          zi                 =>    col_pp%zi                                , & ! Input:  [real(r8) (:,:) ] interface level below a "z" level (m)           
+          dz                 =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ] layer depth (m)                                 
+          snl                =>    col_pp%snl                               , & ! Input:  [integer  (:)   ] number of snow layers                              
+         nlev2bed            =>    col_pp%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
 
           t_soisno           =>    temperature_vars%t_soisno_col         , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)                       
 
@@ -1051,7 +1051,7 @@ contains
        	  nlevbed = nlev2bed(c)
 
           !  specify maximum drainage rate
-          q_perch_max = 1.e-5_r8 * sin(col%topo_slope(c) * (rpi/180._r8))
+          q_perch_max = 1.e-5_r8 * sin(col_pp%topo_slope(c) * (rpi/180._r8))
 
           ! if layer containing water table is frozen, compute the following:
           !     frost table, perched water table, and drainage from perched saturated layer
@@ -1232,7 +1232,7 @@ contains
                    rsub_top_max = dsmax_tmp(c)
                 else
                    imped=10._r8**(-e_ice*(icefracsum/dzsum))
-                   rsub_top_max = 10._r8 * sin((rpi/180.) * col%topo_slope(c))
+                   rsub_top_max = 10._r8 * sin((rpi/180.) * col_pp%topo_slope(c))
                 end if
              endif
              if (use_vichydro) then
@@ -1402,7 +1402,7 @@ contains
           if (use_vsfm) xs1(c) = 0._r8
           h2osoi_liq(c,1) = h2osoi_liq(c,1) - xs1(c)
 
-          if (lun%urbpoi(col%landunit(c))) then
+          if (lun_pp%urbpoi(col_pp%landunit(c))) then
              qflx_rsub_sat(c)     = xs1(c) / dtime
           else
              if(h2osfcflag == 1) then
@@ -1494,7 +1494,7 @@ contains
 
        do fc = 1, num_urbanc
           c = filter_urbanc(fc)
-          if (col%itype(c) /= icol_road_perv) then
+          if (col_pp%itype(c) /= icol_road_perv) then
              qflx_drain(c) = 0._r8
              ! This must be done for roofs and impervious road (walls will be zero)
              qflx_qrgwl(c) = qflx_snwcp_liq(c)
@@ -1586,10 +1586,10 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                                            &
-          z                  =>    col%z                                 , & ! Input:  [real(r8) (:,:) ] layer depth (m)
-          zi                 =>    col%zi                                , & ! Input:  [real(r8) (:,:) ] interface level below a "z" level (m)
-          dz                 =>    col%dz                                , & ! Input:  [real(r8) (:,:) ] layer depth (m)
-          snl                =>    col%snl                               , & ! Input:  [integer  (:)   ] number of snow layers
+          z                  =>    col_pp%z                                 , & ! Input:  [real(r8) (:,:) ] layer depth (m)
+          zi                 =>    col_pp%zi                                , & ! Input:  [real(r8) (:,:) ] interface level below a "z" level (m)
+          dz                 =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ] layer depth (m)
+          snl                =>    col_pp%snl                               , & ! Input:  [integer  (:)   ] number of snow layers
 
           t_soisno           =>    temperature_vars%t_soisno_col         , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)
 
@@ -1690,7 +1690,7 @@ contains
           c = filter_hydrologyc(fc)
 
           !  specify maximum drainage rate
-          q_perch_max = 1.e-5_r8 * sin(col%topo_slope(c) * (rpi/180._r8))
+          q_perch_max = 1.e-5_r8 * sin(col_pp%topo_slope(c) * (rpi/180._r8))
 
           ! if layer containing water table is frozen, compute the following:
           !     frost table, perched water table, and drainage from perched saturated layer
@@ -1868,7 +1868,7 @@ contains
                    rsub_top_max = dsmax_tmp(c)
                 else
                    imped=10._r8**(-e_ice*(icefracsum/dzsum))
-                   rsub_top_max = 10._r8 * sin((rpi/180.) * col%topo_slope(c))
+                   rsub_top_max = 10._r8 * sin((rpi/180.) * col_pp%topo_slope(c))
                 end if
              endif
              if (use_vichydro) then
@@ -1909,7 +1909,7 @@ contains
 
        do fc = 1, num_urbanc
           c = filter_urbanc(fc)
-          if (col%itype(c) /= icol_road_perv) then
+          if (col_pp%itype(c) /= icol_road_perv) then
              qflx_drain(c) = 0._r8
              ! This must be done for roofs and impervious road (walls will be zero)
              qflx_qrgwl(c) = qflx_snwcp_liq(c)
@@ -1958,9 +1958,9 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                                   & 
-          dz            => col%dz                               , & ! Input:  [real(r8) (:,:)   ] layer depth (m)                        
-          zi            => col%zi                               , & ! Input:  [real(r8) (:,:)   ] interface level below a "z" level (m)  
-          z             => col%z                                , & ! Input:  [real(r8) (:,:)   ] layer thickness (m)                    
+          dz            => col_pp%dz                               , & ! Input:  [real(r8) (:,:)   ] layer depth (m)                        
+          zi            => col_pp%zi                               , & ! Input:  [real(r8) (:,:)   ] interface level below a "z" level (m)  
+          z             => col_pp%z                                , & ! Input:  [real(r8) (:,:)   ] layer thickness (m)                    
 
           h2osoi_liq    => waterstate_vars%h2osoi_liq_col       , & ! Input:  [real(r8) (:,:)   ] liquid water (kg/m2)                   
           h2osoi_ice    => waterstate_vars%h2osoi_ice_col       , & ! Input:  [real(r8) (:,:)   ] ice lens (kg/m2)                       

@@ -13,8 +13,8 @@ module BGCReactionsMockRunType
   use decompMod             , only : bounds_type
   use BGCReactionsMod       , only : bgc_reaction_type
   use tracer_varcon         , only : bndcond_as_conc, bndcond_as_flux
-  use LandunitType , only : lun
-  use ColumnType , only : col
+  use LandunitType , only : lun_pp
+  use ColumnType , only : col_pp
   implicit none
 
   save
@@ -312,7 +312,7 @@ contains
     use BeTRTracerType           , only : BeTRTracer_Type
     use tracerstatetype          , only : tracerstate_type
     use WaterstateType           , only : waterstate_type
-    use PatchType                , only : pft
+    use VegetationType                , only : veg_pp
     use clm_varcon               , only : spval, ispval
     use landunit_varcon          , only : istsoil, istcrop
 
@@ -337,8 +337,8 @@ contains
 
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
-       if (lun%ifspecial(l)) then
+       l = col_pp%landunit(c)
+       if (lun_pp%ifspecial(l)) then
           if(betrtracer_vars%ngwmobile_tracers>0)then
              tracerstate_vars%tracer_conc_mobile_col(c,:,:)        = spval
              tracerstate_vars%tracer_conc_surfwater_col(c,:)       = spval
@@ -354,7 +354,7 @@ contains
        endif
        tracerstate_vars%tracer_soi_molarmass_col(c,:)            = spval
 
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           !dual phase tracers
 
           tracerstate_vars%tracer_conc_mobile_col(c,:, :)          = 0._r8

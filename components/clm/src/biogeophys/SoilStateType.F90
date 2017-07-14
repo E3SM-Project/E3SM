@@ -20,9 +20,9 @@ module SoilStateType
   use clm_varctl      , only : use_var_soil_thick
   use clm_varctl      , only : iulog, fsurdat, hist_wrtch4diag
   use ch4varcon       , only : allowlakeprod
-  use LandunitType    , only : lun                
-  use ColumnType      , only : col                
-  use PatchType       , only : pft                
+  use LandunitType    , only : lun_pp                
+  use ColumnType      , only : col_pp                
+  use VegetationType       , only : veg_pp                
   !
   implicit none
   save
@@ -373,9 +373,9 @@ contains
 
     ! Currently pervious road has same properties as soil
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
 
-       if (lun%urbpoi(l) .and. col%itype(c) == icol_road_perv) then 
+       if (lun_pp%urbpoi(l) .and. col_pp%itype(c) == icol_road_perv) then 
           do lev = 1, nlevgrnd
              this%rootfr_road_perv_col(c,lev) = 0._r8
           enddo
@@ -387,9 +387,9 @@ contains
 
     do c = bounds%begc,bounds%endc
        this%rootfr_col (c,nlevsoi+1:nlevgrnd) = 0._r8
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%rootfr_col (c,nlevsoi+1:nlevgrnd) = 0._r8
-       else if (lun%itype(l) == istdlak .and. allowlakeprod) then
+       else if (lun_pp%itype(l) == istdlak .and. allowlakeprod) then
           this%rootfr_col (c,:) = spval
        else  ! Inactive CH4 columns
           this%rootfr_col (c,:) = spval
@@ -399,7 +399,7 @@ contains
    ! Initialize root fraction 
    
    call init_vegrootfr(bounds, nlevsoi, nlevgrnd, &
-        col%nlevbed(bounds%begc:bounds%endc)    , &
+        col_pp%nlevbed(bounds%begc:bounds%endc)    , &
         this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
 
     ! --------------------------------------------------------------------
@@ -450,7 +450,7 @@ contains
     end if
 
     do p = bounds%begp,bounds%endp
-       g = pft%gridcell(p)
+       g = veg_pp%gridcell(p)
        if ( sand3d(g,1)+clay3d(g,1) == 0.0_r8 )then
           if ( any( sand3d(g,:)+clay3d(g,:) /= 0.0_r8 ) )then
              call endrun(msg='found depth points that do NOT sum to zero when surface does'//&
@@ -475,7 +475,7 @@ contains
        call endrun(msg=' ERROR: FMAX NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
        this%wtfact_col(c) = gti(g)
     end do
     deallocate(gti)
@@ -517,10 +517,10 @@ contains
 
 
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
-       l = col%landunit(c)
+       g = col_pp%gridcell(c)
+       l = col_pp%landunit(c)
 
-       if (lun%itype(l)==istwet .or. lun%itype(l)==istice .or. lun%itype(l)==istice_mec) then
+       if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
 
           do lev = 1,nlevgrnd
              this%bsw_col(c,lev)    = spval
@@ -544,14 +544,14 @@ contains
              this%tkmg_col(c,lev)   = spval
              this%tksatu_col(c,lev) = spval
              this%tkdry_col(c,lev)  = spval
-             if (lun%itype(l)==istwet .and. lev > nlevsoi) then
+             if (lun_pp%itype(l)==istwet .and. lev > nlevsoi) then
                 this%csol_col(c,lev) = csol_bedrock
              else
                 this%csol_col(c,lev)= spval
              endif
           end do
 
-       else if (lun%urbpoi(l) .and. (col%itype(c) /= icol_road_perv) .and. (col%itype(c) /= icol_road_imperv) )then
+       else if (lun_pp%urbpoi(l) .and. (col_pp%itype(c) /= icol_road_perv) .and. (col_pp%itype(c) /= icol_road_imperv) )then
 
           ! Urban Roof, sunwall, shadewall properties set to special value
           do lev = 1,nlevgrnd
@@ -583,7 +583,7 @@ contains
 
           do lev = 1,nlevgrnd
              ! Number of soil layers in hydrologically active columns = NLEV2BED
-	     nlevbed = col%nlevbed(c)
+	     nlevbed = col_pp%nlevbed(c)
              if ( more_vertlayers )then ! duplicate clay and sand values from last soil layer
 
                 if (lev .eq. 1) then
@@ -615,7 +615,7 @@ contains
                 endif
              end if
 
-             if (lun%itype(l) == istdlak) then
+             if (lun_pp%itype(l) == istdlak) then
 
                 if (lev <= nlevsoi) then
                    this%cellsand_col(c,lev) = sand
@@ -623,9 +623,9 @@ contains
                    this%cellorg_col(c,lev)  = om_frac*organic_max
                 end if
 
-             else if (lun%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
+             else if (lun_pp%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
 
-                if (lun%urbpoi(l)) then
+                if (lun_pp%urbpoi(l)) then
                    om_frac = 0._r8 ! No organic matter for urban
                 end if
 
@@ -712,13 +712,13 @@ contains
           end do
 
           ! Urban pervious and impervious road
-          if (col%itype(c) == icol_road_imperv) then
+          if (col_pp%itype(c) == icol_road_imperv) then
              ! Impervious road layers -- same as above except set watdry and watopt as missing
              do lev = 1,nlevgrnd
                 this%watdry_col(c,lev) = spval 
                 this%watopt_col(c,lev) = spval 
              end do
-          else if (col%itype(c) == icol_road_perv) then 
+          else if (col_pp%itype(c) == icol_road_perv) then 
              ! pervious road layers  - set in UrbanInitTimeConst
           end if
 
@@ -730,10 +730,10 @@ contains
     ! --------------------------------------------------------------------
 
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
-       l = col%landunit(c)
+       g = col_pp%gridcell(c)
+       l = col_pp%landunit(c)
 
-       if (lun%itype(l)==istdlak) then
+       if (lun_pp%itype(l)==istdlak) then
 
           do lev = 1,nlevgrnd
              if ( lev <= nlevsoi )then
@@ -804,7 +804,7 @@ contains
     ! --------------------------------------------------------------------
 
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
 
        this%gwc_thr_col(c) = 0.17_r8 + 0.14_r8 * clay3d(g,1) * 0.01_r8
        this%mss_frc_cly_vld_col(c) = min(clay3d(g,1) * 0.01_r8, 0.20_r8)
@@ -857,7 +857,7 @@ if(use_dynroot) then
           write(iulog,*) "Initialize rootfr to default"
        end if
        call init_vegrootfr(bounds, nlevsoi, nlevgrnd, &
-            col%nlevbed(bounds%begc:bounds%endc), &
+            col_pp%nlevbed(bounds%begc:bounds%endc), &
        	    this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
     end if
 end if

@@ -30,7 +30,7 @@ module lnd2atmMod
   use TemperatureType      , only : temperature_type
   use WaterFluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
-  use GridcellType         , only : grc                
+  use GridcellType         , only : grc_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -325,7 +325,7 @@ contains
          waterstate_vars%tws_grc  (bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
     do g = bounds%begg, bounds%endg
-       waterstate_vars%tws_grc(g) = waterstate_vars%tws_grc(g) + atm2lnd_vars%volr_grc(g) / grc%area(g) * 1.e-3_r8
+       waterstate_vars%tws_grc(g) = waterstate_vars%tws_grc(g) + atm2lnd_vars%volr_grc(g) / grc_pp%area(g) * 1.e-3_r8
     enddo
 
   end subroutine lnd2atm

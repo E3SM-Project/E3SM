@@ -9,8 +9,8 @@ module PhotosynthesisType
   use clm_varpar     , only : nlevcan
   use clm_varctl     , only : iulog, use_cn, use_c13, use_c14
   use clm_varcon     , only : spval
-  use LandunitType   , only : lun                
-  use PatchType      , only : pft                
+  use LandunitType   , only : lun_pp                
+  use VegetationType      , only : veg_pp                
   !
   implicit none
   save
@@ -322,14 +322,14 @@ contains
     !-----------------------------------------------------------------------
 
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
+       l = veg_pp%landunit(p)
 
        this%lmrcanopy_patch(p) =  0.0_r8 
 
        this%alphapsnsun_patch(p) = spval
        this%alphapsnsha_patch(p) = spval
 
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           this%psnsun_patch(p) = 0._r8
           this%psnsha_patch(p) = 0._r8
           if ( use_c13 ) then
@@ -396,8 +396,8 @@ contains
     !-----------------------------------------------------------------------
 
     do p = bounds%begp, bounds%endp
-       l = pft%landunit(p)
-       if (.not. lun%lakpoi(l)) then
+       l = veg_pp%landunit(p)
+       if (.not. lun_pp%lakpoi(l)) then
           this%psnsun_patch(p)    = 0._r8
           this%psnsun_wc_patch(p) = 0._r8
           this%psnsun_wj_patch(p) = 0._r8
@@ -424,9 +424,9 @@ contains
              this%c14_psnsha_patch(p) = 0._r8
           endif
        end if
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop &
-            .or. lun%itype(l) == istice .or. lun%itype(l) == istice_mec &
-            .or. lun%itype(l) == istwet) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop &
+            .or. lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec &
+            .or. lun_pp%itype(l) == istwet) then
           if (use_c13) then
              this%rc13_canair_patch(p) = 0._r8
              this%rc13_psnsun_patch(p) = 0._r8

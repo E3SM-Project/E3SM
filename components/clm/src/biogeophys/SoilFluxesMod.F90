@@ -19,9 +19,9 @@ module SoilFluxesMod
   use TemperatureType   , only : temperature_type
   use WaterstateType    , only : waterstate_type
   use WaterfluxType     , only : waterflux_type
-  use LandunitType	, only : lun                
-  use ColumnType	, only : col                
-  use PatchType		, only : pft                
+  use LandunitType	, only : lun_pp                
+  use ColumnType	, only : col_pp                
+  use VegetationType    , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -166,13 +166,13 @@ contains
       call t_startf('bgp2_loop_1')
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
-         j = col%snl(c)+1
+         j = col_pp%snl(c)+1
 
          ! Calculate difference in soil temperature from last time step, for
          ! flux corrections
 
-         if (col%snl(c) < 0) then
-            t_grnd0(c) = frac_sno_eff(c) * tssbef(c,col%snl(c)+1) &
+         if (col_pp%snl(c) < 0) then
+            t_grnd0(c) = frac_sno_eff(c) * tssbef(c,col_pp%snl(c)+1) &
                  + (1 - frac_sno_eff(c) - frac_h2osfc(c)) * tssbef(c,1) &
                  + frac_h2osfc(c) * t_h2osfc_bef(c)
          else
@@ -202,13 +202,13 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
+         c = veg_pp%column(p)
          eflx_sh_grnd(p) = eflx_sh_grnd(p) + tinc(c)*cgrnds(p)
          qflx_evap_soi(p) = qflx_evap_soi(p) + tinc(c)*cgrndl(p)
 
          ! set ev_snow, ev_soil for urban landunits here
-         l = pft%landunit(p)
-         if (lun%urbpoi(l)) then
+         l = veg_pp%landunit(p)
+         if (lun_pp%urbpoi(l)) then
             qflx_ev_snow(p) = qflx_evap_soi(p)
             qflx_ev_soil(p) = 0._r8
             qflx_ev_h2osfc(p) = 0._r8
@@ -231,10 +231,10 @@ contains
       do pi = 1,max_patch_per_col
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
-            if ( pi <= col%npfts(c) ) then
-               p = col%pfti(c) + pi - 1
-               if (pft%active(p)) then
-                  topsoil_evap_tot(c) = topsoil_evap_tot(c) + qflx_evap_soi(p) * pft%wtcol(p)
+            if ( pi <= col_pp%npfts(c) ) then
+               p = col_pp%pfti(c) + pi - 1
+               if (veg_pp%active(p)) then
+                  topsoil_evap_tot(c) = topsoil_evap_tot(c) + qflx_evap_soi(p) * veg_pp%wtcol(p)
                end if
             end if
          end do
@@ -255,10 +255,10 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
-         l = pft%landunit(p)
-         g = pft%gridcell(p)
-         j = col%snl(c)+1
+         c = veg_pp%column(p)
+         l = veg_pp%landunit(p)
+         g = veg_pp%gridcell(p)
+         j = col_pp%snl(c)+1
 
          ! Correct soil fluxes for possible evaporation in excess of top layer water
          ! excess energy is added to the sensible heat flux from soil
@@ -274,8 +274,8 @@ contains
 
          ! Ground heat flux
          
-         if (.not. lun%urbpoi(l)) then
-            lw_grnd=(frac_sno_eff(c)*tssbef(c,col%snl(c)+1)**4 &
+         if (.not. lun_pp%urbpoi(l)) then
+            lw_grnd=(frac_sno_eff(c)*tssbef(c,col_pp%snl(c)+1)**4 &
                  +(1._r8-frac_sno_eff(c)-frac_h2osfc(c))*tssbef(c,1)**4 &
                  +frac_h2osfc(c)*t_h2osfc_bef(c)**4)
 
@@ -284,12 +284,12 @@ contains
                  - emg(c)*sb*lw_grnd - emg(c)*sb*t_grnd0(c)**3*(4._r8*tinc(c)) &
                  - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
 
-            if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                eflx_soil_grnd_r(p) = eflx_soil_grnd(p)
             end if
          else
             ! For all urban columns we use the net longwave radiation (eflx_lwrad_net) since
-            ! the term (emg*sb*tssbef(col%snl+1)**4) is not the upward longwave flux because of 
+            ! the term (emg*sb*tssbef(col_pp%snl+1)**4) is not the upward longwave flux because of 
             ! interactions between urban columns.
 
             eflx_lwrad_del(p) = 4._r8*emg(c)*sb*t_grnd0(c)**3*tinc(c)
@@ -308,10 +308,10 @@ contains
          eflx_sh_tot(p) = eflx_sh_veg(p) + eflx_sh_grnd(p)
          qflx_evap_tot(p) = qflx_evap_veg(p) + qflx_evap_soi(p)
          eflx_lh_tot(p)= hvap*qflx_evap_veg(p) + htvp(c)*qflx_evap_soi(p)
-         if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+         if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
             eflx_lh_tot_r(p)= eflx_lh_tot(p)
             eflx_sh_tot_r(p)= eflx_sh_tot(p)
-         else if (lun%urbpoi(l)) then
+         else if (lun_pp%urbpoi(l)) then
             eflx_lh_tot_u(p)= eflx_lh_tot(p)
             eflx_sh_tot_u(p)= eflx_sh_tot(p)
          end if
@@ -345,7 +345,7 @@ contains
          ! This was moved in from Hydrology2 to keep all pft-level
          ! calculations out of Hydrology2
 
-         if (col%snl(c) < 0 .and. do_capsnow(c)) then
+         if (col_pp%snl(c) < 0 .and. do_capsnow(c)) then
             qflx_snwcp_liq(p) = qflx_snwcp_liq(p)+frac_sno_eff(c)*qflx_dew_grnd(p)
             qflx_snwcp_ice(p) = qflx_snwcp_ice(p)+frac_sno_eff(c)*qflx_dew_snow(p)
          end if
@@ -365,26 +365,26 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
+         c = veg_pp%column(p)
          errsoi_patch(p) = eflx_soil_grnd(p) - xmf(c) - xmf_h2osfc(c) &
               - frac_h2osfc(c)*(t_h2osfc(c)-t_h2osfc_bef(c)) &
               *(c_h2osfc(c)/dtime)
 
          ! For urban sunwall, shadewall, and roof columns, the "soil" energy balance check
          ! must include the heat flux from the interior of the building.
-         if (col%itype(c)==icol_sunwall .or. col%itype(c)==icol_shadewall .or. col%itype(c)==icol_roof) then
+         if (col_pp%itype(c)==icol_sunwall .or. col_pp%itype(c)==icol_shadewall .or. col_pp%itype(c)==icol_roof) then
             errsoi_patch(p) = errsoi_patch(p) + eflx_building_heat(c) 
          end if
       end do
       do j = -nlevsno+1,nlevgrnd
          do fp = 1,num_nolakep
             p = filter_nolakep(fp)
-            c = pft%column(p)
+            c = veg_pp%column(p)
 
-            if ((col%itype(c) /= icol_sunwall .and. col%itype(c) /= icol_shadewall &
-                 .and. col%itype(c) /= icol_roof) .or. ( j <= nlevurb)) then
+            if ((col_pp%itype(c) /= icol_sunwall .and. col_pp%itype(c) /= icol_shadewall &
+                 .and. col_pp%itype(c) /= icol_roof) .or. ( j <= nlevurb)) then
                ! area weight heat absorbed by snow layers
-               if (j >= col%snl(c)+1 .and. j < 1) errsoi_patch(p) = errsoi_patch(p) &
+               if (j >= col_pp%snl(c)+1 .and. j < 1) errsoi_patch(p) = errsoi_patch(p) &
                     - frac_sno_eff(c)*(t_soisno(c,j)-tssbef(c,j))/fact(c,j)
                if (j >= 1) errsoi_patch(p) = errsoi_patch(p) &
                     - (t_soisno(c,j)-tssbef(c,j))/fact(c,j)
@@ -402,13 +402,13 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
-         l = pft%landunit(p)
-         g = pft%gridcell(p)
-         j = col%snl(c)+1
+         c = veg_pp%column(p)
+         l = veg_pp%landunit(p)
+         g = veg_pp%gridcell(p)
+         j = col_pp%snl(c)+1
 
-         if (.not. lun%urbpoi(l)) then
-            lw_grnd=(frac_sno_eff(c)*tssbef(c,col%snl(c)+1)**4 &
+         if (.not. lun_pp%urbpoi(l)) then
+            lw_grnd=(frac_sno_eff(c)*tssbef(c,col_pp%snl(c)+1)**4 &
                  +(1._r8-frac_sno_eff(c)-frac_h2osfc(c))*tssbef(c,1)**4 &
                  +frac_h2osfc(c)*t_h2osfc_bef(c)**4)
 
@@ -418,7 +418,7 @@ contains
                  + 4._r8*emg(c)*sb*t_grnd0(c)**3*tinc(c)
 
             eflx_lwrad_net(p) = eflx_lwrad_out(p) - forc_lwrad(c)
-            if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                eflx_lwrad_net_r(p) = eflx_lwrad_out(p) - forc_lwrad(c)
                eflx_lwrad_out_r(p) = eflx_lwrad_out(p)
             end if

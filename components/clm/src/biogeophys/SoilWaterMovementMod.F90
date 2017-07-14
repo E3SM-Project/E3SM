@@ -81,7 +81,7 @@ contains
     use WaterStateType             , only : waterstate_type
     use SoilWaterRetentionCurveMod , only : soil_water_retention_curve_type
     use clm_varcon                 , only : denh2o, denice, watmin
-    use ColumnType                 , only : col
+    use ColumnType                 , only : col_pp
     use ExternalModelConstants     , only : EM_VSFM_SOIL_HYDRO_STAGE
     use ExternalModelConstants     , only : EM_ID_VSFM
     use ExternalModelInterfaceMod  , only : EMI_Driver
@@ -112,9 +112,9 @@ contains
     !------------------------------------------------------------------------------
     associate(                                                         &
       wa                 =>    soilhydrology_vars%wa_col             , & ! Input:  [real(r8) (:)   ] water in the unconfined aquifer (mm)
-      dz                 =>    col%dz                                , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)    
+      dz                 =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)    
       zwt                =>    soilhydrology_vars%zwt_col            , & ! Input:  [real(r8) (:)   ]  water table depth (m)
-      nlev2bed           =>    col%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+      nlev2bed           =>    col_pp%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
       h2osoi_ice         =>    waterstate_vars%h2osoi_ice_col        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
       h2osoi_vol         =>    waterstate_vars%h2osoi_vol_col        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
       h2osoi_liq         =>    waterstate_vars%h2osoi_liq_col          & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
@@ -278,8 +278,8 @@ contains
     use WaterFluxType        , only : waterflux_type
     use WaterStateType       , only : waterstate_type
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
-    use PatchType            , only : pft
-    use ColumnType           , only : col
+    use VegetationType       , only : veg_pp
+    use ColumnType           , only : col_pp
     !
     ! !ARGUMENTS:
     implicit none
@@ -348,10 +348,10 @@ contains
     !-----------------------------------------------------------------------
 
     associate(& 
-         z                 =>    col%z                              , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
-         zi                =>    col%zi                             , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
-         dz                =>    col%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)                             
-         nlev2bed          =>    col%nlevbed                        , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+         z                 =>    col_pp%z                              , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
+         zi                =>    col_pp%zi                             , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
+         dz                =>    col_pp%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)                             
+         nlev2bed          =>    col_pp%nlevbed                        , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
 
          origflag          =>    soilhydrology_vars%origflag        , & ! Input:  constant
          qcharge           =>    soilhydrology_vars%qcharge_col     , & ! Input:  [real(r8) (:)   ]  aquifer recharge rate (mm/s)                      
@@ -866,10 +866,10 @@ contains
     use TemperatureType           , only : temperature_type
     use WaterFluxType             , only : waterflux_type
     use WaterStateType            , only : waterstate_type
-    use PatchType                 , only : pft
-    use ColumnType                , only : col
+    use VegetationType            , only : veg_pp
+    use ColumnType                , only : col_pp
     use clm_varcon                , only : watmin
-    use LandunitType              , only : lun
+    use LandunitType              , only : lun_pp
     use landunit_varcon           , only : istsoil, istcrop
     use clm_varctl                , only : lateral_connectivity
     use domainLateralMod          , only : ldomain_lateral
@@ -902,9 +902,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate( &
-         zi                        =>    col%zi                                     , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
-         dz                        =>    col%dz                                     , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
-         snl                       =>    col%snl                                    , & ! Input:  [integer  (:)   ]  minus number of snow layers
+         zi                        =>    col_pp%zi                                     , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
+         dz                        =>    col_pp%dz                                     , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
+         snl                       =>    col_pp%snl                                    , & ! Input:  [integer  (:)   ]  minus number of snow layers
 
          zwt                       =>    soilhydrology_vars%zwt_col                 , & ! Input:  [real(r8) (:)   ]  water table depth (m)
 
@@ -960,7 +960,7 @@ contains
 
 #ifdef USE_PETSC_LIB
          if (lateral_connectivity) then
-            g    = col%gridCell(c)
+            g    = col_pp%gridCell(c)
             area = ldomain_lateral%ugrid%areaGrid_ghosted(g)
          endif
 #endif
@@ -1063,8 +1063,8 @@ contains
     use clm_varpar       , only : nlevsoi, max_patch_per_col
     use SoilStateType    , only : soilstate_type
     use WaterFluxType    , only : waterflux_type
-    use PatchType        , only : pft
-    use ColumnType       , only : col
+    use VegetationType   , only : veg_pp
+    use ColumnType       , only : col_pp
     !
     ! !ARGUMENTS:
     type(bounds_type)    , intent(in)    :: bounds                          ! bounds
@@ -1079,7 +1079,7 @@ contains
     integer  :: nlevbed                                               ! number of layers to bedrock
     real(r8) :: temp(bounds%begc:bounds%endc)                         ! accumulator for rootr weighting
     associate(& 
-          nlev2bed            =>    col%nlevbed                     , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
+          nlev2bed            =>    col_pp%nlevbed                     , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
           qflx_rootsoi_col    => waterflux_vars%qflx_rootsoi_col    , & ! Output: [real(r8) (:,:) ]  
                                                                         ! vegetation/soil water exchange (m H2O/s) (+ = to atm)
           qflx_tran_veg_patch => waterflux_vars%qflx_tran_veg_patch , & ! Input:  [real(r8) (:)   ]  
@@ -1114,21 +1114,21 @@ contains
             c = filterc(fc)
             nlevbed = nlev2bed(c)
             do j = 1,nlevbed
-               if (pi <= col%npfts(c)) then
-                  p = col%pfti(c) + pi - 1
-                  if (pft%active(p)) then
+               if (pi <= col_pp%npfts(c)) then
+                  p = col_pp%pfti(c) + pi - 1
+                  if (veg_pp%active(p)) then
                      rootr_col(c,j) = rootr_col(c,j) + rootr_patch(p,j) * &
-                           qflx_tran_veg_patch(p) * pft%wtcol(p)
+                           qflx_tran_veg_patch(p) * veg_pp%wtcol(p)
                   end if
                end if
             end do
          end do
          do fc = 1, num_filterc
             c = filterc(fc)
-            if (pi <= col%npfts(c)) then
-               p = col%pfti(c) + pi - 1
-               if (pft%active(p)) then
-                  temp(c) = temp(c) + qflx_tran_veg_patch(p) * pft%wtcol(p)
+            if (pi <= col_pp%npfts(c)) then
+               p = col_pp%pfti(c) + pi - 1
+               if (veg_pp%active(p)) then
+                  temp(c) = temp(c) + qflx_tran_veg_patch(p) * veg_pp%wtcol(p)
                end if
             end if
          end do

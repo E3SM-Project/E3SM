@@ -88,8 +88,8 @@ contains
     use decompMod      , only : bounds_type
     use pftvarcon      , only : noveg, roota_par, rootb_par  !these pars shall be moved to here and set as private in the future
     use clm_varctl     , only : use_var_soil_thick
-    use PatchType      , only : pft
-    use ColumnType     , only : col
+    use VegetationType , only : veg_pp
+    use ColumnType     , only : col_pp
     !
     ! !ARGUMENTS:
     implicit none
@@ -112,21 +112,21 @@ contains
 
     do p = bounds%begp,bounds%endp   
 
-       if (pft%itype(p) /= noveg .and. .not.pft%is_fates(p)) then
-          c = pft%column(p)
+       if (veg_pp%itype(p) /= noveg .and. .not.veg_pp%is_fates(p)) then
+          c = veg_pp%column(p)
 	  nlevbed = njbed(c)
 	  totrootfr = 0._r8
           do lev = 1, ubj-1
-             rootfr(p,lev) = .5_r8*( exp(-roota_par(pft%itype(p)) * col%zi(c,lev-1))  &
-                  + exp(-rootb_par(pft%itype(p)) * col%zi(c,lev-1))  &
-                  - exp(-roota_par(pft%itype(p)) * col%zi(c,lev  ))  &
-                  - exp(-rootb_par(pft%itype(p)) * col%zi(c,lev  )) )
+             rootfr(p,lev) = .5_r8*( exp(-roota_par(veg_pp%itype(p)) * col_pp%zi(c,lev-1))  &
+                  + exp(-rootb_par(veg_pp%itype(p)) * col_pp%zi(c,lev-1))  &
+                  - exp(-roota_par(veg_pp%itype(p)) * col_pp%zi(c,lev  ))  &
+                  - exp(-rootb_par(veg_pp%itype(p)) * col_pp%zi(c,lev  )) )
 	     if(lev <= nlevbed) then
                 totrootfr = totrootfr + rootfr(p,lev)
 	     end if
           end do
-          rootfr(p,ubj) = .5_r8*( exp(-roota_par(pft%itype(p)) * col%zi(c,ubj-1))  &
-               + exp(-rootb_par(pft%itype(p)) * col%zi(c,ubj-1)) )
+          rootfr(p,ubj) = .5_r8*( exp(-roota_par(veg_pp%itype(p)) * col_pp%zi(c,ubj-1))  &
+               + exp(-rootb_par(veg_pp%itype(p)) * col_pp%zi(c,ubj-1)) )
 
           ! Adjust layer root fractions if nlev2bed < nlevsoi
           if (use_var_soil_thick .and. nlevbed < ubj) then

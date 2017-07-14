@@ -15,8 +15,8 @@ module PlantSoilnutrientFluxType
   use clm_time_manager       , only : get_nstep
   use clm_varcon             , only : spval, ispval
   use decompMod              , only : bounds_type
-  use ColumnType             , only : col
-  use PatchType              , only : pft
+  use ColumnType             , only : col_pp
+  use VegetationType              , only : veg_pp
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -221,7 +221,7 @@ module PlantSoilnutrientFluxType
     ! !USES:
     use clm_varpar      , only : crop_prog
     use landunit_varcon , only : istsoil, istcrop
-    use LandunitType   , only : lun
+    use LandunitType   , only : lun_pp
     !
     ! !ARGUMENTS:
     class(plantsoilnutrientflux_type) :: this
@@ -240,8 +240,8 @@ module PlantSoilnutrientFluxType
 
     num_special_col = 0
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
-       if (lun%ifspecial(l)) then
+       l = col_pp%landunit(c)
+       if (lun_pp%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
        end if
@@ -251,8 +251,8 @@ module PlantSoilnutrientFluxType
 
     num_special_patch = 0
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
-       if (lun%ifspecial(l)) then
+       l = veg_pp%landunit(p)
+       if (lun_pp%ifspecial(l)) then
           num_special_patch = num_special_patch + 1
           special_patch(num_special_patch) = p
        end if
@@ -315,7 +315,7 @@ module PlantSoilnutrientFluxType
   !
   ! !USES:
   use subgridAveMod       , only : p2c
-  use GridcellType        , only : grc
+  use GridcellType        , only : grc_pp
 
   !
   ! !ARGUMENTS:
@@ -348,9 +348,9 @@ module PlantSoilnutrientFluxType
   !new approach
   do fp = 1, num_soilp
     p = filter_soilp(fp)
-    c = pft%column(p)
+    c = veg_pp%column(p)
     this%plant_minn_uptake_potential_patch(p) = Vmax_minn*max(frootc_patch(p),10._r8)
-    if(abs(grc%latdeg(col%gridcell(c)))<20._r8)this%plant_minn_uptake_potential_patch(p) = this%plant_minn_uptake_potential_patch(p) * 1.e3_r8
+    if(abs(grc_pp%latdeg(col_pp%gridcell(c)))<20._r8)this%plant_minn_uptake_potential_patch(p) = this%plant_minn_uptake_potential_patch(p) * 1.e3_r8
   enddo
 
   ! now use the p2c routine to get the column-averaged plant_ndemand

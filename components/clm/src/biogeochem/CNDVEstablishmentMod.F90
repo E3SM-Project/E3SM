@@ -8,13 +8,13 @@ module CNDVEstablishmentMod
   ! !USES:
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use decompMod         , only : bounds_type
-  use EcophysConType    , only : ecophyscon
+  use VegetationPropertiesType    , only : veg_vp
   use atm2lndType       , only : atm2lnd_type
   use CNDVType          , only : dgvs_type, dgv_ecophyscon
   use CNCarbonStateType , only : carbonstate_type
   use CNCarbonFluxType  , only : carbonflux_type
-  use LandunitType      , only : lun                
-  use PatchType         , only : pft                
+  use LandunitType      , only : lun_pp                
+  use VegetationType         , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -91,11 +91,11 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                       & 
-         ivt            =>    pft%itype                            , & ! Input:  [integer  (:) ]  patch vegetation type                                
-         slatop         =>    ecophyscon%slatop                    , & ! Input:  [real(r8) (:) ]  specific leaf area at top of canopy, projected area basis [m^2/gC]
-         dsladlai       =>    ecophyscon%dsladlai                  , & ! Input:  [real(r8) (:) ]  dSLA/dLAI, projected area basis [m^2/gC]           
-         dwood          =>    ecophyscon%dwood                     , & ! Input:  [real(r8) (:) ]  ecophys const - wood density (gC/m3)              
-         woody          =>    ecophyscon%woody                     , & ! Input:  [real(r8) (:) ]  ecophys const - woody pft or not                  
+         ivt            =>    veg_pp%itype                            , & ! Input:  [integer  (:) ]  patch vegetation type                                
+         slatop         =>    veg_vp%slatop                    , & ! Input:  [real(r8) (:) ]  specific leaf area at top of canopy, projected area basis [m^2/gC]
+         dsladlai       =>    veg_vp%dsladlai                  , & ! Input:  [real(r8) (:) ]  dSLA/dLAI, projected area basis [m^2/gC]           
+         dwood          =>    veg_vp%dwood                     , & ! Input:  [real(r8) (:) ]  ecophys const - wood density (gC/m3)              
+         woody          =>    veg_vp%woody                     , & ! Input:  [real(r8) (:) ]  ecophys const - woody pft or not                  
 
          crownarea_max  =>    dgv_ecophyscon%crownarea_max         , & ! Input:  [real(r8) (:) ]  ecophys const - tree maximum crown area [m2]      
          twmax          =>    dgv_ecophyscon%twmax                 , & ! Input:  [real(r8) (:) ]  ecophys const - upper limit of temperature of the warmest month
@@ -185,7 +185,7 @@ contains
       end do
 
       do p = bounds%begp,bounds%endp
-         l = pft%landunit(p)
+         l = veg_pp%landunit(p)
 
          ! Case 1 -- pft ceases to exist -kill patches not adapted to current climate
 
@@ -197,7 +197,7 @@ contains
 
          ! Case 2 -- pft begins to exist - introduce newly "adapted" patches
 
-         if (lun%itype(l) == istsoil) then
+         if (lun_pp%itype(l) == istsoil) then
             if (.not. present(p) .and. prec365(p) >= prec_min_estab .and. estab(p)) then
                if (twmax(ivt(p)) > 999._r8 .or. agddtw(p) == 0._r8) then
 
@@ -237,7 +237,7 @@ contains
       ! Calculate total woody FPC and number of woody Patches present and able to establish
 
       do p = bounds%begp,bounds%endp
-         g = pft%gridcell(p)
+         g = veg_pp%gridcell(p)
          if (present(p)) then
             if (woody(ivt(p)) == 1._r8) then
                fpc_tree_total(g) = fpc_tree_total(g) + fpcgrid(p)
@@ -251,7 +251,7 @@ contains
       ! Above grid-level establishment counters are required for the next steps.
 
       do p = bounds%begp,bounds%endp
-         g = pft%gridcell(p)
+         g = veg_pp%gridcell(p)
 
          if (present(p) .and. woody(ivt(p)) == 1._r8 .and. estab(p)) then
 
@@ -315,7 +315,7 @@ contains
       ! Adjustments- don't allow trees to exceed 95% of vegetated landunit
 
       do p = bounds%begp,bounds%endp
-         g = pft%gridcell(p)
+         g = veg_pp%gridcell(p)
          if (fpc_total_new(g) > 0.95_r8) then
             if (woody(ivt(p)) == 1._r8 .and. present(p)) then
                nind(p) = nind(p) * 0.95_r8 / fpc_total_new(g)
@@ -331,7 +331,7 @@ contains
       ! Section for grasses. Grasses can establish in non-vegetated areas
 
       do p = bounds%begp,bounds%endp
-         g = pft%gridcell(p)
+         g = veg_pp%gridcell(p)
          if (present(p) .and. woody(ivt(p)) < 1._r8) then
             if (leafcmax(p) <= 0._r8 .or. fpcgrid(p) <= 0._r8 ) then
                present(p) = .false.
@@ -356,7 +356,7 @@ contains
       ! Adjustment of fpc_total > 1 due to grasses (ivt >= nc3_arctic_grass)
 
       do p = bounds%begp,bounds%endp
-         g = pft%gridcell(p)
+         g = veg_pp%gridcell(p)
 
          if (fpc_total(g) > 1._r8) then
             if (ivt(p) >= nc3_arctic_grass .and. fpcgrid(p) > 0._r8) then
@@ -390,7 +390,7 @@ contains
       ! Ultimately may wish to place in separate subroutine...
 
       do p = bounds%begp,bounds%endp
-         g = pft%gridcell(p)
+         g = veg_pp%gridcell(p)
 
          ! Stress mortality from lpj's subr Mortality
 

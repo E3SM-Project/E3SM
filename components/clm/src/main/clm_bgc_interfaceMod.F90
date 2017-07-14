@@ -28,10 +28,10 @@ module clm_bgc_interfaceMod
   ! clm g/l/c/p constants
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use shr_kind_mod          , only : r8 => shr_kind_r8
-  use GridcellType          , only : grc
-  use LandunitType          , only : lun
-  use ColumnType            , only : col
-  use PatchType             , only : pft
+  use GridcellType          , only : grc_pp
+  use LandunitType          , only : lun_pp
+  use ColumnType            , only : col_pp 
+  use VegetationType             , only : veg_pp
 
   use decompMod             , only : bounds_type
 
@@ -228,8 +228,8 @@ contains
 
     associate( &
          ! Assign local pointer to derived subtypes components (column-level)
-         z                  => col%z                                                , & !  [real(r8) (:,:)]  layer depth (m)
-         dz                 => col%dz                                               , & !  [real(r8) (:,:)]  layer thickness depth (m)
+         z                  => col_pp%z                                                , & !  [real(r8) (:,:)]  layer depth (m)
+         dz                 => col_pp%dz                                               , & !  [real(r8) (:,:)]  layer thickness depth (m)
 
          bd                 => soilstate_vars%bd_col                                , & !
          bsw                => soilstate_vars%bsw_col                               , & !  [real(r8) (:,:)]  Clapp and Hornberger "b" (nlevgrnd)
@@ -332,11 +332,11 @@ contains
   !EOP
   !-----------------------------------------------------------------------
     associate ( &
-      gridcell              => col%gridcell                             , & ! column's gridcell
-      wtgcell               => col%wtgcell                              , & ! column's weight relative to gridcell
-      cactive               => col%active                               , & ! [logical (:)]  column active or not
-      dz                    => col%dz                                   , & ! layer thickness depth (m)
-      zi                    => col%zi                                   , & ! interface depth (m)
+      gridcell              => col_pp%gridcell                             , & ! column's gridcell
+      wtgcell               => col_pp%wtgcell                              , & ! column's weight relative to gridcell
+      cactive               => col_pp%active                               , & ! [logical (:)]  column active or not
+      dz                    => col_pp%dz                                   , & ! layer thickness depth (m)
+      zi                    => col_pp%zi                                   , & ! interface depth (m)
 
       soilpsi               => soilstate_vars%soilpsi_col               , & ! soil water matric potential in each soil layer (MPa)
       rootfr                => soilstate_vars%rootfr_col                , & ! pft-level effective fraction of roots in each soil layer
@@ -433,12 +433,12 @@ contains
         clm_bgc_data%eflx_soil_grnd_col(c)  = 0._r8
         clm_bgc_data%eflx_gnet_col(c)       = 0._r8
         do pftindex = 1, max_patch_per_col
-            if (pftindex <= col%npfts(c)) then
-                p = col%pfti(c) + pftindex - 1
+            if (pftindex <= col_pp%npfts(c)) then
+                p = col_pp%pfti(c) + pftindex - 1
                 clm_bgc_data%eflx_soil_grnd_col(c)  = clm_bgc_data%eflx_soil_grnd_col(c) &
-                                                    + eflx_soil_grnd_patch(p) * pft%wtcol(p)           ! W/m2
+                                                    + eflx_soil_grnd_patch(p) * veg_pp%wtcol(p)           ! W/m2
                 clm_bgc_data%eflx_gnet_col(c)       = clm_bgc_data%eflx_gnet_col(c) &
-                                                    + eflx_gnet_patch(p) * pft%wtcol(p)
+                                                    + eflx_gnet_patch(p) * veg_pp%wtcol(p)
             end if
        end do
     end do

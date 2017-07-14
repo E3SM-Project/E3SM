@@ -25,8 +25,8 @@ module SnowHydrologyMod
   use TemperatureType , only : temperature_type
   use WaterfluxType   , only : waterflux_type
   use WaterstateType  , only : waterstate_type
-  use LandunitType    , only : lun                
-  use ColumnType      , only : col                
+  use LandunitType    , only : lun_pp                
+  use ColumnType      , only : col_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -153,8 +153,8 @@ contains
 
 
     associate(                                                 & 
-         dz             => col%dz                            , & ! Input:  [real(r8) (:,:) ] layer depth (m)                        
-         snl            => col%snl                           , & ! Input:  [integer  (:)   ] number of snow layers                     
+         dz             => col_pp%dz                            , & ! Input:  [real(r8) (:,:) ] layer depth (m)                        
+         snl            => col_pp%snl                           , & ! Input:  [integer  (:)   ] number of snow layers                     
 
          do_capsnow     => waterstate_vars%do_capsnow_col    , & ! Input:  [logical  (:)   ] true => do snow capping                   
          frac_sno_eff   => waterstate_vars%frac_sno_eff_col  , & ! Input:  [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
@@ -200,7 +200,7 @@ contains
 
       do fc = 1,num_snowc
          c = filter_snowc(fc)
-         l=col%landunit(c)
+         l=col_pp%landunit(c)
 
          if (do_capsnow(c)) then
             wgdif = h2osoi_ice(c,snl(c)+1) - frac_sno_eff(c)*qflx_sub_snow(c)*dtime
@@ -562,9 +562,9 @@ contains
      !-----------------------------------------------------------------------
      
      associate(                                              & 
-          snl          => col%snl                          , & ! Input:  [integer (:)    ] number of snow layers                     
-          n_melt       => col%n_melt                       , & ! Input:  [real(r8) (:)   ] SCA shape parameter                      
-          ltype        => lun%itype                        , & ! Input:  [integer (:)    ] landunit type                             
+          snl          => col_pp%snl                          , & ! Input:  [integer (:)    ] number of snow layers                     
+          n_melt       => col_pp%n_melt                       , & ! Input:  [real(r8) (:)   ] SCA shape parameter                      
+          ltype        => lun_pp%itype                        , & ! Input:  [integer (:)    ] landunit type                             
 
           t_soisno     => temperature_vars%t_soisno_col    , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)              
           imelt        => temperature_vars%imelt_col       , & ! Input:  [integer (:,:)  ] flag for melting (=1), freezing (=2), Not=0
@@ -577,7 +577,7 @@ contains
           h2osoi_ice   => waterstate_vars%h2osoi_ice_col   , & ! Input:  [real(r8) (:,:) ] ice lens (kg/m2)                       
           h2osoi_liq   => waterstate_vars%h2osoi_liq_col   , & ! Input:  [real(r8) (:,:) ] liquid water (kg/m2)                   
           
-          dz           => col%dz                             & ! Output: [real(r8) (: ,:) ] layer depth (m)                        
+          dz           => col_pp%dz                             & ! Output: [real(r8) (: ,:) ] layer depth (m)                        
           )
 
        ! Get time step
@@ -600,7 +600,7 @@ contains
                      /(frac_sno(c) * dz(c,j))
                 ! If void is negative, then increase dz such that void = 0.
                 ! This should be done for any landunit, but for now is done only for glacier_mec 1andunits.
-                l = col%landunit(c)
+                l = col_pp%landunit(c)
                 if (ltype(l)==istice_mec .and. void < 0._r8) then
                    dz(c,j) = h2osoi_ice(c,j)/denice + h2osoi_liq(c,j)/denh2o
                    void = 0._r8
@@ -630,7 +630,7 @@ contains
                    ! Compaction occurring during melt
 
                    if (imelt(c,j) == 1) then
-                      if(subgridflag==1 .and. (ltype(col%landunit(c)) == istsoil .or. ltype(col%landunit(c)) == istcrop)) then
+                      if(subgridflag==1 .and. (ltype(col_pp%landunit(c)) == istsoil .or. ltype(col_pp%landunit(c)) == istcrop)) then
                          ! first term is delta mass over mass
                          ddz3 = max(0._r8,min(1._r8,(swe_old(c,j) - wx)/wx))
 
@@ -711,8 +711,8 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                                     & 
-          ltype            => lun%itype                           , & ! Input:  [integer  (:)   ] landunit type                             
-          urbpoi           => lun%urbpoi                          , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
+          ltype            => lun_pp%itype                           , & ! Input:  [integer  (:)   ] landunit type                             
+          urbpoi           => lun_pp%urbpoi                          , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
 
           t_soisno         => temperature_vars%t_soisno_col       , & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)              
 
@@ -738,10 +738,10 @@ contains
           qflx_sl_top_soil => waterflux_vars%qflx_sl_top_soil_col , & ! Output: [real(r8) (:)   ] liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
           qflx_snow2topsoi => waterflux_vars%qflx_snow2topsoi_col , & ! Output: [real(r8) (:)   ] liquid water merged into top soil from snow
 
-          snl              => col%snl                             , & ! Output: [integer  (:)   ] number of snow layers                     
-          dz               => col%dz                              , & ! Output: [real(r8) (:,:) ] layer depth (m)                        
-          zi               => col%zi                              , & ! Output: [real(r8) (:,:) ] interface level below a "z" level (m)  
-          z                => col%z                                 & ! Output: [real(r8) (:,:) ] layer thickness (m)                   
+          snl              => col_pp%snl                             , & ! Output: [integer  (:)   ] number of snow layers                     
+          dz               => col_pp%dz                              , & ! Output: [real(r8) (:,:) ] layer depth (m)                        
+          zi               => col_pp%zi                              , & ! Output: [real(r8) (:,:) ] interface level below a "z" level (m)  
+          z                => col_pp%z                                 & ! Output: [real(r8) (:,:) ] layer thickness (m)                   
           )
 
        ! Determine model time step
@@ -758,7 +758,7 @@ contains
        ! Note: this assumes that this function is called separately with the lake-snow and non-lake-snow filters.
        if (num_snowc > 0) then
           c = filter_snowc(1)
-          l = col%landunit(c)
+          l = col_pp%landunit(c)
           if (ltype(l) == istdlak) then ! Called from LakeHydrology
              dzminloc(:) = dzmin(:) + lsadz
           end if
@@ -777,7 +777,7 @@ contains
 
        do fc = 1, num_snowc
           c = filter_snowc(fc)
-          l = col%landunit(c)
+          l = col_pp%landunit(c)
           do j = msn_old(c)+1,0
              ! use 0.01 to avoid runaway ice buildup
              if (h2osoi_ice(c,j) <= .01_r8) then
@@ -883,7 +883,7 @@ contains
 
        do fc = 1, num_snowc
           c = filter_snowc(fc)
-          l = col%landunit(c)
+          l = col_pp%landunit(c)
           if (snow_depth(c) > 0._r8) then
              if ((ltype(l) == istdlak .and. snow_depth(c) < 0.01_r8 + lsadz ) .or. &
                   ((ltype(l) /= istdlak) .and. ((frac_sno_eff(c)*snow_depth(c) < 0.01_r8)  &
@@ -1108,10 +1108,10 @@ contains
           mss_dst3   => aerosol_vars%mss_dst3_col        , & ! Output: [real(r8) (:,:) ] dust species 3 mass in snow (col,lyr) [kg]
           mss_dst4   => aerosol_vars%mss_dst4_col        , & ! Output: [real(r8) (:,:) ] dust species 4 mass in snow (col,lyr) [kg]
 
-          snl        => col%snl                          , & ! Output: [integer  (:)   ] number of snow layers                     
-          dz         => col%dz                           , & ! Output: [real(r8) (:,:) ] layer depth (m)                        
-          zi         => col%zi                           , & ! Output: [real(r8) (:,:) ] interface level below a "z" level (m)  
-          z          => col%z                              & ! Output: [real(r8) (:,:) ] layer thickness (m)                   
+          snl        => col_pp%snl                          , & ! Output: [integer  (:)   ] number of snow layers                     
+          dz         => col_pp%dz                           , & ! Output: [real(r8) (:,:) ] layer depth (m)                        
+          zi         => col_pp%zi                           , & ! Output: [real(r8) (:,:) ] interface level below a "z" level (m)  
+          z          => col_pp%z                              & ! Output: [real(r8) (:,:) ] layer thickness (m)                   
           )
 
        if ( is_lake ) then
@@ -1776,7 +1776,7 @@ contains
      num_nosnowc = 0
      do fc = 1, num_nolakec
         c = filter_nolakec(fc)
-        if (col%snl(c) < 0) then
+        if (col_pp%snl(c) < 0) then
            num_snowc = num_snowc + 1
            filter_snowc(num_snowc) = c
         else

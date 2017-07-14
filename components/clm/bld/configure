@@ -645,6 +645,7 @@ sub write_filepath_cesmbld
 
 	# source directories under root
 	my @dirs = ( "main", 
+		     "data_types",
 		     "betr",
 		     "betr/betr_math",
 		     "betr/betr_core",

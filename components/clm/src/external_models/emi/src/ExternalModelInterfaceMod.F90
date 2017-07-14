@@ -168,8 +168,8 @@ contains
     use ExternalModelBETRMod  , only : EM_BETR_Populate_L2E_List
     use ExternalModelBETRMod  , only : EM_BETR_Populate_E2L_List
     use decompMod             , only : get_clump_bounds
-    use ColumnType            , only : col
-    use LandunitType          , only : lun
+    use ColumnType            , only : col_pp
+    use LandunitType          , only : lun_pp
     use landunit_varcon       , only : istsoil, istcrop,istice
     use column_varcon         , only : icol_road_perv
     !
@@ -337,10 +337,10 @@ contains
 
           num_e2l_filter_col = 0
           do c = bounds_clump%begc,bounds_clump%endc
-             if (col%active(c)) then
-                l = col%landunit(c)
-                if (lun%itype(l) == istsoil .or. col%itype(c) == icol_road_perv .or. &
-                    lun%itype(l) == istcrop) then
+             if (col_pp%active(c)) then
+                l = col_pp%landunit(c)
+                if (lun_pp%itype(l) == istsoil .or. col_pp%itype(c) == icol_road_perv .or. &
+                    lun_pp%itype(l) == istcrop) then
                    num_e2l_filter_col = num_e2l_filter_col + 1
                    tmp_col(c) = 1
                 end if
@@ -1241,7 +1241,7 @@ contains
     use ExternalModelConstants    , only : L2E_COLUMN_ZI_SNOW_AND_SOIL
     use ExternalModelConstants    , only : L2E_COLUMN_DZ_SNOW_AND_SOIL
     use ExternalModelConstants    , only : L2E_COLUMN_Z_SNOW_AND_SOIL
-    use ColumnType                , only : col
+    use ColumnType                , only : col_pp
     use clm_varpar                , only : nlevgrnd, nlevsno
     !
     implicit none
@@ -1278,21 +1278,21 @@ contains
           case (L2E_COLUMN_ACTIVE)
              do fc = 1, num_filter
                 c = filter(fc)
-                if (col%active(c)) cur_data%data_int_1d(c) = 1
+                if (col_pp%active(c)) cur_data%data_int_1d(c) = 1
              enddo
              cur_data%is_set = .true.
 
           case (L2E_COLUMN_TYPE)
              do fc = 1, num_filter
                 c = filter(fc)
-                cur_data%data_int_1d(c) = col%itype(c)
+                cur_data%data_int_1d(c) = col_pp%itype(c)
              enddo
              cur_data%is_set = .true.
 
           case (L2E_COLUMN_LANDUNIT_INDEX)
              do fc = 1, num_filter
                 c = filter(fc)
-                cur_data%data_int_1d(c) = col%landunit(c)
+                cur_data%data_int_1d(c) = col_pp%landunit(c)
              enddo
              cur_data%is_set = .true.
 
@@ -1300,7 +1300,7 @@ contains
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 0, nlevgrnd
-                   cur_data%data_real_2d(c,j) = col%zi(c,j)
+                   cur_data%data_real_2d(c,j) = col_pp%zi(c,j)
                 enddo
              enddo
              cur_data%is_set = .true.
@@ -1309,7 +1309,7 @@ contains
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = col%dz(c,j)
+                   cur_data%data_real_2d(c,j) = col_pp%dz(c,j)
                 enddo
              enddo
              cur_data%is_set = .true.
@@ -1318,7 +1318,7 @@ contains
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = col%z(c,j)
+                   cur_data%data_real_2d(c,j) = col_pp%z(c,j)
                 enddo
              enddo
              cur_data%is_set = .true.
@@ -1326,14 +1326,14 @@ contains
           case (L2E_COLUMN_AREA)
              do fc = 1, num_filter
                 c = filter(fc)
-                !cur_data%data_real_1d(c) = col%area(c)
+                !cur_data%data_real_1d(c) = col_pp%area(c)
              enddo
              cur_data%is_set = .true.
 
           case (L2E_COLUMN_GRIDCELL_INDEX)
              do fc = 1, num_filter
                 c = filter(fc)
-                cur_data%data_int_1d(c) = col%gridcell(c)
+                cur_data%data_int_1d(c) = col_pp%gridcell(c)
              enddo
              cur_data%is_set = .true.
 
@@ -1341,9 +1341,9 @@ contains
              do fc = 1, num_filter
                 c = filter(fc)
 #ifndef FATES_VIA_EMI
-                cur_data%data_int_1d(c) = col%pfti(c)
+                cur_data%data_int_1d(c) = col_pp%pfti(c)
 #else
-                cur_data%data_int_1d(c) = col%patchi(c)
+                cur_data%data_int_1d(c) = col_pp%patchi(c)
 #endif
              enddo
              cur_data%is_set = .true.
@@ -1351,7 +1351,7 @@ contains
           case (L2E_COLUMN_NUM_SNOW_LAYERS)
              do fc = 1, num_filter
                 c = filter(fc)
-                cur_data%data_int_1d(c) = col%snl(c)
+                cur_data%data_int_1d(c) = col_pp%snl(c)
              enddo
              cur_data%is_set = .true.
 
@@ -1359,7 +1359,7 @@ contains
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = -nlevsno, nlevgrnd
-                   cur_data%data_real_2d(c,j) = col%zi(c,j)
+                   cur_data%data_real_2d(c,j) = col_pp%zi(c,j)
                 enddo
              enddo
              cur_data%is_set = .true.
@@ -1368,7 +1368,7 @@ contains
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = -nlevsno+1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = col%dz(c,j)
+                   cur_data%data_real_2d(c,j) = col_pp%dz(c,j)
                 enddo
              enddo
              cur_data%is_set = .true.
@@ -1377,7 +1377,7 @@ contains
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = -nlevsno+1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = col%z(c,j)
+                   cur_data%data_real_2d(c,j) = col_pp%z(c,j)
                 enddo
              enddo
              cur_data%is_set = .true.
@@ -1402,7 +1402,7 @@ contains
     use ExternalModelConstants    , only : L2E_LANDUNIT_TYPE
     use ExternalModelConstants    , only : L2E_LANDUNIT_LAKEPOINT
     use ExternalModelConstants    , only : L2E_LANDUNIT_URBANPOINT
-    use LandunitType              , only : lun
+    use LandunitType              , only : lun_pp
     !
     implicit none
     !
@@ -1436,21 +1436,21 @@ contains
           case (L2E_LANDUNIT_TYPE)
              do fl = 1, num_filter
                 l = filter(fl)
-                cur_data%data_int_1d(l) = lun%itype(l)
+                cur_data%data_int_1d(l) = lun_pp%itype(l)
              enddo
              cur_data%is_set = .true.
 
           case (L2E_LANDUNIT_LAKEPOINT)
              do fl = 1, num_filter
                 l = filter(fl)
-                if (lun%lakpoi(l)) cur_data%data_int_1d(l) = 1
+                if (lun_pp%lakpoi(l)) cur_data%data_int_1d(l) = 1
              enddo
              cur_data%is_set = .true.
 
           case (L2E_LANDUNIT_URBANPOINT)
              do fl = 1, num_filter
                 l = filter(fl)
-                if (lun%urbpoi(l)) cur_data%data_int_1d(l) = 1
+                if (lun_pp%urbpoi(l)) cur_data%data_int_1d(l) = 1
              enddo
              cur_data%is_set = .true.
 

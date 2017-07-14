@@ -11,8 +11,8 @@ module dynPriorWeightsMod
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use decompMod      , only : bounds_type, BOUNDS_LEVEL_PROC
-  use ColumnType     , only : col
-  use PatchType      , only : pft                
+  use ColumnType     , only : col_pp
+  use VegetationType      , only : veg_pp                
   !
   implicit none
   save
@@ -25,7 +25,7 @@ module dynPriorWeightsMod
      ! Components are public for ease-of-use and efficiency. However, these components
      ! should be treated as read-only!
      real(r8), allocatable, public :: pwtcol(:)     ! prior pft weight on the column
-     logical , allocatable, public :: cactive(:)    ! prior col%active flags
+     logical , allocatable, public :: cactive(:)    ! prior col_pp%active flags
    contains
      procedure :: set_prior_weights      ! set prior weights to current weights
   end type prior_weights_type
@@ -80,11 +80,11 @@ contains
     ! ----------------------------------------------------------------------
     
     do p = bounds%begp, bounds%endp
-       this%pwtcol(p) = pft%wtcol(p)
+       this%pwtcol(p) = veg_pp%wtcol(p)
     end do
 
     do c = bounds%begc, bounds%endc
-       this%cactive(c) = col%active(c)
+       this%cactive(c) = col_pp%active(c)
     end do
   end subroutine set_prior_weights
 

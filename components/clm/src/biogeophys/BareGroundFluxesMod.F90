@@ -17,9 +17,9 @@ module BareGroundFluxesMod
   use TemperatureType      , only : temperature_type
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
-  use LandunitType         , only : lun                
-  use ColumnType           , only : col                
-  use PatchType            , only : pft                
+  use LandunitType         , only : lun_pp                
+  use ColumnType           , only : col_pp                
+  use VegetationType            , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -108,9 +108,9 @@ contains
     !------------------------------------------------------------------------------
 
     associate(                                                          & 
-         snl              =>    col%snl                               , & ! Input:  [integer  (:)   ]  number of snow layers                                                  
-         dz               =>    col%dz                                , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                                     
-         zii              =>    col%zii                               , & ! Input:  [real(r8) (:)   ]  convective boundary height [m]                                        
+         snl              =>    col_pp%snl                               , & ! Input:  [integer  (:)   ]  number of snow layers                                                  
+         dz               =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                                     
+         zii              =>    col_pp%zii                               , & ! Input:  [real(r8) (:)   ]  convective boundary height [m]                                        
 
          forc_u           =>    atm2lnd_vars%forc_u_grc               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
          forc_v           =>    atm2lnd_vars%forc_v_grc               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       
@@ -199,8 +199,8 @@ contains
 
       do f = 1, fn
          p = filterp(f)
-         c = pft%column(p)
-         g = pft%gridcell(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
 
          ! Initialization variables
 
@@ -240,8 +240,8 @@ contains
 
          do f = 1, fn
             p = filterp(f)
-            c = pft%column(p)
-            g = pft%gridcell(p)
+            c = veg_pp%column(p)
+            g = veg_pp%gridcell(p)
 
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
@@ -265,9 +265,9 @@ contains
 
       do f = 1, fn
          p = filterp(f)
-         c = pft%column(p)
-         g = pft%gridcell(p)
-         l = pft%landunit(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
+         l = veg_pp%landunit(p)
 
          ! Determine aerodynamic resistances
 
@@ -333,7 +333,7 @@ contains
 
          rh_ref2m(p) = min(100._r8, q_ref2m(p) / qsat_ref2m * 100._r8)
 
-         if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+         if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
             rh_ref2m_r(p) = rh_ref2m(p)
             t_ref2m_r(p) = t_ref2m(p)
          end if

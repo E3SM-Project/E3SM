@@ -16,8 +16,8 @@ module dynLandunitAreaMod
   use landunit_varcon, only : istsoil, istcrop, istice, istdlak, istwet, max_lunit 
   use decompMod      , only : bounds_type
   use abortutils     , only : endrun
-  use GridcellType   , only : grc
-  use LandunitType   , only : lun                
+  use GridcellType   , only : grc_pp
+  use LandunitType   , only : lun_pp                
   !
   implicit none
   save
@@ -38,9 +38,9 @@ contains
     ! !DESCRIPTION:
     ! Update landunit weights for all grid cells. 
     !
-    ! Assumes lun%wtgcell has been updated for all landunits whose areas are specified by
-    ! the dynamic subgrid code. Update lun%wtgcell for all other landunits (including
-    ! possibly changing some values of lun%wtgcell for landunits whose areas are
+    ! Assumes lun_pp%wtgcell has been updated for all landunits whose areas are specified by
+    ! the dynamic subgrid code. Update lun_pp%wtgcell for all other landunits (including
+    ! possibly changing some values of lun_pp%wtgcell for landunits whose areas are
     ! specified, e.g., if there are conflicts between glacier area and crop area).
     !
     ! !USES:
@@ -68,7 +68,7 @@ contains
        ! Adjust weights so they sum to 100%
        call update_landunit_weights_one_gcell(landunit_weights)
        
-       ! Put the new landunit weights back into lun%wtgcell
+       ! Put the new landunit weights back into lun_pp%wtgcell
        do ltype = 1, max_lunit
           call set_landunit_weight(g, ltype, landunit_weights(ltype))
        end do

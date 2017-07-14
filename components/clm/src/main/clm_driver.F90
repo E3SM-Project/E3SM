@@ -128,10 +128,10 @@ module clm_driver
   use TracerBalanceMod       , only : begin_betr_tracer_massbalance
   use tracer_varcon          , only : is_active_betr_bgc, do_betr_leaching
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetrVeg, CNEcosystemDynBetrSummary, CNFluxStateBetrSummary
-  use GridcellType           , only : grc                
-  use LandunitType           , only : lun                
-  use ColumnType             , only : col                
-  use PatchType              , only : pft
+  use GridcellType           , only : grc_pp                
+  use LandunitType           , only : lun_pp                
+  use ColumnType             , only : col_pp                
+  use VegetationType              , only : veg_pp
   use shr_sys_mod            , only : shr_sys_flush
   use shr_log_mod            , only : errMsg => shr_log_errMsg
 
@@ -715,8 +715,8 @@ contains
        ! ============================================================================
 
        do c = bounds_clump%begc,bounds_clump%endc
-          l = col%landunit(c)
-          if (lun%urbpoi(l)) then
+          l = col_pp%landunit(c)
+          if (lun_pp%urbpoi(l)) then
              ! Urban landunit use Bonan 1996 (LSM Technical Note)
              waterstate_vars%frac_sno_col(c) = min( waterstate_vars%snow_depth_col(c)/0.05_r8, 1._r8)
           end if
@@ -767,7 +767,7 @@ contains
          call run_betr_one_step_without_drainage(bounds_clump, 1, nlevtrc_soil,      &
               filter(nc)%num_soilc, filter(nc)%soilc,                                &
               filter(nc)%num_soilp, filter(nc)%soilp,                                &
-              col, atm2lnd_vars,                                                     &
+              col_pp, atm2lnd_vars,                                                     &
               soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, &
               waterflux_vars, chemstate_vars, cnstate_vars, canopystate_vars,        &
               carbonstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars,&
@@ -955,7 +955,7 @@ contains
             call run_betr_one_step_without_drainage(bounds_clump, 1, nlevtrc_soil,    &
                filter(nc)%num_soilc, filter(nc)%soilc,                                &
                filter(nc)%num_soilp, filter(nc)%soilp,                                &
-               col, atm2lnd_vars,                                                     &
+               col_pp, atm2lnd_vars,                                                     &
                soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, &
                waterflux_vars, chemstate_vars, cnstate_vars, canopystate_vars,        &
                carbonstate_vars, carbonflux_vars,  nitrogenstate_vars,                &
@@ -1007,7 +1007,7 @@ contains
                filter(nc)%num_soilc, filter(nc)%soilc,                                                &
                tracerboundarycond_vars%jtops_col(bounds_clump%begc:bounds_clump%endc),                &
                waterflux_vars%qflx_drain_vr_col(bounds_clump%begc:bounds_clump%endc, 1:nlevtrc_soil), &
-               col, betrtracer_vars , tracercoeff_vars, tracerstate_vars,  tracerflux_vars)
+               col_pp, betrtracer_vars , tracercoeff_vars, tracerstate_vars,  tracerflux_vars)
           call t_stopf('betr drainage')
 
           call t_startf('betr balchk')
@@ -1391,7 +1391,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                             & 
-         snl                => col%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                    
+         snl                => col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                    
         
          h2osno             => waterstate_vars%h2osno_col                , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
          h2osoi_ice         => waterstate_vars%h2osoi_ice_col            , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
@@ -1420,7 +1420,7 @@ contains
       end do
 
       do c = bounds%begc,bounds%endc
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
 
          ! Save snow mass at previous time step
          h2osno_old(c) = h2osno(c)
@@ -1443,7 +1443,7 @@ contains
       ! Initialize fraction of vegetation not covered by snow 
 
       do p = bounds%begp,bounds%endp
-         if (pft%active(p)) then
+         if (veg_pp%active(p)) then
             frac_veg_nosno(p) = frac_veg_nosno_alb(p)
          else
             frac_veg_nosno(p) = 0._r8
@@ -1499,7 +1499,7 @@ contains
 
     fc = 0
     do c = bounds%begc,bounds%endc
-       if (col%active(c)) then
+       if (col_pp%active(c)) then
           fc = fc + 1
           filter_allc(fc) = c
        end if

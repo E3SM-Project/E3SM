@@ -4,7 +4,7 @@ module ColumnMod
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak
   use clm_varcon     , only : spval, ispval
-  use ColumnType     , only : column_type, col
+  use ColumnType     , only : column_physical_properties_type, col_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -49,44 +49,44 @@ contains
 
     idx = 0
 
-    idx = idx + 1;                                         values(idx) = real( col%landunit (c))
-    idx = idx + 1;                                         values(idx) =       col%wtlunit  (c)
-    idx = idx + 1;                                         values(idx) = real( col%gridcell (c))
-    idx = idx + 1;                                         values(idx) =       col%wtgcell  (c)
-    idx = idx + 1;                                         values(idx) = real( col%pfti     (c))
-    idx = idx + 1;                                         values(idx) = real( col%pftf     (c))
-    idx = idx + 1;                                         values(idx) = real( col%npfts    (c))
-    idx = idx + 1;                                         values(idx) = real( col%itype    (c))
+    idx = idx + 1;                                         values(idx) = real( col_pp%landunit (c))
+    idx = idx + 1;                                         values(idx) =       col_pp%wtlunit  (c)
+    idx = idx + 1;                                         values(idx) = real( col_pp%gridcell (c))
+    idx = idx + 1;                                         values(idx) =       col_pp%wtgcell  (c)
+    idx = idx + 1;                                         values(idx) = real( col_pp%pfti     (c))
+    idx = idx + 1;                                         values(idx) = real( col_pp%pftf     (c))
+    idx = idx + 1;                                         values(idx) = real( col_pp%npfts    (c))
+    idx = idx + 1;                                         values(idx) = real( col_pp%itype    (c))
 
-    idx = idx + 1; if (col%active(c))                     values(idx) = 1._r8
+    idx = idx + 1; if (col_pp%active(c))                     values(idx) = 1._r8
 
-    idx = idx + 1; if (.not. isnan(col%glc_topo    (c)))  values(idx) = col%glc_topo    (c)
-    idx = idx + 1; if (.not. isnan(col%micro_sigma (c)))  values(idx) = col%micro_sigma (c)
-    idx = idx + 1; if (.not. isnan(col%n_melt      (c)))  values(idx) = col%n_melt      (c)
-    idx = idx + 1; if (.not. isnan(col%topo_slope  (c)))  values(idx) = col%topo_slope  (c)
-    idx = idx + 1; if (.not. isnan(col%topo_std    (c)))  values(idx) = col%topo_std    (c)
+    idx = idx + 1; if (.not. isnan(col_pp%glc_topo    (c)))  values(idx) = col_pp%glc_topo    (c)
+    idx = idx + 1; if (.not. isnan(col_pp%micro_sigma (c)))  values(idx) = col_pp%micro_sigma (c)
+    idx = idx + 1; if (.not. isnan(col_pp%n_melt      (c)))  values(idx) = col_pp%n_melt      (c)
+    idx = idx + 1; if (.not. isnan(col_pp%topo_slope  (c)))  values(idx) = col_pp%topo_slope  (c)
+    idx = idx + 1; if (.not. isnan(col_pp%topo_std    (c)))  values(idx) = col_pp%topo_std    (c)
 
-    idx = idx + 1;                                         values(idx) = real(col%snl   (c))
-    idx = idx + 1; if (.not. isnan(col%lakedepth   (c)))  values(idx) =      col%lakedepth(c)
+    idx = idx + 1;                                         values(idx) = real(col_pp%snl   (c))
+    idx = idx + 1; if (.not. isnan(col_pp%lakedepth   (c)))  values(idx) =      col_pp%lakedepth(c)
 
     do j = -nlevsno+1,nlevgrnd
-       idx = idx + 1; if (.not. isnan(col%dz(c,j))) values(idx) = col%dz(c,j)
+       idx = idx + 1; if (.not. isnan(col_pp%dz(c,j))) values(idx) = col_pp%dz(c,j)
     enddo
 
     do j = -nlevsno+1,nlevgrnd
-       idx = idx + 1; if (.not. isnan(col%z(c,j))) values(idx) = col%z(c,j)
+       idx = idx + 1; if (.not. isnan(col_pp%z(c,j))) values(idx) = col_pp%z(c,j)
     enddo
 
     do j = -nlevsno,nlevgrnd
-       idx = idx + 1; if (.not. isnan(col%zi(c,j))) values(idx) = col%zi(c,j)
+       idx = idx + 1; if (.not. isnan(col_pp%zi(c,j))) values(idx) = col_pp%zi(c,j)
     enddo
 
     do j = 1,nlevlak
-       idx = idx + 1; if (.not. isnan(col%dz_lake(c,j))) values(idx) = col%dz_lake(c,j)
+       idx = idx + 1; if (.not. isnan(col_pp%dz_lake(c,j))) values(idx) = col_pp%dz_lake(c,j)
     enddo
 
     do j = 1,nlevlak
-       idx = idx + 1; if (.not. isnan(col%z_lake(c,j))) values(idx) = col%z_lake(c,j)
+       idx = idx + 1; if (.not. isnan(col_pp%z_lake(c,j))) values(idx) = col_pp%z_lake(c,j)
     enddo
 
   end subroutine GetValuesForColumn
@@ -122,44 +122,44 @@ contains
 
     idx = 0
 
-    idx = idx + 1;                           col%landunit    (c) = int(values(idx))
-    idx = idx + 1;                           col%wtlunit     (c) =     values(idx)
-    idx = idx + 1;                           col%gridcell    (c) = int(values(idx))
-    idx = idx + 1;                           col%wtgcell     (c) = values(idx)
-    idx = idx + 1;                           col%pfti        (c) = int(values(idx))
-    idx = idx + 1;                           col%pftf        (c) = int(values(idx))
-    idx = idx + 1;                           col%npfts       (c) = int(values(idx))
-    idx = idx + 1;                           col%itype       (c) = int(values(idx))
+    idx = idx + 1;                           col_pp%landunit    (c) = int(values(idx))
+    idx = idx + 1;                           col_pp%wtlunit     (c) =     values(idx)
+    idx = idx + 1;                           col_pp%gridcell    (c) = int(values(idx))
+    idx = idx + 1;                           col_pp%wtgcell     (c) = values(idx)
+    idx = idx + 1;                           col_pp%pfti        (c) = int(values(idx))
+    idx = idx + 1;                           col_pp%pftf        (c) = int(values(idx))
+    idx = idx + 1;                           col_pp%npfts       (c) = int(values(idx))
+    idx = idx + 1;                           col_pp%itype       (c) = int(values(idx))
 
-    idx = idx + 1; if (values(idx) == 1._r8) col%active      (c) = .true.
+    idx = idx + 1; if (values(idx) == 1._r8) col_pp%active      (c) = .true.
 
-    idx = idx + 1;                           col%glc_topo    (c) = values(idx)
-    idx = idx + 1;                           col%micro_sigma (c) = values(idx)
-    idx = idx + 1;                           col%n_melt      (c) = values(idx)
-    idx = idx + 1;                           col%topo_slope  (c) = values(idx)
-    idx = idx + 1;                           col%topo_std    (c) = values(idx)
+    idx = idx + 1;                           col_pp%glc_topo    (c) = values(idx)
+    idx = idx + 1;                           col_pp%micro_sigma (c) = values(idx)
+    idx = idx + 1;                           col_pp%n_melt      (c) = values(idx)
+    idx = idx + 1;                           col_pp%topo_slope  (c) = values(idx)
+    idx = idx + 1;                           col_pp%topo_std    (c) = values(idx)
 
-    idx = idx + 1;                           col%snl         (c) = int(values(idx))
-    idx = idx + 1;                           col%lakedepth   (c) = values(idx)
+    idx = idx + 1;                           col_pp%snl         (c) = int(values(idx))
+    idx = idx + 1;                           col_pp%lakedepth   (c) = values(idx)
 
     do j = -nlevsno+1,nlevgrnd
-       idx = idx + 1; col%dz(c,j) = values(idx)
+       idx = idx + 1; col_pp%dz(c,j) = values(idx)
     enddo
 
     do j = -nlevsno+1,nlevgrnd
-       idx = idx + 1; col%z(c,j) = values(idx)
+       idx = idx + 1; col_pp%z(c,j) = values(idx)
     enddo
 
     do j = -nlevsno,nlevgrnd
-       idx = idx + 1; col%zi(c,j) = values(idx)
+       idx = idx + 1; col_pp%zi(c,j) = values(idx)
     enddo
 
     do j = 1,nlevlak
-       idx = idx + 1; col%dz_lake(c,j) = values(idx)
+       idx = idx + 1; col_pp%dz_lake(c,j) = values(idx)
     enddo
 
     do j = 1,nlevlak
-       idx = idx + 1; col%z_lake(c,j) = values(idx)
+       idx = idx + 1; col_pp%z_lake(c,j) = values(idx)
     enddo
 
   end subroutine SetValuesForColumn

@@ -22,11 +22,11 @@ module clm_initializeMod
   !-----------------------------------------
   ! Definition of component types
   !-----------------------------------------
-  use GridcellType           , only : grc
+  use GridcellType           , only : grc_pp
   use TopounitType           , only : top_pp, top_es, top_ws
-  use LandunitType           , only : lun                
-  use ColumnType             , only : col                
-  use PatchType              , only : pft                
+  use LandunitType           , only : lun_pp                
+  use ColumnType             , only : col_pp                
+  use VegetationType         , only : veg_pp                
   use clm_instMod
   !
   implicit none
@@ -277,16 +277,16 @@ contains
     ! Note that the assumption is made that none of the subgrid initialization
     ! can depend on other elements of the subgrid in the calls below
 
-    call grc%Init (bounds_proc%begg_all, bounds_proc%endg_all)
+    call grc_pp%Init (bounds_proc%begg_all, bounds_proc%endg_all)
     ! --ALM-v1: add initialization for topographic unit data types. 
     ! For preliminary testing, use the same dimensions as gridcell (one topounit per gridcell)
     call top_pp%Init (bounds_proc%begg, bounds_proc%endg) ! topology and physical properties
     call top_es%Init (bounds_proc%begg, bounds_proc%endg) ! energy state
     call top_ws%Init (bounds_proc%begg, bounds_proc%endg) ! water state
     ! --end ALM-v1 block
-    call lun%Init (bounds_proc%begl_all, bounds_proc%endl_all)
-    call col%Init (bounds_proc%begc_all, bounds_proc%endc_all)
-    call pft%Init (bounds_proc%begp_all, bounds_proc%endp_all)
+    call lun_pp%Init (bounds_proc%begl_all, bounds_proc%endl_all)
+    call col_pp%Init (bounds_proc%begc_all, bounds_proc%endc_all)
+    call veg_pp%Init (bounds_proc%begp_all, bounds_proc%endp_all)
 
     ! Determine the number of active external models.
     call EMI_Determine_Active_EMs()
@@ -327,19 +327,19 @@ contains
     ! initialize glc_topo
     ! TODO - does this belong here?
     do c = bounds_proc%begc, bounds_proc%endc
-       l = col%landunit(c)
-       g = col%gridcell(c)
+       l = col_pp%landunit(c)
+       g = col_pp%gridcell(c)
 
-       if (lun%itype(l) == istice_mec) then
+       if (lun_pp%itype(l) == istice_mec) then
           ! For ice_mec landunits, initialize glc_topo based on surface dataset; this
           ! will get overwritten in the run loop by values sent from CISM
-          icemec_class = col_itype_to_icemec_class(col%itype(c))
-          col%glc_topo(c) = topo_glc_mec(g, icemec_class)
+          icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
+          col_pp%glc_topo(c) = topo_glc_mec(g, icemec_class)
        else
           ! For other landunits, arbitrarily initialize glc_topo to 0 m; for landunits
           ! where this matters, this will get overwritten in the run loop by values sent
           ! from CISM
-          col%glc_topo(c) = 0._r8
+          col_pp%glc_topo(c) = 0._r8
        end if
     end do
 
@@ -387,7 +387,7 @@ contains
     use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
     use CNDecompCascadeCNMod  , only : init_decompcascade_cn
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
-    use EcophysConType        , only : ecophysconInit 
+    use VegetationPropertiesType        , only : veg_vp 
     use SoilorderConType      , only : soilorderconInit 
     use LakeCon               , only : LakeConInit 
     use SatellitePhenologyMod , only : SatellitePhenologyInit, readAnnualVegetation, interpMonthlyVeg
@@ -494,8 +494,8 @@ contains
 
     do g = bounds_proc%begg,bounds_proc%endg
        max_decl = 0.409571
-       if (grc%lat(g) < 0._r8) max_decl = -max_decl
-       grc%max_dayl(g) = daylength(grc%lat(g), max_decl)
+       if (grc_pp%lat(g) < 0._r8) max_decl = -max_decl
+       grc_pp%max_dayl(g) = daylength(grc_pp%lat(g), max_decl)
     end do
 
     ! History file variables
@@ -503,11 +503,11 @@ contains
     if (use_cn) then
        call hist_addfld1d (fname='DAYL',  units='s', &
             avgflag='A', long_name='daylength', &
-            ptr_gcell=grc%dayl, default='inactive')
+            ptr_gcell=grc_pp%dayl, default='inactive')
 
        call hist_addfld1d (fname='PREV_DAYL', units='s', &
             avgflag='A', long_name='daylength from previous timestep', &
-            ptr_gcell=grc%prev_dayl, default='inactive')
+            ptr_gcell=grc_pp%prev_dayl, default='inactive')
     end if
 
     ! ------------------------------------------------------------------------
@@ -520,16 +520,16 @@ contains
     ! First put in history calls for subgrid data structures - these cannot appear in the
     ! module for the subgrid data definition due to circular dependencies that are introduced
     
-    data2dptr => col%dz(:,-nlevsno+1:0)
-    col%dz(bounds_proc%begc:bounds_proc%endc,:) = spval
+    data2dptr => col_pp%dz(:,-nlevsno+1:0)
+    col_pp%dz(bounds_proc%begc:bounds_proc%endc,:) = spval
     call hist_addfld2d (fname='SNO_Z', units='m', type2d='levsno',  &
          avgflag='A', long_name='Snow layer thicknesses', &
          ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
 
-    col%zii(bounds_proc%begc:bounds_proc%endc) = spval
+    col_pp%zii(bounds_proc%begc:bounds_proc%endc) = spval
     call hist_addfld1d (fname='ZII', units='m', &
          avgflag='A', long_name='convective boundary height', &
-         ptr_col=col%zii, default='inactive')
+         ptr_col=col_pp%zii, default='inactive')
 
     call clm_inst_biogeophys(bounds_proc)
 

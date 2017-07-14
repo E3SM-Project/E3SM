@@ -14,14 +14,14 @@ module CNMRespMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use pftvarcon           , only : npcropmin
   use CNSharedParamsMod   , only : CNParamsShareInst
-  use EcophysconType      , only : ecophyscon
+  use VegetationPropertiesType      , only : veg_vp
   use SoilStateType       , only : soilstate_type
   use CanopyStateType     , only : canopystate_type
   use TemperatureType     , only : temperature_type
   use PhotosynthesisType  , only : photosyns_type
   use CNCarbonFluxType    , only : carbonflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
-  use PatchType           , only : pft                
+  use VegetationType           , only : veg_pp                
   !
   implicit none
   save
@@ -104,8 +104,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                        &    
-         ivt            =>    pft%itype                             , & ! Input:  [integer  (:)   ]  patch vegetation type                                
-         woody          =>    ecophyscon%woody                      , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         ivt            =>    veg_pp%itype                             , & ! Input:  [integer  (:)   ]  patch vegetation type                                
+         woody          =>    veg_vp%woody                      , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
 
          frac_veg_nosno =>    canopystate_vars%frac_veg_nosno_patch , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
          laisun         =>    canopystate_vars%laisun_patch         , & ! Input:  [real(r8) (:)   ]  sunlit projected leaf area index                  
@@ -193,7 +193,7 @@ contains
       do j = 1,nlevgrnd
          do fp = 1,num_soilp
             p = filter_soilp(fp)
-            c = pft%column(p)
+            c = veg_pp%column(p)
 
             ! Fine root MR
             ! rootfr(j) sums to 1.0 over all soil layers, and

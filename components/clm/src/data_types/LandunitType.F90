@@ -25,7 +25,7 @@ module LandunitType
   save
   private
   !
-  type, public :: landunit_type
+  type, public :: landunit_physical_properties_type
      ! g/l/c/p hierarchy, local g/l/c/p cells only
      integer , pointer :: gridcell     (:) ! index into gridcell level quantities
      real(r8), pointer :: wtgcell      (:) ! weight (relative to gridcell)
@@ -54,20 +54,20 @@ module LandunitType
 
    contains
 
-     procedure, public :: Init
-     procedure, public :: Clean
+     procedure, public :: Init => lun_pp_init
+     procedure, public :: Clean => lun_pp_clean
      
-  end type landunit_type
-  type(landunit_type), public, target :: lun  !geomorphological landunits
+  end type landunit_physical_properties_type
+  type(landunit_physical_properties_type), public, target :: lun_pp  !geomorphological landunits
   !------------------------------------------------------------------------
 
 contains
   
   !------------------------------------------------------------------------
-  subroutine Init(this, begl, endl)
+  subroutine lun_pp_Init(this, begl, endl)
     !
     ! !ARGUMENTS:
-    class(landunit_type) :: this
+    class(landunit_physical_properties_type) :: this
     integer, intent(in) :: begl,endl
     !------------------------------------------------------------------------
 
@@ -97,13 +97,13 @@ contains
     allocate(this%z_0_town     (begl:endl)); this%z_0_town     (:) = nan
     allocate(this%z_d_town     (begl:endl)); this%z_d_town     (:) = nan
 
-  end subroutine Init
+  end subroutine lun_pp_init
 
   !------------------------------------------------------------------------
-  subroutine Clean(this)
+  subroutine lun_pp_clean(this)
     !
     ! !ARGUMENTS:
-    class(landunit_type) :: this
+    class(landunit_physical_properties_type) :: this
     !------------------------------------------------------------------------
 
     deallocate(this%gridcell     )
@@ -127,6 +127,6 @@ contains
     deallocate(this%z_0_town     )
     deallocate(this%z_d_town     )
 
-  end subroutine Clean
+  end subroutine lun_pp_clean
 
 end module LandunitType
