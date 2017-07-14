@@ -5691,7 +5691,7 @@
 <grid name="a%ne30np4">
     <mach name="edison">
       <pes compset="CAM5.+CLM45.+CICE.+DOCN.+RTM.+SGLC.+SWAV" pesize="any">
-        <comment>"PMC - 114 node F-compset gets around 6.6 SYPD"</comment>
+        <comment>"PMC - 114 node F-compset gets around 7.4 SYPD"</comment>
         <PES_PER_NODE>24</PES_PER_NODE>
         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
         <ntasks>
