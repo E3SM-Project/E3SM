@@ -672,18 +672,6 @@ set script_provenance_name = $this_script_name.`date +%F_%T_%Z`
 mkdir -p $script_provenance_dir
 cp -f $this_script_path $script_provenance_dir/$script_provenance_name
 
-#================================================
-# COPY AUTO_CHAIN_RUNS SCRIPT TO CASE_SCRIPTS_DIR
-#================================================
-
-# acme_print 'copying auto_chain script, in case it is needed'
-
-# set auto_chain_run_file = ./auto_chain_runs.$machine
-# if ( -fx ${this_script_dir}/${auto_chain_run_file}  ) then
-#   acme_print 'Copying '${auto_chain_run_file}' to '${case_scripts_dir}
-#   cp ${this_script_dir}/${auto_chain_run_file} ${case_scripts_dir}/${auto_chain_run_file}
-# endif
-
 #=============================================
 # CUSTOMIZE PROCESSOR CONFIGURATION
 # ============================================
@@ -1226,22 +1214,6 @@ if ( `lowercase $submit_run` == 'true' ) then
   else if ( $num_submits <= 0 ) then
     acme_print '$num_submits <= 0 so NOT submitting a job.'
     acme_print '$num_submits = '$num_submits
-  # else if ( `lowercase $debug_queue` == 'true' && $num_submits > 1 ) then
-  #   acme_print 'WARNING: $num_submits > 1  and  $debug_queue = "TRUE"'
-  #   acme_print '         Submitting chained jobs to the debug queue is usually forbidden'
-  #   acme_print '         $num_submits = '$num_submits
-  #   acme_print '         SUBMITTING JUST A SINGLE JOB.'
-  #   ${case_submit_exe} --batch-args " ${batch_options} "
-  # else if ( ! -x ./auto_chain_runs.$machine && $num_submits > 1 ) then
-  #   acme_print 'WARNING: $num_submits > 1  but auto_chain_runs.$machine excutable cannot be found.'
-  #   acme_print '         $num_submits = '$num_submits
-  #   acme_print '         $machine     = '$machine
-  #   acme_print '         SUBMITTING JUST A SINGLE JOB.'
-  #   ${case_submit_exe} --batch-args " ${batch_options} "
-  # else
-  #   # Need to understand why csh won't run with just ./
-  #   acme_print csh ${case_scripts_dir}/auto_chain_runs.$machine $num_submits -1
-  #   csh ${case_scripts_dir}/auto_chain_runs.$machine $num_submits -1
   endif
 else
     acme_print 'Run NOT submitted because $submit_run = '$submit_run
