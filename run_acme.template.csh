@@ -39,7 +39,7 @@ set submit_run       = true
 set debug_queue      = true
 
 ### PROCESSOR CONFIGURATION
-set processor_config = M
+set processor_config = S
 
 ### STARTUP TYPE
 set model_start_type = initial
@@ -676,13 +676,13 @@ cp -f $this_script_path $script_provenance_dir/$script_provenance_name
 # COPY AUTO_CHAIN_RUNS SCRIPT TO CASE_SCRIPTS_DIR
 #================================================
 
-acme_print 'copying auto_chain script, in case it is needed'
+# acme_print 'copying auto_chain script, in case it is needed'
 
-set auto_chain_run_file = ./auto_chain_runs.$machine
-if ( -fx ${this_script_dir}/${auto_chain_run_file}  ) then
-  acme_print 'Copying '${auto_chain_run_file}' to '${case_scripts_dir}
-  cp ${this_script_dir}/${auto_chain_run_file} ${case_scripts_dir}/${auto_chain_run_file}
-endif
+# set auto_chain_run_file = ./auto_chain_runs.$machine
+# if ( -fx ${this_script_dir}/${auto_chain_run_file}  ) then
+#   acme_print 'Copying '${auto_chain_run_file}' to '${case_scripts_dir}
+#   cp ${this_script_dir}/${auto_chain_run_file} ${case_scripts_dir}/${auto_chain_run_file}
+# endif
 
 #=============================================
 # CUSTOMIZE PROCESSOR CONFIGURATION
@@ -1217,28 +1217,31 @@ acme_print '-------- Starting Submission to Run Queue --------'
 acme_newline
 
 if ( `lowercase $submit_run` == 'true' ) then
-  if ( $num_submits == 1 ) then
+  if ( $num_submits >= 1 ) then
+    # Subtract 1 from num_submits (with dc, a stack based calculator), then print it to set RESUBMIT
+    set num_resubmit = `echo "${num_submits} 1 - p" | dc`
+    ${xmlchange_exe} --id RESUBMIT --val ${num_resubmit}
     acme_print '         SUBMITTING A SINGLE JOB.'
     ${case_submit_exe} --batch-args " ${batch_options} "
   else if ( $num_submits <= 0 ) then
     acme_print '$num_submits <= 0 so NOT submitting a job.'
     acme_print '$num_submits = '$num_submits
-  else if ( `lowercase $debug_queue` == 'true' && $num_submits > 1 ) then
-    acme_print 'WARNING: $num_submits > 1  and  $debug_queue = "TRUE"'
-    acme_print '         Submitting chained jobs to the debug queue is usually forbidden'
-    acme_print '         $num_submits = '$num_submits
-    acme_print '         SUBMITTING JUST A SINGLE JOB.'
-    ${case_submit_exe} --batch-args " ${batch_options} "
-  else if ( ! -x ./auto_chain_runs.$machine && $num_submits > 1 ) then
-    acme_print 'WARNING: $num_submits > 1  but auto_chain_runs.$machine excutable cannot be found.'
-    acme_print '         $num_submits = '$num_submits
-    acme_print '         $machine     = '$machine
-    acme_print '         SUBMITTING JUST A SINGLE JOB.'
-    ${case_submit_exe} --batch-args " ${batch_options} "
-  else
-    # Need to understand why csh won't run with just ./
-    acme_print csh ${case_scripts_dir}/auto_chain_runs.$machine $num_submits -1
-    csh ${case_scripts_dir}/auto_chain_runs.$machine $num_submits -1
+  # else if ( `lowercase $debug_queue` == 'true' && $num_submits > 1 ) then
+  #   acme_print 'WARNING: $num_submits > 1  and  $debug_queue = "TRUE"'
+  #   acme_print '         Submitting chained jobs to the debug queue is usually forbidden'
+  #   acme_print '         $num_submits = '$num_submits
+  #   acme_print '         SUBMITTING JUST A SINGLE JOB.'
+  #   ${case_submit_exe} --batch-args " ${batch_options} "
+  # else if ( ! -x ./auto_chain_runs.$machine && $num_submits > 1 ) then
+  #   acme_print 'WARNING: $num_submits > 1  but auto_chain_runs.$machine excutable cannot be found.'
+  #   acme_print '         $num_submits = '$num_submits
+  #   acme_print '         $machine     = '$machine
+  #   acme_print '         SUBMITTING JUST A SINGLE JOB.'
+  #   ${case_submit_exe} --batch-args " ${batch_options} "
+  # else
+  #   # Need to understand why csh won't run with just ./
+  #   acme_print csh ${case_scripts_dir}/auto_chain_runs.$machine $num_submits -1
+  #   csh ${case_scripts_dir}/auto_chain_runs.$machine $num_submits -1
   endif
 else
     acme_print 'Run NOT submitted because $submit_run = '$submit_run
@@ -1361,7 +1364,8 @@ acme_newline
 #                        Also add a fix to reenable using the special acme qos queue on Edison (MD)
 # 3.0.8    2017-05-24    Fixed minor bug when $machine contained a capital letter. Bug was introduced recently. (PJC)
 # 3.0.9    2017-06-19    Fixed branch runs. Also removed sed commands for case.run and use --batch-args in case.submit (MD)
-# 3.0.10    2017-06-14    To allow data-atm compsets to work, I added a test for CAM_CONFIG_OPTS. (PJC)
+# 3.0.10   2017-06-14    To allow data-atm compsets to work, I added a test for CAM_CONFIG_OPTS. (PJC)
+# 3.0.11   2017-07-14    Replace auto-chaining code with ACME's resubmit feature. Also fix Edison's qos setting (again...) (MD)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
