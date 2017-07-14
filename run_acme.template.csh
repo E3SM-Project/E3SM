@@ -57,7 +57,7 @@ set stop_units       = ndays
 set stop_num         = 5
 set restart_units    = $stop_units
 set restart_num      = $stop_num
-set num_submits      = 1
+set num_resubmits    = 0
 set do_short_term_archiving      = false
 set do_long_term_archiving       = false
 
@@ -167,8 +167,8 @@ set cpl_hist_num   = 1
 #stop_num: The simulation length for each batch submission, in units of $stop_units.
 #restart_units: The units for how often restart files are written, eg nhours, ndays, nmonths, nyears.
 #restart_num: How often restart files are written, in units of $restart_units.
-#num_submits: After a batch job finishes successfully, a new batch job will automatically be submitted to
-#    continue the simulation.  num_submits is the total number of submissions.
+#num_resubmits: After a batch job finishes successfully, a new batch job will automatically be submitted to
+#    continue the simulation.  num_resubmits is the number of times to submit after initial completion.
 #    After the first submission, the CONTINUE_RUN flage in env_run.xml will be changed to TRUE.
 #do_short_term_archiving: If TRUE, then move simulation output to the archive directory in your scratch directory.
 #do_long_term_archiving : If TRUE, then move simulation output from the short_term_archive to the local mass storage system.
@@ -210,7 +210,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.10
+set script_ver = 3.0.11
 
 #===========================================
 # DEFINE ALIASES
@@ -297,7 +297,7 @@ if ( `lowercase $case_run_dir` == default && $seconds_before_delete_run_dir >= 0
   exit 15
 endif
 
-if ( $num_submits >1 && ( $stop_units != $restart_units || $stop_num != $restart_num ) ) then
+if ( $num_resubmits >= 1 && ( $stop_units != $restart_units || $stop_num != $restart_num ) ) then
   acme_print 'WARNING: It makes no sense to have chained submissions unless the run is producing appropriate restarts!'
   acme_print '         The run length and restarts do not match exactly. '
   acme_print '         It is hard to check definitively, so stopping just in case.'
@@ -306,15 +306,15 @@ if ( $num_submits >1 && ( $stop_units != $restart_units || $stop_num != $restart
   acme_print '         $stop_num       = '$stop_num
   acme_print '         $restart_units  = '$restart_units
   acme_print '         $restart_num    = '$restart_num
-  acme_print '         $num_submits    = '$num_submits
+  acme_print '         $num_resubmits  = '$num_resubmits
   exit 16
 endif
 
-if ( `lowercase $debug_queue` == true && ( $num_submits >1 || `lowercase $do_short_term_archiving` == true ) ) then
+if ( `lowercase $debug_queue` == true && ( $num_resubmits >= 1 || `lowercase $do_short_term_archiving` == true ) ) then
   acme_print 'ERROR: Supercomputer centers generally do not allow job chaining in debug queues'
   acme_print '       You should either use a different queue, or submit a single job without archiving.'
   acme_print '       $debug_queue             = '$debug_queue
-  acme_print '       $num_submits             = '$num_submits
+  acme_print '       $num_resubmits           = '$num_resubmits
   acme_print '       $do_short_term_archiving = '$do_short_term_archiving
   exit 17
 endif
@@ -1205,16 +1205,14 @@ acme_print '-------- Starting Submission to Run Queue --------'
 acme_newline
 
 if ( `lowercase $submit_run` == 'true' ) then
-  if ( $num_submits >= 1 ) then
-    # Subtract 1 from num_submits (with dc, a stack based calculator), then print it to set RESUBMIT
-    set num_resubmit = `echo "${num_submits} 1 - p" | dc`
-    ${xmlchange_exe} --id RESUBMIT --val ${num_resubmit}
+  if ( ${num_resubmits} == 0 ) then
     acme_print '         SUBMITTING A SINGLE JOB.'
-    ${case_submit_exe} --batch-args " ${batch_options} "
-  else if ( $num_submits <= 0 ) then
-    acme_print '$num_submits <= 0 so NOT submitting a job.'
-    acme_print '$num_submits = '$num_submits
+  else
+    ${xmlchange_exe} --id RESUBMIT --val ${num_resubmits}
+    acme_print '         SUBMITTING A RESUBMITTING JOB WITH '${num_resubmits}' RESUBMISSIONS.'
   endif
+  acme_print ${case_submit_exe} --batch-args " ${batch_options} "
+  ${case_submit_exe} --batch-args " ${batch_options} "
 else
     acme_print 'Run NOT submitted because $submit_run = '$submit_run
 endif
