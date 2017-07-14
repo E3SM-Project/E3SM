@@ -1240,7 +1240,7 @@ subroutine micro_mg_tend ( &
 
         if (k /= 1) then
            where (qc(:,k) < qsmall .and. qi(:,k) < qsmall)
-              precip_frac(:,k) = precip_frac(:,k-1)
+              precip_frac(:,k) = max(precip_frac(:,k-1),precip_frac(:,k))
            end where
         endif
 
