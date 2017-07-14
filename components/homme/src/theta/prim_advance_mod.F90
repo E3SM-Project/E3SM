@@ -953,7 +953,9 @@ endif
   real (kind=real_kind) :: gradexner(np,np,2,nlev)    ! grad(p^kappa)
   real (kind=real_kind) :: gradphi(np,np,2,nlev)     
   real (kind=real_kind) :: gradKE(np,np,2,nlev)       ! grad(0.5 u^T u )
-  
+
+  real (kind=real_kind) :: grad_kappastar(np,np,2,nlev)
+
   real (kind=real_kind) :: v_gradw(np,np,nlev)     
   real (kind=real_kind) :: v_gradtheta(np,np,nlev)     
   real (kind=real_kind) :: v_theta(np,np,2,nlev)
@@ -1166,7 +1168,9 @@ endif
 
         KE(:,:,k) = ( elem(ie)%state%v(:,:,1,k,n0)**2 + elem(ie)%state%v(:,:,2,k,n0)**2)/2
         gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
-        gradexner(:,:,:,k) = gradient_sphere(exner(:,:,k),deriv,elem(ie)%Dinv)        
+        gradexner(:,:,:,k) = gradient_sphere(exner(:,:,k),deriv,elem(ie)%Dinv)
+
+        grad_kappastar(:,:,:,k) = gradient_sphere(kappa_star(:,:,k),deriv,elem(ie)%Dinv)
 
         do j=1,np
            do i=1,np
@@ -1177,12 +1181,18 @@ endif
               vtens1(i,j,k) = (-v_vadv(i,j,1,k) &
                    + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
                    - gradKE(i,j,1,k) - gradphi(i,j,1,k)*dpnh_dp(i,j,k) &
-                   -theta_cp(i,j,k)*gradexner(i,j,1,k))*scale1
+                  -theta_cp(i,j,k)*gradexner(i,j,1,k)&
+                  +theta_cp(i,j,k)*grad_kappastar(i,j,1,k)*exner(i,j,k)*log(pnh(i,j,k)/p0)&
+                  )*scale1
+
 
               vtens2(i,j,k) = (-v_vadv(i,j,2,k) &
                    - v1*(elem(ie)%fcor(i,j) + vort(i,j,k)) &
                    - gradKE(i,j,2,k) - gradphi(i,j,2,k)*dpnh_dp(i,j,k) &
-                   -theta_cp(i,j,k)*gradexner(i,j,2,k))*scale1
+                  -theta_cp(i,j,k)*gradexner(i,j,2,k) &
+                  +theta_cp(i,j,k)*grad_kappastar(i,j,2,k)*exner(i,j,k)*log(pnh(i,j,k)/p0) &
+                  )*scale1
+
            end do
         end do     
      end do vertloop

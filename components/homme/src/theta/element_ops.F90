@@ -70,7 +70,7 @@ contains
   select case(name)
     case ('temperature','T'); call get_temperature(elem,field,hvcoord,nt,ntQ)
     case ('pottemp','Th');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
-    case ('phi');             field = elem%state%phi(:,:,:,nt)
+    case ('phi','geo');       field = elem%state%phi(:,:,:,nt)
     case ('dpnh_dp');         call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
     case ('pnh');             call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt,ntQ)
     case ('exner');           call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt,ntQ)
@@ -800,6 +800,8 @@ contains
   integer :: k,tl, ntQ
   real(real_kind), dimension(np,np,nlev) :: dp, kappa_star
 
+real(real_kind), dimension(np,np,nlev) :: pnh,dpnh,exner
+
   do k=1,nlev
     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,ns)
@@ -809,11 +811,26 @@ contains
   call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
   call set_moist_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,kappa_star,elem%state%phi(:,:,:,ns))
 
+! debug
+call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,ns),dp,&
+     elem%state%phi(:,:,:,ns),&
+     elem%state%phis(:,:),kappa_star,pnh,dpnh,exner)
+
+do k=1,nlev
+   if (maxval(abs(1-dpnh(:,:,k)/dp(:,:,k))) > 1e-10) then
+      print *,'WARNING: hydrostatic inverse FAILED!'
+      print *, minval(dpnh(:,:,k)), minval(dp(:,:,k))
+      print *,k,minval(dpnh(:,:,k)/dp(:,:,k)),maxval(dpnh(:,:,k)/dp(:,:,k))
+   endif
+enddo
+
+
   do tl = ns+1,ne
     call copy_state(elem,ns,tl)
   enddo
 
   if(present(ie)) call save_initial_state(elem%state,ie)
+
 
   end subroutine tests_finalize
 
