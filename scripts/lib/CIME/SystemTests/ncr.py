@@ -6,10 +6,8 @@ The first is a default build
 The second runs two instances for each component with the same total number of tasks,
 and runs each of them concurrently
 """
-import shutil
 from CIME.XML.standard_module_setup import *
 from CIME.case_setup import case_setup
-import CIME.utils
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 from CIME.check_lockedfiles import *
 
