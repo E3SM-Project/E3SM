@@ -1229,9 +1229,14 @@ class Case(object):
 
         return newcase
 
-    def submit_jobs(self, no_batch=False, job=None, skip_pnl=False, batch_args=None, dry_run=False):
+    def submit_jobs(self, no_batch=False, job=None, skip_pnl=False,
+                    mail_user=None, mail_type='never', batch_args=None,
+                    dry_run=False):
         env_batch = self.get_env('batch')
-        return env_batch.submit_jobs(self, no_batch=no_batch, job=job, skip_pnl=skip_pnl, batch_args=batch_args, dry_run=dry_run)
+        return env_batch.submit_jobs(self, no_batch=no_batch, job=job,
+                                     skip_pnl=skip_pnl, mail_user=mail_user,
+                                     mail_type=mail_type, batch_args=batch_args,
+                                     dry_run=dry_run)
 
     def get_mpirun_cmd(self, job="case.run"):
         env_mach_specific = self.get_env('mach_specific')
