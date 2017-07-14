@@ -459,8 +459,7 @@ class EnvBatch(EnvBase):
     def get_batch_mail_type(self, mail_type='never'):
         mail_type_flag = self.get_value("batch_mail_type_flag", subgroup=None)
         raw =  self.get_value("batch_mail_type", subgroup=None)
-        print raw
-        mail_types = [item.strip() for item in raw.split(",")]
+        mail_types = [item.strip() for item in raw.split(",")] # pylint: disable=no-member
         idx = ["never", "all", "begin", "end", "fail"].index(mail_type)
 
         return mail_type_flag, mail_types[idx]
