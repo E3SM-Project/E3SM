@@ -12,7 +12,8 @@ module vertremap_mod
   use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only           : abortmp, parallel_t
   use control_mod, only : vert_remap_q_alg
-  use element_ops, only : set_hydrostatic_phi, set_theta_ref
+  use element_ops, only : set_theta_ref
+  use eos, only : get_dry_phinh
   implicit none
   private
   public :: vertical_remap
@@ -105,7 +106,7 @@ contains
 
      if (rsplit>0) then
         ! remove hydrostatic phi befor remap
-        call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp_star,phi_ref)
+        call get_dry_phinh(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp_star,phi_ref)
         !removing theta_ref does not help much and will not conserve theta*dp
         !call set_theta_ref(hvcoord,dp_star,theta_ref)
 
@@ -127,7 +128,7 @@ contains
         elem(ie)%state%w(:,:,:,np1)=ttmp(:,:,:,5)/dp
 
         ! depends on theta, so do this after updating theta:
-        call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,phi_ref)
+        call get_dry_phinh(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,phi_ref)
         elem(ie)%state%phi(:,:,:,np1)=ttmp(:,:,:,4)/dp + phi_ref
      endif
 

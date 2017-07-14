@@ -19,8 +19,9 @@ module prim_advance_mod
   use edge_mod,           only: edgeDGVunpack, edgevpack, edgevunpack, initEdgeBuffer
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
-  use element_ops,        only: copy_state, get_cp_star, get_kappa_star, get_pnh_and_exner,&
-    get_temperature, set_hydrostatic_phi, set_theta_ref, state0
+  use element_ops,        only: copy_state, get_cp_star, get_kappa_star, &
+    get_temperature, set_theta_ref, state0
+  use eos,                only: get_pnh_and_exner,get_dry_phinh
   use hevi_mod,           only: backsubstitution, elemstate_add, mgs, state_save,state_read
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t
@@ -534,7 +535,7 @@ contains
              (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
      enddo
 
-     call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,&
+     call get_dry_phinh(hvcoord,elem(ie)%state%phis,&
           elem(ie)%state%theta_dp_cp(:,:,:,nt),elem(ie)%state%dp3d(:,:,:,nt),&
           phi_ref(:,:,:,ie))
 
@@ -1455,6 +1456,8 @@ endif
     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
     call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
       kappa_star,pnh,dpnh,exner,exner_i,pnh_i)
+    dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
+
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -1464,11 +1467,9 @@ endif
     kappa_star_i(:,:,1) = kappa_star(:,:,1)
     kappa_star_i(:,:,nlev+1) = kappa_star(:,:,nlev)
 
-    if (theta_hydrostatic_mode) then
-      dpnh_dp(:,:,:) = 1.d0
-    else
-      dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
-    end if
+
+
+
 
     Fn(:,:,1:nlev,1) = elem(ie)%state%w(:,:,:,np1)-elem(ie)%state%w(:,:,:,n0) &
       +dt2*g*(1.0-dpnh_dp(:,:,:))
@@ -1516,7 +1517,7 @@ endif
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(i,j) collapse(2)
 #endif
-    do i=1,np
+      do i=1,np
       do j=1,np
         x(1:nlev) = -(Fn(i,j,1:nlev,1)+Fn(i,j,nlev+1:2*nlev,1)/(g*dt2))
 ! make all :,i,j
@@ -1529,19 +1530,12 @@ endif
         (x(1:nlev)+Fn(i,j,nlev+1:2*nlev,1))/(g*dt2)
        elem(ie)%state%phi(i,j,1:nlev,np1) = elem(ie)%state%phi(i,j,1:nlev,np1) + x(1:nlev)                          
       end do
-    end do
-#if (defined COLUMN_OPENMP)
-!$omp end parallel do
-#endif
+      end do
 
       ! update approximate value of f(x) \approx  0
       call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
         kappa_star,pnh,dpnh,exner,exner_i,pnh_i)   
-      if (theta_hydrostatic_mode) then
-        dpnh_dp(:,:,:) = 1.d0
-      else     
-        dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
-      end if
+      dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
 
       ! update right-hand sides
       Fn(:,:,1:nlev,1)        = elem(ie)%state%w(:,:,:,np1)-elem(ie)%state%w(:,:,:,n0) &
