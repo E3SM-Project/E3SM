@@ -3831,7 +3831,7 @@ end subroutine cesm_init
             call shr_mem_getusage(msize,mrss,.true.)
 
             write(logunit,105) ' memory_write: model date = ',ymd,tod, &
-                 ' memory = ',mrss,' MB (usage)    ',msize,' MB (highwater)', &
+                 ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
                  '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
          endif
       endif
