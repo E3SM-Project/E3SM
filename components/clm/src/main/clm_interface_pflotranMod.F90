@@ -1858,7 +1858,7 @@ contains
       l = clandunit(c)
 
       if ( (ltype(l)==istsoil .or. ltype(l)==istcrop) .and. &
-           (col%active(c) .and. cwtgcell(c)>0._r8) ) then        ! skip inactive or zero-weighted column (may be not needed, but in case)
+           (cactive(c) .and. cwtgcell(c)>0._r8) ) then        ! skip inactive or zero-weighted column (may be not needed, but in case)
 
 #ifdef COLUMN_MODE
         gcount   = gcount + 1                                    ! 0-based column (fake grid) count
@@ -2910,7 +2910,7 @@ contains
     !------------------------------------------------------------------------------------------
     !
     associate ( &
-      cgridcell        => col%gridcell                                   , & ! column's gridcell
+      cgridcell        => col_pp%gridcell                                , & ! column's gridcell
       !
       initial_cn_ratio => clm_interface_data%bgc%initial_cn_ratio        , &
       initial_cp_ratio => clm_interface_data%bgc%initial_cp_ratio        , &
@@ -3400,7 +3400,7 @@ contains
   !
   !
   ! !USES:
-    use ColumnType          , only : col
+    use ColumnType          , only : col_pp
     use clm_varpar          , only : nlevgrnd
     use clm_varcon          , only : tfrz
 
@@ -3517,7 +3517,7 @@ contains
   ! 'mass_balance' retrieving from PFLOTRAN
   !
   ! !USES:
-    use ColumnType          , only : col
+    use ColumnType          , only : col_pp
     use clm_varpar          , only : nlevgrnd
     use clm_varcon          , only : tfrz, denh2o
     use landunit_varcon     , only : istsoil, istcrop
