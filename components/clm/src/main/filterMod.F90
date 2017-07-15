@@ -377,7 +377,7 @@ contains
              f = f + 1
              this_filter(nc)%hydrologyc(f) = c
 
-             if (col%itype(c) == icol_road_perv) then
+             if (col_pp%itype(c) == icol_road_perv) then
                 fn = fn + 1
                 this_filter(nc)%hydrononsoic(fn) = c
              end if
