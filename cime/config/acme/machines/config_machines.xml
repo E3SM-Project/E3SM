@@ -1027,6 +1027,65 @@
     </environment_variables>
 </machine>
 
+<machine MACH="bebop">
+    <DESC>ANL/LCRC Cluster, Cray CS400, 352-nodes Xeon Phi 7230 KNLs 64C/1.3GHz + 672-nodes Xeon E5-2695v4 Broadwells 36C/2.10GHz, Intel Omni-Path network, SLURM batch system, Lmod module environment.</DESC>
+    <NODENAME_REGEX>bebop</NODENAME_REGEX>
+    <TESTS>acme_developer</TESTS>
+    <COMPILERS>intel,gnu</COMPILERS>
+    <MPILIBS>mpt</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/bebop</CIME_OUTPUT_ROOT>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <BASELINE_ROOT>/lcrc/group/earthscience/acme_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
+    <OS>CNL</OS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>acme</SUPPORTED_BY>
+    <GMAKE_J>8</GMAKE_J>
+    <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>36</PES_PER_NODE>
+    <PROJECT>acme</PROJECT>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
+    <mpirun mpilib="default"> 
+      <executable>srun</executable>
+      <arguments>
+        <arg name="label"> --label</arg>
+        <arg name="num_tasks" > -n $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="rm">intel</command>
+        <command name="rm">gcc</command>
+        <command name="rm">cmake</command>
+      </modules>
+      <modules compiler="intel">
+        <command name="load">intel/17.0.4-74uvhji</command>
+        <command name="load">intel-mkl/2017.3.196-jyjmyut</command>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">gcc/7.1.0-4bgguyp</command>
+      </modules>
+      <modules>
+        <command name="load">cmake/2.8.12.2-qndad62</command>
+        <command name="load">mpich/3.2-5koqqym</command>
+        <command name="load">netcdf/4.4.1.1-prsuusl</command>
+      </modules>
+    </module_system>
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+</machine>
+
 <machine MACH="cetus">
          <DESC>ANL IBM BG/Q, os is BGQ, 16 cores/node, batch system is cobalt</DESC>
          <NODENAME_REGEX>cetus</NODENAME_REGEX>
