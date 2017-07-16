@@ -378,8 +378,6 @@
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
                  <directive>-W group_list=cades-ccsi</directive>
-                 <directive>-A ccsi</directive>
-                 <directive>-l qos=std</directive>
          </directives>
          <queues>
            <queue default="true">batch</queue>
