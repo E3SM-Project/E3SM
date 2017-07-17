@@ -22,7 +22,6 @@ module li_advection
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_constants
    use mpas_log
 
    use li_setup

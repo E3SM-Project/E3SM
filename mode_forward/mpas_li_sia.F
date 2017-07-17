@@ -227,11 +227,11 @@ contains
 !-----------------------------------------------------------------------
    subroutine li_sia_solve(meshPool, geometryPool, thermalPool, velocityPool, err)
 
-      use mpas_constants, only: gravity
       use mpas_vector_operations, only: mpas_tangential_vector_1d
       use mpas_geometry_utils, only: mpas_cells_to_points_using_baryweights
 
       use li_setup, only: li_cells_to_vertices_1dfield_using_kiteAreas
+      use li_constants, only: gravity
       use li_thermal
       use li_diagnostic_vars
 

@@ -24,7 +24,6 @@ module li_velocity_external
 
    use li_setup
    use, intrinsic :: iso_c_binding
-   use mpas_constants, only: gravity
    use li_constants
 
    implicit none

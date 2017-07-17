@@ -30,6 +30,7 @@ module li_diagnostic_vars
    use mpas_log
 
    use li_mask
+   use li_constants
 
    implicit none
    private
@@ -370,8 +371,6 @@ contains
 !>  All options are adjusted by the enhancement factor (which defaults to 1.0).
 !-----------------------------------------------------------------------
    subroutine li_calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err)
-      use mpas_constants, only: gravity
-      use li_constants, only: idealGasConstant
 
       !-----------------------------------------------------------------
       !
