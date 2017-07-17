@@ -37,7 +37,7 @@ _TEST_SUITES = {
                     "TESTMEMLEAKPASS_P1.f09_g16.X")
                    ),
 
-    "cime_developer" : (None, "0:10:00",
+    "cime_developer" : (None, "0:15:00",
                             ("NCK_Ld3.f45_g37_rx1.A",
                              "ERI.f09_g16.X",
                              "ERIO.f09_g16.X",
@@ -50,7 +50,7 @@ _TEST_SUITES = {
                              "DAE.f19_f19.A",
                              "PET_P32.f19_f19.A",
                              "SMS.T42_T42.S",
-                             "PRE.f45_g37_rx1.ADESP")
+                             "PRE.f19_f19.ADESP")
                             ),
 
     #

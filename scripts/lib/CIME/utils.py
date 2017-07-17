@@ -2,12 +2,32 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import logging, gzip, sys, os, time, re, shutil, glob, string, random
+import logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
 import stat as statlib
 import warnings
+from contextlib import contextmanager
+
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
 logger = logging.getLogger(__name__)
+
+@contextmanager
+def redirect_stdout(new_target):
+    old_target, sys.stdout = sys.stdout, new_target # replace sys.stdout
+    try:
+        yield new_target # run some code with the replaced stdout
+    finally:
+        sys.stdout = old_target # restore to the previous value
+
+
+@contextmanager
+def redirect_stderr(new_target):
+    old_target, sys.stderr = sys.stderr, new_target # replace sys.stdout
+    try:
+        yield new_target # run some code with the replaced stdout
+    finally:
+        sys.stderr = old_target # restore to the previous value
+
 
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
@@ -177,6 +197,46 @@ def _convert_to_fd(filearg, from_dir):
     return open(filearg, "a")
 
 _hack=object()
+
+def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
+                   input_str=None, from_dir=None, verbose=None,
+                   arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
+
+    # This code will try to import and run each buildnml as a subroutine
+    # if that fails it will run it as a program in a seperate shell
+    do_run_cmd = False
+    stat = 0
+    output = ""
+    errput = ""
+    try:
+        mod = imp.load_source(subname, cmd)
+        logger.info("   Calling {}".format(cmd))
+        if logfile:
+            with redirect_stdout(open(logfile,"w")):
+                getattr(mod, subname)(*subargs)
+        else:
+            getattr(mod, subname)(*subargs)
+    except SyntaxError:
+        do_run_cmd = True
+    except AttributeError:
+        do_run_cmd = True
+    except:
+        raise
+
+    if do_run_cmd:
+        logger.info("   Running {} ".format(cmd))
+        if case is not None:
+            case.flush()
+        stat, output, errput = run_cmd("{} {}".format(cmd, cmdargs), input_str=input_str, from_dir=from_dir,
+                                 verbose=verbose, arg_stdout=arg_stdout, arg_stderr=arg_stderr, env=env,
+                                 combine_output=combine_output)
+
+        logger.info(output)
+        # refresh case xml object from file
+        if case is not None:
+            case.read_xml()
+    return stat, output, errput
+
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
             arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
     """
@@ -298,7 +358,9 @@ def normalize_case_id(case_id):
 def parse_test_name(test_name):
     """
     Given a CIME test name TESTCASE[_CASEOPTS].GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]],
-    return each component of the testname with machine and compiler split
+    return each component of the testname with machine and compiler split.
+    Do not error if a partial testname is provided (TESTCASE or TESTCASE.GRID) instead
+    parse and return the partial results.
 
     >>> parse_test_name('ERS')
     ['ERS', None, None, None, None, None, None]
@@ -316,11 +378,17 @@ def parse_test_name(test_name):
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test-mods')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', 'test/mods']
+    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods')
+    Traceback (most recent call last):
+        ...
+    SystemExit: ERROR: Expected 4th item of 'SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods' ('A_XLND_SICE_SOCN_XROF_XGLC_SWAV') to be in form machine_compiler
+    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods')
+    Traceback (most recent call last):
+        ...
+    SystemExit: ERROR: Invalid compset name 2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV
     """
     rv = [None] * 7
     num_dots = test_name.count(".")
-    expect(num_dots <= 4,
-           "'{}' does not look like a CIME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]".format(test_name))
 
     rv[0:num_dots+1] = test_name.split(".")
     testcase_field_underscores = rv[0].count("_")
@@ -332,6 +400,8 @@ def parse_test_name(test_name):
         rv[1]    = full_str.split("_")[1:]
 
     if (num_dots >= 3):
+        expect(check_name( rv[3] ), "Invalid compset name {}".format(rv[3]))
+
         expect(rv[4].count("_") == 1,
                "Expected 4th item of '{}' ('{}') to be in form machine_compiler".format(test_name, rv[4]))
         rv[4:5] = rv[4].split("_")
@@ -339,6 +409,9 @@ def parse_test_name(test_name):
 
     if (rv[-1] is not None):
         rv[-1] = rv[-1].replace("-", "/")
+
+    expect(num_dots <= 4,
+           "'{}' does not look like a CIME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]".format(test_name))
 
     return rv
 

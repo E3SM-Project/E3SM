@@ -60,7 +60,7 @@ class DAE(SystemTestsCompareTwo):
         self._case.flush()
 
     ###########################################################################
-    def run_phase(self):
+    def run_phase(self): # pylint: disable=arguments-differ
     ###########################################################################
         # Clean up any da.log files in case this is a re-run.
         self._activate_case2()

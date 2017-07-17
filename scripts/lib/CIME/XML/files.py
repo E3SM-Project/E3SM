@@ -24,9 +24,9 @@ class Files(EntryID):
         schema = os.path.join(cimeroot, "config", "xml_schemas", "entry_id.xsd")
         EntryID.__init__(self, infile, schema=schema)
 
-    def get_schema(self, nodename):
+    def get_schema(self, nodename, attributes=None):
         node = self.get_optional_node("entry", {"id":nodename})
-        schemanode = self.get_optional_node("schema", root=node)
+        schemanode = self.get_optional_node("schema", root=node, attributes=attributes)
         if schemanode is not None:
             logger.debug("Found schema for {}".format(nodename))
             return self.get_resolved_value(schemanode.text)

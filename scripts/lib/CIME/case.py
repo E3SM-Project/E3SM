@@ -10,7 +10,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
-from CIME.utils                     import get_current_commit
+from CIME.utils                     import get_current_commit, check_name
 from CIME.check_lockedfiles         import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -411,7 +411,7 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
-    def _set_compset(self, compset_name, files, user_compset=False):
+    def _set_compset(self, compset_name, files):
         """
         Loop through all the compset files and find the compset
         specifation file that matches either the input 'compset_name'.
@@ -425,7 +425,6 @@ class Case(object):
         """
         science_support = []
         compset_alias = None
-        component_defining_compset = None
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}".format(components))
 
@@ -445,16 +444,14 @@ class Case(object):
                     self._compsetname = match
                     self.set_lookup_value("COMPSETS_SPEC_FILE" ,
                                    files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
-                    component_defining_compset = component
                     logger.info("Compset longname is {}".format(match))
                     logger.info("Compset specification file is {}".format(compsets_filename))
-                    if user_compset is True:
-                        logger.info("Found a compset match for longname {} in alias {}".format(compset_name, compset_alias))
+                    return compset_alias, science_support
 
-                    return compset_alias, science_support, component_defining_compset
-
-        if user_compset is True:
+        if compset_alias is None:
+            logger.info("Did not find a compset match for longname {} ".format(compset_name))
             self._compsetname = compset_name
+<<<<<<< HEAD
             files = Files()
             drv_config_file = files.get_value("CONFIG_CPL_FILE")
             drv_comp = Component(drv_config_file)
@@ -503,8 +500,10 @@ class Case(object):
             expect(False,
                    "Could not find a compset match for either alias or longname in {}\n".format(compset_name)
                    + "You may need the --user-compset argument.")
+=======
+>>>>>>> master
 
-        return None, science_support, None
+        return None, science_support
 
     def _find_primary_component(self):
         """
@@ -575,6 +574,8 @@ class Case(object):
         else:
             self._pesfile = pesfile
             pesfile_unresolved = pesfile
+        expect(self._pesfile is not None,"No pesfile found for component {}".format(component))
+
         self.set_lookup_value("PES_SPEC_FILE", pesfile_unresolved)
 
         tests_filename = files.get_value("TESTS_SPEC_FILE", {"component":component}, resolved=False)
@@ -632,12 +633,18 @@ class Case(object):
             env_file.add_elements_by_group(files, attlist)
 
         drv_config_file = files.get_value("CONFIG_CPL_FILE")
-        drv_comp = Component(drv_config_file)
+        drv_comp = Component(drv_config_file, "CPL")
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp, attributes=attlist)
 
         drv_config_file_model_specific = files.get_value("CONFIG_CPL_FILE_MODEL_SPECIFIC")
-        drv_comp_model_specific = Component(drv_config_file_model_specific)
+        drv_comp_model_specific = Component(drv_config_file_model_specific, 'CPL')
+
+        self._component_description["forcing"] = drv_comp_model_specific.get_forcing_description(self._compsetname)
+        logger.info("Compset forcing is {}".format(self._component_description["forcing"]))
+        self._component_description["CPL"] = drv_comp_model_specific.get_description(self._compsetname)
+        if len(self._component_description["CPL"]) > 0:
+            logger.info("Com forcing is {}".format(self._component_description["CPL"]))
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp_model_specific, attributes=attlist)
 
@@ -659,12 +666,15 @@ class Case(object):
             comp_config_file = self.get_resolved_value(comp_config_file)
             expect(comp_config_file is not None and os.path.isfile(comp_config_file),
                    "Config file {} for component {} not found.".format(comp_config_file, comp_name))
-            compobj = Component(comp_config_file)
+            compobj = Component(comp_config_file, comp_class)
+            # For files following version 3 schema this also checks the compsetname validity
             self._component_description[comp_class] = compobj.get_description(self._compsetname)
-            expect(self._component_description[comp_class] is not None,"No description found in file {} for component {}".format(comp_config_file, comp_name))
+            expect(self._component_description[comp_class] is not None,"No description found in file {} for component {} in comp_class {}".format(comp_config_file, comp_name, comp_class))
             logger.info("{} component is {}".format(comp_class, self._component_description[comp_class]))
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
+
+
 
         self.clean_up_lookups()
 
@@ -777,17 +787,17 @@ class Case(object):
 
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
-                  user_compset=False, pesfile=None,
-                  user_grid=False, gridfile=None, ninst=1, test=False,
+                  pesfile=None,user_grid=False, gridfile=None, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None, run_unsupported=False, answer=None,
                   input_dir=None):
 
+        expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
         #--------------------------------------------
         # compset, pesfile, and compset components
         #--------------------------------------------
         files = Files()
-        compset_alias, science_support, component_defining_compset = self._set_compset(
-            compset_name, files, user_compset=user_compset)
+        compset_alias, science_support = self._set_compset(
+            compset_name, files)
 
         self._components = self.get_compset_components()
         #--------------------------------------------
@@ -809,12 +819,10 @@ class Case(object):
         #--------------------------------------------
         self._get_component_config_data(files)
 
-        if component_defining_compset is None:
-            # This needs to be called after self.set_comp_classes, which is called
-            # from self._get_component_config_data
-            self._primary_component = self._find_primary_component()
-        else:
-            self._primary_component = component_defining_compset
+        # This needs to be called after self.set_comp_classes, which is called
+        # from self._get_component_config_data
+        self._primary_component = self._find_primary_component()
+
         self._set_info_from_primary_component(files, pesfile=pesfile)
 
         self.get_compset_var_settings()
@@ -1103,12 +1111,17 @@ class Case(object):
                       "README.case", caseroot=self._caseroot)
         append_status("Pes     specification file is {}".format(self.get_value("PES_SPEC_FILE")),
                       "README.case", caseroot=self._caseroot)
+        if "forcing" in self._component_description:
+            append_status("Forcing is {}".format(self._component_description["forcing"])
+                      ,"README.case", caseroot=self._caseroot)
         for component_class in self._component_classes:
+            if component_class in self._component_description and \
+               len(self._component_description[component_class])>0:
+                append_status("Component {} is {}".format(component_class, self._component_description[component_class]),"README.case", caseroot=self._caseroot)
             if component_class == "CPL":
                 continue
             comp_grid = "{}_GRID".format(component_class)
-            append_status("Component {} is {}".format(component_class, self._component_description[component_class]),
-                          "README.case", caseroot=self._caseroot)
+
             append_status("{} is {}".format(comp_grid,self.get_value(comp_grid)),
                           "README.case", caseroot=self._caseroot)
             comp = str(self.get_value("COMP_{}".format(component_class)))
@@ -1266,9 +1279,14 @@ class Case(object):
 
         return newcase
 
-    def submit_jobs(self, no_batch=False, job=None, skip_pnl=False, batch_args=None, dry_run=False):
+    def submit_jobs(self, no_batch=False, job=None, skip_pnl=False,
+                    mail_user=None, mail_type='never', batch_args=None,
+                    dry_run=False):
         env_batch = self.get_env('batch')
-        return env_batch.submit_jobs(self, no_batch=no_batch, job=job, skip_pnl=skip_pnl, batch_args=batch_args, dry_run=dry_run)
+        return env_batch.submit_jobs(self, no_batch=no_batch, job=job,
+                                     skip_pnl=skip_pnl, mail_user=mail_user,
+                                     mail_type=mail_type, batch_args=batch_args,
+                                     dry_run=dry_run)
 
     def get_mpirun_cmd(self, job="case.run"):
         env_mach_specific = self.get_env('mach_specific')

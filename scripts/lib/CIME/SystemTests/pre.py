@@ -66,16 +66,17 @@ class PRE(SystemTestsCompareTwo):
         self._case.flush()
 
     ###########################################################################
-    def run_phase(self):
+    def run_phase(self): # pylint: disable=arguments-differ
     ###########################################################################
-        SystemTestsCompareTwo.run_phase(self)
+        self._activate_case2()
+        should_match = (self._case.get_value("DESP_MODE") == "NOCHANGE")
+        SystemTestsCompareTwo.run_phase(self, success_change=not should_match)
         # Look for expected coupler restart files
         logger = logging.getLogger(__name__)
         self._activate_case1()
         rundir1 = self._case.get_value("RUNDIR")
         self._activate_case2()
         rundir2 = self._case.get_value("RUNDIR")
-        should_match = (self._case.get_value("DESP_MODE") == "NOCHANGE")
         compare_ok = True
         pause_comps = self._case.get_value("PAUSE_COMPONENT_LIST")
         expect((pause_comps != 'none'), "Pause/Resume (PRE) test has no pause components")

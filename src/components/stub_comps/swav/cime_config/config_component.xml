@@ -2,7 +2,11 @@
 
 <?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
+
+  <description>
+    <desc wav="SWAV">Stub wave component</desc>
+  </description>
 
   <description>
     <desc compset="SWAV">Stub wave component</desc>
@@ -16,7 +20,6 @@
     <file>env_case.xml</file>
     <desc>Name of wave component</desc>
   </entry>
-
 
   <help>
     =========================================

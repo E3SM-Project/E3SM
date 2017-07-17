@@ -53,8 +53,8 @@ def normalize_cases(case1, case2):
                 run_cmd_no_fail("gunzip -f {}".format(" ".join(gzips)))
 
     # Change case1 to be as if it had same test-id as case2
-    test_id1 = run_cmd_no_fail("./xmlquery -value TEST_TESTID", from_dir=case1)
-    test_id2 = run_cmd_no_fail("./xmlquery -value TEST_TESTID", from_dir=case2)
+    test_id1 = run_cmd_no_fail("./xmlquery --value TEST_TESTID", from_dir=case1)
+    test_id2 = run_cmd_no_fail("./xmlquery --value TEST_TESTID", from_dir=case2)
     run_cmd_no_fail("for item in $(find -type f); do  sed -i 's/{}/{}/g' $item; done".format(test_id1, test_id2),
             from_dir=case1)
 
@@ -83,8 +83,8 @@ def normalize_cases(case1, case2):
                 os.rename(os.path.join(case1, file_needing_rename), os.path.join(case1, new_name))
 
     # Normalize CIMEROOT
-    case1_root = run_cmd_no_fail("./xmlquery -value CIMEROOT", from_dir=case1)
-    case2_root = run_cmd_no_fail("./xmlquery -value CIMEROOT", from_dir=case2)
+    case1_root = run_cmd_no_fail("./xmlquery --value CIMEROOT", from_dir=case1)
+    case2_root = run_cmd_no_fail("./xmlquery --value CIMEROOT", from_dir=case2)
     if (case1_root != case2_root):
         run_cmd_no_fail("for item in $(find -type f); do  sed -i 's:{}:{}:g' $item; done".format(case1_root, case2_root),
                 from_dir=case1)

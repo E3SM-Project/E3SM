@@ -10,10 +10,12 @@
   <xs:attribute name="match" type="xs:NCName"/>
   <xs:attribute name="version" type="xs:decimal"/>
 
+
   <!-- simple elements -->
   <xs:element name="help" type="xs:string"/>
   <xs:element name="default_value" type="xs:string"/>
   <xs:element name="valid_values" type="xs:string"/>
+  <xs:element name="schema" type="xs:string"/>
   <xs:element name="category" type="xs:string"/>
   <xs:element name="header" type="xs:string"/>
 
@@ -30,13 +32,18 @@
 
   <xs:element name="desc">
     <xs:complexType mixed="true">
-      <xs:attribute ref="compset"/>
-    </xs:complexType>
-  </xs:element>
+      <xs:attribute name="atm" type="xs:string"/>
+      <xs:attribute name="cpl" type="xs:string"/>
+      <xs:attribute name="ocn" type="xs:string"/>
+      <xs:attribute name="wav" type="xs:string"/>
+      <xs:attribute name="glc" type="xs:string"/>
+      <xs:attribute name="ice" type="xs:string"/>
+      <xs:attribute name="rof" type="xs:string"/>
+      <xs:attribute name="lnd" type="xs:string"/>
 
-  <xs:element name="schema">
-    <xs:complexType mixed="true">
-      <xs:attribute ref="version"/>
+      <xs:attribute name="esp" type="xs:string"/>
+      <xs:attribute name="forcing" type="xs:string"/>
+      <xs:attribute name="option" type="xs:string"/>
     </xs:complexType>
   </xs:element>
 
@@ -45,6 +52,7 @@
       <xs:sequence>
 	<xs:element ref="desc" maxOccurs="unbounded" />
       </xs:sequence>
+      <xs:attribute name="modifier_mode" type="xs:string"/>
     </xs:complexType>
   </xs:element>
 
@@ -62,8 +70,8 @@
   <xs:element name="entry_id">
     <xs:complexType>
       <xs:sequence>
+	<xs:element ref="description" />
 	<xs:element ref="entry" maxOccurs="unbounded" />
-	<xs:element ref="description" minOccurs="0"/>
 	<xs:element ref="help" minOccurs="0"/>
       </xs:sequence>
       <xs:attribute ref="version"/>

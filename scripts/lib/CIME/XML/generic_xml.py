@@ -216,7 +216,8 @@ class GenericXML(object):
         for m in env_ref_re.finditer(item_data):
             logger.debug("look for {} in env".format(item_data))
             env_var = m.groups()[0]
-            expect(env_var in os.environ, "Undefined env var '{}'".format(env_var))
+            env_var_exists = env_var in os.environ
+            expect(env_var_exists, "Undefined env var '{}'".format(env_var))
             item_data = item_data.replace(m.group(), os.environ[env_var])
 
         for s in shell_ref_re.finditer(item_data):

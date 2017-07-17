@@ -43,6 +43,8 @@ CIME User's Guide Part 2: CIME internals, Porting, Testing and Use Cases
    multi-instance.rst
    adding-cases.rst
    use_cases/use-cases.rst
+   adding-components.rst
+   faq/faq.rst
 
 Indices and tables
 ==================

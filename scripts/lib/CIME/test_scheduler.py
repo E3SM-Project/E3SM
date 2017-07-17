@@ -86,7 +86,8 @@ class TestScheduler(object):
                  walltime=None, proc_pool=None,
                  use_existing=False, save_timing=False, queue=None,
                  allow_baseline_overwrite=False, output_root=None,
-                 force_procs=None, force_threads=None, mpilib=None, input_dir=None):
+                 force_procs=None, force_threads=None, mpilib=None,
+                 input_dir=None, pesfile=None):
     ###########################################################################
         self._cime_root       = CIME.utils.get_cime_root()
         self._cime_model      = get_model()
@@ -96,7 +97,7 @@ class TestScheduler(object):
         self._mpilib          = mpilib  # allow override of default mpilib
         self._completed_tests = 0
         self._input_dir       = input_dir
-
+        self._pesfile         = pesfile
         self._allow_baseline_overwrite = allow_baseline_overwrite
 
         self._machobj = Machines(machine=machine_name)
@@ -365,6 +366,9 @@ class TestScheduler(object):
         if self._input_dir is not None:
             create_newcase_cmd += " --input-dir {} ".format(self._input_dir)
 
+        if self._pesfile is not None:
+            create_newcase_cmd += " --pesfile {} ".format(self._pesfile)
+
         if test_mods is not None:
             files = Files()
             if get_model() == "acme":
@@ -434,7 +438,7 @@ class TestScheduler(object):
         # to deal with. This list follows the same order as compset longnames follow.
         files = Files()
         drv_config_file = files.get_value("CONFIG_CPL_FILE")
-        drv_comp = Component(drv_config_file)
+        drv_comp = Component(drv_config_file, "CPL")
         envtest.add_elements_by_group(files, {}, "env_test.xml")
         envtest.add_elements_by_group(drv_comp, {}, "env_test.xml")
         envtest.set_value("TESTCASE", test_case)
