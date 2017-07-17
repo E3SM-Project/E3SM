@@ -2,7 +2,31 @@
 
 <?xml-stylesheet type="text/xsl" href="config_compsets.xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
+  <!-- modifier_mode allowed values are
+       '*' 0 or more modifiers (default)
+       '1' exactly 1 modifier
+       '?' 0 or 1 modifiers
+       '+' 1 or more modifiers
+
+       This file may have forcing and cpl desc entries.
+  -->
+  <description modifier_mode="1">
+    <desc forcing="1850"></desc>
+    <desc forcing="2000">1972-2004</desc>
+    <desc forcing="2003">2002-2003</desc>
+    <desc forcing="HIST">Historic transient </desc>
+    <desc forcing="20TR">Twentieth century transient</desc>
+    <desc forcing="4804"></desc>
+    <desc forcing="RCP2">CMIP5 rcp 2.6 forcing</desc>
+    <desc forcing="RCP4">CMIP5 rcp 4.5 forcing</desc>
+    <desc forcing="RCP6">CMIP5 rcp 6.0 forcing</desc>
+    <desc forcing="RCP8">CMIP5 rcp 8.5 forcing</desc>
+    <desc cpl="BGC[%BDRD][%BPRP]">Biogeochemistry intercomponent </desc>
+    <desc option="BDRD"> with diagnostic CO2</desc>
+    <desc option="BPRP"> with prognostic CO2 </desc>
+
+  </description>
 
   <description>
     <desc compset="_TEST" >--DO NOT USE FOR LONG SIMULATIONS:</desc>
@@ -131,10 +155,10 @@
       <value compset="_CAM">CO2A</value>
       <value compset="_DATM">none</value>
       <value compset="_DATM%CPLHIST.+POP\d">CO2A</value>
+      <value compset="HIST.*_DATM.*_CLM">CO2A</value>
+      <value compset="RCP.*_DATM.*_CLM">CO2A</value>
       <value compset="_BGC%BPRP">CO2C</value>
       <value compset="_BGC%BDRD">CO2C</value>
-      <value compset="HIST.*_DATM%(QIA|CRU)">CO2A</value>
-      <value compset="RCP.*_DATM%(QIA|CRU)" >CO2A</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -245,11 +269,10 @@
       <value compset="_POP2" grid="oi%tx0.1v2">4</value>
       <value compset="_POP2" grid="oi%gx1v6">24</value>
       <value compset="_POP2" grid="oi%gx1v7">24</value>
-      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
       <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value>
       <value compset="_DATM%NYF.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">1</value>
-      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
+      <value compset="_DATM.*_CLM.*_SICE.*_SOCN">1</value>
       <value compset="_SATM.*_SLND.*_SICE.*_SOCN">1</value>
       <value compset="_DLND.*_CISM\d">1</value>
     </values>
@@ -463,8 +486,8 @@
     <group>run_co2</group>
     <file>env_run.xml</file>
     <desc>
-      Mechanism for setting the CO2 value in ppmv for 
-      CLM if CLM_CO2_TYPE is constant or for 
+      Mechanism for setting the CO2 value in ppmv for
+      CLM if CLM_CO2_TYPE is constant or for
       POP if OCN_CO2_TYPE is constant.
     </desc>
   </entry>

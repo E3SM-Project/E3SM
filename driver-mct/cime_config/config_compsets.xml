@@ -14,7 +14,7 @@
 
     The following compsets are those that can be tested in CIME stand-alone configurations
     without any prognostic components.
-    For the compsets below the following are the only allowable values of the components. 
+    For the compsets below the following are the only allowable values of the components.
 
     TIME = Time period (e.g. 2000, HIST, RCP8...)
     ATM  = [DATM, SATM, XATM]
@@ -77,12 +77,12 @@
 
   <compset>
     <alias>ADESP</alias>
-    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_DESP</lname>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV_DESP%NOOP</lname>
   </compset>
 
   <compset>
     <alias>ADESP_TEST</alias>
-    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_DESP%TEST</lname>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV_DESP%TEST</lname>
   </compset>
 
   <compset>
