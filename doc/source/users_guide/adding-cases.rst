@@ -151,7 +151,3 @@ The steps for adding a new component grid to the model system follow. gain, this
       Test the new grid with CAM(newgrid), CLM(newgrid), DOCN(gx1v6), DICE(gx1v6)
       (write an example)
 
-===================
-Adding components
-===================
-
