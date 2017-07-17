@@ -381,6 +381,13 @@ class Case(object):
                 self._env_files_that_need_rewrite.add(env_file)
                 return result
 
+        for env_file in self._env_generic_files:
+            result = env_file.set_value(item, value, subgroup, ignore_type)
+            if (result is not None):
+                logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
+                self._env_files_that_need_rewrite.add(env_file)
+                return result
+
         expect(allow_undefined or result is not None,
                "No variable {} found in case".format(item))
 

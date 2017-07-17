@@ -214,7 +214,7 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
             groups = [subgroup]
         else:
             groups = case.get_record_fields(var, "group")
-            if groups is None and xmlfile:
+            if not groups:
                 groups = ['none']
 
         if xmlfile:
@@ -223,8 +223,9 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
                 results['none'] = {}
                 results['none'][var] = {}
                 results['none'][var]['value']  = value
-        else:
-            expect(groups, " No results found for variable %s"%var)
+        elif not groups:
+                results['none'] = {}
+                results['none'][var] = {}
 
         for group in groups:
             if not group in results:
