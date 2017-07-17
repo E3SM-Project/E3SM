@@ -408,6 +408,18 @@ derived_variables = {
     'CLDTOT': OrderedDict([
         (('CLDTOT'), lambda cldtot: convert_units(cldtot, target_units="%"))
     ]),
+    'CLDHGH_CAL': OrderedDict([
+        (('CLDHGH_CAL'), lambda cldhgh: convert_units(cldhgh, target_units="%"))
+    ]),
+    'CLDLOW_CAL': OrderedDict([
+        (('CLDLOW_CAL'), lambda cldlow: convert_units(cldlow, target_units="%"))
+    ]),
+    'CLDMED_CAL': OrderedDict([
+        (('CLDMED_CAL'), lambda cldmed: convert_units(cldmed, target_units="%"))
+    ]),
+    'CLDTOT_CAL': OrderedDict([
+        (('CLDTOT_CAL'), lambda cldtot: convert_units(cldtot, target_units="%"))
+    ]),
     'ICEFRAC': OrderedDict([
         (('ICEFRAC'), lambda icefrac: convert_units(icefrac, target_units="%"))
     ]),
