@@ -511,6 +511,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
   </test>
 
   <test NAME="NCR">
+    <!-- Note that this is untested and may not be working currently -->
     <DESC>multi-instance validation sequential vs concurrent (default length)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <DOUT_S>FALSE</DOUT_S>
