@@ -180,8 +180,6 @@
     <env name="MPICH_VERSION_DISPLAY">1</env>
     <env name="MPICH_CPUMASK_DISPLAY">1</env>
     <env name="OMP_STACKSIZE">64M</env>
-    <env name="FORT_BUFFERED" compiler="intel">yes</env>
-    <env name="FORT_BUFFERED" compiler="intel17">yes</env>
   </environment_variables>
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
@@ -2616,16 +2614,25 @@
       </modules>
       <!-- Default -->
       <environment_variables>
-		  <env name="COMPILER">$COMPILER</env>
-		  <env name="MPILIB">$MPILIB</env>
-		  <env name="OMP_STACKSIZE">128M</env>
-		  <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
-		  <env name="NETCDF_FORTRAN_PATH" compiler="pgi">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
-		  <env name="PNETCDF_PATH" compiler="pgi" mpilib="!mpi-serial">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
-		  <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
-		  <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
-		  <env name="NETCDF_FORTRAN_PATH" compiler="ibm">/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4</env>
-		  <env name="LD_LIBRARY_PATH" compiler="ibm">$ENV{LD_LIBRARY_PATH}:/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4/lib</env>
+	<env name="COMPILER">$COMPILER</env>
+	<env name="MPILIB">$MPILIB</env>
+	<env name="OMP_STACKSIZE">128M</env>
+	<env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
+	<env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
+	<env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
+      </environment_variables>
+
+      <environment_variables compiler="pgi">
+	<env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
+      </environment_variables>
+
+      <environment_variables compiler="pgi" mpilib="!mpi-serial">
+	<env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
+      </environment_variables>
+
+      <environment_variables compiler="ibm">
+	<env name="NETCDF_FORTRAN_PATH">/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4</env>
+	<env name="LD_LIBRARY_PATH">$ENV{LD_LIBRARY_PATH}:/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4/lib</env>
       </environment_variables>
     </module_system>
 </machine>
