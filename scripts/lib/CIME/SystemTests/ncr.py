@@ -26,25 +26,6 @@ class NCR(SystemTestsCompareTwo):
                                        run_two_description = ("half the number of tasks, " +
                                                               "twice the number of instances"))
 
-    def _common_setup(self):
-        pass
-
-    def _case_two_setup(self):
-        # Set the number of instances, the ROOTPEs, and the number of tasks
-        # The first case should have mostly default settings;
-        # though we apparently halve the number of tasks if greater than 1
-        comp_classes = self._case.get_values("COMP_CLASSES")
-        # Is this correct?
-        comp_classes.remove("CPL")
-
-        for comp in comp_classes:
-            self._case.set_value("NINST_{}".format(comp), str(1))
-            self._case.set_value("ROOTPE_{}".format(comp), 0)
-            ntasks = self._case.get_value("NTASKS_{}".format(comp))
-            if ntasks > 1:
-                self._case.set_value("NTASKS_{}".format(comp), ntasks // 2)
-        case_setup(self._case, test_mode = True, reset = True)
-
     def _case_one_setup(self):
         # Set the number of instances, the ROOTPEs, and the number of tasks
         # The second case should have twice the number of instances and half the number of tasks
@@ -62,3 +43,19 @@ class NCR(SystemTestsCompareTwo):
             ntasks_sum += ntasks * 2
             self._case.set_value("NTASKS_{}".format(comp), ntasks * 2)
         case_setup(self._case, test_mode = False, reset = True)
+
+    def _case_two_setup(self):
+        # Set the number of instances, the ROOTPEs, and the number of tasks
+        # The first case should have mostly default settings;
+        # though we apparently halve the number of tasks if greater than 1
+        comp_classes = self._case.get_values("COMP_CLASSES")
+        # Is this correct?
+        comp_classes.remove("CPL")
+
+        for comp in comp_classes:
+            self._case.set_value("NINST_{}".format(comp), str(1))
+            self._case.set_value("ROOTPE_{}".format(comp), 0)
+            ntasks = self._case.get_value("NTASKS_{}".format(comp))
+            if ntasks > 1:
+                self._case.set_value("NTASKS_{}".format(comp), ntasks // 2)
+        case_setup(self._case, test_mode = True, reset = True)
