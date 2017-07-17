@@ -23,7 +23,6 @@ module li_time_integration_fe
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_constants
    use mpas_dmpar
    use mpas_timer
    use mpas_vector_reconstruction
@@ -34,6 +33,7 @@ module li_time_integration_fe
    use li_thermal, only: li_thermal_solver, li_basal_melt_floating_ice
    use li_diagnostic_vars
    use li_setup
+   use li_constants
 
    implicit none
    private
