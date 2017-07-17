@@ -82,7 +82,7 @@ for mct, etc.
   <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
 </compiler>
 
-<!---------------------------------------------------------------------------------->
+
 <!-- hacking of mach/compiler generated 'Macros.make' for coupling with pflotran -->
 <!-- ideally it should go with CLM configuration -->
 <compiler>
@@ -92,7 +92,7 @@ for mct, etc.
   <ADD_LDFLAGS MODEL="driver" CLM_PFLOTRAN_COUPLED="TRUE"> -L$(CLM_PFLOTRAN_SOURCE_DIR) -lpflotran $(PETSC_LIB) </ADD_LDFLAGS>
 </compiler>
 <!-- end of hacking 'Macros.make' for coupling with pflotran -->
-<!---------------------------------------------------------------------------------->
+
 
 <compiler COMPILER="ibm">
   <!-- http://publib.boulder.ibm.com/infocenter/comphelp/v7v91/index.jsp
