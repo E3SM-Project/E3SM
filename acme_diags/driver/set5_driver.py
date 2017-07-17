@@ -166,7 +166,7 @@ def run_diag(parameter):
                         plot('5', mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                         utils.save_ncfiles('5', mv1_domain, mv2_domain, diff, parameter)
 
-                f_in.close()
+                #f_in.close()
 
             # for variables without z axis:
             elif mv1.getLevel() == None and mv2.getLevel() == None:
