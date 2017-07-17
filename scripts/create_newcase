@@ -3,7 +3,6 @@
 from Tools.standard_script_setup import *
 from CIME.utils         import expect, get_model
 from CIME.case          import Case
-from CIME.check_lockedfiles import lock_file
 
 logger = logging.getLogger(__name__)
 
@@ -187,27 +186,13 @@ def _main_func(description):
            "Case directory {} already exists".format(caseroot))
 
     with Case(caseroot, read_only=False) as case:
-        # Set values for env_case.xml
-        case.set_lookup_value("CASE", os.path.basename(casename))
-        case.set_lookup_value("CASEROOT", caseroot)
-        case.set_lookup_value("SRCROOT", srcroot)
-
         # Configure the Case
-        case.configure(compset, grid, machine_name=machine, project=project,
-                       pecount=pecount, compiler=compiler, mpilib=mpilib,
-                       pesfile=pesfile,user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
-                       walltime=walltime, queue=queue, output_root=output_root,
-                       run_unsupported=run_unsupported, answer=answer,
-                       input_dir=input_dir)
-
-        case.create_caseroot()
-
-        # Write out the case files
-        case.flush(flushall=True)
-        case.apply_user_mods(user_mods_dir)
-
-    # Lock env_case.xml
-    lock_file("env_case.xml", caseroot)
+        case.create(casename, srcroot, compset, grid, user_mods_dir=user_mods_dir, machine_name=machine, project=project,
+                    pecount=pecount, compiler=compiler, mpilib=mpilib,
+                    pesfile=pesfile,user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
+                    walltime=walltime, queue=queue, output_root=output_root,
+                    run_unsupported=run_unsupported, answer=answer,
+                    input_dir=input_dir)
 
 ###############################################################################
 

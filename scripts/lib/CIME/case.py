@@ -1425,3 +1425,39 @@ class Case(object):
             return cpllog
         else:
             return None
+
+    def create(self, casename, srcroot, compset_name, grid_name, user_mods_dir=None, machine_name=None,
+               project=None, pecount=None, compiler=None, mpilib=None,
+               pesfile=None,user_grid=False, gridfile=None, ninst=1, test=False,
+               walltime=None, queue=None, output_root=None, run_unsupported=False, answer=None,
+               input_dir=None):
+        try:
+            # Set values for env_case.xml
+            self.set_lookup_value("CASE", os.path.basename(casename))
+            self.set_lookup_value("CASEROOT", self._caseroot)
+            self.set_lookup_value("SRCROOT", srcroot)
+
+            # Configure the Case
+            self.configure(compset_name, grid_name, machine_name=machine_name, project=project,
+                           pecount=pecount, compiler=compiler, mpilib=mpilib,
+                           pesfile=pesfile,user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
+                           walltime=walltime, queue=queue, output_root=output_root,
+                           run_unsupported=run_unsupported, answer=answer,
+                           input_dir=input_dir)
+
+            self.create_caseroot()
+
+            # Write out the case files
+            self.flush(flushall=True)
+            self.apply_user_mods(user_mods_dir)
+
+            # Lock env_case.xml
+            lock_file("env_case.xml", self._caseroot)
+        except:
+            if os.path.exists(self._caseroot) and not logger.isEnabledFor(logging.DEBUG) and not test:
+                logger.warn("Failed to setup case, removing {}\nUse --debug to force me to keep caseroot".format(self._caseroot))
+                shutil.rmtree(self._caseroot)
+            else:
+                logger.warn("Leaving broken case dir {}".format(self._caseroot))
+
+            raise
