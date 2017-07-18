@@ -32,7 +32,7 @@ def parse_command_line(args):
     parser = argparse.ArgumentParser(
 usage="""
 
-xmlquery provides users the ability to query the xml files in a CIME case and 
+xmlquery provides users the ability to query the xml files in a CIME case and
 has two usage categories:
 
 1) Querying variables:
@@ -46,20 +46,20 @@ has two usage categories:
      where var1, var2 and var3 are variables that appear in a CIME case xml file
 
      Several xml variables that have settings for each component have somewhat special treatment
-     The variables that this current applies to are 
-         NTASKS, NTRDS, ROOTPE, PIO_TYPENAME, PIO_STRIDE, PIO_NUMTASKS 
+     The variables that this current applies to are
+         NTASKS, NTRDS, ROOTPE, PIO_TYPENAME, PIO_STRIDE, PIO_NUMTASKS
      As examples:
      - to show the number of tasks for each component, issue
         >  ./xmlquery NTASKS
      - to show the number of tasks just for the atm component, issue
         > ./xmlauery NTASKS_ATM
 
-    -  the CIME case xml variables are grouped together in xml elements <group></group>.  
-       These are done to associate together xml variables with common features. 
+    -  the CIME case xml variables are grouped together in xml elements <group></group>.
+       These are done to associate together xml variables with common features.
        Most variables are only associated with one group.
        However, in env_batch.xml, there are also xml variables that are associated with more than one group.
        For these variables, the '--subgroup' qualifier permits querying an xml variable that appears in more than
-       one group.  
+       one group.
 
        As an example, in env_batch.xml, the xml variable JOB_QUEUE appears in 3 groups:
         <group id="case.run">
@@ -95,19 +95,19 @@ has two usage categories:
                   STOP_N: 5
 
     - By default variable values are resolved prior to output. If you want to see the unresolved
-      value(s), use the --no-resolve qualifier 
+      value(s), use the --no-resolve qualifier
       as examples:
-         ./xmlquery RUNDIR 
+         ./xmlquery RUNDIR
              RUNDIR: /glade/scratch/mvertens/atest/run
          ./xmlquery RUNDIR --no-resolve
-             RUNDIR: $CIME_OUTPUT_ROOT/$CASE/run 
+             RUNDIR: $CIME_OUTPUT_ROOT/$CASE/run
 
 2) Listing all groups and variables in those groups
 
       ./xmlquery --listall
 
      - You can tailor the query by adding ONE of the following possible qualifier arguments:
-       [--full --fileonly --raw --description --get-group --type --valid-values --subgroup GROUP --file FILE] 
+       [--full --fileonly --raw --description --get-group --type --valid-values --subgroup GROUP --file FILE]
 
        As examples:
 
@@ -224,8 +224,8 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
                 results['none'][var] = {}
                 results['none'][var]['value']  = value
         elif not groups:
-                results['none'] = {}
-                results['none'][var] = {}
+            results['none'] = {}
+            results['none'][var] = {}
 
         for group in groups:
             if not group in results:
