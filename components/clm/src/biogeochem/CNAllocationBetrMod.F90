@@ -58,11 +58,9 @@ module CNAllocationBeTRMod
   character(len=*), parameter, public :: suplnAll='ALL'  ! Supplemental Nitrogen for all PFT's
   character(len=*), parameter, public :: suplnNon='NONE' ! No supplemental Nitrogen
   character(len=15), public :: suplnitro = suplnNon      ! Supplemental Nitrogen mode
-  !! add phosphorus  - X. YANG
   character(len=*), parameter, public :: suplpAll='ALL'  ! Supplemental Phosphorus for all PFT's
   character(len=*), parameter, public :: suplpNon='NONE' ! No supplemental Phosphorus
   character(len=15), public :: suplphos = suplpAll    ! Supplemental Phosphorus mode
-  !! add competition, - Q. Zhu
   logical,          public :: nu_com_leaf_physiology = .false.
   logical,          public :: nu_com_root_kinetics = .false.
   logical,          public :: nu_com_phosphatase = .false.
@@ -269,7 +267,6 @@ contains
     type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-!     !!  add phosphorus  -X.YANG
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     !
@@ -514,7 +511,6 @@ contains
          potential_immob_vr           => nitrogenflux_vars%potential_immob_vr_col              , & ! Output: [real(r8) (:,:) ]
          actual_immob_vr              => nitrogenflux_vars%actual_immob_vr_col                 , & ! Output: [real(r8) (:,:) ]
 
-         !!! add phosphorus variables  - X. YANG
          sminp_vr                     => phosphorusstate_vars%sminp_vr_col                     , & ! Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral P
          solutionp_vr                 => phosphorusstate_vars%solutionp_vr_col                 , & ! Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral P
          retransp                     => phosphorusstate_vars%retransp_patch                   , & ! Input:  [real(r8) (:)   ]  (gP/m2) plant pool of retranslocated P
@@ -852,7 +848,6 @@ contains
 
          ! based on available C, use constant allometric relationships to
          ! determine N requirements
-         ! determine P requirements   -X. YANG
 
          if (woody(ivt(p)) == 1.0_r8) then
             c_allometry(p) = (1._r8+g1)*(1._r8+f1+f3*(1._r8+f2))
@@ -1132,7 +1127,6 @@ contains
     type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-!    !!  add phosphorus  -X.YANG
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     !
@@ -1249,7 +1243,6 @@ contains
          npool_to_deadcrootn          => nitrogenflux_vars%npool_to_deadcrootn_patch         , & ! Output: [real(r8) (:)   ]
          npool_to_deadcrootn_storage  => nitrogenflux_vars%npool_to_deadcrootn_storage_patch , & ! Output: [real(r8) (:)   ]
 
-         !!! add phosphorus variables  - X. YANG
          plant_pdemand                => phosphorusflux_vars%plant_pdemand_patch               , & ! Output: [real(r8) (:)   ]  P flux required to support initial GPP (gP/m2/s)
          plant_palloc                 => phosphorusflux_vars%plant_palloc_patch                , & ! Output: [real(r8) (:)   ]  total allocated P flux (gP/m2/s)
          ppool_to_grainp              => phosphorusflux_vars%ppool_to_grainp_patch             , & ! Output: [real(r8) (:)   ]  allocation to grain P (gP/m2/s)
