@@ -794,13 +794,13 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     !---NEW CODE
     allocate(clm_id_mstr(pcols,max_chnks_in_blk,npes), stat=astat)
     if( astat /= 0 ) then
-       write(iulog,*) 'physpkg-phys_init: failed to allocate clm_id_mstr; error = ',astat
+       write(iulog,*) 'physpkg.F90-phys_init: failed to allocate clm_id_mstr; error = ',astat
        call endrun
     end if
 
     allocate(clm_id(pcols,max_chnks_in_blk), stat=astat)
     if( astat /= 0 ) then
-       write(iulog,*) 'physpkg-phys_init: failed to allocate clm_id; error = ',astat
+       write(iulog,*) 'physpkg.F90-phys_init: failed to allocate clm_id; error = ',astat
        call endrun
     end if
     
@@ -1115,7 +1115,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        call t_startf ('bc_physics')
        !call t_adj_detailf(+1)
 
-!$OMP PARALLEL DO PRIVATE (C, phys_buffer_chunk)
+!$OMP PARALLEL DO PRIVATE (C, phys_buffer_chunk,ilchnk)
        do c=begchunk, endchunk
           !
           ! Output physics terms to IC file
@@ -1530,10 +1530,10 @@ subroutine tphysac (ztodt,   cam_in,  &
     nstep = get_nstep()
 if(pergro_mods) then
     !BALLI- Temporary fix - bypass changes by surface model
-    cam_in%wsx(:)    = 0.0_r8 
-    cam_in%wsy(:)    = 0.0_r8 
-    cam_in%shf(:)    = 0.0_r8
-    cam_in%cflx(:,:) = 0.0_r8 
+    !cam_in%wsx(:)    = 0.0_r8  !BALLI
+    !cam_in%wsy(:)    = 0.0_r8 
+    !cam_in%shf(:)    = 0.0_r8
+    !cam_in%cflx(:,:) = 0.0_r8 
     !BALLI ENDS
 endif
 

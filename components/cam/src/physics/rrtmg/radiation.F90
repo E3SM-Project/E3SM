@@ -49,7 +49,11 @@ public :: &
 
 integer,public, allocatable :: cosp_cnt(:)       ! counter for cosp
 integer,public              :: cosp_cnt_init = 0 !initial value for cosp counter
-integer,public              :: max_chnks_in_blk= huge(1) !initial value for cosp counter
+
+integer,public, parameter   :: kiss_seed_num = 4
+integer,public, allocatable :: rad_randn_seedrst(:,:,:)
+integer,public              :: max_chnks_in_blk= huge(1) 
+
 
 ! Private module data
 integer :: qrs_idx      = 0 
@@ -343,24 +347,9 @@ end function radiation_nextsw_cday
     integer :: history_budget_histfile_num ! output history file number for budget fields
     integer :: err
 
-    integer :: dtime, id, lchnk, ncol, icol, ichnk
+    integer :: dtime, id, lchnk, ncol, icol, ilchnk, astat, iseed
     !-----------------------------------------------------------------------
 
-    allocate(clm_rand_seed(pcols,max_chnks_in_blk,4))
-
-    do ichnk = 1, max_chnks_in_blk
-       lchnk = begchunk + (ichnk -1)
-       ncol = phys_state(lchnk)%ncol
-       do icol = 1, ncol
-          id = clm_id(icol,ichnk)
-          clm_rand_seed(icol,ichnk,1) = id
-          clm_rand_seed(icol,ichnk,2) = id + 1
-          clm_rand_seed(icol,ichnk,3) = id + 2
-          clm_rand_seed(icol,ichnk,4) = id + 3
-       enddo
-    enddo
-
-    
     call rrtmg_state_init()
 
     call init_rad_data() ! initialize output fields for offline driver
@@ -401,12 +390,53 @@ end function radiation_nextsw_cday
 
     
     allocate(cosp_cnt(begchunk:endchunk))
-    if (is_first_restart_step()) then
-      cosp_cnt(begchunk:endchunk)=cosp_cnt_init
-    else
-      cosp_cnt(begchunk:endchunk)=0     
+    
+    allocate(clm_rand_seed(pcols,kiss_seed_num,max_chnks_in_blk), stat=astat)
+    if( astat /= 0 ) then
+       write(iulog,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate clm_rand_seed; error = ',astat
+       call endrun
     end if
 
+    if (is_first_restart_step()) then
+       cosp_cnt(begchunk:endchunk)=cosp_cnt_init
+       !--------------------------------------
+       !Read seeds from restart file
+       !--------------------------------------
+       !For restart runs, rad_randn_seedrst array  will already be allocated in the restart_physics.F90
+       
+       do ilchnk = 1, max_chnks_in_blk
+          lchnk = begchunk + (ilchnk -1)
+          ncol = phys_state(lchnk)%ncol
+          do iseed = 1, kiss_seed_num
+             do icol = 1, ncol                
+                clm_rand_seed(icol,iseed,ilchnk) = rad_randn_seedrst(icol,iseed,lchnk)
+             enddo
+          enddo
+       enddo
+    else
+       cosp_cnt(begchunk:endchunk)=0           
+       !---------------------------------------
+       !create seeds based off of column ids
+       !---------------------------------------
+       !allocate array rad_randn_seedrst for initial run for  maintaining exact restarts
+       !For restart runs, it will already be allocated in the restart_physics.F90
+       allocate(rad_randn_seedrst(pcols,kiss_seed_num,begchunk:endchunk), stat=astat)
+       if( astat /= 0 ) then
+          write(iulog,*) 'radiation.F90(rrtmg)-radiation_init: failed to allocate rad_randn_seedrst; error = ',astat
+          call endrun
+       end if
+       do ilchnk = 1, max_chnks_in_blk
+          lchnk = begchunk + (ilchnk -1)
+          ncol = phys_state(lchnk)%ncol
+          do iseed = 1, kiss_seed_num
+             do icol = 1, ncol
+                id = clm_id(icol,ilchnk)
+                clm_rand_seed(icol,iseed,ilchnk) = id + (iseed -1)
+             enddo
+          enddo
+       enddo
+    end if
+    
 
     ! Shortwave radiation
 
@@ -785,7 +815,7 @@ end function radiation_nextsw_cday
     logical  :: conserve_energy = .true.       ! flag to carry (QRS,QRL)*dp across time steps
 
     ! Local variables from radctl
-    integer i, k                  ! index
+    integer i, k, id, iseed                  ! index
     integer :: istat
     real(r8) solin(pcols)         ! Solar incident flux
     real(r8) fsntoa(pcols)        ! Net solar flux at TOA
@@ -847,7 +877,7 @@ end function radiation_nextsw_cday
     integer, dimension(pcols) :: IdxDay  ! Indicies of daylight coumns
     integer, dimension(pcols) :: IdxNite ! Indicies of night coumns
 
-    integer :: icall                     ! index through climate/diagnostic radiation calls
+    integer :: icall,icol                     ! index through climate/diagnostic radiation calls
     logical :: active_calls(0:N_DIAG)
 
     type(rrtmg_state_t), pointer :: r_state ! contains the atm concentratiosn in layers needed for RRTMG
@@ -1111,7 +1141,7 @@ end function radiation_nextsw_cday
                        fsntoac,      fsnirt,       fsnrtc,       fsnirtsq,     fsns,           &
                        fsnsc,        fsdsc,        fsds,         cam_out%sols, cam_out%soll,   &
                        cam_out%solsd,cam_out%solld,fns,          fcns,                         &
-                       Nday,         Nnite,        IdxDay,       IdxNite,      clm_rand_seed (:,ilchnk,:),  &!BSINGH - added rngsw
+                       Nday,         Nnite,        IdxDay,       IdxNite,      clm_rand_seed (:,:,ilchnk),  &!BSINGH - added rngsw
                        su,           sd,                                                       &
                        E_cld_tau=c_cld_tau, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
                        old_convert = .false.)
@@ -1259,7 +1289,7 @@ end function radiation_nextsw_cday
                        qrl,          qrlc,                                                       &
                        flns,         flnt,         flnsc,           flntc,        cam_out%flwds, &
                        flut,         flutc,        fnl,             fcnl,         fldsc,         &
-                       clm_rand_seed(:,ilchnk,:),                                                 & !BSINGH - added rnglw
+                       clm_rand_seed(:,:,ilchnk),                                                 & !BSINGH - added rnglw
                        lu,           ld)
                   call t_stopf ('rad_rrtmg_lw')
 
@@ -1447,6 +1477,13 @@ end function radiation_nextsw_cday
     end if
  
     cam_out%netsw(:ncol) = fsns(:ncol)
+
+    !write kissvec seeds for random numbers
+    do iseed = 1, kiss_seed_num    
+       do i = 1, ncol          
+          rad_randn_seedrst(i,iseed,lchnk) = clm_rand_seed(i,iseed,ilchnk)
+       enddo
+    enddo
 
  end subroutine radiation_tend
 
