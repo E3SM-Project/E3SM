@@ -228,7 +228,6 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                 self._case_two_custom_prerun_action()
                 self.run_indv(suffix = self._run_two_suffix)
                 self._case_two_custom_postrun_action()
-
             # Compare results
             # Case1 is the "main" case, and we need to do the comparisons from there
             self._activate_case1()
