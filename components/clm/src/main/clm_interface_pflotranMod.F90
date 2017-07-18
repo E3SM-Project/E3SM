@@ -293,7 +293,6 @@ contains
     integer :: nstep
 
 #ifdef CLM_PFLOTRAN
-
     call clm_pf_BeginCBalance(clm_interface_data, bounds, filters, ifilter)
     call clm_pf_BeginNBalance(clm_interface_data, bounds, filters, ifilter)
 
@@ -305,7 +304,6 @@ contains
         call clm_pf_CBalanceCheck(clm_interface_data, bounds, filters, ifilter)
         call clm_pf_NBalanceCheck(clm_interface_data, bounds, filters, ifilter)
     end if
-
 #else
     call pflotran_not_available(subname)
 #endif
@@ -374,9 +372,9 @@ contains
     !
     ! !USES:
     use clm_varctl      , only : iulog
-    use GridcellType    , only : grc
-    use LandunitType    , only : lun
-    use ColumnType      , only : col
+    use GridcellType    , only : grc_pp
+    use LandunitType    , only : lun_pp
+    use ColumnType      , only : col_pp
     use landunit_varcon , only : istsoil, istcrop
     use decompMod       , only : get_proc_global, get_proc_clumps, ldecomp
     use spmdMod         , only : mpicom, masterproc, iam, npes
@@ -448,13 +446,13 @@ contains
 
     associate( &
          ! Assign local pointers to derived subtypes components (landunit-level)
-         ltype      =>  lun%itype      , & !  [integer (:)]  landunit type index
-         lgridcell  =>  lun%gridcell   , & !  [integer (:)]  gridcell index of landunit
+         ltype      =>  lun_pp%itype      , & !  [integer (:)]  landunit type index
+         lgridcell  =>  lun_pp%gridcell   , & !  [integer (:)]  gridcell index of landunit
          ! Assign local pointer to derived subtypes components (column-level)
-         cgridcell  =>  col%gridcell   , & !  [integer (:)]  gridcell index of column
-         clandunit  =>  col%landunit   , & !  [integer (:)]  landunit index of column
-         cwtgcell   =>  col%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell)
-         cactive    =>  col%active       & !  [logic (:)]  column active or not
+         cgridcell  =>  col_pp%gridcell   , & !  [integer (:)]  gridcell index of column
+         clandunit  =>  col_pp%landunit   , & !  [integer (:)]  landunit index of column
+         cwtgcell   =>  col_pp%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell)
+         cactive    =>  col_pp%active       & !  [logic (:)]  column active or not
          )
 
 
@@ -602,7 +600,7 @@ contains
 
       if( (ltype(l)==istsoil .or. ltype(l)==istcrop) .and. &
           (cactive(c) .and. cwtgcell(c)>0._r8) ) then
-         mapped_gid(gcount) = grc%gindex(g)      ! this is the globally grid-index, i.e. 'an' in its original calculation
+         mapped_gid(gcount) = grc_pp%gindex(g)      ! this is the globally grid-index, i.e. 'an' in its original calculation
 
          mapped_gcount_skip(gcount) = .false.
       endif
@@ -637,17 +635,8 @@ contains
     ! (1) Initialize PETSc vector for data transfer between CLM and PFLOTRAN
     call CLMPFLOTRANIDataInit()
 
-    associate( &
-         ! Assign local pointers to derived subtypes components (landunit-level)
-         ltype      =>  lun_pp%itype      , & !  [integer (:)]  landunit type index
-         lgridcell  =>  lun_pp%gridcell   , & !  [integer (:)]  gridcell index of landunit
-         ! Assign local pointer to derived subtypes components (column-level)
-         cgridcell  =>  col_pp%gridcell   , & !  [integer (:)]  gridcell index of column
-         clandunit  =>  col_pp%landunit   , & !  [integer (:)]  landunit index of column
-         cwtgcell   =>  col_pp%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell)
-         cactive    =>  col_pp%active       & !  [logic (:)]  column active or not
-
-         )
+    !----------------------------------------------------------------------------------------
+    ! (2) passing grid/mesh info to interface_data so that PF mesh can be established/mapped
 
     !(2a) domain/decompose
     clm_pf_idata%nzclm_mapped = nlevgrnd      ! the soil layer no. mapped btw CLM and PF for data-passing
@@ -1170,7 +1159,6 @@ contains
     if (pf_tmode) then
         call get_clm_bceflx(clm_interface_data, bounds, filters, ifilter)
         call pflotranModelUpdateSubsurfTCond( pflotran_m )   ! E-SrcSink and T bc
-
     end if
 
     ! (3) pass CLM water fluxes to PFLOTRAN-CLM interface
@@ -1224,7 +1212,6 @@ contains
     ! (6) update CLM variables from PFLOTRAN
 
     if (pf_hmode) then
-
         call pflotranModelGetSaturationFromPF( pflotran_m )   ! hydrological states
         call update_soil_moisture_pf2clm(clm_interface_data, bounds, filters, ifilter)
 
@@ -1237,9 +1224,7 @@ contains
 
     if (pf_tmode) then
         call pflotranModelGetTemperatureFromPF( pflotran_m )  ! thermal states
-
         call update_soil_temperature_pf2clm(clm_interface_data, bounds, filters, ifilter)
-
     endif
 
     if (pf_cmode) then
@@ -1329,7 +1314,7 @@ contains
     ! get soil column dimension to PFLOTRAN
     !
     ! !USES:
-    use GridcellType    , only : grc
+    use GridcellType    , only : grc_pp
     use LandunitType    , only : lun_pp
     use ColumnType      , only : col_pp
 
@@ -1404,7 +1389,7 @@ contains
          lelev      =>  ldomain%topo   , & !  [real(r8) (:)]
          larea      =>  ldomain%area   , & !  [real(r8) (:)]
          ! landunit
-         ltype      =>  lun%itype      , & !  [integer (:)]  landunit type index
+         ltype      =>  lun_pp%itype      , & !  [integer (:)]  landunit type index
          ! Assign local pointer to derived subtypes components (column-level)
          clandunit  =>  col_pp%landunit   , & !  [integer (:)]  landunit index of column
          cgridcell  =>  col_pp%gridcell   , & !  [integer (:)]  gridcell index of column
@@ -1414,7 +1399,6 @@ contains
          z          =>  col_pp%z          , & !  [real(r8) (:,:)]  layer depth (m) (sort of centroid from surface 0 )
          zi         =>  col_pp%zi         , & !  [real(r8) (:,:)]  layer interface depth (m)
          dz         =>  col_pp%dz           & !  [real(r8) (:,:)]  layer thickness (m)
-
          )
 
 
@@ -1557,11 +1541,7 @@ contains
           do j = 1, clm_pf_idata%nzclm_mapped
             if (j <= nlevgrnd) then
 
-            ! note that filters%soilc includes 'istsoil' and 'istcrop'
-            ! (TODO: checking col_pp%itype and lun%itype - appears not match with each other, and col_pp%itype IS messy)
-            if (ltype(l)==istsoil .or. ltype(l)==istcrop) then
-               gcount = gcount + 1                                    ! actually is the active soil column count
-               cellcount = (gcount-1)*clm_pf_idata%nzclm_mapped + j   ! 1-based
+               cellcount = gcount*clm_pf_idata%nzclm_mapped + j    ! 1-based
 
                xsoil_clm_loc(cellcount) = lonc(g)
                ysoil_clm_loc(cellcount) = latc(g)
@@ -1615,7 +1595,7 @@ contains
 
             cellcount = gcount*clm_pf_idata%nzclm_mapped + j   ! 1-based
 
-            cellid_clm_loc(cellcount) = (grc%gindex(g)-1)*clm_pf_idata%nzclm_mapped + j  ! 1-based
+            cellid_clm_loc(cellcount) = (grc_pp%gindex(g)-1)*clm_pf_idata%nzclm_mapped + j  ! 1-based
 
             xsoil_clm_loc(cellcount) = lonc(g)
             ysoil_clm_loc(cellcount) = latc(g)
@@ -1743,7 +1723,6 @@ contains
          ! Assign local pointer to derived subtypes components (column-level)
          ltype                    => lun_pp%itype                                , & !  [integer (:)]  landunit type index
          ! Assign local pointer to derived subtypes components (column-level)
-
          clandunit                => col_pp%landunit                             , & !  [integer (:)]  landunit index of column
          cgridcell                => col_pp%gridcell                             , & !  [integer (:)]  gridcell index of column
          cwtgcell                 => col_pp%wtgcell                              , & !  [real(r8) (:)]  weight (relative to gridcell
@@ -2294,7 +2273,6 @@ contains
 
 !-----------------------------------------------------------------------------
   !BOP
-
   !
   ! !IROUTINE: get_clm_bcwflx
   !
@@ -2375,7 +2353,6 @@ contains
     cgridcell         => col_pp%gridcell                            , & ! column's gridcell
     cwtgcell          => col_pp%wtgcell                             , & ! weight (relative to gridcell)
     dz                => col_pp%dz                                  , & ! layer thickness depth (m)
-
     !
     bsw               => clm_interface_data%bsw_col                           , &! Clapp and Hornberger "b" (nlevgrnd)
     hksat             => clm_interface_data%hksat_col                         , &! hydraulic conductivity at saturation (mm H2O /s) (nlevgrnd)
@@ -2743,7 +2720,6 @@ contains
     cgridcell         => col_pp%gridcell              , &! column's gridcell
     dz                => col_pp%dz                    , &! layer thickness depth (m)
     snl               => col_pp%snl                   , &! number of snow layers (negative)
-
     !
     frac_sno_eff      => clm_interface_data%th%frac_sno_eff_col      , &! fraction of ground covered by snow (0 to 1)
     frac_h2osfc       => clm_interface_data%th%frac_h2osfc_col       , &! fraction of ground covered by surface water (0 to 1)
@@ -2885,6 +2861,7 @@ contains
   end associate
   end subroutine get_clm_bceflx
 
+  !
   !-----------------------------------------------------------------------------
   !
   !
@@ -2978,7 +2955,7 @@ contains
     gcount = -1
     do fc = 1,filters(ifilter)%num_soilc
       c = filters(ifilter)%soilc(fc)
-      g = col_pp%gridcell(c)
+      g = cgridcell(c)
 
 #ifdef COLUMN_MODE
       if (mapped_gcount_skip(c-bounds%begc+1)) cycle   ! skip inactive column (and following numbering)
@@ -3101,7 +3078,6 @@ contains
     !
     associate ( &
       cgridcell                         => col_pp%gridcell               , & ! column's gridcell
-
       !
       decomp_cpools_vr                  => clm_interface_data%bgc%decomp_cpools_vr_col            , &      ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
       decomp_npools_vr                  => clm_interface_data%bgc%decomp_npools_vr_col            , &      ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
@@ -3156,9 +3132,8 @@ contains
     ! operating via 'filters'
     gcount = -1
     do fc = 1,filters(ifilter)%num_soilc
-
       c = filters(ifilter)%soilc(fc)
-      g = col_pp%gridcell(c)
+      g = cgridcell(c)
 
 #ifdef COLUMN_MODE
       if (mapped_gcount_skip(c-bounds%begc+1)) cycle   ! skip inactive column (and following numbering)
@@ -3321,12 +3296,14 @@ contains
   !-----------------------------------------------------------------------
     associate ( &
       cgridcell       => col_pp%gridcell               , & ! column's gridcell
-      dz              => clm_interface_data%dz            , & ! layer thickness depth (m)
-      watsat          => clm_interface_data%watsat_col    , & ! volumetric soil water at saturation (porosity) (nlevgrnd)
-      soilpsi         => clm_interface_data%soilpsi_col   , & ! soil water matric potential in each soil layer (MPa)
-      h2osoi_liq      => clm_interface_data%h2osoi_liq_col, & ! liquid water (kg/m2)
-      h2osoi_ice      => clm_interface_data%h2osoi_ice_col, & ! ice lens (kg/m2)
-      h2osoi_vol      => clm_interface_data%h2osoi_vol_col & ! volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+      dz              => col_pp%dz                     , & ! layer thickness depth (m)
+      !
+      watsat          => clm_interface_data%watsat_col       , & ! volumetric soil water at saturation (porosity) (nlevgrnd)
+      !
+      soilpsi         => clm_interface_data%th%soilpsi_col   , & ! soil water matric potential in each soil layer (MPa)
+      h2osoi_liq      => clm_interface_data%th%h2osoi_liq_col, & ! liquid water (kg/m2)
+      h2osoi_ice      => clm_interface_data%th%h2osoi_ice_col, & ! ice lens (kg/m2)
+      h2osoi_vol      => clm_interface_data%th%h2osoi_vol_col  & ! volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
      )
     !
     call VecGetArrayReadF90(clm_pf_idata%soillsat_clms, sat_clm_loc, ierr)
@@ -3524,28 +3501,6 @@ contains
     enddo
 
 
-
-    ! define frost table as first frozen layer with unfrozen layer above it
-    do fc = 1,filters(ifilter)%num_soilc
-      c = filters(ifilter)%soilc(fc)
-
-      if(t_soisno(c,1) > tfrz) then
-          j_frz = nlevgrnd
-      else
-          j_frz=1
-      endif
-
-      do j = 2, nlevgrnd
-          if (t_soisno(c,j-1) > tfrz .and. t_soisno(c,j) <= tfrz) then
-              j_frz=j
-              exit
-          endif
-      enddo
-
-      frost_table(c)=z(c,j_frz)
-    enddo
-
-
     end associate
   end subroutine update_soil_temperature_pf2clm
 
@@ -3629,8 +3584,7 @@ contains
     gcount = -1
     do fc = 1,filters(ifilter)%num_soilc
       c = filters(ifilter)%soilc(fc)
-      g = cgridcell%gridcell(c)
-
+      g = cgridcell(c)
 
 #ifdef COLUMN_MODE
       if (mapped_gcount_skip(c-bounds%begc+1)) cycle   ! skip inactive column (and following numbering)
@@ -3655,7 +3609,6 @@ contains
       qflx_surf(c) = qflx_top_soil(c)  - qflx_infl(c) - qflx_evap
       qflx_surf(c) = max(0._r8, qflx_surf(c))
 
-
       !'from PF: qflux_subbase_clm_loc: positive - in, negative - out)
       area = area_clm_loc((gcount+1)*clm_pf_idata%nzclm_mapped)                              ! note: this 'area_clm_loc' is in 3-D for all subsurface domain
       qflx_drain(c) = -qflux_subbase_clm_loc(gcount+1)  &
@@ -3675,7 +3628,6 @@ contains
 
     end associate
   end subroutine update_bcflow_pf2clm
-
 
   !
   !-----------------------------------------------------------------------------
@@ -4422,7 +4374,6 @@ contains
        c = filters(ifilter)%soilc(fc)
        g = cgridcell(c)
 
-
 #ifdef COLUMN_MODE
        if (mapped_gcount_skip(c-bounds%begc+1)) cycle   ! skip inactive column (and following numbering)
        gcount = gcount + 1                              ! 0-based: cumulatively by not-skipped column
@@ -4571,6 +4522,7 @@ contains
     integer :: nlev
 
     !-----------------------------------------------------------------------
+
     associate(                                                              &
          decomp_npools_vr       => clm_interface_data%bgc%decomp_npools_vr_col      , &
          smin_no3_vr            => clm_interface_data%bgc%smin_no3_vr_col           , &
@@ -4937,4 +4889,6 @@ contains
 ! (END)
 !************************************************************************************!
 
+
 end module clm_interface_pflotranMod
+
