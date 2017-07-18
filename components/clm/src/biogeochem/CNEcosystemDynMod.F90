@@ -34,7 +34,7 @@ module CNEcosystemDynMod
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   ! bgc interface & pflotran
-  use clm_varctl          , only : use_bgc_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
+  use clm_varctl          , only : use_clm_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
   use CNVerticalProfileMod   , only : decomp_vertprofiles
   use CNAllocationMod     , only : nu_com_nfix, nu_com_phosphatase
   use clm_varctl          , only : nu_com
@@ -103,8 +103,8 @@ contains
     !
     ! !USES:
     use spmdMod              , only: masterproc
-    use PDynamicsMod           , only: PWeathering,PAdsorption,PDesorption,POcclusion
-    use PDynamicsMod           , only: PBiochemMin,PLeaching
+    use PDynamicsMod         , only: PWeathering,PAdsorption,PDesorption,POcclusion
+    use PDynamicsMod         , only: PBiochemMin,PLeaching
     use CNNDynamicsMod       , only: CNNLeaching
     use CNNStateUpdate3Mod   , only: NStateUpdate3
     use PStateUpdate3Mod     , only: PStateUpdate3
@@ -145,7 +145,7 @@ contains
   
     ! only do if ed is off
     if( .not. use_ed) then
-       if(.not.(use_pflotran.and.pf_cmode)) then
+       !if(.not.(use_pflotran.and.pf_cmode)) then
              call t_startf('PWeathering')
              call PWeathering(num_soilc, filter_soilc, &
                   cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
@@ -178,18 +178,18 @@ contains
                      cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
                 call t_stopf('PBiochemMin')
              end if
-       end if
+       !end if
        
-     !-----------------------------------------------------------------------
-     ! pflotran: when both 'pf-bgc' and 'pf-h' on, no need to call CLM-CN's N leaching module
-     if (.not. (pf_cmode .and. pf_hmode)) then
-       call CNNLeaching(bounds, num_soilc, filter_soilc, &
+       !-----------------------------------------------------------------------
+       ! pflotran: when both 'pf-bgc' and 'pf-h' on, no need to call CLM-CN's N leaching module
+       if (.not. (pf_cmode .and. pf_hmode)) then
+         call CNNLeaching(bounds, num_soilc, filter_soilc, &
             waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
 
-       call PLeaching(bounds, num_soilc, filter_soilc, &
+         call PLeaching(bounds, num_soilc, filter_soilc, &
             waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
-     end if !(.not. (pf_cmode .and. pf_hmode))
-     !-----------------------------------------------------------------------
+       end if !(.not. (pf_cmode .and. pf_hmode))
+       !-----------------------------------------------------------------------
 
        call t_startf('CNUpdate3')
 
@@ -430,14 +430,14 @@ contains
        call t_stopf('PDeposition')
 
 !!-------------------------------------------------------------------------------------------------
-!! 'decomp_rate_constants' is moved to CNDecompAlloc
-!       if (use_century_decomp) then
-!          call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
-!               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
-!       else
-!          call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
-!               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
-!       end if
+!! plfotran: 'decomp_rate_constants' must be calculated before entering "clm_interface"
+       if (use_century_decomp) then
+          call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
+               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
+       else
+          call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
+               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
+       end if
 
 !!-------------------------------------------------------------------------------------------------
 !! 'decomp_vertprofiles' (calc nfixation_prof) is moved from CNDecompAlloc:
@@ -446,7 +446,7 @@ contains
            num_soilc, filter_soilc, num_soilp, filter_soilp, &
            soilstate_vars, canopystate_vars, cnstate_vars)
 !!-------------------------------------------------------------------------------------------------
-        !! CNAllocation1 is always called (w/ or w/o use_bgc_interface)
+        !! CNAllocation1 is always called (w/ or w/o use_clm_interface)
         !! pflotran: call 'CNAllocation1' to obtain potential N demand for support initial GPP
        call t_startf('CNAllocation - phase-1')
        call CNAllocation1_PlantNPDemand (bounds                             , &
@@ -559,9 +559,9 @@ contains
 
        call t_startf('CNDecompAlloc')
        !----------------------------------------------------------------
-       if(.not.use_bgc_interface) then
+       if(.not.use_clm_interface) then
             !! directly run clm-bgc
-            !! if (use_bgc_interface & use_clm_bgc), then CNDecomAlloc is called in clm_driver
+            !! if (use_clm_interface & use_clm_bgc), then CNDecomAlloc is called in clm_driver
             call CNDecompAlloc (bounds, num_soilc, filter_soilc,    &
                        num_soilp, filter_soilp,                     &
                        canopystate_vars, soilstate_vars,            &
@@ -570,7 +570,7 @@ contains
                        carbonstate_vars, carbonflux_vars,           &
                        nitrogenstate_vars, nitrogenflux_vars,       &
                        phosphorusstate_vars,phosphorusflux_vars)
-       end if !!if(.not.use_bgc_interface)
+       end if !!if(.not.use_clm_interface)
        !----------------------------------------------------------------
        !! CNDecompAlloc2 is called by both clm-bgc & pflotran
        !! pflotran: call 'CNDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake

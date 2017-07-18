@@ -30,7 +30,7 @@ module CNAllocationMod
   use ColumnType          , only : col_pp                
   use VegetationType           , only : veg_pp
   ! bgc interface & pflotran module switches
-  use clm_varctl          , only: use_bgc_interface,use_clm_bgc, use_pflotran, pf_cmode
+  use clm_varctl          , only: use_clm_interface,use_clm_bgc, use_pflotran, pf_cmode
   use clm_varctl          , only : nu_com
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
@@ -1034,7 +1034,7 @@ contains
       end do
 
       ! pflotran will need an input from CN: modified 'sum_ndemand_vr' ('potential_immob' excluded).
-      if (use_bgc_interface.and.use_pflotran .and. pf_cmode) then
+      if (use_clm_interface.and.use_pflotran .and. pf_cmode) then
             do j = 1, nlevdecomp
                do fc=1, num_soilc
                   c = filter_soilc(fc)
@@ -1076,14 +1076,9 @@ contains
     integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
     integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
-!    type(photosyns_type)     , intent(in)    :: photosyns_vars
-!    type(crop_type)          , intent(in)    :: crop_vars
-!    type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(carbonstate_type)   , intent(in)    :: carbonstate_vars
     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-!    type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
-!    type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
 !     !!  add phosphorus  -X.YANG
@@ -2914,7 +2909,7 @@ contains
     use clm_varpar       , only:  nlevdecomp !!nlevsoi,
     use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
 !    use landunit_varcon  , only: istsoil, istcrop
-!    use clm_time_manager , only: get_step_size
+    use clm_time_manager , only: get_step_size
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -2922,8 +2917,7 @@ contains
     integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
     integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
-!    type(photosyns_type)     , intent(in)    :: photosyns_vars
-!    type(crop_type)          , intent(in)    :: crop_vars
+
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(carbonstate_type)   , intent(in)    :: carbonstate_vars
@@ -2969,6 +2963,7 @@ contains
     real(r8):: cp_stoich_var=0.4    ! variability of CP ratio
     real(r8):: curmr, curmr_ratio         !xsmrpool temporary variables
     real(r8):: xsmr_ratio                 ! ratio of mr comes from non-structue carobn hydrate pool
+    real(r8):: dt
     !-----------------------------------------------------------------------
 
     associate(                                                                                 &
@@ -3139,6 +3134,8 @@ contains
 
 !
 !    !-------------------------------------------------------------------
+      ! set time steps
+      dt = real( get_step_size(), r8 )
 
       ! debug
       do fc=1,num_soilc
@@ -3926,22 +3923,22 @@ contains
       if (nu_com .eq. 'RD') then
 
         if(suplphos == suplpNon) then !!! No supplemental Phosphorus
-        call p2c(bounds,num_soilc,filter_soilc,         &
+          call p2c(bounds,num_soilc,filter_soilc,         &
                sminn_to_npool(bounds%begp:bounds%endp), &
                sminn_to_plant(bounds%begc:bounds%endc))
 
-        call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
-        do j = 1, nlevdecomp
+          call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
+          do j = 1, nlevdecomp
             do fc=1,num_soilc
                 c = filter_soilc(fc)
                 sminn_to_plant_vr(c,j) = sminn_to_plant(c) *  nuptake_prof(c,j)
             end do
-        end do
-      end if
+          end do
+        end if
 
-      !! Phosphorus
+        !! Phosphorus
 
-      if( .not. use_nitrif_denitrif) then
+        if( .not. use_nitrif_denitrif) then
 
           call p2c(bounds,num_soilc,filter_soilc,       &
               sminp_to_ppool(bounds%begp:bounds%endp), &
@@ -3955,23 +3952,25 @@ contains
               end do
           end do
 
-      else     ! use_nitrif_denitrif
+        else     ! use_nitrif_denitrif
   
-        if( .not.cnallocate_carbonphosphorus_only().and. .not.cnallocate_carbonnitrogen_only().and. .not.cnallocate_carbon_only() )then
+          if( .not.cnallocate_carbonphosphorus_only() .and. &
+              .not.cnallocate_carbonnitrogen_only().and.    &
+              .not.cnallocate_carbon_only() )then
 
           temp_sminn_to_plant = sminn_to_plant
           temp_sminp_to_plant = sminp_to_plant
 
-          call p2c(bounds,num_soilc,filter_soilc, &
+            call p2c(bounds,num_soilc,filter_soilc, &
                 sminn_to_npool(bounds%begp:bounds%endp), &
                 sminn_to_plant(bounds%begc:bounds%endc))
 
-          call p2c(bounds,num_soilc,filter_soilc, &
+            call p2c(bounds,num_soilc,filter_soilc, &
                 sminp_to_ppool(bounds%begp:bounds%endp), &
                 sminp_to_plant(bounds%begc:bounds%endc))
 
           
-          do j = 1, nlevdecomp
+            do j = 1, nlevdecomp
                do fc=1,num_soilc
                   c = filter_soilc(fc)
                   if ( temp_sminn_to_plant(c) > 0._r8) then 
@@ -3990,20 +3989,20 @@ contains
                      sminp_to_plant_vr(c,j) = 0._r8
                   endif 
                end do
-          end do             
+            end do
 
-        end if   ! carbonnitrogenphosphorus
+          end if   ! carbonnitrogenphosphorus
 
-        if( cnallocate_carbonnitrogen_only() )then
+          if( cnallocate_carbonnitrogen_only() )then
 
           temp_sminp_to_plant = sminp_to_plant
 
-          call p2c(bounds,num_soilc,filter_soilc, &
+            call p2c(bounds,num_soilc,filter_soilc, &
                 sminp_to_ppool(bounds%begp:bounds%endp), &
                 sminp_to_plant(bounds%begc:bounds%endc))
 
           
-          do j = 1, nlevdecomp
+            do j = 1, nlevdecomp
                do fc=1,num_soilc
                   c = filter_soilc(fc)
 
@@ -4013,11 +4012,13 @@ contains
                      sminp_to_plant_vr(c,j) = 0._r8
                   endif 
                end do
-          end do             
-        end if  ! carbonnitrogen 
+            end do
+          end if  ! carbonnitrogen
+
+        end if   ! use_nitrif_denitrif
+
       end if ! nu_com .eq. RD
          
-      end if   !  
 
       !----------------------------------------------------------------
 
@@ -4070,7 +4071,12 @@ contains
                else
                     sminn_vr_loc(c,j) = smin_no3_vr(c,j) + smin_nh4_vr(c,j)
                end if
-               sminn_tot(c) = sminn_tot(c) + sminn_vr_loc(c,j) * dzsoi_decomp(j) !!original: if (use_nitrif_denitrif): sminn_tot(c) = sminn_tot(c) + (smin_no3_vr(c,j) + smin_nh4_vr(c,j)) * dzsoi_decomp(j)
+               if(use_pflotran .and. pf_cmode) then
+                    sminn_tot(c) = sminn_tot(c) + sminn_vr_loc(c,j) * dzsoi_decomp(j) &
+                       *(nfixation_prof(c,j)*dzsoi_decomp(j))         ! weighted by froot fractions in annual max. active layers
+               else
+                    sminn_tot(c) = sminn_tot(c) + sminn_vr_loc(c,j) * dzsoi_decomp(j) !!original: if (use_nitrif_denitrif): sminn_tot(c) = sminn_tot(c) + (smin_no3_vr(c,j) + smin_nh4_vr(c,j)) * dzsoi_decomp(j)
+               end if
             end do
          end do
 
@@ -4078,12 +4084,16 @@ contains
             do fc=1,num_soilc
                c = filter_soilc(fc)
                if (sminn_tot(c)  >  0.) then
-                  nuptake_prof(c,j) = sminn_vr_loc(c,j) / sminn_tot(c)   !!original: if (use_nitrif_denitrif): nuptake_prof(c,j) = sminn_vr(c,j) / sminn_tot(c)
+                  if(use_pflotran .and. pf_cmode) then
+                     nuptake_prof(c,j) = sminn_vr_loc(c,j) / sminn_tot(c) &
+                        *(nfixation_prof(c,j)*dzsoi_decomp(j))         ! weighted by froot fractions in annual max. active layers
+                  else
+                     nuptake_prof(c,j) = sminn_vr_loc(c,j) / sminn_tot(c)   !!original: if (use_nitrif_denitrif): nuptake_prof(c,j) = sminn_vr(c,j) / sminn_tot(c)
+                  end if
                else
                   nuptake_prof(c,j) = nfixation_prof(c,j)
-               endif
-               !! sum_ndemand_vr will be calculated after calling calc_nuptake_prof
-!                sum_ndemand_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j) + potential_immob_vr(c,j)
+               end if
+
             end do
          end do
 
@@ -4114,7 +4124,7 @@ contains
 
     associate( &
          nfixation_prof               => cnstate_vars%nfixation_prof_col                     , & ! Output: [real(r8) (:,:) ]
-         solutionp_vr                 => phosphorusstate_vars%solutionp_vr_col                       & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N
+         solutionp_vr                 => phosphorusstate_vars%solutionp_vr_col                 & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N
          )
 
 
@@ -4141,8 +4151,7 @@ contains
                else
                   puptake_prof(c,j) = nfixation_prof(c,j)      !!!! need modifications !!!!
                endif
-               !! sum_pdemand_vr will be calculated after calling calc_puptake_prof
-!               sum_pdemand_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j) + potential_immob_p_vr(c,j)
+
             end do
          end do
     end associate

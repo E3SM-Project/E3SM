@@ -47,7 +47,7 @@ module clm_driver
   !
   use SurfaceRadiationMod    , only : SurfaceRadiation, CanopySunShadeFractions
   use UrbanRadiationMod      , only : UrbanRadiation
-  !clm_bgc_interface
+  !clm_interface
   use CNEcosystemDynMod      , only : CNEcosystemDynNoLeaching1, CNEcosystemDynNoLeaching2
 
   use CNEcosystemDynMod      , only : CNEcosystemDynLeaching !!CNEcosystemDynNoLeaching,
@@ -137,17 +137,18 @@ module clm_driver
 
   !!----------------------------------------------------------------------------
   !! bgc interface & pflotran:
-  use clm_varctl             , only : use_bgc_interface
-  use clm_instMod            , only : clm_bgc_data
-  use clm_bgc_interfaceMod   , only : get_clm_bgc_data
+  use clm_varctl             , only : use_clm_interface
+  use clm_instMod            , only : clm_interface_data
+  use clm_interface_funcsMod , only : get_clm_data
   !! (1) clm_bgc through interface
   use clm_varctl             , only : use_clm_bgc
-  use clm_bgc_interfaceMod   , only : clm_bgc_run, update_bgc_data_clm2clm
+  use clm_interface_funcsMod , only : clm_bgc_run, update_bgc_data_clm2clm
   !! (2) pflotran
-  use clm_varctl             , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
-  use clm_bgc_interfaceMod   , only : update_bgc_data_pf2clm
-  use clm_pflotran_interfaceMod   , only : clm_pf_run, clm_pf_write_restart
-!  use clm_pflotran_interfaceMod   , only : clm_pf_finalize
+  use clm_time_manager            , only : nsstep, nestep
+  use clm_varctl                  , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
+  use clm_interface_funcsMod      , only : update_bgc_data_pf2clm, update_th_data_pf2clm
+  use clm_interface_pflotranMod   , only : clm_pf_run, clm_pf_write_restart
+  use clm_interface_pflotranMod   , only : clm_pf_finalize
   !!----------------------------------------------------------------------------
 
   !
@@ -649,6 +650,7 @@ contains
        call HydrologyNoDrainage(bounds_clump,                                &
             filter(nc)%num_nolakec, filter(nc)%nolakec,                      &
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc,                &
+            filter(nc)%num_hydrononsoic, filter(nc)%hydrononsoic,            &
             filter(nc)%num_urbanc, filter(nc)%urbanc,                        &
             filter(nc)%num_snowc, filter(nc)%snowc,                          &
             filter(nc)%num_nosnowc, filter(nc)%nosnowc,                      &
@@ -801,9 +803,9 @@ contains
              ! - crop model:  crop algorithms called from within CNEcosystemDyn
              
              !!===========================================================================================
-             !! clm_bgc_interface: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): BEGIN
-             !! CNEcosystemDynNoLeaching1 is called before clm_bgc_interface
-             !! CNEcosystemDynNoLeaching2 is called after clm_bgc_interface
+             !! clm_interface: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): BEGIN
+             !! CNEcosystemDynNoLeaching1 is called before clm_interface
+             !! CNEcosystemDynNoLeaching2 is called after clm_interface
              !!===========================================================================================
              call CNEcosystemDynNoLeaching1(bounds_clump,                               &
                        filter(nc)%num_soilc, filter(nc)%soilc,                          &
@@ -818,39 +820,35 @@ contains
                        phosphorusflux_vars,phosphorusstate_vars)
 
              !!--------------------------------------------------------------------------------
-             if (use_bgc_interface) then
-                 !! STEP-1: pass data from CLM to clm_bgc_data (INTERFACE DATA TYPE)
-                 call get_clm_bgc_data(clm_bgc_data,bounds_clump,                       &
+             if (use_clm_interface) then
+                 !! STEP-1: pass data from CLM to clm_interface_data (INTERFACE DATA TYPE)
+                 call get_clm_data(clm_interface_data,bounds_clump,                     &
                            filter(nc)%num_soilc, filter(nc)%soilc,                      &
                            filter(nc)%num_soilp, filter(nc)%soilp,                      &
-                           atm2lnd_vars, waterstate_vars, waterflux_vars,               &
-                           soilstate_vars,  temperature_vars, energyflux_vars,          &
-                           soilhydrology_vars, soil_water_retention_curve,              &
+                           atm2lnd_vars, soilstate_vars,                                &
+                           waterstate_vars, waterflux_vars,                             &
+                           temperature_vars, energyflux_vars,                           &
                            cnstate_vars, carbonflux_vars, carbonstate_vars,             &
                            nitrogenflux_vars, nitrogenstate_vars,                       &
                            phosphorusflux_vars, phosphorusstate_vars,                   &
-                           canopystate_vars, ch4_vars)
+                           ch4_vars)
+
 
                  if (use_pflotran .and. pf_cmode) then
                     call t_startf('pflotran')
                     ! -------------------------------------------------------------------------
                     ! PFLOTRAN calling for solving below-ground and ground-surface processes,
                     ! including thermal, hydrological and biogeochemical processes
-                    !! STEP-2: (1) pass data from clm_bgc_data to pflotran
+                    !! STEP-2: (1) pass data from clm_interface_data to pflotran
                     !! STEP-2: (2) run pflotran
-                    !! STEP-2: (3) update clm_bgc_data from pflotran
+                    !! STEP-2: (3) update clm_interface_data from pflotran
                     ! -------------------------------------------------------------------------
-                    call clm_pf_run(clm_bgc_data,bounds_clump,                  &
-                           filter(nc)%num_soilc, filter(nc)%soilc)
+                    call clm_pf_run(clm_interface_data, bounds_clump, filter, nc)
 
-                    !! STEP-3: update CLM from clm_bgc_data
-                    call update_bgc_data_pf2clm(clm_bgc_data,bounds_clump,      &
-                           filter(nc)%num_soilc, filter(nc)%soilc,              &
+                    !! STEP-3: update CLM from clm_interface_data
+                    call update_bgc_data_pf2clm(clm_interface_data%bgc,         &
+                           bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc, &
                            filter(nc)%num_soilp, filter(nc)%soilp,              &
-                           atm2lnd_vars,                                        &
-                           waterstate_vars, waterflux_vars,                     &
-                           soilstate_vars,  temperature_vars, energyflux_vars,  &
-                           soilhydrology_vars, soil_water_retention_curve,      &
                            cnstate_vars, carbonflux_vars, carbonstate_vars,     &
                            nitrogenflux_vars, nitrogenstate_vars,               &
                            phosphorusflux_vars, phosphorusstate_vars,           &
@@ -862,11 +860,11 @@ contains
                     call t_startf('clm-bgc via interface')
                     ! -------------------------------------------------------------------------
                     !! run clm-bgc (CNDecompAlloc) through interface
-                    !! STEP-2: (1) pass data from clm_bgc_data to CNDecompAlloc
+                    !! STEP-2: (1) pass data from clm_interface_data to CNDecompAlloc
                     !! STEP-2: (2) run CNDecompAlloc
-                    !! STEP-2: (3) update clm_bgc_data from CNDecompAlloc
+                    !! STEP-2: (3) update clm_interface_data from CNDecompAlloc
                     ! -------------------------------------------------------------------------
-                    call clm_bgc_run(clm_bgc_data, bounds_clump,                &
+                    call clm_bgc_run(clm_interface_data, bounds_clump,          &
                            filter(nc)%num_soilc, filter(nc)%soilc,              &
                            filter(nc)%num_soilp, filter(nc)%soilp,              &
                            canopystate_vars, soilstate_vars,                    &
@@ -876,21 +874,17 @@ contains
                            nitrogenstate_vars, nitrogenflux_vars,               &
                            phosphorusstate_vars,phosphorusflux_vars)
 
-                    !! STEP-3: update CLM from clm_bgc_data
-                    call update_bgc_data_clm2clm(clm_bgc_data, bounds_clump,    &
-                           filter(nc)%num_soilc, filter(nc)%soilc,              &
+                    !! STEP-3: update CLM from clm_interface_data
+                    call update_bgc_data_clm2clm(clm_interface_data%bgc,        &
+                           bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc,&
                            filter(nc)%num_soilp, filter(nc)%soilp,              &
-                           atm2lnd_vars,                                        &
-                           waterstate_vars, waterflux_vars,                     &
-                           soilstate_vars,  temperature_vars, energyflux_vars,  &
-                           soilhydrology_vars, soil_water_retention_curve,      &
                            cnstate_vars, carbonflux_vars, carbonstate_vars,     &
                            nitrogenflux_vars, nitrogenstate_vars,               &
                            phosphorusflux_vars, phosphorusstate_vars,           &
                            ch4_vars)
                     call t_stopf('clm-bgc via interface')
                  end if !!if (use_pflotran .and. pf_cmode)
-             end if !!if (use_bgc_interface)
+             end if !!if (use_clm_interface)
              !!--------------------------------------------------------------------------------
 
              call CNEcosystemDynNoLeaching2(bounds_clump,                                   &
@@ -907,7 +901,7 @@ contains
                    phosphorusflux_vars,phosphorusstate_vars)
 
              !!===========================================================================================
-             !! clm_bgc_interface: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
+             !! clm_interface: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
              !!===========================================================================================
 
              call CNAnnualUpdate(bounds_clump,            &
@@ -990,13 +984,28 @@ contains
 
        call t_startf('hydro2 drainage')
 
-       call HydrologyDrainage(bounds_clump,                   &
+       if (use_clm_interface .and. (use_pflotran .and. pf_hmode)) then
+         ! pflotran only works on 'soilc' (already done above).
+         ! here for non-soil hydrology columns
+         call HydrologyDrainage(bounds_clump,                     &
+            filter(nc)%num_nolakec, filter(nc)%nolakec,           &
+            filter(nc)%num_hydrononsoic, filter(nc)%hydrononsoic, &
+            filter(nc)%num_urbanc, filter(nc)%urbanc,             &
+            filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,         &
+            atm2lnd_vars, glc2lnd_vars, temperature_vars,         &
+            soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars)
+
+       else
+
+         call HydrologyDrainage(bounds_clump,                 &
             filter(nc)%num_nolakec, filter(nc)%nolakec,       &
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
             filter(nc)%num_urbanc, filter(nc)%urbanc,         &                 
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,     &                
             atm2lnd_vars, glc2lnd_vars, temperature_vars,     &
             soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars)
+
+       end if
 
        call t_stopf('hydro2 drainage')     
 
@@ -1308,13 +1317,6 @@ contains
             soilstate_vars%bsw_col(bounds_proc%begc:bounds_proc%endc, 1:),    &
             soilstate_vars%hksat_col(bounds_proc%begc:bounds_proc%endc, 1:))
 
-       !----------------------------------------------
-       ! pflotran
-       if (use_pflotran) then
-            call clm_pf_write_restart(rdate)
-       end if
-       !----------------------------------------------
-
        call t_stopf('clm_drv_io_htapes')
 
        ! Write to CNDV history buffer if appropriate
@@ -1343,10 +1345,22 @@ contains
                betrtracer_vars, tracerstate_vars, tracerflux_vars,                            &
                tracercoeff_vars, alm_fates, rdate=rdate )
 
+         !----------------------------------------------
+         ! pflotran (off now)
+         ! if (use_pflotran) then
+         !     call clm_pf_write_restart(rdate)
+         ! end if
+         !----------------------------------------------
+
+
           call t_stopf('clm_drv_io_wrest')
        end if
        call t_stopf('clm_drv_io')
 
+    end if
+
+    if (use_pflotran .and. nstep>=nestep) then
+       call clm_pf_finalize()
     end if
 
   end subroutine clm_drv

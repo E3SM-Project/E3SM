@@ -60,6 +60,9 @@ module filterMod
      integer, pointer :: hydrologyc(:)   ! hydrology filter (columns)
      integer :: num_hydrologyc           ! number of columns in hydrology filter 
 
+     integer, pointer :: hydrononsoic(:) ! non-soil hydrology filter (columns)
+     integer :: num_hydrononsoic         ! number of columns in non-soil hydrology filter
+
      integer, pointer :: urbanl(:)       ! urban filter (landunits)
      integer :: num_urbanl               ! number of landunits in urban filter 
      integer, pointer :: nourbanl(:)     ! non-urban filter (landunits)
@@ -195,6 +198,7 @@ contains
        allocate(this_filter(nc)%natvegp(bounds%endp-bounds%begp+1))
 
        allocate(this_filter(nc)%hydrologyc(bounds%endc-bounds%begc+1))
+       allocate(this_filter(nc)%hydrononsoic(bounds%endc-bounds%begc+1))
 
        allocate(this_filter(nc)%urbanp(bounds%endp-bounds%begp+1))
        allocate(this_filter(nc)%nourbanp(bounds%endp-bounds%begp+1))
@@ -364,6 +368,7 @@ contains
     ! Create column-level hydrology filter (soil and Urban pervious road cols) 
 
     f = 0
+    fn= 0
     do c = bounds%begc,bounds%endc
        if (col_pp%active(c) .or. include_inactive) then
           l =col_pp%landunit(c)
@@ -371,10 +376,17 @@ contains
                lun_pp%itype(l) == istcrop) then
              f = f + 1
              this_filter(nc)%hydrologyc(f) = c
+
+             if (col_pp%itype(c) == icol_road_perv) then
+                fn = fn + 1
+                this_filter(nc)%hydrononsoic(fn) = c
+             end if
+
           end if
        end if
     end do
     this_filter(nc)%num_hydrologyc = f
+    this_filter(nc)%num_hydrononsoic = fn
 
     ! Create prognostic crop and soil w/o prog. crop filters at pft-level
     ! according to where the crop model should be used

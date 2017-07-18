@@ -397,8 +397,8 @@ contains
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
-    use clm_varctl                          , only : use_bgc_interface, use_pflotran
-    use clm_pflotran_interfaceMod           , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
+    use clm_varctl                          , only : use_clm_interface, use_pflotran
+    use clm_interface_pflotranMod           , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
     use betr_initializeMod    , only : betr_initialize
     use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars
     use betr_initializeMod    , only : bgc_reaction
@@ -892,15 +892,15 @@ contains
 
     !------------------------------------------------------------
     !! initialize clm_bgc_interface_data_type
-    call t_startf('init_clm_bgc_interface_data & pflotran')
-    if (use_bgc_interface) then
-        call clm_bgc_data%Init(bounds_proc)
+    call t_startf('init_clm_interface_data & pflotran')
+    if (use_clm_interface) then
+        call clm_interface_data%Init(bounds_proc)
         ! PFLOTRAN initialization
         if (use_pflotran) then
             call clm_pf_interface_init(bounds_proc)
         end if
     end if
-    call t_stopf('init_clm_bgc_interface_data & pflotran')
+    call t_stopf('init_clm_interface_data & pflotran')
     !------------------------------------------------------------
 
     !------------------------------------------------------------       
