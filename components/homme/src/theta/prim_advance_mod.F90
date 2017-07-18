@@ -276,7 +276,7 @@ contains
                 
       ! Form dt*n(g2) and store at np1
       call compute_andor_apply_rhs(np1,nm1,nm1,qn0,dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,gamma,1.d0,0.d0,0.d0)
+        deriv,nets,nete,.false.,(1-gamma)*eta_ave_w,1.d0,0.d0,0.d0)
 
       ! solve g2 = un0 + dt*gamma*n(g1) + dt*gamma*s(g2) for dt*s(g2) and 
       ! store at nm1
@@ -307,7 +307,7 @@ contains
        
      ! form unp1 = un0+dt*(1-gamma)*(n(g2)+s(g2))+dt*gamma*(n(g3)+s(g3))
       call compute_andor_apply_rhs(np1,nm1,np1,qn0,gamma*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,1.d0,1.d0,1.d0,1.d0)     
+        deriv,nets,nete,.false.,gamma*eta_ave_w,1.d0,1.d0,1.d0)     
             
       call state_read(elem,statesave,n0,nets,nete)
 
