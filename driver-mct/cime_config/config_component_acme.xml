@@ -452,7 +452,6 @@
     <default_value>FALSE</default_value>
     <values>
       <value compset="DATM.+POP\d">TRUE</value>
-      <value compset="DATM.*_MPASO">TRUE</value>
       <value compset="DATM.+DOCN%IAF">TRUE</value>
     </values>
     <group>run_component_cpl</group>
