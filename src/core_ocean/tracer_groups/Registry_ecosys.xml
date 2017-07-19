@@ -3,6 +3,18 @@
 			description="if true, the 'ecosysGRP' category is enabled for the run"
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_ecosys_atm_co2_option" type="character" default_value="none" units="unitless"
+			description="sets how atm co2 is set"
+			possible_values="none,constant,prognostic,diagnostic"
+		/>
+		<nml_option name="config_ecosys_atm_alt_co2_option" type="character" default_value="none" units="unitless"
+			description="sets how alt atm co2 is set"
+			possible_values="none,constant,prognostic,diagnostic"
+		/>
+		<nml_option name="config_ecosys_atm_co2_constant_value" type="real" default_value="379.0" units="ppmv"
+			description="value of atm co2 when config_ecosys_atm_co2_option = constant"
+			possible_values="positive real number"
+		/>
 		<nml_option name="config_use_ecosysTracers_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"
 			description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'ecosysGRP' category"
 			possible_values=".true. or .false."
