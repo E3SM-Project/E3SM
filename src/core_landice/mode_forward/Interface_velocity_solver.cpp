@@ -1559,8 +1559,7 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
 }
 
 void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
-            double const * lowerSurface_F, 
-            double const * thickness_F, double const * thicknessUncertainty_F,
+            double const * thicknessUncertainty_F,
             double const * smbUncertainty_F,
             double const * bmb_F, double const * bmbUncertainty_F,
             double const * observedSurfaceVelocityX_F, double const * observedSurfaceVelocityY_F,
@@ -2167,8 +2166,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F, minThickness);
 
     import2DFieldsObservations(bdExtensionMap,
-                    lowerSurface_F, 
-                    thickness_F, thicknessUncertainty_F,
+                    thicknessUncertainty_F,
                     smbUncertainty_F,
                     bmb_F, bmbUncertainty_F,
                     observedSurfaceVelocityX_F, observedSurfaceVelocityX_F, observedSurfaceVelocityUncertainty_F,
