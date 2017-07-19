@@ -1,15 +1,15 @@
 """
 Solution reproducibility test - common parts shared by
-different test methods. The CESM/ACME model's 
-multi-instance capability is used to conduct an ensemble 
+different test methods. The CESM/ACME model's
+multi-instance capability is used to conduct an ensemble
 of simulations starting from different initial conditions.
 
 This class inherits from SystemTestsCommon.
 
 Different solution reproducibility test methods use
-different namelist settings and postprocessing. 
-We will decide later whether separate test types 
-will be created for those different methods 
+different namelist settings and postprocessing.
+We will decide later whether separate test types
+will be created for those different methods
 (pergro, time step convergence, statistical methods)
 """
 
@@ -46,3 +46,7 @@ class SLR(SystemTestsCommon):
         self._case.set_value("ROOTPE_CPL",0)
         self._case.set_value("NTASKS_CPL",ntasks*ninst)
         self._case.flush()
+
+        case_setup(self._case, test_mode=True, reset=True)
+
+        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
