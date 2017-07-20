@@ -196,7 +196,7 @@ contains
       real (kind=RKIND), pointer ::  iceThicknessMax, iceThicknessMin, iceThicknessMean
       real (kind=RKIND), pointer ::  totalSfcMassBal, totalBasalMassBal
       real (kind=RKIND), pointer ::  totalGroundedBasalMassBal, totalFloatingBasalMassBal
-      real (kind=RKIND), pointer ::  avgAccumulation
+      real (kind=RKIND), pointer ::  avgNetAccumulation
       real (kind=RKIND), pointer ::  avgGroundedBasalMelt
       real (kind=RKIND), pointer ::  avgSubshelfMelt
       real (kind=RKIND), pointer ::  totalCalvingFlux
@@ -341,8 +341,8 @@ contains
       ! a single reduction for each type, rather than a reduction for each variable
       ! since these global communications can be expensive on many processors.
       ! For now, the mapping of variable names to indices is handled manually,
-      ! but if the number of variables grows, we could consider using a pools (a dictionary)
-      ! or some other strategy for automating the relationships
+      ! but if the number of variables grows, we could consider using a pool (a dictionary)
+      ! or some other strategy for automating the relationships.
       ! Once the reduction is complete, stick the reduced value into the globalStats pool member.
       ! Even though some (most?) variables do not include an index that is decomposed amongst
       ! domain partitions, we assign them within a block loop so that all blocks have the
@@ -353,6 +353,14 @@ contains
       ! ---------------------------
       sums = 0.0_RKIND
       reductions = 0.0_RKIND
+
+      ! Fill the array with the values accumulated over all blocks on this processor.
+      ! Note that the indices here need to be manually matched when unpacking the reduced
+      ! values after the global reduction.
+      ! Instructions: To add a new field, add a new sums(??) line with a larger index.
+      !     Then update nVars to the new value.  Make sure kMaxVariables is large enough above.
+      !     Then unpack the new index in the block loop into the appropriate variable.
+
       sums(1) = blockSumIceArea
       sums(2) = blockSumIceVolume
       sums(3) = blockSumGroundedIceArea
@@ -384,7 +392,7 @@ contains
          call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMin', iceThicknessMin)
          call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMean', iceThicknessMean)
          call mpas_pool_get_array(globalStatsAMPool, 'totalSfcMassBal', totalSfcMassBal)
-         call mpas_pool_get_array(globalStatsAMPool, 'avgAccumulation', avgAccumulation)
+         call mpas_pool_get_array(globalStatsAMPool, 'avgNetAccumulation', avgNetAccumulation)
          call mpas_pool_get_array(globalStatsAMPool, 'totalBasalMassBal', totalBasalMassBal)
          call mpas_pool_get_array(globalStatsAMPool, 'totalGroundedBasalMassBal', totalGroundedBasalMassBal)
          call mpas_pool_get_array(globalStatsAMPool, 'avgGroundedBasalMelt', avgGroundedBasalMelt)
@@ -406,7 +414,7 @@ contains
          volumeAboveFloatation = reductions(12)
 
          iceThicknessMean = totalIceVolume / totalIceArea
-         avgAccumulation = totalSfcMassBal / totalIceArea / rhoi
+         avgNetAccumulation = totalSfcMassBal / totalIceArea / rhoi
          avgGroundedBasalMelt = -1.0_RKIND * totalGroundedBasalMassBal / groundedIceArea / rhoi
          avgSubshelfMelt = -1.0_RKIND * totalFloatingBasalMassBal / floatingIceArea / rhoi
 
