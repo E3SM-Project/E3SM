@@ -65,6 +65,7 @@ module li_core
       use mpas_pool_routines
       use mpas_stream_manager
       use li_velocity
+      use li_velocity_external
       use li_thermal
       use li_setup
       use li_constants
@@ -243,6 +244,13 @@ module li_core
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'coeffs_reconstruct')
       call mpas_timer_stop("halo updates")
+
+      ! ===
+      ! Perform albany mesh write if requested - Note: model terminates after this.
+      ! I think this has to come here so we 1. have the vertical coordinate initialized first,
+      ! which occurs in landice_init_block and 2. have li_velocity_init.
+      ! ===
+      call li_velocity_external_write_albany_mesh(domain)
 
       ! check for errors and exit
 

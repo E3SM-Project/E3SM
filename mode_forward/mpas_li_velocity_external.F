@@ -16,6 +16,8 @@
 
 module li_velocity_external
 
+   use, intrinsic :: iso_c_binding
+
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
@@ -23,8 +25,8 @@ module li_velocity_external
    use mpas_log
 
    use li_setup
-   use, intrinsic :: iso_c_binding
    use li_constants
+   use li_mask
 
    implicit none
    private
@@ -45,7 +47,8 @@ module li_velocity_external
    public :: li_velocity_external_init, &
              li_velocity_external_block_init, &
              li_velocity_external_solve, &
-             li_velocity_external_finalize
+             li_velocity_external_finalize, &
+             li_velocity_external_write_albany_mesh
 
    interface
       ! Note: Could add all interface routines to this interface...
@@ -681,6 +684,175 @@ contains
 
    !--------------------------------------------------------------------
    end subroutine li_velocity_external_finalize
+
+
+!***********************************************************************
+!
+!  routine li_velocity_external_write_albany_mesh
+!
+!> \brief   Calls C++ code to write albany mesh in ascii format
+!> \author Matt Hoffman
+!> \date   4 May 2017
+!> \version SVN:$Id$
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+subroutine li_velocity_external_write_albany_mesh(domain)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      logical, pointer :: config_write_albany_ascii_mesh
+      character (len=StrKIND), pointer :: config_velocity_solver
+      real (kind=RKIND), dimension(:), pointer :: &
+         bedTopography, lowerSurface, upperSurface, layerThicknessFractions, beta
+      real (kind=RKIND), dimension(:), pointer :: thickness, thicknessUncertainty
+      real (kind=RKIND), dimension(:), pointer :: sfcMassBal, sfcMassBalUncertainty
+      real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal, floatingBasalMassBalUncertainty
+      real (kind=RKIND), dimension(:), pointer :: &
+         observedSurfaceVelocityX, observedSurfaceVelocityY, observedSurfaceVelocityUncertainty
+      real (kind=RKIND), dimension(:), pointer :: observedThicknessTendency, observedThicknessTendencyUncertainty
+      real (kind=RKIND), dimension(:,:), pointer :: temperature
+      integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask, floatingEdges
+      integer, dimension(:,:), pointer :: dirichletVelocityMask
+      type (mpas_pool_type), pointer :: meshPool, geometryPool, thermalPool, observationsPool, velocityPool
+      real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
+      integer :: err
+
+      call mpas_pool_get_config(liConfigs, 'config_write_albany_ascii_mesh', config_write_albany_ascii_mesh)
+      if (.not. config_write_albany_ascii_mesh) then
+         return ! do nothing
+      endif
+
+#if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
+      ! Capture Albany output
+      call interface_redirect_stdout(-1) ! time level of -1 prevents message of what time level this is
+
+      ! ---
+      ! Call C++ routine to calculate FEM mesh and write it out
+      ! ---
+
+      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
+
+      if (trim(config_velocity_solver) /= 'FO') then
+         call mpas_log_write("config_velocity solver needs to be set to 'FO' for config_write_albany_ascii_mesh to work.", &
+            MPAS_LOG_CRIT)
+      endif
+      ! check nProcs
+      if (domain % dminfo % nProcs /= 1) then
+         call mpas_log_write("config_write_albany_ascii_mesh currently only works on 1 processor.", MPAS_LOG_CRIT)
+      endif
+      ! check nBlocks
+      if (domain % dminfo % total_blocks /= 1) then
+         call mpas_log_write("config_write_albany_ascii_mesh currently only works on 1 block per processor.", MPAS_LOG_CRIT)
+      endif
+
+      ! get the needed fields out of pools
+      ! NOTE: Assuming one block per processor!
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'thermal', thermalPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'observations', observationsPool)
+
+      ! Mesh variables
+      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
+
+      ! Geometry variables
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
+      call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
+      call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+      call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel = 1)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+
+      ! Velocity variables
+      call mpas_pool_get_array(velocityPool, 'beta', beta)
+      call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
+      call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
+
+      ! Thermal variables
+      call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+
+      ! Observation variables
+      call mpas_pool_get_array(observationsPool, 'observedSurfaceVelocityX', observedSurfaceVelocityX)
+      call mpas_pool_get_array(observationsPool, 'observedSurfaceVelocityY', observedSurfaceVelocityY)
+      call mpas_pool_get_array(observationsPool, 'observedSurfaceVelocityUncertainty', observedSurfaceVelocityUncertainty)
+      call mpas_pool_get_array(observationsPool, 'observedThicknessTendency', observedThicknessTendency)
+      call mpas_pool_get_array(observationsPool, 'observedThicknessTendencyUncertainty', observedThicknessTendencyUncertainty)
+      call mpas_pool_get_array(observationsPool, 'thicknessUncertainty', thicknessUncertainty)
+      call mpas_pool_get_array(observationsPool, 'sfcMassBalUncertainty', sfcMassBalUncertainty)
+      call mpas_pool_get_array(observationsPool, 'floatingBasalMassBalUncertainty', floatingBasalMassBalUncertainty)
+
+      !----
+
+      ! Calculate diagnostic variables to get 1. lowerSurface, 2. mask fields 3. floatingedges and updated edgemask.
+      ! We could call diagnostic_solve_before_velocity to do all that, but the way
+      ! code is currently organized, that would be a circular dependency.a
+
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err)
+
+      ! Lower surface is based on floatation for floating ice.  For grounded ice (and non-ice areas) it is the bed.
+      where ( li_mask_is_floating_ice(cellMask) )
+         lowerSurface = config_sea_level - thickness * (config_ice_density / config_ocean_density)
+      elsewhere
+         lowerSurface = bedTopography
+      end where
+
+      floatingEdges = li_mask_is_floating_ice_int(edgeMask)
+      call li_calculate_extrapolate_floating_edgemask(meshPool, vertexMask, floatingEdges)
+
+      ! Create FEM mesh
+      call mpas_log_write("Generating new external velocity solver FEM grid.", flushNow=.true.)
+      call generate_fem_grid(config_velocity_solver, vertexMask, cellMask, dirichletVelocityMask, &
+              floatingEdges, layerThicknessFractions, lowerSurface, thickness, err)
+
+      ! call the C++ routine to write the mesh
+      call mpas_log_write("Writing Albany ASCII mesh.", flushNow=.true.)
+      call write_ascii_mesh(bedTopography, lowerSurface, &
+              beta, temperature, &
+              thickness, thicknessUncertainty, &
+              sfcMassBal, sfcMassBalUncertainty, &
+              floatingBasalMassBal, floatingBasalMassBalUncertainty, &
+              observedSurfaceVelocityX, observedSurfaceVelocityY, observedSurfaceVelocityUncertainty, &
+              observedThicknessTendency, observedThicknessTendencyUncertainty)
+
+      !----
+
+      call interface_reset_stdout()
+
+      ! kill the model so we don't actually run the forward model
+      call mpas_log_write("Write of Albany ASCII mesh complete. Terminating execution normally.", MPAS_LOG_CRIT)
+
+#else
+      call mpas_log_write("To run with an external velocity solver you must compile MPAS with one.", MPAS_LOG_ERR)
+      err = 1
+      return
+#endif
+
+   !--------------------------------------------------------------------
+   end subroutine li_velocity_external_write_albany_mesh
+
 
 
 

@@ -102,19 +102,23 @@ module li_core_interface
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_SGH
       logical, pointer :: config_adaptive_timestep_include_DCFL
+      logical, pointer :: config_write_albany_ascii_mesh
 
       logical, pointer :: higherOrderVelocityActive
       logical, pointer :: SIAvelocityActive
       logical, pointer :: hydroActive
+      logical, pointer :: observationsActive
 
       ierr = 0
 
       call mpas_pool_get_config(configPool, 'config_velocity_solver', config_velocity_solver)
       call mpas_pool_get_config(configPool, 'config_SGH', config_SGH)
+      call mpas_pool_get_config(configPool, 'config_write_albany_ascii_mesh', config_write_albany_ascii_mesh)
 
       call mpas_pool_get_package(packagePool, 'SIAvelocityActive', SIAvelocityActive)
       call mpas_pool_get_package(packagePool, 'higherOrderVelocityActive', higherOrderVelocityActive)
       call mpas_pool_get_package(packagePool, 'hydroActive', hydroActive)
+      call mpas_pool_get_package(packagePool, 'observationsActive', observationsActive)
 
       if (trim(config_velocity_solver) == 'sia') then
          SIAvelocityActive = .true.
@@ -129,6 +133,12 @@ module li_core_interface
       if (config_SGH) then
          hydroActive = .true.
          call mpas_log_write("The 'hydro' package and assocated variables have been enabled because 'config_SGH' is set to .true.")
+      endif
+
+      if (config_write_albany_ascii_mesh) then
+         observationsActive = .true.
+         call mpas_log_write("The 'observations' package and assocated variables have been enabled because " // &
+              "'config_write_albany_ascii_mesh' is set to .true.")
       endif
 
       ! call setup packages in analysis driver
