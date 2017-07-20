@@ -1,12 +1,11 @@
 .. _introduction-and-overview:
 
 
-**************************
+*************
 Introduction
-**************************
+*************
 
-The Common Infrastructure for Modeling the Earth (CIME) provides a UNIX command-line-based interface for
-configuring, compiling and executing Earth system models. Part 1 of this guide explains the basic commands
+Part 1 of this guide explains the basic commands
 that are needed to get a model running.  
 
 Prerequisites
@@ -23,17 +22,20 @@ Other prerequisites:
 
 - A correct version of the Python interpreter.
 
-CIME's commands are Python scripts and require a correct version of the Python interpreter to be installed. The Python version must be greater than 2.7 but less than 3.0. Determine which version you have like this:
+CIME's commands are Python scripts and require a correct version of
+the Python interpreter to be installed. The Python version must be
+greater than 2.7 but less than 3.0. Determine which version you have
+like this:
 ::
 
    > python --version
 
 
+Key Terms and concepts
+======================
 
-Terms and concepts
-=======================
-
-The following terms and concepts are ingrained in CIME and are used frequently in this documentation.
+The following key terms and concepts are ingrained in CIME and are used frequently in this documentation.
+See the glossary for a more complete list of terms. 
 
 **active, data and stub models**
    *active models*: Components of a model that solve a complex set of equations to describe the model's behavior are called 

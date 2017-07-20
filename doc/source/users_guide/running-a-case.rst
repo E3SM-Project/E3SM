@@ -262,8 +262,7 @@ continuous fashion.
 The variable ``$RUN_STARTDATE`` is the start date (in yyyy-mm-dd format) 
 for either a startup run or a hybrid run. If the run is targeted to be 
 a hybrid or branch run, you must specify values for ``$RUN_REFCASE`` and
-``$RUN_REFDATE``.  All run startup variables are discussed in 
-`run start control variables<http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_.
+``$RUN_REFDATE``. 
 
 .. _controlling-output-data:
 
