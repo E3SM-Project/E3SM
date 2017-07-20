@@ -1032,17 +1032,17 @@
     <NODENAME_REGEX>bebop</NODENAME_REGEX>
     <TESTS>acme_developer</TESTS>
     <COMPILERS>intel,gnu</COMPILERS>
-    <MPILIBS>mpt</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/bebop</CIME_OUTPUT_ROOT>
+    <MPILIBS>impi,mpich,mvapich,openmpi,mpi-serial</MPILIBS>
+    <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch/bebop</CIME_OUTPUT_ROOT>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <BASELINE_ROOT>/lcrc/group/earthscience/acme_baselines</BASELINE_ROOT>
+    <BASELINE_ROOT>/lcrc/group/acme/acme_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
-    <OS>CNL</OS>
+    <OS>LINUX</OS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>acme</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
@@ -1052,19 +1052,17 @@
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <mpirun mpilib="default"> 
-      <executable>srun</executable>
+      <executable>mpirun</executable>
       <arguments>
-        <arg name="label"> --label</arg>
         <arg name="num_tasks" > -n $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="python">module -q</cmd_path>
+      <cmd_path lang="sh">module -q</cmd_path>
+      <cmd_path lang="csh">module -q</cmd_path>
       <modules>
-        <command name="rm">intel</command>
-        <command name="rm">gcc</command>
-        <command name="rm">cmake</command>
+        <command name="purge"></command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/17.0.4-74uvhji</command>
@@ -1073,16 +1071,27 @@
       <modules compiler="gnu">
         <command name="load">gcc/7.1.0-4bgguyp</command>
       </modules>
+      <modules mpilib="impi">
+        <command name="load">intel-mpi/2017.3-dfphq6k</command>
+      </modules>
       <modules>
-        <command name="load">cmake/2.8.12.2-qndad62</command>
-        <command name="load">mpich/3.2-5koqqym</command>
-        <command name="load">netcdf/4.4.1.1-prsuusl</command>
+        <command name="load">cmake</command>
+	<command name="load">netcdf/4.4.1.1-prsuusl</command>
+        <command name="load">netcdf-fortran/4.4.4-ojwazvy</command>
+        <command name="load">parallel-netcdf/1.8.1</command>
       </modules>
     </module_system>
+    <environment_variables>
+      <env name="NETCDF_PATH">$SHELL{which nf-config | xargs dirname | xargs dirname}</env>
+      <env name="PNETCDF_PATH" mpilib="!mpi-serial">$SHELL{which pnetcdf_version | xargs dirname | xargs dirname}</env>
+    </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+    <environment_variables>
+      <env mpilib="impi" name="I_MPI_FABRICS">shm:tmi</env>
     </environment_variables>
 </machine>
 
