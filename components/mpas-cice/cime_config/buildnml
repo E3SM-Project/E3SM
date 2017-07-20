@@ -123,7 +123,7 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 	$decomp_date .= '170111';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS18to6v3_ICG' ) {
-	$grid_date .= '170622';
+	$grid_date .= '170719';
 	$grid_prefix .= 'seaice.RRS18to6v3.restartFrom_titan0228';
 	$decomp_date .= '170111';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
