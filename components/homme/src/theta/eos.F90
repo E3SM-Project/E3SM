@@ -23,7 +23,7 @@ module eos
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind
   use parallel_mod,   only: abortmp
-  use physical_constants, only : p0, kappa
+  use physical_constants, only : p0, kappa, g
   use control_mod,    only: theta_hydrostatic_mode
   use prim_si_mod,    only: preq_hydrostatic_v2, preq_omega_ps
   implicit none
@@ -261,6 +261,109 @@ contains
   enddo
 
   end subroutine
+
+
+  subroutine get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi,phis,kappa_star_i,pnh_i,exact,epsie,hvcoord,dpnh_dp, &
+    theta_dp_cp,kappa_star,pnh,exner,exner_i)
+  !================================================================================
+  ! This subroutine forms the tridiagonal analytic Jacobian (we actually form the diagonal, sub-, and super-diagonal)
+  ! J for use in a LApack tridiagonal LU factorization and solver to solve  J * x = -f either exactly or
+  ! approximately
+  !
+  ! epsie == 1 means exact Jacobian, epsie ~= 1 means finite difference approximate jacobian
+  ! exact,epsie,hvcoord,dpnh_dp,theta_dp_cp,kappa_star,pnh,exner,exner_i are only needed as inputs
+  ! if epsie ~=1
+  !  
+  ! The rule-of-thumb optimal epsie  is epsie = norm(elem)*sqrt(macheps)
+  !===================================================================================
+    real (kind=real_kind), intent(inout) :: JacD(nlev,np,np), pnh_i(np,np,nlevp)
+    real (kind=real_kind), intent(inout) :: JacL(nlev-1,np,np),JacU(nlev-1,np,np), phi(np,np,nlev)
+    real (kind=real_kind), intent(in)    :: dp3d(np,np,nlev), phis(np,np)
+    real (kind=real_kind), intent(in) :: kappa_star_i(np,np,nlevp)
+    real (kind=real_kind), intent(in)    :: dt2
+
+    real (kind=real_kind), intent(in), optional :: epsie ! epsie is the differencing size in the approx. Jacobian
+    real (kind=real_kind), intent(inout),  optional :: dpnh_dp(np,np,nlev), exner(np,np,nlev),exner_i(np,np,nlevp)
+    real (kind=real_kind), intent(inout),  optional :: kappa_star(np,np,nlev),theta_dp_cp(np,np,nlev), pnh(np,np,nlev)
+    type (hvcoord_t)     , intent(in), optional :: hvcoord
+
+
+    integer, intent(in) :: exact
+
+    ! local
+    real (kind=real_kind) :: alpha1(np,np),alpha2(np,np)
+    real (kind=real_kind) :: e(np,np,nlev),phitemp(np,np,nlev)
+    real (kind=real_kind) :: dpnh2(np,np,nlev),dpnh_dpepsie(np,np,nlev)
+    !
+    integer :: k,l
+
+    if (exact.eq.1) then ! use exact Jacobian
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,alpha1,alpha2)
+#endif
+      do k=1,nlev
+        ! this code will need to change when the equation of state is changed.
+        ! precompute the kappa_star, and add special cases for k==1 and k==nlev+1
+        if (k==1) then
+          alpha2(:,:)    = 1.d0 + kappa_star_i(:,:,k+1)/(1.d0-kappa_star_i(:,:,k+1))
+          JacD(k,:,:)    = (dt2*g)**2.d0 *alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k)-phi(:,:,k+1))* &
+            dp3d(:,:,k))+1.d0
+          JacU(k,:,:)    = (dt2*g)**2.d0 *alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k+1)-phi(:,:,k)) &
+            *dp3d(:,:,k))
+	    elseif (k==nlev) then
+          alpha1(:,:)    = 1.d0 + kappa_star_i(:,:,k)/(1.d0-kappa_star_i(:,:,k))
+          JacL(k-1,:,:)  = (dt2*g)**2.d0 *(alpha1(:,:)*pnh_i(:,:,k)/((phi(:,:,k)-phi(:,:,k-1))*dp3d(:,:,k)))
+          JacD(k,:,:)    = (dt2*g)**2.d0 *(  alpha1(:,:)*pnh_i(:,:,k+1)/(phi(:,:,k)-phis(:,:) ) +  &
+            alpha1(:,:)*pnh_i(:,:,k)/(phi(:,:,k-1)-phi(:,:,k)) )/dp3d(:,:,k) + 1.d0
+        else
+          alpha1(:,:)   = 1.d0 + kappa_star_i(:,:,k)/(1.d0-kappa_star_i(:,:,k))
+          alpha2(:,:)   = 1.d0 + kappa_star_i(:,:,k+1)/(1.d0-kappa_star_i(:,:,k+1))
+          JacL(k-1,:,:) = (dt2*g)**2.d0 *alpha1(:,:)*pnh_i(:,:,k)/((phi(:,:,k)-phi(:,:,k-1))*dp3d(:,:,k))
+          JacD(k,:,:)   = (dt2*g)**2.d0 *(alpha2(:,:)*pnh_i(:,:,k+1)/(phi(:,:,k)-phi(:,:,k+1)) + &
+            alpha1(:,:)*pnh_i(:,:,k)/(phi(:,:,k-1)-phi(:,:,k)))/dp3d(:,:,k)+1.d0
+          JacU(k,:,:)   = (dt2*g)**2.d0 *(alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k+1)-phi(:,:,k))*dp3d(:,:,k)))
+        end if
+      end do
+    else ! use finite difference approximation to Jacobian with differencing size espie
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,phitemp,dpnh_dpepsie)
+#endif
+      ! compute Jacobian of F(phi) = phi +const + (dt*g)^2 *(1-dp/dpi) column wise
+      ! we only form the tridagonal entries and this code can easily be modified to
+      ! accomodate sparse non-tridigonal and dense Jacobians, however, testing only
+      ! the tridiagonal of a Jacobian is probably sufficient for testing purpose
+      do k=1,nlev
+        e=0.d0
+        e(:,:,k)=1.d0
+        phitemp(:,:,:)=phi(:,:,:)
+        phitemp(:,:,k) = phi(:,:,k)+epsie*e(:,:,k)
+        if (theta_hydrostatic_mode) then
+          dpnh_dpepsie(:,:,:)=1.d0
+        else
+          call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phitemp,phis,&
+            kappa_star,pnh,dpnh_dpepsie,exner,exner_i,pnh_i)
+          dpnh_dpepsie(:,:,:)=dpnh_dpepsie(:,:,:)/dp3d(:,:,:)
+        end if
+        if (k.eq.1) then
+          JacL(k,:,:) = (g*dt2)**2.d0 * (dpnh_dp(:,:,k+1)-dpnh_dpepsie(:,:,k+1))/epsie
+          JacD(k,:,:) = 1.d0 + (g*dt2)**2.d0 * (dpnh_dp(:,:,k)-dpnh_dpepsie(:,:,k))/epsie
+        elseif (k.eq.nlev) then
+          JacL(k,:,:) = (g*dt2)**2.d0 * (dpnh_dp(:,:,k+1)-dpnh_dpepsie(:,:,k+1))/epsie
+          JacD(k,:,:) = 1.d0 + (g*dt2)**2.d0 * (dpnh_dp(:,:,k)-dpnh_dpepsie(:,:,k))/epsie
+        elseif (k.eq.nlev) then
+          JacD(k,:,:)   = 1.d0 + (g*dt2)**2.d0 * (dpnh_dp(:,:,k)-dpnh_dpepsie(:,:,k))/epsie
+          JacU(k-1,:,:) = (g*dt2)**2.d0 * (dpnh_dp(:,:,k-1)-dpnh_dpepsie(:,:,k-1))/epsie
+        else
+          JacL(k,:,:)   = (g*dt2)**2.d0 * (dpnh_dp(:,:,k+1)-dpnh_dpepsie(:,:,k+1))/epsie
+          JacD(k,:,:)   = 1.d0 + (g*dt2)**2.d0 * (dpnh_dp(:,:,k)-dpnh_dpepsie(:,:,k))/epsie
+          JacU(k-1,:,:) = (g*dt2)**2.d0 * (dpnh_dp(:,:,k-1)-dpnh_dpepsie(:,:,k-1))/epsie
+        end if
+      end do
+    end if
+
+
+  end subroutine get_dirk_jacobian
+
 
 
 end module
