@@ -1033,9 +1033,10 @@ contains
   real (kind=real_kind) :: eta_ave_w  ! weighting for eta_dot_dpdn mean flux
 
   ! local
-  real (kind=real_kind), pointer, dimension(:,:,:)   :: phi
+  !real (kind=real_kind), pointer, dimension(:,:,:)   :: phi
   real (kind=real_kind), pointer, dimension(:,:,:)   :: dp
 
+  real (kind=real_kind), dimension(np,np,nlev)   :: phi
   real (kind=real_kind), dimension(np,np,nlev)   :: omega_p
   real (kind=real_kind), dimension(np,np,nlev)   :: T_v
   real (kind=real_kind), dimension(np,np,nlev)   :: divdp
@@ -1067,7 +1068,6 @@ contains
   real (kind=real_kind) ::  cp2,cp_ratio,E,de,Qt,v1,v2
   real (kind=real_kind) ::  glnps1,glnps2,gpterm
   integer :: i,j,k,kptr,ie
-  real (kind=real_kind) ::  u_m_umet, v_m_vmet, t_m_tmet
 
 !JMD  call t_barrierf('sync_compute_and_apply_rhs', hybrid%par%comm)
 
@@ -1075,7 +1075,7 @@ contains
   call t_startf('compute_and_apply_rhs')
   do ie=nets,nete
      !ps => elem(ie)%state%ps_v(:,:,n0)
-     phi => elem(ie)%derived%phi(:,:,:)
+     !phi => elem(ie)%derived%phi(:,:,:)
      dp  => elem(ie)%state%dp3d(:,:,:,n0)
 
 ! dont thread this because of k-1 dependence:
@@ -1240,7 +1240,7 @@ contains
      ! Compute phi + kinetic energy term: 10*nv*nv Flops
      ! ==============================================
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,E,Ephi,vtemp,vgrad_T,gpterm,glnps1,glnps2,u_m_umet,v_m_vmet,t_m_tmet)
+!$omp parallel do private(k,i,j,v1,v2,E,Ephi,vtemp,vgrad_T,gpterm,glnps1,glnps2)
 #endif
      vertloop: do k=1,nlev
         do j=1,np

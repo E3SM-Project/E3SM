@@ -36,7 +36,10 @@ contains
   implicit none
 !
 ! Use Equation of State to compute exner pressure, nh presure
-! EOS:   
+! hydrostatic EOS:
+!          compute p, exner  (only input needed id dp3d and kappa_star)
+!
+! nonhydrostatic EOS:   
 !
 !       theta_dp_cp * ep = -dphi/ds    OR    rho_R_theta * dphi/ds = -theta_dp_cp*kappa
 !

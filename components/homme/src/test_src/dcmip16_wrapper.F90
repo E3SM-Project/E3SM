@@ -73,6 +73,7 @@ max_thetav = -huge(rl)
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 1: moist baroclinic wave'
 
+  if (qsize<5) call abortmp('ERROR: test requires qsize>=5')
   ! allocate storage for total precip, for output to file
   allocate(precl(np,np,nelemd))
   precl = 0
@@ -98,8 +99,8 @@ max_thetav = -huge(rl)
         call initial_value_terminator( lat*rad2dg, lon*rad2dg, q(i,j,k,4), q(i,j,k,5) )
         call set_tracers(q(i,j,k,1:5),5,dp(i,j,k),i,j,k,lat,lon,elem(ie))
 
-min_thetav =  min( min_thetav,   thetav(i,j,k) )
-max_thetav =  max( max_thetav,   thetav(i,j,k) )
+        min_thetav =  min( min_thetav,   thetav(i,j,k) )
+        max_thetav =  max( max_thetav,   thetav(i,j,k) )
 
     enddo; enddo; enddo
 
@@ -108,7 +109,7 @@ max_thetav =  max( max_thetav,   thetav(i,j,k) )
 
   enddo
   sample_period = 1800.0 ! sec
-print *,"min thetav = ",min_thetav, "max thetav=",max_thetav
+  !print *,"min thetav = ",min_thetav, "max thetav=",max_thetav
 
 
 end subroutine
@@ -336,7 +337,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl) :: max_w, max_precl, min_ps
   real(rl) :: lat, lon, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
 
-  integer :: pbl_type, prec_type
+  integer :: pbl_type, prec_type, qi
   integer, parameter :: test = 1
 
   prec_type = dcmip16_prec_type
@@ -358,11 +359,12 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     theta_kess = T/exner_kess
 
     ! get mixing ratios
-    qv  = elem(ie)%state%Qdp(:,:,:,1,ntQ)/dp
-    qc  = elem(ie)%state%Qdp(:,:,:,2,ntQ)/dp
-    qr  = elem(ie)%state%Qdp(:,:,:,3,ntQ)/dp
-    cl  = elem(ie)%state%Qdp(:,:,:,4,ntQ)/dp
-    cl2 = elem(ie)%state%Qdp(:,:,:,5,ntQ)/dp
+    ! use qi to avoid compiler warnings when qsize_d<5
+    qi=1;  qv  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
+    qi=2;  qc  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
+    qi=3;  qr  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
+    qi=4;  cl  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
+    qi=5;  cl2 = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
 
     ! ensure positivity
     where(qv<0); qv=0; endwhere
@@ -423,12 +425,12 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
 
     ! set tracer-mass forcing
-    elem(ie)%derived%FQ(:,:,:,1) = dp*(qv-qv0)/dt
-    elem(ie)%derived%FQ(:,:,:,2) = dp*(qc-qc0)/dt
-    elem(ie)%derived%FQ(:,:,:,3) = dp*(qr-qr0)/dt
+    qi=1; elem(ie)%derived%FQ(:,:,:,qi) = dp*(qv-qv0)/dt
+    qi=2; elem(ie)%derived%FQ(:,:,:,qi) = dp*(qc-qc0)/dt
+    qi=3; elem(ie)%derived%FQ(:,:,:,qi) = dp*(qr-qr0)/dt
 
-    elem(ie)%derived%FQ(:,:,:,4) = dp*ddt_cl
-    elem(ie)%derived%FQ(:,:,:,5) = dp*ddt_cl2
+    qi=4; elem(ie)%derived%FQ(:,:,:,qi) = dp*ddt_cl
+    qi=5; elem(ie)%derived%FQ(:,:,:,qi) = dp*ddt_cl2
 
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )

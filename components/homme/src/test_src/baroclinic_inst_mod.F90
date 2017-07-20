@@ -251,7 +251,7 @@ if (qsize==10) then
          term = sin(9.*elem(ie)%spherep(i,j)%lon)*sin(9.*elem(ie)%spherep(i,j)%lat)
 
          do k=1,nlev
-         do idex=4,qsize
+         do idex=qsize-6,qsize  
             if ( term < 0. ) then
                elem(ie)%state%Q(i,j,k,idex) = 0
             else

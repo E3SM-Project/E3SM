@@ -678,15 +678,9 @@ contains
            elem(ie)%state%w(:,:,k,nt)=elem(ie)%state%w(:,:,k,nt) &
                 +stens(:,:,k,3,ie)
            
-          ! elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt) &
-          !      +stens(:,:,k,4,ie)
+           elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt) &
+                +stens(:,:,k,4,ie)
         enddo
-
-if(.not. theta_hydrostatic_mode) then
-  do k=1,nlev
-    elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt) +stens(:,:,k,4,ie)
-  enddo
-endif
 
 
         ! apply heating after updating sate.  using updated v gives better results in PREQX model
@@ -968,10 +962,9 @@ endif
   real (kind=real_kind) :: vtens1(np,np,nlev)
   real (kind=real_kind) :: vtens2(np,np,nlev)
   real (kind=real_kind) :: v_vadv(np,np,2,nlev)       ! velocity vertical advection
-  real (kind=real_kind) :: s_state(np,np,nlev,2)      ! scalars w,theta,phi
-  real (kind=real_kind) :: s_vadv(np,np,nlev,3)       ! scalar vertical advection
-  real (kind=real_kind) :: s_theta_dp_cpadv(np,np,nlev)
-  real (kind=real_kind) :: stens(np,np,nlev,3)        ! tendencies w,theta,phi
+  real (kind=real_kind) :: s_state(np,np,nlev,2)      ! scalars w,phi
+  real (kind=real_kind) :: s_vadv(np,np,nlev,3)       ! w,phi, theta  vertical advection term
+  real (kind=real_kind) :: stens(np,np,nlev,3)        ! tendencies w,phi,theta
 
   real (kind=real_kind) ::  temp(np,np,nlev)
   real (kind=real_kind), dimension(np,np) :: sdot_sum ! temporary field
@@ -1056,7 +1049,6 @@ endif
         ! VERTICALLY LAGRANGIAN:   no vertical motion
         eta_dot_dpdn=0
         s_vadv=0
-        s_theta_dp_cpadv=0
         v_vadv=0
      else
         do k=1,nlev
@@ -1112,7 +1104,7 @@ endif
 
 
         do k=1,nlev
-           s_theta_dp_cpadv(:,:,k)= &
+           s_vadv(:,:,k,3)= &
               eta_dot_dpdn(:,:,k+1)* theta_bar(:,:,k+1)  - &
               eta_dot_dpdn(:,:,k)  * theta_bar(:,:,k)
         end do
@@ -1158,14 +1150,14 @@ endif
           elem(ie)%state%v(:,:,2,k,n0)                                 &
           *elem(ie)%state%theta_dp_cp(:,:,k,n0)
         div_v_theta(:,:,k)=divergence_sphere(v_theta(:,:,:,k),deriv,elem(ie))
-        stens(:,:,k,2)=(-s_theta_dp_cpadv(:,:,k)-div_v_theta(:,:,k))*scale1
+        stens(:,:,k,3)=(-s_vadv(:,:,k,3)-div_v_theta(:,:,k))*scale1
 
         gradphi(:,:,:,k) = gradient_sphere(phi(:,:,k),deriv,elem(ie)%Dinv)
 
         v_gradphi(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*gradphi(:,:,1,k) &
              +elem(ie)%state%v(:,:,2,k,n0)*gradphi(:,:,2,k) 
         ! use of s_vadv(:,:,k,2) here is correct since this corresponds to etadot d(phi)/deta
-        stens(:,:,k,3) =  (-s_vadv(:,:,k,2) - v_gradphi(:,:,k))*scale1 + scale2*g*elem(ie)%state%w(:,:,k,n0)
+        stens(:,:,k,2) =  (-s_vadv(:,:,k,2) - v_gradphi(:,:,k))*scale1 + scale2*g*elem(ie)%state%w(:,:,k,n0)
 
         KE(:,:,k) = ( elem(ie)%state%v(:,:,1,k,n0)**2 + elem(ie)%state%v(:,:,2,k,n0)**2)/2
         gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
@@ -1268,7 +1260,7 @@ endif
 
                !  Form IEvert1
                   elem(ie)%accum%IEvert1(i,j)=elem(ie)%accum%IEvert1(i,j)      &
-                  -exner(i,j,k)*s_theta_dp_cpadv(i,j,k)                        
+                  -exner(i,j,k)*s_vadv(i,j,k,3)                        
                !  Form IEvert2
                   elem(ie)%accum%IEvert2(i,j)=elem(ie)%accum%IEvert2(i,j)      &
                   +dpnh(i,j,k)*s_vadv(i,j,k,2)
@@ -1323,9 +1315,9 @@ endif
         elem(ie)%state%w(:,:,k,np1)    = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%w(:,:,k,nm1)   &
           + dt2*stens(:,:,k,1))
         elem(ie)%state%theta_dp_cp(:,:,k,np1) = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%theta_dp_cp(:,:,k,nm1) &
-          + dt2*stens(:,:,k,2))
-        elem(ie)%state%phi(:,:,k,np1)   = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%phi(:,:,k,nm1) & 
           + dt2*stens(:,:,k,3))
+        elem(ie)%state%phi(:,:,k,np1)   = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%phi(:,:,k,nm1) & 
+          + dt2*stens(:,:,k,2))
 
         elem(ie)%state%dp3d(:,:,k,np1) = &
              elem(ie)%spheremp(:,:) * (scale3 * elem(ie)%state%dp3d(:,:,k,nm1) - &
@@ -1376,9 +1368,6 @@ endif
         elem(ie)%state%v(:,:,1,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
         elem(ie)%state%v(:,:,2,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
      end do
-
-      if(theta_hydrostatic_mode) elem(ie)%state%phi(:,:,:,np1) = elem(ie)%state%phi(:,:,:,n0)
-
   end do
 
   call t_stopf('compute_andor_apply_rhs')

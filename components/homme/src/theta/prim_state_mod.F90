@@ -17,7 +17,7 @@ module prim_state_mod
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
-  use element_ops,      only: get_field, get_kappa_star
+  use element_ops,      only: get_field, get_kappa_star, get_phi
   use eos,              only: get_pnh_and_exner
   use viscosity_mod,    only: compute_zeta_C0
   use reduction_mod,    only: parallelmax,parallelmin
@@ -89,6 +89,7 @@ contains
     real (kind=real_kind)  :: tmp1(nets:nete)
     real (kind=real_kind)  :: ps(np,np)
     real (kind=real_kind)  :: dp(np,np)
+    real (kind=real_kind)  :: phi(np,np,nlev)
     real (kind=real_kind)  :: dphi(np,np,nlev-1)
     real (kind=real_kind)  :: tdiag(np,np,nlev)
     !    real (kind=real_kind)  :: E(np,np)
@@ -124,7 +125,7 @@ contains
     real (kind=real_kind) :: phimax_p, phimin_p, phisum_p
 
 
-    real(kind=real_kind) :: vsum_t(1), relvort
+    real(kind=real_kind) :: relvort
     real(kind=real_kind) :: v1, v2, vco(np,np,2,nlev)
 
     real (kind=real_kind) :: time, time2,time1, scale, dt, dt_split
@@ -147,7 +148,6 @@ contains
           write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
        endif
     end if
-
     TOTE     = 0
     KEner    = 0
     PEner    = 0
@@ -178,11 +178,8 @@ contains
     time1 = time - dt
 
 
-    vsum_t(1) = 0.0D0
-
     ! npts = np
     npts=SIZE(elem(1)%state%ps_v(:,:,n0),1)
-
     do q=1,qsize
        do ie=nets,nete
           tmp1(ie) = MINVAL(elem(ie)%state%Q(:,:,:,q))
@@ -212,8 +209,10 @@ contains
        endif
 
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
+       call get_phi(elem(ie),phi,hvcoord,n0,n0q)
+
        do k=1,nlev-1
-          dphi(:,:,k)=elem(ie)%state%phi(:,:,k,n0)-elem(ie)%state%phi(:,:,k+1,n0)
+          dphi(:,:,k)=phi(:,:,k)-phi(:,:,k+1)
        enddo
        !======================================================  
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
@@ -787,6 +786,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(np,np)  :: E
     real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
+    real (kind=real_kind) :: phi(np,np,nlev)  
     real (kind=real_kind) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
     real (kind=real_kind) :: dpnh(np,np,nlev) 
     real (kind=real_kind) :: exner(np,np,nlev)  ! exner nh pressure
@@ -827,12 +827,12 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        enddo
        elem(ie)%accum%KEner(:,:,n)=suml(:,:)
 
-
+       call get_phi(elem(ie),phi,hvcoord,t1,t1_qdp)
     
     !   PE   dp/dn PHIs
        suml=0
        do k=1,nlev
-          suml = suml + elem(ie)%state%phi(:,:,k,t1)*dpt1(:,:,k)
+          suml = suml + phi(:,:,k)*dpt1(:,:,k)
        enddo
        elem(ie)%accum%PEner(:,:,n)=suml(:,:)
        
@@ -843,7 +843,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        do k=1,nlev
           suml(:,:)=suml(:,:)+&
                 elem(ie)%state%theta_dp_cp(:,:,k,t1)*exner(:,:,k) 
-          suml2(:,:) = suml2(:,:) -dpnh(:,:,k)*elem(ie)%state%phi(:,:,k,t1)
+          suml2(:,:) = suml2(:,:) -dpnh(:,:,k)*phi(:,:,k)
        enddo
        elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
             pnh_i(:,:,nlevp)* elem(ie)%state%phis(:,:)

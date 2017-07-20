@@ -758,17 +758,19 @@ contains
              endif
 
              if(nf_selectedvar('precl', output_varnames)) then
-                if (par%masterproc) print *,'writing precl...'
-                allocate (datall(ncnt,1))
-                st=1
-                do ie=1,nelemd
-                   en=st+interpdata(ie)%n_interp-1
-                        call interpolate_scalar(interpdata(ie),precl(:,:,ie), &
-                        np, datall(st:en,1))
-                   st=st+interpdata(ie)%n_interp
-                enddo
-                call nf_put_var(ncdf(ios),datall(:,1),start2d,count2d,name='precl')
-                deallocate(datall)
+                if (allocated(precl)) then
+                   if (par%masterproc) print *,'writing precl...'
+                   allocate (datall(ncnt,1))
+                   st=1
+                   do ie=1,nelemd
+                      en=st+interpdata(ie)%n_interp-1
+                      call interpolate_scalar(interpdata(ie),precl(:,:,ie), &
+                           np, datall(st:en,1))
+                      st=st+interpdata(ie)%n_interp
+                   enddo
+                   call nf_put_var(ncdf(ios),datall(:,1),start2d,count2d,name='precl')
+                   deallocate(datall)
+                endif
              endif
 
 

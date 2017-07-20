@@ -116,7 +116,7 @@ contains
     real (kind=real_kind) :: omegamax_p, omegamin_p, omegasum_p
 
 
-    real(kind=real_kind) :: vsum_t(1), relvort
+    real(kind=real_kind) :: relvort
     real(kind=real_kind) :: v1, v2, vco(np,np,2,nlev)
 
     real (kind=real_kind) :: time, time2,time1, scale, dt, dt_split
@@ -159,8 +159,6 @@ contains
     time2 = time 
     time1 = time - dt
 
-
-    vsum_t(1) = 0.0D0
 
     ! npts = np
     npts=SIZE(elem(1)%state%ps_v(:,:,n0),1)

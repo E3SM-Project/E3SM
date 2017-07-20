@@ -33,7 +33,8 @@ module element_ops
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp
   use physical_constants, only : kappa, p0, Rgas, cp, g, dd_pi, Rwater_vapor, Cpwater_vapor
-
+  use physics_mod,    only : virtual_temperature
+  use prim_si_mod,    only : preq_hydrostatic
   implicit none
 
   type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
@@ -57,7 +58,7 @@ contains
 
     case ('T','temperature'); call get_temperature(elem,field,hvcoord,nt,ntQ)
     case ('Th','pottemp');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
-    case ('geo','phi');       field = elem%derived%phi(:,:,:)
+    case ('geo','phi');       call get_phi(elem,field,hvcoord,nt,ntQ)
 
     case ('omega')
         call get_field(elem,'p',p,hvcoord,nt,ntQ)
@@ -86,6 +87,47 @@ contains
   end subroutine
 
   !_____________________________________________________________________
+  subroutine get_phi(elem,phi,hvcoord,nt,ntQ)
+  implicit none
+    
+  type (element_t), intent(in)        :: elem
+  real (kind=real_kind), intent(out)  :: phi(np,np,nlev)
+  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+  integer, intent(in) :: nt
+  integer, intent(in) :: ntQ
+  
+  !   local
+  real (kind=real_kind) :: pfull(np,np,nlev)
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: T_v(np,np,nlev)
+  real (kind=real_kind) :: Qt
+  integer :: k,i,j
+
+
+  do k=1,nlev
+     pfull(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0  &
+          + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
+     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
+
+
+     if (.not. use_moisture ) then
+        T_v(:,:,k) = elem%state%T(:,:,k,nt)
+     else
+        do j=1,np
+           do i=1,np
+              Qt = elem%state%Qdp(i,j,k,1,ntQ)/dp(i,j,k)
+              T_v(i,j,k) = Virtual_Temperature(elem%state%T(i,j,k,nt),Qt)
+           end do
+        end do
+     endif
+  enddo
+  call preq_hydrostatic(phi,elem%state%phis,T_v,pfull,dp)  
+
+  end subroutine get_phi
+
+
+  !_____________________________________________________________________
   subroutine get_pottemp(elem,pottemp,hvcoord,nt,ntQ)
   implicit none
     
@@ -111,6 +153,7 @@ contains
   enddo
   
   end subroutine get_pottemp
+
 
   !_____________________________________________________________________
   subroutine get_temperature(elem,temperature,hvcoord,nt,ntQ)
@@ -175,7 +218,6 @@ contains
     elem%state%T   (i,j,k,n0:n1)   = T
     elem%state%ps_v(i,j,n0:n1)     = ps
     elem%state%phis(i,j)           = phis
-    elem%derived%phi(i,j,k)        = zm*g
 
   end subroutine
 
@@ -199,7 +241,6 @@ contains
       elem%state%T    (:,:,:,  n) = T
       elem%state%ps_v (:,:,    n) = ps
       elem%state%phis (:,:)       = phis
-      elem%derived%phi(:,:,:)     = zm*g
     end do
 
   end subroutine set_elem_state
@@ -227,7 +268,6 @@ contains
     w   = 0                             ! todo: w = -omega/(rho g)
     T   = elem%state%T   (:,:,:,nt)
     ps  = elem%state%ps_v(:,:,nt)
-    zm  = elem%derived%phi(:,:,:)/g
 
     do k=1,nlev
        p (:,:,k)= hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)

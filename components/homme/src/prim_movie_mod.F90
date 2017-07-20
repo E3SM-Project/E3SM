@@ -592,14 +592,17 @@ contains
              enddo
 
              if(nf_selectedvar('geo', output_varnames)) then
+                if (par%masterproc) print *,'writing geo...'
                 st=1
                 do ie=1,nelemd
                    en=st+elem(ie)%idxp%NumUniquePts-1
-                   call UniquePoints(elem(ie)%idxP,nlev,elem(ie)%derived%phi,var3d(st:en,:))
+                   call get_field(elem(ie),'geo',vartmp,hvcoord,n0,n0_Q)
+                   call UniquePoints(elem(ie)%idxP,nlev,vartmp,var3d(st:en,:))
                    st=en+1
-                end do
+                enddo
                 call nf_put_var(ncdf(ios),var3d,start, count, name='geo')
              end if
+
 
              if(nf_selectedvar('omega', output_varnames)) then
                 st=1

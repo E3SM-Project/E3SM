@@ -15,22 +15,10 @@ if ( ${?SLURM_NNODES} ) then   # redsky
 endif
 date
 
-set EXEC = ../../../test_execs/theta-nlev60/theta-nlev60
 
-# hydrostatic theta
-set namelist = namelist-h.nl
-\cp -f $namelist input.nl
+set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
+\cp -f namelist-r400-dry.nl input.nl
 mpirun -np $NCPU $EXEC < input.nl
-#ncl plot_lon_vs_z.ncl
-#\mv -f movies/dcmip2012_test2_11.nc  movies/hydro_dcmip2012_test2_11.nc
-#\mv -f dcmip2012_test2_1_T_t10.pdf   hydro_T_t10.pdf
-
-# nonhydrostatic theta
-set namelist = namelist-nh.nl
-\cp -f $namelist input.nl
-mpirun -np $NCPU $EXEC < input.nl
-#ncl plot_lon_vs_z.ncl
-#\mv -f movies/dcmip2012_test2_11.nc  movies/nonhydro_dcmip2012_test2_11.nc
-#\mv -f dcmip2012_test2_1_T_t10.pdf   nonhydro_T_t10.pdf
 
 date
+
