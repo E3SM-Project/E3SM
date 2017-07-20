@@ -58,6 +58,7 @@
 #define interface_init_log interface_init_log_
 #define interface_redirect_stdout interface_redirect_stdout_
 #define interface_reset_stdout interface_reset_stdout_
+#define write_ascii_mesh write_ascii_mesh_
 #endif
 
 //#include <lifev/core/algorithm/PreconditionerIfpack.hpp>
@@ -147,7 +148,17 @@ void interface_init_log();
 void interface_redirect_stdout(int const* iTimestep);
 
 void interface_reset_stdout();
-}
+
+void write_ascii_mesh(double const* bedTopography_F, double const* lowerSurface_F,
+    double const* beta_F, double const* temperature_F,
+    double const* thickness_F, double const* thicknessUncertainty_F,
+    double const* smb_F, double const* smbUncertainty_F,
+    double const* bmb_F, double const* bmbUncertainty_F,
+    double const* observedSurfaceVelocityX_F, double const* observedSurfaceVelocityY_F,
+    double const* observedVelocityUncertainty_F, 
+    double const* observedThicknessTendency_F, double const * observedThicknessTendencyUncertainty_F);
+
+} // extern "C"
 
 extern void velocity_solver_finalize__();
 
@@ -234,7 +245,6 @@ extern void velocity_solver_extrude_3d_grid__(int nLayers, int nGlobalTriangles,
 extern void velocity_solver_export_fo_velocity__(MPI_Comm reducedComm);
 
 
-
 #ifdef LIFEV
 extern int  velocity_solver_initialize_iceProblem__(bool keep_proc, MPI_Comm reducedComm);
 #endif
@@ -251,15 +261,26 @@ double signedTriangleArea(const double* x, const double* y, const double* z);
 
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id);
 
-void import2DFields(double const* bedTopography_F, double const* lowerSurface_F, double const* thickness_F,
-    double const* beta_F = 0, double const* smb_F = 0, double eps = 0);
+void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const* lowerSurface_F, double const* thickness_F,
+    double const* beta_F = 0, double const* temperature_F = 0, double const* smb_F = 0, double eps = 0);
+
+void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
+            double const * lowerSurface_F, 
+            double const * thickness_F, double const * thicknessUncertainty_F,
+            double const * smbUncertainty_F,
+            double const * bmb_F, double const * bmbUncertainty_F,
+            double const * observedSurfaceVelocityX_F, double const * observedSurfaceVelocityY_F,
+            double const * observedSurfaceVelocityUncertainty_F,
+            double const * observedThicknessTendency_F, double const * observedThicknessTendencyUncertainty_F);
+ 
+void write_ascii_mesh_field(std::vector<double> fieldData, std::string filenamebase);
 
 std::vector<int> extendMaskByOneLayer(int const* verticesMask_F);
 
 void extendMaskByOneLayer(int const* verticesMask_F,
     std::vector<int>& extendedFVerticesMask);
 
-void importP0Temperature(double const* temperature_F);
+void importP0Temperature();
 
 void exportDissipationHeat(double * dissipationHeat_F);
 

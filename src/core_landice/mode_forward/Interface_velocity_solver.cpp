@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <set>
+#include <fstream>
 #include "Interface_velocity_solver.hpp"
 //#include <lifev/ice_sheet/interface_with_mpas/Interface.hpp>
 //#include <lifev/ice_sheet/solver/BuildMeshFromBareData.hpp>
@@ -59,9 +60,16 @@ std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
 std::vector<int> indexToVertexID, vertexToFCell, triangleToFVertex, indexToEdgeID, edgeToFEdge,
     mask, fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
 std::vector<double> temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices, velocityOnCells,
-    elevationData, thicknessData, betaData, bedTopographyData, smbData, thicknessOnCells;
+    elevationData, thicknessData, betaData, bedTopographyData, temperatureData, smbData, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
-;
+
+// only needed for creating ASCII mesh
+std::vector<double> thicknessUncertaintyData;
+std::vector<double> smbUncertaintyData;
+std::vector<double> bmbData, bmbUncertaintyData;
+std::vector<double> observedVeloXData, observedVeloYData, observedVeloUncertaintyData;
+std::vector<double> observedDHDtData, observedDHDtUncertaintyData;
+
 int numBoundaryEdges;
 double radius;
 
@@ -366,13 +374,14 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
 
 
 
-    import2DFields(bedTopography_F, lowerSurface_F, thickness_F, beta_F, smb_F,  minThickness);
+    std::map<int, int> bdExtensionMap;
+    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
       regulThk[index] = std::max(1e-4, thicknessData[index]);
 
-    importP0Temperature(temperature_F);
+    importP0Temperature();
 
     dissipationHeatOnTetra.resize(3 * nLayers * indexToTriangleID.size());
 
@@ -993,6 +1002,7 @@ void interface_init_log(){
   Interface_stdout = open(albany_log_filename, O_CREAT|O_WRONLY|O_TRUNC,0644);
   if(Interface_stdout >=  0) {
      write(Interface_stdout, "-- Beginning log file for output from Albany velocity solver --", 63);
+     write(Interface_stdout, " ", 1);
      fsync(Interface_stdout);
   } else {
     std::cerr << "Error opening Albany stdout file." << std::endl;
@@ -1416,17 +1426,19 @@ void extendMaskByOneLayer(int const* verticesMask_F,
   }
 }
 
-void import2DFields(double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
-    double const * beta_F, double const * smb_F, double eps) {
+void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
+    double const * beta_F, double const * temperature_F, double const * smb_F, double eps) {
+        
   elevationData.assign(nVertices, 1e10);
   thicknessData.assign(nVertices, 1e10);
   bedTopographyData.assign(nVertices, 1e10);
   if (beta_F != 0)
     betaData.assign(nVertices, 1e10);
+  if(temperature_F != 0)
+    temperatureData.assign(nLayers * nTriangles, 1e10);
   if (smb_F != 0)
     smbData.assign(nVertices, 1e10);
 
-  std::map<int, int> bdExtensionMap;
 
   //import fields
   for (int index = 0; index < nVertices; index++) {
@@ -1439,6 +1451,30 @@ void import2DFields(double const* bedTopography_F, double const * lowerSurface_F
     if (smb_F != 0)
       smbData[index] = smb_F[iCell] / unit_length * secondsInAYear/rho_ice;
   }
+
+  if(temperature_F != 0) {
+    for (int index = 0; index < nTriangles; index++) {
+      for (int il = 0; il < nLayers; il++) {
+        double temperature = 0;
+        int ilReversed = nLayers - il - 1;
+        int nPoints = 0;
+        for (int iVertex = 0; iVertex < 3; iVertex++) {
+      int v = verticesOnTria[iVertex + 3 * index];
+      int iCell = vertexToFCell[v];
+          //compute temperature by averaging tmeperature values of triangles vertices where ice is present
+      if (cellsMask_F[iCell] & ice_present_bit_value) { 
+        temperature += temperature_F[iCell * nLayers + ilReversed];
+        nPoints++;
+         }
+        }
+        if (nPoints == 0)  //if triangle is in an ice-free area, set the temperature to T0
+      temperatureData[index+il*nTriangles] = T0;
+        else
+      temperatureData[index+il*nTriangles] = temperature / nPoints;
+      }
+    }
+  }
+
 
   //extend thickness elevation and basal friction data to the border for floating vertices
   std::set<int>::const_iterator iter;
@@ -1522,33 +1558,75 @@ void import2DFields(double const* bedTopography_F, double const * lowerSurface_F
 
 }
 
-void importP0Temperature(double const * temperature_F) {
+void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
+            double const * thicknessUncertainty_F,
+            double const * smbUncertainty_F,
+            double const * bmb_F, double const * bmbUncertainty_F,
+            double const * observedSurfaceVelocityX_F, double const * observedSurfaceVelocityY_F,
+            double const * observedSurfaceVelocityUncertainty_F,
+            double const * observedThicknessTendency_F, double const * observedThicknessTendencyUncertainty_F) {
+
+  thicknessUncertaintyData.assign(nVertices, 1e10);
+  smbUncertaintyData.assign(nVertices, 1e10);
+  bmbData.assign(nVertices, 1e10);
+  bmbUncertaintyData.assign(nVertices, 1e10);
+  observedVeloXData.assign(nVertices, 1e10);
+  observedVeloYData.assign(nVertices, 1e10);
+  observedVeloUncertaintyData.assign(nVertices, 1e10);
+  observedDHDtData.assign(nVertices, 1e10);
+  observedDHDtUncertaintyData.assign(nVertices, 1e10);
+
+
+  //import fields
+  for (int index = 0; index < nVertices; index++) {
+    int iCell = vertexToFCell[index];
+
+    thicknessUncertaintyData[index] = thicknessUncertainty_F[iCell] / unit_length;
+    smbUncertaintyData[index] = smbUncertainty_F[iCell] / unit_length * secondsInAYear / rho_ice;
+    bmbData[index] = bmb_F[iCell] / unit_length * secondsInAYear / rho_ice;
+    bmbUncertaintyData[index] = bmbUncertainty_F[iCell] / unit_length * secondsInAYear / rho_ice;
+
+    observedVeloXData[index] = observedSurfaceVelocityX_F[iCell] * secondsInAYear;
+    observedVeloYData[index] = observedSurfaceVelocityY_F[iCell] * secondsInAYear;
+    observedVeloUncertaintyData[index] = observedSurfaceVelocityUncertainty_F[iCell] * secondsInAYear;
+
+    observedDHDtData[index] = observedThicknessTendency_F[iCell] / unit_length * secondsInAYear;
+    observedDHDtUncertaintyData[index] = observedThicknessTendencyUncertainty_F[iCell] / unit_length * secondsInAYear;
+  }
+
+  //extend to the border for floating vertices (using map created by import2DFields above)
+  for (std::map<int, int>::iterator it = bdExtensionMap.begin();
+      it != bdExtensionMap.end(); ++it) {
+    int iv = it->first;
+    int ic = it->second;
+
+    thicknessUncertaintyData[iv] = thicknessUncertainty_F[ic] / unit_length;
+    smbUncertaintyData[iv] = smbUncertainty_F[ic] / unit_length * secondsInAYear / rho_ice;
+    bmbData[iv] = bmb_F[ic] / unit_length * secondsInAYear / rho_ice;
+    bmbUncertaintyData[iv] = bmbUncertainty_F[ic] / unit_length * secondsInAYear / rho_ice;
+
+    observedVeloXData[iv] = observedSurfaceVelocityX_F[ic] * secondsInAYear;
+    observedVeloYData[iv] = observedSurfaceVelocityY_F[ic] * secondsInAYear;
+    observedVeloUncertaintyData[iv] = observedSurfaceVelocityUncertainty_F[ic] * secondsInAYear;
+
+    observedDHDtData[iv] = observedThicknessTendency_F[ic] / unit_length * secondsInAYear;
+    observedDHDtUncertaintyData[iv] = observedThicknessTendencyUncertainty_F[ic] / unit_length * secondsInAYear;
+
+  }
+}
+
+
+void importP0Temperature() {
   int lElemColumnShift = (Ordering == 1) ? 3 : 3 * indexToTriangleID.size();
   int elemLayerShift = (Ordering == 0) ? 3 : 3 * nLayers;
   temperatureOnTetra.resize(3 * nLayers * indexToTriangleID.size());
   for (int index = 0; index < nTriangles; index++) {
     for (int il = 0; il < nLayers; il++) {
-      double temperature = 0;
-      int ilReversed = nLayers - il - 1;
-      int nPoints = 0;
-      for (int iVertex = 0; iVertex < 3; iVertex++) {
-        int v = verticesOnTria[iVertex + 3 * index];
-        int iCell = vertexToFCell[v];
-        if (cellsMask_F[iCell] & ice_present_bit_value) {
-          temperature += temperature_F[iCell * nLayers + ilReversed];
-          nPoints++;
-        }
-      }
-      if (nPoints == 0)
-        temperature = T0;
-      else
-        temperature = temperature / nPoints;
       for (int k = 0; k < 3; k++)
         temperatureOnTetra[index * elemLayerShift + il * lElemColumnShift + k] =
-            temperature;
+            temperatureData[index+il*nTriangles];
     }
   }
-
 }
 
 void exportDissipationHeat(double * dissipationHeat_F) {
@@ -2010,3 +2088,168 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     }
   }
 
+  void write_ascii_mesh(double const* bedTopography_F, double const* lowerSurface_F,
+    double const* beta_F, double const* temperature_F,
+    double const* thickness_F, double const* thicknessUncertainty_F,
+    double const* smb_F, double const* smbUncertainty_F,
+    double const* bmb_F, double const* bmbUncertainty_F,
+    double const* observedSurfaceVelocityX_F, double const* observedSurfaceVelocityY_F,
+    double const* observedSurfaceVelocityUncertainty_F, 
+    double const* observedThicknessTendency_F, double const * observedThicknessTendencyUncertainty_F) {
+
+
+//    std::vector<double> regulThk(thicknessData);
+//    for (int index = 0; index < nVertices; index++)
+//      regulThk[index] = std::max(1e-4, thicknessData[index]);  //TODO Make limit a parameter
+//
+//    importP0Temperature(temperature_F);
+//
+//    std::cout << "\n\nTimeStep: "<< *deltat << "\n\n"<< std::endl;
+//
+//    std::vector<int> mpasIndexToVertexID(nVertices);
+//    for (int i = 0; i < nVertices; i++) {
+//      mpasIndexToVertexID[i] = indexToCellID_F[vertexToFCell[i]];
+//    }
+//
+//    mapVerticesToCells(velocityOnVertices, &velocityOnCells[0], 2, nLayers,
+//        Ordering);
+
+
+    // Write out ASCII format
+
+    std::cout << "Writing mesh to albany.msh." << std::endl;
+    // msh file
+    std::ofstream outfile;
+    outfile.open ("albany.msh", std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+
+       int nVerticesBoundaryEdge = 0;
+       for (int index = 0; index < nVertices; index++) {
+          if (isBoundaryEdge[index]) nVerticesBoundaryEdge += 1;
+       }
+       std::vector<int> verticesOnBoundaryEdge;
+       verticesOnBoundaryEdge.resize(2 * nVerticesBoundaryEdge);
+       int iVerticesBoundaryEdge = 0;
+       for (int index = 0; index < nVertices; index++) {
+          if (isBoundaryEdge[index]) {
+             verticesOnBoundaryEdge[0 + 2 * iVerticesBoundaryEdge] = verticesOnEdge[0 + 2 * index];
+             verticesOnBoundaryEdge[1 + 2 * iVerticesBoundaryEdge] = verticesOnEdge[1 + 2 * index];
+             iVerticesBoundaryEdge += 1;
+          }
+       }
+       //std::cout<<"final count: "<<iVerticesBoundaryEdge << "  nVerticesBoundaryEdge="<<nVerticesBoundaryEdge<<std::endl;
+
+       outfile << "Triangle " << 3 << "\n";  // first line saying it is a mesh of triangles
+       outfile << nVertices << " " << nTriangles << " " << nVerticesBoundaryEdge << "\n";  // second line
+
+       for (int index = 0; index < nVertices; index++) { //coordinates lines
+          int iCell = vertexToFCell[index];
+          outfile << xCell_F[iCell] / unit_length << " " << yCell_F[iCell] / unit_length << " " << isVertexBoundary[index] << "\n"  ;
+       }
+
+       for (int index = 0; index < nTriangles; index++) //triangles lines
+        outfile << verticesOnTria[0 + 3 * index] + 1 << " " << verticesOnTria[1 + 3 * index] + 1 << " " << verticesOnTria[2 + 3 * index] + 1 << " " << 1 << "\n"; // last digit can be used to specify a 'material'.  Not used by FELIX, so giving dummy value
+
+       for (int index = 0; index < nVerticesBoundaryEdge; index++) // boundary edges lines
+       outfile <<  verticesOnBoundaryEdge[0 + 2 * index] + 1 << " " << verticesOnBoundaryEdge[1 + 2 * index] + 1 << " " << 1 << "\n"; //last digit can be used to tell whether it's floating or not.. but let's worry about this later.
+
+       outfile.close();
+       }
+    else {
+       std::cout << "Failed to open mshfile!"<< std::endl;
+    }
+
+    // individual field values
+    // Call needed functions to process MPAS fields to Albany units/format
+    
+    std::map<int, int> bdExtensionMap;  // local map to be created by import2DFields
+    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F, minThickness);
+
+    import2DFieldsObservations(bdExtensionMap,
+                    thicknessUncertainty_F,
+                    smbUncertainty_F,
+                    bmb_F, bmbUncertainty_F,
+                    observedSurfaceVelocityX_F, observedSurfaceVelocityX_F, observedSurfaceVelocityUncertainty_F,
+                    observedThicknessTendency_F, observedThicknessTendencyUncertainty_F);
+
+
+    // Write out individual fields
+    write_ascii_mesh_field(thicknessData, "thickness");
+    write_ascii_mesh_field(thicknessUncertaintyData, "thickness_uncertainty");
+
+    write_ascii_mesh_field(elevationData, "surface_height");
+
+    write_ascii_mesh_field(betaData, "basal_friction");
+
+    write_ascii_mesh_field(smbData, "surface_mass_balance");
+    write_ascii_mesh_field(smbUncertaintyData, "surface_mass_balance_uncertainty");
+
+    write_ascii_mesh_field(bmbData, "basal_mass_balance");
+    write_ascii_mesh_field(bmbUncertaintyData, "basal_mass_balance_uncertainty");
+
+    // These two fields are more complicated than the others so cannot use the function to write out
+
+    std::cout << "Writing temperature.ascii." << std::endl;
+    outfile.open ("temperature.ascii", std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+       outfile << nTriangles << " " << nLayers << "\n";  //number of triangles and number of layers on first line
+       
+       double midLayer = 0;
+       for (int il = 0; il < nLayers; il++) { //sigma coordinates for temperature
+         midLayer += layersRatio[il]/2.0;
+         outfile << midLayer << "\n";
+         midLayer += layersRatio[il]/2.0;
+       }    
+
+       for(int i = 0; i<nTriangles; ++i)  //temperature values layer by layer
+         for(int il = 0; il<nLayers; ++il)
+           outfile << temperatureData[i + il * nLayers ]<<"\n";
+       outfile.close();
+       }
+    else {
+       std::cout << "Failed to open tempertature ascii file!"<< std::endl;
+    }
+
+    std::cout << "Writing surface_velocity.ascii." << std::endl;
+    outfile.open ("surface_velocity.ascii", std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+       outfile << nVertices << " " << 2 << "\n";  //number of vertices, number of components per vertex
+       for(int i = 0; i<nVertices; ++i) {
+         outfile << observedVeloXData[i] << "\n";
+         outfile << observedVeloYData[i] << "\n";
+       }
+       outfile.close();
+    }
+    else {
+       std::cout << "Failed to open surface velocity ascii file!"<< std::endl;
+    }
+
+    write_ascii_mesh_field(observedVeloUncertaintyData, "surface_velocity_uncertainty");
+
+    write_ascii_mesh_field(observedDHDtData, "dhdt");
+    write_ascii_mesh_field(observedDHDtUncertaintyData, "dhdt_uncertainty");
+
+    std::cout << "\nWriting of all Albany fields complete." << std::endl;
+
+  }
+
+
+  void write_ascii_mesh_field(std::vector<double> fieldData, std::string filenamebase) {
+
+    std::string filename = filenamebase+".ascii";
+    std::cout << "Writing " << filename << std::endl;
+    std::ofstream outfile;
+    outfile.open (filename.c_str(), std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+       outfile << nVertices << "\n";  //number of vertices on first line
+       for(int i = 0; i < nVertices; ++i)
+         outfile << fieldData[i] << "\n";
+       outfile.close();
+    }
+    else {
+       std::cout << "Error: Failed to open  "+filename << std::endl;
+    }
+
+
+  }
+ 
