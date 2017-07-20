@@ -10,11 +10,12 @@ module li_core_interface
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
-   use mpas_constants
    use mpas_attlist
    use mpas_log
+
    use li_core
    use li_analysis_driver
+   use li_constants
 
    public
 

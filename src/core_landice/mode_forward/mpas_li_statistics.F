@@ -23,7 +23,6 @@
 module li_statistics
 
    use mpas_derived_types
-   use mpas_constants
    use mpas_dmpar
    use mpas_timer
    use mpas_log

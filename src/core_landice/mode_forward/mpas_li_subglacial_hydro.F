@@ -25,7 +25,6 @@ module li_subglacial_hydro
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_timekeeping
-   use mpas_constants, only: gravity
    use mpas_timer
    use mpas_log
 
