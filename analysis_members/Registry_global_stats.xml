@@ -55,28 +55,28 @@
 			description="minimum ice thickness in domain"
 		/>
 		<var name="totalSfcMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
-			description="total, area integrated surface mass balance"
+			description="total, area integrated surface mass balance. Positive values are ice gain."
 		/>
-		<var name="avgAccumulation" type="real" dimensions="Time" units="m yr^{-1}^"
-			description="average sfcMassBal, as a thickness rate"
+		<var name="avgNetAccumulation" type="real" dimensions="Time" units="m yr^{-1}^"
+			description="average sfcMassBal, as a thickness rate. Positive values are ice gain."
 		/>
 		<var name="totalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
-			description="total, area integrated basal mass balance"
+			description="total, area integrated basal mass balance. Positive values are ice gain."
 		/>
 		<var name="totalGroundedBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
-			description="total, area integrated grounded basal mass balance"
+			description="total, area integrated grounded basal mass balance. Positive values are ice gain."
 		/>
 		<var name="avgGroundedBasalMelt" type="real" dimensions="Time" units="m yr^{-1}^"
-			description="average groundedBasalMassBal, as a negative thickness rate"
+			description="average groundedBasalMassBal. Positive values are ice gain."
 		/>
 		<var name="totalFloatingBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
-			description="total, area integrated floating basal mass balance"
+			description="total, area integrated floating basal mass balance. Positive values are ice gain."
 		/>
 		<var name="avgSubshelfMelt" type="real" dimensions="Time" units="m yr^{-1}^"
-			description="average floatingBasalMassBal value, as a negative thickness rate"
+			description="average floatingBasalMassBal value, as a thickness rate. Positive values are ice loss."
 		/>
 		<var name="totalCalvingFlux" type="real" dimensions="Time" units="kg yr^{-1}^"
-			description="total, area integrated mass loss due to calving"
+			description="total, area integrated mass loss due to calving. Positive values are ice loss."
 		/>
                 <var name="surfaceSpeedMax" type="real" dimensions="Time" units="m yr^{-1}"
   			description="maximum surface speed in the domain"

@@ -386,7 +386,7 @@ module li_advection
          ! Update the thickness and cellMask before applying the mass balance.
          ! The update is needed because the SMB and BMB depend on whether ice is present.
 
-         thickness = sum(LayerThickness, 1)
+         thickness = sum(layerThickness, 1)
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
 
          !-----------------------------------------------------------------
