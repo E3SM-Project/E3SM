@@ -1306,12 +1306,13 @@ def run_and_log_case_status(func, phase, caseroot='.'):
     return rv
 
 def _check_for_invalid_args(args):
-    for arg in args:
-        # if arg contains a space then it was originally quoted and we can ignore it here.
-        if " " in arg or arg.startswith("--"):
-            continue
-        if arg.startswith("-") and len(arg) > 2:
-            sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
+    pass
+    # for arg in args:
+    #     # if arg contains a space then it was originally quoted and we can ignore it here.
+    #     if " " in arg or arg.startswith("--"):
+    #         continue
+    #     if arg.startswith("-") and len(arg) > 2:
+    #         sys.stderr.write( "WARNING: The {} argument is deprecated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
 
 class SharedArea(object):
     """

@@ -776,7 +776,7 @@ class Case(object):
 
         self.get_compset_var_settings()
 
-        self.clean_up_lookups()
+        self.clean_up_lookups(allow_undefined=True)
 
         #--------------------------------------------
         # machine
