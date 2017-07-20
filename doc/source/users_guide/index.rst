@@ -6,9 +6,9 @@
 
 .. _users-guide1:
 
-#######################################
- CIME User's Guide Part 1: Basic Usage
-#######################################
+#################################################
+ CIME User's Guide Part 1: Beginner - Basic Usage
+#################################################
 
 .. toctree::
    :maxdepth: 3
@@ -27,9 +27,9 @@
 
 .. _users-guide2:
 
-########################################################################
-CIME User's Guide Part 2: CIME internals, Porting, Testing and Use Cases
-########################################################################
+#######################################################################################
+CIME User's Guide Part 2: Intermediate - CIME internals, Porting, Testing and Use Cases
+#######################################################################################
 
 .. toctree::
    :maxdepth: 3
@@ -44,7 +44,6 @@ CIME User's Guide Part 2: CIME internals, Porting, Testing and Use Cases
    adding-cases.rst
    use_cases/use-cases.rst
    adding-components.rst
-   faq/faq.rst
 
 Indices and tables
 ==================
