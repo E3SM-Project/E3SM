@@ -1165,11 +1165,11 @@ class Case(object):
         else:
             return comp_user_mods
 
-    def submit_jobs(self, no_batch=False, job=None, skip_pnl=False,
+    def submit_jobs(self, no_batch=False, job=None, prereq=None, skip_pnl=False,
                     mail_user=None, mail_type='never', batch_args=None,
                     dry_run=False):
         env_batch = self.get_env('batch')
-        return env_batch.submit_jobs(self, no_batch=no_batch, job=job,
+        return env_batch.submit_jobs(self, no_batch=no_batch, job=job, user_prereq=prereq,
                                      skip_pnl=skip_pnl, mail_user=mail_user,
                                      mail_type=mail_type, batch_args=batch_args,
                                      dry_run=dry_run)

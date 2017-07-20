@@ -61,24 +61,23 @@ OR
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    CIME.utils.expect(args.prereq is None, "--prereq not currently supported")
-
-    return args.test, args.caseroot, args.job, args.no_batch, args.resubmit, \
-        args.skip_preview_namelist, args.mail_user, args.mail_type, \
+    return args.test, args.caseroot, args.job, args.no_batch, args.prereq, \
+        args.resubmit, args.skip_preview_namelist, args.mail_user, args.mail_type, \
         args.batch_args
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    test, caseroot, job, no_batch, resubmit, skip_pnl, \
+    test, caseroot, job, no_batch, prereq, resubmit, skip_pnl, \
         mail_user, mail_type, batch_args = parse_command_line(sys.argv, description)
     if test:
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
     with Case(caseroot, read_only=False) as case:
-        submit(case, job=job, no_batch=no_batch, resubmit=resubmit, skip_pnl=skip_pnl,
-               mail_user=mail_user, mail_type=mail_type, batch_args=batch_args)
+        submit(case, job=job, no_batch=no_batch, prereq=prereq, resubmit=resubmit,
+               skip_pnl=skip_pnl, mail_user=mail_user, mail_type=mail_type,
+               batch_args=batch_args)
 
 if __name__ == "__main__":
     _main_func(__doc__)
