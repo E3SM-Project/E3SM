@@ -126,6 +126,7 @@ module CNNitrogenFluxType
      real(r8), pointer :: m_retransn_to_litter_fire_patch           (:)     ! patch (gN/m2/s) from retransn to deadcrootn due to fire                                                         
      real(r8), pointer :: fire_nloss_patch                          (:)     ! patch total pft-level fire N loss (gN/m2/s) 
      real(r8), pointer :: fire_nloss_col                            (:)     ! col total column-level fire N loss (gN/m2/s)
+     real(r8), pointer :: fire_decomp_nloss_col                     (:)     ! col fire N loss from decomposable pools (gN/m2/s)
      real(r8), pointer :: fire_nloss_p2c_col                        (:)     ! col patch2col column-level fire N loss (gN/m2/s) (p2c)
      real(r8), pointer :: fire_mortality_n_to_cwdn_col              (:,:)   ! col N fluxes associated with fire mortality to CWD pool (gN/m3/s)
 
@@ -590,6 +591,7 @@ contains
     allocate(this%ninputs_col                   (begc:endc))    ; this%ninputs_col                   (:) = nan
     allocate(this%noutputs_col                  (begc:endc))    ; this%noutputs_col                  (:) = nan
     allocate(this%fire_nloss_col                (begc:endc))    ; this%fire_nloss_col                (:) = nan
+    allocate(this%fire_decomp_nloss_col         (begc:endc))    ; this%fire_decomp_nloss_col         (:) = nan
     allocate(this%fire_nloss_p2c_col            (begc:endc))    ; this%fire_nloss_p2c_col            (:) = nan
     allocate(this%som_n_leached_col             (begc:endc))    ; this%som_n_leached_col	     (:) = nan
 
@@ -795,7 +797,6 @@ contains
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use clm_varpar     , only : nlevsno, nlevgrnd, crop_prog 
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp
-    use tracer_varcon  , only : is_active_betr_bgc, do_betr_leaching
     !
     ! !ARGUMENTS:
     class(nitrogenflux_type) :: this
@@ -1259,8 +1260,8 @@ contains
        endif
     end do
 
-    if (.not. is_active_betr_bgc) then
        do l = 1, ndecomp_cascade_transitions
+          if(trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))=='')exit
           ! vertically integrated fluxes
           !-- mineralization/immobilization fluxes (none from CWD)
           if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
@@ -1338,7 +1339,6 @@ contains
              
           endif
        end do
-    endif
 
     this%sminn_no3_input_vr_col(begc:endc,:) = spval
     data2dptr => this%sminn_no3_input_vr_col(:,:)
@@ -1384,6 +1384,7 @@ contains
          ptr_col=this%som_n_leached_col, default='inactive')
 
     do k = 1, ndecomp_pools
+       if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
        if ( .not. decomp_cascade_con%is_cwd(k) ) then
           this%decomp_npools_leached_col(begc:endc,k) = spval
           data1dptr => this%decomp_npools_leached_col(:,k)
@@ -1791,6 +1792,11 @@ contains
     call hist_addfld1d (fname='COL_FIRE_NLOSS', units='gN/m^2/s', &
          avgflag='A', long_name='total column-level fire N loss', &
          ptr_col=this%fire_nloss_col, default='inactive')
+
+    this%fire_decomp_nloss_col(begc:endc) = spval
+    call hist_addfld1d (fname='DECOMP_FIRE_NLOSS', units='gN/m^2/s', &
+       avgflag='A', long_name='fire N loss from decomposable pools', &
+       ptr_col=this%fire_decomp_nloss_col, default='inactive')
 
     this%dwt_seedn_to_leaf_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_SEEDN_TO_LEAF', units='gN/m^2/s', &
@@ -2258,7 +2264,6 @@ contains
     ! !DESCRIPTION:
     ! Set nitrogen flux variables
     !
-    use tracer_varcon , only : is_active_betr_bgc
     ! !ARGUMENTS:
     ! !ARGUMENTS:
     class (nitrogenflux_type) :: this
@@ -2444,7 +2449,7 @@ contains
           this%harvest_n_to_litr_lig_n_col(i,j)          = value_column             
           this%harvest_n_to_cwdn_col(i,j)                = value_column  
 
-          if (.not. use_nitrif_denitrif .and. (.not.is_active_betr_bgc )) then
+          if (.not. use_nitrif_denitrif) then
              this%sminn_to_denit_excess_vr_col(i,j)      = value_column
              this%sminn_leached_vr_col(i,j)              = value_column
           else
@@ -2522,7 +2527,7 @@ contains
        this%gross_nmin_col(i)                = value_column
        this%net_nmin_col(i)                  = value_column
        this%denit_col(i)                     = value_column
-       if (use_nitrif_denitrif .or. is_active_betr_bgc) then
+       if (use_nitrif_denitrif) then
           this%f_nit_col(i)                  = value_column
           this%pot_f_nit_col(i)              = value_column
           this%f_denit_col(i)                = value_column
@@ -2580,7 +2585,6 @@ contains
        end do
     end do
 
-    if (.not. is_active_betr_bgc)then
        do l = 1, ndecomp_cascade_transitions
           do fi = 1,num_column
              i = filter_column(fi)
@@ -2604,7 +2608,6 @@ contains
              end do
           end do
        end do
-    endif
 
     do k = 1, ndecomp_pools
        do j = 1, nlevdecomp_full
@@ -2695,7 +2698,7 @@ contains
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
     use pftvarcon     , only : npcropmin 
-    use tracer_varcon , only: is_active_betr_bgc, do_betr_leaching
+    use tracer_varcon , only: is_active_betr_bgc
     !
     ! !ARGUMENTS:
     class (nitrogenflux_type) :: this
@@ -2769,8 +2772,7 @@ contains
     end do
     
 
-    if ( (.not. (is_active_betr_bgc         )) .and. &
-         (.not. (use_pflotran .and. pf_cmode)) ) then
+    if (  (.not. (use_pflotran .and. pf_cmode)) ) then
        
        ! BeTR is off AND PFLOTRAN's pf_cmode is false
        
@@ -2869,16 +2871,14 @@ contains
                      this%f_n2o_denit_col(c) + &
                      this%f_n2o_denit_vr_col(c,j) * dzsoi_decomp(j)
                 
-                if (.not. do_betr_leaching) then
-                   ! leaching/runoff flux
-                   this%smin_no3_leached_col(c) = &
+                ! leaching/runoff flux
+                this%smin_no3_leached_col(c) = &
                         this%smin_no3_leached_col(c) + &
                         this%smin_no3_leached_vr_col(c,j) * dzsoi_decomp(j)
                    
-                   this%smin_no3_runoff_col(c) = &
+                this%smin_no3_runoff_col(c) = &
                         this%smin_no3_runoff_col(c) + &
                         this%smin_no3_runoff_vr_col(c,j) * dzsoi_decomp(j)
-                endif
              end do
           end do
           
@@ -2888,48 +2888,6 @@ contains
           end do
           
        end if
-
-    elseif (is_active_betr_bgc) then
-
-       ! BeTR is active
-
-       do j = 1, nlevdecomp
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)    
-             this%f_denit_col(c) = &
-                  this%f_denit_col(c) + &
-                  this%f_denit_vr_col(c,j) * dzsoi_decomp(j)
-             
-             this%actual_immob_vr_col(c,j) = &
-                this%actual_immob_nh4_vr_col(c,j)  + &
-                this%actual_immob_no3_vr_col(c,j)
-                
-             this%actual_immob_col(c) = &
-                 this%actual_immob_col(c) + &
-                 this%actual_immob_vr_col(c,j) * dzsoi_decomp(j)
-                 
-             this%f_nit_col(c) = &
-               this%f_nit_col(c) + &
-               this%f_nit_vr_col(c,j) * dzsoi_decomp(j)
-
-             this%f_n2o_nit_col(c) = &
-                  this%f_n2o_nit_col(c) + &
-                  this%f_n2o_nit_vr_col(c,j) * dzsoi_decomp(j)
-               
-             this%smin_nh4_to_plant_col(c) = &
-               this%smin_nh4_to_plant_col(c) + &
-               this%smin_nh4_to_plant_vr_col(c,j) * dzsoi_decomp(j)
-
-             this%smin_no3_to_plant_col(c) = &
-               this%smin_no3_to_plant_col(c) + &
-               this%smin_no3_to_plant_vr_col(c,j) * dzsoi_decomp(j)
-               
-          enddo
-       enddo   
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%denit_col(c) = this%f_denit_col(c)
-       end do
 
     end if
 
