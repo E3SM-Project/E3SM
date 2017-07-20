@@ -199,6 +199,14 @@
       </queues>
     </batch_system>
 
+    <batch_system MACH="bebop" type="slurm" >
+      <queues>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="2304" strict="true">debug</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="21888" default="true">bdw</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="18432">knl</queue>
+      </queues>
+    </batch_system>
+
     <!-- edison is SLURM as of Jan-4-2016 -->
     <batch_system MACH="edison" type="slurm" >
       <queues>
