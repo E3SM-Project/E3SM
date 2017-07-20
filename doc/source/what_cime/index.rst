@@ -13,11 +13,14 @@
    :maxdepth: 3
    :numbered:
       
-CIME contains the support scripts (configure, build, run, test), data models, essential utility libraries, 
-a “main” and other tools that are needed to build a single-executable coupled Earth System Model. 
-CIME is available in a stand-alone package that 
-can be compiled and tested without active prognostic components but is typically included in the source of 
-a climate model. CIME does not contain: any active components, any intra-component coupling capability (such as atmosphere physics-dynamics coupling).
+CIME, pronounced "SEEM", contains the support scripts (configure,
+build, run, test), data models, essential utility libraries, a “main”
+and other tools that are needed to build a single-executable coupled
+Earth System Model.  CIME is available in a stand-alone package that
+can be compiled and tested without active prognostic components but is
+typically included in the source of a climate model. CIME does not
+contain: any active components, any intra-component coupling
+capability (such as atmosphere physics-dynamics coupling).
 
 *********
 Overview
@@ -57,7 +60,9 @@ CIME is comprised of:
 Where is CIME developed?
 *************************
 
-At http://github.com/ESMCI/cime
+CIME is an open-source, public repository hosted under the Earth
+System Model Computational Infrastructure (ESMCI) organization on
+Github at http://github.com/ESMCI/cime.
 
 Indices and tables
 ==================
