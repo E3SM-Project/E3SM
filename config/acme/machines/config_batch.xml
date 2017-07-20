@@ -133,28 +133,30 @@
     </directives>
   </batch_system>
   
-  <!-- for cab llnl -->
+  <!-- for lawrence livermore computing -->
    <batch_system type="lc_slurm">
-     <batch_submit>msub</batch_submit>
-     <batch_directive>#MSUB</batch_directive>
+     <batch_submit>sbatch</batch_submit>
+     <batch_directive>#SBATCH</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
      <depend_string> -l depend=jobid</depend_string>
     <walltime_format>%H:%M:%S</walltime_format>
      <directives>
-       <directive>-V</directive>
-       <directive>-q {{ job_queue }}</directive>
-       <directive>-N {{ job_id }}</directive>
-       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-       <directive>-l walltime={{ job_wallclock_time }}</directive>
+       <directive>--export=ALL</directive>
+       <directive>-p {{ job_queue }}</directive>
+       <directive>-J {{ job_id }}</directive>
+       <directive>-N {{ num_nodes }}</directive>
+       <directive>-n {{ total_tasks }}</directive>
+       <directive>-t {{ job_wallclock_time }}</directive>
        <directive>-o {{ output_error_path }}.out</directive>
        <directive>-e {{ output_error_path }}.err</directive>
-       <directive>-m be</directive>
+       <directive>--mail-type=all</directive>
       <directive> -A {{ project }} </directive>
      </directives>
      <queues>
         <queue walltimemax="01:00:00" jobmin="1" jobmax="4320" default="true">pbatch</queue>
      </queues>
    </batch_system>  
+  <!-- for lawrence livermore computing -->
 
    <batch_system type="slurm" >
      <batch_query>squeue</batch_query>
