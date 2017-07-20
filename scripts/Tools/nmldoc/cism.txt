@@ -1,9 +1,0 @@
- 
-    =========================================
-    CISM naming conventions in compset name
-    =========================================
-    CISM1  => cism1 (shallow ice approximation, serial only)
-    CISM2  => cism2 (default, higher-order, can run in parallel)
-  
-                 _CISM2 : cism2:
-                 _CISM1 : cism1:

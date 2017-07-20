@@ -1,7 +1,0 @@
- 
-    =========================================
-    DWAV naming conventions
-    =========================================
-  
-             _DWAV%NULL : dwav null mode:
-                  _DWAV : dwav copy mode:

@@ -1,7 +1,0 @@
- 
-    =========================================
-    RTM naming conventions
-    =========================================
-  
-                   _RTM : RTM:
-             _RTM%FLOOD : RTM model with flood:
