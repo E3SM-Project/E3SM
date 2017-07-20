@@ -2,40 +2,187 @@ module datm_shr_mod
 
 ! !USES:
 
-  use shr_const_mod, only : SHR_CONST_CDAY,SHR_CONST_TKFRZ,SHR_CONST_SPVAL
-  use shr_file_mod,  only : shr_file_getlogunit
-  use shr_dmodel_mod,only : shr_dmodel_mapset
-  use shr_sys_mod,   only : shr_sys_flush, shr_sys_abort
-  use shr_kind_mod,  only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, &
-                            CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use seq_flds_mod,  only : seq_flds_dom_coord, seq_flds_dom_other
-  use shr_cal_mod,   only: shr_cal_date2julian
-  use shr_ncread_mod,only: shr_ncread_varExists, shr_ncread_varDimSizes, &
-                           shr_ncread_field4dG
+  use shr_kind_mod   , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8 
+  use shr_kind_mod   , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use shr_const_mod  , only : SHR_CONST_CDAY,SHR_CONST_TKFRZ,SHR_CONST_SPVAL
+  use shr_file_mod   , only : shr_file_getlogunit, shr_file_getunit
+  use shr_sys_mod    , only : shr_sys_flush, shr_sys_abort
+  use shr_strdata_mod, only : shr_strdata_readnml
+  use shr_dmodel_mod , only : shr_dmodel_mapset
+  use seq_flds_mod   , only : seq_flds_dom_coord, seq_flds_dom_other
+  use shr_cal_mod    , only : shr_cal_date2julian
+  use shr_ncread_mod , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
+  use shr_strdata_mod, only : shr_strdata_type
+  use pio            , only : iosystem_desc_t
+  use perf_mod
   use mct_mod
 
-! !PUBLIC TYPES:
+  ! !PUBLIC TYPES:
   implicit none
   private ! except
 
-!--------------------------------------------------------------------------
-! Public interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public interfaces
+  !--------------------------------------------------------------------------
 
   public :: datm_shr_getNextRadCDay
   public :: datm_shr_CORE2getFactors
   public :: datm_shr_TN460getFactors
   public :: datm_shr_eSat
+  public :: datm_shr_read_namelists
 
-!--------------------------------------------------------------------------
-! Private data
-!--------------------------------------------------------------------------
+  ! input namelist variables
+  character(CL) , public :: decomp                ! decomp strategy
+  character(CL) , public :: restfilm              ! model restart file namelist
+  character(CL) , public :: restfils              ! stream restart file namelist
+  character(CL) , public :: bias_correct          ! true => send bias correction fields to coupler
+  character(CL) , public :: anomaly_forcing(8)    ! true => send anomaly forcing fields to coupler
+  logical       , public :: force_prognostic_true ! if true set prognostic true
+  logical       , public :: wiso_datm = .false.   ! expect isotopic forcing from file?
+  integer(IN)   , public :: iradsw                ! radiation interval
+  character(CL) , public :: factorFn              ! file containing correction factors
+  logical       , public :: presaero              ! true => send valid prescribe aero fields to coupler
+
+  ! variables obtained from namelist read
+  character(CL) , public :: rest_file             ! restart filename
+  character(CL) , public :: rest_file_strm        ! restart filename for streams
+  character(CL) , public :: atm_mode              ! mode
+  character(len=*), public, parameter :: nullstr = 'undefined'
+
+  !--------------------------------------------------------------------------
+  ! Private data
+  !--------------------------------------------------------------------------
 
   save
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+subroutine datm_shr_read_namelists(mpicom, my_task, master_task, &
+     inst_index, inst_name, inst_suffix, &
+     logunit, shrlogunit, SDATM, atm_present, atm_prognostic, presaero) 
+
+  ! !INPUT/OUTPUT PARAMETERS:
+  integer(IN)            , intent(in)    :: mpicom         ! mpi communicator
+  integer(IN)            , intent(in)    :: my_task        ! my task in mpi communicator mpicom
+  integer(IN)            , intent(in)    :: master_task    ! task number of master task
+  integer                , intent(in)    :: inst_index     ! number of current instance (ie. 1)
+  character(len=16)      , intent(in)    :: inst_suffix    ! char string associated with instance
+  character(len=16)      , intent(in)    :: inst_name      ! fullname of current instance (ie. "lnd_0001")
+  integer(IN)            , intent(in)    :: logunit        ! logging unit number
+  integer(IN)            , intent(in)    :: shrlogunit     ! original log unit and level
+  type(shr_strdata_type) , intent(inout) :: SDATM
+  logical                , intent(out)   :: atm_present    ! flag
+  logical                , intent(out)   :: atm_prognostic ! flag
+
+  !--- local variables ---
+  character(CL) :: fileName    ! generic file name
+  integer(IN)   :: nunit       ! unit number
+  integer(IN)   :: ierr        ! error code
+  logical       :: presaero    ! true => send valid prescribe aero fields to coupler
+
+    !--- formats ---
+  character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
+  character(*), parameter :: F0L   = "('(datm_comp_init) ',a, l2)"
+  character(*), parameter :: F01   = "('(datm_comp_init) ',a,5i8)"
+  character(*), parameter :: subName = "(shr_datm_read_namelists) "
+  !-------------------------------------------------------------------------------
+
+  !----- define namelist -----
+  namelist / datm_nml / &
+       decomp, iradsw, factorFn, restfilm, restfils, presaero, bias_correct, &
+       anomaly_forcing, force_prognostic_true, wiso_datm
+
+  !----------------------------------------------------------------------------
+  ! Determine input filenamname
+  !----------------------------------------------------------------------------
+  filename = "datm_in"//trim(inst_suffix)
+
+  !----------------------------------------------------------------------------
+  ! Read datm_in
+  !----------------------------------------------------------------------------
+  decomp = "1d"
+  iradsw = 0
+  factorFn = 'null'
+  restfilm = trim(nullstr)
+  restfils = trim(nullstr)
+  presaero = .false.
+  force_prognostic_true = .false.
+  if (my_task == master_task) then
+     nunit = shr_file_getUnit() ! get unused unit number
+     open (nunit,file=trim(filename),status="old",action="read")
+     read (nunit,nml=datm_nml,iostat=ierr)
+     close(nunit)
+
+     call shr_file_freeUnit(nunit)
+     if (ierr > 0) then
+        write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
+        call shr_sys_abort(subName//': namelist read error '//trim(filename))
+     end if
+     write(logunit,F00)' decomp   = ',trim(decomp)
+     write(logunit,F01)' iradsw   = ',iradsw
+     write(logunit,F00)' factorFn = ',trim(factorFn)
+     write(logunit,F00)' restfilm = ',trim(restfilm)
+     write(logunit,F00)' restfils = ',trim(restfils)
+     write(logunit,F0L)' presaero = ',presaero
+     write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
+     write(logunit,F0L)' wiso_datm = ', wiso_datm
+     write(logunit,F01) 'inst_index  =  ',inst_index
+     write(logunit,F00) 'inst_name   =  ',trim(inst_name)
+     write(logunit,F00) 'inst_suffix =  ',trim(inst_suffix)
+     call shr_sys_flush(logunit)
+  endif
+  call shr_mpi_bcast(decomp,mpicom,'decomp')
+  call shr_mpi_bcast(iradsw,mpicom,'iradsw')
+  call shr_mpi_bcast(factorFn,mpicom,'factorFn')
+  call shr_mpi_bcast(restfilm,mpicom,'restfilm')
+  call shr_mpi_bcast(restfils,mpicom,'restfils')
+  call shr_mpi_bcast(presaero,mpicom,'presaero')
+  call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
+  call shr_mpi_bcast(wiso_datm, mpicom, 'wiso_datm')
+
+  rest_file = trim(restfilm)
+  rest_file_strm = trim(restfils)
+
+  !----------------------------------------------------------------------------
+  ! Read dshr namelist
+  !----------------------------------------------------------------------------
+
+  call shr_strdata_readnml(SDATM, trim(filename), mpicom=mpicom)
+  call shr_sys_flush(shrlogunit)
+  
+  ! Validate mode
+  
+  atm_mode = trim(SDATM%dataMode)
+  if (trim(atm_mode) == 'NULL'      .or. &
+      trim(atm_mode) == 'CORE2_NYF' .or. &
+      trim(atm_mode) == 'CORE2_IAF' .or. &
+      trim(atm_mode) == 'CLMNCEP'   .or. &
+      trim(atm_mode) == 'CPLHIST'   .or. &
+      trim(atm_mode) == 'COPYALL'   ) then
+     if (my_task == master_task) then
+        write(logunit,F00) ' atm mode = ',trim(atm_mode)
+        call shr_sys_flush(logunit)
+     end if
+  else
+     write(logunit,F00) ' ERROR illegal atm mode = ',trim(atm_mode)
+     call shr_sys_abort()
+  endif
+
+  ! Determine present and prognostic flags
+
+  atm_present = .false.
+  atm_prognostic = .false.
+  if (force_prognostic_true) then
+     atm_present    = .true.
+     atm_prognostic = .true.
+  endif
+  if (trim(atm_mode) /= 'NULL') then
+     atm_present = .true.
+  end if
+
+end subroutine datm_shr_read_namelists
 
 !===============================================================================
 !BOP ===========================================================================
