@@ -427,6 +427,13 @@ CONTAINS
 
     call t_startf('desp_mode')
 
+    if (.not. ANY(pause_sig)) then
+      if ((my_task == master_task) .and. (loglevel > 0)) then
+        write(logunit, '(2a,i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') subname,       &
+             'WARNING: No pause signals found at',yy,mm,dd,CurrentTOD
+      end if
+    end if
+
     ! Find the active components and their restart files
     ! Note hard-coded variable names are just for testing. This could be
     !   changed if this feature comes to regular use
@@ -472,7 +479,7 @@ CONTAINS
           call get_restart_filenames(ind, cpl_resume, errcode)
           allocate(rfilenames(1))
           rfilenames(1) = cpl_resume
-          varname = 'x2oacc_ox_Sa_pslv'
+          varname = 'x2oacc_ox_Foxx_swnet'
         case default
           call shr_sys_abort(subname//'Unrecognized ind')
         end select
