@@ -215,15 +215,13 @@ CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   !===============================================================================
   subroutine datm_comp_init(Eclock, x2a, a2x, &
-       SDATM, gsmap, ggrid, phase, mpicom, compid, my_task, master_task, &
-       inst_suffix, inst_name, logunit, &
+       SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon, &
-       orbEccen, orbMvelpp, orbLambm0, orbObliqr, read_restart, &
-       nextsw_cday)
-
-    implicit none
+       orbEccen, orbMvelpp, orbLambm0, orbObliqr, phase, nextsw_cday)
 
     ! !DESCRIPTION: initialize data atm model
+    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)       , intent(in)    :: EClock
@@ -231,7 +229,6 @@ CONTAINS
     type(shr_strdata_type) , intent(inout) :: SDATM
     type(mct_gsMap)        , pointer       :: gsMap
     type(mct_gGrid)        , pointer       :: ggrid
-    integer                , intent(in)    :: phase
     integer(IN)            , intent(in)    :: mpicom       ! mpi communicator
     integer(IN)            , intent(in)    :: compid       ! mct comp id
     integer(IN)            , intent(in)    :: my_task      ! my task in mpi communicator mpicom
@@ -239,6 +236,7 @@ CONTAINS
     character(len=*)       , intent(in)    :: inst_suffix  ! char string associated with instance
     character(len=*)       , intent(in)    :: inst_name    ! fullname of current instance (ie. "lnd_0001")
     integer(IN)            , intent(in)    :: logunit      ! logging unit number
+    logical                , intent(in)    :: read_restart ! start from restart
     logical                , intent(in)    :: scmMode      ! single column mode
     real(R8)               , intent(in)    :: scmLat       ! single column lat
     real(R8)               , intent(in)    :: scmLon       ! single column lon
@@ -246,27 +244,26 @@ CONTAINS
     real(R8)               , intent(in)    :: orbMvelpp    ! orb moving vernal eq (radians)
     real(R8)               , intent(in)    :: orbLambm0    ! orb mean long of perhelion (radians)
     real(R8)               , intent(in)    :: orbObliqr    ! orb obliquity (radians)
-    logical                , intent(in)    :: read_restart ! start from restart
+    integer                , intent(in)    :: phase
     real(R8)               , intent(out)   :: nextsw_cday  ! calendar of next atm sw
 
   !--- local variables ---
     integer(IN)   :: n,k         ! generic counters
-    integer(IN)   :: ierr        ! error code
     integer(IN)   :: lsize     ! local size
     integer(IN)   :: kmask       ! field reference
     integer(IN)   :: klat        ! field reference
     integer(IN)   :: kfld        ! fld index
     integer(IN)   :: cnt         ! counter
-    character(CL) :: flds_strm
-
+    integer(IN)   :: idt         ! integer timestep
 
     logical       :: exists      ! filename existance
     integer(IN)   :: nu          ! unit number
-    integer(IN)   :: idt         ! integer timestep
     integer(IN)   :: CurrentYMD  ! model date
     integer(IN)   :: CurrentTOD  ! model sec into model date
     integer(IN)   :: stepno      ! step number
     character(CL) :: calendar    ! calendar type
+    character(CL) :: flds_strm
+    type(iosystem_desc_t)  , pointer :: iosystem
 
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
@@ -294,13 +291,18 @@ CONTAINS
        call shr_strdata_pioinit(SDATM, COMPID)
 
        !----------------------------------------------------------------------------
-       ! Initialize datasets
+       ! Initialize SDATM
        !----------------------------------------------------------------------------
 
        call seq_timemgr_EClockGetData( EClock, dtime=idt, calendar=calendar )
+
+       ! NOTE: shr_strdata_init calls shr_dmodel_readgrid which reads the data model
+       ! grid and from that computes SDATM%gsmap and SDATM%ggrid. DATM%gsmap is created
+       ! using the decomp '2d1d' (1d decomp of 2d grid)
        if (scmmode) then
-          if (my_task == master_task) &
-               write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
+          if (my_task == master_task) then
+             write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
+          end if
           call shr_strdata_init(SDATM,&
                mpicom, compid, name='atm', &
                scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, &
@@ -328,17 +330,21 @@ CONTAINS
        call t_stopf('datm_strdata_init')
 
        !----------------------------------------------------------------------------
-       ! Initialize MCT global seg map, 1d decomp
+       ! Initialize MCT global seg map, 1d decomp, gsmap
        !----------------------------------------------------------------------------
 
        call t_startf('datm_initgsmaps')
        if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
        call shr_sys_flush(logunit)
 
+       ! create a data model global seqmap (gsmap) given the data model global grid sizes
+       ! NOTE: gsmap is initialized using the decomp read in from the datm_in namelist
+       ! (which by default is "1d")
        call shr_dmodel_gsmapcreate(gsmap, SDATM%nxg*SDATM%nyg, compid, mpicom, decomp)
        lsize = mct_gsmap_lsize(gsmap,mpicom)
 
-       call mct_rearr_init(SDATM%gsmap,gsmap,mpicom,rearr)
+       ! create a rearranger from the data model SDATM%gsmap to gsmap
+       call mct_rearr_init(SDATM%gsmap, gsmap, mpicom, rearr)
        call t_stopf('datm_initgsmaps')
 
        !----------------------------------------------------------------------------
@@ -386,8 +392,7 @@ CONTAINS
        kco2p = mct_aVect_indexRA(a2x,'Sa_co2prog',perrWith='quiet')
        kco2d = mct_aVect_indexRA(a2x,'Sa_co2diag',perrWith='quiet')
 
-       !isotopic forcing
-       if(wiso_datm) then
+       if (wiso_datm) then  ! water isotopic forcing
           kshum_16O = mct_aVect_indexRA(a2x,'Sa_shum_16O')
           kshum_18O = mct_aVect_indexRA(a2x,'Sa_shum_18O')
           kshum_HDO = mct_aVect_indexRA(a2x,'Sa_shum_HDO')
@@ -447,35 +452,36 @@ CONTAINS
        call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
        call mct_aVect_zero(avstrm)
 
-       stbot  = mct_aVect_indexRA(avstrm,'strm_tbot',perrWith='quiet')
-       swind  = mct_aVect_indexRA(avstrm,'strm_wind',perrWith='quiet')
-       sz     = mct_aVect_indexRA(avstrm,'strm_z',perrWith='quiet')
-       spbot  = mct_aVect_indexRA(avstrm,'strm_pbot',perrWith='quiet')
-       sshum  = mct_aVect_indexRA(avstrm,'strm_shum',perrWith='quiet')
-       stdew  = mct_aVect_indexRA(avstrm,'strm_tdew',perrWith='quiet')
-       srh    = mct_aVect_indexRA(avstrm,'strm_rh',perrWith='quiet')
-       slwdn  = mct_aVect_indexRA(avstrm,'strm_lwdn',perrWith='quiet')
-       sswdn  = mct_aVect_indexRA(avstrm,'strm_swdn',perrWith='quiet')
-       sswdndf= mct_aVect_indexRA(avstrm,'strm_swdndf',perrWith='quiet')
-       sswdndr= mct_aVect_indexRA(avstrm,'strm_swdndr',perrWith='quiet')
-       sprecc = mct_aVect_indexRA(avstrm,'strm_precc',perrWith='quiet')
-       sprecl = mct_aVect_indexRA(avstrm,'strm_precl',perrWith='quiet')
-       sprecn = mct_aVect_indexRA(avstrm,'strm_precn',perrWith='quiet')
-       sco2p  = mct_aVect_indexRA(avstrm,'strm_co2p',perrWith='quiet')
-       sco2d  = mct_aVect_indexRA(avstrm,'strm_co2d',perrWith='quiet')
-       sswup  = mct_aVect_indexRA(avstrm,'strm_swup',perrWith='quiet')
-       sprec  = mct_aVect_indexRA(avstrm,'strm_prec',perrWith='quiet')
-       starcf = mct_aVect_indexRA(avstrm,'strm_tarcf',perrWith='quiet')
+       stbot  = mct_aVect_indexRA(avstrm,'strm_tbot'   ,perrWith='quiet')
+       swind  = mct_aVect_indexRA(avstrm,'strm_wind'   ,perrWith='quiet')
+       sz     = mct_aVect_indexRA(avstrm,'strm_z'      ,perrWith='quiet')
+       spbot  = mct_aVect_indexRA(avstrm,'strm_pbot'   ,perrWith='quiet')
+       sshum  = mct_aVect_indexRA(avstrm,'strm_shum'   ,perrWith='quiet')
+       stdew  = mct_aVect_indexRA(avstrm,'strm_tdew'   ,perrWith='quiet')
+       srh    = mct_aVect_indexRA(avstrm,'strm_rh'     ,perrWith='quiet')
+       slwdn  = mct_aVect_indexRA(avstrm,'strm_lwdn'   ,perrWith='quiet')
+       sswdn  = mct_aVect_indexRA(avstrm,'strm_swdn'   ,perrWith='quiet')
+       sswdndf= mct_aVect_indexRA(avstrm,'strm_swdndf' ,perrWith='quiet')
+       sswdndr= mct_aVect_indexRA(avstrm,'strm_swdndr' ,perrWith='quiet')
+       sprecc = mct_aVect_indexRA(avstrm,'strm_precc'  ,perrWith='quiet')
+       sprecl = mct_aVect_indexRA(avstrm,'strm_precl'  ,perrWith='quiet')
+       sprecn = mct_aVect_indexRA(avstrm,'strm_precn'  ,perrWith='quiet')
+       sco2p  = mct_aVect_indexRA(avstrm,'strm_co2p'   ,perrWith='quiet')
+       sco2d  = mct_aVect_indexRA(avstrm,'strm_co2d'   ,perrWith='quiet')
+       sswup  = mct_aVect_indexRA(avstrm,'strm_swup'   ,perrWith='quiet')
+       sprec  = mct_aVect_indexRA(avstrm,'strm_prec'   ,perrWith='quiet')
+       starcf = mct_aVect_indexRA(avstrm,'strm_tarcf'  ,perrWith='quiet')
+
        ! anomaly forcing
-       sprecsf = mct_aVect_indexRA(avstrm,'strm_precsf',perrWith='quiet')
-       sprec_af = mct_aVect_indexRA(avstrm,'strm_prec_af',perrWith='quiet')
-       su_af = mct_aVect_indexRA(avstrm,'strm_u_af',perrWith='quiet')
-       sv_af = mct_aVect_indexRA(avstrm,'strm_v_af',perrWith='quiet')
-       stbot_af = mct_aVect_indexRA(avstrm,'strm_tbot_af',perrWith='quiet')
-       spbot_af = mct_aVect_indexRA(avstrm,'strm_pbot_af',perrWith='quiet')
-       sshum_af = mct_aVect_indexRA(avstrm,'strm_shum_af',perrWith='quiet')
-       sswdn_af = mct_aVect_indexRA(avstrm,'strm_swdn_af',perrWith='quiet')
-       slwdn_af = mct_aVect_indexRA(avstrm,'strm_lwdn_af',perrWith='quiet')
+       sprecsf  = mct_aVect_indexRA(avstrm,'strm_precsf'  ,perrWith='quiet')
+       sprec_af = mct_aVect_indexRA(avstrm,'strm_prec_af' ,perrWith='quiet')
+       su_af    = mct_aVect_indexRA(avstrm,'strm_u_af'    ,perrWith='quiet')
+       sv_af    = mct_aVect_indexRA(avstrm,'strm_v_af'    ,perrWith='quiet')
+       stbot_af = mct_aVect_indexRA(avstrm,'strm_tbot_af' ,perrWith='quiet')
+       spbot_af = mct_aVect_indexRA(avstrm,'strm_pbot_af' ,perrWith='quiet')
+       sshum_af = mct_aVect_indexRA(avstrm,'strm_shum_af' ,perrWith='quiet')
+       sswdn_af = mct_aVect_indexRA(avstrm,'strm_swdn_af' ,perrWith='quiet')
+       slwdn_af = mct_aVect_indexRA(avstrm,'strm_lwdn_af' ,perrWith='quiet')
 
        if(wiso_datm) then
           ! isotopic forcing
@@ -564,6 +570,16 @@ CONTAINS
        nextsw_cday = datm_shr_getNextRadCDay( CurrentYMD, CurrentTOD, stepno, idt, iradsw, calendar )
 
     endif
+
+    !----------------------------------------------------------------------------
+    ! Set initial atm state, needed for first time atm initialization
+    !----------------------------------------------------------------------------
+
+    call t_adj_detailf(+2)
+    call datm_comp_run(EClock, x2a, a2x, &
+         SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         inst_suffix, logunit, nextsw_cday)
+    call t_adj_detailf(-2)
 
     call t_stopf('DATM_INIT')
 
