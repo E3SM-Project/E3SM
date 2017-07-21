@@ -2211,8 +2211,7 @@ contains
              call cube_init_atomic(elem(ie),gp%points,1.0d0 + delta)
              else
                 ! Abort since the denominator in correction is too small.
-                call abortmp('Cube_mod, set_area_correction_map2() : Area correction based on eps. bubble &
-                              cannot be done, sum_w is too small.')
+                call abortmp('Cube_mod,set_area_correction_map2(): sum_w is too small.')
              endif
           enddo ! loop over elements
           ! code for verification.
