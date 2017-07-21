@@ -39,7 +39,7 @@ set submit_run       = true
 set debug_queue      = true
 
 ### PROCESSOR CONFIGURATION
-set processor_config = M
+set processor_config = S
 
 ### STARTUP TYPE
 set model_start_type = initial
@@ -57,7 +57,7 @@ set stop_units       = ndays
 set stop_num         = 5
 set restart_units    = $stop_units
 set restart_num      = $stop_num
-set num_submits      = 1
+set num_resubmits    = 0
 set do_short_term_archiving      = false
 set do_long_term_archiving       = false
 
@@ -167,8 +167,8 @@ set cpl_hist_num   = 1
 #stop_num: The simulation length for each batch submission, in units of $stop_units.
 #restart_units: The units for how often restart files are written, eg nhours, ndays, nmonths, nyears.
 #restart_num: How often restart files are written, in units of $restart_units.
-#num_submits: After a batch job finishes successfully, a new batch job will automatically be submitted to
-#    continue the simulation.  num_submits is the total number of submissions.
+#num_resubmits: After a batch job finishes successfully, a new batch job will automatically be submitted to
+#    continue the simulation.  num_resubmits is the number of times to submit after initial completion.
 #    After the first submission, the CONTINUE_RUN flage in env_run.xml will be changed to TRUE.
 #do_short_term_archiving: If TRUE, then move simulation output to the archive directory in your scratch directory.
 #do_long_term_archiving : If TRUE, then move simulation output from the short_term_archive to the local mass storage system.
@@ -210,7 +210,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.10
+set script_ver = 3.0.11
 
 #===========================================
 # DEFINE ALIASES
@@ -297,7 +297,7 @@ if ( `lowercase $case_run_dir` == default && $seconds_before_delete_run_dir >= 0
   exit 15
 endif
 
-if ( $num_submits >1 && ( $stop_units != $restart_units || $stop_num != $restart_num ) ) then
+if ( $num_resubmits >= 1 && ( $stop_units != $restart_units || $stop_num != $restart_num ) ) then
   acme_print 'WARNING: It makes no sense to have chained submissions unless the run is producing appropriate restarts!'
   acme_print '         The run length and restarts do not match exactly. '
   acme_print '         It is hard to check definitively, so stopping just in case.'
@@ -306,15 +306,15 @@ if ( $num_submits >1 && ( $stop_units != $restart_units || $stop_num != $restart
   acme_print '         $stop_num       = '$stop_num
   acme_print '         $restart_units  = '$restart_units
   acme_print '         $restart_num    = '$restart_num
-  acme_print '         $num_submits    = '$num_submits
+  acme_print '         $num_resubmits  = '$num_resubmits
   exit 16
 endif
 
-if ( `lowercase $debug_queue` == true && ( $num_submits >1 || `lowercase $do_short_term_archiving` == true ) ) then
+if ( `lowercase $debug_queue` == true && ( $num_resubmits >= 1 || `lowercase $do_short_term_archiving` == true ) ) then
   acme_print 'ERROR: Supercomputer centers generally do not allow job chaining in debug queues'
   acme_print '       You should either use a different queue, or submit a single job without archiving.'
   acme_print '       $debug_queue             = '$debug_queue
-  acme_print '       $num_submits             = '$num_submits
+  acme_print '       $num_resubmits           = '$num_resubmits
   acme_print '       $do_short_term_archiving = '$do_short_term_archiving
   exit 17
 endif
@@ -671,18 +671,6 @@ set script_provenance_dir  = $case_scripts_dir/run_script_provenance
 set script_provenance_name = $this_script_name.`date +%F_%T_%Z`
 mkdir -p $script_provenance_dir
 cp -f $this_script_path $script_provenance_dir/$script_provenance_name
-
-#================================================
-# COPY AUTO_CHAIN_RUNS SCRIPT TO CASE_SCRIPTS_DIR
-#================================================
-
-acme_print 'copying auto_chain script, in case it is needed'
-
-set auto_chain_run_file = ./auto_chain_runs.$machine
-if ( -fx ${this_script_dir}/${auto_chain_run_file}  ) then
-  acme_print 'Copying '${auto_chain_run_file}' to '${case_scripts_dir}
-  cp ${this_script_dir}/${auto_chain_run_file} ${case_scripts_dir}/${auto_chain_run_file}
-endif
 
 #=============================================
 # CUSTOMIZE PROCESSOR CONFIGURATION
@@ -1057,10 +1045,7 @@ endif
 
 ### Only specially authorized people can use the special_acme qos on Cori or Edison. Don't uncomment unless you're one.
 #if ( `lowercase $debug_queue` == false && $machine == edison ) then
-#  set update_run = ${case_run_exe}.updated
-#  awk '/--account/{print; print "#SBATCH --qos=special_acme";next}1' ${case_run_exe} > ${update_run}
-#  mv ${update_run} ${case_run_exe}
-#  unset update_run
+#  set batch_options = "${batch_options} --qos=special_acme"
 #endif
 
 #============================================
@@ -1220,34 +1205,14 @@ acme_print '-------- Starting Submission to Run Queue --------'
 acme_newline
 
 if ( `lowercase $submit_run` == 'true' ) then
-  if ( $num_submits == 1 ) then
+  if ( ${num_resubmits} == 0 ) then
     acme_print '         SUBMITTING A SINGLE JOB.'
-    ${case_submit_exe} --batch-args " ${batch_options} "
-  else if ( $num_submits <= 0 ) then
-    acme_print '$num_submits <= 0 so NOT submitting a job.'
-    acme_print '$num_submits = '$num_submits
-  else if ( `lowercase $debug_queue` == 'true' && $num_submits > 1 ) then
-    acme_print 'WARNING: $num_submits > 1  and  $debug_queue = "TRUE"'
-    acme_print '         Submitting chained jobs to the debug queue is usually forbidden'
-    acme_print '         $num_submits = '$num_submits
-    acme_print '         SUBMITTING JUST A SINGLE JOB.'
-    ${case_submit_exe}
-  else if ( ! -x ./auto_chain_runs.$machine && $num_submits > 1 ) then
-    acme_print 'WARNING: $num_submits > 1  but auto_chain_runs.$machine excutable cannot be found.'
-    acme_print '         $num_submits = '$num_submits
-    acme_print '         $machine     = '$machine
-    acme_print '         SUBMITTING JUST A SINGLE JOB.'
-    ${case_submit_exe}
   else
-    acme_print 'executing 'auto_chain_runs.$machine
-    acme_print '$num_submits = '$num_submits
-    acme_print '$do_short_term_archiving = '`uppercase $do_short_term_archiving`
-     '$do_long_term_archiving  = '`uppercase $do_long_term_archiving`
-    # To avoid the error checking in the ACME scripts, it is necessary to tell ACME the archiving is FALSE, and then implement it manually.
-    $xmlchange_exe --id DOUT_S    --val 'FALSE'
-    $xmlchange_exe --id DOUT_L_MS --val 'FALSE'
-    ./auto_chain_runs.$machine  $num_submits -1 `uppercase $do_short_term_archiving` `uppercase $do_long_term_archiving` ${case_run_exe}
+    ${xmlchange_exe} --id RESUBMIT --val ${num_resubmits}
+    acme_print '         SUBMITTING A RESUBMITTING JOB WITH '${num_resubmits}' RESUBMISSIONS.'
   endif
+  acme_print ${case_submit_exe} --batch-args " ${batch_options} "
+  ${case_submit_exe} --batch-args " ${batch_options} "
 else
     acme_print 'Run NOT submitted because $submit_run = '$submit_run
 endif
@@ -1369,7 +1334,8 @@ acme_newline
 #                        Also add a fix to reenable using the special acme qos queue on Edison (MD)
 # 3.0.8    2017-05-24    Fixed minor bug when $machine contained a capital letter. Bug was introduced recently. (PJC)
 # 3.0.9    2017-06-19    Fixed branch runs. Also removed sed commands for case.run and use --batch-args in case.submit (MD)
-# 3.0.10    2017-06-14    To allow data-atm compsets to work, I added a test for CAM_CONFIG_OPTS. (PJC)
+# 3.0.10   2017-06-14    To allow data-atm compsets to work, I added a test for CAM_CONFIG_OPTS. (PJC)
+# 3.0.11   2017-07-14    Replace auto-chaining code with ACME's resubmit feature. Also fix Edison's qos setting (again...) (MD)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 

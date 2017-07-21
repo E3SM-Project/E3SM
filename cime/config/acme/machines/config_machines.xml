@@ -168,7 +168,6 @@
     </modules>
     <modules>
       <command name="load">git/2.4.6</command>
-      <command name="load">papi/5.4.3.2</command>
       <command name="load">perl/5.20.0</command>
       <command name="load">cmake/3.3.2</command>
       <!--command name="load">cray-petsc/3.5.3.0</command-->
@@ -302,7 +301,6 @@
         <command name="load">git/2.9.1</command>
 	<command name="load">cmake/3.3.2</command>
 	<command name="load">pmi/5.0.10-1.0000.11069.183.8.ari</command>
-	<command name="load">papi/5.4.3.2</command>
 	<command name="load">zlib/1.2.8</command>
       </modules>
     </module_system>
@@ -437,7 +435,6 @@
         <command name="load">git/2.9.1</command>
 	<command name="load">cmake/3.3.2</command>
 	<command name="load">pmi/5.0.10-1.0000.11069.183.8.ari</command>
-	<command name="load">papi/5.4.3.2</command>
 	<command name="load">zlib/1.2.8</command>
 	<!--command name="load">cray-petsc/3.7.0.0</command-->
       </modules>
@@ -2547,7 +2544,7 @@
 	 <PES_PER_NODE>20</PES_PER_NODE>
 	 <MAX_TASKS_PER_NODE>160</MAX_TASKS_PER_NODE>
 	 <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-	 <PROJECT>csc190</PROJECT>
+	 <PROJECT>csc249</PROJECT>
 	 <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
 
 	 <mpirun mpilib="openmpi">
@@ -2593,7 +2590,6 @@
       <modules compiler="pgi">
         <command name="rm">xl</command>
         <command name="load">pgi/17.4</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
         <command name="ls"/>
       </modules>
       <modules compiler="ibm">
@@ -2605,10 +2601,12 @@
       <!-- mpi lib settings -->
       <modules mpilib="mpi-serial">
         <command name="load">netcdf/4.4.1</command>
+        <command name="load">netcdf-fortran/4.4.4</command>
       </modules>
       <modules mpilib="!mpi-serial">
         <command name="load">spectrum_mpi/10.1.0.2-20161221</command>
         <command name="load">netcdf/4.4.1</command>
+        <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">parallel-netcdf/1.7.0</command>
         <command name="load">hdf5/1.10.0-patch1-parallel</command>
       </modules>
@@ -2618,21 +2616,12 @@
 	<env name="MPILIB">$MPILIB</env>
 	<env name="OMP_STACKSIZE">128M</env>
 	<env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
+	<env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
 	<env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
 	<env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       </environment_variables>
-
-      <environment_variables compiler="pgi">
-	<env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
-      </environment_variables>
-
-      <environment_variables compiler="pgi" mpilib="!mpi-serial">
+      <environment_variables mpilib="!mpi-serial">
 	<env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
-      </environment_variables>
-
-      <environment_variables compiler="ibm">
-	<env name="NETCDF_FORTRAN_PATH">/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4</env>
-	<env name="LD_LIBRARY_PATH">$ENV{LD_LIBRARY_PATH}:/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4/lib</env>
       </environment_variables>
     </module_system>
 </machine>

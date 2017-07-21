@@ -132,6 +132,15 @@ _TEST_SUITES = {
                            "SMS.ne30_oECv3_ICG.A_WCYCL1850S",
                            "SMS.f09_g16_a.MPASLIALB")
                           ),
+
+    "acme_weekly" : (("acme_atm_weekly",),None,
+                     () ),
+
+    "fates" : (None, None,
+                         ("ERS_Ld9.1x1_brazil.ICLM45ED",
+                          "ERS_D_Ld9.1x1_brazil.ICLM45ED",
+                          "SMS_D_Lm6.1x1_brazil.ICLM45ED")
+                         ),
 }
 
 ###############################################################################
