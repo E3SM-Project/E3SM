@@ -459,13 +459,15 @@ contains
     v   = elem%state%v   (:,:,2,:,nt)
     ps  = elem%state%ps_v(:,:,    nt)
     phis= elem%state%phis(:,:)
+    w   = elem%state%w   (:,:,  :,nt)
+    phi = elem%state%phi (:,:,  :,nt)
 
     do k=1,nlev
-       dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
+       dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps(:,:)
     enddo
     call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
     call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
-    call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,elem%state%phi,elem%state%phis,kappa_star,pnh,dpnh,exner)
+    call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,phi,phis,kappa_star,pnh,dpnh,exner)
 
     T     = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star*dp)*exner
     rho   = pnh/(kappa_star*cp_star*T)
@@ -478,9 +480,6 @@ contains
           temp(:,:,k) = kappa_star(:,:,k)*elem%state%theta_dp_cp(:,:,k,nt)*exner(:,:,k)/pnh(:,:,k)
        enddo
        call preq_hydrostatic_v2(phi,elem%state%phis,temp)
-    else
-       w   = elem%state%w   (:,:,  :,nt)
-       phi = elem%state%phi (:,:,  :,nt)
     endif
     zm  = phi/g   
 

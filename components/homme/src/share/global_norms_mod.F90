@@ -926,6 +926,7 @@ contains
 
   end function linf_vnorm
 
+
   subroutine wrap_repro_sum (nvars, comm, nsize)
     use dimensions_mod, only: nelemd
 #ifdef CAM
@@ -941,14 +942,21 @@ contains
     integer :: comm             !  mpi communicator
     integer, optional :: nsize  !  local buffer size (defaults to nelemd - number of elements in mpi task)
 
-    integer nsize_use
+    integer nsize_use,n,i
 
     if (present(nsize)) then
        nsize_use = nsize
     else
        nsize_use = nelemd
     endif
-    if (nvars .gt. nrepro_vars) call abortmp('ERROR: repro_sum_buffer_size exceeded')
+    if (nvars .gt. nrepro_vars) call abortmp('repro_sum_buffer_size exceeded')
+    do n=1,nvars
+       do i=1,nsize_use
+          if (global_shared_buf(i,n) /= global_shared_buf(i,n) ) &
+               call abortmp('NaNs detected in repro sum input')
+       enddo
+    enddo
+    
 
 ! Repro_sum contains its own OpenMP, so only one thread should call it (AAM)
 
