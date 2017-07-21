@@ -18,7 +18,6 @@ module clm_initializeMod
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
   use FatesInterfaceMod, only : set_fates_global_elements
-  use BeTRSimulationALM, only : create_betr_simulation_alm
   ! 
   !-----------------------------------------
   ! Definition of component types
@@ -357,7 +356,7 @@ contains
     use shr_orb_mod           , only : shr_orb_decl
     use shr_scam_mod          , only : shr_scam_getCloseLatLon
     use seq_drydep_mod        , only : n_drydep, drydep_method, DD_XLND
-    use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi,max_patch_per_col
+    use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi    
     use clm_varcon            , only : h2osno_max, bdsno, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use clm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
@@ -383,6 +382,7 @@ contains
     use accumulMod            , only : print_accum_fields 
     use ndepStreamMod         , only : ndep_init, ndep_interp
     use CNEcosystemDynMod     , only : CNEcosystemDynInit
+    use CNEcosystemDynBetrMod , only : CNEcosystemDynBetrInit    
     use pdepStreamMod         , only : pdep_init, pdep_interp
     use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
     use CNDecompCascadeCNMod  , only : init_decompcascade_cn
@@ -399,9 +399,11 @@ contains
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
     use clm_varctl                          , only : use_bgc_interface, use_pflotran
     use clm_pflotran_interfaceMod           , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
+    use betr_initializeMod    , only : betr_initialize
+    use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars
+    use betr_initializeMod    , only : bgc_reaction
     use tracer_varcon         , only : is_active_betr_bgc    
     use clm_time_manager      , only : is_restart
-    use ALMbetrNLMod          , only : betr_namelist_buffer
     !
     ! !ARGUMENTS    
     implicit none
@@ -532,12 +534,8 @@ contains
     call clm_inst_biogeophys(bounds_proc)
 
     if(use_betr)then
-      !allocate memory for betr simulator
-      allocate(ep_betr, source=create_betr_simulation_alm())
-      !set internal filters for betr
-      call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, boffline=.false.)
-      call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, waterstate_vars, betr_namelist_buffer, masterproc)
-      is_active_betr_bgc = ep_betr%do_soibgc()
+      !state variables will be initialized inside betr_initialize
+      call betr_initialize(bounds_proc, 1, nlevsoi, waterstate_vars)
     endif
     
     call SnowOptics_init( ) ! SNICAR optical parameters:
@@ -612,7 +610,11 @@ contains
     ! ------------------------------------------------------------------------
 
     if (use_cn) then
-       call CNEcosystemDynInit(bounds_proc)
+       if(is_active_betr_bgc)then
+          call CNEcosystemDynBetrInit(bounds_proc)         
+       else
+          call CNEcosystemDynInit(bounds_proc)
+       endif
     else
        call SatellitePhenologyInit(bounds_proc)
     end if
@@ -664,7 +666,7 @@ contains
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
                waterflux_vars, waterstate_vars,                                               &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
-               ep_betr,                                                                       &
+               betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
                alm_fates)
        end if
 
@@ -680,11 +682,15 @@ contains
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
-            ep_betr,                                                                       &
+            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
             alm_fates)
 
     end if
        
+    if (use_betr)then
+       call bgc_reaction%init_betr_alm_bgc_coupler(bounds_proc, &
+            carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
+    endif
     ! ------------------------------------------------------------------------
     ! Initialize filters and weights
     ! ------------------------------------------------------------------------
@@ -712,9 +718,7 @@ contains
                glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
        end do
        !$OMP END PARALLEL DO
-       if(use_betr)then
-         call ep_betr%set_active(bounds_proc, col_pp)
-       endif
+
        ! Create new template file using cold start
        call restFile_write(bounds_proc, finidat_interp_dest,                               &
             atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
@@ -724,7 +728,7 @@ contains
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
-            ep_betr,                                                                       &
+            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
             alm_fates)
 
        ! Interpolate finidat onto new template file
@@ -740,7 +744,7 @@ contains
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
-            ep_betr,                                                                       &
+            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
             alm_fates)
 
        ! Reset finidat to now be finidat_interp_dest 
@@ -757,9 +761,6 @@ contains
     end do
     !$OMP END PARALLEL DO
 
-    if(use_betr)then
-      call ep_betr%set_active(bounds_proc, col_pp)
-    endif 
     ! ------------------------------------------------------------------------
     ! Initialize nitrogen deposition
     ! ------------------------------------------------------------------------

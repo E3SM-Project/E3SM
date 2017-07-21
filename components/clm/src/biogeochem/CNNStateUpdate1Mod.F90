@@ -17,7 +17,6 @@ module CNNStateUpdate1Mod
   use CNNitrogenFluxType     , only : nitrogenflux_type
   use CNNitrogenStateType    , only : nitrogenstate_type
   use VegetationType              , only : veg_pp
-  use tracer_varcon          , only : is_active_betr_bgc
   !! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
   !
@@ -83,7 +82,54 @@ contains
          ns%seedn_col(c) = ns%seedn_col(c) - nf%dwt_seedn_to_deadstem_col(c) * dt
       end do
 
-      if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode)) then
+      if (is_active_betr_bgc) then
+         !summarize Organic N input and mineral nitrogen input from litter, deposition, fixation and fertilization
+         do fc = 1, num_soilc
+            c = filter_soilc(fc)
+            ns%plant_nbuffer_col(c)        = ns%plant_nbuffer_col(c)        + nf%nfix_to_sminn_col(c)*dt * exp(-cnstate_vars%frootc_nfix_scalar_col(c)/frootc_nfix_thc)            
+         enddo
+
+         do j = 1, nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               ! N deposition and fixation (put all into NH4 pool)
+               nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%ndep_to_sminn_col(c)*dt * ndep_prof(c,j)
+               !now a fraction of fixed nitrogen is first added to plant nitrogen pool 
+               nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%nfix_to_sminn_col(c)*dt * nfixation_prof(c,j) * (1._r8-exp(-cnstate_vars%frootc_nfix_scalar_col(c)/frootc_nfix_thc))
+               
+               ! plant to litter fluxes
+               ! phenology and dynamic landcover fluxes
+               nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) = nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) + &
+                    ( nf%phenology_n_to_litr_met_n_col(c,j) + nf%dwt_frootn_to_litr_met_n_col(c,j) ) * dt
+               
+               nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) = nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) + &
+                    ( nf%phenology_n_to_litr_cel_n_col(c,j) + nf%dwt_frootn_to_litr_cel_n_col(c,j) ) * dt
+               
+               nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) = nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) + &
+                    ( nf%phenology_n_to_litr_lig_n_col(c,j) + nf%dwt_frootn_to_litr_lig_n_col(c,j) ) * dt
+               
+               nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd)     = nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd) + &
+                    ( nf%dwt_livecrootn_to_cwdn_col(c,j)    + nf%dwt_deadcrootn_to_cwdn_col(c,j) )   * dt            
+            enddo
+         enddo
+         
+         ! repeating N dep and fixation for crops
+         if ( crop_prog )then
+            do j = 1, nlevdecomp
+               
+               ! column loop
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                                    
+                  ! N deposition and fixation (put all into NH4 pool)
+                  nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%fert_to_sminn_col(c)*dt * ndep_prof(c,j)
+                  nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%soyfixn_to_sminn_col(c)*dt * nfixation_prof(c,j)
+                  nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%supplement_to_sminn_vr_col(c,j)*dt
+               end do
+            end do
+         end if
+         
+      elseif (.not.(use_pflotran .and. pf_cmode)) then
 
          do j = 1, nlevdecomp
             do fc = 1,num_soilc
