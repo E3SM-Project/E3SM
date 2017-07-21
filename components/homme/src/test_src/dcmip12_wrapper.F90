@@ -648,6 +648,7 @@ subroutine set_tracers(q,nq, dp,i,j,k,lat,lon,elem)
   real(rl), parameter :: wl = 1.0 ! checkerboard wavelength in dg
   integer :: qi
 
+  if (nq>qsize) call abortmp('qsize set too small for dcmip test case')
   ! set known tracers to q and the rest to a checkerboard pattern
   elem%state%Q(i,j,k,:)    = 0.5d0*(1.0d0+sign(1.0d0,sin(lat*360.0/wl)*sin(lon*360.0/wl)))
   elem%state%Q(i,j,k,1:nq) = q

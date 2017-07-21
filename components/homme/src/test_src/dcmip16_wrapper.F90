@@ -154,7 +154,7 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
         w  = 0
         q(2)=0
         q(3)=0
-        q(4)=0
+        q(4)=1
 
         call set_state(u,v,w,T,ps,phis,p,dp,z,g,i,j,k,elem(ie),1,nt)
         call set_tracers(q,4,dp,i,j,k,lat,lon,elem(ie))
