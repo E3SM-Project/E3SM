@@ -6,7 +6,7 @@
 CIME documentation
 ==================
 
-The Common Infrastructure for Modeling the Earth (CIME - pronounced "SEEM") provides a UNIX command-line-based interface for
+The Common Infrastructure for Modeling the Earth (CIME - pronounced "SEAM") provides a UNIX command-line-based interface for
 configuring, compiling and executing Earth system models. 
 
 Table of contents
@@ -21,16 +21,14 @@ Table of contents
    data_models/index.rst
    driver_cpl/index.rst
    misc_tools/index.rst
-   glossary.rst
+   glossary/index.rst
+   xml_files/index.rst
 
-Indices, Glossary and Search
-----------------------------
+Addendum
+---------
 
-* :ref:`genindex`
-* :ref:`modindex`
 * :ref:`glossary`
-* :ref:`search`
-
+* :ref:`xml_files`
 
 CIME is developed by the 
 `ACME <https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy>`_ and 
