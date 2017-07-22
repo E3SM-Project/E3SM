@@ -2,9 +2,9 @@ module ice_comp_mct
 
   ! !USES:
   
-  use seq_cdata_mod
   use esmf
   use mct_mod
+  use perf_mod
   use seq_cdata_mod   , only: seq_cdata, seq_cdata_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_putdata, seq_infodata_getdata
   use seq_comm_mct    , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
@@ -32,7 +32,6 @@ module ice_comp_mct
   ! Private module data
   !--------------------------------------------------------------------------
   type(shr_strdata_type) :: SDICE
-  character(CS)          :: myModelName = 'ice' ! user defined model name
   integer(IN)            :: mpicom              ! mpi communicator
   integer(IN)            :: my_task             ! my task in mpi communicator mpicom
   integer                :: inst_index          ! number of current instance (ie. 1)
@@ -40,8 +39,10 @@ module ice_comp_mct
   character(len=16)      :: inst_suffix         ! char string associated with instance (ie. "_0001" or "")
   integer(IN)            :: logunit             ! logging unit number
   integer(IN)            :: compid              ! mct comp id
-  integer(IN),parameter  :: master_task=0       ! task number of master task
 
+  character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
+  integer(IN) , parameter :: master_task=0 ! task number of master task
+  character(*), parameter :: subName = "(ice_init_mct) "
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -59,6 +60,19 @@ CONTAINS
     character(len=*), optional  , intent(in)    :: NLFilename ! Namelist filename
 
     !--- local ---
+    type(seq_infodata_type), pointer :: infodata
+    type(mct_gsMap)        , pointer :: gsMap
+    type(mct_gGrid)        , pointer :: ggrid
+    integer           :: phase                     ! phase of method
+    logical           :: ice_present               ! flag
+    logical           :: ice_prognostic            ! flag
+    integer(IN)       :: shrlogunit                ! original log unit 
+    integer(IN)       :: shrloglev                 ! original log level
+    logical           :: read_restart              ! start from restart
+    integer(IN)       :: ierr                      ! error code
+    logical           :: scmMode = .false.         ! single column mode
+    real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
+    real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
     character(*), parameter :: subName = "(ice_init_mct) "
     !-------------------------------------------------------------------------------
 
@@ -81,7 +95,7 @@ CONTAINS
     inst_index  = seq_comm_inst(compid)
     inst_suffix = seq_comm_suffix(compid)
 
-    ! Determine communicator groups and sizes
+    ! Determine communicator group
     call mpi_comm_rank(mpicom, my_task, ierr)
 
     !--- open log file ---
@@ -100,15 +114,16 @@ CONTAINS
     call shr_file_setLogUnit (logUnit)
 
     call t_startf('dice_readnml')
-       call dice_shr_read_namelists(mpicom, my_task, master_task, &
-            inst_index, inst_name, inst_suffix, &
-            logunit, shrlogunit, SDICE, ice_present, ice_prognostic)
 
-       call seq_infodata_PutData(infodata, &
-            ice_present=ice_present, &
-            ice_prognostic=ice_prognostic, &
-            iceberg_prognostic=.false.)
-       call t_stopf('dice_readnml')
+    call dice_shr_read_namelists(mpicom, my_task, master_task, &
+         inst_index, inst_suffix, inst_name,  &
+         logunit, shrlogunit, SDICE, ice_present, ice_prognostic)
+
+    call seq_infodata_PutData(infodata, &
+         ice_present=ice_present, &
+         ice_prognostic=ice_prognostic, &
+         iceberg_prognostic=.false.)
+
     call t_stopf('dice_readnml')
 
     !----------------------------------------------------------------------------
@@ -167,9 +182,10 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit     ! original log unit 
-    integer(IN)                      :: shrloglev      ! original log level
-    character(CL)                    :: case_name      ! case name
+    integer(IN)                      :: shrlogunit   ! original log unit 
+    integer(IN)                      :: shrloglev    ! original log level
+    logical                          :: read_restart ! start from restart
+    character(CL)                    :: case_name    ! case name
     character(*), parameter :: subName = "(ice_run_mct) "
     !-------------------------------------------------------------------------------
 
@@ -185,9 +201,9 @@ CONTAINS
 
     call seq_infodata_GetData(infodata, case_name=case_name)
        
-    call dicem_comp_run(EClock, x2i, i2x, &
+    call dice_comp_run(EClock, x2i, i2x, &
        SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, case_name)
+       inst_suffix, logunit, read_restart, case_name)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

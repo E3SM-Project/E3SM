@@ -61,7 +61,7 @@ CONTAINS
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   subroutine datm_shr_read_namelists(mpicom, my_task, master_task, &
-       inst_index, inst_name, inst_suffix, &
+       inst_index, inst_suffix, inst_name, &
        logunit, shrlogunit, SDATM, atm_present, atm_prognostic)
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -97,11 +97,13 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Determine input filenamname
     !----------------------------------------------------------------------------
+
     filename = "datm_in"//trim(inst_suffix)
 
     !----------------------------------------------------------------------------
     ! Read datm_in
     !----------------------------------------------------------------------------
+
     decomp = "1d"
     iradsw = 0
     factorFn = 'null'

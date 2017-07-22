@@ -7,6 +7,7 @@ module dice_shr_mod
   use shr_file_mod   , only : shr_file_getunit, shr_file_freeunit
   use shr_sys_mod    , only : shr_sys_flush, shr_sys_abort
   use shr_strdata_mod, only : shr_strdata_type, shr_strdata_readnml
+  use shr_mpi_mod    , only : shr_mpi_bcast 
 
   ! !PUBLIC TYPES:
   implicit none
@@ -42,7 +43,7 @@ CONTAINS
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   subroutine dice_shr_read_namelists(mpicom, my_task, master_task, &
-       inst_index, inst_name, inst_suffix, &
+       inst_index, inst_suffix, inst_name, &
        logunit, shrlogunit, SDICE, ice_present, ice_prognostic)
 
     ! !DESCRIPTION: Read in dice namelists
@@ -61,10 +62,34 @@ CONTAINS
     logical                , intent(out)   :: ice_present    ! flag
     logical                , intent(out)   :: ice_prognostic ! flag
 
+    !--- local variables ---
+    character(CL) :: fileName    ! generic file name
+    integer(IN)   :: nunit       ! unit number
+    integer(IN)   :: ierr        ! error code
+
+    !--- formats ---
+    character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
+    character(*), parameter :: F0L   = "('(dice_comp_init) ',a, l2)"
+    character(*), parameter :: F01   = "('(dice_comp_init) ',a,5i8)"
+    character(*), parameter :: F02   = "('(dice_comp_init) ',a,4es13.6)"
+    character(*), parameter :: F06   = "('(dice_comp_init) ',a,5l3)"
+    character(*), parameter :: subName = "(shr_dice_read_namelists) "
+    !-------------------------------------------------------------------------------
+
     !----- define namelist -----
     namelist / dice_nml / &
          decomp, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, restfilm, restfils, &
          force_prognostic_true
+
+    !----------------------------------------------------------------------------
+    ! Determine input filenamname
+    !----------------------------------------------------------------------------
+
+    filename = "dice_in"//trim(inst_suffix)
+
+    !----------------------------------------------------------------------------
+    ! Read dice_in
+    !----------------------------------------------------------------------------
 
     filename   = "dice_in"//trim(inst_suffix)
     decomp     = "1d"

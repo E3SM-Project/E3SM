@@ -39,7 +39,7 @@ module atm_comp_mct
   integer(IN)            :: my_task             ! my task in mpi communicator mpicom
   integer                :: inst_index          ! number of current instance (ie. 1)
   character(len=16)      :: inst_name           ! fullname of current instance (ie. "lnd_0001")
-  character(len=16)      :: inst_suffix         ! char string associated with instance (ie. "_0001" or "")
+  character(len=16)      :: inst_suffix = ""    ! char string associated with instance (ie. "_0001" or "")
   integer(IN)            :: logunit             ! logging unit number
   integer(IN)            :: compid              ! mct comp id
   integer(IN),parameter  :: master_task=0       ! task number of master task
@@ -65,30 +65,24 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)       :: compid         ! mct comp id
-    integer(IN)       :: my_task        ! my task in mpi communicator mpicom
-    integer           :: phase          ! phase of method
-    logical           :: atm_present    ! flag
-    logical           :: atm_prognostic ! flag
-    real(R8)          :: orbEccen       ! orb eccentricity (unit-less)
-    real(R8)          :: orbMvelpp      ! orb moving vernal eq (radians)
-    real(R8)          :: orbLambm0      ! orb mean long of perhelion (radians)
-    real(R8)          :: orbObliqr      ! orb obliquity (radians)
-    real(R8)          :: nextsw_cday    ! calendar of next atm sw
-    integer(IN)       :: shrlogunit     ! original log unit 
-    integer(IN)       :: shrloglev      ! original log level
-    integer           :: inst_index     ! number of current instance (ie. 1)
-    character(len=16) :: inst_name      ! fullname of current instance (ie. "lnd_0001")
-    character(len=16) :: inst_suffix    ! char string associated with instance
-    logical           :: read_restart   ! start from restart
-    integer(IN)       :: ierr           ! error code
+    integer           :: phase                     ! phase of method
+    logical           :: atm_present               ! flag
+    logical           :: atm_prognostic            ! flag
+    integer(IN)       :: shrlogunit                ! original log unit 
+    integer(IN)       :: shrloglev                 ! original log level
+    logical           :: read_restart              ! start from restart
+    integer(IN)       :: ierr                      ! error code
     logical           :: scmMode = .false.         ! single column mode
     real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
+    real(R8)          :: orbEccen                  ! orb eccentricity (unit-less)
+    real(R8)          :: orbMvelpp                 ! orb moving vernal eq (radians)
+    real(R8)          :: orbLambm0                 ! orb mean long of perhelion (radians)
+    real(R8)          :: orbObliqr                 ! orb obliquity (radians)
+    real(R8)          :: nextsw_cday               ! calendar of next atm sw
 
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
-
     integer(IN) , parameter :: master_task=0 ! task number of master task
     character(*), parameter :: subName = "(atm_init_mct) "
     !-------------------------------------------------------------------------------
@@ -119,7 +113,7 @@ CONTAINS
     inst_suffix = seq_comm_suffix(compid)
 
     if (phase == 1) then
-       ! Determine communicator groups and sizes
+       ! Determine communicator group
        call mpi_comm_rank(mpicom, my_task, ierr)
 
        !--- open log file ---
@@ -146,8 +140,8 @@ CONTAINS
     if (phase == 1) then
        call t_startf('datm_readnml')
        call datm_shr_read_namelists(mpicom, my_task, master_task, &
-            inst_index, inst_name, inst_suffix, &
-            logunit, shrlogunit, SDATM, atm_present, atm_prognostic, presaero) 
+            inst_index, inst_suffix, inst_name, &
+            logunit, shrlogunit, SDATM, atm_present, atm_prognostic)
 
        call seq_infodata_PutData(infodata, &
             atm_present=atm_present, &

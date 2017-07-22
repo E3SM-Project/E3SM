@@ -22,6 +22,7 @@ module datm_comp_mod
   use shr_dmodel_mod , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list
   use seq_timemgr_mod, only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
   use seq_flds_mod   , only: seq_flds_a2x_fields, seq_flds_x2a_fields
+
   use datm_shr_mod   , only: datm_shr_getNextRadCDay, datm_shr_esat, datm_shr_CORE2getFactors
   use datm_shr_mod   , only: atm_mode       ! namelist input
   use datm_shr_mod   , only: decomp         ! namelist input
@@ -605,7 +606,7 @@ CONTAINS
     integer(IN)            , intent(in)    :: compid           ! mct comp id
     integer(IN)            , intent(in)    :: my_task          ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task      ! task number of master task
-    character(len=16)      , intent(in)    :: inst_suffix      ! char string associated with instance
+    character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
     integer(IN)            , intent(in)    :: logunit          ! logging unit number
     real(R8)               , intent(out)   :: nextsw_cday      ! calendar of next atm sw
     character(CL)          , intent(in), optional :: case_name ! case name
@@ -1073,6 +1074,7 @@ CONTAINS
     ! bias correction / anomaly forcing ( end block )
     !
 
+    ! Write restart info  
     if (write_restart) then
        call t_startf('datm_restart')
        write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
@@ -1094,7 +1096,6 @@ CONTAINS
        call shr_strdata_restWrite(trim(rest_file_strm),SDATM,mpicom,trim(case_name),'SDATM strdata')
        call shr_sys_flush(logunit)
        call t_stopf('datm_restart')
-
     endif
 
     call t_stopf('datm')
@@ -1121,10 +1122,10 @@ CONTAINS
   !===============================================================================
   subroutine datm_comp_final(my_task, master_task, logunit)
 
+    ! !DESCRIPTION: finalize method for datm model
     implicit none
 
-    ! !DESCRIPTION: finalize method for datm model
-
+    ! !INPUT/OUTPUT PARAMETERS:
     integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom
     integer(IN) , intent(in) :: master_task ! task number of master task
     integer(IN) , intent(in) :: logunit     ! logging unit number
@@ -1133,9 +1134,6 @@ CONTAINS
     character(*), parameter :: F00   = "('(datm_comp_final) ',8a)"
     character(*), parameter :: F91   = "('(datm_comp_final) ',73('-'))"
     character(*), parameter :: subName = "(datm_comp_final) "
-
-    !-------------------------------------------------------------------------------
-    !
     !-------------------------------------------------------------------------------
 
     call t_startf('DATM_FINAL')

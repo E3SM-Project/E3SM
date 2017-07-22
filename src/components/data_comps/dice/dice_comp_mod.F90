@@ -5,12 +5,10 @@
 module dice_comp_mod
 
   ! !USES:
-
-  use mct_mod
   use esmf
+  use mct_mod
   use perf_mod
   use shr_pcdf_mod
-
   use shr_const_mod
   use shr_sys_mod
   use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
@@ -24,10 +22,20 @@ module dice_comp_mod
   use shr_strdata_mod , only: shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod , only: shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod  , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
-  use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list
+  use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
   use seq_timemgr_mod , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
   use seq_flds_mod    , only: seq_flds_i2x_fields, seq_flds_x2i_fields, seq_flds_i2o_per_cat
-  !
+
+  use dice_shr_mod   , only: ice_mode       ! namelist input
+  use dice_shr_mod   , only: decomp         ! namelist input
+  use dice_shr_mod   , only: rest_file      ! namelist input
+  use dice_shr_mod   , only: rest_file_strm ! namelist input
+  use dice_shr_mod   , only: flux_swpf      ! namelist input -short-wave penatration factor
+  use dice_shr_mod   , only: flux_Qmin      ! namelist input -bound on melt rate
+  use dice_shr_mod   , only: flux_Qacc      ! namelist input -activates water accumulation/melt wrt Q
+  use dice_shr_mod   , only: flux_Qacc0     ! namelist input -initial water accumulation value
+  use dice_shr_mod   , only: nullstr
+
   ! !PUBLIC TYPES:
   implicit none
   private ! except
@@ -158,6 +166,7 @@ CONTAINS
     integer(IN)   :: kfld        ! field reference
     logical       :: exists      ! file existance logical
     integer(IN)   :: nu          ! unit number
+
     character(CL) :: calendar    ! calendar type
 
     !--- formats ---
@@ -315,7 +324,7 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     if (read_restart) then
-       if (trim(rest_file)      == trim(nullstr) .and. &
+       if (trim(rest_file) == trim(nullstr) .and. &
             trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
              write(logunit,F00) ' restart filenames from rpointer'
@@ -375,7 +384,7 @@ CONTAINS
     call t_adj_detailf(+2)
     call dice_comp_run(EClock, x2i, i2x, &
          SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit)
+         inst_suffix, logunit, read_restart)
     call t_adj_detailf(-2)
 
     call t_stopf('DICE_INIT')
@@ -385,7 +394,7 @@ CONTAINS
   !===============================================================================
   subroutine dice_comp_run(EClock, x2i, i2x, &
        SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, case_name)
+       inst_suffix, logunit, read_restart, case_name)
 
     ! !DESCRIPTION: run method for dice model
 
@@ -402,8 +411,9 @@ CONTAINS
     integer(IN)            , intent(in)    :: compid           ! mct comp id
     integer(IN)            , intent(in)    :: my_task          ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task      ! task number of master task
-    character(len=16)      , intent(in)    :: inst_suffix      ! char string associated with instance
+    character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
     integer(IN)            , intent(in)    :: logunit          ! logging unit number
+    logical                , intent(in)    :: read_restart     ! start from restart
     character(CL)          , intent(in), optional :: case_name ! case name
 
     !--- local ---
@@ -419,6 +429,7 @@ CONTAINS
     real(R8)      :: cosarg            ! for setting ice temp pattern
     real(R8)      :: jday, jday0       ! elapsed day counters
     character(CS) :: calendar          ! calendar type
+    logical       :: write_restart     ! restart now
 
     character(*), parameter :: F00   = "('(dice_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(dice_comp_run) ',2a,2i8,'s')"
@@ -627,6 +638,7 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('dice_restart')
+       ! Write rpointer file
        write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
             trim(case_name), '.dice'//trim(inst_suffix)//'.r.', &
             yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
@@ -641,6 +653,7 @@ CONTAINS
           close(nu)
           call shr_file_freeUnit(nu)
        endif
+       ! Write restart info
        if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
        call shr_pcdf_readwrite('write',SDICE%pio_subsystem, SDICE%io_type, &
             trim(rest_file),mpicom,gsmap,clobber=.true.,rf1=water,rf1n='water')
@@ -672,10 +685,15 @@ CONTAINS
   end subroutine dice_comp_run
 
   !===============================================================================
-  subroutine dice_comp_final()
+  subroutine dice_comp_final(my_task, master_task, logunit)
 
     ! !DESCRIPTION:  finalize method for dice model
     implicit none
+
+    ! !INPUT/OUTPUT PARAMETERS:
+    integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom
+    integer(IN) , intent(in) :: master_task ! task number of master task
+    integer(IN) , intent(in) :: logunit     ! logging unit number
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dice_comp_final) ',8a)"
