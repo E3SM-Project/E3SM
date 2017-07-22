@@ -138,7 +138,6 @@ CONTAINS
        scmMode, scmlat, scmlon)
 
     ! !DESCRIPTION: initialize dice model
-    use pio, only : iosystem_desc_t
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -166,8 +165,8 @@ CONTAINS
     integer(IN)   :: kfld        ! field reference
     logical       :: exists      ! file existance logical
     integer(IN)   :: nu          ! unit number
-
     character(CL) :: calendar    ! calendar type
+    type(iosystem_desc_t), pointer :: ice_pio_subsystem
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
@@ -187,7 +186,6 @@ CONTAINS
 
     call shr_strdata_pioinit(SDICE, COMPID)
 
-
     !----------------------------------------------------------------------------
     ! Initialize SDICE
     !----------------------------------------------------------------------------
@@ -199,6 +197,7 @@ CONTAINS
     ! NOTE: shr_strdata_init calls shr_dmodel_readgrid which reads the data model
     ! grid and from that computes SDICE%gsmap and SDICE%ggrid. DICE%gsmap is created
     ! using the decomp '2d1d' (1d decomp of 2d grid)
+
     if (scmmode) then
        if (my_task == master_task) then
           write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
@@ -397,7 +396,6 @@ CONTAINS
        inst_suffix, logunit, read_restart, case_name)
 
     ! !DESCRIPTION: run method for dice model
-
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -667,7 +665,6 @@ CONTAINS
 
     !----------------------------------------------------------------------------
     ! Log output for model date
-    ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
     call t_startf('dice_run2')
@@ -677,7 +674,6 @@ CONTAINS
     end if
 
     firstcall = .false.
-
     call t_stopf('dice_run2')
 
     call t_stopf('DICE_RUN')

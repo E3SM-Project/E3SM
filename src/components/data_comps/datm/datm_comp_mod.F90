@@ -127,13 +127,11 @@ module datm_comp_mod
        "Faxx_taux       ","Faxx_tauy       ","Faxx_lat        ","Faxx_sen        ", &
        "Faxx_lwup       ","Faxx_evap       ","Fall_fco2_lnd   ","Faoo_fco2_ocn   ", &
        "Faoo_fdms_ocn   ",  &
-       !
        ! add values for bias correction / anomaly forcing
-       !
        "Sa_precsf       ", &
        "Sa_prec_af      ","Sa_u_af         ","Sa_v_af         ","Sa_tbot_af      ",&
        "Sa_pbot_af      ","Sa_shum_af      ","Sa_swdn_af      ","Sa_lwdn_af      ",&
-                                ! isotopic forcing
+       ! isotopic forcing
        "Faxa_rainc_18O  ","Faxa_rainc_HDO  ","Faxa_rainl_18O  ","Faxa_rainl_HDO  ",&
        "Faxa_snowc_18O  ","Faxa_snowc_HDO  ","Faxa_snowl_18O  ","Faxa_snowl_HDO  ",&
        "Sa_shum_16O     ","Sa_shum_18O     ","Sa_shum_HDO     " &
@@ -155,9 +153,9 @@ module datm_comp_mod
        "snowhl          ","lfrac           ","ifrac           ","ofrac           ", &
        "taux            ","tauy            ","lat             ","sen             ", &
        "lwup            ","evap            ","co2lnd          ","co2ocn          ", &
-       ! add precsf
-       "dms             ","precsf          ", &
-       ! add Sa_precsf for precip scale factor
+       "dms             ", &
+       ! add values for bias correction / anomaly forcing (add Sa_precsf for precip scale factor)
+       "precsf          ", &
        "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
        "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         ", &
        ! isotopic forcing
@@ -989,10 +987,12 @@ CONTAINS
 
     call t_stopf('datm_mode')
 
-    !
+    !----------------------------------------------------------
     ! bias correction / anomaly forcing ( start block )
+    !----------------------------------------------------------
+
     ! modify atmospheric input fields if streams exist
-    !
+
     lsize = mct_avect_lsize(avstrm)
 
     ! bias correct precipitation relative to observed
@@ -1008,7 +1008,7 @@ CONTAINS
     endif
 
     ! adjust atmospheric input fields if anomaly forcing streams exist
-    ! (via anomaly_forcing nameslist option)
+    ! (via anomaly_forcing namelist option)
 
     ! wind
     if (su_af > 0 .and. sv_af > 0) then
@@ -1070,9 +1070,9 @@ CONTAINS
           a2x%rAttr(kswvdf,n) = a2x%rAttr(kswvdf,n)*avstrm%rAttr(sswdn_af,n)
        enddo
     endif
-    !
+    !----------------------------------------------------------
     ! bias correction / anomaly forcing ( end block )
-    !
+    !----------------------------------------------------------
 
     ! Write restart info  
     if (write_restart) then
