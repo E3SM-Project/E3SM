@@ -189,7 +189,6 @@ module CNNitrogenStateType
      procedure , public  :: SetValues
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
-     procedure , public  :: nbuffer_update
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory  
      procedure , private :: InitCold     
@@ -838,12 +837,12 @@ contains
           this%storvegn_patch(p)           = 0._r8
           this%totvegn_patch(p)            = 0._r8
           this%totpftn_patch(p)            = 0._r8          
+          this%plant_n_buffer_patch(p)     = 1._r8
        end if
 
        this%npimbalance_patch(p) = 0.0_r8
        this%pnup_pfrootc_patch(p) = 0.0_r8 
        this%benefit_pgpp_pleafc_patch(p) = 0.0_r8   
-       this%plant_n_buffer_patch(p)= 0.01_r8
     end do
 
     !-------------------------------------------
@@ -1569,6 +1568,10 @@ contains
    end do
 
    call p2c(bounds, num_soilc, filter_soilc, &
+        this%plant_n_buffer_patch(bounds%begp:bounds%endp), &
+        this%plant_n_buffer_col(bounds%begc:bounds%endc))
+
+   call p2c(bounds, num_soilc, filter_soilc, &
         this%totvegn_patch(bounds%begp:bounds%endp), &
         this%totvegn_col(bounds%begc:bounds%endc))
 
@@ -1791,13 +1794,15 @@ contains
            this%sminn_col(c) + &
            this%totprodn_col(c) + &
            this%seedn_col(c) + &
-           this%ntrunc_col(c)
+           this%ntrunc_col(c)+ &
+           this%plant_n_buffer_col(c)
            
       this%totabgn_col (c) =  &
            this%totpftn_col(c) + &
            this%totprodn_col(c) + &
            this%seedn_col(c) + &
-           this%ntrunc_col(c) 
+           this%ntrunc_col(c)+ &
+           this%plant_n_buffer_col(c) 
 
       this%totblgn_col(c) = &
            this%cwdn_col(c) + &
@@ -1809,32 +1814,6 @@ contains
 
  end subroutine Summary
  
-  !-----------------------------------------------------------------------
  
-    subroutine nbuffer_update(this, bounds, num_soilp, filter_soilp,  &
-        plant_minn_active_yield_flx_patch, plant_minn_passive_yield_flx_patch)
-
-    use clm_time_manager         , only : get_step_size        
-    ! !ARGUMENTS:
-    class (nitrogenstate_type) :: this
-    type(bounds_type) , intent(in) :: bounds  
-    integer           , intent(in) :: num_soilp       ! number of soil columns in filter
-    integer           , intent(in) :: filter_soilp(:) ! filter for soil columns
-   
-    real(r8)          , intent(in) :: plant_minn_active_yield_flx_patch(bounds%begp:bounds%endp)
-    real(r8)          , intent(in) :: plant_minn_passive_yield_flx_patch(bounds%begp:bounds%endp) 
-    integer :: fp, p
-    real(r8) :: dtime
-  
-    dtime =  get_step_size()
-  
-    
-    do fp = 1, num_soilp
-      p = filter_soilp(fp)
-      this%plant_n_buffer_patch(p) = this%plant_n_buffer_patch(p)           + &
-             (plant_minn_active_yield_flx_patch(p) + &
-               plant_minn_passive_yield_flx_patch(p))*dtime
-    enddo
-  end subroutine nbuffer_update      
 
 end module CNNitrogenStateType
