@@ -5,15 +5,16 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-#####################################
-  Building a Coupled Model with CIME
-#####################################
+#######################################################################
+CIME User's Guide Part 3: Advanced - Building a Coupled Model with CIME
+#######################################################################
 
 .. toctree::
    :maxdepth: 3
    :numbered:
       
    introduction.rst
+   adding-components.rst
 
 Indices and tables
 ==================

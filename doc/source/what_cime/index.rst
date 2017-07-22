@@ -13,7 +13,7 @@
    :maxdepth: 3
    :numbered:
       
-CIME, pronounced "SEEM", contains the support scripts (configure,
+CIME, pronounced "SEAM", contains the support scripts (configure,
 build, run, test), data models, essential utility libraries, a “main”
 and other tools that are needed to build a single-executable coupled
 Earth System Model.  CIME is available in a stand-alone package that
@@ -64,10 +64,6 @@ CIME is an open-source, public repository hosted under the Earth
 System Model Computational Infrastructure (ESMCI) organization on
 Github at http://github.com/ESMCI/cime.
 
-Indices and tables
-==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+
 
