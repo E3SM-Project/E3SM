@@ -571,7 +571,7 @@ CONTAINS
     endif
 
     !----------------------------------------------------------------------------
-    ! Set initial atm state, needed for first time atm initialization
+    ! Set initial atm state
     !----------------------------------------------------------------------------
 
     call t_adj_detailf(+2)
@@ -663,67 +663,61 @@ CONTAINS
 
     !--- copy all fields from streams to a2x as default ---
 
-    if (trim(atm_mode) /= 'NULL') then
-       call t_startf('datm_strdata_advance')
-       call shr_strdata_advance(SDATM,currentYMD,currentTOD,mpicom,'datm')
-       call t_stopf('datm_strdata_advance')
-       call t_barrierf('datm_scatter_BARRIER',mpicom)
-       call t_startf('datm_scatter')
-       if (trim(atm_mode) /= 'COPYALL') then
-          lsize = mct_avect_lsize(a2x)
-          do n = 1,lsize
-             a2x%rAttr(kbid,n) = aerodep_spval
-             a2x%rAttr(kbod,n) = aerodep_spval
-             a2x%rAttr(kbiw,n) = aerodep_spval
-             a2x%rAttr(koid,n) = aerodep_spval
-             a2x%rAttr(kood,n) = aerodep_spval
-             a2x%rAttr(koiw,n) = aerodep_spval
-             a2x%rAttr(kdd1,n) = aerodep_spval
-             a2x%rAttr(kdd2,n) = aerodep_spval
-             a2x%rAttr(kdd3,n) = aerodep_spval
-             a2x%rAttr(kdd4,n) = aerodep_spval
-             a2x%rAttr(kdw1,n) = aerodep_spval
-             a2x%rAttr(kdw2,n) = aerodep_spval
-             a2x%rAttr(kdw3,n) = aerodep_spval
-             a2x%rAttr(kdw4,n) = aerodep_spval
-          enddo
-       endif
-       if (firstcall) then
-          allocate(ilist_av(SDATM%nstreams))
-          allocate(olist_av(SDATM%nstreams))
-          allocate(ilist_st(SDATM%nstreams))
-          allocate(olist_st(SDATM%nstreams))
-          allocate(count_av(SDATM%nstreams))
-          allocate(count_st(SDATM%nstreams))
-       end if
-       do n = 1,SDATM%nstreams
-          if (firstcall) then
-             call shr_dmodel_translate_list(SDATM%avs(n),a2x,&
-                  avifld(1:ktrans),avofld,ilist_av(n),olist_av(n),count_av(n))
-          end if
-          if (count_av(n) > 0) then
-             call shr_dmodel_translateAV_list(SDATM%avs(n),a2x,&
-                  ilist_av(n),olist_av(n),rearr)
-          end if
+    call t_startf('datm_strdata_advance')
+    call shr_strdata_advance(SDATM,currentYMD,currentTOD,mpicom,'datm')
+    call t_stopf('datm_strdata_advance')
+    call t_barrierf('datm_scatter_BARRIER',mpicom)
+    call t_startf('datm_scatter')
+    if (trim(atm_mode) /= 'COPYALL') then
+       lsize = mct_avect_lsize(a2x)
+       do n = 1,lsize
+          a2x%rAttr(kbid,n) = aerodep_spval
+          a2x%rAttr(kbod,n) = aerodep_spval
+          a2x%rAttr(kbiw,n) = aerodep_spval
+          a2x%rAttr(koid,n) = aerodep_spval
+          a2x%rAttr(kood,n) = aerodep_spval
+          a2x%rAttr(koiw,n) = aerodep_spval
+          a2x%rAttr(kdd1,n) = aerodep_spval
+          a2x%rAttr(kdd2,n) = aerodep_spval
+          a2x%rAttr(kdd3,n) = aerodep_spval
+          a2x%rAttr(kdd4,n) = aerodep_spval
+          a2x%rAttr(kdw1,n) = aerodep_spval
+          a2x%rAttr(kdw2,n) = aerodep_spval
+          a2x%rAttr(kdw3,n) = aerodep_spval
+          a2x%rAttr(kdw4,n) = aerodep_spval
        enddo
-       do n = 1,SDATM%nstreams
-          if (firstcall) then
-             call shr_dmodel_translate_list(SDATM%avs(n),avstrm,&
-                  stifld(1:ktranss),stofld,ilist_st(n),olist_st(n),count_st(n))
-          end if
-          if (count_st(n) > 0) then
-             call shr_dmodel_translateAV_list(SDATM%avs(n),avstrm,&
-                  ilist_st(n),olist_st(n),rearr)
-          end if
-       enddo
-
-       call t_stopf('datm_scatter')
-    else
-       call mct_aVect_zero(a2x)
     endif
+    if (firstcall) then
+       allocate(ilist_av(SDATM%nstreams))
+       allocate(olist_av(SDATM%nstreams))
+       allocate(ilist_st(SDATM%nstreams))
+       allocate(olist_st(SDATM%nstreams))
+       allocate(count_av(SDATM%nstreams))
+       allocate(count_st(SDATM%nstreams))
+    end if
+    do n = 1,SDATM%nstreams
+       if (firstcall) then
+          call shr_dmodel_translate_list(SDATM%avs(n),a2x,&
+               avifld(1:ktrans),avofld,ilist_av(n),olist_av(n),count_av(n))
+       end if
+       if (count_av(n) > 0) then
+          call shr_dmodel_translateAV_list(SDATM%avs(n),a2x,&
+               ilist_av(n),olist_av(n),rearr)
+       end if
+    enddo
+    do n = 1,SDATM%nstreams
+       if (firstcall) then
+          call shr_dmodel_translate_list(SDATM%avs(n),avstrm,&
+               stifld(1:ktranss),stofld,ilist_st(n),olist_st(n),count_st(n))
+       end if
+       if (count_st(n) > 0) then
+          call shr_dmodel_translateAV_list(SDATM%avs(n),avstrm,&
+               ilist_st(n),olist_st(n),rearr)
+       end if
+    enddo
+    call t_stopf('datm_scatter')
 
     call t_startf('datm_mode')
-
     select case (trim(atm_mode))
 
     case('COPYALL')

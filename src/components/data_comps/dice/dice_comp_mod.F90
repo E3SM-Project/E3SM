@@ -54,8 +54,6 @@ module dice_comp_mod
 
   character(CS) :: myModelName = 'ice'   ! user defined model name
   logical       :: firstcall = .true.    ! first call logical
-  integer(IN)   :: dbug = 0              ! debug level (higher is more)
-
   character(len=*),parameter :: rpfile = 'rpointer.ice'
 
   real(R8),parameter  :: pi     = shr_const_pi      ! pi
@@ -377,7 +375,7 @@ CONTAINS
     x2i%rAttr(kdens,:) = 1.3_R8
 
     !----------------------------------------------------------------------------
-    ! Set initial ice state, needed for first time ice initialization
+    ! Set initial ice state
     !----------------------------------------------------------------------------
 
     call t_adj_detailf(+2)

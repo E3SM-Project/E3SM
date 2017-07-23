@@ -29,12 +29,9 @@ module ocn_comp_mct
   public :: ocn_final_mct
 
   !--------------------------------------------------------------------------
-  ! Private data
-  !--------------------------------------------------------------------------
-
-  !--------------------------------------------------------------------------
   ! Private module data
   !--------------------------------------------------------------------------
+
   type(shr_strdata_type) :: SDOCN
   integer(IN)            :: mpicom              ! mpi communicator
   integer(IN)            :: my_task             ! my task in mpi communicator mpicom
@@ -44,7 +41,7 @@ module ocn_comp_mct
   integer(IN)            :: logunit             ! logging unit number
   integer(IN)            :: compid              ! mct comp id
 
-  character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
+  character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
   integer(IN) , parameter :: master_task=0 ! task number of master task
   character(*), parameter :: subName = "(ocn_init_mct) "
 
@@ -137,6 +134,7 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     if (.not. ocn_present) then
+
        RETURN
     end if
 
@@ -181,8 +179,8 @@ CONTAINS
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            ,intent(inout) :: EClock
     type(seq_cdata)             ,intent(inout) :: cdata
-    type(mct_aVect)             ,intent(inout) :: x2o        ! driver -> dead
-    type(mct_aVect)             ,intent(inout) :: o2x        ! dead   -> driver
+    type(mct_aVect)             ,intent(inout) :: x2o        ! driver -> docn
+    type(mct_aVect)             ,intent(inout) :: o2x        ! docn   -> driver
 
     !--- local ---
     type(seq_infodata_type), pointer :: infodata
@@ -218,7 +216,7 @@ CONTAINS
   end subroutine ocn_run_mct
 
   !===============================================================================
-  subroutine ocn_final_mct(EClock, cdata, x2d, d2x)
+  subroutine ocn_final_mct(EClock, cdata, x2o, o2x)
 
     ! !DESCRIPTION: finalize method for docn model
     implicit none
@@ -226,8 +224,8 @@ CONTAINS
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            ,intent(inout) :: EClock     ! clock
     type(seq_cdata)             ,intent(inout) :: cdata
-    type(mct_aVect)             ,intent(inout) :: x2d        ! driver -> dead
-    type(mct_aVect)             ,intent(inout) :: d2x        ! dead   -> driver
+    type(mct_aVect)             ,intent(inout) :: x2o       
+    type(mct_aVect)             ,intent(inout) :: o2x       
 
     !--- formats ---
     character(*), parameter :: subName = "(ocn_final_mct) "

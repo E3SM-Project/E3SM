@@ -248,7 +248,7 @@ CONTAINS
   end subroutine atm_run_mct
 
   !===============================================================================
-  subroutine atm_final_mct(EClock, cdata, x2d, d2x)
+  subroutine atm_final_mct(EClock, cdata, x2a, a2x)
 
     ! !DESCRIPTION: finalize method for dead atm model
     implicit none
@@ -256,8 +256,8 @@ CONTAINS
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            ,intent(inout) :: EClock     ! clock
     type(seq_cdata)             ,intent(inout) :: cdata
-    type(mct_aVect)             ,intent(inout) :: x2d        ! driver -> dead
-    type(mct_aVect)             ,intent(inout) :: d2x        ! dead   -> driver
+    type(mct_aVect)             ,intent(inout) :: x2a
+    type(mct_aVect)             ,intent(inout) :: a2x
 
     !--- formats ---
     character(*), parameter :: subName = "(atm_final_mct) "

@@ -29,7 +29,7 @@ module docn_comp_mod
   use docn_shr_mod   , only: rest_file      ! namelist input
   use docn_shr_mod   , only: rest_file_strm ! namelist input
   use docn_shr_mod   , only: nullstr
-  !
+
   ! !PUBLIC TYPES:
   implicit none
   private ! except
@@ -46,10 +46,8 @@ module docn_comp_mod
   ! Private data
   !--------------------------------------------------------------------------
 
-  !--- other ---
   character(CS) :: myModelName = 'ocn'   ! user defined model name
   logical       :: firstcall = .false.   ! first call logical
-  integer(IN)   :: dbug = 0              ! debug level (higher is more)
 
   character(len=*),parameter :: rpfile = 'rpointer.ocn'
 
@@ -170,17 +168,13 @@ CONTAINS
     ! grid and from that computes SDOCN%gsmap and SDOCN%ggrid. DOCN%gsmap is created
     ! using the decomp '2d1d' (1d decomp of 2d grid)
 
-    if (trim(ocn_mode) /= 'NULL') then
-       if (scmmode) then
-          if (my_task == master_task) &
-               write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
-          call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
-               scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, &
-               calendar=calendar)
-       else
-          call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
-               calendar=calendar)
-       endif
+    if (scmmode) then
+       if (my_task == master_task) &
+            write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
+       call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
+            scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, calendar=calendar)
+    else
+       call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar)
     endif
 
     if (my_task == master_task) then
@@ -335,7 +329,7 @@ CONTAINS
     endif
 
     !----------------------------------------------------------------------------
-    ! Set initial ocn state, needed for CCSM atm initialization
+    ! Set initial ocn state
     !----------------------------------------------------------------------------
 
     call t_adj_detailf(+2)
@@ -343,6 +337,9 @@ CONTAINS
          SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, logunit, read_restart)
     call t_adj_detailf(-2)
+
+    if (my_task == master_task) write(logunit,F00) 'docn_comp_init done'
+    call shr_sys_flush(logunit)
 
     call t_stopf('DOCN_INIT')
 
@@ -371,7 +368,6 @@ CONTAINS
     integer(IN)            , intent(in)    :: logunit          ! logging unit number
     logical                , intent(in)    :: read_restart     ! start from restart
     character(CL)          , intent(in), optional :: case_name ! case name
-    !EOP
 
     !--- local ---
     integer(IN)   :: CurrentYMD            ! model date
@@ -416,39 +412,37 @@ CONTAINS
 
     !--- defaults, copy all fields from streams to o2x ---
 
-    if (trim(ocn_mode) /= 'NULL') then
-       !--- defaults ---
-       lsize = mct_avect_lsize(o2x)
-       do n = 1,lsize
-          o2x%rAttr(kt   ,n) = TkFrz
-          o2x%rAttr(ks   ,n) = ocnsalt
-          o2x%rAttr(ku   ,n) = 0.0_R8
-          o2x%rAttr(kv   ,n) = 0.0_R8
-          o2x%rAttr(kdhdx,n) = 0.0_R8
-          o2x%rAttr(kdhdy,n) = 0.0_R8
-          o2x%rAttr(kq   ,n) = 0.0_R8
-          o2x%rAttr(kswp ,n) = swp
-       enddo
+    lsize = mct_avect_lsize(o2x)
+    do n = 1,lsize
+       o2x%rAttr(kt   ,n) = TkFrz
+       o2x%rAttr(ks   ,n) = ocnsalt
+       o2x%rAttr(ku   ,n) = 0.0_R8
+       o2x%rAttr(kv   ,n) = 0.0_R8
+       o2x%rAttr(kdhdx,n) = 0.0_R8
+       o2x%rAttr(kdhdy,n) = 0.0_R8
+       o2x%rAttr(kq   ,n) = 0.0_R8
+       o2x%rAttr(kswp ,n) = swp
+    enddo
 
-       ! NOTE: for SST_AQUAPANAL, the docn buildnml sets the stream to "null"
-       ! and thereby shr_strdata_advance does nothing
+    ! NOTE: for SST_AQUAPANAL, the docn buildnml sets the stream to "null"
+    ! and thereby shr_strdata_advance does nothing
+    
+    !--- copy streams to o2x ---
 
-       !--- copy streams to o2x ---
-       call t_startf('docn_strdata_advance')
-       call shr_strdata_advance(SDOCN,currentYMD,currentTOD,mpicom,'docn')
-       call t_stopf('docn_strdata_advance')
-       call t_barrierf('docn_scatter_BARRIER',mpicom)
-       call t_startf('docn_scatter')
-       do n = 1,SDOCN%nstreams
-          call shr_dmodel_translateAV(SDOCN%avs(n),o2x,avifld,avofld,rearr)
-       enddo
-       call t_stopf('docn_scatter')
-    else
-       call mct_aVect_zero(o2x)
-    endif
+    call t_startf('docn_strdata_advance')
+    call shr_strdata_advance(SDOCN, currentYMD, currentTOD, mpicom, 'docn')
+    call t_stopf('docn_strdata_advance')
+    call t_barrierf('docn_scatter_BARRIER', mpicom)
+
+    call t_startf('docn_scatter')
+    do n = 1, SDOCN%nstreams
+       call shr_dmodel_translateAV(SDOCN%avs(n), o2x, avifld, avofld, rearr)
+    enddo
+    call t_stopf('docn_scatter')
+
+    ! --- handle the docn modes
 
     call t_startf('docn_mode')
-
     select case (trim(ocn_mode))
 
     case('COPYALL')
