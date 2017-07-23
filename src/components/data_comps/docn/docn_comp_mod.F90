@@ -285,8 +285,7 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     if (read_restart) then
-       if (trim(rest_file) == trim(nullstr) .and. &
-            trim(rest_file_strm) == trim(nullstr)) then
+       if (trim(rest_file) == trim(nullstr) .and. trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
              write(logunit,F00) ' restart filenames from rpointer'
              call shr_sys_flush(logunit)
@@ -427,13 +426,12 @@ CONTAINS
     ! NOTE: for SST_AQUAPANAL, the docn buildnml sets the stream to "null"
     ! and thereby shr_strdata_advance does nothing
     
-    !--- copy streams to o2x ---
-
     call t_startf('docn_strdata_advance')
     call shr_strdata_advance(SDOCN, currentYMD, currentTOD, mpicom, 'docn')
     call t_stopf('docn_strdata_advance')
-    call t_barrierf('docn_scatter_BARRIER', mpicom)
 
+    !--- copy streams to o2x ---
+    call t_barrierf('docn_scatter_BARRIER', mpicom)
     call t_startf('docn_scatter')
     do n = 1, SDOCN%nstreams
        call shr_dmodel_translateAV(SDOCN%avs(n), o2x, avifld, avofld, rearr)
@@ -573,6 +571,10 @@ CONTAINS
     end select
 
     call t_stopf('docn_mode')
+
+    !--------------------
+    ! Write restart
+    !--------------------
 
     if (write_restart) then
        call t_startf('docn_restart')

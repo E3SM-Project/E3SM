@@ -306,6 +306,8 @@ CONTAINS
 
     call shr_strdata_advance(SDROF, currentYMD, currentTOD, mpicom, 'drof_r')
     call t_stopf('drof_r_strdata_advance')
+
+    !--- copy streams to r2x ---
     call t_barrierf('drof_r_scatter_BARRIER', mpicom)
     call t_startf('drof_r_scatter')
     do n = 1,SDROF%nstreams
@@ -313,17 +315,23 @@ CONTAINS
     enddo
     call t_stopf('drof_r_scatter')
 
+    ! zero out "special values"
     lsize = mct_avect_lsize(r2x)
     nflds_r2x = mct_avect_nRattr(r2x)
-    ! zero out "special values"
     do nf=1,nflds_r2x
        do n=1,lsize
-          if (abs(r2x%rAttr(nf,n)) > 1.0e28) r2x%rAttr(nf,n) = 0.0_r8
-          !         write(6,*)'crrentymd, currenttod, nf,n,r2x= ',currentymd, currenttod, nf,n,r2x%rattr(nf,n)
+          if (abs(r2x%rAttr(nf,n)) > 1.0e28) then
+             r2x%rAttr(nf,n) = 0.0_r8
+          end if
+          ! write(6,*)'crrentymd, currenttod, nf,n,r2x= ',currentymd, currenttod, nf,n,r2x%rattr(nf,n)
        enddo
     enddo
 
     call t_stopf('drof_r')
+
+    !--------------------
+    ! Write restart
+    !--------------------
 
     if (write_restart) then
        call t_startf('drof_restart')
@@ -349,7 +357,6 @@ CONTAINS
 
     !----------------------------------------------------------------------------
     ! Log output for model date
-    ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
     call t_startf('drof_run2')
@@ -357,6 +364,7 @@ CONTAINS
        write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
        call shr_sys_flush(logunit)
     end if
+    call t_stopf('drof_run2')
 
     call t_stopf('DROF_RUN')
 

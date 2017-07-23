@@ -112,9 +112,14 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
     !----------------------------------------------------------------------------
+
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (logUnit)
+
+    !----------------------------------------------------------------------------
+    ! Read docn namelists and set prognostic, present flags in infodata
+    !----------------------------------------------------------------------------
 
     call t_startf('docn_readnml')
 

@@ -1068,7 +1068,10 @@ CONTAINS
     ! bias correction / anomaly forcing ( end block )
     !----------------------------------------------------------
 
-    ! Write restart info  
+    !--------------------
+    ! Write restart
+    !--------------------
+
     if (write_restart) then
        call t_startf('datm_restart')
        write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
@@ -1106,7 +1109,6 @@ CONTAINS
     end if
 
     firstcall = .false.
-
     call t_stopf('datm_run2')
 
     call t_stopf('DATM_RUN')
