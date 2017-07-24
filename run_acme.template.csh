@@ -38,6 +38,11 @@ set seconds_before_delete_run_dir    = -1
 set submit_run       = true
 set debug_queue      = true
 
+# Priority for Anvil
+# For more information, see
+# https://acme-climate.atlassian.net/wiki/pages/viewpage.action?pageId=98992379#Anvil:ACME'sdedicatednodeshostedonBlues.-Settingthejobpriority
+set anvil_priority   = 4
+
 ### PROCESSOR CONFIGURATION
 set processor_config = S
 
@@ -136,6 +141,8 @@ set cpl_hist_num   = 1
 
 #submit_run:  If True, then submit the batch job to start the simulation.
 #debug_queue: If True, then use the debug queue, otherwise use the queue specified in the section on QUEUE OPTIONS.
+#anvil_priority: If default; use the default priority of qsub.py. Otherwise, should be from 0-5, where 0 is the highest priority
+#    Note that only one user at a time is allowed to use the highest priority
 
 ### PROCESSOR CONFIGURATION (6)
 
@@ -210,7 +217,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.11
+set script_ver = 3.0.12
 
 #===========================================
 # DEFINE ALIASES
@@ -601,6 +608,9 @@ acme_newline
 if ( `lowercase $machine` == default ) then
   set machine = `$xmlquery_exe MACH --value`
 endif
+# machine is a commonly used variable; so make certain it's lowercase
+set machine = `lowercase $machine`
+
 if ( `lowercase $case_build_dir` == default ) then
   set case_build_dir = ${acme_simulations_dir}/${case_name}/bld
 endif
@@ -621,6 +631,13 @@ endif
 
 acme_print "Project used for submission: ${project}"
 
+# Anvil Priority setup
+if ( $machine == 'anvil' ) then
+  # env_batch.xml must be modified by hand, as it doesn't conform to the entry-id format
+  # ${xmlchange_exe} batch_submit="qsub.py "
+  #sed -i 's:qsub:qsub.py:g' env_batch.xml
+endif
+
 #================================
 # SET WALLTIME FOR CREATE_NEWCASE
 #================================
@@ -629,7 +646,7 @@ if ( `lowercase $walltime` == default ) then
   if ( `lowercase $debug_queue` == true ) then
     set walltime = '0:30:00'
   else
-    if ( `lowercase $machine` == 'cab' || `lowercase $machine` == 'syrah' ) then
+    if ( $machine == 'cab' || $machine == 'syrah' ) then
       set walltime = '1:29:00'
     else
       set walltime = '2:00:00'
@@ -887,7 +904,7 @@ if ( `uppercase $debug_compile` != 'TRUE' && `uppercase $debug_compile` != 'FALS
   exit 220
 endif
 
-if ( `lowercase $machine` == 'edison' && `uppercase $debug_compile` == 'TRUE' ) then
+if ( $machine == 'edison' && `uppercase $debug_compile` == 'TRUE' ) then
   acme_print 'ERROR: Edison currently has a compiler bug and crashes when compiling in debug mode (Nov 2015)'
   exit 222
 endif
@@ -1006,8 +1023,6 @@ mkdir -p batch_output      ### Make directory that stdout and stderr will go int
 
 set batch_options = ''
 
-set machine = `lowercase $machine`   # Change to lowercase, just to make the following easier to read. 
-
 if ( $machine == cori || $machine == edison ) then
     set batch_options = "--job-name=${job_name} --output=batch_output/${case_name}.o%j"
 
@@ -1019,7 +1034,6 @@ if ( $machine == cori || $machine == edison ) then
     sed -i /"#SBATCH \( \)*--output"/c'#SBATCH  --output=batch_output/LT+'${case_name}'.o%j'  $longterm_archive_script
 
 else if ( $machine == titan || $machine == eos ) then
-    set batch_options = ""
     sed -i /"#PBS \( \)*-N"/c"#PBS  -N ${job_name}"                                ${case_run_exe}
     sed -i /"#PBS \( \)*-A"/c"#PBS  -A ${project}"                                 ${case_run_exe}
     sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' ${case_run_exe}
@@ -1028,6 +1042,11 @@ else if ( $machine == titan || $machine == eos ) then
     sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $shortterm_archive_script
     sed -i /"#PBS \( \)*-N"/c"#PBS  -N LT+${job_name}"                             $longterm_archive_script
     sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $longterm_archive_script
+
+else if ( $machine == anvil ) then
+    if ( `lowercase ${anvil_priority}` != default ) then
+	set batch_options="-W x=QOS:pri${anvil_priority}"
+    endif
 
 else
     acme_print 'WARNING: This script does not have batch directives for $machine='$machine
@@ -1336,6 +1355,7 @@ acme_newline
 # 3.0.9    2017-06-19    Fixed branch runs. Also removed sed commands for case.run and use --batch-args in case.submit (MD)
 # 3.0.10   2017-06-14    To allow data-atm compsets to work, I added a test for CAM_CONFIG_OPTS. (PJC)
 # 3.0.11   2017-07-14    Replace auto-chaining code with ACME's resubmit feature. Also fix Edison's qos setting (again...) (MD)
+# 3.0.12   2017-07-24    Supports setting the queue priority for anvil. Also move making machine lowercase up to clean some things up (MD)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
