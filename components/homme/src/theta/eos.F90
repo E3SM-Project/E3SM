@@ -351,9 +351,6 @@ contains
           JacL(k,:,:) = (g*dt2)**2.d0 * (dpnh_dp(:,:,k+1)-dpnh_dpepsie(:,:,k+1))/epsie
           JacD(k,:,:) = 1.d0 + (g*dt2)**2.d0 * (dpnh_dp(:,:,k)-dpnh_dpepsie(:,:,k))/epsie
         elseif (k.eq.nlev) then
-          JacL(k,:,:) = (g*dt2)**2.d0 * (dpnh_dp(:,:,k+1)-dpnh_dpepsie(:,:,k+1))/epsie
-          JacD(k,:,:) = 1.d0 + (g*dt2)**2.d0 * (dpnh_dp(:,:,k)-dpnh_dpepsie(:,:,k))/epsie
-        elseif (k.eq.nlev) then
           JacD(k,:,:)   = 1.d0 + (g*dt2)**2.d0 * (dpnh_dp(:,:,k)-dpnh_dpepsie(:,:,k))/epsie
           JacU(k-1,:,:) = (g*dt2)**2.d0 * (dpnh_dp(:,:,k-1)-dpnh_dpepsie(:,:,k-1))/epsie
         else
