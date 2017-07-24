@@ -21,7 +21,6 @@ module docn_comp_mod
   use shr_dmodel_mod  , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
   use seq_timemgr_mod , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
-  use seq_flds_mod    , only: seq_flds_o2x_fields, seq_flds_x2o_fields
 
   use docn_shr_mod   , only: ocn_mode       ! namelist input
   use docn_shr_mod   , only: aquap_option   ! derived from ocn_mode namelist input
@@ -97,6 +96,7 @@ module docn_comp_mod
 CONTAINS
   !===============================================================================
   subroutine docn_comp_init(Eclock, x2o, o2x, &
+       seq_flds_x2o_fields, seq_flds_o2x_fields, &
        SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon)
@@ -108,21 +108,23 @@ CONTAINS
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)       , intent(in)    :: EClock
-    type(mct_aVect)        , intent(inout) :: x2o, o2x     ! input/output attribute vectors
-    type(shr_strdata_type) , intent(inout) :: SDOCN        ! model
-    type(mct_gsMap)        , pointer       :: gsMap        ! model global seg map (output)
-    type(mct_gGrid)        , pointer       :: ggrid        ! model ggrid (output)
-    integer(IN)            , intent(in)    :: mpicom       ! mpi communicator
-    integer(IN)            , intent(in)    :: compid       ! mct comp id
-    integer(IN)            , intent(in)    :: my_task      ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task  ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix  ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name    ! fullname of current instance (ie. "lnd_0001")
-    integer(IN)            , intent(in)    :: logunit      ! logging unit number
-    logical                , intent(in)    :: read_restart ! start from restart
-    logical                , intent(in)    :: scmMode      ! single column mode
-    real(R8)               , intent(in)    :: scmLat       ! single column lat
-    real(R8)               , intent(in)    :: scmLon       ! single column lon
+    type(mct_aVect)        , intent(inout) :: x2o, o2x            ! input/output attribute vectors
+    character(len=*)       , intent(in)    :: seq_flds_x2o_fields ! fields from mediator
+    character(len=*)       , intent(in)    :: seq_flds_o2x_fields ! fields to mediator
+    type(shr_strdata_type) , intent(inout) :: SDOCN               ! model shr_strdata instance (output)
+    type(mct_gsMap)        , pointer       :: gsMap               ! model global seg map (output)
+    type(mct_gGrid)        , pointer       :: ggrid               ! model ggrid (output)
+    integer(IN)            , intent(in)    :: mpicom              ! mpi communicator
+    integer(IN)            , intent(in)    :: compid              ! mct comp id
+    integer(IN)            , intent(in)    :: my_task             ! my task in mpi communicator mpicom
+    integer(IN)            , intent(in)    :: master_task         ! task number of master task
+    character(len=*)       , intent(in)    :: inst_suffix         ! char string associated with instance
+    character(len=*)       , intent(in)    :: inst_name           ! fullname of current instance (ie. "lnd_0001")
+    integer(IN)            , intent(in)    :: logunit             ! logging unit number
+    logical                , intent(in)    :: read_restart        ! start from restart
+    logical                , intent(in)    :: scmMode             ! single column mode
+    real(R8)               , intent(in)    :: scmLat              ! single column lat
+    real(R8)               , intent(in)    :: scmLon              ! single column lon
 
     !--- local variables ---
     integer(IN)   :: n,k      ! generic counters
@@ -393,13 +395,11 @@ CONTAINS
     call t_startf('DOCN_RUN')
 
     call t_startf('docn_run1')
-
     call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
     call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
     call seq_timemgr_EClockGetData( EClock, dtime=idt)
     dt = idt * 1.0_R8
     write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
-
     call t_stopf('docn_run1')
 
     !--------------------
@@ -425,7 +425,7 @@ CONTAINS
 
     ! NOTE: for SST_AQUAPANAL, the docn buildnml sets the stream to "null"
     ! and thereby shr_strdata_advance does nothing
-    
+
     call t_startf('docn_strdata_advance')
     call shr_strdata_advance(SDOCN, currentYMD, currentTOD, mpicom, 'docn')
     call t_stopf('docn_strdata_advance')

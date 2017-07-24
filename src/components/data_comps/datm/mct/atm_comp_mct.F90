@@ -17,6 +17,7 @@ module atm_comp_mct
   use datm_shr_mod    , only: datm_shr_read_namelists
   use datm_shr_mod    , only: atm_mode
   use datm_shr_mod    , only: presaero
+  use seq_flds_mod    , only: seq_flds_a2x_fields, seq_flds_x2a_fields
 
   ! !PUBLIC TYPES:
   implicit none
@@ -166,6 +167,7 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call datm_comp_init(Eclock, x2a, a2x, &
+         seq_flds_x2a_fields, seq_flds_a2x_fields, &
          SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon, &

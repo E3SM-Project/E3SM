@@ -20,7 +20,6 @@ module dlnd_comp_mod
   use shr_dmodel_mod    , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod    , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
   use seq_timemgr_mod   , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
-  use seq_flds_mod      , only: seq_flds_l2x_fields, seq_flds_x2l_fields
   use glc_elevclass_mod , only: glc_get_num_elevation_classes, glc_elevclass_as_string
   
   use dlnd_shr_mod   , only: lnd_mode       ! namelist input
@@ -92,6 +91,7 @@ CONTAINS
 
   !===============================================================================
   subroutine dlnd_comp_init(Eclock, x2l, l2x, &
+       seq_flds_x2l_fields, seq_flds_l2x_fields, &
        SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon)
@@ -103,21 +103,23 @@ CONTAINS
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)       , intent(in)    :: EClock
-    type(mct_aVect)        , intent(inout) :: x2l, l2x     ! input/output attribute vectors
-    type(shr_strdata_type) , intent(inout) :: SDLND        ! model 
-    type(mct_gsMap)        , pointer       :: gsMap        ! model global seg map (output)
-    type(mct_gGrid)        , pointer       :: ggrid        ! model ggrid (output)
-    integer(IN)            , intent(in)    :: mpicom       ! mpi communicator
-    integer(IN)            , intent(in)    :: compid       ! mct comp id
-    integer(IN)            , intent(in)    :: my_task      ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task  ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix  ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name    ! fullname of current instance (ie. "lnd_0001")
-    integer(IN)            , intent(in)    :: logunit      ! logging unit number
-    logical                , intent(in)    :: read_restart ! start from restart
-    logical                , intent(in)    :: scmMode      ! single column mode
-    real(R8)               , intent(in)    :: scmLat       ! single column lat
-    real(R8)               , intent(in)    :: scmLon       ! single column lon
+    type(mct_aVect)        , intent(inout) :: x2l, l2x            ! input/output attribute vectors
+    character(len=*)       , intent(in)    :: seq_flds_x2l_fields ! fields from mediator
+    character(len=*)       , intent(in)    :: seq_flds_l2x_fields ! fields to mediator
+    type(shr_strdata_type) , intent(inout) :: SDLND               ! model shr_strdata instance (output)
+    type(mct_gsMap)        , pointer       :: gsMap               ! model global seg map (output)
+    type(mct_gGrid)        , pointer       :: ggrid               ! model ggrid (output)
+    integer(IN)            , intent(in)    :: mpicom              ! mpi communicator
+    integer(IN)            , intent(in)    :: compid              ! mct comp id
+    integer(IN)            , intent(in)    :: my_task             ! my task in mpi communicator mpicom
+    integer(IN)            , intent(in)    :: master_task         ! task number of master task
+    character(len=*)       , intent(in)    :: inst_suffix         ! char string associated with instance
+    character(len=*)       , intent(in)    :: inst_name           ! fullname of current instance (ie. "lnd_0001")
+    integer(IN)            , intent(in)    :: logunit             ! logging unit number
+    logical                , intent(in)    :: read_restart        ! start from restart
+    logical                , intent(in)    :: scmMode             ! single column mode
+    real(R8)               , intent(in)    :: scmLat              ! single column lat
+    real(R8)               , intent(in)    :: scmLon              ! single column lon
 
     !--- local variables ---
     integer(IN)        :: n,k       ! generic counters
@@ -125,8 +127,6 @@ CONTAINS
     integer(IN)        :: lsize     ! local size
     logical            :: exists    ! file existance
     integer(IN)        :: nu        ! unit number
-    integer(IN)        :: kmask     ! field reference
-    integer(IN)        :: kfrac     ! field reference
     character(CL)      :: calendar  ! model calendar
     integer(IN)        :: glc_nec   ! number of elevation classes
     integer(IN)        :: field_num ! field number
@@ -161,6 +161,10 @@ CONTAINS
     call t_startf('dlnd_strdata_init')
 
     call seq_timemgr_EClockGetData( EClock, calendar=calendar )
+
+    ! NOTE: shr_strdata_init calls shr_dmodel_readgrid which reads the data model
+    ! grid and from that computes SDLND%gsmap and SDLND%ggrid. DLND%gsmap is created
+    ! using the decomp '2d1d' (1d decomp of 2d grid)
 
     if (scmmode) then
        if (my_task == master_task) &
@@ -210,9 +214,13 @@ CONTAINS
     if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
     call shr_sys_flush(logunit)
     
+    ! create a data model global seqmap (gsmap) given the data model global grid sizes
+    ! NOTE: gsmap is initialized using the decomp read in from the docn_in namelist 
+    ! (which by default is "1d")
     call shr_dmodel_gsmapcreate(gsmap,SDLND%nxg*SDLND%nyg,compid,mpicom,decomp)
     lsize = mct_gsmap_lsize(gsmap,mpicom)
     
+    ! create a rearranger from the data model SDOCN%gsmap to gsmap 
     call mct_rearr_init(SDLND%gsmap, gsmap, mpicom, rearr)
     
     call t_stopf('dlnd_initgsmaps')
@@ -335,13 +343,10 @@ CONTAINS
     integer(IN)   :: CurrentTOD            ! model sec into model date
     integer(IN)   :: yy,mm,dd              ! year month day
     integer(IN)   :: n                     ! indices
-    integer(IN)   :: nf                    ! fields loop index
-    integer(IN)   :: lsize                 ! size of attr vect
     integer(IN)   :: idt                   ! integer timestep
     real(R8)      :: dt                    ! timestep
     integer(IN)   :: nu                    ! unit number
     logical       :: write_restart         ! restart now
-    integer(IN)   :: nflds_x2l
 
     character(*), parameter :: F00   = "('(dlnd_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(dlnd_comp_run) ',2a,2i8,'s')"
@@ -354,9 +359,6 @@ CONTAINS
     call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
     call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
     write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
-
-    lsize = mct_avect_lsize(x2l)
-    nflds_x2l = mct_avect_nRattr(x2l)
     call t_stopf('dlnd_run1')
 
     !--------------------

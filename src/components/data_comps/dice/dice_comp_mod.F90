@@ -24,7 +24,6 @@ module dice_comp_mod
   use shr_dmodel_mod  , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
   use seq_timemgr_mod , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
-  use seq_flds_mod    , only: seq_flds_i2x_fields, seq_flds_x2i_fields, seq_flds_i2o_per_cat
 
   use dice_shr_mod   , only: ice_mode       ! namelist input
   use dice_shr_mod   , only: decomp         ! namelist input
@@ -131,6 +130,7 @@ CONTAINS
 
   !===============================================================================
   subroutine dice_comp_init(Eclock, x2i, i2x, &
+       seq_flds_x2i_fields, seq_flds_i2x_fields, seq_flds_i2o_per_cat, &
        SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon)
@@ -140,21 +140,24 @@ CONTAINS
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)       , intent(in)    :: EClock
-    type(mct_aVect)        , intent(inout) :: x2i, i2x     ! input/output attribute vectors
-    type(shr_strdata_type) , intent(inout) :: SDICE        ! model
-    type(mct_gsMap)        , pointer       :: gsMap        ! model global seg map (output)
-    type(mct_gGrid)        , pointer       :: ggrid        ! model ggrid (output)
-    integer(IN)            , intent(in)    :: mpicom       ! mpi communicator
-    integer(IN)            , intent(in)    :: compid       ! mct comp id
-    integer(IN)            , intent(in)    :: my_task      ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task  ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix  ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name    ! fullname of current instance (ie. "lnd_0001")
-    integer(IN)            , intent(in)    :: logunit      ! logging unit number
-    logical                , intent(in)    :: read_restart ! start from restart
-    logical                , intent(in)    :: scmMode      ! single column mode
-    real(R8)               , intent(in)    :: scmLat       ! single column lat
-    real(R8)               , intent(in)    :: scmLon       ! single column lon
+    type(mct_aVect)        , intent(inout) :: x2i, i2x             ! input/output attribute vectors
+    character(len=*)       , intent(in)    :: seq_flds_x2i_fields  ! fields from mediator
+    character(len=*)       , intent(in)    :: seq_flds_i2x_fields  ! fields to mediator
+    logical                , intent(in)    :: seq_flds_i2o_per_cat ! .true. if select per ice thickness fields from ice
+    type(shr_strdata_type) , intent(inout) :: SDICE                ! dice shr_strdata instance (output)
+    type(mct_gsMap)        , pointer       :: gsMap                ! model global seg map (output)
+    type(mct_gGrid)        , pointer       :: ggrid                ! model ggrid (output)
+    integer(IN)            , intent(in)    :: mpicom               ! mpi communicator
+    integer(IN)            , intent(in)    :: compid               ! mct comp id
+    integer(IN)            , intent(in)    :: my_task              ! my task in mpi communicator mpicom
+    integer(IN)            , intent(in)    :: master_task          ! task number of master task
+    character(len=*)       , intent(in)    :: inst_suffix          ! char string associated with instance
+    character(len=*)       , intent(in)    :: inst_name            ! fullname of current instance (ie. "lnd_0001")
+    integer(IN)            , intent(in)    :: logunit              ! logging unit number
+    logical                , intent(in)    :: read_restart         ! start from restart
+    logical                , intent(in)    :: scmMode              ! single column mode
+    real(R8)               , intent(in)    :: scmLat               ! single column lat
+    real(R8)               , intent(in)    :: scmLon               ! single column lon
 
     !--- local variables ---
     integer(IN)   :: n,k         ! generic counters
@@ -380,6 +383,7 @@ CONTAINS
 
     call t_adj_detailf(+2)
     call dice_comp_run(EClock, x2i, i2x, &
+         seq_flds_i2o_per_cat, &
          SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, logunit, read_restart)
     call t_adj_detailf(-2)
@@ -390,6 +394,7 @@ CONTAINS
 
   !===============================================================================
   subroutine dice_comp_run(EClock, x2i, i2x, &
+       seq_flds_i2o_per_cat, &
        SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, case_name)
 
@@ -398,19 +403,25 @@ CONTAINS
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)       , intent(in)    :: EClock
+<<<<<<< HEAD
     type(mct_aVect)        , intent(inout) :: x2i
     type(mct_aVect)        , intent(inout) :: i2x
+=======
+    type(mct_aVect)        , intent(inout) :: x2i
+    type(mct_aVect)        , intent(inout) :: i2x
+    logical                , intent(in)    :: seq_flds_i2o_per_cat ! .true. if select per ice thickness fields from ice
+>>>>>>> all data models are now refactored
     type(shr_strdata_type) , intent(inout) :: SDICE
     type(mct_gsMap)        , pointer       :: gsMap
     type(mct_gGrid)        , pointer       :: ggrid
-    integer(IN)            , intent(in)    :: mpicom           ! mpi communicator
-    integer(IN)            , intent(in)    :: compid           ! mct comp id
-    integer(IN)            , intent(in)    :: my_task          ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task      ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
-    integer(IN)            , intent(in)    :: logunit          ! logging unit number
-    logical                , intent(in)    :: read_restart     ! start from restart
-    character(CL)          , intent(in), optional :: case_name ! case name
+    integer(IN)            , intent(in)    :: mpicom               ! mpi communicator
+    integer(IN)            , intent(in)    :: compid               ! mct comp id
+    integer(IN)            , intent(in)    :: my_task              ! my task in mpi communicator mpicom
+    integer(IN)            , intent(in)    :: master_task          ! task number of master task
+    character(len=*)       , intent(in)    :: inst_suffix          ! char string associated with instance
+    integer(IN)            , intent(in)    :: logunit              ! logging unit number
+    logical                , intent(in)    :: read_restart         ! start from restart
+    character(CL)          , intent(in), optional :: case_name     ! case name
 
     !--- local ---
     integer(IN)   :: CurrentYMD        ! model date

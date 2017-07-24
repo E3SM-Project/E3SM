@@ -21,7 +21,6 @@ module datm_comp_mod
   use shr_dmodel_mod , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list
   use seq_timemgr_mod, only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
-  use seq_flds_mod   , only: seq_flds_a2x_fields, seq_flds_x2a_fields
 
   use datm_shr_mod   , only: datm_shr_getNextRadCDay, datm_shr_esat, datm_shr_CORE2getFactors
   use datm_shr_mod   , only: atm_mode       ! namelist input
@@ -214,6 +213,7 @@ CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   !===============================================================================
   subroutine datm_comp_init(Eclock, x2a, a2x, &
+       seq_flds_x2a_fields, seq_flds_a2x_fields, &
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon, &
@@ -225,26 +225,28 @@ CONTAINS
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)       , intent(in)    :: EClock
     type(mct_aVect)        , intent(inout) :: x2a, a2x
-    type(shr_strdata_type) , intent(inout) :: SDATM
-    type(mct_gsMap)        , pointer       :: gsMap
-    type(mct_gGrid)        , pointer       :: ggrid
-    integer(IN)            , intent(in)    :: mpicom       ! mpi communicator
-    integer(IN)            , intent(in)    :: compid       ! mct comp id
-    integer(IN)            , intent(in)    :: my_task      ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task  ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix  ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name    ! fullname of current instance (ie. "lnd_0001")
-    integer(IN)            , intent(in)    :: logunit      ! logging unit number
-    logical                , intent(in)    :: read_restart ! start from restart
-    logical                , intent(in)    :: scmMode      ! single column mode
-    real(R8)               , intent(in)    :: scmLat       ! single column lat
-    real(R8)               , intent(in)    :: scmLon       ! single column lon
-    real(R8)               , intent(in)    :: orbEccen     ! orb eccentricity (unit-less)
-    real(R8)               , intent(in)    :: orbMvelpp    ! orb moving vernal eq (radians)
-    real(R8)               , intent(in)    :: orbLambm0    ! orb mean long of perhelion (radians)
-    real(R8)               , intent(in)    :: orbObliqr    ! orb obliquity (radians)
-    integer                , intent(in)    :: phase
-    real(R8)               , intent(out)   :: nextsw_cday  ! calendar of next atm sw
+    character(len=*)       , intent(in)    :: seq_flds_x2a_fields ! fields from mediator
+    character(len=*)       , intent(in)    :: seq_flds_a2x_fields ! fields to mediator
+    type(shr_strdata_type) , intent(inout) :: SDATM               ! model shr_strdata instance (output)
+    type(mct_gsMap)        , pointer       :: gsMap               ! model global sep map (output)
+    type(mct_gGrid)        , pointer       :: ggrid               ! model ggrid (output)
+    integer(IN)            , intent(in)    :: mpicom              ! mpi communicator
+    integer(IN)            , intent(in)    :: compid              ! mct comp id
+    integer(IN)            , intent(in)    :: my_task             ! my task in mpi communicator mpicom
+    integer(IN)            , intent(in)    :: master_task         ! task number of master task
+    character(len=*)       , intent(in)    :: inst_suffix         ! char string associated with instance
+    character(len=*)       , intent(in)    :: inst_name           ! fullname of current instance (ie. "lnd_0001")
+    integer(IN)            , intent(in)    :: logunit             ! logging unit number
+    logical                , intent(in)    :: read_restart        ! start from restart
+    logical                , intent(in)    :: scmMode             ! single column mode
+    real(R8)               , intent(in)    :: scmLat              ! single column lat
+    real(R8)               , intent(in)    :: scmLon              ! single column lon
+    real(R8)               , intent(in)    :: orbEccen            ! orb eccentricity (unit-less)
+    real(R8)               , intent(in)    :: orbMvelpp           ! orb moving vernal eq (radians)
+    real(R8)               , intent(in)    :: orbLambm0           ! orb mean long of perhelion (radians)
+    real(R8)               , intent(in)    :: orbObliqr           ! orb obliquity (radians)
+    integer                , intent(in)    :: phase               ! initialization phase index 
+    real(R8)               , intent(out)   :: nextsw_cday         ! calendar of next atm sw
 
   !--- local variables ---
     integer(IN)   :: n,k         ! generic counters

@@ -15,6 +15,7 @@ module ocn_comp_mct
   use shr_file_mod    , only: shr_file_freeunit
   use docn_comp_mod   , only: docn_comp_init, docn_comp_run, docn_comp_final
   use docn_shr_mod    , only: docn_shr_read_namelists
+  use seq_flds_mod    , only: seq_flds_x2o_fields, seq_flds_o2x_fields 
 
   ! !PUBLIC TYPES:
   implicit none
@@ -150,6 +151,7 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call docn_comp_init(Eclock, x2o, o2x, &
+         seq_flds_x2o_fields, seq_flds_o2x_fields, &
          SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon)

@@ -15,6 +15,7 @@ module lnd_comp_mct
   use shr_file_mod    , only: shr_file_freeunit
   use dlnd_comp_mod   , only: dlnd_comp_init, dlnd_comp_run, dlnd_comp_final
   use dlnd_shr_mod    , only: dlnd_shr_read_namelists
+  use seq_flds_mod    , only: seq_flds_x2l_fields, seq_flds_l2x_fields 
 
   ! !PUBLIC TYPES:
   implicit none
@@ -147,6 +148,7 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call dlnd_comp_init(Eclock, x2l, l2x, &
+         seq_flds_x2l_fields, seq_flds_l2x_fields, &
          SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon)

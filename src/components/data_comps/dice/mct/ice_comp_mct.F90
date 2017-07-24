@@ -15,6 +15,7 @@ module ice_comp_mct
   use shr_file_mod    , only: shr_file_freeunit
   use dice_comp_mod   , only: dice_comp_init, dice_comp_run, dice_comp_final
   use dice_shr_mod    , only: dice_shr_read_namelists
+  use seq_flds_mod    , only: seq_flds_i2x_fields, seq_flds_x2i_fields, seq_flds_i2o_per_cat
 
   ! !PUBLIC TYPES:
   implicit none
@@ -141,6 +142,7 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call dice_comp_init(Eclock, x2i, i2x, &
+         seq_flds_x2i_fields, seq_flds_i2x_fields, seq_flds_i2o_per_cat, &
          SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon)
@@ -202,8 +204,9 @@ CONTAINS
     call seq_infodata_GetData(infodata, case_name=case_name)
        
     call dice_comp_run(EClock, x2i, i2x, &
-       SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, case_name)
+         seq_flds_i2o_per_cat, &
+         SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         inst_suffix, logunit, read_restart, case_name)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

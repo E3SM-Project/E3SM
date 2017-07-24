@@ -18,7 +18,6 @@ module drof_comp_mod
   use shr_dmodel_mod  , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
   use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
   use seq_timemgr_mod , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
-  use seq_flds_mod    , only: seq_flds_r2x_fields, seq_flds_x2r_fields
 
   use drof_shr_mod   , only: rof_mode       ! namelist input
   use drof_shr_mod   , only: decomp         ! namelist input
@@ -63,6 +62,7 @@ CONTAINS
 
   !===============================================================================
   subroutine drof_comp_init(Eclock, x2r, r2x, &
+       seq_flds_x2r_fields, seq_flds_r2x_fields, &
        SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart)
 
@@ -71,18 +71,20 @@ CONTAINS
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)       , intent(in)    :: EClock
-    type(mct_aVect)        , intent(inout) :: x2r, r2x     ! input/output attribute vectors
-    type(shr_strdata_type) , intent(inout) :: SDROF        ! model
-    type(mct_gsMap)        , pointer       :: gsMap        ! model global seg map (output)
-    type(mct_gGrid)        , pointer       :: ggrid        ! model ggrid (output)
-    integer(IN)            , intent(in)    :: mpicom       ! mpi communicator
-    integer(IN)            , intent(in)    :: compid       ! mct comp id
-    integer(IN)            , intent(in)    :: my_task      ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task  ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix  ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name    ! fullname of current instance (ie. "lnd_0001")
-    integer(IN)            , intent(in)    :: logunit      ! logging unit number
-    logical                , intent(in)    :: read_restart ! start from restart
+    type(mct_aVect)        , intent(inout) :: x2r, r2x            ! input/output attribute vectors
+    character(len=*)       , intent(in)    :: seq_flds_x2r_fields ! fields from mediator
+    character(len=*)       , intent(in)    :: seq_flds_r2x_fields ! fields to mediator
+    type(shr_strdata_type) , intent(inout) :: SDROF               ! model shr_strdata instance (output)
+    type(mct_gsMap)        , pointer       :: gsMap               ! model global seg map (output)
+    type(mct_gGrid)        , pointer       :: ggrid               ! model ggrid (output)
+    integer(IN)            , intent(in)    :: mpicom              ! mpi communicator
+    integer(IN)            , intent(in)    :: compid              ! mct comp id
+    integer(IN)            , intent(in)    :: my_task             ! my task in mpi communicator mpicom
+    integer(IN)            , intent(in)    :: master_task         ! task number of master task
+    character(len=*)       , intent(in)    :: inst_suffix         ! char string associated with instance
+    character(len=*)       , intent(in)    :: inst_name           ! fullname of current instance (ie. "lnd_0001")
+    integer(IN)            , intent(in)    :: logunit             ! logging unit number
+    logical                , intent(in)    :: read_restart        ! start from restart
 
     !--- local variables ---
     integer(IN)   :: n,k         ! generic counters
@@ -183,8 +185,7 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     if (read_restart) then
-       if (trim(rest_file)        == trim(nullstr) .and. &
-            trim(rest_file_strm) == trim(nullstr)) then
+       if (trim(rest_file) == trim(nullstr) .and. trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
              write(logunit,F00) ' restart filenames from rpointer'
              call shr_sys_flush(logunit)

@@ -15,6 +15,7 @@ module rof_comp_mct
   use shr_file_mod    , only: shr_file_freeunit
   use drof_comp_mod   , only: drof_comp_init, drof_comp_run, drof_comp_final
   use drof_shr_mod    , only: drof_shr_read_namelists
+  use seq_flds_mod    , only: seq_flds_x2r_fields, seq_flds_r2x_fields
 
   ! !PUBLIC TYPES:
   implicit none
@@ -141,6 +142,7 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call drof_comp_init(Eclock, x2r, r2x, &
+         seq_flds_x2r_fields, seq_flds_r2x_fields, &
          SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart)
 
