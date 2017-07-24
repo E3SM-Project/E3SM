@@ -27,6 +27,9 @@
 		<var name="totalIceVolume" type="real" dimensions="Time" units="m^3"
 			description="total ice sheet volume"
 		/>
+		<var name="volumeAboveFloatation" type="real" dimensions="Time" units="m^3"
+			description="total ice sheet volume above floatation"
+		/>
 		<var name="totalIceArea" type="real" dimensions="Time" units="m^2"
 			description="total ice sheet area"
 		/>
@@ -52,13 +55,34 @@
 			description="minimum ice thickness in domain"
 		/>
 		<var name="totalSfcMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
-			description="total, area integrated surface mass balance"
+			description="total, area integrated surface mass balance. Positive values are ice gain."
+		/>
+		<var name="avgNetAccumulation" type="real" dimensions="Time" units="m yr^{-1}^"
+			description="average sfcMassBal, as a thickness rate. Positive values are ice gain."
 		/>
 		<var name="totalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
-			description="total, area integrated basal mass balance"
+			description="total, area integrated basal mass balance. Positive values are ice gain."
+		/>
+		<var name="totalGroundedBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+			description="total, area integrated grounded basal mass balance. Positive values are ice gain."
+		/>
+		<var name="avgGroundedBasalMelt" type="real" dimensions="Time" units="m yr^{-1}^"
+			description="average groundedBasalMassBal. Positive values are ice gain."
+		/>
+		<var name="totalFloatingBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+			description="total, area integrated floating basal mass balance. Positive values are ice gain."
+		/>
+		<var name="avgSubshelfMelt" type="real" dimensions="Time" units="m yr^{-1}^"
+			description="average floatingBasalMassBal value, as a thickness rate. Positive values are ice loss."
 		/>
 		<var name="totalCalvingFlux" type="real" dimensions="Time" units="kg yr^{-1}^"
-			description="total, area integrated mass loss due to calving"
+			description="total, area integrated mass loss due to calving. Positive values are ice loss."
+		/>
+                <var name="surfaceSpeedMax" type="real" dimensions="Time" units="m yr^{-1}"
+  			description="maximum surface speed in the domain"
+		/>
+                <var name="basalSpeedMax" type="real" dimensions="Time" units="m yr^{-1}"
+  			description="maximum basal speed in the domain"
 		/>
  	</var_struct>
 	<streams>
@@ -71,19 +95,8 @@
 				packages="globalStatsAMPKG"
 				clobber_mode="truncate"
 				runtime_format="single_file">
-			<var name="xtime"/> 
+			<var name="xtime"/>
                         <var name="daysSinceStart"/>
-                        <var name="totalIceVolume"/>
-			<var name="totalIceArea"/> 
-			<var name="floatingIceVolume"/> 
-			<var name="floatingIceArea"/> 
-			<var name="groundedIceVolume"/> 
-			<var name="groundedIceArea"/> 
-			<var name="iceThicknessMin"/> 
-			<var name="iceThicknessMax"/> 
-			<var name="iceThicknessMean"/>
-			<var name="totalSfcMassBal"/> 
-			<var name="totalBasalMassBal"/>
-			<var name="totalCalvingFlux"/>
+                        <var_struct name="globalStatsAM"/>
 		</stream>
 	</streams>

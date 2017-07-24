@@ -127,8 +127,6 @@ module li_mask
       module procedure li_mask_is_initial_ice_logout_0d
    end interface
 
-!! SFP: the 1d versions below have not been tested yet - activate and use at your own risk!
-!! Also check the corresponding function below.
    interface li_mask_is_grounded_ice_int
       module procedure li_mask_is_grounded_ice_intout_1d
       module procedure li_mask_is_grounded_ice_intout_0d

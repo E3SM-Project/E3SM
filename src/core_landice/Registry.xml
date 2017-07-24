@@ -787,6 +787,15 @@ is the value of that variable from the *previous* time level!
 		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
 		     description="layer thickness on cell edges"
 		/>
+                <var name="dHdt" type="real" dimensions="nCells Time" units="m a^{-1}"
+                     description="diagnostic field of rate of thickness change with time (dH/dt). This includes all processes (flux divergence, SMB, BMB, calving, etc.) because it is calculated as the new thickness minus the old thickness divided by the time step."
+		/>
+		<var name="thicknessOld" type="real" dimensions="nCells Time" units="m" time_levs="1"
+		     description="ice thickness from previous time level (only used to calculate thicknessTendency)"
+		/>
+                <var name="dynamicThickening" type="real" dimensions="nCells Time" units="m a^{-1}"
+		     description="diagnostic field of dynamic thickening rate (calculated as negative of flux divergence)"
+		/>
 		<var name="cellMask" type="integer" dimensions="nCells Time" units="none"
 		     description="bitmask indicating various properties about the ice sheet on cells.  cellMask only needs to be a restart field if config_allow_additional_advance = false (to keep the mask of initial ice extent)"
 		/>

@@ -25,6 +25,7 @@ module li_regional_stats
    use mpas_stream_manager
 
    use li_mask
+   use li_constants
 
    implicit none
    private
@@ -196,9 +197,6 @@ contains
 
 !      real (kind=RKIND) ::  blockSumCalvingFlux
 
-
-      ! local parameters
-      real (kind=RKIND), parameter :: scyr = 31536000.0_RKIND  ! seconds per 365-day year
 
       err = 0
 
