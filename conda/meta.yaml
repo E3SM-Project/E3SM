@@ -32,6 +32,7 @@ requirements:
     - numpy
     - matplotlib
     - cartopy
+    - dask
 
 about:
     home: https://github.com/zshaheen/acme-diags
