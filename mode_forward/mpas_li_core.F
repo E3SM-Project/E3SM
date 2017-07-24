@@ -868,6 +868,7 @@ module li_core
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: geometryPool
       integer, dimension(:), pointer :: vertexMask
+      real (kind=RKIND), dimension(:), pointer :: thickness, thicknessOld
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
       logical, pointer :: config_adaptive_timestep_include_DCFL
@@ -942,6 +943,10 @@ module li_core
       call li_calculate_mask_init(geometryPool, err=err_tmp)
       err = ior(err, err_tmp)
 
+      ! Initialize thicknessOld variable used to calculate dHdt
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'thicknessOld', thicknessOld)
+      thicknessOld = thickness
 
       ! === error check
       if (err > 0) then
