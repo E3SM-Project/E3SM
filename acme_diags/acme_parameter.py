@@ -45,7 +45,10 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.diff_colormap = ''
         self.diff_levels = []
         self.diff_units = ''
-
+	
+	self.distributed = False
+	self.client_addr = '127.0.0.1:8786'
+	self.nodes = 1
 
     def check_values(self):
         # just check if reference_data_path + reference_data_set and

@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+from dask.distributed import Client
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_parameter import ACMEParameter
 from acme_diags.acme_viewer import create_viewer
@@ -43,6 +44,27 @@ def make_parameters(original_parameter, vars_to_ignore=[]):
             parameters.append(p)
     return parameters
 
+
+def run_diag(parameters):
+    """For a single set of parameters, run the corresponding diags."""
+    for pset in parameters.sets:
+        pset = str(pset)
+
+        if pset == '3':
+            from acme_diags.driver.set3_driver import run_diag
+        elif pset == '4':
+            from acme_diags.driver.set4_driver import run_diag
+        elif pset == '5':
+            from acme_diags.driver.set5_driver import run_diag
+        elif pset == '7':
+            from acme_diags.driver.set7_driver import run_diag
+        else:
+            print('Plot set {} is not supported yet. Please give us time.'.format(pset))
+            continue
+        print('Starting to run ACME diags')   
+        run_diag(parameters)
+
+
 if __name__ == '__main__':
     parser = ACMEParser()
     original_parameter = parser.get_parameter(default_vars=False)
@@ -56,22 +78,14 @@ if __name__ == '__main__':
     ignore_vars = [] if hasattr(original_parameter, 'custom_diags') else ['sets']
     parameters = make_parameters(original_parameter, vars_to_ignore=ignore_vars)
 
-    for parameter in parameters:
-        for pset in parameter.sets:
-            pset = str(pset)
+    if not parameters[0].distributed:
+        for p in parameters:
+            run_diag(p)
+    else:
 
-            if pset == '3':
-                from acme_diags.driver.set3_driver import run_diag
-            elif pset == '4':
-                from acme_diags.driver.set4_driver import run_diag
-            elif pset == '5':
-                from acme_diags.driver.set5_driver import run_diag
-            elif pset == '7':
-                from acme_diags.driver.set7_driver import run_diag
-            else:
-                print('Plot set {} is not supported yet. Please give us time.'.format(pset))
-                continue
-            print('Starting to run ACME diags')
-            run_diag(parameter)
+        client = Client('10.10.10.1:8786')
+        results = client.map(run_diag, parameters)
+        client.gather(results)
+        client.close()
 
     create_viewer(original_parameter.results_dir, parameters, parameters[0].output_format[0])

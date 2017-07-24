@@ -3,7 +3,7 @@ package:
     version: {{ environ['VERSION'] }}
 
 source:
-    git_url: git://github.com/zshaheen/acme-diags
+    git_url: git://github.com/ACME-Climate/acme_diags
 
 build:
     script: python setup.py install
@@ -35,5 +35,5 @@ requirements:
     - dask
 
 about:
-    home: https://github.com/zshaheen/acme-diags
+    home: https://github.com/ACME-Climate/acme_diags
     summary: This is the new version of ACME Diagnostics.

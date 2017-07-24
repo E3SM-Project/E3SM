@@ -1,4 +1,4 @@
-import acme_diags.acme_parameter
-import acme_diags.acme_parser
-import acme_diags.acme_viewer
+import acme_parameter
+import acme_parser
+import acme_viewer
 
