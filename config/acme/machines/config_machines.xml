@@ -849,7 +849,7 @@
 
 <machine MACH="blues">
          <DESC>ANL/LCRC Linux Cluster</DESC>
-         <NODENAME_REGEX>b.*.lcrc.anl.gov</NODENAME_REGEX>
+         <NODENAME_REGEX>blogin.*.lcrc.anl.gov</NODENAME_REGEX>
          <TESTS>acme_integration</TESTS>
          <COMPILERS>gnu,pgi,intel,nag</COMPILERS>
          <MPILIBS>mvapich,mpich,openmpi,mpi-serial</MPILIBS>
@@ -924,7 +924,7 @@
 
 <machine MACH="anvil">
          <DESC>ANL/LCRC Linux Cluster</DESC>
-         <NODENAME_REGEX>b.*.lcrc.anl.gov</NODENAME_REGEX>
+         <NODENAME_REGEX>blogin.*.lcrc.anl.gov</NODENAME_REGEX>
          <TESTS>acme_integration</TESTS>
          <COMPILERS>intel,gnu,pgi</COMPILERS>
          <MPILIBS>mvapich,openmpi,mpi-serial</MPILIBS>
@@ -1029,7 +1029,7 @@
 
 <machine MACH="bebop">
     <DESC>ANL/LCRC Cluster, Cray CS400, 352-nodes Xeon Phi 7230 KNLs 64C/1.3GHz + 672-nodes Xeon E5-2695v4 Broadwells 36C/2.10GHz, Intel Omni-Path network, SLURM batch system, Lmod module environment.</DESC>
-    <NODENAME_REGEX>bebop</NODENAME_REGEX>
+    <NODENAME_REGEX>beboplogin.*</NODENAME_REGEX>
     <TESTS>acme_developer</TESTS>
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>impi,mpich,mvapich,openmpi,mpi-serial</MPILIBS>
