@@ -1041,7 +1041,7 @@
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/lcrc/group/acme/acme_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/lcrc/group/acme/tools/cprnc/cprnc</CCSM_CPRNC>
     <OS>LINUX</OS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>acme</SUPPORTED_BY>
