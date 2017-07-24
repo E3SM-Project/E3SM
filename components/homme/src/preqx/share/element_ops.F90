@@ -261,13 +261,15 @@ contains
     real(real_kind) , dimension(np,np,nlev) :: phi,p,kappa_star, Rstar
 
     integer :: k
-
+    call  get_phi(elem,phi,hvcoord,nt,ntQ)
+    
     ! set prognostic state variables at level midpoints
     u   = elem%state%v   (:,:,1,:,nt)
     v   = elem%state%v   (:,:,2,:,nt)
     w   = 0                             ! todo: w = -omega/(rho g)
     T   = elem%state%T   (:,:,:,nt)
     ps  = elem%state%ps_v(:,:,nt)
+    zm  = phi/g
 
     do k=1,nlev
        p (:,:,k)= hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
