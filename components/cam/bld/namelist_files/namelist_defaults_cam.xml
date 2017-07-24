@@ -26,6 +26,7 @@
 <dtime dyn="se"    hgrid="ne0np4_conus_x4v1_lowcon"  >900</dtime>
 <dtime dyn="se"    hgrid="ne0np4_svalbard_x8v1_lowcon"  >600</dtime>
 <dtime dyn="se"    hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >600</dtime>
+<dtime dyn="se"    hgrid="ne0np4_twpx4v1">900</dtime>
 
 <dtime dyn="sld"                   >3600</dtime>
 
@@ -181,6 +182,7 @@
 <ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_sooberingoax4x8v1np4_L30_c141110.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_sooberingoax4x8v1np4_L30_ape_c000000.nc</ncdata>
 
+<ncdata dyn="se" hgrid="ne0np4_twpx4v1" nlev="72" >atm/cam/inic/homme/cami-mam3_0002-01-01-twpx4v1_L72_c170723.nc</ncdata>
 
 <ncdata dyn="se" hgrid="ne5np8"   nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne5np8_L26_ape_c061102.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L26_ape_c071213.nc</ncdata>
@@ -221,6 +223,7 @@
 <bnd_topo hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/topo/USGS_conusx4v1-tensor12x_consistentSGH_c150924.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_svalbard_x8v1_lowcon"  >atm/cam/topo/USGS_svalbardx8v1-tensor12x_c150612.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/topo/USGS_sooberingoax4x8v1-tensor12x_c150612.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_twpx4v1" >atm/cam/topo/USGS_twpx4v1_tensor12x_consistentSGH_170629.nc</bnd_topo>
 
 <!-- Bulk aerosol physical properties (includes optics) -->
 
@@ -709,6 +712,7 @@
 <drydep_srf_file hgrid="ne0np4_conus_x4v1_lowcon">atm/cam/chem/trop_mam/atmsrf_conusx4v1.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_svalbard_x8v1_lowcon">atm/cam/chem/trop_mam/atmsrf_svalbardx8v1.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_sooberingoa_x4x8v1_lowcon">atm/cam/chem/trop_mam/atmsrf_sooberingoax4x8v1.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_twpx4v1">atm/cam/chem/trop_mam/atmsrf_twpx4v1_170629.nc</drydep_srf_file>
 
 <!-- depvel data -->
 <depvel_file    >atm/cam/chem/trop_mozart/dvel/depvel_monthly.nc</depvel_file>
@@ -1289,6 +1293,7 @@
 <mesh_file hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/inic/homme/conusx4v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_svalbard_x8v1_lowcon"  >atm/cam/inic/homme/svalbardx8v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/inic/homme/sooberingoax4x8v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_twpx4v1" >atm/cam/inic/homme/twpx4v1.g</mesh_file>
 
 <nu_top> 2.5e5 </nu_top>
 <nu_top hgrid="ne240np4"> 1.0e5 </nu_top>
@@ -1312,6 +1317,7 @@
 <nu hgrid="ne0np4_conus_x4v1_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8.0e-8</nu>
+<nu hgrid="ne0np4_twpx4v1" >8.0e-8</nu>
 
 <!-- This will set nu_q to nu internally. -->
 <nu_q> -1.0 </nu_q>
@@ -1328,6 +1334,7 @@
 <nu_p hgrid="ne0np4_conus_x4v1_lowcon"  > 8.0e-8</nu_p>
 <nu_p hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8.0e-8</nu_p>
 <nu_p hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8.0e-8</nu_p>
+<nu_p hgrid="ne0np4_twpx4v1" >8.0e-8</nu_p>
 
 
 <nu_div>                   2.5e15 </nu_div>
@@ -1342,6 +1349,7 @@
 <nu_div hgrid="ne0np4_conus_x4v1_lowcon"  > 20.0e-8</nu_div>
 <nu_div hgrid="ne0np4_svalbard_x8v1_lowcon"  > 20.0e-8</nu_div>
 <nu_div hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 20.0e-8</nu_div>
+<nu_div hgrid="ne0np4_twpx4v1" >20.0e-8</nu_div>
 
 <hypervis_order >     2 </hypervis_order>
 
@@ -1358,6 +1366,7 @@
 <hypervis_subcycle hgrid="ne0np4_conus_x4v1_lowcon"  > 7 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_twpx4v1" > 7 </hypervis_subcycle>
 
 <hypervis_subcycle_q> 1 </hypervis_subcycle_q>
 
@@ -1386,6 +1395,7 @@
 <se_nsplit hgrid="ne0np4_conus_x4v1_lowcon"  > 4 </se_nsplit>
 <se_nsplit hgrid="ne0np4_svalbard_x8v1_lowcon"  > 5 </se_nsplit>
 <se_nsplit hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 5 </se_nsplit>
+<se_nsplit hgrid="ne0np4_twpx4v1" > 4 </se_nsplit>
 
 <se_nsplit hgrid="ne11np4"  waccm_phys="1">  5 </se_nsplit>
 <se_nsplit hgrid="ne16np4"  waccm_phys="1">  5 </se_nsplit>
@@ -1399,11 +1409,13 @@
 <hypervis_scaling  hgrid="ne0np4_conus_x4v1_lowcon"  > 3.2 </hypervis_scaling>
 <hypervis_scaling  hgrid="ne0np4_svalbard_x8v1_lowcon"  > 3.2 </hypervis_scaling>
 <hypervis_scaling  hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 3.2 </hypervis_scaling>
+<hypervis_scaling  hgrid="ne0np4_twpx4v1" > 3.2 </hypervis_scaling>
 
 <se_ne hgrid="ne0np4_arm_x8v3_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_conus_x4v1_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_svalbard_x8v1_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 0 </se_ne>
+<se_ne hgrid="ne0np4_twpx4v1" > 0 </se_ne>
 
 
 <se_ftype> 0 </se_ftype>
