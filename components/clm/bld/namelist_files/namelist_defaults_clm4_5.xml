@@ -301,8 +301,7 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." >lnd/
 <!-- RRM CONUS and ARM resolutions.  maxxpft, mask, bgc unknown -->
 <finidat hgrid="ne0np4_arm_x8v3_lowcon"  ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.armx8v3.1850-01-01.nc</finidat>
 <finidat hgrid="ne0np4_conus_x4v1_lowcon" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45.0021-01-01.conusx4v1.0ac6464_simyr2000_c161130.nc</finidat>
-
-
+<finidat hgrid="ne0np4_twpx4v1" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.twpx4v1_oRRS18to6v3_simyr2000_c170712.nc</finidat>
 
 <!-- for present day simulations - year 2000 -->
 <fsurdat hgrid="360x720cru"   sim_year="2000" use_crop=".false." >
@@ -394,6 +393,8 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c160503.nc</fsurdat>
 <fsurdat hgrid="ne0np4_conus_x4v1_lowcon" sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
 
+<fsurdat hgrid="ne0np4_twpx4v1" sim_year="2000" use_crop=".false.">
+lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
 
 <!-- Regional Refinement Variable Resolution RRM 1850 and 2000-->
 <!--Not ready for clm4.5 fsurdat hgrid="ne0np4_arm_x8v3_lowcon"    sim_year="1850" irrig=".false." >
@@ -404,7 +405,8 @@ lnd/clm2/surfdata_map/surfdata_armx8v3_simyr2000_c140518.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c160503.nc</fsurdat>
 <fsurdat hgrid="ne0np4_conus_x4v1_lowcon"    sim_year="2000" irrig=".false." >
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
-
+<fsurdat hgrid="ne0np4_twpx4v1" sim_year="2000" irrig=".false.">
+lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
 
 <!-- Dynamic PFT surface datasets (relative to {csmdata}) -->
 
