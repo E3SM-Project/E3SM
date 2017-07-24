@@ -67,7 +67,7 @@
 			description="total, area integrated grounded basal mass balance. Positive values are ice gain."
 		/>
 		<var name="avgGroundedBasalMelt" type="real" dimensions="Time" units="m yr^{-1}^"
-			description="average groundedBasalMassBal. Positive values are ice gain."
+			description="average groundedBasalMassBal value, as a thickness rate. Positive values are ice loss."
 		/>
 		<var name="totalFloatingBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
 			description="total, area integrated floating basal mass balance. Positive values are ice gain."
