@@ -46,7 +46,7 @@ module docn_comp_mod
   !--------------------------------------------------------------------------
 
   character(CS) :: myModelName = 'ocn'   ! user defined model name
-  logical       :: firstcall = .false.   ! first call logical
+  logical       :: firstcall = .true.    ! first call logical
 
   character(len=*),parameter :: rpfile = 'rpointer.ocn'
 
