@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import getpass
 from dask.distributed import Client
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_parameter import ACMEParameter
@@ -41,6 +42,7 @@ def make_parameters(original_parameter, vars_to_ignore=[]):
                 if var not in vars_to_ignore:
                     p.__dict__[var] = original_parameter.__dict__[var]
             p.check_values()
+            p.user = getpass.getuser()
             parameters.append(p)
     return parameters
 
@@ -77,13 +79,15 @@ if __name__ == '__main__':
     # don't overwrite the sets keyword in the default json files.
     ignore_vars = [] if hasattr(original_parameter, 'custom_diags') else ['sets']
     parameters = make_parameters(original_parameter, vars_to_ignore=ignore_vars)
+   
+    if not os.path.exists(original_parameter.results_dir):
+        os.makedirs(original_parameter.results_dir, 0775)
 
     if not parameters[0].distributed:
         for p in parameters:
             run_diag(p)
     else:
-
-        client = Client('10.10.10.1:8786')
+        client = Client(parameters[0].client_addr)
         results = client.map(run_diag, parameters)
         client.gather(results)
         client.close()
