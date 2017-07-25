@@ -35,7 +35,7 @@ module CNDecompMod
   use WaterStateType         , only : waterstate_type
   use ch4Mod                 , only : ch4_type
   use cropType               , only : crop_type
-  !! clm interface & pflotran:
+  ! clm interface & pflotran:
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
   !
   implicit none
@@ -88,7 +88,7 @@ contains
 
   end subroutine readCNDecompParams
 
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
   subroutine CNDecompAlloc (bounds, num_soilc, filter_soilc,    &
                 num_soilp, filter_soilp,                        &
                 canopystate_vars, soilstate_vars,               &
@@ -98,20 +98,20 @@ contains
                 nitrogenstate_vars, nitrogenflux_vars,          &
                 phosphorusstate_vars,phosphorusflux_vars)
 
-    !!-----------------------------------------------------------------------------
-    !! DESCRIPTION:
-    !! Modified for bgc-interface (wgs): 9/12/2015
-    !! clm-bgc soil Module, can be called through clm_bgc_interface
-    !! ONLY includes SOM decomposition & nitrification/denitrification (if use_nitrif_denitrif)
-    !! CNAllocaiton is divided into 3 subroutines:
-    !! (1) CNAllocation1_PlantNPDemand  is called in CNEcosystemDynNoLeaching1
-    !! (2) CNAllocation2_ResolveNPLimit is called in CNDecompAlloc (this subroutine)
-    !! (3) CNAllocation3_PlantCNPAlloc  is called in CNDecompAlloc2
-    !!-----------------------------------------------------------------------------
+    !-----------------------------------------------------------------------------
+    ! DESCRIPTION:
+    ! Modified for clm_interface: 9/12/2015
+    ! clm-bgc soil Module, can be called through clm_bgc_interface
+    ! ONLY includes SOM decomposition & nitrification/denitrification (if use_nitrif_denitrif)
+    ! CNAllocaiton is divided into 3 subroutines:
+    ! (1) CNAllocation1_PlantNPDemand  is called in CNEcosystemDynNoLeaching1
+    ! (2) CNAllocation2_ResolveNPLimit is called in CNDecompAlloc (this subroutine)
+    ! (3) CNAllocation3_PlantCNPAlloc  is called in CNDecompAlloc2
+    !-----------------------------------------------------------------------------
 
     ! !USES:
 !    use CNAllocationMod , only: CNAllocation
-    use CNAllocationMod , only: CNAllocation2_ResolveNPLimit !! Phase-2 of CNAllocation
+    use CNAllocationMod , only: CNAllocation2_ResolveNPLimit ! Phase-2 of CNAllocation
     !
     ! !ARGUMENT:
     type(bounds_type)        , intent(in)    :: bounds   
@@ -132,7 +132,7 @@ contains
 !    type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    !! add phosphorus --
+    ! add phosphorus --
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
 !    type(crop_type)          , intent(in)    :: crop_vars
@@ -186,7 +186,7 @@ contains
          net_nmin_vr                      =>    nitrogenflux_vars%net_nmin_vr_col                      , & ! Output: [real(r8) (:,:)   ]                                                  
          gross_nmin                       =>    nitrogenflux_vars%gross_nmin_col                       , & ! Output: [real(r8) (:)     ]  gross rate of N mineralization (gN/m2/s)          
          net_nmin                         =>    nitrogenflux_vars%net_nmin_col                         , & ! Output: [real(r8) (:)     ]  net rate of N mineralization (gN/m2/s)            
-         !!! add phosphorus  
+         ! add phosphorus  
          decomp_cascade_ptransfer_vr      =>    phosphorusflux_vars%decomp_cascade_ptransfer_vr_col    , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of P from donor to receiver pool along decomp. cascade (gP/m3/s)
          decomp_cascade_sminp_flux_vr     =>    phosphorusflux_vars%decomp_cascade_sminp_flux_vr_col   , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
          potential_immob_p_vr             =>    phosphorusflux_vars%potential_immob_p_vr_col           , & ! Output: [real(r8) (:,:)   ]
@@ -212,9 +212,9 @@ contains
          actual_immob_p_vr                =>    phosphorusflux_vars%actual_immob_p_vr_col                &
          )
 
-!!-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
       ! call decomp_rate_constants_bgc() or decomp_rate_constants_cn(): now called in CNEcosystemDynNoLeaching1
-!!-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
 
       ! set initial values for potential C and N fluxes
       p_decomp_cpool_loss(bounds%begc : bounds%endc, :, :) = 0._r8
@@ -384,10 +384,10 @@ contains
       end do
 
 
-!!-------------------------------------------------------------------------------------------------
-!! 'call decomp_vertprofiles()' (calc nfixation_prof) is moved to CNEcosystemDynNoLeaching1
-!! 'nfixation_prof' is used in 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in CNAllocation1,2,3
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
+! 'call decomp_vertprofiles()' (calc nfixation_prof) is moved to CNEcosystemDynNoLeaching1
+! 'nfixation_prof' is used in 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in CNAllocation1,2,3
+!-------------------------------------------------------------------------------------------------
       
       if (use_nitrif_denitrif) then ! calculate nitrification and denitrification rates
          call nitrif_denitrif(bounds, &
@@ -415,9 +415,9 @@ contains
       ! resolution of plant/heterotroph  competition for mineral N
 
 
-	  !!-------------------------------------------------------------------------------------------------
-	  !! [wgs,6/22/2017]: delete c:n,c:p ratios calculation, they have been calculated at the beginning of this subroutine
-	  !!-------------------------------------------------------------------------------------------------      
+	  !-------------------------------------------------------------------------------------------------
+	  ! delete c:n,c:p ratios calculation, they have been calculated at the beginning of this subroutine
+	  !-------------------------------------------------------------------------------------------------      
 
 	  ! upon return from CNAllocation, the fraction of potential immobilization
       ! has been set (cnstate_vars%fpi_vr_col). now finish the decomp calculations.
@@ -579,7 +579,7 @@ contains
 
   end subroutine CNDecompAlloc
 
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
 
   subroutine CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,   &
        photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars,               &
@@ -587,16 +587,16 @@ contains
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,      &
        nitrogenstate_vars, nitrogenflux_vars, crop_vars, atm2lnd_vars,                   &
        phosphorusstate_vars,phosphorusflux_vars)
-    !!-----------------------------------------------------------------------------
-    !! DESCRIPTION:
-    !! bgc interface & pflotran:
-    !! (1) Simplified codes of CNDecompAlloc subroutine for coupling with pflotran
-    !! (2) call CNAllocation3_PlantCNPAlloc
-    !! (3) calculate net_nmin(c), gross_nmin(c), net_pmin(c), gross_pmin(c)
-    !!-----------------------------------------------------------------------------
+    !-----------------------------------------------------------------------------
+    ! DESCRIPTION:
+    ! bgc interface & pflotran:
+    ! (1) Simplified codes of CNDecompAlloc subroutine for coupling with pflotran
+    ! (2) call CNAllocation3_PlantCNPAlloc
+    ! (3) calculate net_nmin(c), gross_nmin(c), net_pmin(c), gross_pmin(c)
+    !-----------------------------------------------------------------------------
 
     ! !USES:
-    use CNAllocationMod , only: CNAllocation3_PlantCNPAlloc !! Phase-3 of CNAllocation
+    use CNAllocationMod , only: CNAllocation3_PlantCNPAlloc ! Phase-3 of CNAllocation
     use atm2lndType     , only: atm2lnd_type
     use clm_time_manager, only: get_step_size
 !    use clm_varpar      , only: nlevdecomp, ndecomp_pools
@@ -683,11 +683,11 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
-	  !!------------------------------------------------------------------
-	  ! 'call decomp_vertprofiles()' moved to EcosystemDynNoLeaching1
-	  !!------------------------------------------------------------------
-	  smin_nh4_to_plant_vr_loc(:,:) = 0._r8
-	  smin_no3_to_plant_vr_loc(:,:) = 0._r8
+	    !------------------------------------------------------------------
+	    ! 'call decomp_vertprofiles()' moved to EcosystemDynNoLeaching1
+	    !------------------------------------------------------------------
+	    smin_nh4_to_plant_vr_loc(:,:) = 0._r8
+	    smin_no3_to_plant_vr_loc(:,:) = 0._r8
 
 
       ! MUST have already updated needed bgc variables from PFLOTRAN by this point
@@ -778,7 +778,7 @@ contains
                         carbonflux_vars, nitrogenflux_vars,       &
                         phosphorusstate_vars, phosphorusflux_vars)
 
-         !! save variables before updating
+         ! save variables before updating
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             do j = 1,nlevdecomp
@@ -787,9 +787,9 @@ contains
             end do
          end do
 
-      end if !!if(use_clm_interface.and.use_pflotran.and.pf_cmode)
+      end if !if(use_clm_interface.and.use_pflotran.and.pf_cmode)
 
-!!------------------------------------------------------------------
+      !------------------------------------------------------------------
       ! phase-3 Allocation for plants
       call t_startf('CNAllocation - phase-3')
       call CNAllocation3_PlantCNPAlloc (bounds                      , &
@@ -800,12 +800,12 @@ contains
                 nitrogenstate_vars, nitrogenflux_vars               , &
                 phosphorusstate_vars, phosphorusflux_vars)
       call t_stopf('CNAllocation - phase-3')
-!!------------------------------------------------------------------
+      !------------------------------------------------------------------
 
     if(use_pflotran.and.pf_cmode) then
-!! wgs: CNAllocation3_PlantCNPAlloc():
-!! smin_nh4_to_plant_vr(c,j), smin_no3_to_plant_vr(c,j), sminn_to_plant_vr(c,j) may be adjusted
-!! therefore, we need to update smin_no3_vr(c,j) & smin_nh4_vr(c,j)
+    ! in CNAllocation3_PlantCNPAlloc():
+    ! smin_nh4_to_plant_vr(c,j), smin_no3_to_plant_vr(c,j), sminn_to_plant_vr(c,j) may be adjusted
+    ! therefore, we need to update smin_no3_vr(c,j) & smin_nh4_vr(c,j)
       do fc = 1,num_soilc
            c = filter_soilc(fc)
            do j = 1,nlevdecomp
@@ -815,8 +815,8 @@ contains
                smin_nh4_vr(c,j) = max(0._r8, smin_nh4_vr(c,j))
             end do
       end do
-    end if !!(use_pflotran.and.pf_cmode)
-!!------------------------------------------------------------------
+    end if !(use_pflotran.and.pf_cmode)
+    !------------------------------------------------------------------
       ! vertically integrate net and gross mineralization fluxes for diagnostic output
       do fc=1,num_soilc
          c = filter_soilc(fc)
@@ -838,7 +838,7 @@ contains
     end associate
   end subroutine CNDecompAlloc2
  
-!!-------------------------------------------------------------------------------------------------
+  !-------------------------------------------------------------------------------------------------
   !
   subroutine CNvariables_nan4pf (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             carbonflux_vars, nitrogenflux_vars, phosphorusstate_vars,phosphorusflux_vars)
@@ -902,9 +902,9 @@ contains
          num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8  )
    end if
 
- end associate
- end subroutine CNvariables_nan4pf
+  end associate
+  end subroutine CNvariables_nan4pf
 
-!!-------------------------------------------------------------------------------------------------
+  !-------------------------------------------------------------------------------------------------
 
 end module CNDecompMod

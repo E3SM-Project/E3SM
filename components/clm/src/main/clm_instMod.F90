@@ -48,7 +48,6 @@ module clm_instMod
   use SoilWaterRetentionCurveMod , only : soil_water_retention_curve_type
   use UrbanParamsType            , only : urbanparams_type   ! Constants
   use VegetationPropertiesType   , only : veg_vp             ! Ecophysical Constants
-  ! use VegetationPropertiesType             , only : veg_vp         ! Constants
   use SoilorderConType           , only : soilordercon         ! Constants
 
   use LandunitType               , only : lun_pp

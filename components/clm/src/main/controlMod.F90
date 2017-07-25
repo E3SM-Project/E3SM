@@ -402,20 +402,20 @@ contains
        end if
 
        ! ----------------------------------------------------------------------
-       !! bgc & pflotran interface
+       ! bgc & pflotran interface
        if(.not.use_clm_interface) then
             use_clm_bgc     = .false.
             use_pflotran    = .false.
        else
-       !! use_clm_interface
+       ! use_clm_interface
             if (use_clm_bgc) then
                 use_pflotran = .false.
             end if
 
             if (use_pflotran) then
                 use_clm_bgc = .false.
-                !! enable 'use_nitrif_denitrif' to initilize Nh4 & NO3 pools,
-                !! but NOT to implement 'nitrif_denitrif'
+                ! enable 'use_nitrif_denitrif' to initilize Nh4 & NO3 pools,
+                ! but NOT to implement 'nitrif_denitrif'
                 use_nitrif_denitrif = .true.
             end if
        end if

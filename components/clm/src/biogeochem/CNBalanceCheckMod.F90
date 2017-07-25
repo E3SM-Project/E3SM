@@ -441,7 +441,7 @@ contains
 
     real(r8) :: leafp_to_litter_col(bounds%begc:bounds%endc) 
     real(r8) :: frootp_to_litter_col(bounds%begc:bounds%endc) 
-    real(r8):: flux_mineralization_col(bounds%begc:bounds%endc)   !!  local temperary variable
+    real(r8):: flux_mineralization_col(bounds%begc:bounds%endc)   !  local temperary variable
     !-----------------------------------------------------------------------
 
     associate(                                                                   &

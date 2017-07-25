@@ -685,7 +685,7 @@ contains
          w_scalar       => carbonflux_vars%w_scalar_col  , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp                           
          o_scalar       => carbonflux_vars%o_scalar_col  , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia   
          decomp_k       => carbonflux_vars%decomp_k_col  , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)   
-         decomp_k_pools => decomp_cascade_con%decomp_k_pools  & !(0: ndecomp_pools)    !! pflotran (0 for atm. co2)
+         decomp_k_pools => decomp_cascade_con%decomp_k_pools  & !(0: ndecomp_pools)    ! pflotran (0 for atm. co2)
          )
 
       mino2lim = CNParamsShareInst%mino2lim
@@ -753,7 +753,7 @@ contains
           i_soil3 = 6
        end if
 
-      !! pflotran:beg---saving orignal k (not scaled) for passing to pflotran bgc decomposition sandboxes
+       ! pflotran:beg---saving orignal k (not scaled) for passing to pflotran bgc decomposition sandboxes
        decomp_k_pools(i_litr1) = k_l1 
        decomp_k_pools(i_litr2) = k_l2_l3
        decomp_k_pools(i_litr3) = k_l2_l3
@@ -761,7 +761,7 @@ contains
        decomp_k_pools(i_soil1) = k_s1 
        decomp_k_pools(i_soil2) = k_s2 
        decomp_k_pools(i_soil3) = k_s3 
-       !! pflotran:end
+       ! pflotran:end
 
      ! The following code implements the acceleration part of the AD spinup algorithm
       if ( spinup_state .eq. 1 ) then

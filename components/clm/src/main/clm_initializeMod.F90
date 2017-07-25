@@ -398,7 +398,7 @@ contains
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
     use clm_varctl                          , only : use_clm_interface, use_pflotran
-    use clm_interface_pflotranMod           , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
+    use clm_interface_pflotranMod           , only : clm_pf_interface_init !, clm_pf_set_restart_stamp
     use betr_initializeMod    , only : betr_initialize
     use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars
     use betr_initializeMod    , only : bgc_reaction
@@ -891,7 +891,7 @@ contains
     deallocate(topo_glc_mec)
 
     !------------------------------------------------------------
-    !! initialize clm_bgc_interface_data_type
+    ! initialize clm_bgc_interface_data_type
     call t_startf('init_clm_interface_data & pflotran')
     if (use_clm_interface) then
         call clm_interface_data%Init(bounds_proc)

@@ -22,7 +22,7 @@ module clm_interface_pflotranMod
 !
 ! date: 2012 - 2017
 !
-! Modified by Gangsheng Wang @ ORNL based on clm_bgc_interfaceMod.F90: 8/28/2015, 2/2/2017
+! modified by Gangsheng Wang @ ORNL based on clm_interface: 8/28/2015, 2/2/2017
 !
 ! yfm: Added Thermal-Hydrology coupling subroutines: 04/2017
 !----------------------------------------------------------------------------------------------
@@ -50,7 +50,7 @@ module clm_interface_pflotranMod
   !  use landunit_varcon     , only : istsoil, istcrop
 
   ! (dummy) variable definitions
-  !! (wgs,8/28/2015): ALM types/variables are replaced by clm_interface_data
+  ! ALM types/variables are replaced by clm_interface_data
   use clm_interface_dataType, only : clm_interface_data_type
 
 
@@ -111,7 +111,7 @@ module clm_interface_pflotranMod
   private :: get_clm_bgc_rate
   private :: update_soil_bgc_pf2clm
   private :: update_bgc_gaslosses_pf2clm
-  !! pflotran mass balance check
+  ! pflotran mass balance check
   private :: clm_pf_BeginCBalance
   private :: clm_pf_BeginNBalance
   private :: clm_pf_CBalanceCheck
@@ -440,8 +440,8 @@ contains
     integer :: clm_bot_npts
     real(r8):: x0, x1, y0, y1, dx_global(1:ldomain%ni), dy_global(1:ldomain%nj)
     integer :: i, j
-    real(r8):: lon0, lat0 !!origin of longitude/latitude
-    integer :: nv  !! number of vertices
+    real(r8):: lon0, lat0 !origin of longitude/latitude
+    integer :: nv  ! number of vertices
     class(realization_subsurface_type), pointer    :: realization
 
     associate( &
@@ -456,11 +456,11 @@ contains
          )
 
 
-    !!wgs:beg----------------------------------------------------------------
-    !! wgs: ACME-v2: add lon0/lat0 to ldomain
+    ! beg----------------------------------------------------------------
+    ! lon0/lat0 have been added to ldomain
     lon0 = ldomain%lon0
     lat0 = ldomain%lat0
-    !!wgs:end----------------------------------------------------------------
+    ! end----------------------------------------------------------------
 
     ! (0) determines Total grids/columns and ids to be mapped between CLM and PFLOTRAN
 
@@ -1099,7 +1099,7 @@ contains
 
   !-----------------------------------------------------------------------
 
-    nstep = get_nstep() - pf_clmnstep0 !!nsstep
+    nstep = get_nstep() - pf_clmnstep0 !nsstep
     dtime = get_step_size()
 
     if (is_first_step() .or. is_first_restart_step()) then
@@ -1111,14 +1111,14 @@ contains
 
     ! (0)
     if (isinitpf) then
-      call calc_nestep()  !! nestep
-       total_clmstep = nestep - pf_clmnstep0!!nestep - nsstep
+      call calc_nestep()  ! nestep
+       total_clmstep = nestep - pf_clmnstep0 !nestep - nsstep
        ispfprint = .true.               ! turn-on or shut-off PF's *.h5 output
 
        call pflotranModelUpdateFinalWaypoint(pflotran_m, total_clmstep*dtime, dtime, ispfprint)
 
-       !! wgs:beg------------------------------------------------
-       !! wgs: move from 'interface_init'
+       ! beg------------------------------------------------
+       ! move from 'interface_init'
        ! force CLM soil domain into PFLOTRAN subsurface grids
        call get_clm_soil_dimension(clm_interface_data, bounds)
 
@@ -1128,7 +1128,7 @@ contains
        ! Get top surface area of 3-D pflotran subsurface domain
        call pflotranModelGetTopFaceArea(pflotran_m)
 
-       !! wgs:end------------------------------------------------
+       ! end------------------------------------------------
 
        ! always initializing soil 'TH' states from CLM to pflotran
        call get_clm_soil_th(clm_interface_data, .not.initth_pf2clm, .not.initth_pf2clm, bounds, filters, ifilter)
@@ -1382,7 +1382,7 @@ contains
          ! Assign local pointers to derived subtypes components (gridcell-level)
          latc       =>  ldomain%latc   , & !  [real(r8) (:)]
          lonc       =>  ldomain%lonc   , & !  [real(r8) (:)]
-         !! latv/lonv missing in ACME1
+         ! latv/lonv missing in ACME1
          latv       =>  ldomain%latv   , & !  [real(r8) (:,:)]
          lonv       =>  ldomain%lonv   , & !  [real(r8) (:,:)]
 
@@ -1457,7 +1457,7 @@ contains
             p2 = 0._r8
             n1 = 0
             n2 = 0
-            do v = 1, ldomain%nv  !!wgs: ldomain%nv missing in ACME1
+            do v = 1, ldomain%nv  ! ldomain%nv missing in ACME1
                if (lonv(g,v)<lonc(g)) then
                   p1 = p1 + lonv(g,v)
                   n1 = n1 + 1
@@ -1474,7 +1474,7 @@ contains
             p2 = 0._r8
             n1 = 0
             n2 = 0
-            do v = 1, ldomain%nv !!wgs: ldomain%nv missing in ACME1
+            do v = 1, ldomain%nv ! ldomain%nv missing in ACME1
                if (latv(g,v)<latc(g)) then
                   p1 = p1 + latv(g,v)
                   n1 = n1 + 1
@@ -1493,7 +1493,6 @@ contains
 
     end do
 
-    !!!!
     call VecGetArrayF90(clm_pf_idata%cellid_clmp,  cellid_clm_loc,  ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
@@ -1557,7 +1556,7 @@ contains
                ! after knowing 'toparea', we may get a pseudo 'dx' and 'dy' so that PF will not crash
                ! (note: PF needs these information otherwise throw-out error message, even with 'vertical_only' option)
 
-               if (ldomain%nv == 4) then   !!wgs: ldomain%nv missing in ACME1
+               if (ldomain%nv == 4) then   ! ldomain%nv missing in ACME1
                   ! having 4 vertices
                   lats = latv(g,1:4)
                   lons = lonv(g,1:4)
@@ -2095,13 +2094,13 @@ contains
                 ! this value IS different from what CLM used (not ice-content adjusted)
                 ! So that in PF, if not ice-adjusted, the PSI is very small (negative) which implies possible water movement
 
-                !! sucsat > 0, sucmin < 0, sucsat & sucmin have units of mm
-                !! psitmp = psitmp0, as denh2o*1.e-3_r8 = 1.0
+                ! sucsat > 0, sucmin < 0, sucsat & sucmin have units of mm
+                ! psitmp = psitmp0, as denh2o*1.e-3_r8 = 1.0
                 psitmp0 = sucsat(c,j) * (-SHR_CONST_G) * (sattmp**(-bsw(c,j)))  ! -Pa
 
                 psitmp = denh2o*(-SHR_CONST_G)*(sucsat(c,j)*1.e-3_r8)*(sattmp**(-bsw(c,j))) ! -Pa
                 sucmin_pa = denh2o*SHR_CONST_G*sucmin(c,j)*1.e-3_r8                         ! -Pa
-                psitmp = min(max(psitmp,sucmin_pa),0._r8) !!Pa
+                psitmp = min(max(psitmp,sucmin_pa),0._r8) !Pa
 
              else
                 sattmp = h2osoi_liq(c,j) / (watsat(c,j)*dz(c,j)*denh2o)
@@ -2115,7 +2114,7 @@ contains
                     psitmp = min(max(psitmp,sucmin_pa),0._r8)
                 endif
 
-             endif !!if(.not.pf_frzmode) 
+             endif !if(.not.pf_frzmode) 
              soillsat_clmp_loc(cellcount)  = sattmp
 
              soilpsi_clmp_loc(cellcount)   = psitmp
@@ -2126,7 +2125,7 @@ contains
 
              soilvwc_clmp_loc(cellcount)   = h2osoi_vol(c,j)
 
-          endif !!if (initpfhmode) then
+          endif !if (initpfhmode) then
 
           if (initpftmode) then
              soilt_clmp_loc(cellcount)=t_soisno(c,j)-tfrz
@@ -2137,10 +2136,10 @@ contains
             call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer numbers is greater than " // &
               " 'clm_varpar%nlevgrnd'. Please check")
 
-        endif !!if (j<=nlevgrnd) then
+        endif !if (j<=nlevgrnd) then
 
-      enddo  !!do j = 1, clm_pf_idata%nzclm_mapped
-    enddo !!do fc = 1,filters(ifilter)%num_soilc
+      enddo  !do j = 1, clm_pf_idata%nzclm_mapped
+    enddo !do fc = 1,filters(ifilter)%num_soilc
 
     call VecRestoreArrayF90(clm_pf_idata%press_clmp, soilpress_clmp_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
@@ -3027,7 +3026,7 @@ contains
   !
   ! !INTERFACE:
   subroutine get_clm_bgc_rate(clm_interface_data,  bounds, filters, ifilter)
-!! TODO: add phosphorus vars
+! TODO: add phosphorus vars
   !
   ! !DESCRIPTION:
   !
@@ -3151,7 +3150,7 @@ contains
           !       (nlevdecomp_full = nlevgrnd)
 
           if(j <= nlevdecomp_full) then
-                !! just in case, we need to do some checking first (actually already done before)
+              ! just in case, we need to do some checking first (actually already done before)
               do k = 1,ndecomp_pools
                 if (col_net_to_decomp_cpools_vr(c,j,k) < 0._r8) then
                   col_net_to_decomp_cpools_vr(c,j,k) =                  &
@@ -3643,7 +3642,7 @@ contains
   !           and the 'CNSoilLittVertTranspMod.F90' after 'update1'.
   !
   subroutine update_soil_bgc_pf2clm(clm_interface_data, bounds, filters, ifilter)
-!! TODO: add phosphorus vars
+! TODO: add phosphorus vars
     use ColumnType              , only : col_pp
     use clm_varctl              , only : iulog, use_ed
     use CNDecompCascadeConType  , only : decomp_cascade_con
@@ -3798,12 +3797,12 @@ contains
 
                  decomp_cpools_delta_vr(c,j,k) = ( decomp_cpools_delta_vr(c,j,k)  &
                                 + decomp_cpools_vr_clm_loc(vec_offset+cellcount)  &
-                                * clm_pf_idata%C_molecular_weight ) !!/dtime  !!wgs: decomp_cpools_delta_vr=> clm_bgc_data%decomp_cpools_sourcesink_col
+                                * clm_pf_idata%C_molecular_weight ) !decomp_cpools_delta_vr=> clm_bgc_data%decomp_cpools_sourcesink_col
 
                  if (clm_pf_idata%floating_cn_ratio(k)) then
                      decomp_npools_delta_vr(c,j,k) = ( decomp_npools_delta_vr(c,j,k)  &
                                 + decomp_npools_vr_clm_loc(vec_offset+cellcount)      &
-                                * clm_pf_idata%N_molecular_weight ) !!/dtime
+                                * clm_pf_idata%N_molecular_weight ) !/dtime
                  else
                      decomp_npools_delta_vr(c,j,k) = decomp_cpools_delta_vr(c,j,k)/ &
                         initial_cn_ratio(k)      ! initial_cn_ratio: already in unit of mass
@@ -3851,8 +3850,8 @@ contains
                           * clm_pf_idata%N_molecular_weight)/dtime
               endif
 
-!! wgs-beg:--------------------------------------------------------------------------------
-!! directly update the 'smin' N pools (SO, must bypass the 'CNNStateUpdate1,2,3' relevant to soil N)
+              ! beg:--------------------------------------------------------------------------------
+              ! directly update the 'smin' N pools (SO, must bypass the 'CNNStateUpdate1,2,3' relevant to soil N)
               smin_no3_vr(c,j) = &
                            smin_no3_vr_clm_loc(cellcount)*clm_pf_idata%N_molecular_weight
 
@@ -3863,9 +3862,9 @@ contains
                            smin_nh4sorb_vr_clm_loc(cellcount)*clm_pf_idata%N_molecular_weight
 
               sminn_vr(c,j) = smin_no3_vr(c,j) + smin_nh4_vr(c,j) + smin_nh4sorb_vr(c,j)
-!! wgs-end:--------------------------------------------------------------------------------
+              ! end:--------------------------------------------------------------------------------
 
-              !! flows or changes
+              ! flows or changes
               smin_nh4_to_plant_vr(c,j) = (accextrnh4_vr_clm_loc(cellcount)  &
                           * clm_pf_idata%N_molecular_weight)/dtime
               smin_no3_to_plant_vr(c,j) = (accextrno3_vr_clm_loc(cellcount)  &
@@ -4236,8 +4235,8 @@ contains
               f_ngas_denit_vr(c,j)       = 0._r8
 
           endif
-       enddo !! do j = 1, nlevdecomp_full
-     enddo !! do fc = 1,filters(ifilter)%num_soilc
+       enddo ! do j = 1, nlevdecomp_full
+     enddo ! do fc = 1,filters(ifilter)%num_soilc
 
      call VecRestoreArrayReadF90(clm_pf_idata%gco2_vr_clms, gco2_vr_clms_loc, ierr)
      call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
@@ -4402,7 +4401,7 @@ contains
 
        ! (TODO) not yet considering lateral transport (although data structure is here)
 
-     enddo !! do fc = 1,filters(ifilter)%num_soilc
+     enddo ! do fc = 1,filters(ifilter)%num_soilc
 
      call VecRestoreArrayReadF90(clm_pf_idata%f_nh4_subsurf_clms, f_nh4_subsurf_clm_loc, ierr)
      call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
@@ -4458,7 +4457,7 @@ contains
 
   end subroutine clm_pf_checkerr
 
-!!--------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------
   subroutine clm_pf_BeginCBalance(clm_interface_data, bounds, filters, ifilter)
     !
     ! !DESCRIPTION:
@@ -4499,7 +4498,7 @@ contains
 
   end subroutine clm_pf_BeginCBalance
 
-!!--------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------
 
   subroutine clm_pf_BeginNBalance(clm_interface_data, bounds, filters, ifilter)
     !
@@ -4541,7 +4540,7 @@ contains
         soil_begnb_min(c) = 0._r8
 
         do j = 1, nlev
-        !!do NOT directly use sminn_vr(c,j), it does NOT always equal to (no3+nh4+nh4sorb) herein
+        !do NOT directly use sminn_vr(c,j), it does NOT always equal to (no3+nh4+nh4sorb) herein
             soil_begnb_min(c) = soil_begnb_min(c) + smin_no3_vr(c,j)*dzsoi_decomp(j)    &
                                                   + smin_nh4_vr(c,j)*dzsoi_decomp(j)    &
                                                   + smin_nh4sorb_vr(c,j)*dzsoi_decomp(j)
@@ -4549,13 +4548,13 @@ contains
                 soil_begnb_org(c)   = soil_begnb_org(c)                         &
                                     + decomp_npools_vr(c,j,l)*dzsoi_decomp(j)
             end do
-        end do !!j = 1, nlevdecomp
+        end do !j = 1, nlevdecomp
 
         soil_begnb(c) = soil_begnb_org(c) + soil_begnb_min(c)
     end do
     end associate
     end subroutine clm_pf_BeginNBalance
-!!--------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------
 
   subroutine clm_pf_CBalanceCheck(clm_interface_data,bounds, filters, ifilter)
     !
@@ -4597,7 +4596,7 @@ contains
 
     ! ------------------------------------------------------------------------
     dtime = real( get_step_size(), r8 )
-    !! pflotran mass blance check-Carbon
+    ! pflotran mass blance check-Carbon
     err_found = .false.
     do fc = 1,filters(ifilter)%num_soilc
         c = filters(ifilter)%soilc(fc)
@@ -4637,10 +4636,10 @@ contains
                                     pf_cinputs(fc)*dtime,pf_coutputs(fc)*dtime,pf_cbeg(fc),pf_cend(fc)
             write(iulog,'(A,70(1h-))')">>>--------  PFLOTRAN Mass Balance Check:end  "
          end if
-    end if !!(.not. use_ed)
+    end if !(.not. use_ed)
     end associate
     end subroutine clm_pf_CBalanceCheck
-!!--------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------
 
   subroutine clm_pf_NBalanceCheck(clm_interface_data,bounds, filters, ifilter)
     !
@@ -4668,31 +4667,31 @@ contains
 
     real(r8) :: pf_ninputs(1:filters(ifilter)%num_soilc)
     real(r8) :: pf_noutputs(1:filters(ifilter)%num_soilc)
-    real(r8) :: pf_ndelta(1:filters(ifilter)%num_soilc)                             !! _ndelta: difference in pool sizes between end & beginning
-    real(r8) :: pf_errnb(1:filters(ifilter)%num_soilc)                              !! _errnb: mass balance error;
+    real(r8) :: pf_ndelta(1:filters(ifilter)%num_soilc)                             ! _ndelta: difference in pool sizes between end & beginning
+    real(r8) :: pf_errnb(1:filters(ifilter)%num_soilc)                              ! _errnb: mass balance error;
     real(r8) :: pf_noutputs_gas(1:filters(ifilter)%num_soilc)
-    real(r8) :: pf_noutputs_veg(1:filters(ifilter)%num_soilc)                       !! _gas:nitrogen gases; _veg:plant uptake of NO3/NH4
+    real(r8) :: pf_noutputs_veg(1:filters(ifilter)%num_soilc)                       ! _gas:nitrogen gases; _veg:plant uptake of NO3/NH4
     real(r8) :: pf_noutputs_nit(1:filters(ifilter)%num_soilc)
-    real(r8) :: pf_noutputs_denit(1:filters(ifilter)%num_soilc)                     !! _gas = _nit + _denit
-    real(r8) :: pf_ninputs_org(1:filters(ifilter)%num_soilc)                        !! _org:organic; _min:mineral nitrogen
+    real(r8) :: pf_noutputs_denit(1:filters(ifilter)%num_soilc)                     ! _gas = _nit + _denit
+    real(r8) :: pf_ninputs_org(1:filters(ifilter)%num_soilc)                        ! _org:organic; _min:mineral nitrogen
     real(r8) :: pf_ninputs_min(1:filters(ifilter)%num_soilc)
     real(r8) :: pf_ndelta_org(1:filters(ifilter)%num_soilc)
     real(r8) :: pf_ndelta_min(1:filters(ifilter)%num_soilc)
-    real(r8) :: pf_nbeg(1:filters(ifilter)%num_soilc)                               !! _nbeg: Nitrogen mass at the beginning of time-step
+    real(r8) :: pf_nbeg(1:filters(ifilter)%num_soilc)                               ! _nbeg: Nitrogen mass at the beginning of time-step
     real(r8) :: pf_nbeg_org(1:filters(ifilter)%num_soilc)
     real(r8) :: pf_nbeg_min(1:filters(ifilter)%num_soilc)
-    real(r8) :: pf_nend(1:filters(ifilter)%num_soilc)                               !! _end: Nitrogen mass at the end of time-step
+    real(r8) :: pf_nend(1:filters(ifilter)%num_soilc)                               ! _end: Nitrogen mass at the end of time-step
     real(r8) :: pf_nend_org(1:filters(ifilter)%num_soilc)
     real(r8) :: pf_nend_min(1:filters(ifilter)%num_soilc)
-    real(r8) :: pf_nend_no3(1:filters(ifilter)%num_soilc)                           !! 3 mineral N pools at the end of time-step
+    real(r8) :: pf_nend_no3(1:filters(ifilter)%num_soilc)                           ! 3 mineral N pools at the end of time-step
     real(r8) :: pf_nend_nh4(1:filters(ifilter)%num_soilc)
     real(r8) :: pf_nend_nh4sorb(1:filters(ifilter)%num_soilc)
     real(r8) :: plant_ndemand(1:filters(ifilter)%num_soilc)
     real(r8) :: potential_immob(1:filters(ifilter)%num_soilc)
     real(r8) :: actual_immob(1:filters(ifilter)%num_soilc)
-    real(r8) :: gross_nmin(1:filters(ifilter)%num_soilc)                            !! _immob: N immobilization; _nmin: N mineralization
-    real(r8) :: pf_ngas_dec(1:filters(ifilter)%num_soilc)                           !! _ngas_dec: N gas from decomposition-mineralization
-    real(r8) :: pf_ngas_min(1:filters(ifilter)%num_soilc)                           !! _ngas_min: N gas from nitrification & denitrification
+    real(r8) :: gross_nmin(1:filters(ifilter)%num_soilc)                            ! _immob: N immobilization; _nmin: N mineralization
+    real(r8) :: pf_ngas_dec(1:filters(ifilter)%num_soilc)                           ! _ngas_dec: N gas from decomposition-mineralization
+    real(r8) :: pf_ngas_min(1:filters(ifilter)%num_soilc)                           ! _ngas_min: N gas from nitrification & denitrification
     real(r8) :: pf_errnb_org(1:filters(ifilter)%num_soilc)
     real(r8) :: pf_errnb_min(1:filters(ifilter)%num_soilc)
 
@@ -4728,7 +4727,7 @@ contains
     ! ------------------------------------------------------------------------
     dtime = real( get_step_size(), r8 )
     nlev = nlevdecomp_full
-    !! pflotran mass blance check-Carbon
+    ! pflotran mass blance check-Carbon
     err_found = .false.
     do fc = 1,filters(ifilter)%num_soilc
         c = filters(ifilter)%soilc(fc)
@@ -4768,7 +4767,7 @@ contains
         pf_errnb_min(fc)        = 0._r8
 
         do j = 1, nlev
-            !! sminn_vr(c,j) has been calculated above
+            ! sminn_vr(c,j) has been calculated above
             pf_nend_no3(fc)     = pf_nend_no3(fc)     + smin_no3_vr(c,j)*dzsoi_decomp(j)
             pf_nend_nh4(fc)     = pf_nend_nh4(fc)     + smin_nh4_vr(c,j)*dzsoi_decomp(j)
             pf_nend_nh4sorb(fc) = pf_nend_nh4sorb(fc) + smin_nh4sorb_vr(c,j)*dzsoi_decomp(j)
@@ -4793,13 +4792,13 @@ contains
             potential_immob(fc) = potential_immob(fc) + potential_immob_vr(c,j)*dzsoi_decomp(j)
             actual_immob(fc)    = actual_immob(fc)    + actual_immob_vr(c,j)*dzsoi_decomp(j)
             gross_nmin(fc)      = gross_nmin(fc)      + gross_nmin_vr(c,j)*dzsoi_decomp(j)
-        end do !!j = 1, nlevdecomp
+        end do !j = 1, nlevdecomp
 
-        pf_nend_org(fc)     = pf_nbeg_org(fc)       + pf_ndelta_org(fc)   !!pf_ndelta_org has been calculated
+        pf_nend_org(fc)     = pf_nbeg_org(fc)       + pf_ndelta_org(fc)   !pf_ndelta_org has been calculated
         pf_nend_min(fc)     = pf_nend_no3(fc)       + pf_nend_nh4(fc) + pf_nend_nh4sorb(fc)
         pf_nend(fc)         = pf_nend_org(fc)       + pf_nend_min(fc)
         pf_ndelta_min(fc)   = pf_nend_min(fc)       - pf_nbeg_min(fc)
-        pf_ndelta(fc)       = pf_nend(fc)           - pf_nbeg(fc)         !!pf_ndelta_org     + pf_ndelta_min
+        pf_ndelta(fc)       = pf_nend(fc)           - pf_nbeg(fc)         !pf_ndelta_org     + pf_ndelta_min
         pf_ninputs(fc)      = pf_ninputs_org(fc)    + pf_ninputs_min(fc)
         pf_noutputs_gas(fc) = pf_noutputs_nit(fc)   + pf_noutputs_denit(fc)
         pf_noutputs(fc)     = pf_noutputs_gas(fc)   + pf_noutputs_veg(fc)
@@ -4817,7 +4816,7 @@ contains
             err_index = fc
         end if
 
-        !! check SON balance at each layer,
+        ! check SON balance at each layer,
         pf_errnb_org_vr(fc,:) = 0._r8
         pf_ndelta_org_vr(fc,:) = 0._r8
         pf_ninputs_org_vr(fc,:) = 0._r8
@@ -4875,10 +4874,10 @@ contains
 !            end do
             write(iulog,'(A,70(1h-))')">>>--------  PFLOTRAN Mass Balance Check:end  "
         end if
-    end if !!(.not. use_ed)
+    end if !(.not. use_ed)
     end associate
     end subroutine clm_pf_NBalanceCheck
-!!--------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------
 
 
   !-----------------------------------------------------------------------------

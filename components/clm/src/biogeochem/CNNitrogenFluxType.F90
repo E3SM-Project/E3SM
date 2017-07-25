@@ -13,7 +13,7 @@ module CNNitrogenFluxType
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
-  !! bgc interface & pflotran:
+  ! bgc interface & pflotran:
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
@@ -341,7 +341,7 @@ module CNNitrogenFluxType
      ! bgc interface/pflotran
      !------------------------------------------------------------------------
      real(r8), pointer :: plant_ndemand_col                         (:)     ! col N flux required to support initial GPP (gN/m2/s)
-     !! pflotran
+     ! pflotran
      real(r8), pointer :: plant_ndemand_vr_col                      (:,:)   ! col vertically-resolved N flux required to support initial GPP (gN/m3/s)
 
      real(r8), pointer :: f_ngas_decomp_vr_col                      (:,:)   ! col vertically-resolved N emission from excess mineral N pool due to mineralization (gN/m3/s)
@@ -1910,8 +1910,8 @@ contains
          avgflag='A', long_name='total allocated N flux', &
          ptr_patch=this%plant_nalloc_patch, default='inactive')
 
-    !!-----------------------------------------------------------
-    !! bgc interface & pflotran
+    !-----------------------------------------------------------
+    ! bgc interface & pflotran
     this%plant_ndemand_col(begc:endc) = spval
        call hist_addfld1d (fname='PLANT_NDEMAND_COL', units='gN/m^2/s', &
             avgflag='A', long_name='N flux required to support initial GPP', &
@@ -1952,7 +1952,7 @@ contains
           call hist_addfld1d (fname='SMIN_NO3_TO_PLANT', units='gN/m^2/s', &
                avgflag='A', long_name='plant uptake of NO3', &
                ptr_col=this%smin_no3_to_plant_col, default='inactive')
-          !!---------------------------------------------------------------
+          !---------------------------------------------------------------
           this%f_ngas_decomp_vr_col(begc:endc,:) = spval
             call hist_addfld_decomp (fname='F_NGAS_DECOMP'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
                avgflag='A', long_name='n gas emission from excess mineral N pool due to mineralization', &
@@ -1982,8 +1982,8 @@ contains
             call hist_addfld_decomp (fname='PLANT_NDEMAND'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
                avgflag='A', long_name='plant N demand distribution via roots', &
                ptr_col=this%plant_ndemand_vr_col, default='inactive')
-    end if !! if (use_pflotran.and.pf_cmode)
-    !!-----------------------------------------------------------
+    end if ! if (use_pflotran.and.pf_cmode)
+    !-----------------------------------------------------------
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -2259,7 +2259,7 @@ contains
           end if
        end if
 
-    end if !! if (use_pflotran .and. pf_cmode)
+    end if ! if (use_pflotran .and. pf_cmode)
     !------------------------------------------------------------------------
 
   end subroutine Restart
@@ -2570,7 +2570,7 @@ contains
        this%fire_nloss_col(i) = value_column
        this%wood_harvestn_col(i) = value_column
 
-       !! bgc-interface
+       ! bgc-interface
        this%plant_ndemand_col(i) = value_column
     end do
 
@@ -3087,12 +3087,12 @@ contains
     !----------------------------------------------------------------
   end subroutine Summary
 
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
 ! !INTERFACE:
 subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
 !
 ! !DESCRIPTION:
-!! bgc interface & pflotran:
+! bgc interface & pflotran:
 ! On the radiation time step, perform column-level nitrogen
 ! summary calculations, which mainly from PFLOTRAN bgc coupling
 !
@@ -3113,8 +3113,6 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
 ! !CALLED FROM:
 ! subroutine NSummary (if pflotran coupled) vertically from 1 to 'nlevdecomp_full' (not 'nlevdecomp')
 !
-! !REVISION HISTORY:
-!!06/17/2015: modified by Gangsheng Wang
 !
 ! !LOCAL VARIABLES:
    integer :: c,j, l      ! indices
@@ -3125,9 +3123,9 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
     dtime = real( get_step_size(), r8 )
 
     if (use_pflotran .and. pf_cmode) then
-! nitrification-denitrification rates (not yet passing out from PF, but will)
-!! wgs:beg------------------------------------------------
-!! NOT used currently
+      ! nitrification-denitrification rates (not yet passing out from PF, but will)
+      !------------------------------------------------
+      ! NOT used currently
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          this%f_nit_col(c)   = 0._r8
@@ -3145,7 +3143,7 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
          this%denit_col(c)      = this%f_denit_col(c)
 
        end do
-!! wgs:end------------------------------------------------
+      !end------------------------------------------------
 
        ! the following are from pflotran bgc, and vertically down to 'nlevdecomp_full'
        do fc = 1,num_soilc
@@ -3197,13 +3195,13 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
             this%sminn_leached_col(c) = this%sminn_leached_col(c) + &
                                         this%sminn_leached_vr_col(c,j)*dzsoi_decomp(j)
 
-          end do !!j = 1, nlevdecomp_full
+          end do !j = 1, nlevdecomp_full
 
           ! for balance-checking
           this%denit_col(c)     = this%f_ngas_denit_col(c)
           this%f_n2o_nit_col(c) = this%f_ngas_decomp_col(c) + this%f_ngas_nitri_col(c)
 
-      end do !!fc = 1,num_soilc
+      end do !fc = 1,num_soilc
 
 
        ! summarize at column-level vertically-resolved littering/removal for PFLOTRAN bgc input needs
@@ -3241,8 +3239,7 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
                         + this%dwt_frootn_to_litr_met_n_col(c,j)             &
                         + this%gap_mortality_n_to_litr_met_n_col(c,j)        &
                         + this%harvest_n_to_litr_met_n_col(c,j)              &
-                        + this%m_n_to_litr_met_fire_col(c,j)                 !!&
-!                        - this%m_decomp_npools_to_fire_vr_col(c,j,l)
+                        + this%m_n_to_litr_met_fire_col(c,j)                 
 
                 elseif (l==i_cel_lit) then
                    this%externaln_to_decomp_npools_col(c,j,l) =              &
@@ -3251,8 +3248,7 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
                         + this%dwt_frootn_to_litr_cel_n_col(c,j)             &
                         + this%gap_mortality_n_to_litr_cel_n_col(c,j)        &
                         + this%harvest_n_to_litr_cel_n_col(c,j)              &
-                        + this%m_n_to_litr_cel_fire_col(c,j)                  !!&
-!                        - this%m_decomp_npools_to_fire_vr_col(c,j,l)
+                        + this%m_n_to_litr_cel_fire_col(c,j)                  
 
                 elseif (l==i_lig_lit) then
                    this%externaln_to_decomp_npools_col(c,j,l) =              &
@@ -3261,8 +3257,7 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
                         + this%dwt_frootn_to_litr_lig_n_col(c,j)             &
                         + this%gap_mortality_n_to_litr_lig_n_col(c,j)        &
                         + this%harvest_n_to_litr_lig_n_col(c,j)              &
-                        + this%m_n_to_litr_lig_fire_col(c,j)                 !!&
-!                        - this%m_decomp_npools_to_fire_vr_col(c,j,l)
+                        + this%m_n_to_litr_lig_fire_col(c,j)                 
 
                 ! for cwd
                 elseif (l==i_cwd) then
@@ -3273,12 +3268,6 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
                         + this%gap_mortality_n_to_cwdn_col(c,j)              &
                         + this%harvest_n_to_cwdn_col(c,j)                    &
                         + this%fire_mortality_n_to_cwdn_col(c,j)
-
-             ! for som n
-!                else
-!                   this%externaln_to_decomp_npools_col(c,j,l) =              &
-!                       this%externaln_to_decomp_npools_col(c,j,l)            &
-!                        - this%m_decomp_npools_to_fire_vr_col(c,j,l)
 
                 end if
 
@@ -3294,9 +3283,9 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
                     this%externaln_to_decomp_npools_col(c,j,l) = 0._r8
                 end if
 
-             end do !!l = 1, ndecomp_pools
-          end do !!j = 1, nlevdecomp_full
-       end do !!fc = 1,num_soilc
+             end do !l = 1, ndecomp_pools
+          end do !j = 1, nlevdecomp_full
+       end do !fc = 1,num_soilc
 
 
        ! if pflotran hydrology NOT coupled, need to do:
@@ -3320,10 +3309,10 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
           this%externaln_to_decomp_delta_col(c) = -this%externaln_to_decomp_delta_col(c)
        end do
 
-    end if !! if (use_pflotran .and. pf_cmode)
+    end if ! if (use_pflotran .and. pf_cmode)
 
 end subroutine NSummary_interface
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
 
 end module CNNitrogenFluxType
 

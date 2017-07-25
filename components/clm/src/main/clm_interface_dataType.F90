@@ -1,15 +1,11 @@
 module clm_interface_dataType
 
-!!=================================================================================================
+!=================================================================================================
 ! ALM Thermal(T)-Hydrology (H) & BioGeoChemistry (BGC) Interface: Data Type (Variables)
-!
-! Created by wgs @ ORNL
-!
-! date: 8/25/2015
-! update: 9/16/2016, 2/2/2017, May-2017
-! modified by yfm, June-2017
-!!=================================================================================================
-  !! USES:
+! created: 8/25/2015
+! update: 9/16/2016, 2/2/2017, May-2017, June-2017
+!=================================================================================================
+  ! USES:
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
@@ -21,7 +17,7 @@ module clm_interface_dataType
 
   private
 
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
   type, public :: clm_interface_data_type
 
      ! col dimension
@@ -59,12 +55,12 @@ module clm_interface_dataType
      procedure , public  :: Init
      procedure , private :: InitAllocate
   end type clm_interface_data_type
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
   
 
 contains
 
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
   subroutine Init(this, bounds)
      use decompMod               , only : bounds_type
      class(clm_interface_data_type) :: this
@@ -77,22 +73,22 @@ contains
      call this%bgc%Init(bounds)
 
   end subroutine Init
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
 
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
 
   subroutine InitAllocate(this, bounds)
-    !! USES
+    ! USES
     use clm_varpar            , only : nlevsno, nlevgrnd
     use clm_varcon            , only : spval
     use decompMod             , only : bounds_type
 
-    !! ARGUMENTS:
+    ! ARGUMENTS:
     real(r8) :: ival  = 0.0_r8  ! initial value
     class(clm_interface_data_type)      :: this
     type(bounds_type), intent(in)       :: bounds
 
-    !! LOCAL VARIABLES:
+    ! LOCAL VARIABLES:
     integer  :: begg, endg
     integer  :: begc, endc
     integer  :: begp, endp
@@ -126,6 +122,6 @@ contains
     allocate(this%csol_col              (begc:endc,1:nlevgrnd))               ; this%csol_col             (:,:) = nan
 
   end subroutine InitAllocate
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
 
 end module clm_interface_dataType

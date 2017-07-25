@@ -1,14 +1,10 @@
 module clm_interface_bgcType
-!!=================================================================================================
+!=================================================================================================
 ! CLM BioGeoChemistry (BGC) Interface: Data Type (Variables)
-!
-! Created by wgs @ ORNL
-!
-! date: 8/25/2015
-! update: 9/16/2016, 2/2/2017, May-2017
-! modifed by yfm, June-2017
-!!=================================================================================================
-  !! USES:
+! created: 8/25/2015
+! update: 9/16/2016, 2/2/2017, May-2017, June-2017
+!=================================================================================================
+  ! USES:
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
@@ -152,9 +148,9 @@ module clm_interface_bgcType
      real(r8) , pointer :: fpi_p_col                                (:)     ! col fraction of potential immobilization (no units)
      real(r8),  pointer :: fpg_p_col                                (:)     ! col fraction of potential gpp (no units)
 
-     !!------------------------------------------------------------------------------------------
-     !! pflotran variables: BEGIN
-     !!------------------------------------------------------------------------------------------
+     !------------------------------------------------------------------------------------------
+     ! pflotran variables: BEGIN
+     !------------------------------------------------------------------------------------------
      ! bgc rates/fluxes (previous time-step) to decomposition pools
      real(r8), pointer :: externalc_to_decomp_cpools_col            (:,:,:) ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
      real(r8), pointer :: externaln_to_decomp_npools_col            (:,:,:) ! col (gN/m3/s) net N fluxes associated with litter/som-adding/removal to decomp pools
@@ -190,30 +186,30 @@ module clm_interface_bgcType
      real(r8), pointer :: forc_pco2_grc                             (:)     ! CO2 partial pressure (Pa)
      real(r8), pointer :: forc_pch4_grc                             (:)     ! CH4 partial pressure (Pa)
 
-     !! mass balance check:
-     !! summary of layer 1:nlevdecomp_full
+     ! mass balance check:
+     ! summary of layer 1:nlevdecomp_full
      real(r8), pointer :: soil_begcb_col                            (:)     ! soil organic carbon mass, beginning of time step (gC/m**2)
      real(r8), pointer :: soil_begnb_col                            (:)     ! soil nitrogen mass, beginning of time step (gN/m**2)
      real(r8), pointer :: soil_begnb_org_col                        (:)     ! soil organic nitrogen mass, beginning of time step (gN/m**2)
      real(r8), pointer :: soil_begnb_min_col                        (:)     ! soil mineral nitrogen mass, beginning of time step (gN/m**2) = no3 + nh4 + nh4sorb
 
-     !!------------------------------------------------------------------------------------------
-     !! pflotran variables: END
-     !!------------------------------------------------------------------------------------------
+     !------------------------------------------------------------------------------------------
+     ! pflotran variables: END
+     !------------------------------------------------------------------------------------------
 
 
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
   contains
      procedure , public  :: Init
      procedure , private :: InitAllocate
   end type clm_interface_bgc_datatype
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
 
   
 contains
 
 
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
   subroutine Init(this, bounds)
      use decompMod               , only : bounds_type
      class(clm_interface_bgc_datatype) :: this
@@ -221,23 +217,23 @@ contains
 
      call this%InitAllocate (bounds)
   end subroutine Init
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
 
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
 
   subroutine InitAllocate(this, bounds)
-    !! USES
+    ! USES
     use clm_varpar            , only : nlevsno, nlevgrnd
     use clm_varpar            , only : nlevdecomp_full, ndecomp_pools,  ndecomp_cascade_transitions
     use clm_varcon            , only : spval
     use decompMod             , only : bounds_type
 
-    !! ARGUMENTS:
+    ! ARGUMENTS:
     real(r8) :: ival  = 0.0_r8  ! initial value
     class(clm_interface_bgc_datatype)   :: this
     type(bounds_type), intent(in)       :: bounds
 
-    !! LOCAL VARIABLES:
+    ! LOCAL VARIABLES:
     integer  :: begg, endg
     integer  :: begc, endc
     integer  :: begp, endp
@@ -379,9 +375,9 @@ contains
     allocate(this%fpi_p_col                 (begc:endc))                    ; this%fpi_p_col                    (:)   = nan
     allocate(this%fpg_p_col                 (begc:endc))                    ; this%fpg_p_col                    (:)   = nan
 
-    !!------------------------------------------------------------------------------------------
-    !! pflotran variables: BEGIN
-    !!------------------------------------------------------------------------------------------
+    !------------------------------------------------------------------------------------------
+    ! pflotran variables: BEGIN
+    !------------------------------------------------------------------------------------------
     ! bgc rates/fluxes to decomposition pools
     allocate(this%externalc_to_decomp_cpools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%externalc_to_decomp_cpools_col(:,:,:) = spval
     allocate(this%externaln_to_decomp_npools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%externaln_to_decomp_npools_col(:,:,:) = spval
@@ -422,11 +418,11 @@ contains
     allocate(this%soil_begnb_org_col            (begc:endc))                ; this%soil_begnb_org_col            (:)   = ival
     allocate(this%soil_begnb_min_col            (begc:endc))                ; this%soil_begnb_min_col            (:)   = ival
 
-    !!------------------------------------------------------------------------------------------
-    !! pflotran variables: END
-    !!------------------------------------------------------------------------------------------
+    !------------------------------------------------------------------------------------------
+    ! pflotran variables: END
+    !------------------------------------------------------------------------------------------
 
   end subroutine InitAllocate
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
 
 end module clm_interface_bgcType

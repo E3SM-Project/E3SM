@@ -161,16 +161,16 @@ contains
     logical :: isgrid2d                     ! true => file is 2d lat/lon
     logical :: istype_domain                ! true => input file is of type domain
     real(r8), allocatable :: rdata2d(:,:)   ! temporary
-    real(r8), allocatable :: rdata3d(:,:,:) ! temporary  !! pflotran
+    real(r8), allocatable :: rdata3d(:,:,:) ! temporary  ! pflotran
     character(len=16) :: vname              ! temporary
     character(len=256):: locfn              ! local file name
     integer :: n                            ! indices
     real(r8):: eps = 1.0e-12_r8             ! lat/lon error tolerance
 
-    !! pflotran:beg-----------------------------
+    ! pflotran:beg-----------------------------
     integer :: j, np, nv
 
-    !! pflotran:end-----------------------------
+    ! pflotran:end-----------------------------
     character(len=32) :: subname = 'surfrd_get_grid'     ! subroutine name
 !-----------------------------------------------------------------------
 
@@ -187,14 +187,14 @@ contains
     ! Determine dimensions
     call ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)
     
-    !! pflotran:beg-----------------------------------------------
+    ! pflotran:beg-----------------------------------------------
     call ncd_inqdlen(ncid, dimid, nv, 'nv')
     if (nv>0) then
        ldomain%nv = nv
     else
        ldomain%nv = 0
     endif
-    !! pflotran:end-----------------------------------------------
+    ! pflotran:end-----------------------------------------------
 
     ! Determine isgrid2d flag for domain
     call domain_init(ldomain, isgrid2d=isgrid2d, ni=ni, nj=nj, nbeg=begg, nend=endg)
@@ -223,7 +223,7 @@ contains
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: yc NOT on file'//errMsg(__FILE__, __LINE__))
 
-       !! pflotran:beg-----------------------------------------------
+       ! pflotran:beg-----------------------------------------------
        ! user-defined grid-cell vertices (ususally 'nv' is 4,
        ! but for future use, we set the following if condition of 'nv>=3' so that possible to use TIN grids
        if (ldomain%nv>=3 .and. use_pflotran) then
@@ -236,7 +236,7 @@ contains
           if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: yv  NOT on file'//errMsg(__FILE__, __LINE__))
 
        end if
-       !! pflotran:end-----------------------------------------------
+       ! pflotran:end-----------------------------------------------
     else
        call ncd_io(ncid=ncid, varname= 'AREA', flag='read', data=ldomain%area, &
             dim1name=grlnd, readvar=readvar)
@@ -250,7 +250,7 @@ contains
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: LATIXY NOT on file'//errMsg(__FILE__, __LINE__))
 
-       !! pflotran:beg-----------------------------------------------
+       ! pflotran:beg-----------------------------------------------
        ! user-defined grid-cell vertices (ususally 'nv' is 4,
        ! but for future use, we set the following if condition of 'nv>=3' so that possible to use TIN grids
        if (ldomain%nv>=3 .and. use_pflotran) then
@@ -264,11 +264,11 @@ contains
           if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: LATIV  NOT on file'//errMsg(__FILE__, __LINE__))
 
        end if
-       !! pflotran:end-----------------------------------------------
+       ! pflotran:end-----------------------------------------------
     end if
 
     
-    !! let lat1d/lon1d data available for all grid-types, if coupled with PFLOTRAN.
+    ! let lat1d/lon1d data available for all grid-types, if coupled with PFLOTRAN.
     if (isgrid2d .or. use_pflotran) then
        allocate(rdata2d(ni,nj), lon1d(ni), lat1d(nj))
        if (istype_domain) then
@@ -287,7 +287,7 @@ contains
        lat1d(:) = rdata2d(1,:)
        deallocate(rdata2d)
 
-       !! pflotran:beg-----------------------------------------------
+       ! pflotran:beg-----------------------------------------------
        ! find the origin of ldomain, if vertices of first grid known
        if (use_pflotran) then
          ldomain%lon0 = -9999._r8
@@ -357,8 +357,8 @@ contains
           deallocate(rdata3d)
          end if
        end if
-       !! pflotran:end-----------------------------------------------
-    end if  !! if (isgrid2d .or. use_pflotran)
+       ! pflotran:end-----------------------------------------------
+    end if  ! if (isgrid2d .or. use_pflotran)
 
 
 

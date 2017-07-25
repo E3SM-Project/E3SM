@@ -41,14 +41,14 @@ module domainMod
      character*16     :: set        ! flag to check if domain is set
      logical          :: decomped   ! decomposed locally or global copy
 
-     !! pflotran:beg-----------------------------------------------------
+     ! pflotran:beg-----------------------------------------------------
      integer          :: nv           ! number of vertices
      real(r8),pointer :: latv(:,:)    ! latitude of grid cell's vertices (deg)
      real(r8),pointer :: lonv(:,:)    ! longitude of grid cell's vertices (deg)
      real(r8)         :: lon0         ! the origin lon/lat (Most western/southern corner, if not globally covered grids; OR -180W(360E)/-90N)
      real(r8)         :: lat0         ! the origin lon/lat (Most western/southern corner, if not globally covered grids; OR -180W(360E)/-90N)
 
-     !! pflotran:end-----------------------------------------------------
+     ! pflotran:end-----------------------------------------------------
   end type domain_type
 
   type(domain_type)    , public :: ldomain
@@ -124,7 +124,7 @@ contains
        call shr_sys_abort('domain_init ERROR: allocate mask, frac, lat, lon, area ')
     endif
 
-    !! pflotran:beg-----------------------------------------------------
+    ! pflotran:beg-----------------------------------------------------
     ! 'nv' is user-defined, so it must be initialized or assigned value prior to call this subroutine
     if (domain%nv > 0 .and. domain%nv /= huge(1)) then
        if(.not.associated(domain%lonv)) then
@@ -140,7 +140,7 @@ contains
            domain%latv     = nan
        endif
     end if
-    !! pflotran:end-----------------------------------------------------
+    ! pflotran:end-----------------------------------------------------
 
     if (present(clmlevel)) then
        domain%clmlevel = clmlevel
@@ -207,7 +207,7 @@ end subroutine domain_init
           call shr_sys_abort('domain_clean ERROR: deallocate mask, frac, lat, lon, area ')
        endif
 
-       !! pflotran:beg-----------------------------------------------------
+       ! pflotran:beg-----------------------------------------------------
        ! 'nv' is user-defined, so it must be initialized or assigned value prior to call this subroutine
        if (domain%nv > 0 .and. domain%nv /= huge(1)) then
           if (associated(domain%lonv)) then
@@ -224,7 +224,7 @@ end subroutine domain_init
              nullify(domain%latv)
           endif
        endif
-       !! pflotran:beg-----------------------------------------------------
+       ! pflotran:beg-----------------------------------------------------
 
     else
        if (masterproc) then

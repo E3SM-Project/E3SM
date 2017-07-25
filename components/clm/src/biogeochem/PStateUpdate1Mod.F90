@@ -18,7 +18,7 @@ module PStateUpdate1Mod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
   use VegetationType              , only : veg_pp
-  !! bgc interface & pflotran:
+  ! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
   use clm_varctl             , only : nu_com
   !
