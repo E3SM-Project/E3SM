@@ -252,10 +252,6 @@ ifeq ($(strip $(USE_PETSC)), TRUE)
   endif
 
   # Get the "PETSC_LIB" list an env var 
-  # (UPDATED: 2017-May-19)
-  # include $(PETSC_PATH)/conf/variables
-  # 1) petsc-git-version: 1a9d3c3c50abf60098813fdf7291fe3540415115
-  # 2) in this petsc package, "PETSC_LIB" contains "-L$LIB_PETSC"
   include $(PETSC_PATH)/lib/petsc/conf/variables
   
 endif
@@ -547,9 +543,6 @@ endif
 
 # Add PETSc libraries
 ifeq ($(strip $(USE_PETSC)), TRUE)
-  # SLIBS += -L${LIB_PETSC} ${PETSC_LIB}
-  # 1) petsc-git-version: 1a9d3c3c50abf60098813fdf7291fe3540415115
-  # 2) in this petsc package, "PETSC_LIB" contains "-L$LIB_PETSC"
   SLIBS += ${PETSC_LIB}
 endif
 
