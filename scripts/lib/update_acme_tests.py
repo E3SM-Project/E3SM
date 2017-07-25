@@ -80,6 +80,7 @@ _TEST_SUITES = {
                             ("SMS_D_Ln5.ne4_ne4.FC5",
                              ("ERS_Ln9.ne4_ne4.FC5AV1C-L", "cam-rtm_null"),
                              ("SMS_Ln9.ne4_ne4.FC5AV1C-L", "cam-outfrq9s"),
+                             ("SMS.ne4_ne4.FC5AV1C-L", "cam-cosplite"),
                              "SMS_R_Ld5.T42_T42.FSCM5A97",
                              "SMS_D_Ln5.ne4_ne4.FC5AV1C-L")
                             ),
@@ -97,6 +98,9 @@ _TEST_SUITES = {
                          ("SMS_Lm1.ne4_ne4.FC5AV1C-L",
                           "ERS_Ld31.ne4_ne4.FC5AV1C-L",
                           "ERP_Lm3.ne4_ne4.FC5AV1C-L",
+                          "SMS_D_Ln5.ne30_ne30.FC5AV1C-L",
+                          ("ERP_Ln5.ne30_ne30.FC5AV1C-L", "cam-rtm_null"),
+                          "SMS_Ln5.ne120_ne120.FC5AV1C-L",
                           "SMS_Ly1.ne4_ne4.FC5AV1C-L")
                          ),
 
