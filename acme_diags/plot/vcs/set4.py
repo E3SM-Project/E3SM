@@ -192,7 +192,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     if not parameter.logo:
         vcs_canvas.drawlogooff()
 
-    fnm = os.path.join(get_output_dir('4', parameter), parameter.output_file)
+    fnm = os.path.join(get_output_dir(parameter.current_set, parameter), parameter.output_file)
     for f in parameter.output_format:
         f = f.lower().split('.')[-1]
         if f == 'png':

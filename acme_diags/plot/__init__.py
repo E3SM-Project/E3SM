@@ -7,6 +7,15 @@ def _get_plot_fcn(backend, set_num):
         import importlib
         if backend == 'matplotlib' or backend == 'mpl':
             backend = 'cartopy'
+        if set_num == 'zonal_mean_xy':
+            set_num = '3'
+        if set_num == 'zonal_mean_2d':
+            set_num = '4'
+        if set_num == 'lat_lon':
+            set_num = '5'
+        if set_num == 'polar':
+            set_num = '7'
+
         mod_str = 'acme_diags.plot.{}.set{}'.format(backend, set_num)
         module = importlib.import_module(mod_str)
         return module.plot
@@ -20,8 +29,6 @@ def plot(set_num, ref, test, diff, metrics_dict, parameter):
     if hasattr(parameter, 'plot'):
         parameter.plot(ref, test, diff, metrics_dict, parameter)
     else:
-        if not 1 <= int(set_num) <= 15:
-            raise RuntimeError('set_num must be between 1 and 15')
         if parameter.backend not in ['vcs', 'cartopy', 'mpl', 'matplotlib']:
             raise RuntimeError('Invalid backend, choose either "vcs" or "matplotlib"/"mpl"/"cartopy"')
 

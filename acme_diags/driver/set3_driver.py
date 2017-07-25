@@ -181,8 +181,8 @@ def run_diag(parameter):
                             ' '.join([var, str(int(plev[ilev])), 'mb', season, region]))
 
                         parameter.var_region = region
-                        plot('3', mv2_zonal, mv1_zonal, diff, {}, parameter)
-                        utils.save_ncfiles('3', mv1_zonal, mv2_zonal, diff, parameter)
+                        plot(parameter.current_set, mv2_zonal, mv1_zonal, diff, {}, parameter)
+                        utils.save_ncfiles(parameter.current_set, mv1_zonal, mv2_zonal, diff, parameter)
 
 #                        mv1_domain, mv2_domain = utils.select_region(region, mv1, mv2, land_frac,ocean_frac,parameter)
 #
@@ -202,8 +202,8 @@ def run_diag(parameter):
 #                            mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
 #
 #                        parameter.var_region = region
-#                        plot('3', mv2_zonal, mv1_zonal, diff parameter)
-#                        utils.save_ncfiles('5', mv1_domain, mv2_domain, diff, parameter)
+#                        plot(parameter.current_set, mv2_zonal, mv1_zonal, diff parameter)
+#                        utils.save_ncfiles(parameter.current_set, mv1_domain, mv2_domain, diff, parameter)
 
 
             # for variables without z axis:
@@ -230,8 +230,8 @@ def run_diag(parameter):
                     parameter.var_region = region
 
 
-                    plot('3', mv2_zonal, mv1_zonal, diff, {}, parameter)
-                    utils.save_ncfiles('3', mv1_zonal, mv2_zonal, diff, parameter)
+                    plot(parameter.current_set, mv2_zonal, mv1_zonal, diff, {}, parameter)
+                    utils.save_ncfiles(parameter.current_set, mv1_zonal, mv2_zonal, diff, parameter)
 
 
 #                    mv1_domain, mv2_domain = utils.select_region(region, mv1, mv2, land_frac,ocean_frac,parameter)

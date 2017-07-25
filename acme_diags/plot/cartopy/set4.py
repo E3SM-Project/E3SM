@@ -135,6 +135,6 @@ def plot(reference, test, diff, metrics_dict, parameter):
     # Save figure
     for f in parameter.output_format:
         f = f.lower().split('.')[-1]
-        fnm = os.path.join(get_output_dir('4', parameter), parameter.output_file)
+        fnm = os.path.join(get_output_dir(parameter.current_set, parameter), parameter.output_file)
         plt.savefig(fnm + '.' + f)
         print('Plot saved in: ' + fnm + '.' + f)
