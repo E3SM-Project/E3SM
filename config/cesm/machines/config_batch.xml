@@ -139,7 +139,7 @@
   </batch_system>
 
   <batch_system type="slurm" >
-    <batch_query>squeue</batch_query>
+    <batch_query per_job_arg="-j">squeue</batch_query>
     <batch_directive>#SBATCH</batch_directive>
     <jobid_pattern>(\d+)$</jobid_pattern>
     <depend_string> --dependency=afterok:jobid</depend_string>

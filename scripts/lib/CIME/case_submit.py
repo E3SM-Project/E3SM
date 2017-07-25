@@ -68,7 +68,16 @@ def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False,
     job_ids = case.submit_jobs(no_batch=no_batch, job=job, skip_pnl=skip_pnl,
                                mail_user=mail_user, mail_type=mail_type,
                                batch_args=batch_args)
-    logger.info("Submitted job ids {}".format(job_ids))
+
+    xml_jobids = []
+    for jobname, jobid in job_ids.iteritems():
+        logger.info("Submitted job {} with id {}".format(jobname, jobid))
+        if jobid:
+            xml_jobids.append("{}:{}".format(jobname, jobid))
+
+    xml_jobid_text = ", ".join(xml_jobids)
+    if xml_jobid_text:
+        case.set_value("JOB_IDS", xml_jobid_text)
 
 def submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False,
            mail_user=None, mail_type='never', batch_args=None):

@@ -1,14 +1,15 @@
 """
 Interface to the env_batch.xml file.  This class inherits from EnvBase
 """
-import stat
-import re
-import math
+
 from CIME.XML.standard_module_setup import *
 from CIME.utils import format_time
 from CIME.XML.env_base import EnvBase
 from CIME.utils import transform_vars, get_cime_root, convert_to_seconds
+
 from copy import deepcopy
+from collections import OrderedDict
+import stat, re, math
 
 logger = logging.getLogger(__name__)
 
@@ -350,7 +351,7 @@ class EnvBatch(EnvBase):
             if self.batchtype == "cobalt":
                 break
 
-        depid = {}
+        depid = OrderedDict()
         jobcmds = []
 
         for job, dependency in jobs:
@@ -392,7 +393,7 @@ class EnvBatch(EnvBase):
         if dry_run:
             return jobcmds
         else:
-            return sorted(list(depid.values()))
+            return depid
 
     def _submit_single_job(self, case, job, depid=None, no_batch=False,
                            skip_pnl=False, mail_user=None, mail_type='never',
@@ -559,3 +560,20 @@ class EnvBatch(EnvBase):
         else:
             nodes =  EnvBase.get_nodes(self, nodename, attributes, root, xpath)
         return nodes
+
+    def get_status(self, jobid):
+        batch_query = self.get_optional_node("batch_query")
+        if not batch_query:
+            logger.warning("Batch queries not supported on this platform")
+        else:
+            cmd = batch_query.text + " "
+            if "per_job_arg" in batch_query:
+                cmd += batch_query.get("per_job_arg") + " "
+
+            cmd += jobid
+
+            stat, out, err = run_cmd(cmd)
+            if stat != 0:
+                logger.warning("Batch query command '{}' failed with error '{}'".format(cmd, err))
+            else:
+                return out.strip()
