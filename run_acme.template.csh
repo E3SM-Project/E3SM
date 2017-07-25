@@ -38,11 +38,6 @@ set seconds_before_delete_run_dir    = -1
 set submit_run       = true
 set debug_queue      = true
 
-# Priority for Anvil
-# For more information, see
-# https://acme-climate.atlassian.net/wiki/pages/viewpage.action?pageId=98992379#Anvil:ACME'sdedicatednodeshostedonBlues.-Settingthejobpriority
-set anvil_priority   = 4
-
 ### PROCESSOR CONFIGURATION
 set processor_config = S
 
@@ -141,8 +136,6 @@ set cpl_hist_num   = 1
 
 #submit_run:  If True, then submit the batch job to start the simulation.
 #debug_queue: If True, then use the debug queue, otherwise use the queue specified in the section on QUEUE OPTIONS.
-#anvil_priority: If default; use the default priority of qsub.py. Otherwise, should be from 0-5, where 0 is the highest priority
-#    Note that only one user at a time is allowed to use the highest priority
 
 ### PROCESSOR CONFIGURATION (6)
 
@@ -631,13 +624,6 @@ endif
 
 acme_print "Project used for submission: ${project}"
 
-# Anvil Priority setup
-if ( $machine == 'anvil' ) then
-  # env_batch.xml must be modified by hand, as it doesn't conform to the entry-id format
-  # ${xmlchange_exe} batch_submit="qsub.py "
-  #sed -i 's:qsub:qsub.py:g' env_batch.xml
-endif
-
 #================================
 # SET WALLTIME FOR CREATE_NEWCASE
 #================================
@@ -1044,7 +1030,16 @@ else if ( $machine == titan || $machine == eos ) then
     sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $longterm_archive_script
 
 else if ( $machine == anvil ) then
+# Priority for Anvil
+# For more information, see
+# https://acme-climate.atlassian.net/wiki/pages/viewpage.action?pageId=98992379#Anvil:ACME'sdedicatednodeshostedonBlues.-Settingthejobpriority
+# If default; use the default priority of qsub.py. Otherwise, should be from 0-5, where 0 is the highest priority
+# Note that only one user at a time is allowed to use the highest (0) priority
+# env_batch.xml must be modified by hand, as it doesn't conform to the entry-id format
+# ${xmlchange_exe} batch_submit="qsub.py "
+    set anvil_priority   = default
     if ( `lowercase ${anvil_priority}` != default ) then
+	sed -i 's:qsub:qsub.py:g' env_batch.xml
 	set batch_options="-W x=QOS:pri${anvil_priority}"
     endif
 
