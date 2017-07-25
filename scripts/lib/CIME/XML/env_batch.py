@@ -563,11 +563,11 @@ class EnvBatch(EnvBase):
 
     def get_status(self, jobid):
         batch_query = self.get_optional_node("batch_query")
-        if not batch_query:
+        if batch_query is None:
             logger.warning("Batch queries not supported on this platform")
         else:
             cmd = batch_query.text + " "
-            if "per_job_arg" in batch_query:
+            if "per_job_arg" in batch_query.attrib:
                 cmd += batch_query.get("per_job_arg") + " "
 
             cmd += jobid

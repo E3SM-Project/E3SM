@@ -1258,7 +1258,7 @@ class Case(object):
                 if status:
                     logger.info("{}: {}".format(jobname, status))
                 else:
-                    logger.info("{}: Unable to get status")
+                    logger.info("{}: Unable to get status. Job may be complete already.".format(jobname))
 
     def get_mpirun_cmd(self, job="case.run"):
         env_mach_specific = self.get_env('mach_specific')
