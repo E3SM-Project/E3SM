@@ -74,6 +74,9 @@ module zm_conv
    real(r8),parameter :: c3 = 243.5_r8
    real(r8) :: tfreez
    real(r8) :: eps1
+
+
+
       
 
    logical :: no_deep_pbl ! default = .false.
@@ -2198,6 +2201,11 @@ subroutine cldprp(lchnk   , &
    real(r8) grav                 ! gravity
    real(r8) cp                   ! heat capacity of dry air
 
+
+!2017-07-25 - CRT Following two variables are for triggers and threshold on precipitation from the ZM-scheme 
+   real(r8) trig  ! zero or one depending on whether liquid water entering updraft exceeds thresh
+   real(r8) thresh  ! threshold for onset of precipitation
+!2017-07-26 - CRT
 !
 ! Local workspace
 !
@@ -2258,6 +2266,10 @@ subroutine cldprp(lchnk   , &
    real(r8) hu_tot(pcols)
    real(r8) hmn_tot(pcols)
 !>songxl 2014-05-20----------------
+
+!2017-07-25 CRT: Set threshold to 0.00015_r8
+   thresh = 0.00015_r8
+!2017-07-25 CRT
 !
 !------------------------------------------------------------------------------
 !
@@ -2747,15 +2759,20 @@ subroutine cldprp(lchnk   , &
       do i = 1,il2g
          rprd(i,k) = 0._r8
          if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8 .and. mu(i,k) >= 0.0_r8) then
+            if (ql(i,k+1) < thresh) then
+               trig = 0._r8
+            else
+               trig = 1._r8
+            endif
             if (mu(i,k) > 0._r8) then
                ql1 = 1._r8/mu(i,k)* (mu(i,k+1)*ql(i,k+1)- &
                      dz(i,k)*du(i,k)*ql(i,k+1)+dz(i,k)*cu(i,k))
-               ql(i,k) = ql1/ (1._r8+dz(i,k)*c0mask(i))
+               ql(i,k) = ql1/ (1._r8+dz(i,k)*c0mask(i)*trig)
             else
                ql(i,k) = 0._r8
             end if
             totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-du(i,k)*ql(i,k+1))
-            rprd(i,k) = c0mask(i)*mu(i,k)*ql(i,k)
+            rprd(i,k) = c0mask(i)*trig*mu(i,k)*ql(i,k)
          end if
       end do
    end do
