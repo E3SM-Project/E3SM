@@ -681,14 +681,6 @@
 	     <command name="-q">netcdf-intel-4.1.3</command>
 	   </modules>
 	 </module_system>
-	 <environment_variables compiler="pgi">
-	   <env name="NETCDF">/usr/local/tools/netcdf-pgi-4.1.3/</env>
-	   <env name="PNETCDF_PATH" mpilib="!mpi-serial">/usr/local/tools/parallel-netcdf-pgi-1.6.1/</env>
-	 </environment_variables>
-	 <environment_variables compiler="intel">
-	   <env name="NETCDF">/usr/local/tools/netcdf-intel-4.1.3/</env>
-	   <env name="PNETCDF_PATH" mpilib="!mpi-serial">/usr/local/tools/parallel-netcdf-intel-1.6.1/</env>
-	 </environment_variables>
 </machine>
 
 <machine MACH="syrah">
@@ -740,14 +732,6 @@
 	     <command name="-q">netcdf-intel-4.1.3</command>
 	   </modules>
 	 </module_system>
-	 <environment_variables compiler="pgi">
-	   <env name="NETCDF">/usr/local/tools/netcdf-pgi-4.1.3/</env>
-	   <env name="PNETCDF_PATH" mpilib="!mpi-serial">/usr/local/tools/parallel-netcdf-pgi-1.6.1/</env>
-	 </environment_variables>
-	 <environment_variables compiler="intel">
-	   <env name="NETCDF">/usr/local/tools/netcdf-intel-4.1.3/</env>
-	   <env name="PNETCDF_PATH" mpilib="!mpi-serial">/usr/local/tools/parallel-netcdf-intel-1.6.1/</env>
-	 </environment_variables>
 </machine>
 
 <machine MACH="sierra">
