@@ -18,6 +18,7 @@ module HydrologyDrainageMod
   use WaterstateType    , only : waterstate_type
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
+  use VegetationType    , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -36,7 +37,7 @@ contains
        num_urbanc, filter_urbanc,         &
        num_do_smb_c, filter_do_smb_c,     &
        atm2lnd_vars, glc2lnd_vars, temperature_vars,    &
-       soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars)
+       soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars, ep_betr)
     !
     ! !DESCRIPTION:
     ! Calculates soil/snow hydrology with drainage (subsurface runoff)
@@ -49,8 +50,8 @@ contains
     use clm_varpar       , only : nlevgrnd, nlevurb, nlevsoi    
     use clm_time_manager , only : get_step_size, get_nstep
     use SoilHydrologyMod , only : CLMVICMap, Drainage
-    use TracerParamsMod  , only : pre_diagnose_soilcol_water_flux, diagnose_drainage_water_flux    
     use clm_varctl       , only : use_vsfm
+    use BeTRSimulationALM, only : betr_simulation_alm_type
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -69,6 +70,7 @@ contains
     type(soilstate_type)     , intent(inout) :: soilstate_vars
     type(waterstate_type)    , intent(inout) :: waterstate_vars
     type(waterflux_type)     , intent(inout) :: waterflux_vars
+    class(betr_simulation_alm_type), intent(inout) :: ep_betr
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,j,fc                 ! indices
@@ -125,8 +127,8 @@ contains
       endif
 
       if (use_betr) then
-         call pre_diagnose_soilcol_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-              h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi))
+        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
+        call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
       endif
 
       if (.not. use_vsfm) then
@@ -137,8 +139,10 @@ contains
       endif
 
       if (use_betr) then
-         call diagnose_drainage_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-              h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi), waterflux_vars)
+        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars, &
+          waterflux_vars=waterflux_vars)
+        call ep_betr%DiagDrainWaterFlux(num_hydrologyc, filter_hydrologyc)
+        call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=waterflux_vars)
       endif
 
       do j = 1, nlevgrnd

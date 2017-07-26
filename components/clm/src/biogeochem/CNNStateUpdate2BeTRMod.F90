@@ -1,4 +1,4 @@
-module CNNStateUpdate2Mod
+module CNNStateUpdate2BeTRMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -12,7 +12,7 @@ module CNNStateUpdate2Mod
   use clm_varctl          , only : iulog
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFLuxType  , only : nitrogenflux_type
-  use VegetationType           , only : veg_pp
+  use VegetationType                , only : veg_pp
   use pftvarcon           , only : npcropmin
   !! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
@@ -38,7 +38,7 @@ contains
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability
     !
-    use tracer_varcon, only : is_active_betr_bgc      
+    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -53,34 +53,13 @@ contains
     real(r8) :: dt      ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                      & 
+    associate(                      &
          nf => nitrogenflux_vars  , &
          ns => nitrogenstate_vars   &
          )
 
       ! set time steps
       dt = real( get_step_size(), r8 )
-
-
-      ! column-level nitrogen fluxes from gap-phase mortality
-      if ( .not. is_active_betr_bgc .and. &
-           .not.(use_pflotran .and. pf_cmode)) then
-         do j = 1, nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               
-               ns%decomp_npools_vr_col(c,j,i_met_lit) = &
-                    ns%decomp_npools_vr_col(c,j,i_met_lit) + nf%gap_mortality_n_to_litr_met_n_col(c,j) * dt
-               ns%decomp_npools_vr_col(c,j,i_cel_lit) = &
-                    ns%decomp_npools_vr_col(c,j,i_cel_lit) + nf%gap_mortality_n_to_litr_cel_n_col(c,j) * dt
-               ns%decomp_npools_vr_col(c,j,i_lig_lit) = &
-                    ns%decomp_npools_vr_col(c,j,i_lig_lit) + nf%gap_mortality_n_to_litr_lig_n_col(c,j) * dt
-               ns%decomp_npools_vr_col(c,j,i_cwd)     = &
-                    ns%decomp_npools_vr_col(c,j,i_cwd)     + nf%gap_mortality_n_to_cwdn_col(c,j)       * dt
-            end do
-         end do
-
-     endif
 
       ! patch -level nitrogen fluxes from gap-phase mortality
 
@@ -128,7 +107,7 @@ contains
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability
     !
-    use tracer_varcon, only : is_active_betr_bgc      
+    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -143,7 +122,7 @@ contains
     real(r8):: dt      ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                      & 
+    associate(                      &
          ivt => veg_pp%itype         , & ! Input:  [integer  (:) ]  pft vegetation type
          nf => nitrogenflux_vars  , &
          ns => nitrogenstate_vars   &
@@ -151,26 +130,6 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
-
-      if (.not. is_active_betr_bgc .and. &
-           .not.(use_pflotran .and. pf_cmode)) then
-         ! column-level nitrogen fluxes from harvest mortality
-
-         do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               ns%decomp_npools_vr_col(c,j,i_met_lit) = &
-                    ns%decomp_npools_vr_col(c,j,i_met_lit) + nf%harvest_n_to_litr_met_n_col(c,j) * dt
-               ns%decomp_npools_vr_col(c,j,i_cel_lit) = &
-                    ns%decomp_npools_vr_col(c,j,i_cel_lit) + nf%harvest_n_to_litr_cel_n_col(c,j) * dt
-               ns%decomp_npools_vr_col(c,j,i_lig_lit) = &
-                    ns%decomp_npools_vr_col(c,j,i_lig_lit) + nf%harvest_n_to_litr_lig_n_col(c,j) * dt
-               ns%decomp_npools_vr_col(c,j,i_cwd)     = &
-                    ns%decomp_npools_vr_col(c,j,i_cwd)     + nf%harvest_n_to_cwdn_col(c,j)       * dt
-            end do
-         end do
-
-      endif
 
       ! patch-level nitrogen fluxes from harvest mortality
 
@@ -215,4 +174,4 @@ contains
 
   end subroutine NStateUpdate2h
 
-end module CNNStateUpdate2Mod
+end module CNNStateUpdate2BeTRMod

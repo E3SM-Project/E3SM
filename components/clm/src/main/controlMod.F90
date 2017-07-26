@@ -109,7 +109,7 @@ contains
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
     use clm_pflotran_interfaceMod , only : clm_pf_readnl
-    use betr_initializeMod        , only : betr_readNL
+    use ALMBeTRNLMod              , only : betr_readNL
     !
     implicit none
     !
@@ -441,7 +441,7 @@ contains
     end if
 
     if (use_betr) then
-       call betr_readNL( NLFilename )
+       call betr_readNL( NLFilename, use_c13, use_c14)
     endif    
 
     ! ----------------------------------------------------------------------
@@ -804,7 +804,7 @@ contains
     write(iulog,*) '    use_vancouver = ', use_vancouver
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
-
+    write(iulog,*) '    use_betr = ', use_betr
     write(iulog,*) 'input data files:'
     write(iulog,*) '   PFT physiology and parameters file = ',trim(paramfile)
     write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)
