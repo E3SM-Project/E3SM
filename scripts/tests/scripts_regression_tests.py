@@ -1389,14 +1389,21 @@ class K_TestCimeCase(TestCreateTestCommon):
                             msg="Build complete had wrong value '%s'" %
                             build_complete)
 
-#            model_specific_val = case.get_value("CPL_SEQ_OPTION")
-#            if CIME.utils.get_model() == 'cesm':
-#                self.assertEqual(model_specific_val, "RASM_OPTION1")
-#            else:
-#                self.assertEqual(model_specific_val, "CESM1_MOD")
 
             # Test some test properties
             self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
+
+    def test_cime_case_driver_nan(self):
+        run_cmd_assert_result(self, "%s/create_test SMS.f19_g16_rx1.A -t test_with_nan --no-build --test-root %s --output-root %s"
+                              % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT))
+        testdirs = glob.glob("%s/SMS.f19_g16_rx1.A.*.test_with_nan"%TEST_ROOT)
+        self.assertEqual(len(testdirs), 1, msg="Expected one test_with_nan, found %s" % len(testdirs))
+
+        shutil.copy2(os.path.join(SCRIPT_DIR,"tests","datm_comp_mod.F90.with_nan"),
+                     os.path.join(testdirs[0], "SourceMods","src.datm","datm_comp_mod.F90"))
+        run_cmd_assert_result(self, "%s/create_test SMS.f19_g16_rx1.A -u -t test_with_nan --test-root %s"%(SCRIPT_DIR, TEST_ROOT))
+
+
 
     ###########################################################################
     def test_cime_case_build_threaded_1(self):

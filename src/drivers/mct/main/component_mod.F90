@@ -226,6 +226,9 @@ contains
           call t_set_prefixf(comp(1)%oneletterid//"_i:")
           call comp_init( EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc, &
                NLFilename=NLFilename )
+          call t_drvstartf ('check_fields')
+          call check_fields(comp(eci), eci)
+          call t_drvstopf ('check_fields')
           call t_unset_prefixf()
 
           if (present(seq_flds_c2x_fluxes)) then
@@ -679,6 +682,9 @@ contains
 
              call t_set_prefixf(comp(1)%oneletterid//":")
              call comp_run(EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc)
+             call t_drvstartf ('check_fields')
+             call check_fields(comp(eci), eci)
+             call t_drvstopf ('check_fields')
              call t_unset_prefixf()
 
              if ((phase == 1) .and. present(seq_flds_c2x_fluxes)) then
@@ -891,5 +897,42 @@ contains
     endif
 
   end subroutine component_diag
+
+  subroutine check_fields(comp, comp_index)
+    use shr_infnan_mod, only: shr_infnan_isnan
+    use mct_mod, only: mct_avect_getrlist2c, mct_gsMap_orderedPoints
+    type(component_type), intent(in) :: comp
+    integer(in), intent(in) :: comp_index
+
+    integer(IN)   :: lsize             ! size of attr vect
+    integer(IN)   :: nflds             ! number of attr vects
+    integer(IN)   :: nancnt
+    integer(in)   :: fld, n            ! iterators
+    integer(IN)  :: rank
+    integer(IN) :: ierr
+    integer(IN), pointer :: gpts(:)
+    character(len=CL) :: msg
+    real(r8), pointer :: rattr(:,:)
+
+    lsize = mct_avect_lsize(comp%c2x_cc)
+    nflds = size(comp%c2x_cc%rattr,1)
+
+    rattr => comp%c2x_cc%rattr
+    do fld=1,nflds
+       nancnt = 0
+       do n=1,lsize
+          if(shr_infnan_isnan(rattr(fld,n))) then
+             call mpi_comm_rank(comp%mpicom_compid, rank, ierr)
+             call mct_gsMap_orderedPoints(comp%gsmap_cc, rank, gpts)
+             write(msg,*)'component_mod:check_fields NaN found in ',trim(comp%name),' instance: ',&
+                  comp_index,' field ',trim(mct_avect_getRList2c(fld, comp%c2x_cc)), ' 1d global index: ',gpts(n)
+             call shr_sys_abort(msg)
+          endif
+       enddo
+    enddo
+
+  end subroutine check_fields
+
+
 
 end module component_mod
