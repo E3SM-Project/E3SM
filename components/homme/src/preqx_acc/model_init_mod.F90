@@ -12,17 +12,21 @@ module model_init_mod
 contains
 
 
-  subroutine model_init2( elem , deriv ,hvcoord)
+  subroutine model_init2( elem , deriv ,hvcoord,tl)
     use element_mod, only: element_t
     use element_state, only: state_qdp, derived_vn0, derived_divdp, derived_divdp_proj
     use derivative_mod, only: derivative_t
     use dimensions_mod, only: nelemd
     use hybvcoord_mod,  only: hvcoord_t
+    use time_mod,       only: timelevel_t
+
     implicit none
     type(element_t)   , intent(in) :: elem(:)
     type(derivative_t), intent(in) :: deriv
     
     type (hvcoord_t)  , intent(in), optional :: hvcoord
+    type (TimeLevel_t), intent(in), optional :: tl
+
     !$omp barrier
     !$omp master
 
