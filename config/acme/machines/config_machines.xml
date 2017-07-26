@@ -221,7 +221,7 @@
 	<arg name="num_tasks" > -n $TOTALPES</arg>
         <!--NOTE: hard-coding -c 2 for now, which is only optimal when using full node with no hyper-threading. (ndk) -->
 	<arg name="thread_count" > -c 2 </arg>
-	<!--arg name="binding" > dash-dash-cpu_bind=cores</arg-->
+	<arg name="binding" > --cpu_bind=cores</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
