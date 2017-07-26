@@ -266,6 +266,7 @@
 
       <modules compiler="intel">
 	<command name="load">PrgEnv-intel</command>
+	<command name="load">gcc/4.9.3</command>
 	<command name="rm">intel</command>
 	<command name="load">intel/17.0.2.174</command>
       </modules>
