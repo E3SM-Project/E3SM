@@ -36,7 +36,7 @@ usage() {
   echo '  --walltime    Amount of walltime requested (default = 4:30)'
   echo '  --account     Account number to use in job scripts (default = machine default)'
   echo '  --compiler    Compiler to use '
-  echo '  --compset     Compset to use (default = FC5)'
+  echo '  --compset     Compset to use (default = F2000_DEV)'
   echo '  --res         Resolution to run (default = ne30_ne30'
   echo '  --uf          Enable ninth time step runs (ultra-fast mode)'
   if [ $ThisScript = "ensemble.sh" ]; then
@@ -110,7 +110,7 @@ ThisDir=$(cd `dirname $0`; pwd -P )
 
 # Default Values
 RES="ne30_ne30"
-COMPSET="FC5"
+COMPSET="F2000_DEV"
 CHANGE_NP=0
 CHANGE_NPICE=0
 CHANGE_NPOCN=0
@@ -302,7 +302,13 @@ case $MACH in
   ;;
 esac
 
-NewCaseFlags="$NewCaseFlags --res $RES --compset $COMPSET --run-unsupported --project $ACCOUNT"
+
+if [ ! -z $ACCOUNT ]; then
+    NewCaseFlags="$NewCaseFlags --res $RES --compset $COMPSET --run-unsupported --project $ACCOUNT"
+else
+    NewCaseFlags="$NewCaseFlags --res $RES --compset $COMPSET --run-unsupported"
+fi
+
 cd $SCRIPTS_ROOT
 echo "Currently in $SCRIPTS_ROOT"
 echo "Flags for create_newcase are $NewCaseFlags"
