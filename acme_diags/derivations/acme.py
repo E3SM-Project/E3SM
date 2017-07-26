@@ -3,6 +3,7 @@ from collections import OrderedDict
 from numbers import Number
 import cdms2
 from genutil import udunits
+import MV2
 
 
 def process_derived_var(var_key, derived_vars_dict, nc_file, parameter):
@@ -225,6 +226,35 @@ def restoa(fsnt, flnt):
     var.long_name = "TOA(top of atmosphere) Radiative flux"
     return var
 
+def cosp_bin_sum(cld, prs_low, prs_high, tau_low, tau_high):
+    """sum of cosp bins to calculate cloud fraction in specified cloud top pressure and cloud thickness bins, input variable has dimention (cosp_prs,cosp_tau,lat,lon)"""
+    prs = cld.getAxis(0)
+    tau = cld.getAxis(1)
+    if prs_low is None:  prs_low = prs[0]
+    if prs_high is None: prs_high = prs[-1]
+    if tau_low is None:  tau_low = tau[0]
+    if tau_high is None: tau_high = tau[-1]
+
+    if cld.id == 'FISCCP1_COSP':   #ISCCP model
+        cld_bin = cld(cosp_prs = (prs_low, prs_high), cosp_tau = (tau_low, tau_high))
+    if cld.id == 'CLISCCP':        #ISCCP obs
+        cld_bin = cld(isccp_prs = (prs_low, prs_high), isccp_tau = (tau_low, tau_high))
+
+    if cld.id == 'CLMODIS':   #MODIS 
+        try: 
+            cld_bin = cld(cosp_prs = (prs_low, prs_high), cosp_tau_modis = (tau_low, tau_high)) #MODIS model
+        except:
+            cld_bin = cld(modis_prs = (prs_low, prs_high), modis_tau = (tau_low, tau_high))  #MODIS obs
+
+    if cld.id == 'CLD_MISR':        #MISR model
+        cld_bin = cld(cosp_htmisr = (prs_low, prs_high), cosp_tau = (tau_low, tau_high))
+    if cld.id == 'CLMISR':        #MISR obs
+        cld_bin = cld(misr_cth = (prs_low, prs_high), misr_tau = (tau_low, tau_high))
+
+    cld_bin_sum = MV2.sum(MV2.sum(cld_bin,axis=1),axis=0)
+    return cld_bin_sum
+       
+
 # derived_variables is a dictionary to accomodate user specified derived variables. 
 # The driver search for available variable keys and functions to calculate derived variable.
 # For example 
@@ -408,6 +438,78 @@ derived_variables = {
     'CLDTOT': OrderedDict([
         (('CLDTOT'), lambda cldtot: convert_units(cldtot, target_units="%"))
     ]),
+#below for COSP output
+    #CLIPSO
+    'CLDHGH_CAL': OrderedDict([
+        (('CLDHGH_CAL'), lambda cldhgh: convert_units(cldhgh, target_units="%"))
+    ]),
+    'CLDLOW_CAL': OrderedDict([
+        (('CLDLOW_CAL'), lambda cldlow: convert_units(cldlow, target_units="%"))
+    ]),
+    'CLDMED_CAL': OrderedDict([
+        (('CLDMED_CAL'), lambda cldmed: convert_units(cldmed, target_units="%"))
+    ]),
+    'CLDTOT_CAL': OrderedDict([
+        (('CLDTOT_CAL'), lambda cldtot: convert_units(cldtot, target_units="%"))
+    ]),
+    #ISCCP
+    'CLDTOT_TAU1.3_ISCCP': OrderedDict([
+        (('FISCCP1_COSP'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, None), target_units="%")),
+        (('CLISCCP'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, None), target_units="%"))
+    ]),
+    'CLDTOT_TAU1.3_9.4_ISCCP': OrderedDict([
+        (('FISCCP1_COSP'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, 9.4), target_units="%")),
+        (('CLISCCP'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, 9.4), target_units="%"))
+    ]),
+    'CLDTOT_TAU9.4_ISCCP': OrderedDict([
+        (('FISCCP1_COSP'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 9.4, None), target_units="%")),
+        (('CLISCCP'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 9.4, None), target_units="%"))
+    ]),
+    #MODIS
+    'CLDTOT_TAU1.3_MODIS': OrderedDict([
+        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, None), target_units="%")),
+    ]),
+    'CLDTOT_TAU1.3_9.4_MODIS': OrderedDict([
+        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, 9.4), target_units="%")),
+    ]),
+    'CLDTOT_TAU9.4_MODIS': OrderedDict([
+        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 9.4, None), target_units="%")),
+    ]),
+    'CLDHGH_TAU1.3_MODIS': OrderedDict([
+        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(cld,0, 440, 1.3, None), target_units="%")),
+    ]),
+    'CLDHGH_TAU1.3_9.4_MODIS': OrderedDict([
+        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(cld,0, 440, 1.3, 9.4), target_units="%")),
+    ]),
+    'CLDHGH_TAU9.4_MODIS': OrderedDict([
+        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(cld,0, 440, 9.4, None), target_units="%")),
+    ]),
+    #MISR
+    'CLDTOT_TAU1.3_MISR': OrderedDict([
+        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, None), target_units="%")),
+        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, None), target_units="%"))
+    ]),
+    'CLDTOT_TAU1.3_9.4_MISR': OrderedDict([
+        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, 9.4), target_units="%")),
+        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, 9.4), target_units="%"))
+    ]),
+    'CLDTOT_TAU9.4_MISR': OrderedDict([
+        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 9.4, None), target_units="%")),
+        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 9.4, None), target_units="%"))
+    ]),
+    'CLDLOW_TAU1.3_MISR': OrderedDict([
+        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(cld,0, 3, 1.3, None), target_units="%")),
+        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(cld,0, 3, 1.3, None), target_units="%"))
+    ]),
+    'CLDLOW_TAU1.3_9.4_MISR': OrderedDict([
+        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(cld, 0, 3, 1.3, 9.4), target_units="%")),
+        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(cld, 0, 3, 1.3, 9.4), target_units="%"))
+    ]),
+    'CLDLOW_TAU9.4_MISR': OrderedDict([
+        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(cld, 0, 3, 9.4, None), target_units="%")),
+        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(cld, 0, 3, 9.4, None), target_units="%"))
+    ]),
+     
     'ICEFRAC': OrderedDict([
         (('ICEFRAC'), lambda icefrac: convert_units(icefrac, target_units="%"))
     ]),
