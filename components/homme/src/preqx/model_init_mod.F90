@@ -14,7 +14,7 @@ module model_init_mod
 
 contains
 
-  subroutine model_init2( elem , deriv,deriv,hvcoord,tl )
+  subroutine model_init2( elem , deriv,hvcoord,tl )
     use element_mod,    only: element_t
     use derivative_mod, only: derivative_t
     use time_mod,       only: timelevel_t
