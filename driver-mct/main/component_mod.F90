@@ -916,7 +916,7 @@ contains
 
     lsize = mct_avect_lsize(comp%c2x_cc)
     nflds = size(comp%c2x_cc%rattr,1)
-
+    if(lsize <= 1 .and. nflds <= 1) return
     rattr => comp%c2x_cc%rattr
     do fld=1,nflds
        nancnt = 0
