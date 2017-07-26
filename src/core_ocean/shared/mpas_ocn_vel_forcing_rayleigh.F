@@ -50,7 +50,7 @@ module ocn_vel_forcing_rayleigh
    !
    !--------------------------------------------------------------------
 
-   logical :: rayleighFrictionOn
+   logical :: rayleighFrictionOn, rayleighFrictionBottomOnly
    real (kind=RKIND) :: rayleighDampingCoef
 
 
@@ -131,15 +131,26 @@ contains
 
       nEdges = nEdgesArray( 1 )
 
-      !$omp do schedule(runtime) private(k)
-      do iEdge = 1, nEdges
-        do k = 1, maxLevelEdgeTop(iEdge)
+      if ( rayleighFrictionBottomOnly ) then
+         !$omp do schedule(runtime) private(k)
+         do iEdge = 1, nEdges
 
+           k = maxLevelEdgeTop(iEdge)
            tend(k,iEdge) = tend(k,iEdge) - rayleighDampingCoef * normalVelocity(k,iEdge)
 
-        enddo
-      enddo
-      !$omp end do
+         enddo
+         !$omp end do
+      else ! not rayleighFrictionBottomOnly
+         !$omp do schedule(runtime) private(k)
+         do iEdge = 1, nEdges
+           do k = 1, maxLevelEdgeTop(iEdge)
+   
+              tend(k,iEdge) = tend(k,iEdge) - rayleighDampingCoef * normalVelocity(k,iEdge)
+   
+           enddo
+         enddo
+         !$omp end do
+      endif
 
       call mpas_timer_stop('vel rayleigh forcing')
 
@@ -172,18 +183,20 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_Rayleigh_friction
+      logical, pointer :: config_Rayleigh_friction, config_Rayleigh_friction_bottom_only
       real (kind=RKIND), pointer :: config_Rayleigh_damping_coeff
 
       err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_friction', config_Rayleigh_friction)
       call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_damping_coeff', config_Rayleigh_damping_coeff)
+      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_friction_bottom_only', config_Rayleigh_friction_bottom_only)
 
       rayleighDampingCoef = 0.0_RKIND
 
       if (config_Rayleigh_friction) then
           rayleighFrictionOn = .true.
+          rayleighFrictionBottomOnly = config_Rayleigh_friction_bottom_only
           rayleighDampingCoef = config_Rayleigh_damping_coeff
       endif
 

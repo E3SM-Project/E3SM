@@ -426,6 +426,10 @@
 					description="If true, Rayleigh friction is included in the momentum equation."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_Rayleigh_friction_bottom_only" type="logical" default_value=".false." units="unitless"
+					description="If true, Rayleigh friction is only applied to the bottom"
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_Rayleigh_damping_coeff" type="real" default_value="0.0" units="s^{-1}"
 					description="Inverse-time coefficient for the Rayleigh damping term, $c_R$."
 					possible_values="Any positive real value."
