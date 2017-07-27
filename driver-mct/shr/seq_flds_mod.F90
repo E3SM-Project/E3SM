@@ -253,6 +253,9 @@ module seq_flds_mod
    character(32) :: wavname='wav'
    character(32) :: rofname='rof'
 
+   ! namelist variables
+   logical :: nan_check_component_fields
+
 !----------------------------------------------------------------------------
  contains
 !----------------------------------------------------------------------------
@@ -335,7 +338,6 @@ module seq_flds_mod
      character(len=CSS)  :: fldname, fldflow
      logical :: is_state, is_flux
      integer :: i,n
-     logical :: nan_check_component_fields
 
      ! use cases namelists
      logical :: flds_co2a
