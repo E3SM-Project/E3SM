@@ -906,7 +906,6 @@ contains
 
     integer(IN)   :: lsize             ! size of attr vect
     integer(IN)   :: nflds             ! number of attr vects
-    integer(IN)   :: nancnt
     integer(in)   :: fld, n            ! iterators
     integer(IN)  :: rank
     integer(IN) :: ierr
@@ -919,7 +918,6 @@ contains
     if(lsize <= 1 .and. nflds <= 1) return
     rattr => comp%c2x_cc%rattr
     do fld=1,nflds
-       nancnt = 0
        do n=1,lsize
           if(shr_infnan_isnan(rattr(fld,n))) then
              call mpi_comm_rank(comp%mpicom_compid, rank, ierr)
