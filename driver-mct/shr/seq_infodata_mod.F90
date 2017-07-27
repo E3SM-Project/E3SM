@@ -276,11 +276,11 @@ CONTAINS
 !===============================================================================
 !BOP ===========================================================================
 !
-! !IROUTINE: seq_infodata_Init -- read in CCSM shared namelist
+! !IROUTINE: seq_infodata_Init -- read in CIME shared namelist
 !
 ! !DESCRIPTION:
 !
-!     Read in input from seq_infodata_inparm namelist, output ccsm derived type for
+!     Read in input from seq_infodata_inparm namelist, output cime derived type for
 !     miscillaneous info.
 !
 ! !INTERFACE: ------------------------------------------------------------------

@@ -335,6 +335,7 @@ module seq_flds_mod
      character(len=CSS)  :: fldname, fldflow
      logical :: is_state, is_flux
      integer :: i,n
+     logical :: nan_check_component_fields
 
      ! use cases namelists
      logical :: flds_co2a
@@ -347,7 +348,7 @@ module seq_flds_mod
 
      namelist /seq_cplflds_inparm/  &
           flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, glc_nec, &
-          ice_ncat, seq_flds_i2o_per_cat, flds_bgc
+          ice_ncat, seq_flds_i2o_per_cat, flds_bgc, nan_check_component_fields
 
      ! user specified new fields
      integer,  parameter :: nfldmax = 200
@@ -381,6 +382,7 @@ module seq_flds_mod
         glc_nec   = 0
         ice_ncat  = 1
         seq_flds_i2o_per_cat = .false.
+        nan_check_component_fields = .false.
 
         unitn = shr_file_getUnit()
         write(logunit,"(A)") subname//': read seq_cplflds_inparm namelist from: '&
@@ -406,6 +408,7 @@ module seq_flds_mod
      call shr_mpi_bcast(glc_nec      , mpicom)
      call shr_mpi_bcast(ice_ncat     , mpicom)
      call shr_mpi_bcast(seq_flds_i2o_per_cat, mpicom)
+     call shr_mpi_bcast(nan_check_component_fields, mpicom)
 
      call glc_elevclass_init(glc_nec)
 
