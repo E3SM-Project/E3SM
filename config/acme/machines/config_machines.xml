@@ -86,7 +86,7 @@
       <arg name="label"> --label</arg>
       <arg name="num_tasks" > -n $TOTALPES</arg>
       <arg name="thread_count"> -c $SHELL{echo 48/`./xmlquery --value MAX_TASKS_PER_NODE`*$ENV{OMP_NUM_THREADS} | bc }</arg>
-      <arg name="binding"> $SHELL{MTPN=`xmlquery --value MAX_TASKS_PER_NODE`; python -c "import math; binding=('--cpu_bind=cores' if math.floor($MTPN/25.)==0 else '--cpu_bind=threads') ; print binding"} </arg>
+      <arg name="binding"> $SHELL{if [ 24 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads"; fi} </arg>
     </arguments>
   </mpirun>
   <module_system type="module">
