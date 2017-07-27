@@ -1218,13 +1218,15 @@ acme_newline
 acme_print '-------- Starting Submission to Run Queue --------'
 acme_newline
 
+if ( ${num_resubmits} > 0 ) then
+  ${xmlchange_exe} --id RESUBMIT --val ${num_resubmits}
+  acme_print 'Setting number of resubmits to be '${num_resubmits}
+  @ total_submits = ${num_resubmits} + 1
+  acme_print 'This job will submit '${total_submits}' times after completion'
+endif
+
 if ( `lowercase $submit_run` == 'true' ) then
-  if ( ${num_resubmits} == 0 ) then
-    acme_print '         SUBMITTING A SINGLE JOB.'
-  else
-    ${xmlchange_exe} --id RESUBMIT --val ${num_resubmits}
-    acme_print '         SUBMITTING A RESUBMITTING JOB WITH '${num_resubmits}' RESUBMISSIONS.'
-  endif
+  acme_print '         SUBMITTING JOB:'
   acme_print ${case_submit_exe} --batch-args " ${batch_options} "
   ${case_submit_exe} --batch-args " ${batch_options} "
 else
