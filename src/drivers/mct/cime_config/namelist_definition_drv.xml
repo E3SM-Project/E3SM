@@ -167,6 +167,19 @@
     </values>
   </entry>
 
+  <entry id="nan_check_component_fields">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      .true. means that all fields passed to coupler are checked for NaN values
+    </desc>
+    <values>
+      <value>.false.</value>
+      <value cime_model='cesm'>.true.</value>
+    </values>
+  </entry>
+
   <!-- =========================== -->
   <!-- -group seq_cplflds_custom   -->
   <!-- =========================== -->
@@ -2677,7 +2690,7 @@
     <group>ccsm_pes</group>
     <desc>
       Determines what ESMF log files (if any) are generated when
-          USE_ESMF_LIB is TRUE. 
+          USE_ESMF_LIB is TRUE.
       ESMF_LOGKIND_SINGLE: Use a single log file, combining messages from
           all of the PETs. Not supported on some platforms.
       ESMF_LOGKIND_MULTI: Use multiple log files — one per PET.
