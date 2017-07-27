@@ -13,6 +13,7 @@ module create_mapper_mod
 
   public :: create_mapper ! create a simple mapper
   public :: clean_mapper  ! deallocate memory associated with a mapper
+  public :: create_gsmap  ! used in test_check_fields
 
 contains
 
