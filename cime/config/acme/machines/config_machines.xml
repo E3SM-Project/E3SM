@@ -740,7 +740,7 @@
   <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
   <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
   <BASELINE_ROOT>/projects/ccsm/ccsm_baselines</BASELINE_ROOT>
-  <CCSM_CPRNC>/projects/ccsm/cprnc/build.new/cprnc_wrap</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
+  <CCSM_CPRNC>/projects/ccsm/cprnc/build.toss3/cprnc_wrap</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
@@ -762,12 +762,12 @@
     <executable></executable>
   </mpirun>
   <module_system type="module">
-    <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
-    <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-    <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
-    <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-    <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
-    <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+    <init_path lang="python">/usr/share/lmod/lmod/init/python.py</init_path>
+    <init_path lang="perl">/usr/share/lmod/lmod/init/perl.pm</init_path>
+    <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+    <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+    <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+    <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
     <cmd_path lang="csh">module</cmd_path>
     <cmd_path lang="sh">module</cmd_path>
     <modules>
@@ -777,25 +777,13 @@
       <command name="load">sems-python/2.7.9</command>
       <command name="load">sems-cmake</command>
       <command name="load">gnu/4.9.2</command>
-      <command name="load">intel/intel-15.0.3.187</command>
-      <command name="load" mpilib="!mpi-serial">openmpi-intel/1.6</command>
-      <command name="load">libraries/intel-mkl-15.0.2.164</command>
+      <command name="load">sems-intel/16.0.2</command>
+      <command name="load" mpilib="!mpi-serial">sems-openmpi/1.10.5</command>
+      <command name="load">mkl/16.0</command>
       <command name="load">sems-netcdf/4.4.1/exo_parallel</command>
-      <!-- We want to use these modules but the segfault comes back if we do, maybe wait for new PIO? -->
-      <!-- <command name="load" mpilib="!mpi-serial">sems-hdf5/1.8.12/parallel</command> -->
-      <!-- <command name="load" mpilib="!mpi-serial">sems-netcdf/4.3.2/parallel</command> -->
-      <!-- <command name="load" mpilib="mpi-serial">sems-hdf5/1.8.11/base</command> -->
-      <!-- <command name="load" mpilib="mpi-serial">sems-netcdf/4.3.2/base</command> -->
     </modules>
   </module_system>
   <environment_variables>
-    <!-- <env name="PATH">/projects/ccsm/cmake-2.8.10.2-Linux-i386/bin:$PATH</env> -->
-    <!-- <env name="PATH">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/bin:$ENV{PATH}</env> -->
-    <!-- <env name="LD_LIBRARY_PATH">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/lib:$ENV{LD_LIBRARY_PATH}</env> -->
-    <!-- <env name="NETCDF_INCLUDES">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/include</env> -->
-    <!-- <env name="NETCDF_LIBS">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/lib</env> -->
-    <!-- <env name="NETCDFROOT">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</env> -->
-    <!-- <env name="PNETCDFROOT">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</env> -->
     <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
     <env name="PNETCDFROOT" mpilib="!mpi-serial">$ENV{SEMS_NETCDF_ROOT}</env>
     <env name="NETCDF_INCLUDES">$ENV{SEMS_NETCDF_ROOT}/include</env>
