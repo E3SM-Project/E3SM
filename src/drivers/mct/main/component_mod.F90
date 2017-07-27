@@ -213,8 +213,11 @@ contains
        endif
 
        if (.not. associated(comp(eci)%x2c_cc)) allocate(comp(eci)%x2c_cc)
-       if (.not. associated(comp(eci)%c2x_cc)) allocate(comp(eci)%c2x_cc)
-
+       if (.not. associated(comp(eci)%c2x_cc)) then
+          allocate(comp(eci)%c2x_cc)
+          ! this is needed for check_fields
+          nullify(comp(eci)%c2x_cc%rattr)
+       endif
        if (comp(eci)%iamin_compid .and. comp(eci)%present) then
           if (drv_threading) call seq_comm_setnthreads(comp(eci)%nthreads_compid)
           call shr_sys_flush(logunit)

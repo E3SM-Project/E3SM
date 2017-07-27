@@ -239,28 +239,27 @@ contains
     integer(IN) :: ierr
     integer(IN), pointer :: gpts(:)
     character(len=CL) :: msg
-    real(r8), pointer :: rattr(:,:)
 
-    lsize = mct_avect_lsize(comp%c2x_cc)
-    nflds = size(comp%c2x_cc%rattr,1)
-
-    ! c2x_cc is allocated even if not used such as in stub models
-    ! do not test this case.
-
-    if(lsize <= 1 .and. nflds <= 1) return
-    rattr => comp%c2x_cc%rattr
-    do fld=1,nflds
-       do n=1,lsize
-          if(shr_infnan_isnan(rattr(fld,n))) then
-             call mpi_comm_rank(comp%mpicom_compid, rank, ierr)
-             call mct_gsMap_orderedPoints(comp%gsmap_cc, rank, gpts)
-             write(msg,*)'component_mod:check_fields NaN found in ',trim(comp%name),' instance: ',&
-                  comp_index,' field ',trim(mct_avect_getRList2c(fld, comp%c2x_cc)), ' 1d global index: ',gpts(n)
-             call shr_sys_abort(msg)
-          endif
-       enddo
-    enddo
-
+    if(associated(comp%c2x_cc) .and. associated(comp%c2x_cc%rattr)) then
+       lsize = mct_avect_lsize(comp%c2x_cc)
+       nflds = size(comp%c2x_cc%rattr,1)
+       ! c2x_cc is allocated even if not used such as in stub models
+       ! do not test this case.
+       if(lsize <= 1 .and. nflds <= 1) return
+       if(any(shr_infnan_isnan(comp%c2x_cc%rattr))) then
+          do fld=1,nflds
+             do n=1,lsize
+                if(shr_infnan_isnan(comp%c2x_cc%rattr(fld,n))) then
+                   call mpi_comm_rank(comp%mpicom_compid, rank, ierr)
+                   call mct_gsMap_orderedPoints(comp%gsmap_cc, rank, gpts)
+                   write(msg,*)'component_mod:check_fields NaN found in ',trim(comp%name),' instance: ',&
+                        comp_index,' field ',trim(mct_avect_getRList2c(fld, comp%c2x_cc)), ' 1d global index: ',gpts(n)
+                   call shr_sys_abort(msg)
+                endif
+             enddo
+          enddo
+       endif
+    endif
   end subroutine check_fields
 
 end module component_type_mod
