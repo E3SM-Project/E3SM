@@ -60,7 +60,7 @@
   <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</DESC>
   <NODENAME_REGEX>edison</NODENAME_REGEX>
   <TESTS>acme_developer</TESTS>
-  <COMPILERS>intel,intel17,gnu,cray</COMPILERS>
+  <COMPILERS>intel,intel17,gnu</COMPILERS>
   <MPILIBS>mpt,mpi-serial</MPILIBS>
   <CIME_OUTPUT_ROOT>$ENV{CSCRATCH}/acme_scratch/edison</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -85,7 +85,7 @@
     <arguments>
       <arg name="label"> --label</arg>
       <arg name="num_tasks" > -n $TOTALPES</arg>
-      <arg name="thread_count" > -c $ENV{OMP_NUM_THREADS}</arg>
+      <arg name="thread_count"> -c $SHELL{echo 48/`./xmlquery --value MAX_TASKS_PER_NODE`*$ENV{OMP_NUM_THREADS} | bc }</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -117,7 +117,6 @@
       <command name="rm">craype-ivybridge</command>
       <command name="rm">craype</command>
       <command name="rm">papi</command>
-      <command name="rm">cmake</command>
       <command name="rm">cray-petsc</command>
       <command name="rm">esmf</command>
     </modules>
@@ -125,36 +124,25 @@
     <modules compiler="intel">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
-      <command name="load">intel/15.0.1.133</command>
+      <command name="load">intel/17.0.2.174</command>
       <command name="rm">cray-libsci</command>
-      <command name="load">cray-mpich/7.2.5</command> 
-    </modules>
-    <modules compiler="intel17">
-      <command name="load">PrgEnv-intel</command>
-      <command name="rm">intel</command>
-      <command name="load">intel/17.0.1.132</command>
-      <command name="rm">cray-libsci</command>
-      <command name="load">cray-mpich/7.5.1</command> 
-    </modules>
-    <modules compiler="cray">
-      <command name="load">PrgEnv-cray</command>
-      <command name="switch">cce cce/8.5.1</command>
-      <command name="switch">cray-libsci/16.07.1</command>
-      <command name="load">cray-mpich/7.5.1</command> 
     </modules>
     <modules compiler="gnu">
       <command name="load">PrgEnv-gnu</command>
-      <command name="switch">gcc gcc/6.2.0</command>
-      <command name="switch">cray-libsci/16.07.1</command>
-      <command name="load">cray-mpich/7.5.1</command> 
+      <command name="rm">gcc</command>
+      <command name="load">gcc/6.3.0</command>
+      <command name="rm">cray-libsci</command>
+      <command name="load">cray-libsci/17.06.1</command>
     </modules>
 
     <modules>
+      <command name="load">cray-mpich/7.6.0</command>
+
       <command name="rm">craype</command>
-      <command name="load">craype/2.5.5</command>
+      <command name="load">craype/2.5.12.3</command>
       <command name="load">craype-ivybridge</command>
       <command name="rm">pmi</command>
-      <command name="load">pmi/5.0.10-1.0000.11050.0.0.ari</command>
+      <command name="load">pmi/5.0.12</command>
     </modules>
 
     <modules mpilib="mpi-serial">
@@ -171,9 +159,9 @@
       <command name="load">cray-parallel-netcdf/1.6.1</command>
     </modules>
     <modules>
-      <command name="load">git/2.4.6</command>
-      <command name="load">perl/5.20.0</command>
-      <command name="load">cmake/3.3.2</command>
+      <!--command name="load">git/2.4.6</command-->
+      <!--command name="load">perl/5.20.0</command-->
+      <!--command name="load">cmake/3.3.2</command-->
       <!--command name="load">cray-petsc/3.5.3.0</command-->
     </modules>
   </module_system>
@@ -184,7 +172,6 @@
     <env name="MPICH_CPUMASK_DISPLAY">1</env>
     <env name="OMP_STACKSIZE">64M</env>
     <env name="FORT_BUFFERED" compiler="intel">yes</env>
-    <env name="FORT_BUFFERED" compiler="intel17">yes</env>
   </environment_variables>
 
 </machine>
@@ -357,6 +344,8 @@
         <!--NOTE: hard-coding -c 4 for now, which is only optimal when using full node with no hyper-threading.  (ndk) -->
 	<arg name="thread_count" > -c 4 </arg>
 	<arg name="binding" > --cpu_bind=cores</arg>
+        <!--arg name="cflag"> $SHELL{MTPN=`xmlquery -_-value MAX_TASKS_PER_NODE`; python -c "import math; cflag=(int(math.floor(272/$MTPN))); print '-c', cflag"} </arg-->
+        <!--arg name="binding"> $SHELL{MTPN=`xmlquery -_-value MAX_TASKS_PER_NODE`; python -c "import math; binding=('-_-cpu_bind=cores' if math.floor($MTPN/69.)==0 else '-_-cpu_bind=threads') ; print binding"} </arg-->
       </arguments>
     </mpirun>
     <module_system type="module">
