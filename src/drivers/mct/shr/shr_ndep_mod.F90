@@ -100,7 +100,7 @@ CONTAINS
     if (len_trim(ndep_list(1)) == 0) then
        add_ndep_fields = .false.
     else
-       ! Loop over species to fill list of fields to communicate for ndep 
+       ! Loop over species to fill list of fields to communicate for ndep
        add_ndep_fields = .true.
        do i=1,maxspc
           if ( len_trim(ndep_list(i))==0 ) exit

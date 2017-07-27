@@ -89,7 +89,7 @@ module prep_glc_mod
 
   ! Fields needed in the g2x_lx attribute vector used as part of mapping qice from lnd to glc
   character(len=:), allocatable :: g2x_lx_fields
-  
+
 
   !================================================================================================
 
@@ -662,9 +662,9 @@ contains
     !       (For CISM with a polar stereographic projection, area_g can differ from aream_g
     !       by up to ~10%.)
     !      If so, then the calls to subroutine mct_avect_vecmult in component_mod.F90
-    !       (just before and after the call to comp_run) should adjust the SMB fluxes 
-    !       such that in each grid cell, the native value of area*flux is equal to the 
-    !       coupler value of aream*flux.  This assumes that the SMB field is contained in 
+    !       (just before and after the call to comp_run) should adjust the SMB fluxes
+    !       such that in each grid cell, the native value of area*flux is equal to the
+    !       coupler value of aream*flux.  This assumes that the SMB field is contained in
     !       seq_fields l2x_fluxes and seq_fields_x2g_fluxes.
 
     real(r8), dimension(:), allocatable :: aream_g   ! cell areas on glc grid, for mapping
@@ -719,10 +719,10 @@ contains
     ! Export the remapped SMB to a local array
     allocate(qice_g(lsize_g))
     call mct_aVect_exportRattr(l2x_gx(eli), trim(qice_fieldname), qice_g)
-    
+
     ! Make a preemptive adjustment to qice_g to account for area differences between CISM and the coupler.
     !    In component_mod.F90, there is a call to mct_avect_vecmult, which multiplies the fluxes
-    !     by aream_g/area_g for conservation purposes. Where CISM areas are larger (area_g > aream_g), 
+    !     by aream_g/area_g for conservation purposes. Where CISM areas are larger (area_g > aream_g),
     !     the fluxes are reduced, and where CISM areas are smaller, the fluxes are increased.
     !    As a result, an SMB of 1 m/yr in CLM would be converted to an SMB ranging from
     !     ~0.9 to 1.05 m/yr in CISM (with smaller values where CISM areas are larger, and larger
@@ -830,7 +830,7 @@ contains
     character(len=:), allocatable :: qice_field
     character(len=:), allocatable :: frac_field
 
-    ! local and global sums of accumulation and ablation; used to compute renormalization factors 
+    ! local and global sums of accumulation and ablation; used to compute renormalization factors
 
     real(r8) :: local_accum_on_land_grid
     real(r8) :: global_accum_on_land_grid
