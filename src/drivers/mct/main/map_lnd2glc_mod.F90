@@ -313,7 +313,7 @@ contains
     !
     ! Puts the output in data_g_ice_covered, which should already be allocated to have size
     ! equal to the number of GLC points that this processor is responsible for.
-    ! 
+    !
     ! !USES:
     !
     ! !ARGUMENTS:
@@ -323,7 +323,7 @@ contains
     real(r8)         , intent(in)    :: topo_g(:)  ! topographic height for each point on the glc grid
     type(seq_map)    , intent(inout) :: mapper
     real(r8)         , intent(out)   :: data_g_ice_covered(:)  ! field remapped to glc grid
-    
+
     ! !LOCAL VARIABLES:
 
     character(len=*), parameter :: toponame = 'Sl_topo'  ! base name for topo fields in l2x_l;
@@ -336,7 +336,7 @@ contains
     character(len=:), allocatable :: fieldnamelist
     character(len=:), allocatable :: toponamelist
     character(len=:), allocatable :: totalfieldlist
-    
+
     integer :: nEC           ! number of elevation classes
     integer :: lsize_g       ! number of cells on glc grid
     integer :: n, ec
@@ -361,15 +361,15 @@ contains
     lsize_g = size(data_g_ice_covered)
     nEC = glc_get_num_elevation_classes()
     SHR_ASSERT_FL((size(topo_g) == lsize_g), __FILE__, __LINE__)
-    
+
     ! ------------------------------------------------------------------------
     ! Create temporary vectors
     ! ------------------------------------------------------------------------
-    
+
     allocate(tmp_field_g(lsize_g))
     allocate(data_g_EC  (lsize_g,nEC))
     allocate(topo_g_EC  (lsize_g,nEC))
-    
+
     ! ------------------------------------------------------------------------
     ! Make a string that concatenates all EC levels of field, as well as the topo
     ! The resulting list will look something like this:
@@ -387,14 +387,14 @@ contains
     strlen = len_trim(fieldnamelist) + len_trim(toponamelist) + extra_len_for_list_merge
     allocate(character(len=strlen) :: totalfieldlist)
     call shr_string_listMerge(fieldnamelist, toponamelist, totalfieldlist )
-    
+
     ! ------------------------------------------------------------------------
     ! Make a temporary attribute vector.
     ! For each grid cell on the land grid, this attribute vector contains the field and
     ! topo values for all ECs.
     ! ------------------------------------------------------------------------
     call mct_aVect_init(l2x_g_temp, rList = totalfieldlist, lsize = lsize_g)
-      
+
     ! ------------------------------------------------------------------------
     ! Remap all these fields from the land (source) grid to the glc (destination) grid.
     ! ------------------------------------------------------------------------
@@ -406,7 +406,7 @@ contains
            norm = .true., &
            avwts_s = landfrac_l, &
            avwtsfld_s = 'lfrac')
-           
+
     ! ------------------------------------------------------------------------
     ! Export all elevation classes out of attribute vector and into local 2D arrays (xy,z)
     ! ------------------------------------------------------------------------
@@ -420,13 +420,13 @@ contains
        call mct_aVect_exportRattr(l2x_g_temp, toponame_ec, tmp_field_g)
        topo_g_EC(:,ec) = tmp_field_g
     enddo
-    
+
     ! ------------------------------------------------------------------------
     ! Perform vertical interpolation of data onto ice sheet topography
     ! ------------------------------------------------------------------------
-    
+
     data_g_ice_covered(:) = 0._r8
-    
+
     do n = 1, lsize_g
 
        ! For each ice sheet point, find bounding EC values...
@@ -465,7 +465,7 @@ contains
           end do
        end if  ! topo_g(n)
     end do  ! lsize_g
-      
+
     ! ------------------------------------------------------------------------
     ! Clean up
     ! ------------------------------------------------------------------------
@@ -473,9 +473,9 @@ contains
     deallocate(tmp_field_g)
     deallocate(data_g_EC)
     deallocate(topo_g_EC)
-    
+
     call mct_aVect_clean(l2x_g_temp)
-    
+
   end subroutine map_ice_covered
 
 end module map_lnd2glc_mod
