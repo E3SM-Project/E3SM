@@ -60,7 +60,7 @@
   <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</DESC>
   <NODENAME_REGEX>edison</NODENAME_REGEX>
   <TESTS>acme_developer</TESTS>
-  <COMPILERS>intel,intel17,gnu</COMPILERS>
+  <COMPILERS>intel,gnu</COMPILERS>
   <MPILIBS>mpt,mpi-serial</MPILIBS>
   <CIME_OUTPUT_ROOT>$ENV{CSCRATCH}/acme_scratch/edison</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
