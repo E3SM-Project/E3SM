@@ -1,0 +1,88 @@
+module test_check_fields
+
+  ! Tests of check_fields in the component_type_mod, check_fields looks for NaN values
+  ! in fields passed from components to the coupler
+
+  use pfunit_mod
+  use component_type_mod
+  use mct_mod
+  use mct_wrapper_mod, only : mct_init, mct_clean
+  use shr_kind_mod, only : r8 => shr_kind_r8
+  use shr_infnan_mod, only : shr_infnan_nan, assignment(=)
+
+  implicit none
+
+  @TestCase
+  type, extends(TestCase) :: TestCheckFields
+     type(component_type) :: comp
+   contains
+     procedure :: setUp
+     procedure :: tearDown
+  end type TestCheckFields
+
+contains
+
+  subroutine setUp(this)
+    class(TestCheckFields), intent(inout) :: this
+
+    call mct_init()
+  end subroutine setUp
+
+  subroutine tearDown(this)
+    class(TestCheckFields), intent(inout) :: this
+    call mct_aVect_clean(this%comp%c2x_cc)
+    call mct_clean()
+  end subroutine tearDown
+
+  @Test
+  subroutine createAVectWithoutData_1Field_checkField(this)
+    class(TestCheckFields), intent(inout) :: this
+    character(len=*), parameter :: attr_tag = 'foo'
+    integer, parameter :: lsize = 5 ! not important for this test
+    character(len=64) :: actual_rlist
+
+    call create_aVect_without_data(this%comp%c2x_cc, [attr_tag], lsize)
+
+    actual_rlist = mct_aVect_exportRList2c(this%comp%c2x_cc)
+    @assertEqual('foo', trim(actual_rlist))
+  end subroutine createAVectWithoutData_1Field_checkField
+
+  @Test
+  subroutine createAVectWithoutData_3Field_checkFields(this)
+    class(TestCheckFields), intent(inout) :: this
+    character(len=*), parameter :: attr_tag1 = 'foo1'
+    character(len=*), parameter :: attr_tag2 = 'foo2'
+    character(len=*), parameter :: attr_tag3 = 'bar '
+    character(len=*), parameter :: expected_rlist = 'foo1:foo2:bar'
+    integer, parameter :: lsize = 5 ! not important for this test
+    character(len=64) :: actual_rlist
+
+    call create_aVect_without_data(this%comp%c2x_cc, [attr_tag1, attr_tag2, attr_tag3], lsize)
+
+    actual_rlist = mct_aVect_exportRList2c(this%comp%c2x_cc)
+    @assertEqual(expected_rlist, actual_rlist)
+  end subroutine createAVectWithoutData_3Field_checkFields
+
+  @Test
+  subroutine createAvectWithData_2Fields_checkData(this)
+    class(TestCheckFields), intent(inout) :: this
+    integer, parameter :: lsize = 3
+    ! note that the two attributes have different trimmed length
+    character(len=4), parameter :: attr_tag1 = 'foo'
+    character(len=4), parameter :: attr_tag2 = 'bar2'
+    real(r8), parameter :: data1(lsize) = [1._r8, 2._r8, 3._r8]
+    real(r8), parameter :: data2(lsize) = [11._r8, 12._r8, 13._r8]
+    real(r8), allocatable :: actual_data1(:), actual_data2(:)
+
+    call create_aVect_with_data_rows_are_points(this%comp%c2x_cc, &
+         attr_tags = [attr_tag1, attr_tag2], &
+         data = reshape([data1, data2], [lsize, 2]))
+
+    actual_data1 = aVect_exportRattr(this%comp%c2x_cc, attr_tag1)
+    @assertEqual(data1, actual_data1)
+    actual_data2 = aVect_exportRattr(this%comp%c2x_cc, attr_tag2)
+    @assertEqual(data2, actual_data2)
+
+  end subroutine createAvectWithData_2Fields_checkData
+
+end module test_check_fields
