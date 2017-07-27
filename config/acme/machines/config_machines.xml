@@ -342,8 +342,6 @@
         <!--NOTE: hard-coding -c 4 for now, which is only optimal when using full node with no hyper-threading.  (ndk) -->
 	<arg name="thread_count" > -c 4 </arg>
 	<arg name="binding" > --cpu_bind=cores</arg>
-        <!--arg name="cflag"> $SHELL{MTPN=`xmlquery -_-value MAX_TASKS_PER_NODE`; python -c "import math; cflag=(int(math.floor(272/$MTPN))); print '-c', cflag"} </arg-->
-        <!--arg name="binding"> $SHELL{MTPN=`xmlquery -_-value MAX_TASKS_PER_NODE`; python -c "import math; binding=('-_-cpu_bind=cores' if math.floor($MTPN/69.)==0 else '-_-cpu_bind=threads') ; print binding"} </arg-->
       </arguments>
     </mpirun>
     <module_system type="module">
