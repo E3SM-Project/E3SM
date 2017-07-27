@@ -1351,7 +1351,7 @@ module seq_flds_mod
      call metadata_set(attname, longname, stdname, units)
 
      if (trim(cime_model) == 'acme') then
-        ! Sea ice basal pressure 
+        ! Sea ice basal pressure
         call seq_flds_add(i2x_states,"Si_bpress")
         call seq_flds_add(x2o_states,"Si_bpress")
         longname = 'Sea ice basal pressure'
@@ -1361,7 +1361,7 @@ module seq_flds_mod
         call metadata_set(attname, longname, stdname, units)
      end if
 
-     ! Ocean melt and freeze potential 
+     ! Ocean melt and freeze potential
      call seq_flds_add(o2x_fluxes,"Fioo_q")
      call seq_flds_add(x2i_fluxes,"Fioo_q")
      longname = 'Ocean melt and freeze potential'
@@ -1419,7 +1419,7 @@ module seq_flds_mod
      attname  = 'Fioi_salt'
      call metadata_set(attname, longname, stdname, units)
 
-     ! Black Carbon hydrophilic deposition  
+     ! Black Carbon hydrophilic deposition
      call seq_flds_add(i2x_fluxes,"Fioi_bcphi" )
      call seq_flds_add(x2o_fluxes,"Fioi_bcphi"   )
      longname = 'Hydrophylic black carbon deposition flux'
@@ -1428,7 +1428,7 @@ module seq_flds_mod
      attname  = 'Fioi_bcphi'
      call metadata_set(attname, longname, stdname, units)
 
-     ! Black Carbon hydrophobic deposition  
+     ! Black Carbon hydrophobic deposition
      call seq_flds_add(i2x_fluxes,"Fioi_bcpho" )
      call seq_flds_add(x2o_fluxes,"Fioi_bcpho"   )
      longname = 'Hydrophobic black carbon deposition flux'
@@ -2514,10 +2514,10 @@ module seq_flds_mod
         longname = 'Ratio of ocean surface level abund. HDO/H2O/Rstd'
         attname  = 'So_roce_HDO'
         call metadata_set(attname, longname, stdname, units)
- 
+
         !--------------------------------------------
-        !Atmospheric specific humidty at lowest level: 
-        !--------------------------------------------       
+        !Atmospheric specific humidty at lowest level:
+        !--------------------------------------------
 
       ! specific humidity of H216O at the lowest model level (kg/kg)
         call seq_flds_add(a2x_states,"Sa_shum_16O")
@@ -2547,7 +2547,7 @@ module seq_flds_mod
         attname  = 'Sa_shum_18O'
         call metadata_set(attname, longname, stdname, units)
 
-       ! Surface snow water equivalent (land/atm only) 
+       ! Surface snow water equivalent (land/atm only)
         call seq_flds_add(l2x_states,"Sl_snowh_16O")
         call seq_flds_add(l2x_states,"Sl_snowh_18O")
         call seq_flds_add(l2x_states,"Sl_snowh_HDO")
@@ -2572,7 +2572,7 @@ module seq_flds_mod
 
         !--------------
         !Isotopic Rain:
-        !-------------- 
+        !--------------
 
        !Isotopic Precipitation Fluxes:
         units    = 'kg m-2 s-1'
@@ -2584,15 +2584,15 @@ module seq_flds_mod
         call seq_flds_add(x2i_fluxes, "Faxa_rain_16O")
         longname = 'Water flux due to H216O rain' !equiv. to bulk
         stdname  = 'H2_16O_rainfall_flux'
-        attname  = 'Faxa_rain_16O' 
+        attname  = 'Faxa_rain_16O'
         call metadata_set(attname, longname, stdname, units)
         longname = 'H216O Convective precipitation rate'
         stdname  = 'H2_16O_convective_precipitation_flux'
-        attname  = 'Faxa_rainc_16O' 
+        attname  = 'Faxa_rainc_16O'
         call metadata_set(attname, longname, stdname, units)
         longname = 'H216O Large-scale (stable) precipitation rate'
         stdname  = 'H2_16O_large_scale_precipitation_flux'
-        attname  = 'Faxa_rainl_16O' 
+        attname  = 'Faxa_rainl_16O'
         call metadata_set(attname, longname, stdname, units)
 
         call seq_flds_add(a2x_fluxes,"Faxa_rainc_18O")
@@ -2603,15 +2603,15 @@ module seq_flds_mod
         call seq_flds_add(x2i_fluxes, "Faxa_rain_18O")
         longname = 'Water flux due to H218O rain'
         stdname  = 'h2_18o_rainfall_flux'
-        attname  = 'Faxa_rain_18O' 
+        attname  = 'Faxa_rain_18O'
         call metadata_set(attname, longname, stdname, units)
         longname = 'H218O Convective precipitation rate'
         stdname  = 'H2_18O_convective_precipitation_flux'
-        attname  = 'Faxa_rainc_18O' 
+        attname  = 'Faxa_rainc_18O'
         call metadata_set(attname, longname, stdname, units)
         longname = 'H218O Large-scale (stable) precipitation rate'
         stdname  = 'H2_18O_large_scale_precipitation_flux'
-        attname  = 'Faxa_rainl_18O' 
+        attname  = 'Faxa_rainl_18O'
         call metadata_set(attname, longname, stdname, units)
 
         call seq_flds_add(a2x_fluxes,"Faxa_rainc_HDO")
@@ -2622,20 +2622,20 @@ module seq_flds_mod
         call seq_flds_add(x2i_fluxes, "Faxa_rain_HDO")
         longname = 'Water flux due to HDO rain'
         stdname  = 'hdo_rainfall_flux'
-        attname  = 'Faxa_rain_HDO' 
+        attname  = 'Faxa_rain_HDO'
         call metadata_set(attname, longname, stdname, units)
         longname = 'HDO Convective precipitation rate'
         stdname  = 'HDO_convective_precipitation_flux'
-        attname  = 'Faxa_rainc_HDO' 
+        attname  = 'Faxa_rainc_HDO'
         call metadata_set(attname, longname, stdname, units)
         longname = 'HDO Large-scale (stable) precipitation rate'
         stdname  = 'HDO_large_scale_precipitation_flux'
-        attname  = 'Faxa_rainl_HDO' 
+        attname  = 'Faxa_rainl_HDO'
         call metadata_set(attname, longname, stdname, units)
 
         !-------------
         !Isotopic snow:
-        !------------- 
+        !-------------
 
         call seq_flds_add(a2x_fluxes,"Faxa_snowc_16O")
         call seq_flds_add(a2x_fluxes,"Faxa_snowl_16O")
@@ -2645,7 +2645,7 @@ module seq_flds_mod
         call seq_flds_add(x2i_fluxes, "Faxa_snow_16O")
         longname = 'Water equiv. H216O snow flux'
         stdname  = 'h2_16o_snowfall_flux'
-        attname  = 'Faxa_snow_16O' 
+        attname  = 'Faxa_snow_16O'
         call metadata_set(attname, longname, stdname, units)
         longname = 'H2_16O Convective snow rate (water equivalent)'
         stdname  = 'H2_16O_convective_snowfall_flux'
@@ -2653,9 +2653,9 @@ module seq_flds_mod
         call metadata_set(attname, longname, stdname, units)
         longname = 'H2_16O Large-scale (stable) snow rate (water equivalent)'
         stdname  = 'H2_16O_large_scale_snowfall_flux'
-        attname  = 'Faxa_snowl_16O' 
+        attname  = 'Faxa_snowl_16O'
         call metadata_set(attname, longname, stdname, units)
-        
+
         call seq_flds_add(a2x_fluxes,"Faxa_snowc_18O")
         call seq_flds_add(a2x_fluxes,"Faxa_snowl_18O")
         call seq_flds_add(x2o_fluxes, "Faxa_snow_18O")
@@ -2664,7 +2664,7 @@ module seq_flds_mod
         call seq_flds_add(x2i_fluxes, "Faxa_snow_18O")
         longname = 'Isotopic water equiv. snow flux of H218O'
         stdname  = 'h2_18o_snowfall_flux'
-        attname  = 'Faxa_snow_18O' 
+        attname  = 'Faxa_snow_18O'
         call metadata_set(attname, longname, stdname, units)
         longname = 'H2_18O Convective snow rate (water equivalent)'
         stdname  = 'H2_18O_convective_snowfall_flux'
@@ -2672,9 +2672,9 @@ module seq_flds_mod
         call metadata_set(attname, longname, stdname, units)
         longname = 'H2_18O Large-scale (stable) snow rate (water equivalent)'
         stdname  = 'H2_18O_large_scale_snowfall_flux'
-        attname  = 'Faxa_snowl_18O' 
+        attname  = 'Faxa_snowl_18O'
         call metadata_set(attname, longname, stdname, units)
-        
+
         call seq_flds_add(a2x_fluxes,"Faxa_snowc_HDO")
         call seq_flds_add(a2x_fluxes,"Faxa_snowl_HDO")
         call seq_flds_add(x2o_fluxes, "Faxa_snow_HDO")
@@ -2683,7 +2683,7 @@ module seq_flds_mod
         call seq_flds_add(x2i_fluxes, "Faxa_snow_HDO")
         longname = 'Isotopic water equiv. snow flux of HDO'
         stdname  = 'hdo_snowfall_flux'
-        attname  = 'Faxa_snow_HDO' 
+        attname  = 'Faxa_snow_HDO'
         call metadata_set(attname, longname, stdname, units)
         longname = 'HDO Convective snow rate (water equivalent)'
         stdname  = 'HDO_convective_snowfall_flux'
@@ -2691,12 +2691,12 @@ module seq_flds_mod
         call metadata_set(attname, longname, stdname, units)
         longname = 'HDO Large-scale (stable) snow rate (water equivalent)'
         stdname  = 'HDO_large_scale_snowfall_flux'
-        attname  = 'Faxa_snowl_HDO' 
+        attname  = 'Faxa_snowl_HDO'
         call metadata_set(attname, longname, stdname, units)
 
         !----------------------------------
         !Isotopic precipitation (rain+snow):
-        !----------------------------------  
+        !----------------------------------
 
         call seq_flds_add(x2o_fluxes,"Faxa_prec_16O")  ! derived rain+snow
         longname = 'Isotopic Water flux (rain+snow) for H2_16O'
@@ -2779,7 +2779,7 @@ module seq_flds_mod
 
        ! H216O Evaporation water flux
         call seq_flds_add(l2x_fluxes,"Fall_evap_16O")
-        call seq_flds_add(i2x_fluxes,"Faii_evap_16O") 
+        call seq_flds_add(i2x_fluxes,"Faii_evap_16O")
         call seq_flds_add(xao_fluxes,"Faox_evap_16O")
         call seq_flds_add(x2a_fluxes,"Faxx_evap_16O")
         call seq_flds_add(x2o_fluxes,"Foxx_evap_16O")
@@ -2799,7 +2799,7 @@ module seq_flds_mod
 
       ! HD16O Evaporation water flux
         call seq_flds_add(l2x_fluxes,"Fall_evap_HDO")
-        call seq_flds_add(i2x_fluxes,"Faii_evap_HDO") 
+        call seq_flds_add(i2x_fluxes,"Faii_evap_HDO")
         call seq_flds_add(xao_fluxes,"Faox_evap_HDO")
         call seq_flds_add(x2a_fluxes,"Faxx_evap_HDO")
         call seq_flds_add(x2o_fluxes,"Foxx_evap_HDO")
@@ -2815,7 +2815,7 @@ module seq_flds_mod
         attname  = 'Foxx_evap_HDO'
         call metadata_set(attname, longname, stdname, units)
         attname  = 'Faxx_evap_HDO'
-        call metadata_set(attname, longname, stdname, units)  
+        call metadata_set(attname, longname, stdname, units)
 
       ! H218O Evaporation water flux
         call seq_flds_add(l2x_fluxes,"Fall_evap_18O")
@@ -2828,7 +2828,7 @@ module seq_flds_mod
         units    = 'kg m-2 s-1'
         attname  = 'Fall_evap_18O'
         call metadata_set(attname, longname, stdname, units)
-        attname  = 'Faii_evap_18O' 
+        attname  = 'Faii_evap_18O'
         call metadata_set(attname, longname, stdname, units)
         attname  = 'Faox_evap_18O'
         call metadata_set(attname, longname, stdname, units)
@@ -2838,7 +2838,7 @@ module seq_flds_mod
         call metadata_set(attname, longname, stdname, units)
 
        !-----------------------------
-       !Isotopic sea ice melting flux: 
+       !Isotopic sea ice melting flux:
        !-----------------------------
 
        ! H216O Water flux from melting
@@ -3010,7 +3010,7 @@ module seq_flds_mod
        ! stdname  = 'H2_18O_flodding_water_flux_back_to_land'
        ! attname  = 'Flrr_flood_18O'
        ! call metadata_set(attname, longname, stdname, units)
- 
+
        !-----------------------------
 
      endif !Water isotopes
@@ -3168,7 +3168,7 @@ module seq_flds_mod
 
         longname = 'nitrogen deposition flux'
         stdname  = 'nitrogen_deposition'
-        units    = 'kg(N)/m2/sec' 
+        units    = 'kg(N)/m2/sec'
 
         call metadata_set(ndep_fields, longname, stdname, units)
      end if
@@ -3606,4 +3606,3 @@ module seq_flds_mod
    end subroutine seq_flds_esmf_metadata_get
 
  end module seq_flds_mod
-

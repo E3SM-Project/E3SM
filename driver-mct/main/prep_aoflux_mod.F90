@@ -211,5 +211,3 @@ contains
   end function prep_aoflux_get_xao_ax
 
 end module prep_aoflux_mod
-
-
