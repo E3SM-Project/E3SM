@@ -546,72 +546,30 @@ for mct, etc.
   <CMAKE_OPTS> -DCMAKE_SYSTEM_NAME=Catamount</CMAKE_OPTS>
 </compiler>
 
-
 <compiler COMPILER="intel" MACH="edison">
-  <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
-  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
-  <ADD_SLIBS> ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</ADD_SLIBS>
-  <MPIFC> ftn </MPIFC>
-  <MPICC> cc </MPICC>
-  <MPICXX> CC </MPICXX>
-  <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
-  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos_09232015/Albany/build/install</ALBANY_PATH>
-</compiler>
-
-<compiler COMPILER="intel17" MACH="edison">
-  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-
-  <FFLAGS>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </FFLAGS>
-  <CFLAGS> -O2 -fp-model precise -std=gnu99 </CFLAGS>
-  <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
-  <FREEFLAGS> -free </FREEFLAGS>
-  <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
-
-  <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created -qno-opt-dynamic-align </ADD_FFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </ADD_FFLAGS>
-
-  <ADD_CFLAGS DEBUG="TRUE"> -O0 -g </ADD_CFLAGS>
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_CFLAGS>
-  <FC_AUTO_R8> -r8 </FC_AUTO_R8>
-
   <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
   <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
-
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
-  <ADD_SLIBS> -mkl -lpthread -lm </ADD_SLIBS>
-  <ADD_CPPDEFS> -DHAVE_SLASHPROC </ADD_CPPDEFS>
-  <MPIFC> ftn </MPIFC>
-  <MPICC> cc </MPICC>
-  <MPICXX> CC </MPICXX>
+  <ADD_SLIBS> -mkl -lpthread </ADD_SLIBS>
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
-  <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
 </compiler>
 
 <compiler COMPILER="intel" MACH="cori-haswell">
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 -qno-opt-dynamic-align </ADD_FFLAGS>
-  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </ADD_FFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
   <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
-  <ADD_SLIBS> -mkl -lpthread -lm </ADD_SLIBS>
-  <ADD_CPPDEFS> -DHAVE_SLASHPROC </ADD_CPPDEFS>
-  <MPIFC> ftn </MPIFC>
-  <MPICC> cc </MPICC>
-  <MPICXX> CC </MPICXX>
+  <ADD_SLIBS> -mkl -lpthread </ADD_SLIBS>
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
@@ -619,19 +577,15 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel" MACH="cori-knl">
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 -qno-opt-dynamic-align</ADD_FFLAGS>
-  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal  -qno-opt-dynamic-align </ADD_FFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
   <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
-  <ADD_SLIBS> -mkl -lpthread -lm </ADD_SLIBS>
-  <ADD_CPPDEFS> -DARCH_MIC_KNL -DHAVE_SLASHPROC </ADD_CPPDEFS>
-  <MPIFC> ftn </MPIFC>
-  <MPICC> cc </MPICC>
-  <MPICXX> CC </MPICXX>
+  <ADD_SLIBS> -mkl -lpthread </ADD_SLIBS>
+  <ADD_CPPDEFS> -DARCH_MIC_KNL </ADD_CPPDEFS>
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
