@@ -4,6 +4,10 @@ module shr_sys_mod
 ! It contains only a few routines that are needed, and an abort method that throws a pFUnit
 ! exception instead of actually aborting.
 
+  ! TODO(wjs, 2017-07-27) I have now separated shr_sys_abort into its own module:
+  ! shr_abort_mod:shr_abort_abort. This mock should be revised or removed in light of
+  ! that.
+
 use shr_kind_mod, only: &
      shr_kind_in, shr_kind_r8
 

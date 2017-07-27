@@ -11,7 +11,6 @@ list(APPEND share_sources
   shr_file_mod.F90
   shr_kind_mod.F90
   shr_const_mod.F90
-  shr_abort_mod.F90
   shr_sys_mod.F90
   shr_log_mod.F90
   shr_orb_mod.F90
