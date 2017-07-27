@@ -6,6 +6,7 @@ module component_type_mod
   use shr_kind_mod     , only: r8 => SHR_KIND_R8
   use shr_kind_mod     , only: cs => SHR_KIND_CS
   use shr_kind_mod     , only: cl => SHR_KIND_CL
+  use shr_kind_mod     , only: IN => SHR_KIND_IN
   use seq_cdata_mod    , only: seq_cdata
   use seq_map_type_mod , only: seq_map
   use seq_comm_mct     , only: seq_comm_namelen
@@ -29,6 +30,7 @@ module component_type_mod
   public :: component_get_gsmap_cc
   public :: component_get_cdata_cc
   public :: component_get_iamroot_compid
+  public :: check_fields
   !
   ! on cpl pes
   public :: component_get_x2c_cx
@@ -223,5 +225,42 @@ contains
     type(seq_map), pointer :: component_get_mapper_Cx2c
     component_get_mapper_Cx2c => comp%mapper_Cx2c
   end function component_get_mapper_Cx2c
+
+  subroutine check_fields(comp, comp_index)
+    use shr_infnan_mod, only: shr_infnan_isnan
+    use mct_mod, only: mct_avect_getrlist2c, mct_gsMap_orderedPoints
+    type(component_type), intent(in) :: comp
+    integer(in), intent(in) :: comp_index
+
+    integer(IN)   :: lsize             ! size of attr vect
+    integer(IN)   :: nflds             ! number of attr vects
+    integer(in)   :: fld, n            ! iterators
+    integer(IN)  :: rank
+    integer(IN) :: ierr
+    integer(IN), pointer :: gpts(:)
+    character(len=CL) :: msg
+    real(r8), pointer :: rattr(:,:)
+
+    lsize = mct_avect_lsize(comp%c2x_cc)
+    nflds = size(comp%c2x_cc%rattr,1)
+
+    ! c2x_cc is allocated even if not used such as in stub models
+    ! do not test this case.
+
+    if(lsize <= 1 .and. nflds <= 1) return
+    rattr => comp%c2x_cc%rattr
+    do fld=1,nflds
+       do n=1,lsize
+          if(shr_infnan_isnan(rattr(fld,n))) then
+             call mpi_comm_rank(comp%mpicom_compid, rank, ierr)
+             call mct_gsMap_orderedPoints(comp%gsmap_cc, rank, gpts)
+             write(msg,*)'component_mod:check_fields NaN found in ',trim(comp%name),' instance: ',&
+                  comp_index,' field ',trim(mct_avect_getRList2c(fld, comp%c2x_cc)), ' 1d global index: ',gpts(n)
+             call shr_sys_abort(msg)
+          endif
+       enddo
+    enddo
+
+  end subroutine check_fields
 
 end module component_type_mod
