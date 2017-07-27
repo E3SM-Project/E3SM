@@ -554,6 +554,7 @@ module li_calving
    subroutine li_restore_calving_front(domain, err)
 
       use li_thermal, only: li_init_linear_temperature_in_column
+      use li_advection
 
       !-----------------------------------------------------------------
       ! input variables
@@ -760,6 +761,19 @@ module li_calving
 
          block => block % next
       enddo
+
+      ! Update mask and geometry
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         call li_update_geometry(geometryPool)
+
+         block => block % next
+      end do
 
       if (config_print_calving_info) then
          call mpas_log_write('Restored the initial calving front')

@@ -225,6 +225,7 @@ contains
 
       use mpas_vector_reconstruction
       use li_mask
+      use li_advection
 
       !-----------------------------------------------------------------
       ! input variables
@@ -315,6 +316,30 @@ contains
       ! velocity again, but we do want to calculate the diagnostic fields related to velocity.
       if (solveVelo) then
 
+
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'thickness')
+      call mpas_timer_stop("halo updates")
+
+      ! Update mask just to be safe (might be redundant)
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         call li_update_geometry(geometryPool)
+
+         block => block % next
+      end do
+
+      ! Update halos on masks - the outermost cells/edges/vertices may be wrong for mask components that need neighbor information
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'cellMask')
+      call mpas_dmpar_field_halo_exch(domain, 'edgeMask')
+      call mpas_dmpar_field_halo_exch(domain, 'vertexMask')
+      call mpas_timer_stop("halo updates")
 
       !   This first block for calculating normalSlopeEdge is also needed for the DCFL calculation
       !   that could occur with any velocity solver
