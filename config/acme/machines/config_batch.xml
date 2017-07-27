@@ -201,14 +201,6 @@
       </queues>
     </batch_system>
 
-    <!-- edison is SLURM as of Jan-4-2016 -->
-    <batch_system MACH="edison" type="slurm" >
-      <queues>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="12288" strict="true">debug</queue>
-        <queue walltimemax="01:30:00" jobmin="1" jobmax="150000" default="true">regular</queue>
-      </queues>
-    </batch_system>
-
     <!-- eos is PBS -->
     <batch_system MACH="eos" type="pbs" >
     <directives>
@@ -219,6 +211,13 @@
       <queue walltimemax="00:30:00" jobmin="1" jobmax="9999" default="true">batch</queue>
     </queues>
    </batch_system>
+
+    <batch_system MACH="edison" type="slurm" >
+      <queues>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="12288" strict="true">debug</queue>
+        <queue walltimemax="01:30:00" jobmin="1" jobmax="150000" default="true">regular</queue>
+      </queues>
+    </batch_system>
 
     <batch_system MACH="cori-haswell" type="slurm">
       <directives>
