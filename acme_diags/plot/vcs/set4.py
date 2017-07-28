@@ -204,7 +204,6 @@ def plot(reference, test, diff, metrics_dict, parameter):
         elif f == 'svg':
             vcs_canvas.svg(fnm)
             _chown(fnm + '.svg', parameter.user)
-
         print('Plot saved in: ' + fnm + '.' + f)
 
     vcs_canvas.clear()
