@@ -970,6 +970,7 @@ class Case(object):
         exefiles = (os.path.join(toolsdir, "case.setup"),
                     os.path.join(toolsdir, "case.build"),
                     os.path.join(toolsdir, "case.submit"),
+                    os.path.join(toolsdir, "case.qstatus"),
                     os.path.join(toolsdir, "case.cmpgen_namelists"),
                     os.path.join(toolsdir, "preview_namelists"),
                     os.path.join(toolsdir, "preview_run"),
@@ -1244,6 +1245,20 @@ class Case(object):
                                      skip_pnl=skip_pnl, mail_user=mail_user,
                                      mail_type=mail_type, batch_args=batch_args,
                                      dry_run=dry_run)
+
+    def report_job_status(self):
+        xml_job_ids = self.get_value("JOB_IDS")
+        if not xml_job_ids:
+            logger.info("No job ids associated with this case. Either case.submit was not run or was run with no-batch")
+        else:
+            job_infos = xml_job_ids.split(", ") # pylint: disable=no-member
+            for job_info in job_infos:
+                jobname, jobid = job_info.split(":")
+                status = self.get_env("batch").get_status(jobid)
+                if status:
+                    logger.info("{}: {}".format(jobname, status))
+                else:
+                    logger.info("{}: Unable to get status. Job may be complete already.".format(jobname))
 
     def get_mpirun_cmd(self, job="case.run"):
         env_mach_specific = self.get_env('mach_specific')

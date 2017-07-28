@@ -17,6 +17,7 @@
                   <xs:simpleContent>
                     <xs:extension base="xs:string">
                       <xs:attribute name="args" type="xs:string"/>
+                      <xs:attribute name="per_job_arg" type="xs:string"/>
                     </xs:extension>
                   </xs:simpleContent>
                 </xs:complexType>
