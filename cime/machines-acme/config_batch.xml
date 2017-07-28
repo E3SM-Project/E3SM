@@ -109,6 +109,7 @@
 
   <!-- for lawrence livermore computing -->
    <batch_system type="lc_slurm">
+     <batch_query>squeue</batch_query>
      <batch_submit>sbatch</batch_submit>
      <batch_directive>#SBATCH</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>

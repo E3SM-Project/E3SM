@@ -659,6 +659,8 @@
            <walltime default="true">walltime=01:00:00</walltime>
          </walltimes>
          </batch_system>
+         <BATCHQUERY>squeue</BATCHQUERY>
+         <BATCHSUBMIT>sbatch</BATCHSUBMIT>
 	 <mpirun mpilib="mpi-serial">
 	   <executable></executable>
 	 </mpirun>
@@ -710,6 +712,8 @@
            <walltime default="true">walltime=01:00:00</walltime>
          </walltimes>
          </batch_system>
+         <BATCHQUERY>squeue</BATCHQUERY>
+         <BATCHSUBMIT>sbatch</BATCHSUBMIT>
 	 <mpirun mpilib="mpi-serial">
 	   <executable></executable>
 	 </mpirun>
