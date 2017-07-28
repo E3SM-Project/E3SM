@@ -333,6 +333,10 @@ SUBROUTINE DCMIP2016_PHYSICS(test, u, v, p, theta, qv, qc, qr, rho, &
 
   ! Reed-Jablonowski Boundary layer
   if (pbl_type .eq. 0) then
+    Km(1)=0
+    Ke(1)=0
+    Ke(nz+1)=0
+    Km(nz+1)=0
     do k = 2, nz
       presi = 0.5d0 * (p(k-1) + p(k))
       if (presi .ge. pbltop) then
