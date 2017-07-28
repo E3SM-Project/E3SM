@@ -17,7 +17,7 @@ requirements:
     - setuptools
 
   run:
-    - cdp 2017.05.25
+    - cdp 2017.07.28
     - vcs-nox 2.8.2017.04.04.16.48.c22e1d924a0145ef526b56a8ca123484adfd660a
     - vtk-cdat-nox 7.1.0.2.8.2017.03.23.16.48.73fb094d17ccdd594a6abf9ff8732149c88dc2e6
     - mesalib <8
