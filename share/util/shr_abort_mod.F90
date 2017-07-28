@@ -1,6 +1,11 @@
 module shr_abort_mod
   ! This module defines procedures that can be used to abort the model cleanly in a
   ! system-specific manner
+  !
+  ! The public routines here are only meant to be used directly by shr_sys_mod. Other code
+  ! that wishes to use these routines should use the republished names from shr_sys_mod
+  ! (shr_sys_abort, shr_sys_backtrace). (This is for consistency with older code, from
+  ! when these routines were defined in shr_sys_mod.)
 
   use, intrinsic :: iso_fortran_env, only: output_unit, error_unit
 
@@ -20,6 +25,10 @@ module shr_abort_mod
 
   private
 
+  ! The public routines here are only meant to be used directly by shr_sys_mod. Other code
+  ! that wishes to use these routines should use the republished names from shr_sys_mod
+  ! (shr_sys_abort, shr_sys_backtrace). (This is for consistency with older code, from
+  ! when these routines were defined in shr_sys_mod.)
   public :: shr_abort_abort     ! abort a program
   public :: shr_abort_backtrace ! print a backtrace, if possible
 
