@@ -393,6 +393,7 @@
 	<command name="load">craype/2.5.10</command>
 	<command name="rm">cray-mpich</command>
 	<command name="load">cray-mpich/7.5.5</command>
+        <command name="load">craype-hugepages2M</command>
       </modules>
 
       <modules compiler="intel-impi">
@@ -461,6 +462,9 @@
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
+
+      <env name="MPICH_MEMORY_REPORT" compiler="intel">1</env>
+      <env name="MPICH_MEMORY_REPORT" compiler="intel18">1</env>
 
       <env name="FORT_BUFFERED" compiler="intel">yes</env>
       <env name="FORT_BUFFERED" compiler="intel18">yes</env>
