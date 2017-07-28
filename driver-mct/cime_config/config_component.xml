@@ -136,7 +136,7 @@
     <desc>Component set long name (for documentation only - DO NOT EDIT)</desc>
   </entry>
 
-  <entry id='GRID'>
+  <entry id="GRID">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>build_grid</group>
@@ -488,6 +488,13 @@
     <desc>Logical to determine whether CESM run has been submitted with the submit script or not</desc>
   </entry>
 
+ <entry id="JOB_IDS">
+   <type>char</type>
+   <default_value></default_value>
+   <group>run_begin_stop_restart</group>
+   <file>env_run.xml</file>
+   <desc>List of job ids for most recent case.submit</desc>
+ </entry>
 
   <!-- ===================================================================== -->
   <!-- definitions archive -->
@@ -2555,7 +2562,6 @@
    <file>env_case.xml</file>
    <desc>Apparent version of the model used for this case</desc>
  </entry>
-
 
  <entry id="PROJECT_REQUIRED">
    <type>logical</type>
