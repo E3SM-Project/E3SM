@@ -131,7 +131,7 @@ CONTAINS
     character(len=CL)                  :: glc_resume(num_inst_glc)
     character(len=CL)                  :: wav_resume(num_inst_wav)
     character(len=CL)                  :: cpl_resume
-    character(len=CL)                  :: case_name       
+    character(len=CL)                  :: case_name
     character(len=*),        parameter :: subName = "(esp_run_mct) "
     !--------------------------------------------------------------------------
 

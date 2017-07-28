@@ -1,7 +1,7 @@
 module lnd_comp_mct
 
   ! !USES:
-  
+
   use esmf
   use mct_mod
   use perf_mod
@@ -15,7 +15,7 @@ module lnd_comp_mct
   use shr_file_mod    , only: shr_file_freeunit
   use dlnd_comp_mod   , only: dlnd_comp_init, dlnd_comp_run, dlnd_comp_final
   use dlnd_shr_mod    , only: dlnd_shr_read_namelists
-  use seq_flds_mod    , only: seq_flds_x2l_fields, seq_flds_l2x_fields 
+  use seq_flds_mod    , only: seq_flds_x2l_fields, seq_flds_l2x_fields
 
   ! !PUBLIC TYPES:
   implicit none
@@ -69,7 +69,7 @@ CONTAINS
     integer           :: phase                     ! phase of method
     logical           :: lnd_present               ! flag
     logical           :: lnd_prognostic            ! flag
-    integer(IN)       :: shrlogunit                ! original log unit 
+    integer(IN)       :: shrlogunit                ! original log unit
     integer(IN)       :: shrloglev                 ! original log level
     logical           :: read_restart              ! start from restart
     integer(IN)       :: ierr                      ! error code
@@ -190,7 +190,7 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit   ! original log unit 
+    integer(IN)                      :: shrlogunit   ! original log unit
     integer(IN)                      :: shrloglev    ! original log level
     logical                          :: read_restart ! start from restart
     character(CL)                    :: case_name    ! case name
@@ -208,7 +208,7 @@ CONTAINS
          infodata=infodata)
 
     call seq_infodata_GetData(infodata, case_name=case_name)
-       
+
     call dlnd_comp_run(EClock, x2l, l2x, &
        SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, case_name)
@@ -229,7 +229,7 @@ CONTAINS
     type(ESMF_Clock)            ,intent(inout) :: EClock     ! clock
     type(seq_cdata)             ,intent(inout) :: cdata
     type(mct_aVect)             ,intent(inout) :: x2l
-    type(mct_aVect)             ,intent(inout) :: l2x        
+    type(mct_aVect)             ,intent(inout) :: l2x
 
     !--- formats ---
     character(*), parameter :: subName = "(lnd_final_mct) "

@@ -21,7 +21,7 @@ module dlnd_comp_mod
   use shr_dmodel_mod    , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
   use seq_timemgr_mod   , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
   use glc_elevclass_mod , only: glc_get_num_elevation_classes, glc_elevclass_as_string
-  
+
   use dlnd_shr_mod   , only: lnd_mode       ! namelist input
   use dlnd_shr_mod   , only: decomp         ! namelist input
   use dlnd_shr_mod   , only: rest_file      ! namelist input
@@ -209,54 +209,54 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize MCT global seg map, 1d decomp
     !----------------------------------------------------------------------------
-    
+
     call t_startf('dlnd_initgsmaps')
     if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
     call shr_sys_flush(logunit)
-    
+
     ! create a data model global seqmap (gsmap) given the data model global grid sizes
-    ! NOTE: gsmap is initialized using the decomp read in from the docn_in namelist 
+    ! NOTE: gsmap is initialized using the decomp read in from the docn_in namelist
     ! (which by default is "1d")
     call shr_dmodel_gsmapcreate(gsmap,SDLND%nxg*SDLND%nyg,compid,mpicom,decomp)
     lsize = mct_gsmap_lsize(gsmap,mpicom)
-    
-    ! create a rearranger from the data model SDOCN%gsmap to gsmap 
+
+    ! create a rearranger from the data model SDOCN%gsmap to gsmap
     call mct_rearr_init(SDLND%gsmap, gsmap, mpicom, rearr)
-    
+
     call t_stopf('dlnd_initgsmaps')
 
     !----------------------------------------------------------------------------
     ! Initialize MCT domain
     !----------------------------------------------------------------------------
-    
+
     call t_startf('dlnd_initmctdom')
     if (my_task == master_task) write(logunit,F00) 'copy domains'
     call shr_sys_flush(logunit)
-    
+
     call shr_dmodel_rearrGGrid(SDLND%grid, ggrid, gsmap, rearr, mpicom)
-    
+
     call t_stopf('dlnd_initmctdom')
-    
+
     !----------------------------------------------------------------------------
     ! Initialize MCT attribute vectors
     !----------------------------------------------------------------------------
-    
+
     call t_startf('dlnd_initmctavs')
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
     call shr_sys_flush(logunit)
-    
+
     call mct_aVect_init(l2x, rList=seq_flds_l2x_fields, lsize=lsize)
     call mct_aVect_zero(l2x)
-    
+
     call mct_aVect_init(x2l, rList=seq_flds_x2l_fields, lsize=lsize)
     call mct_aVect_zero(x2l)
-    
+
     call t_stopf('dlnd_initmctavs')
-    
+
     !----------------------------------------------------------------------------
     ! Read restart
     !----------------------------------------------------------------------------
-    
+
     if (read_restart) then
        if (trim(rest_file) == trim(nullstr) .and. trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
@@ -325,7 +325,7 @@ CONTAINS
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)       , intent(in)    :: EClock
     type(mct_aVect)        , intent(inout) :: x2l
-    type(mct_aVect)        , intent(inout) :: l2x        
+    type(mct_aVect)        , intent(inout) :: l2x
     type(shr_strdata_type) , intent(inout) :: SDLND
     type(mct_gsMap)        , pointer       :: gsMap
     type(mct_gGrid)        , pointer       :: ggrid
@@ -453,9 +453,9 @@ CONTAINS
     call t_startf('DLND_FINAL')
 
     if (my_task == master_task) then
-       write(logunit,F91) 
+       write(logunit,F91)
        write(logunit,F00) trim(myModelName),': end of main integration loop'
-       write(logunit,F91) 
+       write(logunit,F91)
     end if
 
     call t_stopf('DLND_FINAL')

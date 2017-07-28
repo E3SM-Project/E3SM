@@ -403,14 +403,9 @@ CONTAINS
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)       , intent(in)    :: EClock
-<<<<<<< HEAD
-    type(mct_aVect)        , intent(inout) :: x2i
-    type(mct_aVect)        , intent(inout) :: i2x
-=======
     type(mct_aVect)        , intent(inout) :: x2i
     type(mct_aVect)        , intent(inout) :: i2x
     logical                , intent(in)    :: seq_flds_i2o_per_cat ! .true. if select per ice thickness fields from ice
->>>>>>> all data models are now refactored
     type(shr_strdata_type) , intent(inout) :: SDICE
     type(mct_gsMap)        , pointer       :: gsMap
     type(mct_gGrid)        , pointer       :: ggrid

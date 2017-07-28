@@ -245,7 +245,7 @@ CONTAINS
     real(R8)               , intent(in)    :: orbMvelpp           ! orb moving vernal eq (radians)
     real(R8)               , intent(in)    :: orbLambm0           ! orb mean long of perhelion (radians)
     real(R8)               , intent(in)    :: orbObliqr           ! orb obliquity (radians)
-    integer                , intent(in)    :: phase               ! initialization phase index 
+    integer                , intent(in)    :: phase               ! initialization phase index
     real(R8)               , intent(out)   :: nextsw_cday         ! calendar of next atm sw
 
   !--- local variables ---

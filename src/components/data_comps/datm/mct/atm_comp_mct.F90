@@ -1,7 +1,7 @@
 module atm_comp_mct
 
   ! !USES:
-  
+
   use esmf
   use mct_mod
   use perf_mod
@@ -69,7 +69,7 @@ CONTAINS
     integer           :: phase                     ! phase of method
     logical           :: atm_present               ! flag
     logical           :: atm_prognostic            ! flag
-    integer(IN)       :: shrlogunit                ! original log unit 
+    integer(IN)       :: shrlogunit                ! original log unit
     integer(IN)       :: shrloglev                 ! original log level
     logical           :: read_restart              ! start from restart
     integer(IN)       :: ierr                      ! error code
@@ -171,7 +171,7 @@ CONTAINS
          SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon, &
-         orbEccen, orbMvelpp, orbLambm0, orbObliqr, phase, nextsw_cday) 
+         orbEccen, orbMvelpp, orbLambm0, orbObliqr, phase, nextsw_cday)
 
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from datm
@@ -218,7 +218,7 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit     ! original log unit 
+    integer(IN)                      :: shrlogunit     ! original log unit
     integer(IN)                      :: shrloglev      ! original log level
     character(CL)                    :: case_name      ! case name
     real(R8)                         :: nextsw_cday    ! calendar of next atm sw
@@ -236,7 +236,7 @@ CONTAINS
          infodata=infodata)
 
     call seq_infodata_GetData(infodata, case_name=case_name)
-       
+
     call datm_comp_run(EClock, x2a, a2x, &
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, nextsw_cday, case_name)

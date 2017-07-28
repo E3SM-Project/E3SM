@@ -1,7 +1,7 @@
 module datm_shr_mod
 
   ! !USES:
-  use shr_kind_mod   , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8 
+  use shr_kind_mod   , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
   use shr_kind_mod   , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_const_mod  , only : SHR_CONST_CDAY,SHR_CONST_TKFRZ,SHR_CONST_SPVAL
   use shr_file_mod   , only : shr_file_getlogunit, shr_file_getunit, shr_file_freeunit
@@ -12,7 +12,7 @@ module datm_shr_mod
   use shr_cal_mod    , only : shr_cal_date2julian
   use shr_ncread_mod , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
   use shr_strdata_mod, only : shr_strdata_type
-  use mct_mod 
+  use mct_mod
 
   ! !PUBLIC TYPES:
   implicit none

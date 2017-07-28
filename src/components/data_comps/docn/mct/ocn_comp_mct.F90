@@ -15,7 +15,7 @@ module ocn_comp_mct
   use shr_file_mod    , only: shr_file_freeunit
   use docn_comp_mod   , only: docn_comp_init, docn_comp_run, docn_comp_final
   use docn_shr_mod    , only: docn_shr_read_namelists
-  use seq_flds_mod    , only: seq_flds_x2o_fields, seq_flds_o2x_fields 
+  use seq_flds_mod    , only: seq_flds_x2o_fields, seq_flds_o2x_fields
 
   ! !PUBLIC TYPES:
   implicit none
@@ -70,7 +70,7 @@ CONTAINS
     logical           :: ocn_present               ! flag
     logical           :: ocn_prognostic            ! flag
     logical           :: ocnrof_prognostic         ! flag
-    integer(IN)       :: shrlogunit                ! original log unit 
+    integer(IN)       :: shrlogunit                ! original log unit
     integer(IN)       :: shrloglev                 ! original log level
     logical           :: read_restart              ! start from restart
     integer(IN)       :: ierr                      ! error code
@@ -192,7 +192,7 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit   ! original log unit 
+    integer(IN)                      :: shrlogunit   ! original log unit
     integer(IN)                      :: shrloglev    ! original log level
     logical                          :: read_restart ! start from restart
     character(CL)                    :: case_name    ! case name
@@ -210,7 +210,7 @@ CONTAINS
          infodata=infodata)
 
     call seq_infodata_GetData(infodata, case_name=case_name)
-       
+
     call docn_comp_run(EClock, x2o, o2x, &
        SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, case_name)
@@ -230,8 +230,8 @@ CONTAINS
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            ,intent(inout) :: EClock     ! clock
     type(seq_cdata)             ,intent(inout) :: cdata
-    type(mct_aVect)             ,intent(inout) :: x2o       
-    type(mct_aVect)             ,intent(inout) :: o2x       
+    type(mct_aVect)             ,intent(inout) :: x2o
+    type(mct_aVect)             ,intent(inout) :: o2x
 
     !--- formats ---
     character(*), parameter :: subName = "(ocn_final_mct) "

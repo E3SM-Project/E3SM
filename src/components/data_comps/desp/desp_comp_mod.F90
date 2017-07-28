@@ -111,9 +111,9 @@ CONTAINS
     logical,          intent(in)  :: read_restart
     logical,          intent(out) :: esp_present    ! flag
     logical,          intent(out) :: esp_prognostic ! flag
-    
+
     !EOP
-    
+
     !--- local variables ---
     integer(IN)                    :: ierr       ! error code
     integer(IN)                    :: shrlogunit ! original log unit
