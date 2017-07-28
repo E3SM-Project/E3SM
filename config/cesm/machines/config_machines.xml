@@ -1677,10 +1677,24 @@
       <modules compiler="gnu">
 	<command name="load">gnu/5.2.0</command>
       </modules>
-      <modules mpilib="mpi-serial">
+      <modules mpilib="mpi-serial" compiler="gnu">
+	<command name="load">netcdf/4.3.3.1</command>
+      </modules>
+      <modules mpilib="!mpi-serial" compiler="gnu">
+	<command name="load">netcdf-mpi/4.3.3.1</command>
+	<command name="load">pnetcdf/1.6.1</command>
+      </modules>
+      <modules mpilib="mpi-serial" compiler="pgi">
+	<command name="load">netcdf/4.3.3.1</command>
+      </modules>
+      <modules mpilib="!mpi-serial" compiler="pgi">
+	<command name="load">netcdf-mpi/4.3.3.1</command>
+	<command name="load">pnetcdf/1.6.1</command>
+      </modules>
+      <modules mpilib="mpi-serial" compiler="intel">
 	<command name="load">netcdf/4.4.1</command>
       </modules>
-      <modules mpilib="!mpi-serial">
+      <modules mpilib="!mpi-serial" compiler="intel">
 	<command name="load">netcdf-mpi/4.4.1</command>
 	<command name="load">pnetcdf/1.6.1</command>
       </modules>
