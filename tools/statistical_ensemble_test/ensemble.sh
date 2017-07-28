@@ -241,7 +241,8 @@ while [ $i -le ${#Args[@]} ]; do
     --ensemble )
       i=$((i+1))
       # Set CLONECOUNT and runtype
-      CLONECOUNT=${Args[$i]}-1
+      #CLONECOUNT=${Args[$i]}-1
+      CLONECOUNT=$((${Args[$i]}-1))
       if [ $CLONECOUNT -gt 999 ]; then
         echo "ERROR: the number of ensemble member cannot be set to more than 999!"
         exit 2

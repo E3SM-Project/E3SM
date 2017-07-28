@@ -93,6 +93,7 @@
   <xs:element name="batch_query">
     <xs:complexType mixed="true">
       <xs:attribute name="args"/>
+      <xs:attribute name="per_job_arg"/>
     </xs:complexType>
   </xs:element>
 

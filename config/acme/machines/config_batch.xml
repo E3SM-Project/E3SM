@@ -168,7 +168,7 @@
    </batch_system>
 
   <batch_system type="slurm" >
-    <batch_query>squeue</batch_query>
+    <batch_query per_job_arg="-j">squeue</batch_query>
     <batch_submit>sbatch</batch_submit>
     <batch_directive>#SBATCH</batch_directive>
     <jobid_pattern>(\d+)$</jobid_pattern>
@@ -455,7 +455,7 @@
       <template>template.st_archive</template>
       <task_count>1</task_count>
       <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
-      <dependency>case.run or case.test</dependency>
+      <dependency>case.run case.test</dependency>
       <prereq>$DOUT_S</prereq>
     </job>
   </batch_jobs>
