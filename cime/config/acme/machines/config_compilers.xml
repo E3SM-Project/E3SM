@@ -592,6 +592,76 @@ for mct, etc.
   <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
 </compiler>
 
+<compiler COMPILER="intel18" MACH="cori-knl">
+
+  <!--ADD_CFLAGS> -restrict </ADD_CFLAGS-->
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
+  <FREEFLAGS> -free </FREEFLAGS>
+  <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created -qno-opt-dynamic-align </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_CFLAGS>
+  <ADD_CFLAGS DEBUG="TRUE"> -O0 -g </ADD_CFLAGS>
+  <FFLAGS>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </FFLAGS>
+  <CFLAGS> -O2 -fp-model precise -std=gnu99 </CFLAGS>
+  <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
+  <FC_AUTO_R8> -r8 </FC_AUTO_R8>
+  <SFC> ifort </SFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <MPIFC> ftn </MPIFC>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
+  <ADD_SLIBS> -mkl -lpthread -lm </ADD_SLIBS>
+  <ADD_CPPDEFS> -DARCH_MIC_KNL -DHAVE_SLASHPROC </ADD_CPPDEFS>
+  <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
+</compiler>
+
+<compiler COMPILER="intel-impi" MACH="cori-knl">
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
+  <FREEFLAGS> -free </FREEFLAGS>
+  <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created -qno-opt-dynamic-align </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_CFLAGS>
+  <ADD_CFLAGS DEBUG="TRUE"> -O0 -g </ADD_CFLAGS>
+  <FFLAGS>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source -xMIC-AVX512 </FFLAGS>
+  <CFLAGS> -O2 -fp-model precise -std=gnu99 -xMIC-AVX512 </CFLAGS>
+  <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
+  <FC_AUTO_R8> -r8 </FC_AUTO_R8>
+  <SFC> ifort </SFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <MPIFC> mpiifort </MPIFC>
+  <MPICC> mpiicc </MPICC>
+  <MPICXX> mpiicpc </MPICXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
+  <ADD_SLIBS> -mkl -lpthread -lm </ADD_SLIBS>
+  <ADD_CPPDEFS> -DARCH_MIC_KNL -DHAVE_SLASHPROC </ADD_CPPDEFS>
+  <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
+</compiler>
+
 <compiler COMPILER="intel" MACH="eos">
   <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
