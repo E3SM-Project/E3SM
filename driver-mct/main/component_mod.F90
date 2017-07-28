@@ -32,7 +32,7 @@ module component_mod
   use mct_mod   ! mct_ wrappers for mct lib
   use perf_mod
   use ESMF
-
+  use seq_flds_mod, only: nan_check_component_fields
   implicit none
 
 #include <mpif.h>
@@ -213,8 +213,11 @@ contains
        endif
 
        if (.not. associated(comp(eci)%x2c_cc)) allocate(comp(eci)%x2c_cc)
-       if (.not. associated(comp(eci)%c2x_cc)) allocate(comp(eci)%c2x_cc)
-
+       if (.not. associated(comp(eci)%c2x_cc)) then
+          allocate(comp(eci)%c2x_cc)
+          ! this is needed for check_fields
+          nullify(comp(eci)%c2x_cc%rattr)
+       endif
        if (comp(eci)%iamin_compid .and. comp(eci)%present) then
           if (drv_threading) call seq_comm_setnthreads(comp(eci)%nthreads_compid)
           call shr_sys_flush(logunit)
@@ -226,6 +229,11 @@ contains
           call t_set_prefixf(comp(1)%oneletterid//"_i:")
           call comp_init( EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc, &
                NLFilename=NLFilename )
+          if(nan_check_component_fields) then
+             call t_drvstartf ('check_fields')
+             call check_fields(comp(eci), eci)
+             call t_drvstopf ('check_fields')
+          end If
           call t_unset_prefixf()
 
           if (present(seq_flds_c2x_fluxes)) then
@@ -679,6 +687,11 @@ contains
 
              call t_set_prefixf(comp(1)%oneletterid//":")
              call comp_run(EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc)
+             if(nan_check_component_fields) then
+                call t_drvstartf ('check_fields')
+                call check_fields(comp(eci), eci)
+                call t_drvstopf ('check_fields')
+             endif
              call t_unset_prefixf()
 
              if ((phase == 1) .and. present(seq_flds_c2x_fluxes)) then
