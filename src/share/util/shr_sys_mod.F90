@@ -21,8 +21,6 @@ MODULE shr_sys_mod
    use shr_kind_mod  ! defines real & integer kinds
    use shr_log_mod, only: s_loglev  => shr_log_Level
    use shr_log_mod, only: s_logunit => shr_log_Unit
-
-   ! These used to be in shr_sys_mod; we provide these renames for backwards compatibility
    use shr_abort_mod, only: shr_sys_abort => shr_abort_abort
    use shr_abort_mod, only: shr_sys_backtrace => shr_abort_backtrace
 
@@ -46,7 +44,10 @@ MODULE shr_sys_mod
    public :: shr_sys_sleep   ! have program sleep for a while
    public :: shr_sys_flush   ! flush an i/o buffer
 
-   ! Imported from shr_abort_mod and republished with renames for backwards compatibility
+   ! Imported from shr_abort_mod and republished with renames. Other code that wishes to
+   ! use these routines should use these shr_sys names rather than directly using the
+   ! routines from shr_abort_abort. (This is for consistency with older code, from when
+   ! these routines were defined in shr_sys_mod.)
    public :: shr_sys_abort     ! abort a program
    public :: shr_sys_backtrace ! print a backtrace, if possible
 
