@@ -546,72 +546,30 @@ for mct, etc.
   <CMAKE_OPTS> -DCMAKE_SYSTEM_NAME=Catamount</CMAKE_OPTS>
 </compiler>
 
-
 <compiler COMPILER="intel" MACH="edison">
-  <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
-  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
-  <ADD_SLIBS> ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</ADD_SLIBS>
-  <MPIFC> ftn </MPIFC>
-  <MPICC> cc </MPICC>
-  <MPICXX> CC </MPICXX>
-  <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
-  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos_09232015/Albany/build/install</ALBANY_PATH>
-</compiler>
-
-<compiler COMPILER="intel17" MACH="edison">
-  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-
-  <FFLAGS>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </FFLAGS>
-  <CFLAGS> -O2 -fp-model precise -std=gnu99 </CFLAGS>
-  <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
-  <FREEFLAGS> -free </FREEFLAGS>
-  <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
-
-  <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created -qno-opt-dynamic-align </ADD_FFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </ADD_FFLAGS>
-
-  <ADD_CFLAGS DEBUG="TRUE"> -O0 -g </ADD_CFLAGS>
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_CFLAGS>
-  <FC_AUTO_R8> -r8 </FC_AUTO_R8>
-
   <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
   <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
-
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
-  <ADD_SLIBS> -mkl -lpthread -lm </ADD_SLIBS>
-  <ADD_CPPDEFS> -DHAVE_SLASHPROC </ADD_CPPDEFS>
-  <MPIFC> ftn </MPIFC>
-  <MPICC> cc </MPICC>
-  <MPICXX> CC </MPICXX>
+  <ADD_SLIBS> -mkl -lpthread </ADD_SLIBS>
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
-  <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
 </compiler>
 
 <compiler COMPILER="intel" MACH="cori-haswell">
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 -qno-opt-dynamic-align </ADD_FFLAGS>
-  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </ADD_FFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
   <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
-  <ADD_SLIBS> -mkl -lpthread -lm </ADD_SLIBS>
-  <ADD_CPPDEFS> -DHAVE_SLASHPROC </ADD_CPPDEFS>
-  <MPIFC> ftn </MPIFC>
-  <MPICC> cc </MPICC>
-  <MPICXX> CC </MPICXX>
+  <ADD_SLIBS> -mkl -lpthread </ADD_SLIBS>
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
@@ -619,19 +577,15 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel" MACH="cori-knl">
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 -qno-opt-dynamic-align</ADD_FFLAGS>
-  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal  -qno-opt-dynamic-align </ADD_FFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
   <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
-  <ADD_SLIBS> -mkl -lpthread -lm </ADD_SLIBS>
-  <ADD_CPPDEFS> -DARCH_MIC_KNL -DHAVE_SLASHPROC </ADD_CPPDEFS>
-  <MPIFC> ftn </MPIFC>
-  <MPICC> cc </MPICC>
-  <MPICXX> CC </MPICXX>
+  <ADD_SLIBS> -mkl -lpthread </ADD_SLIBS>
+  <ADD_CPPDEFS> -DARCH_MIC_KNL </ADD_CPPDEFS>
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
@@ -768,32 +722,6 @@ for mct, etc.
   <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
 </compiler>
 
-<compiler COMPILER="pgi" MACH="sierra">
-  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
-  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
-  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <ADD_CPPDEFS> -DNO_SHR_VMATH -DCNL </ADD_CPPDEFS>
-  <ADD_SLIBS>$(shell /usr/local/tools/netcdf-pgi-4.1.3/bin/nf-config --flibs)</ADD_SLIBS>
-  <ADD_LDFLAGS> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib -llapack -lblas</ADD_LDFLAGS>
-</compiler>
-
-<compiler COMPILER="intel" MACH="sierra">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <NETCDF_PATH>/usr/local/tools/netcdf-intel-4.1.3</NETCDF_PATH>
-  <PNETCDF_PATH>/usr/local/tools/parallel-netcdf-intel-1.6.1</PNETCDF_PATH>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <MPI_PATH>/usr/local/tools/mvapich2-intel-2.1/</MPI_PATH>
-  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <ADD_CPPDEFS> -DNO_SHR_VMATH -DCNL </ADD_CPPDEFS>
-  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
-  <ADD_SLIBS>$(shell /usr/local/tools/netcdf-intel-4.1.3/bin/nf-config --flibs)</ADD_SLIBS>
-  <ADD_LDFLAGS> -llapack -lblas</ADD_LDFLAGS>
-</compiler>
-<compiler>
-  <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
-</compiler>
-
 <compiler COMPILER="pgi" MACH="cab">
   <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
   <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
@@ -835,6 +763,19 @@ for mct, etc.
   <ADD_CPPDEFS> -DNO_SHR_VMATH -DCNL </ADD_CPPDEFS>
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
   <ADD_SLIBS>$(shell /usr/local/tools/netcdf-intel-4.1.3/bin/nc-config --flibs)</ADD_SLIBS>
+  <ADD_LDFLAGS> -llapack -lblas</ADD_LDFLAGS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="quartz">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH>/usr/workspace/wsa/climdat/spack/opt/spack/linux-rhel7-x86_64/intel-17.0.0/netcdf-fortran-4.4.4-4naprkre2m7kriadyxwboauil7nc3jtc/</NETCDF_PATH> 
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <MPI_PATH>/usr/tce/modulefiles/MPI/intel/17.0.0/mvapich2/2.2/</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
+  <ADD_CPPDEFS> -DNO_SHR_VMATH -DCNL </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
+  <ADD_SLIBS>$(shell /usr/workspace/wsa/climdat/spack/opt/spack/linux-rhel7-x86_64/intel-17.0.0/netcdf-fortran-4.4.4-4naprkre2m7kriadyxwboauil7nc3jtc/bin/nf-config --flibs)</ADD_SLIBS>
   <ADD_LDFLAGS> -llapack -lblas</ADD_LDFLAGS>
 </compiler>
 
