@@ -99,7 +99,7 @@ contains
 
     ! col:
     allocate(this%z                     (begc:endc,-nlevsno+1:nlevgrnd))      ; this%z                    (:,:) = nan
-    allocate(this%zi                    (begc:endc,-nlevsno+1:nlevgrnd))      ; this%zi                   (:,:) = nan
+    allocate(this%zi                    (begc:endc,-nlevsno+0:nlevgrnd))      ; this%zi                   (:,:) = nan
     allocate(this%dz                    (begc:endc,-nlevsno+1:nlevgrnd))      ; this%dz                   (:,:) = nan
 
     ! soilstate_vars:
