@@ -7,11 +7,17 @@ module shr_sys_mod
 use shr_kind_mod, only: &
      shr_kind_in, shr_kind_r8
 
+use shr_abort_mod, only : shr_sys_abort => shr_abort_abort
+
 implicit none
 private
 save
 
 ! Fake abort
+! Imported from shr_abort_mod and republished with renames. Other code that wishes to use
+! these routines should use these shr_sys names rather than directly using the routines
+! from shr_abort_abort. (This is for consistency with older code, from when these routines
+! were defined in shr_sys_mod.)
 public :: shr_sys_abort
 
 ! Fake sleep
@@ -21,19 +27,6 @@ public :: shr_sys_sleep
 public :: shr_sys_flush
 
 contains
-
-subroutine shr_sys_abort(string, rc)
-  use pfunit_mod, only: throw
-
-  character(*), optional :: string
-  integer(shr_kind_in), optional :: rc
-
-  ! Prevent compiler spam about unused variables.
-  if (.false.) rc = rc
-
-  call throw("ABORTED: "//trim(string))
-
-end subroutine shr_sys_abort
 
 subroutine shr_sys_sleep(sec)
   real(shr_kind_r8), intent(in) :: sec

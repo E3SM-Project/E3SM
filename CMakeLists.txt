@@ -84,6 +84,7 @@ endif()
 # by different tests?)
 set(SHARE_ROOT "${CIME_ROOT}/src/share")
 add_subdirectory(${SHARE_ROOT}/util csm_share)
+add_subdirectory(${SHARE_ROOT}/unit_test_stubs/util csm_share_stubs)
 include_directories(${SHARE_ROOT}/include)
 
 # esmf_wrf_timemgr not built here because it depends on csm_share.
