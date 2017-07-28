@@ -204,7 +204,13 @@ def get_output_dir(set_num, parameter):
     """Get the directory of where to save the outputs for a run."""
     pth = os.path.join(parameter.results_dir, 'set{}'.format(set_num), parameter.case_id)
     if not os.path.exists(pth):
-        os.makedirs(pth, 0775)
+        # When running diags in parallel, sometimes another process will create the dir
+        try:
+            os.makedirs(pth, 0775)
+        except OSError as e:
+            if e.errno != os.errno.EEXIST:
+                raise
+            pass 
     _chown(os.path.join(parameter.results_dir, 'set{}'.format(set_num)), parameter.user)
     _chown(pth, parameter.user)
     return pth
