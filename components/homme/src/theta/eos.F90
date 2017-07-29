@@ -13,7 +13,8 @@
 !
 !  get_wet_phinh()           Compute geopotential as a function of potential temperature
 !                            and pressure, including water vapor
-!
+!  
+!  Original version: Mark Taylor 2017/1
 !
 module eos
 
@@ -267,7 +268,7 @@ contains
 
 
   subroutine get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi,phis,kappa_star_i,pnh_i,exact,epsie,hvcoord,dpnh_dp, &
-    theta_dp_cp,kappa_star,pnh,exner,exner_i)
+    theta_dp_cp,kappa_star,pnh,exner)
   !================================================================================
   ! This subroutine forms the tridiagonal analytic Jacobian (we actually form the diagonal, sub-, and super-diagonal)
   ! J for use in a LApack tridiagonal LU factorization and solver to solve  J * x = -f either exactly or
@@ -286,7 +287,7 @@ contains
     real (kind=real_kind), intent(in)    :: dt2
 
     real (kind=real_kind), intent(in), optional :: epsie ! epsie is the differencing size in the approx. Jacobian
-    real (kind=real_kind), intent(inout),  optional :: dpnh_dp(np,np,nlev), exner(np,np,nlev),exner_i(np,np,nlevp)
+    real (kind=real_kind), intent(inout),  optional :: dpnh_dp(np,np,nlev), exner(np,np,nlev)
     real (kind=real_kind), intent(inout),  optional :: kappa_star(np,np,nlev),theta_dp_cp(np,np,nlev), pnh(np,np,nlev)
     type (hvcoord_t)     , intent(in), optional :: hvcoord
 
@@ -344,7 +345,7 @@ contains
           dpnh_dpepsie(:,:,:)=1.d0
         else
           call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phitemp,phis,&
-            kappa_star,pnh,dpnh_dpepsie,exner,exner_i,pnh_i)
+            kappa_star,pnh,dpnh_dpepsie,exner,pnh_i_out=pnh_i)
           dpnh_dpepsie(:,:,:)=dpnh_dpepsie(:,:,:)/dp3d(:,:,:)
         end if
         if (k.eq.1) then

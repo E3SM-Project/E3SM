@@ -88,7 +88,7 @@ contains
     len = SIZE(state%ps_v)
     call AddStateField(RestDesc,len,type)
 
-    len = SIZE(state%phi)
+    len = SIZE(state%phinh)
     call AddStateField(RestDesc,len,type)
 
     len = SIZE(state%phis)

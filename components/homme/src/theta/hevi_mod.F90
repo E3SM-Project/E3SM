@@ -25,7 +25,7 @@ contains
       state(ie,:,:,:,1) = elem(ie)%state%v(:,:,1,:,n)
       state(ie,:,:,:,2) = elem(ie)%state%v(:,:,2,:,n)
       state(ie,:,:,:,3) = elem(ie)%state%w(:,:,:,n)
-      state(ie,:,:,:,4) = elem(ie)%state%phi(:,:,:,n)
+      state(ie,:,:,:,4) = elem(ie)%state%phinh(:,:,:,n)
       state(ie,:,:,:,5) = elem(ie)%state%theta_dp_cp(:,:,:,n)
       state(ie,:,:,:,6) = elem(ie)%state%dp3d(:,:,:,n)
     end do
@@ -45,7 +45,7 @@ contains
       elem(ie)%state%v(:,:,1,:,n)         = state(ie,:,:,:,1)
       elem(ie)%state%v(:,:,2,:,n)         = state(ie,:,:,:,2)
       elem(ie)%state%w(:,:,:,n)           = state(ie,:,:,:,3)
-      elem(ie)%state%phi(:,:,:,n)         = state(ie,:,:,:,4)
+      elem(ie)%state%phinh(:,:,:,n)       = state(ie,:,:,:,4)
       elem(ie)%state%theta_dp_cp(:,:,:,n) = state(ie,:,:,:,5)
       elem(ie)%state%dp3d(:,:,:,n)        = state(ie,:,:,:,6)
     end do
@@ -148,8 +148,8 @@ contains
           a2*elem(ie)%state%v(:,:,2,:,n3)
         elem(ie)%state%w(:,:,:,n1)           = a1*elem(ie)%state%w(:,:,:,n2) + &
           a2*elem(ie)%state%w(:,:,:,n3)
-        elem(ie)%state%phi(:,:,:,n1)         = a1*elem(ie)%state%phi(:,:,:,n2) + &
-          a2*elem(ie)%state%phi(:,:,:,n3)
+        elem(ie)%state%phinh(:,:,:,n1)         = a1*elem(ie)%state%phinh(:,:,:,n2) + &
+          a2*elem(ie)%state%phinh(:,:,:,n3)
         elem(ie)%state%theta_dp_cp(:,:,:,n1) = a1*elem(ie)%state%theta_dp_cp(:,:,:,n2) + &
           a2*elem(ie)%state%theta_dp_cp(:,:,:,n3)
         elem(ie)%state%dp3d(:,:,:,n1)        = a1*elem(ie)%state%dp3d(:,:,:,n2) + &
@@ -163,8 +163,8 @@ contains
          a1*elem(ie)%state%v(:,:,2,:,n2)
        elem(ie)%state%w(:,:,:,n1)           = a3*state(ie,:,:,:,3) + &
          a1*elem(ie)%state%w(:,:,:,n2)
-       elem(ie)%state%phi(:,:,:,n1)         = a3*state(ie,:,:,:,4) + &
-         a1*elem(ie)%state%phi(:,:,:,n2)
+       elem(ie)%state%phinh(:,:,:,n1)         = a3*state(ie,:,:,:,4) + &
+         a1*elem(ie)%state%phinh(:,:,:,n2)
        elem(ie)%state%theta_dp_cp(:,:,:,n1) = a3*state(ie,:,:,:,5) + &
          a1*elem(ie)%state%theta_dp_cp(:,:,:,n2)
        elem(ie)%state%dp3d(:,:,:,n1)        = a3*state(ie,:,:,:,6) + &
@@ -178,8 +178,8 @@ contains
           a2*elem(ie)%state%v(:,:,2,:,n3) + a3*state(ie,:,:,:,2)
         elem(ie)%state%w(:,:,:,n1)           = a1*elem(ie)%state%w(:,:,:,n2) + &
           a2*elem(ie)%state%w(:,:,:,n3) + a3*state(ie,:,:,:,3)
-        elem(ie)%state%phi(:,:,:,n1)         = a1*elem(ie)%state%phi(:,:,:,n2) + &
-          a2*elem(ie)%state%phi(:,:,:,n3) + a3*state(ie,:,:,:,4)
+        elem(ie)%state%phinh(:,:,:,n1)         = a1*elem(ie)%state%phinh(:,:,:,n2) + &
+          a2*elem(ie)%state%phinh(:,:,:,n3) + a3*state(ie,:,:,:,4)
         elem(ie)%state%theta_dp_cp(:,:,:,n1) = a1*elem(ie)%state%theta_dp_cp(:,:,:,n2) + &
           a2*elem(ie)%state%theta_dp_cp(:,:,:,n3) + a3*state(ie,:,:,:,5)
         elem(ie)%state%dp3d(:,:,:,n1)        = a1*elem(ie)%state%dp3d(:,:,:,n2) + &
@@ -193,8 +193,8 @@ contains
           a2*elem(ie)%state%v(:,:,2,:,n3) + elem(ie)%state%v(:,:,2,:,n1)
         elem(ie)%state%w(:,:,:,n1)           = a1*elem(ie)%state%w(:,:,:,n2) + &
           a2*elem(ie)%state%w(:,:,:,n3) + elem(ie)%state%w(:,:,:,n1)
-        elem(ie)%state%phi(:,:,:,n1)         = a1*elem(ie)%state%phi(:,:,:,n2) + &
-          a2*elem(ie)%state%phi(:,:,:,n3) + elem(ie)%state%phi(:,:,:,n1)
+        elem(ie)%state%phinh(:,:,:,n1)         = a1*elem(ie)%state%phinh(:,:,:,n2) + &
+          a2*elem(ie)%state%phinh(:,:,:,n3) + elem(ie)%state%phinh(:,:,:,n1)
         elem(ie)%state%theta_dp_cp(:,:,:,n1) = a1*elem(ie)%state%theta_dp_cp(:,:,:,n2) + &
           a2*elem(ie)%state%theta_dp_cp(:,:,:,n3) + elem(ie)%state%theta_dp_cp(:,:,:,n1)
         elem(ie)%state%dp3d(:,:,:,n1)        = a1*elem(ie)%state%dp3d(:,:,:,n2) + &

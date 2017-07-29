@@ -114,7 +114,7 @@ contains
         ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star
         ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star
         ttmp(:,:,:,3)=elem(ie)%state%theta_dp_cp(:,:,:,np1)   ! - theta_ref*dp_star*Cp
-        ttmp(:,:,:,4)=(elem(ie)%state%phi(:,:,:,np1)-phi_ref)*dp_star
+        ttmp(:,:,:,4)=(elem(ie)%state%phinh(:,:,:,np1)-phi_ref)*dp_star
         ttmp(:,:,:,5)=elem(ie)%state%w(:,:,:,np1)*dp_star
 
         call t_startf('vertical_remap1_1')
@@ -129,7 +129,7 @@ contains
 
         ! depends on theta, so do this after updating theta:
         call get_dry_phinh(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,phi_ref)
-        elem(ie)%state%phi(:,:,:,np1)=ttmp(:,:,:,4)/dp + phi_ref
+        elem(ie)%state%phinh(:,:,:,np1)=ttmp(:,:,:,4)/dp + phi_ref
      endif
 
      ! remap the gll tracers from lagrangian levels (dp_star)  to REF levels dp

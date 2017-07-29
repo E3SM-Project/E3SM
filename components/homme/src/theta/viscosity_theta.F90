@@ -97,7 +97,7 @@ logical var_coef1
               deriv,elem(ie),var_coef=var_coef1)
          stens(:,:,k,3,ie)=laplace_sphere_wk(elem(ie)%state%w(:,:,k,nt),&
               deriv,elem(ie),var_coef=var_coef1)
-         stens(:,:,k,4,ie)=laplace_sphere_wk(elem(ie)%state%phi(:,:,k,nt),&
+         stens(:,:,k,4,ie)=laplace_sphere_wk(elem(ie)%state%phinh(:,:,k,nt),&
               deriv,elem(ie),var_coef=var_coef1)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),&
               var_coef=var_coef1,nu_ratio=nu_ratio1)

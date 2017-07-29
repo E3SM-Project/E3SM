@@ -191,7 +191,7 @@ contains
 
 
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
-          dp,elem%state%phi(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
+          dp,elem%state%phinh(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
           pnh,dpnh,exner)
 
   
@@ -231,7 +231,7 @@ contains
   call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
 
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
-       dp,elem%state%phi(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
+       dp,elem%state%phinh(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
        pnh,dpnh,exner)
   dpnh_dp = dpnh/dp
   end subroutine 
@@ -258,7 +258,7 @@ contains
     call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
 
     call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
-         dp,elem%state%phi(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
+         dp,elem%state%phinh(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
          pnh,dpnh,exner)
 
   end subroutine
@@ -289,7 +289,7 @@ contains
        call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
        
        call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
-            dp,elem%state%phi(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
+            dp,elem%state%phinh(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
             pnh,dpnh,exner)
 
        do k=1,nlev
@@ -299,7 +299,7 @@ contains
        call preq_hydrostatic_v2(phi,elem%state%phis,temp)
        
     else
-       phi = elem%state%phi(:,:,:,nt)
+       phi = elem%state%phinh(:,:,:,nt)
     endif
     
   end subroutine
@@ -320,7 +320,7 @@ contains
   elem%state%v(:,:,:,:,nout)  =elem%state%v(:,:,:,:,nin)
   elem%state%w(:,:,:,nout)    =elem%state%w(:,:,:,nin)
   elem%state%theta_dp_cp(:,:,:,nout) =elem%state%theta_dp_cp(:,:,:,nin)
-  elem%state%phi(:,:,:,nout)  =elem%state%phi(:,:,:,nin)
+  elem%state%phinh(:,:,:,nout)  =elem%state%phinh(:,:,:,nin)
   elem%state%dp3d(:,:,:,nout) =elem%state%dp3d(:,:,:,nin)
   elem%state%ps_v(:,:,nout)   =elem%state%ps_v(:,:,nin)
   end subroutine copy_state
@@ -362,19 +362,19 @@ contains
   enddo
 
   call get_dry_phinh(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,nt),dp,&
-       elem%state%phi(:,:,:,nt))
+       elem%state%phinh(:,:,:,nt))
 
 
   ! debug
   kappa_star=kappa   
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,&
-       elem%state%phi(:,:,:,nt),&
+       elem%state%phinh(:,:,:,nt),&
        elem%state%phis(:,:),kappa_star,pnh,dpnh,exner)
   do k=1,nlev
      if (maxval(abs(1-dpnh(:,:,k)/dp(:,:,k))) > 1e-10) then
-        print *,'WARNING: hydrostatic inverse FAILED!'
-        print *, minval(dpnh(:,:,k)), minval(dp(:,:,k))
-        print *,k,minval(dpnh(:,:,k)/dp(:,:,k)),maxval(dpnh(:,:,k)/dp(:,:,k))
+        write(iulog,*),'WARNING: hydrostatic inverse FAILED!'
+        write(iulog,*), minval(dpnh(:,:,k)), minval(dp(:,:,k))
+        write(iulog,*),k,minval(dpnh(:,:,k)/dp(:,:,k)),maxval(dpnh(:,:,k)/dp(:,:,k))
      endif
   enddo
 
@@ -399,7 +399,7 @@ contains
   elem%state%w   (i,j,k,  n0:n1) = w
   elem%state%dp3d(i,j,k,  n0:n1) = dp
   elem%state%ps_v(i,j,    n0:n1) = ps
-  elem%state%phi (i,j,k,  n0:n1) = g*zm
+  elem%state%phinh(i,j,k, n0:n1) = g*zm
   elem%state%phis(i,j)           = phis
   elem%state%theta_dp_cp(i,j,k,n0:n1)=T*Cp*dp*((p/p0)**(-kappa))
 
@@ -430,7 +430,7 @@ contains
     elem%state%w   (:,:,:,  n) = w
     elem%state%dp3d(:,:,:,  n) = dp
     elem%state%ps_v(:,:,    n) = ps
-    elem%state%phi (:,:,:,  n) = g*zm
+    elem%state%phinh(:,:,:, n) = g*zm
     elem%state%phis(:,:)       = phis
     elem%state%theta_dp_cp(:,:,:,n)=T*cp_star*dp*((p/p0)**(-kappa_star))
   end do
@@ -461,7 +461,7 @@ contains
     ps  = elem%state%ps_v(:,:,    nt)
     phis= elem%state%phis(:,:)
     w   = elem%state%w   (:,:,  :,nt)
-    phi = elem%state%phi (:,:,  :,nt)
+    phi = elem%state%phinh(:,:, :,nt)
 
     do k=1,nlev
        dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps(:,:)
@@ -556,18 +556,18 @@ real(real_kind), dimension(np,np,nlev) :: pnh,dpnh,exner
 
   ntQ=1
   call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
-  call get_moist_phinh(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,kappa_star,elem%state%phi(:,:,:,ns))
+  call get_moist_phinh(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,kappa_star,elem%state%phinh(:,:,:,ns))
 
   ! verify discrete hydrostatic balance
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,ns),dp,&
-       elem%state%phi(:,:,:,ns),&
+       elem%state%phinh(:,:,:,ns),&
        elem%state%phis(:,:),kappa_star,pnh,dpnh,exner)
   
   do k=1,nlev
      if (maxval(abs(1-dpnh(:,:,k)/dp(:,:,k))) > 1e-10) then
-        print *,'WARNING: hydrostatic inverse FAILED!'
-        print *, minval(dpnh(:,:,k)), minval(dp(:,:,k))
-        print *,k,minval(dpnh(:,:,k)/dp(:,:,k)),maxval(dpnh(:,:,k)/dp(:,:,k))
+        write(iulog,*)'WARNING: hydrostatic inverse FAILED!'
+        write(iulog,*) minval(dpnh(:,:,k)), minval(dp(:,:,k))
+        write(iulog,*)k,minval(dpnh(:,:,k)/dp(:,:,k)),maxval(dpnh(:,:,k)/dp(:,:,k))
      endif
   enddo
   
