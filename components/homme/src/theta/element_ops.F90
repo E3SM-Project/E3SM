@@ -27,6 +27,7 @@
 !     used by dcmip2012 test cases
 !  tests_finalize()
 !     initialize geopotential to be in hydrostatic balance
+!     used by DCMIP2012, 2016 tests
 !
 !  Accessory routines used by the above:
 !  get_pottemp()

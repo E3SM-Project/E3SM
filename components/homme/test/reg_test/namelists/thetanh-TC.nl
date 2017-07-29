@@ -20,11 +20,11 @@
   nu                = 3e16                      ! default= 1e15*(ne30/ne8)**3.2 = 6.9e16
   nu_s              = 3e16
   nu_p              = 3e16  
-  nu_top            = 2.5e5                     ! default = 2.5e5
+  nu_top            = 0e5                     ! default = 2.5e5
   limiter_option    = 8
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
-  moisture          = 'wet'
+  moisture          = 'dry'
   theta_hydrostatic_mode = .false.
   dcmip16_prec_type = 0                         ! 0=kessler,     1= reed-jablonowski
   dcmip16_pbl_type  = 0                         ! 0=basic pbl,   1= bryan pbl

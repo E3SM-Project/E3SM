@@ -160,7 +160,7 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
         call set_tracers(q,4,dp,i,j,k,lat,lon,elem(ie))
      enddo; enddo; enddo;
 
-    !call tests_finalize(elem(ie),hvcoord,1,nt)
+    call tests_finalize(elem(ie),hvcoord,1,nt)
   enddo
 
   sample_period = 1800.0 ! sec
