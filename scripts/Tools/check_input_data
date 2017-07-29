@@ -7,14 +7,11 @@ Should be run from case.
 """
 from standard_script_setup import *
 
-from CIME.utils import get_model
-from CIME.XML.machines import Machines
+from CIME.utils import get_model, run_cmd_no_fail
 from CIME.check_input_data import check_input_data, SVN_LOCS
 from CIME.case import Case
 
 import argparse, doctest
-
-MACHINE = Machines()
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -41,10 +38,11 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--svn-loc", default=SVN_LOCS[get_model()],
                         help="The input data repository from which to download data.")
 
-    parser.add_argument("-i", "--input-data-root", default=None,
-                        help="The root directory where input data goes. "
-                        "Default value will come from DIN_LOC_ROOT from case which itself "
-                        "defaults to '{}'".format(MACHINE.get_value("DIN_LOC_ROOT")))
+    din_loc_root = run_cmd_no_fail("./xmlquery --value DIN_LOC_ROOT")
+
+    parser.add_argument("-i", "--input-data-root", default=din_loc_root,
+                        help="The root directory where input data goes. ")
+
 
     parser.add_argument("--data-list-dir", default="Buildconf",
                         help="Where to find list of input files")
