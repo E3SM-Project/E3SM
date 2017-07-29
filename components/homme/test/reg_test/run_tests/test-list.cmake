@@ -14,6 +14,8 @@ SET(HOMME_TESTS
   baro2d-imp.cmake
   thetah-test22.cmake
   thetanh-test22.cmake
+  thetah-TC.cmake
+  thetanh-TC.cmake
   templates.cmake
 )
 

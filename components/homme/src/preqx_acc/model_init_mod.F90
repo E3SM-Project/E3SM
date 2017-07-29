@@ -27,6 +27,8 @@ contains
     type (hvcoord_t)  , intent(in), optional :: hvcoord
     type (TimeLevel_t), intent(in), optional :: tl
 
+    integer :: ie
+
     !$omp barrier
     !$omp master
 

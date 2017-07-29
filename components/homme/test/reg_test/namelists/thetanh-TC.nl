@@ -8,7 +8,7 @@
   test_case         = "dcmip2016_test2"         ! test identifier
   ne                = 8                         ! number of elements per cube face
   qsize             = 4                         ! num tracer fields
-  ndays             = 10
+  ndays             = 1
   statefreq         = 24                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
@@ -31,19 +31,19 @@
 /
 &vert_nl
   vform         = "ccm"
-  vfile_mid     = "../vcoord/camm-30.ascii"
-  vfile_int     = "../vcoord/cami-30.ascii"
+  vfile_mid     = "./vcoord/camm-30.ascii"
+  vfile_int     = "./vcoord/cami-30.ascii"
 /
 &analysis_nl
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 2,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
-  output_frequency  = 3                         ! every 3 hours
-  output_varnames1  ='T','ps','pnh','geo','u','v','w','omega','Th','Q','Q2','Q3','precl','zeta'   ! variables to write to file
+  output_frequency  = 24                        ! every 3 hours
+  output_varnames1  ='T','w','ps','Q','Q4'      ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16
-  interp_nlon       = 360
-  interp_nlat       = 181
+  interp_nlon       = 180
+  interp_nlat       = 91
 /
 &prof_inparm
   profile_outpe_num   = 100
