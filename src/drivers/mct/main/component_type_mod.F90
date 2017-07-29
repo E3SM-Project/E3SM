@@ -252,7 +252,7 @@ contains
                 if(shr_infnan_isnan(comp%c2x_cc%rattr(fld,n))) then
                    call mpi_comm_rank(comp%mpicom_compid, rank, ierr)
                    call mct_gsMap_orderedPoints(comp%gsmap_cc, rank, gpts)
-                   write(msg,*)'component_mod:check_fields NaN found in ',trim(comp%name),' instance: ',&
+                   write(msg,'(a,a,a,i4,a,a,a,i8)')'component_mod:check_fields NaN found in ',trim(comp%name),' instance: ',&
                         comp_index,' field ',trim(mct_avect_getRList2c(fld, comp%c2x_cc)), ' 1d global index: ',gpts(n)
                    call shr_sys_abort(msg)
                 endif
