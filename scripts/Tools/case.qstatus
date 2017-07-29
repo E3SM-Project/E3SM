@@ -7,9 +7,6 @@ Show the batch status of all jobs associated with this case.
 from standard_script_setup import *
 
 from CIME.case            import Case
-from CIME.utils           import find_system_test
-from CIME.XML.files       import Files
-from CIME.XML.component   import Component
 from CIME.test_status     import *
 
 ###############################################################################
