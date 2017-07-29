@@ -1314,10 +1314,6 @@ sub setup_cmdl_soil_decomp {
           $var = "use_century_decomp";
           $val = ".false.";
 
-          if ( defined($nl->get_value($var)) && $nl->get_value($var) ne $val ) {
-            fatal_error("$var is inconsistent with the commandline setting of -soil_decomp");
-          }
-
           my $group = $definition->get_group_name($var);
           $nl_flags->{$var} = $val;
           $nl->set_variable_value($group, $var, $val);
@@ -1330,10 +1326,6 @@ sub setup_cmdl_soil_decomp {
         } elsif ($val eq "century") {
           $var = "use_century_decomp";
           $val = ".true.";
-
-          if ( defined($nl->get_value($var)) && $nl->get_value($var) ne $val ) {
-            fatal_error("$var is inconsistent with the commandline setting of -soil_decomp");
-          }
 
           my $group = $definition->get_group_name($var);
           $nl_flags->{$var} = $val;
