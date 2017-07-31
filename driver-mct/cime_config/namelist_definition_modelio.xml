@@ -147,6 +147,28 @@
     </values>
   </entry>
 
+  <entry id="pio_netcdf_format" modify_via_xml="PIO_NETCDF_FORMAT">
+    <type>char*64</type>
+    <category>pio</category>
+    <group>pio_inparm</group>
+    <valid_values>classic,64bit_offset,64bit_data</valid_values>
+    <desc>
+      format of netcdf files created by pio, ignored if
+      PIO_TYPENAME is netcdf4p or netcdf4c.  64bit_data only
+      supported in netcdf 4.4.0 or newer
+    </desc>
+    <values>
+    <value component="cpl">$CPL_PIO_NETCDF_FORMAT</value>
+    <value component="atm">$ATM_PIO_NETCDF_FORMAT</value>
+    <value component="lnd">$LND_PIO_NETCDF_FORMAT</value>
+    <value component="ocn">$OCN_PIO_NETCDF_FORMAT</value>
+    <value component="ice">$ICE_PIO_NETCDF_FORMAT</value>
+    <value component="rof">$ROF_PIO_NETCDF_FORMAT</value>
+    <value component="glc">$GLC_PIO_NETCDF_FORMAT</value>
+    <value component="wav">$WAV_PIO_NETCDF_FORMAT</value>
+    </values>
+  </entry>
+
   <!-- =========================== -->
   <!-- group modelio               -->
   <!-- =========================== -->
