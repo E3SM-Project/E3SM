@@ -19,9 +19,13 @@ module shr_pio_mod
   public :: shr_pio_getiotype
   public :: shr_pio_getioroot
   public :: shr_pio_finalize
+  public :: shr_pio_getioformat
 
   interface shr_pio_getiotype
      module procedure shr_pio_getiotype_fromid, shr_pio_getiotype_fromname
+  end interface
+  interface shr_pio_getioformat
+     module procedure shr_pio_getioformat_fromid, shr_pio_getioformat_fromname
   end interface
   interface shr_pio_getiosys
      module procedure shr_pio_getiosys_fromid, shr_pio_getiosys_fromname
@@ -278,6 +282,25 @@ contains
     io_type = pio_comp_settings(shr_pio_getindex(component))%pio_iotype
 
   end function shr_pio_getiotype_fromname
+
+  function shr_pio_getioformat_fromid(compid) result(io_format)
+    integer, intent(in) :: compid
+    integer :: io_format
+
+    io_format = pio_comp_settings(shr_pio_getindex(compid))%pio_netcdf_ioformat
+
+  end function shr_pio_getioformat_fromid
+
+
+  function shr_pio_getioformat_fromname(component) result(io_format)
+    ! 'component' must be equal to some element of io_compname(:)
+    ! (but it is case-insensitive)
+    character(len=*), intent(in) :: component
+    integer :: io_format
+
+    io_format = pio_comp_settings(shr_pio_getindex(component))%pio_netcdf_ioformat
+
+  end function shr_pio_getioformat_fromname
 
 !===============================================================================
   function shr_pio_getioroot_fromid(compid) result(io_root)
