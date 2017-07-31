@@ -56,7 +56,7 @@ module docn_comp_mod
   integer(IN)   :: logunit               ! logging unit number
   integer       :: inst_index            ! number of current instance (ie. 1)
   character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
-  character(len=16) :: inst_suffix       ! char string associated with instance 
+  character(len=16) :: inst_suffix       ! char string associated with instance
                                          ! (ie. "_0001" or "")
   character(CL) :: ocn_mode              ! mode
   integer(IN)   :: dbug = 0              ! debug level (higher is more)
@@ -127,7 +127,6 @@ CONTAINS
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
-    use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
     implicit none
 
 ! !INPUT/OUTPUT PARAMETERS:
@@ -276,7 +275,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
- 
+
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
     if (force_prognostic_true) then
@@ -339,9 +338,8 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     if (trim(ocn_mode) /= 'NULL') then
        ocn_present = .true.
        call seq_timemgr_EClockGetData( EClock, calendar=calendar )
-       iosystem => shr_pio_getiosys(trim(inst_name))
-       
-       call shr_strdata_pioinit(SDOCN, iosystem, shr_pio_getiotype(trim(inst_name)))
+
+       call shr_strdata_pioinit(SDOCN, compid)
 
        if (scmmode) then
           if (my_task == master_task) &
@@ -407,8 +405,8 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
        call shr_dmodel_rearrGGrid(SDOCN%grid, ggrid, gsmap, rearr, mpicom)
     end if
 
-    ! Special logic for either prescribed or som aquaplanet - overwrite and 
-    ! set mask/frac to 1 
+    ! Special logic for either prescribed or som aquaplanet - overwrite and
+    ! set mask/frac to 1
     if (ocn_mode == 'SST_AQUAPANAL' .or. ocn_mode == 'SST_AQUAPFILE' .or. ocn_mode == 'SOM_AQUAP') then
        kmask = mct_aVect_indexRA(ggrid%data,'mask')
        ggrid%data%rattr(kmask,:) = 1
@@ -510,7 +508,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
        call shr_mpi_bcast(exists,mpicom,'exists')
        if (trim(ocn_mode) == 'SOM' .or. trim(ocn_mode) == 'SOM_AQUAP') then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
-          call shr_pcdf_readwrite('read',iosystem,SDOCN%io_type,trim(rest_file),mpicom,gsmap,rf1=somtp,rf1n='somtp')
+          call shr_pcdf_readwrite('read',SDOCN%pio_subsystem,SDOCN%io_type,trim(rest_file),mpicom,gsmap=gsmap,rf1=somtp,rf1n='somtp',io_format=SDOCN%io_format)
        endif
        if (exists) then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm)
@@ -595,7 +593,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
    type(seq_infodata_type), pointer :: infodata
 
    real(R8), parameter     :: swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) &
-      /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8) 
+      /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
    character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
    character(*), parameter :: F04   = "('(docn_comp_run) ',2a,2i8,'s')"
    character(*), parameter :: subName = "(docn_comp_run) "
@@ -669,7 +667,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
 
    select case (trim(ocn_mode))
 
-   case('COPYALL') 
+   case('COPYALL')
       ! do nothing extra
 
    case('SSTDATA')
@@ -742,7 +740,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
             hn = avstrm%rAttr(kh,n)
             !--- compute new temp ---
             o2x%rAttr(kt,n) = somtp(n) + &
-               (x2o%rAttr(kswnet,n) + &  ! shortwave 
+               (x2o%rAttr(kswnet,n) + &  ! shortwave
                 x2o%rAttr(klwup ,n) + &  ! longwave
                 x2o%rAttr(klwdn ,n) + &  ! longwave
                 x2o%rAttr(ksen  ,n) + &  ! sensible
@@ -779,7 +777,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
             hn = avstrm%rAttr(kh,n)
             !--- compute new temp ---
             o2x%rAttr(kt,n) = somtp(n) + &
-               (x2o%rAttr(kswnet,n) + &  ! shortwave 
+               (x2o%rAttr(kswnet,n) + &  ! shortwave
                 x2o%rAttr(klwup ,n) + &  ! longwave
                 x2o%rAttr(klwdn ,n) + &  ! longwave
                 x2o%rAttr(ksen  ,n) + &  ! sensible
@@ -839,7 +837,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
       call shr_sys_flush(logunit)
    end if
    firstcall = .false.
-      
+
    call shr_file_setLogUnit (shrlogunit)
    call shr_file_setLogLevel(shrloglev)
    call shr_sys_flush(logunit)
@@ -878,11 +876,11 @@ subroutine docn_comp_final()
 
    call t_startf('DOCN_FINAL')
    if (my_task == master_task) then
-      write(logunit,F91) 
+      write(logunit,F91)
       write(logunit,F00) trim(myModelName),': end of main integration loop'
-      write(logunit,F91) 
+      write(logunit,F91)
    end if
-      
+
    call t_stopf('DOCN_FINAL')
 
 end subroutine docn_comp_final
@@ -912,7 +910,7 @@ subroutine prescribed_sst(xc, yc, lsize, sst_option, sst)
   real(r8), parameter ::   shift      = 5._r8*pio180
   real(r8), parameter ::   shift9     = 10._r8*pio180
   real(r8), parameter ::   shift10    = 15._r8*pio180
-  
+
   ! Parameters for zonally asymmetric experiments
   real(r8), parameter ::   t0_max6    = 1._r8
   real(r8), parameter ::   t0_max7    = 3._r8
@@ -1001,7 +999,7 @@ subroutine prescribed_sst(xc, yc, lsize, sst_option, sst)
            tmp = 1._r8 - tmp*tmp
            sst(i) = tmp*(t0_max - t0_min) + t0_min
         else
-           tmp = sin((rlat(i)-shift)*pi*0.5_r8/(maxlat+shift))	
+           tmp = sin((rlat(i)-shift)*pi*0.5_r8/(maxlat+shift))
            tmp = 1._r8 - tmp*tmp
            sst(i) = tmp*(t0_max - t0_min) + t0_min
         end if
