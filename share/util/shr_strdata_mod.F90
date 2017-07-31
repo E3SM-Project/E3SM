@@ -96,7 +96,8 @@ module shr_strdata_mod
     character(CL)                  :: mapwrit (nStrMax) ! regrid mapping file to write
     character(CL)                  :: tintalgo(nStrMax) ! time interpolation algorithm
     character(CL)                  :: readmode(nStrMax) ! file read mode
-    integer(IN)                    :: io_type
+    integer(IN)                      :: io_type
+    integer(IN)                      :: io_format
 
     !--- data required by cosz t-interp method, set by user ---
     real(R8)                       :: eccen
@@ -335,7 +336,7 @@ module shr_strdata_mod
 
   else
 
-     ! NOTE: if the stream model domainfile is 'null' (or shr_strdata_nullstr), 
+     ! NOTE: if the stream model domainfile is 'null' (or shr_strdata_nullstr),
      ! then set the model domain to the domain of the first stream
 
      if (trim(SDAT%domainfile) == trim(shr_strdata_nullstr)) then
@@ -415,7 +416,7 @@ module shr_strdata_mod
                write(logunit,F00) ' writing ',trim(SDAT%fillwrit(n))
                call shr_sys_flush(logunit)
              endif
-             call shr_mct_sMatWritednc(SDAT%sMatPf(n)%Matrix,SDAT%pio_subsystem,sdat%io_type,  SDAT%fillwrit(n),compid,mpicom)
+             call shr_mct_sMatWritednc(SDAT%sMatPf(n)%Matrix,SDAT%pio_subsystem,sdat%io_type,  SDAT%io_format, SDAT%fillwrit(n),compid,mpicom)
            endif
         else
            if (my_task == master_task) then
@@ -450,7 +451,8 @@ module shr_strdata_mod
                write(logunit,F00) ' writing ',trim(SDAT%mapwrit(n))
                call shr_sys_flush(logunit)
              endif
-             call shr_mct_sMatWritednc(SDAT%sMatPs(n)%Matrix,sdat%pio_subsystem,sdat%io_type,SDAT%mapwrit(n),compid,mpicom)
+             call shr_mct_sMatWritednc(SDAT%sMatPs(n)%Matrix,sdat%pio_subsystem,&
+                  sdat%io_type,SDAT%io_format,SDAT%mapwrit(n),compid,mpicom)
            endif
         else
            if (my_task == master_task) then
@@ -1298,13 +1300,15 @@ end subroutine shr_strdata_readnml
 !     2010-10-26    Jim Edwards
 !
 ! !INTERFACE: ------------------------------------------------------------------
-subroutine shr_strdata_pioinit(SDAT,io_subsystem, io_type )
+subroutine shr_strdata_pioinit(SDAT, compid )
+  use shr_pio_mod, only: shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
   type(shr_strdata_type),intent(inout):: SDAT  ! strdata data data-type
   type(iosystem_desc_t), pointer :: io_subsystem
-  integer, intent(in) :: io_type
+  integer, intent(in) :: compid
 
-  SDAT%pio_subsystem => io_subsystem
-  SDAT%io_type=io_type
+  SDAT%pio_subsystem => shr_pio_getiosys(compid)
+  SDAT%io_type=shr_pio_getiotype(compid)
+  SDAT%io_format = shr_pio_getioformat(compid)
 
 end subroutine shr_strdata_pioinit
 
@@ -1329,7 +1333,6 @@ subroutine shr_strdata_create(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg
            domFilePath, domFileName,                        &
            domTvarName, domXvarName, domYvarName, domAreaName, domMaskName, &
            filePath, filename, fldListFile, fldListModel,   &
-           pio_subsystem, pio_iotype,                       &
 !--- strdata optional ---
            nzg, domZvarName,                                &
            taxMode, dtlimit, tintalgo, readmode,            &
@@ -1365,9 +1368,6 @@ subroutine shr_strdata_create(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg
    character(*)          ,intent(in)   :: filename(:)  ! filename for index filenumber
    character(*)          ,intent(in)   :: fldListFile  ! file field names, colon delim list
    character(*)          ,intent(in)   :: fldListModel ! model field names, colon delim list
-   type(iosystem_desc_t), pointer      :: pio_subsystem ! PIO subsystem pointer
-   integer(IN)          , intent(in)   :: pio_iotype    ! PIO file type
-
    integer(IN) ,optional ,intent(in)   :: nzg
    character(*),optional ,intent(in)   :: domZvarName  ! domain z dim name
    character(*),optional ,intent(in)   :: taxMode
@@ -1399,7 +1399,7 @@ subroutine shr_strdata_create(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg
 
    SDAT%nstreams = 1
 
-   call shr_strdata_pioinit(sdat, pio_subsystem, pio_iotype)
+   call shr_strdata_pioinit(sdat, compid)
 
    if (present(taxMode)) then
       SDAT%taxMode(1) = taxMode
@@ -1649,4 +1649,3 @@ end subroutine shr_strdata_setlogunit
 !===============================================================================
 
 end module shr_strdata_mod
-
