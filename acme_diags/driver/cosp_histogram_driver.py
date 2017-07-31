@@ -92,27 +92,15 @@ def run_diag(parameter):
                 parameter.output_file = '-'.join(
                     [ref_name, var, season, region])
                 parameter.main_title = str(' '.join([var, season, region]))
-                print mv1_domain.shape,mv2_domain.shape
 
                 mv1_domain_mean = mean(mv1_domain)
                 mv2_domain_mean = mean(mv2_domain)
 
-
-                #print mv1_domain_mean.shape,mv2_domain_mean.shape
-                #print mv1_domain_mean.getAxis(0)[:],mv1_domain_mean.getAxis(1)[:]
-                #print mv2_domain_mean.getAxis(0)[:],mv2_domain_mean.getAxis(1)[:]
-                
-
                 diff = mv1_domain_mean - mv2_domain_mean
+                mv1_domain_mean.id = var
+                mv2_domain_mean.id = var
+                diff.id = var
                 plot(parameter.current_set, mv2_domain_mean, mv1_domain_mean, diff, {}, parameter)
-                #plot(parameter.current_set, mv2_domain_mean, mv1_domain_mean, diff,  parameter)
-                #import matplotlib.pyplot as plt
-                #plt.pcolormesh(mv1_domain_mean,cmap='rainbow')#,vmin=0,vmax=3)
-                #plt.show()
-                print diff.shape
-#                    metrics_dict = create_metrics(
-#                        mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
-#                    parameter.var_region = region
 #                    plot(parameter.current_set, mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 #                    utils.save_ncfiles(parameter.current_set, mv1_domain, mv2_domain, diff, parameter)
     

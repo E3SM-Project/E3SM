@@ -39,48 +39,71 @@ def plot_panel(n, fig, _ , var, clevels, cmap, title, stats=None):
     x = var.getAxis(1)
     y = var.getAxis(0)
 
-    p1 = plt.pcolormesh(var)
+    p1 = plt.pcolormesh(var, cmap=cmap,norm=norm)
     # Calculate 3 x 3 grids for cloud fraction for nine cloud class
     # Place cloud fraction of each cloud class in plot:
     cld_3x3= np.zeros((3,3))
     for j in range(3):
         for i in range(3):
-            if j==2:
-                cld_3x3[j,i]=var[4:7,2*i:2*i+2].sum()
-                ax.text(i*2+1, j*2+1.5,'%.1f' %cld_3x3[j,i],horizontalalignment='center',verticalalignment='center',fontsize=25)
+            if var.id.find('MISR') != -1:
+                if j==0:
+                    cld_3x3[j,i]=var[0:6,2*i:2*i+2].sum()
+                    ax.text(i*2+1, 3,'%.1f' %cld_3x3[j,i],horizontalalignment='center',verticalalignment='center',fontsize=25)
+                elif j==1:                
+                    cld_3x3[j,i]=var[6:9,2*i:2*i+2].sum()
+                    ax.text(i*2+1, 7.5,'%.1f' %cld_3x3[j,i],horizontalalignment='center',verticalalignment='center',fontsize=25)
+                elif j==2:                
+                    cld_3x3[j,i]=var[9:,2*i:2*i+2].sum()
+                    ax.text(i*2+1, 12,'%.1f' %cld_3x3[j,i],horizontalalignment='center',verticalalignment='center',fontsize=25)
+    
+
             else:
-                cld_3x3[j,i]=var[2*j:2*j+2,2*i:2*i+2].sum()
-                ax.text(i*2+1, j*2+1,'%.1f' %cld_3x3[j,i],horizontalalignment='center',verticalalignment='center',fontsize=25)
+                if j==2:
+                    cld_3x3[j,i]=var[4:7,2*i:2*i+2].sum()
+                    ax.text(i*2+1, j*2+1.5,'%.1f' %cld_3x3[j,i],horizontalalignment='center',verticalalignment='center',fontsize=25)
+                else:
+                    cld_3x3[j,i]=var[2*j:2*j+2,2*i:2*i+2].sum()
+                    ax.text(i*2+1, j*2+1,'%.1f' %cld_3x3[j,i],horizontalalignment='center',verticalalignment='center',fontsize=25)
     
     # Place vertical/horizonal line to separate cloud class
-    
     plt.axvline(x=2, linewidth=2, color='k')
     plt.axvline(x=4, linewidth=2, color='k')
-    plt.axhline(y=2, linewidth=2, color='k')
-    plt.axhline(y=4, linewidth=2, color='k')
+
+    if var.id.find('MISR') != -1: 
+        plt.axhline(y=6, linewidth=2, color='k')
+        plt.axhline(y=9, linewidth=2, color='k')
+        #yticks = [0,0.5,1,1.5,2,2.5,3,4,5,7,9,11,13,15,17,23]
+        #ylabels = ['%.1f' %i for i in yticks]
+        #ax.set_yticklabels(ylabels)
+        ##yticks_position =np.linspace(0,15,16)
+        #plt.yticks(yticks_position, ylabels)
+        ax.set_ylabel('Cloud Top Height (km)')
+        #plt.ylim(0,23)
+    else:
+        plt.axhline(y=2, linewidth=2, color='k')
+        plt.axhline(y=4, linewidth=2, color='k')
+        yticks = [1000.,800.,680.,560.,440.,310.,180.,0.]
+        ylabels = ['%.1f' %i for i in yticks]
+        ax.set_yticklabels(ylabels)
+        ax.set_ylabel('Cloud Top Pressure (mb)')
+    xticks = [0.3, 1.3, 3.6,9.4,23,60, 379]
+    xlabels = ['%.1f' %i for i in xticks]
+    ax.set_xticklabels(xlabels)
+    ax.set_xlabel('Cloud Optical Thickness')
     
     #xlabels = ['%.1f' %i for i in x.getBounds()[:,0]]+['%.1f' %x.getBounds()[-1,-1]]
     #ylabels = ['%.1f' %i for i in y.getBounds()[:,0]]+['%.1f' %y.getBounds()[-1,-1]]
     
     #ax.set_xticklabels(xlabels)
     #ax.set_yticklabels(ylabels)
-    #if title[0] != None: ax.set_title(title[0], loc='left', fontdict=plotSideTitle)
-    #if title[1] != None: ax.set_title(title[1], fontdict=plotTitle)
-    #if title[2] != None: ax.set_title(title[2], loc='right', fontdict=plotSideTitle)
-    #ax.set_xticks([0, 60, 120, 180, 240, 300, 359.99], crs=ccrs.PlateCarree())
-    ##ax.set_xticks([-180, -120, -60, 0, 60, 120, 180], crs=ccrs.PlateCarree())
-    #ax.set_yticks([-90, -60, -30, 0, 30, 60, 90], crs=ccrs.PlateCarree())
-    #lon_formatter = LongitudeFormatter(zero_direction_label=True, number_format='.0f')
-    #lat_formatter = LatitudeFormatter()
-    #ax.xaxis.set_major_formatter(lon_formatter)
-    #ax.yaxis.set_major_formatter(lat_formatter)
-    #ax.tick_params(labelsize=8.0, direction='out', pad=-2, width=1)
-    #ax.xaxis.set_ticks_position('bottom')
-    #ax.yaxis.set_ticks_position('left')
+    if title[0] != None: ax.set_title(title[0], loc='left', fontdict=plotSideTitle)
+    if title[1] != None: ax.set_title(title[1], fontdict=plotTitle)
+    if title[2] != None: ax.set_title(title[2], loc='right', fontdict=plotSideTitle)
+    #ax.set_ylabel('Cloud Top Height (km)')
 
     # Color bar
     cbax = fig.add_axes((panel[n][0]+0.6635,panel[n][1]+0.0215,0.0326,0.1792))
-    cbar = fig.colorbar(p1, cax=cbax)
+    cbar = fig.colorbar(p1, cax=cbax,extend='both')
     w,h = get_ax_size(fig,cbax)
 
     if levels == None:
@@ -101,8 +124,8 @@ def plot(reference, test, diff,_, parameter):#underscore meanding argument not i
     fig = plt.figure(figsize=[8.5, 11.0])
 
     plot_panel(0, fig, _, test, parameter.contour_levels, 'rainbow', (parameter.test_name,parameter.test_title,test.units))
-    plot_panel(1, fig, _, reference, parameter.contour_levels, 'rainbow', (parameter.test_name,parameter.test_title,test.units))
-    plot_panel(2, fig, _, diff, parameter.diff_levels, 'rainbow', (parameter.test_name,parameter.test_title,test.units))
+    plot_panel(1, fig, _, reference, parameter.contour_levels, 'rainbow', (parameter.reference_name,parameter.reference_title,test.units))
+    plot_panel(2, fig, _, diff, parameter.diff_levels, 'RdBu_r', (parameter.diff_name,parameter.diff_title,test.units))
 
 #    min2  = metrics_dict['ref']['min']
 #    mean2 = metrics_dict['ref']['mean']

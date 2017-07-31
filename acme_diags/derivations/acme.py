@@ -274,7 +274,6 @@ def cosp_histogram_standardize(cld):
     if tau_bounds is None:
         cloud_tau_bounds = np.array([[0.3,1.3],[1.3,3.6],[3.6,9.4],[9.4,23],[23,60],[60,379]]) # length 6
         tau.setBounds( np.array(cloud_tau_bounds,dtype=np.float32) )
-    print prs.getBounds(),tau.getBounds()
 
     if cld.id == 'FISCCP1_COSP':   #ISCCP model
         cld_hist = cld(cosp_tau = (0.3, tau_high))
@@ -551,15 +550,15 @@ derived_variables = {
     ]),
 # COSP cloud fraction joint histogram     
     'COSP_HISTOGRAM_MISR': OrderedDict([
-        (('CLD_MISR'),lambda cld: cosp_histogram_standardize(cld)),
-        (('CLMISR'),lambda cld: cosp_histogram_standardize(cld))
+        (('CLD_MISR'),lambda cld: cosp_histogram_standardize(rename(cld))),
+        (('CLMISR'),lambda cld: cosp_histogram_standardize(rename(cld)))
     ]),
     'COSP_HISTOGRAM_MODIS': OrderedDict([
-        (('CLMODIS'),lambda cld: cosp_histogram_standardize(cld)),
+        (('CLMODIS'),lambda cld: cosp_histogram_standardize(rename(cld))),
     ]),
     'COSP_HISTOGRAM_ISCCP': OrderedDict([
-        (('FISCCP1_COSP'),lambda cld: cosp_histogram_standardize(cld)),
-        (('CLISCCP'),lambda cld: cosp_histogram_standardize(cld))
+        (('FISCCP1_COSP'),lambda cld: cosp_histogram_standardize(rename(cld))),
+        (('CLISCCP'),lambda cld: cosp_histogram_standardize(rename(cld)))
     ]),
     'ICEFRAC': OrderedDict([
         (('ICEFRAC'), lambda icefrac: convert_units(icefrac, target_units="%"))
