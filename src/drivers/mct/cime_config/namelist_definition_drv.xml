@@ -849,18 +849,6 @@
     </values>
   </entry>
 
-  <entry id="cpl_cdf64">
-    <type>logical</type>
-    <category>expdef</category>
-    <group>seq_infodata_inparm</group>
-    <desc>
-      default: true
-    </desc>
-    <values>
-      <value>.true.</value>
-    </values>
-  </entry>
-
   <entry id="do_budgets" modify_via_xml="BUDGETS">
     <type>logical</type>
     <category>budget</category>
@@ -3948,4 +3936,3 @@
   </entry>
 
 </entry_id>
-

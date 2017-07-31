@@ -139,7 +139,7 @@ MODULE seq_infodata_mod
       character(SHR_KIND_CS)  :: aoflux_grid     ! grid for atm ocn flux calc
       integer                 :: cpl_decomp      ! coupler decomp
       character(SHR_KIND_CL)  :: cpl_seq_option  ! coupler sequencing option
-      logical                 :: cpl_cdf64       ! use netcdf 64 bit offset, large file support
+
       logical                 :: do_budgets      ! do heat/water budgets diagnostics
       logical                 :: do_histinit     ! write out initial history file
       integer                 :: budget_inst     ! instantaneous budget level
@@ -372,7 +372,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
     character(SHR_KIND_CS) :: aoflux_grid        ! grid for atm ocn flux calc
     integer                :: cpl_decomp         ! coupler decomp
     character(SHR_KIND_CL) :: cpl_seq_option     ! coupler sequencing option
-    logical                :: cpl_cdf64          ! use netcdf 64 bit offset, large file support
+
     logical                :: do_budgets         ! do heat/water budgets diagnostics
     logical                :: do_histinit        ! write out initial history file
     integer                :: budget_inst        ! instantaneous budget level
@@ -440,7 +440,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
          histavg_atm, histavg_lnd, histavg_ocn, histavg_ice, &
          histavg_rof, histavg_glc, histavg_wav, histavg_xao, &
          histaux_l2x1yr, cpl_seq_option,                   &
-         cpl_cdf64, eps_frac, eps_amask,                   &
+         eps_frac, eps_amask,                   &
          eps_agrid, eps_aarea, eps_omask, eps_ogrid,       &
          eps_oarea, esmf_map_flag,                         &
          reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute, &
@@ -513,7 +513,6 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        aoflux_grid           = 'ocn'
        cpl_decomp            = 0
        cpl_seq_option        = 'CESM1_MOD'
-       cpl_cdf64             = .true.
        do_budgets            = .false.
        do_histinit           = .false.
        budget_inst           = 0
@@ -620,7 +619,6 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        infodata%aoflux_grid           = aoflux_grid
        infodata%cpl_decomp            = cpl_decomp
        infodata%cpl_seq_option        = cpl_seq_option
-       infodata%cpl_cdf64             = cpl_cdf64
        infodata%do_budgets            = do_budgets
        infodata%do_histinit           = do_histinit
        infodata%budget_inst           = budget_inst
@@ -935,7 +933,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
            histaux_a2x24hr, histaux_l2x   , histaux_r2x     , orb_obliq,      &
            histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,                &
            histavg_rof, histavg_glc, histavg_wav, histavg_xao,                &
-           cpl_cdf64, orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
+           orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
            orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
            wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
            tfreeze_option, glc_renormalize_smb,                               &
@@ -1012,7 +1010,6 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
    character(len=*),       optional, intent(OUT) :: aoflux_grid             ! grid for atm ocn flux calc
    integer,                optional, intent(OUT) :: cpl_decomp              ! coupler decomp
    character(len=*),       optional, intent(OUT) :: cpl_seq_option          ! coupler sequencing option
-   logical,                optional, intent(OUT) :: cpl_cdf64               ! netcdf large file setting
    logical,                optional, intent(OUT) :: do_budgets              ! heat/water budgets
    logical,                optional, intent(OUT) :: do_histinit             ! initial history file
    integer,                optional, intent(OUT) :: budget_inst             ! inst budget
@@ -1184,7 +1181,6 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
     if ( present(aoflux_grid)    ) aoflux_grid    = infodata%aoflux_grid
     if ( present(cpl_decomp)     ) cpl_decomp     = infodata%cpl_decomp
     if ( present(cpl_seq_option) ) cpl_seq_option = infodata%cpl_seq_option
-    if ( present(cpl_cdf64)      ) cpl_cdf64      = infodata%cpl_cdf64
     if ( present(do_budgets)     ) do_budgets     = infodata%do_budgets
     if ( present(do_histinit)    ) do_histinit    = infodata%do_histinit
     if ( present(budget_inst)    ) budget_inst    = infodata%budget_inst
@@ -1500,7 +1496,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
            histaux_a2x24hr, histaux_l2x   , histaux_r2x     , orb_obliq,      &
            histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,                &
            histavg_rof, histavg_glc, histavg_wav, histavg_xao,                &
-           cpl_cdf64, orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
+           orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
            orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
            wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
            tfreeze_option, glc_renormalize_smb, &
@@ -1577,7 +1573,6 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
    character(len=*),       optional, intent(IN)    :: aoflux_grid             ! grid for atm ocn flux calc
    integer,                optional, intent(IN)    :: cpl_decomp              ! coupler decomp
    character(len=*),       optional, intent(IN)    :: cpl_seq_option          ! coupler sequencing option
-   logical,                optional, intent(IN)    :: cpl_cdf64               ! netcdf large file setting
    logical,                optional, intent(IN)    :: do_budgets              ! heat/water budgets
    logical,                optional, intent(IN)    :: do_histinit             ! initial history file
    integer,                optional, intent(IN)    :: budget_inst             ! inst budget
@@ -1748,7 +1743,6 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
     if ( present(aoflux_grid)    ) infodata%aoflux_grid    = aoflux_grid
     if ( present(cpl_decomp)     ) infodata%cpl_decomp     = cpl_decomp
     if ( present(cpl_seq_option) ) infodata%cpl_seq_option = cpl_seq_option
-    if ( present(cpl_cdf64)      ) infodata%cpl_cdf64      = cpl_cdf64
     if ( present(do_budgets)     ) infodata%do_budgets     = do_budgets
     if ( present(do_histinit)    ) infodata%do_histinit    = do_histinit
     if ( present(budget_inst)    ) infodata%budget_inst    = budget_inst
@@ -2168,7 +2162,6 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%aoflux_grid,             mpicom)
     call shr_mpi_bcast(infodata%cpl_decomp,              mpicom)
     call shr_mpi_bcast(infodata%cpl_seq_option,          mpicom)
-    call shr_mpi_bcast(infodata%cpl_cdf64,               mpicom)
     call shr_mpi_bcast(infodata%do_budgets,              mpicom)
     call shr_mpi_bcast(infodata%do_histinit,             mpicom)
     call shr_mpi_bcast(infodata%budget_inst,             mpicom)
@@ -2836,7 +2829,6 @@ SUBROUTINE seq_infodata_print( infodata )
        write(logunit,F0A) subname,'aoflux_grid              = ', trim(infodata%aoflux_grid)
        write(logunit,F0A) subname,'cpl_seq_option           = ', trim(infodata%cpl_seq_option)
        write(logunit,F0S) subname,'cpl_decomp               = ', infodata%cpl_decomp
-       write(logunit,F0L) subname,'cpl_cdf64                = ', infodata%cpl_cdf64
        write(logunit,F0L) subname,'do_budgets               = ', infodata%do_budgets
        write(logunit,F0L) subname,'do_histinit              = ', infodata%do_histinit
        write(logunit,F0S) subname,'budget_inst              = ', infodata%budget_inst

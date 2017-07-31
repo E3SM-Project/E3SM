@@ -2165,6 +2165,27 @@
     </values>
   </entry>
 
+  <entry id="PIO_NETCDF_FORMAT">
+    <type>char</type>
+    <valid_values>classic,64bit_offset,64bit_data</valid_values>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio netcdf format (ignored for netcdf4p and netcdf4c)
+    https://www.unidata.ucar.edu/software/netcdf/docs/data_type.html
+    </desc>
+    <values>
+      <value component="ATM">64bit_offset</value>
+      <value component="CPL">64bit_offset</value>
+      <value component="OCN">64bit_offset</value>
+      <value component="WAV">64bit_offset</value>
+      <value component="GLC">64bit_offset</value>
+      <value component="ICE">64bit_offset</value>
+      <value component="ROF">64bit_offset</value>
+      <value component="LND">64bit_offset</value>
+      <value component="ESP">64bit_offset</value>
+    </values>
+  </entry>
+
   <entry id="PIO_STRIDE">
     <type>integer</type>
     <group>run_pio</group>
