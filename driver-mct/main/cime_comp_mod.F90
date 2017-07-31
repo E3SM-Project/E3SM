@@ -475,7 +475,6 @@ module cime_comp_mod
    logical  :: exists                 ! true if file exists
    integer  :: ierr                   ! MPI error return
    integer  :: rc                     ! return code
-   logical  :: cdf64                  ! true => use 64 bit addressing in netCDF files
 
    character(*), parameter :: NLFileName = "drv_in"  ! input namelist filename
 
@@ -1340,7 +1339,6 @@ subroutine cime_init()
         glc_nx=glc_nx, glc_ny=glc_ny,          &
         ocn_nx=ocn_nx, ocn_ny=ocn_ny,          &
         wav_nx=wav_nx, wav_ny=wav_ny,          &
-        cpl_cdf64=cdf64,                       &
         atm_aero=atm_aero )
 
    ! derive samegrid flags
@@ -1522,7 +1520,6 @@ subroutine cime_init()
       write(logunit,F0L)'samegrid_ow           = ',samegrid_ow
       write(logunit,F0L)'skip init ocean run   = ',skip_ocean_run
       write(logunit,F00)'cpl sequence option   = ',trim(cpl_seq_option)
-      write(logunit,F0L)'cpl_cdf64             = ',cdf64
       write(logunit,F0L)'do_histavg            = ',do_histavg
       write(logunit,F0L)'atm_aero              = ',atm_aero
       write(logunit,*  )' '

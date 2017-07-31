@@ -362,7 +362,6 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
         glc_prognostic=glc_prognostic,      &
         wav_prognostic=wav_prognostic,      &
         esp_prognostic=esp_prognostic,      &
-        cpl_cdf64=cdf64,            &
         case_name=case_name)
 
    ! Write out infodata and time manager data to restart file
@@ -406,7 +405,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
       endif
 
       call shr_mpi_bcast(rest_file,mpicom_CPLID)
-      call seq_io_wopen(rest_file,clobber=.true.,cdf64=cdf64)
+      call seq_io_wopen(rest_file,clobber=.true.)
 
       ! loop twice (for perf), first time write header, second time write data
       do fk = 1,2
