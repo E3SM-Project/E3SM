@@ -15,6 +15,8 @@ def _get_plot_fcn(backend, set_num):
             set_num = '5'
         if set_num == 'polar':
             set_num = '7'
+        if set_num == 'cosp_histogram':
+            set_num = '13'
 
         mod_str = 'acme_diags.plot.{}.set{}'.format(backend, set_num)
         module = importlib.import_module(mod_str)

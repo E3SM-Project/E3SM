@@ -104,9 +104,11 @@ def run_diag(parameter):
                 
 
                 diff = mv1_domain_mean - mv2_domain_mean
-                import matplotlib.pyplot as plt
-                plt.pcolormesh(mv1_domain_mean,cmap='rainbow')#,vmin=0,vmax=3)
-                plt.show()
+                plot(parameter.current_set, mv2_domain_mean, mv1_domain_mean, diff, {}, parameter)
+                #plot(parameter.current_set, mv2_domain_mean, mv1_domain_mean, diff,  parameter)
+                #import matplotlib.pyplot as plt
+                #plt.pcolormesh(mv1_domain_mean,cmap='rainbow')#,vmin=0,vmax=3)
+                #plt.show()
                 print diff.shape
 #                    metrics_dict = create_metrics(
 #                        mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
