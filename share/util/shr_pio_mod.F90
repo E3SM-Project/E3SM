@@ -42,6 +42,7 @@ module shr_pio_mod
      integer :: pio_numiotasks
      integer :: pio_iotype
      integer :: pio_rearranger
+     integer :: pio_netcdf_ioformat
   end type pio_comp_t
 
   character(len=16), allocatable :: io_compname(:)
@@ -82,7 +83,7 @@ contains
     integer, intent(inout) :: Global_Comm
 
 
-    integer :: i, pio_root, pio_stride, pio_numiotasks, pio_iotype, pio_rearranger
+    integer :: i, pio_root, pio_stride, pio_numiotasks, pio_iotype, pio_rearranger, pio_netcdf_ioformat
     integer :: mpigrp_world, mpigrp, ierr, mpicom
     character(*),parameter :: subName =   '(shr_pio_init1) '
     integer :: pelist(3,1)
@@ -101,6 +102,7 @@ contains
        pio_comp_settings(i)%pio_numiotasks = pio_numiotasks
        pio_comp_settings(i)%pio_iotype = pio_iotype
        pio_comp_settings(i)%pio_rearranger = pio_rearranger
+       pio_comp_settings(i)%pio_netcdf_ioformat = pio_netcdf_ioformat
     end do
     if(pio_async_interface) then
 #ifdef NO_MPI2
@@ -206,7 +208,8 @@ contains
 
              call shr_pio_read_component_namelist(nlfilename , comp_comm(i), pio_comp_settings(i)%pio_stride, &
                   pio_comp_settings(i)%pio_root, pio_comp_settings(i)%pio_numiotasks, &
-                  pio_comp_settings(i)%pio_iotype, pio_comp_settings(i)%pio_rearranger)
+                  pio_comp_settings(i)%pio_iotype, pio_comp_settings(i)%pio_rearranger, &
+                  pio_comp_settings(i)%pio_netcdf_ioformat)
              call pio_init(comp_comm_iam(i), comp_comm(i), pio_comp_settings(i)%pio_numiotasks, 0, &
                   pio_comp_settings(i)%pio_stride, &
                   pio_comp_settings(i)%pio_rearranger, iosystems(i), &
@@ -386,6 +389,7 @@ contains
 
     character(len=shr_kind_cs) :: pio_typename
     character(len=shr_kind_cs) :: pio_rearr_comm_type, pio_rearr_comm_fcd
+    integer :: pio_netcdf_ioformat
     integer :: pio_rearr_comm_max_pend_req_comp2io
     logical :: pio_rearr_comm_enable_hs_comp2io, pio_rearr_comm_enable_isend_comp2io
     integer :: pio_rearr_comm_max_pend_req_io2comp
@@ -427,7 +431,7 @@ contains
     pio_debug_level = 0 ! no debug info by default
     pio_async_interface = .false.   ! pio tasks are a subset of component tasks
     pio_rearranger = PIO_REARR_SUBSET
-
+    pio_netcdf_ioformat = PIO_64BIT_OFFSET
     pio_rearr_comm_type = 'p2p'
     pio_rearr_comm_fcd = '2denable'
     pio_rearr_comm_max_pend_req_comp2io = 0
@@ -459,7 +463,7 @@ contains
     end if
 
      call shr_pio_namelist_set(npes, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, &
-          iamroot, pio_rearranger)
+          iamroot, pio_rearranger, pio_netcdf_ioformat)
 
     call shr_mpi_bcast(pio_debug_level, Comm)
     call shr_mpi_bcast(pio_blocksize, Comm)
@@ -475,22 +479,24 @@ contains
 
   end subroutine shr_pio_read_default_namelist
 
-  subroutine shr_pio_read_component_namelist(nlfilename, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, pio_rearranger)
+  subroutine shr_pio_read_component_namelist(nlfilename, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, pio_rearranger, pio_netcdf_ioformat)
     character(len=*), intent(in) :: nlfilename
     integer, intent(in) :: Comm
 
-    integer, intent(inout) :: pio_stride, pio_root, pio_numiotasks, pio_iotype, pio_rearranger
+    integer, intent(inout) :: pio_stride, pio_root, pio_numiotasks
+    integer, intent(inout) :: pio_iotype, pio_rearranger, pio_netcdf_ioformat
     character(len=SHR_KIND_CS) ::  pio_typename
+    character(len=SHR_KIND_CS) ::  pio_netcdf_format
     integer :: unitn
 
     integer :: iam, ierr, npes
     logical :: iamroot
     character(*),parameter :: subName =   '(shr_pio_read_component_namelist) '
     integer :: pio_default_stride, pio_default_root, pio_default_numiotasks, pio_default_iotype
-    integer :: pio_default_rearranger
+    integer :: pio_default_rearranger, pio_default_netcdf_ioformat
 
     namelist /pio_inparm/ pio_stride, pio_root, pio_numiotasks, &
-         pio_typename, pio_rearranger
+         pio_typename, pio_rearranger, pio_netcdf_format
 
 
 
@@ -510,7 +516,7 @@ contains
     pio_default_numiotasks = pio_numiotasks
     pio_default_iotype = pio_iotype
     pio_default_rearranger = pio_rearranger
-
+    pio_default_netcdf_ioformat = PIO_64BIT_OFFSET
 
     !--------------------------------------------------------------------------
     ! read io nml parameters
@@ -520,6 +526,7 @@ contains
     pio_root     = -99
     pio_typename = 'nothing'
     pio_rearranger = -99
+    pio_netcdf_format = '64bit_offset'
 
     if(iamroot) then
        unitn=shr_file_getunit()
@@ -531,6 +538,7 @@ contains
            pio_numiotasks = pio_default_numiotasks
            pio_iotype     = pio_default_iotype
            pio_rearranger = pio_default_rearranger
+           pio_netcdf_ioformat = pio_default_netcdf_ioformat
        else
           ierr = 1
           do while( ierr /= 0 )
@@ -544,6 +552,7 @@ contains
           call shr_file_freeUnit( unitn )
 
           call shr_pio_getiotypefromname(pio_typename, pio_iotype, pio_default_iotype)
+          call shr_pio_getioformatfromname(pio_netcdf_format, pio_netcdf_ioformat, pio_default_netcdf_ioformat)
        end if
        if(pio_stride== -99) then
           if (pio_numiotasks > 0) then
@@ -562,10 +571,30 @@ contains
 
 
     call shr_pio_namelist_set(npes, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, &
-         iamroot, pio_rearranger)
+         iamroot, pio_rearranger, pio_netcdf_ioformat)
 
 
   end subroutine shr_pio_read_component_namelist
+
+  subroutine shr_pio_getioformatfromname(pio_netcdf_format, pio_netcdf_ioformat, pio_default_netcdf_ioformat)
+    use shr_string_mod, only : shr_string_toupper
+    character(len=*), intent(inout) :: pio_netcdf_format
+    integer, intent(out) :: pio_netcdf_ioformat
+    integer, intent(in) :: pio_default_netcdf_ioformat
+
+    pio_netcdf_format = shr_string_toupper(pio_netcdf_format)
+    if ( pio_netcdf_format .eq. 'CLASSIC' ) then
+       pio_netcdf_ioformat = 0
+    elseif ( pio_netcdf_format .eq. '64BIT_OFFSET' ) then
+       pio_netcdf_ioformat = PIO_64BIT_OFFSET
+    elseif ( pio_netcdf_format .eq. '64BIT_DATA' ) then
+       pio_netcdf_ioformat = PIO_64BIT_DATA
+    else
+       pio_netcdf_ioformat = pio_default_netcdf_ioformat
+    endif
+
+  end subroutine shr_pio_getioformatfromname
+
 
   subroutine shr_pio_getiotypefromname(typename, iotype, defaulttype)
     use shr_string_mod, only : shr_string_toupper
@@ -582,9 +611,6 @@ contains
        iotype = pio_iotype_netcdf4p
     else if ( typename .eq. 'NETCDF4C') then
        iotype = pio_iotype_netcdf4c
-!  Not yet supported
-!    else if ( typename .eq. 'VDC') then
-!       iotype = pio_iotype_vdc
     else if ( typename .eq. 'NOTHING') then
        iotype = defaulttype
     else if ( typename .eq. 'DEFAULT') then
@@ -598,10 +624,10 @@ contains
 
 !===============================================================================
   subroutine shr_pio_namelist_set(npes,mycomm, pio_stride, pio_root, pio_numiotasks, &
-       pio_iotype, iamroot, pio_rearranger)
+       pio_iotype, iamroot, pio_rearranger, pio_netcdf_ioformat)
     integer, intent(in) :: npes, mycomm
     integer, intent(inout) :: pio_stride, pio_root, pio_numiotasks
-    integer, intent(inout) :: pio_iotype, pio_rearranger
+    integer, intent(inout) :: pio_iotype, pio_rearranger, pio_netcdf_ioformat
     logical, intent(in) :: iamroot
     character(*),parameter :: subName =   '(shr_pio_namelist_set) '
 
@@ -610,6 +636,7 @@ contains
     call shr_mpi_bcast(pio_root    , mycomm)
     call shr_mpi_bcast(pio_numiotasks, mycomm)
     call shr_mpi_bcast(pio_rearranger, mycomm)
+    call shr_mpi_bcast(pio_netcdf_ioformat, mycomm)
 
     if (pio_root<0) then
        pio_root = 1
