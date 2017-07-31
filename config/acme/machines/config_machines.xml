@@ -1040,7 +1040,7 @@
     <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <BASELINE_ROOT>/lcrc/group/acme/acme_baselines</BASELINE_ROOT>
+    <BASELINE_ROOT>/lcrc/group/acme/acme_baselines/bebop</BASELINE_ROOT>
     <CCSM_CPRNC>/lcrc/group/acme/tools/cprnc/cprnc</CCSM_CPRNC>
     <OS>LINUX</OS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
