@@ -24,12 +24,7 @@ def get_ax_size(fig,ax):
     height *= fig.dpi
     return width, height
 
-def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
-
-    var = add_cyclic(var)
-    lon = var.getLongitude()
-    lat = var.getLatitude()
-    var = ma.squeeze( var.asma() )
+def plot_panel(n, fig, _ , var, clevels, cmap, title, stats=None):
 
     # Contour levels
     levels = None
@@ -39,19 +34,22 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
         norm = colors.BoundaryNorm(boundaries=levels, ncolors=256)
 
     # Contour plot
-    ax = fig.add_axes(panel[n],projection=proj)
-    ax.set_global()
-    plt.pcolormesh(var2d)
+    ax = fig.add_axes(panel[n])
+
+    x = var.getAxis(1)
+    y = var.getAxis(0)
+
+    p1 = plt.pcolormesh(var)
     # Calculate 3 x 3 grids for cloud fraction for nine cloud class
     # Place cloud fraction of each cloud class in plot:
     cld_3x3= np.zeros((3,3))
     for j in range(3):
         for i in range(3):
             if j==2:
-                cld_3x3[j,i]=var2d[4:7,2*i:2*i+2].sum()
+                cld_3x3[j,i]=var[4:7,2*i:2*i+2].sum()
                 ax.text(i*2+1, j*2+1.5,'%.1f' %cld_3x3[j,i],horizontalalignment='center',verticalalignment='center',fontsize=25)
             else:
-                cld_3x3[j,i]=var2d[2*j:2*j+2,2*i:2*i+2].sum()
+                cld_3x3[j,i]=var[2*j:2*j+2,2*i:2*i+2].sum()
                 ax.text(i*2+1, j*2+1,'%.1f' %cld_3x3[j,i],horizontalalignment='center',verticalalignment='center',fontsize=25)
     
     # Place vertical/horizonal line to separate cloud class
@@ -61,20 +59,11 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
     plt.axhline(y=2, linewidth=2, color='k')
     plt.axhline(y=4, linewidth=2, color='k')
     
-    xlabels = ['%.1f' %i for i in x.getBounds()[:,0]]+['%.1f' %x.getBounds()[-1,-1]]
-    ylabels = ['%.1f' %i for i in y.getBounds()[:,0]]+['%.1f' %y.getBounds()[-1,-1]]
+    #xlabels = ['%.1f' %i for i in x.getBounds()[:,0]]+['%.1f' %x.getBounds()[-1,-1]]
+    #ylabels = ['%.1f' %i for i in y.getBounds()[:,0]]+['%.1f' %y.getBounds()[-1,-1]]
     
-    ax.set_xticklabels(xlabels)
-    ax.set_yticklabels(ylabels)
-    #p1 = ax.contourf(lon, lat, var,
-    #                 transform=ccrs.PlateCarree(), 
-    #                 norm=norm,
-    #                 levels=levels,
-    #                 cmap=cmap,
-    #                 extend='both',
-    #                 )
-    #ax.set_aspect('auto')
-    #ax.coastlines(lw=0.3)
+    #ax.set_xticklabels(xlabels)
+    #ax.set_yticklabels(ylabels)
     #if title[0] != None: ax.set_title(title[0], loc='left', fontdict=plotSideTitle)
     #if title[1] != None: ax.set_title(title[1], fontdict=plotTitle)
     #if title[2] != None: ax.set_title(title[2], loc='right', fontdict=plotSideTitle)
@@ -105,12 +94,15 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
         cbar.ax.tick_params( labelsize=9.0,pad=25, length=0)
 
 
-def plot(reference, test, diff, parameter):
+def plot(reference, test, diff,_, parameter):#underscore meanding argument not important
 
     # Create figure, projection
+    projection = 'None'
     fig = plt.figure(figsize=[8.5, 11.0])
 
-    plot_panel(0, fig, proj, test, parameter.contour_levels, 'viridis', (parameter.test_name,parameter.test_title,test.units))
+    plot_panel(0, fig, _, test, parameter.contour_levels, 'rainbow', (parameter.test_name,parameter.test_title,test.units))
+    plot_panel(1, fig, _, reference, parameter.contour_levels, 'rainbow', (parameter.test_name,parameter.test_title,test.units))
+    plot_panel(2, fig, _, diff, parameter.diff_levels, 'rainbow', (parameter.test_name,parameter.test_title,test.units))
 
 #    min2  = metrics_dict['ref']['min']
 #    mean2 = metrics_dict['ref']['mean']

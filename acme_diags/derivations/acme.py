@@ -274,6 +274,7 @@ def cosp_histogram_standardize(cld):
     if tau_bounds is None:
         cloud_tau_bounds = np.array([[0.3,1.3],[1.3,3.6],[3.6,9.4],[9.4,23],[23,60],[60,379]]) # length 6
         tau.setBounds( np.array(cloud_tau_bounds,dtype=np.float32) )
+    print prs.getBounds(),tau.getBounds()
 
     if cld.id == 'FISCCP1_COSP':   #ISCCP model
         cld_hist = cld(cosp_tau = (0.3, tau_high))
