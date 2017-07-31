@@ -69,6 +69,8 @@ if __name__ == '__main__':
                 from acme_diags.driver.set5_driver import run_diag
             elif pset == '7' or pset == 'polar':
                 from acme_diags.driver.set7_driver import run_diag
+            elif pset == '13' or pset == 'cosp_histogram':
+                from acme_diags.driver.cosp_histogram_driver import run_diag
             else:
                 print('Plot set {} is not supported yet. Please give us time.'.format(pset))
                 continue
