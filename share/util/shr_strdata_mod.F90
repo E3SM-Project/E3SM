@@ -66,6 +66,17 @@ module shr_strdata_mod
    public shr_strdata_setlogunit
    public shr_strdata_pioinit
 
+!! Interface
+
+   interface shr_strdata_pioinit
+      module procedure shr_strdata_pioinit_oldway
+      module procedure shr_strdata_pioinit_newway
+   end interface shr_strdata_pioinit
+
+   interface shr_strdata_create
+      module procedure shr_strdata_create_oldway
+      module procedure shr_strdata_create_newway
+   end interface shr_strdata_create
 ! !PUBLIC DATA MEMBERS:
 
 
@@ -1300,7 +1311,7 @@ end subroutine shr_strdata_readnml
 !     2010-10-26    Jim Edwards
 !
 ! !INTERFACE: ------------------------------------------------------------------
-subroutine shr_strdata_pioinit(SDAT, compid )
+subroutine shr_strdata_pioinit_newway(SDAT, compid )
   use shr_pio_mod, only: shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
   type(shr_strdata_type),intent(inout):: SDAT  ! strdata data data-type
   type(iosystem_desc_t), pointer :: io_subsystem
@@ -1310,7 +1321,20 @@ subroutine shr_strdata_pioinit(SDAT, compid )
   SDAT%io_type=shr_pio_getiotype(compid)
   SDAT%io_format = shr_pio_getioformat(compid)
 
-end subroutine shr_strdata_pioinit
+end subroutine shr_strdata_pioinit_newway
+
+subroutine shr_strdata_pioinit_oldway(SDAT,io_subsystem, io_type )
+  type(shr_strdata_type),intent(inout):: SDAT  ! strdata data data-type
+  type(iosystem_desc_t), pointer :: io_subsystem
+  integer, intent(in) :: io_type
+
+  SDAT%pio_subsystem => io_subsystem
+  SDAT%io_type=io_type
+  SDAT%io_format = PIO_64BIT_OFFSET  ! hardcoded
+
+end subroutine shr_strdata_pioinit_oldway
+
+
 
 !===============================================================================
 !BOP ===========================================================================
@@ -1327,7 +1351,7 @@ end subroutine shr_strdata_pioinit
 !     2009-Apr-16 - T. Craig - add minimal parallel support
 !
 ! !INTERFACE: ------------------------------------------------------------------
-subroutine shr_strdata_create(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg, &
+subroutine shr_strdata_create_newway(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg, &
 !--- streams stuff required ---
            yearFirst, yearLast, yearAlign, offset,          &
            domFilePath, domFileName,                        &
@@ -1469,8 +1493,81 @@ subroutine shr_strdata_create(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg
            gsmap=gsmap, ggrid=ggrid, nxg=nxg, nyg=nyg, nzg=1)
    endif
 
-end subroutine shr_strdata_create
+end subroutine shr_strdata_create_newway
 
+subroutine shr_strdata_create_oldway(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg, &
+!--- streams stuff required ---
+           yearFirst, yearLast, yearAlign, offset,          &
+           domFilePath, domFileName,                        &
+           domTvarName, domXvarName, domYvarName, domAreaName, domMaskName, &
+           filePath, filename, fldListFile, fldListModel,   &
+           pio_subsystem, pio_iotype,                       &
+!--- strdata optional ---
+           nzg, domZvarName,                                &
+           taxMode, dtlimit, tintalgo, readmode,            &
+           fillalgo, fillmask, fillread, fillwrite,         &
+           mapalgo, mapmask, mapread, mapwrite,             &
+           calendar)
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   type(shr_strdata_type),intent(inout):: SDAT  ! strdata data data-type
+   character(*)          ,intent(in)   :: name  ! name of strdata
+   integer(IN)           ,intent(in)   :: mpicom ! mpi comm
+   integer(IN)           ,intent(in)   :: compid
+   type(mct_gsmap)       ,intent(in)   :: gsmap
+   type(mct_ggrid)       ,intent(in)   :: ggrid
+   integer(IN)           ,intent(in)   :: nxg
+   integer(IN)           ,intent(in)   :: nyg
+
+   integer(IN)           ,intent(in)   :: yearFirst ! first year to use
+   integer(IN)           ,intent(in)   :: yearLast  ! last  year to use
+   integer(IN)           ,intent(in)   :: yearAlign ! align yearFirst with this model year
+   integer(IN)           ,intent(in)   :: offset    ! offset in seconds of stream data
+   character(*)          ,intent(in)   :: domFilePath  ! domain file path
+   character(*)          ,intent(in)   :: domFileName  ! domain file name
+   character(*)          ,intent(in)   :: domTvarName  ! domain time dim name
+   character(*)          ,intent(in)   :: domXvarName  ! domain x dim name
+   character(*)          ,intent(in)   :: domYvarName  ! domain y dim name
+   character(*)          ,intent(in)   :: domAreaName  ! domain area name
+   character(*)          ,intent(in)   :: domMaskName  ! domain mask name
+   character(*)          ,intent(in)   :: filePath     ! path to filenames
+   character(*)          ,intent(in)   :: filename(:)  ! filename for index filenumber
+   character(*)          ,intent(in)   :: fldListFile  ! file field names, colon delim list
+   character(*)          ,intent(in)   :: fldListModel ! model field names, colon delim list
+   type(iosystem_desc_t), pointer      :: pio_subsystem ! PIO subsystem pointer
+   integer(IN)          , intent(in)   :: pio_iotype    ! PIO file type
+
+   integer(IN) ,optional ,intent(in)   :: nzg
+   character(*),optional ,intent(in)   :: domZvarName  ! domain z dim name
+   character(*),optional ,intent(in)   :: taxMode
+   real(R8)    ,optional ,intent(in)   :: dtlimit
+   character(*),optional ,intent(in)   :: fillalgo  ! fill algorithm
+   character(*),optional ,intent(in)   :: fillmask  ! fill mask
+   character(*),optional ,intent(in)   :: fillread  ! fill mapping file to read
+   character(*),optional ,intent(in)   :: fillwrite ! fill mapping file to write
+   character(*),optional ,intent(in)   :: mapalgo   ! scalar map algorithm
+   character(*),optional ,intent(in)   :: mapmask   ! scalar map mask
+   character(*),optional ,intent(in)   :: mapread   ! regrid mapping file to read
+   character(*),optional ,intent(in)   :: mapwrite  ! regrid mapping file to write
+   character(*),optional ,intent(in)   :: tintalgo  ! time interpolation algorithm
+   character(*),optional ,intent(in)   :: readmode  ! file read mode
+   character(*),optional, intent(in)   :: calendar
+
+!EOP
+   ! pio variables are already in SDAT no need to copy them
+   call shr_strdata_create_newway(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg,&
+        yearFirst, yearLast, yearAlign, offset, domFilePath, domFilename, domTvarName, &
+        domXvarName, domYvarName, domAreaName, domMaskName, &
+        filePath, filename, fldListFile, fldListModel, nzg=nzg, domZvarName=domZvarName,&
+        taxMode=taxMode,dtlimit=dtlimit,tintalgo=tintalgo,readmode=readmode,&
+        fillalgo=fillalgo,fillmask=fillmask,fillread=fillread,fillwrite=fillwrite,mapalgo=mapalgo,&
+        mapmask=mapmask,mapread=mapread,mapwrite=mapwrite,calendar=calendar)
+
+
+ end subroutine shr_strdata_create_oldway
 !===============================================================================
 !BOP ===========================================================================
 !
