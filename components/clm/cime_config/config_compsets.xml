@@ -372,6 +372,26 @@
    </compset>
  
    <compset>
+     <alias>I20TRCNECACTCBC</alias>
+     <lname>20TR_DATM%QIA_CLM45%CNECACTCBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+
+   <compset>
+     <alias>I20TRCNECACNTBC</alias>
+     <lname>20TR_DATM%QIA_CLM45%CNECACNTBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+
+   <compset>
+     <alias>I20TRCNPECACTCBC</alias>
+     <lname>20TR_DATM%QIA_CLM45%CNPECACTCBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+
+   <compset>
+     <alias>I20TRCNPECACNTBC</alias>
+     <lname>20TR_DATM%QIA_CLM45%CNPECACNTBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+
+   <compset>
     <alias>IMCRDCTCBC</alias>
     <lname>2000_DATM%QIA_CLM45%CRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
