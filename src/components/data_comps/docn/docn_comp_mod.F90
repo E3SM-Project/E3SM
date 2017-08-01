@@ -17,7 +17,6 @@ module docn_comp_mod
   use mct_mod
   use esmf
   use perf_mod
-  use pio, only : iosystem_desc_t, pio_init, pio_rearr_box
 
   use shr_strdata_mod
   use shr_dmodel_mod
@@ -47,7 +46,6 @@ module docn_comp_mod
 !--------------------------------------------------------------------------
 
   !--- other ---
-  type(iosystem_desc_t), pointer :: iosystem
   character(CS) :: myModelName = 'ocn'   ! user defined model name
   integer(IN)   :: mpicom
   integer(IN)   :: my_task               ! my task in mpi communicator mpicom
@@ -815,8 +813,9 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
       endif
       if (trim(ocn_mode) == 'SOM' .or. trim(ocn_mode) == 'SOM_AQUAP') then
          if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
-         call shr_pcdf_readwrite('write',iosystem,SDOCN%io_type,trim(rest_file),mpicom,gsmap,clobber=.true., &
-            rf1=somtp,rf1n='somtp')
+         call shr_pcdf_readwrite('write',SDOCN%pio_subsystem,SDOCN%io_type,trim(rest_file),&
+              mpicom,gsmap=gsmap,clobber=.true., &
+              rf1=somtp,rf1n='somtp', io_format=SDOCN%io_format)
       endif
       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
       call shr_strdata_restWrite(trim(rest_file_strm),SDOCN,mpicom,trim(case_name),'SDOCN strdata')
