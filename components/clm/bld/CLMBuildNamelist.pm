@@ -1094,6 +1094,10 @@ sub setup_cmdl_methane {
           $var = "use_lch4";
           $val = ".true.";
 
+          if ( defined($nl->get_value($var)) && $nl->get_value($var) ne $val ) {
+            fatal_error("$var is inconsistent with the commandline setting of -methane");
+          }
+
           my $group = $definition->get_group_name($var);
           $nl_flags->{$var} = $val;
           $nl->set_variable_value($group, $var, $val);
@@ -1128,6 +1132,9 @@ sub setup_cmdl_nutrient {
         if ($val eq "c"){
           $var = "suplnitro";
           $val = "'ALL'";
+          if ( defined($nl->get_value($var)) ) {
+            $val = $nl->get_value($var);
+          }
 
           my $group = $definition->get_group_name($var);
           $nl_flags->{$var} = $val;
@@ -1140,6 +1147,9 @@ sub setup_cmdl_nutrient {
 
           $var = "suplphos";
           $val = "'ALL'";
+          if ( defined($nl->get_value($var)) ) {
+            $val = $nl->get_value($var);
+          }
 
           my $group = $definition->get_group_name($var);
           $nl_flags->{$var} = $val;
@@ -1153,6 +1163,9 @@ sub setup_cmdl_nutrient {
         } elsif ($val eq "cn") {
           $var = "suplnitro";
           $val = "'NONE'";
+          if ( defined($nl->get_value($var)) ) {
+            $val = $nl->get_value($var);
+          }
 
           my $group = $definition->get_group_name($var);
           $nl_flags->{$var} = $val;
@@ -1165,6 +1178,9 @@ sub setup_cmdl_nutrient {
 
           $var = "suplphos";
           $val = "'ALL'";
+          if ( defined($nl->get_value($var)) ) {
+            $val = $nl->get_value($var);
+          }
 
           my $group = $definition->get_group_name($var);
           $nl_flags->{$var} = $val;
@@ -1178,6 +1194,9 @@ sub setup_cmdl_nutrient {
         } elsif ($val eq "cnp") {
           $var = "suplnitro";
           $val = "'NONE'";
+          if ( defined($nl->get_value($var)) ) {
+            $val = $nl->get_value($var);
+          }
 
           my $group = $definition->get_group_name($var);
           $nl_flags->{$var} = $val;
@@ -1190,6 +1209,9 @@ sub setup_cmdl_nutrient {
 
           $var = "suplphos";
           $val = "'NONE'";
+          if ( defined($nl->get_value($var)) ) {
+            $val = $nl->get_value($var);
+          }
 
           my $group = $definition->get_group_name($var);
           $nl_flags->{$var} = $val;
@@ -1230,6 +1252,10 @@ sub setup_cmdl_nutrient_comp {
           $var = "nu_com";
           $val = "'RD'";
 
+          if ( defined($nl->get_value($var)) && $nl->get_value($var) ne $val ) {
+            fatal_error("$var is inconsistent with the commandline setting of -nutrient_comp_pathway");
+          }
+
           my $group = $definition->get_group_name($var);
           $nl_flags->{$var} = $val;
           $nl->set_variable_value($group, $var, $val);
@@ -1244,6 +1270,10 @@ sub setup_cmdl_nutrient_comp {
         } elsif ($val eq "eca") {
           $var = "nu_com";
           $val = "'ECA'";
+
+          if ( defined($nl->get_value($var)) && $nl->get_value($var) ne $val ) {
+            fatal_error("$var is inconsistent with the commandline setting of -nutrient_comp_pathway");
+          }
 
           my $group = $definition->get_group_name($var);
           $nl_flags->{$var} = $val;
