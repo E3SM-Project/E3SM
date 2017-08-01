@@ -59,7 +59,7 @@ contains
     call create_gsmap(this%comp%gsmap_cc, lsize)
 
     call check_fields(this%comp, 1)
-    @assertExceptionRaised('ABORTED:  component_mod:check_fields NaN found in pfunittest instance:            1  field foo 1d global index:            3')
+    @assertExceptionRaised('ABORTED: component_mod:check_fields NaN found in pfunittest instance:    1 field foo 1d global index:        3')
 
   end subroutine createAVectWithoutData_1Field_checkField
 
@@ -93,7 +93,7 @@ contains
 
     call check_fields(this%comp, 1)
 
-    @assertExceptionRaised('ABORTED:  component_mod:check_fields NaN found in pfunittest instance:            1  field foo2 1d global index:            3')
+    @assertExceptionRaised('ABORTED: component_mod:check_fields NaN found in pfunittest instance:    1 field foo2 1d global index:        3')
   end subroutine createAVectWithoutData_3Field_checkFields
 
 end module test_check_fields

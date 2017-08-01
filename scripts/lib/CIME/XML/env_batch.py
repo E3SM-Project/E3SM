@@ -572,8 +572,8 @@ class EnvBatch(EnvBase):
 
             cmd += jobid
 
-            stat, out, err = run_cmd(cmd)
-            if stat != 0:
+            status, out, err = run_cmd(cmd)
+            if status != 0:
                 logger.warning("Batch query command '{}' failed with error '{}'".format(cmd, err))
             else:
                 return out.strip()
