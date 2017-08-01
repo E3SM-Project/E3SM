@@ -20,7 +20,6 @@ module datm_comp_mod
 
   use shr_strdata_mod
   use shr_dmodel_mod
-  use shr_pcdf_mod
   use datm_shr_mod
 
   use seq_cdata_mod
@@ -104,7 +103,7 @@ module datm_comp_mod
   integer(IN) :: sprecc,sprecl,sprecn,sco2p,sco2d,sswup,sprec,starcf
 
   !
-  ! water isotopes / tracer input 
+  ! water isotopes / tracer input
   integer(IN) :: &
        kshum_16O, kshum_18O, kshum_HDO, &
        krc_18O, krc_HDO, &
@@ -265,19 +264,18 @@ CONTAINS
 
 subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
   use pio, only : iosystem_desc_t
-  use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
-    implicit none
+  implicit none
 
-    ! !INPUT/OUTPUT PARAMETERS:
+  ! !INPUT/OUTPUT PARAMETERS:
 
-    type(ESMF_Clock)            , intent(in)    :: EClock
-    type(seq_cdata)             , intent(inout) :: cdata
-    type(mct_aVect)             , intent(inout) :: x2a, a2x
-    character(len=*), optional  , intent(in)    :: NLFilename ! Namelist filename
+  type(ESMF_Clock)            , intent(in)    :: EClock
+  type(seq_cdata)             , intent(inout) :: cdata
+  type(mct_aVect)             , intent(inout) :: x2a, a2x
+  character(len=*), optional  , intent(in)    :: NLFilename ! Namelist filename
 
-   !EOP
+  !EOP
 
-    !--- local variables ---
+  !--- local variables ---
     integer(IN)   :: n,k         ! generic counters
     integer(IN)   :: ierr        ! error code
     integer(IN)   :: gsize       ! global size
@@ -294,7 +292,6 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    type(iosystem_desc_t)  , pointer :: iosystem
 
     character(CL) :: filePath    ! generic file path
     character(CL) :: fileName    ! generic file name
@@ -460,9 +457,7 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     ! Initialize PIO
     !----------------------------------------------------------------------------
 
-    iosystem => shr_pio_getiosys(trim(inst_name))
-    call shr_strdata_pioinit(SDATM, iosystem, &
-                                    shr_pio_getiotype(trim(inst_name)))
+    call shr_strdata_pioinit(SDATM, COMPID)
 
     !----------------------------------------------------------------------------
     ! Validate mode

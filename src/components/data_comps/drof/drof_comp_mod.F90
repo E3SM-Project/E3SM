@@ -86,9 +86,6 @@ CONTAINS
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
-
-  use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
-  use pio, only : iosystem_desc_t
   implicit none
 
 ! !INPUT/OUTPUT PARAMETERS:
@@ -140,9 +137,6 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
     logical       :: exists      ! file existance logical
     logical       :: exists_r    ! file existance logical
     integer(IN)   :: nu          ! unit number
-
-    type(iosystem_desc_t), pointer :: rof_pio_subsys
-    integer(IN) :: rof_pio_iotype
 
     !----- define namelist -----
     namelist / drof_nml / &
@@ -270,15 +264,12 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
 
     call t_startf('drof_strdata_init')
 
-    rof_pio_subsys => shr_pio_getiosys(trim(inst_name))
-    rof_pio_iotype =  shr_pio_getiotype(trim(inst_name))
-
     call seq_timemgr_EClockGetData( EClock, calendar=calendar )
 
     if (trim(rof_mode) /= 'NULL') then
        rof_present = .true.
        rofice_present = .true.
-       call shr_strdata_pioinit(SDROF,rof_pio_subsys,rof_pio_iotype)
+       call shr_strdata_pioinit(SDROF, compid)
        call shr_strdata_init(SDROF,mpicom,compid,name='rof',&
             calendar=calendar)
     endif
