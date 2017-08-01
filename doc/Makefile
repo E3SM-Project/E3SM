@@ -16,7 +16,7 @@ help:
 
 # exit 0 is to prevent the api rule from being run by the catchall target
 # and generating an error. 
-api: CIME_api Tools_api
+api: CIME_api Tools_api Tools_user
 	exit 0
 
 CIME_api: 
@@ -25,7 +25,11 @@ CIME_api:
 Tools_api: 
 	@$(SPHINXAPI) --force -o $(SOURCEDIR)/$@ $(SCRIPTSDIR)/Tools
 
-.PHONY: help Makefile CIME_api Tools_api
+Tools_user:
+	rm $(SOURCEDIR)/$@/*.rst
+	./tools_autodoc.py
+
+.PHONY: help Makefile CIME_api Tools_api Tools_user
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).

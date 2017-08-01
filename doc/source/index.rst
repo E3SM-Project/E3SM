@@ -27,6 +27,7 @@ Addendum
    :maxdepth: 2
 
    glossary/index.rst
+   Tools_user/index.rst
    xml_files/index.rst
    CIME_api/modules.rst
    Tools_api/modules.rst
