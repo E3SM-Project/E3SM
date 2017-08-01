@@ -11,7 +11,6 @@ configuring, compiling and executing Earth system models.
 
 Table of contents
 -----------------
-
 .. toctree::
    :maxdepth: 2
       
@@ -21,14 +20,17 @@ Table of contents
    data_models/index.rst
    driver_cpl/index.rst
    misc_tools/index.rst
-   glossary/index.rst
-   xml_files/index.rst
 
 Addendum
 ---------
+.. toctree::
+   :maxdepth: 2
 
-* :ref:`glossary`
-* :ref:`xml_files`
+   glossary/index.rst
+   Tools_user/index.rst
+   xml_files/index.rst
+   CIME_api/modules.rst
+   Tools_api/modules.rst
 
 CIME is developed by the 
 `ACME <https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy>`_ and 

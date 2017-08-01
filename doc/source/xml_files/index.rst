@@ -17,15 +17,13 @@ in the CIMEROOT/config/xml_schemas directory that can be used with
 
 .. toctree::
    :maxdepth: 2
-   :numbered:
 
    acme.rst
    cesm.rst
    common.rst
    components.rst
    drivers.rst
-   xmlchange.rst
-   xmlquery.rst
+
 
 
 

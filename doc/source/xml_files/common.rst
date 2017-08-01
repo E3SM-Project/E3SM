@@ -1,8 +1,8 @@
 .. _common:
 
-#####################
-CIME Common XML Files
-#####################
+#################
+Common XML Files
+#################
 
 Common XML files in CIMEROOT/config. 
 
