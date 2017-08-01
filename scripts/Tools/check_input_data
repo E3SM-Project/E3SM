@@ -39,8 +39,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="The input data repository from which to download data.")
 
 
-    parser.add_argument("-i", "--input-data-root",default="xmlquery DIN_LOC_ROOT",
-                        help="The root directory where input data goes.")
+    parser.add_argument("-i", "--input-data-root",default=None,
+                        help="The root directory where input data goes, "
+                        "use xmlquery DIN_LOC_ROOT to see default value.")
 
 
     parser.add_argument("--data-list-dir", default="Buildconf",
