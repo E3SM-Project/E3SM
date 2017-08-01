@@ -610,8 +610,10 @@ contains
        pio_netcdf_ioformat = 0
     elseif ( pio_netcdf_format .eq. '64BIT_OFFSET' ) then
        pio_netcdf_ioformat = PIO_64BIT_OFFSET
+#ifdef _PNETCDF
     elseif ( pio_netcdf_format .eq. '64BIT_DATA' ) then
        pio_netcdf_ioformat = PIO_64BIT_DATA
+#endif
     else
        pio_netcdf_ioformat = pio_default_netcdf_ioformat
     endif
