@@ -18,8 +18,9 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('~/cime'))
-
+sys.path.insert(0, os.path.abspath('../../scripts/lib'))
+sys.path.insert(1, os.path.abspath('../../scripts'))
+print(sys.path)
 
 # -- General configuration ------------------------------------------------
 
@@ -36,7 +37,8 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'sphinx.ext.viewcode'
+    'sphinx.ext.viewcode',
+    'sphinxcontrib.programoutput'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

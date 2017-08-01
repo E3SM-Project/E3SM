@@ -1,8 +1,8 @@
 .. _acme:
 
-#################################
-CIME ACME Coupled Model XML Files
-#################################
+#############################
+ACME Coupled Model XML Files
+#############################
 
 XML files for ACME in CIMEROOT/config/acme. 
 

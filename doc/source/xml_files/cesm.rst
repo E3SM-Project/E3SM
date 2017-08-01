@@ -1,8 +1,8 @@
 .. _cesm:
 
-#################################
-CIME CESM Coupled Model XML Files
-#################################
+#############################
+CESM Coupled Model XML Files
+#############################
 
 XML files for CESM in CIMEROOT/config/cesm. 
 

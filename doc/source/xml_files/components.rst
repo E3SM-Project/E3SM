@@ -1,8 +1,8 @@
 .. _components:
 
-##############################################
-CIME Data, Stub and Driver Component XML Files
-##############################################
+##########################################
+Data, Stub and Driver Component XML Files
+##########################################
 
 Component XML files in CIMEROOT/src sub-directories.
 

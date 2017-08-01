@@ -1,8 +1,8 @@
 .. _drivers:
 
-#####################
-CIME Driver XML Files
-#####################
+#################
+Driver XML Files
+#################
 
 Driver/Coupler XML files in CIMEROOT/src/drivers/mct/cime_config
 
