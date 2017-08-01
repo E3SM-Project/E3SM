@@ -57,6 +57,12 @@ include 'mpif.h'
    integer, parameter, public :: IO_NODE = 0
    integer, parameter, public :: BUFSIZE = 6000
 
+#ifdef _MPI
+   public :: MPI_COMM_SELF
+#else
+   integer, parameter, public :: MPI_COMM_SELF = 0
+#endif
+
    public :: mpas_dmpar_init
    public :: mpas_dmpar_finalize
    public :: mpas_dmpar_abort
