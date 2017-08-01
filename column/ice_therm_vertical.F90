@@ -696,8 +696,11 @@
         
       real (kind=dbl_kind), dimension (:), &
          intent(out) :: &
-         zqsn        , & ! snow enthalpy
          zTsn            ! snow temperature
+      
+      real (kind=dbl_kind), dimension (:), &
+         intent(inout) :: &
+         zqsn        , & ! snow enthalpy
 
       logical (kind=log_kind), intent(inout) :: &
          l_stop          ! if true, print diagnostics and abort model
