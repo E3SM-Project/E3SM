@@ -201,6 +201,14 @@
       </queues>
     </batch_system>
 
+    <batch_system MACH="bebop" type="slurm" >
+      <queues>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="2304" strict="true">debug</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="21888" default="true">bdw</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="18432">knl</queue>
+      </queues>
+    </batch_system>
+
     <!-- eos is PBS -->
     <batch_system MACH="eos" type="pbs" >
     <directives>
