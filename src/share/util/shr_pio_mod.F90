@@ -95,7 +95,7 @@ contains
     call shr_pio_read_default_namelist(nlfilename, Global_Comm, pio_stride, pio_root, pio_numiotasks, &
          pio_iotype, pio_async_interface, pio_rearranger)
 
-
+    pio_netcdf_ioformat = PIO_64BIT_OFFSET
     call MPI_comm_rank(Global_Comm, drank, ierr)
 
     io_comm = MPI_COMM_NULL
