@@ -97,8 +97,6 @@ CONTAINS
        scmMode, scmlat, scmlon)
 
     ! !DESCRIPTION: initialize dlnd model
-    use pio        , only : iosystem_desc_t
-    use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -131,7 +129,6 @@ CONTAINS
     integer(IN)        :: glc_nec   ! number of elevation classes
     integer(IN)        :: field_num ! field number
     character(nec_len) :: nec_str   ! elevation class, as character string
-    type(iosystem_desc_t), pointer :: lnd_pio_subsystem
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dlnd_comp_init) ',8a)"
@@ -151,8 +148,7 @@ CONTAINS
     ! Initialize pio
     !----------------------------------------------------------------------------
 
-    lnd_pio_subsystem => shr_pio_getiosys(trim(inst_name))
-    call shr_strdata_pioinit(SDLND, lnd_pio_subsystem, shr_pio_getiotype(trim(inst_name)))
+    call shr_strdata_pioinit(SDLND, COMPID)
 
     !----------------------------------------------------------------------------
     ! Initialize SDLND
