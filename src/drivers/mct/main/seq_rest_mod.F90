@@ -317,7 +317,6 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
    integer(IN)   :: ivar             ! integer variable
    real(r8)      :: rvar             ! real variable
    logical       :: whead,wdata      ! flags header/data writing
-   logical       :: cdf64            ! true => create netCDF with 64 bit addressing
    logical       :: cplroot          ! root pe on cpl id
    integer(IN)   :: iun              ! unit number
    character(CL) :: rest_file        ! Local path to restart filename

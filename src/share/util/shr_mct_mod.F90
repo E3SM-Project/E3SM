@@ -785,7 +785,7 @@ end subroutine shr_mct_sMatReaddnc
 !
 ! !INTERFACE:  -----------------------------------------------------------------
 
-subroutine shr_mct_sMatWritednc(sMat,iosystem, io_type, fileName,compid, mpicom)
+subroutine shr_mct_sMatWritednc(sMat,iosystem, io_type, io_format, fileName,compid, mpicom)
 
 ! !USES:
   use pio, only : iosystem_desc_t
@@ -798,6 +798,7 @@ subroutine shr_mct_sMatWritednc(sMat,iosystem, io_type, fileName,compid, mpicom)
    type(mct_sMat)  ,intent(in)   :: sMat     ! mapping data
    type(iosystem_desc_t)         :: iosystem ! PIO subsystem description
    integer(IN)     ,intent(in)   :: io_type  ! type of io interface for this file
+   integer(IN)     ,intent(in)   :: io_format ! type of io netcdf3 format for this file
    character(*)    ,intent(in)   :: filename ! netCDF file to read
    integer(IN)     ,intent(in)   :: compid   ! processor id
    integer(IN)     ,intent(in)   :: mpicom   ! communicator
@@ -856,7 +857,7 @@ subroutine shr_mct_sMatWritednc(sMat,iosystem, io_type, fileName,compid, mpicom)
    AV%rAttr(1,:) = expvarr(:)
    deallocate(expvarr)
 
-   call shr_pcdf_readwrite('write',iosystem,io_type, trim(filename),mpicom,gsmap,clobber=.false.,cdf64=.true., &
+   call shr_pcdf_readwrite('write',iosystem,io_type, trim(filename),mpicom,gsmap,clobber=.false.,io_format=io_format, &
       id1=na,id1n='n_a',id2=nb,id2n='n_b',id3=ns,id3n='n_s',av1=AV,av1n='')
 
    call mct_gsmap_clean(gsmap)
@@ -866,4 +867,3 @@ end subroutine shr_mct_sMatWritednc
 !===============================================================================
 
 end module shr_mct_mod
-
