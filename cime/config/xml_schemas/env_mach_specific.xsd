@@ -4,7 +4,7 @@
 <xs:attribute name="id" type="xs:NCName"/>
 <xs:attribute name="version" type="xs:decimal"/>
 <xs:attribute name="lang" type="xs:NCName"/>
-<xs:attribute name="compiler" type="xs:NCName"/>
+<xs:attribute name="compiler" type="xs:string"/>
 <xs:attribute name="debug" type="xs:boolean"/>
 <xs:attribute name="mpilib" type="xs:string"/>
 <xs:attribute name="value" type="xs:string"/>
