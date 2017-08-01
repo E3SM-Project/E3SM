@@ -287,35 +287,54 @@
     <queues>
       <queue walltimemin="0" walltimemax="00:59:00" jobmin="0" jobmax="9999" default="true">queue</queue>
     </queues>
-    </batch_system>
+  </batch_system>
 
-
-
-  <!-- all pleiades machines are PBS -->
-  <batch_system type="pbs" MACH="pleiades-has" >
-    <jobid_pattern>^(\S+)</jobid_pattern>
+  <!-- NAS pleiades machines -->
+  <batch_system type="pbs" MACH="pleiades-bro" >
     <directives>
-      <directive>-W group_list=$PROJECT </directive>
-      <directive>-l select={{ num_nodes }}:ncpus=$MAX_TASKS_PER_NODE:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=has</directive>
+      <directive>-W group_list=$PROJECT</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=bro</directive>
       <directive>-l place=scatter:excl</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
     <queues>
-      <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">normal</queue>
+      <queue walltimemin="" walltimemax="08:00:00" jobmin="0" jobmax="9999" default="true">normal</queue>
     </queues>
   </batch_system>
 
-  <!-- all pleiades machines are PBS -->
-  <batch_system type="pbs" MACH="pleiades-ivy" >
-    <jobid_pattern>^(\S+)</jobid_pattern>
+  <batch_system type="pbs" MACH="pleiades-has" >
     <directives>
-      <directive>-W group_list=$PROJECT </directive>
-      <directive>-l select={{ num_nodes }}:ncpus=$MAX_TASKS_PER_NODE:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=ivy</directive>
+      <directive>-W group_list=$PROJECT</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=has</directive>
       <directive>-l place=scatter:excl</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
     <queues>
-      <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">normal</queue>
+      <queue walltimemin="" walltimemax="08:00:00" jobmin="0" jobmax="9999" default="true">normal</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system type="pbs" MACH="pleiades-ivy" >
+    <directives>
+      <directive>-W group_list=$PROJECT </directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=ivy</directive>
+      <directive>-l place=scatter:excl</directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
+    </directives>
+    <queues>
+      <queue walltimemin="" walltimemax="08:00:00" jobmin="0" jobmax="9999" default="true">normal</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system type="pbs" MACH="pleiades-san" >
+    <directives>
+      <directive>-W group_list=$PROJECT </directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=san</directive>
+      <directive>-l place=scatter:excl</directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
+    </directives>
+    <queues>
+      <queue walltimemin="" walltimemax="08:00:00" jobmin="0" jobmax="9999" default="true">normal</queue>
     </queues>
   </batch_system>
 
@@ -324,31 +343,6 @@
     <queues>
       <queue jobmin="1" jobmax="480" default="true">ec</queue>
     </queues>
-  </batch_system>
-
-  <!-- all pleiades machines are PBS -->
-  <batch_system type="pbs" MACH="pleiades-san" >
-    <jobid_pattern>^(\S+)</jobid_pattern>
-    <directives>
-      <directive>-W group_list=$PROJECT </directive>
-      <directive>-l select={{ num_nodes }}:ncpus=$MAX_TASKS_PER_NODE:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=san</directive>
-      <directive>-l place=scatter:excl</directive>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
-    <queues>
-      <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">normal</queue>
-    </queues>
-  </batch_system>
-
-  <!-- all pleiades machines are PBS -->
-  <batch_system MACH="pleiades-wes"  type="pbs">
-    <jobid_pattern>^(\S+)</jobid_pattern>
-    <directives>
-      <directive>-W group_list=$PROJECT </directive>
-      <directive>-l select={{ num_nodes }}:ncpus=$MAX_TASKS_PER_NODE:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=wes</directive>
-      <directive>-l place=scatter:excl</directive>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
   </batch_system>
 
   <!-- sierra is SLURM -->

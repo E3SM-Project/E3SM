@@ -1237,11 +1237,67 @@
     </environment_variables>
   </machine>
 
-  <machine MACH="pleiades-has">
-    <DESC>NASA/AMES Linux Cluster, Linux (ia64), 2.5 GHz Haswell Intel Xeon E5-2680v3 processors, 24 pes/node (two 12-core processors) and 128 GB of memory/node, batch system is PBS</DESC>
+  <machine MACH="pleiades-bro">
+    <DESC>NASA/AMES Linux Cluster, Linux (ia64), 2.4 GHz Broadwell Intel Xeon E5-2680v4 processors, 28 pes/node (two 14-core processors) and 128 GB of memory/node, batch system is PBS</DESC>
+    <NODENAME_REGEX>pfe</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
+    <MPILIBS>mpt</MPILIBS>
+    <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>28</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>28</PES_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>mpiexec_mpt</executable>
+      <arguments>
+	<arg name="num_tasks">-n $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/usr/share/Modules/3.2.10/init/perl.pm</init_path>
+      <init_path lang="sh">/usr/share/Modules/3.2.10/init/sh</init_path>
+      <init_path lang="csh">/usr/share/Modules/3.2.10/init/csh</init_path>
+      <init_path lang="python">/usr/share/Modules/3.2.10/init/python.py</init_path>
+      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <modules>
+	<command name="purge"/>
+	<command name="load">nas</command>
+	<command name="load">pkgsrc</command>
+        <command name="load">comp-intel/2016.2.181</command>
+        <command name="load">mpi-sgi/mpt.2.15r20</command>
+        <command name="load">szip/2.1.1</command>
+        <command name="load">hdf4/4.2.12</command>
+        <command name="load">hdf5/1.8.18_mpt</command>
+        <command name="load">netcdf/4.4.1.1_mpt</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="MPI_GROUP_MAX">1024</env>
+      <env name="MPI_TYPE_MAX">100000</env>
+      <env name="MPI_TYPE_DEPTH">16</env>
+      <env name="KMP_AFFINITY">noverbose,disabled</env>
+      <env name="KMP_SCHEDULE">static,balanced</env>
+      <env name="OMP_STACKSIZE">256M</env>
+    </environment_variables>
+  </machine>
+
+  <machine MACH="pleiades-has">
+    <DESC>NASA/AMES Linux Cluster, Linux (ia64), 2.5 GHz Haswell Intel Xeon E5-2680v3 processors, 24 pes/node (two 12-core processors) and 128 GB of memory/node, batch system is PBS</DESC>
+    <NODENAME_REGEX>pfe</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>mpt</MPILIBS>
     <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -1264,82 +1320,39 @@
       <init_path lang="perl">/usr/share/Modules/3.2.10/init/perl.pm</init_path>
       <init_path lang="sh">/usr/share/Modules/3.2.10/init/sh</init_path>
       <init_path lang="csh">/usr/share/Modules/3.2.10/init/csh</init_path>
+      <init_path lang="python">/usr/share/Modules/3.2.10/init/python.py</init_path>
       <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-	<command name="load">perl/5.20.1</command>
-	<command name="load">comp-intel/2015.0.090</command>
-	<command name="load">mpi-sgi/mpt.2.11r13</command>
-	<command name="load">netcdf/4.1.3/intel/mpt</command>
-	<command name="load">cmake/2.8.12.1</command>
 	<command name="load">nas</command>
+	<command name="load">pkgsrc</command>
+	<command name="load">comp-intel/2016.2.181</command>
+        <command name="load">mpi-sgi/mpt.2.15r20</command>
+        <command name="load">szip/2.1.1</command>
+        <command name="load">hdf4/4.2.12</command>
+        <command name="load">hdf5/1.8.18_mpt</command>
+        <command name="load">netcdf/4.4.1.1_mpt</command>
       </modules>
     </module_system>
     <environment_variables>
       <env name="MPI_GROUP_MAX">1024</env>
       <env name="MPI_TYPE_MAX">100000</env>
+      <env name="MPI_TYPE_DEPTH">16</env>
       <env name="KMP_AFFINITY">noverbose,disabled</env>
       <env name="KMP_SCHEDULE">static,balanced</env>
-      <env name="OMP_STACKSIZE">64M</env>
-    </environment_variables>
-  </machine>
-
-  <machine MACH="pleiades-wes">
-    <DESC>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.93 GHz Westmere processors, 12 pes/node and 24 GB of memory, batch system is PBS</DESC>
-    <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
-    <GMAKE_J>8</GMAKE_J>
-    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
-    <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>12</PES_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>mpiexec_mpt</executable>
-      <arguments>
-	<arg name="num_tasks">-n $TOTALPES</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="perl">/usr/share/Modules/3.2.10/init/perl.pm</init_path>
-      <init_path lang="sh">/usr/share/Modules/3.2.10/init/sh</init_path>
-      <init_path lang="csh">/usr/share/Modules/3.2.10/init/csh</init_path>
-      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <modules>
-	<command name="purge"/>
-	<command name="load">perl/5.20.1</command>
-	<command name="load">comp-intel/2015.0.090</command>
-	<command name="load">mpi-sgi/mpt.2.11r13</command>
-	<command name="load">netcdf/4.1.3/intel/mpt</command>
-	<command name="load">cmake/2.8.12.1</command>
-	<command name="load">nas</command>
-      </modules>
-    </module_system>
-    <environment_variables>
-      <env name="MPI_GROUP_MAX">1024</env>
-      <env name="MPI_TYPE_MAX">100000</env>
-      <env name="KMP_AFFINITY">noverbose,disabled</env>
-      <env name="KMP_SCHEDULE">static,balanced</env>
-      <env name="OMP_STACKSIZE">64M</env>
+      <env name="OMP_STACKSIZE">256M</env>
     </environment_variables>
   </machine>
 
   <machine MACH="pleiades-san">
     <DESC>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.6 GHz Sandy Bridge processors, 16 cores/node and 32 GB of memory, batch system is PBS</DESC>
+    <NODENAME_REGEX>pfe</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
+    <MPILIBS>mpt</MPILIBS>
     <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -1362,30 +1375,36 @@
       <init_path lang="perl">/usr/share/Modules/3.2.10/init/perl.pm</init_path>
       <init_path lang="sh">/usr/share/Modules/3.2.10/init/sh</init_path>
       <init_path lang="csh">/usr/share/Modules/3.2.10/init/csh</init_path>
+      <init_path lang="python">/usr/share/Modules/3.2.10/init/python.py</init_path>
       <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-	<command name="load">perl/5.20.1</command>
-	<command name="load">comp-intel/2015.0.090</command>
-	<command name="load">mpi-sgi/mpt.2.11r13</command>
-	<command name="load">netcdf/4.1.3/intel/mpt</command>
-	<command name="load">cmake/2.8.12.1</command>
 	<command name="load">nas</command>
+	<command name="load">pkgsrc</command>
+	<command name="load">comp-intel/2016.2.181</command>
+	<command name="load">mpi-sgi/mpt.2.15r20</command>
+        <command name="load">szip/2.1.1</command>
+        <command name="load">hdf4/4.2.12</command>
+        <command name="load">hdf5/1.8.18_mpt</command>
+ 	<command name="load">netcdf/4.4.1.1_mpt</command>
       </modules>
     </module_system>
     <environment_variables>
       <env name="MPI_GROUP_MAX">1024</env>
       <env name="MPI_TYPE_MAX">100000</env>
+      <env name="MPI_TYPE_DEPTH">16</env>
       <env name="KMP_AFFINITY">noverbose,disabled</env>
       <env name="KMP_SCHEDULE">static,balanced</env>
-      <env name="OMP_STACKSIZE">64M</env>
+      <env name="OMP_STACKSIZE">256M</env>
     </environment_variables>
   </machine>
 
   <machine MACH="pleiades-ivy">
     <DESC>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.8 GHz Ivy Bridge processors, 20 cores/node and 3.2 GB of memory per core, batch system is PBS</DESC>
+    <NODENAME_REGEX>pfe</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
@@ -1411,25 +1430,30 @@
       <init_path lang="perl">/usr/share/Modules/3.2.10/init/perl.pm</init_path>
       <init_path lang="sh">/usr/share/Modules/3.2.10/init/sh</init_path>
       <init_path lang="csh">/usr/share/Modules/3.2.10/init/csh</init_path>
+      <init_path lang="python">/usr/share/Modules/3.2.10/init/python.py</init_path>
       <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-	<command name="load">perl/5.20.1</command>
-	<command name="load">comp-intel/2015.0.090</command>
-	<command name="load">mpi-sgi/mpt.2.11r13</command>
-	<command name="load">netcdf/4.1.3/intel/mpt</command>
-	<command name="load">cmake/2.8.12.1</command>
 	<command name="load">nas</command>
+	<command name="load">pkgsrc</command>
+	<command name="load">comp-intel/2016.2.181</command>
+	<command name="load">mpi-sgi/mpt.2.15r20</command>
+        <command name="load">szip/2.1.1</command>
+        <command name="load">hdf4/4.2.12</command>
+        <command name="load">hdf5/1.8.18_mpt</command>
+ 	<command name="load">netcdf/4.4.1.1_mpt</command>
       </modules>
     </module_system>
     <environment_variables>
       <env name="MPI_GROUP_MAX">1024</env>
       <env name="MPI_TYPE_MAX">100000</env>
+      <env name="MPI_TYPE_DEPTH">16</env>
       <env name="KMP_AFFINITY">noverbose,disabled</env>
       <env name="KMP_SCHEDULE">static,balanced</env>
-      <env name="OMP_STACKSIZE">64M</env>
+      <env name="OMP_STACKSIZE">256M</env>
     </environment_variables>
   </machine>
 
