@@ -643,6 +643,7 @@ contains
       else
          ierr = PIO_CreateFile(pio_subsystem, FileID, iotype_pnetcdf, filename, PIO_64BIT_OFFSET)
       endif
+      ncFileID = 0
 
       if(masterproc) print *, 'Opening file ',trim(filename), fileid%fh, output_type
     end subroutine nf_open_file
