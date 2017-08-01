@@ -397,7 +397,6 @@
     <batch_submit>sbatch</batch_submit>
     <directives>
       <directive>-C knl,quad,cache </directive>
-      <directive>-S 2 </directive>
     </directives>
     <queues>
       <queue walltimemax="02:00:00" jobmin="1" jobmax="45440">regular</queue>
