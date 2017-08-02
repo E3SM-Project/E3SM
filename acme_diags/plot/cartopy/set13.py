@@ -65,6 +65,7 @@ def plot_panel(n, fig, _ , var, clevels, cmap, title, stats=None):
                     cld_3x3[j,i]=var[2*j:2*j+2,2*i:2*i+2].sum()
                     ax.text(i*2+1, j*2+1,'%.1f' %cld_3x3[j,i],horizontalalignment='center',verticalalignment='center',fontsize=25)
     
+    total_cf = cld_3x3.sum()
     # Place vertical/horizonal line to separate cloud class
     plt.axvline(x=2, linewidth=2, color='k')
     plt.axvline(x=4, linewidth=2, color='k')
@@ -98,7 +99,8 @@ def plot_panel(n, fig, _ , var, clevels, cmap, title, stats=None):
     #ax.set_yticklabels(ylabels)
     if title[0] != None: ax.set_title(title[0], loc='left', fontdict=plotSideTitle)
     if title[1] != None: ax.set_title(title[1], fontdict=plotTitle)
-    if title[2] != None: ax.set_title(title[2], loc='right', fontdict=plotSideTitle)
+    ax.set_title('cloud frac: %.1f'%total_cf+'%', loc='right', fontdict=plotSideTitle)
+#    if title[2] != None: ax.set_title(title[2], loc='right', fontdict=plotSideTitle)
     #ax.set_ylabel('Cloud Top Height (km)')
 
     # Color bar
@@ -140,8 +142,9 @@ def plot(reference, test, diff,_, parameter):#underscore meanding argument not i
 #    c = metrics_dict['misc']['corr']
 #    plot_panel(2, fig, proj, diff, parameter.diff_levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(max3,mean3,min3,r,c))
 #
-#    # Figure title
-#    fig.suptitle(parameter.main_title, x=0.5, y=0.96, fontsize=18)
+
+    # Figure title
+    fig.suptitle(parameter.main_title, x=0.5, y=0.96, fontsize=18)
 
     # Save figure
     for f in parameter.output_format:
