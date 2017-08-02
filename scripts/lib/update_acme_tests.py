@@ -50,7 +50,8 @@ _TEST_SUITES = {
                              "DAE.f19_f19.A",
                              "PET_P32.f19_f19.A",
                              "SMS.T42_T42.S",
-                             "PRE.f19_f19.ADESP")
+                             "PRE.f19_f19.ADESP",
+                             "PRE.f19_f19.ADESP_TEST")
                             ),
 
     #
