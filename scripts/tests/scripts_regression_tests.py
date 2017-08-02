@@ -1518,8 +1518,8 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         test_name = "ERS.f19_g16_rx1.A"
         machine, compiler = "blues", "gnu"
-        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s" %
-                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --compiler %s" %
+                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot, self._compiler))
 
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
@@ -1539,8 +1539,8 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         test_name = "ERS_P64.f19_g16_rx1.A"
         machine, compiler = "blues", "gnu"
-        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s" %
-                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --compiler %s" %
+                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot, self._compiler))
 
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
@@ -1560,8 +1560,8 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         test_name = "ERS_P64.f19_g16_rx1.A"
         machine, compiler = "blues", "gnu"
-        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --walltime='0:10:00'" %
-                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --walltime='0:10:00' --compiler %s" %
+                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot, self._compiler))
 
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
@@ -1581,8 +1581,8 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         test_name = "ERS_P1.f19_g16_rx1.A"
         machine, compiler = "blues", "gnu"
-        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --walltime='2:00:00'" %
-                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --walltime='2:00:00' --compiler %s" %
+                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot, self._compiler))
 
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
@@ -1602,8 +1602,8 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         test_name = "ERS_P1.f19_g16_rx1.A"
         machine, compiler = "blues", "gnu"
-        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --queue slartibartfast" %
-                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --queue slartibartfast --compiler %s" %
+                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot, self._compiler))
 
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
@@ -1616,7 +1616,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertEqual(result, "slartibartfast")
 
     def test_create_test_longname(self):
-        create_test_cmd =  "%s/create_test SMS.f19_g16.2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --no-build --output-root %s" % (SCRIPT_DIR, TEST_ROOT)
+        create_test_cmd =  "%s/create_test SMS.f19_g16.2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --no-build --output-root %s --compiler %s" % (SCRIPT_DIR, TEST_ROOT, self._compiler)
         run_cmd_assert_result(self, create_test_cmd)
 
 ###############################################################################
@@ -1636,8 +1636,8 @@ class X_TestSingleSubmit(TestCreateTestCommon):
 
         # Keep small enough for now that we don't have to worry about load balancing
         run_cmd_assert_result(self,
-                              "unset CIME_GLOBAL_WALLTIME && %s/create_test SMS_Ln9_P8.f45_g37_rx1.A SMS_Ln9_P8.f19_g16_rx1.A  -t %s --single-submit --test-root %s --output-root %s "
-                              % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT))
+                              "unset CIME_GLOBAL_WALLTIME && %s/create_test SMS_Ln9_P8.f45_g37_rx1.A SMS_Ln9_P8.f19_g16_rx1.A  -t %s --single-submit --test-root %s --output-root %s --compiler %s"
+                              % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT, self._compiler))
         run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
                               from_dir=self._testroot)
 
@@ -1649,8 +1649,8 @@ class L_TestSaveTimings(TestCreateTestCommon):
     def simple_test(self, manual_timing=False):
     ###########################################################################
         timing_flag = "" if manual_timing else "--save-timing"
-        create_test_cmd =  "%s/create_test SMS_Ln9_P1.f19_g16_rx1.A %s --walltime 0:15:00 -t %s --test-root %s --output-root %s " \
-            % (SCRIPT_DIR, timing_flag, self._baseline_name, TEST_ROOT, TEST_ROOT)
+        create_test_cmd =  "%s/create_test SMS_Ln9_P1.f19_g16_rx1.A %s --walltime 0:15:00 -t %s --test-root %s --output-root %s --compiler %s" \
+            % (SCRIPT_DIR, timing_flag, self._baseline_name, TEST_ROOT, TEST_ROOT, self._compiler)
         if NO_BATCH:
             create_test_cmd += " --no-batch"
 
