@@ -1239,7 +1239,6 @@
 
   <machine MACH="pleiades-bro">
     <DESC>NASA/AMES Linux Cluster, Linux (ia64), 2.4 GHz Broadwell Intel Xeon E5-2680v4 processors, 28 pes/node (two 14-core processors) and 128 GB of memory/node, batch system is PBS</DESC>
-    <NODENAME_REGEX>pfe</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
@@ -1294,7 +1293,6 @@
 
   <machine MACH="pleiades-has">
     <DESC>NASA/AMES Linux Cluster, Linux (ia64), 2.5 GHz Haswell Intel Xeon E5-2680v3 processors, 24 pes/node (two 12-core processors) and 128 GB of memory/node, batch system is PBS</DESC>
-    <NODENAME_REGEX>pfe</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
@@ -1349,7 +1347,6 @@
 
   <machine MACH="pleiades-san">
     <DESC>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.6 GHz Sandy Bridge processors, 16 cores/node and 32 GB of memory, batch system is PBS</DESC>
-    <NODENAME_REGEX>pfe</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
@@ -1404,7 +1401,6 @@
 
   <machine MACH="pleiades-ivy">
     <DESC>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.8 GHz Ivy Bridge processors, 20 cores/node and 3.2 GB of memory per core, batch system is PBS</DESC>
-    <NODENAME_REGEX>pfe</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
