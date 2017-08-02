@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_colpkg.F90 1178 2017-03-08 19:24:07Z eclare $
+!  SVN:$Id: ice_colpkg.F90 1175 2017-03-02 19:53:26Z akt $
 !=========================================================================
 !
 ! flags and interface routines for the column package
@@ -396,7 +396,6 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, abort the model
 
-     ! character (char_len), intent(out) :: stop_label
       character (len=*), intent(out) :: stop_label
 
       l_stop = .false.      ! initialized for CCSMCOUPLED
@@ -576,8 +575,7 @@
 
       logical (kind=log_kind), intent(inout) :: &
          l_stop            ! if true, print diagnostics and abort on return
-        
-!      character (char_len), intent(inout) :: stop_label
+
       character (len=*), intent(inout) :: stop_label
 
       ! local variables
@@ -1939,7 +1937,6 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, abort model
 
-!     character (char_len), intent(out) :: &
       character (len=*), intent(out) :: &
          stop_label      ! abort error message
 
@@ -2397,7 +2394,6 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop         ! if true, abort model
 
-!     character (char_len), intent(out) :: stop_label
       character (len=*), intent(out) :: stop_label
 
       real (kind=dbl_kind), intent(inout), optional :: &
@@ -4901,7 +4897,7 @@
                            sst, sss, fsnow, meltsn, hmix, salinz, &
                            hin_old, flux_bio, flux_bio_atm, &
                            aicen_init, vicen_init, aicen, vicen, vsnon, &
-                           trcrn, vsnon_init, skl_bgc, &
+                           aice0, trcrn, vsnon_init, skl_bgc, &
                            max_algae, max_nbtrcr, &
                            l_stop, stop_label)
 
@@ -4995,6 +4991,7 @@
          vsnon     ! volume per unit area of snow         (m)
 
       real (kind=dbl_kind), intent(in) :: &
+         aice0   , & ! open water area fraction
          sss     , & ! sea surface salinity (ppt)
          sst     , & ! sea surface temperature (C)
          hmix    , & ! mixed layer depth (m)
@@ -5021,7 +5018,8 @@
          dhice       , & ! change due to sublimation/condensation (m)
          kavg        , & ! average ice permeability (m^2)
          bphi_o      , & ! surface ice porosity 
-         hbrin           ! brine height
+         hbrin       , & ! brine height
+         dh_direct       ! surface flooding or runoff
 
       real (kind=dbl_kind), dimension (nblyr+2) :: &
       ! Defined on Bio Grid points
@@ -5149,7 +5147,8 @@
                                    dh_top_chl,  dh_bot_chl,  & 
                                    kavg,        bphi_o,      &
                                    darcy_V (n), darcy_V_chl, &  
-                                   bphi(2,n))
+                                   bphi(2,n),   aice0,       &
+                                   dh_direct)
                
                hbri = hbri + hbrin * aicen(n)  
 
@@ -5169,7 +5168,7 @@
                                   hin_old(n),    iDi(:,n),            &
                                   darcy_V(n),    brine_sal,           & 
                                   brine_rho,     ibrine_sal,          & 
-                                  ibrine_rho,                         &
+                                  ibrine_rho,    dh_direct,           &
                                   Rayleigh_criteria,                  &
                                   first_ice(n),  sss,                 &
                                   sst,           dhbr_top(n),         &
@@ -5222,7 +5221,7 @@
                           bphi_o,                                        &
                           dhice,                 iTin,                   &
                           Zoo(:,n),                                      &
-                          flux_bio(1:nbtrcr),                            &
+                          flux_bio(1:nbtrcr),    dh_direct,              &
                           upNO,                  upNH,                   &
                           fbio_snoice,           fbio_atmice,            &
                           PP_net,                ice_bio_net (1:nbtrcr), &

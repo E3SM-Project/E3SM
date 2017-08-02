@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_zbgc_shared.F90 1177 2017-03-08 18:17:21Z eclare $
+!  SVN:$Id: ice_zbgc_shared.F90 1166 2017-02-12 22:56:19Z njeffery $
 !=======================================================================
 !
 ! Biogeochemistry variables
@@ -259,23 +259,28 @@
 
          n_nd = nbyrn
          n_nr = nlyrn
-         if (hice > hinS) then
-            n_plus          = 3
+         if (hice > hinS) then   ! add S_min to top layer
+            n_plus          = 3        
             tracer(1)       = S_min
             tracer(2)       = S_min
-            dgrid (1)       = -hice+hinS
-            dgrid (2)       = p5*(hinS-hice)
-            dgrid (nbyrn+3) = hinS
-            tracer(nbyrn+3) = trcrn(it+nbyrn-1)
             rgrid (1)       = -hice + hinS
-            rgrid (nlyrn+2) = hinS 
+            rgrid (nlyrn+n_plus-1) = hinS 
+            do kr = 1,n_nr
+               rgrid(kr+1) = (ice_grid(kr)-c1)*hice+ hinS
+            enddo
+            dgrid (1)       = -hice+hinS
+            dgrid (2)       = (hinS-hice)*p5
+            dgrid (nbyrn+n_plus) = hinS
+            tracer(nbyrn+n_plus) = trcrn(it+nbyrn-1)
             do kd = 1,n_nd
                dgrid(kd+2) = bio_grid(kd)*hinS
                tracer(kd+2) = trcrn(it+kd-1)
             enddo
-            do kr = 1,n_nr
-               rgrid(kr+1) = (ice_grid(kr)-c1)*hice+ hinS
-            enddo
+            tracer(n_plus) = (S_min*(hice-hinS) + &
+                         tracer(n_plus)*p5*(dgrid(n_plus+1)-dgrid(n_plus)))/ &
+                        (hice-hinS+ p5*(dgrid(n_plus+1)-dgrid(n_plus)))
+            tracer(1) = tracer(n_plus)
+            tracer(2) = tracer(n_plus)
          else
             n_plus          = 2
             tracer(1)       = trcrn(it)
@@ -368,9 +373,9 @@
                                     top_conc,     igrid,    &
                                     flux_bio,               &
                                     l_stop,       stop_label, &
-                                    melt_b)
+                                    melt_b,       con_gel)
       
-      use ice_constants_colpkg, only: c0, c1, p5
+      use ice_constants_colpkg, only: c0, c1, p5, puny
 
       integer (kind=int_kind), intent(in) :: &
          ntrcr,         & ! number of tracers
@@ -397,98 +402,124 @@
       character (char_len), intent(inout) :: stop_label
 
       real(kind=dbl_kind), intent(in), optional :: &
-         melt_b           ! bottom melt
+         melt_b,         &  ! bottom melt (m)
+         con_gel            ! bottom growth (m)
 
       !  local variables
 
-      integer (kind=int_kind) :: k, n, nt
+      integer (kind=int_kind) :: k, n, nt, nr
 
       real (kind=dbl_kind), dimension (ntrcr+2) :: &
          trtmp0,   &    ! temporary, remapped tracers
          trtmp
 
       real (kind=dbl_kind):: &
-         meltb,    &    !
+         meltb,    &    ! ice bottom melt (m)
+         congel,   &    ! ice bottom growth (m)
          htemp,    &    ! ice thickness after melt (m)
-         zspace,   &    ! bio grid spacing
-         sum_old,  &    ! total tracer before melt loss
-         sum_new        ! total tracer after melt
+         dflux,    &    ! regrid flux correction (mmol/m^2)
+         sum_i,    &    ! total tracer before melt loss
+         sum_f,    &    ! total tracer after melt
+         neg_flux, & 
+         hice,     & 
+         hbio
+
+      real (kind=dbl_kind), dimension(nblyr+1):: &
+         zspace
 
       ! initialize
 
-      zspace = c1/(real(nblyr,kind=dbl_kind))
+      zspace(:) = c1/(real(nblyr,kind=dbl_kind))
+      zspace(1) = p5*zspace(1)
+      zspace(nblyr+1) = zspace(1)
       trtmp0(:) = c0
       trtmp(:) = c0
       meltb = c0
       nt = 1
+      nr = 0
+      sum_i = c0
+      sum_f = c0
+      meltb = c0
+      congel = c0
+      dflux = c0
+
+      !---------------------
+      ! compute initial sum
+      !----------------------
+     
+      do k = 1, nblyr+1
+         sum_i = sum_i + C_stationary(k)*zspace(k)
+        
+      enddo
+     
       if (present(melt_b)) then
          meltb = melt_b
       endif
+      if (present(con_gel)) then
+         congel = con_gel
+      endif
+
       if (hbri_old > c0) then
          do k = 1, nblyr+1
             trtmp0(nblyr+2-k) = C_stationary(k)/hbri_old  ! reverse order
          enddo   ! k
       endif
-      htemp = max(c0,max(hbri,hbri_old - meltb))
+
+      htemp = c0
 
       if (meltb > c0) then
-
+          htemp = hbri_old-meltb  
+          nr = 0
+          hice = hbri_old
+          hbio = htemp
+      elseif (congel > c0) then
+          htemp = hbri_old+congel
+          nr = 1
+          hice = htemp
+          hbio = hbri_old
+      elseif (hbri .gt. hbri_old) then
+          htemp = hbri
+          nr = 1
+          hice = htemp
+          hbio = hbri_old
+      endif
+     
       !-----------------------------------------------------------------
-      ! Regrid C_stationary to remove bottom melt
+      ! Regrid C_stationary to add or remove bottom layer(s)
       !-----------------------------------------------------------------
-         if (hbri_old > htemp) then
-            call remap_zbgc (ntrcr,  nblyr+1,            &
+      if (htemp > c0) then
+          call remap_zbgc   (ntrcr,            nblyr+1,  &
                              nt,                         &
                              trtmp0(1:ntrcr),            &
                              trtmp,                      &
-                             0,                nblyr+1,  &
-                             hbri_old,         htemp,    &
+                             nr,                nblyr+1, & 
+                             hice,              hbio,    & 
                              igrid(1:nblyr+1),           &
                              igrid(1:nblyr+1), top_conc, &
                              l_stop,           stop_label)
-            if (l_stop) return
+          if (l_stop) return
     
-            sum_new = (trtmp(1)+trtmp(nblyr+1))*htemp*p5*zspace
-            sum_old = (C_stationary(1) + C_stationary(nblyr+1))*p5*zspace
-            trtmp0(:) = c0
-            trtmp0(nblyr+1) = trtmp(nt)
-            trtmp0(1) = trtmp(nt + nblyr)
-            do k = 2,nblyr
-               sum_old = sum_old + C_stationary(k)*zspace
-               trtmp0(nblyr+2-k) = trtmp(nt + k-1)
-               sum_new = sum_new + trtmp0(nblyr+2-k)*htemp*zspace
-            enddo       !k
-            flux_bio = flux_bio + max(c0,(sum_old - sum_new)/dt)
-            do k = 1, nblyr+1
-               C_stationary(k) = trtmp0(k)*hbri
-            enddo   ! k
-         endif
-
-      elseif (hbri > hbri_old) then
-
-      !-----------------------------------------------------------------
-      ! Regrid C_stationary to migrate if there is bottom growth
-      !-----------------------------------------------------------------
-         call remap_zbgc    (ntrcr,            nblyr+1,  &
-                             nt,                         &
-                             trtmp0(1:ntrcr),            &
-                             trtmp,                      &
-                             0,                nblyr+1,  &
-                             hbri_old,         hbri,     &
-                             igrid(1:nblyr+1),           &
-                             igrid(1:nblyr+1), top_conc, &
-                             l_stop,           stop_label)
-         if (l_stop) return
-
-         trtmp0(:) = c0
-         do k = 1,nblyr+1
-            trtmp0(nblyr+2-k) = trtmp(nt+k-1)
-         enddo    ! k
-         flux_bio = flux_bio  - (hbri-hbri_old)*top_conc/dt
-         do k = 1, nblyr+1
-            C_stationary(k) = trtmp0(k)*hbri
+          trtmp0(:) = c0
+          do k = 1,nblyr+1
+             trtmp0(nblyr+2-k) = trtmp(nt + k-1)
+          enddo       !k
+         
+          do k = 1, nblyr+1
+             C_stationary(k) = trtmp0(k)*htemp
+             sum_f = sum_f + C_stationary(k)*zspace(k)
           enddo   ! k
-      endif 
+
+         if (congel > c0 .and. top_conc .le. c0 .and. abs(sum_i-sum_f) > puny) then
+            dflux = sum_i - sum_f
+            sum_f = c0
+            do k = 1,nblyr+1
+                C_stationary(k) = max(c0,C_stationary(k) + dflux)
+                sum_f = sum_f + C_stationary(k)*zspace(k)
+            enddo
+         endif
+       
+         flux_bio = flux_bio + (sum_i -sum_f)/dt 
+      endif
 
       end subroutine regrid_stationary
 

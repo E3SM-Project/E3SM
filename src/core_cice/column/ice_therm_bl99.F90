@@ -1,4 +1,4 @@
- !  SVN:$Id: ice_therm_bl99.F90 1178 2017-03-08 19:24:07Z eclare $
+ !  SVN:$Id: ice_therm_bl99.F90 1182 2017-03-16 19:29:26Z njeffery $
 !=========================================================================
 !
 ! Update ice and snow internal temperatures
