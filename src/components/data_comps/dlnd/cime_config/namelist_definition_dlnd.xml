@@ -200,7 +200,7 @@
       datamode = "NULL"
       NULL is always a valid option and means no data will be generated.
       Turns off the data model as a provider of data to the coupler.  The
-      ice_present flag will be set to false and the coupler will assume no
+      lnd_present flag will be set to false and the coupler will assume no
       exchange of data to or from the data model.
       dataMode = "COPYALL"
       Copies all fields directly from the input data streams Any required

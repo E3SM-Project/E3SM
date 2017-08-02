@@ -52,7 +52,7 @@ CONTAINS
       write(errormsg, '(a,i6,2a)') '(PIO:', ierr, ') ', trim(errorstr)
       call shr_sys_abort(errormsg)
     end if
-    
+
   end subroutine esp_pio_handle_error
 
   subroutine esp_pio_openfile(file, fname, piosys, iotype, mode, iulog)
