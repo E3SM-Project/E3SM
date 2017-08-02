@@ -1019,10 +1019,10 @@
       <env name="KMP_HOT_TEAMS_MODE">1</env>
       <env name="KMP_HOT_TEAMS_MAX_LEVEL">1</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="FALSE">
-      <env mpilib="mvapich" name="MV2_ENABLE_AFFINITY">1</env>
-      <env mpilib="mvapich" name="MV2_USE_SHARED_MEM">1</env>
-      <env mpilib="mvapich" name="MV2_SMP_USE_CMA">1</env>
+    <environment_variables SMP_PRESENT="FALSE" mpilib="mvapich">
+      <env name="MV2_ENABLE_AFFINITY">1</env>
+      <env name="MV2_USE_SHARED_MEM">1</env>
+      <env name="MV2_SMP_USE_CMA">1</env>
     </environment_variables>
 </machine>
 
