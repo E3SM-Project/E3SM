@@ -60,8 +60,9 @@ def _add_header(path, version, model_name, time):
 	# </div>
     
     soup = BeautifulSoup(open(path), "lxml")
-    old_header = soup.find_all("nav", "navbar navbar-default")[0]
-    old_header.decompose()
+    old_header = soup.find_all("nav", "navbar navbar-default")
+    if len(old_header) is not 0:
+        old_header[0].decompose()
 
     header_div = soup.new_tag("div", id="acme-header", style="background-color:#dbe6c5; float:left; width:45%")
     p = soup.new_tag("p", style="margin-left:5em")
