@@ -24,6 +24,7 @@ from  CIME.test_status import *
 
 SCRIPT_DIR  = CIME.utils.get_scripts_root()
 TOOLS_DIR   = os.path.join(SCRIPT_DIR,"Tools")
+TEST_COMPILER = None
 MACHINE     = Machines()
 FAST_ONLY   = False
 NO_BATCH    = False
@@ -179,8 +180,11 @@ class N_TestUnitTest(unittest.TestCase):
         cls._testdirs = []
 
     def _has_unit_test_support(self):
-        default_compiler = MACHINE.get_default_compiler()
-        compiler = Compilers(MACHINE, compiler=default_compiler)
+        if TEST_COMPILER is None:
+            default_compiler = MACHINE.get_default_compiler()
+            compiler = Compilers(MACHINE, compiler=default_compiler)
+        else:
+            compiler = Compilers(MACHINE, compiler=TEST_COMPILER)
         attrs = {'MPILIB': 'mpi-serial', 'compile_threaded': 'false'}
         pfunit_path = compiler.get_optional_compiler_node("PFUNIT_PATH",
                                                           attributes=attrs)
@@ -251,9 +255,12 @@ class J_TestCreateNewcase(unittest.TestCase):
         testdir = os.path.join(cls._testroot, 'testcreatenewcase')
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
+        args =  " --case %s --compset X --res f19_g16 --output-root %s " % (testdir, cls._testroot)
+        if TEST_COMPILER is not None:
+            args = args +  " --compiler %s"%TEST_COMPILER
 
         cls._testdirs.append(testdir)
-        run_cmd_assert_result(self, "%s/create_newcase --case CreateNewcaseTest --script-root %s --compset X --res f19_g16 --output-root %s" % (SCRIPT_DIR, testdir, cls._testroot), from_dir=SCRIPT_DIR)
+        run_cmd_assert_result(self, "./create_newcase %s"%(args), from_dir=SCRIPT_DIR)
         self.assertTrue(os.path.exists(testdir))
         self.assertTrue(os.path.exists(os.path.join(testdir, "case.setup")))
 
@@ -281,8 +288,12 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._testdirs.append(testdir)
 
         user_mods_dir = os.path.join(CIME.utils.get_python_libs_root(), "..", "tests", "user_mods_test1")
-        run_cmd_assert_result(self, "%s/create_newcase --case %s --compset X --res f19_g16 --user-mods-dir %s --output-root %s"
-                              % (SCRIPT_DIR, testdir, user_mods_dir, cls._testroot),from_dir=SCRIPT_DIR)
+        args = " --case %s --compset X --res f19_g16 --user-mods-dir %s --output-root %s"% (testdir, user_mods_dir, cls._testroot)
+        if TEST_COMPILER is not None:
+            args = args + " --compiler %s"%TEST_COMPILER
+
+        run_cmd_assert_result(self, "%s/create_newcase %s "
+                              % (SCRIPT_DIR, args),from_dir=SCRIPT_DIR)
 
         self.assertTrue(os.path.isfile(os.path.join(testdir,"SourceMods","src.drv","somefile.F90")), msg="User_mods SourceMod missing")
         with open(os.path.join(testdir,"user_nl_cpl"),"r") as fd:
@@ -383,6 +394,8 @@ class J_TestCreateNewcase(unittest.TestCase):
         args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV  --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
         if CIME.utils.get_model() == "cesm":
             args += " --run-unsupported"
+        if TEST_COMPILER is not None:
+            args += " --compiler %s"%TEST_COMPILER
 
         run_cmd_assert_result(self, "%s/create_newcase %s"%(SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
         run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
@@ -403,6 +416,8 @@ class J_TestCreateNewcase(unittest.TestCase):
         args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
         if CIME.utils.get_model() == "cesm":
             args += " --run-unsupported"
+        if TEST_COMPILER is not None:
+            args += " --compiler %s"%TEST_COMPILER
 
         run_cmd_assert_result(self, "%s/create_newcase %s"%(SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
         run_cmd_assert_result(self, "diff env_mach_pes.xml %s"%(previous_testdir), from_dir=testdir)
@@ -421,7 +436,11 @@ class J_TestCreateNewcase(unittest.TestCase):
             shutil.rmtree(testdir)
 
         cls._testdirs.append(testdir)
-        run_cmd_assert_result(self, "%s/create_newcase --case CreateNewcaseTest --script-root %s --compset X --res f19_g16 --output-root %s --handle-preexisting-dirs u" % (SCRIPT_DIR, testdir, cls._testroot), from_dir=SCRIPT_DIR)
+        args = " --case CreateNewcaseTest --script-root %s --compset X --res f19_g16 --output-root %s --handle-preexisting-dirs u" % (testdir, cls._testroot)
+        if TEST_COMPILER is not None:
+            args += " --compiler %s"%TEST_COMPILER
+
+        run_cmd_assert_result(self, "%s/create_newcase %s" % (SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
         self.assertTrue(os.path.exists(testdir))
         self.assertTrue(os.path.exists(os.path.join(testdir, "case.setup")))
 
@@ -695,7 +714,10 @@ class TestCreateTestCommon(unittest.TestCase):
         self._thread_error      = None
         self._unset_proxy       = setup_proxy()
         self._machine           = MACHINE.get_machine_name()
-        self._compiler          = MACHINE.get_default_compiler()
+        if TEST_COMPILER is None:
+            self._compiler          = MACHINE.get_default_compiler()
+        else:
+            self._compiler = TEST_COMPILER
         self._baseline_name     = "fake_testing_only_%s" % CIME.utils.get_timestamp()
         self._baseline_area     = MACHINE.get_value("BASELINE_ROOT")
         self._testroot          = TEST_ROOT
@@ -754,7 +776,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
                                                        "^TESTRUNFAILEXC_P1.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         self.assertEqual(len(tests), 3)
-        ct = TestScheduler(tests, test_root=TEST_ROOT, output_root=TEST_ROOT)
+        ct = TestScheduler(tests, test_root=TEST_ROOT, output_root=TEST_ROOT,compiler=TEST_COMPILER)
 
         build_fail_test = [item for item in tests if "TESTBUILDFAIL" in item][0]
         run_fail_test   = [item for item in tests if "TESTRUNFAIL" in item][0]
@@ -824,7 +846,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["cime_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
-        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, test_root=TEST_ROOT,output_root=TEST_ROOT)
+        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, test_root=TEST_ROOT,output_root=TEST_ROOT,compiler=TEST_COMPILER)
 
         build_fail_test     = [item for item in tests if "TESTBUILDFAIL_" in item][0]
         build_fail_exc_test = [item for item in tests if "TESTBUILDFAILEXC" in item][0]
@@ -890,7 +912,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         tests = update_acme_tests.get_full_test_names(["TESTBUILDFAIL_P1.f19_g16_rx1.A", "TESTRUNPASS_P1.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
-        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, no_run=True,test_root=TEST_ROOT,output_root=TEST_ROOT)
+        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, no_run=True,test_root=TEST_ROOT,output_root=TEST_ROOT,compiler=TEST_COMPILER)
 
         build_fail_test     = [item for item in tests if "TESTBUILDFAIL" in item][0]
         pass_test           = [item for item in tests if "TESTRUNPASS" in item][0]
@@ -917,7 +939,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
 
         os.environ["TESTBUILDFAIL_PASS"] = "True"
         ct2 = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, use_existing=True,
-                            test_root=TEST_ROOT,output_root=TEST_ROOT)
+                            test_root=TEST_ROOT,output_root=TEST_ROOT,compiler=TEST_COMPILER)
 
         log_lvl = logging.getLogger().getEffectiveLevel()
         logging.disable(logging.CRITICAL)
@@ -1036,7 +1058,7 @@ class T_TestRunRestart(TestCreateTestCommon):
     ###########################################################################
     def test_run_restart(self):
     ###########################################################################
-        run_cmd_assert_result(self, "{}/create_test --test-root {} --output-root {} -t {} NODEFAIL_P1.f09_g16.X".format(SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name))
+        run_cmd_assert_result(self, "{}/create_test --test-root {} --output-root {} -t {} --compiler {} NODEFAIL_P1.f09_g16.X".format(SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name,self._compiler))
         if self._hasbatch:
             run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
                                   from_dir=self._testroot)
@@ -1053,7 +1075,7 @@ class T_TestRunRestart(TestCreateTestCommon):
     def test_run_restart_too_many_fails(self):
     ###########################################################################
         os.environ["NODEFAIL_NUM_FAILS"] = "5"
-        run_cmd_assert_result(self, "{}/create_test --test-root {} --output-root {} -t {} NODEFAIL_P1.f09_g16.X".format(SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name),
+        run_cmd_assert_result(self, "{}/create_test --test-root {} --output-root {} -t {} --compiler {} NODEFAIL_P1.f09_g16.X".format(SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name, self._compiler),
                               expected_stat=(0 if self._hasbatch else CIME.utils.TESTS_FAILED_ERR_CODE))
         if self._hasbatch:
             run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
@@ -1083,6 +1105,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
     ###########################################################################
         if NO_BATCH:
             extra_args += " --no-batch"
+        if TEST_COMPILER is not None:
+            extra_args += " --compiler %s"%TEST_COMPILER
 
         if " -n " in extra_args:
             run_cmd_assert_result(self, "%s/create_test --test-root %s --output-root %s %s"
@@ -1312,6 +1336,8 @@ class Z_FullSystemTest(TestCreateTestCommon):
             % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name)
         if NO_BATCH:
             create_test_cmd += " --no-batch"
+        if TEST_COMPILER is not None:
+            create_test_cmd += " --compiler %s "%TEST_COMPILER
 
         run_cmd_assert_result(self, create_test_cmd)
 
@@ -2364,6 +2390,8 @@ def write_provenance_info():
     cime_model = CIME.utils.get_model()
     logging.info("Using cime_model = %s" % cime_model)
     logging.info("Testing machine = %s" % MACHINE.get_machine_name())
+    if TEST_COMPILER is not None:
+        logging.info("Testing compiler = %s"% TEST_COMPILER)
     logging.info("Test root: %s\n" % TEST_ROOT)
 
 def _main_func():
@@ -2389,6 +2417,13 @@ def _main_func():
         mach_name = sys.argv[midx + 1]
         MACHINE = Machines(machine=mach_name)
         os.environ["CIME_MACHINE"] = mach_name
+        del sys.argv[midx + 1]
+        del sys.argv[midx]
+
+    if "--compiler" in sys.argv:
+        global TEST_COMPILER
+        midx = sys.argv.index("--compiler")
+        TEST_COMPILER = sys.argv[midx + 1]
         del sys.argv[midx + 1]
         del sys.argv[midx]
 
