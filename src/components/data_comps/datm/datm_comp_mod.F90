@@ -264,7 +264,6 @@ CONTAINS
     integer(IN)   :: stepno      ! step number
     character(CL) :: calendar    ! calendar type
     character(CL) :: flds_strm
-    type(iosystem_desc_t)  , pointer :: iosystem
 
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
@@ -288,7 +287,6 @@ CONTAINS
        ! Initialize PIO
        !----------------------------------------------------------------------------
 
-       iosystem => shr_pio_getiosys(trim(inst_name))
        call shr_strdata_pioinit(SDATM, COMPID)
 
        !----------------------------------------------------------------------------

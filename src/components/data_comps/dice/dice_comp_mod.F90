@@ -167,7 +167,6 @@ CONTAINS
     logical       :: exists      ! file existance logical
     integer(IN)   :: nu          ! unit number
     character(CL) :: calendar    ! calendar type
-    type(iosystem_desc_t), pointer :: ice_pio_subsystem
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
