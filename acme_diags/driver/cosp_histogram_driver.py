@@ -99,6 +99,7 @@ def run_diag(parameter):
                 diff = mv1_domain_mean - mv2_domain_mean
                 mv1_domain_mean.id = var
                 mv2_domain_mean.id = var
+                print parameter.main_title
                 diff.id = var
                 plot(parameter.current_set, mv2_domain_mean, mv1_domain_mean, diff, {}, parameter)
 #                    plot(parameter.current_set, mv2_domain, mv1_domain, diff, metrics_dict, parameter)
