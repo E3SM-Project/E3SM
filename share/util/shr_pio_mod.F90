@@ -502,7 +502,8 @@ contains
 
   end subroutine shr_pio_read_default_namelist
 
-  subroutine shr_pio_read_component_namelist(nlfilename, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, pio_rearranger, pio_netcdf_ioformat)
+  subroutine shr_pio_read_component_namelist(nlfilename, Comm, pio_stride, pio_root, &
+       pio_numiotasks, pio_iotype, pio_rearranger, pio_netcdf_ioformat)
     character(len=*), intent(in) :: nlfilename
     integer, intent(in) :: Comm
 
