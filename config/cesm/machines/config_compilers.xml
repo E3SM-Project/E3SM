@@ -799,17 +799,32 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
-<compiler MACH="pleiades-has">
+<compiler MACH="pleiades-bro">
   <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -aCORE-AVX2 -align array32byte </append>
+    <append DEBUG="FALSE"> -O2 -xCORE-AVX2 </append>
   </FFLAGS>
   <MPICC>icc</MPICC>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
   <MPI_PATH>$ENV{MPI_ROOT}</MPI_PATH>
-  <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
   <SLIBS>
-    <append>-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf</append>
+    <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
+</compiler>
+
+<compiler MACH="pleiades-has">
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 -xCORE-AVX2 </append>
+  </FFLAGS>
+  <MPICC>icc</MPICC>
+  <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
+  <MPI_PATH>$ENV{MPI_ROOT}</MPI_PATH>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
+  <SLIBS>
+    <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
+  </SLIBS>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="pleiades-ivy">
@@ -819,10 +834,11 @@ using a fortran linker.
   <MPICC>icc</MPICC>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
   <MPI_PATH>$ENV{MPI_ROOT}</MPI_PATH>
-  <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
   <SLIBS>
-    <append>-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf</append>
+    <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="pleiades-san">
@@ -832,23 +848,11 @@ using a fortran linker.
   <MPICC>icc</MPICC>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
   <MPI_PATH>$ENV{MPI_ROOT}</MPI_PATH>
-  <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
   <SLIBS>
-    <append>-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf</append>
+    <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
-</compiler>
-
-<compiler MACH="pleiades-wes">
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -xSSE4.2 </append>
-  </FFLAGS>
-  <MPICC>icc</MPICC>
-  <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
-  <MPI_PATH>$ENV{MPI_ROOT}</MPI_PATH>
-  <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
-  <SLIBS>
-    <append>-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf</append>
-  </SLIBS>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="sierra">
