@@ -427,7 +427,8 @@ module shr_strdata_mod
                write(logunit,F00) ' writing ',trim(SDAT%fillwrit(n))
                call shr_sys_flush(logunit)
              endif
-             call shr_mct_sMatWritednc(SDAT%sMatPf(n)%Matrix,SDAT%pio_subsystem,sdat%io_type,  SDAT%io_format, SDAT%fillwrit(n),compid,mpicom)
+             call shr_mct_sMatWritednc(SDAT%sMatPf(n)%Matrix,SDAT%pio_subsystem,&
+                  sdat%io_type,  SDAT%io_format, SDAT%fillwrit(n),compid,mpicom)
            endif
         else
            if (my_task == master_task) then
@@ -436,7 +437,8 @@ module shr_strdata_mod
            endif
            call shr_mct_sMatReaddnc(sMati,SDAT%gsmapR(n),SDAT%gsmapR(n),'src', &
              filename=trim(SDAT%fillread(n)),mytask=my_task,mpicom=mpicom)
-           call mct_sMatP_Init(SDAT%sMatPf(n),sMati,SDAT%gsMapR(n),SDAT%gsmapR(n),0, mpicom, compid)
+           call mct_sMatP_Init(SDAT%sMatPf(n),sMati,SDAT%gsMapR(n),&
+                SDAT%gsmapR(n),0, mpicom, compid)
            call mct_sMat_Clean(sMati)
         endif
      endif
