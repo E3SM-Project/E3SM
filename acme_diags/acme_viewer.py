@@ -89,6 +89,19 @@ def _add_header(path, version, model_name, time):
     with open(path, "wb") as f:
         f.write(html)
 
+def h1_to_h3(path):
+    """Change any <h1> to <h3> because h1 is just too big"""
+    soup = BeautifulSoup(open(path), "lxml")
+    h1 = soup.find('h1')
+    if h1 is None:
+        return
+    h1.name = 'h3'
+
+    html = soup.prettify("utf-8")
+    with open(path, "wb") as f:
+        f.write(html)
+
+
 def _extras(root_dir, parameters):
     """Add extras (header, etc) to the generated htmls"""
     _copy_acme_logo(root_dir)
@@ -103,6 +116,7 @@ def _extras(root_dir, parameters):
 
     for f in index_files:
         _add_header(f, acme_diags.__version__, parameters[0].test_name, dt)
+        h1_to_h3(f)
 
 def _add_pages_and_top_row(viewer, parameters):
     """Add the page and columns of the page"""
