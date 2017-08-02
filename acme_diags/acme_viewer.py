@@ -1,5 +1,7 @@
 import os
 import glob
+import urllib2
+from bs4 import BeautifulSoup
 from cdp.cdp_viewer import OutputViewer
 from acme_diags.driver.utils import get_output_dir
 
@@ -18,7 +20,48 @@ from acme_diags.driver.utils import get_output_dir
 # needed so we can have a cols in order of ANN, DJF, MAM, JJA, SON
 ROW_INFO = {}
 
-def add_pages_and_top_row(viewer, parameters):
+def _extras(path):
+    """Add extras (header, etc) to the generated html"""
+
+    # We're basically inserting the following in the body under navbar navbar-default
+    # <div id="acme-header" style="background-color:#dbe6c5; float:left; width:45%">
+	# 	<p style="margin-left:5em">
+	# 		<b>ACME Diagnostics Package [VERSION]</b><br>
+	# 		Test model name: [SOMETHING]<br>
+	# 		Date created: [DATE]<br>
+	# 	</p>
+	# </div>
+	# <div id="acme-header2" style="background-color:#dbe6c5; float:right; width:55%">
+	# 	<img src="ACME_logo.png" alt="logo" style="width:161px; height:70px; background-color:#dbe6c5">
+	# </div>
+
+    soup = BeautifulSoup(open(path), 'lxml')
+
+    header_div = soup.new_tag("div", id="acme-header", style="background-color:#dbe6c5; float:left; width:45%")
+
+    p = soup.new_tag("p", style="margin-left:5em")
+    bolded_title = soup.new_tag("b")
+    bolded_title.append("ACME Diagnostics Package {}".format("VERSION"))
+    bolded_title.append(soup.new_tag("br"))
+    p.append(bolded_title)
+    p.append("Test model name: {}".format('MODEL NAME'))
+    p.append(soup.new_tag("br"))
+    p.append("Date created: {}".format('DATE CREATED'))
+
+    header_div.append(p)
+    soup.body.insert(1, header_div)
+
+    img_div = soup.new_tag("div", id="acme-header2", style="background-color:#dbe6c5; float:right; width:55%")
+    # TODO: remember to copy over the ACME_logo.png file during installation
+    img = soup.new_tag("img", src="ACME_logo.png", alt="logo", style="width:161px; height:70px; background-color:#dbe6c5")
+    img_div.append(img)
+    soup.body.insert(2, img_div)
+
+    html = soup.prettify("utf-8")
+    with open(path, "wb") as f:
+        f.write(html)
+
+def _add_pages_and_top_row(viewer, parameters):
     """Add the page and columns of the page"""
     set_to_seasons = {}  # dict of {set: [seasons]}
     for p in parameters:
@@ -41,7 +84,7 @@ def create_viewer(root_dir, parameters, ext):
     extension ext and create the viewer in root_dir."""
 
     viewer = OutputViewer(path=root_dir, index_name='ACME Diagnostics')
-    add_pages_and_top_row(viewer, parameters)
+    _add_pages_and_top_row(viewer, parameters)
 
 
     for parameter in parameters:
@@ -114,5 +157,6 @@ def create_viewer(root_dir, parameters, ext):
                         viewer.add_col('-----', is_file=True)
 
     viewer.generate_viewer(prompt_user=False)
+    _extras(os.path.join(root_dir, 'index.html'))
 
 
